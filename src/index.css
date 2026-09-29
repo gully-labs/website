@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+
+/* Brand tokens from BRAND.md, plus the few extra values the prototype uses. */
+@theme {
+  --color-*: initial;
+  --color-bg: #0b0e13;
+  --color-bg-alt: #0f1319;
+  --color-bg-footer: #090c10;
+  --color-surface: #10141a;
+  --color-surface-deep: #0d1116;
+  --color-surface-hover: #131820;
+  --color-line: #1d232c;
+  --color-line-strong: #2c3540;
+  --color-line-hover: #3a4452;
+  --color-grid: #1a2029;
+  --color-axis: #5c6878;
+  --color-ink: #eef0f2;
+  --color-ink-2: #cfd5dc;
+  --color-muted: #a6b0bd;
+  --color-dim: #8a96a6;
+  --color-faint: #6c7888;
+  --color-gold: #e8c060;
+  --color-gold-hover: #f4d98c;
+  --color-gold-line: #5a4a22;
+  --color-green: #6fcf6a;
+  --color-success-bg: #16301a;
+  --color-success-line: #2f5a33;
+  --color-bar: #3d4a36;
+  --color-mascot-bg: #24282c;
+  --color-error: #ff8a7a;
+
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-sans: 'Hanken Grotesk', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --radius-btn: 4px;
+  --radius-input: 6px;
+  --radius-card: 12px;
+  --radius-modal: 14px;
+
+  --animate-float: gl-float 6s ease-in-out infinite;
+  --animate-float-slow: gl-float 7s ease-in-out infinite;
+  --animate-spin-slow: gl-spin 30s linear infinite;
+  --animate-spin-rev: gl-spin 18s linear infinite reverse;
+  --animate-glow: gl-glow 4s ease-in-out infinite;
+  --animate-shimmer: gl-shimmer 4s linear infinite;
+  --animate-blink: gl-blink 1.6s ease-in-out infinite;
+  --animate-sweep: gl-sweep 3.2s ease-in-out infinite;
+
+}
+
+@keyframes gl-float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-14px) rotate(1deg); }
+}
+@keyframes gl-spin { to { transform: rotate(360deg); } }
+@keyframes gl-glow {
+  0%, 100% { opacity: 0.35; transform: scale(0.92); }
+  50% { opacity: 0.75; transform: scale(1.05); }
+}
+@keyframes gl-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes gl-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes gl-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gl-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes gl-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@keyframes gl-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Page gutter: clamp(24px, 4.5cqw, 64px), measured against the app container. */
+@utility px-page {
+  padding-inline: clamp(24px, 4.5cqw, 64px);
+}
+
+@layer base {
+  html {
+    /* The prototype relies on browser-default line-height. */
+    line-height: normal;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button,
+  a {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-axis);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
