@@ -38,4 +38,4 @@ Pages: Home, Project detail (x4), Services, About, plus a global contact modal. 
 - The server is shared with many other projects (peddles-*, peddleswap-*, latch-*, cf-*, peddlepro-*). Ports 80/443 belong to `peddles-caddy-1`, and `latch-cloudflared` is Latch's tunnel: none of these are ours, so don't touch them.
 
 ## Placeholders (keep marked as TODO)
-Sample TVL, volume, member and holder numbers; project "Visit" URLs; social links; the email provider in `api/contact.ts`.
+Sample TVL, volume, member and holder numbers; social links; the email provider in `api/contact.ts`.
