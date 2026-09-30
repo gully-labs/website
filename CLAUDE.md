@@ -30,7 +30,7 @@ Pages: Home, Project detail (x4), Services, About, plus a global contact modal. 
 - Clean, reusable components; production build must pass `npm run build` with no type errors.
 
 ## Server and domain
-- `gullylabs.xyz` points to `40.160.136.124`, proxied through Cloudflare (SSL mode Full (strict) with a Cloudflare Origin Certificate).
+- `gullylabs.xyz` points to `40.160.136.124`, proxied through Cloudflare. The origin uses a self-signed cert, so SSL mode must be Full (not strict) until a Cloudflare Origin Certificate is installed in `~/gully-web/certs/`.
 - **On the server, only work in our own containers and ports.** Do not stop, modify, reconfigure or remove any other container, service, port, volume, network, firewall rule or system config that we did not create. Name everything we create with a `gully-` prefix so it is clearly ours.
 - Before binding a port, check it is free; never take over a port used by something else.
 - Deploy: `Dockerfile` + `compose.yaml` (project `gully`, container `gully-web`, image `gully-web`). `server/server.mjs` serves `dist/` with SPA fallback and handles `/api/contact` (replaces the Vercel function when self-hosting). Run with `GULLY_WEB_PORT=<free port> docker compose up -d --build`.
