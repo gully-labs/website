@@ -1,0 +1,17 @@
+# Only gully-* resources. Check both host ports are free before changing them.
+name: gully
+services:
+  web:
+    build: .
+    image: gully-web:latest
+    container_name: gully-web
+    restart: unless-stopped
+    environment:
+      TLS_PORT: "8443"
+    volumes:
+      - ./certs:/certs:ro
+    ports:
+      # Local access for checks on the server.
+      - "127.0.0.1:${GULLY_WEB_PORT:-8099}:8080"
+      # Public port Cloudflare connects to (via an Origin Rule on gullylabs.xyz).
+      - "0.0.0.0:${GULLY_PUBLIC_PORT:-2053}:8443"

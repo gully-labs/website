@@ -1,11 +1,14 @@
 import { Link } from 'react-router'
+import { Mail } from 'lucide-react'
 import { projects } from '../content/projects'
 import { navItems, socialLinks } from '../content/site'
 import { useContact } from './ContactContext'
+import { SocialIcon } from './SocialIcon'
 import { Wordmark } from './Wordmark'
 
 const colLabel = 'font-mono text-[11px] tracking-[1px] text-faint'
-const colLink = 'bg-transparent p-0 text-[15px] text-ink-2 transition-colors hover:text-gold'
+const colLink = 'group inline-flex items-center gap-2 bg-transparent p-0 text-[15px] text-ink-2 transition-colors hover:text-gold'
+const colIcon = 'flex-none text-faint transition-colors group-hover:text-gold'
 
 export function Footer() {
   const { openContact } = useContact()
@@ -24,10 +27,12 @@ export function Footer() {
             <span className={colLabel}>SITE</span>
             {navItems.map((n) => (
               <Link key={n.label} to={n.to} className={colLink}>
+                <n.icon aria-hidden size={15} strokeWidth={1.75} className={colIcon} />
                 {n.label}
               </Link>
             ))}
             <button type="button" onClick={() => openContact()} className={colLink}>
+              <Mail aria-hidden size={15} strokeWidth={1.75} className={colIcon} />
               Contact
             </button>
           </nav>
@@ -35,6 +40,7 @@ export function Footer() {
             <span className={colLabel}>PROJECTS</span>
             {projects.map((p) => (
               <Link key={p.slug} to={`/projects/${p.slug}`} className={colLink}>
+                <span aria-hidden className="size-2 flex-none rounded-full" style={{ background: p.accent }} />
                 {p.name}
               </Link>
             ))}
@@ -43,6 +49,9 @@ export function Footer() {
             <span className={colLabel}>SOCIAL</span>
             {socialLinks.map((s) => (
               <a key={s.label} href={s.href} target="_blank" rel="noopener" className={colLink}>
+                <span className={colIcon}>
+                  <SocialIcon name={s.label} />
+                </span>
                 {s.label}
               </a>
             ))}
