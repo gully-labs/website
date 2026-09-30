@@ -9,7 +9,7 @@ The design kit lives at `C:\Users\Admin\Downloads\Gully Labs landing directions 
 - `screenshots/`: visual targets (desktop 1440px, mobile 390px).
 - `design-files/Gully Labs Portfolio Wall.dc.html`: prototype source. Its inline styles are the exact values when the README is ambiguous.
 
-Pages: Home, Project detail (x4), Services, About, plus a global contact modal. Do not add sections, stats, testimonials, pricing, icons or copy that aren't in the kit.
+Pages: Home, Project detail (x4), Services, About, plus a global contact modal. Do not add sections, stats, testimonials, pricing, icons or copy that aren't in the kit. Exception (requested by the user): nav menus (header, mobile menu, footer) have lucide-react icons plus brand icons for socials.
 
 ## Stack
 - React + Vite + TypeScript, run with `npm run dev`.
@@ -29,5 +29,13 @@ Pages: Home, Project detail (x4), Services, About, plus a global contact modal. 
 - SEO: per-page titles and descriptions, og/twitter image `/social/og-image-1200x630.png`.
 - Clean, reusable components; production build must pass `npm run build` with no type errors.
 
+## Server and domain
+- `gullylabs.xyz` points to `40.160.136.124`, proxied through Cloudflare. Cloudflare Origin Rule "gully-web port 2053" (all requests on the zone) rewrites the destination port to 2053. SSL mode is Full (not strict) because the origin cert is self-signed; install a Cloudflare Origin Certificate in `~/gully-web/certs/` before switching back to Full (strict).
+- **On the server, only work in our own containers and ports.** Do not stop, modify, reconfigure or remove any other container, service, port, volume, network, firewall rule or system config that we did not create. Name everything we create with a `gully-` prefix so it is clearly ours.
+- Before binding a port, check it is free; never take over a port used by something else.
+- Deploy: `Dockerfile` + `compose.yaml` (project `gully`, container `gully-web`, image `gully-web`). `server/server.mjs` serves `dist/` with SPA fallback and handles `/api/contact` (replaces the Vercel function when self-hosting). Run with `GULLY_WEB_PORT=<free port> docker compose up -d --build`.
+- Live deployment: SSH `ubuntu@40.160.136.124`, source in `~/gully-web`, container `gully-web` on `127.0.0.1:8099` (local checks) and public `0.0.0.0:2053` (HTTPS + HTTP on one port, self-signed cert in `~/gully-web/certs/`, for Cloudflare via an Origin Rule rewriting the destination port to 2053), network `gully_default`. Redeploy: upload source to `~/gully-web`, then `cd ~/gully-web && GULLY_WEB_PORT=8099 docker compose up -d --build`.
+- The server is shared with many other projects (peddles-*, peddleswap-*, latch-*, cf-*, peddlepro-*). Ports 80/443 belong to `peddles-caddy-1`, and `latch-cloudflared` is Latch's tunnel: none of these are ours, so don't touch them.
+
 ## Placeholders (keep marked as TODO)
-Sample TVL, volume, member and holder numbers; project "Visit" URLs; social links; the email provider in `api/contact.ts`.
+Sample TVL, volume, member and holder numbers; social links; the email provider in `api/contact.ts`.

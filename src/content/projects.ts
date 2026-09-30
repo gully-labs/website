@@ -1,6 +1,5 @@
 // TODO: every metric, member/holder count and sparkline series below is sample
 // data. Wire them to a real source (e.g. DefiLlama or our own indexer).
-// TODO: project `url`s are placeholders.
 
 export interface Metric {
   label: string
@@ -44,7 +43,7 @@ export const projects: Project[] = [
     fit: 'cover',
     pad: '0px',
     padSm: '0px',
-    url: '#',
+    url: 'https://cartel.family/',
     metrics: [
       { label: 'VOLUME 30D', value: '$412.8M' },
       { label: 'MEMBERS', value: '8,240' },
@@ -65,7 +64,7 @@ export const projects: Project[] = [
     fit: 'contain',
     pad: '56px 80px',
     padSm: '28px 40px',
-    url: '#',
+    url: 'https://latches.fun/',
     metrics: [
       { label: 'TVL', value: '$96.3M' },
       { label: 'HOOKS LIVE', value: '27' },
@@ -86,7 +85,7 @@ export const projects: Project[] = [
     fit: 'cover',
     pad: '0px',
     padSm: '0px',
-    url: '#',
+    url: 'https://peddles.xyz/',
     metrics: [
       { label: 'HOLDERS', value: '14,902' },
       { label: 'VOLUME 30D', value: '$38.5M' },
@@ -107,7 +106,7 @@ export const projects: Project[] = [
     fit: 'contain',
     pad: '64px 64px',
     padSm: '36px 28px',
-    url: '#',
+    url: 'https://peddleswap.xyz/',
     metrics: [
       { label: 'TVL', value: '$88.3M' },
       { label: 'VOLUME 24H', value: '$6.1M' },
