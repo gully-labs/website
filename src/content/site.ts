@@ -1,4 +1,4 @@
-import { FlaskConical, Info, Layers, type LucideIcon } from 'lucide-react'
+import { ChartLine, FlaskConical, Info, Layers, type LucideIcon } from 'lucide-react'
 
 // TODO: replace with the real social profiles.
 export const socialLinks = [
@@ -10,6 +10,7 @@ export const socialLinks = [
 export type SocialLabel = (typeof socialLinks)[number]['label']
 
 export const navItems: { label: string; to: string; match: string; icon: LucideIcon }[] = [
+  { label: 'Ledger', to: '/#ledger', match: '/#ledger', icon: ChartLine },
   { label: 'Projects', to: '/#projects', match: '/projects', icon: FlaskConical },
   { label: 'Services', to: '/services', match: '/services', icon: Layers },
   { label: 'About', to: '/about', match: '/about', icon: Info },
