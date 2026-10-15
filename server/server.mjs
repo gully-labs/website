@@ -1,6 +1,8 @@
 // Production server for self-hosting: serves the built site from dist/ with an
-// SPA fallback, and handles POST /api/contact. No dependencies beyond Node.
+// SPA fallback, handles POST /api/contact and answers GET /api/stats (the live
+// cross-venue figures, see stats.mjs). No dependencies beyond Node.
 import http from 'node:http'
+import { readStats } from './stats.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -70,6 +72,13 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/contact') {
     if (req.method !== 'POST') return send(res, 405, '', { Allow: 'POST' })
     return handleContact(req, res)
+  }
+  if (url.pathname === '/api/stats') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    return readStats().then(
+      (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' }),
+      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json' }),
+    )
   }
   if (url.pathname === '/healthz') return send(res, 200, 'ok')
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, '')

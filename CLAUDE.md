@@ -37,5 +37,28 @@ Pages: Home, Project detail (x4), Services, About, plus a global contact modal. 
 - Live deployment: SSH `ubuntu@40.160.136.124`, source in `~/gully-web`, container `gully-web` on `127.0.0.1:8099` (local checks) and public `0.0.0.0:2053` (HTTPS + HTTP on one port, self-signed cert in `~/gully-web/certs/`, for Cloudflare via an Origin Rule rewriting the destination port to 2053), network `gully_default`. Redeploy: upload source to `~/gully-web`, then `cd ~/gully-web && GULLY_WEB_PORT=8099 docker compose up -d --build`.
 - The server is shared with many other projects (peddles-*, peddleswap-*, latch-*, cf-*, peddlepro-*). Ports 80/443 belong to `peddles-caddy-1`, and `latch-cloudflared` is Latch's tunnel: none of these are ours, so don't touch them.
 
-## Placeholders (keep marked as TODO)
-Sample TVL, volume, member and holder numbers; social links; the email provider in `api/contact.ts`.
+## Live figures: nothing numeric is typed into the site (owner, 2026-10-15)
+Every volume, TVL and fee figure, every sparkline and the home chart are read live from
+`GET /api/stats`, answered by `server/stats.mjs` (the self-hosted server, a Vite middleware in dev,
+and `api/stats.ts` on Vercel). It reads each project's OWN public API once a minute and adds up
+what agrees in USD, keeping the source beside every number:
+
+| Project | Source | Publishes |
+|---|---|---|
+| Cartel Family | `cartel.family/api/platform/landing-stats` | volume 24h, all-time, daily series |
+| DeepCore | `deepcore.fun/v1/overview` (cross-chain) | volume 24h, TVL, fees, daily series |
+| PeddleSwap | `api{,-base,-arc}.peddleswap.xyz/v1/stats/overview` | TVL, volume, fees, locked, daily series |
+| Peddles | `api.peddles.xyz/api/v1/analytics/platform` + `/windows` | TVL, volume 24h; creator fees in ETH |
+| PeddleQuest | none yet (quests, not trading) | — |
+
+Rules: a venue that cannot be read is `state: error` and renders as unreadable, never as zero; a
+figure a venue does not publish is `null` and the totals say which venues they cover; a figure in a
+token (Peddles' creator fees) is shown but never added to a dollar total; fewer than two points is
+"not enough for a series yet", not a flat line. Peddles' and PeddleQuest's APIs refuse a foreign
+browser origin, which is why the read is server-side. Remaining placeholders: social links; the
+email provider in `api/contact.ts`; the notify-me button.
+
+The project list is `src/content/projects.ts` (Cartel Family, DeepCore, PeddleSwap, Peddles,
+PeddleQuest; one slot in the lab). Latch Protocol was removed on 2026-10-15 (its repo is retired);
+DeepCore replaces it. Logos come from each project's own brand kit or live site identity, never
+drawn here.

@@ -6,13 +6,18 @@ import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, SectionHeading } from '../components/ui'
 import { comingSoon, projects, TOTAL_SLOTS } from '../content/projects'
 import { services } from '../content/services'
+import { useStats } from '../hooks/useStats'
+
+const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six']
 
 export function Home() {
+  const st = useStats()
+  const venues = st.k === 'ok' ? st.data.venues : []
   return (
     <>
       <Seo
         title="Web3 projects and blockchain development"
-        description="We build and release Web3 products under our own roof. Here's what's out of the lab so far."
+        description="We build and release Web3 products under our own roof. Here's what's out of the lab so far, with each project's figures read live."
       />
 
       <section className="flex flex-wrap items-center gap-[clamp(32px,4cqw,64px)] px-page py-20">
@@ -24,7 +29,8 @@ export function Home() {
             behind <span className="text-gold">Gully Labs</span>
           </h1>
           <p className="m-0 max-w-[620px] text-[19px] leading-[1.55] text-muted">
-            We build and release Web3 products under our own roof. Here's what's out of the lab so far.
+            We build and release Web3 products under our own roof. {words[projects.length][0].toUpperCase() + words[projects.length].slice(1)}{' '}
+            venues live, read from their own contracts and indexers, added up here.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link to="/#projects" className={`${btnGold} px-[26px] py-4 text-[16px]`}>
@@ -43,12 +49,13 @@ export function Home() {
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading label={`PROJECTS / ${TOTAL_SLOTS}`} title="Out of the lab" />
           <p className="m-0 max-w-[420px] text-[17px] leading-[1.55] text-muted">
-            Four released, two in development. Select a project for details.
+            {words[projects.length][0].toUpperCase() + words[projects.length].slice(1)} released, {words[comingSoon.length]} in development. Each tile reads its
+            project's own API.
           </p>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] gap-5">
           {projects.map((p, i) => (
-            <ProjectTile key={p.slug} project={p} index={i} />
+            <ProjectTile key={p.slug} project={p} index={i} venue={venues.find((v) => v.key === p.key)} failed={st.k === 'error'} />
           ))}
           {comingSoon.map((num) => (
             <ComingSoonTile key={num} num={num} />

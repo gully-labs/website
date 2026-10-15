@@ -1,21 +1,35 @@
 import { Link, Navigate, useParams } from 'react-router'
 import { useContact } from '../components/ContactContext'
+import { DailyLine, EmptySeries } from '../components/LiveChart'
 import { Seo } from '../components/Seo'
-import { Sparkline } from '../components/Sparkline'
 import { btnOutline, statusPill } from '../components/ui'
 import { projectNumber, projects, TOTAL_SLOTS } from '../content/projects'
+import { useStats } from '../hooks/useStats'
+import { fmtTime, metricsOf, sourceHost } from '../lib/stats'
 
 const cardTitle = 'm-0 font-display text-[28px] font-bold uppercase'
 
 export function ProjectDetail() {
   const { slug } = useParams()
   const { openContact } = useContact()
+  const st = useStats()
   const index = projects.findIndex((p) => p.slug === slug)
   if (index < 0) return <Navigate to="/" replace />
 
   const p = projects[index]
   const next = projects[(index + 1) % projects.length]
-  const stats = [...p.metrics, { label: 'CATEGORY', value: p.tag }, { label: 'STATUS', value: p.status }]
+  const venue = st.k === 'ok' ? st.data.venues.find((v) => v.key === p.key) : undefined
+  const live = st.k === 'error' ? metricsOf({ key: p.key, state: 'error', error: 'could not be read' }) : metricsOf(venue)
+  const stats = [...live, { label: 'CATEGORY', value: p.tag }, { label: 'STATUS', value: p.status }]
+  const series = venue?.state === 'ok' ? venue.daily.slice(-30) : []
+  const provenance =
+    venue?.state === 'ok'
+      ? `Read from ${sourceHost(venue.source.url)} at ${fmtTime(venue.source.readAt)}.${venue.notes.length ? ` ${venue.notes.join(' ')}` : ''}`
+      : venue?.state === 'error'
+        ? `Could not be read: ${venue.error}`
+        : st.k === 'error'
+          ? 'Could not be read.'
+          : 'Reading…'
 
   return (
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
@@ -49,6 +63,13 @@ export function ProjectDetail() {
             {p.tagline}
           </div>
           <p className="m-0 max-w-[560px] text-[18px] leading-[1.6] text-muted">{p.description}</p>
+          <div className="flex flex-wrap gap-2">
+            {p.chains.map((c) => (
+              <span key={c} className="rounded-full border border-line-strong px-[10px] py-[3px] font-mono text-[11px] tracking-[.5px] text-muted">
+                {c}
+              </span>
+            ))}
+          </div>
           <div className="mt-2 flex flex-wrap gap-3">
             <a
               href={p.url}
@@ -70,29 +91,36 @@ export function ProjectDetail() {
         </div>
       </div>
 
-      <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
-        {stats.map((s) => (
-          <div key={s.label} className="flex flex-col gap-[6px] bg-surface px-7 py-6">
-            <dt className="font-mono text-[11px] tracking-[1px] text-faint">{s.label}</dt>
-            <dd className="m-0 font-display text-[40px] leading-none font-bold">{s.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className="flex flex-col gap-3">
+        <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
+          {stats.map((s) => (
+            <div key={s.label} className="flex flex-col gap-[6px] bg-surface px-7 py-6">
+              <dt className="font-mono text-[11px] tracking-[1px] text-faint">{s.label}</dt>
+              <dd className={`m-0 font-display text-[40px] leading-none font-bold ${'missing' in s && s.missing ? 'text-dim' : ''}`}>{s.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="m-0 font-mono text-[12px] leading-[1.5] text-faint">{provenance}</p>
+      </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-5">
         <div className="flex flex-col gap-5 rounded-card border border-line bg-surface p-7">
           <div className="flex flex-col gap-1">
-            <h2 className={cardTitle}>Activity</h2>
-            <span className="font-mono text-[12px] text-faint">Last 9 months · sample data</span>
+            <h2 className={cardTitle}>Volume</h2>
+            <span className="font-mono text-[12px] text-faint">
+              {series.length > 1 ? `Daily, last ${series.length} days · read from ${sourceHost(venue!.state === 'ok' ? venue!.source.url : '')}` : 'Daily'}
+            </span>
           </div>
-          <div
-            className="h-[220px]"
-            style={{
-              background:
-                'repeating-linear-gradient(180deg,transparent 0,transparent calc(25% - 1px),#1a2029 calc(25% - 1px),#1a2029 25%)',
-            }}
-          >
-            <Sparkline key={p.slug} data={p.series} color={p.accent} large label={`${p.name} activity, last 9 months`} />
+          <div className="min-h-[220px]">
+            {st.k === 'loading' ? (
+              <p className="m-0 py-6 font-mono text-[12px] text-faint">Reading…</p>
+            ) : series.length > 1 ? (
+              <DailyLine key={p.slug} series={series} color={p.accent} label={`${p.name} daily volume`} />
+            ) : venue?.state === 'ok' ? (
+              <EmptySeries n={series.length} />
+            ) : (
+              <p className="m-0 py-6 font-mono text-[12px] text-error">Could not be read.</p>
+            )}
           </div>
         </div>
         <div className="flex flex-col gap-5 rounded-card border border-line bg-surface p-7">

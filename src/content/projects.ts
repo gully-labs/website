@@ -1,13 +1,10 @@
-// TODO: every metric, member/holder count and sparkline series below is sample
-// data. Wire them to a real source (e.g. DefiLlama or our own indexer).
-
-export interface Metric {
-  label: string
-  value: string
-}
+// The projects Gully Labs has shipped. Every figure shown beside them is read live from the
+// project's own API (server/stats.mjs, keyed by `key`); nothing numeric is written here.
 
 export interface Project {
   slug: string
+  /** Key in the /api/stats document. */
+  key: string
   name: string
   tag: string
   status: 'Live' | 'Beta'
@@ -23,20 +20,19 @@ export interface Project {
   /** Logo padding in the small "Built by this team" cards. */
   padSm: string
   url: string
-  metrics: [Metric, Metric]
-  /** Nine monthly data points for the sparkline and activity chart. */
-  series: number[]
+  chains: string[]
   built: string[]
 }
 
 export const projects: Project[] = [
   {
     slug: 'cartel-family',
+    key: 'cartel-family',
     name: 'Cartel Family',
-    tag: 'Trading community',
+    tag: 'Social trading',
     status: 'Live',
     tagline: 'We trade as one',
-    description: 'A members-first trading collective with shared tools and signals.',
+    description: 'Live markets, automated strategies and shared trades across chains.',
     logo: '/assets/cartel-family.png',
     bg: '#12151c',
     accent: '#b8926a',
@@ -44,62 +40,35 @@ export const projects: Project[] = [
     pad: '0px',
     padSm: '0px',
     url: 'https://cartel.family/',
-    metrics: [
-      { label: 'VOLUME 30D', value: '$412.8M' },
-      { label: 'MEMBERS', value: '8,240' },
-    ],
-    series: [3, 4, 3.6, 5, 5.4, 6.2, 5.8, 7.1, 8],
-    built: ['Member portal and wallet sign-in', 'Shared trading dashboards', 'Token-gated community channels'],
+    chains: ['Solana', 'Multi-chain'],
+    built: ['Member portal and wallet sign-in', 'Live market data and price alerts', 'Copy trading and shared trade feed'],
   },
   {
-    slug: 'latch-protocol',
-    name: 'Latch Protocol',
+    slug: 'deepcore',
+    key: 'deepcore',
+    name: 'DeepCore',
     tag: 'DeFi infrastructure',
     status: 'Live',
-    tagline: 'Hooks for a bigger ecosystem',
-    description: 'Composable hooks that let protocols plug into shared liquidity.',
-    logo: '/assets/latch.png',
-    bg: '#0e1624',
-    accent: '#2e8cff',
+    tagline: 'Launch on one core',
+    description: 'Tokens, Launchpads, DEXes and stock markets on one shared, hardened core, on four chains.',
+    logo: '/assets/deepcore.png',
+    bg: '#061729',
+    accent: '#2ee6c5',
     fit: 'contain',
-    pad: '56px 80px',
+    pad: '56px 96px',
     padSm: '28px 40px',
-    url: 'https://latches.fun/',
-    metrics: [
-      { label: 'TVL', value: '$96.3M' },
-      { label: 'HOOKS LIVE', value: '27' },
-    ],
-    series: [2, 2.4, 3.1, 3, 3.8, 4.4, 4.2, 5.3, 6],
-    built: ['Hook contracts and SDK', 'Liquidity routing layer', 'Security review and audit'],
-  },
-  {
-    slug: 'peddles',
-    name: 'Peddles',
-    tag: 'Community & culture',
-    status: 'Live',
-    tagline: 'Ride the curve', // TODO: placeholder tagline
-    description: 'The home of the Peddles otter and its on-chain community.',
-    logo: '/assets/peddles.png',
-    bg: '#1c1f22',
-    accent: '#27b6ff',
-    fit: 'cover',
-    pad: '0px',
-    padSm: '0px',
-    url: 'https://peddles.xyz/',
-    metrics: [
-      { label: 'HOLDERS', value: '14,902' },
-      { label: 'VOLUME 30D', value: '$38.5M' },
-    ],
-    series: [5, 4.2, 4.8, 6, 5.5, 6.8, 7.4, 7, 8.2],
-    built: ['Collection and mint site', 'Holder rewards programme', 'Mascot and brand system'],
+    url: 'https://deepcore.fun/',
+    chains: ['Base', 'BNB Chain', 'HyperEVM', 'Robinhood'],
+    built: ['Hook-based pool core and launch guards', 'Launchpad and DEX kits with locked liquidity', 'Cross-chain index, SDK and hosted sites'],
   },
   {
     slug: 'peddleswap',
+    key: 'peddleswap',
     name: 'PeddleSwap',
     tag: 'DEX',
-    status: 'Beta',
-    tagline: 'Swap at speed', // TODO: placeholder tagline
-    description: 'A fast, low-fee exchange for swapping tokens and providing liquidity.',
+    status: 'Live',
+    tagline: 'Swap. Lock. Launch.',
+    description: 'Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks.',
     logo: '/assets/peddleswap.png',
     bg: '#15181b',
     accent: '#b8f03c',
@@ -107,17 +76,49 @@ export const projects: Project[] = [
     pad: '64px 64px',
     padSm: '36px 28px',
     url: 'https://peddleswap.xyz/',
-    metrics: [
-      { label: 'TVL', value: '$88.3M' },
-      { label: 'VOLUME 24H', value: '$6.1M' },
-    ],
-    series: [1, 1.8, 1.6, 2.6, 3.4, 3.1, 4.2, 4.9, 5.6],
-    built: ['AMM and router contracts', 'Swap and liquidity interface', 'Analytics and indexing'],
+    chains: ['Robinhood', 'Base', 'Arc'],
+    built: ['AMM and router contracts', 'Swap, liquidity and locker interface', 'Analytics and indexing'],
+  },
+  {
+    slug: 'peddles',
+    key: 'peddles',
+    name: 'Peddles',
+    tag: 'Launchpad',
+    status: 'Live',
+    tagline: 'Launch, trade and play',
+    description: 'Memecoins paired to tokenised stocks. Holders are paid in that stock.',
+    logo: '/assets/peddles.png',
+    bg: '#1c1f22',
+    accent: '#27b6ff',
+    fit: 'cover',
+    pad: '0px',
+    padSm: '0px',
+    url: 'https://peddles.xyz/',
+    chains: ['Base', 'Robinhood', 'BNB Chain', 'Arc'],
+    built: ['Stock-paired launch contracts and holder rewards', 'Terminal, perps and trade bot', 'Arcade: a game for every coin'],
+  },
+  {
+    slug: 'peddlequest',
+    key: 'peddlequest',
+    name: 'PeddleQuest',
+    tag: 'Quest to earn',
+    status: 'Live',
+    tagline: 'Quest on-chain, earn the proof',
+    description: 'Verified quests on four chains. XP, soulbound badges, reward pools escrowed first.',
+    logo: '/assets/peddlequest.png',
+    bg: '#0f1a13',
+    accent: '#7fc26b',
+    fit: 'contain',
+    pad: '72px 90px',
+    padSm: '36px 36px',
+    url: 'https://peddlequest.xyz/',
+    chains: ['Base', 'Robinhood', 'BNB Chain', 'Arc'],
+    built: ['On-chain quest verification and escrow', 'XP, crates and soulbound badges', 'Quest wizard and sybil rules for projects'],
   },
 ]
 
 /** Slots for projects still in development. */
-export const comingSoon = ['05', '06']
+export const comingSoon = ['06']
 
 export const TOTAL_SLOTS = '06'
 

@@ -1,4 +1,5 @@
 interface SparklineProps {
+  /** At least two points; the caller shows an honest empty state otherwise. */
   data: number[]
   color: string
   /** Delay before the line draws in, in seconds. */
@@ -9,8 +10,11 @@ interface SparklineProps {
 }
 
 export function Sparkline({ data, color, delay = 0, large = false, label }: SparklineProps) {
-  const max = Math.max(...data) * 1.1
-  const min = Math.min(...data) * 0.9
+  const hi = Math.max(...data)
+  const lo = Math.min(...data)
+  // A flat series still draws a line, not a division by zero.
+  const max = hi === lo ? hi + 1 : hi * 1.1
+  const min = hi === lo ? lo - 1 : lo * 0.9
   const pts = data
     .map((v, i) => `${(i / (data.length - 1)) * 100},${40 - ((v - min) / (max - min)) * 40}`)
     .join(' L')
