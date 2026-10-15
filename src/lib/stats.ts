@@ -10,8 +10,11 @@ export interface Point {
 export interface VenueOk {
   key: string
   state: 'ok'
+  volumeAllUsd: number | null
+  /** When the venue's all-time count starts (ISO), so "all-time" is never read as "since genesis". */
+  volumeAllSince: string | null
+  volume30dUsd?: number | null
   volume24hUsd: number | null
-  volumeAllUsd?: number | null
   tvlUsd: number | null
   fees24hUsd: number | null
   feesNative?: { symbol: string; amount: number } | null
@@ -29,13 +32,16 @@ export interface VenueError {
 
 export type Venue = VenueOk | VenueError
 
+export type Figure = 'volumeAllUsd' | 'volume24hUsd' | 'tvlUsd' | 'fees24hUsd'
+
 export interface Stats {
   generatedAt: string
   totals: {
+    volumeAllUsd: number | null
     volume24hUsd: number | null
     tvlUsd: number | null
     fees24hUsd: number | null
-    covers: { volume24hUsd: string[]; tvlUsd: string[]; fees24hUsd: string[] }
+    covers: Record<Figure, string[]>
     unread: string[]
   }
   daily: Point[]
@@ -63,6 +69,8 @@ export const fmtTime = (iso: string) =>
 
 export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
+export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+
 /** The host part of a source URL, for provenance lines. */
 export const sourceHost = (url: string) => url.replace(/^https:\/\//, '').split(' ')[0].replace(/\/$/, '')
 
@@ -73,24 +81,19 @@ export interface Metric {
   missing?: boolean
 }
 
-/** The two figures a project tile shows for a venue, chosen per venue by what it publishes. */
+/** The two figures a project page leads with, chosen per venue by what it publishes. */
 export function metricsOf(v: Venue | undefined): [Metric, Metric] {
   if (!v) return [{ label: 'READING', value: '…' }, { label: '', value: '' }]
   if (v.state === 'error') return [{ label: 'STATUS', value: 'Unreadable', missing: true }, { label: 'SOURCE', value: 'its own API' }]
   const usd = (label: string, n: number | null | undefined): Metric => ({ label, value: fmtUsd(n), missing: n === null || n === undefined })
   switch (v.key) {
     case 'cartel-family':
-      return [usd('VOLUME 24H', v.volume24hUsd), usd('VOLUME ALL-TIME', v.volumeAllUsd)]
+      return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('VOLUME 24H', v.volume24hUsd)]
     case 'peddles':
-      return [
-        usd('TVL', v.tvlUsd),
-        v.feesNative
-          ? { label: 'CREATOR FEES 24H', value: `${v.feesNative.amount.toLocaleString('en-US', { maximumFractionDigits: 4 })} ${v.feesNative.symbol}` }
-          : { label: 'CREATOR FEES 24H', value: '—', missing: true },
-      ]
+      return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('TVL', v.tvlUsd)]
     case 'peddlequest':
       return [{ label: 'MODEL', value: 'Quest to earn' }, { label: 'CHAINS', value: '4' }]
     default:
-      return [usd('TVL', v.tvlUsd), usd('VOLUME 24H', v.volume24hUsd)]
+      return [usd('TVL', v.tvlUsd), usd('VOLUME ALL-TIME', v.volumeAllUsd)]
   }
 }

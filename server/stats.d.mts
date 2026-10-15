@@ -2,10 +2,11 @@
 export interface StatsDocument {
   generatedAt: string
   totals: {
+    volumeAllUsd: number | null
     volume24hUsd: number | null
     tvlUsd: number | null
     fees24hUsd: number | null
-    covers: { volume24hUsd: string[]; tvlUsd: string[]; fees24hUsd: string[] }
+    covers: { volumeAllUsd: string[]; volume24hUsd: string[]; tvlUsd: string[]; fees24hUsd: string[] }
     unread: string[]
   }
   daily: { t: number; v: number }[]

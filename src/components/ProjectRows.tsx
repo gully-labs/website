@@ -1,19 +1,26 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { comingSoon, projects, TOTAL_SLOTS, type Project } from '../content/projects'
-import { fmtTime, fmtUsd, sourceHost, type Stats, type Venue } from '../lib/stats'
+import { fmtTime, fmtUsd, sourceHost, type Figure, type Stats, type Venue } from '../lib/stats'
 import { BlinkDot, statusPill } from './ui'
 
-type SortKey = 'tvlUsd' | 'volume24hUsd' | 'fees24hUsd'
 type Dir = 'descending' | 'ascending'
 
-const cols = 'grid grid-cols-[136px_1.5fr_1fr_1fr_1fr_1fr_120px] items-center gap-5 px-7'
+const FIGURES: { key: Figure; label: string }[] = [
+  { key: 'tvlUsd', label: 'TVL' },
+  { key: 'volumeAllUsd', label: 'VOLUME ALL-TIME' },
+  { key: 'volume24hUsd', label: 'VOLUME 24H' },
+  { key: 'fees24hUsd', label: 'FEES 24H' },
+]
+
+const cols = 'grid grid-cols-[136px_1.4fr_.9fr_1fr_1fr_1fr_1fr_110px] items-center gap-5 px-7'
 const colsNarrow = 'max-[959px]:grid-cols-[136px_1fr] max-[959px]:gap-x-5 max-[959px]:gap-y-3'
 
-function cell(v: Venue | undefined, m: SortKey, state: 'loading' | 'error' | 'ok') {
+function cell(v: Venue | undefined, m: Figure, state: 'loading' | 'error' | 'ok') {
   if (state === 'loading') return <span className="text-dim">…</span>
   if (!v || v.state !== 'ok') return <span className="text-error">unreadable</span>
   if (m === 'fees24hUsd' && v.feesNative) return `${v.feesNative.amount.toLocaleString('en-US', { maximumFractionDigits: 4 })} ${v.feesNative.symbol}`
+  if (m === 'volumeAllUsd' && v.volumeAllUsd === null && v.volume30dUsd !== null && v.volume30dUsd !== undefined) return `${fmtUsd(v.volume30dUsd)} · 30d`
   const n = v[m]
   return n === null ? <span className="text-dim">—</span> : fmtUsd(n)
 }
@@ -30,8 +37,8 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
   return (
     <Link
       to={`/projects/${p.slug}`}
-      className={`${cols} ${colsNarrow} min-h-[112px] border-b border-line py-5 text-ink transition-colors last:border-b-0 hover:bg-surface-hover hover:text-ink`}
-      style={{ animation: `gl-rise .5s ${index * 0.07}s ease both` }}
+      className={`${cols} ${colsNarrow} gl-row-sweep relative min-h-[112px] border-b border-line py-5 text-ink transition-colors last:border-b-0 hover:bg-surface-hover hover:text-ink`}
+      style={{ animation: `gl-rise .5s ${index * 0.07}s ease both`, ['--sweep-delay' as string]: `${2 + index * 1.1}s` }}
     >
       {/* The project's own lockup, on its own ground, large enough to read. */}
       <span className="flex h-[72px] w-[136px] items-center justify-center overflow-hidden rounded-[10px] border-b-[3px] border-line" style={{ background: p.bg, borderBottomColor: p.accent }}>
@@ -50,10 +57,10 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
           </span>
         ))}
       </span>
-      {(['tvlUsd', 'volume24hUsd', 'fees24hUsd'] as SortKey[]).map((m) => (
-        <span key={m} className="flex flex-col gap-1 font-mono text-[17px] max-[959px]:col-start-2">
-          <span>{cell(venue, m, state)}</span>
-          <span className="text-[11px] tracking-[.5px] text-faint">{m === 'tvlUsd' ? 'TVL' : m === 'volume24hUsd' ? 'VOLUME 24H' : p.key === 'peddles' ? 'CREATOR FEES 24H' : 'FEES 24H'}</span>
+      {FIGURES.map((f) => (
+        <span key={f.key} className="flex flex-col gap-1 font-mono text-[17px] max-[959px]:col-start-2">
+          <span>{cell(venue, f.key, state)}</span>
+          <span className="text-[11px] tracking-[.5px] text-faint">{f.key === 'fees24hUsd' && p.key === 'peddles' ? 'CREATOR FEES 24H' : f.label}</span>
         </span>
       ))}
       <span className="flex flex-col items-end gap-2 max-[959px]:col-start-2 max-[959px]:items-start">
@@ -67,22 +74,23 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
 
 /** The projects as rows, sortable by any figure; every row reads its project's own API. */
 export function ProjectRows({ data, state }: { data: Stats | null; state: 'loading' | 'error' | 'ok' }) {
-  const [sort, setSort] = useState<{ key: SortKey; dir: Dir } | null>(null)
+  const [sort, setSort] = useState<{ key: Figure; dir: Dir } | null>(null)
   const [notified, setNotified] = useState(false)
   const venueOf = (key: string) => data?.venues.find((v) => v.key === key)
-  const figure = (key: string, m: SortKey) => {
+  const figure = (key: string, m: Figure) => {
     const v = venueOf(key)
     return v?.state === 'ok' ? (v[m] ?? -1) : -1
   }
   const rows = sort ? [...projects].sort((a, b) => (sort.dir === 'descending' ? figure(b.key, sort.key) - figure(a.key, sort.key) : figure(a.key, sort.key) - figure(b.key, sort.key))) : projects
-  const head = (m: SortKey, label: string) => (
+  const head = (f: { key: Figure; label: string }) => (
     <button
+      key={f.key}
       type="button"
-      aria-sort={sort?.key === m ? sort.dir : 'none'}
-      onClick={() => setSort((s) => ({ key: m, dir: s?.key === m && s.dir === 'descending' ? 'ascending' : 'descending' }))}
-      className={`inline-flex items-center gap-[6px] bg-transparent p-0 text-left font-mono text-[11px] tracking-[1px] transition-colors hover:text-gold ${sort?.key === m ? 'text-gold' : 'text-faint'}`}
+      aria-sort={sort?.key === f.key ? sort.dir : 'none'}
+      onClick={() => setSort((s) => ({ key: f.key, dir: s?.key === f.key && s.dir === 'descending' ? 'ascending' : 'descending' }))}
+      className={`inline-flex items-center gap-[6px] bg-transparent p-0 text-left font-mono text-[11px] tracking-[1px] transition-colors hover:text-gold ${sort?.key === f.key ? 'text-gold' : 'text-faint'}`}
     >
-      {label} {sort?.key === m ? (sort.dir === 'descending' ? '↓' : '↑') : '↕'}
+      {f.label} {sort?.key === f.key ? (sort.dir === 'descending' ? '↓' : '↑') : '↕'}
     </button>
   )
   return (
@@ -91,9 +99,7 @@ export function ProjectRows({ data, state }: { data: Stats | null; state: 'loadi
         <span />
         <span>PROJECT</span>
         <span>CHAINS</span>
-        {head('tvlUsd', 'TVL')}
-        {head('volume24hUsd', 'VOLUME 24H')}
-        {head('fees24hUsd', 'FEES 24H')}
+        {FIGURES.map(head)}
         <span />
       </div>
       {rows.map((p, i) => (

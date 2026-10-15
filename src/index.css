@@ -66,6 +66,11 @@
 @keyframes gl-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes gl-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes gl-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes gl-draw-loop { 0% { stroke-dashoffset: 1; opacity: 1; } 35% { stroke-dashoffset: 0; opacity: 1; } 80% { stroke-dashoffset: 0; opacity: 1; } 92% { opacity: 0; } 100% { stroke-dashoffset: 1; opacity: 0; } }
+@keyframes gl-fade-loop { 0% { opacity: 0; } 35% { opacity: 1; } 80% { opacity: 1; } 92% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes gl-breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+@keyframes gl-scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes gl-count-flash { 0% { color: var(--color-gold-hover); } 100% { color: inherit; } }
 @keyframes gl-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes gl-blink {
   0%, 100% { opacity: 1; }
@@ -80,6 +85,8 @@
 @utility px-page {
   padding-inline: clamp(24px, 4.5cqw, 64px);
 }
+
+.gl-row-sweep::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(232,192,96,.07), transparent); transform: translateX(-100%); animation: gl-scan 6s var(--sweep-delay, 0s) ease-in-out infinite; }
 
 @layer base {
   html {

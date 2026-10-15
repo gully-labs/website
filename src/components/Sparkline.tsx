@@ -6,10 +6,12 @@ interface SparklineProps {
   delay?: number
   /** Large variant used for the project Activity chart. */
   large?: boolean
+  /** Keep redrawing: the line draws on, holds, fades and draws again (off under reduced motion). */
+  loop?: boolean
   label?: string
 }
 
-export function Sparkline({ data, color, delay = 0, large = false, label }: SparklineProps) {
+export function Sparkline({ data, color, delay = 0, large = false, loop = false, label }: SparklineProps) {
   const hi = Math.max(...data)
   const lo = Math.min(...data)
   // A flat series still draws a line, not a division by zero.
@@ -18,6 +20,7 @@ export function Sparkline({ data, color, delay = 0, large = false, label }: Spar
   const pts = data
     .map((v, i) => `${(i / (data.length - 1)) * 100},${40 - ((v - min) / (max - min)) * 40}`)
     .join(' L')
+  const last = pts.split(' L').pop()!.split(',')
 
   return (
     <svg
@@ -28,7 +31,7 @@ export function Sparkline({ data, color, delay = 0, large = false, label }: Spar
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
-      <path d={`M0,40 L${pts} L100,40 Z`} fill={`${color}24`} style={{ animation: 'gl-fade 1s .4s ease both' }} />
+      <path d={`M0,40 L${pts} L100,40 Z`} fill={`${color}24`} style={{ animation: loop ? `gl-fade-loop 7s ${delay}s ease-in-out infinite` : 'gl-fade 1s .4s ease both' }} />
       <path
         d={`M${pts}`}
         fill="none"
@@ -37,8 +40,11 @@ export function Sparkline({ data, color, delay = 0, large = false, label }: Spar
         vectorEffect="non-scaling-stroke"
         pathLength={1}
         strokeDasharray={1}
-        style={{ animation: `gl-draw 1.4s ${delay}s ease-out both` }}
+        style={{ animation: loop ? `gl-draw-loop 7s ${delay}s ease-in-out infinite` : `gl-draw 1.4s ${delay}s ease-out both` }}
       />
+      {loop && (
+        <circle cx={last[0]} cy={last[1]} r={2.2} fill={color} vectorEffect="non-scaling-stroke" style={{ animation: `gl-fade-loop 7s ${delay}s ease-in-out infinite`, filter: `drop-shadow(0 0 3px ${color})` }} />
+      )}
     </svg>
   )
 }

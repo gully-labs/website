@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { projects } from '../content/projects'
 import { useCountUp } from '../hooks/useCountUp'
-import { fmtDay, fmtTime, fmtUsd, type Stats, type Venue, type VenueOk } from '../lib/stats'
+import { fmtDate, fmtDay, fmtTime, fmtUsd, type Stats, type Venue, type VenueOk } from '../lib/stats'
 import { DataTable, EmptySeries, nameOf, Segmented } from './LiveChart'
 
 /* The ledger: one combined band across the five venues, then the venues' own series stacked.
@@ -18,7 +18,7 @@ const grid =
 
 /* ------------------------------------------------------------------ KPIs --- */
 
-function Kpi({ label, value, cover, gold, note, state }: { label: string; value: number | null; cover?: string[]; gold?: boolean; note?: React.ReactNode; state: 'loading' | 'error' | 'ok' }) {
+function Kpi({ label, value, cover, gold, note, state, since }: { label: string; value: number | null; cover?: string[]; gold?: boolean; note?: React.ReactNode; state: 'loading' | 'error' | 'ok'; since?: string }) {
   const n = useCountUp(value ?? 0)
   const big = `font-display text-[clamp(40px,3.6cqw,56px)] leading-none font-extrabold tracking-[-.5px] ${gold ? 'text-gold' : 'text-ink'}`
   return (
@@ -30,11 +30,12 @@ function Kpi({ label, value, cover, gold, note, state }: { label: string; value:
       {state !== 'ok' || value === null ? (
         <div className={`${big} text-dim`}>—</div>
       ) : (
-        <div className={big}>
+        <div className={big} style={{ animation: 'gl-count-flash 1.6s ease both' }}>
           <span className="sr-only">{fmtUsd(value)}</span>
           <span aria-hidden>{fmtUsd(n)}</span>
         </div>
       )}
+      {since && state === 'ok' && value !== null && <div className="font-mono text-[11px] text-faint">{since}</div>}
       <div className="text-[13px] text-muted">
         {state === 'loading' ? (
           'Reading the venues…'
@@ -57,31 +58,21 @@ function Kpi({ label, value, cover, gold, note, state }: { label: string; value:
 
 export function LedgerBand({ data, state }: { data: Stats | null; state: 'loading' | 'error' | 'ok' }) {
   const T = data?.totals
-  const live = data ? okOnly(data.venues).length : 0
-  const liveN = useCountUp(live)
+  // The earliest day any venue's all-time count starts, so the headline says what "all-time" means.
+  const since = data
+    ? okOnly(data.venues)
+        .map((v) => v.volumeAllSince)
+        .filter((s): s is string => !!s)
+        .sort()[0]
+    : undefined
+  const unread = T?.unread.length ? <span className="text-error">{names(T.unread)} could not be read</span> : undefined
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
+    // Re-keyed on every read so the tiles count up again as the figures refresh.
+    <div key={data?.generatedAt ?? 'none'} className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
+      <Kpi label="VOLUME ALL-TIME" value={T?.volumeAllUsd ?? null} cover={T?.covers.volumeAllUsd} gold state={state} since={since ? `since ${fmtDate(since)}, the earliest a venue counts from` : undefined} />
       <Kpi label="VOLUME 24H" value={T?.volume24hUsd ?? null} cover={T?.covers.volume24hUsd} state={state} />
-      <Kpi label="TOTAL VALUE LOCKED" value={T?.tvlUsd ?? null} cover={T?.covers.tvlUsd} gold state={state} />
-      <Kpi label="FEES EARNED 24H" value={T?.fees24hUsd ?? null} cover={T?.covers.fees24hUsd} state={state} />
-      <div className="group relative flex flex-col gap-2 overflow-hidden bg-surface px-[26px] py-6">
-        <div className="font-mono text-[12px] tracking-[1px] text-dim">PROJECTS LIVE</div>
-        <div className="font-display text-[clamp(40px,3.6cqw,56px)] leading-none font-extrabold tracking-[-.5px]">
-          {state === 'ok' ? String(Math.round(liveN)).padStart(2, '0') : <span className="text-dim">—</span>}
-        </div>
-        <div className="text-[13px] text-muted">
-          {state === 'loading' ? (
-            'Reading the venues…'
-          ) : state === 'error' || !data ? (
-            <span className="text-error">Couldn't load. Try again.</span>
-          ) : data.totals.unread.length ? (
-            <span className="text-error">{names(data.totals.unread)} could not be read</span>
-          ) : (
-            `all five venues answered at ${fmtTime(data.generatedAt)}`
-          )}
-        </div>
-        <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
-      </div>
+      <Kpi label="TOTAL VALUE LOCKED" value={T?.tvlUsd ?? null} cover={T?.covers.tvlUsd} state={state} />
+      <Kpi label="FEES EARNED 24H" value={T?.fees24hUsd ?? null} cover={T?.covers.fees24hUsd} state={state} note={unread ? <>from <b className="font-medium text-ink-2">{names(T?.covers.fees24hUsd ?? [])}</b> · {unread}</> : undefined} />
     </div>
   )
 }
@@ -126,7 +117,9 @@ export function StackedVolume({ data, state }: { data: Stats | null; state: 'loa
             <span key={i}>{fmtUsd(v)}</span>
           ))}
         </div>
-        <div className="relative flex flex-1 items-stretch gap-[6px] pb-[22px]" style={{ background: grid, backgroundSize: '100% calc(100% - 22px)', backgroundRepeat: 'no-repeat' }}>
+        <div className="relative flex flex-1 items-stretch gap-[6px] overflow-hidden pb-[22px]" style={{ background: grid, backgroundSize: '100% calc(100% - 22px)', backgroundRepeat: 'no-repeat' }}>
+          {/* A slow scan across the bars, so the chart reads as live even between refreshes. */}
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1/3" style={{ background: 'linear-gradient(90deg,transparent,rgba(232,192,96,.08),transparent)', animation: 'gl-scan 5s 1s ease-in-out infinite' }} />
           {rows.map((r, i) => (
             <div
               key={r.t}
@@ -142,7 +135,7 @@ export function StackedVolume({ data, state }: { data: Stats | null; state: 'loa
                 <div
                   key={p.key}
                   className="w-full"
-                  style={{ height: `${(p.v / max) * 100}%`, background: accentOf(p.key), transformOrigin: 'bottom', animation: `gl-grow .7s ${i * 0.04 + j * 0.03}s cubic-bezier(.2,.8,.2,1) both` }}
+                  style={{ height: `${(p.v / max) * 100}%`, background: accentOf(p.key), transformOrigin: 'bottom', animation: `gl-grow .7s ${i * 0.04 + j * 0.03}s cubic-bezier(.2,.8,.2,1) both, gl-breathe 4s ${i * 0.2}s ease-in-out infinite` }}
                 />
               ))}
             </div>
@@ -173,7 +166,8 @@ export function StackedVolume({ data, state }: { data: Stats | null; state: 'loa
     )
 
   return (
-    <div className="flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-7">
+    // Re-keyed on every read: the bars grow again as the figures refresh.
+    <div key={data?.generatedAt ?? 'none'} className="flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-7">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h3 className="m-0 font-display text-[28px] font-bold uppercase">Volume by venue</h3>
@@ -243,7 +237,7 @@ export function TvlShare({ data, state }: { data: Stats | null; state: 'loading'
                 key={r.key}
                 title={`${nameOf(r.key)} ${fmtUsd(r.v)} · ${((r.v / total) * 100).toFixed(1)}%`}
                 className="h-full"
-                style={{ width: `${(r.v / total) * 100}%`, background: accentOf(r.key), transformOrigin: 'left', animation: `gl-grow-x .8s ${i * 0.09}s cubic-bezier(.2,.8,.2,1) both` }}
+                style={{ width: `${(r.v / total) * 100}%`, background: accentOf(r.key), transformOrigin: 'left', animation: `gl-grow-x .8s ${i * 0.09}s cubic-bezier(.2,.8,.2,1) both, gl-breathe 4s ${i * 0.5}s ease-in-out infinite` }}
               />
             ))}
           </div>
