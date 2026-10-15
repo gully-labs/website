@@ -2,16 +2,15 @@ import { ChartLine, FlaskConical, Info, Layers, type LucideIcon } from 'lucide-r
 
 export const SITE_URL = 'https://gullylabs.xyz'
 
-/* The handle every "Follow" and "Post" on the site points at. PeddleQuest's own site names
-   @Ox_Forged as its X account, so that is the team's handle of record until a Gully Labs
-   account exists; change it here and every share button follows. */
+/* The handle every "Follow" and "Post" on the site points at (owner, 2026-10-15). Change it
+   here and every share button, the footer and the share card follow. */
 export const SHARE = {
-  handle: '@Ox_Forged',
+  handle: '@Gully_Labs',
   hashtags: ['#GullyLabs', '#Web3'],
 } as const
 
 export const socialLinks = [
-  { label: 'X', href: 'https://x.com/Ox_Forged' },
+  { label: 'X', href: 'https://x.com/Gully_Labs' },
   { label: 'GitHub', href: 'https://github.com/gully-labs' },
   { label: 'Telegram', href: 'https://t.me/peddlesnews' },
 ] as const
