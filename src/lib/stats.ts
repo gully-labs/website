@@ -17,6 +17,7 @@ export interface VenueOk {
   volume24hUsd: number | null
   tvlUsd: number | null
   fees24hUsd: number | null
+  feesAllUsd?: number | null
   feesNative?: { symbol: string; amount: number } | null
   daily: Point[]
   counts: Record<string, number | null | undefined>
@@ -92,7 +93,7 @@ export function metricsOf(v: Venue | undefined): [Metric, Metric] {
     case 'peddles':
       return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('TVL', v.tvlUsd)]
     case 'peddlequest':
-      return [{ label: 'MODEL', value: 'Quest to earn' }, { label: 'CHAINS', value: '4' }]
+      return [usd('ESCROWED (TVL)', v.tvlUsd), usd('FEES ALL-TIME', v.feesAllUsd)]
     default:
       return [usd('TVL', v.tvlUsd), usd('VOLUME ALL-TIME', v.volumeAllUsd)]
   }

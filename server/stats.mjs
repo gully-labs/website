@@ -40,6 +40,25 @@ async function getJson(url, ms = TIMEOUT_MS) {
   }
 }
 
+/* ------------------------------------------------------------- DefiLlama --- */
+
+// DefiLlama lists Peddles (volume + fees), PeddleQuest (TVL + fees) and DeepCore (all three),
+// each from an adapter in its public repositories with a stated methodology. Where a venue's own
+// API has no dollar figure, DefiLlama's is used and named as the source. Its figures lag the
+// venue's own by up to a day (DefiLlama runs adapters daily), which the provenance says.
+async function llama(kind, slug) {
+  const url = kind === 'tvl' ? `https://api.llama.fi/protocol/${slug}` : `https://api.llama.fi/summary/${kind}/${slug}?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true`
+  const j = await getJson(url, 20_000)
+  if (j.message || j.error) throw new Error(String(j.message ?? j.error))
+  if (kind === 'tvl') {
+    const byChain = j.currentChainTvls ?? {}
+    const tvl = Object.entries(byChain).filter(([k]) => !/-|borrowed|staking|pool2/i.test(k)).map(([, v]) => num(v) ?? 0)
+    const last = (j.tvl ?? []).at(-1)
+    return { url, tvlUsd: tvl.length ? tvl.reduce((a, b) => a + b, 0) : null, at: last ? new Date(last.date * 1000).toISOString() : null }
+  }
+  return { url, total24h: num(j.total24h), total7d: num(j.total7d), totalAllTime: num(j.totalAllTime), chains: j.chains ?? [], methodology: j.methodology ?? null }
+}
+
 /* ---------------------------------------------------------------- venues --- */
 
 async function cartel() {
@@ -149,47 +168,56 @@ async function peddles() {
     const w = await getJson(`${base}/analytics/windows?chainId=4663`)
     const t = w.data?.creatorFees?.total
     if (t && t.currentRaw !== undefined) feesNative = { symbol: t.symbol, amount: units(t.currentRaw, t.decimals) }
-    // All-time volume is published per asset (WETH and tokenised stocks) in token units, and no
-    // Peddles endpoint prices them, so it cannot be shown in dollars without inventing a rate.
-    const legs = w.data?.allTime?.volume?.legs ?? []
     volumeAllSince = w.data?.allTime?.volume?.since ?? null
-    volumeAllUsd = null
-    if (legs.length) notes.push(`All-time volume is published per asset in token units (${legs.map((l) => l.symbol).join(', ')}) with no price, so it is not shown in dollars.`)
   } catch {
-    /* fees and all-time stay unknown */
+    /* fees stay unknown */
   }
-  notes.push('Creator fees are published in ETH only; they are shown but not added to the dollar total.')
+  // Peddles publishes all-time volume per asset in token units and no price. DefiLlama's Peddles
+  // adapter (its public dimension-adapters repository) prices the same swaps in dollars, so the
+  // dollar figures for all-time volume and fees come from there, named as such.
+  let fees24hUsd = null
+  const sources = [url]
+  try {
+    const [dex, fees] = await Promise.all([llama('dexs', 'peddles'), llama('fees', 'peddles')])
+    volumeAllUsd = dex.totalAllTime
+    fees24hUsd = fees.total24h
+    sources.push(dex.url, fees.url)
+    notes.push('All-time volume and fees in dollars are read from DefiLlama (its Peddles adapter), which lags by up to a day.')
+  } catch (e) {
+    notes.push(`DefiLlama could not be read for all-time volume and fees (${String(e?.message ?? e)}).`)
+  }
+  notes.push('Creator fees are published in ETH only; they are shown beside the dollar figure, not added to it.')
   return {
     volume24hUsd: sumKnown(chains.map((c) => c.volume24hUsd)),
     volumeAllUsd,
     volumeAllSince,
     tvlUsd: sumKnown(chains.map((c) => c.tvlUsd)),
-    fees24hUsd: null,
+    fees24hUsd,
     feesNative,
     daily: [],
     chains,
     counts: { launches24h: num(d.launches24h), pools: num(d.poolCount), users: num(d.totalUsers), chains: chains.length },
     notes,
-    source: { url, readAt: new Date().toISOString() },
+    source: { url: sources.join(' + '), readAt: new Date().toISOString() },
   }
 }
 
 async function peddlequest() {
-  // A quest platform: reward pools are escrowed on chain; there is no trading volume, TVL or
-  // fee stream, and no public stats endpoint yet. The read proves the site is up, nothing more.
-  const url = 'https://peddlequest.xyz/'
-  const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(TIMEOUT_MS) })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  // A quest platform: reward pools are escrowed on chain and there is no trading volume. Its own
+  // API publishes no figures; DefiLlama's PeddleQuest adapters report the escrowed reward pools
+  // as TVL and what the platform charges as fees, on all four chains.
+  const [tvl, fees] = await Promise.all([llama('tvl', 'peddlequest'), llama('fees', 'peddlequest')])
   return {
     volume24hUsd: null,
     volumeAllUsd: null,
     volumeAllSince: null,
-    tvlUsd: null,
-    fees24hUsd: null,
+    tvlUsd: tvl.tvlUsd,
+    fees24hUsd: fees.total24h,
+    feesAllUsd: fees.totalAllTime,
     daily: [],
     counts: {},
-    notes: ['Quests, not trading: no volume, TVL or fee stream. Escrow figures are not published yet.'],
-    source: { url, readAt: new Date().toISOString() },
+    notes: ['Quests, not trading: no volume. Value locked is the reward pools escrowed on chain and fees are what the platform charges, both read from DefiLlama (its PeddleQuest adapters), which lags by up to a day.'],
+    source: { url: `${tvl.url} + ${fees.url}`, readAt: tvl.at ?? new Date().toISOString() },
   }
 }
 

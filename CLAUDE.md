@@ -48,8 +48,13 @@ what agrees in USD, keeping the source beside every number:
 | Cartel Family | `cartel.family/api/platform/landing-stats` | volume 24h, all-time, daily series |
 | DeepCore | `deepcore.fun/v1/overview` (cross-chain) | volume 24h, TVL, fees, daily series |
 | PeddleSwap | `api{,-base,-arc}.peddleswap.xyz/v1/stats/overview` | TVL, volume, fees, locked, daily series |
-| Peddles | `api.peddles.xyz/api/v1/analytics/platform` + `/windows` | TVL, volume 24h; creator fees in ETH |
-| PeddleQuest | none yet (quests, not trading) | — |
+| Peddles | `api.peddles.xyz/api/v1/analytics/platform` + `/windows`, plus DefiLlama `summary/dexs/peddles` and `summary/fees/peddles` | TVL, volume 24h from Peddles; all-time volume and fees in USD from DefiLlama; creator fees in ETH |
+| PeddleQuest | DefiLlama `protocol/peddlequest` + `summary/fees/peddlequest` | escrowed reward pools as TVL, fees; no volume |
+
+DefiLlama state (checked 2026-10-15): DeepCore, Peddles (dexs + fees; its merged TVL adapter errors and reports
+nothing), PeddleQuest and the retired Latch Protocol are listed; PeddleSwap's adapter PR #21383 was closed by
+DefiLlama for having no liquidity ("reopen once there are active pools"); Cartel Family is not a DeFi protocol
+and is not listed. DefiLlama figures lag a day and are always named as the source where used.
 
 Rules: a venue that cannot be read is `state: error` and renders as unreadable, never as zero; a
 figure a venue does not publish is `null` and the totals say which venues they cover; a figure in a
