@@ -10,7 +10,7 @@ const FIGURES: { key: Figure; label: string }[] = [
   { key: 'tvlUsd', label: 'TVL' },
   { key: 'volumeAllUsd', label: 'VOLUME ALL-TIME' },
   { key: 'volume24hUsd', label: 'VOLUME 24H' },
-  { key: 'fees24hUsd', label: 'FEES 24H' },
+  { key: 'feesAllUsd', label: 'FEES ALL-TIME' },
 ]
 
 const cols = 'grid grid-cols-[136px_1.4fr_.9fr_1fr_1fr_1fr_1fr_110px] items-center gap-5 px-7'
@@ -19,10 +19,20 @@ const colsNarrow = 'max-[959px]:grid-cols-[136px_1fr] max-[959px]:gap-x-5 max-[9
 function cell(v: Venue | undefined, m: Figure, state: 'loading' | 'error' | 'ok') {
   if (state === 'loading') return <span className="text-dim">…</span>
   if (!v || v.state !== 'ok') return <span className="text-error">unreadable</span>
-  if (m === 'fees24hUsd' && v.feesNative) return `${v.feesNative.amount.toLocaleString('en-US', { maximumFractionDigits: 4 })} ${v.feesNative.symbol}`
   if (m === 'volumeAllUsd' && v.volumeAllUsd === null && v.volume30dUsd !== null && v.volume30dUsd !== undefined) return `${fmtUsd(v.volume30dUsd)} · 30d`
+  if (m === 'feesAllUsd') {
+    const all = v.feesAllUsd ?? null
+    const day = v.fees24hUsd
+    if (all === null && day === null) return <span className="text-dim">—</span>
+    return (
+      <>
+        {all === null ? <span className="text-dim">—</span> : fmtUsd(all)}
+        {day !== null && <span className="ml-2 text-[12px] text-faint">24h {fmtUsd(day)}</span>}
+      </>
+    )
+  }
   const n = v[m]
-  return n === null ? <span className="text-dim">—</span> : fmtUsd(n)
+  return n === null || n === undefined ? <span className="text-dim">—</span> : fmtUsd(n)
 }
 
 function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'loading' | 'error' | 'ok'; index: number }) {
@@ -60,7 +70,7 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
       {FIGURES.map((f) => (
         <span key={f.key} className="flex flex-col gap-1 font-mono text-[17px] max-[959px]:col-start-2">
           <span>{cell(venue, f.key, state)}</span>
-          <span className="text-[11px] tracking-[.5px] text-faint">{f.key === 'fees24hUsd' && p.key === 'peddles' ? 'CREATOR FEES 24H' : f.label}</span>
+          <span className="text-[11px] tracking-[.5px] text-faint">{f.label}</span>
         </span>
       ))}
       <span className="flex flex-col items-end gap-2 max-[959px]:col-start-2 max-[959px]:items-start">

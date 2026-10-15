@@ -33,7 +33,7 @@ export interface VenueError {
 
 export type Venue = VenueOk | VenueError
 
-export type Figure = 'volumeAllUsd' | 'volume24hUsd' | 'tvlUsd' | 'fees24hUsd'
+export type Figure = 'volumeAllUsd' | 'volume24hUsd' | 'tvlUsd' | 'fees24hUsd' | 'feesAllUsd'
 
 export interface Stats {
   generatedAt: string
@@ -42,6 +42,7 @@ export interface Stats {
     volume24hUsd: number | null
     tvlUsd: number | null
     fees24hUsd: number | null
+    feesAllUsd: number | null
     covers: Record<Figure, string[]>
     unread: string[]
   }
@@ -91,7 +92,7 @@ export function metricsOf(v: Venue | undefined): [Metric, Metric] {
     case 'cartel-family':
       return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('VOLUME 24H', v.volume24hUsd)]
     case 'peddles':
-      return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('TVL', v.tvlUsd)]
+      return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('FEES ALL-TIME', v.feesAllUsd)]
     case 'peddlequest':
       return [usd('ESCROWED (TVL)', v.tvlUsd), usd('FEES ALL-TIME', v.feesAllUsd)]
     default:

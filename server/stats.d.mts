@@ -6,7 +6,8 @@ export interface StatsDocument {
     volume24hUsd: number | null
     tvlUsd: number | null
     fees24hUsd: number | null
-    covers: { volumeAllUsd: string[]; volume24hUsd: string[]; tvlUsd: string[]; fees24hUsd: string[] }
+    feesAllUsd: number | null
+    covers: { volumeAllUsd: string[]; volume24hUsd: string[]; tvlUsd: string[]; fees24hUsd: string[]; feesAllUsd: string[] }
     unread: string[]
   }
   daily: { t: number; v: number }[]

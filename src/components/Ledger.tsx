@@ -30,8 +30,9 @@ function Kpi({ label, value, cover, gold, note, state, since }: { label: string;
       {state !== 'ok' || value === null ? (
         <div className={`${big} text-dim`}>—</div>
       ) : (
-        <div className={big} style={{ animation: 'gl-count-flash 1.6s ease both' }}>
-          <span className="sr-only">{fmtUsd(value)}</span>
+        // The final value is the accessible name; the counting text is presentation only, so a
+        // copy of the tile carries the number once.
+        <div className={big} role="img" aria-label={fmtUsd(value)} style={{ animation: 'gl-count-flash 1.6s ease both' }}>
           <span aria-hidden>{fmtUsd(n)}</span>
         </div>
       )}
@@ -72,7 +73,14 @@ export function LedgerBand({ data, state }: { data: Stats | null; state: 'loadin
       <Kpi label="VOLUME ALL-TIME" value={T?.volumeAllUsd ?? null} cover={T?.covers.volumeAllUsd} gold state={state} since={since ? `since ${fmtDate(since)}, the earliest a venue counts from` : undefined} />
       <Kpi label="VOLUME 24H" value={T?.volume24hUsd ?? null} cover={T?.covers.volume24hUsd} state={state} />
       <Kpi label="TOTAL VALUE LOCKED" value={T?.tvlUsd ?? null} cover={T?.covers.tvlUsd} state={state} />
-      <Kpi label="FEES EARNED 24H" value={T?.fees24hUsd ?? null} cover={T?.covers.fees24hUsd} state={state} note={unread ? <>from <b className="font-medium text-ink-2">{names(T?.covers.fees24hUsd ?? [])}</b> · {unread}</> : undefined} />
+      <Kpi
+        label="FEES EARNED ALL-TIME"
+        value={T?.feesAllUsd ?? null}
+        cover={T?.covers.feesAllUsd}
+        state={state}
+        since={T && T.fees24hUsd !== null ? `24h ${fmtUsd(T.fees24hUsd)} · from ${names(T.covers.fees24hUsd)}` : undefined}
+        note={unread ? <>from <b className="font-medium text-ink-2">{names(T?.covers.feesAllUsd ?? [])}</b> · {unread}</> : undefined}
+      />
     </div>
   )
 }

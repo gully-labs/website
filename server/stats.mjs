@@ -73,6 +73,7 @@ async function cartel() {
     volumeAllSince: cum.length ? new Date(cum[0].t * 1000).toISOString() : null,
     tvlUsd: null,
     fees24hUsd: null,
+    feesAllUsd: null,
     daily,
     counts: { traders: num(j.traders), trades: num(j.trades) },
     notes: ['TVL and fees are not published by this venue.'],
@@ -108,19 +109,32 @@ async function deepcore() {
   const notes = []
   if (unpriced) notes.push(`${unpriced} token${unpriced === 1 ? '' : 's'} could not be priced and are left out of the dollar figures.`)
   const prov = j.provenance ?? {}
+  // The index's fee figures carry no window: `paid` is what the protocol has collected and
+  // `accrued` what is owed and not yet collected, so together they are fees earned to date.
+  const feesAllUsd = sumKnown(chains.flatMap((c) => [c.feesPaidUsd, c.feesAccruedUsd]))
+  let fees24hUsd = null
+  const sources = [url]
+  try {
+    const f = await llama('fees', 'deepcore')
+    fees24hUsd = f.total24h
+    sources.push(f.url)
+    notes.push("Fees in the last 24 hours are read from DefiLlama's DeepCore adapter, which lags by up to a day.")
+  } catch (e) {
+    notes.push(`DefiLlama could not be read for 24h fees (${String(e?.message ?? e)}).`)
+  }
   return {
     volume24hUsd: sumKnown(chains.map((c) => c.volume24hUsd)),
     // The index's daily dollars, summed from the first day it holds.
     volumeAllUsd: daily.length ? daily.reduce((a, p) => a + p.v, 0) : null,
     volumeAllSince: daily.length ? new Date(daily[0].t * 1000).toISOString() : null,
     tvlUsd: sumKnown(chains.map((c) => c.tvlUsd)),
-    // Fees the protocol was paid in the window plus what is accrued and not yet collected.
-    fees24hUsd: sumKnown(chains.flatMap((c) => [c.feesPaidUsd, c.feesAccruedUsd])),
+    fees24hUsd,
+    feesAllUsd,
     daily,
     chains,
     counts: { launches, pools, chains: items.length },
     notes,
-    source: { url, readAt: prov.generatedAt ?? new Date().toISOString() },
+    source: { url: sources.join(' + '), readAt: prov.generatedAt ?? new Date().toISOString() },
   }
 }
 
@@ -144,6 +158,7 @@ async function peddleswap() {
     volume30dUsd: daily.length ? daily.reduce((a, p) => a + p.v, 0) : null,
     tvlUsd: sumKnown(ok.map(({ j }) => num(j.tvlUsd))),
     fees24hUsd: sumKnown(ok.map(({ j }) => num(j.fees24hUsd))),
+    feesAllUsd: null,
     daily,
     counts: { pools: sumKnown(ok.map(({ j }) => num(j.counts?.pools))), activeLocks: sumKnown(ok.map(({ j }) => num(j.counts?.activeLocks))), chains: ok.length },
     notes: ['All-time volume is not published; the last 30 days are.', ...failed.map((f) => `${f.host.replace('https://', '')} could not be read (${f.error}).`)],
@@ -176,11 +191,13 @@ async function peddles() {
   // adapter (its public dimension-adapters repository) prices the same swaps in dollars, so the
   // dollar figures for all-time volume and fees come from there, named as such.
   let fees24hUsd = null
+  let feesAllUsd = null
   const sources = [url]
   try {
     const [dex, fees] = await Promise.all([llama('dexs', 'peddles'), llama('fees', 'peddles')])
     volumeAllUsd = dex.totalAllTime
     fees24hUsd = fees.total24h
+    feesAllUsd = fees.totalAllTime
     sources.push(dex.url, fees.url)
     notes.push('All-time volume and fees in dollars are read from DefiLlama (its Peddles adapter), which lags by up to a day.')
   } catch (e) {
@@ -193,6 +210,7 @@ async function peddles() {
     volumeAllSince,
     tvlUsd: sumKnown(chains.map((c) => c.tvlUsd)),
     fees24hUsd,
+    feesAllUsd,
     feesNative,
     daily: [],
     chains,
@@ -252,7 +270,8 @@ export async function readStats() {
       volume24hUsd: sumKnown(ok.map((v) => v.volume24hUsd)),
       tvlUsd: sumKnown(ok.map((v) => v.tvlUsd)),
       fees24hUsd: sumKnown(ok.map((v) => v.fees24hUsd)),
-      covers: { volumeAllUsd: covers('volumeAllUsd'), volume24hUsd: covers('volume24hUsd'), tvlUsd: covers('tvlUsd'), fees24hUsd: covers('fees24hUsd') },
+      feesAllUsd: sumKnown(ok.map((v) => v.feesAllUsd)),
+      covers: { volumeAllUsd: covers('volumeAllUsd'), volume24hUsd: covers('volume24hUsd'), tvlUsd: covers('tvlUsd'), fees24hUsd: covers('fees24hUsd'), feesAllUsd: covers('feesAllUsd') },
       unread: venues.filter((v) => v.state === 'error').map((v) => v.key),
     },
     daily: seriesOf(byDay),
