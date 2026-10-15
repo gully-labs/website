@@ -20,6 +20,9 @@ export interface Project {
   /** Logo padding in the small "Built by this team" cards. */
   padSm: string
   url: string
+  /** The project's own X handle and Telegram link, for the share controls; absent when it has none. */
+  x?: string
+  telegram?: string
   chains: string[]
   built: string[]
 }
@@ -40,6 +43,8 @@ export const projects: Project[] = [
     pad: '0px',
     padSm: '0px',
     url: 'https://cartel.family/',
+    x: '@carteldotfamily',
+    telegram: 'https://t.me/JoinCartelFamily',
     chains: ['Solana', 'Multi-chain'],
     built: ['Member portal and wallet sign-in', 'Live market data and price alerts', 'Copy trading and shared trade feed'],
   },
@@ -76,6 +81,7 @@ export const projects: Project[] = [
     pad: '64px 64px',
     padSm: '36px 28px',
     url: 'https://peddleswap.xyz/',
+    telegram: 'https://t.me/PeddleSwap',
     chains: ['Robinhood', 'Base', 'Arc'],
     built: ['AMM and router contracts', 'Swap, liquidity and locker interface', 'Analytics and indexing'],
   },
@@ -94,6 +100,8 @@ export const projects: Project[] = [
     pad: '0px',
     padSm: '0px',
     url: 'https://peddles.xyz/',
+    x: '@PeddlesX',
+    telegram: 'https://t.me/peddlesnews',
     chains: ['Base', 'Robinhood', 'BNB Chain', 'Arc'],
     built: ['Stock-paired launch contracts and holder rewards', 'Terminal, perps and trade bot', 'Arcade: a game for every coin'],
   },
@@ -112,6 +120,8 @@ export const projects: Project[] = [
     pad: '40px 72px',
     padSm: '24px 28px',
     url: 'https://peddlequest.xyz/',
+    x: '@Ox_Forged',
+    telegram: 'https://t.me/PeddleQuestBot',
     chains: ['Base', 'Robinhood', 'BNB Chain', 'Arc'],
     built: ['On-chain quest verification and escrow', 'XP, crates and soulbound badges', 'Quest wizard and sybil rules for projects'],
   },

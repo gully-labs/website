@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { comingSoon, projects, TOTAL_SLOTS, type Project } from '../content/projects'
 import { fmtTime, fmtUsd, sourceHost, type Figure, type Stats, type Venue } from '../lib/stats'
+import { ShareMenu } from './Share'
 import { BlinkDot, statusPill } from './ui'
 
 type Dir = 'descending' | 'ascending'
@@ -13,7 +14,7 @@ const FIGURES: { key: Figure; label: string }[] = [
   { key: 'feesAllUsd', label: 'FEES ALL-TIME' },
 ]
 
-const cols = 'grid grid-cols-[136px_1.4fr_.9fr_1fr_1fr_1fr_1fr_110px] items-center gap-5 px-7'
+const cols = 'grid grid-cols-[136px_1.4fr_.9fr_1fr_1fr_1fr_1fr_132px] items-center gap-5 px-7'
 const colsNarrow = 'max-[959px]:grid-cols-[136px_1fr] max-[959px]:gap-x-5 max-[959px]:gap-y-3'
 
 function cell(v: Venue | undefined, m: Figure, state: 'loading' | 'error' | 'ok') {
@@ -45,17 +46,18 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
           ? 'Could not be read.'
           : 'Reading…'
   return (
-    <Link
-      to={`/projects/${p.slug}`}
-      className={`${cols} ${colsNarrow} gl-row-sweep relative min-h-[112px] border-b border-line py-5 text-ink transition-colors last:border-b-0 hover:bg-surface-hover hover:text-ink`}
+    <div
+      className={`${cols} ${colsNarrow} gl-row-sweep relative min-h-[112px] border-b border-line py-5 text-ink transition-colors last:border-b-0 hover:bg-surface-hover`}
       style={{ animation: `gl-rise .5s ${index * 0.07}s ease both`, ['--sweep-delay' as string]: `${2 + index * 1.1}s` }}
     >
       {/* The project's own lockup, on its own ground, large enough to read. */}
-      <span className="flex h-[72px] w-[136px] items-center justify-center overflow-hidden rounded-[10px] border-b-[3px] border-line" style={{ background: p.bg, borderBottomColor: p.accent }}>
+      <Link to={`/projects/${p.slug}`} className="flex h-[72px] w-[136px] items-center justify-center overflow-hidden rounded-[10px] border-b-[3px] border-line" style={{ background: p.bg, borderBottomColor: p.accent }} aria-label={`${p.name} project page`}>
         <img src={p.logo} alt={p.name} loading="lazy" className="block size-full" style={{ objectFit: p.fit, padding: p.fit === 'contain' ? '10px 14px' : 0 }} />
-      </span>
+      </Link>
       <span className="flex flex-col gap-[6px]">
-        <span className="font-display text-[26px] leading-none font-bold uppercase">{p.name}</span>
+        <Link to={`/projects/${p.slug}`} className="font-display text-[26px] leading-none font-bold uppercase text-ink hover:text-gold">
+          {p.name}
+        </Link>
         <span className="font-mono text-[12px] text-dim">
           {p.tag} · {p.tagline}
         </span>
@@ -74,11 +76,16 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
         </span>
       ))}
       <span className="flex flex-col items-end gap-2 max-[959px]:col-start-2 max-[959px]:items-start">
-        <span className={statusPill}>{p.status}</span>
-        <span className="text-[14px] whitespace-nowrap text-gold">View project →</span>
+        <span className="flex items-center gap-2">
+          <span className={statusPill}>{p.status}</span>
+          <ShareMenu project={p} compact />
+        </span>
+        <Link to={`/projects/${p.slug}`} className="text-[14px] whitespace-nowrap text-gold hover:text-gold-hover">
+          View project →
+        </Link>
       </span>
       <span className="col-span-full -mt-2 font-mono text-[12px] leading-[1.5] text-faint max-[959px]:col-start-1">{provenance}</span>
-    </Link>
+    </div>
   )
 }
 
@@ -110,7 +117,7 @@ export function ProjectRows({ data, state }: { data: Stats | null; state: 'loadi
         <span>PROJECT</span>
         <span>CHAINS</span>
         {FIGURES.map(head)}
-        <span />
+        <span className="text-right">SHARE</span>
       </div>
       {rows.map((p, i) => (
         <Row key={p.key} p={p} venue={venueOf(p.key)} state={state} index={i} />

@@ -2,6 +2,7 @@ import { Link, Navigate, useParams } from 'react-router'
 import { useContact } from '../components/ContactContext'
 import { DailyLine, EmptySeries } from '../components/LiveChart'
 import { Seo } from '../components/Seo'
+import { ShareMenu } from '../components/Share'
 import { btnOutline, statusPill } from '../components/ui'
 import { projectNumber, projects, TOTAL_SLOTS } from '../content/projects'
 import { useStats } from '../hooks/useStats'
@@ -88,6 +89,7 @@ export function ProjectDetail() {
               Build something similar
             </button>
           </div>
+          <ShareMenu project={p} />
         </div>
       </div>
 

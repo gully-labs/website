@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { LedgerBand, StackedVolume, TvlShare } from '../components/Ledger'
 import { ProjectRows } from '../components/ProjectRows'
 import { Seo } from '../components/Seo'
+import { ShareBar, ShareStrip } from '../components/Share'
 import { btnGold, btnOutline, eyebrow, SectionHeading } from '../components/ui'
 import { VenueTicker } from '../components/VenueTicker'
 import { comingSoon, projects, TOTAL_SLOTS } from '../content/projects'
@@ -44,6 +45,9 @@ export function Home() {
               Work with us
             </Link>
           </div>
+          <div style={{ animation: 'gl-rise .6s .28s ease both' }}>
+            <ShareBar data={data} />
+          </div>
         </div>
         <div style={{ animation: 'gl-rise .6s .25s ease both' }}>
           <VenueTicker data={data} state={st.k} />
@@ -62,11 +66,14 @@ export function Home() {
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading label={`PROJECTS / ${TOTAL_SLOTS}`} title="Out of the lab" />
           <p className="m-0 max-w-[420px] text-[17px] leading-[1.55] text-muted">
-            {cap(words[projects.length])} live, {words[comingSoon.length]} in development. Sort by any column; every row reads its project's own API.
+            {cap(words[projects.length])} live, {words[comingSoon.length]} in development. Sort by any column; every row reads its project's own API and
+            can be shared in one tap.
           </p>
         </div>
         <ProjectRows data={data} state={st.k} />
       </section>
+
+      <ShareStrip data={data} />
 
       <section className="flex flex-col gap-10 border-t border-line bg-bg-alt px-page py-24">
         <div className="flex flex-wrap items-end justify-between gap-6">
