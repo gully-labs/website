@@ -7,3 +7,9 @@ compare/out
 certs/
 .tracker-history*.json
 .open-tracker.mjs
+
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+.data/

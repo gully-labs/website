@@ -10,7 +10,7 @@ FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production PORT=8080 DIST_DIR=/app/dist
 COPY --from=build /app/dist ./dist
-COPY server/server.mjs server/stats.mjs server/tracker.mjs ./
+COPY server/*.mjs ./
 COPY server/data ./data
 RUN mkdir -p /data && chown node:node /data
 USER node

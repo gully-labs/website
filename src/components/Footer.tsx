@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { Mail } from 'lucide-react'
 import { projects } from '../content/projects'
-import { navItems, socialLinks } from '../content/site'
+import { devLinks, navItems, socialLinks } from '../content/site'
 import { useContact } from './ContactContext'
 import { SocialIcon } from './SocialIcon'
 import { Wordmark } from './Wordmark'
@@ -44,6 +44,20 @@ export function Footer() {
                 {p.name}
               </Link>
             ))}
+          </nav>
+          <nav aria-label="Developers" className="flex flex-col items-start gap-3">
+            <span className={colLabel}>DEVELOPERS</span>
+            {devLinks.map((d) =>
+              'href' in d ? (
+                <a key={d.label} href={d.href} className={colLink}>
+                  {d.label}
+                </a>
+              ) : (
+                <Link key={d.label} to={d.to} className={colLink}>
+                  {d.label}
+                </Link>
+              ),
+            )}
           </nav>
           <nav aria-label="Social" className="flex flex-col items-start gap-3">
             <span className={colLabel}>SOCIAL</span>

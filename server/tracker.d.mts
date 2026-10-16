@@ -6,3 +6,4 @@ export function sessionOpen(session: string, at?: Date): boolean
 export const MIN_LIQUIDITY_USD: number
 export const IN_LINE_PCT: number
 export const FLAG_PCT: number
+export function trackerHealth(): unknown

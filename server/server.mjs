@@ -4,6 +4,9 @@
 import http from 'node:http'
 import { readStats } from './stats.mjs'
 import { readHistory, readTracker, startTrackerLoop } from './tracker.mjs'
+import { apiAccess } from './access.mjs'
+import { handleAdmin } from './admin.mjs'
+import { handleDeveloper } from './developer.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -67,8 +70,32 @@ function serveFile(res, file, method) {
   fs.createReadStream(file).pipe(res)
 }
 
-const server = http.createServer((req, res) => {
+// The public API may be called from any site (the widget, integrators): read-only GETs, no credentials.
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '86400' }
+
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost')
+
+  if (url.pathname.startsWith('/api/admin/')) {
+    if (await handleAdmin(req, res, url)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
+  if (url.pathname.startsWith('/api/developer/')) {
+    if (await handleDeveloper(req, res, url)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
+  if (url.pathname.startsWith('/api/tracker')) {
+    if (req.method === 'OPTIONS') return send(res, 204, '', CORS)
+    const access = apiAccess(req)
+    if (!access.ok) {
+      return send(res, access.status, JSON.stringify({ error: access.error }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...CORS, ...(access.retryAfter ? { 'Retry-After': String(access.retryAfter) } : {}) })
+    }
+    if (access.limit) {
+      res.setHeader('X-RateLimit-Limit', String(access.limit))
+      res.setHeader('X-RateLimit-Remaining', String(access.remaining))
+    }
+    for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v)
+  }
 
   if (url.pathname === '/api/contact') {
     if (req.method !== 'POST') return send(res, 405, '', { Allow: 'POST' })

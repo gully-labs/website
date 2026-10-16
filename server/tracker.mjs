@@ -311,3 +311,22 @@ export function startTrackerLoop() {
   tick()
   return setInterval(tick, SNAPSHOT_MS).unref?.()
 }
+
+/** For the admin dashboard: the tracker's own health, read from memory. */
+export function trackerHealth() {
+  const now = Date.now()
+  return {
+    cacheAgeSeconds: cache ? Math.round((now - cache.at) / 1000) : null,
+    lastSnapshot: lastSnapshot ? new Date(lastSnapshot).toISOString() : null,
+    chains: CHAINS.map((c) => ({
+      key: c.key,
+      name: c.name,
+      stocks: c.table.stocks.length,
+      lastPoolRead: lastPools[c.key]?.at ? new Date(lastPools[c.key].at).toISOString() : null,
+      backoffUntil: backoff[c.key] && backoff[c.key].until > now ? new Date(backoff[c.key].until).toISOString() : null,
+      sessionOpen: sessionOpen(c.session),
+    })),
+    history: { series: Object.keys(history).length, points: Object.values(history).reduce((a, h) => a + h.length, 0), file: DATA_FILE },
+    statuses: cache ? cache.body.rows.reduce((m, r) => ((m[r.status] = (m[r.status] ?? 0) + 1), m), {}) : null,
+  }
+}

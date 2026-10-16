@@ -9,6 +9,11 @@ services:
     environment:
       TLS_PORT: "8443"
       TRACKER_DATA: /data/tracker-history.json
+      DATA_DIR: /data
+    # Secrets (ADMIN_TOKEN, …) live in .env on the box only, never in the repo.
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - ./certs:/certs:ro
       # The tracker's 7-day gap history, kept across redeploys.

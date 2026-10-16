@@ -24,3 +24,10 @@ export const navItems: { label: string; to: string; match: string; icon: LucideI
   { label: 'Services', to: '/services', match: '/services', icon: Layers },
   { label: 'About', to: '/about', match: '/about', icon: Info },
 ]
+
+/** Footer links to the developer surfaces. Docs is its own host. */
+export const devLinks = [
+  { label: 'Docs', href: 'https://docs.gullylabs.xyz' },
+  { label: 'Widget', to: '/widget' },
+  { label: 'API keys', to: '/developers' },
+] as const

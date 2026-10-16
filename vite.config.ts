@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { readStats } from './server/stats.mjs'
 import { readHistory, readTracker } from './server/tracker.mjs'
+import { handleAdmin } from './server/admin.mjs'
+import { handleDeveloper } from './server/developer.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
 function mockContactApi(): Plugin {
@@ -73,6 +75,26 @@ function trackerApi(): Plugin {
   }
 }
 
+// In dev the admin and developer APIs answer from the same modules the production server runs.
+function serverModules(): Plugin {
+  return {
+    name: 'server-modules',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = new URL(req.url ?? '/', 'http://localhost')
+        const handler = url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : null
+        if (!handler) return next()
+        handler(req, res, url).then((done) => {
+          if (done) return
+          res.statusCode = 404
+          res.setHeader('Content-Type', 'application/json')
+          res.end('{"error":"not found"}')
+        }, next)
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), mockContactApi(), statsApi(), trackerApi()],
+  plugins: [react(), tailwindcss(), mockContactApi(), statsApi(), trackerApi(), serverModules()],
 })
