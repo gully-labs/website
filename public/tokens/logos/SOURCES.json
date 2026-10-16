@@ -133,11 +133,12 @@
   },
   "AMD": {
     "ticker": "AMD",
-    "file": "/tokens/logos/AMD.ico",
-    "from": "https://www.amd.com/content/dam/code/images/favicon/favicon.ico",
-    "site": "amd.com",
-    "declaredSize": 32,
-    "fetchedAt": "2026-10-16T19:38:12.501Z"
+    "file": "/tokens/logos/AMD.png",
+    "from": "https://www.google.com/s2/favicons?domain=ir.amd.com&sz=256",
+    "site": "ir.amd.com",
+    "size": 180,
+    "fetchedAt": "2026-10-16T20:34:06.521Z",
+    "note": "the largest icon of the company’s own site ir.amd.com, via Google’s favicon service"
   },
   "SLV": {
     "ticker": "SLV",
@@ -198,19 +199,21 @@
   },
   "AMZN": {
     "ticker": "AMZN",
-    "file": "/tokens/logos/AMZN.ico",
-    "from": "https://www.amazon.com/favicon.ico",
-    "site": "amazon.com",
-    "declaredSize": 16,
-    "fetchedAt": "2026-10-16T19:38:15.321Z"
+    "file": "/tokens/logos/AMZN.png",
+    "from": "https://www.google.com/s2/favicons?domain=aboutamazon.com&sz=256",
+    "site": "aboutamazon.com",
+    "size": 180,
+    "fetchedAt": "2026-10-16T20:34:06.521Z",
+    "note": "the largest icon of the company’s own site aboutamazon.com, via Google’s favicon service"
   },
   "ORCL": {
     "ticker": "ORCL",
     "file": "/tokens/logos/ORCL.png",
-    "from": "https://www.oracle.com/apple-touch-icon.png",
-    "site": "oracle.com",
-    "declaredSize": 180,
-    "fetchedAt": "2026-10-16T19:38:15.554Z"
+    "from": "https://www.google.com/s2/favicons?domain=investor.oracle.com&sz=256",
+    "site": "investor.oracle.com",
+    "size": 128,
+    "fetchedAt": "2026-10-16T20:34:06.521Z",
+    "note": "the largest icon of the company’s own site investor.oracle.com, via Google’s favicon service"
   },
   "MU": {
     "ticker": "MU",

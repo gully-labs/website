@@ -16,7 +16,7 @@ const FIGURES: { key: Figure; label: string }[] = [
 ]
 
 const cols = 'grid grid-cols-[136px_1.4fr_.9fr_1fr_1fr_1fr_1fr_132px] items-center gap-5 px-7'
-const colsNarrow = 'max-[959px]:grid-cols-[136px_1fr] max-[959px]:gap-x-5 max-[959px]:gap-y-3'
+const colsNarrow = 'max-[959px]:grid-cols-[104px_1fr] max-[959px]:gap-x-4 max-[959px]:gap-y-3 max-[959px]:px-5'
 
 function cell(v: Venue | undefined, m: Figure, state: 'loading' | 'error' | 'ok') {
   if (state === 'loading') return <span className="text-dim">…</span>
@@ -52,11 +52,11 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
       style={{ animation: `gl-rise .5s ${index * 0.07}s ease both`, ['--sweep-delay' as string]: `${2 + index * 1.1}s` }}
     >
       {/* The project's own lockup, on its own ground, large enough to read. */}
-      <Link to={`/projects/${p.slug}`} className="flex h-[72px] w-[136px] items-center justify-center overflow-hidden rounded-[10px] border-b-[3px] border-line" style={{ background: p.bg, borderBottomColor: p.accent }} aria-label={`${p.name} project page`}>
+      <Link to={`/projects/${p.slug}`} className="flex h-[72px] w-[136px] items-center justify-center overflow-hidden rounded-[10px] border-b-[3px] border-line max-[959px]:h-[58px] max-[959px]:w-[104px]" style={{ background: p.bg, borderBottomColor: p.accent }} aria-label={`${p.name} project page`}>
         <img src={p.logo} alt={p.name} loading="lazy" className="block size-full" style={{ objectFit: p.fit, padding: p.fit === 'contain' ? '10px 14px' : 0 }} />
       </Link>
       <span className="flex flex-col gap-[6px]">
-        <Link to={`/projects/${p.slug}`} className="font-display text-[26px] leading-none font-bold uppercase text-ink hover:text-gold">
+        <Link to={`/projects/${p.slug}`} className="font-display text-[26px] leading-none font-bold uppercase text-ink hover:text-gold max-[959px]:text-[22px]">
           {p.name}
         </Link>
         <span className="font-mono text-[12px] text-dim">
@@ -70,20 +70,30 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
           </span>
         ))}
       </span>
-      {FIGURES.map((f) => (
-        <span key={f.key} className="flex flex-col gap-1 font-mono text-[17px] max-[959px]:col-start-2">
-          <span>{cell(venue, f.key, state)}</span>
-          <span className="text-[11px] tracking-[.5px] text-faint">{f.label}</span>
-        </span>
-      ))}
-      <span className="flex flex-col items-end gap-2 max-[959px]:col-start-2 max-[959px]:items-start">
+      {/* Desktop: four grid cells. Phone: one 2 x 2 block under the name. */}
+      <span className="contents max-[959px]:col-span-full max-[959px]:grid max-[959px]:grid-cols-2 max-[959px]:gap-x-4 max-[959px]:gap-y-3 max-[959px]:rounded-[10px] max-[959px]:border max-[959px]:border-line max-[959px]:bg-surface-deep max-[959px]:p-4">
+        {FIGURES.map((f) => (
+          <span key={f.key} className="flex flex-col gap-1 font-mono text-[17px] max-[959px]:text-[15px]">
+            <span>{cell(venue, f.key, state)}</span>
+            <span className="text-[11px] tracking-[.5px] text-faint">{f.label}</span>
+          </span>
+        ))}
+      </span>
+      <span className="flex flex-col items-end gap-2 max-[959px]:col-span-full max-[959px]:flex-row max-[959px]:flex-wrap max-[959px]:items-center max-[959px]:justify-between">
         <span className={statusPill}>{p.status}</span>
         <ShareMenu project={p} compact />
         <Link to={`/projects/${p.slug}`} className="text-[14px] whitespace-nowrap text-gold hover:text-gold-hover">
           View project →
         </Link>
       </span>
-      <span className="col-span-full -mt-2 font-mono text-[12px] leading-[1.5] text-faint max-[959px]:col-start-1">{provenance}</span>
+      <span className="col-span-full -mt-2 font-mono text-[12px] leading-[1.5] text-faint max-[959px]:hidden">{provenance}</span>
+      <details className="group col-span-full font-mono text-[12px] leading-[1.5] text-faint min-[960px]:hidden">
+        <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 text-dim [&::-webkit-details-marker]:hidden">
+          <span aria-hidden className="transition-transform group-open:rotate-90">›</span>
+          Source
+        </summary>
+        <span className="block pt-1">{provenance}</span>
+      </details>
     </div>
   )
 }

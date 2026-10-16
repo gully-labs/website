@@ -58,16 +58,17 @@ export function pageMeta(host, pathname) {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'
   if (host.startsWith('docs.')) {
     const m = DOCS_PAGES[p]
-    if (m) return { title: m[0], description: m[1], canonical: DOCS + (p === '/' ? '/' : p), found: true }
+    if (m) return { title: m[0], description: m[1], canonical: DOCS + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-docs.png` }
     return { title: 'Not found · Gully Labs docs', description: DOCS_PAGES['/'][1], canonical: null, found: false }
   }
   if (host.startsWith('developers.'))
-    return { title: 'Developer portal · Gully Labs', description: 'Request and manage Gully Labs API keys and see your usage of the tracker API.', canonical: `${DEV}/`, found: true }
+    return { title: 'Developer portal · Gully Labs', description: 'Request and manage Gully Labs API keys and see your usage of the tracker API.', canonical: `${DEV}/`, found: true, image: `${SITE}/social/og-developers.png` }
   if (host.startsWith('admin.')) return { title: 'Admin · Gully Labs', description: 'Private.', canonical: null, found: true, noindex: true }
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
+  const og = p === '/' ? 'home' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
+  return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
 }
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -82,6 +83,10 @@ export function renderHead(source, meta) {
   swap(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(meta.description)}" />`)
   swap(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${esc(meta.title)}" />`)
   swap(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${esc(meta.description)}" />`)
+  if (meta.image) {
+    swap(/<meta property="og:image" [^>]*>/, `<meta property="og:image" content="${esc(meta.image)}" />`)
+    swap(/<meta name="twitter:image"[^>]*>/, `<meta name="twitter:image" content="${esc(meta.image)}" />`)
+  }
   if (meta.canonical) {
     swap(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${esc(meta.canonical)}" />`)
     swap(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${esc(meta.canonical)}" />`)
