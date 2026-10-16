@@ -9,6 +9,7 @@ import { addEnquiry, addToLaunchList } from './store.mjs'
 import { clientIp, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
+import { handleBlog } from './blog.mjs'
 import { handleDeveloper } from './developer.mjs'
 import https from 'node:https'
 import net from 'node:net'
@@ -88,12 +89,13 @@ const server = http.createServer(async (req, res) => {
   const host = String(req.headers.host ?? '').split(':')[0].toLowerCase()
   const isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)
   const isAdmin = host.startsWith('admin.')
+  // The blog is self-hosted Ghost in its own container; every path on its host goes there.
+  if (host.startsWith('blog.')) return handleBlog(req, res, url)
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
   }
   // The developer dashboard lives on developers.gullylabs.xyz. Elsewhere /developers moves there; on that
-  // host any other page belongs to the main site. The blog host has no blog yet, so it sends readers home
-  // with a temporary redirect that can be dropped the day a blog is served there.
+  // host any other page belongs to the main site.
   const isDevelopers = host.startsWith('developers.')
   const isPage = !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/') && !/\.[a-z0-9]+$/i.test(url.pathname)
   if (!isDevelopers && !isLocal && (url.pathname === '/developers' || url.pathname.startsWith('/developers/'))) {
@@ -102,7 +104,6 @@ const server = http.createServer(async (req, res) => {
   if (isDevelopers && isPage && url.pathname !== '/') {
     return send(res, 301, '', { Location: 'https://gullylabs.xyz' + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
-  if (host.startsWith('blog.')) return send(res, 302, '', { Location: 'https://gullylabs.xyz/', 'Cache-Control': 'no-store' })
   // The docs live on their own host; /docs on the main site moves there, path kept.
   if (!isLocal && !host.startsWith('docs.') && (url.pathname === '/docs' || url.pathname.startsWith('/docs/'))) {
     return send(res, 301, '', { Location: 'https://docs.gullylabs.xyz' + (url.pathname.slice(5) || '/'), 'Cache-Control': 'public, max-age=3600' })

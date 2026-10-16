@@ -24,6 +24,53 @@ services:
       # Public port Cloudflare connects to (via an Origin Rule on gullylabs.xyz).
       - "0.0.0.0:${GULLY_PUBLIC_PORT:-2053}:8443"
 
+  # The blog: open-source Ghost, self-hosted. No host port: gully-web forwards blog.gullylabs.xyz to
+  # it over the project network (server/blog.mjs). Secrets (BLOG_DB_PASSWORD, BLOG_SETUP_TOKEN) are in
+  # .env on the box only.
+  blog:
+    image: ghost:6-alpine
+    container_name: gully-blog
+    restart: unless-stopped
+    depends_on:
+      blog-db:
+        condition: service_healthy
+    environment:
+      url: https://blog.gullylabs.xyz
+      NODE_ENV: production
+      database__client: mysql
+      database__connection__host: gully-blog-db
+      database__connection__user: ghost
+      database__connection__password: ${BLOG_DB_PASSWORD:?set BLOG_DB_PASSWORD in .env}
+      database__connection__database: ghost
+      # No mail service yet: staff invites and member sign-in emails need SMTP set here later.
+      mail__transport: Direct
+    volumes:
+      - gully-blog-content:/var/lib/ghost/content
+    mem_limit: 768m
+
+  blog-db:
+    image: mysql:8.4
+    container_name: gully-blog-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ghost
+      MYSQL_USER: ghost
+      MYSQL_PASSWORD: ${BLOG_DB_PASSWORD:?set BLOG_DB_PASSWORD in .env}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    command: ["--innodb-buffer-pool-size=128M", "--performance-schema=OFF"]
+    volumes:
+      - gully-blog-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u ghost -p\"$$MYSQL_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    mem_limit: 640m
+
 volumes:
   gully-web-data:
     name: gully-web-data
+  gully-blog-content:
+    name: gully-blog-content
+  gully-blog-mysql:
+    name: gully-blog-mysql
