@@ -8,10 +8,17 @@ services:
     restart: unless-stopped
     environment:
       TLS_PORT: "8443"
+      TRACKER_DATA: /data/tracker-history.json
     volumes:
       - ./certs:/certs:ro
+      # The tracker's 7-day gap history, kept across redeploys.
+      - gully-web-data:/data
     ports:
       # Local access for checks on the server.
       - "127.0.0.1:${GULLY_WEB_PORT:-8099}:8080"
       # Public port Cloudflare connects to (via an Origin Rule on gullylabs.xyz).
       - "0.0.0.0:${GULLY_PUBLIC_PORT:-2053}:8443"
+
+volumes:
+  gully-web-data:
+    name: gully-web-data

@@ -5,3 +5,5 @@ dist
 test-results
 compare/out
 certs/
+.tracker-history*.json
+.open-tracker.mjs

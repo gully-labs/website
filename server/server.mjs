@@ -3,6 +3,7 @@
 // cross-venue figures, see stats.mjs). No dependencies beyond Node.
 import http from 'node:http'
 import { readStats } from './stats.mjs'
+import { readHistory, readTracker, startTrackerLoop } from './tracker.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -73,6 +74,22 @@ const server = http.createServer((req, res) => {
     if (req.method !== 'POST') return send(res, 405, '', { Allow: 'POST' })
     return handleContact(req, res)
   }
+  // Fair-price tracker. Both answers are cacheable at the edge: every visitor shares one upstream read
+  // per refresh, however many there are.
+  if (url.pathname === '/api/tracker') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    return readTracker().then(
+      (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' }),
+      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+    )
+  }
+  if (url.pathname === '/api/tracker/history') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    const ticker = (url.searchParams.get('ticker') ?? '').toUpperCase()
+    const chain = (url.searchParams.get('chain') ?? 'robinhood').toLowerCase()
+    if (!/^[A-Z.]{1,8}$/.test(ticker) || !/^[a-z]{2,12}$/.test(chain)) return send(res, 400, JSON.stringify({ error: 'chain and ticker' }), { 'Content-Type': 'application/json' })
+    return send(res, 200, JSON.stringify({ chain, ticker, points: readHistory(chain, ticker) }), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=600' })
+  }
   if (url.pathname === '/api/stats') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readStats().then(
@@ -94,6 +111,7 @@ const server = http.createServer((req, res) => {
 })
 
 server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
+startTrackerLoop()
 
 // Optional public port for Cloudflare. It speaks both HTTPS and plain HTTP on the
 // same port (sniffing the first byte), so it works whatever the zone's SSL mode is.

@@ -1,0 +1,160 @@
+{
+  "chainId": 56,
+  "source": "DeepCore SDK deployments/stockFeeds.ts + stocks.ts (Binance bStocks), every feed read on chain 2026-10-15; feeds price the underlying share, so fair = feed x uiMultiplier()",
+  "stocks": [
+    {
+      "ticker": "AAPL",
+      "name": "Apple",
+      "token": "0x431a3BEE82E2ca41e49895CbECE5bB0F76A89b7A",
+      "decimals": 18,
+      "feed": "0xb7Ed5bE7977d61E83534230f3256C021e0fae0B6",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "AMZN",
+      "name": "Amazon",
+      "token": "0x1a4b499833A79A09ad7Cf1D42D7DacF71e92eb00",
+      "decimals": 18,
+      "feed": "0x51d08ca89d3e8c12535BA8AEd33cDf2557ab5b2a",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "COIN",
+      "name": "Coinbase",
+      "token": "0x585BDE7C54ABB5cCD7791F923D6c2187635f3952",
+      "decimals": 18,
+      "feed": "0x2d1AB79D059e21aE519d88F978cAF39d74E31AEB",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "GME",
+      "name": "GameStop",
+      "token": "0x46cEeFDa28Dd7207059ed19B0acdc026955bb15C",
+      "decimals": 18,
+      "feed": "0x66cD2975d02f5F5cdEF2E05cBca12549B1a5022D",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet",
+      "token": "0x3F53De71c126BdaBAe20f9cD64848d317f6C3238",
+      "decimals": 18,
+      "feed": "0xeDA73F8acb669274B15A977Cb0cdA57a84F18c2a",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "META",
+      "name": "Meta Platforms",
+      "token": "0x7425889FE94F9d693E8daefE88BCCed6AcFEf4c0",
+      "decimals": 18,
+      "feed": "0xfc76E9445952A3C31369dFd26edfdfb9713DF5Bb",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "token": "0x80106cb3EAD06659A5ad19DF39D9b4733863B9b0",
+      "decimals": 18,
+      "feed": "0x5D209cE1fBABeAA8E6f9De4514A74FFB4b34560F",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "NFLX",
+      "name": "Netflix",
+      "token": "0xD6829Ea836b6FA224d099D40E54B31262f874631",
+      "decimals": 18,
+      "feed": "0x1fE6c9Bd9B29e5810c2819f37dDa8559739ebeC9",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "NVDA",
+      "name": "NVIDIA Corp",
+      "token": "0x02Fca66C1D1aFB4E2A7884261eB00F63598a7436",
+      "decimals": 18,
+      "feed": "0xea5c2Cbb5cD57daC24E26180b19a929F3E9699B8",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "QQQ",
+      "name": "Invesqo QQQ",
+      "token": "0x205812CdBed920aFf76C6580abD681a46D11efc7",
+      "decimals": 18,
+      "feed": "0x9A41B56b2c24683E2f23BdE15c14BC7c4a58c3c4",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "SPY",
+      "name": "SPY",
+      "token": "0x7138b48df7D98D7e3cc221BfE7192D0a178182D8",
+      "decimals": 18,
+      "feed": "0xb24D1DeE5F9a3f761D286B56d2bC44CE1D02DF7e",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla, Inc.",
+      "token": "0x5b1910eAaD6450E50f816082Aa078C41F10C292f",
+      "decimals": 18,
+      "feed": "0xEEA2ae9c074E87596A85ABE698B2Afebc9B57893",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "MRNA",
+      "name": "Moderna",
+      "token": "0x5fd86da9B05abE396fe9d02a4A213A7c00556503",
+      "decimals": 18,
+      "feed": "0x6101F4DFBb24Cac3D64e28A815255B428b93639f",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    },
+    {
+      "ticker": "JPM",
+      "name": "JPMorgan Chase",
+      "token": "0xbd49D695ba2cc46c8C603eb62aFcd7Fff4698281",
+      "decimals": 18,
+      "feed": "0x8f26ba94180371baA2D2C143f96b6886DCACA250",
+      "feedDecimals": 8,
+      "heartbeat": 86400,
+      "marketHours": "NYSE",
+      "prices": "underlying-share"
+    }
+  ]
+}

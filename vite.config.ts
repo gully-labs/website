@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { readStats } from './server/stats.mjs'
+import { readHistory, readTracker } from './server/tracker.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
 function mockContactApi(): Plugin {
@@ -43,6 +44,35 @@ function statsApi(): Plugin {
   }
 }
 
+// In dev the tracker answers from the same module the production server runs.
+function trackerApi(): Plugin {
+  return {
+    name: 'tracker-api',
+    configureServer(server) {
+      server.middlewares.use('/api/tracker/history', (req, res) => {
+        const q = new URL(req.url ?? '', 'http://x').searchParams
+        const chain = q.get('chain') ?? 'robinhood'
+        const ticker = q.get('ticker') ?? ''
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ chain, ticker: ticker.toUpperCase(), points: readHistory(chain, ticker) }))
+      })
+      server.middlewares.use('/api/tracker', (req, res, next) => {
+        if ((req.url ?? '/').replace(/\?.*$/, '') !== '/') return next()
+        readTracker().then(
+          (body) => {
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify(body))
+          },
+          (err: unknown) => {
+            res.statusCode = 502
+            res.end(JSON.stringify({ error: String(err) }))
+          },
+        )
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), mockContactApi(), statsApi()],
+  plugins: [react(), tailwindcss(), mockContactApi(), statsApi(), trackerApi()],
 })
