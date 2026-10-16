@@ -106,6 +106,8 @@ export function ApiReference() {
             ['status', 'string', <>One of <C>premium</C>, <C>discount</C>, <C>drifting</C>, <C>in-line</C>, <C>thin</C>, <C>no-pool</C>, <C>pool-unreadable</C>, <C>feed-unreadable</C>. Rules in the <DocLink to="methodology" hash="gap">methodology</DocLink>.</>],
             ['pool', 'Pool | null', 'The pool used, below.'],
             ['poolError', 'string | null', 'Why pools could not be read, if they could not.'],
+            ['logo', 'string | null', 'The stock’s logo: the token’s own where it carries the company mark, else the company’s own site icon. An absolute URL on gullylabs.xyz.'],
+            ['chainLogo', 'string | null', 'The chain’s logo, an absolute URL on gullylabs.xyz.'],
             ['poolStale', 'boolean', 'True when the pool figures are the last good read rather than a fresh one.'],
           ]}
         />

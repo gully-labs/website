@@ -367,6 +367,27 @@ function record(rows, at) {
 
 /* ------------------------------------------------------------------- read --- */
 
+// Logos for API consumers and the widget: the token's own (BSC bStocks) or the company's site icon,
+// as absolute URLs on this site. Read once from the SOURCES files the logo scripts keep in public/.
+const SITE_ORIGIN = 'https://gullylabs.xyz'
+const CHAIN_LOGO = { robinhood: '/chains/robinhood.png', bsc: '/chains/bnb.png' }
+let logoMaps = null
+function logosFor(chainKey, stock) {
+  if (!logoMaps) {
+    const dist = path.resolve(process.env.DIST_DIR ?? 'dist')
+    const read = (f) => {
+      try {
+        return JSON.parse(fs.readFileSync(path.join(dist, f), 'utf8'))
+      } catch {
+        return {}
+      }
+    }
+    logoMaps = { token: read('tokens/SOURCES.json'), company: read('tokens/logos/SOURCES.json') }
+  }
+  const file = logoMaps.token[`${chainKey}/${stock.token.toLowerCase()}`]?.file ?? logoMaps.company[stock.ticker]?.file ?? null
+  return { logo: file ? SITE_ORIGIN + file : null, chainLogo: CHAIN_LOGO[chainKey] ? SITE_ORIGIN + CHAIN_LOGO[chainKey] : null }
+}
+
 async function buildChain(chain, at) {
   const open = sessionOpen(chain.session, new Date(at))
   const fail = (e) => chain.table.stocks.map(() => ({ error: String(e?.message ?? e) }))
@@ -399,6 +420,7 @@ async function buildChain(chain, at) {
       status,
       pool: p && !p.error ? { dex: p.dex, labels: p.labels, against: p.other, url: p.url, pair: p.pair, liquidityUsd: p.liquidityUsd, volume24hUsd: p.volume24hUsd, pools: p.pools, totalLiquidityUsd: p.totalLiquidityUsd, totalVolume24hUsd: p.totalVolume24hUsd } : null,
       poolError: p?.error ?? null,
+      ...logosFor(chain.key, s),
     }
   })
   for (const r of rows) r.poolStale = poolRead.stale

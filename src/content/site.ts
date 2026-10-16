@@ -29,7 +29,7 @@ export const navItems: { label: string; to: string; match: string; icon: LucideI
 export const devLinks: ({ label: string; icon: LucideIcon } & ({ href: string } | { to: string }))[] = [
   { label: 'Docs', href: 'https://docs.gullylabs.xyz', icon: BookOpen },
   { label: 'Widget', to: '/widget', icon: Puzzle },
-  { label: 'API keys', to: '/developers', icon: KeyRound },
+  { label: 'Developer portal', to: '/developers', icon: KeyRound },
 ]
 
 /** Header entries for developers, after the site sections. */

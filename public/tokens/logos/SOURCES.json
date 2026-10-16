@@ -269,10 +269,10 @@
   "TSM": {
     "ticker": "TSM",
     "file": "/tokens/logos/TSM.ico",
-    "from": "https://esg.tsmc.com/favicon.ico",
+    "from": "https://www.tsmc.com/favicon.ico",
     "site": "tsmc.com",
-    "declaredSize": 32,
-    "fetchedAt": "2026-10-16T19:38:46.954Z",
-    "note": "fetched with curl; the script cannot reach tsmc.com"
+    "size": 16,
+    "fetchedAt": "2026-10-16T21:19:45.859Z",
+    "note": "www.tsmc.com main icon, fetched with curl (the esg.tsmc.com icon is a different mark)"
   }
 }

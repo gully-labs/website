@@ -71,7 +71,9 @@ function serveFile(res, file, method) {
   // Hashed build assets never change; everything else revalidates.
   const cache = file.includes(`${path.sep}assets${path.sep}`) && /-[\w-]{8}\./.test(file)
     ? 'public, max-age=31536000, immutable'
-    : 'no-cache'
+    : /[\\/](tokens|chains|social)[\\/]/.test(file)
+      ? 'public, max-age=86400'
+      : 'no-cache'
   res.writeHead(200, { 'Content-Type': TYPES[ext] ?? 'application/octet-stream', 'Cache-Control': cache })
   if (method === 'HEAD') return res.end()
   fs.createReadStream(file).pipe(res)

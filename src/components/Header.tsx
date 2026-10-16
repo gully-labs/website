@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
 import { headerDevItems, navItems } from '../content/site'
+import { isDevelopersHost } from '../site-host'
 import { useContact } from './ContactContext'
 import { Wordmark } from './Wordmark'
 import { btnGold } from './ui'
@@ -54,7 +55,7 @@ export function Header() {
           ))}
           <span aria-hidden className="h-5 w-px bg-line-strong" />
           {headerDevItems.map((n) => {
-            const active = !!n.match && isActive(n.match)
+            const active = !!n.match && (isActive(n.match) || (n.match === '/developers' && isDevelopersHost()))
             const cls = `${deskItem} ${active ? 'border-gold text-ink' : 'border-transparent text-muted'}`
             const inner = (
               <>

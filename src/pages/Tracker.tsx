@@ -57,7 +57,14 @@ const BUILD = [
 export function Tracker() {
   const st = useTracker()
   const [chain, setChain] = useState<string>('all')
-  const [selected, setSelected] = useState<string | null>(null)
+  // A link may name a stock (?stock=robinhood:NVDA, used by the widget) to open on it.
+  const [selected, setSelected] = useState<string | null>(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('stock')
+    } catch {
+      return null
+    }
+  })
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 15_000)
