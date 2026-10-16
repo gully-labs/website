@@ -124,11 +124,32 @@ try {
 }
 const backoff = {}
 
+// Prices come from the chain on every refresh; the APIs are asked only to (re)discover which pool to
+// read, and for liquidity and volume, once per DISCOVERY_MS. That keeps us well inside their limits.
+const DISCOVERY_MS = 60 * 60_000
+
 async function readPoolsResilient(chain, fairByToken = new Map()) {
   const b = backoff[chain.key]
   const cached = lastPools[chain.key]
   const usable = cached && Date.now() - cached.at < STALE_LIMIT_MS
-  if (b && Date.now() < b.until && usable) return { pools: cached.pools, asOf: cached.at, stale: true, source: cached.source ?? 'DexScreener' }
+  const chainReady = cached && cached.pools.some((p) => p?.quoteAddr)
+  if (chainReady && Date.now() - cached.at < DISCOVERY_MS) {
+    try {
+      return { pools: await readPoolsOnchain(chain, fairByToken), asOf: cached.at, stale: false, source: 'on chain' }
+    } catch {
+      /* fall through to the APIs */
+    }
+  }
+  if (b && Date.now() < b.until && usable) {
+    if (chainReady) {
+      try {
+        return { pools: await readPoolsOnchain(chain, fairByToken), asOf: cached.at, stale: false, source: 'on chain' }
+      } catch {
+        /* serve the stale read below */
+      }
+    }
+    return { pools: cached.pools, asOf: cached.at, stale: true, source: cached.source ?? 'DexScreener' }
+  }
   try {
     let pools
     let source = 'DexScreener'
