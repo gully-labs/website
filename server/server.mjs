@@ -8,6 +8,7 @@ import { apiAccess } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
 import { clientIp, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
+import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { handleDeveloper } from './developer.mjs'
 import https from 'node:https'
 import net from 'node:net'
@@ -102,7 +103,12 @@ const server = http.createServer(async (req, res) => {
     return send(res, 301, '', { Location: 'https://gullylabs.xyz' + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
   if (host.startsWith('blog.')) return send(res, 302, '', { Location: 'https://gullylabs.xyz/', 'Cache-Control': 'no-store' })
-  if (isAdmin && url.pathname === '/robots.txt') return send(res, 200, 'User-agent: *\nDisallow: /\n', { 'Content-Type': 'text/plain; charset=utf-8' })
+  // The docs live on their own host; /docs on the main site moves there, path kept.
+  if (!isLocal && !host.startsWith('docs.') && (url.pathname === '/docs' || url.pathname.startsWith('/docs/'))) {
+    return send(res, 301, '', { Location: 'https://docs.gullylabs.xyz' + (url.pathname.slice(5) || '/'), 'Cache-Control': 'public, max-age=3600' })
+  }
+  if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
+  if (url.pathname === '/sitemap.xml') return send(res, 200, sitemapFor(host), { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (isAdmin) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
 
   if (url.pathname.startsWith('/api/admin/')) {
@@ -176,8 +182,14 @@ const server = http.createServer(async (req, res) => {
 
   fs.stat(file, (err, stat) => {
     if (!err && stat.isFile()) return serveFile(res, file, req.method)
-    // Unknown paths get the app shell so client-side routes work on reload.
-    serveFile(res, INDEX, req.method)
+    // Every other path gets the app shell, with that page's own head tags so crawlers and link
+    // previews see the right title, description and canonical. A path no page owns is a 404.
+    fs.readFile(INDEX, 'utf8', (e, html) => {
+      if (e) return send(res, 500, '')
+      const meta = pageMeta(host, url.pathname)
+      res.writeHead(meta.found || isLocal ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
+      res.end(req.method === 'HEAD' ? undefined : renderHead(html, meta))
+    })
   })
 })
 
