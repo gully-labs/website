@@ -118,9 +118,9 @@ export function Header() {
                   {n.label}
                 </Link>
               ))}
-              <div className="mt-2 grid grid-cols-2 gap-3 pt-4">
+              <div className="mt-2 grid grid-cols-3 gap-2 pt-4">
                 {headerDevItems.map((n) => {
-                  const cls = 'flex min-h-12 items-center gap-3 rounded-btn border border-line-strong px-4 font-mono text-[14px] text-ink-2 transition-colors hover:border-gold hover:text-ink'
+                  const cls = 'flex min-h-[68px] flex-col items-center justify-center gap-2 rounded-btn border border-line-strong px-2 font-mono text-[13px] text-ink-2 transition-colors hover:border-gold hover:text-ink'
                   const inner = (
                     <>
                       <n.icon aria-hidden size={18} strokeWidth={1.75} className="text-gold" />

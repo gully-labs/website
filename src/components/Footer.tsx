@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Mail } from 'lucide-react'
+import { Mail, Newspaper } from 'lucide-react'
 import { projects } from '../content/projects'
 import { devLinks, navItems, socialLinks } from '../content/site'
 import { useContact } from './ContactContext'
@@ -35,6 +35,10 @@ export function Footer() {
               <Mail aria-hidden size={15} strokeWidth={1.75} className={colIcon} />
               Contact
             </button>
+            <a href="https://blog.gullylabs.xyz" className={colLink}>
+              <Newspaper aria-hidden size={15} strokeWidth={1.75} className={colIcon} />
+              Blog
+            </a>
           </nav>
           <nav aria-label="Projects" className="flex flex-col items-start gap-3">
             <span className={colLabel}>PROJECTS</span>
