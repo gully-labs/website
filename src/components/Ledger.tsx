@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { projects } from '../content/projects'
 import { useCountUp } from '../hooks/useCountUp'
-import { fmtDate, fmtDay, fmtTime, fmtUsd, type Stats, type Venue, type VenueOk } from '../lib/stats'
-import { DataTable, EmptySeries, nameOf, Segmented } from './LiveChart'
+import { fmtDate, fmtDay, fmtTime, fmtUsd, nameOf, type Stats, type Venue, type VenueOk } from '../lib/stats'
+import { DataTable, EmptySeries, Segmented } from './LiveChart'
 
 /* The ledger: one combined band across the five venues, then the venues' own series stacked.
    Everything is read from /api/stats; a venue that publishes no series is not drawn, and the

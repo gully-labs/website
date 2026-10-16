@@ -3,24 +3,31 @@ import { Seo } from '../components/Seo'
 import { eyebrow } from '../components/ui'
 import { comingSoon, projects } from '../content/projects'
 import { IN_THE_LAB, PROJECTS_LIVE } from '../content/stats'
+import { useCountUp } from '../hooks/useCountUp'
 import { useStats } from '../hooks/useStats'
-import { fmtTime, fmtUsd } from '../lib/stats'
+import { fmtTime, fmtUsd, nameOf } from '../lib/stats'
 
 const linkCard =
-  'flex flex-col gap-[14px] rounded-card border border-line bg-surface p-9 text-left text-ink transition-colors hover:border-gold hover:text-ink'
+  'group relative flex flex-col gap-[14px] overflow-hidden rounded-card border border-line bg-surface p-9 text-left text-ink transition-colors hover:border-gold hover:text-ink'
 
 const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six']
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
+const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` })
+
+function Money({ value, state }: { value: number | null | undefined; state: 'loading' | 'error' | 'ok' }) {
+  const n = useCountUp(value ?? 0)
+  if (state === 'loading') return <span className="text-dim">…</span>
+  if (state === 'error' || value === null || value === undefined) return <span className="text-dim">—</span>
+  return (
+    <span role="img" aria-label={fmtUsd(value)} style={{ animation: 'gl-count-flash 1.6s ease both' }}>
+      <span aria-hidden>{fmtUsd(n)}</span>
+    </span>
+  )
+}
 
 export function About() {
   const st = useStats()
   const T = st.k === 'ok' ? st.data.totals : null
-  const money = (v: number | null | undefined) => (st.k === 'loading' ? '…' : st.k === 'error' || v === null || v === undefined ? '—' : fmtUsd(v))
-  const stats = [
-    { label: 'PROJECTS LIVE', value: PROJECTS_LIVE, gold: false },
-    { label: 'IN THE LAB', value: IN_THE_LAB, gold: false },
-    { label: 'TOTAL VALUE LOCKED', value: money(T?.tvlUsd), gold: true },
-    { label: 'VOLUME 24H', value: money(T?.volume24hUsd), gold: false },
-  ]
   return (
     <>
       <Seo
@@ -28,40 +35,41 @@ export function About() {
         description="Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name."
       />
 
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,440px),1fr))] items-center gap-[clamp(40px,5cqw,72px)] px-page pt-20 pb-24">
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,440px),1fr))] items-center gap-[clamp(40px,5cqw,72px)] px-page pt-[72px] pb-24">
         <div className="flex flex-col gap-6">
-          <span className={eyebrow}>ABOUT</span>
-          <h1 className="m-0 font-display text-[clamp(56px,7cqw,104px)] leading-[.9] font-extrabold uppercase">
+          <span className={eyebrow} style={rise(0)}>
+            ABOUT · GULLY LABS
+          </span>
+          <h1 className="m-0 font-display text-[clamp(56px,7cqw,104px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
             A lab that ships <span className="text-gold">its own products</span>
           </h1>
-          <p className="m-0 text-[18px] leading-[1.6] text-muted">
-            Gully Labs is a blockchain development company. We design, build and release Web3 projects under our own
-            name, from trading communities to DeFi infrastructure.
+          <p className="m-0 text-[18px] leading-[1.6] text-muted" style={rise(2)}>
+            Gully Labs is a blockchain development company. We design, build and release Web3 projects under our own name, from trading
+            communities to DeFi infrastructure.
           </p>
-          <p className="m-0 text-[18px] leading-[1.6] text-muted">
-            Running our own products keeps our engineering honest. Partners get a team that has shipped to mainnet and
-            supported what it shipped.
+          <p className="m-0 text-[18px] leading-[1.6] text-muted" style={rise(3)}>
+            Running our own products keeps our engineering honest. Partners get a team that has shipped to mainnet and supported what it
+            shipped.
           </p>
         </div>
-        <div className="relative aspect-square overflow-hidden rounded-modal bg-mascot-bg">
-          <img
-            src="/assets/mascot-scientist.png"
-            alt="Gully Labs chief scientist"
-            className="absolute inset-0 size-full animate-float-slow object-cover"
-          />
+        <div className="relative aspect-square overflow-hidden rounded-modal bg-mascot-bg" style={rise(2)}>
+          <img src="/assets/mascot-scientist.png" alt="Gully Labs chief scientist" className="absolute inset-0 size-full animate-float-slow object-cover" />
         </div>
       </section>
 
       <section aria-label="Gully Labs in numbers" className="flex flex-col gap-3 px-page pb-24">
         <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
-          {stats.map((s) => (
-            <div key={s.label} className="flex flex-col gap-2 bg-surface p-7">
+          {[
+            { label: 'PROJECTS LIVE', value: <>{PROJECTS_LIVE}</>, gold: false, note: projects.map((p) => p.name).join(', ') },
+            { label: 'IN THE LAB', value: <>{IN_THE_LAB}</>, gold: false, note: `slot ${comingSoon.join(', ')}` },
+            { label: 'TOTAL VALUE LOCKED', value: <Money value={T?.tvlUsd} state={st.k} />, gold: true, note: T ? `from ${T.covers.tvlUsd.map(nameOf).join(', ') || 'no venue'}` : '' },
+            { label: 'VOLUME ALL-TIME', value: <Money value={T?.volumeAllUsd} state={st.k} />, gold: false, note: T ? `from ${T.covers.volumeAllUsd.map(nameOf).join(', ') || 'no venue'}` : '' },
+          ].map((s, i) => (
+            <div key={s.label} className="group relative flex flex-col gap-2 overflow-hidden bg-surface p-7" style={rise(i)}>
               <dt className="font-mono text-[11px] tracking-[1px] text-faint">{s.label}</dt>
-              <dd
-                className={`m-0 font-display text-[56px] leading-none font-extrabold ${s.gold ? 'text-gold' : 'text-ink'}`}
-              >
-                {s.value}
-              </dd>
+              <dd className={`m-0 font-display text-[56px] leading-none font-extrabold ${s.gold ? 'text-gold' : 'text-ink'}`}>{s.value}</dd>
+              {s.note && <span className="text-[13px] text-muted">{s.note}</span>}
+              <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
             </div>
           ))}
         </dl>
@@ -75,22 +83,21 @@ export function About() {
       </section>
 
       <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,400px),1fr))] gap-5 border-t border-line bg-bg-alt px-page py-24">
-        <Link to="/#projects" className={linkCard}>
+        <Link to="/#projects" className={linkCard} style={rise(0)}>
           <span className="font-mono text-[13px] text-gold">01</span>
           <span className="font-display text-[40px] leading-none font-extrabold uppercase">Our own products</span>
           <span className="text-[16px] leading-[1.55] text-muted">
-            {words[projects.length + comingSoon.length][0].toUpperCase() + words[projects.length + comingSoon.length].slice(1)} projects funded and built in-house.{' '}
-            {words[projects.length][0].toUpperCase() + words[projects.length].slice(1)} are live.
+            {cap(words[projects.length + comingSoon.length])} projects funded and built in-house. {cap(words[projects.length])} are live.
           </span>
           <span className="mt-2 text-[15px] text-gold">See the projects →</span>
+          <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
         </Link>
-        <Link to="/services" className={linkCard}>
+        <Link to="/services" className={linkCard} style={rise(1)}>
           <span className="font-mono text-[13px] text-gold">02</span>
           <span className="font-display text-[40px] leading-none font-extrabold uppercase">Partner work</span>
-          <span className="text-[16px] leading-[1.55] text-muted">
-            Smart contracts, dApps, infrastructure and audits for teams building on-chain.
-          </span>
+          <span className="text-[16px] leading-[1.55] text-muted">Smart contracts, dApps, infrastructure and audits for teams building on-chain.</span>
           <span className="mt-2 text-[15px] text-gold">See the services →</span>
+          <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
         </Link>
       </section>
     </>

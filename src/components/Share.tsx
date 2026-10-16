@@ -1,34 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { Project } from '../content/projects'
 import { SHARE, SITE_URL } from '../content/site'
-import { fmtUsd, type Stats } from '../lib/stats'
+import { gullyPost, projectPost, tgShare, xFollow, xPost } from '../lib/share'
+import type { Stats } from '../lib/stats'
 import { SocialIcon } from './SocialIcon'
 
-/* Sharing, built from what the page already read: a post about Gully carries the live totals at
-   the moment it is composed (never a typed number), a post about a project carries its own
-   tagline, handle and link. Intent links open the user's own X or Telegram; nothing posts on
-   their behalf. */
-
-const xPost = (text: string, url: string) => `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
-const xFollow = (handle: string) => `https://x.com/intent/follow?screen_name=${encodeURIComponent(handle.replace(/^@/, ''))}`
-const tgShare = (text: string, url: string) => `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`
-
-/** The post about Gully Labs, with the figures the ledger shows right now. */
-export function gullyPost(data: Stats | null): string {
-  const live = data ? data.venues.filter((v) => v.state === 'ok').length : null
-  const parts = [`${live ?? 'Five'} live Web3 venues built by ${SHARE.handle}, measured live:`]
-  const T = data?.totals
-  if (T?.volumeAllUsd != null) parts.push(`${fmtUsd(T.volumeAllUsd)} traded all-time`)
-  if (T?.tvlUsd != null) parts.push(`${fmtUsd(T.tvlUsd)} locked`)
-  if (T?.feesAllUsd != null) parts.push(`${fmtUsd(T.feesAllUsd)} in fees`)
-  return `${parts[0]} ${parts.slice(1).join(' · ') || 'launchpads, DEXes, quests and social trading, one ledger.'} ${SHARE.hashtags.join(' ')}`
-}
-
-/** The post about one project. */
-export function projectPost(p: Project): string {
-  const by = p.x ? `${p.x} by ${SHARE.handle}` : `by ${SHARE.handle}`
-  return `${p.name}: ${p.tagline}. ${p.description} ${by} ${SHARE.hashtags.slice(0, 1).join(' ')}`
-}
+/* Sharing controls: the texts and intent links live in lib/share.ts. */
 
 function useCopied(): [boolean, (text: string) => void] {
   const [copied, setCopied] = useState(false)

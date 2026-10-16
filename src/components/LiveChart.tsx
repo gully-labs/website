@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { projects } from '../content/projects'
-import { fmtDay, fmtUsd, type Point, type Venue } from '../lib/stats'
+import { fmtDay, fmtUsd, nameOf, type Point, type Venue } from '../lib/stats'
 
 /* Charts drawn from live reads only. Lines draw on, bars grow from the baseline; each is
    interactive (hover crosshair with exact values, keyboard stepping) and has a table twin.
@@ -9,9 +9,7 @@ import { fmtDay, fmtUsd, type Point, type Venue } from '../lib/stats'
 const grid =
   'repeating-linear-gradient(180deg,transparent 0,transparent calc(33.33% - 1px),#1a2029 calc(33.33% - 1px),#1a2029 33.33%)'
 
-const byKey = (key: string) => projects.find((p) => p.key === key)
-export const nameOf = (key: string) => byKey(key)?.name ?? key
-const accentOf = (key: string) => byKey(key)?.accent ?? '#e8c060'
+const accentOf = (key: string) => projects.find((p) => p.key === key)?.accent ?? '#e8c060'
 
 function Tip({ x, y, children }: { x: number; y: number; children: React.ReactNode }) {
   return (

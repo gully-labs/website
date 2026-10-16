@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://gullylabs.xyz/</loc><lastmod>2026-10-16</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://gullylabs.xyz/services</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://gullylabs.xyz/about</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://gullylabs.xyz/projects/cartel-family</loc><lastmod>2026-10-16</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://gullylabs.xyz/projects/deepcore</loc><lastmod>2026-10-16</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://gullylabs.xyz/projects/peddleswap</loc><lastmod>2026-10-16</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://gullylabs.xyz/projects/peddles</loc><lastmod>2026-10-16</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://gullylabs.xyz/projects/peddlequest</loc><lastmod>2026-10-16</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+</urlset>

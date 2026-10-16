@@ -1,6 +1,7 @@
 /* The /api/stats document (server/stats.mjs), typed, plus the formatting every surface
    shares. A figure is a number or `null` (not published / not measurable); a venue is
    `ok` or `error`. Nothing here invents a value for a missing one. */
+import { projects } from '../content/projects'
 
 export interface Point {
   t: number
@@ -72,6 +73,9 @@ export const fmtTime = (iso: string) =>
 export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+
+/** A venue's display name from its stats key. */
+export const nameOf = (key: string) => projects.find((p) => p.key === key)?.name ?? key
 
 /** The host part of a source URL, for provenance lines. */
 export const sourceHost = (url: string) => url.replace(/^https:\/\//, '').split(' ')[0].replace(/\/$/, '')
