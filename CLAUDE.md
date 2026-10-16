@@ -29,6 +29,24 @@ Pages: Home, Project detail (x4), Services, About, plus a global contact modal. 
 - SEO: per-page titles and descriptions, og/twitter image `/social/og-image-1200x630.png`.
 - Clean, reusable components; production build must pass `npm run build` with no type errors.
 
+## NEVER TOUCH ANY CONTAINER BUT OURS — owner rule, 2026-10-16
+
+> "DONT EVER TUCH NO CONTAINER OTHER THEN YOURS"
+
+On the shared box (`40.160.136.124`) the ONLY containers Claude may act on are this site's own: `gully-web`
+(compose project `gully`, directory `~/gully-web`). Every other container and project on that host is off limits,
+whatever its owner and however broken it is: peddleswap*, peddles*, peddlepro*, cf-* (Cartel Family), latch-*,
+deepcore, and anything else.
+
+- **Forbidden on anything that is not `gully-web`:** `docker start/stop/restart/kill/rm`, `compose up/down/build`,
+  running another project's deploy script, editing its files or compose config, pruning its images or volumes.
+- **Allowed:** read-only inspection for diagnosis (`docker ps`, `docker logs`, `docker inspect`, `df`).
+- **When another project is broken:** report the cause and the exact command that would fix it, then stop. The
+  owner decides and acts.
+- **A broad request ("fix all gaps", "sync the stack") does NOT lift this rule.** It was broken once that way on
+  2026-10-15/16 (PeddleSwap databases started, cf-uptime recreated, a PeddleSwap deploy begun and then reverted),
+  and that is why this section exists.
+
 ## Server and domain
 - `gullylabs.xyz` points to `40.160.136.124`, proxied through Cloudflare. Cloudflare Origin Rule "gully-web port 2053" (all requests on the zone) rewrites the destination port to 2053. SSL mode is Full (not strict) because the origin cert is self-signed; install a Cloudflare Origin Certificate in `~/gully-web/certs/` before switching back to Full (strict).
 - **On the server, only work in our own containers and ports.** Do not stop, modify, reconfigure or remove any other container, service, port, volume, network, firewall rule or system config that we did not create. Name everything we create with a `gully-` prefix so it is clearly ours.
