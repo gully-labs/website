@@ -11,6 +11,7 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=8080 DIST_DIR=/app/dist
 COPY --from=build /app/dist ./dist
 COPY server/*.mjs ./
+COPY server/vendor ./vendor
 COPY server/data ./data
 RUN mkdir -p /data && chown node:node /data
 USER node

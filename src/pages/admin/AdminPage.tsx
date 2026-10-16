@@ -17,7 +17,7 @@ interface Overview {
   }
   api: { since: string; anonymousLimitPerMin: number; anonymous: { requests: number; limited: number }; keys: { id: string; requests: number; limited: number; lastUsed: string | null }[]; days: { day: string; anonymous: number; keyed: number; limited: number }[]; liveWindows: number }
   venues: { generatedAt?: string; unread?: string[]; list?: { key: string; state: string; error: string | null }[]; error?: string }
-  developers: { pending: number; approved: number; liveKeys: number }
+  developers: { pending: number; approved: number; liveKeys: number; accounts?: number; blocked?: number }
   enquiries: { total: number; open: number }
   launchList: number
   process: { uptimeSeconds: number; rssMb: number; heapMb: number; node: string; dataDirBytes: number | null }
@@ -36,11 +36,22 @@ interface Req {
 interface Key {
   id: string
   prefix: string
-  project: string
+  name: string | null
+  owner: string | null
+  project: string | null
   email: string
   limit: number
   createdAt: string
   revokedAt: string | null
+}
+interface DevAccount {
+  address: string
+  createdAt: string
+  lastLoginAt: string | null
+  blocked: boolean
+  blockedAt: string | null
+  keys: number
+  liveKeys: number
 }
 interface Enquiry {
   id: string
@@ -81,7 +92,7 @@ function setToken(t: string | null) {
 }
 
 function useAdmin(token: string | null) {
-  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[] } | null>(null)
+  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; accounts: DevAccount[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[] } | null>(null)
   const [err, setErr] = useState<{ status: number; message: string } | null>(null)
   const load = useCallback(async () => {
     if (!token) return
@@ -93,7 +104,7 @@ function useAdmin(token: string | null) {
     }
     try {
       const [overview, dev, enq, launch] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries'), get('/api/admin/launch-list')])
-      setData({ overview, requests: dev.requests, keys: dev.keys, enquiries: enq.enquiries, launch: launch.rows })
+      setData({ overview, requests: dev.requests, keys: dev.keys, accounts: dev.accounts ?? [], enquiries: enq.enquiries, launch: launch.rows })
       setErr(null)
     } catch (e) {
       const x = e as { status?: number; message?: string }
@@ -222,7 +233,7 @@ export function AdminPage() {
           <>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,170px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
               <Tile k="API REQUESTS TODAY" v={((o.api.days.at(-1)?.anonymous ?? 0) + (o.api.days.at(-1)?.keyed ?? 0)).toLocaleString('en-US')} note={`${o.api.days.at(-1)?.limited ?? 0} rate-limited`} />
-              <Tile k="KEY REQUESTS" v={String(o.developers.pending)} note={`pending · ${o.developers.liveKeys} live keys`} tone={o.developers.pending ? '#e8c060' : undefined} />
+              <Tile k="DEVELOPERS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#e8c060' : undefined} />
               <Tile k="ENQUIRIES" v={String(o.enquiries.open)} note={`open of ${o.enquiries.total}`} tone={o.enquiries.open ? '#e8c060' : undefined} />
               <Tile k="LAUNCH LIST" v={String(o.launchList)} note="notify-me sign-ups" />
               <Tile k="TRACKER CACHE" v={o.tracker.cacheAgeSeconds === null ? '—' : `${o.tracker.cacheAgeSeconds}s`} note={`last snapshot ${ago(o.tracker.lastSnapshot)}`} />
@@ -297,8 +308,62 @@ export function AdminPage() {
 
             <section className={card}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className={h2}>API key requests</h2>
-                <span className={small}>approve, then the developer redeems the key with their claim code</span>
+                <h2 className={h2}>Developer wallets</h2>
+                <span className={small}>keys are self-serve; blocking a wallet stops all its keys and signs it out</span>
+              </div>
+              {!data.accounts.length ? (
+                <p className="m-0 text-[14px] text-muted">No wallet has signed in yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-[14px]">
+                    <thead>
+                      <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
+                        <th className="py-2 pr-3 font-medium">WALLET</th>
+                        <th className="py-2 pr-3 font-medium">KEYS</th>
+                        <th className="py-2 pr-3 font-medium">FIRST SIGN-IN</th>
+                        <th className="py-2 pr-3 font-medium">LAST SIGN-IN</th>
+                        <th className="py-2 pr-3 font-medium">STATUS</th>
+                        <th className="py-2" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.accounts.map((a) => (
+                        <tr key={a.address} className="border-b border-line last:border-b-0">
+                          <td className="py-3 pr-3 font-mono text-[12px] text-ink-2">{a.address}</td>
+                          <td className="py-3 pr-3 font-mono text-[12px]">
+                            {a.liveKeys} live <span className="text-faint">/ {a.keys}</span>
+                          </td>
+                          <td className="py-3 pr-3 font-mono text-[12px] text-faint">{when(a.createdAt)}</td>
+                          <td className="py-3 pr-3 font-mono text-[12px] text-faint">{ago(a.lastLoginAt)}</td>
+                          <td className="py-3 pr-3 font-mono text-[12px]">{a.blocked ? <span className="text-error">blocked {when(a.blockedAt)}</span> : <span className="text-green">active</span>}</td>
+                          <td className="py-3 text-right whitespace-nowrap">
+                            {a.blocked ? (
+                              <button type="button" onClick={() => act(`/api/admin/accounts/${a.address}/unblock`)} className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-gold hover:text-ink">
+                                Unblock
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => window.confirm(`Block ${a.address}? Its ${a.liveKeys} live keys stop working and it is signed out.`) && act(`/api/admin/accounts/${a.address}/block`)}
+                                className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error"
+                              >
+                                Block
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            {data.requests.length > 0 && (
+            <section className={card}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className={h2}>Legacy key requests</h2>
+                <span className={small}>the old manual flow, kept for requests already made; new keys are self-serve</span>
               </div>
               {!data.requests.length ? (
                 <p className="m-0 text-[14px] text-muted">No requests yet.</p>
@@ -352,6 +417,7 @@ export function AdminPage() {
                 </div>
               )}
             </section>
+            )}
 
             <div className="grid grid-cols-[1fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>
@@ -365,9 +431,9 @@ export function AdminPage() {
                       return (
                         <li key={k.id} className={`flex flex-wrap items-center justify-between gap-3 rounded-input border border-line px-3 py-2 ${k.revokedAt ? 'opacity-50' : ''}`}>
                           <span className="flex flex-col">
-                            <span className="text-[14px]">{k.project}</span>
+                            <span className="text-[14px]">{k.name ?? k.project}</span>
                             <span className={small}>
-                              {k.prefix}… · {(u?.requests ?? 0).toLocaleString('en-US')} requests · last {ago(u?.lastUsed ?? null)}
+                              {k.prefix}… · {k.owner ? `${k.owner.slice(0, 6)}…${k.owner.slice(-4)}` : k.email} · {(u?.requests ?? 0).toLocaleString('en-US')} requests · last {ago(u?.lastUsed ?? null)}
                             </span>
                           </span>
                           {k.revokedAt ? (
@@ -375,7 +441,7 @@ export function AdminPage() {
                           ) : (
                             <button
                               type="button"
-                              onClick={() => window.confirm(`Revoke ${k.project}'s key? It stops working immediately.`) && act(`/api/admin/keys/${k.id}/revoke`)}
+                              onClick={() => window.confirm(`Revoke ${k.name ?? k.project ?? 'this'} key? It stops working immediately.`) && act(`/api/admin/keys/${k.id}/revoke`)}
                               className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error"
                             >
                               Revoke

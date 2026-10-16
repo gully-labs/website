@@ -11,7 +11,7 @@ const TRUSTED = new Set(['premium', 'discount', 'drifting', 'in-line'])
 type Card = { icon: LucideIcon; label: string; title: string; body: string; cta: string } & ({ to: string } | { href: string })
 const CARDS: Card[] = [
   { icon: Puzzle, label: 'EMBED', title: 'Tracker widget', body: 'One script tag puts a live ticker, a one-stock badge or a table of the widest gaps on any site.', cta: 'Build a widget', to: '/widget' },
-  { icon: KeyRound, label: 'BUILD', title: 'Developer portal', body: 'Get an API key for 600 calls a minute and manage it in one place. 60 calls a minute are free with no key.', cta: 'Open the portal', href: DEVELOPERS_URL },
+  { icon: KeyRound, label: 'BUILD', title: 'Developer portal', body: 'Sign in with your wallet, get an API key in seconds and watch your usage live. 60 calls a minute are free with no key.', cta: 'Open the portal', href: DEVELOPERS_URL },
   { icon: Newspaper, label: 'READ', title: 'The Gully blog', body: 'How we build: launches, research on tokenised stocks and the numbers behind every venue.', cta: 'Read the blog', href: BLOG_URL },
 ]
 

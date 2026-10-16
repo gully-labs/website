@@ -165,7 +165,7 @@ export function ApiReference() {
           ]}
         />
         <P>
-          Need more? <DocLink to="api-keys">Request a key</DocLink>.
+          Need more? <DocLink to="api-keys">Get a free key</DocLink>, instantly.
         </P>
       </Section>
 

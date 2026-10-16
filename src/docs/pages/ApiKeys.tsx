@@ -3,7 +3,8 @@ import { C, Callout, DocLink, DocPage, Ext, List, P, Section } from '../DocPage'
 
 const sections = [
   { id: 'when', title: 'When you need one' },
-  { id: 'request', title: 'Requesting a key' },
+  { id: 'get', title: 'Getting a key' },
+  { id: 'manage', title: 'Managing keys' },
   { id: 'using', title: 'Using a key' },
   { id: 'limits', title: 'Limits' },
   { id: 'safety', title: 'Keeping it safe' },
@@ -24,7 +25,7 @@ export function ApiKeys() {
       slug="api-keys"
       eyebrow="BUILD · API KEYS"
       title="API keys"
-      description="When you need a Gully Labs API key, how to request one, how to send it as a Bearer token, and how rate limits are reported."
+      description="When you need a Gully Labs API key, how to get one instantly by signing in with a wallet, how to send it as a Bearer token, and how rate limits are reported."
       lead="The API is open without a key. A key raises your rate limit and counts your requests against your own allowance instead of your IP address."
       sections={sections}
     >
@@ -36,10 +37,26 @@ export function ApiKeys() {
         </List>
       </Section>
 
-      <Section id="request" title="Requesting a key">
+      <Section id="get" title="Getting a key">
         <P>
-          Request a key at <Ext href="https://developers.gullylabs.xyz">developers.gullylabs.xyz</Ext>. Tell us what you are building and roughly how often you will call the API.
+          Keys are free and issued instantly at <Ext href="https://developers.gullylabs.xyz">developers.gullylabs.xyz</Ext>. There is no form and no approval:
         </P>
+        <List>
+          <li>Press <b>Connect wallet</b> and pick any browser wallet or Coinbase Wallet. Your wallet address is your account; there is no email or password.</li>
+          <li>Sign the message your wallet shows. It is Sign-In with Ethereum (EIP-4361): a signature, not a transaction, so it costs nothing and moves nothing. It names developers.gullylabs.xyz, expires after ten minutes and can be used once.</li>
+          <li>Open <b>API keys</b>, press <b>Create key</b> and name it. The key works at once. Copy it then: it is shown in full only once, because we store only a hash of it.</li>
+        </List>
+        <P>Smart-contract wallets (EIP-1271, including ones not deployed yet, ERC-6492) are accepted on Ethereum, Base, BNB Chain and Robinhood Chain. A sign-in lasts 30 days on that browser.</P>
+      </Section>
+
+      <Section id="manage" title="Managing keys">
+        <List>
+          <li>A wallet can hold up to five live keys. Each has its own 600-a-minute allowance.</li>
+          <li><b>Rotate</b> gives a key a new secret and stops the old one immediately; its name and usage history stay.</li>
+          <li><b>Revoke</b> stops a key for good.</li>
+          <li>The dashboard shows requests per hour or day for each key, the error rate, and the last 50 requests with status and latency. Answers served from the edge cache never reach our servers and are not counted.</li>
+          <li>A key issued through the earlier request form keeps working. Link it to your wallet from the API keys page to manage it there.</li>
+        </List>
       </Section>
 
       <Section id="using" title="Using a key">
@@ -61,7 +78,7 @@ export function ApiKeys() {
         <List>
           <li>Keep the key on a server or in an environment variable. Anything shipped to a browser, an app bundle or a public repository is public.</li>
           <li>Do not put a key in the widget snippet: the widget does not read one.</li>
-          <li>If a key is exposed, stop using it and request a new one from the developers page.</li>
+          <li>If a key is exposed, rotate or revoke it on the developers dashboard; the old secret stops working at once.</li>
         </List>
         <Callout label="TIP" tone="plain">
           To serve many browser users, call the API from your server with your key and cache the answer for a minute. Your users then never touch the limit.

@@ -1,37 +1,249 @@
-// /api/developer/* — API key requests and a key holder's own usage.
+// /api/developer/* — the developer dashboard's API.
 //
-//   POST /api/developer/request  { email, project, url?, use }   -> { requestId, claimCode, status: 'pending' }
-//        The claim code is shown once and stored only as a hash. Five requests per IP per hour.
-//   POST /api/developer/claim    { requestId, claimCode }        -> { status } | { status: 'approved', key }
-//        After an admin approves, the claim code redeems the key exactly once.
-//   GET  /api/developer/me       (Bearer key)                    -> the key's project, limit and usage
-//   POST /api/developer/rotate   (Bearer key)                    -> { key }  new key; the old one is revoked
+// Wallet accounts (Sign-In with Ethereum, EIP-4361; see siwe.mjs). The account is the wallet address,
+// lower-cased. Keys are issued instantly, up to MAX_KEYS_PER_ACCOUNT live keys per wallet.
+//   GET  /api/developer/nonce                 -> { nonce, expiresAt }            single use, 10 minutes
+//   POST /api/developer/siwe    { message, signature }  -> { address }  and sets the session cookie
+//   POST /api/developer/logout
+//   GET  /api/developer/account               -> address, limits, keys (prefix only, never secrets)
+//   POST /api/developer/keys    { name }      -> { key, secret }   the secret is shown once
+//   POST /api/developer/keys/:id/rename { name }
+//   POST /api/developer/keys/:id/rotate       -> { key, secret }   same key id and history, new secret
+//   POST /api/developer/keys/:id/revoke
+//   POST /api/developer/keys/link { key }     attach a key issued by the old request flow to this wallet
+//   GET  /api/developer/usage?range=24h|7d|30d
+//   GET  /api/developer/requests              last 50 requests made with this wallet's keys
+//
+// Sessions: an HttpOnly, SameSite=Lax cookie (Secure off localhost) holding a random id; only its
+// SHA-256 is stored (sessions.json), 30 days. CSRF: every POST must carry `X-Requested-With: gully`
+// (a header a foreign page cannot send without a CORS preflight we never grant) and, when the browser
+// sends an Origin, it must be this host.
+//
+// Legacy (kept so existing key holders keep working; no longer in the UI):
+//   POST /api/developer/request, POST /api/developer/claim, GET /api/developer/me, POST /api/developer/rotate
 
-import { keyUsage } from './access.mjs'
+import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests } from './access.mjs'
 import { bearer, clientIp, json, readJson } from './http.mjs'
-import { developers, findKey, issueKey, randomToken, safeEqual, saveDevelopers, sha256 } from './store.mjs'
+import { verifySiwe, issueNonce } from './siwe.mjs'
+import {
+  createSession,
+  deleteSession,
+  developers,
+  findKey,
+  findSession,
+  getAccount,
+  issueKey,
+  KEY_LIMIT_PER_MIN,
+  keysOf,
+  MAX_KEYS_PER_ACCOUNT,
+  randomToken,
+  rotateKeySecret,
+  safeEqual,
+  saveDevelopers,
+  sha256,
+  SESSION_TTL_MS,
+  touchAccount,
+} from './store.mjs'
 
 const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,24}$/
-const requestWindow = new Map() // ip -> [timestamps]
-const claimFailures = new Map() // ip -> [timestamps]
+const NAME_RE = /^[\p{L}\p{N} ._\-]{1,40}$/u
+const PROD_HOST = 'developers.gullylabs.xyz'
+const hits = new Map() // `${bucket}:${who}` -> [timestamps]
 
-function recent(map, ip, ms) {
+/** Records a hit and says whether `who` is still under `max` hits per `ms` in this bucket. */
+function allow(bucket, who, max, ms) {
+  const k = `${bucket}:${who}`
   const now = Date.now()
-  const hits = (map.get(ip) ?? []).filter((t) => now - t < ms)
-  map.set(ip, hits)
-  return hits
+  const list = (hits.get(k) ?? []).filter((t) => now - t < ms)
+  if (list.length >= max) {
+    hits.set(k, list)
+    return false
+  }
+  list.push(now)
+  hits.set(k, list)
+  return true
 }
+setInterval(() => {
+  const now = Date.now()
+  for (const [k, list] of hits) if (!list.some((t) => now - t < 3_600_000)) hits.delete(k)
+}, 600_000).unref?.()
 
 const clean = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 
+const hostOf = (req) => String(req.headers.host ?? '').toLowerCase()
+const isLocalHost = (host) => /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host)
+
+/* ------------------------------------------------------------ sessions --- */
+
+const cookieName = (req) => (isLocalHost(hostOf(req)) ? 'gl_dev' : '__Host-gl_dev')
+
+function readCookie(req, name) {
+  for (const part of String(req.headers.cookie ?? '').split(';')) {
+    const i = part.indexOf('=')
+    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim()
+  }
+  return null
+}
+
+function sessionCookie(req, value, maxAgeSec) {
+  const secure = isLocalHost(hostOf(req)) ? '' : '; Secure'
+  return `${cookieName(req)}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${secure}`
+}
+
+function currentSession(req) {
+  const id = readCookie(req, cookieName(req))
+  const s = id ? findSession(id) : null
+  return s ? { id, ...s } : null
+}
+
+/** CSRF guard for every state-changing request. */
+function sameSite(req) {
+  if (req.headers['x-requested-with'] !== 'gully') return false
+  const origin = req.headers.origin
+  if (!origin) return true
+  try {
+    return new URL(origin).host.toLowerCase() === hostOf(req)
+  } catch {
+    return false
+  }
+}
+
+/* --------------------------------------------------------------- views --- */
+
+const keyView = (k) => ({ id: k.id, name: k.name ?? k.project ?? 'Key', prefix: k.prefix, limit: k.limit, createdAt: k.createdAt, rotatedAt: k.rotatedAt ?? null, revokedAt: k.revokedAt, lastUsed: lastUsed(k.id) })
+
+function accountView(address) {
+  const a = getAccount(address)
+  const keys = keysOf(address)
+  return {
+    address,
+    createdAt: a?.createdAt ?? null,
+    blocked: !!a?.blocked,
+    limits: { anonymousPerMin: ANON_LIMIT_PER_MIN, keyPerMin: KEY_LIMIT_PER_MIN, maxKeys: MAX_KEYS_PER_ACCOUNT },
+    keys: keys.map(keyView),
+  }
+}
+
+/* ------------------------------------------------------------- handler --- */
+
 export async function handleDeveloper(req, res, url) {
   const p = url.pathname
+  const ip = clientIp(req)
+  const post = req.method === 'POST'
+
+  /* ---------- wallet sign-in ---------- */
+
+  if (p === '/api/developer/nonce') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    if (!allow('nonce', ip, 30, 60_000)) return json(res, 429, { error: 'Too many sign-in attempts. Wait a minute.' }), true
+    const n = issueNonce()
+    if (!n) return json(res, 503, { error: 'Sign-in is busy. Try again in a minute.' }), true
+    return json(res, 200, n), true
+  }
+
+  if (p === '/api/developer/siwe') {
+    if (!post) return json(res, 405, { error: 'POST only' }), true
+    if (!sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
+    if (!allow('siwe', ip, 20, 600_000)) return json(res, 429, { error: 'Too many sign-in attempts. Try again in ten minutes.' }), true
+    const host = hostOf(req)
+    const local = isLocalHost(host)
+    if (!local && host !== PROD_HOST) return json(res, 400, { error: `Sign in at https://${PROD_HOST}.` }), true
+    const body = await readJson(req, 24_000)
+    const v = await verifySiwe({ message: body?.message, signature: body?.signature, host, secureOrigin: !local })
+    if (!v.ok) return json(res, 401, { error: v.error }), true
+    if (getAccount(v.address)?.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact hello@gullylabs.xyz.' }), true
+    touchAccount(v.address)
+    const id = createSession(v.address)
+    return json(res, 200, { address: v.address }, { 'Set-Cookie': sessionCookie(req, id, Math.floor(SESSION_TTL_MS / 1000)) }), true
+  }
+
+  if (p === '/api/developer/logout') {
+    if (!post) return json(res, 405, { error: 'POST only' }), true
+    if (!sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
+    const s = currentSession(req)
+    if (s) deleteSession(s.id)
+    return json(res, 200, { ok: true }, { 'Set-Cookie': sessionCookie(req, '', 0) }), true
+  }
+
+  /* ---------- signed-in routes ---------- */
+
+  const accountRoute = p === '/api/developer/account' || p === '/api/developer/usage' || p === '/api/developer/requests' || p === '/api/developer/keys' || p.startsWith('/api/developer/keys/')
+  if (accountRoute) {
+    if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
+    if (!post && req.method !== 'GET') return json(res, 405, { error: 'GET or POST only' }), true
+    const s = currentSession(req)
+    if (!s) return json(res, 401, { error: 'Not signed in.' }), true
+    const address = s.address
+    const account = getAccount(address)
+    if (!account || account.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact hello@gullylabs.xyz.' }), true
+    const mine = keysOf(address)
+
+    if (p === '/api/developer/account') return json(res, 200, accountView(address)), true
+
+    if (p === '/api/developer/usage') {
+      const range = url.searchParams.get('range') ?? '24h'
+      return json(res, 200, { ...accountUsage(mine.map((k) => k.id), range), keys: mine.map((k) => ({ id: k.id, name: k.name, prefix: k.prefix, revoked: !!k.revokedAt })) }), true
+    }
+
+    if (p === '/api/developer/requests') {
+      const names = Object.fromEntries(mine.map((k) => [k.id, { name: k.name, prefix: k.prefix }]))
+      return json(res, 200, { requests: recentRequests(mine.map((k) => k.id)).map((r) => ({ ...r, key: names[r.keyId] ?? null })) }), true
+    }
+
+    if (!post) return json(res, 405, { error: 'POST only' }), true
+
+    if (p === '/api/developer/keys') {
+      const body = await readJson(req, 2_000)
+      const name = clean(body?.name, 40)
+      if (!NAME_RE.test(name)) return json(res, 400, { error: 'Name the key: 1 to 40 letters, digits, spaces, dots, dashes or underscores.' }), true
+      if (mine.filter((k) => !k.revokedAt).length >= MAX_KEYS_PER_ACCOUNT) return json(res, 409, { error: `You have ${MAX_KEYS_PER_ACCOUNT} live keys, the most a wallet can hold. Revoke one first.` }), true
+      if (!allow('newkey', address, 10, 3_600_000)) return json(res, 429, { error: 'Too many keys created in the last hour. Try again later.' }), true
+      const { key, secret } = issueKey({ owner: address, name })
+      return json(res, 201, { key: keyView(key), secret }), true
+    }
+
+    if (p === '/api/developer/keys/link') {
+      if (!allow('link', address, 10, 900_000)) return json(res, 429, { error: 'Too many attempts. Try again in 15 minutes.' }), true
+      const body = await readJson(req, 2_000)
+      const key = findKey(clean(body?.key, 100))
+      if (!key) return json(res, 404, { error: 'No live key matches.' }), true
+      if (key.owner && key.owner !== address) return json(res, 409, { error: 'That key already belongs to another wallet.' }), true
+      if (!key.owner && mine.filter((k) => !k.revokedAt).length >= MAX_KEYS_PER_ACCOUNT) return json(res, 409, { error: `You have ${MAX_KEYS_PER_ACCOUNT} live keys. Revoke one first.` }), true
+      key.owner = address
+      key.name ??= key.project ?? 'Linked key'
+      saveDevelopers()
+      return json(res, 200, { key: keyView(key) }), true
+    }
+
+    const m = p.match(/^\/api\/developer\/keys\/([\w-]{1,40})\/(rename|rotate|revoke)$/)
+    if (!m) return json(res, 404, { error: 'not found' }), true
+    const key = mine.find((k) => k.id === m[1])
+    if (!key) return json(res, 404, { error: 'No such key on this account.' }), true
+    if (key.revokedAt) return json(res, 409, { error: 'That key is revoked.' }), true
+
+    if (m[2] === 'rename') {
+      const body = await readJson(req, 2_000)
+      const name = clean(body?.name, 40)
+      if (!NAME_RE.test(name)) return json(res, 400, { error: 'Name the key: 1 to 40 letters, digits, spaces, dots, dashes or underscores.' }), true
+      key.name = name
+      saveDevelopers()
+      return json(res, 200, { key: keyView(key) }), true
+    }
+    if (m[2] === 'rotate') {
+      if (!allow('newkey', address, 10, 3_600_000)) return json(res, 429, { error: 'Too many keys created in the last hour. Try again later.' }), true
+      const secret = rotateKeySecret(key)
+      return json(res, 200, { key: keyView(key), secret }), true
+    }
+    key.revokedAt = new Date().toISOString()
+    saveDevelopers()
+    return json(res, 200, { key: keyView(key) }), true
+  }
+
+  /* ---------- legacy: manual approval flow ---------- */
 
   if (p === '/api/developer/request') {
-    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
-    const ip = clientIp(req)
-    const hits = recent(requestWindow, ip, 3_600_000)
-    if (hits.length >= 5) return json(res, 429, { error: 'Too many requests from this address. Try again in an hour.' }), true
+    if (!post) return json(res, 405, { error: 'POST only' }), true
+    if (!allow('request', ip, 5, 3_600_000)) return json(res, 429, { error: 'Too many requests from this address. Try again in an hour.' }), true
     const body = await readJson(req)
     const email = clean(body?.email, 254).toLowerCase()
     const project = clean(body?.project, 80)
@@ -41,7 +253,6 @@ export async function handleDeveloper(req, res, url) {
     if (project.length < 2) return json(res, 400, { error: 'Name your project.' }), true
     if (use.length < 10) return json(res, 400, { error: 'Say in a sentence what you will build.' }), true
     if (site && !/^https?:\/\/\S+$/.test(site)) return json(res, 400, { error: 'The website must start with http:// or https://.' }), true
-    hits.push(Date.now())
     const claimCode = `glc_${randomToken(18)}`
     const r = { id: randomToken(9), email, project, url: site || null, use, claimHash: sha256(claimCode), status: 'pending', createdAt: new Date().toISOString(), decidedAt: null, keyId: null, claimedAt: null }
     developers().requests.push(r)
@@ -50,14 +261,14 @@ export async function handleDeveloper(req, res, url) {
   }
 
   if (p === '/api/developer/claim') {
-    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
-    const ip = clientIp(req)
-    const fails = recent(claimFailures, ip, 900_000)
+    if (!post) return json(res, 405, { error: 'POST only' }), true
+    const failKey = `claimfail:${ip}`
+    const fails = (hits.get(failKey) ?? []).filter((t) => Date.now() - t < 900_000)
     if (fails.length >= 10) return json(res, 429, { error: 'Too many failed attempts. Try again in 15 minutes.' }), true
     const body = await readJson(req)
     const r = developers().requests.find((x) => x.id === clean(body?.requestId, 40))
     if (!r || !safeEqual(r.claimHash, sha256(clean(body?.claimCode, 80)))) {
-      fails.push(Date.now())
+      hits.set(failKey, [...fails, Date.now()])
       return json(res, 404, { error: 'No request matches that ID and claim code.' }), true
     }
     if (r.status !== 'approved') return json(res, 200, { status: r.status, project: r.project, createdAt: r.createdAt }), true
@@ -72,19 +283,15 @@ export async function handleDeveloper(req, res, url) {
   if (p === '/api/developer/me') {
     const key = findKey(bearer(req))
     if (!key) return json(res, 401, { error: 'Sign in with a valid API key.' }), true
-    return json(res, 200, { project: key.project, prefix: key.prefix, limit: key.limit, createdAt: key.createdAt, usage: keyUsage(key.id) }), true
+    return json(res, 200, { project: key.project ?? key.name, prefix: key.prefix, limit: key.limit, createdAt: key.createdAt, usage: keyUsage(key.id) }), true
   }
 
   if (p === '/api/developer/rotate') {
-    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    if (!post) return json(res, 405, { error: 'POST only' }), true
     const key = findKey(bearer(req))
     if (!key) return json(res, 401, { error: 'Sign in with a valid API key.' }), true
-    key.revokedAt = new Date().toISOString()
-    const { key: next, secret } = issueKey({ requestId: key.requestId, project: key.project, email: key.email })
-    const r = developers().requests.find((x) => x.id === key.requestId)
-    if (r) r.keyId = next.id
-    saveDevelopers()
-    return json(res, 200, { key: secret, limit: next.limit }), true
+    const secret = rotateKeySecret(key)
+    return json(res, 200, { key: secret, limit: key.limit }), true
   }
 
   return false

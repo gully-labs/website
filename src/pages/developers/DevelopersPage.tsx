@@ -1,351 +1,240 @@
-import { useEffect, useState } from 'react'
-import { DayBars } from '../../components/charts/DayBars'
+import { motion } from 'motion/react'
+import { Activity, AlertTriangle, ArrowUpRight, BookOpen, ChartLine, KeyRound, Loader2, ShieldCheck, Wallet, Zap } from 'lucide-react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Seo } from '../../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../../components/ui'
 import { DOCS_URL } from '../../site-host'
+import { api, type Account } from './api'
+import { Dashboard } from './Dashboard'
 
-/* The developer dashboard: request an API key, redeem it once approved, and see its usage.
-   The key never leaves this browser except to call our API; it is kept in sessionStorage only. */
+/* The developer dashboard (developers.gullylabs.xyz, /developers on localhost). Signed out: what the
+   free tier is and a "Connect wallet" button. Signing in is Sign-In with Ethereum: the wallet signs a
+   message (no transaction, no gas) and the server sets an HttpOnly session cookie. The wallet libraries
+   load only when that button is pressed; the signed-in dashboard itself never needs them. */
 
-interface Me {
-  project: string
-  prefix: string
-  limit: number
-  createdAt: string
-  usage: { requests: number; limited: number; lastUsed: string | null; today: number; days: { day: string; requests: number }[] }
+const loadWallet = () => import('./WalletSignIn')
+const WalletSignIn = lazy(loadWallet)
+
+type Session = { state: 'loading' } | { state: 'out' } | { state: 'blocked'; message: string } | { state: 'error'; message: string } | { state: 'in'; account: Account }
+
+function readSession(): Promise<Session> {
+  return api<Account>('/api/developer/account').then((r) => {
+    if (r.ok) return { state: 'in', account: r.data }
+    if (r.status === 401) return { state: 'out' }
+    if (r.status === 403) return { state: 'blocked', message: r.error }
+    return { state: 'error', message: r.error }
+  })
 }
 
-const KEY_STORE = 'gully-dev-key'
-const CLAIM_STORE = 'gully-dev-claim'
-const box = 'flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-7 max-[600px]:p-5'
-const input = 'h-11 w-full rounded-input border border-line-strong bg-bg px-3 text-[15px] text-ink outline-none focus:border-gold'
-const label = 'flex flex-col gap-2 text-[14px] text-ink-2'
 const rise = (i: number) => ({ animation: `gl-rise .5s ${i * 0.06}s ease both` })
 
-const store = {
-  get: (s: Storage, k: string) => {
-    try {
-      return s.getItem(k)
-    } catch {
-      return null
-    }
-  },
-  set: (s: Storage, k: string, v: string | null) => {
-    try {
-      if (v === null) s.removeItem(k)
-      else s.setItem(k, v)
-    } catch {
-      /* private mode */
-    }
-  },
-}
+const FEATURES = [
+  { icon: Zap, title: 'Keys in seconds', body: 'No form and no waiting for approval. Sign in, name a key, use it. Up to five per wallet.' },
+  { icon: ChartLine, title: 'Usage you can read', body: 'Requests per hour or day for each key, error rate and status codes, as they happen.' },
+  { icon: Activity, title: 'Request log', body: 'The last fifty calls made with your keys: path, status and latency.' },
+  { icon: ShieldCheck, title: 'Wallet sign-in', body: 'Sign-In with Ethereum (EIP-4361). No password or email to leak; keys are stored only as hashes.' },
+]
 
-async function post<T>(path: string, body: unknown, key?: string): Promise<{ ok: boolean; status: number; data: T }> {
-  const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', ...(key ? { authorization: `Bearer ${key}` } : {}) }, body: JSON.stringify(body ?? {}) })
-  return { ok: r.ok, status: r.status, data: (await r.json().catch(() => ({}))) as T }
-}
-
-function Copy({ text }: { text: string }) {
-  const [done, setDone] = useState(false)
+function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolean; error: string | null }) {
   return (
-    <button
-      type="button"
-      onClick={() => navigator.clipboard?.writeText(text).then(() => setDone(true)).then(() => setTimeout(() => setDone(false), 1500))}
-      className="shrink-0 rounded-btn border border-line-strong px-3 py-[6px] font-mono text-[12px] text-ink-2 transition-colors hover:border-gold"
-      aria-live="polite"
-    >
-      {done ? '✓ Copied' : 'Copy'}
-    </button>
-  )
-}
-
-function Secret({ label: l, value, warn }: { label: string; value: string; warn?: string }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="font-mono text-[11px] tracking-[1px] text-faint">{l}</span>
-      <div className="flex items-center gap-2 rounded-input border border-gold-line bg-bg px-3 py-2">
-        <code className="min-w-0 flex-1 truncate font-mono text-[13px] text-gold">{value}</code>
-        <Copy text={value} />
-      </div>
-      {warn && <span className="text-[13px] text-muted">{warn}</span>}
-    </div>
-  )
-}
-
-function RequestForm({ onCreated }: { onCreated: (c: { requestId: string; claimCode: string }) => void }) {
-  const [f, setF] = useState({ email: '', project: '', url: '', use: '' })
-  const [err, setErr] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={async (e) => {
-        e.preventDefault()
-        setBusy(true)
-        setErr(null)
-        try {
-          const r = await post<{ requestId: string; claimCode: string; error?: string }>('/api/developer/request', f)
-          if (!r.ok) setErr(r.data.error ?? `Request failed (${r.status}).`)
-          else onCreated(r.data)
-        } catch {
-          setErr('The server could not be reached. Try again.')
-        } finally {
-          setBusy(false)
-        }
-      }}
-    >
-      <label className={label}>
-        Email
-        <input className={input} type="email" required autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
-      </label>
-      <label className={label}>
-        Project name
-        <input className={input} required minLength={2} maxLength={80} value={f.project} onChange={(e) => setF({ ...f, project: e.target.value })} />
-      </label>
-      <label className={label}>
-        Website <span className="text-faint">(optional)</span>
-        <input className={input} type="url" placeholder="https://" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} />
-      </label>
-      <label className={label}>
-        What you will build
-        <textarea className={`${input} h-24 py-2`} required minLength={10} maxLength={1000} value={f.use} onChange={(e) => setF({ ...f, use: e.target.value })} />
-      </label>
-      {err && <p className="m-0 text-[14px] text-error">{err}</p>}
-      <button type="submit" disabled={busy} className={`${btnGold} min-h-11 self-start px-6 text-[15px] disabled:opacity-60`}>
-        {busy ? 'Sending…' : 'Request an API key'}
-      </button>
-    </form>
-  )
-}
-
-function Claim({ claim, onKey, onForget }: { claim: { requestId: string; claimCode: string }; onKey: (k: string) => void; onForget: () => void }) {
-  const [status, setStatus] = useState<string | null>(null)
-  const [err, setErr] = useState<string | null>(null)
-  const [key, setKey] = useState<string | null>(null)
-  const check = async () => {
-    setErr(null)
-    try {
-      const r = await post<{ status: string; key?: string; error?: string }>('/api/developer/claim', claim)
-      if (!r.ok) return setErr(r.data.error ?? `Check failed (${r.status}).`)
-      setStatus(r.data.status)
-      if (r.data.key) setKey(r.data.key)
-    } catch {
-      setErr('The server could not be reached. Try again.')
-    }
-  }
-  return (
-    <div className="flex flex-col gap-4">
-      <Secret label="REQUEST ID" value={claim.requestId} />
-      <Secret label="CLAIM CODE" value={claim.claimCode} warn="Shown once. Keep it: it redeems your key after approval. This browser remembers it too." />
-      {key ? (
-        <>
-          <Secret label="YOUR API KEY" value={key} warn="Shown once and stored only as a hash on our side. Copy it now." />
-          <button type="button" onClick={() => onKey(key)} className={`${btnGold} min-h-11 self-start px-6 text-[15px]`}>
-            Open my dashboard
-          </button>
-        </>
-      ) : (
-        <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={check} className={`${btnOutline} min-h-11 px-5 text-[15px]`}>
-            Check status
-          </button>
-          {status && (
-            <span className="font-mono text-[13px] text-muted">
-              Status: <b className={status === 'rejected' ? 'text-error' : 'text-gold'}>{status}</b>
-              {status === 'pending' && ' · requests are reviewed by hand, usually within a day'}
-              {status === 'claimed' && ' · this key was already redeemed; sign in with it below'}
+    <>
+      <section className="relative overflow-hidden px-page pt-[64px] pb-14">
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.16),transparent_62%)]" />
+        <div className="relative grid grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-center gap-12 max-[1023px]:grid-cols-1">
+          <div className="flex flex-col gap-6">
+            <span className={eyebrow} style={rise(0)}>
+              DEVELOPERS · TRACKER API
             </span>
-          )}
-          <button type="button" onClick={onForget} className="bg-transparent p-0 text-[13px] text-faint underline-offset-4 hover:text-ink hover:underline">
-            Forget this request
-          </button>
-        </div>
-      )}
-      {err && <p className="m-0 text-[14px] text-error">{err}</p>}
-    </div>
-  )
-}
-
-function Dashboard({ apiKey, onSignOut, onRotated }: { apiKey: string; onSignOut: () => void; onRotated: (k: string) => void }) {
-  const [me, setMe] = useState<Me | null>(null)
-  const [err, setErr] = useState<string | null>(null)
-  const [fresh, setFresh] = useState<string | null>(null)
-  useEffect(() => {
-    let alive = true
-    fetch('/api/developer/me', { headers: { authorization: `Bearer ${apiKey}` } })
-      .then(async (r) => ({ ok: r.ok, d: await r.json() }))
-      .then(({ ok, d }) => alive && (ok ? setMe(d as Me) : setErr((d as { error?: string }).error ?? 'Sign-in failed.')), () => alive && setErr('The server could not be reached.'))
-    return () => {
-      alive = false
-    }
-  }, [apiKey])
-
-  if (err)
-    return (
-      <div className="flex flex-col gap-3">
-        <p className="m-0 text-[15px] text-error">{err}</p>
-        <button type="button" onClick={onSignOut} className={`${btnOutline} min-h-11 self-start px-5 text-[15px]`}>
-          Use another key
-        </button>
-      </div>
-    )
-  if (!me) return <p className="m-0 font-mono text-[13px] text-faint">Reading your usage…</p>
-  const tiles = [
-    { k: 'REQUESTS TODAY', v: me.usage.today.toLocaleString('en-US') },
-    { k: 'LAST 30 DAYS', v: me.usage.days.reduce((a, d) => a + d.requests, 0).toLocaleString('en-US') },
-    { k: 'LIMIT', v: `${me.limit}/min` },
-    { k: 'RATE-LIMITED', v: me.usage.limited.toLocaleString('en-US') },
-  ]
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <span className="font-mono text-[12px] text-faint">SIGNED IN</span>
-          <span className="font-display text-[32px] leading-none font-bold uppercase">{me.project}</span>
-          <span className="font-mono text-[12px] text-muted">
-            {me.prefix}… · created {new Date(me.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            {me.usage.lastUsed && ` · last used ${new Date(me.usage.lastUsed).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={async () => {
-              if (!window.confirm('Rotate this key? The current key stops working immediately.')) return
-              const r = await post<{ key?: string; error?: string }>('/api/developer/rotate', {}, apiKey)
-              if (r.data.key) {
-                setFresh(r.data.key)
-                onRotated(r.data.key)
-              } else setErr(r.data.error ?? 'Rotation failed.')
-            }}
-            className={`${btnOutline} min-h-10 px-4 text-[14px]`}
-          >
-            Rotate key
-          </button>
-          <button type="button" onClick={onSignOut} className={`${btnOutline} min-h-10 px-4 text-[14px]`}>
-            Sign out
-          </button>
-        </div>
-      </div>
-      {fresh && <Secret label="NEW API KEY" value={fresh} warn="Shown once. The old key no longer works." />}
-      <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-px overflow-hidden rounded-[10px] border border-line bg-line">
-        {tiles.map((t, i) => (
-          <div key={t.k} className="flex flex-col gap-1 bg-surface-deep px-5 py-4" style={rise(i)}>
-            <dt className="font-mono text-[10px] tracking-[1px] text-faint">{t.k}</dt>
-            <dd className="m-0 font-display text-[30px] leading-none font-extrabold">{t.v}</dd>
+            <h1 className="m-0 font-display text-[clamp(48px,6.4cqw,92px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
+              Build on the <span className="text-gold">fair-price tracker</span>
+            </h1>
+            <p className="m-0 max-w-[620px] text-[18px] leading-[1.55] text-muted" style={rise(2)}>
+              Tokenised-stock prices against their fair value, across chains, as JSON. Free and open without a key. Connect a wallet to create keys instantly, raise your limit tenfold and watch your usage.
+            </p>
+            <div className="flex flex-wrap items-center gap-3" style={rise(3)}>
+              <button type="button" onClick={connect} disabled={busy} className={`${btnGold} inline-flex min-h-[52px] items-center gap-3 px-7 text-[17px] disabled:opacity-70`}>
+                {busy ? <Loader2 size={19} className="animate-spin" aria-hidden /> : <Wallet size={19} aria-hidden />}
+                {busy ? 'Opening wallets…' : 'Connect wallet'}
+              </button>
+              <a href={`${DOCS_URL}/api`} className={`${btnOutline} inline-flex min-h-[52px] items-center gap-2 px-6 text-[16px]`}>
+                <BookOpen size={17} aria-hidden /> Read the docs
+              </a>
+            </div>
+            {error && (
+              <p className="m-0 flex max-w-[620px] items-start gap-2 text-[14px] text-error" role="alert">
+                <AlertTriangle size={16} className="mt-[2px] shrink-0" aria-hidden /> {error}
+              </p>
+            )}
+            <p className="m-0 font-mono text-[12px] leading-[1.7] text-faint" style={rise(4)}>
+              Signing in signs a message, not a transaction: it is free and moves nothing. Any browser wallet or Coinbase Wallet works.
+            </p>
           </div>
-        ))}
-      </dl>
-      <div className="flex flex-col gap-3">
-        <span className="font-mono text-[12px] text-faint">Requests per day, last 30 days · requests served from the edge cache are not counted</span>
-        <DayBars days={me.usage.days.map((d) => ({ day: d.day, requests: d.requests }))} series={[{ key: 'requests', label: 'Requests', color: '#e8c060' }]} />
-      </div>
-    </div>
+
+          <div className="flex flex-col gap-3" style={rise(3)}>
+            {[
+              { k: 'NO KEY', v: '60', u: 'requests / min', d: 'Per IP address. Nothing to sign up for: call the API.', tone: 'text-ink' },
+              { k: 'FREE KEY', v: '600', u: 'requests / min', d: 'Per key, up to five keys, with usage charts and a request log.', tone: 'text-gold' },
+            ].map((t, i) => (
+              <motion.div
+                key={t.k}
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
+                className={`relative flex items-center gap-6 overflow-hidden rounded-card border bg-surface px-6 py-5 max-[480px]:gap-4 max-[480px]:px-4 ${i ? 'border-gold-line' : 'border-line'}`}
+              >
+                {i === 1 && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(232,192,96,.08)_50%,transparent_70%)] bg-[length:200%_100%]" />}
+                <div className="relative flex min-w-[112px] flex-col max-[480px]:min-w-[92px]">
+                  <span className="font-mono text-[11px] tracking-[1.5px] text-faint">{t.k}</span>
+                  <span className={`font-display text-[56px] leading-[.95] font-extrabold max-[480px]:text-[44px] ${t.tone}`}>{t.v}</span>
+                  <span className="font-mono text-[11px] text-muted">{t.u}</span>
+                </div>
+                <p className="relative m-0 text-[15px] leading-[1.5] text-muted">{t.d}</p>
+              </motion.div>
+            ))}
+            <pre className="m-0 overflow-x-auto rounded-input border border-line bg-surface-deep px-4 py-3 font-mono text-[12.5px] leading-[1.7] text-ink-2">
+              <span className="text-faint">$ </span>curl https://gullylabs.xyz/api/tracker \{'\n'}
+              {'    '}-H <span className="text-gold">&quot;Authorization: Bearer gl_live_…&quot;</span>
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-page pb-12">
+        <div className="grid grid-cols-4 gap-4 max-[1100px]:grid-cols-2 max-[600px]:grid-cols-1">
+          {FEATURES.map((f, i) => {
+            const Icon = f.icon
+            return (
+              <div key={f.title} className="group flex flex-col gap-3 rounded-card border border-line bg-surface p-6 transition-colors hover:border-line-hover" style={rise(4 + i)}>
+                <span className="inline-flex size-10 items-center justify-center rounded-input border border-gold-line bg-[rgba(232,192,96,.07)] text-gold transition-transform group-hover:-translate-y-[2px]">
+                  <Icon size={19} aria-hidden />
+                </span>
+                <h2 className="m-0 font-display text-[22px] leading-none font-bold uppercase">{f.title}</h2>
+                <p className="m-0 text-[14px] leading-[1.6] text-muted">{f.body}</p>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="px-page pb-24">
+        <div className="flex flex-col gap-6 rounded-card border border-line bg-surface-deep p-8 max-[600px]:p-5">
+          <h2 className="m-0 font-display text-[30px] leading-none font-bold uppercase">How it works</h2>
+          <ol className="m-0 grid list-none grid-cols-3 gap-6 p-0 max-[900px]:grid-cols-1">
+            {[
+              { icon: Wallet, t: 'Connect', d: 'Choose your wallet. Your address is your account: no email, no password.' },
+              { icon: ShieldCheck, t: 'Sign', d: 'Sign a one-time message for developers.gullylabs.xyz. It expires in ten minutes and cannot be replayed.' },
+              { icon: KeyRound, t: 'Create a key', d: 'Name it and copy it. It works at once; we keep only a hash, so it is shown one time.' },
+            ].map((s, i) => {
+              const Icon = s.icon
+              return (
+                <li key={s.t} className="flex gap-4">
+                  <span className="font-display text-[44px] leading-[.8] font-extrabold text-gold">{i + 1}</span>
+                  <span className="flex flex-col gap-2">
+                    <span className="flex items-center gap-2 font-display text-[20px] leading-none font-bold uppercase">
+                      <Icon size={17} className="text-gold" aria-hidden /> {s.t}
+                    </span>
+                    <span className="text-[14px] leading-[1.6] text-muted">{s.d}</span>
+                  </span>
+                </li>
+              )
+            })}
+          </ol>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line pt-5 font-mono text-[12px] text-faint">
+            <a href={`${DOCS_URL}/api-keys`} className="inline-flex items-center gap-1 text-muted hover:text-gold">
+              About API keys <ArrowUpRight size={13} aria-hidden />
+            </a>
+            <a href="/widget" className="inline-flex items-center gap-1 text-muted hover:text-gold">
+              No code? Embed the widget <ArrowUpRight size={13} aria-hidden />
+            </a>
+          </div>
+        </div>
+      </section>
+    </>
   )
 }
 
 export function DevelopersPage() {
-  const [apiKey, setApiKey] = useState<string | null>(() => store.get(sessionStorage, KEY_STORE))
-  const [claim, setClaim] = useState<{ requestId: string; claimCode: string } | null>(() => {
-    const raw = store.get(localStorage, CLAIM_STORE)
-    try {
-      return raw ? JSON.parse(raw) : null
-    } catch {
-      return null
-    }
-  })
-  const [signIn, setSignIn] = useState('')
-  const rememberKey = (k: string | null) => {
-    store.set(sessionStorage, KEY_STORE, k)
-    setApiKey(k)
+  const [session, setSession] = useState<Session>({ state: 'loading' })
+  const [wallet, setWallet] = useState({ mounted: false, trigger: 0, signedOut: 0 })
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadAccount = useCallback(() => readSession().then(setSession), [])
+  useEffect(() => {
+    readSession().then(setSession)
+  }, [])
+
+  const connect = () => {
+    setError(null)
+    setBusy(true)
+    loadWallet().then(
+      () => setWallet((w) => ({ ...w, mounted: true, trigger: w.trigger + 1 })),
+      () => {
+        setBusy(false)
+        setError('The wallet module could not be loaded. Check your connection and try again.')
+      },
+    )
+  }
+  // The modal opens once the chunk has mounted; the button stops spinning shortly after.
+  useEffect(() => {
+    if (!wallet.trigger) return
+    const id = setTimeout(() => setBusy(false), 400)
+    return () => clearTimeout(id)
+  }, [wallet.trigger])
+
+  const signOut = async () => {
+    await api('/api/developer/logout', { method: 'POST' })
+    setWallet((w) => ({ ...w, signedOut: w.signedOut + 1 }))
+    setSession({ state: 'out' })
   }
 
   return (
     <>
-      <Seo title="Developers" description="Free access to the Gully Labs tracker API. Request an API key for a higher rate limit and see your usage." />
-      <section className="flex flex-col gap-5 px-page pt-[64px] pb-10">
-        <span className={eyebrow} style={rise(0)}>
-          DEVELOPERS · TRACKER API
-        </span>
-        <h1 className="m-0 max-w-[900px] font-display text-[clamp(48px,6.4cqw,92px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
-          Build on the <span className="text-gold">fair-price tracker</span>
-        </h1>
-        <p className="m-0 max-w-[680px] text-[18px] leading-[1.55] text-muted" style={rise(2)}>
-          The API is free and open: 60 requests a minute per address, no key needed. A key raises that to 600 and shows your usage here. Read the{' '}
-          <a href={`${DOCS_URL}/api`} className="text-gold hover:text-gold-hover">
-            API reference
-          </a>{' '}
-          or drop in the{' '}
-          <a href="/widget" className="text-gold hover:text-gold-hover">
-            widget
-          </a>
-          .
-        </p>
-        <pre className="m-0 max-w-[680px] overflow-x-auto rounded-input border border-line bg-surface-deep px-4 py-3 font-mono text-[13px] text-ink-2" style={rise(3)}>
-          <span className="text-faint">$ </span>curl https://gullylabs.xyz/api/tracker
-        </pre>
-      </section>
-
-      <section className="grid grid-cols-[1fr_1fr] gap-5 px-page pb-24 max-[959px]:grid-cols-1">
-        <div className={box} style={rise(2)}>
-          {apiKey ? (
-            <Dashboard apiKey={apiKey} onSignOut={() => rememberKey(null)} onRotated={(k) => store.set(sessionStorage, KEY_STORE, k)} />
-          ) : (
-            <>
-              <div className="flex flex-col gap-1">
-                <h2 className="m-0 font-display text-[28px] font-bold uppercase">Sign in with your key</h2>
-                <span className="text-[14px] text-muted">Kept in this tab only and sent only to this site.</span>
-              </div>
-              <form
-                className="flex flex-wrap gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  if (signIn.trim()) rememberKey(signIn.trim())
-                }}
-              >
-                <label className="min-w-0 flex-1">
-                  <span className="sr-only">API key</span>
-                  <input className={input} placeholder="gl_live_…" value={signIn} onChange={(e) => setSignIn(e.target.value)} autoComplete="off" spellCheck={false} />
-                </label>
-                <button type="submit" className={`${btnGold} min-h-11 px-5 text-[15px]`}>
-                  Sign in
-                </button>
-              </form>
-              <p className="m-0 font-mono text-[12px] leading-[1.6] text-faint">No key yet? Request one. It is free; requests are reviewed by hand.</p>
-            </>
-          )}
-        </div>
-
-        <div className={box} style={rise(3)}>
-          <div className="flex flex-col gap-1">
-            <h2 className="m-0 font-display text-[28px] font-bold uppercase">{claim ? 'Your request' : 'Request an API key'}</h2>
-            <span className="text-[14px] text-muted">
-              {claim ? 'Check back after approval to redeem your key, once.' : 'Tell us who you are and what you will build. You get a claim code straight away.'}
-            </span>
+      <Seo title="Developers" description="Free API keys for the Gully Labs tracker API: sign in with your wallet, create keys instantly and see your usage." />
+      {session.state === 'loading' && (
+        <section className="flex min-h-[50vh] items-center justify-center px-page">
+          <span className="inline-flex items-center gap-3 font-mono text-[13px] text-faint">
+            <Loader2 size={16} className="animate-spin" aria-hidden /> Checking your session…
+          </span>
+        </section>
+      )}
+      {session.state === 'out' && <SignedOut connect={connect} busy={busy} error={error} />}
+      {(session.state === 'error' || session.state === 'blocked') && (
+        <section className="flex min-h-[50vh] flex-col items-start justify-center gap-4 px-page py-16">
+          <span className={eyebrow}>DEVELOPER DASHBOARD</span>
+          <p className="m-0 flex max-w-[640px] items-start gap-3 text-[17px] leading-[1.55] text-error" role="alert">
+            <AlertTriangle size={20} className="mt-[3px] shrink-0" aria-hidden />
+            {session.state === 'blocked' ? session.message : `The dashboard could not be loaded: ${session.message}`}
+          </p>
+          <div className="flex gap-3">
+            {session.state === 'error' && (
+              <button type="button" onClick={loadAccount} className={`${btnGold} min-h-11 px-5 text-[15px]`}>
+                Try again
+              </button>
+            )}
+            {session.state === 'blocked' && (
+              <button type="button" onClick={signOut} className={`${btnOutline} min-h-11 px-5 text-[15px]`}>
+                Sign out
+              </button>
+            )}
           </div>
-          {claim ? (
-            <Claim
-              claim={claim}
-              onKey={(k) => {
-                rememberKey(k)
-                store.set(localStorage, CLAIM_STORE, null)
-                setClaim(null)
-              }}
-              onForget={() => {
-                store.set(localStorage, CLAIM_STORE, null)
-                setClaim(null)
-              }}
-            />
-          ) : (
-            <RequestForm
-              onCreated={(c) => {
-                store.set(localStorage, CLAIM_STORE, JSON.stringify(c))
-                setClaim(c)
-              }}
-            />
-          )}
-        </div>
-      </section>
+        </section>
+      )}
+      {session.state === 'in' && <Dashboard account={session.account} reload={loadAccount} onSignOut={signOut} />}
+      {wallet.mounted && (
+        <Suspense fallback={null}>
+          <WalletSignIn
+            trigger={wallet.trigger}
+            signedOut={wallet.signedOut}
+            onSignedIn={() => {
+              setError(null)
+              loadAccount()
+            }}
+            onClose={() => setBusy(false)}
+            onError={setError}
+          />
+        </Suspense>
+      )}
     </>
   )
 }
