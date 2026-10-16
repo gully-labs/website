@@ -8,7 +8,12 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
   const [hover, setHover] = useState<string | null>(null)
   const id = (r: TrackerRow) => `${r.chain}:${r.ticker}`
   const multi = new Set(rows.map((r) => r.chain)).size > 1
-  const data = rows.filter((r) => r.gapPct !== null).sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0))
+  const [all, setAll] = useState(false)
+  const TOP = 16
+  const withGap = rows.filter((r) => r.gapPct !== null)
+  // The widest gaps first so the chart stays compact; "show all" lists every stock.
+  const widest = all ? withGap : [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0)).slice(0, TOP)
+  const data = widest.sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0))
   if (!data.length) return <p className="m-0 py-6 font-mono text-[12px] text-faint">No token has both a feed and a pool to compare yet.</p>
   const extent = Math.max(3, Math.ceil(Math.max(...data.map((r) => Math.abs(r.gapPct ?? 0))) * 1.15))
   const pct = (v: number) => (v / extent) * 50
@@ -46,7 +51,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
                 onBlur={() => setHover(null)}
                 aria-pressed={selected === id(r)}
                 aria-label={`${r.ticker} ${fmtGap(r.gapPct)}, onchain ${fmtPrice(r.onchain)}, fair ${fmtPrice(r.fair)}${thin ? ', thin pool' : ''}`}
-                className={`grid h-[22px] w-full grid-cols-[76px_1fr] items-center gap-2 rounded-[4px] bg-transparent p-0 text-left transition-colors ${active ? 'bg-surface-hover' : ''}`}
+                className={`grid h-[20px] w-full grid-cols-[76px_1fr] items-center gap-2 rounded-[4px] bg-transparent p-0 text-left transition-colors ${active ? 'bg-surface-hover' : ''}`}
               >
                 <span className={`truncate pr-1 text-right font-mono text-[12px] ${selected === id(r) ? 'text-gold' : 'text-ink-2'}`}>
                   {r.ticker}
@@ -78,6 +83,11 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
           )
         })}
       </ul>
+      {withGap.length > TOP && (
+        <button type="button" onClick={() => setAll((v) => !v)} className="mt-1 self-start bg-transparent p-0 font-mono text-[12px] text-gold hover:text-gold-hover">
+          {all ? `Show the ${TOP} widest` : `Show all ${withGap.length}`}
+        </button>
+      )}
       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-faint">
         <span className="inline-flex items-center gap-2">
           <i className="inline-block size-[10px] rounded-[2px]" style={{ background: UP }} /> above fair price

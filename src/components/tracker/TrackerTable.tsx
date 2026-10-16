@@ -118,13 +118,13 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
             <tr className="border-b border-line">
               {head('ticker', 'STOCK', 'text-left')}
               {head('onchain', 'ONCHAIN')}
-              <th className="px-3 py-3 text-right font-mono text-[11px] font-medium tracking-[1px] text-faint">FAIR</th>
+              <th className="px-3 py-2 text-right font-mono text-[11px] font-medium tracking-[1px] text-faint">FAIR</th>
               {head('absgap', 'GAP')}
-              <th className="px-3 py-3 text-left font-mono text-[11px] font-medium tracking-[1px] text-faint">STATUS</th>
+              <th className="px-3 py-2 text-left font-mono text-[11px] font-medium tracking-[1px] text-faint">STATUS</th>
               {head('liquidity', 'LIQUIDITY')}
               {head('volume', 'VOLUME 24H')}
-              <th className="px-3 py-3 text-right font-mono text-[11px] font-medium tracking-[1px] text-faint">FEED</th>
-              <th className="px-3 py-3" />
+              <th className="px-3 py-2 text-right font-mono text-[11px] font-medium tracking-[1px] text-faint">FEED</th>
+              <th className="px-3 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -138,27 +138,27 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                   className={`cursor-pointer border-b border-line transition-colors last:border-b-0 ${on ? 'bg-surface-hover' : 'hover:bg-surface-hover'}`}
                   style={{ animation: `gl-rise .4s ${Math.min(i * 0.02, 0.6)}s ease both` }}
                 >
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-2">
                     <button type="button" onClick={() => onSelect(id)} className="flex items-center gap-3 bg-transparent p-0 text-left" aria-pressed={on}>
-                      <span className={`flex h-8 min-w-12 items-center justify-center rounded-[6px] border px-2 font-display text-[15px] font-bold ${on ? 'border-gold text-gold' : 'border-line-strong text-ink'}`}>{r.ticker}</span>
+                      <span className={`flex h-7 min-w-12 items-center justify-center rounded-[6px] border px-2 font-display text-[15px] font-bold ${on ? 'border-gold text-gold' : 'border-line-strong text-ink'}`}>{r.ticker}</span>
                       <span className="flex flex-col">
                         <span className="text-ink-2">{r.name}</span>
                         {multi && <span className="font-mono text-[10px] text-faint">{CHAIN_SHORT[r.chain] ?? r.chain}</span>}
                       </span>
                     </button>
                   </td>
-                  <td className="px-3 py-3 text-right font-mono">{fmtPrice(r.onchain)}</td>
-                  <td className="px-3 py-3 text-right font-mono text-muted">{fmtPrice(r.fair)}</td>
-                  <td className="px-3 py-3 text-right font-mono font-medium" style={{ color: r.gapPct === null ? undefined : r.status === 'thin' ? '#6c7888' : r.gapPct >= 0 ? UP : DOWN }}>
+                  <td className="px-3 py-2 text-right font-mono">{fmtPrice(r.onchain)}</td>
+                  <td className="px-3 py-2 text-right font-mono text-muted">{fmtPrice(r.fair)}</td>
+                  <td className="px-3 py-2 text-right font-mono font-medium" style={{ color: r.gapPct === null ? undefined : r.status === 'thin' ? '#6c7888' : r.gapPct >= 0 ? UP : DOWN }}>
                     {fmtGap(r.gapPct)}
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-2">
                     <StatusBadge r={r} />
                   </td>
-                  <td className="px-3 py-3 text-right font-mono">{fmtCompactUsd(r.pool?.liquidityUsd)}</td>
-                  <td className="px-3 py-3 text-right font-mono text-muted">{fmtCompactUsd(r.pool?.totalVolume24hUsd)}</td>
-                  <td className="px-3 py-3 text-right font-mono text-[12px] text-faint">{ageText(r.feedUpdatedAt, now)}</td>
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-2 text-right font-mono">{fmtCompactUsd(r.pool?.liquidityUsd)}</td>
+                  <td className="px-3 py-2 text-right font-mono text-muted">{fmtCompactUsd(r.pool?.totalVolume24hUsd)}</td>
+                  <td className="px-3 py-2 text-right font-mono text-[12px] text-faint">{ageText(r.feedUpdatedAt, now)}</td>
+                  <td className="px-3 py-2">
                     <span className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                       {r.pool?.url && (
                         <a href={r.pool.url} target="_blank" rel="noopener" className="inline-flex h-8 items-center rounded-btn border border-line-strong px-3 text-[12px] text-ink transition-colors hover:border-gold hover:text-ink">
