@@ -37,9 +37,15 @@ export function safeEqual(a, b) {
 
 /* ---------------------------------------------------------- developers --- */
 
-// { requests: [{ id, email, project, url, use, claimHash, status, createdAt, decidedAt, keyId, claimedAt }],
-//   keys: [{ id, hash, prefix, requestId, project, email, limit, createdAt, revokedAt }] }
+// { requests: [{ id, email, project, url, use, claimHash, status, createdAt, decidedAt, keyId, claimedAt }],   (legacy, manual approval)
+//   keys: [{ id, hash, prefix, name, owner, requestId, project, email, limit, createdAt, rotatedAt, revokedAt }],
+//   accounts: [{ address, createdAt, lastLoginAt, blocked, blockedAt }] }
+// A key issued through the old request flow has requestId/project/email and no owner; a key created
+// in the wallet dashboard has owner (a lower-case wallet address) and name.
 let db = readFile(FILE, { requests: [], keys: [] })
+db.requests ??= []
+db.keys ??= []
+db.accounts ??= []
 
 export const developers = () => db
 export function saveDevelopers() {
@@ -47,21 +53,125 @@ export function saveDevelopers() {
 }
 
 export const KEY_LIMIT_PER_MIN = 600
+export const MAX_KEYS_PER_ACCOUNT = 5
+
+const newSecret = () => `gl_live_${randomToken(24)}`
 
 /** A new API key: returns the plaintext once; only its hash is stored. */
-export function issueKey({ requestId, project, email }) {
-  const secret = `gl_live_${randomToken(24)}`
-  const key = { id: randomToken(9), hash: sha256(secret), prefix: secret.slice(0, 14), requestId, project, email, limit: KEY_LIMIT_PER_MIN, createdAt: new Date().toISOString(), revokedAt: null }
+export function issueKey({ requestId = null, project = null, email = null, owner = null, name = null }) {
+  const secret = newSecret()
+  const key = { id: randomToken(9), hash: sha256(secret), prefix: secret.slice(0, 14), name: name ?? project, owner, requestId, project, email, limit: KEY_LIMIT_PER_MIN, createdAt: new Date().toISOString(), rotatedAt: null, revokedAt: null }
   db.keys.push(key)
   saveDevelopers()
   return { key, secret }
 }
 
-/** The live key matching a plaintext secret, or null. */
+/** Replaces a key's secret, keeping its id, name and usage history. Returns the new plaintext once. */
+export function rotateKeySecret(key) {
+  const secret = newSecret()
+  key.hash = sha256(secret)
+  key.prefix = secret.slice(0, 14)
+  key.rotatedAt = new Date().toISOString()
+  saveDevelopers()
+  return secret
+}
+
+/** The live key matching a plaintext secret, or null. Keys of a blocked wallet do not work. */
 export function findKey(secret) {
-  if (!secret || !secret.startsWith('gl_live_')) return null
+  if (!secret || !secret.startsWith('gl_live_') || secret.length > 100) return null
   const h = sha256(secret)
-  return db.keys.find((k) => !k.revokedAt && k.hash === h) ?? null
+  const key = db.keys.find((k) => !k.revokedAt && safeEqual(k.hash, h)) ?? null
+  if (key?.owner && getAccount(key.owner)?.blocked) return null
+  return key
+}
+
+/** Keys owned by a wallet, newest first. */
+export const keysOf = (address) => db.keys.filter((k) => k.owner === address).reverse()
+
+/* ------------------------------------------------------------ accounts --- */
+
+export const getAccount = (address) => db.accounts.find((a) => a.address === address) ?? null
+
+/** The account for a wallet, created on first sign-in. */
+export function touchAccount(address) {
+  let a = getAccount(address)
+  const now = new Date().toISOString()
+  if (!a) {
+    a = { address, createdAt: now, lastLoginAt: now, blocked: false, blockedAt: null }
+    db.accounts.push(a)
+  } else a.lastLoginAt = now
+  saveDevelopers()
+  return a
+}
+
+export function setBlocked(address, blocked) {
+  const a = getAccount(address)
+  if (!a) return null
+  a.blocked = !!blocked
+  a.blockedAt = blocked ? new Date().toISOString() : null
+  saveDevelopers()
+  return a
+}
+
+/* ------------------------------------------------------------ sessions --- */
+
+// Dashboard sign-in sessions: { [sha256(sessionId)]: { address, createdAt, expiresAt } }. The cookie holds
+// the plaintext id; only its hash is stored.
+const SESSIONS = path.join(DATA_DIR, 'sessions.json')
+export const SESSION_TTL_MS = 30 * 86_400_000
+const MAX_SESSIONS_PER_ACCOUNT = 20
+let sessions = readFile(SESSIONS, {})
+
+function saveSessions() {
+  try {
+    writeFile(SESSIONS, sessions)
+  } catch {
+    /* kept in memory */
+  }
+}
+
+function pruneSessions() {
+  const now = Date.now()
+  for (const [h, s] of Object.entries(sessions)) if (Date.parse(s.expiresAt) <= now) delete sessions[h]
+}
+
+/** Starts a session for a wallet; returns the plaintext session id (for the cookie) once. */
+export function createSession(address) {
+  pruneSessions()
+  const mine = Object.entries(sessions).filter(([, s]) => s.address === address).sort((a, b) => a[1].createdAt.localeCompare(b[1].createdAt))
+  while (mine.length >= MAX_SESSIONS_PER_ACCOUNT) delete sessions[mine.shift()[0]]
+  const id = randomToken(32)
+  const now = Date.now()
+  sessions[sha256(id)] = { address, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + SESSION_TTL_MS).toISOString() }
+  saveSessions()
+  return id
+}
+
+/** The live session for a plaintext id, or null. */
+export function findSession(id) {
+  if (typeof id !== 'string' || id.length < 20 || id.length > 100) return null
+  const s = sessions[sha256(id)]
+  if (!s) return null
+  if (Date.parse(s.expiresAt) <= Date.now()) {
+    delete sessions[sha256(id)]
+    saveSessions()
+    return null
+  }
+  return s
+}
+
+export function deleteSession(id) {
+  if (typeof id !== 'string') return
+  const h = sha256(id)
+  if (!sessions[h]) return
+  delete sessions[h]
+  saveSessions()
+}
+
+/** Ends every session of a wallet (used when an admin blocks it). */
+export function deleteSessionsOf(address) {
+  for (const [h, s] of Object.entries(sessions)) if (s.address === address) delete sessions[h]
+  saveSessions()
 }
 
 /* ----------------------------------------------------------- enquiries --- */

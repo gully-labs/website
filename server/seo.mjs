@@ -30,7 +30,7 @@ const DOCS_PAGES = {
   '/methodology': ['Methodology · Gully Labs docs', 'How fair prices, onchain prices, gaps and staleness are read and computed for every tokenised stock.'],
   '/api': ['API reference · Gully Labs docs', 'The public tracker API: endpoints, fields, rate limits and errors. Free to call with no key.'],
   '/widget': ['Widget guide · Gully Labs docs', 'Embed the live tracker with one script tag: ticker, badge and table, with every option.'],
-  '/api-keys': ['API keys · Gully Labs docs', 'How to request, claim and use a Gully Labs API key for a higher rate limit.'],
+  '/api-keys': ['API keys · Gully Labs docs', 'How to get a free Gully Labs API key instantly by signing in with a wallet, and use it for a higher rate limit.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],
 }
 
@@ -62,7 +62,7 @@ export function pageMeta(host, pathname) {
     return { title: 'Not found · Gully Labs docs', description: DOCS_PAGES['/'][1], canonical: null, found: false }
   }
   if (host.startsWith('developers.'))
-    return { title: 'Developer portal · Gully Labs', description: 'Request and manage Gully Labs API keys and see your usage of the tracker API.', canonical: `${DEV}/`, found: true }
+    return { title: 'Developer portal · Gully Labs', description: 'Sign in with your wallet to create Gully Labs API keys instantly, and see your usage of the tracker API.', canonical: `${DEV}/`, found: true }
   if (host.startsWith('admin.')) return { title: 'Admin · Gully Labs', description: 'Private.', canonical: null, found: true, noindex: true }
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.

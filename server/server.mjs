@@ -4,7 +4,7 @@
 import http from 'node:http'
 import { readStats } from './stats.mjs'
 import { readHistory, readTracker, startTrackerLoop } from './tracker.mjs'
-import { apiAccess } from './access.mjs'
+import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
 import { clientIp, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
@@ -123,6 +123,8 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/tracker')) {
     if (req.method === 'OPTIONS') return send(res, 204, '', CORS)
     const access = apiAccess(req)
+    // Keyed requests are recorded (status class, latency) for the holder's dashboard once answered.
+    observe(req, res, access.keyId)
     if (!access.ok) {
       return send(res, access.status, JSON.stringify({ error: access.error }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...CORS, ...(access.retryAfter ? { 'Retry-After': String(access.retryAfter) } : {}) })
     }
@@ -194,6 +196,8 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
+// Keep the last minute of API usage across a restart or redeploy.
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), process.exit(0)))
 startTrackerLoop()
 
 // Optional public port for Cloudflare. It speaks both HTTPS and plain HTTP on the

@@ -67,7 +67,7 @@ function Sidebar({ onPick }: { onPick: () => void }) {
         {[
           { label: 'Live tracker', href: `${SITE}/tracker` },
           { label: 'Widget builder', href: `${SITE}/widget` },
-          { label: 'Request an API key', href: 'https://developers.gullylabs.xyz' },
+          { label: 'Get an API key', href: 'https://developers.gullylabs.xyz' },
         ].map((l) => (
           <a key={l.href} href={l.href} className="flex min-h-10 items-center justify-between gap-2 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
             {l.label}

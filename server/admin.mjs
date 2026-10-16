@@ -8,6 +8,7 @@
 //   GET  /api/admin/developers                key requests and keys (no hashes, no secrets)
 //   POST /api/admin/requests/:id/approve|reject
 //   POST /api/admin/keys/:id/revoke
+//   POST /api/admin/accounts/:address/block|unblock   wallet accounts (Sign-In with Ethereum)
 //   GET  /api/admin/enquiries                 contact-form enquiries, newest first
 //   GET  /api/admin/launch-list[?format=csv]  "notify me" sign-ups
 //   POST /api/admin/enquiries/:id/handled     { handled: boolean }
@@ -16,7 +17,7 @@ import fs from 'node:fs'
 import { accessStats } from './access.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
-import { developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers } from './store.mjs'
+import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
 
 const failures = new Map()
@@ -76,7 +77,7 @@ export async function handleAdmin(req, res, url) {
       tracker: trackerHealth(),
       api: accessStats(),
       venues,
-      developers: { pending: db.requests.filter((r) => r.status === 'pending').length, approved: db.requests.filter((r) => r.status === 'approved').length, liveKeys: db.keys.filter((k) => !k.revokedAt).length },
+      developers: { pending: db.requests.filter((r) => r.status === 'pending').length, approved: db.requests.filter((r) => r.status === 'approved').length, liveKeys: db.keys.filter((k) => !k.revokedAt).length, accounts: db.accounts.length, blocked: db.accounts.filter((a) => a.blocked).length },
       enquiries: { total: enquiries.length, open: enquiries.filter((e) => !e.handled).length },
       launchList: listLaunch().length,
       process: { uptimeSeconds: Math.round(process.uptime()), rssMb: Math.round(mem.rss / 1e6), heapMb: Math.round(mem.heapUsed / 1e6), node: process.version, dataDirBytes: dirBytes(DATA_DIR) },
@@ -86,7 +87,8 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/developers') {
     return json(res, 200, {
       requests: [...db.requests].reverse().map((r) => ({ id: r.id, email: r.email, project: r.project, url: r.url, use: r.use, status: r.status, createdAt: r.createdAt, decidedAt: r.decidedAt, keyId: r.keyId, claimedAt: r.claimedAt })),
-      keys: [...db.keys].reverse().map((k) => ({ id: k.id, prefix: k.prefix, requestId: k.requestId, project: k.project, email: k.email, limit: k.limit, createdAt: k.createdAt, revokedAt: k.revokedAt })),
+      keys: [...db.keys].reverse().map((k) => ({ id: k.id, prefix: k.prefix, name: k.name ?? k.project, owner: k.owner ?? null, requestId: k.requestId, project: k.project, email: k.email, limit: k.limit, createdAt: k.createdAt, revokedAt: k.revokedAt })),
+      accounts: [...db.accounts].reverse().map((a) => ({ ...a, keys: db.keys.filter((k) => k.owner === a.address).length, liveKeys: db.keys.filter((k) => k.owner === a.address && !k.revokedAt).length })),
     }), true
   }
 
@@ -110,6 +112,16 @@ export async function handleAdmin(req, res, url) {
     k.revokedAt ??= new Date().toISOString()
     saveDevelopers()
     return json(res, 200, { id: k.id, revokedAt: k.revokedAt }), true
+  }
+
+  m = p.match(/^\/api\/admin\/accounts\/(0x[0-9a-f]{40})\/(block|unblock)$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const a = setBlocked(m[1], m[2] === 'block')
+    if (!a) return json(res, 404, { error: 'No such account.' }), true
+    // A blocked wallet is signed out everywhere; its keys stop working while it stays blocked.
+    if (a.blocked) deleteSessionsOf(a.address)
+    return json(res, 200, { address: a.address, blocked: a.blocked }), true
   }
 
   if (p === '/api/admin/enquiries') return json(res, 200, { enquiries: [...listEnquiries()].reverse() }), true
