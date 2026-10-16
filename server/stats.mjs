@@ -24,7 +24,8 @@ const sumKnown = (xs) => {
   const real = xs.filter((x) => x !== null && x !== undefined)
   return real.length ? real.reduce((a, b) => a + b, 0) : null
 }
-const dayKey = (t) => Math.floor(t / 86400) * 86400
+// Venues disagree on units: PeddleSwap stamps its days in milliseconds, the others in seconds.
+const dayKey = (t) => Math.floor((t > 1e11 ? t / 1000 : t) / 86400) * 86400
 const seriesOf = (map) => [...map.entries()].sort((a, b) => a[0] - b[0]).map(([t, v]) => ({ t, v }))
 const units = (raw, decimals) => Number(BigInt(raw)) / 10 ** decimals
 

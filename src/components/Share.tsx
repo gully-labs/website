@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Check, Copy, Link2, Share2, UserPlus } from 'lucide-react'
 import type { Project } from '../content/projects'
 import { SHARE, SITE_URL } from '../content/site'
 import { gullyPost, projectPost, tgShare, xFollow, xPost } from '../lib/share'
@@ -44,11 +45,13 @@ export function ShareBar({ data }: { data: Stats | null }) {
       </a>
       {canShare ? (
         <button type="button" onClick={() => navigator.share({ title: 'Gully Labs', text, url: SITE_URL }).catch(() => undefined)} className={pill}>
+          <Share2 aria-hidden size={14} strokeWidth={1.75} />
           Share…
         </button>
       ) : (
         <button type="button" onClick={() => copy(SITE_URL)} className={pill} aria-live="polite">
-          {copied ? '✓ Link copied' : 'Copy link'}
+          {copied ? <Check aria-hidden size={14} strokeWidth={2} className="text-green" /> : <Link2 aria-hidden size={14} strokeWidth={1.75} />}
+          {copied ? 'Link copied' : 'Copy link'}
         </button>
       )}
     </div>
@@ -91,7 +94,8 @@ export function ShareStrip({ data }: { data: Stats | null }) {
               Post this
             </a>
             <button type="button" onClick={() => copy(`${text} ${SITE_URL}`)} className={pill} aria-live="polite">
-              {copied ? '✓ Copied' : 'Copy text'}
+              {copied ? <Check aria-hidden size={14} strokeWidth={2} className="text-green" /> : <Copy aria-hidden size={14} strokeWidth={1.75} />}
+              {copied ? 'Copied' : 'Copy text'}
             </button>
           </div>
         </div>
@@ -132,6 +136,7 @@ export function ShareMenu({ project: p, compact = false }: { project: Project; c
       </button>
       {p.x && !compact && (
         <a href={xFollow(p.x)} target="_blank" rel="noopener" className={pill}>
+          <UserPlus aria-hidden size={14} strokeWidth={1.75} />
           Follow {p.x}
         </a>
       )}

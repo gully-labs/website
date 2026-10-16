@@ -1,4 +1,4 @@
-import { Activity, ChartLine, FlaskConical, Info, Layers, type LucideIcon } from 'lucide-react'
+import { Activity, BookOpen, ChartLine, Code2, FlaskConical, Info, KeyRound, Layers, Puzzle, type LucideIcon } from 'lucide-react'
 
 export const SITE_URL = 'https://gullylabs.xyz'
 
@@ -25,9 +25,15 @@ export const navItems: { label: string; to: string; match: string; icon: LucideI
   { label: 'About', to: '/about', match: '/about', icon: Info },
 ]
 
-/** Footer links to the developer surfaces. Docs is its own host. */
-export const devLinks = [
-  { label: 'Docs', href: 'https://docs.gullylabs.xyz' },
-  { label: 'Widget', to: '/widget' },
-  { label: 'API keys', to: '/developers' },
-] as const
+/** The developer surfaces. Docs is its own host; /developers moves to developers.gullylabs.xyz. */
+export const devLinks: ({ label: string; icon: LucideIcon } & ({ href: string } | { to: string }))[] = [
+  { label: 'Docs', href: 'https://docs.gullylabs.xyz', icon: BookOpen },
+  { label: 'Widget', to: '/widget', icon: Puzzle },
+  { label: 'API keys', to: '/developers', icon: KeyRound },
+]
+
+/** Header entries for developers, after the site sections. */
+export const headerDevItems: { label: string; icon: LucideIcon; href?: string; to?: string; match?: string }[] = [
+  { label: 'Developers', to: '/developers', match: '/developers', icon: Code2 },
+  { label: 'Docs', href: 'https://docs.gullylabs.xyz', icon: BookOpen },
+]

@@ -226,7 +226,7 @@ export function TvlShare({ data, state }: { data: Stats | null; state: 'loading'
   const total = rows.reduce((a, r) => a + r.v, 0)
   const missing = projects.filter((p) => !rows.some((r) => r.key === p.key)).map((p) => p.key)
   return (
-    <div className="flex min-w-0 flex-col gap-5 self-start rounded-card border border-line bg-surface p-7">
+    <div className="flex min-w-0 flex-col gap-5 self-stretch rounded-card border border-line bg-surface p-7">
       <div className="flex flex-col gap-1">
         <h3 className="m-0 font-display text-[28px] font-bold uppercase">Value locked</h3>
         <span className="font-mono text-[12px] text-faint">Share by venue, right now</span>
@@ -262,7 +262,7 @@ export function TvlShare({ data, state }: { data: Stats | null; state: 'loading'
         </>
       )}
       {state === 'ok' && (
-        <p className="m-0 font-mono text-[12px] leading-[1.5] text-faint">
+        <p className="m-0 mt-auto font-mono text-[12px] leading-[1.5] text-faint">
           {rows.length ? `${names(rows.map((r) => r.key))} publish value locked` : 'No venue publishes value locked'}
           {missing.length ? `; ${names(missing)} do not.` : '.'}
         </p>

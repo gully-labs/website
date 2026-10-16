@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
-import { navItems } from '../content/site'
+import { headerDevItems, navItems } from '../content/site'
 import { useContact } from './ContactContext'
 import { Wordmark } from './Wordmark'
 import { btnGold } from './ui'
 
 const WIDE_QUERY = '(min-width: 860px)'
+const deskItem = 'group inline-flex items-center gap-2 border-b-2 py-[6px] text-[15px] transition-colors hover:text-ink'
+// Between 860 and 1240 px the labels give way and the icons carry the menu (each keeps its title and name).
+const deskLabel = 'sr-only min-[1240px]:not-sr-only'
 
 export function Header() {
   const { pathname } = useLocation()
@@ -36,25 +39,39 @@ export function Header() {
           <Wordmark size={30} shimmer />
         </Link>
 
-        <nav aria-label="Main" className="hidden items-center gap-8 min-[860px]:flex">
+        <nav aria-label="Main" className="hidden items-center gap-5 min-[860px]:flex min-[1240px]:gap-7">
           {navItems.map((n) => (
             <Link
               key={n.label}
               to={n.to}
+              title={n.label}
               aria-current={isActive(n.match) ? 'page' : undefined}
-              className={`group inline-flex items-center gap-2 border-b-2 py-[6px] text-[15px] transition-colors hover:text-ink ${
-                isActive(n.match) ? 'border-gold text-ink' : 'border-transparent text-muted'
-              }`}
+              className={`${deskItem} ${isActive(n.match) ? 'border-gold text-ink' : 'border-transparent text-muted'}`}
             >
-              <n.icon
-                aria-hidden
-                size={16}
-                strokeWidth={1.75}
-                className={`transition-colors ${isActive(n.match) ? 'text-gold' : 'text-faint group-hover:text-gold'}`}
-              />
-              {n.label}
+              <n.icon aria-hidden size={16} strokeWidth={1.75} className={`transition-colors ${isActive(n.match) ? 'text-gold' : 'text-faint group-hover:text-gold'}`} />
+              <span className={deskLabel}>{n.label}</span>
             </Link>
           ))}
+          <span aria-hidden className="h-5 w-px bg-line-strong" />
+          {headerDevItems.map((n) => {
+            const active = !!n.match && isActive(n.match)
+            const cls = `${deskItem} ${active ? 'border-gold text-ink' : 'border-transparent text-muted'}`
+            const inner = (
+              <>
+                <n.icon aria-hidden size={16} strokeWidth={1.75} className={`transition-colors ${active ? 'text-gold' : 'text-faint group-hover:text-gold'}`} />
+                <span className={deskLabel}>{n.label}</span>
+              </>
+            )
+            return n.href ? (
+              <a key={n.label} href={n.href} title={n.label} className={cls}>
+                {inner}
+              </a>
+            ) : (
+              <Link key={n.label} to={n.to!} title={n.label} aria-current={active ? 'page' : undefined} className={cls}>
+                {inner}
+              </Link>
+            )
+          })}
           <button type="button" onClick={() => openContact()} className={`${btnGold} inline-flex items-center gap-2 px-[22px] py-3 text-[15px]`}>
             Start a project
             <ArrowUpRight aria-hidden size={16} strokeWidth={2} />
@@ -101,6 +118,26 @@ export function Header() {
                   {n.label}
                 </Link>
               ))}
+              <div className="mt-2 grid grid-cols-2 gap-3 pt-4">
+                {headerDevItems.map((n) => {
+                  const cls = 'flex min-h-12 items-center gap-3 rounded-btn border border-line-strong px-4 font-mono text-[14px] text-ink-2 transition-colors hover:border-gold hover:text-ink'
+                  const inner = (
+                    <>
+                      <n.icon aria-hidden size={18} strokeWidth={1.75} className="text-gold" />
+                      {n.label}
+                    </>
+                  )
+                  return n.href ? (
+                    <a key={n.label} href={n.href} onClick={close} className={cls}>
+                      {inner}
+                    </a>
+                  ) : (
+                    <Link key={n.label} to={n.to!} onClick={close} className={cls}>
+                      {inner}
+                    </Link>
+                  )
+                })}
+              </div>
               <button
                 type="button"
                 onClick={() => {

@@ -85,7 +85,10 @@ export function Home() {
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,240px),1fr))] gap-5">
           {services.map((s) => (
             <Link key={s.n} to="/services" className="flex flex-col gap-3 border-t border-line-strong pt-5 text-ink transition-colors hover:border-gold hover:text-ink">
-              <span className="font-mono text-[13px] text-gold">{s.n}</span>
+              <span className="flex items-center justify-between">
+                <span className="font-mono text-[13px] text-gold">{s.n}</span>
+                <s.icon aria-hidden size={22} strokeWidth={1.5} className="text-faint" />
+              </span>
               <h3 className="m-0 font-display text-[28px] leading-[1.05] font-bold uppercase">{s.name}</h3>
               <span className="text-[15px] leading-[1.55] text-muted">{s.description}</span>
             </Link>

@@ -50,10 +50,12 @@ export function Footer() {
             {devLinks.map((d) =>
               'href' in d ? (
                 <a key={d.label} href={d.href} className={colLink}>
+                  <d.icon aria-hidden size={15} strokeWidth={1.75} className={colIcon} />
                   {d.label}
                 </a>
               ) : (
                 <Link key={d.label} to={d.to} className={colLink}>
+                  <d.icon aria-hidden size={15} strokeWidth={1.75} className={colIcon} />
                   {d.label}
                 </Link>
               ),

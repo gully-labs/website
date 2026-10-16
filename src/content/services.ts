@@ -1,7 +1,10 @@
+import { FileCode2, MonitorSmartphone, Server, ShieldCheck, type LucideIcon } from 'lucide-react'
+
 export type ServiceType = 'Smart contracts' | 'dApp / frontend' | 'Infrastructure' | 'Audit' | 'Other'
 
 export interface Service {
   n: string
+  icon: LucideIcon
   name: string
   time: string
   description: string
@@ -13,6 +16,7 @@ export interface Service {
 export const services: Service[] = [
   {
     n: '01',
+    icon: FileCode2,
     name: 'Smart Contracts',
     time: '6–12 weeks',
     description: 'Solidity and Rust contracts designed, tested and deployed to mainnet.',
@@ -21,6 +25,7 @@ export const services: Service[] = [
   },
   {
     n: '02',
+    icon: MonitorSmartphone,
     name: 'dApps & Frontends',
     time: '8–16 weeks',
     description: 'Wallet-connected web and mobile apps people can actually use.',
@@ -29,6 +34,7 @@ export const services: Service[] = [
   },
   {
     n: '03',
+    icon: Server,
     name: 'Chain Infrastructure',
     time: '8–20 weeks',
     description: 'Nodes, rollups, bridges and the plumbing underneath.',
@@ -37,6 +43,7 @@ export const services: Service[] = [
   },
   {
     n: '04',
+    icon: ShieldCheck,
     name: 'Security & Audits',
     time: '2–6 weeks',
     description: 'Review, testing and hardening before and after launch.',
