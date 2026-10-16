@@ -1,4 +1,4 @@
-import { ArrowUpRight, Menu, X } from 'lucide-react'
+import { Activity, ArrowUpRight, BookOpen, Code2, History, Home, KeyRound, Menu, Puzzle, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useResolvedPath } from 'react-router'
 import { Wordmark } from '../components/Wordmark'
@@ -34,17 +34,21 @@ function ApiPill() {
   )
 }
 
+const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, changelog: History }
+
 function SideLink({ slug, title, onPick }: { slug: DocSlug; title: string; onPick: () => void }) {
   const href = useDocHref(slug)
+  const Icon = DOC_ICON[slug]
   return (
     <NavLink
       to={href}
       end
       onClick={onPick}
       className={({ isActive }) =>
-        `relative flex min-h-10 items-center rounded-btn px-3 text-[14px] transition-colors ${isActive ? 'bg-surface text-ink before:absolute before:inset-y-2 before:left-0 before:w-[2px] before:rounded-full before:bg-gold' : 'text-muted hover:bg-surface hover:text-ink'}`
+        `group relative flex min-h-10 items-center gap-3 rounded-btn px-3 text-[14px] transition-colors ${isActive ? 'bg-surface text-ink before:absolute before:inset-y-2 before:left-0 before:w-[2px] before:rounded-full before:bg-gold [&_svg]:text-gold' : 'text-muted hover:bg-surface hover:text-ink'}`
       }
     >
+      <Icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
       {title}
     </NavLink>
   )
@@ -65,12 +69,13 @@ function Sidebar({ onPick }: { onPick: () => void }) {
       <div className="flex flex-col gap-1 border-t border-line pt-5">
         <span className="px-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint">GULLY LABS</span>
         {[
-          { label: 'Live tracker', href: `${SITE}/tracker` },
-          { label: 'Widget builder', href: `${SITE}/widget` },
-          { label: 'Request an API key', href: 'https://developers.gullylabs.xyz' },
+          { label: 'Live tracker', href: `${SITE}/tracker`, icon: Activity },
+          { label: 'Widget builder', href: `${SITE}/widget`, icon: Puzzle },
+          { label: 'Developer portal', href: 'https://developers.gullylabs.xyz', icon: KeyRound },
         ].map((l) => (
-          <a key={l.href} href={l.href} className="flex min-h-10 items-center justify-between gap-2 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
-            {l.label}
+          <a key={l.href} href={l.href} className="group flex min-h-10 items-center gap-3 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
+            <l.icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
+            <span className="flex-1">{l.label}</span>
             <ArrowUpRight size={14} aria-hidden className="text-faint" />
           </a>
         ))}
