@@ -76,10 +76,8 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
         </span>
       ))}
       <span className="flex flex-col items-end gap-2 max-[959px]:col-start-2 max-[959px]:items-start">
-        <span className="flex items-center gap-2">
-          <span className={statusPill}>{p.status}</span>
-          <ShareMenu project={p} compact />
-        </span>
+        <span className={statusPill}>{p.status}</span>
+        <ShareMenu project={p} compact />
         <Link to={`/projects/${p.slug}`} className="text-[14px] whitespace-nowrap text-gold hover:text-gold-hover">
           View project →
         </Link>
