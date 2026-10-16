@@ -53,7 +53,12 @@ export function Services() {
               className="gl-row-sweep relative grid grid-cols-[72px_1.2fr_1.6fr_160px_140px] items-center gap-6 border-b border-line px-7 py-7 transition-colors last:border-b-0 hover:bg-surface-hover max-[959px]:grid-cols-[72px_1fr] max-[959px]:gap-y-3"
               style={{ ...rise(i + 2), ['--sweep-delay' as string]: `${1 + i * 1.3}s` }}
             >
-              <span className="font-display text-[40px] leading-none font-extrabold text-gold">{s.n}</span>
+              <span className="flex flex-col items-start gap-3">
+                <span className="flex size-12 items-center justify-center rounded-btn border border-gold-line text-gold">
+                  <s.icon aria-hidden size={22} strokeWidth={1.6} />
+                </span>
+                <span className="font-mono text-[13px] text-gold">{s.n}</span>
+              </span>
               <h2 className="m-0 font-display text-[clamp(30px,3cqw,40px)] leading-[.95] font-extrabold uppercase">{s.name}</h2>
               <div className="flex flex-col gap-3 max-[959px]:col-start-2">
                 <span className="text-[16px] leading-[1.55] text-muted">{s.description}</span>
@@ -86,7 +91,10 @@ export function Services() {
         <ol className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line p-0">
           {processSteps.map((st, i) => (
             <li key={st.n} className="relative flex flex-col gap-3 overflow-hidden bg-bg-alt p-7" style={rise(i)}>
-              <span className="font-mono text-[12px] tracking-[1px] text-dim">PHASE {st.n}</span>
+              <span className="flex items-center justify-between">
+                <span className="font-mono text-[12px] tracking-[1px] text-dim">PHASE {st.n}</span>
+                <st.icon aria-hidden size={20} strokeWidth={1.6} className="text-gold" />
+              </span>
               <h3 className="m-0 font-display text-[28px] font-bold uppercase">{st.name}</h3>
               <span className="text-[15px] leading-[1.55] text-muted">{st.description}</span>
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-gold" style={{ animation: `gl-grow-x .8s ${0.3 + i * 0.15}s cubic-bezier(.2,.8,.2,1) both` }} />

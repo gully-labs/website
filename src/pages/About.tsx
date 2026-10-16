@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { FlaskConical, Handshake } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { eyebrow } from '../components/ui'
 import { comingSoon, projects } from '../content/projects'
@@ -84,7 +85,12 @@ export function About() {
 
       <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,400px),1fr))] gap-5 border-t border-line bg-bg-alt px-page py-24">
         <Link to="/#projects" className={linkCard} style={rise(0)}>
-          <span className="font-mono text-[13px] text-gold">01</span>
+          <span className="flex items-center justify-between">
+            <span className="flex size-12 items-center justify-center rounded-btn border border-gold-line text-gold transition-colors group-hover:bg-gold group-hover:text-bg">
+              <FlaskConical aria-hidden size={22} strokeWidth={1.6} />
+            </span>
+            <span className="font-mono text-[13px] text-gold">01</span>
+          </span>
           <span className="font-display text-[40px] leading-none font-extrabold uppercase">Our own products</span>
           <span className="text-[16px] leading-[1.55] text-muted">
             {cap(words[projects.length + comingSoon.length])} projects funded and built in-house. {cap(words[projects.length])} are live.
@@ -93,7 +99,12 @@ export function About() {
           <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
         </Link>
         <Link to="/services" className={linkCard} style={rise(1)}>
-          <span className="font-mono text-[13px] text-gold">02</span>
+          <span className="flex items-center justify-between">
+            <span className="flex size-12 items-center justify-center rounded-btn border border-gold-line text-gold transition-colors group-hover:bg-gold group-hover:text-bg">
+              <Handshake aria-hidden size={22} strokeWidth={1.6} />
+            </span>
+            <span className="font-mono text-[13px] text-gold">02</span>
+          </span>
           <span className="font-display text-[40px] leading-none font-extrabold uppercase">Partner work</span>
           <span className="text-[16px] leading-[1.55] text-muted">Smart contracts, dApps, infrastructure and audits for teams building on-chain.</span>
           <span className="mt-2 text-[15px] text-gold">See the services →</span>

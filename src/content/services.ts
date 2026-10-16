@@ -1,4 +1,4 @@
-import { FileCode2, MonitorSmartphone, Server, ShieldCheck, type LucideIcon } from 'lucide-react'
+import { Compass, FileCode2, FlaskConical, MonitorSmartphone, Rocket, Server, ShieldCheck, type LucideIcon } from 'lucide-react'
 
 export type ServiceType = 'Smart contracts' | 'dApp / frontend' | 'Infrastructure' | 'Audit' | 'Other'
 
@@ -57,8 +57,8 @@ export const serviceTypes: ServiceType[] = ['Smart contracts', 'dApp / frontend'
 export const budgets = ['< $50k', '$50–150k', '$150k+', 'Not sure']
 
 export const processSteps = [
-  { n: '01', name: 'Discover', description: 'Scope the product, the chain and the token model.' },
-  { n: '02', name: 'Prototype', description: 'A working testnet build in weeks, not quarters.' },
-  { n: '03', name: 'Build & audit', description: 'Production contracts, apps and independent review.' },
-  { n: '04', name: 'Launch', description: 'Mainnet release, monitoring and ongoing support.' },
+  { n: '01', name: 'Discover', icon: Compass, description: 'Scope the product, the chain and the token model.' },
+  { n: '02', name: 'Prototype', icon: FlaskConical, description: 'A working testnet build in weeks, not quarters.' },
+  { n: '03', name: 'Build & audit', icon: ShieldCheck, description: 'Production contracts, apps and independent review.' },
+  { n: '04', name: 'Launch', icon: Rocket, description: 'Mainnet release, monitoring and ongoing support.' },
 ]

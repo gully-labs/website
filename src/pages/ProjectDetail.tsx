@@ -6,7 +6,7 @@ import { ShareMenu } from '../components/Share'
 import { btnOutline, statusPill } from '../components/ui'
 import { projectNumber, projects, TOTAL_SLOTS } from '../content/projects'
 import { useStats } from '../hooks/useStats'
-import { fmtTime, metricsOf, sourceHost } from '../lib/stats'
+import { fmtTime, fmtUsd, metricsOf, sourceHost } from '../lib/stats'
 
 const cardTitle = 'm-0 font-display text-[28px] font-bold uppercase'
 
@@ -21,7 +21,18 @@ export function ProjectDetail() {
   const next = projects[(index + 1) % projects.length]
   const venue = st.k === 'ok' ? st.data.venues.find((v) => v.key === p.key) : undefined
   const live = st.k === 'error' ? metricsOf({ key: p.key, state: 'error', error: 'could not be read' }) : metricsOf(venue)
-  const stats = [...live, { label: 'CATEGORY', value: p.tag }, { label: 'STATUS', value: p.status }]
+  // Four live figures when the venue answers; a figure the venue does not publish reads "not published".
+  // Category and status are already in the header, so they no longer take a tile.
+  const usd = (label: string, n: number | null | undefined) => ({ label, value: n === null || n === undefined ? 'not published' : fmtUsd(n), missing: n === null || n === undefined })
+  const stats =
+    venue?.state === 'ok'
+      ? [
+          usd(p.key === 'peddlequest' ? 'ESCROWED (TVL)' : 'TVL', venue.tvlUsd),
+          venue.volumeAllUsd === null && venue.volume30dUsd !== null && venue.volume30dUsd !== undefined ? usd('VOLUME 30 DAYS', venue.volume30dUsd) : usd('VOLUME ALL-TIME', venue.volumeAllUsd),
+          usd('VOLUME 24H', venue.volume24hUsd),
+          usd('FEES ALL-TIME', venue.feesAllUsd),
+        ]
+      : [...live, { label: 'CATEGORY', value: p.tag }, { label: 'STATUS', value: p.status }]
   const series = venue?.state === 'ok' ? venue.daily.slice(-30) : []
   const provenance =
     venue?.state === 'ok'
@@ -98,7 +109,7 @@ export function ProjectDetail() {
           {stats.map((s) => (
             <div key={s.label} className="flex flex-col gap-[6px] bg-surface px-7 py-6">
               <dt className="font-mono text-[11px] tracking-[1px] text-faint">{s.label}</dt>
-              <dd className={`m-0 font-display text-[40px] leading-none font-bold ${'missing' in s && s.missing ? 'text-dim' : ''}`}>{s.value}</dd>
+              <dd className={`m-0 font-display leading-none font-bold ${'missing' in s && s.missing ? 'text-[22px] text-dim' : 'text-[40px]'}`}>{s.value}</dd>
             </div>
           ))}
         </dl>
