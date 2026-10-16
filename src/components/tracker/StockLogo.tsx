@@ -31,7 +31,7 @@ export function StockLogo({ row, size = 28, active = false, chainBadge = true }:
           {row.ticker.slice(0, 4)}
         </span>
       ) : (
-        <span className={`flex size-full items-center justify-center overflow-hidden rounded-full bg-white ring-1 ${active ? 'ring-gold' : 'ring-line-strong'}`}>
+        <span className={`flex size-full items-center justify-center overflow-hidden rounded-full bg-[#fff] ring-1 ${active ? 'ring-gold' : 'ring-line-strong'}`}>
           <img src={src} alt="" width={size} height={size} loading="lazy" decoding="async" onError={() => setFailed(true)} className="size-[82%] object-contain" />
         </span>
       )}

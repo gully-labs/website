@@ -20,13 +20,13 @@ export const logoByToken: Record<string, string> = {
 }
 
 export const logoByTicker: Record<string, string> = {
-  "NVDA": "/tokens/logos/NVDA.ico",
+  "NVDA": "/tokens/logos/NVDA.svg",
   "SPCX": "/tokens/logos/SPCX.ico",
   "USO": "/tokens/logos/USO.png",
   "TSLA": "/tokens/logos/TSLA.png",
   "CLSK": "/tokens/logos/CLSK.png",
   "IONQ": "/tokens/logos/IONQ.png",
-  "ASML": "/tokens/logos/ASML.ico",
+  "ASML": "/tokens/logos/ASML.svg",
   "DELL": "/tokens/logos/DELL.png",
   "RGTI": "/tokens/logos/RGTI.png",
   "RKLB": "/tokens/logos/RKLB.png",
@@ -41,8 +41,8 @@ export const logoByTicker: Record<string, string> = {
   "CRCL": "/tokens/logos/CRCL.svg",
   "CRWV": "/tokens/logos/CRWV.png",
   "GOOGL": "/tokens/logos/GOOGL.png",
-  "PLTR": "/tokens/logos/PLTR.ico",
-  "INTC": "/tokens/logos/INTC.png",
+  "PLTR": "/tokens/logos/PLTR.svg",
+  "INTC": "/tokens/logos/INTC.svg",
   "QQQ": "/tokens/logos/QQQ.png",
   "AMZN": "/tokens/logos/AMZN.png",
   "ORCL": "/tokens/logos/ORCL.png",
@@ -52,5 +52,5 @@ export const logoByTicker: Record<string, string> = {
   "COIN": "/tokens/logos/COIN.png",
   "GME": "/tokens/logos/GME.ico",
   "META": "/tokens/logos/META.svg",
-  "TSM": "/tokens/logos/TSM.ico"
+  "TSM": "/tokens/logos/TSM.png"
 }

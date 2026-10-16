@@ -1,11 +1,12 @@
 {
   "NVDA": {
     "ticker": "NVDA",
-    "file": "/tokens/logos/NVDA.ico",
-    "from": "https://www.nvidia.com/favicon.ico",
+    "file": "/tokens/logos/NVDA.svg",
+    "from": "https://www.nvidia.com/en-us/ (header logo SVG)",
     "site": "nvidia.com",
-    "declaredSize": 16,
-    "fetchedAt": "2026-10-16T19:38:00.761Z"
+    "size": "vector",
+    "fetchedAt": "2026-10-16T21:47:28.739Z",
+    "note": "the eye symbol cropped from the vector logo in nvidia.com’s own header; the wordmark path is dropped"
   },
   "SPCX": {
     "ticker": "SPCX",
@@ -50,11 +51,12 @@
   },
   "ASML": {
     "ticker": "ASML",
-    "file": "/tokens/logos/ASML.ico",
-    "from": "https://www.asml.com/favicon.ico",
+    "file": "/tokens/logos/ASML.svg",
+    "from": "https://www.asml.com/images/icons/asml-logo.svg",
     "site": "asml.com",
-    "declaredSize": 32,
-    "fetchedAt": "2026-10-16T19:38:06.318Z"
+    "size": "vector",
+    "fetchedAt": "2026-10-16T21:47:28.739Z",
+    "note": "ASML’s own vector logo (sprite symbol made standalone, fill = ASML blue as rendered on asml.com)"
   },
   "DELL": {
     "ticker": "DELL",
@@ -175,19 +177,21 @@
   },
   "PLTR": {
     "ticker": "PLTR",
-    "file": "/tokens/logos/PLTR.ico",
-    "from": "https://www.palantir.com/favicon.ico",
+    "file": "/tokens/logos/PLTR.svg",
+    "from": "https://www.palantir.com/ (header logo SVG)",
     "site": "palantir.com",
-    "declaredSize": 32,
-    "fetchedAt": "2026-10-16T19:38:14.462Z"
+    "size": "vector",
+    "fetchedAt": "2026-10-16T21:47:28.739Z",
+    "note": "the ring symbol, viewBox cropped from the vector logo in palantir.com’s own header"
   },
   "INTC": {
     "ticker": "INTC",
-    "file": "/tokens/logos/INTC.png",
-    "from": "https://www.intel.com/etc.clientlibs/settings/wcm/designs/intel/default/resources/favicon-32x32.png",
+    "file": "/tokens/logos/INTC.svg",
+    "from": "https://www.intel.com/content/www/us/en/homepage.html (header logo SVG)",
     "site": "intel.com",
-    "declaredSize": 32,
-    "fetchedAt": "2026-10-16T19:38:14.700Z"
+    "size": "vector",
+    "fetchedAt": "2026-10-16T21:47:28.739Z",
+    "note": "the vector logo in intel.com’s own header"
   },
   "QQQ": {
     "ticker": "QQQ",
@@ -268,11 +272,11 @@
   },
   "TSM": {
     "ticker": "TSM",
-    "file": "/tokens/logos/TSM.ico",
-    "from": "https://www.tsmc.com/favicon.ico",
+    "file": "/tokens/logos/TSM.png",
+    "from": "https://www.tsmc.com/themes/custom/bootstrap_sass/images/logo.png",
     "site": "tsmc.com",
-    "size": 16,
-    "fetchedAt": "2026-10-16T21:19:45.859Z",
-    "note": "www.tsmc.com main icon, fetched with curl (the esg.tsmc.com icon is a different mark)"
+    "size": 132,
+    "fetchedAt": "2026-10-16T21:47:28.739Z",
+    "note": "the logo image in tsmc.com’s own header"
   }
 }

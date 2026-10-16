@@ -103,7 +103,7 @@
     },
     {
       "ticker": "QQQ",
-      "name": "Invesqo QQQ",
+      "name": "Invesco QQQ Trust",
       "token": "0x205812CdBed920aFf76C6580abD681a46D11efc7",
       "decimals": 18,
       "feed": "0x9A41B56b2c24683E2f23BdE15c14BC7c4a58c3c4",
@@ -114,7 +114,7 @@
     },
     {
       "ticker": "SPY",
-      "name": "SPY",
+      "name": "SPDR S&P 500 ETF Trust",
       "token": "0x7138b48df7D98D7e3cc221BfE7192D0a178182D8",
       "decimals": 18,
       "feed": "0xb24D1DeE5F9a3f761D286B56d2bC44CE1D02DF7e",
