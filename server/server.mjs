@@ -5,6 +5,7 @@ import http from 'node:http'
 import { readStats } from './stats.mjs'
 import { readHistory, readTracker, startTrackerLoop } from './tracker.mjs'
 import { apiAccess } from './access.mjs'
+import { addEnquiry } from './store.mjs'
 import { handleAdmin } from './admin.mjs'
 import { handleDeveloper } from './developer.mjs'
 import https from 'node:https'
@@ -53,8 +54,10 @@ function handleContact(req, res) {
     if (!EMAIL_RE.test(data?.email ?? '') || !Array.isArray(data?.types) || data.types.length === 0) {
       return send(res, 400, JSON.stringify({ ok: false }), { 'Content-Type': 'application/json' })
     }
-    // TODO: forward the enquiry to the email provider or CRM (e.g. Resend).
-    console.log('New enquiry', JSON.stringify(data))
+    // Saved for the admin dashboard (/admin). Forwarding to email or Telegram is still to be wired.
+    const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '')
+    addEnquiry({ name: str(data.name, 120), email: str(data.email, 254), message: str(data.message, 5000), types: data.types.slice(0, 8).map((t) => str(t, 40)), budget: str(data.budget, 40) })
+    console.log('New enquiry saved')
     send(res, 200, JSON.stringify({ ok: true }), { 'Content-Type': 'application/json' })
   })
 }

@@ -1,8 +1,123 @@
-// /api/admin/* — the private admin dashboard's API, behind ADMIN_TOKEN.
-// OWNED BY THE ADMIN-DASHBOARD WORK. Stub: handles nothing.
+// /api/admin/* — the private admin dashboard's API.
 //
-// Contract: handleAdmin(req, res, url) -> Promise<boolean>  (true when it answered the request)
+// Auth: `Authorization: Bearer <ADMIN_TOKEN>`, compared in constant time. ADMIN_TOKEN lives only in
+// the box's .env (never the repo). Unset or short, every admin route answers 503, so a missing secret
+// fails closed. Ten failed attempts per IP per 15 minutes lock that address out.
+//
+//   GET  /api/admin/overview                  tracker health, API traffic, venues, process, counts
+//   GET  /api/admin/developers                key requests and keys (no hashes, no secrets)
+//   POST /api/admin/requests/:id/approve|reject
+//   POST /api/admin/keys/:id/revoke
+//   GET  /api/admin/enquiries                 contact-form enquiries, newest first
+//   POST /api/admin/enquiries/:id/handled     { handled: boolean }
 
-export async function handleAdmin() {
-  return false
+import fs from 'node:fs'
+import { accessStats } from './access.mjs'
+import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
+import { readStats } from './stats.mjs'
+import { developers, listEnquiries, markEnquiry, safeEqual, saveDevelopers } from './store.mjs'
+import { trackerHealth } from './tracker.mjs'
+
+const failures = new Map()
+
+function authorised(req, res) {
+  const token = process.env.ADMIN_TOKEN
+  if (!token || token.length < 24) {
+    json(res, 503, { error: 'The admin dashboard is disabled: ADMIN_TOKEN is not set on the server.' })
+    return false
+  }
+  const ip = clientIp(req)
+  const recent = (failures.get(ip) ?? []).filter((t) => Date.now() - t < 900_000)
+  if (recent.length >= 10) {
+    json(res, 429, { error: 'Too many failed attempts. Try again in 15 minutes.' })
+    return false
+  }
+  if (!safeEqual(bearer(req) ?? '', token)) {
+    failures.set(ip, [...recent, Date.now()])
+    json(res, 401, { error: 'Wrong admin token.' })
+    return false
+  }
+  return true
+}
+
+function dirBytes(dir) {
+  try {
+    return fs.readdirSync(dir).reduce((a, f) => {
+      try {
+        return a + fs.statSync(`${dir}/${f}`).size
+      } catch {
+        return a
+      }
+    }, 0)
+  } catch {
+    return null
+  }
+}
+
+export async function handleAdmin(req, res, url) {
+  const p = url.pathname
+  if (!p.startsWith('/api/admin/')) return false
+  if (!authorised(req, res)) return true
+  const db = developers()
+
+  if (p === '/api/admin/overview') {
+    let venues
+    try {
+      const s = await readStats()
+      venues = { generatedAt: s.generatedAt, unread: s.totals.unread, list: s.venues.map((v) => ({ key: v.key, state: v.state, error: v.state === 'error' ? v.error : null })) }
+    } catch (e) {
+      venues = { error: String(e?.message ?? e) }
+    }
+    const mem = process.memoryUsage()
+    const enquiries = listEnquiries()
+    return json(res, 200, {
+      generatedAt: new Date().toISOString(),
+      tracker: trackerHealth(),
+      api: accessStats(),
+      venues,
+      developers: { pending: db.requests.filter((r) => r.status === 'pending').length, approved: db.requests.filter((r) => r.status === 'approved').length, liveKeys: db.keys.filter((k) => !k.revokedAt).length },
+      enquiries: { total: enquiries.length, open: enquiries.filter((e) => !e.handled).length },
+      process: { uptimeSeconds: Math.round(process.uptime()), rssMb: Math.round(mem.rss / 1e6), heapMb: Math.round(mem.heapUsed / 1e6), node: process.version, dataDirBytes: dirBytes(DATA_DIR) },
+    }), true
+  }
+
+  if (p === '/api/admin/developers') {
+    return json(res, 200, {
+      requests: [...db.requests].reverse().map((r) => ({ id: r.id, email: r.email, project: r.project, url: r.url, use: r.use, status: r.status, createdAt: r.createdAt, decidedAt: r.decidedAt, keyId: r.keyId, claimedAt: r.claimedAt })),
+      keys: [...db.keys].reverse().map((k) => ({ id: k.id, prefix: k.prefix, requestId: k.requestId, project: k.project, email: k.email, limit: k.limit, createdAt: k.createdAt, revokedAt: k.revokedAt })),
+    }), true
+  }
+
+  let m = p.match(/^\/api\/admin\/requests\/([\w-]+)\/(approve|reject)$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const r = db.requests.find((x) => x.id === m[1])
+    if (!r) return json(res, 404, { error: 'No such request.' }), true
+    if (r.status !== 'pending') return json(res, 409, { error: `Already ${r.status}.` }), true
+    r.status = m[2] === 'approve' ? 'approved' : 'rejected'
+    r.decidedAt = new Date().toISOString()
+    saveDevelopers()
+    return json(res, 200, { id: r.id, status: r.status }), true
+  }
+
+  m = p.match(/^\/api\/admin\/keys\/([\w-]+)\/revoke$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const k = db.keys.find((x) => x.id === m[1])
+    if (!k) return json(res, 404, { error: 'No such key.' }), true
+    k.revokedAt ??= new Date().toISOString()
+    saveDevelopers()
+    return json(res, 200, { id: k.id, revokedAt: k.revokedAt }), true
+  }
+
+  if (p === '/api/admin/enquiries') return json(res, 200, { enquiries: [...listEnquiries()].reverse() }), true
+
+  m = p.match(/^\/api\/admin\/enquiries\/([\w-]+)\/handled$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const body = await readJson(req)
+    return (markEnquiry(m[1], !!body?.handled) ? json(res, 200, { ok: true }) : json(res, 404, { error: 'No such enquiry.' }), true)
+  }
+
+  return json(res, 404, { error: 'not found' }), true
 }
