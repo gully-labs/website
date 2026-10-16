@@ -38,7 +38,7 @@ export function ApiKeys() {
 
       <Section id="request" title="Requesting a key">
         <P>
-          Request a key at <Ext href="https://gullylabs.xyz/developers">gullylabs.xyz/developers</Ext>. Tell us what you are building and roughly how often you will call the API.
+          Request a key at <Ext href="https://developers.gullylabs.xyz">developers.gullylabs.xyz</Ext>. Tell us what you are building and roughly how often you will call the API.
         </P>
       </Section>
 

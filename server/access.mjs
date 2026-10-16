@@ -61,7 +61,7 @@ export function apiAccess(req) {
   const secret = bearer(req)
   if (secret) {
     const key = findKey(secret)
-    if (!key) return { ok: false, status: 401, error: 'Unknown or revoked API key. Request one at https://gullylabs.xyz/developers.' }
+    if (!key) return { ok: false, status: 401, error: 'Unknown or revoked API key. Request one at https://developers.gullylabs.xyz.' }
     const c = count(`key:${key.id}`, key.limit)
     tally(key.id, !c.allowed)
     return c.allowed ? { ok: true, keyId: key.id, limit: key.limit, remaining: c.remaining } : { ok: false, status: 429, error: 'Rate limit reached for this key.', retryAfter: c.retryAfter }
@@ -70,7 +70,7 @@ export function apiAccess(req) {
   tally(null, !c.allowed)
   return c.allowed
     ? { ok: true, keyId: null, limit: ANON_LIMIT_PER_MIN, remaining: c.remaining }
-    : { ok: false, status: 429, error: `Anonymous limit is ${ANON_LIMIT_PER_MIN} requests a minute. An API key raises it: https://gullylabs.xyz/developers.`, retryAfter: c.retryAfter }
+    : { ok: false, status: 429, error: `Anonymous limit is ${ANON_LIMIT_PER_MIN} requests a minute. An API key raises it: https://developers.gullylabs.xyz.`, retryAfter: c.retryAfter }
 }
 
 /** One key's usage, for its holder's dashboard. */

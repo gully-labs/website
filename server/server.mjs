@@ -90,6 +90,18 @@ const server = http.createServer(async (req, res) => {
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
   }
+  // The developer dashboard lives on developers.gullylabs.xyz. Elsewhere /developers moves there; on that
+  // host any other page belongs to the main site. The blog host has no blog yet, so it sends readers home
+  // with a temporary redirect that can be dropped the day a blog is served there.
+  const isDevelopers = host.startsWith('developers.')
+  const isPage = !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/') && !/\.[a-z0-9]+$/i.test(url.pathname)
+  if (!isDevelopers && !isLocal && (url.pathname === '/developers' || url.pathname.startsWith('/developers/'))) {
+    return send(res, 301, '', { Location: 'https://developers.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
+  }
+  if (isDevelopers && isPage && url.pathname !== '/') {
+    return send(res, 301, '', { Location: 'https://gullylabs.xyz' + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
+  }
+  if (host.startsWith('blog.')) return send(res, 302, '', { Location: 'https://gullylabs.xyz/', 'Cache-Control': 'no-store' })
   if (isAdmin && url.pathname === '/robots.txt') return send(res, 200, 'User-agent: *\nDisallow: /\n', { 'Content-Type': 'text/plain; charset=utf-8' })
   if (isAdmin) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
 

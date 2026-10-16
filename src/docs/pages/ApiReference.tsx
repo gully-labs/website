@@ -177,7 +177,7 @@ export function ApiReference() {
           rows={[
             ['400', 'history: chain or ticker malformed', <>Check the parameters. Body: <C>{'{"error":"chain and ticker"}'}</C>.</>],
             ['405', 'a method other than GET or OPTIONS', 'Use GET.'],
-            ['401', 'unknown or revoked API key', 'Check the key, or request one at gullylabs.xyz/developers.'],
+            ['401', 'unknown or revoked API key', 'Check the key, or request one at developers.gullylabs.xyz.'],
             ['429', 'rate limit exceeded', 'Wait for Retry-After seconds, or use an API key.'],
             ['502', 'the tracker could not be built at all', 'Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.'],
           ]}

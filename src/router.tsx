@@ -3,9 +3,9 @@ import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
 import { AboutRoute, AdminRoute, DevelopersRoute, ProjectDetailRoute, ServicesRoute, WidgetRoute } from './pages/LazyRoutes'
-import { GoTo } from './pages/GoTo'
+import { GoTo, ToSite } from './pages/GoTo'
 import { TrackerRoute } from './pages/TrackerRoute'
-import { ADMIN_URL, isAdminHost, isDocsHost, isLocalHost } from './site-host'
+import { ADMIN_URL, DEVELOPERS_URL, isAdminHost, isDevelopersHost, isDocsHost, isLocalHost } from './site-host'
 
 const mainRoutes = [
   {
@@ -17,7 +17,7 @@ const mainRoutes = [
       { path: '/about', element: <AboutRoute /> },
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/widget', element: <WidgetRoute /> },
-      { path: '/developers', element: <DevelopersRoute /> },
+      { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={DEVELOPERS_URL} /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
@@ -31,4 +31,16 @@ const mainRoutes = [
 // On the admin host every path is the dashboard; it has its own chrome (no site header or footer).
 const adminRoutes = [{ path: '*', element: <AdminRoute /> }]
 
-export const router = createBrowserRouter(isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : mainRoutes)
+// On the developers host the dashboard is the home page, inside the site chrome; every other page
+// belongs to the main site, so it leaves for it with the same path.
+const developersRoutes = [
+  {
+    element: <Layout />,
+    children: [
+      { path: '/', element: <DevelopersRoute /> },
+      { path: '*', element: <ToSite /> },
+    ],
+  },
+]
+
+export const router = createBrowserRouter(isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isDevelopersHost() ? developersRoutes : mainRoutes)
