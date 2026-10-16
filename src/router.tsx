@@ -4,6 +4,7 @@ import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
 import { AboutRoute, AdminRoute, DevelopersRoute, ProjectDetailRoute, ServicesRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
+import { RouteError } from './pages/RouteError'
 import { TrackerRoute } from './pages/TrackerRoute'
 import { ADMIN_URL, DEVELOPERS_URL, isAdminHost, isDevelopersHost, isDocsHost, isLocalHost } from './site-host'
 
@@ -43,4 +44,8 @@ const developersRoutes = [
   },
 ]
 
-export const router = createBrowserRouter(isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isDevelopersHost() ? developersRoutes : mainRoutes)
+const routes = isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isDevelopersHost() ? developersRoutes : mainRoutes
+
+// One error boundary over every host's routes: a page left open across a deploy reloads onto the new
+// build instead of showing React Router's default error screen.
+export const router = createBrowserRouter([{ errorElement: <RouteError />, children: routes }])

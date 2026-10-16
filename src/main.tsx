@@ -9,7 +9,13 @@ import '@fontsource/hanken-grotesk/600.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import './index.css'
+import { reloadForNewBuild } from './lib/staleBuild'
 import { router } from './router'
+
+// Vite reports a code file that failed to load (usually: deleted by a deploy while this page was open).
+window.addEventListener('vite:preloadError', (e) => {
+  if (reloadForNewBuild()) e.preventDefault()
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

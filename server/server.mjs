@@ -6,7 +6,7 @@ import { readStats } from './stats.mjs'
 import { readHistory, readTracker, startTrackerLoop } from './tracker.mjs'
 import { apiAccess } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
-import { clientIp, readJson } from './http.mjs'
+import { clientIp, DATA_DIR, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { handleBlog } from './blog.mjs'
@@ -19,6 +19,7 @@ import path from 'node:path'
 const PORT = Number(process.env.PORT ?? 8080)
 const ROOT = path.resolve(process.env.DIST_DIR ?? 'dist')
 const INDEX = path.join(ROOT, 'index.html')
+const ASSET_ARCHIVE = path.join(DATA_DIR, 'assets-archive')
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const MAX_BODY = 20_000
 
@@ -183,6 +184,12 @@ const server = http.createServer(async (req, res) => {
 
   fs.stat(file, (err, stat) => {
     if (!err && stat.isFile()) return serveFile(res, file, req.method)
+    // A code file from an earlier build, asked for by a page opened before the last deploy.
+    if (url.pathname.startsWith('/assets/')) {
+      const old = path.join(ASSET_ARCHIVE, path.basename(url.pathname))
+      if (fs.existsSync(old)) return serveFile(res, old, req.method)
+      return send(res, 404, '')
+    }
     // Every other path gets the app shell, with that page's own head tags so crawlers and link
     // previews see the right title, description and canonical. A path no page owns is a 404.
     fs.readFile(INDEX, 'utf8', (e, html) => {
@@ -193,6 +200,27 @@ const server = http.createServer(async (req, res) => {
     })
   })
 })
+
+// Keep every build's hashed files for 30 days in the data volume, so a page left open across a deploy
+// can still load the chunks it was built with. Hashed names never collide between builds.
+function archiveAssets() {
+  try {
+    fs.mkdirSync(ASSET_ARCHIVE, { recursive: true })
+    const live = path.join(ROOT, 'assets')
+    for (const f of fs.existsSync(live) ? fs.readdirSync(live) : []) {
+      const dst = path.join(ASSET_ARCHIVE, f)
+      if (!fs.existsSync(dst)) fs.copyFileSync(path.join(live, f), dst)
+    }
+    const cutoff = Date.now() - 30 * 86_400_000
+    for (const f of fs.readdirSync(ASSET_ARCHIVE)) {
+      const p = path.join(ASSET_ARCHIVE, f)
+      if (fs.statSync(p).mtimeMs < cutoff && !fs.existsSync(path.join(live, f))) fs.rmSync(p)
+    }
+  } catch (e) {
+    console.error('asset archive:', e?.message ?? e)
+  }
+}
+archiveAssets()
 
 server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
 startTrackerLoop()
