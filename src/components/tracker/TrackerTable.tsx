@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import { ChainLogo, StockLogo } from './StockLogo'
 import { xPost } from '../../lib/share'
-import { ageText, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, STATUS_LABEL, UP, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
+import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, STATUS_LABEL, UP, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
 import { SocialIcon } from '../SocialIcon'
 
 type SortKey = 'ticker' | 'gap' | 'absgap' | 'onchain' | 'liquidity' | 'volume'
@@ -140,10 +141,18 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                 >
                   <td className="px-3 py-2">
                     <button type="button" onClick={() => onSelect(id)} className="flex items-center gap-3 bg-transparent p-0 text-left" aria-pressed={on}>
-                      <span className={`flex h-7 min-w-12 items-center justify-center rounded-[6px] border px-2 font-display text-[15px] font-bold ${on ? 'border-gold text-gold' : 'border-line-strong text-ink'}`}>{r.ticker}</span>
+                      <StockLogo row={r} size={30} active={on} />
                       <span className="flex flex-col">
-                        <span className="text-ink-2">{r.name}</span>
-                        {multi && <span className="font-mono text-[10px] text-faint">{CHAIN_SHORT[r.chain] ?? r.chain}</span>}
+                        <span className="flex items-baseline gap-2">
+                          <b className={`font-display text-[15px] font-bold ${on ? 'text-gold' : 'text-ink'}`}>{r.ticker}</b>
+                          <span className="text-ink-2">{r.name}</span>
+                        </span>
+                        {multi && (
+                          <span className="flex items-center gap-1 font-mono text-[10px] text-faint">
+                            <ChainLogo chain={r.chain} size={10} />
+                            {CHAIN_NAME[r.chain] ?? r.chain}
+                          </span>
+                        )}
                       </span>
                     </button>
                   </td>
@@ -198,6 +207,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
               >
                 <span className="flex items-center justify-between gap-3">
                   <span className="flex items-center gap-3">
+                    <StockLogo row={r} size={32} active={selected === id} />
                     <span className="font-display text-[20px] font-bold">{r.ticker}</span>
                     <span className="text-[13px] text-muted">
                       {r.name}

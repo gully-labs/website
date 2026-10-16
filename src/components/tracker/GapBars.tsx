@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChainLogo, StockLogo } from './StockLogo'
 import { DOWN, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
 /* Every token's gap as a bar from a centre axis: right of centre trades above its fair price, left
@@ -51,11 +52,12 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
                 onBlur={() => setHover(null)}
                 aria-pressed={selected === id(r)}
                 aria-label={`${r.ticker} ${fmtGap(r.gapPct)}, onchain ${fmtPrice(r.onchain)}, fair ${fmtPrice(r.fair)}${thin ? ', thin pool' : ''}`}
-                className={`grid h-[20px] w-full grid-cols-[76px_1fr] items-center gap-2 rounded-[4px] bg-transparent p-0 text-left transition-colors ${active ? 'bg-surface-hover' : ''}`}
+                className={`grid h-[22px] w-full grid-cols-[104px_1fr] items-center gap-2 rounded-[4px] bg-transparent p-0 text-left transition-colors ${active ? 'bg-surface-hover' : ''}`}
               >
-                <span className={`truncate pr-1 text-right font-mono text-[12px] ${selected === id(r) ? 'text-gold' : 'text-ink-2'}`}>
-                  {r.ticker}
-                  {multi && <span className="ml-1 text-[9px] text-faint">{r.chain === 'bsc' ? 'BNB' : 'RH'}</span>}
+                <span className={`flex min-w-0 items-center justify-end gap-[6px] pr-1 font-mono text-[12px] ${selected === id(r) ? 'text-gold' : 'text-ink-2'}`}>
+                  <StockLogo row={r} size={16} chainBadge={false} active={selected === id(r)} />
+                  <span className="truncate">{r.ticker}</span>
+                  {multi && <ChainLogo chain={r.chain} size={10} />}
                 </span>
                 <span className="relative h-full">
                   <span

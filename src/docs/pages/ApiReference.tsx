@@ -82,7 +82,8 @@ export function ApiReference() {
             ['sessionName', 'string', <><C>24/5</C> or <C>NYSE hours</C>.</>],
             ['fairMethod', 'string', 'How fair is derived on this chain, in words.'],
             ['poolsAsOf', 'string | null', 'Time of the pool read in use.'],
-            ['poolsStale', 'boolean', 'True when the pool read is the last good one, served while DexScreener is backing off.'],
+            ['poolsStale', 'boolean', 'True when the pool read is the last good one, served while every price source for that chain is backing off.'],
+            ['poolSource', 'string | null', 'Where pool prices came from this cycle: on chain, DexScreener or GeckoTerminal.'],
           ]}
         />
       </Section>
@@ -111,10 +112,10 @@ export function ApiReference() {
         <H3>pool</H3>
         <Fields
           rows={[
-            ['dex', 'string', 'DexScreener’s id for the venue.'],
+            ['dex', 'string', 'The venue’s id, as DexScreener or GeckoTerminal names it.'],
             ['labels', 'string[]', 'Venue labels, e.g. v3.'],
             ['against', 'string', 'Symbol of the other token in the pool.'],
-            ['url', 'string', 'The pool on DexScreener.'],
+            ['url', 'string', 'The pool on DexScreener or GeckoTerminal.'],
             ['pair', 'string', 'Pool address.'],
             ['liquidityUsd', 'number', 'Liquidity of this pool.'],
             ['volume24hUsd', 'number', '24-hour volume of this pool.'],

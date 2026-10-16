@@ -28,7 +28,7 @@ export function Methodology() {
             <strong className="text-ink">Fair</strong>: the Chainlink feed for that stock, read on chain.
           </li>
           <li>
-            <strong className="text-ink">Onchain</strong>: the token’s price in its deepest pool, from DexScreener’s public API.
+            <strong className="text-ink">Onchain</strong>: the token’s price in its deepest pool, read straight from that pool’s contract.
           </li>
         </List>
         <P>Both are in US dollars per token. Each is either a number or unreadable; an unreadable price is never replaced with zero or with an older figure.</P>
@@ -54,10 +54,13 @@ export function Methodology() {
 
       <Section id="onchain" title="Onchain price">
         <P>
-          The tracker asks DexScreener for every pool of every token, 30 tokens per request. For each token it keeps the pools with a positive price and picks one: pools quoted against a native coin or a dollar stablecoin come first (WETH, ETH, WBNB, BNB, USDC, USDG, USDT, USD1, FDUSD), then the deepest by liquidity.
+          Once an hour the tracker asks DexScreener (GeckoTerminal if DexScreener refuses) for every pool of every token, 30 tokens per request. For each token it keeps the pools with a positive price and picks one: pools quoted against a native coin or a dollar stablecoin come first (WETH, ETH, WBNB, BNB, USDC, USDG, USDT, USD1, FDUSD), then the deepest by liquidity.
         </P>
         <P>
-          DexScreener prices a pool’s base token. Where the stock is the quote token, its price is <C>priceUsd / priceNative</C>. The row’s <C>pool</C> object names the pool used, its liquidity and 24-hour volume, and totals across every pool found for the token.
+          Between those reads, every refresh prices the chosen pool from the chain itself: <C>slot0()</C> on a v3 pool, <C>StateView.getSlot0</C> on a Uniswap v4 pool. The pool’s ratio is turned into dollars with $1 for a dollar stablecoin, Chainlink’s ETH/USD or BNB/USD feed for the native coin, and this cycle’s fair price where the quote is itself a stock token. The chain’s <C>poolSource</C> says <C>on chain</C> when this is the source.
+        </P>
+        <P>
+          The row’s <C>pool</C> object names the pool used, its liquidity and 24-hour volume, and totals across every pool found for the token. Liquidity and volume come from the hourly read, because the chain does not publish them in a usable form.
         </P>
       </Section>
 
@@ -101,7 +104,7 @@ export function Methodology() {
         <List>
           <li>The tracker reads its sources at most once every two minutes. Every visitor and every API caller share that one read.</li>
           <li>
-            If DexScreener cannot be read, that chain backs off (one minute, doubling, at most 30 minutes) and keeps serving its last good pool read, marked <C>poolsStale: true</C> with its time in <C>poolsAsOf</C>, and <C>poolStale: true</C> on each row. A pool read older than six hours is dropped rather than shown. Fair prices stay live throughout.
+            If the chain cannot be read and neither API answers, that chain backs off (one minute, doubling, at most 30 minutes) and keeps serving its last good pool read, marked <C>poolsStale: true</C> with its time in <C>poolsAsOf</C>, and <C>poolStale: true</C> on each row. A pool read older than six hours is dropped rather than shown. Fair prices stay live throughout.
           </li>
           <li>
             Every five minutes one snapshot per token is recorded, and kept for seven days. Rows without a gap, or with a stale pool read, are not recorded. The <DocLink to="api" hash="history">history endpoint</DocLink> serves them.

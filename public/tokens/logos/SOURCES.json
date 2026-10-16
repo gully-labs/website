@@ -1,0 +1,275 @@
+{
+  "NVDA": {
+    "ticker": "NVDA",
+    "file": "/tokens/logos/NVDA.ico",
+    "from": "https://www.nvidia.com/favicon.ico",
+    "site": "nvidia.com",
+    "declaredSize": 16,
+    "fetchedAt": "2026-10-16T19:38:00.761Z"
+  },
+  "SPCX": {
+    "ticker": "SPCX",
+    "file": "/tokens/logos/SPCX.ico",
+    "from": "https://www.spacex.com/assets/favicon-spacex.ico",
+    "site": "spacex.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:01.301Z"
+  },
+  "USO": {
+    "ticker": "USO",
+    "file": "/tokens/logos/USO.png",
+    "from": "https://www.uscfinvestments.com/site-template/assets/favicon/apple-touch-icon.png",
+    "site": "uscfinvestments.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:03.253Z"
+  },
+  "TSLA": {
+    "ticker": "TSLA",
+    "file": "/tokens/logos/TSLA.png",
+    "from": "https://www.google.com/s2/favicons?domain=tesla.com&sz=256",
+    "site": "tesla.com",
+    "size": 152,
+    "fetchedAt": "2026-10-16T19:48:27.854Z",
+    "note": "tesla.com’s own largest icon, via Google’s favicon service"
+  },
+  "CLSK": {
+    "ticker": "CLSK",
+    "file": "/tokens/logos/CLSK.png",
+    "from": "https://www.cleanspark.com/assets/v3/img/icon/favicon-192x192.png",
+    "site": "cleanspark.com",
+    "declaredSize": 192,
+    "fetchedAt": "2026-10-16T19:38:05.140Z"
+  },
+  "IONQ": {
+    "ticker": "IONQ",
+    "file": "/tokens/logos/IONQ.png",
+    "from": "https://cdn.prod.website-files.com/68836cf9cff21bf9efa61419/69134555b96bed09364a35dc_IonQ%20Webclip.png",
+    "site": "ionq.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:05.533Z"
+  },
+  "ASML": {
+    "ticker": "ASML",
+    "file": "/tokens/logos/ASML.ico",
+    "from": "https://www.asml.com/favicon.ico",
+    "site": "asml.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:06.318Z"
+  },
+  "DELL": {
+    "ticker": "DELL",
+    "file": "/tokens/logos/DELL.png",
+    "from": "https://www.dell.com/apple-touch-icon.png",
+    "site": "dell.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:06.663Z"
+  },
+  "RGTI": {
+    "ticker": "RGTI",
+    "file": "/tokens/logos/RGTI.png",
+    "from": "https://www.rigetti.com/apple-touch-icon.png",
+    "site": "rigetti.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:07.211Z"
+  },
+  "RKLB": {
+    "ticker": "RKLB",
+    "file": "/tokens/logos/RKLB.png",
+    "from": "https://rocketlabcorp.com/touchicon.png",
+    "site": "rocketlabcorp.com",
+    "size": 180,
+    "fetchedAt": "2026-10-16T19:46:39.018Z",
+    "note": "largest icon the company homepage declares, read in Chromium (scripts/hires-company-logos.mjs)"
+  },
+  "MSTR": {
+    "ticker": "MSTR",
+    "file": "/tokens/logos/MSTR.png",
+    "from": "https://www.strategy.com/apple-touch-icon.png",
+    "site": "strategy.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:08.150Z"
+  },
+  "BABA": {
+    "ticker": "BABA",
+    "file": "/tokens/logos/BABA.png",
+    "from": "https://cdn.dexscreener.com/cms/images/ZWTEpQtOhGSyc_z_",
+    "site": "dexscreener.com",
+    "size": 256,
+    "fetchedAt": "2026-10-16T19:48:27.854Z",
+    "note": "the BABA token’s logo on DexScreener (Robinhood Chain)"
+  },
+  "EWY": {
+    "ticker": "EWY",
+    "file": "/tokens/logos/EWY.ico",
+    "from": "https://www.ishares.com/blk-one02-c-assets/ishares-favicon.ico",
+    "site": "ishares.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:11.151Z"
+  },
+  "NBIS": {
+    "ticker": "NBIS",
+    "file": "/tokens/logos/NBIS.svg",
+    "from": "https://nebius.com/favicon/favicon.svg",
+    "site": "nebius.com",
+    "declaredSize": 512,
+    "fetchedAt": "2026-10-16T19:38:11.515Z"
+  },
+  "MSFT": {
+    "ticker": "MSFT",
+    "file": "/tokens/logos/MSFT.ico",
+    "from": "https://www.microsoft.com/favicon.ico?v2",
+    "site": "microsoft.com",
+    "size": 128,
+    "fetchedAt": "2026-10-16T19:47:04.101Z",
+    "note": "largest icon the company homepage declares, read in Chromium (scripts/hires-company-logos.mjs)"
+  },
+  "AAPL": {
+    "ticker": "AAPL",
+    "file": "/tokens/logos/AAPL.png",
+    "from": "https://www.apple.com/apple-touch-icon.png",
+    "site": "apple.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:12.250Z"
+  },
+  "AMD": {
+    "ticker": "AMD",
+    "file": "/tokens/logos/AMD.ico",
+    "from": "https://www.amd.com/content/dam/code/images/favicon/favicon.ico",
+    "site": "amd.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:12.501Z"
+  },
+  "SLV": {
+    "ticker": "SLV",
+    "file": "/tokens/logos/SLV.ico",
+    "from": "https://www.ishares.com/blk-one02-c-assets/ishares-favicon.ico",
+    "site": "ishares.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:13.160Z"
+  },
+  "CRCL": {
+    "ticker": "CRCL",
+    "file": "/tokens/logos/CRCL.svg",
+    "from": "https://cdn.prod.website-files.com/668c08d1b8a9330bd1d786ad/669a20df8ac2810a6dd50e67_favicon-256.svg",
+    "site": "circle.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:13.599Z"
+  },
+  "CRWV": {
+    "ticker": "CRWV",
+    "file": "/tokens/logos/CRWV.png",
+    "from": "https://cdn.prod.website-files.com/62ba1fb86485b6d5029975c4/676dd39272d1e888a56c48ad_logo_coreweave_solo_256x256.png",
+    "site": "coreweave.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:13.972Z"
+  },
+  "GOOGL": {
+    "ticker": "GOOGL",
+    "file": "/tokens/logos/GOOGL.png",
+    "from": "https://www.google.com/s2/favicons?domain=google.com&sz=256",
+    "site": "google.com",
+    "size": 144,
+    "fetchedAt": "2026-10-16T19:48:27.854Z",
+    "note": "google.com’s own largest icon"
+  },
+  "PLTR": {
+    "ticker": "PLTR",
+    "file": "/tokens/logos/PLTR.ico",
+    "from": "https://www.palantir.com/favicon.ico",
+    "site": "palantir.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:14.462Z"
+  },
+  "INTC": {
+    "ticker": "INTC",
+    "file": "/tokens/logos/INTC.png",
+    "from": "https://www.intel.com/etc.clientlibs/settings/wcm/designs/intel/default/resources/favicon-32x32.png",
+    "site": "intel.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:14.700Z"
+  },
+  "QQQ": {
+    "ticker": "QQQ",
+    "file": "/tokens/logos/QQQ.png",
+    "from": "https://www.invesco.com/etc.clientlibs/invesco/clientlibs/main/resources/images/apple-touch-icon.png",
+    "site": "invesco.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:14.991Z"
+  },
+  "AMZN": {
+    "ticker": "AMZN",
+    "file": "/tokens/logos/AMZN.ico",
+    "from": "https://www.amazon.com/favicon.ico",
+    "site": "amazon.com",
+    "declaredSize": 16,
+    "fetchedAt": "2026-10-16T19:38:15.321Z"
+  },
+  "ORCL": {
+    "ticker": "ORCL",
+    "file": "/tokens/logos/ORCL.png",
+    "from": "https://www.oracle.com/apple-touch-icon.png",
+    "site": "oracle.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:15.554Z"
+  },
+  "MU": {
+    "ticker": "MU",
+    "file": "/tokens/logos/MU.png",
+    "from": "https://www.micron.com/content/dam/micron/global/favicon/apple-icon-180x180.png",
+    "site": "micron.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:15.838Z"
+  },
+  "SNDK": {
+    "ticker": "SNDK",
+    "file": "/tokens/logos/SNDK.ico",
+    "from": "https://www.sandisk.com/content/dam/sandisk/en-us/portal-assets/logos/favicon.ico",
+    "site": "sandisk.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:16.058Z"
+  },
+  "SPY": {
+    "ticker": "SPY",
+    "file": "/tokens/logos/SPY.png",
+    "from": "https://www.ssga.com/apple-touch-icon-precomposed.png",
+    "site": "ssga.com",
+    "size": 152,
+    "fetchedAt": "2026-10-16T19:46:49.695Z",
+    "note": "largest icon the company homepage declares, read in Chromium (scripts/hires-company-logos.mjs)"
+  },
+  "COIN": {
+    "ticker": "COIN",
+    "file": "/tokens/logos/COIN.png",
+    "from": "https://www.coinbase.com/apple-touch-icon.png",
+    "site": "coinbase.com",
+    "declaredSize": 180,
+    "fetchedAt": "2026-10-16T19:38:16.933Z"
+  },
+  "GME": {
+    "ticker": "GME",
+    "file": "/tokens/logos/GME.ico",
+    "from": "https://www.gamestop.com/favicon.ico",
+    "site": "gamestop.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:43:57.033Z",
+    "note": "fetched with curl; the script is refused by gamestop.com"
+  },
+  "META": {
+    "ticker": "META",
+    "file": "/tokens/logos/META.svg",
+    "from": "https://static.xx.fbcdn.net/rsrc.php/yf/r/-7pQO6hUGK_.svg",
+    "site": "meta.com",
+    "declaredSize": 512,
+    "fetchedAt": "2026-10-16T19:43:57.033Z",
+    "note": "the SVG icon www.meta.com declares, on Meta’s own CDN; fetched with curl"
+  },
+  "TSM": {
+    "ticker": "TSM",
+    "file": "/tokens/logos/TSM.ico",
+    "from": "https://esg.tsmc.com/favicon.ico",
+    "site": "tsmc.com",
+    "declaredSize": 32,
+    "fetchedAt": "2026-10-16T19:38:46.954Z",
+    "note": "fetched with curl; the script cannot reach tsmc.com"
+  }
+}

@@ -78,7 +78,7 @@ export function Overview() {
 
       <Section id="sources" title="Where the numbers come from">
         <P>
-          Fair prices are Chainlink feeds read on chain with <C>latestRoundData()</C>. Onchain prices come from DexScreener’s public API. Nothing is estimated or typed in: a price that cannot be read is reported as unreadable, never as zero. The <DocLink to="methodology">methodology</DocLink> gives the exact rules.
+          Fair prices are Chainlink feeds read on chain with <C>latestRoundData()</C>. Onchain prices are read from each token’s deepest pool on chain; DexScreener and GeckoTerminal only find the pool. Nothing is estimated or typed in: a price that cannot be read is reported as unreadable, never as zero. The <DocLink to="methodology">methodology</DocLink> gives the exact rules.
         </P>
         <Callout label="NOT ADVICE">The tracker reports what two public sources say. It is not investment advice, and a gap is not a promise that anyone can trade it away.</Callout>
       </Section>

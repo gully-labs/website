@@ -1,0 +1,4 @@
+{
+  "robinhood": { "file": "/chains/robinhood.png", "from": "https://robinhood.com (its own site icon, via https://www.google.com/s2/favicons?domain=robinhood.com&sz=256)", "fetchedAt": "2026-10-16T19:48:11Z" },
+  "bsc": { "file": "/chains/bnb.png", "from": "https://coin-images.coingecko.com/coins/images/12591/large/binance-coin-logo.png (BNB's logo on its GeckoTerminal/CoinGecko listing)", "fetchedAt": "2026-10-16T19:48:11Z" }
+}

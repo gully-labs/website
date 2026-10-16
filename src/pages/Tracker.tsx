@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ArrowUpRight, BookOpen, KeyRound, Puzzle } from 'lucide-react'
+import { DEVELOPERS_URL, DOCS_URL } from '../site-host'
+import { StockLogo } from '../components/tracker/StockLogo'
 import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
 import { GapBars } from '../components/tracker/GapBars'
@@ -44,6 +47,13 @@ function Card({ title, sub, children, i, className = '' }: { title: string; sub?
 
 /* Stock tokens against their fair price, live, on every chain the tracker reads. Compact: one band
    of headline figures, then a grid of charts, then the table. */
+/* Where a builder goes next: the same figures as JSON, as an embed, or with a higher rate limit. */
+const BUILD = [
+  { title: 'Public API', body: 'Every row on this page as JSON, plus 7 days of gap history. 60 calls a minute with no key.', href: `${DOCS_URL}/api`, icon: BookOpen },
+  { title: 'Embed widget', body: 'One script tag puts a live gap card for any stock on your site.', href: '/widget', icon: Puzzle },
+  { title: 'Developer portal', body: 'Request an API key for 600 calls a minute, and manage it in one place.', href: DEVELOPERS_URL, icon: KeyRound },
+]
+
 export function Tracker() {
   const st = useTracker()
   const [chain, setChain] = useState<string>('all')
@@ -160,12 +170,15 @@ export function Tracker() {
               {sel ? (
                 <>
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex flex-col gap-1">
-                      <span className={cardSub}>{CHAIN_NAME[sel.chain] ?? sel.chain}</span>
-                      <h2 className="m-0 flex flex-wrap items-baseline gap-x-3 font-display text-[30px] leading-none font-extrabold uppercase">
-                        {sel.ticker}
-                        <span className="font-sans text-[14px] font-normal normal-case text-muted">{sel.name}</span>
-                      </h2>
+                    <div className="flex items-center gap-3">
+                      <StockLogo row={sel} size={44} />
+                      <div className="flex flex-col gap-1">
+                        <span className={cardSub}>{CHAIN_NAME[sel.chain] ?? sel.chain}</span>
+                        <h2 className="m-0 flex flex-wrap items-baseline gap-x-3 font-display text-[30px] leading-none font-extrabold uppercase">
+                          {sel.ticker}
+                          <span className="font-sans text-[14px] font-normal normal-case text-muted">{sel.name}</span>
+                        </h2>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <StatusBadge r={sel} />
@@ -226,12 +239,31 @@ export function Tracker() {
             <TrackerTable rows={rows} selected={pick} onSelect={select} now={now} />
           </section>
 
+          <section aria-label="Build with this data" className="px-page pb-12">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-3">
+              {BUILD.map((b) => (
+                <a key={b.title} href={b.href} className="group flex items-start gap-4 rounded-card border border-line bg-surface p-5 text-ink transition-colors hover:border-gold hover:text-ink">
+                  <span className="flex size-10 flex-none items-center justify-center rounded-btn border border-gold-line text-gold">
+                    <b.icon aria-hidden size={18} strokeWidth={1.75} />
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="flex items-center gap-2 font-display text-[18px] font-bold uppercase">
+                      {b.title}
+                      <ArrowUpRight aria-hidden size={15} className="text-faint transition-colors group-hover:text-gold" />
+                    </span>
+                    <span className="text-[14px] leading-[1.5] text-muted">{b.body}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          </section>
+
           <section className="border-t border-line bg-bg-alt px-page py-10">
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-8">
               <div className="flex flex-col gap-2">
                 <span className="font-mono text-[12px] tracking-[1.5px] text-gold">HOW IT WORKS</span>
                 <p className="m-0 text-[14px] leading-[1.6] text-muted">
-                  <b className="font-medium text-ink-2">Onchain</b> is each token's deepest pool, pools against ETH, BNB or a dollar stablecoin first, from DexScreener. <b className="font-medium text-ink-2">Fair</b> is Chainlink: on Robinhood Chain the feed prices the token; on BNB Chain it prices the share, multiplied by the token's on-chain multiplier.
+                  <b className="font-medium text-ink-2">Onchain</b> is each token's deepest pool, pools against ETH, BNB or a dollar stablecoin first, priced straight from the pool contract every minute. DexScreener and GeckoTerminal find the pool and report its liquidity and volume. <b className="font-medium text-ink-2">Fair</b> is Chainlink: on Robinhood Chain the feed prices the token; on BNB Chain it prices the share, multiplied by the token's on-chain multiplier.
                 </p>
               </div>
               <div className="flex flex-col gap-2">
