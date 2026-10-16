@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigationType, useSearchParams } from 'react-router'
-import { MotionConfig, motion } from 'motion/react'
 import type { ServiceType } from '../content/services'
 import { ClosingCta } from './ClosingCta'
 import { ContactContext } from './ContactContext'
 import { emptyForm, type ContactForm } from './contactForm'
-import { ContactModal } from './ContactModal'
 import { Footer } from './Footer'
 import { Header } from './Header'
+
+// The contact modal (and the animation library it uses) loads the first time it is opened, so the
+// landing never downloads it.
+const ContactModal = lazy(() => import('./ContactModal').then((m) => ({ default: m.ContactModal })))
 
 const HEADER_OFFSET = 72
 
@@ -37,6 +39,8 @@ export function Layout() {
 
   // The modal can also be opened with ?contact=1.
   const [open, setOpen] = useState(() => searchParams.get('contact') === '1')
+  // Mounted from the first open onwards, so its close animation can still play.
+  const [everOpened, setEverOpened] = useState(open)
   const [form, setForm] = useState<ContactForm>(emptyForm)
   const [sent, setSent] = useState(false)
 
@@ -45,6 +49,7 @@ export function Layout() {
       if (sent) setForm(emptyForm)
       if (preselect) setForm((f) => ({ ...(sent ? emptyForm : f), types: [preselect] }))
       setSent(false)
+      setEverOpened(true)
       setOpen(true)
     },
     [sent],
@@ -61,8 +66,7 @@ export function Layout() {
   const api = useMemo(() => ({ openContact }), [openContact])
 
   return (
-    <MotionConfig reducedMotion="user">
-      <ContactContext.Provider value={api}>
+    <ContactContext.Provider value={api}>
         <div className="min-h-screen overflow-x-clip bg-bg font-sans text-ink [container-type:inline-size]">
           <a
             href="#main"
@@ -71,27 +75,17 @@ export function Layout() {
             Skip to content
           </a>
           <Header />
-          <motion.main
-            id="main"
-            key={pathname}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-          >
+          <main id="main" key={pathname} className="animate-[gl-fade_.25s_ease-out_both]">
             <Outlet />
-          </motion.main>
+          </main>
           <ClosingCta />
           <Footer />
-          <ContactModal
-            open={open}
-            onClose={closeContact}
-            form={form}
-            setForm={setForm}
-            sent={sent}
-            setSent={setSent}
-          />
+          {everOpened && (
+            <Suspense fallback={null}>
+              <ContactModal open={open} onClose={closeContact} form={form} setForm={setForm} sent={sent} setSent={setSent} />
+            </Suspense>
+          )}
         </div>
       </ContactContext.Provider>
-    </MotionConfig>
   )
 }

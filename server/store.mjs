@@ -9,6 +9,7 @@ import { DATA_DIR } from './http.mjs'
 
 const FILE = path.join(DATA_DIR, 'developers.json')
 const ENQUIRIES = path.join(DATA_DIR, 'enquiries.json')
+const LAUNCH_LIST = path.join(DATA_DIR, 'launch-list.json')
 
 function readFile(file, fallback) {
   try {
@@ -83,5 +84,23 @@ export function markEnquiry(id, handled) {
   if (!e) return false
   e.handled = handled
   writeFile(ENQUIRIES, enquiries)
+  return true
+}
+
+/* --------------------------------------------------------- launch list --- */
+
+// People who asked to hear when the next project launches: [{ email, slot, addedAt }], one row per email+slot.
+let launchList = readFile(LAUNCH_LIST, [])
+export const listLaunch = () => launchList
+
+/** Adds an email; returns false when it was already on the list for that slot. */
+export function addToLaunchList(email, slot) {
+  if (launchList.some((r) => r.email === email && r.slot === slot)) return false
+  launchList.push({ email, slot, addedAt: new Date().toISOString() })
+  try {
+    writeFile(LAUNCH_LIST, launchList)
+  } catch {
+    /* kept in memory */
+  }
   return true
 }

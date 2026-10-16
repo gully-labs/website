@@ -52,7 +52,7 @@ export function ApiKeys() {
 
       <Section id="limits" title="Limits">
         <P>
-          Every successful response carries <C>X-RateLimit-Limit</C> and <C>X-RateLimit-Remaining</C>. Past the limit the API answers <C>429</C> with a <C>Retry-After</C> header in seconds. The figures are read from the headers rather than fixed here, because they can change. Details in the <DocLink to="api" hash="rate-limits">API reference</DocLink>.
+          Every successful response carries <C>X-RateLimit-Limit</C> and <C>X-RateLimit-Remaining</C>. Past the limit the API answers <C>429</C> with a <C>Retry-After</C> header in seconds. Today that is 60 requests a minute per IP address without a key and 600 a minute with one; read the headers rather than hard-coding either, because they can change. Details in the <DocLink to="api" hash="rate-limits">API reference</DocLink>.
         </P>
         <P>The data refreshes about every two minutes, so polling more often than once a minute returns the same answer.</P>
       </Section>

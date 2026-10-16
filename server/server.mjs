@@ -5,7 +5,8 @@ import http from 'node:http'
 import { readStats } from './stats.mjs'
 import { readHistory, readTracker, startTrackerLoop } from './tracker.mjs'
 import { apiAccess } from './access.mjs'
-import { addEnquiry } from './store.mjs'
+import { addEnquiry, addToLaunchList } from './store.mjs'
+import { clientIp, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { handleDeveloper } from './developer.mjs'
 import https from 'node:https'
@@ -76,6 +77,8 @@ function serveFile(res, file, method) {
 // The public API may be called from any site (the widget, integrators): read-only GETs, no credentials.
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '86400' }
 
+const notifyHits = new Map()
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost')
 
@@ -112,6 +115,20 @@ const server = http.createServer(async (req, res) => {
     for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v)
   }
 
+  // "Notify me" on a project still in the lab: saves the email to the launch list (admin dashboard).
+  if (url.pathname === '/api/notify') {
+    if (req.method !== 'POST') return send(res, 405, '', { Allow: 'POST' })
+    const ip = clientIp(req)
+    const hits = (notifyHits.get(ip) ?? []).filter((t) => Date.now() - t < 3_600_000)
+    if (hits.length >= 10) return send(res, 429, JSON.stringify({ error: 'Too many sign-ups from this address. Try again later.' }), { 'Content-Type': 'application/json' })
+    notifyHits.set(ip, [...hits, Date.now()])
+    const body = await readJson(req, 2_000)
+    const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase().slice(0, 254) : ''
+    const slot = typeof body?.slot === 'string' && /^\d{2}$/.test(body.slot) ? body.slot : null
+    if (!EMAIL_RE.test(email) || !slot) return send(res, 400, JSON.stringify({ error: 'A valid email is required.' }), { 'Content-Type': 'application/json' })
+    const added = addToLaunchList(email, slot)
+    return send(res, 200, JSON.stringify({ ok: true, alreadyOnList: !added }), { 'Content-Type': 'application/json' })
+  }
   if (url.pathname === '/api/contact') {
     if (req.method !== 'POST') return send(res, 405, '', { Allow: 'POST' })
     return handleContact(req, res)

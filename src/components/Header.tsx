@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { AnimatePresence, motion } from 'motion/react'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
 import { navItems } from '../content/site'
 import { useContact } from './ContactContext'
@@ -74,17 +73,14 @@ export function Header() {
         </button>
       </div>
 
-      <AnimatePresence initial={false}>
-        {menuOpen && (
-          <motion.nav
-            id="mobile-menu"
-            aria-label="Mobile"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="overflow-hidden min-[860px]:hidden"
-          >
+      {/* Height animates with a CSS grid-row transition (0fr to 1fr); closed, the menu is inert. */}
+      <nav
+        id="mobile-menu"
+        aria-label="Mobile"
+        inert={!menuOpen}
+        className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out min-[860px]:hidden ${menuOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+      >
+        <div className="overflow-hidden">
             <div className="flex flex-col border-t border-line px-page pt-2 pb-6">
               {navItems.map((n) => (
                 <Link
@@ -117,9 +113,8 @@ export function Header() {
                 <ArrowUpRight aria-hidden size={18} strokeWidth={2} />
               </button>
             </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
+        </div>
+      </nav>
     </header>
   )
 }

@@ -9,13 +9,14 @@
 //   POST /api/admin/requests/:id/approve|reject
 //   POST /api/admin/keys/:id/revoke
 //   GET  /api/admin/enquiries                 contact-form enquiries, newest first
+//   GET  /api/admin/launch-list[?format=csv]  "notify me" sign-ups
 //   POST /api/admin/enquiries/:id/handled     { handled: boolean }
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
-import { developers, listEnquiries, markEnquiry, safeEqual, saveDevelopers } from './store.mjs'
+import { developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
 
 const failures = new Map()
@@ -77,6 +78,7 @@ export async function handleAdmin(req, res, url) {
       venues,
       developers: { pending: db.requests.filter((r) => r.status === 'pending').length, approved: db.requests.filter((r) => r.status === 'approved').length, liveKeys: db.keys.filter((k) => !k.revokedAt).length },
       enquiries: { total: enquiries.length, open: enquiries.filter((e) => !e.handled).length },
+      launchList: listLaunch().length,
       process: { uptimeSeconds: Math.round(process.uptime()), rssMb: Math.round(mem.rss / 1e6), heapMb: Math.round(mem.heapUsed / 1e6), node: process.version, dataDirBytes: dirBytes(DATA_DIR) },
     }), true
   }
@@ -111,6 +113,16 @@ export async function handleAdmin(req, res, url) {
   }
 
   if (p === '/api/admin/enquiries') return json(res, 200, { enquiries: [...listEnquiries()].reverse() }), true
+
+  if (p === '/api/admin/launch-list') {
+    const rows = [...listLaunch()].reverse()
+    if (url.searchParams.get('format') === 'csv') {
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="launch-list.csv"', 'Cache-Control': 'no-store' })
+      res.end(['email,slot,added_at', ...rows.map((r) => `${JSON.stringify(r.email)},${r.slot},${r.addedAt}`)].join('\n') + '\n')
+      return true
+    }
+    return json(res, 200, { rows }), true
+  }
 
   m = p.match(/^\/api\/admin\/enquiries\/([\w-]+)\/handled$/)
   if (m) {

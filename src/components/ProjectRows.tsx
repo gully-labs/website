@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { comingSoon, projects, TOTAL_SLOTS, type Project } from '../content/projects'
 import { fmtTime, fmtUsd, sourceHost, type Figure, type Stats, type Venue } from '../lib/stats'
 import { ShareMenu } from './Share'
+import { NotifyMe } from './NotifyMe'
 import { BlinkDot, statusPill } from './ui'
 
 type Dir = 'descending' | 'ascending'
@@ -90,7 +91,6 @@ function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'lo
 /** The projects as rows, sortable by any figure; every row reads its project's own API. */
 export function ProjectRows({ data, state }: { data: Stats | null; state: 'loading' | 'error' | 'ok' }) {
   const [sort, setSort] = useState<{ key: Figure; dir: Dir } | null>(null)
-  const [notified, setNotified] = useState(false)
   const venueOf = (key: string) => data?.venues.find((v) => v.key === key)
   const figure = (key: string, m: Figure) => {
     const v = venueOf(key)
@@ -137,17 +137,7 @@ export function ProjectRows({ data, state }: { data: Stats | null; state: 'loadi
             </span>
             <span className="text-[15px] text-muted">Project {num} is in development. Get an email the day it launches.</span>
           </div>
-          {/* TODO: send the notify-me sign-up to the mailing list provider. */}
-          <button
-            type="button"
-            aria-pressed={notified}
-            onClick={() => setNotified((n) => !n)}
-            className={`relative ml-auto min-h-11 whitespace-nowrap rounded-btn border px-[18px] py-3 text-[14px] font-semibold transition-colors ${
-              notified ? 'border-success-line bg-success-bg text-green' : 'border-gold-line bg-transparent text-gold hover:border-gold'
-            }`}
-          >
-            {notified ? '✓ On the list' : 'Notify me'}
-          </button>
+          <NotifyMe slot={num} />
         </div>
       ))}
     </div>

@@ -153,12 +153,12 @@ export function ApiReference() {
 
       <Section id="rate-limits" title="Rate limits">
         <P>
-          Anonymous requests are limited per IP address. Requests that carry an API key in <C>Authorization: Bearer &lt;key&gt;</C> are counted against the key and get a higher limit. The limits in force are not fixed in these docs; read them from each response:
+          Anonymous requests are limited to <b>60 a minute per IP address</b>. Requests that carry an API key in <C>Authorization: Bearer &lt;key&gt;</C> are counted against the key instead, at <b>600 a minute</b>. Windows are fixed one-minute windows. An unknown or revoked key answers <C>401</C>. Every response also states the limit in force, so a client can read it rather than hard-code it:
         </P>
         <Fields
           head={['Header', 'On', 'Meaning']}
           rows={[
-            ['X-RateLimit-Limit', 'success', 'Requests allowed in the current window.'],
+            ['X-RateLimit-Limit', 'success', 'Requests allowed per minute: 60 anonymous, 600 with a key.'],
             ['X-RateLimit-Remaining', 'success', 'Requests left in it.'],
             ['Retry-After', '429', 'Seconds to wait before trying again.'],
           ]}
@@ -177,6 +177,7 @@ export function ApiReference() {
           rows={[
             ['400', 'history: chain or ticker malformed', <>Check the parameters. Body: <C>{'{"error":"chain and ticker"}'}</C>.</>],
             ['405', 'a method other than GET or OPTIONS', 'Use GET.'],
+            ['401', 'unknown or revoked API key', 'Check the key, or request one at gullylabs.xyz/developers.'],
             ['429', 'rate limit exceeded', 'Wait for Retry-After seconds, or use an API key.'],
             ['502', 'the tracker could not be built at all', 'Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.'],
           ]}

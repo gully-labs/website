@@ -1,11 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
-import { About } from './pages/About'
 import { Home } from './pages/Home'
-import { AdminRoute, DevelopersRoute, WidgetRoute } from './pages/LazyRoutes'
-import { ProjectDetail } from './pages/ProjectDetail'
-import { Services } from './pages/Services'
+import { AboutRoute, AdminRoute, DevelopersRoute, ProjectDetailRoute, ServicesRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo } from './pages/GoTo'
 import { TrackerRoute } from './pages/TrackerRoute'
 import { ADMIN_URL, isAdminHost, isDocsHost, isLocalHost } from './site-host'
@@ -15,9 +12,9 @@ const mainRoutes = [
     element: <Layout />,
     children: [
       { path: '/', element: <Home /> },
-      { path: '/projects/:slug', element: <ProjectDetail /> },
-      { path: '/services', element: <Services /> },
-      { path: '/about', element: <About /> },
+      { path: '/projects/:slug', element: <ProjectDetailRoute /> },
+      { path: '/services', element: <ServicesRoute /> },
+      { path: '/about', element: <AboutRoute /> },
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/developers', element: <DevelopersRoute /> },

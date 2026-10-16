@@ -19,6 +19,7 @@ interface Overview {
   venues: { generatedAt?: string; unread?: string[]; list?: { key: string; state: string; error: string | null }[]; error?: string }
   developers: { pending: number; approved: number; liveKeys: number }
   enquiries: { total: number; open: number }
+  launchList: number
   process: { uptimeSeconds: number; rssMb: number; heapMb: number; node: string; dataDirBytes: number | null }
 }
 interface Req {
@@ -80,7 +81,7 @@ function setToken(t: string | null) {
 }
 
 function useAdmin(token: string | null) {
-  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; enquiries: Enquiry[] } | null>(null)
+  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[] } | null>(null)
   const [err, setErr] = useState<{ status: number; message: string } | null>(null)
   const load = useCallback(async () => {
     if (!token) return
@@ -91,8 +92,8 @@ function useAdmin(token: string | null) {
       return d
     }
     try {
-      const [overview, dev, enq] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries')])
-      setData({ overview, requests: dev.requests, keys: dev.keys, enquiries: enq.enquiries })
+      const [overview, dev, enq, launch] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries'), get('/api/admin/launch-list')])
+      setData({ overview, requests: dev.requests, keys: dev.keys, enquiries: enq.enquiries, launch: launch.rows })
       setErr(null)
     } catch (e) {
       const x = e as { status?: number; message?: string }
@@ -223,6 +224,7 @@ export function AdminPage() {
               <Tile k="API REQUESTS TODAY" v={((o.api.days.at(-1)?.anonymous ?? 0) + (o.api.days.at(-1)?.keyed ?? 0)).toLocaleString('en-US')} note={`${o.api.days.at(-1)?.limited ?? 0} rate-limited`} />
               <Tile k="KEY REQUESTS" v={String(o.developers.pending)} note={`pending · ${o.developers.liveKeys} live keys`} tone={o.developers.pending ? '#e8c060' : undefined} />
               <Tile k="ENQUIRIES" v={String(o.enquiries.open)} note={`open of ${o.enquiries.total}`} tone={o.enquiries.open ? '#e8c060' : undefined} />
+              <Tile k="LAUNCH LIST" v={String(o.launchList)} note="notify-me sign-ups" />
               <Tile k="TRACKER CACHE" v={o.tracker.cacheAgeSeconds === null ? '—' : `${o.tracker.cacheAgeSeconds}s`} note={`last snapshot ${ago(o.tracker.lastSnapshot)}`} />
               <Tile k="HISTORY" v={o.tracker.history.points.toLocaleString('en-US')} note={`points across ${o.tracker.history.series} series`} />
               <Tile k="PROCESS" v={`${o.process.rssMb} MB`} note={`up ${Math.round(o.process.uptimeSeconds / 3600)}h · ${o.process.node}`} />
@@ -417,6 +419,42 @@ export function AdminPage() {
                 )}
               </section>
             </div>
+
+            <section className={card}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className={h2}>Launch list</h2>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const r = await fetch('/api/admin/launch-list?format=csv', { headers: { authorization: `Bearer ${token}` } })
+                    if (!r.ok) return
+                    const url = URL.createObjectURL(await r.blob())
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'launch-list.csv'
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}
+                  className="rounded-btn border border-line-strong px-3 py-[6px] font-mono text-[12px] text-ink-2 hover:border-gold"
+                >
+                  Export CSV
+                </button>
+              </div>
+              {!data.launch.length ? (
+                <p className="m-0 text-[14px] text-muted">Nobody has signed up yet.</p>
+              ) : (
+                <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2 p-0">
+                  {data.launch.map((r) => (
+                    <li key={r.email + r.slot} className="flex items-center justify-between gap-2 rounded-input border border-line px-3 py-2">
+                      <span className="truncate font-mono text-[12px] text-ink-2">{r.email}</span>
+                      <span className={small}>
+                        {r.slot} · {when(r.addedAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </>
         )}
       </main>
