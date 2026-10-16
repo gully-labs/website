@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
+import { useReducedMotion } from './charts/chart-utils'
+
 interface SparklineProps {
   /** At least two points; the caller shows an honest empty state otherwise. */
   data: number[]
@@ -11,7 +14,47 @@ interface SparklineProps {
   label?: string
 }
 
-export function Sparkline({ data, color, delay = 0, large = false, loop = false, label }: SparklineProps) {
+/** Values at `n` evenly spaced positions along `v`, so a series can morph into one of another length. */
+const resample = (v: number[], n: number) =>
+  v.length === n || !v.length
+    ? v
+    : Array.from({ length: n }, (_, i) => {
+        const x = n === 1 ? 0 : (i / (n - 1)) * (v.length - 1)
+        const a = Math.floor(x)
+        const b = Math.min(v.length - 1, a + 1)
+        return v[a] + (v[b] - v[a]) * (x - a)
+      })
+
+/* When the series changes (a refresh), the drawn line glides from its old shape to the new one
+   instead of jumping; immediate under prefers-reduced-motion. The values only pass through
+   in-between shapes for the length of the glide; at rest the line is exactly the data. */
+function useTween(target: number[], ms = 700) {
+  const reduced = useReducedMotion()
+  const [shown, setShown] = useState(target)
+  const from = useRef(target)
+  const sig = target.join(',')
+  useEffect(() => {
+    const a = resample(from.current, target.length)
+    const t0 = performance.now()
+    let raf = 0
+    const step = (now: number) => {
+      const k = reduced ? 1 : Math.min(1, (now - t0) / ms)
+      const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2
+      const v = k === 1 ? target : target.map((x, i) => (a[i] ?? x) + (x - (a[i] ?? x)) * e)
+      from.current = v
+      setShown(v)
+      if (k < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+    // `sig` is the series by value; a new array with the same numbers is not a change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig, reduced, ms])
+  return shown.length === target.length ? shown : target
+}
+
+export function Sparkline({ data: target, color, delay = 0, large = false, loop = false, label }: SparklineProps) {
+  const data = useTween(target)
   const hi = Math.max(...data)
   const lo = Math.min(...data)
   // A flat series still draws a line, not a division by zero.

@@ -97,14 +97,26 @@ export function useHistory(chain: string | null, ticker: string | null): Load<Hi
   useEffect(() => {
     if (!key || !chain || !ticker) return
     let alive = true
-    fetch(`/api/tracker/history?chain=${encodeURIComponent(chain)}&ticker=${encodeURIComponent(ticker)}`)
-      .then((r) => (r.ok ? (r.json() as Promise<{ points: HistoryPoint[] }>) : Promise.reject(new Error(String(r.status)))))
-      .then(
-        (d) => alive && setState({ key, load: { k: 'ok', data: d.points } }),
-        () => alive && setState({ key, load: { k: 'error' } }),
-      )
+    // Re-read every minute so the chart picks up each new five-minute reading; the state only
+    // changes when a reading was added, and a failed re-read keeps the last good one.
+    const tick = () =>
+      fetch(`/api/tracker/history?chain=${encodeURIComponent(chain)}&ticker=${encodeURIComponent(ticker)}`)
+        .then((r) => (r.ok ? (r.json() as Promise<{ points: HistoryPoint[] }>) : Promise.reject(new Error(String(r.status)))))
+        .then(
+          (d) =>
+            alive &&
+            setState((s) => {
+              const prev = s.key === key && s.load.k === 'ok' ? s.load.data : null
+              if (prev && prev.length === d.points.length && prev.at(-1)?.[0] === d.points.at(-1)?.[0]) return s
+              return { key, load: { k: 'ok', data: d.points } }
+            }),
+          () => alive && setState((s) => (s.key === key && s.load.k === 'ok' ? s : { key, load: { k: 'error' } })),
+        )
+    tick()
+    const id = setInterval(tick, REFRESH_MS)
     return () => {
       alive = false
+      clearInterval(id)
     }
   }, [key, chain, ticker])
   return state.key === key ? state.load : { k: 'loading' }
