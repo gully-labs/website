@@ -6,8 +6,9 @@ import { Home } from './pages/Home'
 import { AdminRoute, DevelopersRoute, WidgetRoute } from './pages/LazyRoutes'
 import { ProjectDetail } from './pages/ProjectDetail'
 import { Services } from './pages/Services'
+import { GoTo } from './pages/GoTo'
 import { TrackerRoute } from './pages/TrackerRoute'
-import { isDocsHost } from './site-host'
+import { ADMIN_URL, isAdminHost, isDocsHost, isLocalHost } from './site-host'
 
 const mainRoutes = [
   {
@@ -23,10 +24,14 @@ const mainRoutes = [
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
-  // The admin dashboard has its own chrome: no site header, footer or contact band.
-  { path: '/admin', element: <AdminRoute /> },
+  // The admin dashboard lives on its own host. Locally it is also at /admin; anywhere else /admin
+  // sends you there (the server answers that path with a 301 before the app even loads).
+  { path: '/admin', element: isLocalHost() ? <AdminRoute /> : <GoTo url={ADMIN_URL} /> },
   // Development only: the docs site under /docs on the main host. In production it lives on its own host.
   { path: '/docs', children: docsRoutes },
 ]
 
-export const router = createBrowserRouter(isDocsHost() ? docsRoutes : mainRoutes)
+// On the admin host every path is the dashboard; it has its own chrome (no site header or footer).
+const adminRoutes = [{ path: '*', element: <AdminRoute /> }]
+
+export const router = createBrowserRouter(isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : mainRoutes)

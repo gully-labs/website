@@ -79,7 +79,19 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost')
 
+  // Hosts. The admin dashboard and its API live on admin.gullylabs.xyz only: on any other public host
+  // /admin is a permanent redirect and /api/admin is not found. localhost keeps both for development.
+  const host = String(req.headers.host ?? '').split(':')[0].toLowerCase()
+  const isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)
+  const isAdmin = host.startsWith('admin.')
+  if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
+    return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
+  }
+  if (isAdmin && url.pathname === '/robots.txt') return send(res, 200, 'User-agent: *\nDisallow: /\n', { 'Content-Type': 'text/plain; charset=utf-8' })
+  if (isAdmin) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
+
   if (url.pathname.startsWith('/api/admin/')) {
+    if (!isAdmin && !isLocal) return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
     if (await handleAdmin(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
