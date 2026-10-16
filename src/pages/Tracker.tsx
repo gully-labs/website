@@ -222,7 +222,7 @@ export function Tracker() {
               <GapHistogram rows={rows} />
             </Card>
             <Card i={3} title="Depth vs gap" sub="do thin pools drift further?">
-              <LiquidityScatter rows={rows} onSelect={select} />
+              <LiquidityScatter rows={rows} inLinePct={data.rules.inLinePct} onSelect={select} />
             </Card>
           </section>
 

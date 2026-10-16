@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { projects } from '../content/projects'
 import { useCountUp } from '../hooks/useCountUp'
 import { fmtDate, fmtDay, fmtTime, fmtUsd, nameOf, type Stats, type Venue, type VenueOk } from '../lib/stats'
+import { EChart } from './charts/EChart'
+import { esc, type ChartEvent } from './charts/chart-utils'
 import { DataTable, EmptySeries, Segmented } from './LiveChart'
 
 /* The ledger: one combined band across the five venues, then the venues' own series stacked.
@@ -12,9 +14,6 @@ import { DataTable, EmptySeries, Segmented } from './LiveChart'
 const names = (keys: string[]) => keys.map(nameOf).join(', ')
 const accentOf = (key: string) => projects.find((p) => p.key === key)?.accent ?? '#e8c060'
 const okOnly = (venues: Venue[]) => venues.filter((v): v is VenueOk => v.state === 'ok')
-
-const grid =
-  'repeating-linear-gradient(180deg,transparent 0,transparent calc(33.33% - 1px),#1a2029 calc(33.33% - 1px),#1a2029 33.33%)'
 
 /* ------------------------------------------------------------------ KPIs --- */
 
@@ -90,17 +89,65 @@ export function LedgerBand({ data, state }: { data: Stats | null; state: 'loadin
 export function StackedVolume({ data, state }: { data: Stats | null; state: 'loading' | 'error' | 'ok' }) {
   const [on, setOn] = useState<Record<string, boolean>>(() => Object.fromEntries(projects.map((p) => [p.key, true])))
   const [view, setView] = useState<'chart' | 'table'>('chart')
-  const [hover, setHover] = useState(-1)
   const ok = data ? okOnly(data.venues) : []
   const byKey = Object.fromEntries(ok.map((v) => [v.key, v]))
   const withSeries = projects.filter((p) => (byKey[p.key]?.daily.length ?? 0) > 1).map((p) => p.key)
   const days = [...new Set(ok.flatMap((v) => v.daily.map((d) => d.t)))].sort((a, b) => a - b).slice(-14)
+  // A day a venue did not report is null (no segment, "—" in the tooltip), never a zero.
+  const valueOn = (key: string, t: number) => byKey[key]?.daily.find((d) => d.t === t)?.v ?? null
   const rows = days.map((t) => ({
     t,
-    parts: projects.filter((p) => on[p.key] && byKey[p.key]).map((p) => ({ key: p.key, v: byKey[p.key].daily.find((d) => d.t === t)?.v ?? 0 })),
+    parts: projects.filter((p) => on[p.key] && byKey[p.key]).map((p) => ({ key: p.key, v: valueOn(p.key, t) })),
   }))
-  const total = (r: (typeof rows)[number]) => r.parts.reduce((a, p) => a + p.v, 0)
-  const max = Math.max(...rows.map(total), 1e-9)
+  const total = (r: (typeof rows)[number]) => r.parts.reduce((a, p) => a + (p.v ?? 0), 0)
+  const drawn = projects.filter((p) => byKey[p.key]?.daily.length)
+  const key = `${data?.generatedAt}|${days.join()}|${drawn.map((p) => p.key).join()}|${JSON.stringify(on)}`
+  const option = useMemo(
+    () => ({
+      animationDuration: 900,
+      animationEasing: 'cubicOut',
+      animationDurationUpdate: 700,
+      animationEasingUpdate: 'cubicInOut',
+      // The venue chips above are the legend; this hidden one carries their on/off state so a toggle
+      // restacks with animation instead of redrawing.
+      legend: { show: false, selected: Object.fromEntries(drawn.map((p) => [p.key, on[p.key]])) },
+      grid: { left: 0, right: 8, top: 10, bottom: 0, containLabel: true },
+      xAxis: { type: 'category', data: days.map(fmtDay), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
+      yAxis: { type: 'value', splitNumber: 3, axisLabel: { formatter: (v: number) => fmtUsd(v).replace(/\.00$/, '') } },
+      tooltip: {
+        trigger: 'axis',
+        confine: true,
+        axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(166,176,189,.06)' } },
+        formatter: (ps: ChartEvent[]) => {
+          const t = days[ps[0]?.dataIndex]
+          if (t === undefined) return ''
+          const shown = drawn.filter((p) => on[p.key])
+          const sum = shown.reduce((a, p) => a + (valueOn(p.key, t) ?? 0), 0)
+          return `<div style="color:#6c7888">${fmtDay(t)}</div>${shown
+            .map((p) => {
+              const v = valueOn(p.key, t)
+              return `<div><span style="color:${p.accent}">●</span> ${esc(p.name)} <b style="font-weight:500;color:${v === null ? '#6c7888' : '#e8c060'}">${v === null ? 'no reading' : fmtUsd(v)}</b></div>`
+            })
+            .join('')}<div>total <b style="font-weight:500;color:#e8c060">${fmtUsd(sum)}</b></div>`
+        },
+      },
+      series: drawn.map((p, j) => ({
+        id: p.key,
+        name: p.key,
+        type: 'bar',
+        stack: 'volume',
+        barCategoryGap: '22%',
+        color: p.accent,
+        data: days.map((t) => valueOn(p.key, t)),
+        animationDelay: (i: number) => i * 35 + j * 60,
+        emphasis: { focus: 'series' },
+        blur: { itemStyle: { opacity: 0.35 } },
+      })),
+    }),
+    // `key` holds the read, the days, the drawn venues and the toggles
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [key],
+  )
 
   let body: React.ReactNode
   if (state === 'loading') body = <p className="m-0 py-6 font-mono text-[12px] text-faint">Reading the venues…</p>
@@ -111,7 +158,7 @@ export function StackedVolume({ data, state }: { data: Stats | null; state: 'loa
         rows={[...rows].reverse()}
         cols={[
           { label: 'DAY', cell: (r) => fmtDay(r.t) },
-          ...projects.map((p) => ({ label: p.name.toUpperCase(), cell: (r: (typeof rows)[number]) => { const x = r.parts.find((q) => q.key === p.key); return x ? fmtUsd(x.v) : '—' } })),
+          ...projects.map((p) => ({ label: p.name.toUpperCase(), cell: (r: (typeof rows)[number]) => { const x = r.parts.find((q) => q.key === p.key); return x && x.v !== null ? fmtUsd(x.v) : '—' } })),
           { label: 'TOTAL', cell: (r) => fmtUsd(total(r)) },
         ]}
       />
@@ -119,63 +166,20 @@ export function StackedVolume({ data, state }: { data: Stats | null; state: 'loa
   else if (days.length < 2) body = <EmptySeries n={days.length} />
   else
     body = (
-      <div className="relative flex h-[280px] gap-3">
-        <div aria-hidden className="flex w-11 flex-none flex-col justify-between pb-[22px] text-right font-mono text-[11px] text-axis">
-          {[max, (max * 2) / 3, max / 3, 0].map((v, i) => (
-            <span key={i}>{fmtUsd(v)}</span>
-          ))}
-        </div>
-        <div className="relative flex flex-1 items-stretch gap-[6px] overflow-hidden pb-[22px]" style={{ background: grid, backgroundSize: '100% calc(100% - 22px)', backgroundRepeat: 'no-repeat' }}>
-          {/* A slow scan across the bars, so the chart reads as live even between refreshes. */}
-          <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1/3" style={{ background: 'linear-gradient(90deg,transparent,rgba(232,192,96,.08),transparent)', animation: 'gl-scan 5s 1s ease-in-out infinite' }} />
-          {rows.map((r, i) => (
-            <div
-              key={r.t}
-              tabIndex={0}
-              aria-label={`${fmtDay(r.t)} ${fmtUsd(total(r))}`}
-              className={`relative flex flex-1 flex-col-reverse overflow-hidden rounded-t-[3px] outline-offset-0 ${hover === i ? 'outline outline-1 outline-line-hover' : ''}`}
-              onMouseEnter={() => setHover(i)}
-              onMouseLeave={() => setHover(-1)}
-              onFocus={() => setHover(i)}
-              onBlur={() => setHover(-1)}
-            >
-              {r.parts.map((p, j) => (
-                <div
-                  key={p.key}
-                  className="w-full"
-                  style={{ height: `${(p.v / max) * 100}%`, background: accentOf(p.key), transformOrigin: 'bottom', animation: `gl-grow .7s ${i * 0.04 + j * 0.03}s cubic-bezier(.2,.8,.2,1) both, gl-breathe 4s ${i * 0.2}s ease-in-out infinite` }}
-                />
-              ))}
-            </div>
-          ))}
-          <div aria-hidden className="absolute inset-x-0 bottom-0 flex justify-between font-mono text-[11px] text-axis">
-            <span>{fmtDay(days[0])}</span>
-            <span>{fmtDay(days[Math.floor(days.length / 2)])}</span>
-            <span>{fmtDay(days[days.length - 1])}</span>
-          </div>
-          {hover >= 0 && rows[hover] && (
-            <div
-              className="pointer-events-none absolute z-10 rounded-input border border-line-strong bg-surface-deep px-[10px] py-2 font-mono text-[12px] whitespace-nowrap text-ink"
-              style={{ left: `${((hover + 0.5) / rows.length) * 100}%`, top: 6, transform: 'translateX(-50%)' }}
-            >
-              {fmtDay(rows[hover].t)}
-              {rows[hover].parts.map((p) => (
-                <div key={p.key}>
-                  <span style={{ color: accentOf(p.key) }}>●</span> {nameOf(p.key)} <b className="font-medium text-gold">{fmtUsd(p.v)}</b>
-                </div>
-              ))}
-              <div>
-                total <b className="font-medium text-gold">{fmtUsd(total(rows[hover]))}</b>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <EChart
+        option={option}
+        height={280}
+        steps={{ count: days.length }}
+        label={`Daily volume by venue, last ${days.length} days: ${rows.map((r) => `${fmtDay(r.t)} ${fmtUsd(total(r))}`).join(', ')}. Arrow keys step through days; the Table view lists every figure.`}
+      >
+        {/* A slow scan across the bars, so the chart reads as live even between refreshes. */}
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1/3" style={{ background: 'linear-gradient(90deg,transparent,rgba(232,192,96,.06),transparent)', animation: 'gl-scan 5s 1s ease-in-out infinite' }} />
+      </EChart>
     )
 
   return (
-    // Re-keyed on every read: the bars grow again as the figures refresh.
-    <div key={data?.generatedAt ?? 'none'} className="flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-7">
+    // Not re-keyed on a read: the chart animates from the old figures to the new ones.
+    <div className="flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-7">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h3 className="m-0 font-display text-[28px] font-bold uppercase">Volume by venue</h3>
@@ -225,6 +229,41 @@ export function TvlShare({ data, state }: { data: Stats | null; state: 'loading'
   const rows = data ? projects.map((p) => ({ key: p.key, v: okOnly(data.venues).find((v) => v.key === p.key)?.tvlUsd ?? null })).filter((r): r is { key: string; v: number } => r.v !== null) : []
   const total = rows.reduce((a, r) => a + r.v, 0)
   const missing = projects.filter((p) => !rows.some((r) => r.key === p.key)).map((p) => p.key)
+  const key = rows.map((r) => `${r.key}=${r.v}`).join('|')
+  // One track, one segment per venue: the segments sweep in from the left and re-share on refresh.
+  const option = useMemo(
+    () => ({
+      animationDuration: 900,
+      animationEasing: 'cubicOut',
+      animationDurationUpdate: 700,
+      animationEasingUpdate: 'cubicInOut',
+      grid: { left: 0, right: 0, top: 2, bottom: 2 },
+      xAxis: { type: 'value', show: false, min: 0, max: total || 1 },
+      yAxis: { type: 'category', show: false, data: ['tvl'] },
+      tooltip: {
+        trigger: 'item',
+        appendTo: 'body',
+        formatter: (p: ChartEvent) => `<span style="color:${accentOf(p.seriesId)}">●</span> ${esc(nameOf(p.seriesId))} <b style="font-weight:500;color:#e8c060">${fmtUsd(p.value)}</b> · ${((p.value / total) * 100).toFixed(1)}%`,
+      },
+      series: rows.map((r, i) => ({
+        id: r.key,
+        type: 'bar',
+        stack: 'tvl',
+        barWidth: 14,
+        color: accentOf(r.key),
+        showBackground: i === 0,
+        backgroundStyle: { color: '#1d232c', borderRadius: 7 },
+        itemStyle: { borderRadius: rows.length === 1 ? 7 : i === 0 ? [7, 0, 0, 7] : i === rows.length - 1 ? [0, 7, 7, 0] : 0 },
+        animationDelay: i * 90,
+        emphasis: { focus: 'self' },
+        blur: { itemStyle: { opacity: 0.4 } },
+        data: [r.v],
+      })),
+    }),
+    // `key` holds every venue's value
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [key],
+  )
   return (
     <div className="flex min-w-0 flex-col gap-5 self-stretch rounded-card border border-line bg-surface p-7">
       <div className="flex flex-col gap-1">
@@ -239,16 +278,7 @@ export function TvlShare({ data, state }: { data: Stats | null; state: 'loading'
         <p className="m-0 py-6 font-mono text-[12px] text-faint">Nothing to share out yet.</p>
       ) : (
         <>
-          <div className="flex h-[14px] overflow-hidden rounded-full bg-line" role="img" aria-label={rows.map((r) => `${nameOf(r.key)} ${((r.v / total) * 100).toFixed(1)}%`).join(', ')}>
-            {rows.map((r, i) => (
-              <div
-                key={r.key}
-                title={`${nameOf(r.key)} ${fmtUsd(r.v)} · ${((r.v / total) * 100).toFixed(1)}%`}
-                className="h-full"
-                style={{ width: `${(r.v / total) * 100}%`, background: accentOf(r.key), transformOrigin: 'left', animation: `gl-grow-x .8s ${i * 0.09}s cubic-bezier(.2,.8,.2,1) both, gl-breathe 4s ${i * 0.5}s ease-in-out infinite` }}
-              />
-            ))}
-          </div>
+          <EChart option={option} height={18} label={`Value locked by venue: ${rows.map((r) => `${nameOf(r.key)} ${((r.v / total) * 100).toFixed(1)}%`).join(', ')}`} />
           <div className="flex flex-col gap-[10px] text-[14px] text-muted">
             {rows.map((r) => (
               <span key={r.key} className="flex items-center gap-[10px]">

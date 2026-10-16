@@ -1,93 +1,163 @@
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import type { EChartsType } from 'echarts/core'
+import { EChart } from '../charts/EChart'
+import { esc, type ChartEvent } from '../charts/chart-utils'
 import { ChainLogo, StockLogo } from './StockLogo'
 import { DOWN, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
+const ROW = 24 // px per stock: the label column and the chart's category bands share it exactly
+const TOP = 22 // px above the first row, for the axis labels
+const BOTTOM = 4
+const SORT_MS = 650 // update animation length
+const id = (r: TrackerRow) => `${r.chain}:${r.ticker}`
+
 /* Every token's gap as a bar from a centre axis: right of centre trades above its fair price, left
-   below. The ±in-line band is shaded so noise reads as noise. Bars grow out from the axis; thin
-   pools are drawn hollow because their price is not trustworthy. Click a bar to open its history. */
+   below. The ±in-line band is shaded so noise reads as noise; thin pools are drawn hollow because
+   their price is not trustworthy. Bars grow from the axis, and on every refresh they grow or shrink
+   to their new gap. Click a bar or a name to open its history. */
 export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: TrackerRow[]; inLinePct: number; selected: string | null; onSelect: (id: string) => void }) {
   const [hover, setHover] = useState<string | null>(null)
-  const id = (r: TrackerRow) => `${r.chain}:${r.ticker}`
-  const multi = new Set(rows.map((r) => r.chain)).size > 1
   const [all, setAll] = useState(false)
-  const TOP = 16
+  const chart = useRef<EChartsType | null>(null)
+  const multi = new Set(rows.map((r) => r.chain)).size > 1
+  const TOP_N = 16
   const withGap = rows.filter((r) => r.gapPct !== null)
+
   // The widest gaps first so the chart stays compact; "show all" lists every stock.
-  const widest = all ? withGap : [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0)).slice(0, TOP)
-  const data = widest.sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0))
-  if (!data.length) return <p className="m-0 py-6 font-mono text-[12px] text-faint">No token has both a feed and a pool to compare yet.</p>
-  const extent = Math.max(3, Math.ceil(Math.max(...data.map((r) => Math.abs(r.gapPct ?? 0))) * 1.15))
-  const pct = (v: number) => (v / extent) * 50
-  const ticks = [-extent, -extent / 2, 0, extent / 2, extent]
+  const shown = all ? withGap : [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0)).slice(0, TOP_N)
+  // One order for both the label column and the chart's categories (gap descending, ties by id), so
+  // row i of the labels is always band i of the chart. On a refresh each band's bar grows or shrinks
+  // to its new value. (ECharts' realtimeSort was tried: its order drifted from the labels.)
+  const byId = [...shown].sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0) || (id(a) < id(b) ? -1 : 1))
+  const ranked = byId
+  const key = byId.map((r) => `${id(r)}=${r.gapPct}:${r.status}`).join('|') + `|${selected}|${inLinePct}`
+
+  const option = useMemo(() => {
+    if (!byId.length) return null
+    const raw = Math.max(...byId.map((r) => Math.abs(r.gapPct ?? 0)))
+    const extent = Math.max(3, Math.ceil(raw * 1.3))
+    return {
+      animationDuration: 800,
+      animationEasing: 'cubicOut',
+      animationDurationUpdate: SORT_MS,
+      animationEasingUpdate: 'cubicInOut',
+      // Side room so the value label of the widest bar is never clipped.
+      grid: { left: 46, right: 46, top: TOP, bottom: BOTTOM, containLabel: false },
+      xAxis: {
+        type: 'value',
+        position: 'top',
+        min: -extent,
+        max: extent,
+        interval: extent / 2,
+        axisLabel: { margin: 6, formatter: (v: number) => `${v > 0 ? '+' : ''}${Number.isInteger(v) ? v : v.toFixed(1)}%` },
+        splitLine: { lineStyle: { color: '#1a2029' } },
+      },
+      yAxis: {
+        type: 'category',
+        inverse: true,
+        data: byId.map(id),
+        axisLabel: { show: false },
+        axisLine: { lineStyle: { color: '#2c3540' } },
+        animationDuration: 300,
+        animationDurationUpdate: SORT_MS,
+      },
+      tooltip: {
+        trigger: 'item',
+        confine: true,
+        formatter: (p: ChartEvent) => {
+          const r = byId[p.dataIndex]
+          if (!r) return ''
+          const c = (r.gapPct ?? 0) >= 0 ? UP : DOWN
+          return `<div><b style="color:#e8c060;font-weight:500">${esc(r.ticker)}</b>${r.status === 'thin' ? ' <span style="color:#6c7888">· thin pool</span>' : ''}</div><div>gap <b style="color:${c};font-weight:500">${fmtGap(r.gapPct)}</b></div><div style="color:#a6b0bd">onchain ${fmtPrice(r.onchain)} · fair ${fmtPrice(r.fair)}</div>`
+        },
+      },
+      series: [
+        {
+          id: 'gap',
+          type: 'bar',
+          barWidth: 14,
+          cursor: 'pointer',
+          data: byId.map((r) => {
+            const g = r.gapPct ?? 0
+            const c = g >= 0 ? UP : DOWN
+            const thin = r.status === 'thin'
+            const sel = id(r) === selected
+            return {
+              value: g,
+              itemStyle: {
+                color: thin ? 'rgba(0,0,0,0)' : c,
+                borderColor: sel ? '#e8c060' : c,
+                borderWidth: thin || sel ? 1.5 : 0,
+                borderType: thin ? 'dashed' : 'solid',
+                borderRadius: 2,
+              },
+              label: { show: true, position: g >= 0 ? 'right' : 'left', distance: 6, color: c, fontSize: 11, formatter: () => fmtGap(r.gapPct) },
+            }
+          }),
+          emphasis: { focus: 'self', itemStyle: { shadowBlur: 10, shadowColor: 'rgba(232,192,96,.35)' } },
+          blur: { itemStyle: { opacity: 0.4 }, label: { opacity: 0.5 } },
+          markArea: { silent: true, itemStyle: { color: 'rgba(232,192,96,.06)' }, label: { show: false }, data: [[{ xAxis: -inLinePct }, { xAxis: inLinePct }]] },
+        },
+      ],
+    }
+    // `key` captures everything the option reads from rows and selection
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+
+  if (!option) return <p className="m-0 py-6 font-mono text-[12px] text-faint">No token has both a feed and a pool to compare yet.</p>
+
+  const point = (rid: string | null, on: boolean) => {
+    const i = byId.findIndex((r) => id(r) === rid)
+    if (i >= 0) chart.current?.dispatchAction({ type: on ? 'highlight' : 'downplay', seriesIndex: 0, dataIndex: i })
+  }
+  const height = TOP + ranked.length * ROW + BOTTOM
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative ml-[84px] h-4 font-mono text-[11px] text-axis" aria-hidden>
-        {ticks.map((t) => (
-          <span key={t} className="absolute -translate-x-1/2" style={{ left: `${50 + pct(t)}%` }}>
-            {t > 0 ? '+' : ''}
-            {Number.isInteger(t) ? t : t.toFixed(1)}%
-          </span>
-        ))}
-      </div>
-      <ul className="relative m-0 flex list-none flex-col gap-[3px] p-0" aria-label="Gap to fair price, by token">
-        {/* the in-line band and the axis, behind the bars */}
-        <li aria-hidden className="pointer-events-none absolute top-0 bottom-0 left-[84px] right-0">
-          <span className="absolute inset-y-0 bg-[rgba(232,192,96,.06)]" style={{ left: `${50 - pct(inLinePct)}%`, width: `${pct(inLinePct) * 2}%` }} />
-          <span className="absolute inset-y-0 left-1/2 w-px bg-line-strong" />
-        </li>
-        {data.map((r, i) => {
-          const g = r.gapPct ?? 0
-          const color = g >= 0 ? UP : DOWN
-          const thin = r.status === 'thin'
-          const active = selected === id(r) || hover === id(r)
-          return (
-            <li key={id(r)} className="relative">
-              <button
-                type="button"
-                onClick={() => onSelect(id(r))}
-                onMouseEnter={() => setHover(id(r))}
-                onMouseLeave={() => setHover(null)}
-                onFocus={() => setHover(id(r))}
-                onBlur={() => setHover(null)}
-                aria-pressed={selected === id(r)}
-                aria-label={`${r.ticker} ${fmtGap(r.gapPct)}, onchain ${fmtPrice(r.onchain)}, fair ${fmtPrice(r.fair)}${thin ? ', thin pool' : ''}`}
-                className={`grid h-[22px] w-full grid-cols-[104px_1fr] items-center gap-2 rounded-[4px] bg-transparent p-0 text-left transition-colors ${active ? 'bg-surface-hover' : ''}`}
-              >
-                <span className={`flex min-w-0 items-center justify-end gap-[6px] pr-1 font-mono text-[12px] ${selected === id(r) ? 'text-gold' : 'text-ink-2'}`}>
-                  <StockLogo row={r} size={16} chainBadge={false} active={selected === id(r)} />
+      <div className="grid grid-cols-[104px_1fr] gap-2">
+        <ul className="m-0 flex list-none flex-col p-0" style={{ paddingTop: TOP }} aria-label="Gap to fair price, by token">
+          {ranked.map((r) => {
+            const rid = id(r)
+            const sel = selected === rid
+            return (
+              <li key={rid} style={{ height: ROW }}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(rid)}
+                  onMouseEnter={() => (setHover(rid), point(rid, true))}
+                  onMouseLeave={() => (setHover(null), point(rid, false))}
+                  onFocus={() => (setHover(rid), point(rid, true))}
+                  onBlur={() => (setHover(null), point(rid, false))}
+                  aria-pressed={sel}
+                  aria-label={`${r.ticker} ${fmtGap(r.gapPct)}, onchain ${fmtPrice(r.onchain)}, fair ${fmtPrice(r.fair)}${r.status === 'thin' ? ', thin pool' : ''}`}
+                  className={`flex h-full w-full min-w-0 items-center justify-end gap-[6px] rounded-[4px] bg-transparent p-0 pr-1 font-mono text-[12px] transition-colors ${hover === rid ? 'bg-surface-hover' : ''} ${sel ? 'text-gold' : 'text-ink-2'}`}
+                >
+                  <StockLogo row={r} size={16} chainBadge={false} active={sel} />
                   <span className="truncate">{r.ticker}</span>
                   {multi && <ChainLogo chain={r.chain} size={10} />}
-                </span>
-                <span className="relative h-full">
-                  <span
-                    className="absolute top-[4px] bottom-[4px] rounded-[2px]"
-                    style={{
-                      left: g >= 0 ? '50%' : `${50 + pct(g)}%`,
-                      width: `${Math.max(0.4, Math.abs(pct(g)))}%`,
-                      background: thin ? 'transparent' : color,
-                      border: thin ? `1px dashed ${color}` : 'none',
-                      opacity: active || !hover ? 1 : 0.45,
-                      transformOrigin: g >= 0 ? 'left' : 'right',
-                      animation: `gl-grow-x .7s ${Math.min(i * 0.025, 0.8)}s cubic-bezier(.2,.8,.2,1) both`,
-                      transition: 'opacity .15s',
-                    }}
-                  />
-                  <span
-                    className="absolute top-1/2 -translate-y-1/2 font-mono text-[11px] whitespace-nowrap"
-                    style={g >= 0 ? { left: `calc(${50 + Math.abs(pct(g))}% + 6px)`, color } : { right: `calc(${50 + Math.abs(pct(g))}% + 6px)`, color }}
-                  >
-                    {fmtGap(r.gapPct)}
-                  </span>
-                </span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-      {withGap.length > TOP && (
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+        <EChart
+          option={option}
+          height={height}
+          label={`Gap to fair price for ${ranked.length} tokens, widest premium first: ${ranked
+            .slice(0, 5)
+            .map((r) => `${r.ticker} ${fmtGap(r.gapPct)}`)
+            .join(', ')}${ranked.length > 5 ? ', and more' : ''}.`}
+          onChart={(c) => (chart.current = c)}
+          onEvents={{
+            click: (p) => byId[p.dataIndex] && onSelect(id(byId[p.dataIndex])),
+            mouseover: (p) => byId[p.dataIndex] && setHover(id(byId[p.dataIndex])),
+            mouseout: () => setHover(null),
+          }}
+        />
+      </div>
+      {withGap.length > TOP_N && (
         <button type="button" onClick={() => setAll((v) => !v)} className="mt-1 self-start bg-transparent p-0 font-mono text-[12px] text-gold hover:text-gold-hover">
-          {all ? `Show the ${TOP} widest` : `Show all ${withGap.length}`}
+          {all ? `Show the ${TOP_N} widest` : `Show all ${withGap.length}`}
         </button>
       )}
       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-faint">

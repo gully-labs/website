@@ -1,13 +1,12 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { projects } from '../content/projects'
 import { fmtDay, fmtUsd, nameOf, type Point, type Venue } from '../lib/stats'
+import { EChart } from './charts/EChart'
+import type { ChartEvent } from './charts/chart-utils'
 
 /* Charts drawn from live reads only. Lines draw on, bars grow from the baseline; each is
    interactive (hover crosshair with exact values, keyboard stepping) and has a table twin.
    All animation is off under prefers-reduced-motion (index.css). */
-
-const grid =
-  'repeating-linear-gradient(180deg,transparent 0,transparent calc(33.33% - 1px),#1a2029 calc(33.33% - 1px),#1a2029 33.33%)'
 
 const accentOf = (key: string) => projects.find((p) => p.key === key)?.accent ?? '#e8c060'
 
@@ -30,110 +29,50 @@ export function EmptySeries({ n }: { n: number }) {
   )
 }
 
-/** Daily totals as an area line, last N days. */
+/** Daily totals as an area line, last N days: the line draws on, the area fades up, and a refresh
+    glides it to the new values. Crosshair tooltip with the exact figure; arrow keys step days. */
 export function DailyLine({ series, label, color = '#e8c060' }: { series: Point[]; label: string; color?: string }) {
-  const gradientId = useId()
-  const plot = useRef<HTMLDivElement>(null)
-  const [idx, setIdx] = useState(-1)
-  const [box, setBox] = useState({ w: 0, h: 0 })
-  useEffect(() => {
-    const el = plot.current
-    if (!el) return
-    const ro = new ResizeObserver(() => setBox({ w: el.clientWidth, h: el.clientHeight }))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-  if (series.length < 2) return <EmptySeries n={series.length} />
-  const max = Math.max(...series.map((p) => p.v), 1e-9)
-  const pts = series.map((p, i) => [(i / (series.length - 1)) * 100, 100 - (p.v / max) * 100] as const)
-  const line = pts.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' L')
-  const step = Math.ceil(series.length / 7)
-  const cur = idx >= 0 ? series[idx] : null
-
-  return (
-    <div
-      className="flex min-h-[260px] gap-3 outline-offset-4"
-      tabIndex={0}
-      role="img"
-      aria-label={`${label}: ${series.map((p) => `${fmtDay(p.t)} ${fmtUsd(p.v)}`).join(', ')}`}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowRight') {
-          e.preventDefault()
-          setIdx((i) => Math.min(series.length - 1, i < 0 ? 0 : i + 1))
-        } else if (e.key === 'ArrowLeft') {
-          e.preventDefault()
-          setIdx((i) => Math.max(0, i < 0 ? series.length - 1 : i - 1))
-        } else if (e.key === 'Escape') setIdx(-1)
-      }}
-      onBlur={() => setIdx(-1)}
-    >
-      <div aria-hidden className="flex w-11 flex-none flex-col justify-between pb-[22px] text-right font-mono text-[11px] text-axis">
-        {[max, (max * 2) / 3, max / 3, 0].map((v, i) => (
-          <span key={i}>{fmtUsd(v)}</span>
-        ))}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div
-          ref={plot}
-          className="relative flex-1"
-          style={{ background: grid }}
-          onMouseMove={(e) => {
-            const r = e.currentTarget.getBoundingClientRect()
-            setIdx(Math.round(((e.clientX - r.left) / r.width) * (series.length - 1)))
-          }}
-          onMouseLeave={() => setIdx(-1)}
-        >
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
-            <defs>
-              <linearGradient id={gradientId} x1={0} y1={0} x2={0} y2={1}>
-                <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-                <stop offset="100%" stopColor={color} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <path d={`M0,100 L${line} L100,100 Z`} fill={`url(#${gradientId})`} style={{ animation: 'gl-fade 1.2s .6s ease both' }} />
-            <path
-              d={`M${line}`}
-              fill="none"
-              stroke={color}
-              strokeWidth={2.5}
-              vectorEffect="non-scaling-stroke"
-              pathLength={1}
-              strokeDasharray={1}
-              style={{ animation: 'gl-draw 1.6s ease-out both' }}
-            />
-          </svg>
-          {cur && (
-            <>
-              <div aria-hidden className="absolute top-0 bottom-0 w-px bg-line-hover" style={{ left: (idx / (series.length - 1)) * box.w }} />
-              <div
-                aria-hidden
-                className="absolute size-[10px] -translate-1/2 rounded-full"
-                style={{ left: (idx / (series.length - 1)) * box.w, top: (1 - cur.v / max) * box.h, background: color, boxShadow: `0 0 12px ${color}` }}
-              />
-              <Tip x={(idx / (series.length - 1)) * box.w} y={(1 - cur.v / max) * box.h}>
-                {fmtDay(cur.t)}
-                <br />
-                <b className="font-medium text-gold">{fmtUsd(cur.v)}</b>
-              </Tip>
-            </>
-          )}
-        </div>
-        <div aria-hidden className="relative h-4 font-mono text-[11px] text-axis">
-          {series.map((p, i) =>
-            i % step === 0 || i === series.length - 1 ? (
-              <span
-                key={p.t}
-                className="absolute whitespace-nowrap"
-                style={{ left: `${(i / (series.length - 1)) * 100}%`, transform: i === 0 ? 'none' : i === series.length - 1 ? 'translateX(-100%)' : 'translateX(-50%)' }}
-              >
-                {fmtDay(p.t)}
-              </span>
-            ) : null,
-          )}
-        </div>
-      </div>
-    </div>
+  const key = `${color}|${series.map((p) => `${p.t}=${p.v}`).join(',')}`
+  const option = useMemo(
+    () => ({
+      animationDuration: 1200,
+      animationEasing: 'cubicOut',
+      animationDurationUpdate: 700,
+      animationEasingUpdate: 'cubicInOut',
+      grid: { left: 0, right: 10, top: 12, bottom: 0, containLabel: true },
+      xAxis: { type: 'category', boundaryGap: false, data: series.map((p) => fmtDay(p.t)), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
+      yAxis: { type: 'value', splitNumber: 3, axisLabel: { formatter: (v: number) => fmtUsd(v).replace(/\.00$/, '') } },
+      tooltip: {
+        trigger: 'axis',
+        confine: true,
+        axisPointer: { type: 'line', lineStyle: { color: '#3a4452' } },
+        formatter: (ps: ChartEvent[]) => {
+          const p = series[ps[0]?.dataIndex]
+          return p ? `<div style="color:#6c7888">${fmtDay(p.t)}</div><b style="font-weight:500;color:#e8c060">${fmtUsd(p.v)}</b>` : ''
+        },
+      },
+      series: [
+        {
+          id: 'daily',
+          type: 'line',
+          data: series.map((p) => p.v),
+          smooth: 0.25,
+          smoothMonotone: 'x',
+          showSymbol: false,
+          symbolSize: 8,
+          color,
+          lineStyle: { width: 2.5 },
+          areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: `${color}59` }, { offset: 1, color: `${color}00` }] } },
+          emphasis: { disabled: true },
+        },
+      ],
+    }),
+    // `key` holds the colour and every point
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [key],
   )
+  if (series.length < 2) return <EmptySeries n={series.length} />
+  return <EChart option={option} height={260} steps={{ count: series.length }} label={`${label}: ${series.map((p) => `${fmtDay(p.t)} ${fmtUsd(p.v)}`).join(', ')}. Arrow keys step through days.`} />
 }
 
 /** One bar per venue, from a picked figure; a venue without it says so instead of drawing zero. */
