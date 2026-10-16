@@ -24,11 +24,12 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const load = (f) => JSON.parse(fs.readFileSync(path.join(here, 'data', f), 'utf8'))
 
 const CHAINS = [
-  { id: 4663, key: 'robinhood', name: 'Robinhood Chain', dex: 'robinhood', rpcs: ['https://rpc.mainnet.chain.robinhood.com', 'https://rpc.ordofi.network'], session: '24/5', table: load('robinhood-stocks.json'), multiplier: false },
-  { id: 56, key: 'bsc', name: 'BNB Chain', dex: 'bsc', rpcs: ['https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-rpc.publicnode.com'], session: 'nyse', table: load('bsc-stocks.json'), multiplier: true },
+  { id: 4663, key: 'robinhood', name: 'Robinhood Chain', dex: 'robinhood', gecko: 'robinhood', rpcs: ['https://rpc.mainnet.chain.robinhood.com', 'https://rpc.ordofi.network'], session: '24/5', table: load('robinhood-stocks.json'), multiplier: false },
+  { id: 56, key: 'bsc', name: 'BNB Chain', dex: 'bsc', gecko: 'bsc', rpcs: ['https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-rpc.publicnode.com'], session: 'nyse', table: load('bsc-stocks.json'), multiplier: true },
 ]
 
 const DEX = 'https://api.dexscreener.com/tokens/v1'
+const GECKO = 'https://api.geckoterminal.com/api/v2/networks'
 const UA = 'gullylabs-tracker/1 (+https://gullylabs.xyz/tracker)'
 const CACHE_MS = 120_000
 const SNAPSHOT_MS = 300_000
@@ -127,11 +128,23 @@ async function readPoolsResilient(chain) {
   const b = backoff[chain.key]
   const cached = lastPools[chain.key]
   const usable = cached && Date.now() - cached.at < STALE_LIMIT_MS
-  if (b && Date.now() < b.until && usable) return { pools: cached.pools, asOf: cached.at, stale: true }
+  if (b && Date.now() < b.until && usable) return { pools: cached.pools, asOf: cached.at, stale: true, source: cached.source ?? 'DexScreener' }
   try {
-    const pools = await readPools(chain)
+    let pools
+    let source = 'DexScreener'
+    try {
+      pools = await readPools(chain)
+    } catch (first) {
+      // Second, independent source before falling back to a stale read.
+      try {
+        pools = await readPoolsGecko(chain)
+        source = 'GeckoTerminal'
+      } catch {
+        throw first
+      }
+    }
     delete backoff[chain.key]
-    lastPools[chain.key] = { at: Date.now(), pools }
+    lastPools[chain.key] = { at: Date.now(), pools, source }
     try {
       fs.mkdirSync(path.dirname(POOLS_FILE), { recursive: true })
       fs.writeFileSync(POOLS_FILE + '.tmp', JSON.stringify(lastPools))
@@ -139,13 +152,55 @@ async function readPoolsResilient(chain) {
     } catch {
       /* memory only */
     }
-    return { pools, asOf: Date.now(), stale: false }
+    return { pools, asOf: Date.now(), stale: false, source }
   } catch (e) {
     const wait = Math.min(30 * 60_000, (b?.wait ?? 60_000) * 2)
     backoff[chain.key] = { wait, until: Date.now() + wait }
-    if (usable) return { pools: cached.pools, asOf: cached.at, stale: true, error: String(e?.message ?? e) }
+    if (usable) return { pools: cached.pools, asOf: cached.at, stale: true, source: cached.source ?? 'DexScreener', error: String(e?.message ?? e) }
     throw e
   }
+}
+
+/** The same figures from GeckoTerminal, the second source, used when DexScreener refuses: each
+    token's price (GeckoTerminal's, from its most liquid pool), its total liquidity and volume, and
+    its top pool for the venue, pair and link. 30 tokens per request. */
+async function readPoolsGecko(chain) {
+  const tokens = chain.table.stocks.map((s) => s.token)
+  const byToken = new Map()
+  const pools = new Map()
+  for (let i = 0; i < tokens.length; i += 30) {
+    const url = `${GECKO}/${chain.gecko}/tokens/multi/${tokens.slice(i, i + 30).join(',')}?include=top_pools`
+    const res = await fetch(url, { headers: { accept: 'application/json', 'user-agent': UA }, signal: AbortSignal.timeout(20_000) })
+    if (!res.ok) throw new Error(`GeckoTerminal HTTP ${res.status}`)
+    const j = await res.json()
+    if (!Array.isArray(j.data)) throw new Error('GeckoTerminal: no data')
+    for (const t of j.data) byToken.set(String(t.attributes?.address ?? '').toLowerCase(), t)
+    for (const p of j.included ?? []) if (p.type === 'pool') pools.set(p.id, p)
+  }
+  return tokens.map((addr) => {
+    const t = byToken.get(addr.toLowerCase())
+    const price = num(t?.attributes?.price_usd)
+    if (!t || !price) return null
+    const ids = (t.relationships?.top_pools?.data ?? []).map((d) => d.id)
+    const top = pools.get(ids[0])
+    const name = String(top?.attributes?.name ?? '')
+    const against = name.split('/')[1]?.trim().split(/\s+/)[0] ?? '?'
+    const dexId = String(top?.relationships?.dex?.data?.id ?? 'unknown')
+    return {
+      price,
+      liquidityUsd: num(top?.attributes?.reserve_in_usd) ?? 0,
+      volume24hUsd: num(top?.attributes?.volume_usd?.h24) ?? 0,
+      dex: dexId.replace(/-(robinhood|bsc)$/, ''),
+      labels: [],
+      other: against,
+      url: top ? `https://www.geckoterminal.com/${chain.gecko}/pools/${top.attributes.address}` : null,
+      pair: top?.attributes?.address ?? null,
+      sound: SOUND_QUOTES.has(against.toUpperCase()),
+      pools: ids.length,
+      totalLiquidityUsd: num(t.attributes?.total_reserve_in_usd) ?? 0,
+      totalVolume24hUsd: num(t.attributes?.volume_usd?.h24) ?? 0,
+    }
+  })
 }
 
 /** Every token's pools in batches of 30 (DexScreener's limit). */
@@ -255,6 +310,7 @@ async function buildChain(chain, at) {
       sessionName: chain.session === 'nyse' ? 'NYSE hours' : '24/5',
       poolsAsOf: poolRead.asOf ? new Date(poolRead.asOf).toISOString() : null,
       poolsStale: poolRead.stale,
+      poolSource: poolRead.source ?? null,
       fairMethod: chain.multiplier ? 'Share price from Chainlink × the token’s on-chain uiMultiplier' : 'Chainlink feed for the token itself',
     },
     rows,
@@ -271,7 +327,7 @@ async function build() {
     rules: { minLiquidityUsd: MIN_LIQUIDITY_USD, inLinePct: IN_LINE_PCT, flagPct: FLAG_PCT },
     sources: {
       fair: 'Chainlink feeds, read on chain with latestRoundData(); on BNB Chain multiplied by each bStock’s uiMultiplier()',
-      onchain: 'DexScreener public API: the deepest pool per token, pools against a native coin or dollar stable first',
+      onchain: 'DexScreener public API (the deepest pool per token, pools against a native coin or dollar stable first), with GeckoTerminal as the second source when DexScreener refuses',
       tables: CHAINS.map((c) => `${c.name}: ${c.table.source}`),
     },
     rows: parts.flatMap((p) => p.rows),

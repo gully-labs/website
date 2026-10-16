@@ -48,6 +48,8 @@ export interface TrackerChain {
   fairMethod: string
   poolsAsOf: string | null
   poolsStale: boolean
+  /** Which source answered for the pool prices: DexScreener, or GeckoTerminal when it refused. */
+  poolSource: string | null
 }
 
 export interface Tracker {

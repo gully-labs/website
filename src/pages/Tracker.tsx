@@ -246,7 +246,7 @@ export function Tracker() {
               </div>
             </div>
             <p className="m-0 mt-6 font-mono text-[11px] leading-[1.6] text-faint">
-              Read at {new Date(data.generatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC, refreshed every minute; history every five minutes. Sources: {data.sources.fair}; {data.sources.onchain}.
+              Read at {new Date(data.generatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC, refreshed every minute; history every five minutes. Pool prices now from {[...new Set(data.chains.map((c) => c.poolSource).filter(Boolean))].join(' and ') || 'no source'}. Sources: {data.sources.fair}; {data.sources.onchain}.
             </p>
           </section>
         </>
