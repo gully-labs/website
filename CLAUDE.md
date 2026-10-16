@@ -54,7 +54,8 @@ what agrees in USD, keeping the source beside every number:
 DefiLlama state (checked 2026-10-15): DeepCore, Peddles (dexs + fees; its merged TVL adapter errors and reports
 nothing), PeddleQuest and the retired Latch Protocol are listed; PeddleSwap's adapter PR #21383 was closed by
 DefiLlama for having no liquidity ("reopen once there are active pools"); Cartel Family is not a DeFi protocol
-and is not listed. DefiLlama figures lag a day and are always named as the source where used.
+and is not listed. PeddleSwap's own stats API answered 500 on 2026-10-15 because its Postgres containers had exited
+after the box ran out of disk; `docker start` on them fixed it the same day, and this site reads it again. DefiLlama figures lag a day and are always named as the source where used.
 
 Rules: a venue that cannot be read is `state: error` and renders as unreadable, never as zero; a
 figure a venue does not publish is `null` and the totals say which venues they cover; a figure in a
