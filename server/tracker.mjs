@@ -24,8 +24,8 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const load = (f) => JSON.parse(fs.readFileSync(path.join(here, 'data', f), 'utf8'))
 
 const CHAINS = [
-  { id: 4663, key: 'robinhood', name: 'Robinhood Chain', dex: 'robinhood', gecko: 'robinhood', rpcs: ['https://rpc.mainnet.chain.robinhood.com', 'https://rpc.ordofi.network'], session: '24/5', table: load('robinhood-stocks.json'), multiplier: false },
-  { id: 56, key: 'bsc', name: 'BNB Chain', dex: 'bsc', gecko: 'bsc', rpcs: ['https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-rpc.publicnode.com'], session: 'nyse', table: load('bsc-stocks.json'), multiplier: true },
+  { id: 4663, key: 'robinhood', name: 'Robinhood Chain', dex: 'robinhood', gecko: 'robinhood', rpcs: ['https://rpc.mainnet.chain.robinhood.com', 'https://rpc.ordofi.network'], session: '24/5', stateView: '0xf3334192d15450cdd385c8b70e03f9a6bd9e673b', nativeUsdFeed: '0x78f3556b67e17df817d51ef5a990cdaf09e8d3a9', nativeQuotes: ['WETH', 'ETH'], table: load('robinhood-stocks.json'), multiplier: false },
+  { id: 56, key: 'bsc', name: 'BNB Chain', dex: 'bsc', gecko: 'bsc', rpcs: ['https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-rpc.publicnode.com'], session: 'nyse', stateView: null, nativeUsdFeed: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE', nativeQuotes: ['WBNB', 'BNB'], table: load('bsc-stocks.json'), multiplier: true },
 ]
 
 const DEX = 'https://api.dexscreener.com/tokens/v1'
@@ -101,7 +101,7 @@ function bestPool(token, pairs) {
       const native = num(p.priceNative)
       // DexScreener prices the BASE token; a stock on the quote side is priceUsd / priceNative.
       const price = isBase ? usd : usd !== null && native ? usd / native : null
-      return { price, liquidityUsd: num(p.liquidity?.usd) ?? 0, volume24hUsd: num(p.volume?.h24) ?? 0, dex: p.dexId, labels: p.labels ?? [], other: other?.symbol ?? '?', url: p.url, pair: p.pairAddress, sound: SOUND_QUOTES.has(String(other?.symbol ?? '').toUpperCase()) }
+      return { price, liquidityUsd: num(p.liquidity?.usd) ?? 0, volume24hUsd: num(p.volume?.h24) ?? 0, dex: p.dexId, labels: p.labels ?? [], other: other?.symbol ?? '?', quoteAddr: other?.address ?? null, url: p.url, pair: p.pairAddress, sound: SOUND_QUOTES.has(String(other?.symbol ?? '').toUpperCase()) }
     })
     .filter((r) => r.price !== null && r.price > 0)
   if (!rows.length) return null
@@ -124,7 +124,7 @@ try {
 }
 const backoff = {}
 
-async function readPoolsResilient(chain) {
+async function readPoolsResilient(chain, fairByToken = new Map()) {
   const b = backoff[chain.key]
   const cached = lastPools[chain.key]
   const usable = cached && Date.now() - cached.at < STALE_LIMIT_MS
@@ -140,11 +140,16 @@ async function readPoolsResilient(chain) {
         pools = await readPoolsGecko(chain)
         source = 'GeckoTerminal'
       } catch {
-        throw first
+        try {
+          pools = await readPoolsOnchain(chain, fairByToken)
+          source = 'on chain'
+        } catch {
+          throw first
+        }
       }
     }
     delete backoff[chain.key]
-    lastPools[chain.key] = { at: Date.now(), pools, source }
+    if (source !== 'on chain') lastPools[chain.key] = { at: Date.now(), pools, source }
     try {
       fs.mkdirSync(path.dirname(POOLS_FILE), { recursive: true })
       fs.writeFileSync(POOLS_FILE + '.tmp', JSON.stringify(lastPools))
@@ -165,6 +170,7 @@ async function readPoolsResilient(chain) {
     token's price (GeckoTerminal's, from its most liquid pool), its total liquidity and volume, and
     its top pool for the venue, pair and link. 30 tokens per request. */
 async function readPoolsGecko(chain) {
+  if (process.env.TRACKER_SKIP_APIS === '1') throw new Error('APIs skipped (test switch)')
   const tokens = chain.table.stocks.map((s) => s.token)
   const byToken = new Map()
   const pools = new Map()
@@ -184,8 +190,13 @@ async function readPoolsGecko(chain) {
     const ids = (t.relationships?.top_pools?.data ?? []).map((d) => d.id)
     const top = pools.get(ids[0])
     const name = String(top?.attributes?.name ?? '')
-    const against = name.split('/')[1]?.trim().split(/\s+/)[0] ?? '?'
+    // "SPY / PLTR 0.05%": the pair's other side is whichever half is not this token (base or quote).
+    const [baseSym, quoteSym] = name.split('/').map((x) => x.trim().split(/\s+/)[0] ?? '?')
+    const baseId = String(top?.relationships?.base_token?.data?.id ?? '').split('_')[1] ?? ''
+    const against = (baseId.toLowerCase() === addr.toLowerCase() ? quoteSym : baseSym) ?? '?'
     const dexId = String(top?.relationships?.dex?.data?.id ?? 'unknown')
+    const sides = [top?.relationships?.base_token?.data?.id, top?.relationships?.quote_token?.data?.id].map((id) => String(id ?? '').split('_')[1] ?? '')
+    const quoteAddr = sides.find((a) => a && a.toLowerCase() !== addr.toLowerCase()) ?? null
     return {
       price,
       liquidityUsd: num(top?.attributes?.reserve_in_usd) ?? 0,
@@ -193,6 +204,7 @@ async function readPoolsGecko(chain) {
       dex: dexId.replace(/-(robinhood|bsc)$/, ''),
       labels: [],
       other: against,
+      quoteAddr,
       url: top ? `https://www.geckoterminal.com/${chain.gecko}/pools/${top.attributes.address}` : null,
       pair: top?.attributes?.address ?? null,
       sound: SOUND_QUOTES.has(against.toUpperCase()),
@@ -203,8 +215,74 @@ async function readPoolsGecko(chain) {
   })
 }
 
+/* The third source, used when both price APIs refuse: re-price each token's last known pool straight
+   from the chain. v3 pools (Uniswap, PancakeSwap, Ramses) are read with slot0(); Uniswap v4 pools by id
+   through StateView.getSlot0. The quote is valued at $1 for a dollar stable, by Chainlink for the
+   native coin, and by this cycle's fair price when the quote is itself a stock token (SPY, GLD…).
+   Liquidity and volume are not on chain in usable form, so they stay those of the last good read. */
+const STABLES = new Set(['USDC', 'USDG', 'USDT', 'USD1', 'FDUSD', 'USDC.E', 'DAI'])
+const ZERO = '0x0000000000000000000000000000000000000000'
+const decimalsCache = new Map()
+
+async function readPoolsOnchain(chain, fairByToken) {
+  const cached = lastPools[chain.key]
+  if (!cached) throw new Error('no pool list to re-price yet')
+  const pools = cached.pools
+  const nat = await rpcBatch(chain, [{ jsonrpc: '2.0', id: 0, method: 'eth_call', params: [{ to: chain.nativeUsdFeed, data: '0xfeaf968c' }, 'latest'] }])
+  const natHex = nat.get(0)?.result
+  const nativeUsd = natHex && natHex.length >= 2 + 64 * 5 ? Number(BigInt.asIntN(256, word(natHex, 1))) / 1e8 : null
+
+  const calls = []
+  const plan = chain.table.stocks.map((s, i) => {
+    const p = pools[i]
+    if (!p || p.error || !p.pair || !p.quoteAddr) return null
+    const v4 = p.pair.length === 66
+    if (v4 && !chain.stateView) return null
+    const id = calls.length
+    calls.push({ jsonrpc: '2.0', id, method: 'eth_call', params: [v4 ? { to: chain.stateView, data: '0xc815641c' + p.pair.slice(2) } : { to: p.pair, data: '0x3850c7bd' }, 'latest'] })
+    return { id, token: s.token.toLowerCase(), quote: p.quoteAddr.toLowerCase() }
+  })
+  const need = new Set()
+  for (const x of plan) if (x) for (const a of [x.token, x.quote]) if (a !== ZERO && !decimalsCache.has(`${chain.key}:${a}`)) need.add(a)
+  const decIds = new Map()
+  for (const a of need) {
+    decIds.set(a, calls.length)
+    calls.push({ jsonrpc: '2.0', id: calls.length, method: 'eth_call', params: [{ to: a, data: '0x313ce567' }, 'latest'] })
+  }
+  if (!calls.length) throw new Error('nothing to re-price')
+  const out = await rpcBatch(chain, calls)
+  for (const [a, id] of decIds) {
+    const r = out.get(id)?.result
+    if (r && r.length >= 66) decimalsCache.set(`${chain.key}:${a}`, Number(BigInt(r)))
+  }
+  const dec = (a) => (a === ZERO ? 18 : decimalsCache.get(`${chain.key}:${a}`))
+
+  let repriced = 0
+  const result = pools.map((p, i) => {
+    const x = plan[i]
+    if (!x) return p
+    const r = out.get(x.id)?.result
+    if (!r || r.length < 66) return p
+    const sqrt = Number(word(r, 0)) / 2 ** 96
+    const tokenIs0 = x.token < x.quote
+    const d0 = dec(tokenIs0 ? x.token : x.quote)
+    const d1 = dec(tokenIs0 ? x.quote : x.token)
+    if (!sqrt || d0 === undefined || d1 === undefined) return p
+    const zeroInOne = sqrt * sqrt * 10 ** (d0 - d1) // price of currency0 in units of currency1
+    const inQuote = tokenIs0 ? zeroInOne : 1 / zeroInOne
+    const sym = String(p.other ?? '').toUpperCase()
+    const quoteUsd = STABLES.has(sym) ? 1 : chain.nativeQuotes.includes(sym) ? nativeUsd : (fairByToken.get(x.quote) ?? null)
+    if (!quoteUsd || !Number.isFinite(inQuote) || inQuote <= 0) return p
+    repriced++
+    return { ...p, price: inQuote * quoteUsd }
+  })
+  if (!repriced) throw new Error('no pool could be re-priced on chain')
+  return result
+}
+
 /** Every token's pools in batches of 30 (DexScreener's limit). */
 async function readPools(chain) {
+  if (process.env.TRACKER_SKIP_APIS === '1') throw new Error('APIs skipped (test switch)')
   const tokens = chain.table.stocks.map((s) => s.token)
   const pairs = []
   for (let i = 0; i < tokens.length; i += 30) {
@@ -271,7 +349,9 @@ function record(rows, at) {
 async function buildChain(chain, at) {
   const open = sessionOpen(chain.session, new Date(at))
   const fail = (e) => chain.table.stocks.map(() => ({ error: String(e?.message ?? e) }))
-  const [feeds, poolRead] = await Promise.all([readFeeds(chain).catch(fail), readPoolsResilient(chain).catch((e) => ({ pools: fail(e), asOf: null, stale: false }))])
+  const feeds = await readFeeds(chain).catch(fail)
+  const fairByToken = new Map(chain.table.stocks.map((s, i) => [s.token.toLowerCase(), feeds[i] && !feeds[i].error ? feeds[i].price : null]).filter(([, v]) => v))
+  const poolRead = await readPoolsResilient(chain, fairByToken).catch((e) => ({ pools: fail(e), asOf: null, stale: false }))
   const pools = poolRead.pools
   const rows = chain.table.stocks.map((s, i) => {
     const f = feeds[i]
@@ -327,7 +407,7 @@ async function build() {
     rules: { minLiquidityUsd: MIN_LIQUIDITY_USD, inLinePct: IN_LINE_PCT, flagPct: FLAG_PCT },
     sources: {
       fair: 'Chainlink feeds, read on chain with latestRoundData(); on BNB Chain multiplied by each bStock’s uiMultiplier()',
-      onchain: 'DexScreener public API (the deepest pool per token, pools against a native coin or dollar stable first), with GeckoTerminal as the second source when DexScreener refuses',
+      onchain: 'DexScreener public API (the deepest pool per token, pools against a native coin or dollar stable first), with GeckoTerminal when DexScreener refuses; when both refuse, the same pools re-priced directly on chain (v3 slot0, v4 StateView)',
       tables: CHAINS.map((c) => `${c.name}: ${c.table.source}`),
     },
     rows: parts.flatMap((p) => p.rows),
