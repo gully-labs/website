@@ -23,7 +23,7 @@
 //   - it has the chain's confirmations (Ethereum 6, Base 10, Arbitrum 10, BNB Chain 15); fewer answers
 //     202, try again shortly.
 //
-// Stored in DATA_DIR/billing.json: { payments, quotes, invoices }. The running plan lives on the account
+// Stored in DATA_DIR/billing.json: { payments, quotes, invoices, links }. The running plan lives on the account
 // (developers.json) as account.plan = { id, since, expiresAt, source: 'payment' | 'admin' }. Records
 // written before multi-chain payments (USDC on Base only, "intents") are migrated on load.
 
@@ -31,7 +31,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
-import { assetById, ASSET_IDS, blockTime, CHAINS, confirmationsFor, DEFAULT_ASSET, fmtUnits, fmtUsd, MAX_TAG, quoteAmount, readFeed, readPayment, txUrl } from './payments.mjs'
+import { assetById, ASSET_IDS, blockTime, CHAINS, confirmationsFor, DEFAULT_ASSET, fmtUnits, fmtUsd, MAX_TAG, paymentUri, quoteAmount, readFeed, readPayment, txUrl } from './payments.mjs'
 import { PAID_PLAN_IDS, PERIOD_MS, planOf, PLANS, treasury } from './plans.mjs'
 import { getAccount, randomToken, saveDevelopers } from './store.mjs'
 
@@ -53,6 +53,8 @@ try {
 db.payments ??= []
 db.quotes ??= []
 db.invoices ??= []
+// Gully Pay links (paylinks.mjs): reusable pages that each make an invoice per payer.
+db.links ??= []
 // Migration from USDC-on-Base only: payments gain chain and asset; open "intents" become quotes and
 // keep the expiry they were given.
 for (const p of db.payments) {
@@ -111,6 +113,8 @@ export function quoteView(q) {
     treasury: q.treasury,
     chainId: a.chainId,
     token: a.address,
+    // EIP-681 wallet link for the exact amount (the pay page's QR). Built here, the one source of truth.
+    uri: paymentUri(a, q.treasury, q.amountRaw),
     confirmations: confirmationsFor(a.chainId),
     // Kept for pages built before multi-chain payments.
     priceUsdc: q.plan && PLANS[q.plan] ? PLANS[q.plan].priceUsdc : null,

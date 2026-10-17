@@ -117,16 +117,18 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
     for (let tries = 0; ; tries++) {
       const r = await verify(q, txHash)
       if (me !== run.current) return
-      if (r.ok) {
+      // 202 "not confirmed yet" is a 2xx, so api() answers it as ok: it is not a payment yet.
+      if (r.ok && r.status !== 202) {
         setCheck({ state: 'done', hash: txHash })
         onPaid(r.data, q, txHash)
         return
       }
+      const message = r.ok ? ((r.data as { error?: string } | null)?.error ?? 'Waiting for confirmations.') : r.error
       if (r.status !== 202 || tries >= 100) {
-        setCheck({ state: 'error', hash: txHash, message: r.status === 202 ? `${r.error} Still not confirmed after ten minutes: check again later with the same hash.` : r.error })
+        setCheck({ state: 'error', hash: txHash, message: r.status === 202 ? `${message} Still not confirmed after ten minutes: check again later with the same hash.` : message })
         return
       }
-      setCheck({ state: 'pending', hash: txHash, message: r.error })
+      setCheck({ state: 'pending', hash: txHash, message })
       await new Promise((ok) => setTimeout(ok, 6_000))
       if (me !== run.current) return
     }

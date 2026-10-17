@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { PayAsset, Payment } from '../developers/api'
+import type { Checkout, PayAsset, Payment } from './api'
 
 /* A Gully Pay invoice as GET /api/pay/:id answers it (server/invoices.mjs). */
 
@@ -19,7 +19,9 @@ export interface Invoice {
   paidAt: string | null
   cancelledAt: string | null
   payment: Payment | null
-  checkout: { enabled: true; treasury: string } | { enabled: false; treasury: null; reason: string }
+  /** The pay link this invoice was made from, if any. */
+  linkId: string | null
+  checkout: Checkout
 }
 
 export type InvoiceState = { k: 'loading' } | { k: 'missing' } | { k: 'error'; message: string } | { k: 'ok'; invoice: Invoice }

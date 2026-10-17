@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, ChainKitRoute, DevelopersRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, ChainKitRoute, DevelopersRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { RouteError } from './pages/RouteError'
 import { TrackerRoute } from './pages/TrackerRoute'
@@ -24,6 +24,8 @@ const mainRoutes = [
       { path: '/chain-kit', element: <ChainKitRoute /> },
       // Gully Pay: an invoice anyone with its link can pay (never linked, never indexed).
       { path: '/pay/:id', element: <PayRoute /> },
+      // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
+      { path: '/pay/l/:id', element: <PayLinkRoute /> },
       { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={DEVELOPERS_URL} /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

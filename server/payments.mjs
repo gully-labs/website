@@ -18,6 +18,8 @@
 //   GULLY_MIN_CONFIRMATIONS       older override for Base's confirmations, still honoured
 //   GULLY_CONFIRMATIONS_<chainId> confirmations for one chain
 
+import { keccak_256 } from './vendor/noble.mjs'
+
 /** A Chainlink answer older than this is stale and no quote is given in that coin. */
 export const FEED_MAX_AGE_SEC = 2 * 3600
 
@@ -299,4 +301,33 @@ export async function readPayment(asset, txHash, treasury) {
 export async function blockTime(chainId, blockHex) {
   const b = await rpc(chainId, 'eth_getBlockByNumber', [blockHex, false])
   return b?.timestamp ? Number(BigInt(b.timestamp)) * 1000 : null
+}
+
+/* ---------------------------------------------------- wallet links (QR) --- */
+
+/** EIP-55 mixed-case checksum of an address (wallets reading a QR check it). */
+export function checksumAddress(a) {
+  const lowerHex = String(a).toLowerCase().replace(/^0x/, '')
+  if (!/^[0-9a-f]{40}$/.test(lowerHex)) throw new Error('not an address')
+  const h = keccak_256(new TextEncoder().encode(lowerHex))
+  let out = '0x'
+  for (let i = 0; i < 40; i++) {
+    const nibble = (h[i >> 1] >> (i % 2 ? 0 : 4)) & 15
+    out += nibble >= 8 ? lowerHex[i].toUpperCase() : lowerHex[i]
+  }
+  return out
+}
+
+/**
+ * The EIP-681 payment request for an exact amount, built from base units with BigInt only:
+ *   native coin  ethereum:<treasury>@<chainId>?value=<wei>
+ *   ERC-20       ethereum:<token>@<chainId>/transfer?address=<treasury>&uint256=<baseUnits>
+ * Wallet support varies, so the pay page also shows the address, amount and token to copy by hand.
+ */
+export function paymentUri(asset, treasuryAddress, amountRaw) {
+  const units = BigInt(amountRaw)
+  if (units <= 0n) throw new Error('amount must be positive')
+  const to = checksumAddress(treasuryAddress)
+  if (asset.kind === 'native') return `ethereum:${to}@${asset.chainId}?value=${units.toString()}`
+  return `ethereum:${checksumAddress(asset.address)}@${asset.chainId}/transfer?address=${to}&uint256=${units.toString()}`
 }
