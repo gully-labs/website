@@ -450,7 +450,7 @@ async function build() {
     rules: { minLiquidityUsd: MIN_LIQUIDITY_USD, inLinePct: IN_LINE_PCT, flagPct: FLAG_PCT },
     sources: {
       fair: 'Chainlink feeds, read on chain with latestRoundData(); on BNB Chain multiplied by each bStock’s uiMultiplier()',
-      onchain: 'DexScreener public API (the deepest pool per token, pools against a native coin or dollar stable first), with GeckoTerminal when DexScreener refuses; when both refuse, the same pools re-priced directly on chain (v3 slot0, v4 StateView)',
+      onchain: 'each token’s deepest pool (pools against a native coin or dollar stable first), priced directly on chain every refresh (v3 slot0, v4 StateView); DexScreener, or GeckoTerminal when it refuses, finds the pool and reports liquidity and volume once an hour',
       tables: CHAINS.map((c) => `${c.name}: ${c.table.source}`),
     },
     rows: parts.flatMap((p) => p.rows),

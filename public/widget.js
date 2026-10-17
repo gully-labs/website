@@ -1,4 +1,4 @@
-/*! Gully Labs tracker widget v2 · https://docs.gullylabs.xyz/widget
+/*! Gully Labs tracker widget v2 \u00b7 https://docs.gullylabs.xyz/widget
  * <div data-gully-widget="ticker|badge|table" data-chain="all|robinhood|bsc" data-ticker="NVDA"
  *      data-theme="dark|light" data-limit="5"></div>
  * <script src="https://gullylabs.xyz/widget.js" async></script>
@@ -91,10 +91,10 @@
     return typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/.test(u) ? u : null
   }
   function price(v) {
-    return num(v) ? '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: v < 1 ? 4 : 2 }) : '—'
+    return num(v) ? '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: v < 1 ? 4 : 2 }) : '\u2014'
   }
   function gap(v) {
-    return num(v) ? (v > 0 ? '+' : '') + v.toFixed(2) + '%' : '—'
+    return num(v) ? (v > 0 ? '+' : '') + v.toFixed(2) + '%' : '\u2014'
   }
   // Colour by direction, as the tracker does; a thin pool stays neutral because its price is not trusted.
   function tone(r) {
@@ -102,7 +102,7 @@
     return r.gapPct >= 0 ? 'up' : 'dn'
   }
   function arrow(r) {
-    return num(r.gapPct) ? (r.gapPct >= 0 ? '▲' : '▼') : ''
+    return num(r.gapPct) ? (r.gapPct >= 0 ? '\u25b2' : '\u25bc') : ''
   }
   function key(r) {
     return r.chain + ':' + r.ticker
@@ -162,10 +162,10 @@
 
   function footer(d, stale) {
     var t = d ? new Date(d.generatedAt) : null
-    var when = t && !isNaN(t) ? (stale ? 'last read ' : 'live · ') + t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+    var when = t && !isNaN(t) ? (stale ? 'last read ' : 'live \u00b7 ') + t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
     return (
       '<div class="f"><span class="lv"><span class="dot' + (stale || !d ? ' st' : '') + '"></span>' + esc(when) + '</span>' +
-      '<a href="' + TRACKER + '" target="_blank" rel="noopener">Gully Labs tracker ↗</a></div>'
+      '<a href="' + TRACKER + '" target="_blank" rel="noopener">Gully Labs tracker \u2197</a></div>'
     )
   }
 
@@ -184,7 +184,7 @@
     var items = rows
       .map(function (r) {
         return (
-          '<a class="it" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener" title="' + esc(r.name + ' · ' + (CHAIN[r.chain] || r.chain)) + '">' +
+          '<a class="it" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener" title="' + esc(r.name + ' \u00b7 ' + (CHAIN[r.chain] || r.chain)) + '">' +
           logo(r, 20, w.chain === 'all') + '<b>' + esc(r.ticker) + '</b><span class="v" data-v="p">' + esc(price(r.onchain)) + '</span>' + pill(r) + '</a>'
         )
       })
@@ -192,7 +192,7 @@
     return '<div class="vp" tabindex="0" role="region" aria-label="Stock token prices and gap to fair price"><div class="tr"><div>' + items + '</div><div class="dup" aria-hidden="true">' + items + '</div></div></div>'
   }
 
-  // Gap to fair as a bar from the centre line: right for above fair, left for below, scaled to ±3%.
+  // Gap to fair as a bar from the centre line: right for above fair, left for below, scaled to \u00b13%.
   function gapBar(r) {
     if (!num(r.gapPct)) return ''
     var span = Math.min(Math.abs(r.gapPct) / 3, 1) * 50
@@ -256,7 +256,7 @@
     var g = num(r.gapPct) ? pill(r) : '<span class="pl">' + (r.status === 'no-pool' ? 'no pool' : 'unreadable') + '</span>'
     return (
       '<a class="b" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">' +
-      '<div class="hd">' + logo(r, 40, true) + '<div class="tx"><span class="k">' + esc(r.ticker) + '</span><span class="n">' + esc(r.name) + ' · ' + esc(CHAIN[r.chain] || r.chain) + '</span></div></div>' +
+      '<div class="hd">' + logo(r, 40, true) + '<div class="tx"><span class="k">' + esc(r.ticker) + '</span><span class="n">' + esc(r.name) + ' \u00b7 ' + esc(CHAIN[r.chain] || r.chain) + '</span></div></div>' +
       '<div class="row"><span class="p v" data-v="p">' + esc(price(r.onchain)) + '</span>' + g + '</div>' +
       gapBar(r) +
       '<div class="c" title="Fair price from Chainlink"><span>fair <span class="v" data-v="f">' + esc(price(r.fair)) + '</span></span><span>' + esc(note) + '</span></div>' +
@@ -328,7 +328,7 @@
       })
       .join('')
     var th = function (k, label, cls) {
-      return '<th' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" data-sort="' + k + '"' + (by === k ? ' aria-sort="descending"' : '') + '>' + label + (by === k ? ' ↓' : '') + '</button></th>'
+      return '<th' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" data-sort="' + k + '"' + (by === k ? ' aria-sort="descending"' : '') + '>' + label + (by === k ? ' \u2193' : '') + '</button></th>'
     }
     return (
       '<table><caption class="sr">Widest gaps to fair price, pools with $' + esc(minLiq.toLocaleString('en-US')) + ' or more liquidity</caption>' +
@@ -403,7 +403,7 @@
         var cur = sp.querySelector('.cur')
         cur.style.left = bx + 'px'
         tip.style.left = Math.min(Math.max(bx, 40), rect.width - 40) + 'px'
-        tip.textContent = new Date(best[0] * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' · ' + gap(best[1])
+        tip.textContent = new Date(best[0] * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' \u00b7 ' + gap(best[1])
       })
     }
   }
@@ -413,7 +413,7 @@
       var f = feeds[w.base]
       var d = f && f.data
       var inner
-      if (!d) inner = f && f.error ? '<div class="m e">The tracker could not be read. Retrying every minute.</div>' : '<div class="m">Reading the tracker…</div>'
+      if (!d) inner = f && f.error ? '<div class="m e">The tracker could not be read. Retrying every minute.</div>' : '<div class="m">Reading the tracker\u2026</div>'
       else inner = (w.type === 'badge' ? badge : w.type === 'table' ? table : ticker)(w, d)
       var html = inner + footer(d, f && f.error)
       if (html === w.last) return

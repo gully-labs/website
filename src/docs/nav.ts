@@ -8,6 +8,7 @@ export const DOC_PAGES = [
   { slug: 'api', title: 'API reference', group: 'Build' },
   { slug: 'widget', title: 'Widget guide', group: 'Build' },
   { slug: 'api-keys', title: 'API keys', group: 'Build' },
+  { slug: 'sdk', title: 'SDK', group: 'Build' },
   { slug: 'changelog', title: 'Changelog', group: 'More' },
 ] as const
 
