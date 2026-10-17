@@ -7,6 +7,12 @@ import { Meter } from './charts'
 import { BLOCK_TEXT, siteMeta, type SiteUsage } from './helpers'
 import { CopyButton, Dialog } from './Dialog'
 import { Empty, ErrorLine, Skeleton } from './parts'
+import { ExtLink } from './ExtLink'
+import { OpenAnalytics } from './OpenAnalytics'
+import { Can } from './RoleGate'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { KEY_COLORS } from './styles'
+import { QuotaRing } from './vcharts'
 import { PayFlow } from './PayFlow'
 import { input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
 import { toastError, toastSuccess } from '../../components/ui/toast'
@@ -47,9 +53,9 @@ function PasswordDialog({ secret, loginUrl, onClose }: { secret: Secret; loginUr
               <CopyButton text={secret.password} what="Password" />
             </div>
           </div>
-          <a href={loginUrl} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
-            Sign in at {loginUrl.replace(/^https:\/\//, '')} <ArrowUpRight size={12} aria-hidden />
-          </a>
+          <ExtLink href={loginUrl} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
+            Sign in at {loginUrl.replace(/^https:\/\//, '')}
+          </ExtLink>
           <div className="flex justify-end">
             <button type="button" data-autofocus onClick={onClose} className={pillGold}>
               <Check size={16} aria-hidden /> I have saved it
@@ -129,13 +135,15 @@ function StartCard({ view, onStarted }: { view: AnalyticsView; onStarted: (s: Se
       )}
       {err && <ErrorLine>{err}</ErrorLine>}
       <div className="relative flex flex-wrap items-center gap-2">
-        <button type="button" onClick={start} disabled={busy || !view.configured} className={`${pillGold} px-6`}>
-          {busy ? <Loader2 size={17} className="animate-spin" aria-hidden /> : <ChartNoAxesCombined size={17} aria-hidden />}
-          {busy ? 'Creating your login…' : view.trialAvailable ? 'Start free trial' : 'Create my login'}
-        </button>
-        <a href={`${DOCS_URL}/analytics`} className={pillLine}>
-          How it works <ArrowUpRight size={15} aria-hidden />
-        </a>
+        <Can cat="analytics" what="start Gully Analytics">
+          <button type="button" onClick={start} disabled={busy || !view.configured} className={`${pillGold} px-6`}>
+            {busy ? <Loader2 size={17} className="animate-spin" aria-hidden /> : <ChartNoAxesCombined size={17} aria-hidden />}
+            {busy ? 'Creating your login…' : view.trialAvailable ? 'Start free trial' : 'Create my login'}
+          </button>
+        </Can>
+        <ExtLink href={`${DOCS_URL}/analytics`} className={pillLine}>
+          How it works
+        </ExtLink>
       </div>
     </section>
   )
@@ -161,15 +169,17 @@ function SiteRow({ site, origin, usage, share, onDelete }: { site: AnalyticsSite
           <Meter value={Math.round(share * 1000)} max={1000} label={`${site.domain}: share of this month’s events`} />
         </span>
         <span className="flex flex-wrap items-center gap-2">
-          <a href={site.dashboardUrl} target="_blank" rel="noopener" className={pillSm}>
-            Open <ArrowUpRight size={13} aria-hidden />
-          </a>
+          <ExtLink href={site.dashboardUrl} className={pillSm}>
+            Open
+          </ExtLink>
           <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className={pillSm}>
             <Code2 size={14} aria-hidden /> {open ? 'Hide snippet' : 'Install'}
           </button>
-          <button type="button" onClick={onDelete} aria-label={`Remove ${site.name}`} className="inline-flex size-11 items-center justify-center rounded-full border border-line-strong text-muted transition-colors hover:border-error hover:text-error">
-            <Trash2 size={15} aria-hidden />
-          </button>
+          <Can cat="analytics" what="remove websites" hide>
+            <button type="button" onClick={onDelete} aria-label={`Remove ${site.name}`} className="inline-flex size-11 items-center justify-center rounded-full border border-line-strong text-muted transition-colors hover:border-error hover:text-error">
+              <Trash2 size={15} aria-hidden />
+            </button>
+          </Can>
         </span>
       </div>
       {open && (
@@ -241,7 +251,7 @@ function Websites({ account, origin, reload }: { account: AnalyticsAccount; orig
         </div>
       </div>
       {!account.sites.length ? (
-        <Empty icon={<Globe size={26} className="text-gold" aria-hidden />} title="No websites yet">
+        <Empty icon={<Globe size={26} className="text-gold" aria-hidden />} title="No websites yet" action={canAdd ? <button type="button" onClick={() => document.querySelector<HTMLInputElement>('input[placeholder="My dapp"]')?.focus()} className={pillSm}><Plus size={14} aria-hidden /> Add your first website</button> : undefined}>
           Add your dapp’s domain to get its website id and the one-line install snippet.
         </Empty>
       ) : (
@@ -261,9 +271,11 @@ function Websites({ account, origin, reload }: { account: AnalyticsAccount; orig
             Domain
             <input className={input} value={domain} onChange={(e) => setDomain(e.target.value)} maxLength={253} required placeholder="app.example.com" inputMode="url" autoCapitalize="off" spellCheck={false} />
           </label>
-          <button type="submit" disabled={busy || !name.trim() || !domain.trim()} className={pillGold}>
-            {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Plus size={16} aria-hidden />} Add website
-          </button>
+          <Can cat="analytics" what="add websites">
+            <button type="submit" disabled={busy || !name.trim() || !domain.trim()} className={pillGold}>
+              {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Plus size={16} aria-hidden />} Add website
+            </button>
+          </Can>
         </form>
       ) : (
         <p className="m-0 border-t border-line pt-3 text-[13px] text-faint">{account.state === 'lapsed' ? 'Choose a plan below to add websites again.' : `Your plan includes ${limit} website${limit === 1 ? '' : 's'}. Remove one or upgrade to add another.`}</p>
@@ -325,9 +337,11 @@ function PlanList({ view, account, onBuy }: { view: AnalyticsView; account: Anal
               <span className="font-mono text-[12px] text-muted">
                 {p.sites} websites · {n(p.eventsPerMonth)} events a month · Web3 tracking
               </span>
-              <button type="button" disabled={!offer.checkout.enabled} onClick={() => onBuy(p)} className={isCur ? pillLine : pillGold}>
-                {!offer.checkout.enabled ? 'Not on sale yet' : isCur ? `Extend ${p.name} by ${offer.analytics.periodDays} days` : `Choose ${p.name}`}
-              </button>
+              <Can cat="billing" what="pay for plans" block>
+                <button type="button" disabled={!offer.checkout.enabled} onClick={() => onBuy(p)} className={`${isCur ? pillLine : pillGold} w-full`}>
+                  {!offer.checkout.enabled ? 'Not on sale yet' : isCur ? `Extend ${p.name} by ${offer.analytics.periodDays} days` : `Choose ${p.name}`}
+                </button>
+              </Can>
             </div>
           )
         })}
@@ -435,19 +449,46 @@ function StatusCard({ account, onReset }: { account: AnalyticsAccount; onReset: 
           <CopyButton text={account.username} what="Username" label="Copy" className="!min-h-9 border-none !px-2 text-[11px]" />
         </span>
         <span className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={onReset} className={pillSm}>
-            Reset password
-          </button>
-          <a href={account.loginUrl} target="_blank" rel="noopener" className={pillGold}>
-            Open Gully Analytics <ArrowUpRight size={14} aria-hidden />
-          </a>
+          <Can cat="analytics" what="reset the Gully Analytics password" hide>
+            <button type="button" onClick={onReset} className={pillSm}>
+              Reset password
+            </button>
+          </Can>
+          <OpenAnalytics loginUrl={account.loginUrl} />
         </span>
       </div>
     </section>
   )
 }
 
+/** Events used against the monthly quota: one ring for the whole account (a slice per site), one per site. */
+function QuotaCard({ account }: { account: AnalyticsAccount }) {
+  const quota = account.plan?.eventsPerMonth ?? null
+  const colors = (i: number) => KEY_COLORS[i % KEY_COLORS.length]
+  return (
+    <section className={panel} style={rise(1)} aria-labelledby="ga-quota" data-testid="quota-rings">
+      <div className="flex flex-col gap-[2px]">
+        <h2 id="ga-quota" className={panelTitle}>
+          Events against the quota
+        </h2>
+        <span className={mono}>{new Date(account.monthStart).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })} (UTC) · every site shares the plan&apos;s monthly events</span>
+      </div>
+      {quota === null ? (
+        <p className="m-0 rounded-[10px] border border-dashed border-line-strong px-4 py-6 text-center font-mono text-[12px] text-faint">No running plan, so there is no quota to measure against: {n(account.eventsThisMonth)} events this month.</p>
+      ) : (
+        <div className="flex flex-wrap items-start justify-center gap-6 min-[700px]:justify-start">
+          <QuotaRing caption="All sites" quota={quota} size={168} slices={account.sites.length ? account.sites.map((s, i) => ({ name: s.domain, value: s.eventsThisMonth, color: colors(i) })) : [{ name: 'events', value: account.eventsThisMonth, color: KEY_COLORS[0] }]} />
+          {account.sites.map((s, i) => (
+            <QuotaRing key={s.id} caption={s.domain} quota={quota} size={120} slices={[{ name: s.domain, value: s.eventsThisMonth, color: colors(i) }]} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function Payments({ payments }: { payments: Payment[] }) {
+
   return (
     <section className={panel} style={rise(3)} aria-labelledby="ga-payments">
       <div className="flex flex-col gap-[2px]">
@@ -466,8 +507,8 @@ function Payments({ payments }: { payments: Payment[] }) {
             <li key={`${p.chainId}:${p.txHash}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-[10px] border border-line px-3 py-2">
               <span className="text-muted">{fmtDate(p.at)}</span>
               <span className="text-ink uppercase">{p.plan}</span>
-              <span className="text-ink-2">
-                {p.amount} {p.symbol} · {p.chain}
+              <span className="inline-flex items-center gap-[6px] text-ink-2">
+                <ChainLogo chain={p.chain} size={14} decorative /> {p.amount} {p.symbol} · {p.chain}
               </span>
               <span className="text-muted">
                 {fmtDate(p.periodStart)} – {fmtDate(p.expiresAt)}
@@ -545,6 +586,7 @@ export function AnalyticsPanel() {
       ) : (
         <>
           <StatusCard account={a} onReset={() => setConfirmReset(true)} />
+          <QuotaCard account={a} />
           {buying ? (
             <Checkout
               key={buying.id}
