@@ -20,6 +20,8 @@ export interface VenueOk {
   fees24hUsd: number | null
   feesAllUsd?: number | null
   feesNative?: { symbol: string; amount: number } | null
+  /** DeepCore only: dollars held in its locks (launch LP locked forever, timed locks, vesting). */
+  lockedUsd?: number | null
   daily: Point[]
   counts: Record<string, number | null | undefined>
   notes: string[]

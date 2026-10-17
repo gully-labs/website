@@ -82,10 +82,46 @@ async function cartel() {
   }
 }
 
+// DeepCore's documented public API host. The old path on the app host is read only if the API
+// host refuses, so a move or outage of one never blanks the venue.
+export const DEEPCORE_HOSTS = ['https://api.deepcore.fun', 'https://deepcore.fun']
+
+// Every chain must state a figure for the sum to be stated: a chain that leaves it out makes the
+// total unknown, never a smaller number.
+const sumAll = (xs) => (xs.length && xs.every((x) => x !== null && x !== undefined) ? xs.reduce((a, b) => a + b, 0) : null)
+
+/** The figures the landing shows beside DeepCore's dollars, from one /v1/overview document:
+    hosted sites (pads), launches in the last 24 hours, locks and the dollars they hold. */
+export function deepcoreExtras(items) {
+  const lockUsd = items.map((it) => num(it.locks?.usd))
+  const unpricedLocks = items.reduce((a, it) => a + (num(it.locks?.unpricedLocks) ?? 0), 0)
+  return {
+    sites: sumAll(items.map((it) => num(it.sites?.total))),
+    sites24h: sumAll(items.map((it) => num(it.sites?.last24h))),
+    launches24h: sumAll(items.map((it) => num(it.launches?.last24h))),
+    locks: sumAll(items.map((it) => num(it.locks?.count))),
+    lockedUsd: sumAll(lockUsd),
+    unpricedLocks,
+  }
+}
+
 async function deepcore() {
-  const url = 'https://deepcore.fun/v1/overview'
-  const j = await getJson(url, 25_000)
-  const items = j.data?.items ?? []
+  let url = null
+  let j = null
+  const failed = []
+  for (const host of DEEPCORE_HOSTS) {
+    try {
+      j = await getJson(`${host}/v1/overview`, 25_000)
+      if (!Array.isArray(j?.data?.items)) throw new Error('no items in the overview')
+      url = `${host}/v1/overview`
+      break
+    } catch (e) {
+      failed.push(`${host.replace('https://', '')} ${String(e?.message ?? e)}`)
+      j = null
+    }
+  }
+  if (!j) throw new Error(`every DeepCore host refused: ${failed.join('; ')}`)
+  const items = j.data.items
   const byDay = new Map()
   let unpriced = 0
   let launches = 0
@@ -107,7 +143,9 @@ async function deepcore() {
     })
   }
   const daily = seriesOf(byDay)
-  const notes = []
+  const extras = deepcoreExtras(items)
+  const notes = failed.map((f) => `${f} could not be read; the fallback host was used.`)
+  if (extras.unpricedLocks) notes.push(`${extras.unpricedLocks} lock${extras.unpricedLocks === 1 ? '' : 's'} could not be priced and are left out of the locked dollars.`)
   if (unpriced) notes.push(`${unpriced} token${unpriced === 1 ? '' : 's'} could not be priced and are left out of the dollar figures.`)
   const prov = j.provenance ?? {}
   // The index's fee figures carry no window: `paid` is what the protocol has collected and
@@ -131,9 +169,12 @@ async function deepcore() {
     tvlUsd: sumKnown(chains.map((c) => c.tvlUsd)),
     fees24hUsd,
     feesAllUsd,
+    // Dollars held in DeepCore locks (launch liquidity locked forever, timed LP locks, token locks
+    // and vesting), as the index values them. Not added to any total: it overlaps value locked.
+    lockedUsd: extras.lockedUsd,
     daily,
     chains,
-    counts: { launches, pools, chains: items.length },
+    counts: { launches, pools, chains: items.length, sites: extras.sites, sites24h: extras.sites24h, launches24h: extras.launches24h, locks: extras.locks },
     notes,
     source: { url: sources.join(' + '), readAt: prov.generatedAt ?? new Date().toISOString() },
   }

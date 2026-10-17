@@ -12,3 +12,6 @@ export const MIN_LIQUIDITY_USD: number
 export const IN_LINE_PCT: number
 export const FLAG_PCT: number
 export function trackerHealth(): unknown
+export const DEEPCORE_CL_POOL_MANAGER: string
+export function isDeepcorePool(p: { dex?: string | null; poolManager?: string | null } | null | undefined): boolean
+export function onchainPriceCall(chain: { stateView: string | null; deepcoreCl?: string | null }, p: { pair?: string | null; dex?: string | null; poolManager?: string | null } | null | undefined): { to: string; data: string } | null

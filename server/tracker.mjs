@@ -25,9 +25,13 @@ import { computeMovers, MOVER_WINDOWS } from './movers.mjs'
 const here = path.dirname(fileURLToPath(import.meta.url))
 const load = (f) => JSON.parse(fs.readFileSync(path.join(here, 'data', f), 'utf8'))
 
+// DeepCore's CLPoolManager (a PancakeSwap Infinity fork), at the same address on every chain it runs on.
+// Its pool ids are 32 bytes like a Uniswap v4 pool id, so they must never be sent to Uniswap's StateView.
+export const DEEPCORE_CL_POOL_MANAGER = '0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC'
+
 const CHAINS = [
-  { id: 4663, key: 'robinhood', name: 'Robinhood Chain', dex: 'robinhood', gecko: 'robinhood', rpcs: ['https://rpc.mainnet.chain.robinhood.com', 'https://rpc.ordofi.network'], session: '24/5', stateView: '0xf3334192d15450cdd385c8b70e03f9a6bd9e673b', nativeUsdFeed: '0x78f3556b67e17df817d51ef5a990cdaf09e8d3a9', nativeQuotes: ['WETH', 'ETH'], table: load('robinhood-stocks.json'), multiplier: false },
-  { id: 56, key: 'bsc', name: 'BNB Chain', dex: 'bsc', gecko: 'bsc', rpcs: ['https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-rpc.publicnode.com'], session: 'nyse', stateView: null, nativeUsdFeed: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE', nativeQuotes: ['WBNB', 'BNB'], table: load('bsc-stocks.json'), multiplier: true },
+  { id: 4663, key: 'robinhood', name: 'Robinhood Chain', dex: 'robinhood', gecko: 'robinhood', rpcs: ['https://rpc.mainnet.chain.robinhood.com', 'https://rpc.ordofi.network'], session: '24/5', stateView: '0xf3334192d15450cdd385c8b70e03f9a6bd9e673b', deepcoreCl: DEEPCORE_CL_POOL_MANAGER, nativeUsdFeed: '0x78f3556b67e17df817d51ef5a990cdaf09e8d3a9', nativeQuotes: ['WETH', 'ETH'], table: load('robinhood-stocks.json'), multiplier: false },
+  { id: 56, key: 'bsc', name: 'BNB Chain', dex: 'bsc', gecko: 'bsc', rpcs: ['https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-rpc.publicnode.com'], session: 'nyse', stateView: null, deepcoreCl: DEEPCORE_CL_POOL_MANAGER, nativeUsdFeed: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE', nativeQuotes: ['WBNB', 'BNB'], table: load('bsc-stocks.json'), multiplier: true },
 ]
 
 const DEX = 'https://api.dexscreener.com/tokens/v1'
@@ -240,10 +244,30 @@ async function readPoolsGecko(chain) {
 
 /* The third source, used when both price APIs refuse: re-price each token's last known pool straight
    from the chain. v3 pools (Uniswap, PancakeSwap, Ramses) are read with slot0(); Uniswap v4 pools by id
-   through StateView.getSlot0. The quote is valued at $1 for a dollar stable, by Chainlink for the
+   through StateView.getSlot0; DeepCore CL pools by id through DeepCore's CLPoolManager.getSlot0
+   (onchainPriceCall). The quote is valued at $1 for a dollar stable, by Chainlink for the
    native coin, and by this cycle's fair price when the quote is itself a stock token (SPY, GLD…).
    Liquidity and volume are not on chain in usable form, so they stay those of the last good read. */
 const STABLES = new Set(['USDC', 'USDG', 'USDT', 'USD1', 'FDUSD', 'USDC.E', 'DAI'])
+
+/** A DeepCore pool, told apart from a Uniswap v4 pool (same 32-byte id) by the venue DexScreener or
+    GeckoTerminal names, or by its pool manager when a source states one. */
+export const isDeepcorePool = (p) =>
+  /deep-?core/i.test(String(p?.dex ?? '')) || String(p?.poolManager ?? '').toLowerCase() === DEEPCORE_CL_POOL_MANAGER.toLowerCase()
+
+/** The eth_call that reads a pool's price on chain, or null when this chain cannot read it.
+    - a 20-byte pair address is a v3 pool: slot0() on the pool itself;
+    - a 32-byte DeepCore pool id: CLPoolManager.getSlot0(bytes32) on DeepCore's own manager, which
+      returns (sqrtPriceX96, tick, protocolFee, lpFee), sqrtPriceX96 first as StateView does. Same
+      selector as StateView (0xc815641c), different contract. A DeepCore Bin pool has no sqrtPrice: the
+      CL manager answers zeros for it, which the caller treats as unreadable (last good price kept);
+    - any other 32-byte id is a Uniswap v4 pool: StateView.getSlot0(bytes32). */
+export function onchainPriceCall(chain, p) {
+  if (!p?.pair) return null
+  if (p.pair.length !== 66) return { to: p.pair, data: '0x3850c7bd' }
+  const to = isDeepcorePool(p) ? chain.deepcoreCl : chain.stateView
+  return to ? { to, data: '0xc815641c' + p.pair.slice(2) } : null
+}
 const ZERO = '0x0000000000000000000000000000000000000000'
 const decimalsCache = new Map()
 
@@ -259,10 +283,10 @@ async function readPoolsOnchain(chain, fairByToken) {
   const plan = chain.table.stocks.map((s, i) => {
     const p = pools[i]
     if (!p || p.error || !p.pair || !p.quoteAddr) return null
-    const v4 = p.pair.length === 66
-    if (v4 && !chain.stateView) return null
+    const call = onchainPriceCall(chain, p)
+    if (!call) return null
     const id = calls.length
-    calls.push({ jsonrpc: '2.0', id, method: 'eth_call', params: [v4 ? { to: chain.stateView, data: '0xc815641c' + p.pair.slice(2) } : { to: p.pair, data: '0x3850c7bd' }, 'latest'] })
+    calls.push({ jsonrpc: '2.0', id, method: 'eth_call', params: [call, 'latest'] })
     return { id, token: s.token.toLowerCase(), quote: p.quoteAddr.toLowerCase() }
   })
   const need = new Set()

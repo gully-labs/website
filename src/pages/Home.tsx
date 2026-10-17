@@ -1,9 +1,9 @@
-import { lazy } from 'react'
+import { Fragment, lazy } from 'react'
 import { Link } from 'react-router'
 import { DemoSection, type DemoSectionProps } from '../components/landing/DemoSection'
 import { HeroLedger } from '../components/landing/HeroLedger'
 import { h2, PORTAL, PORTAL_ALERTS } from '../components/landing/links'
-import { Kicker, LandingPricing, OpenStrip, ProductIndex, ServicesBlock } from '../components/landing/Sections'
+import { ChainsSection, Kicker, LandingPricing, OpenStrip, ProductIndex, ServicesBlock } from '../components/landing/Sections'
 import { ProjectRows } from '../components/ProjectRows'
 import { Seo } from '../components/Seo'
 import { ShareStrip } from '../components/Share'
@@ -13,8 +13,8 @@ import { useStats } from '../hooks/useStats'
 import { ANALYTICS_SIGNUP, usePlans } from '../lib/plans'
 
 /* The showroom landing: the ledger of every venue up top, an index of everything we ship, the projects
-   table, then one section per product with a live demo of it, pricing, services and the open-source
-   strip. Each demo is its own chunk, fetched only as its section nears the viewport (DemoSection). */
+   table, then one section per product with a live demo of it (plus the Gully Chains preview after
+   Chain Kit), pricing, services and the open-source strip. Each demo is its own chunk, fetched only as its section nears the viewport (DemoSection). */
 
 const TrackerDemo = lazy(() => import('../components/demos/TrackerDemo'))
 const AlertsDemo = lazy(() => import('../components/demos/AlertsDemo'))
@@ -84,7 +84,7 @@ export function Home() {
     },
     {
       id: 'api',
-      n: '06',
+      n: '07',
       kicker: 'API + SDK',
       title: 'Build on the same data',
       body: `Every tracker row as JSON. ${anon ? `${anon} calls a minute` : 'Free calls'} with no key; sign in with your wallet for a free key${free ? ` (${free.perMin.toLocaleString('en-US')} a minute)` : ''} and higher limits on a plan. Typed TypeScript SDK, MIT.`,
@@ -95,7 +95,7 @@ export function Home() {
     },
     {
       id: 'widget',
-      n: '07',
+      n: '08',
       kicker: 'WIDGET',
       title: 'A live ticker on any site',
       body: 'One script tag puts a ticker, a one-stock badge or a table of the widest gaps on your site. Also a React component in the SDK.',
@@ -107,7 +107,7 @@ export function Home() {
     },
     {
       id: 'pay',
-      n: '08',
+      n: '09',
       kicker: 'GULLY PAY',
       title: 'Paid in crypto, held by no one',
       body: 'Every plan is paid from your wallet straight to ours in ETH, BNB, USDC or USDT on four chains. Checked on chain, active the moment it confirms.',
@@ -173,7 +173,11 @@ export function Home() {
       </section>
 
       {demos.map((d) => (
-        <DemoSection key={d.id} {...d} />
+        <Fragment key={d.id}>
+          <DemoSection {...d} />
+          {/* Gully Chains (no demo yet: it is in development) follows Chain Kit, whose explorer it will run. */}
+          {d.id === 'chainkit' && <ChainsSection n="06" />}
+        </Fragment>
       ))}
 
       <LandingPricing plans={plans} />
