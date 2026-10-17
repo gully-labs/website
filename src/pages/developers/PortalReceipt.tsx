@@ -1,6 +1,7 @@
 import { ArrowLeft, Printer } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Wordmark } from '../../components/Wordmark'
+import { ChainLogo } from '../../components/logos/ChainLogo'
 import { api, type BillingView, type Payment } from './api'
 import { fmtDateTime, usePortal } from './portal'
 
@@ -93,6 +94,9 @@ export function PortalReceipt({ id, onBack }: { id: string; onBack: () => void }
               <div className="flex flex-col gap-1">
                 <span className="font-mono text-[11px] tracking-[1px] text-[#5c6878]">FROM</span>
                 <span className="text-[16px] font-semibold">Gully Labs</span>
+                <span className="inline-flex items-center gap-2 text-[13px] text-[#3a4452]">
+                  <ChainLogo chain={s.p.chain} size={16} decorative /> paid on {s.p.chain}
+                </span>
                 <span className="text-[14px] text-[#3a4452]">Developer API plans</span>
               </div>
             </div>

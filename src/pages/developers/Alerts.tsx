@@ -471,7 +471,7 @@ export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () =>
         )}
         <p className="m-0 border-t border-line pt-3 text-[12px] leading-[1.6] text-faint">
           Alerts look only at stocks the tracker would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature:{' '}
-          <ExtLink href={`${DOCS_URL}/plans-alerts`} className="text-ink-2 underline-offset-4 hover:underline">
+          <ExtLink href={`${DOCS_URL}/plans-alerts`} className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:underline">
             Plans &amp; alerts docs
           </ExtLink>
           .

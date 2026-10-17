@@ -1,6 +1,8 @@
 import { ArrowUpRight, CheckCircle2, Download, FileText, Receipt, Users } from 'lucide-react'
 import { usePortal, useWrite } from './portal'
 import { Can } from './RoleGate'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { LiveMarker, StackedDays } from './vcharts'
 import { useCallback, useEffect, useState } from 'react'
 import { isLocalHost, SITE_URL } from '../../site-host'
@@ -305,6 +307,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                     <td className="py-[10px] pr-3 text-muted">{fmtDate(p.at)}</td>
                     <td className="py-[10px] pr-3 text-ink uppercase">{p.plan}</td>
                     <td className="py-[10px] pr-3 text-ink-2">
+                      <TokenLogo symbol={p.symbol} size={14} decorative className="mr-1 align-[-2px]" />
                       {p.amount} {p.symbol}
                       {p.price && p.usd && (
                         <span className="block text-[11px] text-faint">
@@ -312,7 +315,11 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                         </span>
                       )}
                     </td>
-                    <td className="py-[10px] pr-3 text-muted">{p.chain}</td>
+                    <td className="py-[10px] pr-3 text-muted">
+                      <span className="inline-flex items-center gap-[6px]">
+                        <ChainLogo chain={p.chain} size={14} decorative /> {p.chain}
+                      </span>
+                    </td>
                     <td className="py-[10px] pr-3 text-muted">{p.from === user ? 'your wallet' : p.from === account.address ? 'owner wallet' : shortAddress(p.from)}</td>
                     <td className="py-[10px] pr-3 text-muted">
                       {fmtDate(p.periodStart)} – {fmtDate(p.expiresAt)}

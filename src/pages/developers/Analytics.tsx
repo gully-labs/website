@@ -10,6 +10,7 @@ import { Empty, ErrorLine, Skeleton } from './parts'
 import { ExtLink } from './ExtLink'
 import { OpenAnalytics } from './OpenAnalytics'
 import { Can } from './RoleGate'
+import { ChainLogo } from '../../components/logos/ChainLogo'
 import { KEY_COLORS } from './styles'
 import { QuotaRing } from './vcharts'
 import { PayFlow } from './PayFlow'
@@ -506,8 +507,8 @@ function Payments({ payments }: { payments: Payment[] }) {
             <li key={`${p.chainId}:${p.txHash}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-[10px] border border-line px-3 py-2">
               <span className="text-muted">{fmtDate(p.at)}</span>
               <span className="text-ink uppercase">{p.plan}</span>
-              <span className="text-ink-2">
-                {p.amount} {p.symbol} · {p.chain}
+              <span className="inline-flex items-center gap-[6px] text-ink-2">
+                <ChainLogo chain={p.chain} size={14} decorative /> {p.amount} {p.symbol} · {p.chain}
               </span>
               <span className="text-muted">
                 {fmtDate(p.periodStart)} – {fmtDate(p.expiresAt)}
