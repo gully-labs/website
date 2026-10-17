@@ -31,7 +31,7 @@ export const CHAINS = {
     explorer: 'https://basescan.org',
     explorerName: 'Basescan',
     confirmations: 10,
-    rpcs: ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'],
+    rpcs: ['https://base.drpc.org', 'https://base-rpc.publicnode.com', 'https://mainnet.base.org', 'https://base-mainnet.public.blastapi.io', 'https://base.gateway.tenderly.co', 'https://1rpc.io/base'],
     feed: { address: '0x71041dddad3595f9ced3dccfbe3d1f4b0a16bb70', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
   1: {
@@ -41,7 +41,7 @@ export const CHAINS = {
     explorer: 'https://etherscan.io',
     explorerName: 'Etherscan',
     confirmations: 6,
-    rpcs: ['https://ethereum.publicnode.com', 'https://eth.drpc.org', 'https://1rpc.io/eth'],
+    rpcs: ['https://eth.drpc.org', 'https://eth-mainnet.public.blastapi.io', 'https://rpc.mevblocker.io', 'https://ethereum-rpc.publicnode.com', 'https://rpc.flashbots.net', 'https://mainnet.gateway.tenderly.co'],
     feed: { address: '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
   56: {
@@ -51,7 +51,7 @@ export const CHAINS = {
     explorer: 'https://bscscan.com',
     explorerName: 'BscScan',
     confirmations: 15,
-    rpcs: ['https://bsc-dataseed.bnbchain.org', 'https://bsc.drpc.org', 'https://bsc-dataseed1.defibit.io'],
+    rpcs: ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed1.ninicoin.io', 'https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-dataseed3.bnbchain.org', 'https://bsc-dataseed2.bnbchain.org'],
     feed: { address: '0x0567f2323251f0aab15c8dfb1967e4e8a7d42aee', decimals: 8, description: 'BNB / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
   42161: {
@@ -61,7 +61,7 @@ export const CHAINS = {
     explorer: 'https://arbiscan.io',
     explorerName: 'Arbiscan',
     confirmations: 10,
-    rpcs: ['https://arb1.arbitrum.io/rpc', 'https://arbitrum-one-rpc.publicnode.com'],
+    rpcs: ['https://arbitrum.drpc.org', 'https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc', 'https://arbitrum.gateway.tenderly.co', 'https://arbitrum.meowrpc.com', 'https://1rpc.io/arb'],
     feed: { address: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
 }
@@ -166,27 +166,62 @@ export function quoteAmount(asset, usdCents, tag, price) {
 
 const chainIdOk = new Map() // url -> true once eth_chainId matched
 
+/* Automatic fallback: a URL that times out, answers an HTTP error, rate-limits or returns a non-JSON
+   page steps aside for a cool-off (30 s, doubling to 10 min while it keeps failing). Healthy URLs are
+   tried first in their configured order; cooling ones only when nothing healthy is left. A plain
+   JSON-RPC error from a working node (e.g. an execution revert) does not mark the node unhealthy. */
+const cooling = new Map() // url -> { until, strikes }
+const isNodeFault = (e) => e?.nodeFault === true
+
+function strike(url) {
+  const c = cooling.get(url) ?? { until: 0, strikes: 0 }
+  c.strikes = Math.min(c.strikes + 1, 6)
+  c.until = Date.now() + Math.min(30_000 * 2 ** (c.strikes - 1), 600_000)
+  cooling.set(url, c)
+}
+
+/** URLs in the order to try: healthy first, then cooling (soonest back first). */
+export function rpcOrder(chainId) {
+  const now = Date.now()
+  const all = rpcsFor(chainId)
+  const healthy = all.filter((u) => (cooling.get(u)?.until ?? 0) <= now)
+  const cold = all.filter((u) => (cooling.get(u)?.until ?? 0) > now).sort((a, b) => cooling.get(a).until - cooling.get(b).until)
+  return [...healthy, ...cold]
+}
+
 async function post(url, method, params) {
-  const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(10_000) })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const j = await res.json()
-  if (j.error) throw new Error(j.error.message ?? 'RPC error')
+  let res
+  try {
+    res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(6_000) })
+  } catch (e) {
+    throw Object.assign(new Error(`${new URL(url).host}: ${e?.name === 'TimeoutError' ? 'timed out' : 'unreachable'}`), { nodeFault: true })
+  }
+  if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { nodeFault: true })
+  const j = await res.json().catch(() => null)
+  if (!j || typeof j !== 'object') throw Object.assign(new Error('not a JSON-RPC answer'), { nodeFault: true })
+  if (j.error) {
+    const msg = String(j.error.message ?? 'RPC error')
+    throw Object.assign(new Error(msg), { nodeFault: /rate|limit|too many|quota|api ?key|unauthori[sz]ed|forbidden|capacity|upgrade/i.test(msg) })
+  }
   return j.result
 }
 
 /** One JSON-RPC call on a chain. Each URL must first prove it serves that chain (eth_chainId). */
 export async function rpc(chainId, method, params) {
   let last
-  for (const url of rpcsFor(chainId)) {
+  for (const url of rpcOrder(chainId)) {
     try {
       if (!chainIdOk.get(url)) {
         const id = await post(url, 'eth_chainId', [])
         if (typeof id !== 'string' || Number(BigInt(id)) !== chainId) throw new Error(`node at ${new URL(url).host} is not on chain ${chainId}`)
         chainIdOk.set(url, true)
       }
-      return await post(url, method, params)
+      const out = await post(url, method, params)
+      cooling.delete(url)
+      return out
     } catch (e) {
       last = e
+      if (isNodeFault(e) || /not on chain/.test(String(e?.message))) strike(url)
     }
   }
   throw last ?? new Error('no RPC configured')
