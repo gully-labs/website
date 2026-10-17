@@ -37,6 +37,7 @@
 //   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
 //   POST /api/admin/ask/draft, GET /api/admin/ask/log   Gully Ask content studio and ask log (ask.mjs)
 //   GET  /api/admin/charts?days=7|30|90       daily series for the dashboard's charts (admin-charts.mjs)
+//   /api/admin/channel*                       @GullyLabsNews channel posts and auto posts (telegram-channel.mjs)
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
@@ -54,6 +55,7 @@ import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
 import { umamiConfigured } from './umami.mjs'
 import { linkedChat, telegramStats } from './telegram.mjs'
+import { handleChannelAdmin } from './telegram-channel.mjs'
 import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
 
@@ -125,6 +127,7 @@ export async function handleAdmin(req, res, url) {
   if (!authorised(req, res)) return true
   // Gully Ask content studio and ask log (ask.mjs): POST /api/admin/ask/draft, GET /api/admin/ask/log.
   if (p.startsWith('/api/admin/ask/')) return handleAskAdmin(req, res, url)
+  if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
   const db = developers()
 
   if (p === '/api/admin/overview') {

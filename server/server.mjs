@@ -9,6 +9,7 @@ import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts } from './alerts.mjs'
 import { handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
+import { startChannel } from './telegram-channel.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
@@ -358,6 +359,7 @@ function startLoops() {
   startDeepcore()
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
   startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
+  startChannel() // @GullyLabsNews: scheduled posts and auto posts (telegram-channel.mjs)
   // Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.
   startAsk()
 }

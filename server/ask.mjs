@@ -269,6 +269,7 @@ const DRAFT_KINDS = {
   changelog: 'A changelog entry in the docs\' style: a dated heading (## D Month YYYY, use [TODO: date] if no date is given) and three to six bullet points, each one sentence saying what changed and where, newest first.',
   stock_explainer: 'A short explainer (200 to 350 words) of one tokenised stock on the tracker: what the token is, which chain, how its fair price is read, what the tracker shows right now (from the get_stock data, stating the time it was read), and what the status means. Describe, never advise or predict. End with a link to the stock\'s tracker page.',
   release_note: 'A release note (150 to 300 words): a title line, one paragraph on what shipped and who it is for, a bullet list of what is new, and a line on where to find it.',
+  telegram_post: 'A post for the Gully Labs News Telegram channel, at most 900 characters. Instead of Markdown, write Telegram HTML using only <b>, <i>, <u>, <s>, <a href="https://...">, <code>, <pre>, <blockquote> (no other tags, no Markdown). A bold first line, two to four short lines, and exactly one clear call to action as one https link to the relevant gullylabs.xyz page. At most two emojis. No investment advice; every number must come from a tool result or a source.',
 }
 export const DRAFT_KIND_NAMES = Object.keys(DRAFT_KINDS)
 
@@ -700,6 +701,7 @@ async function draft(body) {
     if (g.stop === 'max_tokens') warnings.push('The draft hit the length limit and may be cut short.')
     if (g.stop === 'refusal') warnings.push('The model declined this draft.')
     if (kind === 'x_thread') warnings.push(...threadWarnings(text))
+    if (kind === 'telegram_post' && text.replace(/\n*Sources:[^\n]*$/, '').replace(/<[^>]*>/g, '').length > 900) warnings.push('The post is over 900 characters; trim it before posting.')
     writeLog({ channel: 'draft', who: 'admin', question: `[${kind}] ${topic}`, answerChars: text.length, answered: true, citations: citations.map((c) => c.url), usedTools, latencyMs: Date.now() - t0, tokens: g.usage, model: g.model })
     // Every retrieved source is listed (the draft may lean on one without citing it), cited ones first.
     const sources = results.map((r, i) => ({ n: i + 1, title: r.chunk.title, url: r.chunk.url, source: r.chunk.source, cited: citations.some((c) => c.n === i + 1) }))
