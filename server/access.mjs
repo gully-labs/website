@@ -151,7 +151,7 @@ export function accountUsage(keyIds, range = '24h') {
   const lastStart = r.hours === 24 ? utcDayStart(now) : Math.floor(now / HOUR_MS) * HOUR_MS
   const first = lastStart - (r.buckets - 1) * sizeMs
   const points = []
-  for (let i = 0; i < r.buckets; i++) points.push({ t: new Date(first + i * sizeMs).toISOString(), total: 0, errors: 0, keys: {} })
+  for (let i = 0; i < r.buckets; i++) points.push({ t: new Date(first + i * sizeMs).toISOString(), total: 0, errors: 0, limited: 0, keys: {} })
 
   const empty = () => ({ total: 0, ok: 0, client: 0, limited: 0, server: 0 })
   const todayTotals = empty()
@@ -178,6 +178,7 @@ export function accountUsage(keyIds, range = '24h') {
       add(rangeTotals, b)
       points[i].total += b[0]
       points[i].errors += b[2] + b[3] + b[4]
+      points[i].limited += b[3]
       points[i].keys[id] = (points[i].keys[id] ?? 0) + b[0]
     }
   }

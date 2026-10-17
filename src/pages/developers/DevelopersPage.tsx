@@ -1,11 +1,10 @@
-import { motion } from 'motion/react'
-import { Activity, AlertTriangle, ArrowUpRight, BookOpen, ChartLine, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Seo } from '../../components/Seo'
-import { btnGold, btnOutline, eyebrow } from '../../components/ui'
 import { DOCS_URL } from '../../site-host'
-import { api, type Account } from './api'
+import { api, type Account, type Offer } from './api'
 import { Dashboard } from './Dashboard'
+import { mono, pillGold, pillLine } from './styles'
 
 /* The developer dashboard (developers.gullylabs.xyz, /developers on localhost). Signed out: what the
    free tier is and a "Connect wallet" button. Signing in is Sign-In with Ethereum: the wallet signs a
@@ -26,136 +25,105 @@ function readSession(): Promise<Session> {
   })
 }
 
-const rise = (i: number) => ({ animation: `gl-rise .5s ${i * 0.06}s ease both` })
+type Tiers = { anon: number; free: number; keys: number } | null
 
-const FEATURES = [
-  { icon: Zap, title: 'Keys in seconds', body: 'No form and no waiting for approval. Sign in, name a key, use it. Up to five per wallet.' },
-  { icon: ChartLine, title: 'Usage you can read', body: 'Requests per hour or day for each key, error rate and status codes, as they happen.' },
-  { icon: Activity, title: 'Request log', body: 'The last fifty calls made with your keys: path, status and latency.' },
-  { icon: ShieldCheck, title: 'Wallet sign-in', body: 'Sign-In with Ethereum (EIP-4361). No password or email to leak; keys are stored only as hashes.' },
-]
+/** The public tiers from GET /api/plans, so the sign-in card never states a stale limit. */
+function useTiers(): Tiers {
+  const [t, setT] = useState<Tiers>(null)
+  useEffect(() => {
+    let alive = true
+    api<Offer>('/api/plans').then((r) => {
+      if (!alive || !r.ok) return
+      const free = r.data.plans.find((p) => p.id === 'free')
+      if (free) setT({ anon: r.data.anonymous.perMin, free: free.perMin, keys: free.maxKeys })
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+  return t
+}
 
 function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolean; error: string | null }) {
+  const tiers = useTiers()
   return (
-    <>
-      <section className="relative overflow-hidden px-page pt-[64px] pb-14">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.16),transparent_62%)]" />
-        <div className="relative grid grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-center gap-12 max-[1023px]:grid-cols-1">
-          <div className="flex flex-col gap-6">
-            <span className={eyebrow} style={rise(0)}>
-              DEVELOPERS · TRACKER API
-            </span>
-            <h1 className="m-0 font-display text-[clamp(48px,6.4cqw,92px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
-              Build on the <span className="text-gold">fair-price tracker</span>
-            </h1>
-            <p className="m-0 max-w-[620px] text-[18px] leading-[1.55] text-muted" style={rise(2)}>
-              Tokenised-stock prices against their fair value, across chains, as JSON. Free and open without a key. Connect a wallet to create keys instantly, raise your limit tenfold and watch your usage.
-            </p>
-            <div className="flex flex-wrap items-center gap-3" style={rise(3)}>
-              <button type="button" onClick={connect} disabled={busy} className={`${btnGold} inline-flex min-h-[52px] items-center gap-3 px-7 text-[17px] disabled:opacity-70`}>
-                {busy ? <Loader2 size={19} className="animate-spin" aria-hidden /> : <Wallet size={19} aria-hidden />}
-                {busy ? 'Opening wallets…' : 'Connect wallet'}
-              </button>
-              <a href={`${DOCS_URL}/api`} className={`${btnOutline} inline-flex min-h-[52px] items-center gap-2 px-6 text-[16px]`}>
-                <BookOpen size={17} aria-hidden /> Read the docs
-              </a>
-            </div>
-            {window.location.hash === '#analytics' && (
-              <p className="m-0 flex max-w-[620px] items-start gap-3 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3 text-[15px] leading-[1.55] text-ink-2" style={rise(3)}>
-                <ChartNoAxesCombined size={18} className="mt-[3px] shrink-0 text-gold" aria-hidden />
-                Here for Gully Analytics? Connect your wallet: the Analytics tab of your dashboard starts the free trial.
-              </p>
-            )}
-            {error && (
-              <p className="m-0 flex max-w-[620px] items-start gap-2 text-[14px] text-error" role="alert">
-                <AlertTriangle size={16} className="mt-[2px] shrink-0" aria-hidden /> {error}
-              </p>
-            )}
-            <p className="m-0 font-mono text-[12px] leading-[1.7] text-faint" style={rise(4)}>
-              Signing in signs a message, not a transaction: it is free and moves nothing. Any browser wallet or Coinbase Wallet works.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3" style={rise(3)}>
-            {[
-              { k: 'NO KEY', v: '60', u: 'requests / min', d: 'Per IP address. Nothing to sign up for: call the API.', tone: 'text-ink' },
-              { k: 'FREE KEY', v: '600', u: 'requests / min', d: 'Per key, up to five keys, with usage charts and a request log.', tone: 'text-gold' },
-            ].map((t, i) => (
-              <motion.div
-                key={t.k}
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
-                className={`relative flex items-center gap-6 overflow-hidden rounded-card border bg-surface px-6 py-5 max-[480px]:gap-4 max-[480px]:px-4 ${i ? 'border-gold-line' : 'border-line'}`}
-              >
-                {i === 1 && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(232,192,96,.08)_50%,transparent_70%)] bg-[length:200%_100%]" />}
-                <div className="relative flex min-w-[112px] flex-col max-[480px]:min-w-[92px]">
-                  <span className="font-mono text-[11px] tracking-[1.5px] text-faint">{t.k}</span>
-                  <span className={`font-display text-[56px] leading-[.95] font-extrabold max-[480px]:text-[44px] ${t.tone}`}>{t.v}</span>
-                  <span className="font-mono text-[11px] text-muted">{t.u}</span>
-                </div>
-                <p className="relative m-0 text-[15px] leading-[1.5] text-muted">{t.d}</p>
-              </motion.div>
-            ))}
-            <pre className="m-0 overflow-x-auto rounded-input border border-line bg-surface-deep px-4 py-3 font-mono text-[12.5px] leading-[1.7] text-ink-2">
-              <span className="text-faint">$ </span>curl https://gullylabs.xyz/api/tracker \{'\n'}
-              {'    '}-H <span className="text-gold">&quot;Authorization: Bearer gl_live_…&quot;</span>
-            </pre>
-          </div>
+    <section className="relative flex min-h-[calc(100vh-200px)] items-center justify-center overflow-hidden px-4 py-16">
+      <div aria-hidden className="pointer-events-none absolute top-[-200px] left-1/2 size-[640px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.12),transparent_62%)]" />
+      <div className="relative flex w-full max-w-[460px] animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-5 rounded-[14px] border border-line bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-5">
+        <div className="flex items-center gap-[10px]">
+          <span aria-hidden className="grid size-[26px] place-items-center rounded-[8px] bg-gold font-display text-[17px] font-extrabold text-bg">
+            G
+          </span>
+          <span className="font-semibold">Developers</span>
+          <span className="ml-auto font-mono text-[10px] tracking-[1px] text-faint">TRACKER API · ANALYTICS</span>
         </div>
-      </section>
-
-      <section className="px-page pb-12">
-        <div className="grid grid-cols-4 gap-4 max-[1100px]:grid-cols-2 max-[600px]:grid-cols-1">
-          {FEATURES.map((f, i) => {
-            const Icon = f.icon
+        <div className="flex flex-col gap-2">
+          <h1 className="m-0 font-display text-[34px] leading-[.95] font-bold uppercase">
+            Sign in with <span className="text-gold">your wallet</span>
+          </h1>
+          <p className="m-0 text-[14px] leading-[1.6] text-muted">Your address is your account: no email, no password. Create API keys instantly, set gap alerts, run Gully Analytics and pay for a plan, all from one console.</p>
+        </div>
+        {tiers ? (
+          <dl className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-line bg-line">
+            <div className="flex flex-col gap-1 bg-surface-deep px-4 py-3">
+              <dt className="text-[11px] text-dim">No key</dt>
+              <dd className="m-0 font-display text-[28px] leading-none font-bold">
+                {tiers.anon.toLocaleString('en-US')}
+                <span className="ml-1 font-mono text-[11px] font-normal text-faint">/min per IP</span>
+              </dd>
+            </div>
+            <div className="flex flex-col gap-1 bg-surface-deep px-4 py-3">
+              <dt className="text-[11px] text-dim">Free key · up to {tiers.keys}</dt>
+              <dd className="m-0 font-display text-[28px] leading-none font-bold text-gold">
+                {tiers.free.toLocaleString('en-US')}
+                <span className="ml-1 font-mono text-[11px] font-normal text-faint">/min per key</span>
+              </dd>
+            </div>
+          </dl>
+        ) : null}
+        {window.location.hash === '#analytics' && (
+          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
+            <ChartNoAxesCombined size={18} className="mt-[3px] shrink-0 text-gold" aria-hidden />
+            Here for Gully Analytics? Connect your wallet: the Analytics tab of your console starts the free trial.
+          </p>
+        )}
+        <button type="button" onClick={connect} disabled={busy} className={`${pillGold} min-h-12 w-full text-[16px] disabled:opacity-70`}>
+          {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Wallet size={18} aria-hidden />}
+          {busy ? 'Opening wallets…' : 'Connect wallet'}
+        </button>
+        {error && (
+          <p className="m-0 flex items-start gap-2 text-[14px] text-error" role="alert">
+            <AlertTriangle size={16} className="mt-[2px] shrink-0" aria-hidden /> {error}
+          </p>
+        )}
+        <ol className="m-0 grid list-none grid-cols-3 gap-2 p-0 max-[420px]:grid-cols-1">
+          {[
+            { icon: Wallet, t: 'Connect', d: 'Any browser wallet or Coinbase Wallet.' },
+            { icon: ShieldCheck, t: 'Sign', d: 'A message, not a transaction. Free, expires in 10 min.' },
+            { icon: KeyRound, t: 'Build', d: 'Keys, alerts and analytics. Keys are shown once and stored hashed.' },
+          ].map((s, i) => {
+            const Icon = s.icon
             return (
-              <div key={f.title} className="group flex flex-col gap-3 rounded-card border border-line bg-surface p-6 transition-colors hover:border-line-hover" style={rise(4 + i)}>
-                <span className="inline-flex size-10 items-center justify-center rounded-input border border-gold-line bg-[rgba(232,192,96,.07)] text-gold transition-transform group-hover:-translate-y-[2px]">
-                  <Icon size={19} aria-hidden />
+              <li key={s.t} className="flex flex-col gap-1 rounded-[10px] border border-line px-3 py-2">
+                <span className="flex items-center gap-2 text-[13px] font-semibold">
+                  <span className="font-mono text-[11px] text-gold">{i + 1}</span>
+                  <Icon size={14} className="text-gold" aria-hidden /> {s.t}
                 </span>
-                <h2 className="m-0 font-display text-[22px] leading-none font-bold uppercase">{f.title}</h2>
-                <p className="m-0 text-[14px] leading-[1.6] text-muted">{f.body}</p>
-              </div>
+                <span className="text-[12px] leading-[1.45] text-dim">{s.d}</span>
+              </li>
             )
           })}
+        </ol>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+          <a href={`${DOCS_URL}/api`} className="inline-flex min-h-11 items-center gap-2 text-[13px] text-muted hover:text-ink">
+            <BookOpen size={15} aria-hidden /> Read the docs
+          </a>
+          <a href="/widget" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-muted hover:text-gold">
+            No code? Embed the widget <ArrowUpRight size={13} aria-hidden />
+          </a>
         </div>
-      </section>
-
-      <section className="px-page pb-24">
-        <div className="flex flex-col gap-6 rounded-card border border-line bg-surface-deep p-8 max-[600px]:p-5">
-          <h2 className="m-0 font-display text-[30px] leading-none font-bold uppercase">How it works</h2>
-          <ol className="m-0 grid list-none grid-cols-3 gap-6 p-0 max-[900px]:grid-cols-1">
-            {[
-              { icon: Wallet, t: 'Connect', d: 'Choose your wallet. Your address is your account: no email, no password.' },
-              { icon: ShieldCheck, t: 'Sign', d: 'Sign a one-time message for developers.gullylabs.xyz. It expires in ten minutes and cannot be replayed.' },
-              { icon: KeyRound, t: 'Create a key', d: 'Name it and copy it. It works at once; we keep only a hash, so it is shown one time.' },
-            ].map((s, i) => {
-              const Icon = s.icon
-              return (
-                <li key={s.t} className="flex gap-4">
-                  <span className="font-display text-[44px] leading-[.8] font-extrabold text-gold">{i + 1}</span>
-                  <span className="flex flex-col gap-2">
-                    <span className="flex items-center gap-2 font-display text-[20px] leading-none font-bold uppercase">
-                      <Icon size={17} className="text-gold" aria-hidden /> {s.t}
-                    </span>
-                    <span className="text-[14px] leading-[1.6] text-muted">{s.d}</span>
-                  </span>
-                </li>
-              )
-            })}
-          </ol>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line pt-5 font-mono text-[12px] text-faint">
-            <a href={`${DOCS_URL}/api-keys`} className="inline-flex items-center gap-1 text-muted hover:text-gold">
-              About API keys <ArrowUpRight size={13} aria-hidden />
-            </a>
-            <a href="/widget" className="inline-flex items-center gap-1 text-muted hover:text-gold">
-              No code? Embed the widget <ArrowUpRight size={13} aria-hidden />
-            </a>
-          </div>
-        </div>
-      </section>
-    </>
+      </div>
+    </section>
   )
 }
 
@@ -198,7 +166,7 @@ export function DevelopersPage() {
     <>
       <Seo title="Developers" description="Free API keys for the Gully Labs tracker API and Gully Analytics trials: sign in with your wallet, create keys instantly and see your usage." />
       {session.state === 'loading' && (
-        <section className="flex min-h-[50vh] items-center justify-center px-page">
+        <section className="flex min-h-[50vh] items-center justify-center px-4">
           <span className="inline-flex items-center gap-3 font-mono text-[13px] text-faint">
             <Loader2 size={16} className="animate-spin" aria-hidden /> Checking your session…
           </span>
@@ -206,20 +174,20 @@ export function DevelopersPage() {
       )}
       {session.state === 'out' && <SignedOut connect={connect} busy={busy} error={error} />}
       {(session.state === 'error' || session.state === 'blocked') && (
-        <section className="flex min-h-[50vh] flex-col items-start justify-center gap-4 px-page py-16">
-          <span className={eyebrow}>DEVELOPER DASHBOARD</span>
+        <section className="mx-auto flex min-h-[50vh] w-full max-w-[640px] flex-col items-start justify-center gap-4 px-4 py-16">
+          <span className={mono}>DEVELOPER CONSOLE</span>
           <p className="m-0 flex max-w-[640px] items-start gap-3 text-[17px] leading-[1.55] text-error" role="alert">
             <AlertTriangle size={20} className="mt-[3px] shrink-0" aria-hidden />
             {session.state === 'blocked' ? session.message : `The dashboard could not be loaded: ${session.message}`}
           </p>
           <div className="flex gap-3">
             {session.state === 'error' && (
-              <button type="button" onClick={loadAccount} className={`${btnGold} min-h-11 px-5 text-[15px]`}>
+              <button type="button" onClick={loadAccount} className={pillGold}>
                 Try again
               </button>
             )}
             {session.state === 'blocked' && (
-              <button type="button" onClick={signOut} className={`${btnOutline} min-h-11 px-5 text-[15px]`}>
+              <button type="button" onClick={signOut} className={pillLine}>
                 Sign out
               </button>
             )}

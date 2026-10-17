@@ -271,6 +271,8 @@ export interface UsagePoint {
   t: string
   total: number
   errors: number
+  /** Rate-limited (429) answers in the bucket; absent on servers older than the console portal. */
+  limited?: number
   keys: Record<string, number>
 }
 
@@ -300,6 +302,12 @@ export interface RecentRequest {
 export const shortAddress = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
 export const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
+
+/** Whole days from now until `iso` (0 when it is today or past), or null without a date. */
+export function daysLeft(iso: string | null): number | null {
+  if (!iso) return null
+  return Math.max(0, Math.ceil((Date.parse(iso) - Date.now()) / 86_400_000))
+}
 
 export function ago(iso: string | null): string {
   if (!iso) return 'never'
