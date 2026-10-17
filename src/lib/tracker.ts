@@ -145,6 +145,9 @@ export const ageText = (iso: string | null, now: number) => {
 }
 
 /* Premium and discount use the CVD-safe pair (teal above, vermilion below), never red/green alone. */
+/** The page of one stock token on one chain. */
+export const stockPath = (r: { chain: string; ticker: string }) => `/tracker/${r.chain}/${r.ticker}`
+
 export const UP = '#1f9e89'
 export const DOWN = '#e4572e'
 

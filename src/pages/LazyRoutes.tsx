@@ -46,6 +46,16 @@ export function ChainKitRoute() {
   )
 }
 
+const Stock = lazy(() => import('./StockPage').then((m) => ({ default: m.StockPage })))
+
+export function StockRoute() {
+  return (
+    <Suspense fallback={fallback}>
+      <Stock />
+    </Suspense>
+  )
+}
+
 export function PricingRoute() {
   return (
     <Suspense fallback={fallback}>

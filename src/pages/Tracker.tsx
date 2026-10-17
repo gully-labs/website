@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { ArrowUpRight, BookOpen, KeyRound, Puzzle } from 'lucide-react'
 import { DEVELOPERS_URL, DOCS_URL } from '../site-host'
 import { StockLogo } from '../components/tracker/StockLogo'
@@ -10,7 +11,7 @@ import { ChainCompare, GapHistogram, LiquidityRing, LiquidityScatter } from '../
 import { StatusBadge, TrackerTable } from '../components/tracker/TrackerTable'
 import { useCountUp } from '../hooks/useCountUp'
 import { xPost } from '../lib/share'
-import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, UP, useTracker, type TrackerRow } from '../lib/tracker'
+import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, stockPath, UP, useTracker, type TrackerRow } from '../lib/tracker'
 
 const SHARE_URL = 'https://gullylabs.xyz/tracker'
 const rise = (i: number) => ({ animation: `gl-rise .5s ${i * 0.05}s ease both` })
@@ -189,6 +190,9 @@ export function Tracker() {
                     </div>
                     <div className="flex items-center gap-2">
                       <StatusBadge r={sel} />
+                      <Link to={stockPath(sel)} className="inline-flex h-8 items-center gap-1 rounded-btn border border-gold-line px-3 text-[12px] text-gold hover:border-gold hover:text-gold">
+                        {sel.ticker} page →
+                      </Link>
                       {sel.pool?.url && (
                         <a href={sel.pool.url} target="_blank" rel="noopener" className="inline-flex h-8 items-center rounded-btn border border-line-strong px-3 text-[12px] text-ink hover:border-gold hover:text-ink">
                           Pool ↗

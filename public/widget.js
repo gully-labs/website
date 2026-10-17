@@ -108,7 +108,7 @@
     return r.chain + ':' + r.ticker
   }
   function link(r) {
-    return TRACKER + '?stock=' + encodeURIComponent(key(r))
+    return TRACKER + '/' + encodeURIComponent(r.chain) + '/' + encodeURIComponent(r.ticker)
   }
   function logo(r, size, withChain) {
     var src = safeUrl(r.logo)

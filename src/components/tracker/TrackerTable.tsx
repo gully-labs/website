@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { ChainLogo, StockLogo } from './StockLogo'
 import { xPost } from '../../lib/share'
-import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, STATUS_LABEL, UP, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
+import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, STATUS_LABEL, stockPath, UP, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
 import { SocialIcon } from '../SocialIcon'
 
 type SortKey = 'ticker' | 'gap' | 'absgap' | 'onchain' | 'liquidity' | 'volume'
@@ -169,6 +170,9 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                   <td className="px-3 py-2 text-right font-mono text-[12px] text-faint">{ageText(r.feedUpdatedAt, now)}</td>
                   <td className="px-3 py-2">
                     <span className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Link to={stockPath(r)} aria-label={`${r.ticker} page`} className="inline-flex h-8 items-center rounded-btn border border-gold-line px-3 text-[12px] text-gold transition-colors hover:border-gold hover:text-gold">
+                        Page
+                      </Link>
                       {r.pool?.url && (
                         <a href={r.pool.url} target="_blank" rel="noopener" className="inline-flex h-8 items-center rounded-btn border border-line-strong px-3 text-[12px] text-ink transition-colors hover:border-gold hover:text-ink">
                           Pool ↗

@@ -114,10 +114,38 @@ const CARDS = [
   })),
 ]
 
+// One card per tracked stock token: its own logo and chain mark, no figures (a card cannot stay current).
+const tokenLogos = JSON.parse(fs.readFileSync(path.join(root, 'public/tokens/SOURCES.json'), 'utf8'))
+const companyLogos = JSON.parse(fs.readFileSync(path.join(root, 'public/tokens/logos/SOURCES.json'), 'utf8'))
+const CHAIN = { robinhood: ['Robinhood Chain', 'chains/robinhood.png'], bsc: ['BNB Chain', 'chains/bnb.png'] }
+for (const key of Object.keys(CHAIN)) {
+  const stocks = JSON.parse(fs.readFileSync(path.join(root, `server/data/${key}-stocks.json`), 'utf8')).stocks
+  for (const st of stocks) {
+    const file = tokenLogos[`${key}/${st.token.toLowerCase()}`]?.file ?? companyLogos[st.ticker]?.file
+    const logo = file
+      ? `<div style="position:relative;width:300px;height:300px"><div style="width:300px;height:300px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #1d232c,0 30px 80px #000a;overflow:hidden"><img src="${pub(file.slice(1))}" style="width:78%;height:78%;object-fit:contain"></div><img src="${pub(CHAIN[key][1])}" style="position:absolute;right:6px;bottom:6px;width:92px;height:92px;border-radius:50%;box-shadow:0 0 0 8px #0b0e13"></div>`
+      : ''
+    CARDS.push({
+      file: `og-tracker/${key}/${st.ticker}.png`,
+      html: page({
+        eyebrow: `Stock token · ${CHAIN[key][0]}`,
+        title: `${st.ticker} <em>vs fair value</em>`,
+        body: `${st.name}: its price in its deepest pool against the Chainlink fair price, read live.`,
+        url: `gullylabs.xyz/tracker/${key}/${st.ticker}`,
+        right: `<div style="position:absolute;right:110px;top:50%;transform:translateY(-50%)">${logo}</div>`,
+        titleSize: st.ticker.length > 4 ? 96 : 110,
+      }),
+    })
+  }
+}
+
 const browser = await chromium.launch()
 const page_ = await browser.newPage({ viewport: { width: 1200, height: 630 } })
+const only = process.argv[2] // optional: render only cards whose file starts with this
 for (const c of CARDS) {
-  const tmp = path.join(out, `.tmp-${c.file}.html`)
+  if (only && !c.file.startsWith(only)) continue
+  fs.mkdirSync(path.dirname(path.join(out, c.file)), { recursive: true })
+  const tmp = path.join(out, `.tmp-${c.file.replace(/[\/]/g, '_')}.html`)
   fs.writeFileSync(tmp, c.html)
   await page_.goto(pathToFileURL(tmp).href, { waitUntil: 'load' })
   await page_.evaluate(() => document.fonts.ready)

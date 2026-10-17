@@ -3,6 +3,8 @@
 // homepage as its canonical address, which tells search engines to drop it as a duplicate.
 // The <Seo> component keeps matching titles in the browser; keep the two in step.
 
+import fs from 'node:fs'
+
 const SITE = 'https://gullylabs.xyz'
 const DOCS = 'https://docs.gullylabs.xyz'
 const DEV = 'https://developers.gullylabs.xyz'
@@ -27,6 +29,22 @@ const MAIN = {
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
+
+// One page per tracked stock token, from the same tables the tracker reads (server/data next to this file).
+const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
+for (const key of Object.keys(CHAIN_NAMES)) {
+  let stocks = []
+  try {
+    stocks = JSON.parse(fs.readFileSync(new URL(`./data/${key}-stocks.json`, import.meta.url), 'utf8')).stocks
+  } catch {
+    /* no table: no pages for this chain */
+  }
+  for (const s of stocks)
+    MAIN[`/tracker/${key}/${s.ticker}`] = [
+      `${s.ticker} token price vs fair value (${CHAIN_NAMES[key]}) · Gully Labs`,
+      `${s.name} (${s.ticker}) token on ${CHAIN_NAMES[key]}: its price in its deepest pool against the Chainlink fair price, the gap, pool depth and history, read live.`,
+    ]
+}
 
 const DOCS_PAGES = {
   '/': ['Gully Labs docs', 'How the Gully Labs stock token tracker works, its public API, the embeddable widget and API keys.'],
@@ -120,7 +138,7 @@ export function sitemapFor(host) {
     urls = Object.keys(MAIN).map((p) => [
       SITE + (p === '/' ? '/' : p),
       p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
-      p === '/tracker' ? 'hourly' : p === '/' || p.startsWith('/projects/') ? 'daily' : 'monthly',
+      p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p.startsWith('/projects/') ? 'daily' : 'monthly',
     ])
   const rows = urls.map(([u, pr, f]) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</urlset>\n`

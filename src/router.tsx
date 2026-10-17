@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, ChainKitRoute, DevelopersRoute, PricingRoute, ProjectDetailRoute, ServicesRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, ChainKitRoute, StockRoute, DevelopersRoute, PricingRoute, ProjectDetailRoute, ServicesRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { RouteError } from './pages/RouteError'
 import { TrackerRoute } from './pages/TrackerRoute'
@@ -17,6 +17,7 @@ const mainRoutes = [
       { path: '/services', element: <ServicesRoute /> },
       { path: '/about', element: <AboutRoute /> },
       { path: '/tracker', element: <TrackerRoute /> },
+      { path: '/tracker/:chain/:ticker', element: <StockRoute /> },
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
