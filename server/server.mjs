@@ -88,6 +88,40 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods
 
 const notifyHits = new Map()
 
+/* Security headers. The CSP keeps scripts to this origin (no inline scripts exist in the build); styles allow
+   inline because React style props need it; connections allow any https/wss origin because the developer
+   portal's wallets and payment checks talk to public RPCs and WalletConnect relays chosen at runtime.
+   The admin host and the developer portal may not be framed at all; the main site only by itself. */
+function securityHeaders(host) {
+  const local = /^(localhost|127.0.0.1|[::1])$/.test(host)
+  const strict = host.startsWith('admin.') || host.startsWith('developers.')
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https: wss:",
+    'frame-src https:',
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    `frame-ancestors ${strict ? "'none'" : "'self'"}`,
+    ...(local ? [] : ['upgrade-insecure-requests']),
+  ].join('; ')
+  return {
+    ...(local ? {} : { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' }),
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+    // Wallet popups (Coinbase Wallet, WalletConnect) need to talk back to the opener.
+    'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    'X-Frame-Options': strict ? 'DENY' : 'SAMEORIGIN',
+    'Content-Security-Policy': csp,
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost')
 
@@ -100,6 +134,8 @@ const server = http.createServer(async (req, res) => {
   if (host.startsWith('blog.')) return handleBlog(req, res, url)
   // Gully Analytics (Umami fork) in its own container; every path on its host goes there.
   if (host.startsWith('analytics.')) return handleAnalytics(req, res)
+  // Security headers for everything this server answers itself (the blog and analytics set their own).
+  for (const [k, v] of Object.entries(securityHeaders(host))) res.setHeader(k, v)
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
   }
