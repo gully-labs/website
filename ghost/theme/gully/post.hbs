@@ -1,0 +1,99 @@
+{{!< default}}
+{{!--
+    A post: kicker (tag, date, reading time), display title, excerpt, byline and share; the generated
+    banner (framing the feature image when there is one); the content; tags, share, the author box;
+    members sign-up (only when members are on); comments; related posts.
+--}}
+{{#post}}
+<main id="gl-main" class="gl-main gl-post" tabindex="-1">
+    <article class="gl-article {{post_class}}">
+        <header class="gl-article-head gl-page">
+            <p class="gl-kicker gl-article-kicker">
+                {{#if primary_tag}}<a class="gl-kicker-link" href="{{primary_tag.url}}">{{> "icons/hash"}}{{primary_tag.name}}</a><span class="gl-kicker-sep">/</span>{{/if}}
+                <time datetime="{{date format="YYYY-MM-DD"}}">{{date format="D MMM YYYY"}}</time>
+                {{#if reading_time}}<span class="gl-kicker-sep">/</span><span>{{reading_time minute="1 min read" minutes="% min read"}}</span>{{/if}}
+            </p>
+            <h1 class="gl-article-title">{{title}}</h1>
+            {{#if custom_excerpt}}<p class="gl-article-dek">{{custom_excerpt}}</p>{{/if}}
+            <div class="gl-byline">
+                <div class="gl-byline-authors">
+                    {{#foreach authors}}
+                        <a class="gl-byline-author" href="{{url}}">
+                            {{#if profile_image}}
+                                <img class="gl-avatar" src="{{img_url profile_image size="xs"}}" alt="" width="36" height="36" loading="lazy">
+                            {{else}}
+                                <span class="gl-avatar gl-avatar--empty" aria-hidden="true">{{> "icons/user"}}</span>
+                            {{/if}}
+                            <span>{{name}}</span>
+                        </a>
+                    {{/foreach}}
+                </div>
+                {{> "share"}}
+            </div>
+        </header>
+
+        <figure class="gl-article-banner gl-page">
+            {{> "banner" variant="post" seed=slug label=title tag=primary_tag.slug tagname=primary_tag.name img=feature_image alt=feature_image_alt eager=true}}
+            {{#if feature_image_caption}}<figcaption>{{feature_image_caption}}</figcaption>{{/if}}
+        </figure>
+
+        <section class="gh-content gh-canvas gl-content">
+            {{content}}
+        </section>
+
+        <footer class="gl-article-foot gh-canvas">
+            {{#if tags}}
+                <ul class="gl-chips" role="list" aria-label="Tags">
+                    {{#foreach tags visibility="public"}}
+                        <li><a class="gl-chip" href="{{url}}">{{> "icons/hash"}}{{name}}</a></li>
+                    {{/foreach}}
+                </ul>
+            {{/if}}
+            <div class="gl-article-share">
+                <p class="gl-kicker">Share this post</p>
+                {{> "share"}}
+            </div>
+            {{#foreach authors}}
+                <section class="gl-authorbox" aria-label="About the author">
+                    {{#if profile_image}}
+                        <img class="gl-avatar gl-avatar--lg" src="{{img_url profile_image size="s"}}" alt="" width="72" height="72" loading="lazy">
+                    {{else}}
+                        <span class="gl-avatar gl-avatar--lg gl-avatar--empty" aria-hidden="true">{{> "icons/user"}}</span>
+                    {{/if}}
+                    <div class="gl-authorbox-text">
+                        <p class="gl-kicker">Written by</p>
+                        <h2 class="gl-authorbox-name"><a href="{{url}}">{{name}}</a></h2>
+                        {{#if bio}}<p class="gl-authorbox-bio">{{bio}}</p>{{/if}}
+                        <a class="gl-textlink" href="{{url}}">More posts by {{name}} {{> "icons/arrow-right"}}</a>
+                    </div>
+                </section>
+            {{/foreach}}
+        </footer>
+    </article>
+
+    {{#if @site.members_enabled}}
+        {{#unless @member}}
+            <div class="gh-canvas gl-post-newsletter">{{> "newsletter" variant="post"}}</div>
+        {{/unless}}
+    {{/if}}
+
+    {{#if comments}}
+        <section class="gh-canvas gl-comments" aria-label="Comments">{{comments}}</section>
+    {{/if}}
+
+    {{#if primary_tag}}
+        {{#get "posts" filter="tags:{{primary_tag.slug}}+id:-{{id}}" limit="3" include="tags,authors" as |related|}}
+            {{#if related}}
+                <section class="gl-section gl-page gl-related" aria-labelledby="gl-related-title">
+                    {{> "section-head" num="→" kicker="Read next" title="More on this topic" id="gl-related-title"}}
+                    <div class="gl-grid">{{#foreach related}}{{> "post-card"}}{{/foreach}}</div>
+                </section>
+            {{else}}
+                {{> "related-latest" id=../id}}
+            {{/if}}
+        {{/get}}
+    {{else}}
+        {{> "related-latest"}}
+    {{/if}}
+</main>
+{{/post}}

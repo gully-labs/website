@@ -1,0 +1,14 @@
+{{!-- Topic filter chips: the blog's public tags, busiest first. Each chip opens that tag's page; "All posts" is marked
+      current on the index; a tag's chip is marked current on its own page by assets/js/gully.js. --}}
+{{#get "tags" limit="10" include="count.posts" order="count.posts desc" filter="visibility:public" as |topics|}}
+    {{#if topics}}
+        <nav class="gl-topics" aria-label="Topics">
+            <ul class="gl-chips" role="list">
+                <li><a class="gl-chip{{#is "home, index"}} is-current{{/is}}" href="{{@site.url}}"{{#is "home, index"}} aria-current="page"{{/is}}>{{> "icons/house"}}All posts</a></li>
+                {{#foreach topics}}
+                    <li><a class="gl-chip" href="{{url}}" data-gl-chip>{{> "icons/hash"}}{{name}}<span class="gl-chip-count">{{count.posts}}</span></a></li>
+                {{/foreach}}
+            </ul>
+        </nav>
+    {{/if}}
+{{/get}}

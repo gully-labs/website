@@ -1,0 +1,20 @@
+{{!< default}}
+{{!-- The post index: page 2 onwards (home.hbs renders page 1), and the fallback for collections. --}}
+<main id="gl-main" class="gl-main gl-index" tabindex="-1">
+{{#if posts}}
+    <header class="gl-archive-head gl-page">
+        <p class="gl-kicker"><span class="gl-kicker-num">{{#if pagination.page}}{{pagination.page}}{{else}}1{{/if}}</span><span>Archive</span></p>
+        <h1 class="gl-archive-title">All posts</h1>
+        <p class="gl-archive-sub">{{plural pagination.total empty="No posts yet" singular="% post" plural="% posts"}} · page {{pagination.page}} of {{pagination.pages}}</p>
+    </header>
+    <section class="gl-section gl-page" aria-label="Posts">
+        {{> "topic-chips"}}
+        <div class="gl-grid">
+            {{#foreach posts}}{{> "post-card"}}{{/foreach}}
+        </div>
+    </section>
+    {{pagination}}
+{{else}}
+    {{> "empty-state"}}
+{{/if}}
+</main>

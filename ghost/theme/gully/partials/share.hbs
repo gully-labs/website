@@ -1,0 +1,6 @@
+{{!-- Share buttons: X and Telegram (new tab), and copy link (toast). Post context. --}}
+<ul class="gl-share" role="list">
+    <li><a class="gl-iconbtn gl-iconbtn--box" href="https://x.com/intent/post?text={{encode title}}&url={{url absolute="true"}}&via=Gully_Labs" target="_blank" rel="noopener noreferrer">{{> "icons/brand-x"}}<span class="gl-sr">Share on X (opens in a new tab)</span></a></li>
+    <li><a class="gl-iconbtn gl-iconbtn--box" href="https://t.me/share/url?url={{url absolute="true"}}&text={{encode title}}" target="_blank" rel="noopener noreferrer">{{> "icons/brand-telegram"}}<span class="gl-sr">Share on Telegram (opens in a new tab)</span></a></li>
+    <li><button type="button" class="gl-iconbtn gl-iconbtn--box" data-gl-copy="{{url absolute="true"}}">{{> "icons/link"}}<span class="gl-sr">Copy link</span></button></li>
+</ul>

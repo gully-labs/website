@@ -1,0 +1,23 @@
+{{!< default}}
+<main id="gl-main" class="gl-main gl-error" tabindex="-1">
+    <section class="gl-error-box gl-page">
+        {{> "banner" variant="tag" seed="error-404" label="404" tag="network" tagname="Not found"}}
+        <div class="gl-error-copy">
+            <p class="gl-kicker"><span class="gl-kicker-num">404</span><span>Page not found</span></p>
+            <h1 class="gl-error-title">This page is off the chain</h1>
+            <p class="gl-error-sub">The link may be old, or the post may have moved. Try the latest posts, or head to the site.</p>
+            <div class="gl-empty-actions">
+                <a class="gl-btn gl-btn--gold" href="{{@site.url}}">{{> "icons/newspaper"}}<span>Latest posts</span></a>
+                <a class="gl-btn gl-btn--outline" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">{{> "icons/house"}}<span>gullylabs.xyz</span>{{> "ext-mark"}}</a>
+            </div>
+        </div>
+    </section>
+    {{#get "posts" limit="3" include="tags,authors" as |latest|}}
+        {{#if latest}}
+            <section class="gl-section gl-page" aria-labelledby="gl-404-latest">
+                {{> "section-head" num="01" kicker="Latest" title="Recent posts" id="gl-404-latest"}}
+                <div class="gl-grid">{{#foreach latest}}{{> "post-card"}}{{/foreach}}</div>
+            </section>
+        {{/if}}
+    {{/get}}
+</main>

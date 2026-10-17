@@ -1,0 +1,21 @@
+{{!< default}}
+<main id="gl-main" class="gl-main gl-tag" tabindex="-1">
+    {{#tag}}
+        <header class="gl-archive-head gl-archive-head--banner gl-page">
+            <div class="gl-archive-copy">
+                <p class="gl-kicker"><span class="gl-kicker-num">{{> "icons/hash"}}</span><span>Topic</span></p>
+                <h1 class="gl-archive-title">{{name}}</h1>
+                {{#if description}}<p class="gl-archive-sub">{{description}}</p>{{/if}}
+                <p class="gl-archive-count">{{plural ../pagination.total empty="No posts yet" singular="% post" plural="% posts"}}</p>
+            </div>
+            {{> "banner" variant="tag" seed=slug label=name tag=slug tagname=name img=feature_image alt=name eager=true}}
+        </header>
+    {{/tag}}
+    <section class="gl-section gl-page" aria-label="Posts">
+        {{> "topic-chips"}}
+        <div class="gl-grid">
+            {{#foreach posts}}{{> "post-card"}}{{/foreach}}
+        </div>
+    </section>
+    {{pagination}}
+</main>

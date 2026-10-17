@@ -1,0 +1,24 @@
+{{!-- The home page's lead story: a featured post (or the latest), with its banner. Post context. --}}
+<article class="gl-hero {{post_class}}" data-gl-card>
+    <div class="gl-hero-media">
+        {{> "banner" variant="hero" seed=slug label=title tag=primary_tag.slug tagname=primary_tag.name img=feature_image alt=feature_image_alt eager=true}}
+    </div>
+    <div class="gl-hero-body">
+        <p class="gl-kicker"><span class="gl-kicker-num">01</span><span>{{#if featured}}Featured{{else}}Latest{{/if}}</span></p>
+        {{#if tags}}
+            <ul class="gl-chips" role="list">
+                {{#foreach tags limit="3" visibility="public"}}
+                    <li><a class="gl-chip" href="{{url}}">{{> "icons/hash"}}{{name}}</a></li>
+                {{/foreach}}
+            </ul>
+        {{/if}}
+        <h2 class="gl-hero-title"><a class="gl-card-link" href="{{url}}">{{title}}</a></h2>
+        <p class="gl-hero-excerpt">{{excerpt words="40"}}</p>
+        <p class="gl-card-meta">
+            {{#if primary_author}}<span class="gl-meta-item">{{> "icons/user"}}{{primary_author.name}}</span>{{/if}}
+            <span class="gl-meta-item">{{> "icons/calendar"}}<time datetime="{{date format="YYYY-MM-DD"}}">{{date format="D MMM YYYY"}}</time></span>
+            {{#if reading_time}}<span class="gl-meta-item">{{> "icons/clock"}}{{reading_time minute="1 min read" minutes="% min read"}}</span>{{/if}}
+        </p>
+        <span class="gl-hero-cta" aria-hidden="true">Read the post {{> "icons/arrow-right"}}</span>
+    </div>
+</article>
