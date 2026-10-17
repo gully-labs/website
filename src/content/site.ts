@@ -1,4 +1,4 @@
-import { Activity, BookOpen, Boxes, ChartNoAxesCombined, ChartLine, Code2, FlaskConical, Info, KeyRound, Layers, Newspaper, Puzzle, Tag, type LucideIcon } from 'lucide-react'
+import { Activity, BellRing, BookOpen, Boxes, ChartNoAxesCombined, ChartLine, Code2, FileJson, FlaskConical, Info, KeyRound, Layers, Newspaper, Puzzle, Tag, type LucideIcon } from 'lucide-react'
 
 export const SITE_URL = 'https://gullylabs.xyz'
 
@@ -23,6 +23,20 @@ export const navItems: { label: string; to: string; match: string; icon: LucideI
   { label: 'Tracker', to: '/tracker', match: '/tracker', icon: Activity },
   { label: 'Services', to: '/services', match: '/services', icon: Layers },
   { label: 'About', to: '/about', match: '/about', icon: Info },
+]
+
+/** The header's site menu: every section of the landing, each also matching its own page. Deliberately
+    short labels: with labels the bar must still fit on one line from 1320 px (Header.tsx). */
+export const headerNav: { label: string; to: string; match: string; icon: LucideIcon }[] = [
+  { label: 'Projects', to: '/#projects', match: '/projects', icon: FlaskConical },
+  { label: 'Tracker', to: '/#tracker', match: '/tracker', icon: Activity },
+  { label: 'Alerts', to: '/#alerts', match: '/#alerts', icon: BellRing },
+  { label: 'Analytics', to: '/#analytics', match: '/analytics', icon: ChartNoAxesCombined },
+  { label: 'Chain Kit', to: '/#chainkit', match: '/chain-kit', icon: Boxes },
+  { label: 'API', to: '/#api', match: '/#api', icon: FileJson },
+  { label: 'Widget', to: '/#widget', match: '/widget', icon: Puzzle },
+  { label: 'Pricing', to: '/#pricing', match: '/pricing', icon: Tag },
+  { label: 'Services', to: '/#services', match: '/services', icon: Layers },
 ]
 
 /** The developer surfaces. Docs is its own host; /developers moves to developers.gullylabs.xyz. */

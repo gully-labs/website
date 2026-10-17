@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
-import { headerDevItems, navItems } from '../content/site'
+import { headerDevItems, headerNav } from '../content/site'
 import { isDevelopersHost } from '../site-host'
 import { useContact } from './ContactContext'
 import { Wordmark } from './Wordmark'
 import { btnGold } from './ui'
 
 const WIDE_QUERY = '(min-width: 860px)'
-const deskItem = 'group inline-flex items-center gap-2 border-b-2 py-[6px] text-[15px] transition-colors hover:text-ink'
+const deskItem = 'group inline-flex min-h-11 items-center gap-[6px] border-b-2 py-[6px] text-[14px] transition-colors hover:text-ink'
 // Between 860 and 1320 px the labels give way and the icons carry the menu (each keeps its title and name).
-// Measured: with labels the bar needs ~1300 px, so labels at 1240 wrapped the header onto two lines.
+// The section menu shows its labels from 1320 px; the developer links (Developers, Docs, Blog) keep to
+// their icons until 1600 px. Measured so the bar stays on one line at every width.
 const deskLabel = 'sr-only min-[1320px]:not-sr-only'
+const devLabel = 'sr-only min-[1600px]:not-sr-only'
 
 export function Header() {
   const { pathname } = useLocation()
@@ -41,8 +43,8 @@ export function Header() {
           <Wordmark size={30} shimmer />
         </Link>
 
-        <nav aria-label="Main" className="hidden flex-nowrap items-center gap-4 whitespace-nowrap min-[860px]:flex min-[1100px]:gap-5 min-[1480px]:gap-7">
-          {navItems.map((n) => (
+        <nav aria-label="Main" className="hidden flex-nowrap items-center gap-[14px] whitespace-nowrap min-[860px]:flex min-[1100px]:gap-4 min-[1480px]:gap-5">
+          {headerNav.map((n) => (
             <Link
               key={n.label}
               to={n.to}
@@ -61,7 +63,7 @@ export function Header() {
             const inner = (
               <>
                 <n.icon aria-hidden size={16} strokeWidth={1.75} className={`transition-colors ${active ? 'text-gold' : 'text-faint group-hover:text-gold'}`} />
-                <span className={deskLabel}>{n.label}</span>
+                <span className={devLabel}>{n.label}</span>
               </>
             )
             return n.href ? (
@@ -102,13 +104,13 @@ export function Header() {
         {/* On a short screen (a phone held sideways) the open menu scrolls instead of running off the bottom. */}
         <div className="max-h-[calc(100dvh-82px)] overflow-hidden overscroll-contain" style={menuOpen ? { overflowY: 'auto' } : undefined}>
             <div className="flex flex-col border-t border-line px-page pt-2 pb-6">
-              {navItems.map((n) => (
+              {headerNav.map((n) => (
                 <Link
                   key={n.label}
                   to={n.to}
                   onClick={close}
                   aria-current={isActive(n.match) ? 'page' : undefined}
-                  className={`flex items-center gap-4 border-b border-line py-[18px] text-left font-display text-[28px] font-bold uppercase ${
+                  className={`flex items-center gap-4 border-b border-line py-[14px] text-left font-display text-[24px] font-bold uppercase ${
                     isActive(n.match) ? 'text-ink' : 'text-muted'
                   }`}
                 >

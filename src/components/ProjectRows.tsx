@@ -1,155 +1,234 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { comingSoon, projects, TOTAL_SLOTS, type Project } from '../content/projects'
-import { fmtTime, fmtUsd, sourceHost, type Figure, type Stats, type Venue } from '../lib/stats'
-import { ShareMenu } from './Share'
+import { fmtTime, fmtUsd, sourceHost, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
-import { BlinkDot, statusPill } from './ui'
+import { BlinkDot } from './ui'
+
+/* The projects as one sortable table: venue, chains, then volume, value locked and fees, each with a
+   bar against the largest readable figure. Every row reads its project's own API (GET /api/stats); a
+   figure a venue does not publish is "—" with no bar, a venue that could not be read says so. */
 
 type Dir = 'descending' | 'ascending'
+type Col = 'volume' | 'tvl' | 'fees'
+type State = 'loading' | 'error' | 'ok'
 
-const FIGURES: { key: Figure; label: string }[] = [
-  { key: 'tvlUsd', label: 'TVL' },
-  { key: 'volumeAllUsd', label: 'VOLUME ALL-TIME' },
-  { key: 'volume24hUsd', label: 'VOLUME 24H' },
-  { key: 'feesAllUsd', label: 'FEES ALL-TIME' },
+const COLS: { key: Col; label: string }[] = [
+  { key: 'volume', label: 'VOLUME' },
+  { key: 'tvl', label: 'TVL' },
+  { key: 'fees', label: 'FEES' },
 ]
 
-const cols = 'grid grid-cols-[136px_1.4fr_.9fr_1fr_1fr_1fr_1fr_132px] items-center gap-5 px-7'
-const colsNarrow = 'max-[959px]:grid-cols-[104px_1fr] max-[959px]:gap-x-4 max-[959px]:gap-y-3 max-[959px]:px-5'
+/** A venue's figure for a column, with a note when it is not the all-time figure. */
+function figure(v: Venue | undefined, c: Col): { n: number | null; note?: string } {
+  if (!v || v.state !== 'ok') return { n: null }
+  if (c === 'tvl') return { n: v.tvlUsd }
+  if (c === 'volume') {
+    if (v.volumeAllUsd !== null) return { n: v.volumeAllUsd }
+    if (v.volume30dUsd !== null && v.volume30dUsd !== undefined) return { n: v.volume30dUsd, note: '30d' }
+    return { n: v.volume24hUsd, note: v.volume24hUsd === null ? undefined : '24h' }
+  }
+  if (v.feesAllUsd !== null && v.feesAllUsd !== undefined) return { n: v.feesAllUsd }
+  return { n: v.fees24hUsd, note: v.fees24hUsd === null ? undefined : '24h' }
+}
 
-function cell(v: Venue | undefined, m: Figure, state: 'loading' | 'error' | 'ok') {
-  if (state === 'loading') return <span className="text-dim">…</span>
-  if (!v || v.state !== 'ok') return <span className="text-error">unreadable</span>
-  if (m === 'volumeAllUsd' && v.volumeAllUsd === null && v.volume30dUsd !== null && v.volume30dUsd !== undefined) return `${fmtUsd(v.volume30dUsd)} · 30d`
-  if (m === 'feesAllUsd') {
-    const all = v.feesAllUsd ?? null
-    const day = v.fees24hUsd
-    if (all === null && day === null) return <span className="text-dim">—</span>
-    return (
+const initials = (name: string) =>
+  name
+    .split(/(?=[A-Z])|\s+/)
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
+function Cell({ p, venue, c, max, state }: { p: Project; venue?: Venue; c: Col; max: number; state: State }) {
+  const f = figure(venue, c)
+  let text: React.ReactNode
+  if (state === 'loading') text = <span className="text-dim">…</span>
+  else if (!venue || venue.state !== 'ok') text = <span className="text-error">unreadable</span>
+  else if (f.n === null) text = <span className="text-dim" title="This venue does not publish this figure">—</span>
+  else
+    text = (
       <>
-        {all === null ? <span className="text-dim">—</span> : fmtUsd(all)}
-        {day !== null && <span className="ml-2 text-[12px] text-faint">24h {fmtUsd(day)}</span>}
+        {fmtUsd(f.n)}
+        {f.note && <span className="ml-[6px] text-[11px] text-faint">{f.note}</span>}
       </>
     )
-  }
-  const n = v[m]
-  return n === null || n === undefined ? <span className="text-dim">—</span> : fmtUsd(n)
-}
-
-function Row({ p, venue, state, index }: { p: Project; venue?: Venue; state: 'loading' | 'error' | 'ok'; index: number }) {
-  const provenance =
-    venue?.state === 'ok'
-      ? `Read from ${sourceHost(venue.source.url)} at ${fmtTime(venue.source.readAt)}${venue.notes.length ? ` · ${venue.notes.join(' ')}` : ''}`
-      : venue?.state === 'error'
-        ? `Could not be read: ${venue.error}`
-        : state === 'error'
-          ? 'Could not be read.'
-          : 'Reading…'
+  const w = f.n !== null && max > 0 ? Math.max(2, (f.n / max) * 100) : 0
   return (
-    <div
-      className={`${cols} ${colsNarrow} gl-row-sweep relative min-h-[112px] border-b border-line py-5 text-ink transition-colors last:border-b-0 hover:bg-surface-hover`}
-      style={{ animation: `gl-rise .5s ${index * 0.07}s ease both`, ['--sweep-delay' as string]: `${2 + index * 1.1}s` }}
-    >
-      {/* The project's own lockup, on its own ground, large enough to read. */}
-      <Link to={`/projects/${p.slug}`} className="flex h-[72px] w-[136px] items-center justify-center overflow-hidden rounded-[10px] border-b-[3px] border-line max-[959px]:h-[58px] max-[959px]:w-[104px]" style={{ background: p.bg, borderBottomColor: p.accent }} aria-label={`${p.name} project page`}>
-        <img src={p.logo} alt={p.name} loading="lazy" className="block size-full" style={{ objectFit: p.fit, padding: p.fit === 'contain' ? '10px 14px' : 0 }} />
-      </Link>
-      <span className="flex flex-col gap-[6px]">
-        <Link to={`/projects/${p.slug}`} className="font-display text-[26px] leading-none font-bold uppercase text-ink hover:text-gold max-[959px]:text-[22px]">
-          {p.name}
-        </Link>
-        <span className="font-mono text-[12px] text-dim">
-          {p.tag} · {p.tagline}
+    <td className="min-w-[120px] px-2 py-3">
+      <span className="flex flex-col gap-1">
+        <span className="font-mono text-[13px] whitespace-nowrap">{text}</span>
+        <span aria-hidden className="h-1 overflow-hidden rounded-[2px] bg-grid">
+          <span className="block h-full rounded-[2px] transition-[width] duration-600" style={{ width: `${w}%`, background: p.accent }} />
         </span>
       </span>
-      <span className="flex flex-wrap gap-1 max-[959px]:col-start-2">
-        {p.chains.map((c) => (
-          <span key={c} className="rounded-full border border-line-strong px-2 py-[2px] font-mono text-[10px] tracking-[.5px] text-muted">
-            {c}
-          </span>
-        ))}
-      </span>
-      {/* Desktop: four grid cells. Phone: one 2 x 2 block under the name. */}
-      <span className="contents max-[959px]:col-span-full max-[959px]:grid max-[959px]:grid-cols-2 max-[959px]:gap-x-4 max-[959px]:gap-y-3 max-[959px]:rounded-[10px] max-[959px]:border max-[959px]:border-line max-[959px]:bg-surface-deep max-[959px]:p-4">
-        {FIGURES.map((f) => (
-          <span key={f.key} className="flex flex-col gap-1 font-mono text-[17px] max-[959px]:text-[15px]">
-            <span>{cell(venue, f.key, state)}</span>
-            <span className="text-[11px] tracking-[.5px] text-faint">{f.label}</span>
-          </span>
-        ))}
-      </span>
-      <span className="flex flex-col items-end gap-2 max-[959px]:col-span-full max-[959px]:flex-row max-[959px]:flex-wrap max-[959px]:items-center max-[959px]:justify-between">
-        <span className={statusPill}>{p.status}</span>
-        <ShareMenu project={p} compact />
-        <Link to={`/projects/${p.slug}`} className="text-[14px] whitespace-nowrap text-gold hover:text-gold-hover">
-          View project →
-        </Link>
-      </span>
-      <span className="col-span-full -mt-2 font-mono text-[12px] leading-[1.5] text-faint max-[959px]:hidden">{provenance}</span>
-      <details className="group col-span-full font-mono text-[12px] leading-[1.5] text-faint min-[960px]:hidden">
-        <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 text-dim [&::-webkit-details-marker]:hidden">
-          <span aria-hidden className="transition-transform group-open:rotate-90">›</span>
-          Source
-        </summary>
-        <span className="block pt-1">{provenance}</span>
-      </details>
-    </div>
+    </td>
   )
 }
 
-/** The projects as rows, sortable by any figure; every row reads its project's own API. */
-export function ProjectRows({ data, state }: { data: Stats | null; state: 'loading' | 'error' | 'ok' }) {
-  const [sort, setSort] = useState<{ key: Figure; dir: Dir } | null>(null)
+const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five']
+
+/** The projects as rows, sortable by volume, value locked or fees; every row reads its project's own API. */
+export function ProjectRows({ data, state }: { data: Stats | null; state: State }) {
+  const [sort, setSort] = useState<{ key: Col; dir: Dir }>({ key: 'volume', dir: 'descending' })
   const venueOf = (key: string) => data?.venues.find((v) => v.key === key)
-  const figure = (key: string, m: Figure) => {
-    const v = venueOf(key)
-    return v?.state === 'ok' ? (v[m] ?? -1) : -1
-  }
-  const rows = sort ? [...projects].sort((a, b) => (sort.dir === 'descending' ? figure(b.key, sort.key) - figure(a.key, sort.key) : figure(a.key, sort.key) - figure(b.key, sort.key))) : projects
-  const head = (f: { key: Figure; label: string }) => (
-    <button
-      key={f.key}
-      type="button"
-      aria-sort={sort?.key === f.key ? sort.dir : 'none'}
-      onClick={() => setSort((s) => ({ key: f.key, dir: s?.key === f.key && s.dir === 'descending' ? 'ascending' : 'descending' }))}
-      className={`inline-flex items-center gap-[6px] bg-transparent p-0 text-left font-mono text-[11px] tracking-[1px] transition-colors hover:text-gold ${sort?.key === f.key ? 'text-gold' : 'text-faint'}`}
-    >
-      {f.label} {sort?.key === f.key ? (sort.dir === 'descending' ? '↓' : '↑') : '↕'}
-    </button>
-  )
+  const value = (key: string, c: Col) => figure(venueOf(key), c).n ?? -1
+  const rows = [...projects].sort((a, b) => (sort.dir === 'descending' ? value(b.key, sort.key) - value(a.key, sort.key) : value(a.key, sort.key) - value(b.key, sort.key)))
+  const maxOf = (c: Col) => Math.max(0, ...projects.map((p) => figure(venueOf(p.key), c).n ?? 0))
+
   return (
-    <div className="overflow-hidden rounded-card border border-line bg-surface">
-      <div className={`${cols} h-11 border-b border-line bg-surface-deep font-mono text-[11px] tracking-[1px] text-faint max-[959px]:hidden`}>
-        <span />
-        <span>PROJECT</span>
-        <span>CHAINS</span>
-        {FIGURES.map(head)}
-        <span className="text-right">SHARE</span>
+    <div className="flex flex-col gap-2">
+      <div className="relative overflow-x-auto rounded-card border border-line bg-surface max-[759px]:hidden">
+        <table className="w-full min-w-[760px] border-collapse">
+          <caption className="sr-only">Gully Labs projects with their volume, value locked and fees, read live from each project's API</caption>
+          <thead>
+            <tr className="text-left font-mono text-[11px] tracking-[1px] text-faint">
+              <th scope="col" className="px-4 py-3 font-medium">
+                VENUE
+              </th>
+              <th scope="col" className="px-2 py-3 font-medium">
+                CHAINS
+              </th>
+              {COLS.map((c) => {
+                const on = sort.key === c.key
+                return (
+                  <th key={c.key} scope="col" aria-sort={on ? sort.dir : 'none'} className="px-2 py-[6px] font-medium">
+                    <button
+                      type="button"
+                      onClick={() => setSort((s) => ({ key: c.key, dir: s.key === c.key && s.dir === 'descending' ? 'ascending' : 'descending' }))}
+                      className={`min-h-11 bg-transparent p-0 font-mono text-[11px] tracking-[1px] transition-colors hover:text-ink ${on ? 'text-gold' : 'text-faint'}`}
+                    >
+                      {c.label} {on ? (sort.dir === 'descending' ? '↓' : '↑') : '↕'}
+                    </button>
+                  </th>
+                )
+              })}
+              <th scope="col" className="px-4 py-3">
+                <span className="sr-only">Links</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => {
+              const venue = venueOf(p.key)
+              const provenance =
+                venue?.state === 'ok'
+                  ? `Read from ${sourceHost(venue.source.url)} at ${fmtTime(venue.source.readAt)}${venue.notes.length ? ` · ${venue.notes.join(' ')}` : ''}`
+                  : venue?.state === 'error'
+                    ? `Could not be read: ${venue.error}`
+                    : undefined
+              return (
+                <tr key={p.key} className="border-t border-line transition-colors hover:bg-surface-hover" title={provenance}>
+                  <td className="px-4 py-3">
+                    <Link to={`/projects/${p.slug}`} className="group flex items-center gap-3 text-ink hover:text-ink">
+                      <span aria-hidden className="grid size-[34px] flex-none place-items-center rounded-[8px] font-display text-[15px] font-extrabold text-bg" style={{ background: p.accent }}>
+                        {initials(p.name)}
+                      </span>
+                      <span className="flex flex-col leading-[1.2]">
+                        <b className="font-semibold group-hover:text-gold">{p.name}</b>
+                        <span className="text-[12px] text-dim">{p.tagline}</span>
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="px-2 py-3 text-[12px] text-muted">{p.chains.join(' · ')}</td>
+                  {COLS.map((c) => (
+                    <Cell key={c.key} p={p} venue={venue} c={c.key} max={maxOf(c.key)} state={state} />
+                  ))}
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <a href={p.url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-[13px] text-gold hover:text-gold-hover">
+                      Visit ↗<span className="sr-only"> {p.name}</span>
+                    </a>
+                  </td>
+                </tr>
+              )
+            })}
+            {comingSoon.length > 0 && (
+              <tr className="border-t border-line">
+                <td colSpan={6} className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="flex items-center gap-2 font-mono text-[12px] text-faint">
+                      <BlinkDot color="gold" />+ {WORDS[comingSoon.length] ?? comingSoon.length} venue{comingSoon.length === 1 ? '' : 's'} in development · IN THE LAB · {comingSoon.join(', ')} / {TOTAL_SLOTS}
+                    </span>
+                    <NotifyMe slot={comingSoon[0]} />
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-      {rows.map((p, i) => (
-        <Row key={p.key} p={p} venue={venueOf(p.key)} state={state} index={i} />
-      ))}
-      {comingSoon.map((num) => (
-        <div
-          key={num}
-          className="relative flex flex-wrap items-center gap-5 overflow-hidden border-t border-line px-7 py-5"
-          style={{ background: 'repeating-linear-gradient(135deg,#10141a 0 12px,#0d1116 12px 24px)' }}
-        >
-          <div aria-hidden className="absolute inset-0 animate-sweep" style={{ background: 'linear-gradient(90deg,transparent,rgba(232,192,96,.08),transparent)' }} />
-          <span aria-hidden className="relative font-display text-[44px] leading-none font-extrabold text-line" style={{ WebkitTextStroke: '1px #3a4452' }}>
-            {num}
-          </span>
-          <div className="relative flex flex-col gap-1">
-            <span className="flex items-center gap-2 font-mono text-[12px] tracking-[1.5px] text-dim">
-              <BlinkDot color="gold" />
-              IN THE LAB · {num} / {TOTAL_SLOTS}
-            </span>
-            <span className="text-[15px] text-muted">Project {num} is in development. Get an email the day it launches.</span>
-          </div>
-          <NotifyMe slot={num} />
+      {/* Phone: one card per venue, the three figures side by side, sorted by the same control. */}
+      <div className="flex flex-col gap-2 min-[760px]:hidden">
+        <div role="group" aria-label="Sort by" className="flex gap-[2px] rounded-[8px] border border-line p-[2px]">
+          {COLS.map((c) => {
+            const on = sort.key === c.key
+            return (
+              <button
+                key={c.key}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setSort((s) => ({ key: c.key, dir: s.key === c.key && s.dir === 'descending' ? 'ascending' : 'descending' }))}
+                className={`min-h-11 flex-1 rounded-[6px] font-mono text-[11px] tracking-[1px] transition-colors ${on ? 'bg-gold text-bg' : 'bg-transparent text-muted'}`}
+              >
+                {c.label} {on ? (sort.dir === 'descending' ? '↓' : '↑') : ''}
+              </button>
+            )
+          })}
         </div>
-      ))}
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {rows.map((p) => {
+            const venue = venueOf(p.key)
+            return (
+              <li key={p.key} className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4">
+                <div className="flex items-center gap-3">
+                  <Link to={`/projects/${p.slug}`} className="flex min-w-0 flex-1 items-center gap-3 text-ink hover:text-ink">
+                    <span aria-hidden className="grid size-[34px] flex-none place-items-center rounded-[8px] font-display text-[15px] font-extrabold text-bg" style={{ background: p.accent }}>
+                      {initials(p.name)}
+                    </span>
+                    <span className="flex min-w-0 flex-col leading-[1.2]">
+                      <b className="font-semibold">{p.name}</b>
+                      <span className="truncate text-[12px] text-dim">{p.chains.join(' · ')}</span>
+                    </span>
+                  </Link>
+                  <a href={p.url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-[13px] text-gold">
+                    Visit ↗<span className="sr-only"> {p.name}</span>
+                  </a>
+                </div>
+                <table className="w-full table-fixed border-collapse">
+                  <thead>
+                    <tr className="text-left font-mono text-[10px] tracking-[1px] text-faint">
+                      {COLS.map((c) => (
+                        <th key={c.key} scope="col" className="px-2 pb-1 font-medium first:pl-0">
+                          {c.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="[&>td]:min-w-0 [&>td]:py-0 [&>td:first-child]:pl-0">
+                      {COLS.map((c) => (
+                        <Cell key={c.key} p={p} venue={venue} c={c.key} max={maxOf(c.key)} state={state} />
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </li>
+            )
+          })}
+          {comingSoon.length > 0 && (
+            <li className="flex flex-col gap-3 rounded-card border border-dashed border-line-strong p-4">
+              <span className="flex items-center gap-2 font-mono text-[12px] text-faint">
+                <BlinkDot color="gold" />+ {WORDS[comingSoon.length] ?? comingSoon.length} venue{comingSoon.length === 1 ? '' : 's'} in development
+              </span>
+              <NotifyMe slot={comingSoon[0]} />
+            </li>
+          )}
+        </ul>
+      </div>
+      <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">
+        {state === 'ok' && data ? `Read at ${fmtTime(data.generatedAt)}. ` : ''}Volume and fees are all-time unless marked. — means the venue does not publish that figure; on a wide screen, hover a row for its source.
+      </p>
     </div>
   )
 }

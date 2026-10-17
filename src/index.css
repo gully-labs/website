@@ -72,6 +72,8 @@
 @keyframes gl-scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 @keyframes gl-count-flash { 0% { color: var(--color-gold-hover); } 100% { color: inherit; } }
 @keyframes gl-pop { from { opacity: 0; transform: translate(-50%, -50%) scale(.2); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes gl-marquee { to { transform: translateX(-50%); } }
+@keyframes gl-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(111,207,106,.55); } 70% { box-shadow: 0 0 0 7px rgba(111,207,106,0); } 100% { box-shadow: 0 0 0 0 rgba(111,207,106,0); } }
 @keyframes gl-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes gl-blink {
   0%, 100% { opacity: 1; }

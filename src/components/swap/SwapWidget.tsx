@@ -13,6 +13,19 @@ import { LIFI_FEE, LIFI_INTEGRATOR, NATIVE_TOKEN } from './swapConfig'
    visitor has acknowledged the notice on a stock page. The wallet is the site's own (wagmi + RainbowKit); the
    widget finds routes through li.quest and the wallet signs; Gully Labs never holds funds. */
 
+/* The widget's internal router (TanStack Router, memory history) resets the WINDOW's scroll on each of its own
+   page changes, including its first render: ticking "I understand" jumped the page to the top. Its call is
+   always scrollTo({ top: 0, left: 0, behavior }); this site never passes `left`, so exactly that call is
+   dropped while this chunk is loaded (it is only ever loaded for the swap). */
+if (typeof window !== 'undefined') {
+  const original = window.scrollTo.bind(window) as (...a: unknown[]) => void
+  window.scrollTo = ((...args: unknown[]) => {
+    const o = args[0] as ScrollToOptions | undefined
+    if (args.length === 1 && o && typeof o === 'object' && o.top === 0 && o.left === 0) return
+    original(...args)
+  }) as typeof window.scrollTo
+}
+
 const font = "'Hanken Grotesk', sans-serif"
 
 const theme: WidgetConfig['theme'] = {
