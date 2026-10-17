@@ -8,7 +8,7 @@ import { AssetPicker } from '../../components/pay/AssetPicker'
 import { Seo } from '../../components/Seo'
 import { btnOutline } from '../../components/ui'
 import { payApi, type PayAsset, type Payment } from '../pay/api'
-import { Checkout, ConfirmBar, type Phase } from '../pay/Checkout'
+import { Checkout, type Phase } from '../pay/Checkout'
 import type { Invoice } from '../pay/invoice'
 import { fmtDay, fmtTime } from '../pay/invoice'
 import { Missing, Notice, Shell } from '../pay/PayPage'
@@ -128,10 +128,10 @@ function Failed({ what, message, retry }: { what: string; message: string; retry
   )
 }
 
-function PausedNotice({ brand, reason }: { brand: Brand; reason?: string }) {
+function PausedNotice({ brand }: { brand: Brand }) {
   return (
     <Notice icon={<PauseCircle size={18} className="mt-[3px] shrink-0 text-error" aria-hidden />}>
-      <b className="text-ink">This store's checkout is paused.</b> {(reason ?? '').replace("This store's checkout is paused. ", '')} Nothing can be paid here right now{brand.supportEmail ? `; write to ${brand.supportEmail}` : ''}.
+      <b className="text-ink">This store's checkout is paused.</b> Nothing can be paid here right now. {brand.supportEmail ? `Write to ${brand.supportEmail} to pay another way.` : 'Contact the store to pay another way.'}
     </Notice>
   )
 }
@@ -167,7 +167,6 @@ function StorePaid({ invoice }: { invoice: StoreInvoice }) {
           <span className="text-[15px] text-muted">{p ? `${p.amount} ${p.symbol} on ${p.chain} to ${invoice.merchant.name}, confirmed ${fmtTime(invoice.paidAt)}.` : `Paid ${fmtTime(invoice.paidAt)}.`}</span>
         </div>
       </div>
-      <ConfirmBar n={1} needed={1} done />
       {p && (
         <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-input border border-line bg-bg px-4 py-3 font-mono text-[12px]">
           <dt className="text-faint">AMOUNT</dt>
@@ -317,7 +316,7 @@ function StoreInvoiceView({ invoice, onPaid }: { invoice: StoreInvoice; onPaid: 
               </Notice>
             )}
             {invoice.status === 'cancelled' && <Notice icon={<Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />}>The store cancelled this invoice on {fmtDay(invoice.cancelledAt)}; it cannot be paid.</Notice>}
-            {invoice.status === 'open' && invoice.checkout.paused && <PausedNotice brand={brand} reason={invoice.checkout.reason} />}
+            {invoice.status === 'open' && invoice.checkout.paused && <PausedNotice brand={brand} />}
             {invoice.status === 'open' && !invoice.checkout.enabled && !invoice.checkout.paused && <Notice icon={<Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />}>{invoice.checkout.reason}</Notice>}
             {invoice.status === 'open' && invoice.checkout.enabled && <Checkout invoice={invoice as unknown as Invoice} initialAsset={params.get('asset')} onPaid={onPaid} onPhase={setPhase} api={`/api/pay/m/i/${invoice.id}`} payee={brand.name} />}
           </div>
@@ -388,7 +387,7 @@ function StoreLinkView({ link }: { link: StoreLink }) {
   }
   let body: ReactNode
   if (link.state !== 'active') body = <Notice icon={<Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />}>{link.stateText} Ask the store for a new link.</Notice>
-  else if (link.checkout.paused) body = <PausedNotice brand={brand} reason={link.checkout.reason} />
+  else if (link.checkout.paused) body = <PausedNotice brand={brand} />
   else if (!link.checkout.enabled) body = <Notice icon={<Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />}>{link.checkout.reason}</Notice>
   return (
     <div className="flex flex-col gap-6" style={{ borderTop: `3px solid ${accent}`, paddingTop: 20 }}>

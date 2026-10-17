@@ -62,12 +62,12 @@ export function MerchantTab() {
       <header className="flex flex-col gap-4 rounded-[14px] border border-line bg-surface p-5 max-[600px]:p-4" style={view.profile.accent ? { borderTop: `3px solid ${view.profile.accent}` } : undefined}>
         <div className="flex flex-wrap items-center gap-3">
           {view.profile.logoUrl ? <img src={view.profile.logoUrl} alt="" className="size-11 rounded-[10px] object-contain" /> : <Store size={28} className="text-gold" aria-hidden />}
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 flex-[1_1_200px] flex-col">
             <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY PAY FOR MERCHANTS</span>
             <h1 className="m-0 truncate text-[22px] font-semibold text-ink">{view.profile.displayName}</h1>
           </div>
           <span className={`inline-flex min-h-[30px] items-center gap-2 rounded-full border px-3 text-[13px] ${state.cls}`}>
-            <span aria-hidden className={`size-2 rounded-full ${f.paused ? 'bg-error' : view.ready ? 'animate-[gl-live-pulse_2.4s_ease-out_infinite] bg-green' : 'bg-faint'}`} />
+            <span aria-hidden className={`size-2 rounded-full ${f.paused ? 'bg-error' : view.ready ? 'animate-[gl-blink_1.6s_ease-in-out_infinite] bg-green' : 'bg-faint'}`} />
             {state.text}
           </span>
           <a href={`/api/developer/merchant/export/payments.csv`} className={pillLine} download>
@@ -95,7 +95,7 @@ export function MerchantTab() {
       {f.paused && (
         <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-5 py-4" role="alert">
           <PauseCircle size={22} className="shrink-0 text-error" aria-hidden />
-          <span className="min-w-0 flex-1 text-[14px] leading-[1.55] text-ink">
+          <span className="min-w-0 flex-[1_1_240px] text-[14px] leading-[1.55] text-ink">
             <b>Your checkout is paused.</b> Fee statement {overdue?.number} (${overdue?.usd}) is more than {f.pauseAfterDays} days unpaid, so payers see “This store's checkout is paused” and no new payment can start. Paying it resumes checkout at once.
           </span>
           {overdue && (

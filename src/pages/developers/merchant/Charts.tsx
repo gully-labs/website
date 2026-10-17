@@ -51,7 +51,7 @@ export function PaymentsDashboard({ refreshKey }: { refreshKey: number }) {
     const lastIdx = total.length - 1
     return {
       grid: { left: 8, right: 12, top: 28, bottom: 4, containLabel: true },
-      legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: C.muted, fontSize: 11 } },
+      legend: { top: 0, left: 0, data: data.byChain.map((c) => c.name), itemWidth: 10, itemHeight: 10, textStyle: { color: C.muted, fontSize: 11 } },
       tooltip: axisTooltip((ps: { dataIndex: number; seriesName: string; value: number; color: string }[]) => {
         const i = ps[0]?.dataIndex ?? 0
         const rows = ps.filter((p) => p.seriesName !== 'live' && p.value > 0).map((p) => ({ name: p.seriesName, value: usd(p.value), color: p.color }))
@@ -109,7 +109,7 @@ export function PaymentsDashboard({ refreshKey }: { refreshKey: number }) {
       title="Payments"
       sub={
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="size-2 animate-[gl-live-pulse_2.4s_ease-out_infinite] rounded-full bg-green" /> Live from the chain checks; refreshes every 30 s.
+          <span aria-hidden className="size-2 animate-[gl-blink_1.6s_ease-in-out_infinite] rounded-full bg-green" /> Live from the chain checks; refreshes every 30 s.
         </span>
       }
       action={
@@ -142,7 +142,7 @@ export function PaymentsDashboard({ refreshKey }: { refreshKey: number }) {
           <span className={label}>Volume per day, by chain (USD at the quoted value)</span>
           {volumeOption ? (
             <EChart option={volumeOption} height={240} label={`Daily payment volume by chain over ${data?.days} days: ${usd(t?.volumeUsd)} in total.`} steps={{ count: data?.dates.length ?? 0 }}>
-              {none && <span className="pointer-events-none absolute inset-x-0 top-1/2 text-center font-mono text-[12px] text-faint">No payment in this range yet: the first one shows here within seconds of confirming.</span>}
+              {none && <span className="pointer-events-none absolute inset-x-4 top-[40%] mx-auto max-w-[360px] rounded-input bg-surface/90 px-3 py-2 text-center font-mono text-[12px] text-faint">No payment in this range yet: the first one shows here within seconds of confirming.</span>}
             </EChart>
           ) : (
             <ChartBox height={240} state={err ? 'error' : 'loading'} onRetry={load} />

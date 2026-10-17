@@ -171,7 +171,7 @@ export function WalletsSection({ view, onChange }: { view: MerchantView; onChang
         </ul>
       ) : (
         <p className="m-0 flex items-center gap-2 rounded-input border border-dashed border-line-strong px-4 py-4 text-[14px] text-muted">
-          <span aria-hidden className="size-2 animate-[gl-live-pulse_2.4s_ease-out_infinite] rounded-full bg-gold" /> No wallet yet. Add the address that should receive payments: the checkout opens on every chain you enable.
+          <span aria-hidden className="size-2 animate-[gl-blink_1.6s_ease-in-out_infinite] rounded-full bg-gold" /> No wallet yet. Add the address that should receive payments: the checkout opens on every chain you enable.
         </p>
       )}
       {view.can.manage && (

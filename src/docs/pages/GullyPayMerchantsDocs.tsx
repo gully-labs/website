@@ -65,7 +65,7 @@ function FeeCurve() {
     const eff = xs.map((v, i) => (v ? Math.round((fee[i] / v) * 10_000) / 100 : 0))
     const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
     return {
-      grid: { left: 8, right: 8, top: 24, bottom: 4, containLabel: true },
+      grid: { left: 8, right: 8, top: 40, bottom: 4, containLabel: true },
       legend: { top: 0, left: 0, textStyle: { color: C.muted, fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const i = ps[0]?.dataIndex ?? 0
@@ -77,7 +77,7 @@ function FeeCurve() {
         { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `${v}%` }, splitLine: { show: false }, max: cfg.feePct },
       ],
       series: [
-        { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 10, formatter: 'free allowance' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
+        { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 10, formatter: 'free allowance', position: 'insideEndTop' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
         { id: 'eff', name: 'Effective rate', ...linePreset({ color: '#5aa9e6', dashed: true }), yAxisIndex: 1, data: eff },
       ],
     }
