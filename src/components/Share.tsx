@@ -32,18 +32,18 @@ export function ShareBar({ data }: { data: Stats | null }) {
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label="Follow and share">
-      <a href={xFollow(SHARE.handle)} target="_blank" rel="noopener" className={`${pill} border-gold-line text-gold hover:bg-gold hover:text-bg`}>
+      <a href={xFollow(SHARE.handle)} target="_blank" rel="noopener noreferrer" className={`${pill} border-gold-line text-gold hover:bg-gold hover:text-bg`}>
         <SocialIcon name="X" size={14} />
         Follow {SHARE.handle}
-      </a>
-      <a href={xPost(text, SITE_URL)} target="_blank" rel="noopener" className={pill}>
+      <span className="sr-only"> (opens in a new tab)</span></a>
+      <a href={xPost(text, SITE_URL)} target="_blank" rel="noopener noreferrer" className={pill}>
         <SocialIcon name="X" size={14} />
         Post about Gully
-      </a>
-      <a href={tgShare(text, SITE_URL)} target="_blank" rel="noopener" className={pill}>
+      <span className="sr-only"> (opens in a new tab)</span></a>
+      <a href={tgShare(text, SITE_URL)} target="_blank" rel="noopener noreferrer" className={pill}>
         <SocialIcon name="Telegram" size={15} />
         Send on Telegram
-      </a>
+      <span className="sr-only"> (opens in a new tab)</span></a>
       {canShare ? (
         <button type="button" onClick={() => navigator.share({ title: 'Gully Labs', text, url: SITE_URL }).catch(() => undefined)} className={pill}>
           <Share2 aria-hidden size={14} strokeWidth={1.75} />
@@ -90,10 +90,10 @@ export function ShareStrip({ data }: { data: Stats | null }) {
             {text} <span className="text-gold">{SITE_URL.replace('https://', '')}</span>
           </p>
           <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-            <a href={xPost(text, SITE_URL)} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-[18px] py-[10px] text-[14px] font-semibold text-bg transition-colors hover:bg-gold-hover hover:text-bg">
+            <a href={xPost(text, SITE_URL)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-[18px] py-[10px] text-[14px] font-semibold text-bg transition-colors hover:bg-gold-hover hover:text-bg">
               <SocialIcon name="X" size={14} />
               Post this
-            </a>
+            <span className="sr-only"> (opens in a new tab)</span></a>
             <button type="button" onClick={() => copy(`${text} ${SITE_URL}`, 'Post text')} className={pill}>
               {copied ? <Check aria-hidden size={14} strokeWidth={2} className="text-green" /> : <Copy aria-hidden size={14} strokeWidth={1.75} />}
               {copied ? 'Copied' : 'Copy text'}
@@ -114,12 +114,12 @@ export function ShareMenu({ project: p, compact = false }: { project: Project; c
     : pill
   return (
     <div className={`flex items-center gap-2 ${compact ? 'flex-nowrap gap-1' : 'flex-wrap'}`} aria-label={`Share ${p.name}`}>
-      <a href={xPost(text, p.url)} target="_blank" rel="noopener" className={btn} title={`Post about ${p.name} on X`} aria-label={`Post about ${p.name} on X`}>
+      <a href={xPost(text, p.url)} target="_blank" rel="noopener noreferrer" className={btn} title={`Post about ${p.name} on X`} aria-label={`Post about ${p.name} on X (opens in a new tab)`}>
         <SocialIcon name="X" size={14} />
         {!compact && 'Post on X'}
       </a>
       {p.telegram && (
-        <a href={tgShare(text, p.url)} target="_blank" rel="noopener" className={btn} title={`Send ${p.name} on Telegram`} aria-label={`Send ${p.name} on Telegram`}>
+        <a href={tgShare(text, p.url)} target="_blank" rel="noopener noreferrer" className={btn} title={`Send ${p.name} on Telegram`} aria-label={`Send ${p.name} on Telegram (opens in a new tab)`}>
           <SocialIcon name="Telegram" size={15} />
           {!compact && 'Send on Telegram'}
         </a>
@@ -136,10 +136,10 @@ export function ShareMenu({ project: p, compact = false }: { project: Project; c
         {!compact && (copied ? 'Copied' : 'Copy link')}
       </button>
       {p.x && !compact && (
-        <a href={xFollow(p.x)} target="_blank" rel="noopener" className={pill}>
+        <a href={xFollow(p.x)} target="_blank" rel="noopener noreferrer" className={pill}>
           <UserPlus aria-hidden size={14} strokeWidth={1.75} />
           Follow {p.x}
-        </a>
+        <span className="sr-only"> (opens in a new tab)</span></a>
       )}
     </div>
   )

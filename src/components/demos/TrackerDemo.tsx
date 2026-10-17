@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type JSX } from 'react'
 import { Link } from 'react-router'
-import { STATUS_LABEL, stockPath, UP, DOWN, CHAIN_SHORT, fmtGap, fmtPrice, useHistory, useTracker, type HistoryPoint, type TrackerRow } from '../../lib/tracker'
+import { STATUS_LABEL, stockPath, UP, DOWN, CHAIN_SHORT, fmtGap, fmtPrice, gapColor, useHistory, useTracker, type HistoryPoint, type TrackerRow } from '../../lib/tracker'
 import { StockLogo } from '../tracker/StockLogo'
 import { StockSwap } from '../swap/StockSwap'
 
@@ -17,7 +17,7 @@ const H = 260
 const MAX_POINTS = 160
 const TRUSTED = new Set(['premium', 'discount', 'drifting', 'in-line'])
 
-const tone = (r: Pick<TrackerRow, 'gapPct' | 'status'>) => (r.gapPct === null || r.status === 'thin' ? undefined : r.gapPct >= 0 ? UP : DOWN)
+const tone = (r: Pick<TrackerRow, 'gapPct' | 'status'>) => (r.status === 'thin' ? undefined : gapColor(r))
 const pad2 = (n: number) => String(n).padStart(2, '0')
 const when = (t: number, range: Range) => {
   const d = new Date(t * 1000)
@@ -128,8 +128,8 @@ function Chart({ row, range }: { row: TrackerRow; range: Range }) {
           </>
         )}
       </svg>
-      <span className="pointer-events-none absolute top-2 right-3 font-mono text-[10px] text-faint">{fmtPrice(hi)}</span>
-      <span className="pointer-events-none absolute right-3 bottom-1 font-mono text-[10px] text-faint">{fmtPrice(lo)}</span>
+      <span className="pointer-events-none absolute top-2 right-3 font-mono text-[11px] text-faint">{fmtPrice(hi)}</span>
+      <span className="pointer-events-none absolute right-3 bottom-1 font-mono text-[11px] text-faint">{fmtPrice(lo)}</span>
       {tip && (
         <div
           className="pointer-events-none absolute top-3 grid grid-cols-[auto_auto] gap-x-[14px] gap-y-[2px] rounded-[6px] border border-line-strong bg-[rgba(13,17,22,.96)] px-[10px] py-2 font-mono text-[11px]"
@@ -189,7 +189,7 @@ export default function TrackerDemo(): JSX.Element {
     <div className={`${card} flex flex-wrap text-[13px] leading-[1.45]`}>
       {/* Stock list */}
       <div className="flex min-w-0 flex-[1_1_210px] flex-col gap-[2px] border-line p-2 min-[720px]:border-r max-[719px]:border-b">
-        <span className="px-2 py-[6px] font-mono text-[10px] tracking-[1px] text-faint">
+        <span className="px-2 py-[6px] font-mono text-[11px] tracking-[1px] text-faint">
           STOCK · GAP <span className="text-faint">({rows.length})</span>
         </span>
         <div ref={listRef} role="listbox" aria-label="Stock tokens" onKeyDown={onListKey} className="flex max-h-[470px] flex-col gap-[2px] overflow-y-auto overscroll-contain max-[719px]:max-h-[232px]">
@@ -210,7 +210,7 @@ export default function TrackerDemo(): JSX.Element {
                 <StockLogo row={r} size={26} active={on} />
                 <span className="flex min-w-0 flex-col leading-[1.15]">
                   <b className="font-semibold">{r.ticker}</b>
-                  <span className="truncate font-mono text-[10px] text-faint">{CHAIN_SHORT[r.chain] ?? r.chain}</span>
+                  <span className="truncate font-mono text-[11px] text-faint">{CHAIN_SHORT[r.chain] ?? r.chain}</span>
                 </span>
                 <span className="font-mono text-[12px]" style={{ color: tc }}>
                   {r.gapPct === null ? <span className="text-faint">{STATUS_LABEL[r.status].toLowerCase()}</span> : fmtGap(r.gapPct)}
@@ -248,7 +248,7 @@ export default function TrackerDemo(): JSX.Element {
           </div>
         </div>
         <Chart key={keyOf(row)} row={row} range={range} />
-        <div className="flex flex-wrap justify-between gap-2 px-[14px] pt-2 pb-3 font-mono text-[10px] text-faint">
+        <div className="flex flex-wrap justify-between gap-2 px-[14px] pt-2 pb-3 font-mono text-[11px] text-faint">
           <span className="flex gap-[14px]">
             <span className="flex items-center gap-[6px]">
               <span className="h-[2px] w-3 bg-gold" />
@@ -267,7 +267,7 @@ export default function TrackerDemo(): JSX.Element {
       <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-4 border-line p-6 min-[720px]:border-l max-[719px]:border-t">
         <div className="flex items-center justify-between">
           <b className="font-display text-[20px] font-bold uppercase">Swap {row.ticker}</b>
-          <span className="font-mono text-[10px] text-faint">LI.FI</span>
+          <span className="font-mono text-[11px] text-faint">LI.FI</span>
         </div>
         <StockSwap key={keyOf(row)} row={row} />
         <Link to={stockPath(row)} className="mt-auto inline-flex min-h-11 items-center text-[13px] text-gold hover:text-gold-hover">

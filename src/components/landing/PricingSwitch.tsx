@@ -71,14 +71,14 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
     cards = offer.plans.map((p) => ({
       name: p.name,
       price: `$${n(p.priceUsdc)}`,
-      per: p.priceUsdc ? `per ${offer.periodDays} days` : undefined,
+      per: p.priceUsdc ? `/ ${offer.periodDays} days` : undefined,
       feats: [`${n(p.perMin)} calls a minute`, `${p.alerts} alert${p.alerts === 1 ? '' : 's'}`, `${p.historyDays} days of history`, `${p.maxKeys} key${p.maxKeys === 1 ? '' : 's'}`],
     }))
   else if (offer && product === 'analytics')
     cards = offer.analytics.plans.map((p) => ({
       name: p.priceUsdc ? p.name : 'Trial',
       price: p.priceUsdc ? `$${n(p.priceUsdc)}` : 'Free',
-      per: p.priceUsdc ? `per ${offer.analytics.periodDays} days` : `${offer.analytics.trialDays} days`,
+      per: p.priceUsdc ? `/ ${offer.analytics.periodDays} days` : `${offer.analytics.trialDays} days`,
       feats: [`${p.sites} website${p.sites === 1 ? '' : 's'}`, `${n(p.eventsPerMonth)} events a month`, 'Wallet, chain and transaction events'],
     }))
 
@@ -89,7 +89,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
       </a>
     ) : product === 'analytics' ? (
       <a href={ANALYTICS_SIGNUP} className={ctaCls}>
-        Start the free trial <ArrowUpRight aria-hidden size={14} />
+        Start free trial <ArrowUpRight aria-hidden size={14} />
       </a>
     ) : (
       <button type="button" onClick={() => openContact()} className={ctaCls}>

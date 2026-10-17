@@ -9,6 +9,7 @@ import { Header } from './Header'
 import { scrollBehavior } from './LayoutNav'
 import { BackToTop } from './LayoutScroll'
 import { scrollToAnchor } from '../lib/anchors'
+import { prefetchPath } from '../pages/routeChunks'
 
 // The contact modal (and the animation library it uses) loads the first time it is opened, so the
 // landing never downloads it.
@@ -30,10 +31,32 @@ function useScrollOnNavigate() {
   }, [location.key, location.hash, navType])
 }
 
+/** Starts loading a page's chunk as soon as a visitor shows intent: pointer over, focus on, or a touch
+    on any same-site link. By the click the chunk is usually cached, so the route skeleton barely shows. */
+function usePrefetchOnIntent() {
+  useEffect(() => {
+    const onIntent = (e: Event) => {
+      const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+      if (!a || a.target === '_blank') return
+      const url = new URL(a.href, window.location.href)
+      if (url.origin === window.location.origin) prefetchPath(url.pathname)
+    }
+    document.addEventListener('pointerover', onIntent, { passive: true })
+    document.addEventListener('focusin', onIntent)
+    document.addEventListener('touchstart', onIntent, { passive: true })
+    return () => {
+      document.removeEventListener('pointerover', onIntent)
+      document.removeEventListener('focusin', onIntent)
+      document.removeEventListener('touchstart', onIntent)
+    }
+  }, [])
+}
+
 export function Layout() {
   const { pathname } = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   useScrollOnNavigate()
+  usePrefetchOnIntent()
 
   // The modal can also be opened with ?contact=1.
   const [open, setOpen] = useState(() => searchParams.get('contact') === '1')

@@ -3,8 +3,8 @@ import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 're
 import { AskFailure, askStatus, postAsk, type AskAnswer, type AskStatus, type Citation, type Turn } from './askApi'
 import { toastError } from '../ui/toast'
 
-/* Gully Ask: a question box with answers drawn from the docs and the site, each with numbered sources.
-   Used by the /ask page (variant "page") and the docs' Ask Gully side panel / sheet (variant "panel").
+/* Gully AI: a question box with answers drawn from the docs and the site, each with numbered sources.
+   Used by the /ask page (variant "page") and the docs' Gully AI side panel / sheet (variant "panel").
    Lazy-loaded everywhere: neither the landing nor the docs pages pay for it until it is opened. */
 
 const MAX = 500
@@ -25,6 +25,25 @@ const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tra
 type Exchange = { id: number; q: string; a: AskAnswer | null; error: string | null }
 
 const isOwnHost = (u: string) => /^https:\/\/([\w-]+\.)?gullylabs\.xyz(\/|$)/.test(u)
+/** Another site's link opens in a new tab; our own hosts open in place. */
+const linkProps = (u: string) => (isOwnHost(u) ? {} : { target: '_blank', rel: 'noopener noreferrer' })
+
+/** Numbers the sources 1..n in the order the answer first cites them (sources it never cites follow),
+    and rewrites the [n] markers to match, so the markers read in order and the list has no gaps. */
+function renumber(a: AskAnswer): AskAnswer {
+  const order: number[] = []
+  for (const m of a.answer.matchAll(/\[(\d{1,2})\]/g)) {
+    const n = Number(m[1])
+    if (a.citations.some((c) => c.n === n) && !order.includes(n)) order.push(n)
+  }
+  for (const c of a.citations) if (!order.includes(c.n)) order.push(c.n)
+  const to = new Map(order.map((n, i) => [n, i + 1]))
+  return {
+    ...a,
+    answer: a.answer.replace(/\[(\d{1,2})\]/g, (_m, n) => (to.has(Number(n)) ? `[${to.get(Number(n))}]` : '')),
+    citations: a.citations.map((c) => ({ ...c, n: to.get(c.n)! })).sort((x, y) => x.n - y.n),
+  }
+}
 
 /** Inline text: **bold**, [n] citation links and gullylabs.xyz URLs. Everything else is plain text. */
 function inline(text: string, cites: Citation[], key: string): ReactNode[] {
@@ -41,7 +60,7 @@ function inline(text: string, cites: Citation[], key: string): ReactNode[] {
       const c = cites.find((x) => x.n === Number(m![2]))
       out.push(
         c ? (
-          <a key={k} href={c.url} target={isOwnHost(c.url) ? undefined : '_blank'} rel="noopener" title={c.title} className="mx-[1px] inline-flex min-w-[20px] items-center justify-center rounded-[4px] border border-gold-line px-[4px] align-[2px] font-mono text-[11px] leading-[16px] text-gold no-underline hover:bg-gold hover:text-bg">
+          <a key={k} href={c.url} {...linkProps(c.url)} title={c.title} className="mx-[1px] inline-flex min-w-[20px] items-center justify-center rounded-[4px] border border-gold-line px-[4px] align-[2px] font-mono text-[11px] leading-[16px] text-gold no-underline hover:bg-gold hover:text-bg">
             {c.n}
           </a>
         ) : null,
@@ -101,7 +120,7 @@ function Sources({ cites }: { cites: Citation[] }) {
       <ol className="m-0 flex list-none flex-col gap-1 p-0">
         {cites.map((c) => (
           <li key={c.n}>
-            <a href={c.url} target={isOwnHost(c.url) ? undefined : '_blank'} rel="noopener" className="group flex min-h-11 items-center gap-3 rounded-btn border border-line px-3 py-2 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover">
+            <a href={c.url} {...linkProps(c.url)} className="group flex min-h-11 items-center gap-3 rounded-btn border border-line px-3 py-2 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover">
               <span className="grid size-6 shrink-0 place-items-center rounded-[5px] border border-gold-line font-mono text-[11px] text-gold">{c.n}</span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-[14px]">{c.title}</span>
@@ -110,6 +129,7 @@ function Sources({ cites }: { cites: Citation[] }) {
                 </span>
               </span>
               <ArrowUpRight size={14} aria-hidden className="shrink-0 text-faint group-hover:text-gold" />
+              {!isOwnHost(c.url) && <span className="sr-only"> (opens in a new tab)</span>}
             </a>
           </li>
         ))}
@@ -160,14 +180,15 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
     abortRef.current = new AbortController()
     try {
       const a = await postAsk(text, history, setStage, abortRef.current.signal)
-      setLog((l) => l.map((e) => (e.id === id ? { ...e, a } : e)))
+      const shown = renumber(a)
+      setLog((l) => l.map((e) => (e.id === id ? { ...e, a: shown } : e)))
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return
       const msg = e instanceof AskFailure ? e.message : 'Something went wrong. Try again.'
       setLog((l) => l.map((x) => (x.id === id ? { ...x, error: msg } : x)))
       // The error also shows under the question with Try again; the toast is what screen readers hear
       // (the answer log only announces additions) and what you see if you scrolled away.
-      toastError('Gully Ask could not answer', { detail: msg, id: 'ask:error' })
+      toastError('Gully AI could not answer', { detail: msg, id: 'ask:error' })
     } finally {
       setBusy(false)
       setStage('')
@@ -179,12 +200,23 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
     }
   }
 
-  if (status === 'loading') return <p className="m-0 font-mono text-[13px] text-faint">Loading Ask…</p>
+  if (status === 'loading')
+    return (
+      <div role="status" aria-label="Loading Gully AI" className="flex flex-col gap-3">
+        <div className="h-[14px] w-[160px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-full bg-surface" />
+        <div className="flex flex-wrap gap-2">
+          {[220, 180, 240].map((w) => (
+            <div key={w} className="h-11 animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-full bg-surface" style={{ width: w }} />
+          ))}
+        </div>
+        <div className="h-[92px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[12px] bg-surface" />
+      </div>
+    )
   if (!status || !status.configured)
     return (
       <div role="status" className="flex flex-col gap-3 rounded-card border border-line bg-surface p-6">
-        <span className="font-mono text-[11px] tracking-[1px] text-gold">ASK GULLY</span>
-        <p className="m-0 text-[16px] text-ink">Ask is not available yet.</p>
+        <span className="font-mono text-[11px] tracking-[1px] text-gold">GULLY AI</span>
+        <p className="m-0 text-[16px] text-ink">Gully AI is not switched on here yet.</p>
         <p className="m-0 text-[14px] leading-[1.6] text-muted">
           Until it is, the answers are in the <a href="https://docs.gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">docs</a>, and the team is one message away through the{' '}
           <a href="https://gullylabs.xyz/services?contact=1" className="text-gold underline decoration-gold-line underline-offset-2">contact form</a>.

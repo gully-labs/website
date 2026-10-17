@@ -1,4 +1,4 @@
-/* Gully Ask client: GET /api/ask/status and POST /api/ask (server-sent events when the browser can read a
+/* Gully AI client: GET /api/ask/status and POST /api/ask (server-sent events when the browser can read a
    stream, plain JSON otherwise). Same origin on every host, so the CSP's connect-src 'self' is enough. */
 
 export interface AskStatus {

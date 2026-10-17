@@ -146,7 +146,7 @@ export default function ApiDemo(): JSX.Element {
     <div className="flex flex-wrap overflow-hidden rounded-card border border-line bg-surface text-[13px] leading-[1.45]">
       {/* Request */}
       <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-[10px] border-line p-[14px] min-[720px]:border-r max-[719px]:border-b">
-        <span className="font-mono text-[10px] tracking-[1px] text-gold">API PLAYGROUND · LIVE</span>
+        <span className="font-mono text-[11px] tracking-[1px] text-gold">API PLAYGROUND · LIVE</span>
         <div role="radiogroup" aria-label="Endpoint" className="flex flex-col gap-[2px]">
           {eps.map((e) => (
             <button
@@ -157,7 +157,7 @@ export default function ApiDemo(): JSX.Element {
               onClick={() => (setEpId(e.id), setRes({ k: 'idle' }))}
               className={`flex min-h-11 items-center gap-2 rounded-[8px] px-[10px] text-left font-mono text-[12px] text-ink transition-colors ${e.id === ep.id ? 'bg-grid' : 'bg-transparent hover:bg-surface-hover'}`}
             >
-              <span className="rounded-[4px] bg-success-bg px-[6px] py-px text-[10px] text-green">GET</span>
+              <span className="rounded-[4px] bg-success-bg px-[6px] py-px text-[11px] text-green">GET</span>
               <span className="min-w-0 truncate" title={e.path}>
                 {e.path}
               </span>
@@ -185,7 +185,7 @@ export default function ApiDemo(): JSX.Element {
           <span className="h-[6px] overflow-hidden rounded-[3px] bg-grid" aria-hidden>
             <span className="block h-full rounded-[3px] bg-gold transition-[width] duration-400" style={{ width: limit ? `${Math.min(100, ((used ?? 0) / limit.limit) * 100)}%` : '0%' }} />
           </span>
-          <span className="font-mono text-[10px] text-faint">{limit ? 'from the X-RateLimit headers of the last metered answer' : 'filled in from the first /api/tracker answer'}</span>
+          <span className="font-mono text-[11px] text-faint">{limit ? 'from the X-RateLimit headers of the last metered answer' : 'filled in from the first /api/tracker answer'}</span>
         </div>
         <button
           type="button"
@@ -237,7 +237,7 @@ export default function ApiDemo(): JSX.Element {
           {res.k === 'network' && `// ${res.message}`}
           {res.k === 'done' && (res.json ? res.body : `// not JSON (${res.headers.find(([h]) => h === 'content-type')?.[1] ?? 'no content-type'})\n${res.body}`)}
         </pre>
-        {res.k === 'done' && res.json && <span className="border-t border-line px-4 py-2 font-mono text-[10px] text-faint">Long lists show their first items and how many more there are{res.cut ? '; the rest of the answer is cut for the screen' : ''}.</span>}
+        {res.k === 'done' && res.json && <span className="border-t border-line px-4 py-2 font-mono text-[11px] text-faint">Long lists show their first items and how many more there are{res.cut ? '; the rest of the answer is cut for the screen' : ''}.</span>}
       </div>
     </div>
   )

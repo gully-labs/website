@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { ArrowUpRight, Globe, Loader2 } from 'lucide-react'
+import { BellRing, CircleHelp, Globe, ChartLine, Loader2 } from 'lucide-react'
+import { NewTabMark } from '../LayoutLinks'
+import { newTab } from '../LayoutNav'
 import type { TrackerRow } from '../../lib/tracker'
 import { feeText, NATIVE_SYMBOL, SWAP_CHAIN_ID } from './swapConfig'
 import { DeepCoreQuote } from './DeepCoreQuote'
@@ -45,41 +47,61 @@ function useGeo(): Geo {
   return geo
 }
 
-const note = 'flex items-start gap-3 rounded-input border border-line-strong bg-surface-deep p-4 text-[14px] leading-[1.55] text-ink-2'
+const note = 'flex items-start gap-3 rounded-input border border-line-strong bg-surface-deep px-4 py-3 text-[14px] leading-[1.55] text-ink-2'
+const action = 'inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink transition-colors hover:border-gold hover:text-ink'
 
-function Unavailable({ children, row }: { children: React.ReactNode; row: TrackerRow }) {
+/** No swap here: one line with the reason, then what the visitor can do instead (never a dead end). */
+function Unavailable({ children, row, alerts }: { children: React.ReactNode; row: TrackerRow; alerts?: string }) {
   return (
     <div className="flex flex-col gap-3">
       <p className={`m-0 ${note}`} role="status">
         <Globe aria-hidden size={18} className="mt-[2px] shrink-0 text-gold" />
         <span>{children}</span>
       </p>
-      {row.pool?.url && (
-        <a href={row.pool.url} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-[14px] text-muted hover:text-gold">
-          See the pool on DexScreener (information only) <ArrowUpRight aria-hidden size={14} />
+      <div className="flex flex-col gap-2">
+        {alerts && (
+          <a href={alerts} className={`${action} border-gold-line`}>
+            <BellRing aria-hidden size={16} className="flex-none text-gold" /> Get a gap alert for {row.ticker}
+          </a>
+        )}
+        {row.pool?.url && (
+          <a href={row.pool.url} {...newTab} className={action}>
+            <ChartLine aria-hidden size={16} className="flex-none text-gold" /> View the pool on DexScreener
+            <NewTabMark size={14} />
+          </a>
+        )}
+        <a href="#how-swaps-work" className={action}>
+          <CircleHelp aria-hidden size={16} className="flex-none text-gold" /> How swaps work
         </a>
-      )}
+      </div>
     </div>
   )
 }
 
-export function StockSwap({ row }: { row: TrackerRow }) {
+export function StockSwap({ row, alerts }: { row: TrackerRow; alerts?: string }) {
   const geo = useGeo()
   const [ack, setAck] = useState(readAck)
   const chainId = SWAP_CHAIN_ID[row.chain]
 
-  if (!chainId) return <Unavailable row={row}>Swapping isn't offered for tokens on this chain.</Unavailable>
+  if (!chainId) return <Unavailable row={row} alerts={alerts}>Swapping isn't offered for tokens on this chain.</Unavailable>
   if (geo.k === 'loading')
     return (
-      <p className="m-0 inline-flex items-center gap-2 text-[14px] text-faint" role="status">
-        <Loader2 aria-hidden size={16} className="animate-spin" /> Checking whether swapping is available in your region…
-      </p>
+      <div role="status" aria-label="Checking whether swapping is available in your region" className="flex flex-col gap-2">
+        <span aria-hidden className="h-[46px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-input bg-surface-deep" />
+        <span aria-hidden className="h-11 w-[70%] animate-[gl-skeleton_1.4s_.15s_ease-in-out_infinite] rounded-btn bg-surface-deep" />
+      </div>
     )
-  if (geo.k === 'error') return <Unavailable row={row}>Swapping is unavailable right now: we could not check your region. Try again later.</Unavailable>
+  if (geo.k === 'error') return <Unavailable row={row} alerts={alerts}>Swapping is unavailable right now: we could not check your region. Try again later.</Unavailable>
   if (!geo.allowed)
     return (
-      <Unavailable row={row}>
-        {geo.reason === 'blocked' ? <>Swapping this token isn't available in your region.</> : <>Swapping this token isn't available because your region could not be determined.</>}
+      <Unavailable row={row} alerts={alerts}>
+        {geo.reason === 'blocked' ? (
+          <>
+            Swapping {row.ticker} isn't offered in your region{geo.country ? ` (${geo.country})` : ''}: stock tokens are not available to US persons or in sanctioned regions. You can still follow its gap.
+          </>
+        ) : (
+          <>Swapping {row.ticker} isn't offered because your region could not be determined. You can still follow its gap.</>
+        )}
       </Unavailable>
     )
 

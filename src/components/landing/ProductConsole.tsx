@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, MessageCircleQuestion, Puzzle, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, Puzzle, Sparkles, type LucideIcon } from 'lucide-react'
 import { askStatus } from '../ask/askApi'
 import { useContact } from '../ContactContext'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
@@ -44,15 +44,15 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
   const anon = offer?.anonymous.perMin
   const free = offer?.plans.find((p) => p.id === 'free')
   return [
-    { id: 'tracker', name: 'Tracker + Swap', icon: Activity, status: 'LIVE', live: true, pitch: 'Every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price, every minute, with a swap on each stock page.', cta: { label: 'Open the tracker', to: '/tracker' }, height: 560, Demo: TrackerDemo },
+    { id: 'tracker', name: 'Tracker + Swap', icon: Activity, status: 'LIVE', live: true, pitch: 'Every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price, every minute, with a swap on each stock page.', cta: { label: 'Launch app', to: '/tracker' }, height: 560, Demo: TrackerDemo },
     { id: 'alerts', name: 'Alerts', icon: BellRing, status: 'LIVE', live: true, pitch: 'Set a gap rule once; get a Telegram message with Open and Mute buttons, a signed webhook, or both.', cta: { label: 'Set an alert', href: PORTAL_ALERTS }, height: 560, Demo: AlertsDemo },
-    { id: 'analytics', name: 'Gully Analytics', icon: ChartNoAxesCombined, status: trial ? `${trial} DAYS FREE` : 'FREE TRIAL', live: true, pitch: 'Page views next to wallet connects, chains and transactions. Cookie-free, built on Umami, sign up with your wallet.', cta: { label: 'Start the free trial', href: ANALYTICS_SIGNUP }, height: 600, Demo: AnalyticsDemo },
+    { id: 'analytics', name: 'Gully Analytics', icon: ChartNoAxesCombined, status: 'FREE TRIAL', live: true, pitch: `Page views next to wallet connects, chains and transactions. Cookie-free, built on Umami, sign up with your wallet${trial ? `, ${trial} days free` : ''}.`, cta: { label: 'Start free trial', href: ANALYTICS_SIGNUP }, height: 600, Demo: AnalyticsDemo },
     { id: 'chainkit', name: 'Chain Kit', icon: Boxes, status: 'ON REQUEST', live: false, pitch: 'A Blockscout explorer with your domain, colours, token list and API, run by us. Change the brand below and watch it update.', cta: { label: 'Explore Chain Kit', to: '/chain-kit' }, height: 620, Demo: ChainKitDemo },
     { id: 'chains', name: 'Gully Chains', icon: Layers, status: 'SOON', live: false, pitch: 'Arbitrum Orbit L3 chains, launched and operated by Gully Labs. In development: none of it is live yet.', cta: { label: 'Ask about a chain', contact: true }, height: 360 },
     { id: 'api', name: 'API + SDK', icon: Code2, status: 'LIVE', live: true, pitch: `Every tracker row as JSON: ${anon ? `${anon} calls a minute` : 'free calls'} with no key, a free key${free ? ` (${free.perMin.toLocaleString('en-US')} a minute)` : ''} with wallet sign-in, and a typed SDK (MIT).`, cta: { label: 'Get a key', href: PORTAL }, height: 560, Demo: ApiDemo },
     { id: 'widget', name: 'Widget', icon: Puzzle, status: 'LIVE', live: true, pitch: 'One script tag puts a live ticker, a one-stock badge or a table of the widest gaps on any site.', cta: { label: 'Build a widget', to: '/widget' }, height: 520, Demo: WidgetDemo },
     { id: 'pay', name: 'Gully Pay', icon: CircleDollarSign, status: 'LIVE', live: true, pitch: 'Plans paid from your wallet straight to ours in ETH, BNB, USDC or USDT on four chains, checked on chain. No custody.', cta: { label: 'See plans', to: '/#pricing' }, height: 540, Demo: PayDemo },
-    { id: 'ask', name: 'Ask Gully', icon: MessageCircleQuestion, status: ask ? 'LIVE' : 'SOON', live: !!ask, pitch: 'Questions about any Gully product, answered from our docs with the sources cited.', cta: { label: 'Open Gully Ask', to: '/ask' }, height: ask ? 420 : 200 },
+    { id: 'ask', name: 'Gully AI', icon: Sparkles, status: ask ? 'LIVE' : 'SOON', live: !!ask, pitch: 'Questions about any Gully product, answered from our docs with the sources cited.', cta: { label: 'Open Gully AI', to: '/ask' }, height: ask ? 560 : 200 },
   ]
 }
 
@@ -147,15 +147,15 @@ function ChainsPane() {
             <a
               href={`https://github.com/gully-labs/${r.repo}`}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="flex h-full min-h-11 flex-col gap-[2px] rounded-[10px] border border-line bg-surface px-3 py-[10px] text-ink transition-[border-color,background-color] duration-200 hover:border-gold-line hover:bg-surface-hover hover:text-ink"
             >
-              <span className="flex items-center justify-between gap-2 font-mono text-[10px] tracking-[1px] text-gold">
+              <span className="flex items-center justify-between gap-2 font-mono text-[11px] tracking-[1px] text-gold">
                 {r.role.toUpperCase()}
                 <GitFork aria-hidden size={12} />
               </span>
               <b className="font-mono text-[12px] leading-[1.35] font-medium [overflow-wrap:anywhere]">gully-labs/{r.repo}</b>
-            </a>
+            <span className="sr-only"> (opens in a new tab)</span></a>
           </li>
         ))}
       </ul>
@@ -175,11 +175,11 @@ function AskPane({ configured }: { configured: boolean | null }) {
     <div className="flex min-h-[200px] flex-col items-start justify-center gap-3 rounded-card border border-dashed border-line-strong bg-surface p-6">
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{configured === null ? 'CHECKING…' : 'COMING ONLINE SOON'}</span>
       <p className="m-0 max-w-[520px] text-[14px] leading-[1.5] text-muted">
-        Gully Ask answers questions about the tracker, the API, Analytics, Chain Kit and Gully Pay from our own docs, and cites where each answer came from.
+        Gully AI answers questions about the tracker, the API, Analytics, Chain Kit and Gully Pay from our own docs, and cites where each answer came from.
         {configured === false ? ' It is not switched on here yet; the docs are open meanwhile.' : ''}
       </p>
       <Link to="/ask" className="inline-flex min-h-11 items-center gap-2 text-[14px] font-medium text-gold hover:text-gold-hover">
-        Go to Gully Ask <ArrowUpRight aria-hidden size={14} />
+        Go to Gully AI <ArrowUpRight aria-hidden size={14} />
       </Link>
     </div>
   )
@@ -298,7 +298,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
                   aria-controls="console-panel"
                   tabIndex={on ? 0 : -1}
                   onClick={() => choose(t.id)}
-                  className={`group relative flex min-h-12 flex-none items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-[border-color,background-color,color] duration-200 max-[899px]:min-h-11 max-[899px]:rounded-full max-[899px]:py-1 ${on ? 'border-gold-line bg-grid text-ink' : 'border-transparent bg-transparent text-muted hover:border-line hover:bg-surface hover:text-ink max-[899px]:border-line'}`}
+                  className={`group relative flex min-h-12 flex-none items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-[border-color,background-color,color] duration-200 max-[899px]:min-h-11 max-[899px]:rounded-full max-[899px]:py-1 ${on ? 'border-gold-line bg-grid text-ink' : 'border-transparent bg-transparent text-muted hover:bg-surface-hover hover:text-ink max-[899px]:border-line'}`}
                 >
                   {on && <motion.span layoutId="console-rail" aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gold max-[899px]:hidden" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                   <span className={`grid size-8 flex-none place-items-center rounded-[8px] transition-colors max-[899px]:size-6 max-[899px]:bg-transparent ${on ? 'bg-bg text-gold' : 'bg-surface text-dim group-hover:text-gold'}`}>
@@ -306,7 +306,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
                   </span>
                   <span className="flex min-w-0 flex-1 items-center justify-between gap-2 max-[899px]:flex-none">
                     <b className="text-[14px] font-semibold whitespace-nowrap">{t.name}</b>
-                    <span className={`font-mono text-[9px] tracking-[.5px] whitespace-nowrap max-[899px]:hidden ${t.live ? 'text-green' : 'text-dim'}`}>{t.status}</span>
+                    <span className={`font-mono text-[11px] tracking-[.5px] whitespace-nowrap max-[899px]:hidden ${t.live ? 'text-green' : 'text-dim'}`}>{t.status}</span>
                   </span>
                 </button>
               )
@@ -320,7 +320,8 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
             onAnimationComplete={() => setMoving(false)}
             // Clipped only while the height eases, so a demo's own menus and tooltips are never cut.
             style={{ overflow: moving ? 'hidden' : 'visible' }}
-            className="min-w-0"
+            // From 900 px up the pane holds the tallest demo's height, so switching tabs never moves the page.
+            className="min-w-0 min-[900px]:min-h-[880px]"
           >
             <div ref={inner} id="console-panel" role="tabpanel" aria-labelledby={`console-tab-${cur.id}`} className="min-w-0">
               <AnimatePresence mode="wait" initial={false}>
@@ -329,7 +330,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
                     <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-[2px]">
                       <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-gold">
                         {cur.name.toUpperCase()}
-                        <span className={`rounded-full border px-[7px] py-px text-[9px] ${cur.live ? 'border-success-line text-green' : 'border-line-strong text-dim'}`}>{cur.status}</span>
+                        <span className={`rounded-full border px-[7px] py-px text-[11px] ${cur.live ? 'border-success-line text-green' : 'border-line-strong text-dim'}`}>{cur.status}</span>
                       </span>
                       <p className="m-0 text-[14px] leading-[1.45] text-ink-2">{cur.pitch}</p>
                     </div>

@@ -38,7 +38,7 @@ export function VenueTicker({ data, state }: { data: Stats | null; state: 'loadi
             key={p.key}
             href={p.url}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="gl-row-sweep relative grid grid-cols-[96px_1fr_84px_auto] items-center gap-[14px] border-b border-line px-5 py-3 text-ink transition-colors last:border-b-0 hover:bg-surface-hover hover:text-ink"
             style={{ animation: `gl-rise .5s ${0.25 + i * 0.06}s ease both`, ['--sweep-delay' as string]: `${i * 1.2}s` }}
           >
@@ -53,7 +53,7 @@ export function VenueTicker({ data, state }: { data: Stats | null; state: 'loadi
               {series.length > 1 ? (
                 <Sparkline data={series} color={p.accent} delay={0.2 + i * 0.9} loop />
               ) : (
-                <span className="block pt-2 text-right font-mono text-[10px] text-faint">{state === 'ok' ? 'no series' : ''}</span>
+                <span className="block pt-2 text-right font-mono text-[11px] text-faint">{state === 'ok' ? 'no series' : ''}</span>
               )}
             </span>
             <span className="text-right">

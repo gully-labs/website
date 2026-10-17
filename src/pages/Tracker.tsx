@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowUpRight, BookOpen, KeyRound, Puzzle } from 'lucide-react'
+import { NewTabMark } from '../components/LayoutLinks'
+import { newTab } from '../components/LayoutNav'
 import { DEVELOPERS_URL, DOCS_URL } from '../site-host'
 import { ChainLogo, StockLogo } from '../components/tracker/StockLogo'
 import { Seo } from '../components/Seo'
@@ -14,12 +16,12 @@ import { TopMovers } from '../components/tracker/TopMovers'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../components/charts/number-formats'
 import { xPost } from '../lib/share'
-import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, stockPath, UP, useTracker, type TrackerRow } from '../lib/tracker'
+import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, gapPost, stockPath, UP, useTracker, type TrackerRow } from '../lib/tracker'
 
 const SHARE_URL = 'https://gullylabs.xyz/tracker'
 const rise = (i: number) => ({ animation: `gl-rise .5s ${i * 0.05}s ease both` })
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5'
-const cardTitle = 'm-0 font-display text-[20px] leading-none font-bold uppercase'
+const cardTitle = 'm-0 font-display text-h4 font-bold uppercase'
 const cardSub = 'font-mono text-[11px] text-faint'
 const idOf = (r: TrackerRow) => `${r.chain}:${r.ticker}`
 
@@ -28,7 +30,7 @@ const idOf = (r: TrackerRow) => `${r.chain}:${r.ticker}`
 function Kpi({ label, value, nf, suffix, note, tone }: { label: string; value: number | null; nf: NumberFormat; suffix?: string; note: React.ReactNode; tone?: string }) {
   return (
     <div className="group relative flex min-w-0 flex-col gap-1 overflow-hidden bg-surface px-4 py-3">
-      <span className="font-mono text-[10px] tracking-[1px] text-faint">{label}</span>
+      <span className="font-mono text-[11px] tracking-[1px] text-faint">{label}</span>
       <AnimatedNumber className="font-display text-[clamp(24px,2.2cqw,32px)] leading-none font-extrabold" style={{ color: tone }} value={value} format={nf} suffix={suffix} countUp />
       <span className="truncate text-[12px] text-muted">{note}</span>
       <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
@@ -52,9 +54,9 @@ function Card({ title, sub, children, i, className = '' }: { title: string; sub?
    of headline figures, then a grid of charts, then the table. */
 /* Where a builder goes next: the same figures as JSON, as an embed, or with a higher rate limit. */
 const BUILD = [
-  { title: 'Public API', body: 'Every row on this page as JSON, plus 7 days of gap history. 60 calls a minute with no key.', href: `${DOCS_URL}/api`, icon: BookOpen },
-  { title: 'Embed widget', body: 'One script tag puts a live gap card for any stock on your site.', href: '/widget', icon: Puzzle },
-  { title: 'Developer portal', body: 'Sign in with a wallet and create API keys instantly: 600 calls a minute, with usage in one place.', href: DEVELOPERS_URL, icon: KeyRound },
+  { title: 'Public API', body: 'Every row on this page as JSON, plus 7 days of gap history. 60 calls a minute with no key.', href: `${DOCS_URL}/api`, icon: BookOpen, ext: true },
+  { title: 'Embed widget', body: 'One script tag puts a live gap card for any stock on your site.', href: '/widget', icon: Puzzle, ext: false },
+  { title: 'Developer portal', body: 'Sign in with a wallet and create API keys instantly: 600 calls a minute, with usage in one place.', href: DEVELOPERS_URL, icon: KeyRound, ext: false },
 ]
 
 export function Tracker() {
@@ -111,7 +113,7 @@ export function Tracker() {
             <span className="font-mono text-[12px] tracking-[1.5px] text-gold" style={rise(0)}>
               TRACKER · TOKENISED STOCKS · LIVE
             </span>
-            <h1 className="m-0 font-display text-[clamp(36px,4.2cqw,60px)] leading-[.92] font-extrabold uppercase" style={rise(1)}>
+            <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
               Is your stock token <span className="text-gold">fairly priced?</span>
             </h1>
             <p className="m-0 max-w-[680px] text-[15px] leading-[1.5] text-muted" style={rise(2)}>
@@ -126,7 +128,7 @@ export function Tracker() {
                 {c.name} · {c.sessionOpen ? 'open' : 'closed'}
               </span>
             ))}
-            <a href={xPost(shareText, SHARE_URL)} target="_blank" rel="noopener" className="inline-flex min-h-9 items-center gap-2 rounded-btn bg-gold px-4 text-[13px] font-semibold text-bg transition-colors hover:bg-gold-hover hover:text-bg">
+            <a href={xPost(shareText, SHARE_URL)} {...newTab} aria-label="Share the tracker on X (opens in a new tab)" className="inline-flex min-h-9 max-[859px]:min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[13px] font-semibold text-bg transition-colors hover:bg-gold-hover hover:text-bg">
               <SocialIcon name="X" size={13} />
               Share
             </a>
@@ -141,7 +143,7 @@ export function Tracker() {
               type="button"
               aria-selected={chain === c.key}
               onClick={() => setChain(c.key)}
-              className={`inline-flex items-center gap-1.5 rounded-btn px-3 py-[6px] font-mono text-[12px] whitespace-nowrap transition-colors ${chain === c.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
+              className={`inline-flex items-center gap-1.5 rounded-btn px-3 py-[6px] font-mono text-[12px] whitespace-nowrap transition-colors max-[859px]:min-h-11 ${chain === c.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
             >
               <ChainLogo chain={c.key} size={14} />
               {c.name}
@@ -150,7 +152,17 @@ export function Tracker() {
           ))}
         </div>
 
-        {st.k === 'loading' && <p className="m-0 font-mono text-[13px] text-faint">Reading every feed and pool…</p>}
+        {st.k === 'loading' && (
+          // Holds the page's shape while the first read lands, so the footer never rises and drops.
+          <div role="status" aria-label="Reading every feed and pool" className="flex min-h-[100svh] flex-col gap-4">
+            <div className="h-[86px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface" />
+            <div className="h-[230px] animate-[gl-skeleton_1.4s_.1s_ease-in-out_infinite] rounded-card bg-surface" />
+            <div className="grid grid-cols-3 gap-4 max-[1199px]:grid-cols-2 max-[759px]:grid-cols-1">
+              <div className="h-[420px] animate-[gl-skeleton_1.4s_.2s_ease-in-out_infinite] rounded-card bg-surface" />
+              <div className="col-span-2 h-[420px] animate-[gl-skeleton_1.4s_.3s_ease-in-out_infinite] rounded-card bg-surface max-[1199px]:col-span-1" />
+            </div>
+          </div>
+        )}
         {st.k === 'error' && <p className="m-0 font-mono text-[13px] text-error">The tracker could not be read just now. It retries every minute.</p>}
         {data?.chains.some((c) => c.poolsStale) && (
           <p className="m-0 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-2 font-mono text-[12px] text-ink-2">
@@ -187,23 +199,23 @@ export function Tracker() {
                       <StockLogo row={sel} size={44} />
                       <div className="flex flex-col gap-1">
                         <span className={cardSub}>{CHAIN_NAME[sel.chain] ?? sel.chain}</span>
-                        <h2 className="m-0 flex flex-wrap items-baseline gap-x-3 font-display text-[30px] leading-none font-extrabold uppercase">
-                          {sel.ticker}
+                        <h2 className="m-0 flex flex-wrap items-baseline gap-x-3 font-display text-h4 font-extrabold uppercase">
+                          {sel.ticker}{' '}
                           <span className="font-sans text-[14px] font-normal normal-case text-muted">{sel.name}</span>
                         </h2>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <StatusBadge r={sel} />
-                      <Link to={stockPath(sel)} className="inline-flex h-8 items-center gap-1 rounded-btn border border-gold-line px-3 text-[12px] text-gold hover:border-gold hover:text-gold">
+                      <Link to={stockPath(sel)} className="inline-flex min-h-8 items-center gap-1 rounded-btn whitespace-nowrap max-[859px]:min-h-11 border border-gold-line px-3 text-[12px] text-gold hover:border-gold hover:text-gold">
                         {sel.ticker} page →
                       </Link>
                       {sel.pool?.url && (
-                        <a href={sel.pool.url} target="_blank" rel="noopener" className="inline-flex h-8 items-center rounded-btn border border-line-strong px-3 text-[12px] text-ink hover:border-gold hover:text-ink">
-                          Pool ↗
+                        <a href={sel.pool.url} {...newTab} className="inline-flex min-h-8 items-center gap-1 rounded-btn border border-line-strong px-3 text-[12px] whitespace-nowrap text-ink hover:border-gold hover:text-ink max-[859px]:min-h-11">
+                          Pool <NewTabMark size={12} />
                         </a>
                       )}
-                      <a href={xPost(gapPost(sel), SHARE_URL)} target="_blank" rel="noopener" aria-label={`Post ${sel.ticker}'s gap on X`} className="inline-flex size-8 items-center justify-center rounded-btn border border-gold-line text-gold hover:border-gold hover:text-gold">
+                      <a href={xPost(gapPost(sel), SHARE_URL)} {...newTab} aria-label={`Post ${sel.ticker}'s gap on X (opens in a new tab)`} className="inline-flex size-8 max-[859px]:size-11 items-center justify-center rounded-btn border border-gold-line text-gold hover:border-gold hover:text-gold">
                         <SocialIcon name="X" size={12} />
                       </a>
                     </div>
@@ -212,11 +224,11 @@ export function Tracker() {
                     {[
                       { k: 'ONCHAIN', v: fmtPrice(sel.onchain) },
                       { k: 'FAIR', v: fmtPrice(sel.fair) },
-                      { k: 'GAP', v: fmtGap(sel.gapPct), c: sel.gapPct === null ? undefined : sel.gapPct >= 0 ? UP : DOWN },
+                      { k: 'GAP', v: fmtGap(sel.gapPct), c: gapColor(sel) },
                       { k: 'LIQUIDITY', v: fmtCompactUsd(sel.pool?.liquidityUsd) },
                     ].map((m) => (
                       <div key={m.k} className="flex flex-col gap-1 bg-surface-deep px-3 py-2">
-                        <dt className="font-mono text-[10px] tracking-[1px] text-faint">{m.k}</dt>
+                        <dt className="font-mono text-[11px] tracking-[1px] text-faint">{m.k}</dt>
                         <dd className="m-0 font-mono text-[15px]" style={{ color: m.c }}>
                           {m.v}
                         </dd>
@@ -261,14 +273,14 @@ export function Tracker() {
           <section aria-label="Build with this data" className="px-page pb-12">
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-3">
               {BUILD.map((b) => (
-                <a key={b.title} href={b.href} className="group flex items-start gap-4 rounded-card border border-line bg-surface p-5 text-ink transition-colors hover:border-gold hover:text-ink">
+                <a key={b.title} href={b.href} {...(b.ext ? newTab : {})} className="group flex items-start gap-4 rounded-card border border-line bg-surface p-5 text-ink transition-colors hover:border-gold hover:text-ink">
                   <span className="flex size-10 flex-none items-center justify-center rounded-btn border border-gold-line text-gold">
                     <b.icon aria-hidden size={18} strokeWidth={1.75} />
                   </span>
                   <span className="flex min-w-0 flex-col gap-1">
                     <span className="flex items-center gap-2 font-display text-[18px] font-bold uppercase">
                       {b.title}
-                      <ArrowUpRight aria-hidden size={15} className="text-faint transition-colors group-hover:text-gold" />
+                      {b.ext ? <NewTabMark size={15} className="text-faint transition-colors group-hover:text-gold" /> : <ArrowUpRight aria-hidden size={15} className="text-faint transition-colors group-hover:text-gold" />}
                     </span>
                     <span className="text-[14px] leading-[1.5] text-muted">{b.body}</span>
                   </span>

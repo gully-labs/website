@@ -142,9 +142,9 @@ export function DeepCoreQuote({ row }: { row: TrackerRow }) {
         </p>
       )}
       {links && (
-        <a href={links.swap} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 self-start text-[14px] text-gold hover:underline">
+        <a href={links.swap} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 self-start text-[14px] text-gold hover:underline">
           Swap on DeepCore <ArrowUpRight aria-hidden size={14} />
-        </a>
+        <span className="sr-only"> (opens in a new tab)</span></a>
       )}
       <p className="m-0 text-[12px] leading-[1.5] text-faint">Comparison only. Gully Labs does not route or execute swaps through DeepCore; the link opens deepcore.fun, where your wallet signs on DeepCore’s own page.</p>
     </section>

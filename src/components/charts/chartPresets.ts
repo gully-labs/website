@@ -20,7 +20,7 @@ export const C = {
   ink2: '#cfd5dc',
   muted: '#a6b0bd',
   dim: '#8a96a6',
-  faint: '#6c7888',
+  faint: '#7f8b9c',
   axis: '#5c6878',
   grid: '#1a2029',
   line: '#1d232c',
@@ -32,7 +32,7 @@ export const C = {
 } as const
 
 /** Categorical series colours, in order (the theme's palette). */
-export const PALETTE = ['#e8c060', '#5aa9e6', '#1f9e89', '#c98bdb', '#e4572e', '#9bc53d', '#f4d98c', '#6c7888'] as const
+export const PALETTE = ['#e8c060', '#5aa9e6', '#1f9e89', '#c98bdb', '#e4572e', '#9bc53d', '#f4d98c', '#7f8b9c'] as const
 
 /** `#rrggbb` plus an alpha 0–1, as `#rrggbbaa`. */
 export const alpha = (hex: string, a: number) => `${hex.slice(0, 7)}${Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0')}`

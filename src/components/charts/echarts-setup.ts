@@ -40,7 +40,7 @@ const axis = {
   axisTick: { show: false },
   axisLabel: { color: '#5c6878', fontFamily: MONO, fontSize: 11 },
   splitLine: { lineStyle: { color: '#1a2029', width: 1 } },
-  nameTextStyle: { color: '#6c7888', fontFamily: MONO, fontSize: 10 },
+  nameTextStyle: { color: '#7f8b9c', fontFamily: MONO, fontSize: 11 },
 }
 
 /* Brand tokens (src/index.css) as an ECharts theme: recessive grid, mono labels, a dark tooltip with
@@ -64,7 +64,7 @@ echarts.registerTheme('gully', {
     lineStyle: { color: '#3a4452', width: 1, type: 'dashed' },
     crossStyle: { color: '#3a4452', width: 1, type: 'dashed' },
     shadowStyle: { color: 'rgba(166,176,189,.06)' },
-    label: { backgroundColor: '#1d232c', borderColor: '#2c3540', borderWidth: 1, color: '#eef0f2', fontFamily: MONO, fontSize: 10, padding: [3, 6], borderRadius: 3 },
+    label: { backgroundColor: '#1d232c', borderColor: '#2c3540', borderWidth: 1, color: '#eef0f2', fontFamily: MONO, fontSize: 11, padding: [3, 6], borderRadius: 3 },
   },
   tooltip: {
     backgroundColor: 'rgba(13,17,22,.96)',
@@ -83,7 +83,7 @@ echarts.registerTheme('gully', {
     moveHandleStyle: { color: '#2c3540' },
     dataBackground: { lineStyle: { color: '#3a4452' }, areaStyle: { color: 'rgba(166,176,189,.08)' } },
     selectedDataBackground: { lineStyle: { color: '#e8c060' }, areaStyle: { color: 'rgba(232,192,96,.12)' } },
-    textStyle: { color: '#6c7888', fontFamily: MONO, fontSize: 10 },
+    textStyle: { color: '#7f8b9c', fontFamily: MONO, fontSize: 11 },
     brushSelect: false,
   },
 })

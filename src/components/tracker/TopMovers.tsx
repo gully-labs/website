@@ -1,7 +1,8 @@
-import { useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react'
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { newTab } from '../LayoutNav'
 import { SocialIcon } from '../SocialIcon'
 import { StockLogo } from './StockLogo'
 import { useReducedMotion } from '../charts/chart-utils'
@@ -30,7 +31,7 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
           role="radio"
           aria-checked={value === o.key}
           onClick={() => onChange(o.key)}
-          className={`min-h-8 rounded-btn px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${value === o.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
+          className={`min-h-8 rounded-btn px-3 max-[859px]:min-h-11 max-[859px]:min-w-11 font-mono text-[12px] whitespace-nowrap transition-colors ${value === o.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
         >
           {o.name}
         </button>
@@ -97,11 +98,11 @@ function MoverCard({ m, mode, win, max }: { m: Mover; mode: Mode; win: MoverWind
         <StockLogo row={m} size={30} />
         <span className="flex min-w-0 flex-col">
           <b className="font-display text-[18px] leading-none font-bold">{m.ticker}</b>
-          <span className="truncate font-mono text-[10px] text-faint">{CHAIN_SHORT[m.chain] ?? m.chain} · gap {fmtGap(m.gapPct)}</span>
+          <span className="truncate font-mono text-[11px] text-faint">{CHAIN_SHORT[m.chain] ?? m.chain} · gap {fmtGap(m.gapPct)}</span>
         </span>
       </span>
       <span className="flex flex-col gap-[2px] whitespace-nowrap">
-        <span className="flex items-baseline justify-between gap-2 font-mono text-[10px] tracking-[1px] text-faint">
+        <span className="flex items-baseline justify-between gap-2 font-mono text-[11px] tracking-[1px] text-faint">
           {mode === 'gap' ? `Δ GAP ${win.toUpperCase()}` : `PRICE ${win.toUpperCase()}`}
           <span className="tracking-normal text-dim">{mode === 'gap' ? `${fmtGap(m.gapThen)} → ${fmtGap(m.gapNow)}` : `Δ gap ${fmtPp(m.gapChangePp)}`}</span>
         </span>
@@ -122,6 +123,32 @@ export function TopMovers({ chain }: { chain: string }) {
   return <TopMoversView key={attempt} chain={chain} onRetry={() => setAttempt((a) => a + 1)} />
 }
 
+/** Whether the strip can scroll further left or right, kept current as it scrolls or resizes. */
+function useScrollEdges(ref: React.RefObject<HTMLUListElement | null>, count: number) {
+  const [edges, setEdges] = useState({ prev: false, next: false })
+  const measure = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    setEdges({ prev: el.scrollLeft > 4, next: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 })
+  }, [ref])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', measure)
+      ro.disconnect()
+    }
+  }, [ref, measure, count])
+  const page = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * Math.max(224, ref.current.clientWidth - 224), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+  return { edges, page }
+}
+
+const arrowBtn = 'absolute top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-line-strong bg-surface-deep text-ink shadow-[0_6px_18px_rgba(0,0,0,.45)] transition-colors hover:border-gold hover:text-gold max-[599px]:hidden'
+
 function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void }) {
   const [mode, setMode] = useState<Mode>('gap')
   const [win, setWin] = useState<MoverWindow>('24h')
@@ -131,12 +158,16 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
   const data = st.k === 'ok' ? st.data : null
   const list = data ? (mode === 'gap' ? data.byGap : data.byPrice) : []
   const max = Math.max(0, ...list.map((m) => Math.abs((mode === 'gap' ? m.gapChangePp : m.priceChangePct) ?? 0)))
+  const stripRef = useRef<HTMLUListElement>(null)
+  const strip = useScrollEdges(stripRef, list.length)
+  // The edge that has more cards behind it fades out, so a cut-off card reads as "scroll for more".
+  const mask = strip.edges.prev && strip.edges.next ? 'linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 64px), transparent)' : strip.edges.next ? 'linear-gradient(to right, #000 calc(100% - 64px), transparent)' : strip.edges.prev ? 'linear-gradient(to right, transparent, #000 48px)' : undefined
 
   return (
     <section aria-labelledby={titleId} className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4" style={{ animation: 'gl-rise .5s .3s ease both' }}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 id={titleId} className="m-0 font-display text-[20px] leading-none font-bold uppercase">
+          <h2 id={titleId} className="m-0 font-display text-h4 font-bold uppercase">
             Top movers
           </h2>
           <span className="font-mono text-[11px] text-faint">
@@ -165,9 +196,9 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
           {data && list.length > 0 && (
             <a
               href={xPost(moversPost(data, mode), SHARE_URL)}
-              target="_blank"
-              rel="noopener"
-              className="inline-flex min-h-10 items-center gap-2 rounded-btn border border-gold-line px-3 text-[12px] text-gold hover:border-gold hover:text-gold"
+              {...newTab}
+              aria-label="Share top movers on X (opens in a new tab)"
+              className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-gold-line px-3 text-[12px] text-gold hover:border-gold hover:text-gold"
             >
               <SocialIcon name="X" size={12} />
               Share top movers
@@ -190,7 +221,18 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
         </p>
       )}
       {list.length > 0 && (
-        <ul aria-label={`Top ${mode === 'gap' ? 'gap' : 'price'} moves over ${win}`} className="m-0 -mx-1 flex list-none snap-x gap-3 overflow-x-auto px-1 pt-[3px] pb-2">
+        <div className="relative">
+        {strip.edges.prev && (
+          <button type="button" aria-label="Earlier movers" onClick={() => strip.page(-1)} className={`${arrowBtn} -left-2`}>
+            <ChevronLeft aria-hidden size={18} />
+          </button>
+        )}
+        {strip.edges.next && (
+          <button type="button" aria-label="More movers" onClick={() => strip.page(1)} className={`${arrowBtn} -right-2`}>
+            <ChevronRight aria-hidden size={18} />
+          </button>
+        )}
+        <ul ref={stripRef} aria-label={`Top ${mode === 'gap' ? 'gap' : 'price'} moves over ${win}`} className="m-0 -mx-1 flex list-none snap-x gap-3 overflow-x-auto px-1 pt-[3px] pb-2 [scrollbar-width:thin]" style={{ maskImage: mask, WebkitMaskImage: mask }}>
           <AnimatePresence mode="popLayout">
             {list.map((m, i) => (
               <motion.li
@@ -207,9 +249,10 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
             ))}
           </AnimatePresence>
         </ul>
+        </div>
       )}
       {data?.asOf && list.length > 0 && (
-        <span className="font-mono text-[10px] text-faint">
+        <span className="font-mono text-[11px] text-faint">
           Compared {new Date(data.from!).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric', hour12: false, timeZone: 'UTC' })} → {new Date(data.to!).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC · {data.eligible} stocks with both points
         </span>
       )}

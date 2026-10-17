@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ChainLogo, StockLogo } from './StockLogo'
 import { xPost } from '../../lib/share'
-import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, STATUS_LABEL, stockPath, UP, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
+import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, gapPost, STATUS_LABEL, stockPath, UP, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
 import { SocialIcon } from '../SocialIcon'
+import { NewTabMark } from '../LayoutLinks'
+import { newTab } from '../LayoutNav'
 
 type SortKey = 'ticker' | 'gap' | 'absgap' | 'onchain' | 'liquidity' | 'volume'
 type Filter = 'all' | 'flagged' | 'in-line' | 'thin'
@@ -19,7 +21,7 @@ const SHARE_URL = 'https://gullylabs.xyz/tracker'
 
 export function StatusBadge({ r }: { r: TrackerRow }) {
   const tone =
-    r.status === 'premium' ? { c: UP, bg: 'rgba(31,158,137,.12)' } : r.status === 'discount' ? { c: DOWN, bg: 'rgba(228,87,46,.12)' } : r.status === 'in-line' ? { c: '#a6b0bd', bg: 'rgba(166,176,189,.08)' } : r.status === 'drifting' ? { c: '#e8c060', bg: 'rgba(232,192,96,.1)' } : { c: '#6c7888', bg: 'transparent' }
+    r.status === 'premium' ? { c: UP, bg: 'rgba(31,158,137,.12)' } : r.status === 'discount' ? { c: DOWN, bg: 'rgba(228,87,46,.12)' } : r.status === 'in-line' ? { c: '#a6b0bd', bg: 'rgba(166,176,189,.08)' } : r.status === 'drifting' ? { c: '#e8c060', bg: 'rgba(232,192,96,.1)' } : { c: '#7f8b9c', bg: 'transparent' }
   return (
     <span className="inline-flex items-center gap-[6px] rounded-full border px-[9px] py-[2px] font-mono text-[11px] whitespace-nowrap" style={{ color: tone.c, background: tone.bg, borderColor: `${tone.c}40` }}>
       {(r.status === 'premium' || r.status === 'discount') && <i className="size-[6px] rounded-full" style={{ background: tone.c, animation: 'gl-blink 1.6s ease-in-out infinite' }} />}
@@ -89,7 +91,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                 type="button"
                 aria-pressed={filter === f.id}
                 onClick={() => setFilter(f.id)}
-                className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 font-mono text-[12px] transition-colors ${filter === f.id ? 'border-gold bg-gold text-bg' : 'border-line-strong text-ink-2 hover:border-gold'}`}
+                className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 font-mono text-[12px] max-[859px]:min-h-11 transition-colors ${filter === f.id ? 'border-gold bg-gold text-bg' : 'border-line-strong text-ink-2 hover:border-gold'}`}
               >
                 {f.label}
                 <span className={filter === f.id ? 'text-bg/70' : 'text-faint'}>{n}</span>
@@ -108,7 +110,8 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search NVDA, Tesla…"
-            className="h-10 w-full rounded-input border border-line-strong bg-bg pr-3 pl-9 text-[14px] text-ink outline-none focus:border-gold"
+            aria-label="Search stocks by ticker or name"
+            className="h-11 w-full rounded-input border border-line-strong bg-bg pr-3 pl-9 text-[14px] text-ink outline-none focus:border-gold"
           />
         </label>
       </div>
@@ -125,7 +128,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
               <th className="px-3 py-2 text-left font-mono text-[11px] font-medium tracking-[1px] text-faint">STATUS</th>
               {head('liquidity', 'LIQUIDITY')}
               {head('volume', 'VOLUME 24H')}
-              <th className="px-3 py-2 text-right font-mono text-[11px] font-medium tracking-[1px] text-faint">FEED</th>
+              <th className="px-3 py-2 text-right font-mono text-[11px] font-medium tracking-[1px] whitespace-nowrap text-faint" title="When Chainlink last updated the fair price. Feeds hold their last value while the market is closed.">FEED AGE</th>
               <th className="px-3 py-2" />
             </tr>
           </thead>
@@ -138,7 +141,8 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                   key={id}
                   onClick={() => onSelect(id)}
                   className={`cursor-pointer border-b border-line transition-colors last:border-b-0 ${on ? 'bg-surface-hover' : 'hover:bg-surface-hover'}`}
-                  style={{ animation: `gl-rise .4s ${Math.min(i * 0.02, 0.6)}s ease both` }}
+                  // Opacity only, and quick: a full-page capture or print never shows half the table blank.
+                  style={{ animation: `gl-fade .3s ${Math.min(i * 0.015, 0.3)}s ease-out both` }}
                 >
                   <td className="px-3 py-2">
                     <button type="button" onClick={() => onSelect(id)} className="flex items-center gap-3 bg-transparent p-0 text-left" aria-pressed={on}>
@@ -149,7 +153,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                           <span className="text-ink-2">{r.name}</span>
                         </span>
                         {multi && (
-                          <span className="flex items-center gap-1 font-mono text-[10px] text-faint">
+                          <span className="flex items-center gap-1 font-mono text-[11px] text-faint">
                             <ChainLogo chain={r.chain} size={10} />
                             {CHAIN_NAME[r.chain] ?? r.chain}
                           </span>
@@ -159,7 +163,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                   </td>
                   <td className="px-3 py-2 text-right font-mono">{fmtPrice(r.onchain)}</td>
                   <td className="px-3 py-2 text-right font-mono text-muted">{fmtPrice(r.fair)}</td>
-                  <td className="px-3 py-2 text-right font-mono font-medium" style={{ color: r.gapPct === null ? undefined : r.status === 'thin' ? '#6c7888' : r.gapPct >= 0 ? UP : DOWN }}>
+                  <td className="px-3 py-2 text-right font-mono font-medium" style={{ color: gapColor(r) }}>
                     {fmtGap(r.gapPct)}
                   </td>
                   <td className="px-3 py-2">
@@ -167,22 +171,21 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                   </td>
                   <td className="px-3 py-2 text-right font-mono">{fmtCompactUsd(r.pool?.liquidityUsd)}</td>
                   <td className="px-3 py-2 text-right font-mono text-muted">{fmtCompactUsd(r.pool?.totalVolume24hUsd)}</td>
-                  <td className="px-3 py-2 text-right font-mono text-[12px] text-faint">{ageText(r.feedUpdatedAt, now)}</td>
+                  <td className="min-w-[72px] px-3 py-2 text-right font-mono text-[12px] whitespace-nowrap text-faint">{ageText(r.feedUpdatedAt, now)}</td>
                   <td className="px-3 py-2">
-                    <span className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    <span className="flex items-center justify-end gap-1 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <Link to={stockPath(r)} aria-label={`${r.ticker} page`} className="inline-flex h-8 items-center rounded-btn border border-gold-line px-3 text-[12px] text-gold transition-colors hover:border-gold hover:text-gold">
                         Page
                       </Link>
                       {r.pool?.url && (
-                        <a href={r.pool.url} target="_blank" rel="noopener" className="inline-flex h-8 items-center rounded-btn border border-line-strong px-3 text-[12px] text-ink transition-colors hover:border-gold hover:text-ink">
-                          Pool ↗
+                        <a href={r.pool.url} {...newTab} aria-label={`${r.ticker} pool on DexScreener (opens in a new tab)`} className="inline-flex h-8 items-center gap-1 rounded-btn border border-line-strong px-3 text-[12px] whitespace-nowrap text-ink transition-colors hover:border-gold hover:text-ink">
+                          Pool <NewTabMark size={12} />
                         </a>
                       )}
                       <a
                         href={xPost(gapPost(r), SHARE_URL)}
-                        target="_blank"
-                        rel="noopener"
-                        aria-label={`Post ${r.ticker}'s gap on X`}
+                        {...newTab}
+                        aria-label={`Post ${r.ticker}'s gap on X (opens in a new tab)`}
                         className="inline-flex size-8 items-center justify-center rounded-btn border border-line text-muted transition-colors hover:border-gold hover:text-gold"
                       >
                         <SocialIcon name="X" size={13} />
@@ -218,21 +221,21 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                       {multi && ` · ${CHAIN_SHORT[r.chain] ?? r.chain}`}
                     </span>
                   </span>
-                  <span className="font-mono text-[16px] font-medium" style={{ color: r.gapPct === null ? undefined : r.status === 'thin' ? '#6c7888' : r.gapPct >= 0 ? UP : DOWN }}>
+                  <span className="font-mono text-[16px] font-medium" style={{ color: gapColor(r) }}>
                     {fmtGap(r.gapPct)}
                   </span>
                 </span>
                 <span className="grid grid-cols-3 gap-2 font-mono text-[12px]">
                   <span className="flex flex-col">
-                    <span className="text-[10px] text-faint">ONCHAIN</span>
+                    <span className="text-[11px] text-faint">ONCHAIN</span>
                     {fmtPrice(r.onchain)}
                   </span>
                   <span className="flex flex-col">
-                    <span className="text-[10px] text-faint">FAIR</span>
+                    <span className="text-[11px] text-faint">FAIR</span>
                     {fmtPrice(r.fair)}
                   </span>
                   <span className="flex flex-col">
-                    <span className="text-[10px] text-faint">LIQUIDITY</span>
+                    <span className="text-[11px] text-faint">LIQUIDITY</span>
                     {fmtCompactUsd(r.pool?.liquidityUsd)}
                   </span>
                 </span>

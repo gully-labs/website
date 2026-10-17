@@ -14,3 +14,6 @@ export const groupActive = (g: NavGroup, pathname: string, hash: string) => g.it
 export function scrollBehavior(): ScrollBehavior {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
 }
+
+/** Props for an <a> that opens another app or site in a new tab (pair it with <NewTabMark/>). */
+export const newTab = { target: '_blank', rel: 'noopener noreferrer' } as const
