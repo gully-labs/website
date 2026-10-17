@@ -1,22 +1,26 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { motion } from 'motion/react'
+import { ArrowUpRight } from 'lucide-react'
 import { comingSoon, projects, TOTAL_SLOTS, type Project } from '../content/projects'
-import { fmtTime, fmtUsd, sourceHost, type Stats, type Venue } from '../lib/stats'
+import { fmtTime, fmtUsd, sourceHost, type Point, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
 import { BlinkDot } from './ui'
 
-/* The projects as one sortable table: venue, chains, then volume, value locked and fees, each with a
-   bar against the largest readable figure. Every row reads its project's own API (GET /api/stats); a
-   figure a venue does not publish is "—" with no bar, a venue that could not be read says so. */
+/* The projects as compact cards: venue badge, name, tagline, chains, status, a sparkline of its daily
+   volume that draws in when it scrolls into view, then volume, value locked and fees, each with a bar
+   against the largest readable figure that grows in on first view. The sort switch re-orders the cards
+   with an animated layout change. Every card reads its project's own API (GET /api/stats); a figure a
+   venue does not publish is "—" with no bar, a venue that could not be read says so. Motion follows
+   the landing's MotionConfig (reduced motion: no growth, no travel; the numbers still update). */
 
-type Dir = 'descending' | 'ascending'
 type Col = 'volume' | 'tvl' | 'fees'
 type State = 'loading' | 'error' | 'ok'
 
-const COLS: { key: Col; label: string }[] = [
-  { key: 'volume', label: 'VOLUME' },
-  { key: 'tvl', label: 'TVL' },
-  { key: 'fees', label: 'FEES' },
+const COLS: { key: Col; label: string; long: string }[] = [
+  { key: 'volume', label: 'VOLUME', long: 'Volume' },
+  { key: 'tvl', label: 'TVL', long: 'Value locked' },
+  { key: 'fees', label: 'FEES', long: 'Fees' },
 ]
 
 /** A venue's figure for a column, with a note when it is not the all-time figure. */
@@ -32,7 +36,7 @@ function figure(v: Venue | undefined, c: Col): { n: number | null; note?: string
   return { n: v.fees24hUsd, note: v.fees24hUsd === null ? undefined : '24h' }
 }
 
-/** Small secondary facts a venue publishes beyond the three columns (DeepCore: hosted sites,
+/** Small secondary facts a venue publishes beyond the three figures (DeepCore: hosted sites,
     launches in 24h, dollars in locks). A fact the venue left out reads "—", never 0. */
 function extrasOf(v: Venue | undefined): string | null {
   if (!v || v.state !== 'ok' || v.key !== 'deepcore') return null
@@ -50,8 +54,47 @@ const initials = (name: string) =>
     .slice(0, 2)
     .toUpperCase()
 
-function Cell({ p, venue, c, max, state }: { p: Project; venue?: Venue; c: Col; max: number; state: State }) {
-  const f = figure(venue, c)
+const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five']
+const ease = [0.2, 0.8, 0.2, 1] as const
+const SW = 240
+const SH = 40
+
+/** The venue's daily volume over its last 30 readings, drawn in once when it comes into view. */
+function Spark({ p, daily, state }: { p: Project; daily: Point[] | null; state: State }) {
+  const pts = (daily ?? []).slice(-30)
+  if (pts.length < 2)
+    return (
+      <span className="flex h-10 items-center font-mono text-[10px] text-faint">
+        {state === 'loading' ? 'reading…' : daily === null ? 'daily series unreadable' : 'no daily series published'}
+      </span>
+    )
+  const max = Math.max(...pts.map((d) => d.v)) || 1
+  const xy = pts.map((d, i) => [(i / (pts.length - 1)) * SW, SH - 3 - (d.v / max) * (SH - 6)] as const)
+  const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
+  const area = `${line} L${SW} ${SH} L0 ${SH} Z`
+  const [lx, ly] = xy[xy.length - 1]
+  return (
+    <svg viewBox={`0 0 ${SW} ${SH}`} preserveAspectRatio="none" className="block h-10 w-full overflow-visible" role="img" aria-label={`${p.name} daily volume, last ${pts.length} days, peak ${fmtUsd(max)}`}>
+      <motion.path d={area} fill={p.accent} initial={{ opacity: 0 }} whileInView={{ opacity: 0.12 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }} />
+      <motion.path
+        d={line}
+        fill="none"
+        stroke={p.accent}
+        strokeWidth={1.5}
+        vectorEffect="non-scaling-stroke"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        whileInView={{ pathLength: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.9, ease }}
+      />
+      <motion.circle cx={lx} cy={ly} r={2.5} fill={p.accent} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.8, duration: 0.3 }} />
+    </svg>
+  )
+}
+
+function Metric({ p, venue, c, max, state, active }: { p: Project; venue?: Venue; c: (typeof COLS)[number]; max: number; state: State; active: boolean }) {
+  const f = figure(venue, c.key)
   let text: React.ReactNode
   if (state === 'loading') text = <span className="text-dim">…</span>
   else if (!venue || venue.state !== 'ok') text = <span className="text-error">unreadable</span>
@@ -60,185 +103,137 @@ function Cell({ p, venue, c, max, state }: { p: Project; venue?: Venue; c: Col; 
     text = (
       <>
         {fmtUsd(f.n)}
-        {f.note && <span className="ml-[6px] text-[11px] text-faint">{f.note}</span>}
+        {f.note && <span className="ml-1 text-[10px] text-faint">{f.note}</span>}
       </>
     )
   const w = f.n !== null && max > 0 ? Math.max(2, (f.n / max) * 100) : 0
   return (
-    <td className="min-w-[120px] px-2 py-3">
-      <span className="flex flex-col gap-1">
-        <span className="font-mono text-[13px] whitespace-nowrap">{text}</span>
+    <div className="flex min-w-0 flex-col gap-1">
+      <dt className={`font-mono text-[10px] tracking-[1px] ${active ? 'text-gold' : 'text-faint'}`}>
+        <abbr title={c.long} className="no-underline">
+          {c.label}
+        </abbr>
+      </dt>
+      <dd className="m-0 flex flex-col gap-1">
+        <span className="truncate font-mono text-[13px] whitespace-nowrap">{text}</span>
         <span aria-hidden className="h-1 overflow-hidden rounded-[2px] bg-grid">
-          <span className="block h-full rounded-[2px] transition-[width] duration-600" style={{ width: `${w}%`, background: p.accent }} />
+          <motion.span
+            className="block h-full origin-left rounded-[2px] transition-[width] duration-700"
+            style={{ width: `${w}%`, background: p.accent }}
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.15, ease }}
+          />
         </span>
-      </span>
-    </td>
+      </dd>
+    </div>
   )
 }
 
-const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five']
-
-/** The projects as rows, sortable by volume, value locked or fees; every row reads its project's own API. */
-export function ProjectRows({ data, state }: { data: Stats | null; state: State }) {
-  const [sort, setSort] = useState<{ key: Col; dir: Dir }>({ key: 'volume', dir: 'descending' })
+/** The projects as cards, sortable by volume, value locked or fees; every card reads its project's own API. */
+export function ProjectCards({ data, state }: { data: Stats | null; state: State }) {
+  const [sort, setSort] = useState<Col>('volume')
   const venueOf = (key: string) => data?.venues.find((v) => v.key === key)
   const value = (key: string, c: Col) => figure(venueOf(key), c).n ?? -1
-  const rows = [...projects].sort((a, b) => (sort.dir === 'descending' ? value(b.key, sort.key) - value(a.key, sort.key) : value(a.key, sort.key) - value(b.key, sort.key)))
+  const rows = [...projects].sort((a, b) => value(b.key, sort) - value(a.key, sort))
   const maxOf = (c: Col) => Math.max(0, ...projects.map((p) => figure(venueOf(p.key), c).n ?? 0))
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="relative overflow-x-auto rounded-card border border-line bg-surface max-[759px]:hidden">
-        <table className="w-full min-w-[760px] border-collapse">
-          <caption className="sr-only">Gully Labs projects with their volume, value locked and fees, read live from each project's API</caption>
-          <thead>
-            <tr className="text-left font-mono text-[11px] tracking-[1px] text-faint">
-              <th scope="col" className="px-4 py-3 font-medium">
-                VENUE
-              </th>
-              <th scope="col" className="px-2 py-3 font-medium">
-                CHAINS
-              </th>
-              {COLS.map((c) => {
-                const on = sort.key === c.key
-                return (
-                  <th key={c.key} scope="col" aria-sort={on ? sort.dir : 'none'} className="px-2 py-[6px] font-medium">
-                    <button
-                      type="button"
-                      onClick={() => setSort((s) => ({ key: c.key, dir: s.key === c.key && s.dir === 'descending' ? 'ascending' : 'descending' }))}
-                      className={`min-h-11 bg-transparent p-0 font-mono text-[11px] tracking-[1px] transition-colors hover:text-ink ${on ? 'text-gold' : 'text-faint'}`}
-                    >
-                      {c.label} {on ? (sort.dir === 'descending' ? '↓' : '↑') : '↕'}
-                    </button>
-                  </th>
-                )
-              })}
-              <th scope="col" className="px-4 py-3">
-                <span className="sr-only">Links</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((p) => {
-              const venue = venueOf(p.key)
-              const provenance =
-                venue?.state === 'ok'
-                  ? `Read from ${sourceHost(venue.source.url)} at ${fmtTime(venue.source.readAt)}${venue.notes.length ? ` · ${venue.notes.join(' ')}` : ''}`
-                  : venue?.state === 'error'
-                    ? `Could not be read: ${venue.error}`
-                    : undefined
-              return (
-                <tr key={p.key} className="border-t border-line transition-colors hover:bg-surface-hover" title={provenance}>
-                  <td className="px-4 py-3">
-                    <Link to={`/projects/${p.slug}`} className="group flex items-center gap-3 text-ink hover:text-ink">
-                      <span aria-hidden className="grid size-[34px] flex-none place-items-center rounded-[8px] font-display text-[15px] font-extrabold text-bg" style={{ background: p.accent }}>
-                        {initials(p.name)}
-                      </span>
-                      <span className="flex flex-col leading-[1.2]">
-                        <b className="font-semibold group-hover:text-gold">{p.name}</b>
-                        <span className="text-[12px] text-dim">{p.tagline}</span>
-                        {extrasOf(venue) && <span className="mt-[2px] font-mono text-[11px] text-faint">{extrasOf(venue)}</span>}
-                      </span>
-                    </Link>
-                  </td>
-                  <td className="px-2 py-3 text-[12px] text-muted">{p.chains.join(' · ')}</td>
-                  {COLS.map((c) => (
-                    <Cell key={c.key} p={p} venue={venue} c={c.key} max={maxOf(c.key)} state={state} />
-                  ))}
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <a href={p.url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-[13px] text-gold hover:text-gold-hover">
-                      Visit ↗<span className="sr-only"> {p.name}</span>
-                    </a>
-                  </td>
-                </tr>
-              )
-            })}
-            {comingSoon.length > 0 && (
-              <tr className="border-t border-line">
-                <td colSpan={6} className="px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="flex items-center gap-2 font-mono text-[12px] text-faint">
-                      <BlinkDot color="gold" />+ {WORDS[comingSoon.length] ?? comingSoon.length} venue{comingSoon.length === 1 ? '' : 's'} in development · IN THE LAB · {comingSoon.join(', ')} / {TOTAL_SLOTS}
-                    </span>
-                    <NotifyMe slot={comingSoon[0]} />
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      {/* Phone: one card per venue, the three figures side by side, sorted by the same control. */}
-      <div className="flex flex-col gap-2 min-[760px]:hidden">
-        <div role="group" aria-label="Sort by" className="flex gap-[2px] rounded-[8px] border border-line p-[2px]">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div role="group" aria-label="Sort the projects by" className="flex gap-[2px] rounded-[8px] border border-line p-[2px]">
           {COLS.map((c) => {
-            const on = sort.key === c.key
+            const on = sort === c.key
             return (
               <button
                 key={c.key}
                 type="button"
                 aria-pressed={on}
-                onClick={() => setSort((s) => ({ key: c.key, dir: s.key === c.key && s.dir === 'descending' ? 'ascending' : 'descending' }))}
-                className={`min-h-11 flex-1 rounded-[6px] font-mono text-[11px] tracking-[1px] transition-colors ${on ? 'bg-gold text-bg' : 'bg-transparent text-muted'}`}
+                onClick={() => setSort(c.key)}
+                className={`relative min-h-11 min-w-[72px] rounded-[6px] bg-transparent px-3 font-mono text-[11px] tracking-[1px] transition-colors duration-200 ${on ? 'text-bg' : 'text-muted hover:text-ink'}`}
               >
-                {c.label} {on ? (sort.dir === 'descending' ? '↓' : '↑') : ''}
+                {on && <motion.span layoutId="project-sort" aria-hidden className="absolute inset-0 rounded-[6px] bg-gold" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
+                <span className="relative">{c.label} ↓</span>
               </button>
             )
           })}
         </div>
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {rows.map((p) => {
-            const venue = venueOf(p.key)
-            return (
-              <li key={p.key} className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4">
-                <div className="flex items-center gap-3">
-                  <Link to={`/projects/${p.slug}`} className="flex min-w-0 flex-1 items-center gap-3 text-ink hover:text-ink">
-                    <span aria-hidden className="grid size-[34px] flex-none place-items-center rounded-[8px] font-display text-[15px] font-extrabold text-bg" style={{ background: p.accent }}>
-                      {initials(p.name)}
-                    </span>
-                    <span className="flex min-w-0 flex-col leading-[1.2]">
-                      <b className="font-semibold">{p.name}</b>
-                      <span className="truncate text-[12px] text-dim">{p.chains.join(' · ')}</span>
-                      {extrasOf(venue) && <span className="mt-[2px] font-mono text-[11px] text-faint">{extrasOf(venue)}</span>}
-                    </span>
-                  </Link>
-                  <a href={p.url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-[13px] text-gold">
-                    Visit ↗<span className="sr-only"> {p.name}</span>
-                  </a>
-                </div>
-                <table className="w-full table-fixed border-collapse">
-                  <thead>
-                    <tr className="text-left font-mono text-[10px] tracking-[1px] text-faint">
-                      {COLS.map((c) => (
-                        <th key={c.key} scope="col" className="px-2 pb-1 font-medium first:pl-0">
-                          {c.label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="[&>td]:min-w-0 [&>td]:py-0 [&>td:first-child]:pl-0">
-                      {COLS.map((c) => (
-                        <Cell key={c.key} p={p} venue={venue} c={c.key} max={maxOf(c.key)} state={state} />
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-              </li>
-            )
-          })}
-          {comingSoon.length > 0 && (
-            <li className="flex flex-col gap-3 rounded-card border border-dashed border-line-strong p-4">
-              <span className="flex items-center gap-2 font-mono text-[12px] text-faint">
-                <BlinkDot color="gold" />+ {WORDS[comingSoon.length] ?? comingSoon.length} venue{comingSoon.length === 1 ? '' : 's'} in development
-              </span>
-              <NotifyMe slot={comingSoon[0]} />
-            </li>
-          )}
-        </ul>
+        <span className="font-mono text-[11px] text-faint" aria-live="polite">
+          Sorted by {COLS.find((c) => c.key === sort)?.long.toLowerCase()}, largest first
+        </span>
       </div>
+      <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,310px),1fr))] gap-3 p-0">
+        {rows.map((p, i) => {
+          const venue = venueOf(p.key)
+          const extras = extrasOf(venue)
+          const provenance =
+            venue?.state === 'ok'
+              ? `Read from ${sourceHost(venue.source.url)} at ${fmtTime(venue.source.readAt)}${venue.notes.length ? ` · ${venue.notes.join(' ')}` : ''}`
+              : venue?.state === 'error'
+                ? `Could not be read: ${venue.error}`
+                : undefined
+          return (
+            <motion.li
+              key={p.key}
+              layout="position"
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.45, delay: i * 0.05, ease, layout: { type: 'spring', stiffness: 380, damping: 36 } }}
+              title={provenance}
+              className="group flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4 transition-[border-color,background-color,box-shadow] duration-200 hover:border-line-hover hover:bg-surface-hover hover:shadow-[0_10px_30px_rgba(0,0,0,.35)]"
+            >
+              <div className="flex items-start gap-3">
+                <span aria-hidden className="grid size-[38px] flex-none place-items-center rounded-[9px] font-display text-[16px] font-extrabold text-bg transition-transform duration-200 group-hover:scale-105" style={{ background: p.accent }}>
+                  {initials(p.name)}
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col leading-[1.25]">
+                  <Link to={`/projects/${p.slug}`} className="w-fit font-semibold text-ink hover:text-gold">
+                    {p.name}
+                  </Link>
+                  <span className="text-[12px] text-dim">{p.tagline}</span>
+                </span>
+                <span className={`flex-none rounded-full border px-2 py-px font-mono text-[10px] ${venue?.state === 'error' ? 'border-line-strong text-error' : 'border-success-line text-green'}`}>{venue?.state === 'error' ? 'UNREAD' : p.status.toUpperCase()}</span>
+              </div>
+              <span className="-mt-1 font-mono text-[11px] text-faint">{p.chains.join(' · ')}</span>
+              <Spark p={p} daily={venue ? (venue.state === 'ok' ? venue.daily : null) : []} state={state} />
+              <dl className="m-0 grid grid-cols-3 gap-3">
+                {COLS.map((c) => (
+                  <Metric key={c.key} p={p} venue={venue} c={c} max={maxOf(c.key)} state={state} active={c.key === sort} />
+                ))}
+              </dl>
+              <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-2">
+                <span className="min-w-0 font-mono text-[10px] leading-[1.4] text-faint">{extras ?? (state === 'ok' && venue?.state === 'ok' ? `read ${fmtTime(venue.source.readAt)}` : '')}</span>
+                <a href={p.url} target="_blank" rel="noopener" className="inline-flex min-h-11 flex-none items-center gap-1 text-[13px] text-gold hover:text-gold-hover">
+                  Visit <ArrowUpRight aria-hidden size={13} />
+                  <span className="sr-only"> {p.name}</span>
+                </a>
+              </div>
+            </motion.li>
+          )
+        })}
+        {comingSoon.length > 0 && (
+          <motion.li
+            layout="position"
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.45, delay: rows.length * 0.05, ease }}
+            className="flex min-w-0 flex-col justify-center gap-3 rounded-card border border-dashed border-line-strong p-4"
+          >
+            <span className="flex items-center gap-2 font-mono text-[12px] text-faint">
+              <BlinkDot color="gold" />+ {WORDS[comingSoon.length] ?? comingSoon.length} venue{comingSoon.length === 1 ? '' : 's'} in development
+            </span>
+            <span className="font-display text-[26px] leading-none font-extrabold text-dim uppercase">
+              Slot {comingSoon.join(', ')} / {TOTAL_SLOTS}
+            </span>
+            <NotifyMe slot={comingSoon[0]} />
+          </motion.li>
+        )}
+      </ul>
       <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">
-        {state === 'ok' && data ? `Read at ${fmtTime(data.generatedAt)}. ` : ''}Volume and fees are all-time unless marked. — means the venue does not publish that figure; on a wide screen, hover a row for its source.
+        {state === 'ok' && data ? `Read at ${fmtTime(data.generatedAt)}. ` : ''}Volume and fees are all-time unless marked. — means the venue does not publish that figure; hover a card for its source.
       </p>
     </div>
   )
