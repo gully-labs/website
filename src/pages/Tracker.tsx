@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowUpRight, BookOpen, KeyRound, Puzzle } from 'lucide-react'
 import { DEVELOPERS_URL, DOCS_URL } from '../site-host'
-import { StockLogo } from '../components/tracker/StockLogo'
+import { ChainLogo, StockLogo } from '../components/tracker/StockLogo'
 import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
 import { GapBars } from '../components/tracker/GapBars'
@@ -122,6 +122,7 @@ export function Tracker() {
             {chains.map((c) => (
               <span key={c.key} className="inline-flex items-center gap-2 rounded-full border border-line-strong px-3 py-[5px] font-mono text-[11px] text-ink-2">
                 <span className={`size-[6px] rounded-full ${c.sessionOpen ? 'bg-green' : 'bg-faint'}`} style={c.sessionOpen ? { animation: 'gl-blink 1.6s ease-in-out infinite' } : undefined} />
+                <ChainLogo chain={c.key} size={14} />
                 {c.name} · {c.sessionOpen ? 'open' : 'closed'}
               </span>
             ))}
@@ -140,8 +141,9 @@ export function Tracker() {
               type="button"
               aria-selected={chain === c.key}
               onClick={() => setChain(c.key)}
-              className={`rounded-btn px-3 py-[6px] font-mono text-[12px] whitespace-nowrap transition-colors ${chain === c.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
+              className={`inline-flex items-center gap-1.5 rounded-btn px-3 py-[6px] font-mono text-[12px] whitespace-nowrap transition-colors ${chain === c.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
             >
+              <ChainLogo chain={c.key} size={14} />
               {c.name}
               {data && <span className={`ml-2 ${chain === c.key ? 'text-bg/70' : 'text-faint'}`}>{c.key === 'all' ? data.rows.length : data.rows.filter((r) => r.chain === c.key).length}</span>}
             </button>

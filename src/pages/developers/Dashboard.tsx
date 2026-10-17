@@ -1,4 +1,5 @@
 import { BookOpen, Copy, LogOut } from 'lucide-react'
+import { VenueLogo } from '../../components/logos/VenueLogo'
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { Alerts } from './Alerts'
@@ -167,9 +168,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         <div className="mx-auto flex max-w-[1240px] flex-col gap-[10px] px-6 pt-3 max-[480px]:px-4">
           <div className="flex flex-wrap items-center gap-3">
             <button type="button" onClick={() => go('overview')} className="flex min-h-11 items-center gap-[10px] text-ink">
-              <span aria-hidden className="grid size-[26px] place-items-center rounded-[8px] bg-gold font-display text-[17px] font-extrabold text-bg">
-                G
-              </span>
+              <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
               <span className="font-semibold">Developers</span>
             </button>
             <span className="text-line-strong" aria-hidden>

@@ -3,7 +3,7 @@
 import fs from 'node:fs'
 const tokens = JSON.parse(fs.readFileSync('public/tokens/SOURCES.json', 'utf8'))
 const companies = JSON.parse(fs.readFileSync('public/tokens/logos/SOURCES.json', 'utf8'))
-const byToken = Object.fromEntries(Object.entries(tokens).map(([k, v]) => [k, v.file]))
+const byToken = Object.fromEntries(Object.entries(tokens).filter(([k]) => k.includes('/0x')).map(([k, v]) => [k, v.file]))
 const byTicker = Object.fromEntries(Object.entries(companies).map(([k, v]) => [k, v.file]))
 fs.writeFileSync(
   'src/content/stockLogos.ts',

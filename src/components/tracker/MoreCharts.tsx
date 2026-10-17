@@ -5,6 +5,7 @@ import type { ChartEvent } from '../charts/chart-utils'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../charts/number-formats'
 import { axisTooltip, barsPreset, C, itemTooltip, PALETTE, ringPreset, tipHtml } from '../charts/chartPresets'
+import { ChainLogo } from './StockLogo'
 import { CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
 const trusted = (rows: TrackerRow[]) => rows.filter((r) => r.gapPct !== null && r.status !== 'thin')
@@ -221,7 +222,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
             <i className="size-[9px] flex-none rounded-[2px]" style={{ background: s.color }} />
             <span className="truncate text-ink-2">
               {s.label}
-              {s.chain && <span className="ml-1 font-mono text-[10px] text-faint">{s.chain === 'bsc' ? 'BNB' : 'RH'}</span>}
+              {s.chain && <ChainLogo chain={s.chain} size={12} named className="ml-1.5 align-[-2px]" />}
             </span>
             <span className="ml-auto font-mono text-[12px] text-muted">{fmtCompactUsd(s.v)}</span>
             <span className="w-11 text-right font-mono text-[12px] text-ink-2">{((s.v / total) * 100).toFixed(1)}%</span>
