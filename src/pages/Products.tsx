@@ -114,7 +114,7 @@ function ProductPage({ p }: { p: Product }) {
       </section>
 
       <section className="px-page pb-20">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] gap-4">
           {p.features.map((f, i) => (
             <div key={f.title} className="flex flex-col gap-3 rounded-card border border-line bg-surface p-7 transition-[border-color,transform] duration-200 hover:-translate-y-1 hover:border-gold" style={rise(i)}>
               <span className="flex size-11 items-center justify-center rounded-btn border border-gold-line text-gold">
