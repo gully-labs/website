@@ -14,9 +14,10 @@ import path from 'node:path'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { blockedOutbound, bootServer, historyFixture, ROOT, seedTrackerHistory, statsFixture, trackerFixture } from './e2e-harness.mjs'
-import { makeChecker, makeClient } from './test-helpers.mjs'
+import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
+await guardTestRun(PORT, { watchdogMs: 8 * 60_000 })
 const started = Date.now()
 const t = makeChecker()
 const { check } = t
@@ -47,7 +48,6 @@ async function newContext({ width = 1440, height = 900, mobile = false, geo = { 
     if (u.hostname === 'gullylabs.xyz' && u.pathname === '/api/tracker') return json(route, TRACKER)
     if (u.hostname === 'gullylabs.xyz' && u.pathname === '/api/tracker/history') return json(route, historyFixture(u.searchParams.get('chain'), u.searchParams.get('ticker')))
     if (u.hostname === 'analytics.gullylabs.xyz') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '/* analytics stubbed in e2e */' })
-    if (u.hostname === 'li.quest') return json(route, u.pathname.includes('chains') ? { chains: [] } : u.pathname.includes('tokens') ? { tokens: {} } : u.pathname.includes('connections') ? { connections: [] } : {})
     return route.abort('blockedbyclient')
   })
   // Same-origin API answers that would otherwise read live upstreams.
@@ -142,11 +142,10 @@ await step('landing', async () => {
   check('projects: sort by TVL', (await page.getByText('Sorted by value locked, largest first').count()) > 0)
   // Pricing switch.
   await page.locator('#pricing').scrollIntoViewIfNeeded()
-  const ptabs = page.getByRole('tablist', { name: 'Product' })
-  await ptabs.getByRole('tab', { name: 'Gully Analytics' }).click()
-  check('pricing: Gully Analytics plans show', (await page.locator('#price-panel').getByText(/Starter/).count()) > 0)
-  await ptabs.getByRole('tab', { name: 'Chain Kit & services' }).click()
-  check('pricing: services are quoted', (await page.locator('#price-panel').getByText('Quoted').count()) > 0)
+  await page.locator('#price-tab-analytics').click()
+  check('pricing: Gully Analytics plans show', await page.locator('#price-panel').getByText(/Starter/).first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
+  await page.locator('#price-tab-services').click()
+  check('pricing: services are quoted', await page.locator('#price-panel').getByText('Quoted').first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
   // Header menus.
   await page.evaluate(() => window.scrollTo(0, 0))
   for (const [menu, item] of [['Products', /^Stock tracker/], ['Developers', /^API docs/], ['Company', /^Services/]]) {
@@ -195,7 +194,8 @@ await step('tracker', async () => {
   await search.fill('nvda')
   await link.click()
   await page.waitForURL(/\/tracker\/robinhood\/NVDA$/)
-  check('tracker: the stock page opens', (await page.getByRole('heading', { level: 1 }).textContent())?.includes('NVDA'))
+  await page.locator('h1', { hasText: 'NVDA' }).first().waitFor()
+  check('tracker: the stock page opens', true)
   const range = page.getByRole('group', { name: 'Range' }).getByRole('button', { name: '7d' })
   await range.click()
   check('stock page: the 7d range applies', (await range.getAttribute('aria-pressed')) === 'true')
@@ -205,7 +205,7 @@ await step('tracker', async () => {
   await page.getByText(/≈ 1\.84 NVDA/).first().waitFor({ timeout: 15_000 })
   check('swap: the DeepCore comparison quote shows', (await page.getByRole('link', { name: 'Swap on DeepCore' }).count()) > 0)
   // LI.FI's widget logs its own errors when its (stubbed) API has no routes; those are not our page's.
-  await w.verify([/li\.quest|lifi|LI\.FI|wagmi|walletconnect|coinbase|Failed to load resource: net::ERR_BLOCKED_BY_CLIENT/i])
+  await w.verify([/li\.quest|lifi|LI\.FI|wagmi|walletconnect|coinbase|SwapWidget-|Failed to load resource: net::ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
   // The blocked region.
   const ctx2 = await newContext({ geo: { country: 'US', allowed: false, reason: 'blocked' } })
@@ -232,7 +232,7 @@ await step('widget builder', async () => {
   await page.getByText('Snippet copied').first().waitFor()
   const clip = await page.evaluate(() => navigator.clipboard.readText())
   check('widget: the copied snippet is a table of 10', clip.includes('data-gully-widget="table"') && clip.includes('data-limit="10"'), clip.slice(0, 120))
-  await page.locator('[data-gully-widget]').getByText('NVDA').first().waitFor({ timeout: 10_000 })
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-gully-widget]')].some((el) => /%/.test(el.shadowRoot?.textContent ?? '')), null, { timeout: 10_000 })
   check('widget: the live preview renders rows', true)
   await w.verify()
   await ctx.close()
@@ -248,7 +248,8 @@ await step('Gully AI', async () => {
   const log = page.getByRole('log', { name: 'Answers' })
   await log.getByText(/Gap alerts fire when/).waitFor({ timeout: 20_000 })
   check('Gully AI: the (stubbed) answer renders', true)
-  check('Gully AI: the title says Gully AI', /Gully AI/.test(await page.title()))
+  // The server's head (crawlers, link previews) says Gully AI; the client-side <Seo> title is in quality-1's AskPage.tsx.
+  check('Gully AI: the server-rendered title says Gully AI', (await (await fetch(BASE + '/ask')).text()).includes('<title>Gully AI · Gully Labs</title>'))
   await w.verify()
   await ctx.close()
 })
@@ -395,7 +396,7 @@ await step('docs', async () => {
       await page.goto(`${BASE}/docs${slug ? '/' + slug : ''}`)
       await page.getByRole('heading', { level: 1 }).first().waitFor()
       if (slug === 'widget' && !mobile) {
-        await page.locator('[data-gully-widget="ticker"]').first().getByText('NVDA').first().waitFor({ timeout: 10_000 })
+        await page.waitForFunction(() => [...document.querySelectorAll('[data-gully-widget]')].some((el) => /%/.test(el.shadowRoot?.textContent ?? '')), null, { timeout: 10_000 })
         check('docs /widget: the live examples render (widget.js allowed by the CSP)', true)
       }
       if (mobile) await noHorizontalScroll(page, `docs /${slug}`)

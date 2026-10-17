@@ -8,6 +8,8 @@ import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { EChart } from '../components/charts/EChart'
 import { axisTooltip, barsPreset, C, itemTooltip, PALETTE, sparklinePreset, tipHtml } from '../components/charts/chartPresets'
 import { NF } from '../components/charts/number-formats'
+import { ChainLogo } from '../components/logos/ChainLogo'
+import { TokenLogo } from '../components/logos/TokenLogo'
 import { apiOrigin } from './nav'
 
 /* ------------------------------------------------------------- probes --- */
@@ -276,6 +278,21 @@ export function PayCoverage() {
         <p className="m-0 py-6 font-mono text-[12px] text-muted">The server lists no payment chains: not tracked yet.</p>
       ) : (
         <EChart option={option} height={Math.max(180, chains.length * 46 + 40)} label="Assets Gully Pay accepts per chain, native coin and stablecoins, with the confirmations each chain needs" skeleton="bars" error={failed ? 'GET /api/plans could not be read just now.' : undefined} steps={{ count: chains.length }} />
+      )}
+      {chains.length > 0 && (
+        <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0" aria-label="Chains and assets">
+          {chains.map((c) => (
+            <li key={c.id} className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[12px] text-muted">
+              <ChainLogo chain={c.name} size={16} decorative />
+              <span className="text-ink">{c.name}</span>
+              {assets
+                .filter((a) => a.chainId === c.id)
+                .map((a) => (
+                  <TokenLogo key={a.symbol} symbol={a.symbol} size={16} />
+                ))}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )

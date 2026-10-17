@@ -192,13 +192,14 @@ export async function bootServer({ port }) {
     TRACKER_LOOP: 'off',
     DEEPCORE_LOOP: 'off',
     TRACKER_SKIP_APIS: '1',
+    ASK_REMOTE: 'off',
     GULLY_TREASURY_ADDRESS: treasury,
     ANTHROPIC_API_KEY: 'sk-ant-e2e-' + 'x'.repeat(30),
     TELEGRAM_BOT_TOKEN: '7000000001:' + 'E'.repeat(35),
     DEEPCORE_API: 'https://deepcore-api.e2e.invalid',
     ...Object.fromEntries(Object.keys(FEEDS).map((id) => [`GULLY_RPC_${id}`, `https://rpc-${id}.e2e.invalid`])),
   })
-  for (const k of ['GULLY_BASE_RPC', 'GULLY_MIN_CONFIRMATIONS', 'ANALYTICS_ADMIN_PASSWORD', 'ANTHROPIC_API_URL', 'TELEGRAM_API', 'ASK_REMOTE']) delete process.env[k]
+  for (const k of ['GULLY_BASE_RPC', 'GULLY_MIN_CONFIRMATIONS', 'ANALYTICS_ADMIN_PASSWORD', 'ANTHROPIC_API_URL', 'TELEGRAM_API']) delete process.env[k]
   stubServerFetch()
   await import(pathToFileURL(path.join(ROOT, 'server/server.mjs')).href)
   await new Promise((r) => setTimeout(r, 300))

@@ -5,6 +5,8 @@ import { EChart } from '../../components/charts/EChart'
 import type { ChartEvent } from '../../components/charts/chart-utils'
 import { alpha, axisTooltip, barsPreset, C, linePreset, PALETTE, tipHtml } from '../../components/charts/chartPresets'
 import { NF } from '../../components/charts/number-formats'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { adminCall } from './payAdmin'
 
 /* The admin dashboard's live charts, from GET /api/admin/charts (server/admin-charts.mjs): revenue by
@@ -227,6 +229,16 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
           <Daily days={d} lines={revLines} fmt={fmtUsd} label={`Revenue per day by ${split}, ${fmtUsd(sum(data.revenue.usd) ?? 0)} in total`} />
         ) : (
           <Daily days={d} lines={[{ name: 'Revenue', data: data.revenue.usd, color: C.gold }]} fmt={fmtUsd} label="Revenue per day: no payments in this range" />
+        )}
+        {split !== 'kind' && revLines.length > 0 && (
+          <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label={split === 'asset' ? 'Assets paid in' : 'Chains paid on'}>
+            {revLines.map((l) => (
+              <li key={l.name} className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[12px] text-ink">
+                {split === 'asset' ? <TokenLogo symbol={l.name} size={16} decorative /> : <ChainLogo chain={l.name} size={16} decorative />}
+                {l.name}
+              </li>
+            ))}
+          </ul>
         )}
         <span className={small}>{data.revenue.note}</span>
       </section>
