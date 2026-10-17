@@ -111,7 +111,31 @@ services:
       retries: 10
     mem_limit: 512m
 
+  # Nightly backups of every gully-* volume and database into gully-backups, kept 7 days (ops/backup.sh,
+  # restore steps in ops/RESTORE.md). Read-only mounts of the data volumes.
+  backup:
+    image: postgres:16-alpine
+    container_name: gully-backup
+    restart: unless-stopped
+    entrypoint: ["sh", "-c", "apk add --no-cache mysql-client >/dev/null && exec sh /backup.sh"]
+    environment:
+      BLOG_DB_PASSWORD: ${BLOG_DB_PASSWORD:?set BLOG_DB_PASSWORD in .env}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD:?set ANALYTICS_DB_PASSWORD in .env}
+    volumes:
+      - ./ops/backup.sh:/backup.sh:ro
+      - gully-web-data:/src/web:ro
+      - gully-blog-content:/src/blog:ro
+      - gully-backups:/backups
+    depends_on:
+      blog-db:
+        condition: service_healthy
+      analytics-db:
+        condition: service_healthy
+    mem_limit: 256m
+
 volumes:
+  gully-backups:
+    name: gully-backups
   gully-analytics-db:
     name: gully-analytics-db
   gully-web-data:
