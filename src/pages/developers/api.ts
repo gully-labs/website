@@ -323,3 +323,157 @@ export function ago(iso: string | null): string {
   if (s < 86_400) return `${Math.round(s / 3600)}h ago`
   return `${Math.round(s / 86_400)}d ago`
 }
+
+/* ------------------------------------------------------------ portal v2: workspaces --- */
+
+export type Role = 'owner' | 'admin' | 'developer' | 'billing' | 'viewer'
+export type MemberRole = Exclude<Role, 'owner'>
+
+/** A workspace as the signed-in wallet sees it. The id is the owner's lower-case address. */
+export interface WorkspaceRef {
+  id: string
+  name: string
+  role: Role
+  owner: string
+}
+
+export interface NotifySettings {
+  telegramUsage: boolean
+  telegramBilling: boolean
+}
+
+/** The signed-in wallet's own profile. ens and avatar come from a cached reverse lookup (ENS, then Basenames). */
+export interface Profile {
+  displayName: string | null
+  email: string | null
+  ens: string | null
+  avatar: string | null
+  notify: NotifySettings
+}
+
+/** Company details of the ACTIVE workspace (for invoices). */
+export interface Company {
+  name: string | null
+  address: string | null
+  taxId: string | null
+}
+
+export interface PendingInvite {
+  id: string
+  workspace: { id: string; name: string }
+  role: MemberRole
+  invitedBy: string
+  expiresAt: string
+}
+
+/** GET /api/developer/me (with a session cookie). */
+export interface Me {
+  address: string
+  profile: Profile
+  company: Company
+  workspaces: WorkspaceRef[]
+  active: WorkspaceRef
+  pendingInvites: PendingInvite[]
+}
+
+export interface TeamMember {
+  address: string
+  role: Role
+  joinedAt: string | null
+  invitedBy: string | null
+  lastSeenAt: string | null
+  you: boolean
+}
+
+export interface TeamInvite {
+  id: string
+  kind: 'link' | 'address'
+  address?: string
+  role: MemberRole
+  createdBy: string
+  createdAt: string
+  expiresAt: string
+}
+
+/** GET /api/developer/team. members[0] is always the owner. */
+export interface TeamView {
+  workspace: WorkspaceRef
+  members: TeamMember[]
+  invites: TeamInvite[]
+  limits: { maxMembers: number; maxOpenInvites: number; inviteDays: number }
+}
+
+/** POST /api/developer/team/invite. `link` is present only for a link invite and is shown once. */
+export interface InviteCreated {
+  invite: TeamInvite
+  link?: string
+}
+
+/** GET /api/developer/invite/:token (public). */
+export interface InvitePreview {
+  workspace: { name: string }
+  role: MemberRole
+  invitedBy: string
+  expiresAt: string
+  valid: boolean
+  state: 'open' | 'accepted' | 'revoked' | 'expired'
+}
+
+/** POST /api/developer/invite/accept. The session switches to the joined workspace. */
+export interface InviteAccepted {
+  workspace: WorkspaceRef
+  active: WorkspaceRef
+}
+
+/** GET /api/developer/sessions. `id` is a hash safe to show; revoke with it, or with 'others'. */
+export interface SessionInfo {
+  id: string
+  device: string
+  createdAt: string
+  lastSeenAt: string
+  expiresAt: string
+  current: boolean
+}
+
+export type ActivityAction =
+  | 'key.created' | 'key.renamed' | 'key.rotated' | 'key.revoked' | 'key.linked'
+  | 'alert.created' | 'alert.updated' | 'alert.deleted' | 'alert.tested'
+  | 'telegram.linked' | 'telegram.unlinked'
+  | 'analytics.trial' | 'analytics.site_added' | 'analytics.site_removed' | 'analytics.password_reset' | 'analytics.quote' | 'analytics.plan'
+  | 'billing.quote' | 'billing.paid'
+  | 'team.invited' | 'team.invite_revoked' | 'team.joined' | 'team.role_changed' | 'team.removed' | 'team.left' | 'workspace.renamed'
+  | 'company.updated' | 'profile.updated' | 'sessions.revoked'
+  | 'usage.threshold'
+
+export interface ActivityEvent {
+  id: string
+  at: string
+  /** The wallet that acted, or 'system'. */
+  actor: string
+  action: ActivityAction
+  target: string | null
+  detail: Record<string, string | number | boolean | null | string[]> | null
+}
+
+/** GET /api/developer/activity?cursor=. Pass nextCursor back as cursor for the next (older) page. */
+export interface ActivityPage {
+  workspace: { id: string }
+  events: ActivityEvent[]
+  nextCursor: string | null
+}
+
+export type Endpoint = '/api/tracker' | '/api/tracker/history' | '/api/tracker/movers' | '/api/plans' | 'other'
+
+/** GET /api/developer/usage on a portal v2 server: Usage plus these. Unknown figures are null, never 0. */
+export interface UsageV2 extends Usage {
+  previous: (Totals & { from: string; to: string }) | null
+  byStatus: { ok: number; client: number; limited: number; server: number } | null
+  byEndpoint: { endpoint: Endpoint; count: number }[] | null
+  endpointsSince: string | null
+}
+
+/** A refused write: 403 with code 'forbidden-role'. */
+export interface RoleError {
+  error: string
+  code: 'forbidden-role'
+}

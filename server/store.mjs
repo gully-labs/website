@@ -115,7 +115,7 @@ export function setBlocked(address, blocked) {
 
 /* ------------------------------------------------------------ sessions --- */
 
-// Dashboard sign-in sessions: { [sha256(sessionId)]: { address, createdAt, expiresAt } }. The cookie holds
+// Dashboard sign-in sessions: { [sha256(sessionId)]: { address, createdAt, expiresAt, lastSeenAt?, userAgent?, activeWorkspace? } }. The cookie holds
 // the plaintext id; only its hash is stored.
 const SESSIONS = path.join(DATA_DIR, 'sessions.json')
 export const SESSION_TTL_MS = 30 * 86_400_000
@@ -135,14 +135,17 @@ function pruneSessions() {
   for (const [h, s] of Object.entries(sessions)) if (Date.parse(s.expiresAt) <= now) delete sessions[h]
 }
 
-/** Starts a session for a wallet; returns the plaintext session id (for the cookie) once. */
-export function createSession(address) {
+/**
+ * Starts a session for a wallet; returns the plaintext session id (for the cookie) once.
+ * `userAgent` (optional) is kept, cut to 200 characters, to label the device in the sessions list.
+ */
+export function createSession(address, { userAgent = null } = {}) {
   pruneSessions()
   const mine = Object.entries(sessions).filter(([, s]) => s.address === address).sort((a, b) => a[1].createdAt.localeCompare(b[1].createdAt))
   while (mine.length >= MAX_SESSIONS_PER_ACCOUNT) delete sessions[mine.shift()[0]]
   const id = randomToken(32)
   const now = Date.now()
-  sessions[sha256(id)] = { address, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + SESSION_TTL_MS).toISOString() }
+  sessions[sha256(id)] = { address, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + SESSION_TTL_MS).toISOString(), lastSeenAt: new Date(now).toISOString(), userAgent: typeof userAgent === 'string' ? userAgent.slice(0, 200) : null, activeWorkspace: null }
   saveSessions()
   return id
 }
@@ -166,6 +169,63 @@ export function deleteSession(id) {
   if (!sessions[h]) return
   delete sessions[h]
   saveSessions()
+}
+
+/** A wallet's live sessions as [storedHash, session] pairs, newest first (portal v2 sessions list). */
+export function sessionsOf(address) {
+  pruneSessions()
+  return Object.entries(sessions)
+    .filter(([, s]) => s.address === address)
+    .sort((a, b) => b[1].createdAt.localeCompare(a[1].createdAt))
+}
+
+/** The stored key of a plaintext session id (its SHA-256). */
+export const sessionKey = (id) => sha256(String(id))
+
+/** Ends one session by its stored key. Returns whether it existed. */
+export function deleteSessionByKey(key) {
+  if (!sessions[key]) return false
+  delete sessions[key]
+  saveSessions()
+  return true
+}
+
+const SEEN_SAVE_MS = 5 * 60_000
+/** Marks a session as seen now; written to disk at most every five minutes per session. */
+export function touchSession(id) {
+  const s = sessions[sha256(String(id))]
+  if (!s) return
+  const now = Date.now()
+  const last = Date.parse(s.lastSeenAt ?? s.createdAt)
+  s.lastSeenAt = new Date(now).toISOString()
+  if (!(now - last < SEEN_SAVE_MS)) saveSessions()
+}
+
+/** Sets the workspace a session acts in (null = the wallet's own). */
+export function setSessionWorkspace(id, workspace) {
+  const s = sessions[sha256(String(id))]
+  if (!s) return
+  s.activeWorkspace = workspace && workspace !== s.address ? workspace : null
+  saveSessions()
+}
+
+/** Every session of `address` acting in `workspace` falls back to the wallet's own workspace. */
+export function resetSessionsWorkspace(address, workspace) {
+  let changed = false
+  for (const s of Object.values(sessions)) {
+    if (s.address === address && s.activeWorkspace === workspace) {
+      s.activeWorkspace = null
+      changed = true
+    }
+  }
+  if (changed) saveSessions()
+}
+
+/** The latest time a wallet was seen in the dashboard (session activity or sign-in), or null. */
+export function lastSeenOf(address) {
+  let best = getAccount(address)?.lastLoginAt ?? null
+  for (const s of Object.values(sessions)) if (s.address === address && s.lastSeenAt && (!best || s.lastSeenAt > best)) best = s.lastSeenAt
+  return best
 }
 
 /** Ends every session of a wallet (used when an admin blocks it). */

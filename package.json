@@ -18,6 +18,7 @@
     "test:deepcore": "node --test scripts/test-deepcore.mjs",
     "test:paylinks": "node scripts/test-paylinks.mjs",
     "test:ask": "node scripts/test-ask.mjs",
+    "test:workspaces": "node scripts/test-workspaces.mjs",
     "ask:index": "node scripts/build-ask-index.mjs"
   },
   "dependencies": {

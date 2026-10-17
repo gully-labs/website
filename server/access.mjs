@@ -38,6 +38,10 @@ const utcDayStart = (ms) => {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
 }
 
+// Per key, the request count of each of the last 60 minutes ([minute, count] pairs, at most 61), for
+// the usage-threshold notices (peakPerMinute). Only keys used in the last hour are held.
+const minuteHistory = new Map() // keyId -> [[minute, count], ...]
+
 function count(id, limit) {
   const minute = Math.floor(Date.now() / 60_000)
   let w = windows.get(id)
@@ -46,7 +50,35 @@ function count(id, limit) {
     windows.set(id, w)
   }
   w.count++
+  if (id.startsWith('key:')) noteMinute(id.slice(4), minute, w.count)
   return { allowed: w.count <= limit, remaining: Math.max(0, limit - w.count), retryAfter: 60 - Math.floor((Date.now() / 1000) % 60) }
+}
+
+function noteMinute(keyId, minute, n) {
+  let h = minuteHistory.get(keyId)
+  if (!h) minuteHistory.set(keyId, (h = []))
+  const last = h.at(-1)
+  if (last && last[0] === minute) last[1] = Math.max(last[1], n)
+  else h.push([minute, n])
+  while (h.length && h[0][0] < minute - 60) h.shift()
+}
+
+/** The busiest minute of a key over the last hour (requests counted against its limit, 429s included), or 0. */
+export function peakPerMinute(keyId, now = Date.now()) {
+  const minute = Math.floor(now / 60_000)
+  let max = 0
+  for (const [m, n] of minuteHistory.get(keyId) ?? []) if (m >= minute - 60 && n > max) max = n
+  return max
+}
+
+/** Test hook: counts `n` requests for a key in the current minute (as if they had been made). */
+export function bumpMinuteForTest(keyId, n) {
+  const minute = Math.floor(Date.now() / 60_000)
+  const id = `key:${keyId}`
+  let w = windows.get(id)
+  if (!w || w.minute !== minute) windows.set(id, (w = { minute, count: 0 }))
+  w.count += n
+  noteMinute(keyId, minute, w.count)
 }
 
 function keyRecord(keyId) {
@@ -107,16 +139,30 @@ function bucketIndex(status) {
  * Records a keyed request's outcome once its response has been sent: the hour bucket by status class
  * and the recent-requests ring buffer. Anonymous requests are only counted in apiAccess.
  */
+// Endpoint templates counted per key and hour (the dashboard's "top endpoints"). A fixed set, so memory
+// stays bounded: at most ENDPOINTS.length counters per key-hour, pruned with the hour buckets.
+export const ENDPOINTS = ['/api/tracker', '/api/tracker/history', '/api/tracker/movers', '/api/plans', 'other']
+/** A request path reduced to its route template (one of ENDPOINTS). */
+export function endpointOf(pathname) {
+  const p = String(pathname ?? '').split('?')[0].replace(/\/+$/, '') || '/'
+  return p !== 'other' && ENDPOINTS.includes(p) ? p : 'other'
+}
+
 export function observe(req, res, keyId) {
   if (!keyId) return
   const start = Date.now()
   const u = new URL(req.url ?? '/', 'http://x')
   const shown = (u.pathname + u.search).slice(0, 200)
+  const ep = endpointOf(u.pathname)
   res.once('finish', () => {
     const k = keyRecord(keyId)
-    const h = (k.hours[hourKey(start)] ??= [0, 0, 0, 0, 0])
+    const hk = hourKey(start)
+    const h = (k.hours[hk] ??= [0, 0, 0, 0, 0])
     h[0]++
     h[bucketIndex(res.statusCode)]++
+    k.ep ??= {}
+    const e = (k.ep[hk] ??= {})
+    e[ep] = (e[ep] ?? 0) + 1
     k.recent.push([start, req.method ?? 'GET', shown, res.statusCode, Date.now() - start])
     if (k.recent.length > RECENT) k.recent.splice(0, k.recent.length - RECENT)
     dirty = true
@@ -185,6 +231,102 @@ export function accountUsage(keyIds, range = '24h') {
   return { range: RANGES[range] ? range : '24h', bucket: r.hours === 24 ? 'day' : 'hour', points, today: todayTotals, last7d: weekTotals, rangeTotals, countingSince: since === null ? null : new Date(since).toISOString() }
 }
 
+/** Start and bucket size of a range's window (same arithmetic as accountUsage). */
+function rangeWindow(range, now = Date.now()) {
+  const r = RANGES[range] ?? RANGES['24h']
+  const sizeMs = r.hours * HOUR_MS
+  const lastStart = r.hours === 24 ? utcDayStart(now) : Math.floor(now / HOUR_MS) * HOUR_MS
+  const first = lastStart - (r.buckets - 1) * sizeMs
+  return { r, sizeMs, first, end: first + r.buckets * sizeMs }
+}
+
+/**
+ * Extra usage figures for the dashboard (portal v2), over the same window as accountUsage(range):
+ *   previous:   totals of the period of the same length just before, with its { from, to }
+ *               (null when counting began after that period started, so it would be partial)
+ *   byStatus:   { ok, client, limited, server } over the range (null when nothing was ever counted for these keys)
+ *   byEndpoint: [{ endpoint, count }] over the range, busiest first (null when no endpoint counts exist yet)
+ *   endpointsSince: first hour with endpoint counts, or null
+ * Unknown figures are null, never 0.
+ */
+export function usageExtras(keyIds, range = '24h', now = Date.now()) {
+  const { first, end } = rangeWindow(range, now)
+  const prevStart = first - (end - first)
+  const zero = () => ({ total: 0, ok: 0, client: 0, limited: 0, server: 0 })
+  const prev = zero()
+  const cur = zero()
+  const add = (s, b) => {
+    s.total += b[0]
+    s.ok += b[1]
+    s.client += b[2]
+    s.limited += b[3]
+    s.server += b[4]
+  }
+  let since = null
+  let epSince = null
+  const eps = {}
+  for (const id of keyIds) {
+    const k = usage.keys[id]
+    for (const [hk, b] of Object.entries(k?.hours ?? {})) {
+      const t = Date.parse(hk + ':00:00Z')
+      if (since === null || t < since) since = t
+      if (t >= first && t < end) add(cur, b)
+      else if (t >= prevStart && t < first) add(prev, b)
+    }
+    for (const [hk, counts] of Object.entries(k?.ep ?? {})) {
+      const t = Date.parse(hk + ':00:00Z')
+      if (epSince === null || t < epSince) epSince = t
+      if (t < first || t >= end) continue
+      for (const [e, n] of Object.entries(counts)) eps[e] = (eps[e] ?? 0) + n
+    }
+  }
+  return {
+    previous: since !== null && since <= prevStart ? { ...prev, from: new Date(prevStart).toISOString(), to: new Date(first).toISOString() } : null,
+    byStatus: since === null ? null : { ok: cur.ok, client: cur.client, limited: cur.limited, server: cur.server },
+    byEndpoint: epSince === null ? null : Object.entries(eps).map(([endpoint, count]) => ({ endpoint, count })).sort((a, b) => b.count - a.count || a.endpoint.localeCompare(b.endpoint)),
+    endpointsSince: epSince === null ? null : new Date(epSince).toISOString(),
+  }
+}
+
+/**
+ * Per-bucket, per-key rows for the CSV export: { t, keyId, total, ok, client, limited, server }, oldest
+ * first; only buckets with traffic. '24h' and '7d' are hourly, '30d' daily (UTC days).
+ */
+export function usageRows(keyIds, range = '24h', now = Date.now()) {
+  const { sizeMs, first, end } = rangeWindow(range, now)
+  const rows = new Map() // `${bucketStart}|${keyId}` -> row
+  for (const id of keyIds) {
+    for (const [hk, b] of Object.entries(usage.keys[id]?.hours ?? {})) {
+      const t = Date.parse(hk + ':00:00Z')
+      if (t < first || t >= end) continue
+      const start = first + Math.floor((t - first) / sizeMs) * sizeMs
+      const key = `${start}|${id}`
+      const r = rows.get(key) ?? { t: new Date(start).toISOString(), keyId: id, total: 0, ok: 0, client: 0, limited: 0, server: 0 }
+      r.total += b[0]
+      r.ok += b[1]
+      r.client += b[2]
+      r.limited += b[3]
+      r.server += b[4]
+      rows.set(key, r)
+    }
+  }
+  return [...rows.values()].sort((a, b) => a.t.localeCompare(b.t) || a.keyId.localeCompare(b.keyId))
+}
+
+/** Test hook: adds one hour bucket [total, ok, client, limited, server] (and endpoint counts) to a key. */
+export function addUsageForTest(keyId, atMs, bucket, endpoints = null) {
+  const k = keyRecord(keyId)
+  const hk = hourKey(atMs)
+  const h = (k.hours[hk] ??= [0, 0, 0, 0, 0])
+  for (let i = 0; i < 5; i++) h[i] += bucket[i] ?? 0
+  if (endpoints) {
+    k.ep ??= {}
+    const e = (k.ep[hk] ??= {})
+    for (const [ep, n] of Object.entries(endpoints)) e[ep] = (e[ep] ?? 0) + n
+  }
+  dirty = true
+}
+
 /** The most recent requests across a set of keys, newest first. */
 export function recentRequests(keyIds, limit = RECENT) {
   const rows = []
@@ -214,7 +356,10 @@ export function flushUsage() {
   if (!dirty) return
   dirty = false
   const oldest = hourKey(Date.now() - KEEP_HOURS * HOUR_MS)
-  for (const k of Object.values(usage.keys)) for (const hk of Object.keys(k.hours ?? {})) if (hk < oldest) delete k.hours[hk]
+  for (const k of Object.values(usage.keys)) {
+    for (const hk of Object.keys(k.hours ?? {})) if (hk < oldest) delete k.hours[hk]
+    for (const hk of Object.keys(k.ep ?? {})) if (hk < oldest) delete k.ep[hk]
+  }
   try {
     fs.mkdirSync(path.dirname(USAGE_FILE), { recursive: true })
     fs.writeFileSync(USAGE_FILE + '.tmp', JSON.stringify(usage))
@@ -228,5 +373,6 @@ export function flushUsage() {
 setInterval(() => {
   const minute = Math.floor(Date.now() / 60_000)
   for (const [id, w] of windows) if (w.minute < minute - 1) windows.delete(id)
+  for (const [id, h] of minuteHistory) if (!h.length || h.at(-1)[0] < minute - 60) minuteHistory.delete(id)
   flushUsage()
 }, 60_000).unref?.()
