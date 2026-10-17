@@ -6,9 +6,11 @@ import { SocialIcon } from '../components/SocialIcon'
 import { GapHistory } from '../components/tracker/GapHistory'
 import { ChainLogo, StockLogo } from '../components/tracker/StockLogo'
 import { StatusBadge } from '../components/tracker/TrackerTable'
-import { useCountUp } from '../hooks/useCountUp'
+import { AnimatedNumber } from '../components/charts/AnimatedNumber'
+import { NF } from '../components/charts/number-formats'
+import { PoolDepth } from '../components/tracker/PoolDepth'
 import { xPost } from '../lib/share'
-import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, fmtPrice, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow } from '../lib/tracker'
+import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow } from '../lib/tracker'
 import { DEVELOPERS_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
@@ -58,9 +60,9 @@ function CopyAddress({ label, address, chain }: { label: string; address: string
   )
 }
 
+/** A live price: rolls up on load, then rolls to each new read; unreadable shows a dash. */
 function Price({ value }: { value: number | null }) {
-  const n = useCountUp(value ?? 0)
-  return <>{value === null ? '—' : fmtPrice(n)}</>
+  return <AnimatedNumber value={value} format={value !== null && value < 1 ? NF.usd4 : NF.usd} countUp />
 }
 
 /** One window's gap change for this stock, from /api/tracker/movers, with why when there is none. */
@@ -136,11 +138,11 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             [
               { k: 'ONCHAIN', v: <Price value={row.onchain} />, n: row.pool ? `${row.ticker}/${row.pool.against}` : 'no pool' },
               { k: 'FAIR', v: <Price value={row.fair} />, n: `Chainlink · ${ageText(row.feedUpdatedAt, now)}` },
-              { k: 'GAP', v: fmtGap(row.gapPct), c: tone, n: row.status === 'thin' ? 'thin pool, not trusted' : 'onchain vs fair' },
+              { k: 'GAP', v: <AnimatedNumber value={row.gapPct} format={NF.signed2} suffix="%" countUp />, c: tone, n: row.status === 'thin' ? 'thin pool, not trusted' : 'onchain vs fair' },
               moveCell('GAP Δ 1H', move1h, row),
               moveCell('GAP Δ 24H', move24h, row),
-              { k: 'LIQUIDITY', v: fmtCompactUsd(row.pool?.liquidityUsd), n: 'deepest pool' },
-              { k: 'VOLUME 24H', v: fmtCompactUsd(row.pool?.volume24hUsd), n: 'deepest pool' },
+              { k: 'LIQUIDITY', v: <AnimatedNumber value={row.pool?.liquidityUsd} format={NF.compactUsd} countUp />, n: 'deepest pool' },
+              { k: 'VOLUME 24H', v: <AnimatedNumber value={row.pool?.volume24hUsd} format={NF.compactUsd} countUp />, n: 'deepest pool' },
               { k: 'ALL POOLS', v: row.pool ? String(row.pool.pools) : '—', n: row.pool ? `${fmtCompactUsd(row.pool.totalLiquidityUsd)} liquidity` : 'none found' },
             ] as KpiCell[]
           ).map((m) => (
@@ -156,14 +158,20 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
       </section>
 
       <section className="grid grid-cols-[2fr_1fr] items-start gap-5 px-page pb-8 max-[1099px]:grid-cols-1">
-        <div className={card} style={rise(4)}>
-          <h2 className="m-0 font-display text-[26px] font-bold uppercase">Gap to fair price</h2>
-          <GapHistory chain={row.chain} ticker={row.ticker} inLinePct={data.rules.inLinePct} />
-          <span className="font-mono text-[11px] leading-[1.5] text-faint">
-            {row.pool ? `${row.pool.dex}${row.pool.labels.length ? ` ${row.pool.labels.join('/')}` : ''} · ${row.ticker}/${row.pool.against}` : 'no pool'} · {chain?.fairMethod ?? 'fair from Chainlink'}
-            {row.feedPrices === 'underlying-share' && row.multiplier !== null ? ` · share × ${row.multiplier.toFixed(6)}` : ''}
-            {chain ? ` · market ${chain.sessionOpen ? 'open' : 'closed'} (${chain.sessionName})` : ''}
-          </span>
+        <div className="flex min-w-0 flex-col gap-5">
+          <div className={card} style={rise(4)}>
+            <h2 className="m-0 font-display text-[26px] font-bold uppercase">Gap to fair price</h2>
+            <GapHistory chain={row.chain} ticker={row.ticker} inLinePct={data.rules.inLinePct} />
+            <span className="font-mono text-[11px] leading-[1.5] text-faint">
+              {row.pool ? `${row.pool.dex}${row.pool.labels.length ? ` ${row.pool.labels.join('/')}` : ''} · ${row.ticker}/${row.pool.against}` : 'no pool'} · {chain?.fairMethod ?? 'fair from Chainlink'}
+              {row.feedPrices === 'underlying-share' && row.multiplier !== null ? ` · share × ${row.multiplier.toFixed(6)}` : ''}
+              {chain ? ` · market ${chain.sessionOpen ? 'open' : 'closed'} (${chain.sessionName})` : ''}
+            </span>
+          </div>
+          <div className={card} style={rise(5)}>
+            <h2 className="m-0 font-display text-[22px] font-bold uppercase">Pool depth</h2>
+            <PoolDepth pool={row.pool} ticker={row.ticker} />
+          </div>
         </div>
 
         <div className="flex min-w-0 flex-col gap-5">

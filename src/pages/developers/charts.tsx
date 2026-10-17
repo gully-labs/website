@@ -2,9 +2,12 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode 
 import { LIMITED_COLOR } from './styles'
 
 /* Hand-drawn SVG charts for the console portal: a sparkline, the stacked request bars, the double
-   ring and a meter. CSS animations only (bars grow in, lines draw, rings sweep); the global
-   prefers-reduced-motion rule in index.css switches every one of them off. They draw only the numbers
-   they are given: no smoothing, no sample data. */
+   ring and a meter. They stay SVG (not ECharts) so the portal chunk stays small, but move like the
+   site's chart kit: bars grow in with a small stagger and glide to new heights, lines draw left to
+   right and end on a pulsing live dot, rings sweep, meters fill; hovering a bucket lights its column
+   with a crosshair while the others dim, and the tooltip follows. Under prefers-reduced-motion the
+   index.css policy turns the growth into short fades and stills the pulse. They draw only the
+   numbers they are given: no smoothing, no sample data. */
 
 const EASE = 'cubic-bezier(.2,.8,.2,1)'
 
@@ -12,10 +15,16 @@ const EASE = 'cubic-bezier(.2,.8,.2,1)'
 export function Spark({ values, color, w = 80, h = 28, label }: { values: number[]; color: string; w?: number; h?: number; label?: string }) {
   if (values.length < 2) return <span aria-hidden className="inline-block" style={{ width: w, height: h }} />
   const max = Math.max(...values)
-  const d = values.map((v, i) => `${i ? 'L' : 'M'}${((i / (values.length - 1)) * w).toFixed(1)} ${(max ? (1 - v / max) * (h - 4) + 2 : h - 2).toFixed(1)}`).join(' ')
+  const px = (i: number) => (i / (values.length - 1)) * (w - 4)
+  const py = (v: number) => (max ? (1 - v / max) * (h - 6) + 3 : h - 3)
+  const d = values.map((v, i) => `${i ? 'L' : 'M'}${px(i).toFixed(1)} ${py(v).toFixed(1)}`).join(' ')
+  const lx = px(values.length - 1)
+  const ly = py(values[values.length - 1])
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} className="block shrink-0" role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+    <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} className="block shrink-0 overflow-visible" role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
       <path key={d} d={d} pathLength={1} fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" style={{ strokeDasharray: 1, animation: `gl-draw 1.3s ${EASE} both` }} />
+      <circle cx={lx} cy={ly} r={2.2} fill={color} style={{ animation: 'gl-fade .3s 1.1s both' }} />
+      <circle cx={lx} cy={ly} r={2.2} fill="none" stroke={color} strokeWidth={1} style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: 'gl-live-pulse 2.4s 1.4s ease-out infinite both' }} />
     </svg>
   )
 }
@@ -94,6 +103,12 @@ export function RequestBars({ columns, series, showLimited, animKey, height = 24
         {[0, 1, 2, 3].map((i) => (
           <line key={i} x1={0} x2={W} y1={y((top / 3) * i)} y2={y((top / 3) * i)} stroke={i ? '#1a2029' : '#2c3540'} vectorEffect="non-scaling-stroke" />
         ))}
+        {hover !== null && hover < n && (
+          <g aria-hidden pointerEvents="none">
+            <rect x={hover * slot} y={0} width={slot} height={H} fill="rgba(166,176,189,.06)" />
+            <line x1={hover * slot + slot / 2} x2={hover * slot + slot / 2} y1={0} y2={H} stroke="#3a4452" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+          </g>
+        )}
         <g key={animKey}>
           {columns.map((c, i) => {
             let acc = 0
@@ -137,7 +152,7 @@ export function RequestBars({ columns, series, showLimited, animKey, height = 24
           id={tipId}
           role="status"
           className="pointer-events-none absolute top-1 z-10 grid grid-cols-[auto_auto] gap-x-[14px] gap-y-[2px] rounded-[8px] border border-line-strong bg-[rgba(13,17,22,.96)] px-[10px] py-2 font-mono text-[11px] whitespace-nowrap text-ink shadow-[0_8px_24px_rgba(0,0,0,.45)]"
-          style={{ left: `${leftPct}%`, transform: `translateX(${hover > n * 0.55 ? 'calc(-100% - 10px)' : '10px'})` }}
+          style={{ left: `${leftPct}%`, transform: `translateX(${hover > n * 0.55 ? 'calc(-100% - 10px)' : '10px'})`, transition: 'left .12s ease-out' }}
         >
           <span className="text-faint">{cur.long}</span>
           <span />

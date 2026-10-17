@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
+import { ChartBox } from '../charts/ChartSkeleton'
+import { axisTooltip, C, linePreset, livePoint, tipHtml } from '../charts/chartPresets'
 import { DOWN, fmtGap, fmtPrice, UP, useHistory, type HistoryPoint } from '../../lib/tracker'
 
 type Range = '24h' | '7d'
@@ -49,7 +51,13 @@ function withBreaks(pts: HistoryPoint[]) {
    prices side by side. Crosshair tooltip with exact values, arrow keys step through readings,
    drag (or the slider on 7d) to zoom. Switching stock, mode or range animates the line to its new
    shape; a short history says how short instead of drawing. */
-export function GapHistory({ chain, ticker, inLinePct }: { chain: string; ticker: string; inLinePct: number }) {
+export function GapHistory(props: { chain: string; ticker: string; inLinePct: number }) {
+  // Retry remounts the view, which reads the history afresh.
+  const [attempt, setAttempt] = useState(0)
+  return <GapHistoryView key={attempt} {...props} onRetry={() => setAttempt((a) => a + 1)} />
+}
+
+function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; ticker: string; inLinePct: number; onRetry: () => void }) {
   const st = useHistory(chain, ticker)
   const [range, setRange] = useState<Range>('24h')
   const [mode, setMode] = useState<Mode>('gap')
@@ -82,7 +90,7 @@ export function GapHistory({ chain, ticker, inLinePct }: { chain: string; ticker
       label: { show: true, position: 'insideTop', color: '#5c6878', fontSize: 10, formatter: 'no readings' },
       data: holes.map(([a, b]) => [{ xAxis: ms(a) }, { xAxis: ms(b) }]),
     }
-    const drawn = { animationDuration: 1100, animationEasing: 'cubicOut', animationDurationUpdate: 700, animationEasingUpdate: 'cubicInOut' }
+    const newest = rows[rows.length - 1]
 
     let series: object[]
     let yAxis: object
@@ -95,6 +103,7 @@ export function GapHistory({ chain, ticker, inLinePct }: { chain: string; ticker
         max: ext,
         interval: ext / 2,
         axisLabel: { formatter: (v: number) => `${v > 0 ? '+' : ''}${Number.isInteger(v) ? v : v.toFixed(2).replace(/0$/, '')}%` },
+        axisPointer: { label: { formatter: (p: ChartEvent) => fmtGap(p.value) } },
       }
       // Above fair is teal, below is vermilion, split exactly at zero (bounded pieces: open-ended ones
       // leave ECharts with no gradient stops on a line).
@@ -103,18 +112,12 @@ export function GapHistory({ chain, ticker, inLinePct }: { chain: string; ticker
         {
           id: 'gap',
           name: 'gap',
-          type: 'line',
+          ...linePreset({ smooth: 0.15 }),
           data: line(1),
-          smooth: 0.15,
-          smoothMonotone: 'x',
-          showSymbol: false,
-          symbolSize: 8,
           connectNulls: false,
-          lineStyle: { width: 2 },
           areaStyle: { opacity: 0.14, origin: 0 },
           emphasis: { disabled: true },
           z: 3,
-          ...drawn,
           markArea: {
             silent: true,
             itemStyle: { color: 'rgba(232,192,96,.07)' },
@@ -124,16 +127,18 @@ export function GapHistory({ chain, ticker, inLinePct }: { chain: string; ticker
           markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: '#3a4452', width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
         },
         { id: 'gap-bridge', ...bridgeStyle, data: bridge(1), markArea: holeArea },
+        livePoint(newest ? [ms(newest), newest[1]] : null, newest && newest[1] < 0 ? DOWN : UP),
       ]
     } else {
       // min/max/interval are cleared explicitly: the y axis merges across modes, and the gap mode's
       // fixed extent would otherwise stay.
-      yAxis = { type: 'value', scale: true, min: null, max: null, interval: null, splitNumber: 4, axisLabel: { formatter: (v: number) => fmtPrice(v).replace(/\.00$/, '') } }
+      yAxis = { type: 'value', scale: true, min: null, max: null, interval: null, splitNumber: 4, axisLabel: { formatter: (v: number) => fmtPrice(v).replace(/\.00$/, '') }, axisPointer: { label: { formatter: (p: ChartEvent) => fmtPrice(p.value) } } }
       series = [
-        { id: 'onchain', name: 'onchain', type: 'line', data: line(2), smooth: false, showSymbol: false, symbolSize: 8, connectNulls: false, color: '#e8c060', lineStyle: { width: 2 }, emphasis: { disabled: true }, z: 3, ...drawn },
-        { id: 'fair', name: 'fair (Chainlink)', type: 'line', data: line(3), smooth: false, showSymbol: false, symbolSize: 7, connectNulls: false, color: '#a6b0bd', lineStyle: { width: 1.5, type: [5, 4] }, emphasis: { disabled: true }, z: 2, ...drawn },
+        { id: 'onchain', name: 'onchain', ...linePreset({ color: C.gold, smooth: 0 }), data: line(2), connectNulls: false, z: 3 },
+        { id: 'fair', name: 'fair (Chainlink)', ...linePreset({ color: C.muted, width: 1.5, smooth: 0, dashed: true }), symbolSize: 7, data: line(3), connectNulls: false, z: 2 },
         { id: 'onchain-bridge', ...bridgeStyle, data: bridge(2), markArea: holeArea },
         { id: 'fair-bridge', ...bridgeStyle, data: bridge(3) },
+        livePoint(newest ? [ms(newest), newest[2]] : null, C.gold),
       ]
     }
 
@@ -149,21 +154,24 @@ export function GapHistory({ chain, ticker, inLinePct }: { chain: string; ticker
         splitNumber: 4,
         // Times when the readings span under two days (whatever the range), dates beyond that.
         axisLabel: { hideOverlap: true, formatter: (v: number) => (pts[pts.length - 1][0] - pts[0][0] < 2 * 86400 ? hhmm(v) : day(v)) },
+        axisPointer: { label: { formatter: (p: ChartEvent) => `${day(p.value)} ${hhmm(p.value)}` } },
       },
       yAxis,
       visualMap,
-      tooltip: {
-        trigger: 'axis',
-        confine: true,
-        axisPointer: { type: 'line', lineStyle: { color: '#3a4452', width: 1 }, label: { show: false } },
-        formatter: (ps: ChartEvent[]) => {
-          const main = ps.find((p) => p.seriesId === 'gap' || p.seriesId === 'onchain')
-          const p = main ? rows[main.dataIndex] : null
-          if (!p) return ''
-          const c = p[1] >= 0 ? UP : DOWN
-          return `<div style="color:#6c7888">${day(p[0] * 1000)} · ${hhmm(p[0] * 1000)} UTC</div><div>gap <b style="color:${c};font-weight:500">${fmtGap(p[1])}</b></div><div>onchain <b style="color:#e8c060;font-weight:500">${fmtPrice(p[2])}</b> · fair ${fmtPrice(p[3])}</div>`
-        },
-      },
+      tooltip: axisTooltip((ps: ChartEvent[]) => {
+        const main = ps.find((p) => p.seriesId === 'gap' || p.seriesId === 'onchain')
+        const p = main ? rows[main.dataIndex] : null
+        if (!p) return ''
+        const c = p[1] >= 0 ? UP : DOWN
+        return tipHtml({
+          title: `${day(p[0] * 1000)} · ${hhmm(p[0] * 1000)} UTC`,
+          rows: [
+            { name: 'gap', value: fmtGap(p[1]), valueColor: c },
+            { name: 'onchain', value: fmtPrice(p[2]), color: C.gold },
+            { name: 'fair', value: fmtPrice(p[3]), color: C.muted },
+          ],
+        })
+      }, 'cross'),
       dataZoom: [
         ...(touch ? [] : [{ id: 'zin', type: 'inside', xAxisIndex: 0, filterMode: 'none', zoomOnMouseWheel: 'shift', moveOnMouseWheel: false, moveOnMouseMove: true }]),
         ...(slider ? [{ id: 'zslide', type: 'slider', xAxisIndex: 0, filterMode: 'none', height: 22, bottom: 6, showDetail: false }] : []),
@@ -211,8 +219,8 @@ export function GapHistory({ chain, ticker, inLinePct }: { chain: string; ticker
         <p className="pointer-events-none absolute inset-0 m-0 flex items-center justify-center font-mono text-[12px] text-ink-2">Reading {ticker}'s history…</p>
       </EChart>
     )
-  else if (st.k === 'loading') body = note(`Reading ${ticker}'s history…`)
-  else if (st.k === 'error') body = note('The history could not be read. Try again.', true)
+  else if (st.k === 'loading') body = <ChartBox height={HEIGHT} state="loading" variant="line" />
+  else if (st.k === 'error') body = <ChartBox height={HEIGHT} state="error" message={`Couldn't load ${ticker}'s history.`} onRetry={onRetry} />
   else if (!option)
     body = note(`${pts.length} reading${pts.length === 1 ? '' : 's'} in this range — not enough for a series. The tracker records every token every five minutes, so a line appears after two readings.`)
   else {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { EChart } from '../charts/EChart'
-import { esc, type ChartEvent } from '../charts/chart-utils'
+import type { ChartEvent } from '../charts/chart-utils'
+import { heatmapPreset, itemTooltip, tipHtml } from '../charts/chartPresets'
 import { CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, stockPath, UP, type TrackerRow } from '../../lib/tracker'
 
 /* Gap heatmap: every trusted stock as a tile, sized by the liquidity of the pool its price comes from
@@ -53,33 +54,30 @@ export function GapHeatmap({ rows, inLinePct }: { rows: TrackerRow[]; inLinePct:
   const total = tiles.reduce((a, r) => a + r.pool!.liquidityUsd, 0)
   const option = useMemo(
     () => ({
-      animationDuration: 900,
-      animationEasing: 'cubicOut',
-      animationDurationUpdate: 750,
-      animationEasingUpdate: 'cubicInOut',
-      tooltip: {
-        trigger: 'item',
-        confine: true,
-        formatter: (p: ChartEvent) => {
-          const r = tiles.find((t) => idOf(t) === p.data?.id)
-          if (!r) return ''
-          return `<div><b style="color:#e8c060;font-weight:500">${esc(r.ticker)}</b> · ${esc(r.name)}</div><div style="color:#6c7888">${esc(CHAIN_NAME[r.chain] ?? r.chain)}</div><div>gap <span style="color:${(r.gapPct ?? 0) >= 0 ? UP : DOWN}">${fmtGap(r.gapPct)}</span></div><div>onchain ${fmtPrice(r.onchain)} · fair ${fmtPrice(r.fair)}</div><div style="color:#6c7888">pool liquidity ${fmtCompactUsd(r.pool!.liquidityUsd)}</div>`
-        },
-      },
+      tooltip: itemTooltip((p: ChartEvent) => {
+        const r = tiles.find((t) => idOf(t) === p.data?.id)
+        if (!r) return ''
+        const c = (r.gapPct ?? 0) >= 0 ? UP : DOWN
+        return tipHtml({
+          title: `${r.ticker} · ${r.name} · ${CHAIN_NAME[r.chain] ?? r.chain}`,
+          rows: [
+            { name: 'gap', value: fmtGap(r.gapPct), color: c, valueColor: c },
+            { name: 'onchain', value: fmtPrice(r.onchain) },
+            { name: 'fair', value: fmtPrice(r.fair) },
+            { name: 'pool liquidity', value: fmtCompactUsd(r.pool!.liquidityUsd) },
+          ],
+          note: 'click for its page',
+        })
+      }),
       series: [
         {
           id: 'heat',
-          type: 'treemap',
+          ...heatmapPreset(),
           left: 0,
           right: 0,
           top: 0,
           bottom: 0,
-          roam: false,
-          nodeClick: false,
-          breadcrumb: { show: false },
           squareRatio: 0.5 * (1 + Math.sqrt(5)),
-          itemStyle: { borderColor: '#10141a', borderWidth: 2, gapWidth: 2, borderRadius: 4 },
-          emphasis: { itemStyle: { borderColor: '#e8c060', borderWidth: 2 }, label: { show: true } },
           label: {
             show: true,
             overflow: 'truncate',

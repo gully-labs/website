@@ -9,8 +9,10 @@ interface SparklineProps {
   delay?: number
   /** Large variant used for the project Activity chart. */
   large?: boolean
-  /** Keep redrawing: the line draws on, holds, fades and draws again (off under reduced motion). */
+  /** Keep redrawing: the line draws on, holds, fades and draws again (drawn once under reduced motion). */
   loop?: boolean
+  /** Mark the newest point with a dot (and, when not looping, a soft live pulse). Default on. */
+  pulse?: boolean
   label?: string
 }
 
@@ -26,7 +28,7 @@ const resample = (v: number[], n: number) =>
       })
 
 /* When the series changes (a refresh), the drawn line glides from its old shape to the new one
-   instead of jumping; immediate under prefers-reduced-motion. The values only pass through
+   instead of jumping; a short 150 ms linear change under prefers-reduced-motion. The values only pass through
    in-between shapes for the length of the glide; at rest the line is exactly the data. */
 function useTween(target: number[], ms = 700) {
   const reduced = useReducedMotion()
@@ -38,8 +40,8 @@ function useTween(target: number[], ms = 700) {
     const t0 = performance.now()
     let raf = 0
     const step = (now: number) => {
-      const k = reduced ? 1 : Math.min(1, (now - t0) / ms)
-      const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2
+      const k = Math.min(1, (now - t0) / (reduced ? 150 : ms))
+      const e = reduced ? k : k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2
       const v = k === 1 ? target : target.map((x, i) => (a[i] ?? x) + (x - (a[i] ?? x)) * e)
       from.current = v
       setShown(v)
@@ -53,7 +55,7 @@ function useTween(target: number[], ms = 700) {
   return shown.length === target.length ? shown : target
 }
 
-export function Sparkline({ data: target, color, delay = 0, large = false, loop = false, label }: SparklineProps) {
+export function Sparkline({ data: target, color, delay = 0, large = false, loop = false, pulse = true, label }: SparklineProps) {
   const data = useTween(target)
   const hi = Math.max(...data)
   const lo = Math.min(...data)
@@ -65,29 +67,41 @@ export function Sparkline({ data: target, color, delay = 0, large = false, loop 
     .join(' L')
   const last = pts.split(' L').pop()!.split(',')
 
+  const [lx, ly] = last.map(Number)
+
   return (
-    <svg
-      viewBox="0 0 100 40"
-      preserveAspectRatio="none"
-      className="block size-full overflow-visible"
-      role={label ? 'img' : undefined}
-      aria-label={label}
-      aria-hidden={label ? undefined : true}
-    >
-      <path d={`M0,40 L${pts} L100,40 Z`} fill={`${color}24`} style={{ animation: loop ? `gl-fade-loop 7s ${delay}s ease-in-out infinite` : 'gl-fade 1s .4s ease both' }} />
-      <path
-        d={`M${pts}`}
-        fill="none"
-        stroke={color}
-        strokeWidth={large ? 2.5 : 2}
-        vectorEffect="non-scaling-stroke"
-        pathLength={1}
-        strokeDasharray={1}
-        style={{ animation: loop ? `gl-draw-loop 7s ${delay}s ease-in-out infinite` : `gl-draw 1.4s ${delay}s ease-out both` }}
-      />
-      {loop && (
-        <circle cx={last[0]} cy={last[1]} r={2.2} fill={color} vectorEffect="non-scaling-stroke" style={{ animation: `gl-fade-loop 7s ${delay}s ease-in-out infinite`, filter: `drop-shadow(0 0 3px ${color})` }} />
+    <span className="relative block size-full">
+      <svg
+        viewBox="0 0 100 40"
+        preserveAspectRatio="none"
+        className="block size-full overflow-visible"
+        role={label ? 'img' : undefined}
+        aria-label={label}
+        aria-hidden={label ? undefined : true}
+      >
+        <path d={`M0,40 L${pts} L100,40 Z`} fill={`${color}24`} style={{ animation: loop ? `gl-fade-loop 7s ${delay}s ease-in-out infinite` : 'gl-fade 1s .4s ease both' }} />
+        <path
+          d={`M${pts}`}
+          fill="none"
+          stroke={color}
+          strokeWidth={large ? 2.5 : 2}
+          vectorEffect="non-scaling-stroke"
+          pathLength={1}
+          strokeDasharray={1}
+          style={{ animation: loop ? `gl-draw-loop 7s ${delay}s ease-in-out infinite` : `gl-draw 1.4s ${delay}s ease-out both` }}
+        />
+      </svg>
+      {/* The newest point, drawn in HTML so it stays round however the line is stretched. It lands
+          when the line finishes drawing; a live (non-looping) line keeps a soft pulse on it. */}
+      {pulse && (
+        <span aria-hidden className="pointer-events-none absolute" style={{ left: `${lx}%`, top: `${(ly / 40) * 100}%` }}>
+          <i
+            className="absolute -m-[3px] block size-[6px] rounded-full"
+            style={{ background: color, boxShadow: `0 0 6px ${color}`, animation: loop ? `gl-fade-loop 7s ${delay}s ease-in-out infinite` : `gl-fade .3s ${delay + 1.2}s ease both` }}
+          />
+          {!loop && <i className="absolute -m-[3px] block size-[6px] rounded-full border" style={{ borderColor: color, animation: `gl-live-pulse 2.4s ${delay + 1.5}s ease-out infinite both` }} />}
+        </span>
       )}
-    </svg>
+    </span>
   )
 }

@@ -1,7 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
-import { esc, type ChartEvent } from '../charts/chart-utils'
+import type { ChartEvent } from '../charts/chart-utils'
+import { AnimatedNumber } from '../charts/AnimatedNumber'
+import { NF, type NumberFormat } from '../charts/number-formats'
+import { axisTooltip, barsPreset, C, itemTooltip, PALETTE, ringPreset, tipHtml } from '../charts/chartPresets'
 import { CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
 const trusted = (rows: TrackerRow[]) => rows.filter((r) => r.gapPct !== null && r.status !== 'thin')
@@ -11,7 +14,6 @@ const median = (v: number[]) => {
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2
 }
 const idOf = (r: TrackerRow) => `${r.chain}:${r.ticker}`
-const motion = { animationDuration: 800, animationEasing: 'cubicOut', animationDurationUpdate: 650, animationEasingUpdate: 'cubicInOut' }
 
 /* How far stock tokens sit from fair: a histogram in quarter-percent bins, the outer bins catching
    everything beyond. Bars rise from the baseline and move to their new counts on every refresh;
@@ -27,35 +29,23 @@ export function GapHistogram({ rows }: { rows: TrackerRow[] }) {
     return { lo, hi, items, label, range }
   })
   const key = bins.map((b) => b.items.map((r) => r.ticker).join(',')).join('|')
+  const binColour = (b: (typeof bins)[number]) => (b.lo >= -0.25 && b.hi <= 0.25 ? C.muted : b.lo >= 0 ? UP : DOWN)
   const option = useMemo(
     () => ({
-      ...motion,
       grid: { left: 4, right: 4, top: 10, bottom: 4, containLabel: true },
       xAxis: { type: 'category', data: bins.map((b) => b.label), axisLabel: { fontSize: 10, interval: 0, hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
       yAxis: { type: 'value', minInterval: 1, splitNumber: 3, axisLabel: { fontSize: 10 } },
-      tooltip: {
-        trigger: 'axis',
-        confine: true,
-        axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(166,176,189,.06)' } },
-        formatter: (ps: ChartEvent[]) => {
-          const b = bins[ps[0]?.dataIndex]
-          if (!b) return ''
-          const names = b.items.map((r) => esc(r.ticker)).join(' ')
-          return `<div style="color:#6c7888">${b.range}</div><div><b style="color:#e8c060;font-weight:500">${b.items.length}</b> stock${b.items.length === 1 ? '' : 's'}</div>${names ? `<div style="color:#6c7888;max-width:220px;white-space:normal">${names}</div>` : ''}`
-        },
-      },
+      tooltip: axisTooltip((ps: ChartEvent[]) => {
+        const b = bins[ps[0]?.dataIndex]
+        if (!b) return ''
+        return tipHtml({ title: b.range, rows: [{ name: 'stocks', value: String(b.items.length), color: binColour(b) }], note: b.items.map((r) => r.ticker).join(' ') || undefined })
+      }, 'shadow'),
       series: [
         {
           id: 'bins',
-          type: 'bar',
+          ...barsPreset({ stagger: 40 }),
           barCategoryGap: '18%',
-          data: bins.map((b) => ({
-            value: b.items.length,
-            itemStyle: { color: b.lo >= -0.25 && b.hi <= 0.25 ? '#a6b0bd' : b.lo >= 0 ? UP : DOWN, borderRadius: [3, 3, 0, 0] },
-          })),
-          animationDelay: (i: number) => i * 40,
-          emphasis: { focus: 'self' },
-          blur: { itemStyle: { opacity: 0.4 } },
+          data: bins.map((b) => ({ value: b.items.length, itemStyle: { color: binColour(b), borderRadius: [3, 3, 0, 0] } })),
         },
       ],
     }),
@@ -90,7 +80,6 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
     const lo = 10 ** Math.floor(Math.log10(Math.max(1, Math.min(...liq))))
     const hi = 10 ** Math.ceil(Math.log10(Math.max(10, ...liq)))
     return {
-      ...motion,
       grid: { left: 4, right: 14, top: 12, bottom: 22, containLabel: true },
       xAxis: {
         type: 'log',
@@ -105,15 +94,21 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
         axisLine: { show: true, lineStyle: { color: '#2c3540' } },
       },
       yAxis: { type: 'value', min: -Number(ext.toFixed(1)), max: Number(ext.toFixed(1)), splitNumber: 2, axisLabel: { fontSize: 10, formatter: (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%` } },
-      tooltip: {
-        trigger: 'item',
-        confine: true,
-        formatter: (p: ChartEvent) => {
-          const r = pts[p.dataIndex]
-          if (!r) return ''
-          return `<div><b style="color:#e8c060;font-weight:500">${esc(r.ticker)}</b> · ${esc(CHAIN_NAME[r.chain] ?? r.chain)}</div><div>gap <span style="color:${(r.gapPct ?? 0) >= 0 ? UP : DOWN}">${fmtGap(r.gapPct)}</span> · ${fmtPrice(r.onchain)}</div><div style="color:#6c7888">liquidity ${fmtCompactUsd(r.pool!.liquidityUsd)} · vol ${fmtCompactUsd(r.pool!.totalVolume24hUsd)}${r.status === 'thin' ? ' · thin pool' : ''}</div>`
-        },
-      },
+      tooltip: itemTooltip((p: ChartEvent) => {
+        const r = pts[p.dataIndex]
+        if (!r) return ''
+        const c = (r.gapPct ?? 0) >= 0 ? UP : DOWN
+        return tipHtml({
+          title: `${r.ticker} · ${CHAIN_NAME[r.chain] ?? r.chain}`,
+          rows: [
+            { name: 'gap', value: fmtGap(r.gapPct), color: c, valueColor: c },
+            { name: 'onchain', value: fmtPrice(r.onchain) },
+            { name: 'liquidity', value: fmtCompactUsd(r.pool!.liquidityUsd) },
+            { name: 'volume 24h', value: fmtCompactUsd(r.pool!.totalVolume24hUsd) },
+          ],
+          note: r.status === 'thin' ? 'thin pool, not trusted' : 'click for its history',
+        })
+      }),
       dataZoom: [
         { id: 'zx', type: 'inside', xAxisIndex: 0, filterMode: 'none', zoomOnMouseWheel: 'shift', moveOnMouseWheel: false },
         { id: 'zy', type: 'inside', yAxisIndex: 0, filterMode: 'none', zoomOnMouseWheel: 'shift', moveOnMouseWheel: false },
@@ -133,6 +128,8 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
               itemStyle: { color: thin ? 'rgba(0,0,0,0)' : `${c}66`, borderColor: c, borderWidth: 1.25, borderType: thin ? 'dashed' : 'solid' },
             }
           }),
+          animationDuration: 700,
+          animationEasing: 'backOut',
           animationDelay: (i: number) => Math.min(i * 18, 600),
           emphasis: { focus: 'self', scale: 1.35, label: { show: true, position: 'top', color: '#eef0f2', fontSize: 11, formatter: (p: ChartEvent) => pts[p.dataIndex]?.ticker ?? '' } },
           blur: { itemStyle: { opacity: 0.25 } },
@@ -168,33 +165,18 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
   const chart = useRef<EChartsType | null>(null)
   const withPool = rows.filter((r) => r.pool && r.pool.totalLiquidityUsd > 0).sort((a, b) => b.pool!.totalLiquidityUsd - a.pool!.totalLiquidityUsd)
   const total = withPool.reduce((a, r) => a + r.pool!.totalLiquidityUsd, 0)
-  const palette = ['#e8c060', '#1f9e89', '#5aa9e6', '#c98bdb', '#e4572e', '#9bc53d', '#f4d98c', '#6c7888']
+  const palette = [PALETTE[0], PALETTE[2], PALETTE[1], PALETTE[3], PALETTE[4], PALETTE[5], PALETTE[6], PALETTE[7]]
   const top = withPool.slice(0, 7).map((r, i) => ({ id: idOf(r), label: r.ticker, chain: r.chain, v: r.pool!.totalLiquidityUsd, color: palette[i] }))
   const rest = total - top.reduce((a, s) => a + s.v, 0)
   const slices = rest > 0 ? [...top, { id: 'other', label: `${withPool.length - top.length} others`, chain: '', v: rest, color: '#3a4452' }] : top
   const key = slices.map((s) => `${s.id}=${s.v}`).join('|')
   const option = useMemo(
     () => ({
-      animationDuration: 1000,
-      animationEasing: 'cubicOut',
-      animationDurationUpdate: 650,
-      animationEasingUpdate: 'cubicInOut',
       tooltip: { show: false },
       series: [
         {
           id: 'ring',
-          type: 'pie',
-          radius: ['64%', '92%'],
-          center: ['50%', '50%'],
-          startAngle: 90,
-          animationType: 'expansion',
-          avoidLabelOverlap: false,
-          label: { show: false },
-          labelLine: { show: false },
-          padAngle: 0.6,
-          itemStyle: { borderRadius: 2 },
-          emphasis: { scale: true, scaleSize: 4, focus: 'self' },
-          blur: { itemStyle: { opacity: 0.35 } },
+          ...ringPreset(),
           data: slices.map((s) => ({ name: s.id, value: s.v, itemStyle: { color: s.color } })),
         },
       ],
@@ -212,12 +194,18 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
         <EChart
           option={option}
           height={150}
+          skeleton="ring"
+          steps={{ count: slices.length }}
           onChart={(c) => (chart.current = c)}
           label={slices.map((s) => `${s.label} ${((s.v / total) * 100).toFixed(1)}%`).join(', ')}
-          onEvents={{ mouseover: (p) => setHover(p.name), mouseout: () => setHover(null) }}
+          onEvents={{ mouseover: (p) => setHover(p.name), mouseout: () => setHover(null), highlight: (p) => typeof p.dataIndex === 'number' && slices[p.dataIndex] && setHover(slices[p.dataIndex].id), downplay: () => setHover(null) }}
         >
           <span aria-hidden className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display text-[22px] leading-none font-extrabold text-ink">{cur ? `${((cur.v / total) * 100).toFixed(0)}%` : fmtCompactUsd(total)}</span>
+            {cur ? (
+              <AnimatedNumber className="font-display text-[22px] leading-none font-extrabold text-ink" value={(cur.v / total) * 100} format={NF.int} suffix="%" />
+            ) : (
+              <AnimatedNumber className="font-display text-[22px] leading-none font-extrabold text-ink" value={total} format={NF.compactUsd} countUp />
+            )}
             <span className="mt-1 font-mono text-[10px] text-faint">{cur ? cur.label : 'in pools'}</span>
           </span>
         </EChart>
@@ -261,11 +249,11 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
       volume: rs.reduce((a, r) => a + (r.pool?.totalVolume24hUsd ?? 0), 0),
     }
   })
-  const metrics: { k: string; label: string; get: (s: (typeof stats)[number]) => number | null; fmt: (v: number) => string; lowerBetter?: boolean }[] = [
-    { k: 'stocks', label: 'Stocks tracked', get: (s) => s.stocks, fmt: (v) => String(v) },
-    { k: 'gap', label: 'Typical gap', get: (s) => s.gap, fmt: (v) => `${v.toFixed(2)}%`, lowerBetter: true },
-    { k: 'liquidity', label: 'Pool liquidity', get: (s) => s.liquidity, fmt: fmtCompactUsd },
-    { k: 'volume', label: 'Volume 24h', get: (s) => s.volume, fmt: fmtCompactUsd },
+  const metrics: { k: string; label: string; get: (s: (typeof stats)[number]) => number | null; fmt: (v: number) => string; nf: NumberFormat; suffix?: string; lowerBetter?: boolean }[] = [
+    { k: 'stocks', label: 'Stocks tracked', get: (s) => s.stocks, fmt: (v) => String(v), nf: NF.int },
+    { k: 'gap', label: 'Typical gap', get: (s) => s.gap, fmt: (v) => `${v.toFixed(2)}%`, nf: NF.fixed2, suffix: '%', lowerBetter: true },
+    { k: 'liquidity', label: 'Pool liquidity', get: (s) => s.liquidity, fmt: fmtCompactUsd, nf: NF.compactUsd },
+    { k: 'volume', label: 'Volume 24h', get: (s) => s.volume, fmt: fmtCompactUsd, nf: NF.compactUsd },
   ]
   const colors = ['#e8c060', '#5aa9e6']
   const table = metrics.map((m) => stats.map((s) => m.get(s)))
@@ -273,23 +261,18 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
   const key = JSON.stringify(table) + stats.map((s) => s.name).join()
   const option = useMemo(
     () => ({
-      ...motion,
       grid: metrics.map((_, j) => ({ left: 0, right: 0, top: j * CC_ROW + CC_LABEL, height: CC_BARS })),
       xAxis: metrics.map((_, j) => ({ gridIndex: j, type: 'value', show: false, min: 0, max: 100 })),
       yAxis: metrics.map((_, j) => ({ gridIndex: j, type: 'category', inverse: true, show: false, data: stats.map((s) => s.name) })),
-      tooltip: {
-        trigger: 'item',
-        confine: true,
-        formatter: (p: ChartEvent) => {
-          const j = p.seriesIndex
-          return `<div style="color:#6c7888">${metrics[j].label}</div>${stats.map((s, i) => `<div><span style="color:${colors[i]}">●</span> ${esc(s.name)} <b style="font-weight:500">${fmtCell(j, i)}</b></div>`).join('')}`
-        },
-      },
+      tooltip: itemTooltip((p: ChartEvent) => {
+        const j = p.seriesIndex
+        return tipHtml({ title: metrics[j].label, rows: stats.map((s, i) => ({ name: s.name, value: fmtCell(j, i), color: colors[i] })) })
+      }),
       series: metrics.map((m, j) => {
         const max = Math.max(1e-9, ...table[j].map((x) => x ?? 0))
         return {
           id: m.k,
-          type: 'bar',
+          ...barsPreset({ horizontal: true }),
           xAxisIndex: j,
           yAxisIndex: j,
           barWidth: 10,
@@ -335,7 +318,7 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
           {metrics.map((m, j) =>
             stats.map((s, i) => (
               <span key={`${m.k}-${s.key}`} className="absolute right-0 font-mono text-[12px] leading-[14px] text-ink-2" style={{ top: j * CC_ROW + CC_LABEL + i * (CC_BARS / 2) }}>
-                {fmtCell(j, i)}
+                {table[j][i] === null ? '—' : <AnimatedNumber value={table[j][i]} format={m.nf} suffix={m.suffix} countUp />}
               </span>
             )),
           )}

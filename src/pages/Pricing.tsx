@@ -6,6 +6,8 @@ import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
 import { DEVELOPERS_URL, DOCS_URL, isLocalHost } from '../site-host'
 import type { AlertChannels, Offer } from './developers/api'
+import { AnimatedNumber } from '../components/charts/AnimatedNumber'
+import { PlanLimits } from '../components/charts/PlanLimits'
 
 /* The paid tiers of the tracker API and the Gully Analytics plans, in two sections. Every price and limit
    is read from GET /api/plans (server/plans.mjs); nothing numeric is typed into this page. */
@@ -124,7 +126,7 @@ export function Pricing() {
                     <div className="relative flex flex-col gap-2">
                       <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
                       <span className="flex items-baseline gap-2">
-                        <span className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`}>{p.priceUsdc}</span>
+                        <AnimatedNumber className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`} value={p.priceUsdc} countUp />
                         <span className="font-mono text-[13px] text-muted">{p.priceUsdc ? `USD / ${offer.periodDays} days` : 'free, no time limit'}</span>
                       </span>
                     </div>
@@ -149,6 +151,12 @@ export function Pricing() {
                 )
               })}
             </div>
+            <PlanLimits
+              tiers={[
+                { name: 'No key', perMin: offer.anonymous.perMin, historyDays: offer.anonymous.historyDays, alerts: null, maxKeys: null },
+                ...offer.plans.map((p) => ({ name: p.name, perMin: p.perMin, historyDays: p.historyDays, alerts: p.alerts, maxKeys: p.maxKeys })),
+              ]}
+            />
             <p className="m-0 font-mono text-[12px] leading-[1.7] text-faint">
               Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history. Prices in US dollars, paid in ETH, BNB, USDC or USDT on {chainList(offer)}. Limits protect our servers; answers served from the edge cache do not count against them.
             </p>

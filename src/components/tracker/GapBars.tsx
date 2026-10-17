@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
-import { esc, type ChartEvent } from '../charts/chart-utils'
+import type { ChartEvent } from '../charts/chart-utils'
+import { axisTooltip, barsPreset, tipHtml } from '../charts/chartPresets'
 import { ChainLogo, StockLogo } from './StockLogo'
-import { DOWN, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
+import { CHAIN_SHORT, DOWN, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
 const ROW = 24 // px per stock: the label column and the chart's category bands share it exactly
 const TOP = 22 // px above the first row, for the axis labels
@@ -37,8 +38,6 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
     const raw = Math.max(...byId.map((r) => Math.abs(r.gapPct ?? 0)))
     const extent = Math.max(3, Math.ceil(raw * 1.3))
     return {
-      animationDuration: 800,
-      animationEasing: 'cubicOut',
       animationDurationUpdate: SORT_MS,
       animationEasingUpdate: 'cubicInOut',
       // Side room so the value label of the widest bar is never clipped.
@@ -61,20 +60,24 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
         animationDuration: 300,
         animationDurationUpdate: SORT_MS,
       },
-      tooltip: {
-        trigger: 'item',
-        confine: true,
-        formatter: (p: ChartEvent) => {
-          const r = byId[p.dataIndex]
-          if (!r) return ''
-          const c = (r.gapPct ?? 0) >= 0 ? UP : DOWN
-          return `<div><b style="color:#e8c060;font-weight:500">${esc(r.ticker)}</b>${r.status === 'thin' ? ' <span style="color:#6c7888">· thin pool</span>' : ''}</div><div>gap <b style="color:${c};font-weight:500">${fmtGap(r.gapPct)}</b></div><div style="color:#a6b0bd">onchain ${fmtPrice(r.onchain)} · fair ${fmtPrice(r.fair)}</div>`
-        },
-      },
+      tooltip: axisTooltip((ps: ChartEvent[]) => {
+        const r = byId[ps[0]?.dataIndex]
+        if (!r) return ''
+        const c = (r.gapPct ?? 0) >= 0 ? UP : DOWN
+        return tipHtml({
+          title: `${r.ticker}${multi ? ` · ${CHAIN_SHORT[r.chain] ?? r.chain}` : ''}`,
+          rows: [
+            { name: 'gap', value: fmtGap(r.gapPct), color: c, valueColor: c },
+            { name: 'onchain', value: fmtPrice(r.onchain) },
+            { name: 'fair', value: fmtPrice(r.fair) },
+          ],
+          note: r.status === 'thin' ? 'thin pool, not trusted' : undefined,
+        })
+      }, 'shadow'),
       series: [
         {
           id: 'gap',
-          type: 'bar',
+          ...barsPreset({ horizontal: true, radius: 2, stagger: 25 }),
           barWidth: 14,
           cursor: 'pointer',
           data: byId.map((r) => {
@@ -94,8 +97,6 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
               label: { show: true, position: g >= 0 ? 'right' : 'left', distance: 6, color: c, fontSize: 11, formatter: () => fmtGap(r.gapPct) },
             }
           }),
-          emphasis: { focus: 'self', itemStyle: { shadowBlur: 10, shadowColor: 'rgba(232,192,96,.35)' } },
-          blur: { itemStyle: { opacity: 0.4 }, label: { opacity: 0.5 } },
           markArea: { silent: true, itemStyle: { color: 'rgba(232,192,96,.06)' }, label: { show: false }, data: [[{ xAxis: -inLinePct }, { xAxis: inLinePct }]] },
         },
       ],

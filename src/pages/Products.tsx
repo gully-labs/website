@@ -4,9 +4,11 @@ import { ANALYTICS_SIGNUP, usePlans } from '../lib/plans'
 import { useContact } from '../components/ContactContext'
 import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
+import { AnalyticsExample, ChainKitExample } from '../components/charts/ProductExamples'
 
 /* Product pages for the two open-source-based products. Copy states what exists today; nothing
-   numeric about customers or usage is claimed. */
+   numeric about customers or usage is claimed. The "What it draws" charts are illustrations with
+   example data, badged EXAMPLE DATA on screen and in their accessible labels. */
 
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` })
 
@@ -28,6 +30,8 @@ type Product = {
   how: { title: string; body: string }[]
   code?: string
   licence: string
+  /** An interactive illustration of what the product draws (example data, labelled as such). */
+  figure?: { title: string; body: string; node: React.ReactNode }
 }
 
 const ANALYTICS: Product = {
@@ -60,6 +64,7 @@ const ANALYTICS: Product = {
   ],
   code: '<script defer src="https://analytics.gullylabs.xyz/script.js"\n  data-website-id="YOUR-SITE-ID" data-web3="true"></script>',
   licence: 'Built on Umami, MIT licensed. Our changes are MIT too.',
+  figure: { title: 'What the Web3 tab draws', body: 'The charts below use made-up example figures to show the views; your dashboard draws your own site.', node: <AnalyticsExample /> },
 }
 
 const CHAIN_KIT: Product = {
@@ -88,6 +93,7 @@ const CHAIN_KIT: Product = {
     { title: 'Launch and run', body: 'We keep it indexed, upgraded and backed up while you build the chain.' },
   ],
   licence: 'Built on Blockscout, GPL-3.0. Our deployment layer is GPL-3.0 too.',
+  figure: { title: 'Charts on day one', body: 'Blockscout charts your chain from its first block. The figures below are made-up examples of what it draws.', node: <ChainKitExample /> },
 }
 
 function ProductPage({ p }: { p: Product }) {
@@ -142,6 +148,19 @@ function ProductPage({ p }: { p: Product }) {
           ))}
         </div>
       </section>
+
+      {p.figure && (
+        <section className="px-page pb-20" aria-labelledby="figure-title">
+          <div className="mb-8 flex flex-col gap-3">
+            <span className={eyebrow}>IN THE PRODUCT</span>
+            <h2 id="figure-title" className="m-0 font-display text-[clamp(32px,3.6cqw,48px)] leading-[.95] font-extrabold uppercase">
+              {p.figure.title}
+            </h2>
+            <p className="m-0 max-w-[680px] text-[15px] leading-[1.6] text-muted">{p.figure.body}</p>
+          </div>
+          {p.figure.node}
+        </section>
+      )}
 
       {p.pricing && <Plans />}
 

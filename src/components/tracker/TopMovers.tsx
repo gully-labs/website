@@ -1,17 +1,20 @@
 import { useId, useState } from 'react'
 import { Link } from 'react-router'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { SocialIcon } from '../SocialIcon'
 import { StockLogo } from './StockLogo'
+import { useReducedMotion } from '../charts/chart-utils'
+import { ChartBox } from '../charts/ChartSkeleton'
 import { xPost } from '../../lib/share'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPct, fmtPp, moversPost, stockPath, UP, useMovers, type Mover, type MoverWindow } from '../../lib/tracker'
 
 /* Top movers: the stock tokens whose gap to fair (or onchain price) moved most over the last hour or
    day, from the tracker's own five-minute snapshots. A horizontally scrollable strip of cards, each a
-   link to the stock's page. Cards rise in on load, glide to their new place when the ranking changes,
-   and a changed figure flashes. Nothing is shown that the endpoint did not return: too little history
-   reads as such. */
+   link to the stock's page. Cards rise in on load, glide to their new place when the ranking changes
+   (motion layout), each card's bar grows to its move against the biggest move in the list, and a
+   changed figure flashes. Under reduced motion cards only fade (no rise, no glide). Nothing is shown
+   that the endpoint did not return: too little history reads as such. */
 
 type Mode = 'gap' | 'price'
 const SHARE_URL = 'https://gullylabs.xyz/tracker'
@@ -66,7 +69,20 @@ const Flash = ({ text, color, className = '' }: { text: string; color?: string; 
   </span>
 )
 
-function MoverCard({ m, mode, win }: { m: Mover; mode: Mode; win: MoverWindow }) {
+/** The move as a bar, scaled to the largest move in the list; grows in, then glides to new values. */
+function MoveBar({ value, max, color }: { value: number | null; max: number; color?: string }) {
+  const pct = value === null || !max ? 0 : Math.max(2, (Math.abs(value) / max) * 100)
+  return (
+    <span aria-hidden className="block h-[3px] overflow-hidden rounded-full bg-line">
+      <span
+        className="block h-full origin-left rounded-full"
+        style={{ width: `${pct}%`, background: color ?? '#a6b0bd', transition: 'width .7s cubic-bezier(.2,.8,.2,1)', animation: 'gl-grow-x .8s .25s cubic-bezier(.2,.8,.2,1) both' }}
+      />
+    </span>
+  )
+}
+
+function MoverCard({ m, mode, win, max }: { m: Mover; mode: Mode; win: MoverWindow; max: number }) {
   const main = mode === 'gap' ? m.gapChangePp : m.priceChangePct
   const Arrow = main === null || main === 0 ? ArrowRight : main > 0 ? ArrowUpRight : ArrowDownRight
   const mainText = mode === 'gap' ? fmtPp(m.gapChangePp) : fmtPct(m.priceChangePct)
@@ -93,6 +109,7 @@ function MoverCard({ m, mode, win }: { m: Mover; mode: Mode; win: MoverWindow })
           <Arrow aria-hidden size={15} strokeWidth={2.25} />
           <Flash text={mainText} />
         </span>
+        <MoveBar value={main} max={max} color={tone(main)} />
       </span>
       <Spark points={m.spark} color={tone(m.gapNow) ?? '#a6b0bd'} />
     </Link>
@@ -100,6 +117,12 @@ function MoverCard({ m, mode, win }: { m: Mover; mode: Mode; win: MoverWindow })
 }
 
 export function TopMovers({ chain }: { chain: string }) {
+  // Retry remounts the strip, which reads the movers afresh.
+  const [attempt, setAttempt] = useState(0)
+  return <TopMoversView key={attempt} chain={chain} onRetry={() => setAttempt((a) => a + 1)} />
+}
+
+function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void }) {
   const [mode, setMode] = useState<Mode>('gap')
   const [win, setWin] = useState<MoverWindow>('24h')
   const st = useMovers(win, { limit: 10, chain: chain === 'all' ? undefined : chain })
@@ -107,6 +130,7 @@ export function TopMovers({ chain }: { chain: string }) {
   const titleId = useId()
   const data = st.k === 'ok' ? st.data : null
   const list = data ? (mode === 'gap' ? data.byGap : data.byPrice) : []
+  const max = Math.max(0, ...list.map((m) => Math.abs((mode === 'gap' ? m.gapChangePp : m.priceChangePct) ?? 0)))
 
   return (
     <section aria-labelledby={titleId} className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4" style={{ animation: 'gl-rise .5s .3s ease both' }}>
@@ -159,7 +183,7 @@ export function TopMovers({ chain }: { chain: string }) {
           ))}
         </div>
       )}
-      {st.k === 'error' && <p className="m-0 py-4 font-mono text-[12px] text-faint">The movers could not be read just now. It retries every minute.</p>}
+      {st.k === 'error' && <ChartBox height={150} state="error" message="Couldn't load the movers. It also retries every minute." onRetry={onRetry} />}
       {data && list.length === 0 && (
         <p className="m-0 py-4 font-mono text-[12px] text-faint">
           {data.note ?? (chain !== 'all' ? `No trusted pool on this chain has ${win} of snapshots yet.` : `No trusted pool has ${win} of snapshots yet.`)}
@@ -167,18 +191,18 @@ export function TopMovers({ chain }: { chain: string }) {
       )}
       {list.length > 0 && (
         <ul aria-label={`Top ${mode === 'gap' ? 'gap' : 'price'} moves over ${win}`} className="m-0 -mx-1 flex list-none snap-x gap-3 overflow-x-auto px-1 pt-[3px] pb-2">
-          <AnimatePresence initial={!reduced} mode="popLayout">
+          <AnimatePresence mode="popLayout">
             {list.map((m, i) => (
               <motion.li
                 key={`${m.chain}:${m.ticker}`}
-                layout={!reduced}
-                initial={reduced ? false : { opacity: 0, y: 12 }}
+                layout={reduced ? false : 'position'}
+                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={reduced ? undefined : { opacity: 0, scale: 0.94 }}
-                transition={{ duration: 0.35, delay: reduced ? 0 : i * 0.04, layout: { duration: 0.45, ease: [0.2, 0.7, 0.2, 1] } }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
+                transition={reduced ? { duration: 0.15, ease: 'linear' } : { duration: 0.35, delay: i * 0.04, layout: { duration: 0.45, ease: [0.2, 0.7, 0.2, 1] } }}
                 className="flex-none snap-start"
               >
-                <MoverCard m={m} mode={mode} win={win} />
+                <MoverCard m={m} mode={mode} win={win} max={max} />
               </motion.li>
             ))}
           </AnimatePresence>

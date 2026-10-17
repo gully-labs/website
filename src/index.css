@@ -83,6 +83,16 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+/* A live data point: a ring that grows and fades from the newest reading. */
+@keyframes gl-live-pulse {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  70%, 100% { transform: scale(2.6); opacity: 0; }
+}
+/* Chart skeleton: a soft pulse while the chart library or its data loads. */
+@keyframes gl-skeleton {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.7; }
+}
 
 /* Page gutter: clamp(24px, 4.5cqw, 64px), measured against the app container. */
 @utility px-page {
@@ -118,11 +128,56 @@
   }
 }
 
+/* Reduced-motion policy (one policy for CSS, motion, ECharts and NumberFlow).
+   Windows reports prefers-reduced-motion: reduce whenever "Animation effects" is off, so switching
+   every animation off would leave many visitors with a site where nothing ever changes visibly.
+   Under reduce we keep what tells you something changed and drop what moves things around:
+     kept:    opacity and colour transitions and short fades, at most 200 ms; chart values still
+              change over ~150 ms (EChart.tsx, chart-utils motionFor); numbers cross-fade
+              (AnimatedNumber); loading spinners (.animate-spin) keep turning, as status.
+     dropped: transforms and large movement (rises, grows, slides, layout glides), staggered
+              entries (all delays are zeroed), parallax, infinite loops, auto-scrolling marquees.
+   The keyframes below are redefined so a transform animation becomes a plain short fade, and loops
+   become no-ops that run once. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation: none !important;
-    transition: none !important;
+    animation-delay: 0s !important;
+    animation-duration: 0.2s !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, fill, stroke !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
   }
+  [class*='duration-'],
+  [class*='transition'] {
+    transition-duration: 0.15s !important;
+  }
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  /* Entrances: fade only, no movement. */
+  @keyframes gl-rise { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes gl-grow { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes gl-grow-x { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes gl-draw { from { opacity: 0; stroke-dashoffset: 0; } to { opacity: 1; stroke-dashoffset: 0; } }
+  @keyframes gl-pop { from { opacity: 0; transform: translate(-50%, -50%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+  /* Loops: drawn once, resting fully visible. */
+  @keyframes gl-draw-loop { from { opacity: 1; stroke-dashoffset: 0; } to { opacity: 1; stroke-dashoffset: 0; } }
+  @keyframes gl-fade-loop { from { opacity: 1; } to { opacity: 1; } }
+  @keyframes gl-float { from { transform: none; } to { transform: none; } }
+  @keyframes gl-glow { from { opacity: 0.5; } to { opacity: 0.5; } }
+  @keyframes gl-blink { from { opacity: 1; } to { opacity: 1; } }
+  @keyframes gl-breathe { from { filter: none; } to { filter: none; } }
+  @keyframes gl-pulse-ring { from { box-shadow: none; } to { box-shadow: none; } }
+  @keyframes gl-live-pulse { from { opacity: 0; } to { opacity: 0; } }
+  @keyframes gl-skeleton { from { opacity: 0.6; } to { opacity: 0.6; } }
+  /* Movement: none. */
+  @keyframes gl-marquee { from { transform: none; } to { transform: none; } }
+  @keyframes gl-scan { from { transform: translateX(-100%); } to { transform: translateX(-100%); } }
+  @keyframes gl-sweep { from { transform: translateX(-100%); } to { transform: translateX(-100%); } }
+  @keyframes gl-shimmer { from { background-position: 200% 0; } to { background-position: 200% 0; } }
 }

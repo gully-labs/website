@@ -3,10 +3,11 @@ import { projects } from '../content/projects'
 import { fmtDay, fmtUsd, nameOf, type Point, type Venue } from '../lib/stats'
 import { EChart } from './charts/EChart'
 import type { ChartEvent } from './charts/chart-utils'
+import { areaPreset, axisTooltip, livePoint, tipHtml } from './charts/chartPresets'
 
-/* Charts drawn from live reads only. Lines draw on, bars grow from the baseline; each is
-   interactive (hover crosshair with exact values, keyboard stepping) and has a table twin.
-   All animation is off under prefers-reduced-motion (index.css). */
+/* Charts drawn from live reads only. Lines draw on with a pulsing dot on the newest day, bars grow
+   from the baseline; each is interactive (hover crosshair with exact values, keyboard stepping)
+   and has a table twin. Under prefers-reduced-motion the motion is gentle (index.css policy). */
 
 const accentOf = (key: string) => projects.find((p) => p.key === key)?.accent ?? '#e8c060'
 
@@ -32,47 +33,27 @@ export function EmptySeries({ n }: { n: number }) {
 /** Daily totals as an area line, last N days: the line draws on, the area fades up, and a refresh
     glides it to the new values. Crosshair tooltip with the exact figure; arrow keys step days. */
 export function DailyLine({ series, label, color = '#e8c060' }: { series: Point[]; label: string; color?: string }) {
-  const key = `${color}|${series.map((p) => `${p.t}=${p.v}`).join(',')}`
+  const key = `${color}|${label}|${series.map((p) => `${p.t}=${p.v}`).join(',')}`
   const option = useMemo(
     () => ({
-      animationDuration: 1200,
-      animationEasing: 'cubicOut',
-      animationDurationUpdate: 700,
-      animationEasingUpdate: 'cubicInOut',
-      grid: { left: 0, right: 10, top: 12, bottom: 0, containLabel: true },
+      grid: { left: 0, right: 14, top: 12, bottom: 0, containLabel: true },
       xAxis: { type: 'category', boundaryGap: false, data: series.map((p) => fmtDay(p.t)), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
       yAxis: { type: 'value', splitNumber: 3, axisLabel: { formatter: (v: number) => fmtUsd(v).replace(/\.00$/, '') } },
-      tooltip: {
-        trigger: 'axis',
-        confine: true,
-        axisPointer: { type: 'line', lineStyle: { color: '#3a4452' } },
-        formatter: (ps: ChartEvent[]) => {
-          const p = series[ps[0]?.dataIndex]
-          return p ? `<div style="color:#6c7888">${fmtDay(p.t)}</div><b style="font-weight:500;color:#e8c060">${fmtUsd(p.v)}</b>` : ''
-        },
-      },
+      tooltip: axisTooltip((ps: ChartEvent[]) => {
+        const p = series[ps[0]?.dataIndex]
+        return p ? tipHtml({ title: fmtDay(p.t), rows: [{ name: label, value: fmtUsd(p.v), color }] }) : ''
+      }),
       series: [
-        {
-          id: 'daily',
-          type: 'line',
-          data: series.map((p) => p.v),
-          smooth: 0.25,
-          smoothMonotone: 'x',
-          showSymbol: false,
-          symbolSize: 8,
-          color,
-          lineStyle: { width: 2.5 },
-          areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: `${color}59` }, { offset: 1, color: `${color}00` }] } },
-          emphasis: { disabled: true },
-        },
+        { id: 'daily', ...areaPreset({ color, width: 2.5, smooth: 0.25, fill: 0.35 }), data: series.map((p) => p.v), emphasis: { disabled: true } },
+        livePoint(series.length ? [fmtDay(series[series.length - 1].t), series[series.length - 1].v] : null, color),
       ],
     }),
-    // `key` holds the colour and every point
+    // `key` holds the colour, the label and every point
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [key],
   )
   if (series.length < 2) return <EmptySeries n={series.length} />
-  return <EChart option={option} height={260} steps={{ count: series.length }} label={`${label}: ${series.map((p) => `${fmtDay(p.t)} ${fmtUsd(p.v)}`).join(', ')}. Arrow keys step through days.`} />
+  return <EChart option={option} height={260} skeleton="line" steps={{ count: series.length }} label={`${label}: ${series.map((p) => `${fmtDay(p.t)} ${fmtUsd(p.v)}`).join(', ')}. Arrow keys step through days.`} />
 }
 
 /** One bar per venue, from a picked figure; a venue without it says so instead of drawing zero. */

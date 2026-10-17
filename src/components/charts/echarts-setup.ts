@@ -2,7 +2,7 @@
    registered, and this module is loaded on demand by EChart.tsx, so it never sits in the entry
    chunk. Apache ECharts, Apache-2.0. */
 import * as echarts from 'echarts/core'
-import { BarChart, LineChart, PieChart, ScatterChart, TreemapChart } from 'echarts/charts'
+import { BarChart, EffectScatterChart, LineChart, PieChart, ScatterChart, TreemapChart } from 'echarts/charts'
 import {
   DataZoomInsideComponent,
   DataZoomSliderComponent,
@@ -17,6 +17,7 @@ import { CanvasRenderer, SVGRenderer } from 'echarts/renderers'
 
 echarts.use([
   BarChart,
+  EffectScatterChart,
   LineChart,
   PieChart,
   ScatterChart,
@@ -42,24 +43,37 @@ const axis = {
   nameTextStyle: { color: '#6c7888', fontFamily: MONO, fontSize: 10 },
 }
 
-/* Brand tokens (src/index.css) as an ECharts theme: recessive grid, mono labels, a dark tooltip
-   with a gold edge. Data colours are set per chart. */
+/* Brand tokens (src/index.css) as an ECharts theme: recessive grid, mono labels, a dark tooltip with
+   a hairline border, a quiet crosshair, and the site's motion defaults (entries ease out over ~0.9 s,
+   updates glide over 0.6 s with cubicOut). Data colours are set per chart; chartPresets.ts holds the
+   per-type entry animations. Under reduced motion EChart.tsx swaps all timings for GENTLE_MOTION. */
 echarts.registerTheme('gully', {
   backgroundColor: 'transparent',
   color: ['#e8c060', '#5aa9e6', '#1f9e89', '#c98bdb', '#e4572e', '#9bc53d'],
   textStyle: { fontFamily: MONO, color: '#a6b0bd' },
+  animationDuration: 900,
+  animationEasing: 'cubicOut',
+  animationDurationUpdate: 600,
+  animationEasingUpdate: 'cubicOut',
   categoryAxis: { ...axis, splitLine: { show: false } },
   valueAxis: { ...axis, axisLine: { show: false } },
   logAxis: { ...axis, axisLine: { show: false } },
   timeAxis: { ...axis, splitLine: { show: false } },
   legend: { textStyle: { color: '#a6b0bd', fontFamily: MONO, fontSize: 11 }, itemWidth: 12, itemHeight: 8, icon: 'roundRect' },
+  axisPointer: {
+    lineStyle: { color: '#3a4452', width: 1, type: 'dashed' },
+    crossStyle: { color: '#3a4452', width: 1, type: 'dashed' },
+    shadowStyle: { color: 'rgba(166,176,189,.06)' },
+    label: { backgroundColor: '#1d232c', borderColor: '#2c3540', borderWidth: 1, color: '#eef0f2', fontFamily: MONO, fontSize: 10, padding: [3, 6], borderRadius: 3 },
+  },
   tooltip: {
-    backgroundColor: '#0d1116',
+    backgroundColor: 'rgba(13,17,22,.96)',
     borderColor: '#2c3540',
     borderWidth: 1,
     padding: [8, 10],
     textStyle: { color: '#eef0f2', fontFamily: MONO, fontSize: 12 },
-    extraCssText: 'border-radius:6px;border-left:2px solid #e8c060;box-shadow:0 8px 24px rgba(0,0,0,.45);',
+    transitionDuration: 0.2,
+    extraCssText: 'border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-variant-numeric:tabular-nums;',
   },
   dataZoom: {
     backgroundColor: 'transparent',

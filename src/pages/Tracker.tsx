@@ -11,7 +11,8 @@ import { GapHistory } from '../components/tracker/GapHistory'
 import { ChainCompare, GapHistogram, LiquidityRing, LiquidityScatter } from '../components/tracker/MoreCharts'
 import { StatusBadge, TrackerTable } from '../components/tracker/TrackerTable'
 import { TopMovers } from '../components/tracker/TopMovers'
-import { useCountUp } from '../hooks/useCountUp'
+import { AnimatedNumber } from '../components/charts/AnimatedNumber'
+import { NF, type NumberFormat } from '../components/charts/number-formats'
 import { xPost } from '../lib/share'
 import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, stockPath, UP, useTracker, type TrackerRow } from '../lib/tracker'
 
@@ -22,14 +23,13 @@ const cardTitle = 'm-0 font-display text-[20px] leading-none font-bold uppercase
 const cardSub = 'font-mono text-[11px] text-faint'
 const idOf = (r: TrackerRow) => `${r.chain}:${r.ticker}`
 
-function Kpi({ label, value, fmt, note, tone }: { label: string; value: number | null; fmt: (v: number) => string; note: React.ReactNode; tone?: string }) {
-  const n = useCountUp(value ?? 0, 1400)
+/** A headline figure that rolls up on load and rolls to each new value on refresh (AnimatedNumber);
+    one that could not be read shows a dash, never zero. */
+function Kpi({ label, value, nf, suffix, note, tone }: { label: string; value: number | null; nf: NumberFormat; suffix?: string; note: React.ReactNode; tone?: string }) {
   return (
     <div className="group relative flex min-w-0 flex-col gap-1 overflow-hidden bg-surface px-4 py-3">
       <span className="font-mono text-[10px] tracking-[1px] text-faint">{label}</span>
-      <span className="font-display text-[clamp(24px,2.2cqw,32px)] leading-none font-extrabold" style={{ color: tone }} role="img" aria-label={value === null ? 'not available' : fmt(value)}>
-        <span aria-hidden>{value === null ? '—' : fmt(n)}</span>
-      </span>
+      <AnimatedNumber className="font-display text-[clamp(24px,2.2cqw,32px)] leading-none font-extrabold" style={{ color: tone }} value={value} format={nf} suffix={suffix} countUp />
       <span className="truncate text-[12px] text-muted">{note}</span>
       <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
     </div>
@@ -158,13 +158,13 @@ export function Tracker() {
 
         {data && (
           <div key={`${data.generatedAt}-${chain}`} className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line" style={rise(5)}>
-            <Kpi label="STOCKS" value={rows.length} fmt={(v) => String(Math.round(v))} note={`${trusted.length} trusted pools`} />
-            <Kpi label="TYPICAL GAP" value={median} fmt={(v) => `${v.toFixed(2)}%`} note="median" />
-            <Kpi label="OFF BY 2%+" value={flagged} fmt={(v) => String(Math.round(v))} tone={flagged ? '#e8c060' : undefined} note="flagged now" />
-            <Kpi label="TOP PREMIUM" value={premium?.gapPct ?? null} fmt={(v) => fmtGap(v)} tone={UP} note={premium ? premium.ticker : 'none'} />
-            <Kpi label="TOP DISCOUNT" value={discount?.gapPct ?? null} fmt={(v) => fmtGap(v)} tone={DOWN} note={discount ? discount.ticker : 'none'} />
-            <Kpi label="LIQUIDITY" value={liquidity} fmt={(v) => fmtCompactUsd(v)} note="all pools" />
-            <Kpi label="VOLUME 24H" value={volume} fmt={(v) => fmtCompactUsd(v)} note="all pools" />
+            <Kpi label="STOCKS" value={rows.length} nf={NF.int} note={`${trusted.length} trusted pools`} />
+            <Kpi label="TYPICAL GAP" value={median} nf={NF.fixed2} suffix="%" note="median" />
+            <Kpi label="OFF BY 2%+" value={flagged} nf={NF.int} tone={flagged ? '#e8c060' : undefined} note="flagged now" />
+            <Kpi label="TOP PREMIUM" value={premium?.gapPct ?? null} nf={NF.signed2} suffix="%" tone={UP} note={premium ? premium.ticker : 'none'} />
+            <Kpi label="TOP DISCOUNT" value={discount?.gapPct ?? null} nf={NF.signed2} suffix="%" tone={DOWN} note={discount ? discount.ticker : 'none'} />
+            <Kpi label="LIQUIDITY" value={liquidity} nf={NF.compactUsd} note="all pools" />
+            <Kpi label="VOLUME 24H" value={volume} nf={NF.compactUsd} note="all pools" />
           </div>
         )}
         {data && <TopMovers chain={chain} />}
