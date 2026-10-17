@@ -6,6 +6,7 @@ const Developers = lazy(() => import('./developers/DevelopersPage').then((m) => 
 const Services = lazy(() => import('./Services').then((m) => ({ default: m.Services })))
 const About = lazy(() => import('./About').then((m) => ({ default: m.About })))
 const ProjectDetail = lazy(() => import('./ProjectDetail').then((m) => ({ default: m.ProjectDetail })))
+const Pricing = lazy(() => import('./Pricing').then((m) => ({ default: m.Pricing })))
 const Admin = lazy(() => import('./admin/AdminPage').then((m) => ({ default: m.AdminPage })))
 
 const fallback = <p className="px-page py-24 font-mono text-[13px] text-faint">Loading…</p>
@@ -22,6 +23,14 @@ export function DevelopersRoute() {
   return (
     <Suspense fallback={fallback}>
       <Developers />
+    </Suspense>
+  )
+}
+
+export function PricingRoute() {
+  return (
+    <Suspense fallback={fallback}>
+      <Pricing />
     </Suspense>
   )
 }

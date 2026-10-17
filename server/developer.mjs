@@ -13,6 +13,10 @@
 //   POST /api/developer/keys/link { key }     attach a key issued by the old request flow to this wallet
 //   GET  /api/developer/usage?range=24h|7d|30d
 //   GET  /api/developer/requests              last 50 requests made with this wallet's keys
+//   GET  /api/developer/billing               plan in force, payments, open checkouts, plans on offer
+//   POST /api/developer/checkout { plan }     -> { intent }  exact USDC amount and treasury (billing.mjs)
+//   POST /api/developer/checkout/verify { plan, txHash } -> 200 plan applied | 202 not confirmed yet | 4xx
+//   GET|POST /api/developer/alerts…           gap alerts (alerts.mjs)
 //
 // Sessions: an HttpOnly, SameSite=Lax cookie (Secure off localhost) holding a random id; only its
 // SHA-256 is stored (sessions.json), 30 days. CSRF: every POST must carry `X-Requested-With: gully`
@@ -23,7 +27,10 @@
 //   POST /api/developer/request, POST /api/developer/claim, GET /api/developer/me, POST /api/developer/rotate
 
 import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests } from './access.mjs'
+import { handleAlerts } from './alerts.mjs'
+import { billingOf, openIntent, verifyPayment } from './billing.mjs'
 import { bearer, clientIp, json, readJson } from './http.mjs'
+import { planOf, publicPlans } from './plans.mjs'
 import { verifySiwe, issueNonce } from './siwe.mjs'
 import {
   createSession,
@@ -110,16 +117,19 @@ function sameSite(req) {
 
 /* --------------------------------------------------------------- views --- */
 
-const keyView = (k) => ({ id: k.id, name: k.name ?? k.project ?? 'Key', prefix: k.prefix, limit: k.limit, createdAt: k.createdAt, rotatedAt: k.rotatedAt ?? null, revokedAt: k.revokedAt, lastUsed: lastUsed(k.id) })
+// A wallet's key is limited by the wallet's plan; a legacy key with no wallet by its own stored limit.
+const keyView = (k) => ({ id: k.id, name: k.name ?? k.project ?? 'Key', prefix: k.prefix, limit: k.owner ? planOf(k.owner).perMin : k.limit, createdAt: k.createdAt, rotatedAt: k.rotatedAt ?? null, revokedAt: k.revokedAt, lastUsed: lastUsed(k.id) })
 
 function accountView(address) {
   const a = getAccount(address)
   const keys = keysOf(address)
+  const plan = planOf(address)
   return {
     address,
     createdAt: a?.createdAt ?? null,
     blocked: !!a?.blocked,
-    limits: { anonymousPerMin: ANON_LIMIT_PER_MIN, keyPerMin: KEY_LIMIT_PER_MIN, maxKeys: MAX_KEYS_PER_ACCOUNT },
+    plan: { id: plan.id, name: plan.name, expiresAt: plan.expiresAt, source: plan.source, alerts: plan.alerts, historyDays: plan.historyDays },
+    limits: { anonymousPerMin: ANON_LIMIT_PER_MIN, keyPerMin: plan.perMin, freeKeyPerMin: KEY_LIMIT_PER_MIN, maxKeys: MAX_KEYS_PER_ACCOUNT },
     keys: keys.map(keyView),
   }
 }
@@ -167,7 +177,17 @@ export async function handleDeveloper(req, res, url) {
 
   /* ---------- signed-in routes ---------- */
 
-  const accountRoute = p === '/api/developer/account' || p === '/api/developer/usage' || p === '/api/developer/requests' || p === '/api/developer/keys' || p.startsWith('/api/developer/keys/')
+  const accountRoute =
+    p === '/api/developer/account' ||
+    p === '/api/developer/usage' ||
+    p === '/api/developer/requests' ||
+    p === '/api/developer/keys' ||
+    p.startsWith('/api/developer/keys/') ||
+    p === '/api/developer/billing' ||
+    p === '/api/developer/checkout' ||
+    p === '/api/developer/checkout/verify' ||
+    p === '/api/developer/alerts' ||
+    p.startsWith('/api/developer/alerts/')
   if (accountRoute) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
     if (!post && req.method !== 'GET') return json(res, 405, { error: 'GET or POST only' }), true
@@ -190,7 +210,26 @@ export async function handleDeveloper(req, res, url) {
       return json(res, 200, { requests: recentRequests(mine.map((k) => k.id)).map((r) => ({ ...r, key: names[r.keyId] ?? null })) }), true
     }
 
+    if (p === '/api/developer/alerts' || p.startsWith('/api/developer/alerts/')) return handleAlerts(req, res, url, address)
+
+    if (p === '/api/developer/billing') return json(res, 200, { ...billingOf(address), offer: publicPlans() }), true
+
     if (!post) return json(res, 405, { error: 'POST only' }), true
+
+    if (p === '/api/developer/checkout') {
+      if (!allow('checkout', address, 30, 3_600_000)) return json(res, 429, { error: 'Too many checkouts started in the last hour. Try again later.' }), true
+      const body = await readJson(req, 1_000)
+      const r = openIntent(address, String(body?.plan ?? ''))
+      return r.ok ? json(res, 200, { intent: r.intent }) : json(res, r.status, { error: r.error }), true
+    }
+
+    if (p === '/api/developer/checkout/verify') {
+      if (!allow('verify', address, 60, 3_600_000)) return json(res, 429, { error: 'Too many payment checks in the last hour. Try again later.' }), true
+      const body = await readJson(req, 1_000)
+      const r = await verifyPayment(address, String(body?.plan ?? ''), body?.txHash)
+      if (r.ok) return json(res, 200, { payment: r.payment, plan: r.plan }), true
+      return json(res, r.status, { error: r.error, ...(r.pending ? { pending: true, confirmations: r.confirmations, needed: r.needed } : {}) }), true
+    }
 
     if (p === '/api/developer/keys') {
       const body = await readJson(req, 2_000)

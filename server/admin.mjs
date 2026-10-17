@@ -12,9 +12,14 @@
 //   GET  /api/admin/enquiries                 contact-form enquiries, newest first
 //   GET  /api/admin/launch-list[?format=csv]  "notify me" sign-ups
 //   POST /api/admin/enquiries/:id/handled     { handled: boolean }
+//   GET  /api/admin/billing                   subscriptions (wallets with a plan), every payment, checkout state
+//   POST /api/admin/accounts/:address/plan    { plan: 'pro'|'business'|'free', days? }  grant for `days` (30) or revoke
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
+import { alertStats } from './alerts.mjs'
+import { adminSetPlan, allPayments } from './billing.mjs'
+import { planOf, publicPlans } from './plans.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
 import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
@@ -88,7 +93,7 @@ export async function handleAdmin(req, res, url) {
     return json(res, 200, {
       requests: [...db.requests].reverse().map((r) => ({ id: r.id, email: r.email, project: r.project, url: r.url, use: r.use, status: r.status, createdAt: r.createdAt, decidedAt: r.decidedAt, keyId: r.keyId, claimedAt: r.claimedAt })),
       keys: [...db.keys].reverse().map((k) => ({ id: k.id, prefix: k.prefix, name: k.name ?? k.project, owner: k.owner ?? null, requestId: k.requestId, project: k.project, email: k.email, limit: k.limit, createdAt: k.createdAt, revokedAt: k.revokedAt })),
-      accounts: [...db.accounts].reverse().map((a) => ({ ...a, keys: db.keys.filter((k) => k.owner === a.address).length, liveKeys: db.keys.filter((k) => k.owner === a.address && !k.revokedAt).length })),
+      accounts: [...db.accounts].reverse().map((a) => ({ ...a, planNow: planOf(a.address).id, keys: db.keys.filter((k) => k.owner === a.address).length, liveKeys: db.keys.filter((k) => k.owner === a.address && !k.revokedAt).length })),
     }), true
   }
 
@@ -122,6 +127,25 @@ export async function handleAdmin(req, res, url) {
     // A blocked wallet is signed out everywhere; its keys stop working while it stays blocked.
     if (a.blocked) deleteSessionsOf(a.address)
     return json(res, 200, { address: a.address, blocked: a.blocked }), true
+  }
+
+  if (p === '/api/admin/billing') {
+    const subscriptions = db.accounts
+      .filter((a) => a.plan)
+      .map((a) => {
+        const live = planOf(a.address)
+        return { address: a.address, plan: a.plan.id, since: a.plan.since ?? null, expiresAt: a.plan.expiresAt, source: a.plan.source ?? null, active: live.id === a.plan.id && !!live.expiresAt }
+      })
+      .sort((x, y) => y.expiresAt.localeCompare(x.expiresAt))
+    return json(res, 200, { subscriptions, payments: allPayments(), offer: publicPlans(), alerts: alertStats() }), true
+  }
+
+  m = p.match(/^\/api\/admin\/accounts\/(0x[0-9a-f]{40})\/plan$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const body = await readJson(req, 1_000)
+    const r = adminSetPlan(m[1], String(body?.plan ?? ''), body?.days ?? 30)
+    return (r.ok ? json(res, 200, { address: m[1], plan: r.plan }) : json(res, r.status, { error: r.error }), true)
   }
 
   if (p === '/api/admin/enquiries') return json(res, 200, { enquiries: [...listEnquiries()].reverse() }), true

@@ -1,33 +1,35 @@
 import { motion } from 'motion/react'
-import { Activity, AlertTriangle, AppWindow, ArrowUpRight, BookOpen, Check, KeyRound, LayoutDashboard, LogOut, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Terminal, Trash2, Wallet } from 'lucide-react'
+import { Activity, AlertTriangle, AppWindow, ArrowUpRight, BellRing, BookOpen, Check, CreditCard, KeyRound, LayoutDashboard, LogOut, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Terminal, Trash2, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { btnGold, btnOutline } from '../../components/ui'
 import { CodeBlock } from '../../docs/CodeBlock'
 import { widgetSnippet } from '../../lib/widgetEmbed'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
+import { Alerts } from './Alerts'
 import { ago, api, fmtDate, shortAddress, type Account, type ApiKey, type Range, type RecentRequest, type Usage } from './api'
+import { Billing } from './Billing'
 import { CopyButton, Dialog } from './Dialog'
+import { ErrorLine, Skeleton } from './parts'
+import { card, cardTitle, iconBtn, input, rise, sub } from './styles'
 import { UsageChart } from './UsageChart'
 
-/* The signed-in developer dashboard: overview (usage), API keys, quickstart, recent requests, widget.
-   Every figure is read from /api/developer/*; loading, empty and error states are distinct. */
+/* The signed-in developer dashboard: overview (usage), API keys, plan & billing, alerts, quickstart,
+   recent requests, widget. Every figure is read from /api/developer/*; loading, empty and error states
+   are distinct. */
 
-export type Tab = 'overview' | 'keys' | 'quickstart' | 'requests' | 'widget'
+export type Tab = 'overview' | 'keys' | 'billing' | 'alerts' | 'quickstart' | 'requests' | 'widget'
 
 const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'keys', label: 'API keys', icon: KeyRound },
+  { id: 'billing', label: 'Plan & billing', icon: CreditCard },
+  { id: 'alerts', label: 'Alerts', icon: BellRing },
   { id: 'quickstart', label: 'Quickstart', icon: Terminal },
   { id: 'requests', label: 'Requests', icon: Activity },
   { id: 'widget', label: 'Widget', icon: AppWindow },
 ]
+const PRICING_URL = isLocalHost() ? '/pricing' : `${SITE_URL}/pricing`
 
-const card = 'flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-6 max-[600px]:p-4'
-const cardTitle = 'm-0 font-display text-[24px] leading-none font-bold uppercase'
-const sub = 'font-mono text-[11px] tracking-[.5px] text-faint'
-const input = 'h-11 w-full rounded-input border border-line-strong bg-bg px-3 text-[15px] text-ink outline-none transition-colors focus:border-gold'
-const iconBtn = 'inline-flex min-h-10 items-center gap-2 rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:opacity-50'
-const rise = (i: number) => ({ animation: `gl-rise .45s ${i * 0.05}s ease both` })
 const WIDGET_URL = isLocalHost() ? '/widget' : `${SITE_URL}/widget`
 const API_ORIGIN = 'https://gullylabs.xyz'
 
@@ -49,24 +51,6 @@ function useTab(): [Tab, (t: Tab) => void] {
       setTab(t)
     },
   ]
-}
-
-function ErrorLine({ children, onRetry }: { children: ReactNode; onRetry?: () => void }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3 rounded-input border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-4 py-3 text-[14px] text-error" role="alert">
-      <AlertTriangle size={16} aria-hidden />
-      <span className="min-w-0 flex-1">{children}</span>
-      {onRetry && (
-        <button type="button" onClick={onRetry} className="font-mono text-[12px] text-ink-2 underline underline-offset-4 hover:text-ink">
-          Retry
-        </button>
-      )}
-    </div>
-  )
-}
-
-function Skeleton({ h = 20, w = '100%' }: { h?: number; w?: number | string }) {
-  return <span aria-hidden className="block animate-shimmer rounded-[4px] bg-[linear-gradient(90deg,#131820_0%,#1a2029_50%,#131820_100%)] bg-[length:200%_100%]" style={{ height: h, width: w }} />
 }
 
 /* ------------------------------------------------------------------ overview --- */
@@ -179,7 +163,7 @@ function Overview({ account, goKeys }: { account: Account; goKeys: () => void })
           note={errRate === null ? 'no requests yet' : '4xx, 429 and 5xx answers'}
           tone={errRate !== null && errRate >= 5 ? '#ff8a7a' : undefined}
         />
-        <Kpi label="CURRENT LIMIT" value={`${account.limits.keyPerMin}/min`} note={`per key · ${account.limits.anonymousPerMin}/min without one`} />
+        <Kpi label="CURRENT LIMIT" value={`${account.limits.keyPerMin}/min`} note={`per key on ${account.plan.name} · ${account.limits.anonymousPerMin}/min without one`} />
       </dl>
 
       <section className={card} style={rise(2)}>
@@ -805,17 +789,23 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
           </a>
           <div className="mt-4 flex flex-col gap-2 rounded-input border border-line bg-surface-deep p-4 max-[960px]:hidden">
             <span className="flex items-center gap-2 font-mono text-[10.5px] tracking-[1px] text-faint">
-              <Wallet size={13} aria-hidden /> FREE TIER
+              <Wallet size={13} aria-hidden /> {account.plan.name.toUpperCase()} PLAN
             </span>
             <span className="text-[13px] leading-[1.5] text-muted">
-              {account.limits.keyPerMin} req/min per key, up to {account.limits.maxKeys} keys. No card, no email.
+              {account.limits.keyPerMin.toLocaleString('en-US')} req/min per key, up to {account.limits.maxKeys} keys, {account.plan.alerts} alert{account.plan.alerts === 1 ? '' : 's'}, {account.plan.historyDays} days of history.
+              {account.plan.expiresAt ? ` Runs until ${fmtDate(account.plan.expiresAt)}.` : ' No card, no email.'}
             </span>
+            <a href={PRICING_URL} className="inline-flex items-center gap-1 font-mono text-[12px] text-gold hover:underline">
+              Compare plans <ArrowUpRight size={12} aria-hidden />
+            </a>
           </div>
         </nav>
 
         <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="min-w-0">
           {tab === 'overview' && <Overview account={account} goKeys={goKeys} />}
           {tab === 'keys' && <Keys account={account} reload={reload} />}
+          {tab === 'billing' && <Billing account={account} reload={reload} />}
+          {tab === 'alerts' && <Alerts goBilling={() => setTab('billing')} />}
           {tab === 'quickstart' && <Quickstart account={account} goKeys={goKeys} />}
           {tab === 'requests' && <Requests />}
           {tab === 'widget' && <WidgetPanel />}

@@ -1,4 +1,4 @@
-import { Activity, BookOpen, ChartLine, Code2, FlaskConical, Info, KeyRound, Layers, Newspaper, Puzzle, type LucideIcon } from 'lucide-react'
+import { Activity, BookOpen, ChartLine, Code2, FlaskConical, Info, KeyRound, Layers, Newspaper, Puzzle, Tag, type LucideIcon } from 'lucide-react'
 
 export const SITE_URL = 'https://gullylabs.xyz'
 
@@ -30,6 +30,7 @@ export const devLinks: ({ label: string; icon: LucideIcon } & ({ href: string } 
   { label: 'Docs', href: 'https://docs.gullylabs.xyz', icon: BookOpen },
   { label: 'Widget', to: '/widget', icon: Puzzle },
   { label: 'Developer portal', to: '/developers', icon: KeyRound },
+  { label: 'Pricing', to: '/pricing', icon: Tag },
 ]
 
 /** Header entries for developers, after the site sections. */

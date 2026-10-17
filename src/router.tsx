@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, DevelopersRoute, ProjectDetailRoute, ServicesRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, DevelopersRoute, PricingRoute, ProjectDetailRoute, ServicesRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { RouteError } from './pages/RouteError'
 import { TrackerRoute } from './pages/TrackerRoute'
@@ -18,6 +18,7 @@ const mainRoutes = [
       { path: '/about', element: <AboutRoute /> },
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/widget', element: <WidgetRoute /> },
+      { path: '/pricing', element: <PricingRoute /> },
       { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={DEVELOPERS_URL} /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

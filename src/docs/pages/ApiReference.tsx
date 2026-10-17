@@ -129,12 +129,13 @@ export function ApiReference() {
       </Section>
 
       <Section id="history" title="GET /api/tracker/history">
-        <P>One token’s gap history: a snapshot every five minutes, kept for seven days.</P>
+        <P>One token’s gap history: a snapshot every five minutes. Seven days are open to everyone; paid plans keep more (see <DocLink to="plans-alerts">Plans &amp; alerts</DocLink>).</P>
         <Fields
           head={['Parameter', 'Type', 'Meaning']}
           rows={[
             ['chain', 'string', <>Chain key, default <C>robinhood</C>. 2 to 12 lowercase letters.</>],
             ['ticker', 'string, required', '1 to 8 letters or dots; case does not matter.'],
+            ['days', 'integer, optional', <>Window in days, from 1 up to what your plan includes. Without it you get the last seven days, as before. Over your plan’s limit answers <C>403</C>; past seven days the answer adds <C>days</C> and is not cached publicly.</>],
           ]}
         />
         <P>
@@ -161,13 +162,13 @@ export function ApiReference() {
         <Fields
           head={['Header', 'On', 'Meaning']}
           rows={[
-            ['X-RateLimit-Limit', 'success', 'Requests allowed per minute: 60 anonymous, 600 with a key.'],
+            ['X-RateLimit-Limit', 'success', 'Requests allowed per minute: 60 anonymous, 600 with a Free key, more on a paid plan.'],
             ['X-RateLimit-Remaining', 'success', 'Requests left in it.'],
             ['Retry-After', '429', 'Seconds to wait before trying again.'],
           ]}
         />
         <P>
-          Need more? <DocLink to="api-keys">Get a free key</DocLink>, instantly.
+          Need more? <DocLink to="api-keys">Get a free key</DocLink>, instantly. A key on a paid plan gets that plan’s higher limit; see <DocLink to="plans-alerts">Plans &amp; alerts</DocLink>.
         </P>
       </Section>
 
@@ -181,6 +182,7 @@ export function ApiReference() {
             ['400', 'history: chain or ticker malformed', <>Check the parameters. Body: <C>{'{"error":"chain and ticker"}'}</C>.</>],
             ['405', 'a method other than GET or OPTIONS', 'Use GET.'],
             ['401', 'unknown or revoked API key', 'Check the key, or request one at developers.gullylabs.xyz.'],
+            ['403', 'history: days beyond what your plan includes',<>Ask for fewer days, or move to a plan with more history. The body names your limit in <C>historyDays</C>.</>],
             ['429', 'rate limit exceeded', 'Wait for Retry-After seconds, or use an API key.'],
             ['502', 'the tracker could not be built at all', 'Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.'],
           ]}

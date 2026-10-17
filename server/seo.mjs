@@ -19,6 +19,7 @@ const PROJECTS = {
 const MAIN = {
   '/': ['Gully Labs · Web3 projects and blockchain development', 'Every project Gully Labs ships reports its own volume, value locked and fees. This page reads each one live and adds them up.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price, with the gap, pool depth and feed time.'],
+  '/pricing': ['Pricing: tracker API plans · Gully Labs', 'Plans for the Gully Labs tracker API: higher rate limits, gap alerts by webhook and longer history, paid in USDC on Base with no custody.'],
   '/widget': ['Tracker widget · Gully Labs', 'Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps.'],
   '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security audits from the team behind the Gully Labs projects.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
@@ -31,6 +32,7 @@ const DOCS_PAGES = {
   '/api': ['API reference · Gully Labs docs', 'The public tracker API: endpoints, fields, rate limits and errors. Free to call with no key.'],
   '/widget': ['Widget guide · Gully Labs docs', 'Embed the live tracker with one script tag: ticker, badge and table, with every option.'],
   '/api-keys': ['API keys · Gully Labs docs', 'How to get a free Gully Labs API key instantly by signing in with a wallet, and use it for a higher rate limit.'],
+  '/plans-alerts': ['Plans & alerts · Gully Labs docs', 'Paid API plans paid in USDC on Base, gap alerts by webhook or Telegram, the webhook payload and how to verify its signature.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],
 }
@@ -68,7 +70,8 @@ export function pageMeta(host, pathname) {
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  const og = p === '/' ? 'home' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
+  // Pricing has no card of its own yet; it shares the developer portal's.
+  const og = p === '/' ? 'home' : p === '/pricing' ? 'developers' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
   return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
 }
 

@@ -1,7 +1,7 @@
 // Public API access control: who may call /api/tracker*, and how often.
 //
 //   anonymous: ANON_LIMIT_PER_MIN requests per minute per IP
-//   API key (Authorization: Bearer gl_live_…): the key's own limit per minute
+//   API key (Authorization: Bearer gl_live_…): the per-key limit of its wallet's plan (plans.mjs)
 //
 // Fixed one-minute windows held in memory (fast; a restart forgets them, which only ever errs in the
 // caller's favour). Usage per key is kept for the developer dashboard and flushed to disk every minute:
@@ -13,9 +13,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { bearer, clientIp, DATA_DIR } from './http.mjs'
+import { ANONYMOUS, planOf, PLANS } from './plans.mjs'
 import { findKey } from './store.mjs'
 
-export const ANON_LIMIT_PER_MIN = 60
+export const ANON_LIMIT_PER_MIN = ANONYMOUS.perMin
 const USAGE_FILE = path.join(DATA_DIR, 'api-usage.json')
 const HOUR_MS = 3_600_000
 const KEEP_HOURS = 31 * 24
@@ -79,16 +80,18 @@ export function apiAccess(req) {
   if (secret) {
     const key = findKey(secret)
     if (!key) return { ok: false, status: 401, error: 'Unknown or revoked API key. Create one at https://developers.gullylabs.xyz.' }
-    const c = count(`key:${key.id}`, key.limit)
+    // A wallet's key gets its plan's limit; a legacy key with no wallet keeps its own (the Free limit).
+    const plan = key.owner ? planOf(key.owner) : { ...PLANS.free, perMin: key.limit }
+    const c = count(`key:${key.id}`, plan.perMin)
     tally(key.id, !c.allowed)
     return c.allowed
-      ? { ok: true, keyId: key.id, limit: key.limit, remaining: c.remaining }
-      : { ok: false, status: 429, keyId: key.id, error: 'Rate limit reached for this key.', retryAfter: c.retryAfter }
+      ? { ok: true, keyId: key.id, limit: plan.perMin, remaining: c.remaining, plan: plan.id, historyDays: plan.historyDays }
+      : { ok: false, status: 429, keyId: key.id, error: `Rate limit reached for this key (${plan.perMin} a minute on the ${plan.name} plan).`, retryAfter: c.retryAfter }
   }
   const c = count(`ip:${clientIp(req)}`, ANON_LIMIT_PER_MIN)
   tally(null, !c.allowed)
   return c.allowed
-    ? { ok: true, keyId: null, limit: ANON_LIMIT_PER_MIN, remaining: c.remaining }
+    ? { ok: true, keyId: null, limit: ANON_LIMIT_PER_MIN, remaining: c.remaining, plan: 'anonymous', historyDays: ANONYMOUS.historyDays }
     : { ok: false, status: 429, error: `Anonymous limit is ${ANON_LIMIT_PER_MIN} requests a minute. A free API key raises it: https://developers.gullylabs.xyz.`, retryAfter: c.retryAfter }
 }
 

@@ -3,7 +3,9 @@
 // cross-venue figures, see stats.mjs). No dependencies beyond Node.
 import http from 'node:http'
 import { readStats } from './stats.mjs'
-import { readHistory, readTracker, startTrackerLoop } from './tracker.mjs'
+import { onSnapshot, readHistory, readHistoryDays, readTracker, startTrackerLoop } from './tracker.mjs'
+import { evaluateAlerts } from './alerts.mjs'
+import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
 import { clientIp, DATA_DIR, readJson } from './http.mjs'
@@ -124,9 +126,10 @@ const server = http.createServer(async (req, res) => {
     if (await handleDeveloper(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  let access = null
   if (url.pathname.startsWith('/api/tracker')) {
     if (req.method === 'OPTIONS') return send(res, 204, '', CORS)
-    const access = apiAccess(req)
+    access = apiAccess(req)
     // Keyed requests are recorded (status class, latency) for the holder's dashboard once answered.
     observe(req, res, access.keyId)
     if (!access.ok) {
@@ -171,7 +174,25 @@ const server = http.createServer(async (req, res) => {
     const ticker = (url.searchParams.get('ticker') ?? '').toUpperCase()
     const chain = (url.searchParams.get('chain') ?? 'robinhood').toLowerCase()
     if (!/^[A-Z.]{1,8}$/.test(ticker) || !/^[a-z]{2,12}$/.test(chain)) return send(res, 400, JSON.stringify({ error: 'chain and ticker' }), { 'Content-Type': 'application/json' })
-    return send(res, 200, JSON.stringify({ chain, ticker, points: readHistory(chain, ticker) }), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=600' })
+    // ?days= asks for a window; beyond seven days it needs a plan that includes that much history.
+    const daysParam = url.searchParams.get('days')
+    if (daysParam === null) return send(res, 200, JSON.stringify({ chain, ticker, points: readHistory(chain, ticker) }), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=600' })
+    const days = Number(daysParam)
+    const maxDays = PLANS.business.historyDays
+    if (!Number.isInteger(days) || days < 1 || days > maxDays) return send(res, 400, JSON.stringify({ error: `days must be a whole number from 1 to ${maxDays}` }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+    const allowed = access?.historyDays ?? ANONYMOUS.historyDays
+    if (days > allowed) {
+      const needs = Object.values(PLANS).find((p) => p.historyDays >= days)
+      return send(res, 403, JSON.stringify({ error: `Your ${access.keyId ? 'plan' : 'anonymous access'} includes ${allowed} days of history; ${days} days needs the ${needs?.name ?? 'Business'} plan (https://gullylabs.xyz/pricing).`, historyDays: allowed }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...CORS })
+    }
+    // Within the public 7 days the answer is the same for everyone; past it, it depends on the key.
+    const cache = days <= ANONYMOUS.historyDays ? 'public, max-age=60, s-maxage=120, stale-while-revalidate=600' : 'private, max-age=60'
+    return send(res, 200, JSON.stringify({ chain, ticker, days, points: readHistoryDays(chain, ticker, days) }), { 'Content-Type': 'application/json', 'Cache-Control': cache, ...(days > ANONYMOUS.historyDays ? { Vary: 'Authorization' } : {}) })
+  }
+  // The paid tiers: limits and prices from plans.mjs, and whether checkout is open. Public.
+  if (url.pathname === '/api/plans') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    return send(res, 200, JSON.stringify(publicPlans()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
   }
   if (url.pathname === '/api/stats') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
@@ -229,7 +250,10 @@ archiveAssets()
 server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
 // Keep the last minute of API usage across a restart or redeploy.
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), process.exit(0)))
-startTrackerLoop()
+// Gap alerts are evaluated on every recorded tracker snapshot.
+onSnapshot((rows, at) => evaluateAlerts(rows, at))
+// TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.
+if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
 
 // Optional public port for Cloudflare. It speaks both HTTPS and plain HTTP on the
 // same port (sniffing the first byte), so it works whatever the zone's SSL mode is.

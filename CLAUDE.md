@@ -11,6 +11,13 @@ The design kit lives at `C:\Users\Admin\Downloads\Gully Labs landing directions 
 
 Pages: Home, Project detail (x4), Services, About, plus a global contact modal. Do not add sections, stats, testimonials, pricing, icons or copy that aren't in the kit. Exception (requested by the user): nav menus (header, mobile menu, footer) have lucide-react icons plus brand icons for socials.
 
+## Paid API tiers (owner-approved, 2026-10-16; an exception to "no pricing" above)
+- Limits and prices live ONLY in `server/plans.mjs` (owner-editable); pages read `GET /api/plans`. Enforced in `access.mjs` (rate), `alerts.mjs` (alert count) and the history endpoint (`?days=`).
+- Checkout: USDC on Base straight to `GULLY_TREASURY_ADDRESS` (env). Unset = checkout off and every page says so; never a fallback address. Verification in `server/billing.mjs` (receipt, USDC Transfer to treasury >= price, sender is the wallet or exact checkout amount, unused hash, `GULLY_MIN_CONFIRMATIONS`, default 10). Data: `DATA_DIR/billing.json`, plan on the account in `developers.json`.
+- Gap alerts: `server/alerts.mjs`, evaluated on each tracker snapshot (`onSnapshot`). Webhooks https + public IPs only (SSRF guard); Telegram only with `TELEGRAM_BOT_TOKEN`. Data: `DATA_DIR/alerts.json`.
+- Long history: `DATA_DIR/history/YYYY-MM-DD/<chain>-<TICKER>.ndjson`, pruned at 365 days.
+- Test: `npm run test:paid` (in-process server on port 8791, stub RPC, no upstream calls).
+
 ## Stack
 - React + Vite + TypeScript, run with `npm run dev`.
 - React Router for `/`, `/projects/:slug`, `/services`, `/about`.

@@ -53,6 +53,12 @@ interface DevAccount {
   keys: number
   liveKeys: number
 }
+interface Billing {
+  subscriptions: { address: string; plan: string; since: string | null; expiresAt: string; source: string | null; active: boolean }[]
+  payments: { txHash: string; address: string; plan: string; amount: string; from: string; at: string; expiresAt: string }[]
+  offer: { plans: { id: string; name: string; priceUsdc: number }[]; checkout: { enabled: boolean; treasury: string | null; reason?: string } }
+  alerts: { total: number; enabled: number; owners: number }
+}
 interface Enquiry {
   id: string
   receivedAt: string
@@ -92,7 +98,7 @@ function setToken(t: string | null) {
 }
 
 function useAdmin(token: string | null) {
-  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; accounts: DevAccount[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[] } | null>(null)
+  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; accounts: DevAccount[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[]; billing: Billing } | null>(null)
   const [err, setErr] = useState<{ status: number; message: string } | null>(null)
   const load = useCallback(async () => {
     if (!token) return
@@ -103,8 +109,8 @@ function useAdmin(token: string | null) {
       return d
     }
     try {
-      const [overview, dev, enq, launch] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries'), get('/api/admin/launch-list')])
-      setData({ overview, requests: dev.requests, keys: dev.keys, accounts: dev.accounts ?? [], enquiries: enq.enquiries, launch: launch.rows })
+      const [overview, dev, enq, launch, billing] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries'), get('/api/admin/launch-list'), get('/api/admin/billing')])
+      setData({ overview, requests: dev.requests, keys: dev.keys, accounts: dev.accounts ?? [], enquiries: enq.enquiries, launch: launch.rows, billing })
       setErr(null)
     } catch (e) {
       const x = e as { status?: number; message?: string }
@@ -166,6 +172,137 @@ function Login({ onToken, error }: { onToken: (t: string) => void; error: string
   )
 }
 
+/** Paid plans: who has one, every payment, and a manual grant / revoke. */
+function Subscriptions({ billing, accounts, act }: { billing: Billing; accounts: DevAccount[]; act: (path: string, body?: unknown) => Promise<string | null> }) {
+  const [address, setAddress] = useState('')
+  const [plan, setPlan] = useState('pro')
+  const [days, setDays] = useState('30')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold'
+  const grant = async (addr: string, p: string, d?: number) => {
+    setMsg(null)
+    const err = await act(`/api/admin/accounts/${addr}/plan`, { plan: p, days: d })
+    setMsg(err ? { ok: false, text: err } : { ok: true, text: p === 'free' ? `${addr} is back on Free.` : `${addr} has ${p} for ${d} days.` })
+  }
+  const c = billing.offer.checkout
+  return (
+    <section className={card}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className={h2}>Subscriptions</h2>
+        <span className={small}>
+          checkout {c.enabled ? `open · treasury ${c.treasury}` : 'off: GULLY_TREASURY_ADDRESS is not set'} · {billing.alerts.enabled} live alerts of {billing.alerts.total} ({billing.alerts.owners} wallets)
+        </span>
+      </div>
+      <form
+        className="flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          grant(address.trim().toLowerCase(), plan, Number(days))
+        }}
+      >
+        <label className="flex min-w-[min(100%,360px)] flex-1 flex-col gap-1 text-[12px] text-faint">
+          Wallet
+          <input list="admin-wallets" className={field} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" />
+          <datalist id="admin-wallets">
+            {accounts.map((a) => (
+              <option key={a.address} value={a.address} />
+            ))}
+          </datalist>
+        </label>
+        <label className="flex flex-col gap-1 text-[12px] text-faint">
+          Plan
+          <select className={field} value={plan} onChange={(e) => setPlan(e.target.value)}>
+            {billing.offer.plans.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.id === 'free' ? 'free (revoke)' : p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {plan !== 'free' && (
+          <label className="flex w-[90px] flex-col gap-1 text-[12px] text-faint">
+            Days
+            <input className={field} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} required />
+          </label>
+        )}
+        <button type="submit" className="h-10 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover">
+          {plan === 'free' ? 'Revoke plan' : 'Grant plan'}
+        </button>
+      </form>
+      {msg && <p className={`m-0 font-mono text-[12px] ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
+      {!billing.subscriptions.length ? (
+        <p className="m-0 text-[14px] text-muted">No wallet has a paid or granted plan yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[14px]">
+            <thead>
+              <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
+                <th className="py-2 pr-3 font-medium">WALLET</th>
+                <th className="py-2 pr-3 font-medium">PLAN</th>
+                <th className="py-2 pr-3 font-medium">SOURCE</th>
+                <th className="py-2 pr-3 font-medium">SINCE</th>
+                <th className="py-2 pr-3 font-medium">UNTIL</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {billing.subscriptions.map((s) => (
+                <tr key={s.address} className="border-b border-line last:border-b-0">
+                  <td className="py-3 pr-3 font-mono text-[12px] text-ink-2">{s.address}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px] uppercase">{s.plan}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px] text-faint">{s.source ?? '—'}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px] text-faint">{when(s.since)}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px]">{s.active ? <span className="text-green">{when(s.expiresAt)}</span> : <span className="text-faint">lapsed {when(s.expiresAt)}</span>}</td>
+                  <td className="py-3 text-right whitespace-nowrap">
+                    {s.active && (
+                      <button type="button" onClick={() => window.confirm(`Revoke ${s.plan} from ${s.address}? It returns to Free now.`) && grant(s.address, 'free')} className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error">
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <h3 className="m-0 font-mono text-[12px] tracking-[1px] text-faint">PAYMENTS ({billing.payments.length})</h3>
+      {!billing.payments.length ? (
+        <p className="m-0 text-[14px] text-muted">No payments yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
+                <th className="py-2 pr-3 font-medium">WHEN</th>
+                <th className="py-2 pr-3 font-medium">WALLET</th>
+                <th className="py-2 pr-3 font-medium">PLAN</th>
+                <th className="py-2 pr-3 font-medium">AMOUNT</th>
+                <th className="py-2 pr-3 font-medium">TRANSACTION</th>
+              </tr>
+            </thead>
+            <tbody className="font-mono">
+              {billing.payments.map((p) => (
+                <tr key={p.txHash} className="border-b border-line last:border-b-0">
+                  <td className="py-2 pr-3 text-faint">{when(p.at)}</td>
+                  <td className="py-2 pr-3 text-ink-2">{p.address}</td>
+                  <td className="py-2 pr-3 uppercase">{p.plan}</td>
+                  <td className="py-2 pr-3">{p.amount} USDC</td>
+                  <td className="py-2 pr-3">
+                    <a href={`https://basescan.org/tx/${p.txHash}`} target="_blank" rel="noopener" className="text-ink-2 hover:text-gold">
+                      {p.txHash.slice(0, 10)}…
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
 export function AdminPage() {
   const [token, setTok] = useState<string | null>(getToken)
   const { data, err, reload } = useAdmin(token)
@@ -195,9 +332,11 @@ export function AdminPage() {
       />
     )
 
-  const act = async (path: string, body?: unknown) => {
-    await fetch(path, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) })
+  const act = async (path: string, body?: unknown): Promise<string | null> => {
+    const r = await fetch(path, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) }).catch(() => null)
+    const d = r ? await r.json().catch(() => null) : null
     reload()
+    return r?.ok ? null : (d?.error ?? 'The server could not be reached.')
   }
 
   const o = data?.overview
@@ -358,6 +497,8 @@ export function AdminPage() {
                 </div>
               )}
             </section>
+
+            <Subscriptions billing={data.billing} accounts={data.accounts} act={act} />
 
             {data.requests.length > 0 && (
             <section className={card}>

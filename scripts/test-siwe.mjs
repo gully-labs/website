@@ -11,9 +11,9 @@ import { createSiweMessage } from 'viem/siwe'
 import { concat, encodeAbiParameters, encodeDeployData, encodeFunctionData, erc6492SignatureValidatorByteCode, hashMessage, parseAbi, toHex } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { contractCheckCall, hashPersonalMessage, parseSiwe, recoverAddress } from '../server/siwe.mjs'
+import { makeClient } from './test-helpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:8797'
-const HOST = new URL(BASE).host
 const ADMIN = process.env.ADMIN_TOKEN
 let passed = 0
 let failed = 0
@@ -61,31 +61,13 @@ function check(name, cond, extra = '') {
 
 /* ----------------------------------------------------- end to end --- */
 
-let cookie = ''
-async function call(path, { method = 'GET', body, headers = {}, auth, useCookie = true } = {}) {
-  const h = { ...headers }
-  if (body !== undefined) h['content-type'] = 'application/json'
-  if (useCookie && cookie) h.cookie = cookie
-  if (auth) h.authorization = `Bearer ${auth}`
-  const r = await fetch(BASE + path, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'manual' })
-  const text = await r.text()
-  let data = null
-  try {
-    data = JSON.parse(text)
-  } catch {
-    /* not json */
-  }
-  return { status: r.status, data, headers: r.headers }
-}
-const xrw = { 'x-requested-with': 'gully' }
-const post = (path, body, extra = {}) => call(path, { ...extra, method: 'POST', body: body ?? {}, headers: { ...xrw, ...(extra.headers ?? {}) } })
+// The HTTP client and SIWE message builder are shared with test-paid.mjs (test-helpers.mjs).
+const client = makeClient(BASE)
+const { call, post } = client
 
 const account = privateKeyToAccount(generatePrivateKey())
 const stranger = privateKeyToAccount(generatePrivateKey())
-const message = async (overrides = {}) => {
-  const { data } = await call('/api/developer/nonce')
-  return createSiweMessage({ domain: HOST, address: account.address, uri: BASE, version: '1', chainId: 1, nonce: data.nonce, issuedAt: new Date(), statement: 'Sign in to the Gully Labs developer dashboard.', ...overrides })
-}
+const message = (overrides = {}) => client.siweMessage(account, overrides)
 
 {
   const n = await call('/api/developer/nonce')
@@ -122,7 +104,7 @@ const message = async (overrides = {}) => {
   const setCookie = ok.headers.get('set-cookie') ?? ''
   check('a good signature signs in', ok.status === 200 && ok.data?.address === account.address.toLowerCase())
   check('session cookie is HttpOnly and SameSite=Lax', /HttpOnly/.test(setCookie) && /SameSite=Lax/.test(setCookie) && /Max-Age=2592000/.test(setCookie))
-  cookie = setCookie.split(';')[0]
+  client.cookie = setCookie.split(';')[0]
 
   const replay = await post('/api/developer/siwe', { message: m1, signature: s1 }, { useCookie: false })
   check('a reused nonce is refused', replay.status === 401, replay.data?.error)
@@ -194,7 +176,7 @@ const message = async (overrides = {}) => {
     check('admin revokes a single key', (await call('/api/tracker/history?chain=robinhood&ticker=NVDA', { auth: extra[1].data.secret, useCookie: false })).status === 401)
     const m7 = await message()
     const again = await post('/api/developer/siwe', { message: m7, signature: await account.signMessage({ message: m7 }) }, { useCookie: false })
-    cookie = (again.headers.get('set-cookie') ?? '').split(';')[0]
+    client.cookie = (again.headers.get('set-cookie') ?? '').split(';')[0]
   } else console.log('SKIP  admin checks (set ADMIN_TOKEN to the server token)')
 
   const out = await post('/api/developer/logout')

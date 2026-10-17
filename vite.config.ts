@@ -5,6 +5,7 @@ import { readStats } from './server/stats.mjs'
 import { readHistory, readTracker } from './server/tracker.mjs'
 import { handleAdmin } from './server/admin.mjs'
 import { handleDeveloper } from './server/developer.mjs'
+import { publicPlans } from './server/plans.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
 function mockContactApi(): Plugin {
@@ -82,6 +83,10 @@ function serverModules(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://localhost')
+        if (url.pathname === '/api/plans') {
+          res.setHeader('Content-Type', 'application/json')
+          return res.end(JSON.stringify(publicPlans()))
+        }
         const handler = url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : null
         if (!handler) return next()
         handler(req, res, url).then((done) => {

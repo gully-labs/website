@@ -1,0 +1,148 @@
+import { ArrowUpRight, BellRing, Check, History, Loader2, ShieldCheck, Zap } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Seo } from '../components/Seo'
+import { btnGold, btnOutline, eyebrow } from '../components/ui'
+import { DEVELOPERS_URL, DOCS_URL, isLocalHost } from '../site-host'
+import type { Offer } from './developers/api'
+
+/* The paid tiers of the tracker API. Every price and limit is read from GET /api/plans (server/plans.mjs);
+   nothing numeric is typed into this page. */
+
+const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` })
+const DASHBOARD = isLocalHost() ? '/developers#billing' : `${DEVELOPERS_URL}/#billing`
+
+type State = { k: 'loading' } | { k: 'error'; message: string } | { k: 'ok'; offer: Offer }
+
+function usePlans(): [State, () => void] {
+  const [state, setState] = useState<State>({ k: 'loading' })
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/plans')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`The server answered ${r.status}.`))))
+      .then((offer: Offer) => alive && setState({ k: 'ok', offer }))
+      .catch((e: unknown) => alive && setState({ k: 'error', message: e instanceof Error ? e.message : 'The plans could not be read.' }))
+    return () => {
+      alive = false
+    }
+  }, [n])
+  return [state, () => (setState({ k: 'loading' }), setN((x) => x + 1))]
+}
+
+const FAQ = (o: Offer | null): { q: string; a: string }[] => [
+  { q: 'How do I pay?', a: `In USDC on ${o?.chain.name ?? 'Base'}. Pick a plan in the developer dashboard; it shows the exact amount and the Gully Labs treasury address. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash.` },
+  { q: 'Do you hold my funds?', a: 'No. The USDC goes straight to the Gully Labs treasury wallet in one transfer, the same as paying any address. There is no deposit, balance or card on file, and nothing is ever taken from your wallet without you signing it.' },
+  { q: 'How is a payment checked?', a: `The server reads the transaction from a public ${o?.chain.name ?? 'Base'} node: it must have succeeded, moved at least the plan’s price in USDC to the treasury, and have a few blocks on top. Each transaction counts once. The plan starts the moment it is confirmed.` },
+  { q: 'How do I cancel?', a: `Just don’t renew. A payment buys ${o?.periodDays ?? 30} days and nothing renews by itself; when the days run out the account returns to Free with its keys still working at the Free limit.` },
+  { q: 'Can I extend or switch?', a: 'Paying again for the same plan adds days to the end of the current period. A different plan starts the day you pay for it; the days left on the old one are not carried over.' },
+  { q: 'What does Free include?', a: 'Keys, usage charts and the request log, as today, with the limits shown above. Calling the API without any key keeps working too, at the anonymous limit.' },
+]
+
+export function Pricing() {
+  const [state, retry] = usePlans()
+  const offer = state.k === 'ok' ? state.offer : null
+  return (
+    <>
+      <Seo title="Pricing" description="Plans for the Gully Labs tracker API: higher rate limits, gap alerts by webhook and longer history, paid in USDC on Base with no custody." />
+
+      <section className="relative overflow-hidden px-page pt-[72px] pb-12">
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.14),transparent_62%)]" />
+        <div className="relative flex max-w-[860px] flex-col gap-6">
+          <span className={eyebrow} style={rise(0)}>
+            PRICING · TRACKER API
+          </span>
+          <h1 className="m-0 font-display text-[clamp(52px,6.6cqw,96px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
+            More calls, <span className="text-gold">alerts and history</span>
+          </h1>
+          <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
+            The tracker API stays free and open. Paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. You pay in USDC from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.
+          </p>
+        </div>
+      </section>
+
+      <section className="px-page pb-16" aria-live="polite">
+        {state.k === 'loading' && (
+          <p className="m-0 inline-flex items-center gap-3 font-mono text-[13px] text-faint">
+            <Loader2 size={16} className="animate-spin" aria-hidden /> Reading the plans…
+          </p>
+        )}
+        {state.k === 'error' && (
+          <div className="flex flex-wrap items-center gap-4 rounded-card border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-6 py-5 text-[15px] text-error" role="alert">
+            The plans could not be read: {state.message}
+            <button type="button" onClick={retry} className={`${btnOutline} min-h-11 px-5 text-[14px]`}>
+              Try again
+            </button>
+          </div>
+        )}
+        {offer && (
+          <div className="flex flex-col gap-5">
+            {!offer.checkout.enabled && (
+              <p className="m-0 rounded-input border border-line-strong bg-surface px-5 py-4 text-[15px] text-ink-2" role="status">
+                {offer.checkout.reason} The limits below are what each plan will include; Free works today.
+              </p>
+            )}
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4">
+              {offer.plans.map((p, i) => {
+                const featured = p.id === 'pro'
+                return (
+                  <div key={p.id} className={`relative flex flex-col gap-6 overflow-hidden rounded-card border bg-surface p-7 ${featured ? 'border-gold-line' : 'border-line'}`} style={rise(3 + i)}>
+                    {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(232,192,96,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
+                    <div className="relative flex flex-col gap-2">
+                      <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
+                      <span className="flex items-baseline gap-2">
+                        <span className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`}>{p.priceUsdc}</span>
+                        <span className="font-mono text-[13px] text-muted">{p.priceUsdc ? `USDC / ${offer.periodDays} days` : 'free, no time limit'}</span>
+                      </span>
+                    </div>
+                    <ul className="relative m-0 flex list-none flex-col gap-3 p-0 text-[15px] text-ink-2">
+                      <li className="flex items-start gap-3">
+                        <Zap size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {p.perMin.toLocaleString('en-US')} requests a minute per key, up to {p.maxKeys} keys
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <BellRing size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {p.alerts} gap alert{p.alerts === 1 ? '' : 's'} by webhook
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <History size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {p.historyDays} days of gap history per stock
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <Check size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Usage charts and request log
+                      </li>
+                    </ul>
+                    <a href={DASHBOARD} className={`${featured ? btnGold : btnOutline} relative mt-auto inline-flex min-h-12 items-center justify-center gap-2 px-6 text-[16px]`}>
+                      {p.priceUsdc ? (offer.checkout.enabled ? `Get ${p.name}` : 'Open the dashboard') : 'Get a free key'} <ArrowUpRight size={16} aria-hidden />
+                    </a>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="m-0 font-mono text-[12px] leading-[1.7] text-faint">
+              Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history. Prices in {offer.currency} on {offer.chain.name}. Limits protect our servers; answers served from the edge cache do not count against them.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section className="px-page pb-24">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-10 rounded-card border border-line bg-surface-deep p-8 max-[900px]:grid-cols-1 max-[600px]:p-5">
+          <div className="flex flex-col gap-4">
+            <h2 className="m-0 font-display text-[36px] leading-none font-bold uppercase">Questions</h2>
+            <p className="m-0 flex items-start gap-2 text-[14px] leading-[1.6] text-muted">
+              <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Paid in USDC on Base, checked on chain, no custody.
+            </p>
+            <a href={`${DOCS_URL}/plans-alerts`} className="inline-flex items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
+              Plans &amp; alerts docs <ArrowUpRight size={13} aria-hidden />
+            </a>
+          </div>
+          <dl className="m-0 flex flex-col gap-6">
+            {FAQ(offer).map((f) => (
+              <div key={f.q} className="flex flex-col gap-2 border-b border-line pb-5 last:border-b-0 last:pb-0">
+                <dt className="font-display text-[22px] leading-none font-bold uppercase">{f.q}</dt>
+                <dd className="m-0 text-[15px] leading-[1.65] text-muted">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+    </>
+  )
+}

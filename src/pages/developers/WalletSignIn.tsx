@@ -1,57 +1,15 @@
 import '@rainbow-me/rainbowkit/styles.css'
-import { connectorsForWallets, createAuthenticationAdapter, darkTheme, RainbowKitAuthenticationProvider, RainbowKitProvider, useConnectModal, type AuthenticationStatus, type Theme } from '@rainbow-me/rainbowkit'
-import { coinbaseWallet, injectedWallet, metaMaskWallet, rabbyWallet, rainbowWallet, trustWallet, walletConnectWallet } from '@rainbow-me/rainbowkit/wallets'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createAuthenticationAdapter, RainbowKitAuthenticationProvider, RainbowKitProvider, useConnectModal, type AuthenticationStatus } from '@rainbow-me/rainbowkit'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { createSiweMessage } from 'viem/siwe'
-import { createConfig, http, useAccount, useDisconnect, WagmiProvider } from 'wagmi'
-import { base, bsc, mainnet } from 'wagmi/chains'
-import { defineChain } from 'viem'
+import { useAccount, useDisconnect, WagmiProvider } from 'wagmi'
 import { api } from './api'
+import { queryClient, wagmiConfig as config, walletTheme as theme } from './walletConfig'
 
 /* Wallet connection and Sign-In with Ethereum. This module (wagmi, viem, RainbowKit) is its own lazy
    chunk: it loads only when someone presses "Connect wallet", never with the site or the signed-in
-   dashboard. Injected wallets (any EIP-6963 browser wallet) and Coinbase Wallet need no configuration;
-   WalletConnect wallets appear only when VITE_WALLETCONNECT_PROJECT_ID is set at build time. */
-
-const robinhood = defineChain({
-  id: 4663,
-  name: 'Robinhood Chain',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: ['https://rpc.mainnet.chain.robinhood.com'] } },
-})
-
-const projectId = (import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string | undefined)?.trim() || ''
-export const walletConnectEnabled = projectId.length > 0
-
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: 'Popular',
-      // Without a WalletConnect project id, only wallets that never fall back to WalletConnect are listed.
-      wallets: walletConnectEnabled ? [metaMaskWallet, coinbaseWallet, rabbyWallet, rainbowWallet, trustWallet, walletConnectWallet] : [injectedWallet, coinbaseWallet, rabbyWallet],
-    },
-  ],
-  { appName: 'Gully Labs Developers', appDescription: 'API keys for the Gully Labs tracker API', appUrl: 'https://developers.gullylabs.xyz', projectId: projectId || 'not-configured' },
-)
-
-const config = createConfig({
-  chains: [mainnet, base, bsc, robinhood],
-  connectors,
-  transports: { [mainnet.id]: http(), [base.id]: http(), [bsc.id]: http(), [robinhood.id]: http() },
-  ssr: false,
-})
-
-const queryClient = new QueryClient()
-
-const theme: Theme = (() => {
-  const t = darkTheme({ accentColor: '#e8c060', accentColorForeground: '#0b0e13', borderRadius: 'small', overlayBlur: 'small' })
-  return {
-    ...t,
-    colors: { ...t.colors, modalBackground: '#10141a', modalBorder: '#1d232c', profileForeground: '#0d1116', generalBorder: '#2c3540', actionButtonSecondaryBackground: '#131820', menuItemBackground: '#131820', modalText: '#eef0f2', modalTextSecondary: '#a6b0bd', closeButtonBackground: '#131820', closeButton: '#a6b0bd' },
-    fonts: { body: "'Hanken Grotesk', sans-serif" },
-  }
-})()
+   dashboard. The wallet set-up itself is shared with checkout (walletConfig.ts). */
 
 function Opener({ trigger, status, onClose }: { trigger: number; status: AuthenticationStatus; onClose: () => void }) {
   const { openConnectModal, connectModalOpen } = useConnectModal()

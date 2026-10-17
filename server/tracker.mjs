@@ -19,6 +19,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { DATA_DIR } from './http.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const load = (f) => JSON.parse(fs.readFileSync(path.join(here, 'data', f), 'utf8'))
@@ -348,12 +349,40 @@ try {
 
 const histKey = (chainKey, ticker) => `${chainKey}:${ticker}`
 
+/* Long history, for paid plans: the same points also go to append-only files, one directory per UTC
+   day and one NDJSON file per token in it (ARCHIVE_DIR/YYYY-MM-DD/<chain>-<TICKER>.ndjson, one
+   [unixSeconds, gapPct, onchain, fair] per line). Reading one token's year is then ~365 small files,
+   not the whole archive. Day directories older than ARCHIVE_KEEP_DAYS are deleted. */
+const ARCHIVE_DIR = path.join(DATA_DIR, 'history')
+export const ARCHIVE_KEEP_DAYS = 365
+const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10)
+let lastPrune = 0
+
+function archive(points, at) {
+  try {
+    const dir = path.join(ARCHIVE_DIR, dayOf(at))
+    fs.mkdirSync(dir, { recursive: true })
+    for (const [key, p] of points) fs.appendFileSync(path.join(dir, `${key.replace(':', '-')}.ndjson`), JSON.stringify(p) + '\n')
+    if (at - lastPrune > 6 * 3_600_000) {
+      lastPrune = at
+      const oldest = dayOf(at - ARCHIVE_KEEP_DAYS * 86_400_000)
+      for (const d of fs.readdirSync(ARCHIVE_DIR)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && d < oldest) fs.rmSync(path.join(ARCHIVE_DIR, d), { recursive: true, force: true })
+    }
+  } catch (e) {
+    console.error('history archive:', e?.message ?? e)
+  }
+}
+
 function record(rows, at) {
   const cutoff = at - KEEP_MS
+  const added = []
   for (const r of rows) {
     if (r.gapPct === null || r.poolStale) continue
-    const h = (history[histKey(r.chain, r.ticker)] ??= [])
-    h.push([Math.round(at / 1000), Math.round(r.gapPct * 100) / 100, r.onchain, r.fair])
+    const key = histKey(r.chain, r.ticker)
+    const h = (history[key] ??= [])
+    const p = [Math.round(at / 1000), Math.round(r.gapPct * 100) / 100, r.onchain, r.fair]
+    h.push(p)
+    added.push([key, p])
     while (h.length && h[0][0] * 1000 < cutoff) h.shift()
   }
   try {
@@ -363,6 +392,32 @@ function record(rows, at) {
   } catch {
     /* history stays in memory */
   }
+  archive(added, at)
+}
+
+/** Every token the tracker follows, for validating alert targets. */
+export const trackedStocks = () => CHAINS.flatMap((c) => c.table.stocks.map((s) => ({ chain: c.key, ticker: s.ticker, name: s.name })))
+
+/* Snapshot listeners (gap alerts): called with the rows and time of every recorded snapshot. */
+const snapshotListeners = new Set()
+export function onSnapshot(fn) {
+  snapshotListeners.add(fn)
+  return () => snapshotListeners.delete(fn)
+}
+function emitSnapshot(rows, at) {
+  for (const fn of snapshotListeners) {
+    try {
+      Promise.resolve(fn(rows, at)).catch((e) => console.error('snapshot listener:', e?.message ?? e))
+    } catch (e) {
+      console.error('snapshot listener:', e?.message ?? e)
+    }
+  }
+}
+
+/** Test hook: records a snapshot of synthetic rows exactly as the loop would (history, archive, listeners). */
+export function recordSnapshotForTest(rows, at = Date.now()) {
+  record(rows, at)
+  emitSnapshot(rows, at)
 }
 
 /* ------------------------------------------------------------------- read --- */
@@ -469,6 +524,7 @@ export async function readTracker() {
       if (Date.now() - lastSnapshot >= SNAPSHOT_MS) {
         lastSnapshot = Date.now()
         record(body.rows, lastSnapshot)
+        emitSnapshot(body.rows.map((r) => ({ ...r, sessionOpen: body.chains.find((c) => c.key === r.chain)?.sessionOpen ?? null })), lastSnapshot)
       }
       cache = { at: Date.now(), body }
       return body
@@ -482,6 +538,46 @@ export async function readTracker() {
 /** One token's gap history: [unixSeconds, gapPct, onchain, fair][]. */
 export function readHistory(chainKey, ticker) {
   return history[histKey(String(chainKey).toLowerCase(), String(ticker).toUpperCase())] ?? []
+}
+
+/**
+ * The last `days` days of one token's gap history, same point shape. Up to seven days come from
+ * memory; beyond that the archive supplies what is older than the in-memory series. Nothing is
+ * filled in: a token or a day with no recorded snapshot simply has no points.
+ */
+export function readHistoryDays(chainKey, ticker, days) {
+  const key = histKey(String(chainKey).toLowerCase(), String(ticker).toUpperCase())
+  const since = Math.floor((Date.now() - days * 86_400_000) / 1000)
+  const recent = (history[key] ?? []).filter((p) => p[0] >= since)
+  if (days <= 7) return recent
+  const before = (history[key] ?? [])[0]?.[0] ?? Infinity
+  const older = []
+  let dirs = []
+  try {
+    const first = dayOf(since * 1000)
+    dirs = fs.readdirSync(ARCHIVE_DIR).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= first).sort()
+  } catch {
+    return recent
+  }
+  const file = `${key.replace(':', '-')}.ndjson`
+  for (const d of dirs) {
+    let text
+    try {
+      text = fs.readFileSync(path.join(ARCHIVE_DIR, d, file), 'utf8')
+    } catch {
+      continue
+    }
+    for (const line of text.split('\n')) {
+      if (!line) continue
+      try {
+        const p = JSON.parse(line)
+        if (Array.isArray(p) && p[0] >= since && p[0] < before) older.push(p)
+      } catch {
+        /* a torn last line after a crash */
+      }
+    }
+  }
+  return older.concat(recent)
 }
 
 /** Keep snapshots coming when nobody is looking, so the history has no holes. */

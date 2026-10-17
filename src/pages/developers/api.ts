@@ -31,13 +31,114 @@ export interface ApiKey {
   lastUsed: string | null
 }
 
+export type PlanId = 'free' | 'pro' | 'business'
+
 export interface Account {
   address: string
   createdAt: string | null
   blocked: boolean
-  limits: { anonymousPerMin: number; keyPerMin: number; maxKeys: number }
+  plan: { id: PlanId; name: string; expiresAt: string | null; source: 'payment' | 'admin' | null; alerts: number; historyDays: number }
+  limits: { anonymousPerMin: number; keyPerMin: number; freeKeyPerMin: number; maxKeys: number }
   keys: ApiKey[]
 }
+
+/* ------------------------------------------------------------ plans & billing --- */
+
+export interface Plan {
+  id: PlanId
+  name: string
+  priceUsdc: number
+  perMin: number
+  alerts: number
+  historyDays: number
+  maxKeys: number
+}
+
+/** GET /api/plans: the tiers and whether they can be bought. Prices live only on the server. */
+export interface Offer {
+  currency: 'USDC'
+  chain: { id: number; name: string }
+  token: { address: string; symbol: string; decimals: number }
+  periodDays: number
+  anonymous: { perMin: number; historyDays: number }
+  plans: Plan[]
+  checkout: { enabled: true; treasury: string; minConfirmations: number } | { enabled: false; treasury: null; reason: string }
+}
+
+export interface Intent {
+  id: string
+  plan: PlanId
+  amount: string
+  amountRaw: string
+  priceUsdc: number
+  treasury: string
+  token: string
+  chainId: number
+  createdAt: string
+  expiresAt: string
+}
+
+export interface Payment {
+  txHash: string
+  plan: PlanId
+  amount: string
+  from: string
+  blockNumber: number
+  at: string
+  periodStart: string
+  expiresAt: string
+}
+
+export interface BillingView {
+  plan: Plan & { expiresAt: string | null; source: 'payment' | 'admin' | null; since: string | null }
+  payments: Payment[]
+  intents: Intent[]
+  offer: Offer
+}
+
+/* -------------------------------------------------------------------- alerts --- */
+
+export type AlertCondition = { type: 'gap'; pct: number } | { type: 'status'; status: 'premium' | 'discount' | 'either' }
+
+export interface Delivery {
+  id: string
+  at: string
+  test: boolean
+  channel: 'webhook' | 'telegram'
+  status: number | null
+  ok: boolean
+  error: string | null
+  ms: number
+  events: string[]
+}
+
+export interface GapAlert {
+  id: string
+  name: string | null
+  chain: string | null
+  ticker: string | null
+  condition: AlertCondition
+  webhook: { url: string } | null
+  telegram: { chatId: string } | null
+  enabled: boolean
+  coveredByPlan: boolean
+  armed: boolean
+  waitingToReArm: string[]
+  createdAt: string
+  lastFiredAt: string | null
+  deliveries: Delivery[]
+}
+
+export interface AlertsView {
+  alerts: GapAlert[]
+  limits: { plan: PlanId; planName: string; max: number; used: number; cooldownMinutes: number; flagPct: number }
+  telegram: { enabled: boolean; bot: string | null }
+  stocks: { chain: string; ticker: string; name: string }[]
+}
+
+export const conditionText = (c: AlertCondition) => (c.type === 'gap' ? `Gap ≥ ${c.pct}% either way` : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
+
+export const fmtUsd0 = (n: number) => n.toLocaleString('en-US')
 
 export interface Totals {
   total: number
