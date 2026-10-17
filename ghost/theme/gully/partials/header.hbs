@@ -2,7 +2,7 @@
     The header, matching gullylabs.xyz (src/components/Header.tsx): the GULLY LABS wordmark (to the site,
     new tab) and "Blog" (this blog), the Products and Developers menus, Projects and Pricing, and the
     gold "Launch app" button. Below it, a hairline bar with the blog's own sections ({{navigation}}
-    from Ghost admin), search and, only when members are on, sign-in and subscribe.
+    from Ghost admin), and search. No sign-in, subscribe or account buttons: the blog has no email opt-in.
 
     Menus are disclosure buttons (aria-expanded + aria-controls, not role="menu"): click, Enter or
     Space opens; Escape closes and returns focus; arrow keys move between items (assets/js/gully.js).
@@ -66,14 +66,6 @@
             </nav>
             <div class="gl-subbar-actions">
                 <button type="button" class="gl-iconbtn" data-ghost-search aria-label="Search the blog">{{> "icons/search"}}<span class="gl-subbar-label">Search</span></button>
-                {{#if @site.members_enabled}}
-                    {{#if @member}}
-                        <a class="gl-iconbtn" href="#/portal/account" data-portal="account">{{> "icons/user"}}<span class="gl-subbar-label">Account</span></a>
-                    {{else}}
-                        <a class="gl-iconbtn" href="#/portal/signin" data-portal="signin">{{> "icons/user"}}<span class="gl-subbar-label">Sign in</span></a>
-                        <a class="gl-btn gl-btn--small gl-btn--outline" href="#/portal/signup" data-portal="signup">{{> "icons/mail"}}<span>Subscribe</span></a>
-                    {{/if}}
-                {{/if}}
             </div>
         </div>
     </div>

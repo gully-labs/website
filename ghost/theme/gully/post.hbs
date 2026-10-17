@@ -2,7 +2,7 @@
 {{!--
     A post: kicker (tag, date, reading time), display title, excerpt, byline and share; the generated
     banner (framing the feature image when there is one); the content; tags, share, the author box;
-    members sign-up (only when members are on); comments; related posts.
+    related posts. No sign-up box, comments or members prompts: the blog has no email opt-in.
 --}}
 {{#post}}
 <main id="gl-main" class="gl-main gl-post" tabindex="-1">
@@ -70,16 +70,6 @@
             {{/foreach}}
         </footer>
     </article>
-
-    {{#if @site.members_enabled}}
-        {{#unless @member}}
-            <div class="gh-canvas gl-post-newsletter">{{> "newsletter" variant="post"}}</div>
-        {{/unless}}
-    {{/if}}
-
-    {{#if comments}}
-        <section class="gh-canvas gl-comments" aria-label="Comments">{{comments}}</section>
-    {{/if}}
 
     {{#if primary_tag}}
         {{#get "posts" filter="tags:{{primary_tag.slug}}+id:-{{id}}" limit="3" include="tags,authors" as |related|}}

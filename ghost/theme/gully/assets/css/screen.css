@@ -7,7 +7,7 @@
  *  1. Tokens          7. Hairline grid + cards     13. Ghost cards (kg-*)
  *  2. Base            8. Banners                   14. Footer
  *  3. Utilities       9. Home                      15. Archive, author, error, empty
- *  4. Buttons, chips 10. Post head                 16. Newsletter, toast, pagination
+ *  4. Buttons, chips 10. Post head                 16. Toast, pagination
  *  5. Header + menus 11. Content                   17. Reduced motion
  *  6. Mobile sheet   12. Code blocks
  */
@@ -233,10 +233,12 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-entry--menu .gl-entry-label { min-height: 20px; }
 
 .gl-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.gl-launch { display: none; }
+/* Visibility rules are scoped to .gl-actions so a bare .gl-btn rule elsewhere (e.g. Ghost code
+   injection) cannot bring the Menu or Launch button back at the wrong width. */
+.gl-actions .gl-launch { display: none; }
 .gl-launch .gl-icon { width: 16px; height: 16px; }
 
-/* Sub-bar: the blog's own sections (Ghost navigation), search, members. */
+/* Sub-bar: the blog's own sections (Ghost navigation) and search. */
 .gl-subbar { border-top: 1px solid var(--gl-line); display: none; }
 .gl-subbar-inner { display: flex; align-items: center; gap: 16px; min-height: 44px; }
 .gl-blognav { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
@@ -263,14 +265,14 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-progress-bar { display: block; height: 100%; background: var(--gl-gold); transform: scaleX(0); transform-origin: 0 50%; }
 
 @media (min-width: 560px) {
-    .gl-launch { display: inline-flex; }
+    .gl-actions .gl-launch { display: inline-flex; }
 }
 @media (min-width: 768px) {
     .gl-subbar { display: block; }
 }
 @media (min-width: 1024px) {
     .gl-nav { display: block; }
-    .gl-menu-button { display: none; }
+    .gl-actions .gl-menu-button { display: none; }
 }
 @media (max-width: 1180px) and (min-width: 1024px) {
     .gl-bar { gap: 12px; }
@@ -310,7 +312,6 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-sheet-blognav .gl-blognav-list { flex-direction: column; gap: 0; }
 .gl-sheet-blognav .gl-blognav-link { font-size: 13px; padding: 0 12px; min-height: 48px; width: 100%; }
 .gl-sheet-blognav .gl-blognav-item.is-current .gl-blognav-link::after { left: 0; right: auto; top: 12px; bottom: 12px; width: 2px; height: auto; }
-.gl-sheet-members { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; }
 .gl-sheet-launch { display: flex; flex-direction: column; gap: 8px; margin-top: 24px; }
 .gl-sheet-launch .gl-kicker { color: var(--gl-dim); font-size: 11px; letter-spacing: 1px; }
 .gl-sheet-social { display: flex; gap: 8px; list-style: none; margin: 24px 0 0; padding: 0; }
@@ -355,7 +356,6 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
     display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: auto; padding-top: 6px;
     font-family: var(--gl-font-mono); font-size: 12px; color: var(--gl-dim);
 }
-.gl-meta-locked { color: var(--gl-gold); }
 
 .gl-tile {
     position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; min-height: 220px; padding: 24px;
@@ -490,8 +490,6 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-authorbox-name { font-family: var(--gl-font-display); font-weight: 700; font-size: 28px; line-height: 1.05; }
 .gl-authorbox-name a:hover { color: var(--gl-gold); }
 .gl-authorbox-bio { color: var(--gl-muted); font-size: 15px; }
-.gl-post-newsletter { margin-top: 48px; }
-.gl-post-newsletter > * { grid-column: main; }
 .gl-comments { margin-top: 48px; }
 .gl-comments > * { grid-column: main; }
 .gl-related .gl-kicker-num::after { width: 16px; }
@@ -608,13 +606,10 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .kg-file-card-container:hover { border-color: var(--gl-gold-line) !important; }
 .kg-file-card-icon { color: var(--gl-gold); }
 .kg-audio-card { background: var(--gl-surface-deep) !important; border: 1px solid var(--gl-line); box-shadow: none !important; }
-.kg-signup-card, .kg-cta-card { border-radius: 12px; }
+.kg-cta-card { border-radius: 12px; }
 .gh-content .kg-gallery-image img { border-radius: 0; }
-/* The paywall / sign-up box Ghost puts inside {{content}} for members-only posts. */
-.gh-post-upgrade-cta-content, .gh-post-upgrade-cta { border-radius: 12px; }
-.gh-post-upgrade-cta-content { background: var(--gl-surface-deep) !important; border: 1px solid var(--gl-gold-line); color: var(--gl-ink); }
-.gh-post-upgrade-cta a.gh-btn { background: var(--gl-gold) !important; color: var(--gl-bg) !important; border-radius: var(--gl-radius-btn); }
-.gh-post-upgrade-cta h2 { font-family: var(--gl-font-display); color: var(--gl-ink); }
+/* No email opt-in on this blog: hide any sign-up card left in a post's content. */
+.kg-signup-card { display: none !important; }
 
 /* 14. Footer ------------------------------------------------------------------------------------ */
 .gl-footer { margin-top: clamp(64px, 9vw, 120px); border-top: 1px solid var(--gl-line); background: var(--gl-bg-footer); }
@@ -683,26 +678,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
     .gl-error-box--plain { grid-template-columns: 1fr; }
 }
 
-/* 16. Newsletter, toast, pagination ------------------------------------------------------------- */
-.gl-newsletter { border-bottom: 1px solid var(--gl-line); background: var(--gl-surface-deep); }
-.gl-newsletter-inner { display: grid; gap: 20px; padding-block: 40px; }
-.gl-newsletter--post { border: 1px solid var(--gl-line); border-radius: var(--gl-radius-card); }
-.gl-newsletter--post .gl-newsletter-inner { padding: 28px; }
-.gl-newsletter-copy { display: flex; flex-direction: column; gap: 8px; }
-.gl-newsletter-title { font-family: var(--gl-font-display); font-weight: 800; font-size: clamp(28px, 3vw, 38px); line-height: 1; text-transform: uppercase; }
-.gl-newsletter-sub { color: var(--gl-muted); font-size: 15px; }
-.gl-newsletter-form { display: flex; flex-wrap: wrap; gap: 8px; align-content: center; }
-.gl-newsletter-form .gl-input { flex: 1 1 220px; }
-.gl-nl-loading, .gl-newsletter-msg { display: none; }
-.gl-newsletter-msg { flex-basis: 100%; font-size: 14px; }
-.gl-nl-success { color: var(--gl-green); }
-.gl-nl-error { color: var(--gl-error); }
-.gl-newsletter-form.loading .gl-nl-default { display: none; }
-.gl-newsletter-form.loading .gl-nl-loading { display: inline; }
-.gl-newsletter-form.success .gl-nl-success, .gl-newsletter-form.error .gl-nl-error { display: block; }
-@media (min-width: 1024px) {
-    .gl-newsletter--footer .gl-newsletter-inner { grid-template-columns: 1fr minmax(360px, 480px); align-items: center; gap: 48px; }
-}
+/* 16. Toast, pagination ------------------------------------------------------------- */
 
 .gl-toast {
     position: fixed; left: 50%; bottom: 24px; z-index: 90; transform: translateX(-50%);

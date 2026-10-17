@@ -29,16 +29,6 @@
                         </button>
                     </li>
                 </ul>
-                {{#if @site.members_enabled}}
-                    <div class="gl-sheet-members">
-                        {{#if @member}}
-                            <a class="gl-btn gl-btn--outline" href="#/portal/account" data-portal="account">{{> "icons/user"}}<span>Account</span></a>
-                        {{else}}
-                            <a class="gl-btn gl-btn--outline" href="#/portal/signin" data-portal="signin">{{> "icons/user"}}<span>Sign in</span></a>
-                            <a class="gl-btn gl-btn--gold" href="#/portal/signup" data-portal="signup">{{> "icons/mail"}}<span>Subscribe</span></a>
-                        {{/if}}
-                    </div>
-                {{/if}}
             </div>
         </div>
         <div class="gl-acc">

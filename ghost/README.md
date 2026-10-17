@@ -23,7 +23,7 @@ scripts/
 - **Blog sections bar** under it: Ghost's own navigation (admin > Settings > Navigation), each item with
   an icon picked by its label (home, tags, about, releases, changelog, news, engineering, guides,
   products, research, tracker, pay, chains, rss, contact, launches, authors; a page icon otherwise),
-  plus search and, only when members are on, Sign in / Subscribe.
+  plus search. No Sign in, Subscribe or Account buttons.
 - **Mobile:** a Menu button opens a full-height sheet with the same groups as accordions.
 - **Footer like the site:** Products / Developers / Company / Social columns, Start a project, the
   "Information only, not investment advice" line, Ghost's secondary navigation. No "Powered by Ghost".
@@ -34,8 +34,10 @@ scripts/
   (X, Telegram, copy link with a toast), the generated banner, content with docs-style code blocks
   (language label and copy button), captions, author box, related posts (same primary tag, else latest).
 - **Tag, author, 404 and error pages**, pagination.
-- **Members UI only when Ghost reports members on** (`@site.members_enabled`): sign-in, subscribe,
-  newsletter forms. With sign-up set to "none" none of it renders.
+- **No email opt-in or members UI**: no sign-in, subscribe, account or newsletter forms, no post-end
+  sign-up box, no comments, no "Members" lock on cards, and partials/content-cta.hbs blanks Ghost's
+  members-only upgrade box. Set Settings > Membership > Subscription access to "Nobody" so Ghost
+  does not load Portal either.
 - **Accessibility:** 44 px targets, gold focus rings, skip link, disclosure-button menus (Escape closes
   and returns focus, arrow keys move), focus-trapped mobile sheet, text contrast at or above 4.5:1
   (small text uses `#8a96a6` or lighter on `#0b0e13`). Reduced motion follows the site's policy: fades

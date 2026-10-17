@@ -5,7 +5,7 @@
  *   3. Links to other Gully sites in Ghost's navigation: new tab, rel, marker
  *   4. Reading progress hairline on posts
  *   5. Copy link and code blocks (with a toast)
- *   6. Content helpers: responsive embeds, scrollable tables, members form states
+ *   6. Content helpers: responsive embeds, scrollable tables
  */
 (function () {
     'use strict';
@@ -147,7 +147,7 @@
             }
         });
         sheet.addEventListener('click', function (e) {
-            var a = e.target.closest && e.target.closest('a[href], [data-ghost-search], [data-portal]');
+            var a = e.target.closest && e.target.closest('a[href], [data-ghost-search]');
             if (a && !a.matches('[target="_blank"]')) closeSheet(false);
         });
         var onWide = function () {

@@ -15,7 +15,6 @@
         <p class="gl-card-meta">
             <span class="gl-meta-item">{{> "icons/calendar"}}<time datetime="{{date format="YYYY-MM-DD"}}">{{date format="D MMM YYYY"}}</time></span>
             {{#if reading_time}}<span class="gl-meta-item">{{> "icons/clock"}}{{reading_time minute="1 min read" minutes="% min read"}}</span>{{/if}}
-            {{#unless access}}<span class="gl-meta-item gl-meta-locked">{{> "icons/key-round"}}Members</span>{{/unless}}
         </p>
     </div>
 </article>
