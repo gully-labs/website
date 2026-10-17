@@ -13,9 +13,10 @@ import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { makeChecker, makeClient } from './test-helpers.mjs'
+import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8795
+await guardTestRun(PORT)
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-telegram-'))
 const TOKEN = `7000000001:${crypto.randomBytes(24).toString('base64url')}`
@@ -362,10 +363,13 @@ try {
   fail429 = 1
   const t0 = Date.now()
   const test = await dev.post(`/api/developer/alerts/${alertId}/test`)
+  // Spacing is read from the server's own send grants, not from when the stub received each call: network
+  // and event-loop jitter under load moved arrivals by tens of ms and made these checks flaky.
   const tries = sent(111).filter((c) => c.at >= t0)
-  check('a 429 is retried after retry_after', test.data?.results?.[0]?.ok === true && tries.length === 2 && tries[1].at - tries[0].at >= 990, `${tries.length} tries, ${tries[1] ? tries[1].at - tries[0].at : '-'} ms`)
-  const spaced = sent(111).map((c) => c.at)
-  check('at most one message a second per chat', spaced.slice(1).every((x, i) => x - spaced[i] >= 990), spaced.map((x, i) => (i ? x - spaced[i - 1] : 0)).join())
+  const grantTries = tg.sendGrantsForTest(111).filter((x) => x >= t0)
+  check('a 429 is retried after retry_after', test.data?.results?.[0]?.ok === true && tries.length === 2 && grantTries.length === 2 && grantTries[1] - grantTries[0] >= 1_000, `${tries.length} tries, ${grantTries[1] ? grantTries[1] - grantTries[0] : '-'} ms between grants`)
+  const spaced = tg.sendGrantsForTest(111)
+  check('at most one message a second per chat', spaced.length >= 2 && spaced.slice(1).every((x, i) => x - spaced[i] >= 1_000), spaced.map((x, i) => (i ? x - spaced[i - 1] : 0)).join())
 
   /* -------------------------------------------------------------- groups --- */
   const group = { id: -100300, type: 'supergroup', title: 'Trading <desk>' }

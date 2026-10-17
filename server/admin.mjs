@@ -36,9 +36,11 @@
 //   POST /api/admin/analytics/:address/plan   { plan: 'starter'|'growth'|'none', days? }  grant for `days` (30) or stop now
 //   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
 //   POST /api/admin/ask/draft, GET /api/admin/ask/log   Gully Ask content studio and ask log (ask.mjs)
+//   GET  /api/admin/charts?days=7|30|90       daily series for the dashboard's charts (admin-charts.mjs)
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
+import { adminCharts } from './admin-charts.mjs'
 import { handleAskAdmin } from './ask.mjs'
 import { adminAnalyticsAccounts, adminAnalyticsDelete, adminAnalyticsSetPlan } from './analytics-accounts.mjs'
 import { alertStats, alertsOf } from './alerts.mjs'
@@ -145,6 +147,11 @@ export async function handleAdmin(req, res, url) {
       launchList: listLaunch().length,
       process: { uptimeSeconds: Math.round(process.uptime()), rssMb: Math.round(mem.rss / 1e6), heapMb: Math.round(mem.heapUsed / 1e6), node: process.version, dataDirBytes: dirBytes(DATA_DIR) },
     }), true
+  }
+
+  if (p === '/api/admin/charts') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, adminCharts(url.searchParams.get('days') ?? 30)), true
   }
 
   if (p === '/api/admin/developers') {

@@ -140,6 +140,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const chatTail = new Map() // chatId -> promise of the last queued send
 const chatNextAt = new Map() // chatId -> earliest time of its next send
 const globalSent = [] // send times within the last second
+const grants = [] // the last 200 { chatId, at } turns granted (tests read the spacing here, not at the network)
 
 async function waitTurn(chatId) {
   for (;;) {
@@ -149,6 +150,8 @@ async function waitTurn(chatId) {
     if (w <= 0) {
       globalSent.push(now)
       chatNextAt.set(chatId, now + PER_CHAT_MS)
+      grants.push({ chatId, at: now })
+      if (grants.length > 200) grants.shift()
       return
     }
     await sleep(w)
@@ -672,3 +675,6 @@ export const telegramStats = () => ({ enabled: telegramEnabled(), links: db.link
 export function expireLinkCodesForTest() {
   for (const c of db.codes) c.expiresAt = new Date(Date.now() - 1).toISOString()
 }
+
+/** Tests only: the send turns granted to one chat (ms timestamps), oldest first. */
+export const sendGrantsForTest = (chatId) => grants.filter((g) => g.chatId === String(chatId)).map((g) => g.at)

@@ -6,6 +6,7 @@ import { apiOrigin } from '../nav'
 
 const sections = [
   { id: 'start', title: 'Sign up' },
+  { id: 'sign-in', title: 'Sign in' },
   { id: 'install', title: 'Install the tracker' },
   { id: 'web3', title: 'Web3 events' },
   { id: 'privacy', title: 'Privacy modes' },
@@ -72,6 +73,20 @@ export function AnalyticsDocs() {
           <li>Add a website with its name and domain. The tab shows its website id, the install snippet, a link to its dashboard and the events counted this month.</li>
         </List>
         <Callout label="ONE TRIAL PER WALLET">The free trial runs once per wallet. After it, choose a plan in the same tab to keep recording.</Callout>
+      </Section>
+
+      <Section id="sign-in" title="Sign in">
+        <P>
+          The quickest way in is <b>Open Gully Analytics</b> in the Analytics tab of the <Ext href="https://developers.gullylabs.xyz/#analytics">developer portal</Ext>. It signs you straight in to the dashboard, with no password to type: the portal asks the server for a one-time sign-in link (<C>POST /api/developer/analytics/sso</C>), and the browser opens it on <C>analytics.gullylabs.xyz</C>.
+        </P>
+        <List>
+          <li>The link works once and only for 60 seconds, from the browser that asked for it. Only a hash of it is kept.</li>
+          <li>Owners, admins and developers of the workspace can use it; billing members and viewers cannot. Everyone in the workspace opens the same Gully Analytics account.</li>
+          <li>It never shows, changes or resets the account’s password, so a password you saved keeps working.</li>
+        </List>
+        <P>
+          The password login at <Ext href="https://analytics.gullylabs.xyz/login">analytics.gullylabs.xyz/login</Ext> still works for anyone with the password. Forgot it? <b>Reset password</b> in the portal’s Analytics tab sets a new one.
+        </P>
       </Section>
 
       <Section id="install" title="Install the tracker">
