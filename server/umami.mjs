@@ -12,7 +12,10 @@
 //   DELETE /api/websites/:id
 //   GET    /api/websites/:id/stats?startAt&endAt         -> { pageviews, visitors, visits, bounces, totaltime, comparison }
 //   GET    /api/websites/:id/events/stats?startAt&endAt  -> { events, visitors, visits, uniqueEvents, comparison }
+//   GET    /api/users/:id               -> user                                         (admin only)
 // Every call carries `Authorization: Bearer <token>`.
+
+import crypto from 'node:crypto'
 
 const TIMEOUT_MS = 10_000
 
@@ -111,6 +114,66 @@ export async function websiteStats(id, startAt, endAt) {
   if (!s.ok) return s
   const n = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v))
   return { ok: true, stats: { pageviews: n(s.data?.pageviews), visitors: n(s.data?.visitors), visits: n(s.data?.visits), customEvents: e.ok ? n(e.data?.events) : null } }
+}
+
+/** The Umami user as the admin sees it (404 once deleted). */
+export const getUser = (userId) => call('GET', `/api/users/${encodeURIComponent(userId)}`)
+
+/* ---------------------------------------------------------- sign-in tokens --- */
+// One-click sign-in from the developer portal (analytics-sso.mjs). Umami 3.4 keeps no server session
+// without Redis: its token is a JWT (HS256) signed with secret() = sha512hex(APP_SECRET), then
+// AES-256-GCM encrypted with a key derived from the same secret (src/lib/jwt.ts createSecureToken,
+// src/lib/crypto.ts encrypt). checkAuth (src/lib/auth.ts) loads the user from Umami's own database on
+// every call and accepts a token without a password fingerprint, so this server can mint one for a user
+// it manages WITHOUT knowing, exposing or changing that user's password. ANALYTICS_APP_SECRET must be
+// the value compose gives the analytics container as APP_SECRET (both come from ~/gully-web/.env).
+// The token carries an expiry (jsonwebtoken checks exp), so a minted session ends on its own.
+
+const appSecret = () => String(process.env.ANALYTICS_APP_SECRET ?? '')
+/** Whether this server can mint Umami sign-in tokens. */
+export const ssoConfigured = () => appSecret().length > 0 && umamiConfigured()
+const umamiSecret = (source = appSecret()) => crypto.createHash('sha512').update(source).digest('hex')
+const b64url = (v) => Buffer.from(v).toString('base64url')
+
+/** Umami's encrypt(): base64(salt[64] | iv[16] | tag[16] | ciphertext), key = pbkdf2(secret, salt, 10000, 32, sha512). */
+function encrypt(value, secret) {
+  const salt = crypto.randomBytes(64)
+  const iv = crypto.randomBytes(16)
+  const key = crypto.pbkdf2Sync(secret, salt, 10_000, 32, 'sha512')
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+  const enc = Buffer.concat([cipher.update(String(value), 'utf8'), cipher.final()])
+  return Buffer.concat([salt, iv, cipher.getAuthTag(), enc]).toString('base64')
+}
+
+export const SSO_SESSION_SEC = 12 * 3600
+
+/** A Umami session token for `userId`, valid for `ttlSec` seconds. */
+export function mintUserToken(userId, role = 'user', ttlSec = SSO_SESSION_SEC) {
+  const secret = umamiSecret()
+  const now = Math.floor(Date.now() / 1000)
+  const head = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const body = b64url(JSON.stringify({ userId, role, iat: now, exp: now + ttlSec }))
+  const sig = crypto.createHmac('sha256', secret).update(`${head}.${body}`).digest('base64url')
+  return encrypt(`${head}.${body}.${sig}`, secret)
+}
+
+/** Umami's parseSecureToken (decrypt, verify HS256 and exp), for the tests and the local stub. */
+export function parseUserToken(token, secretSource = appSecret()) {
+  try {
+    const secret = umamiSecret(secretSource)
+    const buf = Buffer.from(String(token), 'base64')
+    const key = crypto.pbkdf2Sync(secret, buf.subarray(0, 64), 10_000, 32, 'sha512')
+    const d = crypto.createDecipheriv('aes-256-gcm', key, buf.subarray(64, 80))
+    d.setAuthTag(buf.subarray(80, 96))
+    const jwt = d.update(buf.subarray(96)).toString('utf8') + d.final('utf8')
+    const [h, b, s] = jwt.split('.')
+    const want = crypto.createHmac('sha256', secret).update(`${h}.${b}`).digest('base64url')
+    if (!s || !crypto.timingSafeEqual(Buffer.from(s), Buffer.from(want))) return null
+    const payload = JSON.parse(Buffer.from(b, 'base64url').toString('utf8'))
+    return payload.exp * 1000 > Date.now() ? payload : null
+  } catch {
+    return null
+  }
 }
 
 /** Tests only: forget the cached admin token. */

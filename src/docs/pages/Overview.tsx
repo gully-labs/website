@@ -2,10 +2,12 @@ import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, P, Section } from '../DocPage'
+import { ApiStatusStrip } from '../LiveCharts'
 import { useDocHref, type DocSlug } from '../nav'
 
 const sections = [
   { id: 'what-it-is', title: 'What the tracker is' },
+  { id: 'live', title: 'Live status' },
   { id: 'start-here', title: 'Start here' },
   { id: 'quick-start', title: 'Quick start' },
   { id: 'sources', title: 'Where the numbers come from' },
@@ -56,6 +58,11 @@ export function Overview() {
         <P>
           The live page is at <Ext href="https://gullylabs.xyz/tracker">gullylabs.xyz/tracker</Ext>. Everything it shows comes from the same public API these docs describe.
         </P>
+      </Section>
+
+      <Section id="live" title="Live status">
+        <P>The public API as your browser sees it right now, checked every 15 seconds, and the widest gaps the tracker stands behind at this moment.</P>
+        <ApiStatusStrip />
       </Section>
 
       <Section id="start-here" title="Start here">

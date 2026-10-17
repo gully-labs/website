@@ -1,5 +1,6 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Fields, List, P, Section } from '../DocPage'
+import { PayCoverage } from '../LiveCharts'
 
 const sections = [
   { id: 'overview', title: 'Overview' },
@@ -154,6 +155,10 @@ export function GullyPayDocs() {
             ['Arbitrum (42161)', '10', 'USDC (6 decimals), ETH'],
           ]}
         />
+        <P>
+          The live list, read from <C>GET /api/plans</C> as you look at this page (hover a chain for its assets and confirmations):
+        </P>
+        <PayCoverage />
         <Callout label="NO CUSTODY">Nothing is held in between: the transfer goes to the treasury in the payer’s own transaction. If no treasury is configured, every page says checkout is closed and shows no amount or QR.</Callout>
       </Section>
 
