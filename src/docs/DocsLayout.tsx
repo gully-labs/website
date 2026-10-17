@@ -1,4 +1,4 @@
-import { Activity, ArrowUpRight, BellRing, BookOpen, Code2, History, Home, KeyRound, Menu, Package, Puzzle, X, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2, History, Home, KeyRound, Menu, Package, Puzzle, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useResolvedPath } from 'react-router'
 import { Wordmark } from '../components/Wordmark'
@@ -34,7 +34,7 @@ function ApiPill() {
   )
 }
 
-const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, changelog: History }
+const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, changelog: History }
 
 function SideLink({ slug, title, onPick }: { slug: DocSlug; title: string; onPick: () => void }) {
   const href = useDocHref(slug)

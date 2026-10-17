@@ -352,6 +352,62 @@ export async function verifyPayment(address, planIdIn, txHashIn, quoteId = null)
   })
 }
 
+/* ------------------------------------------------- other products' plans --- */
+
+// Another product sold per wallet (Gully Analytics, analytics-accounts.mjs) uses the same quotes and the
+// same checks under its own `kind`; the product applies the plan itself in `apply`. Payments of another
+// kind never show in the tracker API's billing view.
+
+/** A quote for `kind`/`planId` at `usdCents`: an open one with five minutes or more left comes back. */
+export async function openProductQuote({ kind, address, planId, usdCents, assetId = DEFAULT_ASSET }) {
+  const t = treasury()
+  if (!t) return noTreasury
+  const id = String(assetId || DEFAULT_ASSET)
+  if (!assetById(id)) return { ok: false, status: 400, error: `Choose an asset: ${ASSET_IDS.join(', ')}.` }
+  if (pruneQuotes()) save()
+  const live = db.quotes.find((q) => q.kind === kind && q.address === address && q.plan === planId && q.assetId === id && q.treasury === t && q.usdCents === String(usdCents) && !q.paidAt && Date.parse(q.expiresAt) - Date.now() > 5 * 60_000)
+  if (live) return { ok: true, intent: quoteView(live) }
+  const r = await createQuote({ kind, assetId: id, usdCents: BigInt(usdCents), address, plan: planId })
+  return r.ok ? { ok: true, intent: quoteView(r.quote) } : r
+}
+
+/**
+ * Checks a payment against one of the wallet's `kind` quotes. When it holds, `apply(quote)` applies the
+ * plan and returns { periodStart, expiresAt }, and the payment is recorded.
+ */
+export async function verifyProductPayment({ kind, address, quoteId, txHashIn, label, apply }) {
+  if (!treasury()) return noTreasury
+  const txHash = normHash(txHashIn)
+  const quote = quoteId ? findQuote(String(quoteId)) : null
+  if (!quote || quote.kind !== kind || quote.address !== address) return { ok: false, status: 404, error: 'No such checkout for this wallet. Start a new one.' }
+  if (quote.paidAt) return { ok: false, status: 409, error: 'This checkout has been paid already.' }
+  if (!isHash(txHash)) return badHash
+  const asset = assetById(quote.assetId)
+  return checkTx({
+    quote,
+    asset,
+    txHash,
+    signer: address,
+    minRaw: quote.minRaw,
+    label: label(quote),
+    run: async ({ match, read }) => {
+      const period = apply(quote)
+      if (!period.ok) return period
+      const payment = recordPayment({ kind, txHash, chainId: asset.chainId, assetId: asset.id, symbol: asset.symbol, decimals: asset.decimals, amountRaw: String(match.value), usdCents: quote.usdCents, price: quote.price ?? null, quoteId: quote.id, address, plan: quote.plan, from: match.from, blockNumber: read.blockNumber, periodStart: period.periodStart, expiresAt: period.expiresAt }, quote)
+      return { ok: true, payment: paymentView(payment) }
+    },
+  })
+}
+
+/** A wallet's payments and open quotes of one kind. */
+export function productBilling(kind, address) {
+  const now = Date.now()
+  return {
+    payments: db.payments.filter((p) => p.kind === kind && p.address === address).reverse().map(paymentView),
+    intents: db.quotes.filter((q) => q.kind === kind && q.address === address && !q.paidAt && Date.parse(q.expiresAt) > now).map(quoteView),
+  }
+}
+
 /* ---------------------------------------------------------------- views --- */
 
 /** The billing view of a wallet for its dashboard. */

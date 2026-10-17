@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { Activity, AlertTriangle, ArrowUpRight, BookOpen, ChartLine, KeyRound, Loader2, ShieldCheck, Wallet, Zap } from 'lucide-react'
+import { Activity, AlertTriangle, ArrowUpRight, BookOpen, ChartLine, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet, Zap } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Seo } from '../../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../../components/ui'
@@ -60,6 +60,12 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
                 <BookOpen size={17} aria-hidden /> Read the docs
               </a>
             </div>
+            {window.location.hash === '#analytics' && (
+              <p className="m-0 flex max-w-[620px] items-start gap-3 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3 text-[15px] leading-[1.55] text-ink-2" style={rise(3)}>
+                <ChartNoAxesCombined size={18} className="mt-[3px] shrink-0 text-gold" aria-hidden />
+                Here for Gully Analytics? Connect your wallet: the Analytics tab of your dashboard starts the free trial.
+              </p>
+            )}
             {error && (
               <p className="m-0 flex max-w-[620px] items-start gap-2 text-[14px] text-error" role="alert">
                 <AlertTriangle size={16} className="mt-[2px] shrink-0" aria-hidden /> {error}
@@ -190,7 +196,7 @@ export function DevelopersPage() {
 
   return (
     <>
-      <Seo title="Developers" description="Free API keys for the Gully Labs tracker API: sign in with your wallet, create keys instantly and see your usage." />
+      <Seo title="Developers" description="Free API keys for the Gully Labs tracker API and Gully Analytics trials: sign in with your wallet, create keys instantly and see your usage." />
       {session.state === 'loading' && (
         <section className="flex min-h-[50vh] items-center justify-center px-page">
           <span className="inline-flex items-center gap-3 font-mono text-[13px] text-faint">

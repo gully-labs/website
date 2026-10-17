@@ -78,14 +78,76 @@ export interface Offer {
   periodDays: number
   anonymous: { perMin: number; historyDays: number }
   plans: Plan[]
+  analytics: { plans: AnalyticsPlan[]; trialDays: number; graceDays: number; periodDays: number }
   checkout: { enabled: true; treasury: string } | { enabled: false; treasury: null; reason: string }
+}
+
+/* ------------------------------------------------------------ Gully Analytics --- */
+
+export type AnalyticsPlanId = 'trial' | 'starter' | 'growth'
+
+/** A Gully Analytics plan (server/plans.mjs, ANALYTICS_PLANS). */
+export interface AnalyticsPlan {
+  id: AnalyticsPlanId
+  name: string
+  priceUsdc: number
+  sites: number
+  eventsPerMonth: number
+}
+
+export type AnalyticsBlock = 'gully-plan-lapsed' | 'gully-site-limit' | 'gully-quota-exceeded'
+
+export interface AnalyticsSite {
+  id: string
+  name: string
+  domain: string
+  createdAt: string
+  eventsThisMonth: number
+  dashboardUrl: string
+  blocked: AnalyticsBlock | null
+}
+
+export interface AnalyticsAccount {
+  username: string
+  createdAt: string
+  state: 'trial' | 'active' | 'lapsed'
+  plan: AnalyticsPlan | null
+  expiresAt: string | null
+  source: 'trial' | 'payment' | 'admin' | null
+  lapsedAt: string | null
+  readableUntil: string | null
+  trialEndsAt: string
+  lastPlan: { id: AnalyticsPlanId; name: string; expiresAt: string } | null
+  month: string
+  monthStart: string
+  eventsThisMonth: number
+  loginUrl: string
+  sites: AnalyticsSite[]
+}
+
+/** GET /api/developer/analytics */
+export interface AnalyticsView {
+  configured: boolean
+  trialAvailable: boolean
+  account: AnalyticsAccount | null
+  offer: Offer
+  dashboardOrigin: string
+  payments: Payment[]
+  intents: Quote[]
+}
+
+/** GET /api/developer/analytics/usage: Umami's own figures for this month, per site. */
+export interface AnalyticsUsage {
+  from: string
+  to: string
+  sites: ({ id: string; ok: true; stats: { pageviews: number | null; visitors: number | null; visits: number | null; customEvents: number | null } } | { id: string; ok: false; error: string })[]
 }
 
 /** A 20-minute quote: the exact amount to send in one asset, for a plan or an invoice. */
 export interface Quote {
   id: string
-  kind: 'plan' | 'invoice'
-  plan: PlanId | null
+  kind: 'plan' | 'invoice' | 'analytics'
+  plan: PlanId | AnalyticsPlanId | null
   invoiceId: string | null
   asset: { id: string; chainId: number; chain: string; symbol: string; kind: 'token' | 'native'; address: string | null; decimals: number }
   usd: string
@@ -105,7 +167,7 @@ export type Intent = Quote
 
 export interface Payment {
   id: string | null
-  kind: 'plan' | 'invoice'
+  kind: 'plan' | 'invoice' | 'analytics'
   txHash: string
   chainId: number
   chain: string
@@ -119,7 +181,7 @@ export interface Payment {
   at: string
   txUrl: string | null
   price: { description: string; answer: string; updatedAt: string; roundId: string; feed: string } | null
-  plan: PlanId | null
+  plan: PlanId | AnalyticsPlanId | null
   periodStart: string | null
   expiresAt: string | null
   invoiceId: string | null

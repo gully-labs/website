@@ -1,4 +1,6 @@
 import { ArrowUpRight, Boxes, ChartNoAxesCombined, Cpu, Eye, Fingerprint, GitBranch, Layers, Link2, Palette, Rocket, ServerCog, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
+import { AnalyticsPlanCards } from '../components/AnalyticsPlans'
+import { ANALYTICS_SIGNUP, usePlans } from '../lib/plans'
 import { useContact } from '../components/ContactContext'
 import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
@@ -17,6 +19,10 @@ type Product = {
   status: string
   cta: string
   ctaType: 'Infrastructure' | 'dApp / frontend' | 'Other'
+  /** When set, the main button links here instead of opening the contact form. */
+  ctaHref?: string
+  /** Shows the plans read from GET /api/plans. */
+  pricing?: boolean
   source: { label: string; href: string }
   features: Feature[]
   how: { title: string; body: string }[]
@@ -32,9 +38,11 @@ const ANALYTICS: Product = {
   eyebrow: 'PRODUCT · GULLY ANALYTICS',
   title: ['Analytics that see', 'the wallet'],
   lead: 'Page views alone don’t tell a dapp what worked. Gully Analytics adds what happens next: which visits connected a wallet, on which chain, with which wallet app, and which went on to send a transaction.',
-  status: 'Early access',
-  cta: 'Request early access',
+  status: 'Free trial',
+  cta: 'Start free trial',
   ctaType: 'dApp / frontend',
+  ctaHref: ANALYTICS_SIGNUP,
+  pricing: true,
   source: { label: 'gully-labs/umami', href: 'https://github.com/gully-labs/umami/tree/gully/analytics' },
   features: [
     { icon: Wallet, title: 'Wallet connects', body: 'Detected through EIP-6963 and window.ethereum, by observing the wallet, never by prompting it.' },
@@ -45,6 +53,7 @@ const ANALYTICS: Product = {
     { icon: ShieldCheck, title: 'Opt-in, small, open', body: 'Web3 tracking turns on with one attribute; the whole script stays a few kilobytes. The source is public.' },
   ],
   how: [
+    { title: 'Sign in and add your site', body: 'Connect a wallet in the developer portal, start the free trial and add your domain.' },
     { title: 'Add the script', body: 'One tag on your dapp, with data-web3="true".' },
     { title: 'Use your dapp as usual', body: 'Connects, chain switches and transactions are recorded as they happen.' },
     { title: 'Read the Web3 tab', body: 'Wallets, connect rate, transactions, chains and the funnel for any date range.' },
@@ -100,10 +109,17 @@ function ProductPage({ p }: { p: Product }) {
             {p.lead}
           </p>
           <div className="flex flex-wrap gap-3" style={rise(3)}>
-            <button type="button" onClick={() => openContact(p.ctaType)} className={`${btnGold} inline-flex items-center gap-2 px-[26px] py-4 text-[16px]`}>
-              <Rocket aria-hidden size={18} strokeWidth={1.75} />
-              {p.cta}
-            </button>
+            {p.ctaHref ? (
+              <a href={p.ctaHref} className={`${btnGold} inline-flex items-center gap-2 px-[26px] py-4 text-[16px]`}>
+                <Rocket aria-hidden size={18} strokeWidth={1.75} />
+                {p.cta}
+              </a>
+            ) : (
+              <button type="button" onClick={() => openContact(p.ctaType)} className={`${btnGold} inline-flex items-center gap-2 px-[26px] py-4 text-[16px]`}>
+                <Rocket aria-hidden size={18} strokeWidth={1.75} />
+                {p.cta}
+              </button>
+            )}
             <a href={p.source.href} target="_blank" rel="noopener" className={`${btnOutline} inline-flex items-center gap-2 px-[26px] py-4 text-[16px]`}>
               <GitBranch aria-hidden size={18} strokeWidth={1.75} />
               Source: {p.source.label}
@@ -127,6 +143,8 @@ function ProductPage({ p }: { p: Product }) {
         </div>
       </section>
 
+      {p.pricing && <Plans />}
+
       <section className="border-t border-line bg-bg-alt px-page py-20">
         <span className={eyebrow}>HOW IT WORKS</span>
         <ol className="m-0 mt-6 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line p-0">
@@ -147,6 +165,21 @@ function ProductPage({ p }: { p: Product }) {
         <p className="m-0 mt-8 font-mono text-[12px] text-faint">{p.licence}</p>
       </section>
     </>
+  )
+}
+
+function Plans() {
+  const [state, retry] = usePlans()
+  return (
+    <section className="px-page pb-20" aria-labelledby="plans-title" aria-live="polite">
+      <div className="mb-8 flex flex-col gap-3">
+        <span className={eyebrow}>PLANS</span>
+        <h2 id="plans-title" className="m-0 font-display text-[clamp(36px,4.4cqw,56px)] leading-[.95] font-extrabold uppercase">
+          Start free, <span className="text-gold">pay in crypto</span>
+        </h2>
+      </div>
+      <AnalyticsPlanCards state={state} retry={retry} />
+    </section>
   )
 }
 
