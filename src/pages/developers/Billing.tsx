@@ -1,58 +1,65 @@
-import { ArrowUpRight, CheckCircle2, Receipt, ShieldCheck } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2, Receipt } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { QuotePay } from '../../components/pay/QuotePay'
-import { btnGold, btnOutline } from '../../components/ui'
 import { isLocalHost, SITE_URL } from '../../site-host'
-import { api, fmtDate, shortAddress, type Account, type BillingView, type Offer, type Payment, type Plan, type Quote } from './api'
+import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, type Payment, type Plan, type PlanId, type Quote } from './api'
 import { Empty, ErrorLine, Skeleton } from './parts'
-import { card, cardTitle, rise, sub } from './styles'
+import { PayFlow } from './PayFlow'
+import { mono, panel, panelTitle, pillGold, pillLine, rise } from './styles'
 
-/* Plan & billing: the plan in force, the plans on offer (from the server; no price is typed here),
-   checkout in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum straight to the treasury
-   wallet (Gully Pay, components/pay), and the wallet's payment history. */
+/* Billing: the plan in force, the plans on offer (from the server; no price is typed here), Gully Pay
+   checkout (chain and asset chips, a 20-minute quote, pay from the connected wallet or check a hash)
+   straight to the treasury wallet, and the wallet's payment history. With no treasury configured the
+   server says checkout is closed and the plans show as "Not on sale yet". */
 
 const PRICING_URL = isLocalHost() ? '/pricing' : `${SITE_URL}/pricing`
+const fmt = (n: number) => n.toLocaleString('en-US')
+
+/** Where a checkout should start: set by the Overview's pay strip. */
+export type CheckoutIntent = { plan: PlanId; asset: string | null } | null
 
 function Limits({ p }: { p: Plan }) {
   return (
-    <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[14px] text-muted">
-      <li>
-        <b className="font-medium text-ink">{p.perMin.toLocaleString('en-US')}</b> requests a minute per key
-      </li>
-      <li>
-        <b className="font-medium text-ink">{p.alerts}</b> gap alert{p.alerts === 1 ? '' : 's'}
-      </li>
-      <li>
-        <b className="font-medium text-ink">{p.historyDays}</b> days of gap history
-      </li>
-      <li>Up to {p.maxKeys} keys</li>
-    </ul>
+    <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+      {[
+        ['Calls / min per key', fmt(p.perMin)],
+        ['Keys', String(p.maxKeys)],
+        ['Gap alerts', String(p.alerts)],
+        ['History', `${p.historyDays} days`],
+      ].map(([k, v]) => (
+        <div key={k} className="flex flex-col">
+          <dt className="text-[11px] text-dim">{k}</dt>
+          <dd className="m-0 font-mono text-ink">{v}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
-function PlanCheckout({ plan, offer, current, onPaid, onCancel }: { plan: Plan; offer: Offer; current: BillingView['plan']; onPaid: () => void; onCancel: () => void }) {
+function PlanCheckout({ plan, view, initialAsset, autoQuote, onPaid, onCancel }: { plan: Plan; view: BillingView; initialAsset: string | null; autoQuote: boolean; onPaid: () => void; onCancel: () => void }) {
   const [done, setDone] = useState<Payment | null>(null)
-  const switching = current.expiresAt && current.id !== plan.id
+  const cur = view.plan
+  const offer = view.offer
+  const switching = cur.expiresAt && cur.id !== plan.id
 
   if (done)
     return (
-      <section className={`${card} border-success-line`} style={rise(0)}>
+      <section className={`${panel} border-success-line`} style={rise(0)}>
         <div className="flex items-start gap-3">
           <CheckCircle2 size={22} className="mt-[2px] shrink-0 text-green" aria-hidden />
           <div className="flex flex-col gap-1">
-            <h2 className={cardTitle}>Payment confirmed</h2>
-            <span className="text-[15px] text-muted">
+            <h2 className={panelTitle}>Payment confirmed</h2>
+            <span className="text-[14px] text-muted">
               {done.amount} {done.symbol} received on {done.chain}. {plan.name} runs until {fmtDate(done.expiresAt)}. Your keys have the new limit now.
             </span>
             {done.txUrl && (
-              <a href={done.txUrl} target="_blank" rel="noopener" className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-gold">
+              <a href={done.txUrl} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-gold">
                 {shortAddress(done.txHash)} <ArrowUpRight size={12} aria-hidden />
               </a>
             )}
           </div>
         </div>
         <div>
-          <button type="button" onClick={onCancel} className={`${btnOutline} min-h-11 px-5 text-[15px]`}>
+          <button type="button" onClick={onCancel} className={pillLine}>
             Done
           </button>
         </div>
@@ -60,24 +67,31 @@ function PlanCheckout({ plan, offer, current, onPaid, onCancel }: { plan: Plan; 
     )
 
   return (
-    <section className={`${card} border-gold-line`} style={rise(0)}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-[6px]">
-          <h2 className={cardTitle}>Pay for {plan.name}</h2>
-          <span className={sub}>
-            {plan.priceUsdc} USD for {offer.periodDays} days · quotes last 20 minutes
+    <section className={`${panel} border-gold-line`} style={rise(0)} aria-labelledby="pay-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-[2px]">
+          <h2 id="pay-title" className={panelTitle}>
+            {cur.id === plan.id ? `Extend ${plan.name} by ${offer.periodDays} days` : `${plan.name} · ${offer.periodDays} days`}
+          </h2>
+          <span className={mono}>
+            {plan.priceUsdc} USD · quotes last 20 minutes · paying again adds {offer.periodDays} days
           </span>
         </div>
-        <button type="button" onClick={onCancel} className="min-h-10 font-mono text-[12px] text-muted underline-offset-4 hover:text-ink hover:underline">
+        <button type="button" onClick={onCancel} className="inline-flex min-h-11 items-center rounded-full px-3 font-mono text-[12px] text-muted hover:text-ink">
           Back to plans
         </button>
       </div>
-      {switching && <p className="m-0 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3 text-[14px] text-ink-2">You are on {current.name} until {fmtDate(current.expiresAt)}. A different plan starts today; the days left on {current.name} are not carried over.</p>}
-      <QuotePay
-        assets={offer.assets}
+      {switching && (
+        <p className="m-0 rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3 text-[14px] text-ink-2">
+          You are on {cur.name} until {fmtDate(cur.expiresAt)}. A different plan starts today; the days left on {cur.name} are not carried over.
+        </p>
+      )}
+      <PayFlow
+        offer={offer}
+        usd={plan.priceUsdc}
         label={`${plan.name}, ${offer.periodDays} days`}
-        match="wallet"
-        initialAsset="base-usdc"
+        initialAsset={initialAsset}
+        autoQuote={autoQuote}
         getQuote={(asset) => api<{ intent: Quote }>('/api/developer/checkout', { method: 'POST', body: { plan: plan.id, asset } }).then((r) => (r.ok ? { ...r, data: { quote: r.data.intent } } : r))}
         verify={(q, txHash) => api('/api/developer/checkout/verify', { method: 'POST', body: { plan: plan.id, quoteId: q.id, txHash } })}
         onPaid={(data) => {
@@ -85,18 +99,14 @@ function PlanCheckout({ plan, offer, current, onPaid, onCancel }: { plan: Plan; 
           onPaid()
         }}
       />
-      <p className="m-0 flex items-start gap-2 border-t border-line pt-4 text-[13px] leading-[1.6] text-faint">
-        <ShieldCheck size={15} className="mt-[2px] shrink-0 text-gold" aria-hidden />
-        The transfer goes straight to the Gully Labs treasury wallet, the same address on every chain; we never hold your funds or a card. The server reads it from a public node of that chain before the plan starts, and each transaction counts once.
-      </p>
     </section>
   )
 }
 
-export function Billing({ account, reload }: { account: Account; reload: () => Promise<void> }) {
+export function Billing({ account, reload, intent, onIntentDone }: { account: Account; reload: () => Promise<void>; intent: CheckoutIntent; onIntentDone: () => void }) {
   const [view, setView] = useState<BillingView | null>(null)
   const [err, setErr] = useState<string | null>(null)
-  const [buying, setBuying] = useState<Plan | null>(null)
+  const [buying, setBuying] = useState<{ plan: Plan; asset: string | null; auto: boolean } | null>(null)
 
   const load = useCallback(
     () =>
@@ -111,6 +121,7 @@ export function Billing({ account, reload }: { account: Account; reload: () => P
   useEffect(() => {
     load()
   }, [load])
+
 
   const onPaid = useCallback(() => {
     load()
@@ -129,17 +140,24 @@ export function Billing({ account, reload }: { account: Account; reload: () => P
   const cur = view.plan
   const offer = view.offer
   const paid = offer.plans.filter((p) => p.priceUsdc > 0)
+  const left = daysLeft(cur.expiresAt)
+  // Arriving from the Overview's "Pay on …": that plan's checkout, quoted at once in the chosen asset.
+  const intentPlan = intent && offer.checkout.enabled ? offer.plans.find((x) => x.id === intent.plan) : undefined
+  const active = buying ?? (intent && intentPlan ? { plan: intentPlan, asset: intent.asset, auto: true } : null)
 
   return (
-    <div className="flex flex-col gap-5">
-      <section className={card} style={rise(0)}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-[6px]">
-            <span className={sub}>CURRENT PLAN</span>
-            <h2 className="m-0 font-display text-[40px] leading-none font-extrabold uppercase">
+    <div className="flex flex-col gap-[14px]">
+      <section className={panel} style={rise(0)} aria-labelledby="plan-title">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="flex max-w-[560px] min-w-0 flex-col gap-2">
+            <span className="flex items-center gap-2 text-[12px] text-dim">
+              <span className="size-2 rounded-full" style={{ background: cur.id === 'free' ? '#6c7888' : '#e8c060' }} aria-hidden /> Current plan
+            </span>
+            <h2 id="plan-title" className="m-0 font-display text-[40px] leading-none font-bold uppercase">
               <span className={cur.id === 'free' ? 'text-ink' : 'text-gold'}>{cur.name}</span>
+              {left !== null && <span className="ml-3 font-mono text-[13px] font-normal text-muted normal-case">{left === 0 ? 'ends today' : `${left} day${left === 1 ? '' : 's'} left`}</span>}
             </h2>
-            <span className="text-[14px] text-muted">
+            <span className="text-[14px] leading-[1.55] text-muted">
               {cur.expiresAt ? (
                 <>
                   Runs until <b className="font-medium text-ink">{fmtDate(cur.expiresAt)}</b> ({cur.source === 'admin' ? 'granted by Gully Labs' : 'paid'}). It does not renew by itself: pay again to extend it, or let it lapse to return to Free.
@@ -149,82 +167,84 @@ export function Billing({ account, reload }: { account: Account; reload: () => P
               )}
             </span>
           </div>
-          <Limits p={cur} />
+          <div className="min-w-[240px] flex-[0_1_320px]">
+            <Limits p={cur} />
+          </div>
         </div>
       </section>
 
-      {buying ? (
+      {active ? (
         <PlanCheckout
-          key={buying.id}
-          plan={buying}
-          offer={offer}
-          current={cur}
+          key={`${active.plan.id}:${active.asset}`}
+          plan={active.plan}
+          view={view}
+          initialAsset={active.asset}
+          autoQuote={active.auto}
           onPaid={onPaid}
           onCancel={() => {
             setBuying(null)
+            onIntentDone()
             load()
           }}
         />
       ) : (
-        <section className={card} style={rise(1)}>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex flex-col gap-[6px]">
-              <h2 className={cardTitle}>Plans</h2>
-              <span className={sub}>
-                Priced in USD · paid in ETH, BNB, USDC or USDT on {offer.chains.map((c) => c.name).join(', ')} · {offer.periodDays} days per payment · no subscription to cancel
+        <section className={panel} style={rise(1)} aria-labelledby="plans-title">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col gap-[2px]">
+              <h2 id="plans-title" className={panelTitle}>
+                Plans
+              </h2>
+              <span className={mono}>
+                Priced in USD · paid in {[...new Set(offer.assets.map((a) => a.symbol))].join(', ')} on {offer.chains.map((c) => c.name).join(', ')} · {offer.periodDays} days per payment · nothing to cancel
               </span>
             </div>
-            <a href={PRICING_URL} className="inline-flex min-h-10 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
+            <a href={PRICING_URL} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
               Pricing page and FAQ <ArrowUpRight size={12} aria-hidden />
             </a>
           </div>
           {!offer.checkout.enabled && (
-            <p className="m-0 rounded-input border border-line-strong bg-surface-deep px-4 py-3 text-[14px] text-ink-2" role="status">
+            <p className="m-0 rounded-[10px] border border-line-strong bg-surface-deep px-4 py-3 text-[14px] text-ink-2" role="status">
               {offer.checkout.reason} The limits below are what each plan will include.
             </p>
           )}
-          <div className="grid grid-cols-2 gap-4 max-[760px]:grid-cols-1">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3">
             {paid.map((p) => {
               const isCur = cur.id === p.id
               return (
-                <div key={p.id} className={`flex flex-col gap-4 rounded-card border bg-surface-deep p-5 ${isCur ? 'border-gold-line' : 'border-line'}`}>
+                <div key={p.id} className={`flex flex-col gap-4 rounded-[12px] border bg-surface-deep p-4 ${isCur ? 'border-gold-line' : 'border-line'}`}>
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="font-display text-[26px] leading-none font-bold uppercase">{p.name}</span>
-                    <span className="font-display text-[30px] leading-none font-extrabold text-gold">
-                      {p.priceUsdc} <span className="font-mono text-[12px] font-normal text-faint">USD / {offer.periodDays} days</span>
+                    <span className="flex items-center gap-2 text-[15px] font-semibold">
+                      {p.name}
+                      {isCur && <span className="rounded-full border border-gold-line px-2 font-mono text-[10px] text-gold">CURRENT</span>}
+                    </span>
+                    <span className="font-display text-[30px] leading-none font-bold">
+                      {p.priceUsdc} <span className="font-mono text-[11px] font-normal text-faint">USD / {offer.periodDays} days</span>
                     </span>
                   </div>
                   <Limits p={p} />
-                  <button
-                    type="button"
-                    disabled={!offer.checkout.enabled}
-                    onClick={() => setBuying(p)}
-                    className={`${isCur ? btnOutline : btnGold} inline-flex min-h-11 items-center justify-center gap-2 px-5 text-[15px] disabled:cursor-not-allowed disabled:opacity-50`}
-                  >
+                  <button type="button" disabled={!offer.checkout.enabled} onClick={() => setBuying({ plan: p, asset: null, auto: false })} className={isCur ? pillLine : pillGold}>
                     {!offer.checkout.enabled ? 'Not on sale yet' : isCur ? `Extend ${p.name} by ${offer.periodDays} days` : `Choose ${p.name}`}
                   </button>
                 </div>
               )
             })}
           </div>
-          <p className="m-0 flex items-start gap-2 border-t border-line pt-4 text-[13px] leading-[1.6] text-faint">
-            <ShieldCheck size={15} className="mt-[2px] shrink-0 text-gold" aria-hidden />
-            You send the coin or stablecoin straight to the Gully Labs treasury wallet; we never hold your funds or a card. The server checks the transfer on its chain before the plan starts, and each transaction counts once.
-          </p>
         </section>
       )}
 
-      <section className={card} style={rise(2)}>
-        <div className="flex flex-col gap-[6px]">
-          <h2 className={cardTitle}>Payments</h2>
-          <span className={sub}>Every payment this wallet has made for a plan</span>
+      <section className={panel} style={rise(2)} aria-labelledby="payments-title">
+        <div className="flex flex-col gap-[2px]">
+          <h2 id="payments-title" className={panelTitle}>
+            Payments
+          </h2>
+          <span className={mono}>Every payment this wallet has made for a plan</span>
         </div>
         {!view.payments.length ? (
           <Empty icon={<Receipt size={26} className="text-gold" aria-hidden />} title="No payments yet">
             Payments you make for a plan appear here with their transaction on the chain’s explorer.
           </Empty>
         ) : (
-          <div className="-mx-2 overflow-x-auto px-2">
+          <div className="-mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[720px] border-collapse text-[13px]">
               <thead>
                 <tr className="border-b border-line text-left font-mono text-[10.5px] tracking-[1px] text-faint">

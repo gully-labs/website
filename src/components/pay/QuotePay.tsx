@@ -58,9 +58,11 @@ export interface QuotePayProps {
   /** 'wallet': a signed-in wallet may pay any amount of at least the price; 'exact': only the exact amount matches. */
   match: 'wallet' | 'exact'
   initialAsset?: string | null
+  /** false: the caller picked the asset already (initialAsset) and shows its own picker. */
+  showPicker?: boolean
 }
 
-export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initialAsset = null }: QuotePayProps) {
+export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initialAsset = null, showPicker = true }: QuotePayProps) {
   const [assetId, setAssetId] = useState<string | null>(initialAsset)
   const [quote, setQuote] = useState<Quote | null>(null)
   const [quoteErr, setQuoteErr] = useState<string | null>(null)
@@ -143,10 +145,12 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3">
-        <span className="font-mono text-[11px] tracking-[1px] text-faint">PAY WITH</span>
-        <AssetPicker assets={assets} value={assetId} onChange={load} disabled={busy} />
-      </div>
+      {showPicker && (
+        <div className="flex flex-col gap-3">
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">PAY WITH</span>
+          <AssetPicker assets={assets} value={assetId} onChange={load} disabled={busy} />
+        </div>
+      )}
 
       {loading && (
         <div className="flex flex-col gap-3" aria-busy>
@@ -160,7 +164,7 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
       {!assetId && !loading && <p className="m-0 text-[14px] text-muted">Choose a chain and an asset to get the exact amount to send.</p>}
 
       {quote && asset && (
-        <div className="flex flex-col gap-4 border-t border-line pt-5">
+        <div className={`flex flex-col gap-4 ${showPicker ? 'border-t border-line pt-5' : ''}`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="inline-flex items-center gap-2 text-[15px] text-ink">
               <ChainMark chainKey={asset.chainKey} name={asset.chain} size={24} />

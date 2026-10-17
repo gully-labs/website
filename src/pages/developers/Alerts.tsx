@@ -1,24 +1,55 @@
-import { AlertTriangle, BellOff, BellRing, Check, ChevronDown, ExternalLink, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { btnGold, btnOutline } from '../../components/ui'
+import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { DOCS_URL } from '../../site-host'
-import { ago, api, conditionText, type AlertsView, type GapAlert, type TelegramInfo, type TelegramLink } from './api'
+import { ago, api, type AlertsView, type GapAlert, type TelegramInfo, type TelegramLink } from './api'
+import { alertName, alertRule, alertState, CHAIN_NAMES, useAlertActions, useAlertsView, type Secret } from './helpers'
 import { CopyButton, Dialog } from './Dialog'
 import { Empty, ErrorLine, Skeleton } from './parts'
-import { card, cardTitle, iconBtn, input, rise, sub } from './styles'
+import { input, mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
 
 /* Gap alerts: create, test, pause and delete alerts, and read each one's delivery log. Limits come
    from the plan (server); Telegram appears only when the server has a bot configured, and delivers to
-   the chat linked with Connect Telegram (a one-time t.me link; no chat ids to paste). */
+   the chat linked with Connect Telegram (a one-time t.me link; no chat ids to paste). The Telegram card,
+   the channel chips and the load/act helpers are shared with the Overview. */
 
 const select = `${input} pr-8`
-const label = 'flex flex-col gap-2 text-[14px] text-ink-2'
-const CHAIN_NAMES: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
+const fieldLabel = 'flex flex-col gap-2 text-[14px] text-ink-2'
+const TG_BLUE = '#2aa3df'
 
-type Secret = { title: string; secret: string } | null
-
-function statusTone(ok: boolean) {
-  return ok ? 'border-success-line text-green' : 'border-[#5a2a24] text-error'
+/**
+ * The per-alert channel chips. Telegram is a toggle (aria-pressed): on when the alert sends there; it
+ * can be turned on only once a chat is linked, and off only while a webhook is left to deliver.
+ * Webhook is a status chip.
+ */
+export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram: TelegramInfo; act: (a: GapAlert, op: string, body?: unknown) => void; busy: string | null }) {
+  const on = !!a.telegram
+  const canOn = telegram.enabled && !!telegram.linked
+  const canOff = !!a.webhook
+  const disabled = !!busy || (on ? !canOff : !canOn)
+  const why = on ? (canOff ? 'Stop sending this alert to Telegram' : 'Telegram is this alert’s only channel') : canOn ? 'Also send this alert to Telegram' : telegram.enabled ? 'Connect Telegram first' : 'Telegram is not configured on this server'
+  const broken = on && !a.telegram?.linked
+  return (
+    <span className="flex flex-wrap items-center gap-[6px]">
+      {telegram.enabled || on ? (
+        <button
+          type="button"
+          aria-pressed={on}
+          disabled={disabled}
+          title={why}
+          aria-label={`Telegram for ${alertName(a)}: ${on ? 'on' : 'off'}. ${why}`}
+          onClick={() => act(a, 'telegram', { on: !on })}
+          className="inline-flex min-h-11 items-center gap-[6px] rounded-full border px-3 text-[12px] transition-colors disabled:cursor-not-allowed max-[480px]:px-[10px]"
+          style={{ borderColor: broken ? '#5a2a24' : on ? TG_BLUE : '#2c3540', color: broken ? '#ff8a7a' : on ? '#7cc8ef' : '#6c7888', opacity: disabled && !on ? 0.6 : 1 }}
+        >
+          {on && <Check size={12} aria-hidden />}
+          Telegram{broken ? ': no chat' : ''}
+        </button>
+      ) : null}
+      <span className={`inline-flex min-h-[30px] items-center rounded-full border px-3 text-[12px] ${a.webhook ? 'border-line-strong text-muted' : 'border-line text-faint line-through'}`} title={a.webhook?.url ?? 'No webhook'}>
+        Webhook
+      </span>
+    </span>
+  )
 }
 
 function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClose: () => void; view: AlertsView; onCreated: (secret: string | null) => void }) {
@@ -54,11 +85,13 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
   return (
     <Dialog open={open} onClose={onClose} title="New gap alert">
       <form className="flex flex-col gap-4" onSubmit={submit}>
-        <label className={label}>
-          Name <span className="text-[12px] text-faint">optional</span>
+        <label className={fieldLabel}>
+          <span>
+            Name <span className="text-[12px] text-faint">optional</span>
+          </span>
           <input className={input} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="e.g. NVDA wide gap" />
         </label>
-        <label className={label}>
+        <label className={fieldLabel}>
           Stock
           <select className={select} value={target} onChange={(e) => setTarget(e.target.value)}>
             <option value="any">Any stock the tracker follows</option>
@@ -74,7 +107,7 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
           </select>
         </label>
         <div className="grid grid-cols-[minmax(0,1fr)_120px] gap-3 max-[480px]:grid-cols-1">
-          <label className={label}>
+          <label className={fieldLabel}>
             When
             <select className={select} value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
               <option value="gap">The gap is at least…</option>
@@ -84,7 +117,7 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
             </select>
           </label>
           {kind === 'gap' && (
-            <label className={label}>
+            <label className={fieldLabel}>
               Percent
               <input className={input} type="number" min={0.1} max={100} step={0.1} value={pct} onChange={(e) => setPct(e.target.value)} required />
             </label>
@@ -93,7 +126,7 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
         <span className="-mt-2 text-[12px] leading-[1.5] text-faint">
           Either way, above or below fair. Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).
         </span>
-        <label className={label}>
+        <label className={fieldLabel}>
           Webhook URL
           <input className={`${input} font-mono text-[13px]`} type="url" value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://example.com/hooks/gully" spellCheck={false} />
           <span className="text-[12px] text-faint">https only, on a public address. We POST signed JSON; the signing secret is shown once.</span>
@@ -106,16 +139,16 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
             </span>
           </label>
         ) : view.telegram.enabled ? (
-          <p className="m-0 text-[12px] text-faint">To get alerts in Telegram, close this and press Connect Telegram first.</p>
+          <p className="m-0 text-[12px] text-faint">To get alerts in Telegram, close this and press Connect on the Telegram card first.</p>
         ) : (
           <p className="m-0 text-[12px] text-faint">Telegram delivery is not configured on this server; webhooks work.</p>
         )}
         {err && <ErrorLine>{err}</ErrorLine>}
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className={`${btnOutline} min-h-11 px-5 text-[15px]`}>
+          <button type="button" onClick={onClose} className={pillLine}>
             Cancel
           </button>
-          <button type="submit" disabled={busy || (!webhook.trim() && !toTelegram)} className={`${btnGold} min-h-11 px-5 text-[15px] disabled:opacity-50`}>
+          <button type="submit" disabled={busy || (!webhook.trim() && !toTelegram)} className={pillGold}>
             {busy ? 'Creating…' : 'Create alert'}
           </button>
         </div>
@@ -126,92 +159,77 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
 
 function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: (a: GapAlert, op: string, body?: unknown) => void; busy: string | null; telegram: TelegramInfo }) {
   const [open, setOpen] = useState(false)
-  const state = !a.coveredByPlan ? { t: 'Not in your plan', c: 'text-error' } : !a.enabled ? { t: 'Paused', c: 'text-faint' } : a.mutedUntil ? { t: `Muted from Telegram until ${new Date(a.mutedUntil).toLocaleString()}`, c: 'text-faint' } : a.waitingToReArm.length ? { t: 'Fired · waits to re-arm', c: 'text-gold' } : { t: 'Watching', c: 'text-green' }
+  const st = alertState(a)
   const mine = (op: string) => busy === `${a.id}:${op}`
   return (
-    <li className="flex flex-col gap-3 rounded-input border border-line bg-surface-deep p-4" style={rise(i)}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-2 text-[15px] font-medium">
-            {a.name || (a.ticker ? `${a.ticker} alert` : 'Any-stock alert')}
-            <span className={`font-mono text-[11px] ${state.c}`}>{state.t}</span>
-          </span>
-          <span className="text-[14px] text-muted">
-            {a.ticker ? `${a.ticker} on ${CHAIN_NAMES[a.chain ?? ''] ?? a.chain}` : 'Any stock'} · {conditionText(a.condition)}
-          </span>
-          <span className="font-mono text-[11.5px] break-all text-faint">
-            {a.webhook && <>webhook {a.webhook.url}</>}
-            {a.webhook && a.telegram && ' · '}
-            {a.telegram && (a.telegram.linked ? <>Telegram {a.telegram.chatTitle ?? 'chat'}</> : <span className="text-error">Telegram: no chat linked</span>)}
-            {' · '}last fired {ago(a.lastFiredAt)}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className={iconBtn} disabled={!!busy} onClick={() => act(a, 'test')}>
-            <Send size={14} aria-hidden /> {mine('test') ? 'Sending…' : 'Test'}
-          </button>
-          {a.mutedUntil && a.enabled ? (
-            <button type="button" className={iconBtn} disabled={!!busy} onClick={() => act(a, 'resume')}>
-              <BellRing size={14} aria-hidden /> Unmute
-            </button>
-          ) : (
-            <button type="button" className={iconBtn} disabled={!!busy} onClick={() => act(a, a.enabled ? 'pause' : 'resume')}>
-              {a.enabled ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />} {a.enabled ? 'Pause' : 'Resume'}
-            </button>
-          )}
-          {telegram.enabled && telegram.linked && !a.telegram && (
-            <button type="button" className={iconBtn} disabled={!!busy} onClick={() => act(a, 'telegram', { on: true })}>
-              <Send size={14} aria-hidden /> Add Telegram
-            </button>
-          )}
-          {a.telegram && a.webhook && (
-            <button type="button" className={iconBtn} disabled={!!busy} onClick={() => act(a, 'telegram', { on: false })}>
-              <BellOff size={14} aria-hidden /> Stop Telegram
-            </button>
-          )}
-          {a.webhook && (
-            <button type="button" className={iconBtn} disabled={!!busy} onClick={() => act(a, 'rotate')}>
-              <RotateCw size={14} aria-hidden /> New secret
-            </button>
-          )}
-          <button type="button" className={`${iconBtn} hover:!border-error hover:!text-error`} disabled={!!busy} onClick={() => act(a, 'delete')}>
-            <Trash2 size={14} aria-hidden /> Delete
-          </button>
-        </div>
+    <li className="flex flex-col gap-3 border-t border-line pt-3" style={rise(i)}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="flex min-w-0 flex-[1_1_200px] flex-col">
+          <b className="font-semibold">{alertName(a)}</b>
+          <span className="font-mono text-[11px] text-faint">{alertRule(a)}</span>
+        </span>
+        <ChannelChips a={a} telegram={telegram} act={act} busy={busy} />
+        <span className="font-mono text-[11px]" style={{ color: st.c }}>
+          {st.t}
+        </span>
       </div>
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex items-center gap-2 self-start font-mono text-[12px] text-muted hover:text-ink">
-        <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden /> Deliveries ({a.deliveries.length})
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, 'test')}>
+          <Send size={14} aria-hidden /> {mine('test') ? 'Sending…' : 'Test'}
+        </button>
+        {a.mutedUntil && a.enabled ? (
+          <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, 'resume')}>
+            <BellRing size={14} aria-hidden /> Unmute
+          </button>
+        ) : (
+          <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, a.enabled ? 'pause' : 'resume')}>
+            {a.enabled ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />} {a.enabled ? 'Pause' : 'Resume'}
+          </button>
+        )}
+        {a.webhook && (
+          <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, 'rotate')}>
+            <RotateCw size={14} aria-hidden /> New webhook secret
+          </button>
+        )}
+        <button type="button" className={`${pillSm} hover:!border-error hover:!text-error`} disabled={!!busy} onClick={() => act(a, 'delete')}>
+          <Trash2 size={14} aria-hidden /> Delete
+        </button>
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full px-2 font-mono text-[12px] text-muted hover:text-ink">
+          <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden /> Delivery log ({a.deliveries.length})
+        </button>
+      </div>
+      {a.webhook && <span className="font-mono text-[11px] break-all text-faint">webhook {a.webhook.url}</span>}
       {open &&
         (!a.deliveries.length ? (
           <p className="m-0 text-[13px] text-faint">Nothing sent yet. Use Test to check your endpoint.</p>
         ) : (
-          <div className="-mx-2 overflow-x-auto px-2">
-            <table className="w-full min-w-[560px] border-collapse text-[12.5px]">
-              <thead>
-                <tr className="border-b border-line text-left font-mono text-[10.5px] tracking-[1px] text-faint">
-                  <th className="py-2 pr-3 font-medium">TIME</th>
-                  <th className="py-2 pr-3 font-medium">KIND</th>
-                  <th className="py-2 pr-3 font-medium">CHANNEL</th>
-                  <th className="py-2 pr-3 font-medium">RESULT</th>
-                  <th className="py-2 text-right font-medium">LATENCY</th>
+          <div className="overflow-x-auto rounded-[10px] border border-line">
+            <div className="bg-surface-deep px-3 py-2 font-mono text-[10px] tracking-[1px] text-faint">DELIVERY LOG · LAST {a.deliveries.length}</div>
+            <table className="w-full min-w-[560px] border-collapse font-mono text-[12px]">
+              <thead className="sr-only">
+                <tr>
+                  <th>Time</th>
+                  <th>Result</th>
+                  <th>What</th>
+                  <th>Channel</th>
+                  <th>Latency</th>
                 </tr>
               </thead>
-              <tbody className="font-mono">
+              <tbody>
                 {a.deliveries.map((d, k) => (
-                  <tr key={`${d.id}-${d.channel}-${k}`} className="border-b border-line last:border-b-0">
-                    <td className="py-2 pr-3 whitespace-nowrap text-muted" title={new Date(d.at).toLocaleString()}>
+                  <tr key={`${d.id}-${d.channel}-${k}`} className="border-t border-line">
+                    <td className="px-3 py-2 whitespace-nowrap text-dim" title={new Date(d.at).toLocaleString()}>
                       {ago(d.at)}
                     </td>
-                    <td className="py-2 pr-3 text-ink-2">{d.test ? 'test' : d.events.map((e) => e.split(':')[1]).join(', ')}</td>
-                    <td className="py-2 pr-3 text-muted">{d.channel}</td>
-                    <td className="py-2 pr-3">
-                      <span className={`rounded-full border px-2 py-[1px] text-[11px] ${statusTone(d.ok)}`} title={d.error ?? undefined}>
-                        {d.status ?? 'no answer'}
-                      </span>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: d.ok ? '#6fcf6a' : '#ff8a7a' }} title={d.error ?? undefined}>
+                      {d.status ?? 'no answer'}
+                    </td>
+                    <td className="max-w-[260px] truncate px-3 py-2 text-ink-2">
+                      {d.test ? 'test' : d.events.map((e) => e.split(':')[1]).join(', ')}
                       {d.error && <span className="ml-2 text-faint">{d.error}</span>}
                     </td>
-                    <td className="py-2 text-right text-muted">{d.ms} ms</td>
+                    <td className="px-3 py-2 text-dim">{d.channel}</td>
+                    <td className="px-3 py-2 text-right text-dim">{d.ms} ms</td>
                   </tr>
                 ))}
               </tbody>
@@ -222,8 +240,8 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
   )
 }
 
-/* Telegram: not configured / connect (one-time deep link) / connected (chat name, unlink). */
-function TelegramCard({ info, reload }: { info: TelegramInfo; reload: () => Promise<unknown> }) {
+/* Telegram: not configured / connect (one-time deep link, polled) / connected (chat name, unlink). */
+export function TelegramCard({ info, reload, compact = false }: { info: TelegramInfo; reload: () => Promise<unknown>; compact?: boolean }) {
   const [link, setLink] = useState<TelegramLink | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -260,148 +278,123 @@ function TelegramCard({ info, reload }: { info: TelegramInfo; reload: () => Prom
     reload()
   }
 
+  const chat = info.enabled ? info.linked : null
+  const title = !info.enabled ? 'Telegram not available' : chat ? 'Telegram connected' : live ? 'Waiting for the bot…' : 'Connect Telegram'
+  const subline = !info.enabled
+    ? 'No bot is configured on this server. Webhook alerts work.'
+    : chat
+      ? `${chat.chatTitle} · ${chat.chatType === 'private' ? 'private chat' : 'group'} · linked ${ago(chat.linkedAt)}${info.bot ? ` · @${info.bot}` : ''}`
+      : link && !live
+        ? 'That link has expired. Make a new one.'
+        : link
+          ? `Open the bot and press Start. The link works once, until ${new Date(link.expiresAt).toLocaleTimeString()}.`
+          : 'One-time code, no chat id to copy. Works in groups.'
+
   return (
-    <section className={card} style={rise(0)} aria-labelledby="tg-title">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-[6px]">
-          <h2 id="tg-title" className={`${cardTitle} flex items-center gap-3`}>
-            <Send size={20} className="text-gold" aria-hidden /> Telegram
-          </h2>
-          <span className={sub}>
-            {!info.enabled ? 'not configured on this server' : info.linked ? 'connected' : 'not connected'}
-            {info.enabled && info.bot ? ` · @${info.bot}` : ''}
-          </span>
-        </div>
-        {info.enabled && !info.linked && (
-          <button type="button" onClick={connect} disabled={busy} className={`${link ? btnOutline : btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px] disabled:opacity-50`}>
-            <Send size={16} aria-hidden /> {busy ? 'Making a link…' : link ? 'New link' : 'Connect Telegram'}
+    <div className="flex flex-col gap-3 rounded-[12px] border p-3" style={{ background: chat ? '#16301a' : '#0d1116', borderColor: chat ? '#2f5a33' : live ? '#5a4a22' : '#1d232c' }}>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ background: info.enabled ? TG_BLUE : '#2c3540' }}>
+          <Send size={17} color="#fff" aria-hidden />
+        </span>
+        <span className="flex min-w-0 flex-[1_1_160px] flex-col">
+          <b className="font-semibold">{title}</b>
+          <span className="text-[12px] text-muted">{subline}</span>
+        </span>
+        {info.enabled && !chat && (
+          <button type="button" onClick={connect} disabled={busy} className={live ? pillLine : pillGold}>
+            {busy ? 'Making a link…' : link ? 'New link' : 'Connect'}
           </button>
         )}
-        {info.linked && (
-          <button type="button" onClick={unlink} disabled={busy} className={`${iconBtn} hover:!border-error hover:!text-error`}>
+        {chat && (
+          <button type="button" onClick={unlink} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-grid px-4 text-[13px] font-semibold text-ink hover:text-error disabled:opacity-50">
             <Link2Off size={14} aria-hidden /> Unlink
           </button>
         )}
       </div>
-
-      {!info.enabled && (
-        <p className="m-0 text-[14px] leading-[1.6] text-muted">
-          Telegram delivery is not available here: no bot is configured on this server. Webhook alerts work; Telegram appears in this tab once the bot is set up.
-        </p>
-      )}
-
-      {info.enabled && info.linked && (
-        <div className="flex flex-col gap-2 rounded-input border border-success-line bg-surface-deep px-4 py-3">
-          <span className="flex flex-wrap items-center gap-2 text-[15px] text-ink">
-            <Check size={16} className="text-green" aria-hidden /> {info.linked.chatTitle}
-            <span className="font-mono text-[11px] text-faint">
-              {info.linked.chatType === 'private' ? 'private chat' : 'group'} · linked {ago(info.linked.linkedAt)}
-            </span>
-          </span>
-          <span className="text-[13px] leading-[1.55] text-muted">
-            Tick Telegram on an alert to have it sent here, with Open and Mute 24h buttons. In the chat, /alerts lists your alerts, /gap NVDA and /top read the tracker, and /stop unlinks.
-          </span>
+      {link && live && (
+        <div className="flex flex-wrap gap-2">
+          <a href={link.link} target="_blank" rel="noopener noreferrer" className={pillGold}>
+            <ExternalLink size={15} aria-hidden /> Open {info.bot ? `@${info.bot}` : 'the bot'}
+          </a>
+          <a href={link.groupLink} target="_blank" rel="noopener noreferrer" className={pillLine}>
+            <Users size={15} aria-hidden /> Add to a group
+          </a>
         </div>
       )}
-
-      {info.enabled && !info.linked && !link && (
-        <p className="m-0 text-[14px] leading-[1.6] text-muted">
-          Get alerts in a Telegram chat. Connect opens the bot with a one-time code that links the chat to this wallet: no chat id to copy. The bot also answers /gap NVDA and /top for anyone.
-        </p>
-      )}
-
-      {info.enabled && !info.linked && link && (
-        <div className="flex flex-col gap-3 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-4">
-          {live ? (
-            <>
-              <span className="text-[14px] leading-[1.55] text-ink-2">Open the bot and press Start. The link works once, for ten minutes; this card updates when the chat is linked.</span>
-              <div className="flex flex-wrap gap-2">
-                <a href={link.link} target="_blank" rel="noopener noreferrer" className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
-                  <ExternalLink size={16} aria-hidden /> Open {info.bot ? `@${info.bot}` : 'the bot'}
-                </a>
-                <a href={link.groupLink} target="_blank" rel="noopener noreferrer" className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
-                  <Users size={16} aria-hidden /> Add to a group
-                </a>
-              </div>
-              <span className="font-mono text-[11.5px] text-faint">Expires {new Date(link.expiresAt).toLocaleTimeString()}. In a group, only the person who links it can unlink it.</span>
-            </>
-          ) : (
-            <span className="text-[14px] text-muted">That link has expired. Press New link for another.</span>
-          )}
-        </div>
-      )}
+      {!compact && chat && <span className="text-[12px] leading-[1.55] text-muted">Tick Telegram on an alert to have it sent here, with Open and Mute 24h buttons. In the chat, /alerts lists your alerts, /gap NVDA and /top read the tracker, and /stop unlinks.</span>}
+      {!compact && info.enabled && !chat && !link && <span className="text-[12px] leading-[1.55] text-muted">Connect opens the bot with a one-time code that links the chat to this wallet. The bot also answers /gap NVDA and /top for anyone. In a group, only the person who links it can unlink it.</span>}
       {err && <ErrorLine>{err}</ErrorLine>}
-    </section>
+    </div>
   )
 }
 
-export function Alerts({ goBilling }: { goBilling: () => void }) {
-  const [view, setView] = useState<AlertsView | null>(null)
-  const [err, setErr] = useState<string | null>(null)
-  const [creating, setCreating] = useState(false)
-  const [secret, setSecret] = useState<Secret>(null)
-  const [busy, setBusy] = useState<string | null>(null)
-  const [actErr, setActErr] = useState<string | null>(null)
-  const [note, setNote] = useState<string | null>(null)
-
-  const load = useCallback(
-    () =>
-      api<AlertsView>('/api/developer/alerts').then((r) => {
-        if (r.ok) {
-          setView(r.data)
-          setErr(null)
-        } else setErr(r.error)
-      }),
-    [],
+export function SecretDialog({ secret, onClose }: { secret: Secret; onClose: () => void }) {
+  return (
+    <Dialog open={!!secret} onClose={onClose} title={secret?.title ?? ''} dismissable={false}>
+      {secret ? (
+        <div className="flex flex-col gap-4">
+          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
+            <AlertTriangle size={18} className="mt-[2px] shrink-0 text-gold" aria-hidden />
+            Copy it now; it is not shown again. Check the X-Gully-Signature header of every delivery with it. Lost it? Make a new one.
+          </p>
+          <div className="flex items-center gap-2 rounded-[10px] border border-gold-line bg-bg py-1 pr-1 pl-3">
+            <code className="min-w-0 flex-1 font-mono text-[13px] break-all text-gold">{secret.secret}</code>
+            <CopyButton text={secret.secret} />
+          </div>
+          <div className="flex justify-end">
+            <button type="button" data-autofocus onClick={onClose} className={pillGold}>
+              <Check size={16} aria-hidden /> I have saved it
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </Dialog>
   )
-  useEffect(() => {
-    load()
-    const id = setInterval(load, 60_000)
-    return () => clearInterval(id)
-  }, [load])
+}
 
-  const act = async (a: GapAlert, op: string, body?: unknown) => {
-    if (op === 'delete' && !window.confirm(`Delete ${a.name || 'this alert'}? Its delivery log goes with it.`)) return
-    setBusy(`${a.id}:${op}`)
-    setActErr(null)
-    setNote(null)
-    const r = await api<{ secret?: string; results?: { channel: string; ok: boolean; status: number | null; error: string | null }[] }>(`/api/developer/alerts/${a.id}/${op}`, { method: 'POST', body })
-    setBusy(null)
-    if (!r.ok) return setActErr(r.error)
-    if (op === 'rotate' && r.data.secret) setSecret({ title: 'New signing secret', secret: r.data.secret })
-    if (op === 'test' && r.data.results) setNote(r.data.results.map((x) => `${x.channel}: ${x.ok ? `delivered (${x.status})` : `failed (${x.error ?? x.status})`}`).join(' · '))
-    load()
+export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () => void; creating: boolean; onCreateDone: () => void }) {
+  const { view, err, load } = useAlertsView()
+  const { act, busy, actErr, note, secret, setSecret } = useAlertActions(load)
+  const [opened, setOpen] = useState(false)
+
+  // "+ New alert" on the Overview lands here with the dialog open (once the plan's room is known).
+  const full = !!view && view.limits.used >= view.limits.max
+  const open = opened || (creating && !!view && !full)
+  const closeCreate = () => {
+    setOpen(false)
+    onCreateDone()
   }
 
   if (err) return <ErrorLine onRetry={load}>Alerts could not be read: {err}</ErrorLine>
   if (!view)
     return (
       <div className="flex flex-col gap-3">
-        <Skeleton h={120} />
-        <Skeleton h={80} />
+        <Skeleton h={90} />
+        <Skeleton h={160} />
       </div>
     )
 
-  const full = view.limits.used >= view.limits.max
   return (
-    <div className="flex flex-col gap-5">
-      <TelegramCard info={view.telegram} reload={load} />
-      <section className={card} style={rise(0)}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-[6px]">
-            <h2 className={cardTitle}>Gap alerts</h2>
-            <span className={sub}>
+    <div className="flex flex-col gap-[14px]">
+      <section className={panel} style={rise(0)} aria-labelledby="alerts-title">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-[2px]">
+            <h2 id="alerts-title" className={panelTitle}>
+              Gap alerts
+            </h2>
+            <span className={mono}>
               {view.limits.used} of {view.limits.max} on {view.limits.planName} · checked every five minutes · at most one delivery per alert every {view.limits.cooldownMinutes} minutes
             </span>
           </div>
-          <button type="button" disabled={full} onClick={() => setCreating(true)} title={full ? 'Your plan’s alerts are all in use' : undefined} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px] disabled:cursor-not-allowed disabled:opacity-50`}>
+          <button type="button" disabled={full} onClick={() => setOpen(true)} title={full ? 'Your plan’s alerts are all in use' : undefined} className={pillLine}>
             <Plus size={16} aria-hidden /> New alert
           </button>
         </div>
+        <TelegramCard info={view.telegram} reload={load} />
         {full && (
           <p className="m-0 text-[14px] text-muted">
             Every alert your plan includes is in use.{' '}
-            <button type="button" onClick={goBilling} className="text-gold underline-offset-4 hover:underline">
+            <button type="button" onClick={goBilling} className="min-h-11 text-gold underline-offset-4 hover:underline">
               See plans
             </button>{' '}
             for more, or delete one.
@@ -424,7 +417,7 @@ export function Alerts({ goBilling }: { goBilling: () => void }) {
             ))}
           </ul>
         )}
-        <p className="m-0 border-t border-line pt-4 text-[13px] leading-[1.6] text-faint">
+        <p className="m-0 border-t border-line pt-3 text-[12px] leading-[1.6] text-faint">
           Alerts look only at stocks the tracker would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature:{' '}
           <a href={`${DOCS_URL}/plans-alerts`} className="text-ink-2 underline-offset-4 hover:underline">
             Plans &amp; alerts docs
@@ -434,35 +427,16 @@ export function Alerts({ goBilling }: { goBilling: () => void }) {
       </section>
 
       <CreateDialog
-        open={creating}
-        onClose={() => setCreating(false)}
+        open={open}
+        onClose={closeCreate}
         view={view}
         onCreated={(s) => {
-          setCreating(false)
+          closeCreate()
           if (s) setSecret({ title: 'Your signing secret', secret: s })
           load()
         }}
       />
-
-      <Dialog open={!!secret} onClose={() => setSecret(null)} title={secret?.title ?? ''} dismissable={false}>
-        {secret ? (
-          <div className="flex flex-col gap-4">
-            <p className="m-0 flex items-start gap-3 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
-              <AlertTriangle size={18} className="mt-[2px] shrink-0 text-gold" aria-hidden />
-              Copy it now; it is not shown again. Check the X-Gully-Signature header of every delivery with it. Lost it? Make a new one.
-            </p>
-            <div className="flex items-center gap-2 rounded-input border border-gold-line bg-bg py-1 pr-1 pl-3">
-              <code className="min-w-0 flex-1 font-mono text-[13px] break-all text-gold">{secret.secret}</code>
-              <CopyButton text={secret.secret} />
-            </div>
-            <div className="flex justify-end">
-              <button type="button" data-autofocus onClick={() => setSecret(null)} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
-                <Check size={16} aria-hidden /> I have saved it
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </Dialog>
+      <SecretDialog secret={secret} onClose={() => setSecret(null)} />
     </div>
   )
 }
