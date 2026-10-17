@@ -217,8 +217,11 @@ export interface GapAlert {
   ticker: string | null
   condition: AlertCondition
   webhook: { url: string } | null
-  telegram: { chatId: string } | null
+  /** Telegram delivery to the account's linked chat; linked is false while no chat is linked. */
+  telegram: { chatTitle: string | null; linked: boolean } | null
   enabled: boolean
+  /** Set while muted from Telegram's "Mute 24h" button. */
+  mutedUntil: string | null
   coveredByPlan: boolean
   armed: boolean
   waitingToReArm: string[]
@@ -227,10 +230,28 @@ export interface GapAlert {
   deliveries: Delivery[]
 }
 
+export interface TelegramInfo {
+  enabled: boolean
+  bot: string | null
+  linked: { chatType: 'private' | 'group' | 'supergroup'; chatTitle: string; linkedAt: string } | null
+}
+
+export interface TelegramLink {
+  link: string
+  groupLink: string
+  expiresAt: string
+}
+
+/** GET /api/alerts/channels: which delivery channels the server offers. */
+export interface AlertChannels {
+  webhook: { enabled: boolean }
+  telegram: { enabled: boolean; bot: string | null; reason?: string }
+}
+
 export interface AlertsView {
   alerts: GapAlert[]
   limits: { plan: PlanId; planName: string; max: number; used: number; cooldownMinutes: number; flagPct: number }
-  telegram: { enabled: boolean; bot: string | null }
+  telegram: TelegramInfo
   stocks: { chain: string; ticker: string; name: string }[]
 }
 

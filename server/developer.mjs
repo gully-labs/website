@@ -19,6 +19,7 @@
 //   POST /api/developer/checkout/verify { plan, txHash, quoteId? } -> 200 plan applied | 202 not confirmed yet | 4xx
 //   GET|POST /api/developer/alerts…           gap alerts (alerts.mjs)
 //   GET|POST /api/developer/analytics…        Gully Analytics self-serve: trial, websites, plan (analytics-accounts.mjs)
+//   GET|POST /api/developer/telegram…         link a Telegram chat to the account (telegram.mjs)
 //
 // Sessions: an HttpOnly, SameSite=Lax cookie (Secure off localhost) holding a random id; only its
 // SHA-256 is stored (sessions.json), 30 days. CSRF: every POST must carry `X-Requested-With: gully`
@@ -31,6 +32,7 @@
 import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests } from './access.mjs'
 import { handleAlerts } from './alerts.mjs'
 import { handleAnalyticsAccount } from './analytics-accounts.mjs'
+import { handleTelegramAccount } from './telegram.mjs'
 import { billingOf, openIntent, verifyPayment } from './billing.mjs'
 import { bearer, clientIp, json, readJson } from './http.mjs'
 import { planOf, publicPlans } from './plans.mjs'
@@ -192,7 +194,9 @@ export async function handleDeveloper(req, res, url) {
     p === '/api/developer/alerts' ||
     p.startsWith('/api/developer/alerts/') ||
     p === '/api/developer/analytics' ||
-    p.startsWith('/api/developer/analytics/')
+    p.startsWith('/api/developer/analytics/') ||
+    p === '/api/developer/telegram' ||
+    p.startsWith('/api/developer/telegram/')
   if (accountRoute) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
     if (!post && req.method !== 'GET') return json(res, 405, { error: 'GET or POST only' }), true
@@ -218,6 +222,7 @@ export async function handleDeveloper(req, res, url) {
     if (p === '/api/developer/alerts' || p.startsWith('/api/developer/alerts/')) return handleAlerts(req, res, url, address)
 
     if (p === '/api/developer/analytics' || p.startsWith('/api/developer/analytics/')) return handleAnalyticsAccount(req, res, url, address)
+    if (p === '/api/developer/telegram' || p.startsWith('/api/developer/telegram/')) return handleTelegramAccount(req, res, url, address)
 
     if (p === '/api/developer/billing') return json(res, 200, { ...billingOf(address), offer: publicPlans() }), true
 

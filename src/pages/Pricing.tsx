@@ -1,16 +1,42 @@
+import { useEffect, useState } from 'react'
 import { ArrowUpRight, BellRing, Check, History, Loader2, ShieldCheck, Zap } from 'lucide-react'
 import { AnalyticsPlanCards } from '../components/AnalyticsPlans'
 import { usePlans } from '../lib/plans'
 import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
 import { DEVELOPERS_URL, DOCS_URL, isLocalHost } from '../site-host'
-import type { Offer } from './developers/api'
+import type { AlertChannels, Offer } from './developers/api'
 
 /* The paid tiers of the tracker API and the Gully Analytics plans, in two sections. Every price and limit
    is read from GET /api/plans (server/plans.mjs); nothing numeric is typed into this page. */
 
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` })
 const DASHBOARD = isLocalHost() ? '/developers#billing' : `${DEVELOPERS_URL}/#billing`
+
+/** Telegram delivery as the server reports it (GET /api/alerts/channels): null while unknown. */
+function useTelegramChannel(): AlertChannels['telegram'] | null {
+  const [tg, setTg] = useState<AlertChannels['telegram'] | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/alerts/channels')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then(
+        (c: AlertChannels) => alive && setTg(c.telegram),
+        () => undefined,
+      )
+    return () => {
+      alive = false
+    }
+  }, [])
+  return tg
+}
+
+const telegramAnswer = (tg: AlertChannels['telegram'] | null) =>
+  tg === null
+    ? 'Alerts can also go to a Telegram chat when the server has its bot configured; the Alerts tab of the developer dashboard shows whether it is. Webhooks always work.'
+    : tg.enabled
+      ? `Yes. In the Alerts tab of the developer dashboard, press Connect Telegram: it opens ${tg.bot ? `@${tg.bot}` : 'the bot'} with a one-time code that links the chat (or a group) to your wallet, with no chat id to copy. Then tick Telegram on any alert. Messages carry the gap, on-chain and fair prices, a link to the stock and a Mute 24h button.`
+      : 'Not yet. Telegram delivery works only once the bot is configured on the server, and it is not configured yet; the dashboard will offer it when it is. Webhooks work today.'
 
 const chainList = (o: Offer | null) => (o ? o.chains.map((c) => c.name).join(', ').replace(/, ([^,]*)$/, ' or $1') : 'Base, Ethereum, BNB Chain or Arbitrum')
 const assetList = (o: Offer | null) =>
@@ -21,7 +47,7 @@ const assetList = (o: Offer | null) =>
     : ''
 const confirmationList = (o: Offer | null) => (o ? o.chains.map((c) => `${c.name} ${c.confirmations}`).join(', ') : 'a few, depending on the chain')
 
-const FAQ = (o: Offer | null): { q: string; a: string }[] => [
+const FAQ = (o: Offer | null, tg: AlertChannels['telegram'] | null): { q: string; a: string }[] => [
   { q: 'How do I pay?', a: `In ETH, BNB, USDC or USDT on ${chainList(o)}. Pick a plan in the developer dashboard, then a chain and an asset; it gives a quote with the exact amount and the Gully Labs treasury address, valid for 20 minutes. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash.` },
   { q: 'What do I pay in?', a: `Prices are in US dollars. ${assetList(o)} Stablecoins are counted one to one with the dollar. ETH and BNB are priced by the Chainlink USD feed on the same chain when you ask for the quote, rounded up; if that feed has not updated for two hours, no quote is given in that coin.` },
   { q: 'Do you hold my funds?', a: 'No. Your coin or stablecoin goes straight to the Gully Labs treasury wallet in one transfer, the same as paying any address. There is no deposit, balance or card on file, and nothing is ever taken from your wallet without you signing it.' },
@@ -29,6 +55,7 @@ const FAQ = (o: Offer | null): { q: string; a: string }[] => [
   { q: 'How do I cancel?', a: `Just don’t renew. A payment buys ${o?.periodDays ?? 30} days and nothing renews by itself; when the days run out the account returns to Free with its keys still working at the Free limit.` },
   { q: 'Can I extend or switch?', a: 'Paying again for the same plan adds days to the end of the current period. A different plan starts the day you pay for it; the days left on the old one are not carried over.' },
   { q: 'When does Gully Analytics stop recording?', a: `At the monthly event limit of your plan, until the month turns (UTC) or you upgrade; and when a trial or plan ends without being extended. Your dashboard stays readable for ${o?.analytics?.graceDays ?? 30} days after a plan ends; after that the account may be deleted. Plans are bought in the Analytics tab of the developer dashboard.` },
+  { q: 'Can alerts come to Telegram?', a: telegramAnswer(tg) },
   { q: 'What does Free include?', a: 'Keys, usage charts and the request log, as today, with the limits shown above. Calling the API without any key keeps working too, at the anonymous limit.' },
 ]
 
@@ -46,6 +73,7 @@ function SectionHead({ id, eyebrow: label, title }: { id: string; eyebrow: strin
 export function Pricing() {
   const [state, retry] = usePlans()
   const offer = state.k === 'ok' ? state.offer : null
+  const tg = useTelegramChannel()
   return (
     <>
       <Seo title="Pricing" description="Plans for the Gully Labs tracker API and for Gully Analytics, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, with no custody." />
@@ -105,7 +133,7 @@ export function Pricing() {
                         <Zap size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {p.perMin.toLocaleString('en-US')} requests a minute per key, up to {p.maxKeys} keys
                       </li>
                       <li className="flex items-start gap-3">
-                        <BellRing size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {p.alerts} gap alert{p.alerts === 1 ? '' : 's'} by webhook
+                        <BellRing size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {p.alerts} gap alert{p.alerts === 1 ? '' : 's'} by webhook{tg?.enabled ? ' or Telegram' : ''}
                       </li>
                       <li className="flex items-start gap-3">
                         <History size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {p.historyDays} days of gap history per stock
@@ -145,7 +173,7 @@ export function Pricing() {
             </a>
           </div>
           <dl className="m-0 flex flex-col gap-6">
-            {FAQ(offer).map((f) => (
+            {FAQ(offer, tg).map((f) => (
               <div key={f.q} className="flex flex-col gap-2 border-b border-line pb-5 last:border-b-0 last:pb-0">
                 <dt className="font-display text-[22px] leading-none font-bold uppercase">{f.q}</dt>
                 <dd className="m-0 text-[15px] leading-[1.65] text-muted">{f.a}</dd>
