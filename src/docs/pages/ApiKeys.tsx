@@ -39,11 +39,11 @@ export function ApiKeys() {
 
       <Section id="get" title="Getting a key">
         <P>
-          Keys are free and issued instantly at <Ext href="https://developers.gullylabs.xyz">developers.gullylabs.xyz</Ext>. There is no form and no approval:
+          Keys are free and issued instantly at <Ext href="https://app.gullylabs.xyz">app.gullylabs.xyz</Ext>. There is no form and no approval:
         </P>
         <List>
           <li>Press <b>Connect wallet</b> and pick any browser wallet or Coinbase Wallet. Your wallet address is your account; there is no email or password.</li>
-          <li>Sign the message your wallet shows. It is Sign-In with Ethereum (EIP-4361): a signature, not a transaction, so it costs nothing and moves nothing. It names developers.gullylabs.xyz, expires after ten minutes and can be used once.</li>
+          <li>Sign the message your wallet shows. It is Sign-In with Ethereum (EIP-4361): a signature, not a transaction, so it costs nothing and moves nothing. It names app.gullylabs.xyz, expires after ten minutes and can be used once.</li>
           <li>Open <b>API keys</b>, press <b>Create key</b> and name it. The key works at once. Copy it then: it is shown in full only once, because we store only a hash of it.</li>
         </List>
         <P>Smart-contract wallets (EIP-1271, including ones not deployed yet, ERC-6492) are accepted on Ethereum, Base, BNB Chain and Robinhood Chain. A sign-in lasts 30 days on that browser.</P>

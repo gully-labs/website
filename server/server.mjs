@@ -19,6 +19,7 @@ import { handleBlog } from './blog.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
+import { APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
@@ -99,10 +100,10 @@ const notifyHits = new Map()
 /* Security headers. The CSP keeps scripts to this origin (no inline scripts exist in the build); styles allow
    inline because React style props need it; connections allow any https/wss origin because the developer
    portal's wallets and payment checks talk to public RPCs and WalletConnect relays chosen at runtime.
-   The admin host and the developer portal may not be framed at all; the main site only by itself. */
+   The admin host and the app (and its old developers host) may not be framed at all; the main site only by itself. */
 function securityHeaders(host) {
   const local = /^(localhost|127.0.0.1|[::1])$/.test(host)
-  const strict = host.startsWith('admin.') || host.startsWith('developers.')
+  const strict = host.startsWith('admin.') || isAppHost(host) || isLegacyDevelopersHost(host)
   // The docs host runs the widget's live examples, which load https://gullylabs.xyz/widget.js (its
   // reads of /api/tracker and the logos are covered by connect-src https: and img-src https:).
   const docs = host.startsWith('docs.') || local
@@ -152,14 +153,21 @@ const server = http.createServer(async (req, res) => {
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
   }
-  // The developer dashboard lives on developers.gullylabs.xyz. Elsewhere /developers moves there; on that
-  // host any other page belongs to the main site.
-  const isDevelopers = host.startsWith('developers.')
+  // The Gully Labs App (the developer dashboard) lives on app.gullylabs.xyz (hosts.mjs). Elsewhere /app and
+  // /developers move there; on that host any other page belongs to the main site.
+  const isApp = isAppHost(host)
   const isPage = !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/') && !/\.[a-z0-9]+$/i.test(url.pathname)
-  if (!isDevelopers && !isLocal && (url.pathname === '/developers' || url.pathname.startsWith('/developers/'))) {
-    return send(res, 301, '', { Location: 'https://developers.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
+  // Its old host, developers.gullylabs.xyz: every page answers 301 to the app with the same path and query
+  // (browsers keep the #fragment across a redirect, so #billing and #invite=… still land). /api/* is NOT
+  // redirected: a 301 on a POST breaks clients, so the API (and the build's files, for tabs left open) are
+  // still served here during the transition. Deprecated: drop this branch once the old host is retired.
+  if (isLegacyDevelopersHost(host) && isPage) {
+    return send(res, 301, '', { Location: APP_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
-  if (isDevelopers && isPage && url.pathname !== '/') {
+  if (!isApp && !isLegacyDevelopersHost(host) && !isLocal && /^\/(app|developers)(\/|$)/.test(url.pathname)) {
+    return send(res, 301, '', { Location: `${APP_URL}/`, 'Cache-Control': 'public, max-age=3600' })
+  }
+  if (isApp && isPage && url.pathname !== '/') {
     return send(res, 301, '', { Location: 'https://gullylabs.xyz' + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
   // The docs live on their own host; /docs on the main site moves there, path kept.
@@ -167,7 +175,11 @@ const server = http.createServer(async (req, res) => {
     return send(res, 301, '', { Location: 'https://docs.gullylabs.xyz' + (url.pathname.slice(5) || '/'), 'Cache-Control': 'public, max-age=3600' })
   }
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
-  if (url.pathname === '/sitemap.xml') return send(res, 200, sitemapFor(host), { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
+  if (url.pathname === '/sitemap.xml') {
+    const map = sitemapFor(host)
+    if (!map) return send(res, 404, '', { 'Cache-Control': 'public, max-age=3600' })
+    return send(res, 200, map, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
+  }
   if (isAdmin) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
 
   if (url.pathname.startsWith('/api/admin/')) {

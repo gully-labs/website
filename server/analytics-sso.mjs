@@ -30,7 +30,7 @@ const hits = new Map()
 
 const sha256 = (v) => crypto.createHash('sha256').update(String(v)).digest('hex')
 const publicOrigin = () => String(process.env.ANALYTICS_PUBLIC_ORIGIN ?? 'https://analytics.gullylabs.xyz').replace(/\/+$/, '')
-const portalUrl = () => String(process.env.PORTAL_PUBLIC_URL ?? 'https://developers.gullylabs.xyz/#analytics')
+const portalUrl = () => String(process.env.PORTAL_PUBLIC_URL ?? 'https://app.gullylabs.xyz/#analytics')
 
 function allow(bucket, who, max, ms) {
   const k = `${bucket}:${who}`

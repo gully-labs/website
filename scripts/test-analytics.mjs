@@ -333,7 +333,7 @@ try {
   /* ------------------------------------------------------------ proxy: login, speed, headers --- */
   const hitsBefore = umami.loginHits
   px = await proxy('/login', { headers: { accept: 'text/html' } })
-  check('GET /login is the branded way in, with the portal first', px.status === 200 && px.text.includes('Sign in from the developer portal') && px.text.includes('developers.gullylabs.xyz/#analytics') && px.text.includes('Reset it in the portal') && px.text.includes('Start the 14-day free trial') && px.text.includes('/login?form=password'))
+  check('GET /login is the branded way in, with the portal first', px.status === 200 && px.text.includes('Sign in from the developer portal') && px.text.includes('app.gullylabs.xyz/#analytics') && px.text.includes('Reset it in the portal') && px.text.includes('Start the 14-day free trial') && px.text.includes('/login?form=password'))
   check('the login page runs no script', /script-src 'none'/.test(px.headers['content-security-policy'] ?? '') && !px.text.includes('<script'))
   await new Promise((res) => setTimeout(res, 150))
   check('it warms Umami’s password form in the background', umami.loginHits > hitsBefore)
@@ -350,7 +350,7 @@ try {
   const c2 = await proxy('/_next/static/chunks/app-abc123.js', { headers: { 'accept-encoding': 'gzip' } })
   check('build chunks are fetched from Umami once, then served from memory', umami.staticHits === s0 + 1 && c2.headers['x-gully-cache'] === 'HIT' && c2.text === c1.text)
   check('build chunks are immutable for a year', c2.headers['cache-control'] === 'public, max-age=31536000, immutable')
-  px = await proxy('/api/send', { method: 'OPTIONS', headers: { origin: 'https://developers.gullylabs.xyz', 'access-control-request-method': 'POST' } })
+  px = await proxy('/api/send', { method: 'OPTIONS', headers: { origin: 'https://app.gullylabs.xyz', 'access-control-request-method': 'POST' } })
   check('the tracker preflight is answered here with CORS', px.status === 204 && px.headers['access-control-allow-origin'] === '*')
   const up = process.env.ANALYTICS_UPSTREAM
   process.env.ANALYTICS_UPSTREAM = 'http://127.0.0.1:9'

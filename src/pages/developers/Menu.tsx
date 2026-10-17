@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { restoreFocus } from './portal'
 
-/* A dropdown menu for the console header (workspace switcher, wallet menu): a button with
+/* A dropdown menu for the app's sidebar and header (workspace switcher, wallet menu): a button with
    aria-haspopup, a role="menu" panel, the first item focused on open, arrow keys / Home / End move
    between items, Escape (or Tab) closes and returns focus to the button, a click outside closes. */
 
 export const menuItem = 'flex min-h-11 w-full items-center gap-3 rounded-[8px] px-3 text-left text-[14px] text-ink-2 outline-offset-[-2px] hover:bg-surface-hover hover:text-ink focus-visible:bg-surface-hover'
 
-export function Menu({ label, button, buttonClass, children, align = 'right', width = 250, testId }: { label: string; button: ReactNode; buttonClass: string; children: (close: () => void) => ReactNode; align?: 'left' | 'right'; width?: number; testId?: string }) {
+export function Menu({ label, button, buttonClass, children, align = 'right', placement = 'down', width = 250, testId }: { label: string; button: ReactNode; buttonClass: string; children: (close: () => void) => ReactNode; align?: 'left' | 'right'; placement?: 'down' | 'up'; width?: number; testId?: string }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
@@ -30,7 +31,7 @@ export function Menu({ label, button, buttonClass, children, align = 'right', wi
     if (back) setRefocus((n) => n + 1)
   }
   useEffect(() => {
-    if (refocus) trigger.current?.focus()
+    if (refocus) restoreFocus(trigger.current)
   }, [refocus])
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -59,7 +60,7 @@ export function Menu({ label, button, buttonClass, children, align = 'right', wi
         {button}
       </button>
       {open && (
-        <div ref={panel} role="menu" aria-label={label} className={`absolute top-12 z-40 flex max-w-[calc(100vw-32px)] animate-[gl-rise_.18s_ease_both] flex-col rounded-[12px] border border-line-strong bg-surface-deep p-1 shadow-[0_12px_32px_rgba(0,0,0,.5)] ${align === 'right' ? 'right-0' : 'left-0'}`} style={{ width }}>
+        <div ref={panel} role="menu" aria-label={label} className={`absolute ${placement === 'up' ? 'bottom-12' : 'top-12'} z-40 flex max-w-[calc(100vw-32px)] animate-[gl-rise_.18s_ease_both] flex-col rounded-[12px] border border-line-strong bg-surface-deep p-1 shadow-[0_12px_32px_rgba(0,0,0,.5)] ${align === 'right' ? 'right-0' : 'left-0'}`} style={{ width }}>
           {children(() => close())}
         </div>
       )}

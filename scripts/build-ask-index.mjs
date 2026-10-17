@@ -319,7 +319,7 @@ function siteChunks() {
       }
       const label = get('label')
       const to = get('to')
-      const href = get('href') ?? (to === '/developers' ? 'https://developers.gullylabs.xyz' : to ? SITE + to : null)
+      const href = get('href') ?? (to === '/developers' || to === '/app' ? 'https://app.gullylabs.xyz' : to ? SITE + to : null)
       if (label && href && !links.some((l) => l.endsWith(href))) links.push(`${label}: ${href}`)
     }
   }

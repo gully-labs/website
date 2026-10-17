@@ -45,6 +45,8 @@ for (const k of ['log', 'error', 'warn']) {
 /* -------------------------------------------------------------- Bot API stub --- */
 
 const calls = [] // { method, body, at, resultId }
+const nonMembers = new Set() // user ids the stub reports as not following the News channel
+let memberCheckBroken = false // the stub refuses getChatMember (bot not an admin of the channel)
 const msgs = new Map() // message_id -> { chatId, kind, text, markup }
 let nextMsgId = 1_000
 let fail429 = 0
@@ -72,6 +74,10 @@ const stub = http.createServer((req, res) => {
     calls.push(call)
     const bad = (description) => send(400, { ok: false, error_code: 400, description })
     if (method === 'getMe') return send(200, { ok: true, result: { id: BOT_ID, is_bot: true, username: BOT } })
+    if (method === 'getChatMember') {
+      if (memberCheckBroken) return bad('Bad Request: member list is inaccessible')
+      return send(200, { ok: true, result: { status: nonMembers.has(Number(body.user_id)) ? 'left' : 'member', user: { id: Number(body.user_id) } } })
+    }
     if (method === 'sendMessage' && fail429 > 0) {
       fail429--
       return send(429, { ok: false, error_code: 429, description: 'Too Many Requests: retry after 1', parameters: { retry_after: 1 } })
@@ -276,7 +282,7 @@ try {
   check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · stock tokens vs their fair price, live.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain and BNB Chain`) && cap1.includes('🔔 gap alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
   check('the banner carries the main menu: 8 buttons in 4 rows', menuKb.length === 4 && flat(menuKb).length === 8 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 Developer portal ↗', '⚙️ Settings']))
-  check('the menu: Developer portal is a url button, the others are routes', button(menuKb, /Developer portal/)?.url === 'https://developers.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
+  check('the menu: Developer portal is a url button, the others are routes', button(menuKb, /Developer portal/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
   check('the banner file_id is stored after the first upload', JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner?.fileId === BANNER_FILE_ID)
   await say(privateChat(801), '/start')
   const an2 = calls.filter((c) => c.method === 'sendAnimation' && c.body.chat_id === '801').at(-1)
@@ -360,7 +366,7 @@ try {
   await say(privateChat(340), '/launches solana')
   check('/launches with an unknown chain lists DeepCore’s chains', /DeepCore runs on bsc, hyperevm, robinhood, base/.test(view(340).text))
   await press(privateChat(340), 'dla:0')
-  check('launch alert in an unlinked chat: explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(340).text) && button(view(340).kb, /Link wallet/)?.url === 'https://developers.gullylabs.xyz/#alerts' && data(view(340).kb).includes('dc:0'))
+  check('launch alert in an unlinked chat: explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(340).text) && button(view(340).kb, /Link wallet/)?.url === 'https://app.gullylabs.xyz/#alerts' && data(view(340).kb).includes('dc:0'))
   tg.setLaunchesReaderForTest(async () => ({ state: 'unreadable', launches: [], asOf: null, chains: [] }))
   await say(privateChat(341), '/launches')
   check('/launches: an unreadable API is said honestly, never "no launches"', /could not be read just now/.test(view(341).text) && !/No launches/.test(view(341).text))
@@ -400,13 +406,14 @@ try {
   check('/ask: the Claude API never sees the chat id', !JSON.stringify(claudeCalls).includes('603'))
 
   /* -------------------------------------------------- unknown chats --- */
-  const before = calls.length
+  const apiCalls = () => calls.filter((c) => c.method !== 'getChatMember').length // the News channel gate adds membership checks
+  const before = apiCalls()
   const nAns = answers().length
   await say(privateChat(444), '/stop')
   await say(privateChat(444), 'hello')
   await press(privateChat(444), 'mute:abc', { msgId: null })
   check('unknown chats: /stop and plain text are ignored', sent(444).length === 0)
-  check('unknown chats: a Mute press is answered without acting', answers().length === nAns + 1 && /not linked/.test(lastAnswer().text) && calls.length === before + 1)
+  check('unknown chats: a Mute press is answered without acting', answers().length === nAns + 1 && /not linked/.test(lastAnswer().text) && apiCalls() === before + 1)
   await say(privateChat(444), '/alerts')
   check('unknown chats: /alerts explains linking, with Link wallet', /need a linked account/.test(view(444).text) && !!button(view(444).kb, /Link wallet/)?.url)
   await say(privateChat(445), '/help')
@@ -590,7 +597,7 @@ try {
 
   /* ------------------------------------------- alert stepper, unlinked --- */
   await press(privateChat(840), 'al:rh:NVDA:g1', { msgId: null })
-  check('Alert me in an unlinked chat explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(840).text) && button(view(840).kb, /Link wallet/)?.url === 'https://developers.gullylabs.xyz/#alerts' && button(view(840).kb, /Back/).callback_data === 'c:rh:NVDA:g1')
+  check('Alert me in an unlinked chat explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(840).text) && button(view(840).kb, /Link wallet/)?.url === 'https://app.gullylabs.xyz/#alerts' && button(view(840).kb, /Back/).callback_data === 'c:rh:NVDA:g1')
   await press(privateChat(840), 'ma', { msgId: null })
   check('My alerts in an unlinked chat explains, with Link wallet', /need a linked account/.test(view(840).text))
 
@@ -607,7 +614,7 @@ try {
   const s3 = view(111)
   check('stepper 3/3: summary with ✅ Create and Back', /Fires when the gap reaches ±2% either way/.test(s3.text) && data(s3.kb).includes('alk:rh:NVDA:g1:2:e') && button(s3.kb, /Back/).callback_data === 'al:rh:NVDA:g1:2')
   await press(ada, 'alk:rh:NVDA:g1:2:e')
-  check('plan limit: the Free plan’s one alert is in use, with ⬆ Upgrade', /Plan limit reached/.test(view(111).text) && /Free plan includes 1 alert/.test(view(111).text) && button(view(111).kb, /Upgrade/)?.url === 'https://developers.gullylabs.xyz/#billing' && (await myAlerts()).length === 1, view(111).text)
+  check('plan limit: the Free plan’s one alert is in use, with ⬆ Upgrade', /Plan limit reached/.test(view(111).text) && /Free plan includes 1 alert/.test(view(111).text) && button(view(111).kb, /Upgrade/)?.url === 'https://app.gullylabs.xyz/#billing' && (await myAlerts()).length === 1, view(111).text)
   // Custom threshold.
   await press(ada, 'alx:rh:NVDA:g1')
   const cp = sent(111).at(-1)
@@ -742,6 +749,33 @@ try {
   check(`callback_data is at most 64 bytes in every keyboard sent (${allKb.length} buttons; longest ${Buffer.byteLength(longest)} bytes)`, allKb.length > 300 && allKb.every((d) => Buffer.byteLength(d) <= 64), longest)
   check('every button press was answered exactly once', pressedIds.every((id) => answers().filter((a) => a.body.callback_query_id === id).length === 1), `${pressedIds.length} presses`)
   check('every inline button has a callback or a url, and a short label', calls.filter((c) => c.body?.reply_markup?.inline_keyboard).every((c) => flat(c.body.reply_markup.inline_keyboard).every((b) => (b.callback_data || /^https:\/\//.test(b.url ?? '')) && b.text.length <= 64)))
+
+  /* -------------------------------------------------- News channel gate --- */
+  const ng1 = privateChat(9901, 'Gus')
+  nonMembers.add(9901)
+  await say(ng1, '/start')
+  const ngMsg = sent(9901).at(-1)?.body
+  const ngKb = ngMsg?.reply_markup?.inline_keyboard ?? []
+  check('gate: a non-follower gets the Join @GullyLabsNews screen instead of the bot', /Follow Gully Labs News/.test(ngMsg?.text ?? '') && flat(ngKb).some((b) => b.url === 'https://t.me/GullyLabsNews') && data(ngKb).includes('jchk'), ngMsg?.text)
+  await say(ng1, '/top')
+  check('gate: commands stay blocked until they follow', /Follow Gully Labs News/.test(lastText(9901)))
+  await press(ng1, 'jchk', { msgId: null })
+  check('gate: "I’ve joined" without joining is refused with an alert', /Not joined yet/.test(lastAnswer().text ?? '') && lastAnswer().show_alert === true)
+  nonMembers.delete(9901)
+  await press(ng1, 'jchk', { msgId: null })
+  check('gate: after joining, "I’ve joined" opens the menu', /Thanks for following/.test(lastAnswer().text ?? '') && /Pick a screen below/.test(lastText(9901)))
+  await say(ng1, '/help')
+  check('gate: a follower uses the bot normally', !/Follow Gully Labs News/.test(lastText(9901)))
+  const ng2 = privateChat(9902, 'Ivy')
+  nonMembers.add(9902)
+  await press(ng2, 'mute:nonexistent', { msgId: null })
+  check('gate: Mute buttons on alert deliveries are never gated', !/Follow Gully Labs News/.test(lastText(9902)))
+  memberCheckBroken = true
+  const ng3 = privateChat(9903, 'Lee')
+  nonMembers.add(9903)
+  await say(ng3, '/help')
+  check('gate: if membership cannot be checked, the bot fails open', !/Follow Gully Labs News/.test(lastText(9903)) && lastText(9903).length > 0)
+  memberCheckBroken = false
 
   /* ------------------------------------------------------------ token off --- */
   delete process.env.TELEGRAM_BOT_TOKEN

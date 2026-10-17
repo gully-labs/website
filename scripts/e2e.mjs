@@ -261,9 +261,11 @@ await step('portal', async () => {
   const page = await ctx.newPage()
   const w = watch(page, 'portal')
   await page.goto(BASE + '/developers#keys')
-  await page.getByRole('tablist', { name: 'Portal' }).waitFor()
+  // The app's pages are sidebar links (AppShell); at 1440 px the sidebar is open.
+  const appNav = page.getByRole('navigation', { name: 'App pages' })
+  await appNav.waitFor()
   // Keys: create, rename, revoke.
-  await page.getByRole('tab', { name: /^Keys/ }).click()
+  await appNav.getByRole('link', { name: /^Keys/ }).click()
   await page.getByRole('button', { name: 'Create key' }).first().click()
   const dlg = page.getByRole('dialog', { name: 'Create a key' })
   await dlg.getByPlaceholder('e.g. Production backend').fill('e2e key')
@@ -284,7 +286,7 @@ await step('portal', async () => {
   await page.getByText('Key revoked').first().waitFor()
   check('keys: revoke', true)
   // Alerts: create, test, pause.
-  await page.getByRole('tab', { name: /^Alerts/ }).click()
+  await appNav.getByRole('link', { name: /^Alerts/ }).click()
   await page.getByRole('button', { name: 'New alert' }).first().click()
   const na = page.getByRole('dialog', { name: 'New gap alert' })
   await na.getByLabel('Stock').selectOption('robinhood:NVDA')
@@ -301,13 +303,13 @@ await step('portal', async () => {
   await page.getByText(/paused/).first().waitFor()
   check('alerts: pause', true)
   // Gully Analytics tab (sign-up is off on this server: it must say so, not break).
-  await page.getByRole('tab', { name: /^Analytics/ }).click()
+  await appNav.getByRole('link', { name: /^Analytics/ }).click()
   await page.getByText(/not switched on/).first().waitFor()
   check('analytics tab: says self-serve is off here', true)
   await w.verify()
 
   // Team: invite by link, the second wallet accepts in its own browser, role change, removal.
-  await page.getByRole('tab', { name: /^Team/ }).click()
+  await appNav.getByRole('link', { name: /^Team/ }).click()
   await page.getByRole('button', { name: 'Invite', exact: true }).click()
   const id = page.getByRole('dialog', { name: 'Invite to the workspace' })
   await id.getByRole('radio', { name: 'Create a link' }).click()
@@ -328,7 +330,7 @@ await step('portal', async () => {
   await mctx.close()
   const mateAddr = mate.address.toLowerCase()
   await page.reload()
-  await page.getByRole('tab', { name: /^Team/ }).click()
+  await appNav.getByRole('link', { name: /^Team/ }).click()
   const sel = page.locator(`[data-role-select="${mateAddr}"]`)
   await sel.waitFor({ timeout: 10_000 })
   await sel.selectOption('viewer')
@@ -339,12 +341,12 @@ await step('portal', async () => {
   await sel.waitFor({ state: 'detached', timeout: 10_000 })
   check('team: the owner removes the member', true)
   // Activity lists what happened, in the UI.
-  await page.getByRole('tab', { name: /^Activity/ }).click()
+  await appNav.getByRole('link', { name: /^Activity/ }).click()
   await page.getByRole('heading', { name: 'Activity' }).waitFor()
   const actText = await page.locator('section[aria-labelledby="act-title"]').textContent()
   check('activity: the log shows the key, alert and team changes', /key/i.test(actText) && /alert/i.test(actText) && /invite|member|role/i.test(actText), actText?.slice(0, 160))
   // CSV downloads from Billing.
-  await page.getByRole('tab', { name: /^Billing/ }).click()
+  await appNav.getByRole('link', { name: /^Billing/ }).click()
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: /Payments CSV/ }).click()])
   check('CSV: payments downloads', /payments.*\.csv$/.test(dl.suggestedFilename()), dl.suggestedFilename())
   const usageLink = page.getByRole('link', { name: /Download usage CSV/ }).first()

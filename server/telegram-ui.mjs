@@ -24,7 +24,7 @@
 // answer is never overwritten by the next screen).
 
 export const SITE = 'https://gullylabs.xyz'
-export const PORTAL = 'https://developers.gullylabs.xyz'
+export const PORTAL = 'https://app.gullylabs.xyz'
 export const PORTAL_ALERTS = `${PORTAL}/#alerts`
 export const PORTAL_BILLING = `${PORTAL}/#billing`
 export const DEEPCORE = 'https://deepcore.fun'

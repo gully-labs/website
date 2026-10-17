@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-17T21:53:33.471Z",
+ "updatedAt": "2026-10-17T22:59:14.062Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -224,8 +224,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#errors",
    "section": "Errors",
-   "text": "Errors are JSON with a single error string. 400 (history: chain or ticker malformed): Check the parameters. Body: {\"error\":\"chain and ticker\"}. 400 (movers: window, limit, chain or ticker malformed): Use window=1h or 24h, a limit from 1 to 50, and a ticker only with a chain. 405 (a method other than GET or OPTIONS): Use GET. 401 (unknown or revoked API key): Check the key, or request one at developers.gullylabs.xyz. 403 (history: days beyond what your plan includes): Ask for fewer days, or move to a plan with more history. The body names your limit in historyDays. 429 (rate limit exceeded): Wait for Retry-After seconds, or use an API key. 502 (the tracker could not be built at all): Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "Errors are JSON with a single error string. 400 (history: chain or ticker malformed): Check the parameters. Body: {\"error\":\"chain and ticker\"}. 400 (movers: window, limit, chain or ticker malformed): Use window=1h or 24h, a limit from 1 to 50, and a ticker only with a chain. 405 (a method other than GET or OPTIONS): Use GET. 401 (unknown or revoked API key): Check the key, or request one at app.gullylabs.xyz. 403 (history: days beyond what your plan includes): Ask for fewer days, or move to a plan with more history. The body names your limit in historyDays. 429 (rate limit exceeded): Wait for Retry-After seconds, or use an API key. 502 (the tracker could not be built at all): Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.",
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "9eb94f89f74e",
@@ -386,8 +386,8 @@
    "title": "API keys",
    "url": "https://docs.gullylabs.xyz/api-keys#get",
    "section": "Getting a key",
-   "text": "Keys are free and issued instantly at developers.gullylabs.xyz. There is no form and no approval: Press Connect wallet and pick any browser wallet or Coinbase Wallet. Your wallet address is your account; there is no email or password. Sign the message your wallet shows. It is Sign-In with Ethereum (EIP-4361): a signature, not a transaction, so it costs nothing and moves nothing. It names developers.gullylabs.xyz, expires after ten minutes and can be used once. Open API keys, press Create key and name it. The key works at once. Copy it then: it is shown in full only once, because we store only a hash of it. Smart-contract wallets (EIP-1271, including ones not deployed yet, ERC-6492) are accepted on Ethereum, Base, BNB Chain and Robinhood Chain. A sign-in lasts 30 days on that browser.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "Keys are free and issued instantly at app.gullylabs.xyz. There is no form and no approval: Press Connect wallet and pick any browser wallet or Coinbase Wallet. Your wallet address is your account; there is no email or password. Sign the message your wallet shows. It is Sign-In with Ethereum (EIP-4361): a signature, not a transaction, so it costs nothing and moves nothing. It names app.gullylabs.xyz, expires after ten minutes and can be used once. Open API keys, press Create key and name it. The key works at once. Copy it then: it is shown in full only once, because we store only a hash of it. Smart-contract wallets (EIP-1271, including ones not deployed yet, ERC-6492) are accepted on Ethereum, Base, BNB Chain and Robinhood Chain. A sign-in lasts 30 days on that browser.",
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "a0300b79df15",
@@ -557,8 +557,8 @@
    "title": "Teams & workspaces",
    "url": "https://docs.gullylabs.xyz/teams#invites",
    "section": "Invites",
-   "text": "Owners and admins invite from the Team tab, in two ways: By wallet. Enter the teammate’s address. The invite waits for that wallet: they sign in to the portal and accept it there. Nobody else can use it. By link. The portal makes a link (https://developers.gullylabs.xyz/#invite=…) that anyone who signs in with a wallet can accept, once. The link is shown once; only a hash of it is kept, so it cannot be shown again. Send it privately. Every invite carries the role it grants and expires after 7 days. Accepted, revoked and expired invites stop working at once. Open invites can be revoked from the Team tab. Only the owner can invite, or revoke the invite of, an admin. Opening a link shows the workspace name, the role and who invited you before you accept. Unknown links and repeated attempts are rate limited per address. Owners and admins change a member’s role or remove them from the Team tab. Removing someone moves their sessions back to their own workspace, which is untouched.",
-   "updatedAt": "2026-10-17T21:53:33.471Z"
+   "text": "Owners and admins invite from the Team tab, in two ways: By wallet. Enter the teammate’s address. The invite waits for that wallet: they sign in to the portal and accept it there. Nobody else can use it. By link. The portal makes a link (https://app.gullylabs.xyz/#invite=…) that anyone who signs in with a wallet can accept, once. The link is shown once; only a hash of it is kept, so it cannot be shown again. Send it privately. Every invite carries the role it grants and expires after 7 days. Accepted, revoked and expired invites stop working at once. Open invites can be revoked from the Team tab. Only the owner can invite, or revoke the invite of, an admin. Opening a link shows the workspace name, the role and who invited you before you accept. Unknown links and repeated attempts are rate limited per address. Owners and admins change a member’s role or remove them from the Team tab. Removing someone moves their sessions back to their own workspace, which is untouched.",
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "df45d819ee20",
@@ -845,8 +845,8 @@
    "title": "Services",
    "url": "https://gullylabs.xyz/services",
    "section": "Build with the team behind the projects",
-   "text": "We take on a small number of partner engagements alongside our own releases, using the same people and the same stack.",
-   "updatedAt": "2026-10-17T16:10:49.167Z"
+   "text": "We take on a small number of partner engagements alongside our own releases, using the same people and the same stack. The venues this team built, read live from each one's own API: daily volume, stacked by venue.",
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "c25c6a4a4899",
@@ -865,6 +865,15 @@
    "section": "A lab that ships its own products",
    "text": "Gully Labs is a blockchain development company. We design, build and release Web3 projects under our own name, from trading communities to DeFi infrastructure. Running our own products keeps our engineering honest. Partners get a team that has shipped to mainnet and supported what it shipped.",
    "updatedAt": "2026-10-17T16:10:49.167Z"
+  },
+  {
+   "id": "bfce6515bcbf",
+   "source": "Site",
+   "title": "About Gully Labs",
+   "url": "https://gullylabs.xyz/about",
+   "section": "What we shipped, measured",
+   "text": "from the start of each venue's all-time count to today each venue's own figure, read live",
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "f6c9c9ef7449",
@@ -944,8 +953,8 @@
    "title": "Gully Labs links and contact",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/peddlesnews. For project enquiries use the contact form on https://gullylabs.xyz/services.",
-   "updatedAt": "2026-10-17T18:11:37.628Z"
+   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. For project enquiries use the contact form on https://gullylabs.xyz/services.",
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   }
  ]
 }
