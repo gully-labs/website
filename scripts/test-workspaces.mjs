@@ -13,9 +13,10 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { makeChecker, makeClient } from './test-helpers.mjs'
+import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8794
+await guardTestRun(PORT)
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-workspaces-'))
 

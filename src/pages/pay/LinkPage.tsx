@@ -1,5 +1,5 @@
 import { ArrowRight, Ban, Clock, Loader2, ShieldCheck } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { AssetPicker } from '../../components/pay/AssetPicker'
 import { Seo } from '../../components/Seo'
@@ -10,6 +10,11 @@ import { Missing, Notice, Shell } from './PayPage'
 /* /pay/l/<linkId>: a reusable Gully Pay link. The payer sees what it is for and the amount (or types
    one between the link's bounds), picks an asset, and gets an invoice of their own; the checkout
    (/pay/<invoice>) takes it from there. The server checks the amount, the asset and the link's state. */
+
+// Live charts (ECharts loads with them, on demand): the chosen coin's Chainlink price, and the
+// confirmations each accepted chain needs.
+const PriceChart = lazy(() => import('./PayCharts').then((m) => ({ default: m.PriceChart })))
+const ChainConfirmations = lazy(() => import('./PayCharts').then((m) => ({ default: m.ChainConfirmations })))
 
 type State = { k: 'loading' } | { k: 'missing' } | { k: 'error'; message: string } | { k: 'ok'; link: PayLink }
 
@@ -72,6 +77,9 @@ function LinkView({ link }: { link: PayLink }) {
     else if (toCents(v) < BigInt(open.minCents) || toCents(v) > BigInt(open.maxCents)) amountErr = `From ${open.min} to ${open.max} USD.`
   }
   const ready = !!asset && (!open || (!!usd.trim() && !amountErr))
+  // The coin whose live price is charted: the chosen one when it is a native coin, else the first accepted.
+  const chosen = link.assets.find((a) => a.id === asset)
+  const priceAsset = chosen?.kind === 'native' ? chosen : (link.assets.find((a) => a.kind === 'native') ?? null)
 
   const go = async () => {
     if (!ready || busy) return
@@ -104,6 +112,12 @@ function LinkView({ link }: { link: PayLink }) {
           <ShieldCheck size={15} className="mt-[2px] shrink-0 text-gold" aria-hidden />
           Paid wallet to wallet: your transfer goes straight to the Gully Labs treasury, checked on chain. No account, no card.
         </p>
+        <div className="flex max-w-[620px] flex-col gap-5 rounded-card border border-line bg-surface p-5 max-[600px]:p-4">
+          <Suspense fallback={<span className="block h-[150px] animate-pulse rounded-input bg-surface-deep" />}>
+            {priceAsset && <PriceChart asset={priceAsset} />}
+            <ChainConfirmations assets={link.assets} />
+          </Suspense>
+        </div>
       </div>
 
       <section className="flex min-w-0 flex-col overflow-hidden rounded-card border border-line bg-surface" style={{ animation: 'gl-rise .5s .07s ease both' }} aria-label="Start a payment">

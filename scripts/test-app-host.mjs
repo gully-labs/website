@@ -13,10 +13,11 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { hostRequest, hostSignIn, makeChecker } from './test-helpers.mjs'
+import { guardTestRun, hostRequest, hostSignIn, makeChecker } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8798
 const BASE = `http://localhost:${PORT}`
+await guardTestRun(PORT)
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-app-host-'))
 const dist = path.join(tmp, 'dist')
 fs.mkdirSync(path.join(dist, 'assets'), { recursive: true })

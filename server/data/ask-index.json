@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-17T22:45:47.729Z",
+ "updatedAt": "2026-10-17T22:59:14.062Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -19,6 +19,15 @@
    "section": "What the tracker is",
    "text": "For each stock token the tracker reads two prices: the fair price, from the Chainlink feed for that stock, read on chain; and the onchain price, what the token trades at in its deepest pool. The difference, as a percentage of fair, is the gap. A token trading above its fair price is at a premium; below it, at a discount. The live page is at gullylabs.xyz/tracker. Everything it shows comes from the same public API these docs describe.",
    "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "d3389637d74a",
+   "source": "Docs",
+   "title": "Tokenised stocks, priced two ways",
+   "url": "https://docs.gullylabs.xyz/#live",
+   "section": "Live status",
+   "text": "The public API as your browser sees it right now, checked every 15 seconds, and the widest gaps the tracker stands behind at this moment.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
   },
   {
    "id": "9f45867057fc",
@@ -80,8 +89,17 @@
    "title": "Tracker methodology",
    "url": "https://docs.gullylabs.xyz/methodology#gap",
    "section": "The gap and its status",
-   "text": "Every row carries a status, decided in this order: feed-unreadable (fair is null): The Chainlink feed (or, on BNB Chain, the multiplier) could not be read. pool-unreadable (pool read failed): DexScreener could not be read for this chain. no-pool (onchain is null): No pool with a usable price was found. thin (liquidity < $10,000): The chosen pool is too small to trust. Shown, never flagged. in-line (|gap| < 1%): Within the noise. Robinhood Chain feeds only move on a 0.5% deviation. drifting (1% ≤ |gap| < 2%): Moving away from fair, not yet flagged. premium (gap ≥ 2%): Flagged: trading above fair. discount (gap ≤ −2%): Flagged: trading below fair. The thresholds are returned with every response in rules (minLiquidityUsd, inLinePct, flagPct), so a client never has to hard-code them.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "Every row carries a status, decided in this order: feed-unreadable (fair is null): The Chainlink feed (or, on BNB Chain, the multiplier) could not be read. pool-unreadable (pool read failed): DexScreener could not be read for this chain. no-pool (onchain is null): No pool with a usable price was found. unverified (onchain ≥ 5× or ≤ 1/5 of fair; or |gap| ≥ 15% unless the pool holds $1,000,000+ and was read on chain this cycle): The figure is implausible for a tokenised stock: far more often a bad print (a misread venue, an old API reading, a decimals slip) than a price. gapPct is withheld (null), the figure stays in rawGapPct, and untrustedReason says why. Never flagged, ranked, alerted on or recorded in the history. thin (liquidity < $10,000): The chosen pool is too small to trust. Shown, never flagged. in-line (|gap| < 1%): Within the noise. Robinhood Chain feeds only move on a 0.5% deviation. drifting (1% ≤ |gap| < 2%): Moving away from fair, not yet flagged. premium (gap ≥ 2%): Flagged: trading above fair. discount (gap ≤ −2%): Flagged: trading below fair. The thresholds are returned with every response in rules (minLiquidityUsd, inLinePct, flagPct, implausiblePct, trustLiquidityUsd, unitsRatio), so a client never has to hard-code them. Trust and provenance",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
+   "id": "82289de6035c",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology#gap",
+   "section": "The gap and its status",
+   "text": "Flagged: trading below fair. The thresholds are returned with every response in rules (minLiquidityUsd, inLinePct, flagPct, implausiblePct, trustLiquidityUsd, unitsRatio), so a client never has to hard-code them. Trust and provenance Every row says whether the tracker stands behind its gap. trusted is true only for premium, discount, drifting and in-line rows whose pool read is fresh; otherwise untrustedReason gives the reason in a sentence (a thin pool, an implausible figure, an unreadable source, or a pool read served from the last good one while sources back off). Top movers and gap alerts only ever use trusted rows; the five-minute history skips every row without a gap (an unverified row included) and every stale pool read. onchainSource says where this cycle’s onchain price came from: chain when the pool contract was read directly, api when it is the price API’s reading for a venue that cannot be re-read on chain. onchainAt is when that price was read, so an API reading shows its own age.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
   },
   {
    "id": "9d2d39a53f88",
@@ -125,8 +143,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#basics",
    "section": "Basics",
-   "text": "Base URL (https://gullylabs.xyz): Every endpoint lives under /api/tracker. Methods (GET, OPTIONS): Anything else answers 405. Format (JSON): UTF-8. Times are ISO 8601 in UTC, except history points, which use Unix seconds. CORS (Access-Control-Allow-Origin: *): Call it from any browser origin. Preflight allows the Authorization and Content-Type headers. Auth (Optional): Send Authorization: Bearer <key> for a higher limit. See API keys. Prices are US dollars per token. Any price may be null, meaning it could not be read; it is never replaced with zero.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "Base URL (https://gullylabs.xyz): Every endpoint lives under /api/tracker. Methods (GET, OPTIONS): Anything else answers 405. Format (JSON): UTF-8. Times are ISO 8601 in UTC, except history points, which use Unix seconds. CORS (Access-Control-Allow-Origin: *): Call it from any browser origin. Preflight allows the Authorization and Content-Type headers. Auth (Optional): Send Authorization: Bearer <key> for a higher limit. See API keys. Prices are US dollars per token. Any price may be null, meaning it could not be read; it is never replaced with zero. Live, from your browser: the response time of /api/tracker, measured every 10 seconds while this tab is open, and the rows it returns by status.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
   },
   {
    "id": "3a4c7040af79",
@@ -134,8 +152,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#tracker",
    "section": "GET /api/tracker",
-   "text": "The whole tracker: every chain, the rules, the sources and one row per token. Top level generatedAt (string (ISO)): When this answer was built. chains (Chain[]): One entry per chain, below. rules (object): The thresholds in force: minLiquidityUsd (pools below are “thin”), inLinePct (gaps below are “in line”), flagPct (gaps at or above are flagged). sources (object): fair and onchain describe the two price sources; tables names the feed table used per chain. rows (Row[]): One per token. See Rows. chains[] key (string): Chain key used everywhere else: robinhood or bsc. id (number): EVM chain id (4663, 56). name (string): Display name. sessionOpen (boolean): Whether the chain’s feed session is open now. See sessions. sessionName (string): 24/5 or NYSE hours. fairMethod (string): How fair is derived on this chain, in words. poolsAsOf (string | null): Time of the pool read in use. poolsStale (boolean): True when the pool read is the last good one, served while every price source for that chain is backing off. poolSource (string | null): Where pool prices came from this cycle: on chain, DexScreener or GeckoTerminal.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "The whole tracker: every chain, the rules, the sources and one row per token. Top level generatedAt (string (ISO)): When this answer was built. chains (Chain[]): One entry per chain, below. rules (object): The thresholds in force: minLiquidityUsd (pools below are “thin”), inLinePct (gaps below are “in line”), flagPct (gaps at or above are flagged), implausiblePct (a gap this wide needs a deep pool read on chain to be believed), trustLiquidityUsd (how deep that pool must be) and unitsRatio (an onchain price this many times fair, or this fraction of it, is a units error). sources (object): fair and onchain describe the two price sources; tables names the feed table used per chain. rows (Row[]): One per token. See Rows. chains[] key (string): Chain key used everywhere else: robinhood or bsc. id (number): EVM chain id (4663, 56). name (string): Display name. sessionOpen (boolean): Whether the chain’s feed session is open now. See sessions. sessionName (string): 24/5 or NYSE hours. fairMethod (string): How fair is derived on this chain, in words. poolsAsOf (string | null): Time of the pool read in use. poolsStale (boolean): True when the pool read is the last good one, served while every price source for that chain is backing off. poolSource (string | null): Where pool prices came from this cycle: on chain, DexScreener or GeckoTerminal.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
   },
   {
    "id": "4ee8912f6048",
@@ -143,8 +161,17 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#rows",
    "section": "Rows",
-   "text": "chain (string): Chain key. ticker (string): Stock ticker, e.g. NVDA. name (string): Company name. token (string): Token contract address. feed (string): Chainlink feed address. fair (number | null): Fair price in USD per token. feedPrices (string): tokenized-instrument (the feed prices the token) or underlying-share (it prices the share). multiplier (number | null): Shares per token from uiMultiplier() on BNB Chain; 1 on Robinhood Chain; null when the feed could not be read. feedUpdatedAt (string | null): When the feed last updated. feedError (string | null): Why the feed could not be read, if it could not. onchain (number | null): Price in the chosen pool, USD per token. gapPct (number | null): (onchain − fair) / fair × 100. Null unless both prices were read. status (string): One of premium, discount, drifting, in-line, thin, no-pool, pool-unreadable, feed-unreadable. Rules in the methodology. pool (Pool | null): The pool used, below. poolError (string | null): Why pools could not be read, if they could not. logo (string | null): The stock’s logo: the token’s own where it carries the company mark, else the company’s own site icon. An absolute URL on gullylabs.xyz. chainLogo (string | null): The chain’s logo, an absolute URL on gullylabs.xyz. poolStale (boolean): True when the pool figures are the last good read rather than a fresh one. pool dex (string): The venue’s id, as DexScreener or GeckoTerminal names it. labels (string[]): Venue labels, e.g. v3. against (string): Symbol of the other token in the pool. url (string): The pool on DexScreener or GeckoTerminal. pair (string): Pool address. liquidityUsd (number): Liquidity of this pool. volume24hUsd (number): 24-hour volume of this pool. pools (number): How many pools with a price were found for the token. totalLiquidityUsd (number): Liquidity summed over those pools. totalVolume24hUsd (number): 24-hour volume summed over those pools.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "chain (string): Chain key. ticker (string): Stock ticker, e.g. NVDA. name (string): Company name. token (string): Token contract address. feed (string): Chainlink feed address. fair (number | null): Fair price in USD per token. feedPrices (string): tokenized-instrument (the feed prices the token) or underlying-share (it prices the share). multiplier (number | null): Shares per token from uiMultiplier() on BNB Chain; 1 on Robinhood Chain; null when the feed could not be read. feedUpdatedAt (string | null): When the feed last updated. feedError (string | null): Why the feed could not be read, if it could not. onchain (number | null): Price in the chosen pool, USD per token. gapPct (number | null): (onchain − fair) / fair × 100. Null unless both prices were read, and null on an unverified row (the figure is withheld; see rawGapPct). rawGapPct (number | null): The same gap before the plausibility check. Equal to gapPct on every row except an unverified one, where it keeps the figure that was withheld. Never chart, rank or alert on it. status (string): One of premium, discount, drifting, in-line, thin, unverified, no-pool, pool-unreadable, feed-unreadable. Rules in the methodology. trusted (boolean): Whether the tracker stands behind this row’s gap: true only for premium, discount, drifting and in-line rows whose pool read is fresh (not poolStale). Top movers and gap alerts use trusted rows only.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
+   "id": "d682416d7f92",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#rows",
+   "section": "Rows",
+   "text": "stands behind this row’s gap: true only for premium, discount, drifting and in-line rows whose pool read is fresh (not poolStale). Top movers and gap alerts use trusted rows only. untrustedReason (string | null): Why trusted is false, in a sentence, e.g. The pool holds $4,210, under the $10,000 needed to flag a gap. Null on a trusted row. onchainSource (string | null): chain when this cycle’s onchain price was read from the pool contract itself, api when it is DexScreener’s or GeckoTerminal’s reading (a venue the tracker cannot re-read on chain). Null when there is no onchain price. onchainAt (string | null): When that onchain price was read (ISO). For api prices this can be older than generatedAt. Null when there is no onchain price. pool (Pool | null): The pool used, below. poolError (string | null): Why pools could not be read, if they could not. logo (string | null): The stock’s logo: the token’s own where it carries the company mark, else the company’s own site icon. An absolute URL on gullylabs.xyz. chainLogo (string | null): The chain’s logo, an absolute URL on gullylabs.xyz. poolStale (boolean): True when the pool figures are the last good read rather than a fresh one. pool dex (string): The venue’s id, as DexScreener or GeckoTerminal names it. labels (string[]): Venue labels, e.g. v3. against (string): Symbol of the other token in the pool. url (string): The pool on DexScreener or GeckoTerminal. pair (string): Pool address. liquidityUsd (number): Liquidity of this pool. volume24hUsd (number): 24-hour volume of this pool. pools (number): How many pools with a price were found for the token. totalLiquidityUsd (number): Liquidity summed over those pools. totalVolume24hUsd (number): 24-hour volume summed over those pools.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
   },
   {
    "id": "54037d4d698f",
@@ -198,7 +225,7 @@
    "url": "https://docs.gullylabs.xyz/api#errors",
    "section": "Errors",
    "text": "Errors are JSON with a single error string. 400 (history: chain or ticker malformed): Check the parameters. Body: {\"error\":\"chain and ticker\"}. 400 (movers: window, limit, chain or ticker malformed): Use window=1h or 24h, a limit from 1 to 50, and a ticker only with a chain. 405 (a method other than GET or OPTIONS): Use GET. 401 (unknown or revoked API key): Check the key, or request one at app.gullylabs.xyz. 403 (history: days beyond what your plan includes): Ask for fewer days, or move to a plan with more history. The body names your limit in historyDays. 429 (rate limit exceeded): Wait for Retry-After seconds, or use an API key. 502 (the tracker could not be built at all): Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.",
-   "updatedAt": "2026-10-17T22:45:47.729Z"
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "9eb94f89f74e",
@@ -360,7 +387,7 @@
    "url": "https://docs.gullylabs.xyz/api-keys#get",
    "section": "Getting a key",
    "text": "Keys are free and issued instantly at app.gullylabs.xyz. There is no form and no approval: Press Connect wallet and pick any browser wallet or Coinbase Wallet. Your wallet address is your account; there is no email or password. Sign the message your wallet shows. It is Sign-In with Ethereum (EIP-4361): a signature, not a transaction, so it costs nothing and moves nothing. It names app.gullylabs.xyz, expires after ten minutes and can be used once. Open API keys, press Create key and name it. The key works at once. Copy it then: it is shown in full only once, because we store only a hash of it. Smart-contract wallets (EIP-1271, including ones not deployed yet, ERC-6492) are accepted on Ethereum, Base, BNB Chain and Robinhood Chain. A sign-in lasts 30 days on that browser.",
-   "updatedAt": "2026-10-17T22:45:47.729Z"
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "a0300b79df15",
@@ -453,6 +480,24 @@
    "updatedAt": "2026-10-17T16:09:52.545Z"
   },
   {
+   "id": "14dc9ff4aec8",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#deepcore-launches",
+   "section": "DeepCore launch alerts",
+   "text": "A second kind of alert watches DeepCore, the launchpad and DEX in the Gully Labs family, for new token launches. It has no stock: it watches one DeepCore chain, or every chain when chainId is left empty. deepcore-launch ({ type: \"deepcore-launch\", chainId }): A token launches on DeepCore on that chain: 56 BNB Chain, 999 HyperEVM, 4663 Robinhood Chain or 8453 Base; null for any of them. DeepCore’s public API (GET /v1/launches) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again. Only launches made after the alert was created count (with an hour of slack for indexer lag), so a new alert does not replay the backlog. One delivery at most every 5 minutes per alert: launches seen in the meantime wait and go out together, up to the 20 most recent. A paused, muted or over-the-plan alert neither sends nor queues: launches it missed are not sent later. It counts against your plan’s alerts like a gap alert, and delivers the same way: webhook, Telegram or both, signed the same way (see below). When DeepCore cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
+   "id": "095cdfbbfa53",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#deepcore-launches",
+   "section": "DeepCore launch alerts",
+   "text": "both, signed the same way (see below). When DeepCore cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen. In Telegram, anyone can ask the bot /launches for the five latest DeepCore launches on every chain, or /launches base (also bsc, robinhood, hyperevm, or a chain id) for one chain. It reads the same 90-second cache as the alerts, says when the list is older because DeepCore could not be read, and names any chain DeepCore itself could not read. Launch information is not advice.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
    "id": "034735424bbd",
    "source": "Docs",
    "title": "Plans & alerts",
@@ -480,6 +525,69 @@
    "updatedAt": "2026-10-17T16:09:52.545Z"
   },
   {
+   "id": "c5f50ab0f64d",
+   "source": "Docs",
+   "title": "Teams & workspaces",
+   "url": "https://docs.gullylabs.xyz/teams",
+   "section": null,
+   "text": "Every wallet account is a workspace. Invite teammates by wallet or by link, give each a role, and see who changed what. Share one Gully Labs developer account with a team: workspaces, roles and what each may change, invites by wallet or by link, the activity log and CSV exports of usage and payments.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
+   "id": "3056a8fa129b",
+   "source": "Docs",
+   "title": "Teams & workspaces",
+   "url": "https://docs.gullylabs.xyz/teams#workspaces",
+   "section": "Workspaces",
+   "text": "When a wallet first signs in to the developer portal, it gets its own workspace and is its owner. Everything in the portal belongs to the workspace: API keys, gap and DeepCore launch alerts, the linked Telegram chat, Gully Analytics, the plan and its payments. Members share all of it; nothing is copied per person. The workspace is named after its owner (0x1234…abcd’s workspace) until an admin or the owner renames it. A workspace holds at most 25 people, the owner included, and 20 open invites at a time. Membership is checked on every request. A member who is removed is moved back to their own workspace on their next request. If the owner’s wallet is blocked, the workspace is unavailable to every member.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
+   "id": "03930b1f701b",
+   "source": "Docs",
+   "title": "Teams & workspaces",
+   "url": "https://docs.gullylabs.xyz/teams#roles",
+   "section": "Roles",
+   "text": "Every member can see everything in the workspace. A role decides what they may change: owner (everything): The wallet that owns the workspace. Cannot be removed or demoted, and is the only one who can add, change or remove admins. admin (keys, alerts, Telegram, Gully Analytics, billing, company details, the team): Invites and manages developers, billing members and viewers, and renames the workspace. developer (keys, alerts, Telegram, Gully Analytics): Creates, renames, rotates and revokes keys; manages alerts and analytics websites; can open Gully Analytics in one click (see single sign-on). Cannot pay or manage the team. billing (billing, company details): Buys and renews plans (tracker API and Gully Analytics) and keeps the invoice details current. viewer (nothing): Read-only: keys (prefixes only), usage, alerts, billing and the activity log. Your own profile, your sign-in sessions, switching workspace, leaving one and accepting an invite are open to every role. A request beyond your role answers 403 with {\"code\":\"forbidden-role\"}.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
+   "id": "0f4c3542d76e",
+   "source": "Docs",
+   "title": "Teams & workspaces",
+   "url": "https://docs.gullylabs.xyz/teams#invites",
+   "section": "Invites",
+   "text": "Owners and admins invite from the Team tab, in two ways: By wallet. Enter the teammate’s address. The invite waits for that wallet: they sign in to the portal and accept it there. Nobody else can use it. By link. The portal makes a link (https://app.gullylabs.xyz/#invite=…) that anyone who signs in with a wallet can accept, once. The link is shown once; only a hash of it is kept, so it cannot be shown again. Send it privately. Every invite carries the role it grants and expires after 7 days. Accepted, revoked and expired invites stop working at once. Open invites can be revoked from the Team tab. Only the owner can invite, or revoke the invite of, an admin. Opening a link shows the workspace name, the role and who invited you before you accept. Unknown links and repeated attempts are rate limited per address. Owners and admins change a member’s role or remove them from the Team tab. Removing someone moves their sessions back to their own workspace, which is untouched.",
+   "updatedAt": "2026-10-17T22:59:14.062Z"
+  },
+  {
+   "id": "df45d819ee20",
+   "source": "Docs",
+   "title": "Teams & workspaces",
+   "url": "https://docs.gullylabs.xyz/teams#switching",
+   "section": "Switching and leaving",
+   "text": "If you belong to more than one workspace, the portal’s workspace switcher lists yours first, then the others by name. The choice is kept for that sign-in session only, so two browsers can work in two workspaces. Members can leave a workspace from the Team tab; the owner cannot leave their own.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
+   "id": "5b4ad0d4ad1d",
+   "source": "Docs",
+   "title": "Teams & workspaces",
+   "url": "https://docs.gullylabs.xyz/teams#activity",
+   "section": "Activity log",
+   "text": "The Activity tab lists who did what in the workspace, newest first, 50 at a time. It records: Keys: key.created, key.renamed, key.rotated, key.revoked, key.linked. Alerts and Telegram: alert.created, alert.updated, alert.tested, alert.deleted, telegram.linked, telegram.unlinked. Billing and analytics: billing.quote, billing.paid, analytics.trial, analytics.site_added, analytics.site_removed, analytics.password_reset, analytics.quote, analytics.plan. Team and account: team.invited, team.invite_revoked, team.joined, team.role_changed, team.removed, team.left, workspace.renamed, company.updated, profile.updated, sessions.revoked. Usage: usage.threshold, by system, when the workspace’s busiest key passes 80% or 100% of the plan’s per-minute limit (at most once a day per threshold). The owner can also have it sent to Telegram from their profile. Only successful changes are logged, and never a secret. A workspace keeps its newest 1,000 events and nothing older than 180 days. Reading it from code Page backwards by passing the previous page’s nextCursor as ?cursor=. A cursor that has aged out answers 400: start again from the first page.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
+   "id": "77cfee1c8d88",
+   "source": "Docs",
+   "title": "Teams & workspaces",
+   "url": "https://docs.gullylabs.xyz/teams#exports",
+   "section": "CSV exports",
+   "text": "Two downloads from the portal, for whatever workspace is active. Any member, viewers included, can download them. usage.csv (one per time bucket and key): Requests made with the workspace’s keys: hourly buckets for 24h and 7d, daily (UTC) for 30d. client_err is 4xx other than 429, limited is 429, server_err is 5xx. payments.csv (one per payment, oldest first): Every payment for the workspace’s plans (tracker API and Gully Analytics), with the asset, chain, transaction hash and an explorer link. Every text cell that starts with =, +, -, @, a tab or a carriage return gets a leading ', so a spreadsheet shows it as text instead of running it as a formula. Cells with commas, quotes or line breaks are quoted. Files are UTF-8 with CRLF line ends.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
+  },
+  {
    "id": "7fb0b6c4a793",
    "source": "Docs",
    "title": "Gully Analytics",
@@ -496,6 +604,15 @@
    "section": "Sign up",
    "text": "Open the developer portal, connect a wallet and sign the sign-in message (no transaction, no gas). In the Analytics tab press Start free trial. The server creates a Gully Analytics login for your wallet and shows its password once; copy it. We do not keep the password. Reset password in the same tab sets a new one and signs out open sessions. Add a website with its name and domain. The tab shows its website id, the install snippet, a link to its dashboard and the events counted this month. The free trial runs once per wallet. After it, choose a plan in the same tab to keep recording.",
    "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "9432826f1388",
+   "source": "Docs",
+   "title": "Gully Analytics",
+   "url": "https://docs.gullylabs.xyz/analytics#sign-in",
+   "section": "Sign in",
+   "text": "The quickest way in is Open Gully Analytics in the Analytics tab of the developer portal. It signs you straight in to the dashboard, with no password to type: the portal asks the server for a one-time sign-in link (POST /api/developer/analytics/sso), and the browser opens it on analytics.gullylabs.xyz. The link works once and only for 60 seconds, from the browser that asked for it. Only a hash of it is kept. Owners, admins and developers of the workspace can use it; billing members and viewers cannot. Everyone in the workspace opens the same Gully Analytics account. It never shows, changes or resets the account’s password, so a password you saved keeps working. The password login at analytics.gullylabs.xyz/login still works for anyone with the password. Forgot it? Reset password in the portal’s Analytics tab sets a new one.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
   },
   {
    "id": "f24fce492305",
@@ -557,8 +674,8 @@
    "title": "Gully Pay",
    "url": "https://docs.gullylabs.xyz/gully-pay#overview",
    "section": "Overview",
-   "text": "An invoice (/pay/inv_…) asks for one US dollar amount. The payer picks a chain and an asset and gets a quote: the exact amount to send, valid for 20 minutes. Stablecoins count one to one with a unique tag in the last digits; ETH and BNB are priced by the Chainlink USD feed on the same chain. A payment is checked on chain (success, right chain, right asset, the treasury, the exact amount, enough confirmations, never used before) before the invoice is marked paid. The same rules as API plans apply. Base (8453) (10): USDC (6 decimals), ETH Ethereum (1) (6): USDC, USDT (6 decimals), ETH BNB Chain (56) (15): USDT, USDC (18 decimals), BNB Arbitrum (42161) (10): USDC (6 decimals), ETH Nothing is held in between: the transfer goes to the treasury in the payer’s own transaction. If no treasury is configured, every page says checkout is closed and shows no amount or QR.",
-   "updatedAt": "2026-10-17T17:00:51.286Z"
+   "text": "An invoice (/pay/inv_…) asks for one US dollar amount. The payer picks a chain and an asset and gets a quote: the exact amount to send, valid for 20 minutes. Stablecoins count one to one with a unique tag in the last digits; ETH and BNB are priced by the Chainlink USD feed on the same chain. A payment is checked on chain (success, right chain, right asset, the treasury, the exact amount, enough confirmations, never used before) before the invoice is marked paid. The same rules as API plans apply. Base (8453) (10): USDC (6 decimals), ETH Ethereum (1) (6): USDC, USDT (6 decimals), ETH BNB Chain (56) (15): USDT, USDC (18 decimals), BNB Arbitrum (42161) (10): USDC (6 decimals), ETH The live list, read from GET /api/plans as you look at this page (hover a chain for its assets and confirmations): Nothing is held in between: the transfer goes to the treasury in the payer’s own transaction. If no treasury is configured, every page says checkout is closed and shows no amount or QR.",
+   "updatedAt": "2026-10-17T21:53:33.471Z"
   },
   {
    "id": "aecd2bb90e1b",
@@ -729,7 +846,7 @@
    "url": "https://gullylabs.xyz/services",
    "section": "Build with the team behind the projects",
    "text": "We take on a small number of partner engagements alongside our own releases, using the same people and the same stack. The venues this team built, read live from each one's own API: daily volume, stacked by venue.",
-   "updatedAt": "2026-10-17T22:45:47.729Z"
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "c25c6a4a4899",
@@ -756,7 +873,7 @@
    "url": "https://gullylabs.xyz/about",
    "section": "What we shipped, measured",
    "text": "from the start of each venue's all-time count to today each venue's own figure, read live",
-   "updatedAt": "2026-10-17T22:45:47.729Z"
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   },
   {
    "id": "f6c9c9ef7449",
@@ -836,8 +953,8 @@
    "title": "Gully Labs links and contact",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsBot. For project enquiries use the contact form on https://gullylabs.xyz/services.",
-   "updatedAt": "2026-10-17T22:45:47.729Z"
+   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. For project enquiries use the contact form on https://gullylabs.xyz/services.",
+   "updatedAt": "2026-10-17T22:59:14.062Z"
   }
  ]
 }

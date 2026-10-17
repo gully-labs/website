@@ -103,10 +103,13 @@ const notifyHits = new Map()
 function securityHeaders(host) {
   const local = /^(localhost|127.0.0.1|[::1])$/.test(host)
   const strict = host.startsWith('admin.') || isAppHost(host) || isLegacyDevelopersHost(host)
+  // The docs host runs the widget's live examples, which load https://gullylabs.xyz/widget.js (its
+  // reads of /api/tracker and the logos are covered by connect-src https: and img-src https:).
+  const docs = host.startsWith('docs.') || local
   const csp = [
     "default-src 'self'",
     // Cloudflare Web Analytics is enabled on the zone and injects its beacon into every page.
-    "script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz",
+    `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz' : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
@@ -317,7 +320,7 @@ const server = http.createServer(async (req, res) => {
     fs.readFile(INDEX, 'utf8', (e, html) => {
       if (e) return send(res, 500, '')
       const meta = pageMeta(host, url.pathname)
-      res.writeHead(meta.found || isLocal ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
+      res.writeHead(meta.found ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
       res.end(req.method === 'HEAD' ? undefined : renderHead(html, meta))
     })
   })
@@ -349,15 +352,44 @@ server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), flushAnalyticsUsage(), process.exit(0)))
 // Gap alerts are evaluated on every recorded tracker snapshot.
 onSnapshot((rows, at) => evaluateAlerts(rows, at))
-// TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.
-if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
 // DeepCore launch alerts run on every DeepCore poll (DEEPCORE_LOOP=off in tests: polled on demand).
 onLaunches((fresh, at) => evaluateLaunchAlerts(fresh, at))
-startDeepcore()
-// The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
-startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
-// Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.
-startAsk()
+
+/* Background loops (upstream polls that fire alerts, the Telegram webhook, Gully Ask's refresh). During a
+   zero-downtime deploy (ops/deploy.sh) the new container starts with GULLY_STANDBY=1: it answers requests
+   (health checks, warm-up) but runs no loops, so alerts are not sent twice while the old container still
+   serves. The deploy promotes it with SIGUSR2 once traffic is on it. Promotion is remembered in the data
+   volume per container (its hostname is the container id), so a later restart of the same container
+   starts its loops at once. */
+let loopsStarted = false
+function startLoops() {
+  if (loopsStarted) return
+  loopsStarted = true
+  // TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.
+  if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
+  startDeepcore()
+  // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
+  startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
+  // Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.
+  startAsk()
+}
+const PROMOTED = path.join(DATA_DIR, `.promoted-${(process.env.HOSTNAME ?? 'local').replace(/[^\w-]/g, '')}`)
+if (process.env.GULLY_STANDBY !== '1' || fs.existsSync(PROMOTED)) startLoops()
+else console.log('standby: serving requests; background loops wait for SIGUSR2 (ops/deploy.sh)')
+process.on('SIGUSR2', () => {
+  if (loopsStarted) return
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true })
+    fs.writeFileSync(PROMOTED, new Date().toISOString())
+    // Markers of containers that no longer exist are tiny; keep the newest five.
+    const old = fs.readdirSync(DATA_DIR).filter((f) => f.startsWith('.promoted-')).map((f) => [f, fs.statSync(path.join(DATA_DIR, f)).mtimeMs]).sort((a, b) => b[1] - a[1]).slice(5)
+    for (const [f] of old) fs.rmSync(path.join(DATA_DIR, f), { force: true })
+  } catch (e) {
+    console.error('promote marker:', e?.message ?? e)
+  }
+  console.log('promoted: starting background loops')
+  startLoops()
+})
 
 // Optional public port for Cloudflare. It speaks both HTTPS and plain HTTP on the
 // same port (sniffing the first byte), so it works whatever the zone's SSL mode is.

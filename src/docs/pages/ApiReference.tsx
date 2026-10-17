@@ -1,6 +1,7 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, H3, P, Section } from '../DocPage'
 import { EXAMPLE_HISTORY, EXAMPLE_TRACKER, FETCHED_AT, TRACKER_ROWS_AT_FETCH } from '../examples'
+import { LatencySpark, StatusRing } from '../LiveCharts'
 
 const sections = [
   { id: 'basics', title: 'Basics' },
@@ -35,9 +36,9 @@ if (res.status === 429) {
 if (!res.ok) throw new Error(\`Tracker answered \${res.status}\`)
 const tracker = await res.json()
 
-// The widest trusted gaps: skip thin pools and unreadable prices.
+// The widest trusted gaps: skips thin pools, unverified and unreadable prices.
 const widest = tracker.rows
-  .filter((r) => r.gapPct !== null && r.status !== 'thin')
+  .filter((r) => r.trusted && r.gapPct !== null)
   .sort((a, b) => Math.abs(b.gapPct) - Math.abs(a.gapPct))
   .slice(0, 5)`
 
@@ -63,6 +64,11 @@ export function ApiReference() {
           ]}
         />
         <P>Prices are US dollars per token. Any price may be <C>null</C>, meaning it could not be read; it is never replaced with zero.</P>
+        <P>Live, from your browser: the response time of <C>/api/tracker</C>, measured every 10 seconds while this tab is open, and the rows it returns by status.</P>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-3">
+          <LatencySpark path="/api/tracker" />
+          <StatusRing />
+        </div>
       </Section>
 
       <Section id="tracker" title="GET /api/tracker">
@@ -72,7 +78,7 @@ export function ApiReference() {
           rows={[
             ['generatedAt', 'string (ISO)', 'When this answer was built.'],
             ['chains', 'Chain[]', 'One entry per chain, below.'],
-            ['rules', 'object', <>The thresholds in force: <C>minLiquidityUsd</C> (pools below are “thin”), <C>inLinePct</C> (gaps below are “in line”), <C>flagPct</C> (gaps at or above are flagged).</>],
+            ['rules', 'object', <>The thresholds in force: <C>minLiquidityUsd</C> (pools below are “thin”), <C>inLinePct</C> (gaps below are “in line”), <C>flagPct</C> (gaps at or above are flagged), <C>implausiblePct</C> (a gap this wide needs a deep pool read on chain to be believed), <C>trustLiquidityUsd</C> (how deep that pool must be) and <C>unitsRatio</C> (an onchain price this many times fair, or this fraction of it, is a units error).</>],
             ['sources', 'object', <><C>fair</C> and <C>onchain</C> describe the two price sources; <C>tables</C> names the feed table used per chain.</>],
             ['rows', 'Row[]', <>One per token. See <DocLink to="api" hash="rows">Rows</DocLink>.</>],
           ]}
@@ -107,8 +113,13 @@ export function ApiReference() {
             ['feedUpdatedAt', 'string | null', 'When the feed last updated.'],
             ['feedError', 'string | null', 'Why the feed could not be read, if it could not.'],
             ['onchain', 'number | null', 'Price in the chosen pool, USD per token.'],
-            ['gapPct', 'number | null', '(onchain − fair) / fair × 100. Null unless both prices were read.'],
-            ['status', 'string', <>One of <C>premium</C>, <C>discount</C>, <C>drifting</C>, <C>in-line</C>, <C>thin</C>, <C>no-pool</C>, <C>pool-unreadable</C>, <C>feed-unreadable</C>. Rules in the <DocLink to="methodology" hash="gap">methodology</DocLink>.</>],
+            ['gapPct', 'number | null', <>(onchain − fair) / fair × 100. Null unless both prices were read, and null on an <C>unverified</C> row (the figure is withheld; see <C>rawGapPct</C>).</>],
+            ['rawGapPct', 'number | null', <>The same gap before the plausibility check. Equal to <C>gapPct</C> on every row except an <C>unverified</C> one, where it keeps the figure that was withheld. Never chart, rank or alert on it.</>],
+            ['status', 'string', <>One of <C>premium</C>, <C>discount</C>, <C>drifting</C>, <C>in-line</C>, <C>thin</C>, <C>unverified</C>, <C>no-pool</C>, <C>pool-unreadable</C>, <C>feed-unreadable</C>. Rules in the <DocLink to="methodology" hash="gap">methodology</DocLink>.</>],
+            ['trusted', 'boolean', <>Whether the tracker stands behind this row’s gap: true only for <C>premium</C>, <C>discount</C>, <C>drifting</C> and <C>in-line</C> rows whose pool read is fresh (not <C>poolStale</C>). Top movers and gap alerts use trusted rows only.</>],
+            ['untrustedReason', 'string | null', <>Why <C>trusted</C> is false, in a sentence, e.g. <C>The pool holds $4,210, under the $10,000 needed to flag a gap.</C> Null on a trusted row.</>],
+            ['onchainSource', 'string | null', <><C>chain</C> when this cycle’s onchain price was read from the pool contract itself, <C>api</C> when it is DexScreener’s or GeckoTerminal’s reading (a venue the tracker cannot re-read on chain). Null when there is no onchain price.</>],
+            ['onchainAt', 'string | null', <>When that onchain price was read (ISO). For <C>api</C> prices this can be older than <C>generatedAt</C>. Null when there is no onchain price.</>],
             ['pool', 'Pool | null', 'The pool used, below.'],
             ['poolError', 'string | null', 'Why pools could not be read, if they could not.'],
             ['logo', 'string | null', 'The stock’s logo: the token’s own where it carries the company mark, else the company’s own site icon. An absolute URL on gullylabs.xyz.'],

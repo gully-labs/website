@@ -86,6 +86,10 @@ const CARDS = [
     html: page({ eyebrow: 'Docs', title: 'Gully Labs <em>docs</em>', body: 'Methodology, the public API, the widget and API keys.', url: 'docs.gullylabs.xyz', right: codeCard('<span style="color:#e8c060">GET</span> /api/tracker<br><span style="color:#e8c060">GET</span> /api/tracker/history<br><br><span style="color:#6c7888"># 60 calls a minute, no key</span><br><span style="color:#6c7888"># 600 with a key</span>') }),
   },
   {
+    file: 'og-ask.png',
+    html: page({ eyebrow: 'Gully AI', title: 'Ask <em>Gully AI</em>', body: 'Answers about the tracker, its API, plans and products, from the docs and the site, with sources.', url: 'gullylabs.xyz/ask', right: codeCard('<span style="color:#6c7888"># you</span><br>How do gap alerts work?<br><br><span style="color:#6c7888"># Gully AI</span><br>An alert fires when a stock\'s<br>gap crosses your threshold <span style="color:#e8c060">[1]</span><br><br><span style="color:#6c7888">[1] docs · Plans &amp; alerts</span>') }),
+  },
+  {
     file: 'og-developers.png',
     html: page({ eyebrow: 'Gully Labs App', title: 'Build on <em>live data</em>', body: 'API keys, alerts, analytics and payments for every Gully Labs product, in one app.', url: 'app.gullylabs.xyz', right: codeCard('curl gullylabs.xyz/api/tracker \\<br>&nbsp;&nbsp;-H "Authorization: Bearer <span style="color:#1f9e89">gl_live_…</span>"') }),
   },

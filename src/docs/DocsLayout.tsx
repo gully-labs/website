@@ -1,4 +1,4 @@
-import { Activity, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2, History, Home, KeyRound, Menu, Package, Puzzle, Wallet, X, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2, History, Home, KeyRound, Menu, MessageCircleQuestion, Package, Puzzle, Tags, Users, Wallet, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useResolvedPath } from 'react-router'
 import { Wordmark } from '../components/Wordmark'
@@ -35,7 +35,7 @@ function ApiPill() {
   )
 }
 
-const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, changelog: History }
+const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, teams: Users, changelog: History }
 
 function SideLink({ slug, title, onPick }: { slug: DocSlug; title: string; onPick: () => void }) {
   const href = useDocHref(slug)
@@ -72,6 +72,9 @@ function Sidebar({ onPick }: { onPick: () => void }) {
         {[
           { label: 'Live tracker', href: `${SITE}/tracker`, icon: Activity },
           { label: 'Widget builder', href: `${SITE}/widget`, icon: Puzzle },
+          { label: 'Gully AI', href: `${SITE}/ask`, icon: MessageCircleQuestion },
+          { label: 'Alerts', href: `${SITE}/#alerts`, icon: BellRing },
+          { label: 'Pricing', href: `${SITE}/pricing`, icon: Tags },
           { label: 'Developer portal', href: 'https://app.gullylabs.xyz', icon: KeyRound },
         ].map((l) => (
           <a key={l.href} href={l.href} className="group flex min-h-10 items-center gap-3 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
@@ -110,8 +113,8 @@ export function DocsLayout() {
         Skip to content
       </a>
       <header className="sticky top-0 z-40 border-b border-line bg-[rgba(11,14,19,.86)] backdrop-blur-md">
-        <div className="mx-auto flex h-[64px] max-w-[1440px] items-center justify-between gap-4 px-6 max-[600px]:px-4">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="mx-auto flex h-[64px] max-w-[1440px] items-center justify-between gap-4 px-6 max-[600px]:gap-2 max-[600px]:px-4">
+          <div className="flex min-w-0 items-center gap-3 max-[600px]:gap-2">
             <button
               type="button"
               aria-label={open ? 'Close the docs menu' : 'Open the docs menu'}
@@ -122,12 +125,13 @@ export function DocsLayout() {
             >
               {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
             </button>
-            <NavLink to={home} end className="flex min-h-11 items-center gap-3 text-ink no-underline" aria-label="Gully Labs Docs, home">
+            <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline" aria-label="Gully Labs Docs, home">
               <Wordmark size={22} />
-              <span className="rounded-full border border-gold-line px-[9px] py-[2px] font-mono text-[11px] tracking-[1px] text-gold">DOCS</span>
+              {/* Below 440px the header has no room for the pill beside the menu, Ask and site buttons. */}
+              <span className="shrink-0 rounded-full border border-gold-line px-[9px] py-[2px] font-mono text-[11px] tracking-[1px] text-gold max-[439px]:hidden">DOCS</span>
             </NavLink>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <AskLauncher />
             <span className="max-[520px]:hidden">
               <ApiPill />
@@ -136,7 +140,8 @@ export function DocsLayout() {
               Tracker <ArrowUpRight size={14} aria-hidden />
             </a>
             <a href={SITE} className="inline-flex min-h-11 items-center gap-1 rounded-btn border border-line-strong px-3 text-[14px] text-ink transition-colors hover:border-gold hover:text-ink">
-              gullylabs.xyz <ArrowUpRight size={14} aria-hidden />
+              <span className="max-[389px]:hidden">gullylabs.xyz</span>
+              <span className="sr-only min-[390px]:hidden">gullylabs.xyz</span> <ArrowUpRight size={14} aria-hidden />
             </a>
           </div>
         </div>

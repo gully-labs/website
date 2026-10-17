@@ -13,7 +13,7 @@ export const SHARE = {
 export const socialLinks = [
   { label: 'X', href: 'https://x.com/Gully_Labs', name: 'X' },
   { label: 'GitHub', href: 'https://github.com/gully-labs', name: 'GitHub' },
-  { label: 'Telegram', href: 'https://t.me/GullyLabsBot', name: 'Telegram bot' },
+  { label: 'Telegram', href: 'https://t.me/GullyLabsNews', name: 'Gully Labs News on Telegram' },
 ] as const
 
 export type SocialLabel = (typeof socialLinks)[number]['label']

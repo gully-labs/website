@@ -101,3 +101,64 @@ export async function hostSignIn(base, host, account, { domain = host } = {}) {
   const signature = await account.signMessage({ message })
   return hostRequest(base, host, '/api/developer/siwe', { method: 'POST', body: { message, signature }, headers: { 'x-requested-with': 'gully', origin: `https://${host}` } })
 }
+
+/* ------------------------------------------------------------- run guard --- */
+// Every suite that starts the server in its own process calls guardTestRun(PORT) first:
+// - it fails fast, with a clear message, when TEST_PORT is already taken (a leftover server would otherwise
+//   answer this suite's requests and make it fail in confusing ways);
+// - children registered with track() are killed on exit, on SIGINT/SIGTERM and on an uncaught error;
+// - a watchdog ends a suite that hangs (for example waiting on a child that never exits), so no server
+//   is left listening after the script.
+
+import net from 'node:net'
+
+const children = new Set()
+
+/** Registers a spawned child so it is killed whenever this test process ends. Returns the child. */
+export function track(child) {
+  children.add(child)
+  child.once('exit', () => children.delete(child))
+  return child
+}
+
+function killChildren() {
+  for (const c of children) {
+    try {
+      c.kill('SIGKILL')
+    } catch {
+      /* already gone */
+    }
+  }
+  children.clear()
+}
+
+/** Resolves when `port` is free on localhost; exits the process with a clear message when it is not. */
+export async function guardTestRun(port, { watchdogMs = 5 * 60_000, name = process.argv[1]?.split(/[\/]/).pop() } = {}) {
+  const busy = await new Promise((resolve) => {
+    const s = net.createServer()
+    s.once('error', (e) => resolve(e.code === 'EADDRINUSE' ? true : false))
+    s.listen(port, () => s.close(() => resolve(false)))
+  })
+  if (busy) {
+    console.error(`${name}: port ${port} is already in use (a server left over from an earlier run?). Stop it or set TEST_PORT to a free port.`)
+    process.exit(2)
+  }
+  process.on('exit', killChildren)
+  for (const sig of ['SIGINT', 'SIGTERM']) {
+    process.on(sig, () => {
+      killChildren()
+      process.exit(130)
+    })
+  }
+  process.on('uncaughtException', (e) => {
+    console.error(`${name}: uncaught ${e?.stack ?? e}`)
+    killChildren()
+    process.exit(1)
+  })
+  const dog = setTimeout(() => {
+    console.error(`${name}: timed out after ${Math.round(watchdogMs / 1000)} s; stopping the server and any child processes.`)
+    killChildren()
+    process.exit(1)
+  }, watchdogMs)
+  dog.unref()
+}
