@@ -1,6 +1,7 @@
 import { ArrowUpRight, CornerDownLeft, LoaderCircle, RotateCcw, Sparkles } from 'lucide-react'
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { AskFailure, askStatus, postAsk, type AskAnswer, type AskStatus, type Citation, type Turn } from './askApi'
+import { toastError } from '../ui/toast'
 
 /* Gully Ask: a question box with answers drawn from the docs and the site, each with numbered sources.
    Used by the /ask page (variant "page") and the docs' Ask Gully side panel / sheet (variant "panel").
@@ -164,6 +165,9 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
       if ((e as Error)?.name === 'AbortError') return
       const msg = e instanceof AskFailure ? e.message : 'Something went wrong. Try again.'
       setLog((l) => l.map((x) => (x.id === id ? { ...x, error: msg } : x)))
+      // The error also shows under the question with Try again; the toast is what screen readers hear
+      // (the answer log only announces additions) and what you see if you scrolled away.
+      toastError('Gully Ask could not answer', { detail: msg, id: 'ask:error' })
     } finally {
       setBusy(false)
       setStage('')

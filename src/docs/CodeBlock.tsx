@@ -1,5 +1,6 @@
 import { Check, Copy } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { copyWithToast } from '../components/ui/toast'
 import { TINT, tint, type Lang } from './tint'
 
 const LABEL: Record<Lang, string> = { json: 'JSON', js: 'JavaScript', html: 'HTML', bash: 'Shell', text: 'Text' }
@@ -9,13 +10,11 @@ export function CodeBlock({ code, lang, caption, wrap = false }: { code: string;
   const tokens = useMemo(() => tint(code, lang), [code, lang])
   const [copied, setCopied] = useState(false)
   const copy = () => {
-    navigator.clipboard?.writeText(code).then(
-      () => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 1600)
-      },
-      () => undefined,
-    )
+    copyWithToast(code, lang === 'bash' ? 'Command' : 'Snippet').then((ok) => {
+      if (!ok) return
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    })
   }
   return (
     <figure className="m-0 flex min-w-0 flex-col overflow-hidden rounded-[10px] border border-line bg-surface-deep">

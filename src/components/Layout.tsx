@@ -6,6 +6,8 @@ import { ContactContext } from './ContactContext'
 import { emptyForm, type ContactForm } from './contactForm'
 import { Footer } from './Footer'
 import { Header } from './Header'
+import { scrollBehavior } from './LayoutNav'
+import { BackToTop } from './LayoutScroll'
 
 // The contact modal (and the animation library it uses) loads the first time it is opened, so the
 // landing never downloads it.
@@ -13,7 +15,8 @@ const ContactModal = lazy(() => import('./ContactModal').then((m) => ({ default:
 
 const HEADER_OFFSET = 72
 
-/** Scrolls to the top on page change, or smoothly to #hash (minus the sticky header). */
+/** Scrolls to the top on page change, or to #hash (minus the sticky header): smoothly, unless the
+    visitor asked for reduced motion. */
 function useScrollOnNavigate() {
   const location = useLocation()
   const navType = useNavigationType()
@@ -25,7 +28,7 @@ function useScrollOnNavigate() {
       const el = id ? document.getElementById(id) : null
       window.scrollTo({
         top: el ? el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET : 0,
-        behavior: el ? 'smooth' : 'instant',
+        behavior: el ? scrollBehavior() : 'instant',
       })
     }, 20)
     return () => clearTimeout(timer)
@@ -75,11 +78,12 @@ export function Layout() {
             Skip to content
           </a>
           <Header />
-          <main id="main" key={pathname} className="animate-[gl-fade_.25s_ease-out_both]">
+          <main id="main" key={pathname} tabIndex={-1} className="animate-[gl-fade_.25s_ease-out_both] outline-none">
             <Outlet />
           </main>
           <ClosingCta />
           <Footer />
+          <BackToTop />
           {everOpened && (
             <Suspense fallback={null}>
               <ContactModal open={open} onClose={closeContact} form={form} setForm={setForm} sent={sent} setSent={setSent} />

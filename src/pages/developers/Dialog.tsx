@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { copyWithToast } from '../../components/ui/toast'
 
 /** A modal dialog: Escape closes, Tab stays inside, focus returns to where it was. */
 export function Dialog({ open, onClose, title, children, dismissable = true }: { open: boolean; onClose: () => void; title: string; children: ReactNode; dismissable?: boolean }) {
@@ -69,23 +70,21 @@ export function Dialog({ open, onClose, title, children, dismissable = true }: {
   )
 }
 
-/** A copy-to-clipboard button. */
-export function CopyButton({ text, label = 'Copy', className = '' }: { text: string; label?: string; className?: string }) {
+/** A copy-to-clipboard button. `what` names the thing in the toast ("Key copied"). */
+export function CopyButton({ text, label = 'Copy', what = 'Text', className = '' }: { text: string; label?: string; what?: string; className?: string }) {
   const [done, setDone] = useState(false)
   return (
     <button
       type="button"
       onClick={() =>
-        navigator.clipboard?.writeText(text).then(
-          () => {
-            setDone(true)
-            setTimeout(() => setDone(false), 1600)
-          },
-          () => undefined,
-        )
+        copyWithToast(text, what).then((ok) => {
+          if (!ok) return
+          setDone(true)
+          setTimeout(() => setDone(false), 1600)
+        })
       }
       className={`inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-btn border px-3 font-mono text-[12px] transition-colors ${done ? 'border-success-line text-green' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'} ${className}`}
-      aria-live="polite"
+      aria-label={done ? `${what} copied` : `Copy ${what.toLowerCase()}`}
     >
       {done ? 'Copied' : label}
     </button>

@@ -6,6 +6,7 @@ import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import { ago, api, fmtDate, type Account, type ApiKey, type RecentRequest, type Usage } from './api'
 import { Spark } from './charts'
 import { CopyButton, Dialog } from './Dialog'
+import { toastSuccess } from '../../components/ui/toast'
 import { Empty, ErrorLine, Skeleton } from './parts'
 import { chip, input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
 import { keyColors } from './helpers'
@@ -109,8 +110,16 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
   const submitName = (e: FormEvent) => {
     e.preventDefault()
     if (!dialog) return
-    if (dialog.kind === 'create') act('/api/developer/keys', { name }, (d) => setDialog({ kind: 'secret', key: d.key, secret: d.secret ?? '', rotated: false }))
-    else if (dialog.kind === 'rename') act(`/api/developer/keys/${dialog.key.id}/rename`, { name }, close)
+    if (dialog.kind === 'create')
+      act('/api/developer/keys', { name }, (d) => {
+        toastSuccess('Key created', { detail: `${d.key.name}: copy its secret now, it is shown once.` })
+        setDialog({ kind: 'secret', key: d.key, secret: d.secret ?? '', rotated: false })
+      })
+    else if (dialog.kind === 'rename')
+      act(`/api/developer/keys/${dialog.key.id}/rename`, { name }, (d) => {
+        toastSuccess('Key renamed', { detail: d.key.name })
+        close()
+      })
   }
 
   const colors = keyColors(account.keys)
@@ -284,11 +293,21 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
                 Cancel
               </button>
               {dialog.kind === 'rotate' ? (
-                <button type="button" disabled={busy} onClick={() => act(`/api/developer/keys/${dialog.key.id}/rotate`, {}, (d) => setDialog({ kind: 'secret', key: d.key, secret: d.secret ?? '', rotated: true }))} className={pillGold}>
+                <button type="button" disabled={busy} onClick={() =>
+                    act(`/api/developer/keys/${dialog.key.id}/rotate`, {}, (d) => {
+                      toastSuccess('Secret rotated', { detail: `${d.key.name}: the old secret stopped working.` })
+                      setDialog({ kind: 'secret', key: d.key, secret: d.secret ?? '', rotated: true })
+                    })
+                  } className={pillGold}>
                   {busy ? 'Rotating…' : 'Rotate'}
                 </button>
               ) : (
-                <button type="button" disabled={busy} onClick={() => act(`/api/developer/keys/${dialog.key.id}/revoke`, {}, close)} className={pillDanger}>
+                <button type="button" disabled={busy} onClick={() =>
+                    act(`/api/developer/keys/${dialog.key.id}/revoke`, {}, (d) => {
+                      toastSuccess('Key revoked', { detail: `${d.key.name} no longer works.` })
+                      close()
+                    })
+                  } className={pillDanger}>
                   {busy ? 'Revoking…' : 'Revoke key'}
                 </button>
               )}
@@ -310,7 +329,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
                 <code className="min-w-0 flex-1 font-mono text-[13px] break-all text-gold" data-testid="new-secret">
                   {dialog.secret}
                 </code>
-                <CopyButton text={dialog.secret} />
+                <CopyButton text={dialog.secret} what="Key" />
               </div>
             </div>
             <div className="flex justify-end">
@@ -350,6 +369,7 @@ function LinkDialog({ open, onClose, reload }: { open: boolean; onClose: () => v
           setBusy(false)
           if (!r.ok) return setErr(r.error)
           await reload()
+          toastSuccess('Key linked', { detail: 'It is now managed from this wallet.' })
           setKey('')
           onClose()
         }}

@@ -7,6 +7,7 @@ import { daysLeft, shortAddress, type Account, type PlanId } from './api'
 import { Billing, type CheckoutIntent } from './Billing'
 import { KeysTab } from './Keys'
 import { Overview } from './Overview'
+import { copyWithToast } from '../../components/ui/toast'
 
 /* The signed-in console ("B · Console app"): a header with the plan pill, Docs and the wallet, and
    five underlined tabs. Tabs are deep-linkable by hash (#keys, #alerts, #analytics, #billing; the
@@ -89,10 +90,7 @@ function WalletMenu({ address, onSignOut }: { address: string; onSignOut: () => 
             type="button"
             className={item}
             onClick={() =>
-              navigator.clipboard?.writeText(address).then(
-                () => setCopied(true),
-                () => undefined,
-              )
+              copyWithToast(address, 'Address').then((ok) => ok && setCopied(true))
             }
           >
             <Copy size={15} aria-hidden /> {copied ? 'Copied' : 'Copy address'}

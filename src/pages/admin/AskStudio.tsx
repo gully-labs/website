@@ -1,5 +1,6 @@
 import { Check, Copy, LoaderCircle, RotateCcw, Wand2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { copyWithToast } from '../../components/ui/toast'
 
 /* Gully Ask in the admin dashboard: the content studio (drafts from the docs and live data, never
    posted anywhere) and the ask log (what people ask, and how often Ask had no answer).
@@ -142,13 +143,9 @@ function Studio({ token, configured }: { token: string; configured: boolean }) {
               <button
                 type="button"
                 onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(draft.markdown)
-                    setCopied(true)
-                    setTimeout(() => setCopied(false), 2000)
-                  } catch {
-                    setErr('Copy failed: select the text instead.')
-                  }
+                  if (!(await copyWithToast(draft.markdown, 'Markdown'))) return
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 2000)
                 }}
                 className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink hover:border-gold"
               >

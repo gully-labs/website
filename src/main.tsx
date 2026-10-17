@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
+import { MotionConfig } from 'motion/react'
 import '@fontsource/barlow-condensed/700.css'
 import '@fontsource/barlow-condensed/800.css'
 import '@fontsource/hanken-grotesk/400.css'
@@ -9,6 +10,7 @@ import '@fontsource/hanken-grotesk/600.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import './index.css'
+import { ToastRoot } from './components/ui/ToastRoot'
 import { reloadForNewBuild } from './lib/staleBuild'
 import { router } from './router'
 
@@ -19,6 +21,11 @@ window.addEventListener('vite:preloadError', (e) => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    {/* Every motion component follows the OS reduced-motion setting: transforms dropped, opacity kept. */}
+    <MotionConfig reducedMotion="user">
+      <RouterProvider router={router} />
+      {/* One toast host for every host's app (site, developers, admin, docs). */}
+      <ToastRoot />
+    </MotionConfig>
   </StrictMode>,
 )
