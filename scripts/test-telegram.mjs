@@ -45,6 +45,8 @@ for (const k of ['log', 'error', 'warn']) {
 /* -------------------------------------------------------------- Bot API stub --- */
 
 const calls = [] // { method, body, at, resultId }
+const nonMembers = new Set() // user ids the stub reports as not following the News channel
+let memberCheckBroken = false // the stub refuses getChatMember (bot not an admin of the channel)
 const msgs = new Map() // message_id -> { chatId, kind, text, markup }
 let nextMsgId = 1_000
 let fail429 = 0
@@ -72,6 +74,10 @@ const stub = http.createServer((req, res) => {
     calls.push(call)
     const bad = (description) => send(400, { ok: false, error_code: 400, description })
     if (method === 'getMe') return send(200, { ok: true, result: { id: BOT_ID, is_bot: true, username: BOT } })
+    if (method === 'getChatMember') {
+      if (memberCheckBroken) return bad('Bad Request: member list is inaccessible')
+      return send(200, { ok: true, result: { status: nonMembers.has(Number(body.user_id)) ? 'left' : 'member', user: { id: Number(body.user_id) } } })
+    }
     if (method === 'sendMessage' && fail429 > 0) {
       fail429--
       return send(429, { ok: false, error_code: 429, description: 'Too Many Requests: retry after 1', parameters: { retry_after: 1 } })
@@ -400,13 +406,14 @@ try {
   check('/ask: the Claude API never sees the chat id', !JSON.stringify(claudeCalls).includes('603'))
 
   /* -------------------------------------------------- unknown chats --- */
-  const before = calls.length
+  const apiCalls = () => calls.filter((c) => c.method !== 'getChatMember').length // the News channel gate adds membership checks
+  const before = apiCalls()
   const nAns = answers().length
   await say(privateChat(444), '/stop')
   await say(privateChat(444), 'hello')
   await press(privateChat(444), 'mute:abc', { msgId: null })
   check('unknown chats: /stop and plain text are ignored', sent(444).length === 0)
-  check('unknown chats: a Mute press is answered without acting', answers().length === nAns + 1 && /not linked/.test(lastAnswer().text) && calls.length === before + 1)
+  check('unknown chats: a Mute press is answered without acting', answers().length === nAns + 1 && /not linked/.test(lastAnswer().text) && apiCalls() === before + 1)
   await say(privateChat(444), '/alerts')
   check('unknown chats: /alerts explains linking, with Link wallet', /need a linked account/.test(view(444).text) && !!button(view(444).kb, /Link wallet/)?.url)
   await say(privateChat(445), '/help')
@@ -742,6 +749,33 @@ try {
   check(`callback_data is at most 64 bytes in every keyboard sent (${allKb.length} buttons; longest ${Buffer.byteLength(longest)} bytes)`, allKb.length > 300 && allKb.every((d) => Buffer.byteLength(d) <= 64), longest)
   check('every button press was answered exactly once', pressedIds.every((id) => answers().filter((a) => a.body.callback_query_id === id).length === 1), `${pressedIds.length} presses`)
   check('every inline button has a callback or a url, and a short label', calls.filter((c) => c.body?.reply_markup?.inline_keyboard).every((c) => flat(c.body.reply_markup.inline_keyboard).every((b) => (b.callback_data || /^https:\/\//.test(b.url ?? '')) && b.text.length <= 64)))
+
+  /* -------------------------------------------------- News channel gate --- */
+  const ng1 = privateChat(9901, 'Gus')
+  nonMembers.add(9901)
+  await say(ng1, '/start')
+  const ngMsg = sent(9901).at(-1)?.body
+  const ngKb = ngMsg?.reply_markup?.inline_keyboard ?? []
+  check('gate: a non-follower gets the Join @GullyLabsNews screen instead of the bot', /Follow Gully Labs News/.test(ngMsg?.text ?? '') && flat(ngKb).some((b) => b.url === 'https://t.me/GullyLabsNews') && data(ngKb).includes('jchk'), ngMsg?.text)
+  await say(ng1, '/top')
+  check('gate: commands stay blocked until they follow', /Follow Gully Labs News/.test(lastText(9901)))
+  await press(ng1, 'jchk', { msgId: null })
+  check('gate: "I’ve joined" without joining is refused with an alert', /Not joined yet/.test(lastAnswer().text ?? '') && lastAnswer().show_alert === true)
+  nonMembers.delete(9901)
+  await press(ng1, 'jchk', { msgId: null })
+  check('gate: after joining, "I’ve joined" opens the menu', /Thanks for following/.test(lastAnswer().text ?? '') && /Pick a screen below/.test(lastText(9901)))
+  await say(ng1, '/help')
+  check('gate: a follower uses the bot normally', !/Follow Gully Labs News/.test(lastText(9901)))
+  const ng2 = privateChat(9902, 'Ivy')
+  nonMembers.add(9902)
+  await press(ng2, 'mute:nonexistent', { msgId: null })
+  check('gate: Mute buttons on alert deliveries are never gated', !/Follow Gully Labs News/.test(lastText(9902)))
+  memberCheckBroken = true
+  const ng3 = privateChat(9903, 'Lee')
+  nonMembers.add(9903)
+  await say(ng3, '/help')
+  check('gate: if membership cannot be checked, the bot fails open', !/Follow Gully Labs News/.test(lastText(9903)) && lastText(9903).length > 0)
+  memberCheckBroken = false
 
   /* ------------------------------------------------------------ token off --- */
   delete process.env.TELEGRAM_BOT_TOKEN
