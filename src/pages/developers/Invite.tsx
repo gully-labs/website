@@ -173,7 +173,7 @@ export function InviteLanding({ token, signedIn, connect, connecting, onDone }: 
                 </button>
               </>
             ) : (
-              <button type="button" onClick={connect} disabled={connecting} className={`${pillGold} min-h-12 w-full text-[16px]`}>
+              <button type="button" onClick={connect} disabled={connecting} data-focus-fallback className={`${pillGold} min-h-12 w-full text-[16px]`}>
                 {connecting ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Wallet size={18} aria-hidden />} Sign in to accept
               </button>
             )}

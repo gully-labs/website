@@ -282,7 +282,7 @@ try {
   check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · stock tokens vs their fair price, live.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain and BNB Chain`) && cap1.includes('🔔 gap alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
   check('the banner carries the main menu: 8 buttons in 4 rows', menuKb.length === 4 && flat(menuKb).length === 8 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 Developer portal ↗', '⚙️ Settings']))
-  check('the menu: Developer portal is a url button, the others are routes', button(menuKb, /Developer portal/)?.url === 'https://developers.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
+  check('the menu: Developer portal is a url button, the others are routes', button(menuKb, /Developer portal/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
   check('the banner file_id is stored after the first upload', JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner?.fileId === BANNER_FILE_ID)
   await say(privateChat(801), '/start')
   const an2 = calls.filter((c) => c.method === 'sendAnimation' && c.body.chat_id === '801').at(-1)
@@ -366,7 +366,7 @@ try {
   await say(privateChat(340), '/launches solana')
   check('/launches with an unknown chain lists DeepCore’s chains', /DeepCore runs on bsc, hyperevm, robinhood, base/.test(view(340).text))
   await press(privateChat(340), 'dla:0')
-  check('launch alert in an unlinked chat: explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(340).text) && button(view(340).kb, /Link wallet/)?.url === 'https://developers.gullylabs.xyz/#alerts' && data(view(340).kb).includes('dc:0'))
+  check('launch alert in an unlinked chat: explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(340).text) && button(view(340).kb, /Link wallet/)?.url === 'https://app.gullylabs.xyz/#alerts' && data(view(340).kb).includes('dc:0'))
   tg.setLaunchesReaderForTest(async () => ({ state: 'unreadable', launches: [], asOf: null, chains: [] }))
   await say(privateChat(341), '/launches')
   check('/launches: an unreadable API is said honestly, never "no launches"', /could not be read just now/.test(view(341).text) && !/No launches/.test(view(341).text))
@@ -597,7 +597,7 @@ try {
 
   /* ------------------------------------------- alert stepper, unlinked --- */
   await press(privateChat(840), 'al:rh:NVDA:g1', { msgId: null })
-  check('Alert me in an unlinked chat explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(840).text) && button(view(840).kb, /Link wallet/)?.url === 'https://developers.gullylabs.xyz/#alerts' && button(view(840).kb, /Back/).callback_data === 'c:rh:NVDA:g1')
+  check('Alert me in an unlinked chat explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(840).text) && button(view(840).kb, /Link wallet/)?.url === 'https://app.gullylabs.xyz/#alerts' && button(view(840).kb, /Back/).callback_data === 'c:rh:NVDA:g1')
   await press(privateChat(840), 'ma', { msgId: null })
   check('My alerts in an unlinked chat explains, with Link wallet', /need a linked account/.test(view(840).text))
 
@@ -614,7 +614,7 @@ try {
   const s3 = view(111)
   check('stepper 3/3: summary with ✅ Create and Back', /Fires when the gap reaches ±2% either way/.test(s3.text) && data(s3.kb).includes('alk:rh:NVDA:g1:2:e') && button(s3.kb, /Back/).callback_data === 'al:rh:NVDA:g1:2')
   await press(ada, 'alk:rh:NVDA:g1:2:e')
-  check('plan limit: the Free plan’s one alert is in use, with ⬆ Upgrade', /Plan limit reached/.test(view(111).text) && /Free plan includes 1 alert/.test(view(111).text) && button(view(111).kb, /Upgrade/)?.url === 'https://developers.gullylabs.xyz/#billing' && (await myAlerts()).length === 1, view(111).text)
+  check('plan limit: the Free plan’s one alert is in use, with ⬆ Upgrade', /Plan limit reached/.test(view(111).text) && /Free plan includes 1 alert/.test(view(111).text) && button(view(111).kb, /Upgrade/)?.url === 'https://app.gullylabs.xyz/#billing' && (await myAlerts()).length === 1, view(111).text)
   // Custom threshold.
   await press(ada, 'alx:rh:NVDA:g1')
   const cp = sent(111).at(-1)

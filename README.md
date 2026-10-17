@@ -27,7 +27,7 @@ The source of [gullylabs.xyz](https://gullylabs.xyz) and the sites that share it
 | [gullylabs.xyz](https://gullylabs.xyz) | The ledger: volume, value locked and fees across every Gully Labs project, read live from each project's own API |
 | [gullylabs.xyz/tracker](https://gullylabs.xyz/tracker) | The stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price |
 | [docs.gullylabs.xyz](https://docs.gullylabs.xyz) | Methodology, API reference, widget guide, SDK, plans and alerts |
-| [developers.gullylabs.xyz](https://developers.gullylabs.xyz) | The developer portal: sign in with a wallet, API keys, usage, alerts and plans |
+| [app.gullylabs.xyz](https://app.gullylabs.xyz) | The Gully Labs App (developer portal): sign in with a wallet, API keys, usage, alerts, analytics and payments. developers.gullylabs.xyz answers 301 to it |
 | [gullylabs.xyz/widget](https://gullylabs.xyz/widget) | The embeddable widget and its builder |
 
 One React bundle renders the right app for each host. A dependency-free Node server (`server/`) serves it, answers the public API (`/api/tracker`, `/api/stats`, `/api/plans`) and forwards the blog and analytics hosts to their own containers.

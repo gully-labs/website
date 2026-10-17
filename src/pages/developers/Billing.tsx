@@ -159,7 +159,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="flex max-w-[560px] min-w-0 flex-col gap-2">
             <span className="flex items-center gap-2 text-[12px] text-dim">
-              <span className="size-2 rounded-full" style={{ background: cur.id === 'free' ? '#6c7888' : '#e8c060' }} aria-hidden /> Current plan
+              <span className="size-2 rounded-full" style={{ background: cur.id === 'free' ? '#7f8b9c' : '#e8c060' }} aria-hidden /> Current plan
             </span>
             <h2 id="plan-title" className="m-0 font-display text-[40px] leading-none font-bold uppercase">
               <span className={cur.id === 'free' ? 'text-ink' : 'text-gold'}>{cur.name}</span>
@@ -229,7 +229,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="flex items-center gap-2 text-[15px] font-semibold">
                       {p.name}
-                      {isCur && <span className="rounded-full border border-gold-line px-2 font-mono text-[10px] text-gold">CURRENT</span>}
+                      {isCur && <span className="rounded-full border border-gold-line px-2 font-mono text-[11px] text-gold">CURRENT</span>}
                     </span>
                     <span className="font-display text-[30px] leading-none font-bold">
                       {p.priceUsdc} <span className="font-mono text-[11px] font-normal text-faint">USD / {offer.periodDays} days</span>
@@ -290,7 +290,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
           <div className="-mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[720px] border-collapse text-[13px]">
               <thead>
-                <tr className="border-b border-line text-left font-mono text-[10.5px] tracking-[1px] text-faint">
+                <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
                   <th className="py-2 pr-3 font-medium">DATE</th>
                   <th className="py-2 pr-3 font-medium">PLAN</th>
                   <th className="py-2 pr-3 font-medium">AMOUNT</th>

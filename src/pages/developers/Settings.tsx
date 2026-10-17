@@ -291,7 +291,7 @@ function SessionsCard() {
               <span className="flex min-w-0 flex-[1_1_220px] flex-col">
                 <span className="flex items-center gap-2">
                   <b className="font-semibold">{s.device}</b>
-                  {s.current && <span className="rounded-full bg-gold px-2 py-[1px] font-mono text-[10px] font-semibold text-bg">THIS BROWSER</span>}
+                  {s.current && <span className="rounded-full bg-gold px-2 py-[1px] font-mono text-[11px] font-semibold text-bg">THIS BROWSER</span>}
                 </span>
                 <span className="font-mono text-[11px] text-dim">
                   signed in {fmtDateTime(s.createdAt)} · last seen {ago(s.lastSeenAt)} · ends {fmtDateTime(s.expiresAt)}

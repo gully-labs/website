@@ -47,7 +47,7 @@ export function Teams() {
     >
       <Section id="workspaces" title="Workspaces">
         <P>
-          When a wallet first signs in to the <Ext href="https://developers.gullylabs.xyz">developer portal</Ext>, it gets its own workspace and is its <b>owner</b>. Everything in the portal belongs to the workspace: API keys, gap and DeepCore launch alerts, the linked Telegram chat, Gully Analytics, the plan and its payments. Members share all of it; nothing is copied per person.
+          When a wallet first signs in to the <Ext href="https://app.gullylabs.xyz">developer portal</Ext>, it gets its own workspace and is its <b>owner</b>. Everything in the portal belongs to the workspace: API keys, gap and DeepCore launch alerts, the linked Telegram chat, Gully Analytics, the plan and its payments. Members share all of it; nothing is copied per person.
         </P>
         <List>
           <li>The workspace is named after its owner (<C>0x1234…abcd’s workspace</C>) until an admin or the owner renames it.</li>
@@ -81,7 +81,7 @@ export function Teams() {
             <b>By wallet.</b> Enter the teammate’s address. The invite waits for that wallet: they sign in to the portal and accept it there. Nobody else can use it.
           </li>
           <li>
-            <b>By link.</b> The portal makes a link (<C>https://developers.gullylabs.xyz/#invite=…</C>) that anyone who signs in with a wallet can accept, once. The link is shown <b>once</b>; only a hash of it is kept, so it cannot be shown again. Send it privately.
+            <b>By link.</b> The portal makes a link (<C>https://app.gullylabs.xyz/#invite=…</C>) that anyone who signs in with a wallet can accept, once. The link is shown <b>once</b>; only a hash of it is kept, so it cannot be shown again. Send it privately.
           </li>
         </List>
         <List>

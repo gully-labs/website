@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { copyWithToast } from '../../components/ui/toast'
+import { restoreFocus } from './portal'
 
 /**
  * A modal dialog, rendered into document.body (a portal): a transformed ancestor such as the tab panel's
@@ -47,7 +48,7 @@ export function Dialog({ open, onClose, title, children, dismissable = true }: {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = overflow
       // Back to the trigger, if it is still on the page (a menu item may have gone with its menu).
-      if (previous && previous.isConnected && previous !== document.body) previous.focus()
+      restoreFocus(previous)
     }
   }, [open, dismissable])
 

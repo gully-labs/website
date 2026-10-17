@@ -65,7 +65,7 @@ export function AnalyticsDocs() {
       <Section id="start" title="Sign up">
         <List>
           <li>
-            Open the <Ext href="https://developers.gullylabs.xyz/#analytics">developer portal</Ext>, connect a wallet and sign the sign-in message (no transaction, no gas).
+            Open the <Ext href="https://app.gullylabs.xyz/#analytics">developer portal</Ext>, connect a wallet and sign the sign-in message (no transaction, no gas).
           </li>
           <li>
             In the <b>Analytics</b> tab press <b>Start free trial</b>. The server creates a Gully Analytics login for your wallet and shows its password once; copy it. We do not keep the password. <b>Reset password</b> in the same tab sets a new one and signs out open sessions.
@@ -77,7 +77,7 @@ export function AnalyticsDocs() {
 
       <Section id="sign-in" title="Sign in">
         <P>
-          The quickest way in is <b>Open Gully Analytics</b> in the Analytics tab of the <Ext href="https://developers.gullylabs.xyz/#analytics">developer portal</Ext>. It signs you straight in to the dashboard, with no password to type: the portal asks the server for a one-time sign-in link (<C>POST /api/developer/analytics/sso</C>), and the browser opens it on <C>analytics.gullylabs.xyz</C>.
+          The quickest way in is <b>Open Gully Analytics</b> in the Analytics tab of the <Ext href="https://app.gullylabs.xyz/#analytics">developer portal</Ext>. It signs you straight in to the dashboard, with no password to type: the portal asks the server for a one-time sign-in link (<C>POST /api/developer/analytics/sso</C>), and the browser opens it on <C>analytics.gullylabs.xyz</C>.
         </P>
         <List>
           <li>The link works once and only for 60 seconds, from the browser that asked for it. Only a hash of it is kept.</li>

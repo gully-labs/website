@@ -26,6 +26,11 @@ export const ROLE_TEXT: Record<Role, string> = {
   viewer: 'Reads everything, changes nothing.',
 }
 
+export const APP_NAME = 'Gully Labs App'
+/** The app's home title; the server sends the same one (server/seo.mjs APP_TITLE). */
+export const APP_TITLE = `${APP_NAME} · keys, alerts, analytics, payments`
+export const APP_DESCRIPTION = 'Sign in with your wallet to create Gully Labs API keys instantly, set gap and launch alerts, run Gully Analytics, and pay for plans and invoices in crypto, with your team in one workspace.'
+
 export const MEMBER_ROLES: MemberRole[] = ['admin', 'developer', 'billing', 'viewer']
 
 export interface Portal {
@@ -51,6 +56,20 @@ export const PortalContext = createContext<Portal>({
 })
 
 export const usePortal = () => useContext(PortalContext)
+
+/** Puts focus back where it was before a menu, sheet, dialog or the wallet modal opened. When that element
+    is gone (a sign-out removed it, a menu item went with its menu), focus goes to the page's fallback
+    target instead: the open page's <main>, or the Connect wallet button when signed out. */
+export function restoreFocus(previous?: HTMLElement | null) {
+  if (previous && previous.isConnected && previous !== document.body) {
+    previous.focus()
+    if (document.activeElement === previous) return
+  }
+  document.querySelector<HTMLElement>('[data-focus-fallback]')?.focus({ preventScroll: true })
+}
+
+/** restoreFocus on the next frame, once React has drawn what replaced the old element. */
+export const restoreFocusSoon = (previous?: HTMLElement | null) => requestAnimationFrame(() => restoreFocus(previous))
 
 /** Whether the current role may make writes of `cat`, and the reason shown when it may not. */
 export function useWrite(cat: WriteCategory, what: string): { ok: boolean; why: string | undefined } {
