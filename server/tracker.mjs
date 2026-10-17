@@ -586,7 +586,7 @@ export function recordSnapshotForTest(rows, at = Date.now()) {
 // Logos for API consumers and the widget: the token's own (BSC bStocks) or the company's site icon,
 // as absolute URLs on this site. Read once from the SOURCES files the logo scripts keep in public/.
 const SITE_ORIGIN = 'https://gullylabs.xyz'
-const CHAIN_LOGO = { robinhood: '/chains/robinhood.png', bsc: '/chains/bnb.png' }
+const CHAIN_LOGO = { robinhood: '/chains/robinhood.png', bsc: '/chains/bnb-chain.svg' }
 let logoMaps = null
 function logosFor(chainKey, stock) {
   if (!logoMaps) {
