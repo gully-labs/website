@@ -17,7 +17,7 @@ const CARDS: Card[] = [
 
 /* The two products built on open source, each with the snippet that starts it. */
 const PRODUCTS = [
-  { to: '/analytics', code: `<script defer data-web3="true"\n  src="https://analytics.gullylabs.xyz/script.js"\n  data-website-id="…"></script>`, status: 'LIVE', title: 'Gully Analytics', body: 'Web analytics that see the wallet: connects, chains and transactions next to page views, with a visit → wallet → transaction funnel.', cta: 'Explore Gully Analytics' },
+  { to: '/analytics', code: `<script defer data-web3="true"\n  src="https://analytics.gullylabs.xyz/script.js"\n  data-website-id="…"></script>`, status: 'LIVE', title: 'Gully Analytics', body: 'Web analytics that see the wallet: connects, chains and transactions next to page views, with a visit → wallet → transaction funnel. Sign up with your wallet: 14 days free, then from $19 a month in crypto.', cta: 'Start the free trial' },
   { to: '/chain-kit', code: `# your chain, your brand\nCHAIN_ID=4663\nCHAIN_TYPE=arbitrum\nNETWORK_NAME="Your Chain"`, status: 'ON REQUEST', title: 'Chain Kit', body: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.', cta: 'Explore Chain Kit' },
 ]
 

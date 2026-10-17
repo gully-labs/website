@@ -33,7 +33,7 @@ export function Home() {
             style={{ animation: 'gl-rise .6s ease both' }}
           >
             <span className="rounded-full bg-gold px-[10px] py-[3px] font-mono text-[11px] font-medium tracking-[1px] text-bg">NEW</span>
-            Gully Analytics is live: web analytics that see the wallet
+            Gully Analytics: web analytics that see the wallet, 14 days free
             <ArrowRight aria-hidden size={15} className="text-gold transition-transform group-hover:translate-x-[3px]" />
           </Link>
           <span className={`${eyebrow} animate-[gl-rise_.6s_ease_both]`}>GULLY LABS · {words[projects.length].toUpperCase()} VENUES · ONE LEDGER</span>
