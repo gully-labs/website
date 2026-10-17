@@ -13,7 +13,8 @@
     "test:pay": "node scripts/test-pay.mjs",
     "test:movers": "node --test scripts/test-movers.mjs",
     "test:analytics": "node scripts/test-analytics.mjs",
-    "test:telegram": "node scripts/test-telegram.mjs"
+    "test:telegram": "node scripts/test-telegram.mjs",
+    "test:paylinks": "node scripts/test-paylinks.mjs"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",
@@ -28,6 +29,7 @@
     "echarts": "^6.1.0",
     "lucide-react": "^1.49.0",
     "motion": "^13.4.6",
+    "qrcode-generator": "2.0.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router": "^8.4.0",

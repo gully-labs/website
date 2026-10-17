@@ -10,9 +10,13 @@
 //   POST /api/pay/:id/quote  { asset }             -> { quote }   20 minutes, exact amount in that asset
 //   POST /api/pay/:id/verify { quoteId, txHash }   -> 200 paid | 202 not confirmed yet | 4xx
 // Admin API (admin.mjs, behind ADMIN_TOKEN):
-//   adminListInvoices(), adminCreateInvoice(body), adminCancelInvoice(id)
+//   adminListInvoices(), adminCreateInvoice(body), adminCancelInvoice(id),
+//   adminSetInvoiceWebhook(id, url), adminRotateInvoiceWebhook(id), adminTestInvoiceWebhook(id)
+// Pay links (paylinks.mjs) make invoices through createInvoiceRecord(); /api/pay/l/* is answered there.
+// A paid invoice sends invoice.paid to its merchant webhooks (pay-webhooks.mjs).
 
 import { checkInvoiceTx, createQuote, findQuote, isHash, badHash, ledger, normHash, paymentView, quoteView, recordPayment, save } from './billing.mjs'
+import { checkEndpoint, deliveries, emitInvoicePaid, endpointView, makeEndpoint, newSecret, sendTest } from './pay-webhooks.mjs'
 import { clientIp, json, readJson } from './http.mjs'
 import { assetById, ASSET_IDS, fmtUsd, parseUsdCents, publicAssets } from './payments.mjs'
 import { treasury } from './plans.mjs'
@@ -70,18 +74,53 @@ export function publicInvoice(inv) {
     paidAt: inv.paidAt ?? null,
     cancelledAt: inv.cancelledAt ?? null,
     payment: paymentOf(inv),
+    linkId: inv.linkId ?? null,
     checkout: t ? { enabled: true, treasury: t } : { enabled: false, treasury: null, reason: 'This invoice cannot be paid yet: no treasury wallet is configured.' },
   }
 }
 
-const adminView = (inv) => ({ ...publicInvoice(inv), path: `/pay/${inv.id}` })
+const adminView = (inv) => ({ ...publicInvoice(inv), path: `/pay/${inv.id}`, webhook: endpointView(inv.webhook) })
+
+/**
+ * A new open invoice (admin or pay link). `usdCents` is a BigInt already checked by the caller.
+ * Returns the stored record.
+ */
+export function createInvoiceRecord({ title, note = '', usdCents, assets, ttlMs, linkId = null, webhook = null }) {
+  const now = Date.now()
+  const inv = {
+    id: 'inv_' + randomToken(16),
+    number: `GL-${String(invoices().length + 1).padStart(4, '0')}`,
+    title,
+    note,
+    usdCents: String(usdCents),
+    assets: ASSET_IDS.filter((a) => assets.includes(a)),
+    createdAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + ttlMs).toISOString(),
+    cancelledAt: null,
+    paidAt: null,
+    paymentId: null,
+    linkId,
+    webhook,
+  }
+  invoices().push(inv)
+  save()
+  return inv
+}
 
 /* -------------------------------------------------------------- admin --- */
 
 export const adminListInvoices = () => [...invoices()].reverse().map(adminView)
+/** One invoice for the admin, or null. */
+export const adminInvoice = (id) => {
+  const inv = findInvoice(id)
+  return inv ? adminView(inv) : null
+}
 
-/** body: { title, usd, note?, assets?: string[], expiresInDays? (1..365, default 30) } */
-export function adminCreateInvoice(body) {
+/**
+ * body: { title, usd, note?, assets?: string[], expiresInDays? (1..365, default 30), webhookUrl? }
+ * Resolves to { ok, invoice, secret? }: the webhook's signing secret is shown this once.
+ */
+export async function adminCreateInvoice(body) {
   const title = typeof body?.title === 'string' ? body.title.trim() : ''
   if (!title || title.length > MAX_TITLE) return { ok: false, status: 400, error: `Give the invoice a title of 1 to ${MAX_TITLE} characters.` }
   const cents = parseUsdCents(body?.usd)
@@ -92,24 +131,50 @@ export function adminCreateInvoice(body) {
   if (!list || !list.length || list.some((a) => !assetById(a))) return { ok: false, status: 400, error: `assets must be a non-empty list of: ${ASSET_IDS.join(', ')}.` }
   const days = body?.expiresInDays == null ? 30 : Number(body.expiresInDays)
   if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) return { ok: false, status: 400, error: `expiresInDays must be a whole number from 1 to ${MAX_DAYS}.` }
-  const now = Date.now()
-  const inv = {
-    id: 'inv_' + randomToken(16),
-    number: `GL-${String(invoices().length + 1).padStart(4, '0')}`,
-    title,
-    note,
-    usdCents: String(cents),
-    assets: ASSET_IDS.filter((a) => list.includes(a)),
-    createdAt: new Date(now).toISOString(),
-    expiresAt: new Date(now + days * 86_400_000).toISOString(),
-    cancelledAt: null,
-    paidAt: null,
-    paymentId: null,
+  let webhook = null
+  if (body?.webhookUrl) {
+    const c = await checkEndpoint(body.webhookUrl)
+    if (!c.ok) return { ok: false, status: 400, error: c.error }
+    webhook = makeEndpoint(c.url)
   }
-  invoices().push(inv)
-  save()
-  return { ok: true, invoice: adminView(inv) }
+  const inv = createInvoiceRecord({ title, note, usdCents: cents, assets: list, ttlMs: days * 86_400_000, webhook })
+  return { ok: true, invoice: adminView(inv), secret: webhook?.secret ?? null }
 }
+
+/** Sets (url) or removes (null / '') an invoice's own webhook. Resolves to { ok, invoice, secret? }. */
+export async function adminSetInvoiceWebhook(id, raw) {
+  const inv = findInvoice(id)
+  if (!inv) return { ok: false, status: 404, error: 'No such invoice.' }
+  if (raw === null || raw === undefined || raw === '') {
+    inv.webhook = null
+    save()
+    return { ok: true, invoice: adminView(inv), secret: null }
+  }
+  const c = await checkEndpoint(raw)
+  if (!c.ok) return { ok: false, status: 400, error: c.error }
+  inv.webhook = makeEndpoint(c.url)
+  save()
+  return { ok: true, invoice: adminView(inv), secret: inv.webhook.secret }
+}
+
+export function adminRotateInvoiceWebhook(id) {
+  const inv = findInvoice(id)
+  if (!inv) return { ok: false, status: 404, error: 'No such invoice.' }
+  if (!inv.webhook) return { ok: false, status: 409, error: 'This invoice has no webhook.' }
+  inv.webhook.secret = newSecret()
+  inv.webhook.rotatedAt = new Date().toISOString()
+  save()
+  return { ok: true, invoice: adminView(inv), secret: inv.webhook.secret }
+}
+
+export async function adminTestInvoiceWebhook(id) {
+  const inv = findInvoice(id)
+  if (!inv) return { ok: false, status: 404, error: 'No such invoice.' }
+  return sendTest({ target: 'invoice', targetId: inv.id, invoiceId: inv.id, linkId: inv.linkId ?? null })
+}
+
+/** An invoice's webhook deliveries (to any endpoint), newest first. */
+export const adminInvoiceDeliveries = (id) => deliveries({ invoiceId: id })
 
 export function adminCancelInvoice(id) {
   const inv = findInvoice(id)
@@ -159,7 +224,18 @@ async function verifyFor(inv, quoteId, txHashIn) {
       const payment = recordPayment({ kind: 'invoice', invoiceId: inv.id, txHash, chainId: asset.chainId, assetId: asset.id, symbol: asset.symbol, decimals: asset.decimals, amountRaw: String(match.value), usdCents: quote.usdCents, price: quote.price, quoteId: quote.id, from: match.from, blockNumber: read.blockNumber }, quote)
       inv.paymentId = payment.id
       inv.paidAt = payment.at
+      // A pay link counts its paid uses (max uses and the admin's view read this).
+      const link = inv.linkId ? ledger().links.find((l) => l.id === inv.linkId) : null
+      if (link) {
+        link.paidUses = (link.paidUses ?? 0) + 1
+        link.lastPaidAt = payment.at
+      }
       save()
+      try {
+        emitInvoicePaid(inv, payment, read.confirmations)
+      } catch (e) {
+        console.error('invoice.paid webhook:', e?.message ?? e)
+      }
       return { ok: true }
     },
   })
@@ -167,6 +243,8 @@ async function verifyFor(inv, quoteId, txHashIn) {
 
 /** Handles /api/pay/*. Returns true when it answered. */
 export async function handlePay(req, res, url) {
+  // Pay links live in paylinks.mjs (loaded on first use; it imports this module).
+  if (url.pathname.startsWith('/api/pay/l/')) return (await import('./paylinks.mjs')).handlePayLink(req, res, url)
   const m = url.pathname.match(/^\/api\/pay\/([^/]+)(?:\/(quote|verify))?$/)
   if (!m) return false
   const inv = findInvoice(m[1])

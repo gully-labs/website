@@ -157,8 +157,11 @@ export async function resolvePublic(u) {
   return { ok: true, address: addrs[0].address, family: addrs[0].family }
 }
 
-/** POSTs a signed body to a webhook: pinned to the checked address, 5 s, no redirects. */
-async function postWebhook(urlStr, secret, body) {
+/**
+ * POSTs a signed body to a webhook: pinned to the checked address, 5 s, no redirects. Also used by Gully
+ * Pay's merchant webhooks (pay-webhooks.mjs), with their own user agent.
+ */
+export async function postWebhook(urlStr, secret, body, { userAgent = 'GullyLabs-Alerts/1 (+https://docs.gullylabs.xyz/plans-alerts)' } = {}) {
   const form = checkWebhookForm(urlStr)
   if (!form.ok) return { status: null, ok: false, error: form.error }
   const u = form.url
@@ -179,7 +182,7 @@ async function postWebhook(urlStr, secret, body) {
       u,
       {
         method: 'POST',
-        headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body), 'user-agent': 'GullyLabs-Alerts/1 (+https://docs.gullylabs.xyz/plans-alerts)', 'x-gully-timestamp': String(ts), 'x-gully-signature': `sha256=${sig}` },
+        headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body), 'user-agent': userAgent, 'x-gully-timestamp': String(ts), 'x-gully-signature': `sha256=${sig}` },
         lookup: (_h, opts, cb) => (opts?.all ? cb(null, [{ address: target.address, family: target.family }]) : cb(null, target.address, target.family)),
       },
       (res) => {

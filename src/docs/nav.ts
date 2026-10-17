@@ -11,6 +11,7 @@ export const DOC_PAGES = [
   { slug: 'plans-alerts', title: 'Plans & alerts', group: 'Build' },
   { slug: 'sdk', title: 'SDK', group: 'Build' },
   { slug: 'analytics', title: 'Gully Analytics', group: 'Products' },
+  { slug: 'gully-pay', title: 'Gully Pay', group: 'Products' },
   { slug: 'changelog', title: 'Changelog', group: 'More' },
 ] as const
 

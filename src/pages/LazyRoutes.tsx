@@ -10,6 +10,7 @@ const Pricing = lazy(() => import('./Pricing').then((m) => ({ default: m.Pricing
 const Admin = lazy(() => import('./admin/AdminPage').then((m) => ({ default: m.AdminPage })))
 const Pay = lazy(() => import('./pay/PayPage').then((m) => ({ default: m.PayPage })))
 const Receipt = lazy(() => import('./pay/Receipt').then((m) => ({ default: m.Receipt })))
+const PayLink = lazy(() => import('./pay/LinkPage').then((m) => ({ default: m.LinkPage })))
 
 const fallback = <p className="px-page py-24 font-mono text-[13px] text-faint">Loading…</p>
 
@@ -70,6 +71,14 @@ export function PayRoute() {
   return (
     <Suspense fallback={fallback}>
       <Pay />
+    </Suspense>
+  )
+}
+
+export function PayLinkRoute() {
+  return (
+    <Suspense fallback={fallback}>
+      <PayLink />
     </Suspense>
   )
 }

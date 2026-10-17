@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { DayBars } from '../../components/charts/DayBars'
 import { byChain } from '../../components/pay/assets'
 import { Wordmark } from '../../components/Wordmark'
 import type { PayAsset } from '../developers/api'
 import type { Invoice } from '../pay/invoice'
+import { adminCall } from './payAdmin'
+import { DeliveryLog, EmbedBox, PayLinks, SecretOnce, type Delivery, type Endpoint } from './PayLinks'
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
    kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site. */
@@ -439,28 +441,101 @@ function AnalyticsAccounts({ data, act }: { data: AnalyticsAdmin; act: (path: st
   )
 }
 
-type AdminInvoice = Invoice & { path: string }
+type AdminInvoice = Invoice & { path: string; webhook: Endpoint | null }
 const STATUS_CLS: Record<string, string> = { open: 'text-gold', paid: 'text-green', expired: 'text-faint', cancelled: 'text-faint' }
 
+/** Below an invoice row: its "Pay with crypto" embed and its own merchant webhook with the delivery log. */
+function InvoiceExtras({ token, invoice, reload, onSecret }: { token: string; invoice: AdminInvoice; reload: () => void; onSecret: (s: string) => void }) {
+  const [url, setUrl] = useState('')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [log, setLog] = useState<Delivery[] | null>(null)
+  const loadLog = useCallback(() => {
+    adminCall<{ deliveries: Delivery[] }>(token, `/api/admin/invoices/${invoice.id}/deliveries`).then((r) => r.ok && setLog(r.data.deliveries))
+  }, [token, invoice.id])
+  useEffect(() => {
+    loadLog()
+  }, [loadLog, invoice.status])
+  const call = async (path: string, body: unknown, done: string) => {
+    setMsg(null)
+    const r = await adminCall<{ secret?: string | null; delivery?: Delivery }>(token, path, body)
+    if (!r.ok) return setMsg({ ok: false, text: r.error })
+    if (r.data.secret) onSecret(r.data.secret)
+    setMsg(r.data.delivery ? { ok: r.data.delivery.state === 'delivered', text: r.data.delivery.state === 'delivered' ? `Test delivered (${r.data.delivery.last?.status}).` : `Test failed: ${r.data.delivery.last?.error ?? r.data.delivery.last?.status}` } : { ok: true, text: done })
+    setUrl('')
+    reload()
+    loadLog()
+  }
+  const btn = 'inline-flex min-h-9 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold'
+  return (
+    <div className="flex flex-col gap-4 rounded-input border border-line bg-bg p-4">
+      <div className="flex flex-col gap-2">
+        <span className="font-mono text-[11px] tracking-[1px] text-faint">EMBED</span>
+        <EmbedBox path={invoice.path} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="font-mono text-[11px] tracking-[1px] text-faint">WEBHOOK OF THIS INVOICE</span>
+        {invoice.webhook ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="min-w-0 flex-1 font-mono text-[12px] break-all text-ink-2">{invoice.webhook.url}</code>
+            <button type="button" className={btn} onClick={() => call(`/api/admin/invoices/${invoice.id}/webhook/test`, {}, 'Test sent.')}>
+              Send test event
+            </button>
+            <button type="button" className={btn} onClick={() => window.confirm('Rotate the signing secret?') && call(`/api/admin/invoices/${invoice.id}/webhook/rotate`, {}, 'Secret rotated.')}>
+              Rotate secret
+            </button>
+            <button type="button" className={`${btn} hover:border-error hover:text-error`} onClick={() => call(`/api/admin/invoices/${invoice.id}/webhook`, { url: null }, 'Webhook removed.')}>
+              Remove
+            </button>
+          </div>
+        ) : (
+          <form
+            className="flex flex-wrap items-end gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              call(`/api/admin/invoices/${invoice.id}/webhook`, { url }, 'Webhook set.')
+            }}
+          >
+            <input className="h-10 min-w-[min(100%,300px)] flex-1 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com/hooks/gully" required aria-label="Webhook URL for this invoice" />
+            <button type="submit" className={btn}>
+              Set webhook
+            </button>
+          </form>
+        )}
+        {msg && <p className={`m-0 font-mono text-[12px] ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="font-mono text-[11px] tracking-[1px] text-faint">DELIVERIES</span>
+        {log ? <DeliveryLog rows={log} /> : <span className="font-mono text-[12px] text-faint">Loading…</span>}
+      </div>
+    </div>
+  )
+}
+
 /* Gully Pay invoices for everything that is not an API plan. The link is the only way to the pay page. */
-function Invoices({ invoices, assets, act }: { invoices: AdminInvoice[]; assets: PayAsset[]; act: (path: string, body?: unknown) => Promise<string | null> }) {
+function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInvoice[]; assets: PayAsset[]; act: (path: string, body?: unknown) => Promise<string | null>; token: string; reload: () => void }) {
   const [title, setTitle] = useState('')
   const [usd, setUsd] = useState('')
   const [note, setNote] = useState('')
   const [days, setDays] = useState('30')
+  const [hook, setHook] = useState('')
   const [chosen, setChosen] = useState<string[]>(() => assets.map((a) => a.id))
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [secret, setSecret] = useState<string | null>(null)
+  const [extras, setExtras] = useState<string | null>(null)
   const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
   const link = (path: string) => `${window.location.protocol}//${window.location.host.replace(/^admin\./, '')}${path}`
   const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
   const create = async () => {
     setMsg(null)
-    const err = await act('/api/admin/invoices', { title, usd, note, assets: chosen, expiresInDays: Number(days) })
-    if (err) return setMsg({ ok: false, text: err })
+    const r = await adminCall<{ secret: string | null }>(token, '/api/admin/invoices', { title, usd, note, assets: chosen, expiresInDays: Number(days), webhookUrl: hook.trim() || undefined })
+    reload()
+    if (!r.ok) return setMsg({ ok: false, text: r.error })
+    if (r.data.secret) setSecret(r.data.secret)
     setMsg({ ok: true, text: 'Invoice created: copy its link from the top of the list.' })
     setTitle('')
     setUsd('')
     setNote('')
+    setHook('')
   }
   const copy = (path: string) =>
     navigator.clipboard?.writeText(link(path)).then(
@@ -494,6 +569,10 @@ function Invoices({ invoices, assets, act }: { invoices: AdminInvoice[]; assets:
             Valid (days)
             <input className={`${field} font-mono`} type="number" min={1} max={365} value={days} onChange={(e) => setDays(e.target.value)} required />
           </label>
+          <label className="flex min-w-[min(100%,260px)] flex-1 flex-col gap-1 text-[12px] text-faint">
+            Webhook URL (optional, https)
+            <input className={`${field} font-mono`} type="url" value={hook} onChange={(e) => setHook(e.target.value)} placeholder="https://example.com/hooks/gully" />
+          </label>
         </div>
         <label className="flex flex-col gap-1 text-[12px] text-faint">
           Note for the customer (optional; shown on the pay page and the receipt)
@@ -522,6 +601,7 @@ function Invoices({ invoices, assets, act }: { invoices: AdminInvoice[]; assets:
         </div>
       </form>
       {msg && <p className={`m-0 font-mono text-[12px] break-all ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
+      {secret && <SecretOnce secret={secret} onDone={() => setSecret(null)} />}
       {!invoices.length ? (
         <p className="m-0 text-[14px] text-muted">No invoices yet.</p>
       ) : (
@@ -540,9 +620,14 @@ function Invoices({ invoices, assets, act }: { invoices: AdminInvoice[]; assets:
             </thead>
             <tbody>
               {invoices.map((i) => (
-                <tr key={i.id} className="border-b border-line last:border-b-0">
+                <Fragment key={i.id}>
+                <tr className="border-b border-line last:border-b-0">
                   <td className="py-3 pr-3 font-mono text-[12px] text-faint">{i.number}</td>
-                  <td className="py-3 pr-3 text-ink-2">{i.title}</td>
+                  <td className="py-3 pr-3 text-ink-2">
+                    {i.title}
+                    {i.linkId && <span className="ml-2 font-mono text-[11px] text-faint">via pay link</span>}
+                    {i.webhook && <span className="ml-2 font-mono text-[11px] text-faint">webhook</span>}
+                  </td>
                   <td className="py-3 pr-3 font-mono text-[12px]">{i.usd}</td>
                   <td className={`py-3 pr-3 font-mono text-[12px] uppercase ${STATUS_CLS[i.status]}`}>{i.status}</td>
                   <td className="py-3 pr-3 font-mono text-[12px] text-faint">{when(i.expiresAt)}</td>
@@ -563,6 +648,9 @@ function Invoices({ invoices, assets, act }: { invoices: AdminInvoice[]; assets:
                       <a href={link(i.status === 'paid' ? `${i.path}/receipt` : i.path)} target="_blank" rel="noopener" className={btn}>
                         {i.status === 'paid' ? 'Receipt' : 'Open'}
                       </a>
+                      <button type="button" onClick={() => setExtras(extras === i.id ? null : i.id)} className={btn} aria-expanded={extras === i.id}>
+                        {extras === i.id ? 'Hide' : 'Embed & webhook'}
+                      </button>
                       {(i.status === 'open' || i.status === 'expired') && (
                         <button
                           type="button"
@@ -575,6 +663,14 @@ function Invoices({ invoices, assets, act }: { invoices: AdminInvoice[]; assets:
                     </span>
                   </td>
                 </tr>
+                {extras === i.id && (
+                  <tr className="border-b border-line">
+                    <td colSpan={7} className="py-3">
+                      <InvoiceExtras token={token} invoice={i} reload={reload} onSecret={setSecret} />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -627,14 +723,14 @@ export function AdminPage() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-line bg-[rgba(11,14,19,.9)] px-page py-4 backdrop-blur">
+      <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-[rgba(11,14,19,.9)] px-page py-4 backdrop-blur">
         <div className="flex items-center gap-4">
           <Link to="/" aria-label="Gully Labs home" className="text-ink">
             <Wordmark size={24} />
           </Link>
           <span className="rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] text-gold">ADMIN</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className={small}>{o ? `updated ${ago(o.generatedAt)}` : 'loading…'}</span>
           <button type="button" onClick={() => reload()} className="rounded-btn border border-line-strong px-3 py-2 font-mono text-[12px] text-ink-2 hover:border-gold">
             Refresh
@@ -782,7 +878,8 @@ export function AdminPage() {
             <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
             <AnalyticsAccounts data={data.analytics} act={act} />
 
-            <Invoices invoices={data.invoices.invoices} assets={data.invoices.assets} act={act} />
+            <Invoices invoices={data.invoices.invoices} assets={data.invoices.assets} act={act} token={token} reload={reload} />
+            <PayLinks token={token} />
 
             {data.requests.length > 0 && (
             <section className={card}>

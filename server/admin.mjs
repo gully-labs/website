@@ -17,7 +17,18 @@
 //   GET  /api/admin/invoices                  every invoice (Gully Pay), newest first, and the accepted assets
 //   POST /api/admin/invoices                  { title, usd, note?, assets?, expiresInDays? } -> 201 { invoice }
 //   POST /api/admin/invoices/:id/cancel
-//   GET  /api/admin/analytics                 Gully Analytics accounts: wallet, plan, sites, events this month
+//   GET  /api/admin/invoices/:id/deliveries   the invoice's merchant webhook deliveries
+//   POST /api/admin/invoices/:id/webhook      { url | null } set or remove its own webhook -> { invoice, secret? }
+//   POST /api/admin/invoices/:id/webhook/rotate|test
+//   GET  /api/admin/paylinks                  Gully Pay links, the assets, the default webhook
+//   POST /api/admin/paylinks                  { title, description?, amount, assets?, expiresAt?, maxUses?, webhookUrl? } -> 201 { link, secret? }
+//   GET  /api/admin/paylinks/:id              the link, its invoices and payments, its webhook deliveries
+//   POST /api/admin/paylinks/:id              any of the create fields, or active -> { link, secret? }
+//   POST /api/admin/paylinks/:id/activate|deactivate|rotate|test
+//   GET  /api/admin/pay-webhooks              the default endpoint and the latest deliveries
+//   POST /api/admin/pay-webhooks/default      { url | null } -> { endpoint, secret? }
+//   POST /api/admin/pay-webhooks/default/rotate|test
+//   GET  /api/admin/analytics                Gully Analytics accounts: wallet, plan, sites, events this month
 //   POST /api/admin/analytics/:address/plan   { plan: 'starter'|'growth'|'none', days? }  grant for `days` (30) or stop now
 //   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
 
@@ -26,7 +37,9 @@ import { accessStats } from './access.mjs'
 import { adminAnalyticsAccounts, adminAnalyticsDelete, adminAnalyticsSetPlan } from './analytics-accounts.mjs'
 import { alertStats } from './alerts.mjs'
 import { adminSetPlan, allPayments } from './billing.mjs'
-import { adminCancelInvoice, adminCreateInvoice, adminListInvoices } from './invoices.mjs'
+import { adminCancelInvoice, adminCreateInvoice, adminInvoiceDeliveries, adminListInvoices, adminRotateInvoiceWebhook, adminSetInvoiceWebhook, adminTestInvoiceWebhook } from './invoices.mjs'
+import { adminCreateLink, adminLinkDetail, adminListLinks, adminRotateLinkSecret, adminSetLinkActive, adminTestLinkWebhook, adminUpdateLink } from './paylinks.mjs'
+import { defaultEndpoint, deliveries, rotateDefaultSecret, sendTest, setDefaultEndpoint, webhookStats } from './pay-webhooks.mjs'
 import { publicAssets } from './payments.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
@@ -161,8 +174,54 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/invoices') {
     if (req.method === 'GET') return json(res, 200, { invoices: adminListInvoices(), assets: publicAssets() }), true
     if (req.method !== 'POST') return json(res, 405, { error: 'GET or POST only' }), true
-    const r = adminCreateInvoice(await readJson(req, 4_000))
-    return (r.ok ? json(res, 201, { invoice: r.invoice }) : json(res, r.status, { error: r.error }), true)
+    const r = await adminCreateInvoice(await readJson(req, 4_000))
+    return (r.ok ? json(res, 201, { invoice: r.invoice, secret: r.secret }) : json(res, r.status, { error: r.error }), true)
+  }
+
+  // Merchant webhooks of one invoice.
+  m = p.match(/^\/api\/admin\/invoices\/([\w-]+)\/(deliveries|webhook|webhook\/rotate|webhook\/test)$/)
+  if (m) {
+    if (m[2] === 'deliveries') return json(res, 200, { deliveries: adminInvoiceDeliveries(m[1]) }), true
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    let r
+    if (m[2] === 'webhook') r = await adminSetInvoiceWebhook(m[1], (await readJson(req, 2_000))?.url ?? null)
+    else if (m[2] === 'webhook/rotate') r = adminRotateInvoiceWebhook(m[1])
+    else r = await adminTestInvoiceWebhook(m[1])
+    return (r.ok ? json(res, 200, { ...r, ok: undefined }) : json(res, r.status, { error: r.error }), true)
+  }
+
+  // Gully Pay links.
+  if (p === '/api/admin/paylinks') {
+    if (req.method === 'GET') return json(res, 200, { links: adminListLinks(), assets: publicAssets(), defaultWebhook: defaultEndpoint(), webhooks: webhookStats() }), true
+    if (req.method !== 'POST') return json(res, 405, { error: 'GET or POST only' }), true
+    const r = await adminCreateLink(await readJson(req, 6_000))
+    return (r.ok ? json(res, 201, { link: r.link, secret: r.secret }) : json(res, r.status, { error: r.error }), true)
+  }
+  m = p.match(/^\/api\/admin\/paylinks\/(pl_[\w-]{16})(?:\/(activate|deactivate|rotate|test))?$/)
+  if (m) {
+    if (!m[2] && req.method === 'GET') {
+      const d = adminLinkDetail(m[1])
+      return (d ? json(res, 200, d) : json(res, 404, { error: 'No such link.' }), true)
+    }
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    let r
+    if (!m[2]) r = await adminUpdateLink(m[1], await readJson(req, 6_000))
+    else if (m[2] === 'activate' || m[2] === 'deactivate') r = adminSetLinkActive(m[1], m[2] === 'activate')
+    else if (m[2] === 'rotate') r = adminRotateLinkSecret(m[1])
+    else r = await adminTestLinkWebhook(m[1])
+    return (r.ok ? json(res, 200, { ...r, ok: undefined }) : json(res, r.status, { error: r.error }), true)
+  }
+
+  // The default merchant webhook: events of invoices that have no endpoint of their own or of their link.
+  if (p === '/api/admin/pay-webhooks') return json(res, 200, { default: defaultEndpoint(), deliveries: deliveries({ limit: 100 }), stats: webhookStats() }), true
+  m = p.match(/^\/api\/admin\/pay-webhooks\/default(?:\/(rotate|test))?$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    let r
+    if (!m[1]) r = await setDefaultEndpoint((await readJson(req, 2_000))?.url ?? null)
+    else if (m[1] === 'rotate') r = rotateDefaultSecret()
+    else r = await sendTest({ target: 'default', targetId: null })
+    return (r.ok ? json(res, 200, { ...r, ok: undefined }) : json(res, r.status, { error: r.error }), true)
   }
 
   m = p.match(/^\/api\/admin\/invoices\/([\w-]+)\/cancel$/)
