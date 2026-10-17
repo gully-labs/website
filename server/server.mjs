@@ -5,7 +5,8 @@ import http from 'node:http'
 import { readStats } from './stats.mjs'
 import { onSnapshot, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
-import { evaluateAlerts } from './alerts.mjs'
+import { evaluateAlerts, evaluateLaunchAlerts } from './alerts.mjs'
+import { handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
@@ -179,6 +180,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
   }
+  // DeepCore router quote for the stock pages' comparison panel (deepcore.mjs): cached and rate limited here.
+  if (url.pathname === '/api/deepcore/quote') return void (await handleDeepcoreQuote(req, res, url, geoFor(req, isLocal)))
   // Gully Ask (ask.mjs): POST /api/ask and GET /api/ask/status.
   if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status') return void (await handleAsk(req, res, url))
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
@@ -334,6 +337,9 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), fl
 onSnapshot((rows, at) => evaluateAlerts(rows, at))
 // TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.
 if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
+// DeepCore launch alerts run on every DeepCore poll (DEEPCORE_LOOP=off in tests: polled on demand).
+onLaunches((fresh, at) => evaluateLaunchAlerts(fresh, at))
+startDeepcore()
 // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
 startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
 // Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.

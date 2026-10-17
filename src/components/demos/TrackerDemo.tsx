@@ -165,7 +165,8 @@ export default function TrackerDemo(): JSX.Element {
 
   const rows = order(st.data.rows)
   const keyOf = (r: TrackerRow) => `${r.chain}:${r.ticker}`
-  const row = rows.find((r) => keyOf(r) === sel) ?? rows[0]
+  // Default: the widest trusted gap among fresh pools of $100k or more (never an unverified or thin row), else the first.
+  const row = rows.find((r) => keyOf(r) === sel) ?? rows.find((r) => TRUSTED.has(r.status) && r.trusted !== false && !r.poolStale && (r.pool?.liquidityUsd ?? 0) >= 100_000) ?? rows[0]
   if (!row)
     return (
       <div className={`${card} flex h-[240px] items-center justify-center p-6`}>

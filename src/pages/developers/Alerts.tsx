@@ -56,7 +56,10 @@ export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram
 function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClose: () => void; view: AlertsView; onCreated: (secret: string | null) => void }) {
   const [name, setName] = useState('')
   const [target, setTarget] = useState('any')
-  const [kind, setKind] = useState<'gap' | 'premium' | 'discount' | 'either'>('gap')
+  const [kind, setKind] = useState<'gap' | 'premium' | 'discount' | 'either' | 'deepcore'>('gap')
+  // DeepCore launch alerts, offered when the server lists that kind (with its chains).
+  const launchKind = view.kinds?.find((k) => k.id === 'deepcore-launch')
+  const [dcChain, setDcChain] = useState('')
   const [pct, setPct] = useState(String(view.limits.flagPct))
   const [webhook, setWebhook] = useState('')
   const [toTelegram, setToTelegram] = useState(false)
@@ -71,8 +74,8 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setErr(null)
-    const [chain, ticker] = target === 'any' ? [undefined, undefined] : target.split(':')
-    const condition = kind === 'gap' ? { type: 'gap', pct: Number(pct) } : { type: 'status', status: kind }
+    const [chain, ticker] = target === 'any' || kind === 'deepcore' ? [undefined, undefined] : target.split(':')
+    const condition = kind === 'deepcore' ? { type: 'deepcore-launch', chainId: dcChain ? Number(dcChain) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct) } : { type: 'status', status: kind }
     setBusy(true)
     const r = await api<{ secret: string | null }>('/api/developer/alerts', { method: 'POST', body: { name: name.trim(), chain, ticker, condition, webhookUrl: webhook.trim() || undefined, telegram: toTelegram || undefined } })
     setBusy(false)
@@ -80,7 +83,7 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
     setName('')
     setWebhook('')
     setToTelegram(false)
-    toastSuccess('Alert created', { detail: name.trim() || (ticker ? `${ticker} alert` : 'Any-stock alert') })
+    toastSuccess('Alert created', { detail: name.trim() || (kind === 'deepcore' ? 'DeepCore launch alert' : ticker ? `${ticker} alert` : 'Any-stock alert') })
     onCreated(r.data.secret)
   }
 
@@ -93,6 +96,19 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
           </span>
           <input className={input} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="e.g. NVDA wide gap" />
         </label>
+        {kind === 'deepcore' && launchKind ? (
+          <label className={fieldLabel}>
+            Chain
+            <select className={select} value={dcChain} onChange={(e) => setDcChain(e.target.value)}>
+              <option value="">Every chain DeepCore runs on</option>
+              {(launchKind.chains ?? []).map((c) => (
+                <option key={c.chainId} value={String(c.chainId)}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
         <label className={fieldLabel}>
           Stock
           <select className={select} value={target} onChange={(e) => setTarget(e.target.value)}>
@@ -108,6 +124,7 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
             ))}
           </select>
         </label>
+        )}
         <div className="grid grid-cols-[minmax(0,1fr)_120px] gap-3 max-[480px]:grid-cols-1">
           <label className={fieldLabel}>
             When
@@ -116,6 +133,7 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
               <option value="premium">It turns premium</option>
               <option value="discount">It turns discount</option>
               <option value="either">It turns premium or discount</option>
+              {launchKind && <option value="deepcore">A new token launches on DeepCore</option>}
             </select>
           </label>
           {kind === 'gap' && (
@@ -126,7 +144,9 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
           )}
         </div>
         <span className="-mt-2 text-[12px] leading-[1.5] text-faint">
-          Either way, above or below fair. Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).
+          {kind === 'deepcore'
+            ? `Once per new launch read from DeepCore's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
+            : <>Either way, above or below fair. Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
         </span>
         <label className={fieldLabel}>
           Webhook URL

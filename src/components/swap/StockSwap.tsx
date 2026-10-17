@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { ArrowUpRight, Globe, Loader2 } from 'lucide-react'
 import type { TrackerRow } from '../../lib/tracker'
 import { feeText, NATIVE_SYMBOL, SWAP_CHAIN_ID } from './swapConfig'
+import { DeepCoreQuote } from './DeepCoreQuote'
 
 /* The swap card on a stock page. Three gates before the LI.FI widget's chunk is even fetched:
    1. the chain is one LI.FI serves (Robinhood Chain, BNB Chain);
@@ -101,6 +102,7 @@ export function StockSwap({ row }: { row: TrackerRow }) {
         />
         I understand
       </label>
+      {ack && <DeepCoreQuote row={row} />}
       {ack && (
         <Suspense
           fallback={

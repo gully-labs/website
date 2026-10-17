@@ -18,8 +18,11 @@
 // ?startgroup= link); only the Telegram user who linked a group may unlink it or mute from it.
 // One chat per account; a newer link replaces the older one.
 //
-// Commands: /gap TICKER [chain], /top, /movers (only when the tracker has movers), /alerts, /ask QUESTION, /help.
-// Chats that are not linked get only /start, /help, /gap, /top and /ask; everything else from them is ignored.
+// Commands: /gap TICKER [chain], /top, /movers (only when the tracker has movers), /launches [chain],
+// /alerts, /ask QUESTION, /help.
+// Chats that are not linked get only /start, /help, /gap, /top, /launches and /ask; everything else from
+// them is ignored. /launches reads DeepCore's latest launches from deepcore.mjs's cache (never more than
+// one DeepCore read per poll interval, however many chats ask).
 // /ask answers through Gully Ask (ask.mjs), limited per chat and by Ask's daily cap.
 // Replies are plain and short, in HTML parse mode with every dynamic piece escaped. A figure that could
 // not be read is said to be unreadable, never shown as zero.
@@ -37,6 +40,7 @@ import { alertsForChat, muteAlert } from './alerts.mjs'
 import { randomToken, sha256 } from './store.mjs'
 import * as tracker from './tracker.mjs'
 import { askConfigured, askForChat, MAX_QUESTION } from './ask.mjs'
+import { DEEPCORE_CHAINS, readLaunches } from './deepcore.mjs'
 
 const FILE = path.join(DATA_DIR, 'telegram.json')
 const SITE = 'https://gullylabs.xyz'
@@ -213,6 +217,7 @@ function commandList() {
     { command: 'gap', description: 'Gap of one stock: /gap NVDA or /gap NVDA bsc' },
     { command: 'top', description: 'The five widest trusted gaps now' },
     ...(movers() ? [{ command: 'movers', description: 'Biggest gap moves in 24 hours' }] : []),
+    { command: 'launches', description: 'Latest DeepCore launches: /launches or /launches base' },
     { command: 'ask', description: 'Ask about Gully Labs: /ask how do alerts work?' },
     { command: 'alerts', description: 'Your alerts (linked chats)' },
     { command: 'stop', description: 'Unlink this chat from your account' },
@@ -272,6 +277,13 @@ export async function sendAlertTelegram(a) {
     const r = await sendText(chatId, `${title}\nTest message (${esc(a.conditionText)}). Deliveries for this alert reach this chat.`)
     return { status: r.status, ok: r.ok, error: r.error }
   }
+  if (a.events.some((e) => e.kind === 'deepcore.launch')) {
+    const shownL = a.events.slice(0, 5)
+    const text = `${title}\n${esc(a.conditionText)}\n\n${shownL.map(launchBlock).join('\n\n')}${a.events.length > shownL.length ? `\n…and ${a.events.length - shownL.length} more on deepcore.fun` : ''}`
+    const open = shownL.slice(0, 3).map((e) => ({ text: `Open ${e.symbol ?? 'token'} on DeepCore`.slice(0, 40), url: e.links.token }))
+    const r = await sendText(chatId, text, { reply_markup: { inline_keyboard: [...(open.length ? [open] : []), [{ text: 'Mute 24h', callback_data: `mute:${a.alertId}`.slice(0, 64) }]] } })
+    return { status: r.status, ok: r.ok, error: r.error }
+  }
   const shown = a.events.slice(0, 5)
   const blocks = shown.map((e) => {
     const lines = [`<b>${esc(e.ticker)}</b> · ${esc(e.chainName ?? chainName(e.chain))}`, `Gap <b>${esc(signed(e.gapPct))}%</b> vs fair (${esc(e.status)})`]
@@ -289,6 +301,17 @@ export async function sendAlertTelegram(a) {
   const reply_markup = { inline_keyboard: [...(open.length ? [open] : []), [{ text: 'Mute 24h', callback_data: `mute:${a.alertId}`.slice(0, 64) }]] }
   const r = await sendText(chatId, text, { reply_markup })
   return { status: r.status, ok: r.ok, error: r.error }
+}
+
+/** One DeepCore launch, in the bot's style: token, chain, time, pools and locks as DeepCore states them. */
+function launchBlock(l) {
+  const head = `<b>${esc(l.symbol ?? shortAddr(l.token))}</b> · ${esc(l.chainName)} · ${esc(when(l.createdAt))}`
+  const legs = (l.pools ?? l.legs ?? []).map((g) => {
+    const lock = g.locked === true ? `liquidity locked${g.lockId ? ` (lock #${esc(g.lockId)})` : ''}` : g.locked === false ? 'no liquidity lock' : 'lock not reported'
+    return `${esc(g.kind ?? 'Pool')} pool vs ${esc(g.quote ?? '?')} · ${lock}`
+  })
+  const lines = [head, legs.length ? legs.join('\n') : 'Pool not reported', `<a href="${esc(l.links.token)}">${esc(`deepcore.fun/tokens/${shortAddr(l.token)}`)}</a> · <a href="${esc(l.links.swap)}">swap on DeepCore</a>`]
+  return lines.join('\n')
 }
 
 /* ------------------------------------------------------------- commands --- */
@@ -315,6 +338,7 @@ const helpText = (linked) =>
     '/gap NVDA · one stock (add <code>bsc</code> or <code>robinhood</code> for one chain)',
     '/top · the five widest trusted gaps now',
     ...(movers() ? ['/movers · biggest gap moves in 24 hours'] : []),
+    '/launches · the latest token launches on DeepCore (add a chain: <code>bsc</code>, <code>base</code>, <code>robinhood</code>, <code>hyperevm</code>)',
     '/ask · a question about Gully Labs, answered from the docs',
     ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['Alerts: open the developer dashboard, Alerts tab, and press Connect Telegram.']),
     '',
@@ -331,6 +355,7 @@ function rowText(r) {
   if (r.status === 'feed-unreadable') body = 'The fair price (Chainlink feed) could not be read just now.'
   else if (r.status === 'pool-unreadable') body = `The pool could not be read just now.${fair ? ` Fair ${esc(fair)}.` : ''}`
   else if (r.status === 'no-pool') body = `No pool found for this token.${fair ? ` Fair ${esc(fair)}.` : ''}`
+  else if (r.status === 'unverified') body = [`Unverified: ${esc(r.untrustedReason ?? 'the on-chain price could not be confirmed.')}`, `On chain ${esc(on ?? 'unreadable')} · fair ${esc(fair ?? 'unreadable')}`, liq ? `Pool liquidity ${esc(liq)}` : 'Pool liquidity not reported'].join('\n')
   else if (typeof r.gapPct !== 'number' || !Number.isFinite(r.gapPct)) body = 'The gap could not be read just now.'
   else {
     const lines = [`Gap <b>${esc(signed(r.gapPct))}%</b> (${esc(r.status)})`, `On chain ${esc(on ?? 'unreadable')} · fair ${esc(fair ?? 'unreadable')}`, liq ? `Pool liquidity ${esc(liq)}` : 'Pool liquidity not reported']
@@ -379,6 +404,36 @@ async function cmdTop() {
   return `<b>Widest trusted gaps now</b>\n${lines.join('\n')}${closed ? `\n${closedText} and not ranked.` : ''}\n<a href="${SITE}/tracker">gullylabs.xyz/tracker</a>`
 }
 
+const LAUNCH_CHAIN_ALIASES = { bnb: 56, bsc: 56, binance: 56, hyperevm: 999, hype: 999, hl: 999, robinhood: 4663, rh: 4663, hood: 4663, base: 8453 }
+
+let readLaunchesFn = (o) => readLaunches(o)
+/** Test hook: replace the DeepCore launches read. */
+export function setLaunchesReaderForTest(fn) {
+  readLaunchesFn = fn
+}
+
+/** /launches [chain]: the latest DeepCore launches, newest first. */
+async function cmdLaunches(args) {
+  const arg = args.split(/\s+/).filter(Boolean)[0]?.toLowerCase().slice(0, 20)
+  const chainId = arg ? (LAUNCH_CHAIN_ALIASES[arg] ?? (DEEPCORE_CHAINS[Number(arg)] ? Number(arg) : undefined)) : null
+  if (chainId === undefined) return `DeepCore runs on ${Object.values(DEEPCORE_CHAINS).map((c) => esc(c.key)).join(', ')}. Try <code>/launches</code> or <code>/launches base</code>.`
+  let r
+  try {
+    r = await readLaunchesFn({ chainId, limit: 5 })
+  } catch {
+    r = { state: 'unreadable', launches: [] }
+  }
+  const where = chainId ? ` on ${esc(DEEPCORE_CHAINS[chainId].name)}` : ''
+  if (r.state === 'unreadable') return `DeepCore’s launches could not be read just now. Try again in a minute.\n<a href="https://deepcore.fun">deepcore.fun</a>`
+  const unread = (r.chains ?? []).filter((c) => c.status !== 'ok' && (!chainId || c.chainId === chainId)).map((c) => esc(c.name))
+  const notes = []
+  if (r.state === 'stale') notes.push(`<i>DeepCore could not be read just now; this is the list as of ${esc(when(r.asOf))}.</i>`)
+  if (unread.length) notes.push(`<i>DeepCore could not read ${unread.join(', ')}; launches there may be missing.</i>`)
+  if (!r.launches.length) return [`No launches on DeepCore${where} yet.`, ...notes, '<a href="https://deepcore.fun">deepcore.fun</a>'].join('\n')
+  const list = r.launches.map((l, i) => `${i + 1}. ${launchBlock(l)}`)
+  return [`<b>Latest DeepCore launches${where}</b>`, list.join('\n\n'), ...notes, `<i>Read from api.deepcore.fun${r.asOf ? ` at ${esc(when(r.asOf))}` : ''}. Information only.</i>`].join('\n')
+}
+
 async function cmdMovers() {
   let m
   try {
@@ -415,7 +470,7 @@ function cmdAlerts(link) {
 
 /* ---------------------------------------------------------------- updates --- */
 
-const PUBLIC_COMMANDS = new Set(['start', 'help', 'gap', 'top', 'ask'])
+const PUBLIC_COMMANDS = new Set(['start', 'help', 'gap', 'top', 'ask', 'launches'])
 const cmdHits = new Map()
 const seenUpdates = new Set()
 
@@ -490,6 +545,7 @@ async function onMessage(msg) {
   } else if (cmd === 'help') reply = helpText(!!link)
   else if (cmd === 'gap') reply = await cmdGap(args)
   else if (cmd === 'top') reply = await cmdTop()
+  else if (cmd === 'launches') reply = await cmdLaunches(args)
   else if (cmd === 'ask') {
     tg('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => undefined)
     reply = await cmdAsk(chatId, longArgs)

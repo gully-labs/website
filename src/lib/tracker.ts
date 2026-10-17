@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 /* The /api/tracker document (server/tracker.mjs), typed. A price is a number or null (could not be
    read); `status` says which, so nothing on the page invents a value for a missing one. */
 
-export type TrackerStatus = 'premium' | 'discount' | 'drifting' | 'in-line' | 'thin' | 'no-pool' | 'pool-unreadable' | 'feed-unreadable'
+export type TrackerStatus = 'premium' | 'discount' | 'drifting' | 'in-line' | 'thin' | 'unverified' | 'no-pool' | 'pool-unreadable' | 'feed-unreadable'
 
 export interface TrackerPool {
   dex: string
@@ -35,6 +35,14 @@ export interface TrackerRow {
   status: TrackerStatus
   pool: TrackerPool | null
   poolError: string | null
+  /** The gap before the plausibility guard; set while gapPct is withheld on an "unverified" row. */
+  rawGapPct?: number | null
+  /** Whether the tracker stands behind this gap, and why not when it does not. */
+  trusted?: boolean
+  untrustedReason?: string | null
+  /** 'chain': the pool was read on chain this cycle; 'api': the price API's reading at onchainAt. */
+  onchainSource?: 'chain' | 'api' | null
+  onchainAt?: string | null
   /** The pool read is the chain's last good one, served while the source is backing off. */
   poolStale?: boolean
 }
@@ -239,6 +247,7 @@ export const STATUS_LABEL: Record<TrackerStatus, string> = {
   drifting: 'Drifting',
   'in-line': 'In line',
   thin: 'Thin pool',
+  unverified: 'Unverified price',
   'no-pool': 'No pool',
   'pool-unreadable': 'Pool unreadable',
   'feed-unreadable': 'Feed unreadable',
