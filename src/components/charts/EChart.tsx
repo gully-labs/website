@@ -84,7 +84,15 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
     chart.current = c
     const names = ['click', 'mouseover', 'mouseout', 'globalout', 'highlight', 'downplay', 'updateAxisPointer']
     for (const n of names) c.on(n, (p: ChartEvent) => events.current?.[n]?.(p))
-    const ro = new ResizeObserver(() => c.resize())
+    // ResizeObserver fires once as soon as it observes; resizing then would finish the entry animation
+    // instantly. Resize only when the box really changed size.
+    let size = `${node.clientWidth}x${node.clientHeight}`
+    const ro = new ResizeObserver(() => {
+      const next = `${node.clientWidth}x${node.clientHeight}`
+      if (next === size) return
+      size = next
+      c.resize()
+    })
     ro.observe(node)
     notify.current?.(c)
     return () => {
