@@ -1,4 +1,5 @@
-// End-to-end test of Gully Pay links, wallet payment URIs (EIP-681) and merchant webhooks.
+// End-to-end test of Gully Pay links, wallet payment URIs (EIP-681) and merchant webhooks (with redeliver
+// and invoice.cancelled).
 //
 //   node scripts/test-paylinks.mjs        (no build needed; it tests the API, not the pages)
 //
@@ -351,6 +352,58 @@ try {
   sweepExpired()
   await processDue()
   check('invoice.expired is sent only once', hook.got.filter((g) => JSON.parse(g.body).type === 'invoice.expired' && JSON.parse(g.body).data.invoice.id === inv6.id).length === 1)
+
+  /* ------------------------------------------------------------ redeliver --- */
+  // The failed d5 (six 503s) is sent again: same event id and body, a new delivery with its own attempts.
+  hook.status = 200
+  hook.got.length = 0
+  const firstBody = JSON.parse(fs.readFileSync(path.join(tmp, 'pay-webhooks.json'), 'utf8')).deliveries.find((d) => d.id === d5.id).body
+  r = await admin(`/api/admin/pay-webhooks/deliveries/${d5.id}/redeliver`, 'POST')
+  const rd = r.data?.delivery
+  check('redeliver: a failed delivery is sent again at once', r.status === 200 && rd?.state === 'delivered' && rd.attempts === 1 && rd.last?.status === 200, r.data?.error)
+  check('redeliver: a NEW delivery with the SAME event id, pointing at the original', rd && rd.id !== d5.id && rd.eventId === d5.eventId && rd.redeliveryOf === d5.id && rd.type === 'invoice.paid')
+  check('redeliver: the receiver gets the identical body (same id), signed with the link secret', hook.got.length === 1 && hook.got[0].path === '/retry' && hook.got[0].body === firstBody && JSON.parse(hook.got[0].body).id === d5.eventId && merchantVerifies(hook.got[0], retrySecret))
+  check('redeliver: the original keeps its own log (failed, six attempts)', d5.state === 'failed' && d5.attempts.length === 6)
+  const linkLog = (await admin(`/api/admin/paylinks/${retryLink.id}`)).data.deliveries
+  check('redeliver: the link log shows both, newest first', linkLog[0]?.id === rd?.id && linkLog[0].redeliveryOf === d5.id && linkLog.some((d) => d.id === d5.id && d.state === 'failed'))
+  r = await admin(`/api/admin/pay-webhooks/deliveries/${rd?.id}/redeliver`, 'POST')
+  check('redeliver: a delivered (past) delivery may be sent again too, same event id', r.status === 200 && r.data.delivery.eventId === d5.eventId && hook.got.length === 2 && JSON.parse(hook.got[1].body).id === d5.eventId)
+  hook.status = 503
+  r = await admin(`/api/admin/pay-webhooks/deliveries/${d5.id}/redeliver`, 'POST')
+  const rdFail = deliveriesForTest().find((d) => d.id === r.data?.delivery?.id)
+  check('redeliver: a failing redelivery starts a new retry series (pending, 1 of 6, next retry set)', r.status === 200 && r.data.delivery.state === 'pending' && r.data.delivery.attempts === 1 && r.data.delivery.maxAttempts === 6 && Date.parse(r.data.delivery.nextAt) > Date.now())
+  r = await admin(`/api/admin/pay-webhooks/deliveries/${rdFail?.id}/redeliver`, 'POST')
+  check('redeliver: refused while the delivery is still being retried (409)', r.status === 409, r.data?.error)
+  hook.status = 200
+  await sleep(150)
+  await processDue()
+  check('…and its retry delivers it with the same event id', rdFail?.state === 'delivered' && rdFail.attempts.length === 2 && rdFail.eventId === d5.eventId)
+  const testD = deliveriesForTest().find((d) => d.test)
+  check('redeliver: refused for a test event (409)', (await admin(`/api/admin/pay-webhooks/deliveries/${testD.id}/redeliver`, 'POST')).status === 409)
+  check('redeliver: an unknown delivery is 404', (await admin('/api/admin/pay-webhooks/deliveries/whd_aaaaaaaaaaaa/redeliver', 'POST')).status === 404)
+  check('redeliver: needs the admin token (401)', (await admin(`/api/admin/pay-webhooks/deliveries/${d5.id}/redeliver`, 'POST', undefined, 'x'.repeat(48))).status === 401)
+  check('redeliver: GET is refused (405)', (await admin(`/api/admin/pay-webhooks/deliveries/${d5.id}/redeliver`)).status === 405)
+
+  /* ----------------------------------------------------- invoice.cancelled --- */
+  hook.got.length = 0
+  const cx = await admin('/api/admin/invoices', 'POST', { title: 'To cancel', usd: '20', assets: ['base-usdc'], webhookUrl: HOOK('/cancel') })
+  r = await admin(`/api/admin/invoices/${cx.data.invoice.id}/cancel`, 'POST')
+  await processDue()
+  const cReq = hook.got.find((g) => g.path === '/cancel')
+  const cEvt = cReq ? JSON.parse(cReq.body) : null
+  check('invoice.cancelled goes to the invoice endpoint when an admin cancels it', r.status === 200 && cEvt?.type === 'invoice.cancelled' && /^evt_/.test(cEvt.id) && cEvt.data.invoice.id === cx.data.invoice.id && cEvt.data.invoice.status === 'cancelled' && !!cEvt.data.invoice.cancelledAt, cReq?.body)
+  check('…signed with the invoice secret', !!cReq && merchantVerifies(cReq, cx.data.secret))
+  check('…and logged under the invoice', (await admin(`/api/admin/invoices/${cx.data.invoice.id}/deliveries`)).data.deliveries.some((d) => d.type === 'invoice.cancelled' && d.state === 'delivered'))
+  check('cancelling twice is refused and sends nothing more', (await admin(`/api/admin/invoices/${cx.data.invoice.id}/cancel`, 'POST')).status === 409 && (await processDue(), hook.got.filter((g) => g.path === '/cancel').length === 1))
+  hook.got.length = 0
+  const inv8 = (await payPost(`/api/pay/l/${retryLink.id}/invoice`, {}, '198.51.100.32')).data.invoice
+  await admin(`/api/admin/invoices/${inv8.id}/cancel`, 'POST')
+  await processDue()
+  const c8 = hook.got.find((g) => g.path === '/retry' && JSON.parse(g.body).type === 'invoice.cancelled')
+  check('a cancelled link invoice sends invoice.cancelled to the link endpoint, with the link', !!c8 && JSON.parse(c8.body).data.link?.id === retryLink.id && merchantVerifies(c8, retrySecret))
+  sweepExpired(Date.now() + 2 * 3_600_000)
+  await processDue()
+  check('a cancelled invoice never sends invoice.expired later', !hook.got.some((g) => JSON.parse(g.body).type === 'invoice.expired' && JSON.parse(g.body).data.invoice.id === inv8.id))
 
   /* ---------------------------------- invoice webhook and global default --- */
   const ci = await admin('/api/admin/invoices', 'POST', { title: 'Audit', usd: '100', assets: ['base-usdc'], webhookUrl: HOOK('/invoice') })

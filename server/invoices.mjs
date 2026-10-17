@@ -13,10 +13,11 @@
 //   adminListInvoices(), adminCreateInvoice(body), adminCancelInvoice(id),
 //   adminSetInvoiceWebhook(id, url), adminRotateInvoiceWebhook(id), adminTestInvoiceWebhook(id)
 // Pay links (paylinks.mjs) make invoices through createInvoiceRecord(); /api/pay/l/* is answered there.
-// A paid invoice sends invoice.paid to its merchant webhooks (pay-webhooks.mjs).
+// A paid invoice sends invoice.paid to its merchant webhooks (pay-webhooks.mjs); one an admin cancels sends
+// invoice.cancelled.
 
 import { checkInvoiceTx, createQuote, findQuote, isHash, badHash, ledger, normHash, paymentView, quoteView, recordPayment, save } from './billing.mjs'
-import { checkEndpoint, deliveries, emitInvoicePaid, endpointView, makeEndpoint, newSecret, sendTest } from './pay-webhooks.mjs'
+import { checkEndpoint, deliveries, emitInvoiceCancelled, emitInvoicePaid, endpointView, makeEndpoint, newSecret, sendTest } from './pay-webhooks.mjs'
 import { clientIp, json, readJson } from './http.mjs'
 import { assetById, ASSET_IDS, fmtUsd, parseUsdCents, publicAssets } from './payments.mjs'
 import { treasury } from './plans.mjs'
@@ -184,6 +185,11 @@ export function adminCancelInvoice(id) {
   if (s === 'cancelled') return { ok: false, status: 409, error: 'Already cancelled.' }
   inv.cancelledAt = new Date().toISOString()
   save()
+  try {
+    emitInvoiceCancelled(inv)
+  } catch (e) {
+    console.error('invoice.cancelled webhook:', e?.message ?? e)
+  }
   return { ok: true, invoice: adminView(inv) }
 }
 

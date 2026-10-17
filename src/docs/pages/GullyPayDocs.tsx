@@ -31,8 +31,8 @@ ethereum:0x8AC7…580d@56/transfer?address=0xAbC…123&uint256=15000031610000000
 
 const SHAPE = `// The body of every event (JSON). Types, not sample values.
 type GullyPayEvent = {
-  id: string                         // "evt_…": the same on every retry, so drop duplicates by id
-  type: 'invoice.paid' | 'invoice.expired' | 'webhook.test'
+  id: string                         // "evt_…": the same on every retry and redelivery, so drop duplicates by id
+  type: 'invoice.paid' | 'invoice.expired' | 'invoice.cancelled' | 'webhook.test'
   createdAt: string                  // ISO 8601, UTC
   data: {
     invoice: {                       // absent on webhook.test
@@ -47,6 +47,7 @@ type GullyPayEvent = {
       createdAt: string
       expiresAt: string
       paidAt: string | null
+      cancelledAt: string | null     // set on invoice.cancelled
     }
     link: { id: string; title: string; url: string } | null
     payment?: {                      // invoice.paid only
@@ -78,7 +79,7 @@ const EXAMPLE = `{
     "invoice": { "id": "inv_YyRDxuWTBu6ZnYlPVsGCjQ", "number": "GL-0001", "title": "Chain Kit setup", "usd": "1,500",
                  "usdCents": "150000", "status": "paid", "url": "https://gullylabs.xyz/pay/inv_YyRDxuWTBu6ZnYlPVsGCjQ",
                  "linkId": "pl_aV2bqpQu_I9b6Hem", "createdAt": "2026-10-17T16:01:32.866Z",
-                 "expiresAt": "2026-10-17T17:01:32.866Z", "paidAt": "2026-10-17T16:01:32.945Z" },
+                 "expiresAt": "2026-10-17T17:01:32.866Z", "paidAt": "2026-10-17T16:01:32.945Z", "cancelledAt": null },
     "link": { "id": "pl_aV2bqpQu_I9b6Hem", "title": "Chain Kit setup", "url": "https://gullylabs.xyz/pay/l/pl_aV2bqpQu_I9b6Hem" },
     "payment": { "chainId": 56, "chain": "BNB Chain", "asset": "bnb-usdc", "symbol": "USDC", "decimals": 18,
                  "amount": "1500.003161", "amountRaw": "1500003161000000000000", "usd": "1,500",
@@ -215,6 +216,7 @@ export function GullyPayDocs() {
           rows={[
             ['invoice.paid', 'The payment is confirmed and the invoice marked paid.', 'invoice, link, payment'],
             ['invoice.expired', 'An open invoice ran out without a payment.', 'invoice, link'],
+            ['invoice.cancelled', 'Gully Labs cancelled the invoice; it can no longer be paid. A cancelled invoice never sends invoice.expired afterwards.', 'invoice, link'],
             ['webhook.test', 'The admin pressed Send test event.', 'target, message'],
           ]}
         />
@@ -256,6 +258,9 @@ export function GullyPayDocs() {
           <li>Retries carry the same event <C>id</C> and body; each is signed again with the current secret and timestamp.</li>
           <li>The queue is stored on disk, so a restart loses nothing: attempts that came due while the server was down go out when it is back.</li>
           <li>Each link and invoice shows its delivery log in the admin: event, state, attempts, last answer.</li>
+          <li>
+            A finished delivery (failed or delivered) can be <b>redelivered</b> from the admin, for example after your endpoint was down for longer than the retries. The same event goes out again, with the same <C>id</C> and body, as a new delivery with its own six attempts. Your handler should already drop an <C>id</C> it has handled.
+          </li>
           <li>Events may arrive out of order and, rarely, more than once. Treat <C>invoice.paid</C> as the source of truth for a sale and look the invoice up by id.</li>
         </List>
       </Section>

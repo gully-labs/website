@@ -5,6 +5,7 @@
 //   invoice.paid     an invoice was paid and confirmed: chain, asset, exact amount, tx hash, block,
 //                    confirmations, payer address, invoice and link ids
 //   invoice.expired  an open invoice ran out without a payment
+//   invoice.cancelled an admin cancelled an open (or expired) invoice; it can no longer be paid
 //   webhook.test     sent by the admin's "Send test event"; never retried
 //
 // Signing is the same scheme as gap alerts (alerts.mjs), with the endpoint's own secret (whsec_…, shown
@@ -18,6 +19,11 @@
 // minutes, six attempts over about an hour, then the delivery is marked failed. The queue lives in
 // DATA_DIR/pay-webhooks.json (tmp + rename) so a restart loses nothing: due attempts run on start.
 // Each event keeps its id across retries, so a receiver can drop duplicates by `id`.
+//
+// Redeliver: an admin may send a finished delivery (failed or delivered, never a test event) again. The
+// SAME event (same id, same body) goes out as a new delivery with its own attempt series (first attempt at
+// once, then the usual retries), signed with the endpoint's current secret. The new delivery records
+// `redeliveryOf` (the delivery it repeats); the original keeps its own log untouched.
 //
 // Env (tests): GULLY_PAY_WEBHOOK_DELAYS_MS  comma-separated retry delays in ms (five of them)
 //              GULLY_PAY_WEBHOOK_TICK_MS    queue check interval (default 10000; 0 turns the timer off)
@@ -114,7 +120,7 @@ function targetsFor(inv) {
 
 function invoiceBrief(inv) {
   const status = inv.paymentId ? 'paid' : inv.cancelledAt ? 'cancelled' : Date.parse(inv.expiresAt) <= Date.now() ? 'expired' : 'open'
-  return { id: inv.id, number: inv.number, title: inv.title, usd: fmtUsd(inv.usdCents), usdCents: inv.usdCents, status, url: `${SITE}/pay/${inv.id}`, linkId: inv.linkId ?? null, createdAt: inv.createdAt, expiresAt: inv.expiresAt, paidAt: inv.paidAt ?? null }
+  return { id: inv.id, number: inv.number, title: inv.title, usd: fmtUsd(inv.usdCents), usdCents: inv.usdCents, status, url: `${SITE}/pay/${inv.id}`, linkId: inv.linkId ?? null, createdAt: inv.createdAt, expiresAt: inv.expiresAt, paidAt: inv.paidAt ?? null, cancelledAt: inv.cancelledAt ?? null }
 }
 
 function linkBrief(id) {
@@ -158,6 +164,10 @@ function expiredEvent(inv) {
   return { id: `evt_${randomToken(12)}`, type: 'invoice.expired', createdAt: new Date().toISOString(), data: { invoice: invoiceBrief(inv), link: linkBrief(inv.linkId) } }
 }
 
+function cancelledEvent(inv) {
+  return { id: `evt_${randomToken(12)}`, type: 'invoice.cancelled', createdAt: new Date().toISOString(), data: { invoice: invoiceBrief(inv), link: linkBrief(inv.linkId) } }
+}
+
 function enqueue(event, inv) {
   const targets = targetsFor(inv)
   const body = JSON.stringify(event)
@@ -176,6 +186,11 @@ function enqueue(event, inv) {
 /** Queues invoice.paid for an invoice that was just paid. Returns how many endpoints it goes to. */
 export function emitInvoicePaid(inv, payment, confirmations) {
   return enqueue(paidEvent(inv, payment, confirmations), inv)
+}
+
+/** Queues invoice.cancelled for an invoice an admin just cancelled. Returns how many endpoints it goes to. */
+export function emitInvoiceCancelled(inv) {
+  return enqueue(cancelledEvent(inv), inv)
 }
 
 /** Queues invoice.expired for every open invoice that ran out recently and was not announced yet. */
@@ -292,11 +307,38 @@ export async function sendTest(t) {
   return { ok: true, delivery: deliveryView(d), event }
 }
 
+/* ------------------------------------------------------------- redeliver --- */
+
+/**
+ * Sends a finished delivery's event again: same event id and body, a new delivery with its own attempt
+ * series. The first attempt goes out now (so the admin sees its answer); a failure is retried as usual.
+ * Resolves to { ok, delivery } or { ok: false, status, error }.
+ */
+export async function redeliver(id) {
+  const orig = db.deliveries.find((d) => d.id === id)
+  if (!orig) return { ok: false, status: 404, error: 'No such delivery.' }
+  if (orig.test) return { ok: false, status: 409, error: 'A test event is not redelivered. Send a new test event instead.' }
+  if (orig.state === 'pending') return { ok: false, status: 409, error: 'This delivery is still being retried. Wait until it is delivered or failed.' }
+  if (!endpointOf(orig)) return { ok: false, status: 409, error: 'The endpoint this delivery went to has been removed.' }
+  const now = new Date().toISOString()
+  const d = { id: `whd_${randomToken(9)}`, eventId: orig.eventId, type: orig.type, test: false, target: orig.target, targetId: orig.targetId, url: orig.url, invoiceId: orig.invoiceId, linkId: orig.linkId, body: orig.body, state: 'pending', attempts: [], nextAt: now, createdAt: now, finishedAt: null, redeliveryOf: orig.id }
+  db.deliveries.push(d)
+  inFlight.add(d.id)
+  try {
+    await attempt(d)
+  } finally {
+    inFlight.delete(d.id)
+    prune()
+    save()
+  }
+  return { ok: true, delivery: deliveryView(d) }
+}
+
 /* ---------------------------------------------------------------- views --- */
 
 export function deliveryView(d) {
   const last = d.attempts.at(-1) ?? null
-  return { id: d.id, eventId: d.eventId, type: d.type, test: d.test, target: d.target, targetId: d.targetId, url: d.url, invoiceId: d.invoiceId, linkId: d.linkId, state: d.state, attempts: d.attempts.length, maxAttempts: d.test ? 1 : MAX_ATTEMPTS, last, nextAt: d.nextAt, createdAt: d.createdAt, finishedAt: d.finishedAt }
+  return { id: d.id, eventId: d.eventId, type: d.type, test: d.test, target: d.target, targetId: d.targetId, url: d.url, invoiceId: d.invoiceId, linkId: d.linkId, state: d.state, attempts: d.attempts.length, maxAttempts: d.test ? 1 : MAX_ATTEMPTS, last, nextAt: d.nextAt, createdAt: d.createdAt, finishedAt: d.finishedAt, redeliveryOf: d.redeliveryOf ?? null }
 }
 
 /** Deliveries matching a filter, newest first. */

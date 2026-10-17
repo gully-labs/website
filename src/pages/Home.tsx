@@ -53,7 +53,7 @@ export function Home() {
             </button>
           </div>
         </div>
-        <div id="ledger" className="min-w-0 flex-[1.3_1_520px] scroll-mt-20" style={{ animation: 'gl-rise .6s .08s cubic-bezier(.2,.8,.2,1) both' }}>
+        <div id="ledger" className="min-w-0 flex-[1.3_1_520px] scroll-mt-[72px]" style={{ animation: 'gl-rise .6s .08s cubic-bezier(.2,.8,.2,1) both' }}>
           <HeroLedger data={data} state={st.k} />
         </div>
       </section>

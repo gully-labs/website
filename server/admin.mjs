@@ -28,6 +28,10 @@
 //   GET  /api/admin/pay-webhooks              the default endpoint and the latest deliveries
 //   POST /api/admin/pay-webhooks/default      { url | null } -> { endpoint, secret? }
 //   POST /api/admin/pay-webhooks/default/rotate|test
+//   POST /api/admin/pay-webhooks/deliveries/:id/redeliver   send a finished delivery's event again (same
+//                                             event id, a new attempt series) -> { delivery }
+//   GET  /api/admin/telegram                  linked Telegram chats: account, chat type, title, linked date,
+//                                             alerts using Telegram, last Telegram delivery. No message content.
 //   GET  /api/admin/analytics                Gully Analytics accounts: wallet, plan, sites, events this month
 //   POST /api/admin/analytics/:address/plan   { plan: 'starter'|'growth'|'none', days? }  grant for `days` (30) or stop now
 //   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
@@ -37,16 +41,17 @@ import fs from 'node:fs'
 import { accessStats } from './access.mjs'
 import { handleAskAdmin } from './ask.mjs'
 import { adminAnalyticsAccounts, adminAnalyticsDelete, adminAnalyticsSetPlan } from './analytics-accounts.mjs'
-import { alertStats } from './alerts.mjs'
+import { alertStats, alertsOf } from './alerts.mjs'
 import { adminSetPlan, allPayments } from './billing.mjs'
 import { adminCancelInvoice, adminCreateInvoice, adminInvoiceDeliveries, adminListInvoices, adminRotateInvoiceWebhook, adminSetInvoiceWebhook, adminTestInvoiceWebhook } from './invoices.mjs'
 import { adminCreateLink, adminLinkDetail, adminListLinks, adminRotateLinkSecret, adminSetLinkActive, adminTestLinkWebhook, adminUpdateLink } from './paylinks.mjs'
-import { defaultEndpoint, deliveries, rotateDefaultSecret, sendTest, setDefaultEndpoint, webhookStats } from './pay-webhooks.mjs'
+import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, setDefaultEndpoint, webhookStats } from './pay-webhooks.mjs'
 import { publicAssets } from './payments.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
 import { umamiConfigured } from './umami.mjs'
+import { linkedChat, telegramStats } from './telegram.mjs'
 import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
 
@@ -70,6 +75,32 @@ function authorised(req, res) {
     return false
   }
   return true
+}
+
+/**
+ * Linked Telegram chats, read-only from the stored links (telegram.mjs linkedChat, one per account) and the
+ * account's alerts (alerts.mjs). Never the chat id or any message text.
+ */
+async function telegramChats(accounts) {
+  const chats = []
+  for (const a of accounts) {
+    const l = linkedChat(a.address)
+    if (!l) continue
+    let alerts = null
+    let last = null
+    try {
+      const v = await alertsOf(a.address)
+      const tg = v.alerts.filter((x) => x.telegram)
+      alerts = { telegram: tg.length, enabled: tg.filter((x) => x.enabled).length, total: v.alerts.length }
+      for (const x of tg)
+        for (const d of x.deliveries)
+          if (d.channel === 'telegram' && (!last || d.at > last.at)) last = { at: d.at, ok: !!d.ok, test: !!d.test, status: d.status ?? null, error: d.ok ? null : (d.error ?? null) }
+    } catch {
+      alerts = null
+    }
+    chats.push({ address: a.address, chatType: l.chatType === 'private' ? 'private' : 'group', chatKind: l.chatType, chatTitle: l.chatTitle || null, linkedAt: l.linkedAt ?? null, alerts, lastDelivery: last })
+  }
+  return chats.sort((x, y) => String(y.linkedAt).localeCompare(String(x.linkedAt)))
 }
 
 function dirBytes(dir) {
@@ -214,6 +245,20 @@ export async function handleAdmin(req, res, url) {
     else if (m[2] === 'rotate') r = adminRotateLinkSecret(m[1])
     else r = await adminTestLinkWebhook(m[1])
     return (r.ok ? json(res, 200, { ...r, ok: undefined }) : json(res, r.status, { error: r.error }), true)
+  }
+
+  // Send a finished delivery again (any target: link, invoice or the default endpoint).
+  m = p.match(/^\/api\/admin\/pay-webhooks\/deliveries\/(whd_[\w-]{12})\/redeliver$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const r = await redeliver(m[1])
+    return (r.ok ? json(res, 200, { delivery: r.delivery }) : json(res, r.status, { error: r.error }), true)
+  }
+
+  if (p === '/api/admin/telegram') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    const s = telegramStats()
+    return json(res, 200, { enabled: s.enabled, links: s.links, chats: await telegramChats(db.accounts) }), true
   }
 
   // The default merchant webhook: events of invoices that have no endpoint of their own or of their link.

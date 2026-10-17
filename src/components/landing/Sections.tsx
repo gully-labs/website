@@ -16,7 +16,7 @@ const ease = [0.2, 0.8, 0.2, 1] as const
 export function ServicesBlock() {
   const { openContact } = useContact()
   return (
-    <section id="services" aria-labelledby="services-title" className="scroll-mt-20 border-t border-line bg-bg-alt">
+    <section id="services" aria-labelledby="services-title" className="scroll-mt-[72px] border-t border-line bg-bg-alt">
       <div className="flex flex-col gap-5 px-page py-12 max-[599px]:py-9">
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.45, ease }} className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
@@ -82,7 +82,7 @@ const OPENS: { t: string; href: string; kind: 'repo' | 'docs' | 'blog' }[] = [
 
 export function OpenStrip({ data }: { data: Stats | null }) {
   return (
-    <section id="open" aria-label="Open source, docs, blog and sharing" className="scroll-mt-20 border-t border-line">
+    <section id="open" aria-label="Open source, docs, blog and sharing" className="scroll-mt-[72px] border-t border-line">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-page py-6">
         <ul className="m-0 flex list-none flex-wrap items-center gap-x-1 gap-y-1 p-0">
           <li className="mr-2 font-mono text-[11px] tracking-[1.5px] text-gold">OPEN SOURCE</li>
