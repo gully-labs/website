@@ -33,7 +33,7 @@ const gapColour = (gap: number, inLinePct: number) => {
 }
 const idOf = (r: TrackerRow) => `${r.chain}:${r.ticker}`
 const HEIGHT = 320
-const CHAIN_TAG: Record<string, string> = { robinhood: 'RH', bsc: 'BNB' }
+const CHAIN_TAG: Record<string, string> = { robinhood: 'RH', bsc: 'BNB', solana: 'SOL' }
 
 export function GapHeatmap({ rows, inLinePct }: { rows: TrackerRow[]; inLinePct: number }) {
   const navigate = useNavigate()

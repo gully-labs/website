@@ -21,6 +21,7 @@ import { handleDeveloper } from './developer.mjs'
 import { handlePay } from './invoices.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
+import { handleSolana } from './solana-routes.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -182,6 +183,11 @@ const server = http.createServer(async (req, res) => {
   }
   // DeepCore router quote for the stock pages' comparison panel (deepcore.mjs): cached and rate limited here.
   if (url.pathname === '/api/deepcore/quote') return void (await handleDeepcoreQuote(req, res, url, geoFor(req, isLocal)))
+  // Solana (solana-routes.mjs): the RPC proxy, Solana Pay reference lookup and the geo-gated Jupiter quote/swap proxy.
+  if (url.pathname.startsWith('/api/solana/')) {
+    if (await handleSolana(req, res, url, geoFor(req, isLocal))) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
   // Gully Ask (ask.mjs): POST /api/ask and GET /api/ask/status.
   if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status') return void (await handleAsk(req, res, url))
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).

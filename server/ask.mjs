@@ -109,7 +109,7 @@ export const askStatus = () => ({ configured: askConfigured(), model: askModel()
 /* ------------------------------------------------------------------ tools --- */
 
 const TRUSTED = new Set(['in-line', 'drifting', 'premium', 'discount'])
-const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
+const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', solana: 'Solana' }
 const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${what} timed out`)), ms).unref?.())])
 
 let readRows = async () => {
@@ -152,7 +152,7 @@ export const TOOLS = [
     description: 'The tracker\'s latest reading for one tokenised stock: its on-chain price, Chainlink fair price, the gap in percent, status, pool liquidity and whether the feed session is open. Without a chain, every chain that lists the ticker is returned.',
     input_schema: {
       type: 'object',
-      properties: { ticker: { type: 'string', description: 'The stock ticker, e.g. NVDA' }, chain: { type: 'string', enum: ['robinhood', 'bsc'], description: 'Optional: robinhood (Robinhood Chain) or bsc (BNB Chain)' } },
+      properties: { ticker: { type: 'string', description: 'The stock ticker, e.g. NVDA' }, chain: { type: 'string', enum: ['robinhood', 'bsc', 'solana'], description: 'Optional: robinhood (Robinhood Chain), bsc (BNB Chain) or solana (Solana)' } },
       required: ['ticker'],
       additionalProperties: false,
     },
@@ -197,7 +197,7 @@ export async function runTool(name, input = {}) {
       const ticker = String(input?.ticker ?? '').toUpperCase().replace(/^\$/, '').trim()
       const chain = input?.chain ? String(input.chain).toLowerCase() : null
       if (!/^[A-Z.]{1,8}$/.test(ticker)) return { error: 'Not a ticker.' }
-      if (chain && !CHAIN_NAMES[chain]) return { error: 'chain must be robinhood or bsc' }
+      if (chain && !CHAIN_NAMES[chain]) return { error: 'chain must be robinhood, bsc or solana' }
       const followed = tracker.trackedStocks().filter((s) => s.ticker === ticker && (!chain || s.chain === chain))
       if (!followed.length) return { error: `${ticker}${chain ? ` on ${CHAIN_NAMES[chain]}` : ''} is not a stock the tracker follows.`, list: `${SITE}/tracker` }
       const { at, rows } = await readRows()

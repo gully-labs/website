@@ -34,6 +34,11 @@ import { DATA_DIR } from './http.mjs'
 import { assetById, ASSET_IDS, blockTime, CHAINS, confirmationsFor, DEFAULT_ASSET, fmtUnits, fmtUsd, MAX_TAG, paymentUri, quoteAmount, readFeed, readPayment, txUrl } from './payments.mjs'
 import { PAID_PLAN_IDS, PERIOD_MS, planOf, PLANS, treasury } from './plans.mjs'
 import { getAccount, randomToken, saveDevelopers } from './store.mjs'
+import { isSolanaAsset, solanaPayUrl, solanaTreasury } from './solana-pay.mjs'
+import { isSolanaSignature, newReference } from './solana.mjs'
+
+/** The treasury a payment in this asset goes to: GULLY_SOLANA_TREASURY on Solana, else the EVM treasury. */
+const treasuryFor = (asset) => (isSolanaAsset(asset) ? solanaTreasury() : treasury())
 
 const FILE = path.join(DATA_DIR, 'billing.json')
 export const QUOTE_TTL_MS = 20 * 60_000
@@ -113,8 +118,11 @@ export function quoteView(q) {
     treasury: q.treasury,
     chainId: a.chainId,
     token: a.address,
-    // EIP-681 wallet link for the exact amount (the pay page's QR). Built here, the one source of truth.
-    uri: paymentUri(a, q.treasury, q.amountRaw),
+    // EIP-681 wallet link (Solana Pay transfer request on Solana) for the exact amount (the pay page's QR).
+    // Built here, the one source of truth.
+    uri: isSolanaAsset(a) ? solanaPayUrl({ asset: a, recipient: q.treasury, amountRaw: q.amountRaw, reference: q.reference, message: q.plan && PLANS[q.plan] ? `Gully Labs ${PLANS[q.plan].name}` : 'Gully Pay' }) : paymentUri(a, q.treasury, q.amountRaw),
+    /** Solana Pay: the quote's unique reference key, which finds its payment on chain. */
+    reference: q.reference ?? null,
     confirmations: confirmationsFor(a.chainId),
     // Kept for pages built before multi-chain payments.
     priceUsdc: q.plan && PLANS[q.plan] ? PLANS[q.plan].priceUsdc : null,
@@ -152,16 +160,18 @@ export function paymentView(p) {
 /* -------------------------------------------------------------- quotes --- */
 
 const noTreasury = { ok: false, status: 503, error: 'Payments cannot be taken yet: no treasury wallet is configured.' }
+const noSolanaTreasury = { ok: false, status: 503, error: 'Payments on Solana cannot be taken yet: no Solana treasury wallet is configured. Choose another chain.' }
 
 /**
  * A new quote in one asset for a USD amount. Its amount differs from every other open quote in that
  * asset, so a transfer of exactly that amount names its quote.
  */
 export async function createQuote({ kind, assetId, usdCents, address = null, plan = null, invoiceId = null }) {
-  const t = treasury()
-  if (!t) return noTreasury
+  if (!treasury()) return noTreasury
   const asset = assetById(String(assetId ?? ''))
   if (!asset) return { ok: false, status: 400, error: `Choose an asset: ${ASSET_IDS.join(', ')}.` }
+  const t = treasuryFor(asset)
+  if (!t) return noSolanaTreasury
   let price = null
   if (asset.kind === 'native') {
     const f = await readFeed(asset.chainId)
@@ -197,6 +207,7 @@ export async function createQuote({ kind, assetId, usdCents, address = null, pla
     // From the signed-in wallet a stablecoin needs the USD amount; a native coin the quoted amount.
     minRaw: String(asset.kind === 'native' ? pick.amount : pick.base),
     treasury: t,
+    ...(isSolanaAsset(asset) ? { reference: newReference() } : {}),
     price,
     createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + QUOTE_TTL_MS).toISOString(),
@@ -220,15 +231,17 @@ const verifying = new Set()
  * otherwise resolves to { ok: false, status, error, pending?, confirmations?, needed? }.
  */
 async function checkTx({ quote, asset, txHash, signer, minRaw, label, run }) {
-  const t = treasury()
-  if (!t) return noTreasury
+  if (!treasury()) return noTreasury
+  const t = treasuryFor(asset)
+  if (!t) return noSolanaTreasury
+  if (isSolanaAsset(asset) !== isSolanaSignature(txHash)) return isSolanaAsset(asset) ? { ok: false, status: 400, error: 'This quote is on Solana: give the transaction signature (base58, 87 or 88 characters), not a 0x hash.' } : badHash
   if (quote && quote.treasury !== t) return { ok: false, status: 409, error: 'This quote was made for an earlier treasury address. Start a new one.' }
   if (hashUsed(asset.chainId, txHash)) return { ok: false, status: 409, error: 'This transaction has already been used for a payment.' }
   const key = usedKey(asset.chainId, txHash)
   if (verifying.has(key)) return { ok: false, status: 409, error: 'This transaction is being checked already.' }
   verifying.add(key)
   try {
-    const read = await readPayment(asset, txHash, t)
+    const read = await readPayment(asset, txHash, t, { reference: quote?.reference ?? null })
     if (!read.ok) return read
     const min = BigInt(minRaw)
     const exact = quote ? BigInt(quote.amountRaw) : null
@@ -244,9 +257,9 @@ async function checkTx({ quote, asset, txHash, signer, minRaw, label, run }) {
     }
     // Matched by amount, or priced by a feed: it must fall inside the quote's life.
     if (quote && (asset.kind === 'native' || match.from !== signer)) {
-      let minedAt
+      let minedAt = read.minedAt ?? null
       try {
-        minedAt = await blockTime(asset.chainId, read.blockHex)
+        minedAt ??= await blockTime(asset.chainId, read.blockHex)
       } catch (e) {
         return { ok: false, status: 502, error: `${CHAINS[asset.chainId].name} could not be read just now (${String(e?.message ?? e)}). Try again in a minute.` }
       }
@@ -272,9 +285,13 @@ export function recordPayment(fields, quote) {
   return payment
 }
 
-export const normHash = (v) => String(v ?? '').trim().toLowerCase()
-export const isHash = (h) => /^0x[0-9a-f]{64}$/.test(h)
-export const badHash = { ok: false, status: 400, error: 'That is not a transaction hash (0x followed by 64 hex characters).' }
+/** An EVM hash is lower-cased; a Solana signature (base58) is case-sensitive and kept as given. */
+export const normHash = (v) => {
+  const s = String(v ?? '').trim()
+  return isSolanaSignature(s) ? s : s.toLowerCase()
+}
+export const isHash = (h) => /^0x[0-9a-f]{64}$/.test(h) || isSolanaSignature(h)
+export const badHash = { ok: false, status: 400, error: 'That is not a transaction hash (0x followed by 64 hex characters) or a Solana signature.' }
 
 /** Checks an invoice payment (invoices.mjs owns the invoice rules): exact quoted amount only. */
 export function checkInvoiceTx({ quote, txHash, run }) {
@@ -298,7 +315,7 @@ export async function openIntent(address, planId, assetId = DEFAULT_ASSET) {
   const id = String(assetId || DEFAULT_ASSET)
   if (!assetById(id)) return { ok: false, status: 400, error: `Choose an asset: ${ASSET_IDS.join(', ')}.` }
   if (pruneQuotes()) save()
-  const live = db.quotes.find((q) => q.kind === 'plan' && q.address === address && q.plan === planId && q.assetId === id && q.treasury === t && !q.paidAt && Date.parse(q.expiresAt) - Date.now() > 5 * 60_000)
+  const live = db.quotes.find((q) => q.kind === 'plan' && q.address === address && q.plan === planId && q.assetId === id && q.treasury === treasuryFor(assetById(id)) && !q.paidAt && Date.parse(q.expiresAt) - Date.now() > 5 * 60_000)
   if (live) return { ok: true, intent: quoteView(live) }
   const r = await createQuote({ kind: 'plan', assetId: id, usdCents: planCents(planId), address, plan: planId })
   return r.ok ? { ok: true, intent: quoteView(r.quote) } : r
@@ -369,7 +386,7 @@ export async function openProductQuote({ kind, address, planId, usdCents, assetI
   const id = String(assetId || DEFAULT_ASSET)
   if (!assetById(id)) return { ok: false, status: 400, error: `Choose an asset: ${ASSET_IDS.join(', ')}.` }
   if (pruneQuotes()) save()
-  const live = db.quotes.find((q) => q.kind === kind && q.address === address && q.plan === planId && q.assetId === id && q.treasury === t && q.usdCents === String(usdCents) && !q.paidAt && Date.parse(q.expiresAt) - Date.now() > 5 * 60_000)
+  const live = db.quotes.find((q) => q.kind === kind && q.address === address && q.plan === planId && q.assetId === id && q.treasury === treasuryFor(assetById(id)) && q.usdCents === String(usdCents) && !q.paidAt && Date.parse(q.expiresAt) - Date.now() > 5 * 60_000)
   if (live) return { ok: true, intent: quoteView(live) }
   const r = await createQuote({ kind, assetId: id, usdCents: BigInt(usdCents), address, plan: planId })
   return r.ok ? { ok: true, intent: quoteView(r.quote) } : r

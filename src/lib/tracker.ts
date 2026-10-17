@@ -45,6 +45,10 @@ export interface TrackerRow {
   onchainAt?: string | null
   /** The pool read is the chain's last good one, served while the source is backing off. */
   poolStale?: boolean
+  /** Who priced `fair` where it is not Chainlink (Solana: "Pyth (on chain)" or "Pyth (Hermes)"). */
+  fairSource?: string
+  /** The token's own symbol where it differs from the ticker (Solana xStocks: AAPLx). */
+  symbol?: string
 }
 
 export interface TrackerChain {
@@ -253,8 +257,8 @@ export const STATUS_LABEL: Record<TrackerStatus, string> = {
   'feed-unreadable': 'Feed unreadable',
 }
 
-export const CHAIN_NAME: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
-export const CHAIN_SHORT: Record<string, string> = { robinhood: 'Robinhood', bsc: 'BNB' }
+export const CHAIN_NAME: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', solana: 'Solana' }
+export const CHAIN_SHORT: Record<string, string> = { robinhood: 'Robinhood', bsc: 'BNB', solana: 'Solana' }
 
 /** The post a visitor shares about one token's gap. */
 export function gapPost(r: TrackerRow): string {

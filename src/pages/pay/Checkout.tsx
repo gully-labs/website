@@ -7,6 +7,8 @@ import { payApi, type Quote } from './api'
 import { fmtTime, type Invoice } from './invoice'
 import { QrCode } from './QrCode'
 import { copyWithToast, toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
+import { isSolanaChain, isSolanaSignature, priceSource } from '../../components/solana/constants'
+import { SolanaReferenceWatch } from '../../components/solana/SolanaReferenceWatch'
 
 /* The hosted checkout of one invoice (/pay/<id>, also where a pay link lands): plan header and status,
    asset picker grouped by chain, the exact amount, a wallet QR (EIP-681, built by the server), copy
@@ -14,6 +16,7 @@ import { copyWithToast, toastError, toastInfo, toastSuccess } from '../../compon
    for), a pasted-hash fallback, live confirmations and the receipt. Every figure is the server's. */
 
 const PayWallet = lazy(() => import('../../components/pay/PayWallet'))
+const SolanaPayWallet = lazy(() => import('../../components/solana/SolanaPayWallet'))
 
 type Check = { s: 'idle' } | { s: 'checking'; hash: string } | { s: 'pending'; hash: string; confirmations: number; needed: number; message: string } | { s: 'error'; message: string; hash?: string } | { s: 'done'; hash: string }
 
@@ -261,8 +264,8 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
     e.preventDefault()
     if (!quote) return
     const h = hash.trim()
-    if (/^0x[0-9a-fA-F]{64}$/.test(h)) verify(quote, h)
-    else setCheck({ s: 'error', message: 'A transaction hash is 0x followed by 64 hexadecimal characters.' })
+    if (/^0x[0-9a-fA-F]{64}$/.test(h) || (isSolanaChain(quote.chainId) && isSolanaSignature(h))) verify(quote, h)
+    else setCheck({ s: 'error', message: isSolanaChain(quote.chainId) ? 'A Solana transaction signature is 87 or 88 base58 characters.' : 'A transaction hash is 0x followed by 64 hexadecimal characters.' })
   }
 
   const txLink = (h: string) => (asset ? `${asset.explorer}/tx/${h}` : null)
@@ -279,7 +282,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
       {loading && (
         <div className="flex flex-col gap-3" aria-busy>
           <span className="inline-flex items-center gap-2 font-mono text-[12px] text-muted" role="status">
-            <Loader2 size={14} className="animate-spin" aria-hidden /> Getting a quote{asset?.kind === 'native' ? ` from the Chainlink ${asset.feed?.description} price on ${asset.chain}` : ''}…
+            <Loader2 size={14} className="animate-spin" aria-hidden /> Getting a quote{asset?.kind === 'native' ? ` from the ${priceSource(asset.chainId)} ${asset.feed?.description} price on ${asset.chain}` : ''}…
           </span>
           <span className="block h-[200px] animate-pulse rounded-card bg-surface-deep" />
         </div>
@@ -331,7 +334,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
                 {quote.amount} <span className="text-gold">{quote.asset.symbol}</span>
               </span>
               <span className="font-mono text-[12px] text-dim">
-                {quote.usd} USD · {quote.asset.kind === 'native' && quote.price ? `1 ${quote.asset.symbol} = ${Number(quote.price.answer).toLocaleString('en-US', { maximumFractionDigits: 2 })} USD (Chainlink), rounded up` : 'stablecoin, 1:1, plus a tag in the last digits'}
+                {quote.usd} USD · {quote.asset.kind === 'native' && quote.price ? `1 ${quote.asset.symbol} = ${Number(quote.price.answer).toLocaleString('en-US', { maximumFractionDigits: 2 })} USD (${priceSource(quote.chainId)}), rounded up` : 'stablecoin, 1:1, plus a tag in the last digits'}
               </span>
               <div className="mt-1 flex flex-wrap gap-2">
                 <CopyChip text={quote.amount} label="Amount" />
@@ -353,15 +356,15 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
             {quote.asset.kind === 'token' && quote.asset.address ? <Row k={`${quote.asset.symbol} CONTRACT · ${quote.asset.decimals} DECIMALS`} v={quote.asset.address} /> : <Row k="ASSET" v={`${quote.asset.chain}’s own coin (a plain transfer, not a token)`} />}
           </div>
           <span className="font-mono text-[11px] leading-[1.6] text-faint">
-            Chain id {quote.chainId} · counts after {quote.confirmations} confirmations
+            {isSolanaChain(quote.chainId) ? 'Solana mainnet · counts once finalized (about 15 s)' : `Chain id ${quote.chainId} · counts after ${quote.confirmations} confirmations`}
             {quote.price && (
               <>
                 {' '}
                 · price from the{' '}
                 <a href={`${asset.explorer}/address/${quote.price.feed}`} target="_blank" rel="noopener" className="text-dim underline-offset-4 hover:underline">
-                  Chainlink {quote.price.description} feed
+                  {priceSource(quote.chainId)} {quote.price.description} {isSolanaChain(quote.chainId) ? 'price account' : 'feed'}
                 </a>
-                , round {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}
+                , {isSolanaChain(quote.chainId) ? 'slot' : 'round'} {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}
               </>
             )}
           </span>
@@ -371,15 +374,27 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
               <span className="font-mono text-[11px] tracking-[1px] text-faint">ONE CLICK</span>
               {showWallet ? (
                 <Suspense fallback={<span className="block h-11 animate-pulse rounded-btn bg-surface-deep" />}>
-                  <PayWallet
-                    quote={quote}
-                    disabled={expired || busy}
-                    onError={setWalletErr}
-                    onSent={(h) => {
-                      setHash(h)
-                      verify(quote, h)
-                    }}
-                  />
+                  {isSolanaChain(quote.chainId) ? (
+                    <SolanaPayWallet
+                      quote={quote}
+                      disabled={expired || busy}
+                      onError={setWalletErr}
+                      onSent={(h) => {
+                        setHash(h)
+                        verify(quote, h)
+                      }}
+                    />
+                  ) : (
+                    <PayWallet
+                      quote={quote}
+                      disabled={expired || busy}
+                      onError={setWalletErr}
+                      onSent={(h) => {
+                        setHash(h)
+                        verify(quote, h)
+                      }}
+                    />
+                  )}
                 </Suspense>
               ) : (
                 <button type="button" disabled={expired || busy} onClick={() => setShowWallet(true)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-btn bg-gold px-5 text-[15px] font-semibold text-bg transition-colors hover:bg-gold-hover disabled:cursor-not-allowed disabled:opacity-50">
@@ -387,6 +402,17 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
                 </button>
               )}
               <span className="text-[12px] leading-[1.5] text-faint">Sends exactly {quote.amount} {quote.asset.symbol} from the wallet you connect, after switching it to {quote.asset.chain}.</span>
+              {isSolanaChain(quote.chainId) && (
+                <SolanaReferenceWatch
+                  quoteId={quote.id}
+                  reference={(quote as { reference?: string | null }).reference}
+                  active={!busy && check.s !== 'done'}
+                  onFound={(h) => {
+                    setHash(h)
+                    verify(quote, h)
+                  }}
+                />
+              )}
               {walletErr && (
                 <p className="m-0 text-[13px] text-error" role="alert">
                   {walletErr}
@@ -395,8 +421,8 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
             </div>
             <form className="flex flex-col gap-3" onSubmit={submit}>
               <label className="flex flex-col gap-2">
-                <span className="font-mono text-[11px] tracking-[1px] text-faint">OR PASTE THE TRANSACTION HASH</span>
-                <input className="h-11 w-full rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none transition-colors focus:border-gold" value={hash} onChange={(e) => setHash(e.target.value)} placeholder="0x…" spellCheck={false} autoComplete="off" inputMode="text" />
+                <span className="font-mono text-[11px] tracking-[1px] text-faint">OR PASTE THE TRANSACTION {isSolanaChain(quote.chainId) ? 'SIGNATURE' : 'HASH'}</span>
+                <input className="h-11 w-full rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none transition-colors focus:border-gold" value={hash} onChange={(e) => setHash(e.target.value)} placeholder={isSolanaChain(quote.chainId) ? '5h3…' : '0x…'} spellCheck={false} autoComplete="off" inputMode="text" />
               </label>
               <button type="submit" disabled={busy || !hash.trim()} className={`${btnOutline} inline-flex min-h-11 items-center justify-center gap-2 px-5 text-[15px] disabled:opacity-50`}>
                 {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}

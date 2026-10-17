@@ -7,6 +7,8 @@ import { input } from '../../pages/developers/styles'
 import { btnOutline } from '../ui'
 import { toastError, toastInfo, toastSuccess } from '../ui/toast'
 import { AssetMark, AssetPicker } from './AssetPicker'
+import { isSolanaChain, isSolanaSignature, priceSource } from '../solana/constants'
+import { SolanaReferenceWatch } from '../solana/SolanaReferenceWatch'
 
 /* Gully Pay checkout, shared by the dashboard's Plan & billing tab and the public /pay/<invoice> page:
    pick a chain and asset, get a 20-minute quote (exact amount, treasury, price source), pay with one
@@ -14,6 +16,7 @@ import { AssetMark, AssetPicker } from './AssetPicker'
    from the server's quote; nothing is priced here. */
 
 const PayWallet = lazy(() => import('./PayWallet'))
+const SolanaPayWallet = lazy(() => import('../solana/SolanaPayWallet'))
 
 type Check = { state: 'idle' } | { state: 'checking'; hash: string } | { state: 'pending'; hash: string; message: string } | { state: 'done'; hash: string } | { state: 'error'; message: string; hash?: string }
 
@@ -154,8 +157,8 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!quote) return
-    if (/^0x[0-9a-fA-F]{64}$/.test(hash.trim())) doVerify(quote, hash.trim())
-    else setCheck({ state: 'error', message: 'A transaction hash is 0x followed by 64 hexadecimal characters.' })
+    if (/^0x[0-9a-fA-F]{64}$/.test(hash.trim()) || (isSolanaChain(quote.chainId) && isSolanaSignature(hash))) doVerify(quote, hash.trim())
+    else setCheck({ state: 'error', message: isSolanaChain(quote.chainId) ? 'A Solana transaction signature is 87 or 88 base58 characters.' : 'A transaction hash is 0x followed by 64 hexadecimal characters.' })
   }
 
   const busy = check.state === 'checking' || check.state === 'pending'
@@ -180,7 +183,7 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
       {loading && (
         <div className="flex flex-col gap-3" aria-busy>
           <span className="inline-flex items-center gap-2 font-mono text-[12px] text-muted" role="status">
-            <Loader2 size={14} className="animate-spin" aria-hidden /> Getting a quote{asset?.kind === 'native' ? ` from the Chainlink ${asset.feed?.description} price on ${asset.chain}` : ''}…
+            <Loader2 size={14} className="animate-spin" aria-hidden /> Getting a quote{asset?.kind === 'native' ? ` from the ${priceSource(asset.chainId)} ${asset.feed?.description} price on ${asset.chain}` : ''}…
           </span>
           <Skeleton h={58} />
         </div>
@@ -216,7 +219,7 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
 
           <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13px] leading-[1.6] text-faint">
             <li>
-              Network: {quote.asset.chain} (chain id {quote.chainId}).{' '}
+              Network: {quote.asset.chain}{isSolanaChain(quote.chainId) ? '' : ` (chain id ${quote.chainId})`}.{' '}
               {quote.asset.kind === 'token' ? (
                 <>
                   Token:{' '}
@@ -228,15 +231,15 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
               ) : (
                 <>A plain transfer of the chain’s own coin, not a token.</>
               )}{' '}
-              Counts after {quote.confirmations} confirmations.
+              {isSolanaChain(quote.chainId) ? 'Counts once finalized (about 15 s).' : `Counts after ${quote.confirmations} confirmations.`}
             </li>
             {quote.price && (
               <li>
                 Priced at 1 {quote.asset.symbol} = {Number(quote.price.answer).toLocaleString('en-US', { maximumFractionDigits: 2 })} USD by the{' '}
                 <a href={`${asset.explorer}/address/${quote.price.feed}`} target="_blank" rel="noopener" className="text-ink-2 underline-offset-4 hover:underline">
-                  Chainlink {quote.price.description} feed
+                  {priceSource(quote.chainId)} {quote.price.description} {isSolanaChain(quote.chainId) ? 'price account' : 'feed'}
                 </a>{' '}
-                (round {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}, updated {minutesAgo(quote.price.updatedAt, now)}), rounded up.
+                ({isSolanaChain(quote.chainId) ? 'slot' : 'round'} {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}, updated {minutesAgo(quote.price.updatedAt, now)}), rounded up.
               </li>
             )}
             <li>
@@ -253,15 +256,27 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
               <span className="font-mono text-[11px] tracking-[1px] text-faint">ONE CLICK</span>
               {showWallet ? (
                 <Suspense fallback={<Skeleton h={44} />}>
-                  <PayWallet
-                    quote={quote}
-                    disabled={expired || busy}
-                    onError={setWalletErr}
-                    onSent={(h) => {
-                      setHash(h)
-                      doVerify(quote, h)
-                    }}
-                  />
+                  {isSolanaChain(quote.chainId) ? (
+                    <SolanaPayWallet
+                      quote={quote}
+                      disabled={expired || busy}
+                      onError={setWalletErr}
+                      onSent={(h) => {
+                        setHash(h)
+                        doVerify(quote, h)
+                      }}
+                    />
+                  ) : (
+                    <PayWallet
+                      quote={quote}
+                      disabled={expired || busy}
+                      onError={setWalletErr}
+                      onSent={(h) => {
+                        setHash(h)
+                        doVerify(quote, h)
+                      }}
+                    />
+                  )}
                 </Suspense>
               ) : (
                 <button type="button" disabled={expired} onClick={() => setShowWallet(true)} className={`${btnOutline} inline-flex min-h-11 items-center justify-center gap-2 border-gold-line px-5 text-[15px] text-gold hover:border-gold disabled:cursor-not-allowed disabled:opacity-50`}>
@@ -270,11 +285,22 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
               )}
               {expired && <span className="text-[13px] text-faint">Get a new quote to pay from a wallet. A payment you already sent in time can still be checked on the right.</span>}
               {walletErr && <ErrorLine>{walletErr}</ErrorLine>}
+              {isSolanaChain(quote.chainId) && (
+                <SolanaReferenceWatch
+                  quoteId={quote.id}
+                  reference={(quote as { reference?: string | null }).reference}
+                  active={!busy && check.state !== 'done'}
+                  onFound={(h) => {
+                    setHash(h)
+                    doVerify(quote, h)
+                  }}
+                />
+              )}
             </div>
             <form className="flex flex-col gap-3" onSubmit={submit}>
               <label className="flex flex-col gap-2">
-                <span className="font-mono text-[11px] tracking-[1px] text-faint">OR PASTE THE TRANSACTION HASH</span>
-                <input className={`${input} font-mono text-[13px]`} value={hash} onChange={(e) => setHash(e.target.value)} placeholder="0x…" spellCheck={false} autoComplete="off" />
+                <span className="font-mono text-[11px] tracking-[1px] text-faint">OR PASTE THE TRANSACTION {isSolanaChain(quote.chainId) ? 'SIGNATURE' : 'HASH'}</span>
+                <input className={`${input} font-mono text-[13px]`} value={hash} onChange={(e) => setHash(e.target.value)} placeholder={isSolanaChain(quote.chainId) ? '5h3…' : '0x…'} spellCheck={false} autoComplete="off" />
               </label>
               <button type="submit" disabled={busy || !hash.trim()} className={`${btnOutline} inline-flex min-h-11 items-center justify-center gap-2 px-5 text-[15px] disabled:opacity-50`}>
                 {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}

@@ -21,6 +21,7 @@
     "test:paylinks": "node scripts/test-paylinks.mjs",
     "test:ask": "node scripts/test-ask.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",
+    "test:solana": "node scripts/test-solana.mjs",
     "ask:index": "node scripts/build-ask-index.mjs"
   },
   "dependencies": {
