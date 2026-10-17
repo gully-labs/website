@@ -2,6 +2,7 @@ import { AppWindow, ArrowUpRight, BookOpen, Check, ChevronDown, Code2, MessageCi
 import { useEffect, useState, type ReactNode } from 'react'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import type { Account, AlertsView, AnalyticsView } from './api'
+import { ExtLink } from './ExtLink'
 import { mono, panel, panelTitle, pillSm, rise } from './styles'
 
 /* The Overview's "Get started" checklist and "Tools" row. Every tick comes from account data the console
@@ -183,10 +184,10 @@ function useHealth(): Health {
 export function ToolsRow() {
   const health = useHealth()
   const time = (d: Date) => d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-  const tools: { href: string; icon: ReactNode; title: string; note: ReactNode }[] = [
+  const tools: { href: string; icon: ReactNode; title: string; note: ReactNode; ext?: boolean }[] = [
     { href: site('/widget'), icon: <AppWindow size={16} aria-hidden />, title: 'Widget builder', note: 'live fair prices, no key' },
-    { href: `${DOCS_URL}/sdk`, icon: <Code2 size={16} aria-hidden />, title: 'SDK', note: 'typed TypeScript client' },
-    { href: `${DOCS_URL}/api`, icon: <BookOpen size={16} aria-hidden />, title: 'API docs', note: 'every endpoint and field' },
+    { href: `${DOCS_URL}/sdk`, icon: <Code2 size={16} aria-hidden />, title: 'SDK', note: 'typed TypeScript client', ext: true },
+    { href: `${DOCS_URL}/api`, icon: <BookOpen size={16} aria-hidden />, title: 'API docs', note: 'every endpoint and field', ext: true },
     { href: site('/ask'), icon: <MessageCircleQuestion size={16} aria-hidden />, title: 'Ask Gully', note: 'questions about the data and docs' },
     {
       href: site('/tracker'),
@@ -206,7 +207,7 @@ export function ToolsRow() {
   return (
     <nav aria-label="Tools" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,190px),1fr))] gap-3" style={rise(6)} data-testid="tools-row">
       {tools.map((t) => (
-        <a key={t.title} href={t.href} className="group flex min-h-[64px] min-w-0 items-center gap-3 rounded-[14px] border border-line bg-surface px-4 py-3 transition-colors hover:border-gold-line">
+        <a key={t.title} href={t.href} {...(t.ext ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="group flex min-h-[64px] min-w-0 items-center gap-3 rounded-[14px] border border-line bg-surface px-4 py-3 transition-colors hover:border-gold-line">
           <span className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-line-strong text-gold group-hover:border-gold-line">{t.icon}</span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="flex items-center gap-1 text-[14px] font-semibold text-ink">
@@ -214,7 +215,9 @@ export function ToolsRow() {
             </span>
             <span className="truncate text-[12px] text-dim">{t.note}</span>
           </span>
+          {t.ext && <span className="sr-only"> (opens in a new tab)</span>}
         </a>
+
       ))}
     </nav>
   )
@@ -233,9 +236,9 @@ export function PayOnRequest() {
       <a href={site('/services?contact=1')} className={pillSm}>
         Ask for Gully Pay <ArrowUpRight size={13} aria-hidden />
       </a>
-      <a href={`${DOCS_URL}/gully-pay`} className={pillSm}>
+      <ExtLink href={`${DOCS_URL}/gully-pay`} className={pillSm}>
         <BookOpen size={15} aria-hidden /> How it works
-      </a>
+      </ExtLink>
     </section>
   )
 }

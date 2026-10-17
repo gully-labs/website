@@ -1,11 +1,16 @@
-import { ArrowUpRight, CheckCircle2, Receipt } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2, Download, FileText, Receipt, Users } from 'lucide-react'
+import { usePortal, useWrite } from './portal'
+import { Can } from './RoleGate'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { TokenLogo } from '../../components/logos/TokenLogo'
+import { LiveMarker, StackedDays } from './vcharts'
 import { useCallback, useEffect, useState } from 'react'
 import { isLocalHost, SITE_URL } from '../../site-host'
 import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, type Payment, type Plan, type PlanId, type Quote } from './api'
 import { PayOnRequest } from './GetStarted'
 import { Empty, ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
-import { mono, panel, panelTitle, pillGold, pillLine, rise } from './styles'
+import { mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
 
 /* Billing: the plan in force, the plans on offer (from the server; no price is typed here), Gully Pay
    checkout (chain and asset chips, a 20-minute quote, pay from the connected wallet or check a hash)
@@ -108,6 +113,8 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
   const [view, setView] = useState<BillingView | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [buying, setBuying] = useState<{ plan: Plan; asset: string | null; auto: boolean } | null>(null)
+  const { me, user } = usePortal()
+  const canPay = useWrite('billing', 'pay for plans').ok
 
   const load = useCallback(
     () =>
@@ -143,7 +150,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
   const paid = offer.plans.filter((p) => p.priceUsdc > 0)
   const left = daysLeft(cur.expiresAt)
   // Arriving from the Overview's "Pay on …": that plan's checkout, quoted at once in the chosen asset.
-  const intentPlan = intent && offer.checkout.enabled ? offer.plans.find((x) => x.id === intent.plan) : undefined
+  const intentPlan = intent && offer.checkout.enabled && canPay ? offer.plans.find((x) => x.id === intent.plan) : undefined
   const active = buying ?? (intent && intentPlan ? { plan: intentPlan, asset: intent.asset, auto: true } : null)
 
   return (
@@ -172,6 +179,12 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
             <Limits p={cur} />
           </div>
         </div>
+        <p className="m-0 flex items-start gap-2 rounded-[10px] border border-line bg-surface-deep px-3 py-2 text-[13px] leading-[1.55] text-ink-2" data-testid="workspace-pays">
+          <Users size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden />
+          <span>
+            <b className="font-semibold">This workspace pays.</b> The plan belongs to {me ? <b className="font-semibold">{me.active.name}</b> : 'the workspace'} and covers every member&apos;s keys and alerts. {canPay ? 'Payments can come from any wallet; the receipt names the workspace and its company details.' : 'Owners, admins and billing members can pay or extend it.'}
+          </span>
+        </p>
       </section>
 
       {active ? (
@@ -223,9 +236,11 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                     </span>
                   </div>
                   <Limits p={p} />
-                  <button type="button" disabled={!offer.checkout.enabled} onClick={() => setBuying({ plan: p, asset: null, auto: false })} className={isCur ? pillLine : pillGold}>
-                    {!offer.checkout.enabled ? 'Not on sale yet' : isCur ? `Extend ${p.name} by ${offer.periodDays} days` : `Choose ${p.name}`}
-                  </button>
+                  <Can cat="billing" what="pay for plans" block>
+                    <button type="button" disabled={!offer.checkout.enabled} onClick={() => setBuying({ plan: p, asset: null, auto: false })} className={`${isCur ? pillLine : pillGold} w-full`} data-checkout={p.id}>
+                      {!offer.checkout.enabled ? 'Not on sale yet' : isCur ? `Extend ${p.name} by ${offer.periodDays} days` : `Choose ${p.name}`}
+                    </button>
+                  </Can>
                 </div>
               )
             })}
@@ -234,14 +249,41 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
       )}
 
       <section className={panel} style={rise(2)} aria-labelledby="payments-title">
-        <div className="flex flex-col gap-[2px]">
-          <h2 id="payments-title" className={panelTitle}>
-            Payments
-          </h2>
-          <span className={mono}>Every payment this wallet has made for a plan</span>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-col gap-[2px]">
+            <h2 id="payments-title" className={panelTitle}>
+              Payments
+            </h2>
+            <span className={mono}>Every payment made for this workspace&apos;s plan, with its transaction</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2" data-testid="csv-exports">
+            <a href="/api/developer/export/payments.csv" download className={pillSm}>
+              <Download size={14} aria-hidden /> Payments CSV
+            </a>
+            <span className="flex items-center gap-1 rounded-full border border-line px-1">
+              <span className="pl-2 font-mono text-[11px] text-faint">Usage CSV</span>
+              {(['24h', '7d', '30d'] as const).map((r) => (
+                <a key={r} href={`/api/developer/export/usage.csv?range=${r}`} download className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-2 font-mono text-[12px] text-ink-2 hover:text-gold" aria-label={`Download usage CSV, last ${r}`}>
+                  {r}
+                </a>
+              ))}
+            </span>
+          </div>
         </div>
+        {view.payments.length ? (
+          <div data-testid="payments-chart">
+            <StackedDays
+              height={160}
+              label={`Payments over time: ${view.payments.length} payments.`}
+              kinds={[...new Set(view.payments.map((p) => p.plan ?? p.kind))].map((k, i) => ({ id: String(k), name: `${k} (USD)`, color: ['#e8c060', '#6aa6ff', '#6fcf6a', '#c58cff'][i % 4] }))}
+              days={[...view.payments].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { [String(p.plan ?? p.kind)]: Math.round(Number(p.usd ?? 0) * 100) / 100 } }))}
+            />
+          </div>
+        ) : (
+          <LiveMarker text="Waiting for the first payment: it charts here with its amount and date" />
+        )}
         {!view.payments.length ? (
-          <Empty icon={<Receipt size={26} className="text-gold" aria-hidden />} title="No payments yet">
+          <Empty icon={<Receipt size={26} className="text-gold" aria-hidden />} title="No payments yet" action={<button type="button" onClick={() => document.getElementById('plans-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className={pillSm}>See the plans</button>}>
             Payments you make for a plan appear here with their transaction on the chain’s explorer.
           </Empty>
         ) : (
@@ -255,7 +297,8 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                   <th className="py-2 pr-3 font-medium">CHAIN</th>
                   <th className="py-2 pr-3 font-medium">FROM</th>
                   <th className="py-2 pr-3 font-medium">PERIOD</th>
-                  <th className="py-2 text-right font-medium">TRANSACTION</th>
+                  <th className="py-2 pr-3 text-right font-medium">TRANSACTION</th>
+                  <th className="py-2 text-right font-medium">RECEIPT</th>
                 </tr>
               </thead>
               <tbody className="font-mono">
@@ -264,6 +307,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                     <td className="py-[10px] pr-3 text-muted">{fmtDate(p.at)}</td>
                     <td className="py-[10px] pr-3 text-ink uppercase">{p.plan}</td>
                     <td className="py-[10px] pr-3 text-ink-2">
+                      <TokenLogo symbol={p.symbol} size={14} decorative className="mr-1 align-[-2px]" />
                       {p.amount} {p.symbol}
                       {p.price && p.usd && (
                         <span className="block text-[11px] text-faint">
@@ -271,20 +315,31 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                         </span>
                       )}
                     </td>
-                    <td className="py-[10px] pr-3 text-muted">{p.chain}</td>
-                    <td className="py-[10px] pr-3 text-muted">{p.from === account.address ? 'this wallet' : shortAddress(p.from)}</td>
+                    <td className="py-[10px] pr-3 text-muted">
+                      <span className="inline-flex items-center gap-[6px]">
+                        <ChainLogo chain={p.chain} size={14} decorative /> {p.chain}
+                      </span>
+                    </td>
+                    <td className="py-[10px] pr-3 text-muted">{p.from === user ? 'your wallet' : p.from === account.address ? 'owner wallet' : shortAddress(p.from)}</td>
                     <td className="py-[10px] pr-3 text-muted">
                       {fmtDate(p.periodStart)} – {fmtDate(p.expiresAt)}
                     </td>
-                    <td className="py-[10px] text-right">
+                    <td className="py-[10px] pr-3 text-right">
                       {p.txUrl ? (
-                        <a href={p.txUrl} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-ink-2 hover:text-gold">
+                        <a href={p.txUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 text-ink-2 hover:text-gold">
                           {shortAddress(p.txHash)} <ArrowUpRight size={12} aria-hidden />
+                          <span className="sr-only"> on the explorer (opens in a new tab)</span>
                         </a>
                       ) : (
                         <span className="text-ink-2">{shortAddress(p.txHash)}</span>
                       )}
                     </td>
+                    <td className="py-[10px] text-right">
+                      <a href={`#receipt=${p.chainId}:${p.txHash}`} className="inline-flex min-h-11 items-center gap-1 text-ink-2 hover:text-gold">
+                        <FileText size={13} aria-hidden /> Receipt
+                      </a>
+                    </td>
+
                   </tr>
                 ))}
               </tbody>

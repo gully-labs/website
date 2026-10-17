@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { copyWithToast } from '../components/ui/toast'
 import { Link, Navigate, useParams } from 'react-router'
-import { ArrowLeft, ArrowUpRight, BellRing, Check, Code2, Copy, ExternalLink } from 'lucide-react'
+import { NotFound } from './NotFound'
+import { NewTabMark } from '../components/LayoutLinks'
+import { newTab } from '../components/LayoutNav'
+import { ArrowLeft, BellRing, Check, Code2, Copy, ExternalLink } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
 import { GapHistory } from '../components/tracker/GapHistory'
@@ -11,7 +14,7 @@ import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF } from '../components/charts/number-formats'
 import { PoolDepth } from '../components/tracker/PoolDepth'
 import { xPost } from '../lib/share'
-import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow } from '../lib/tracker'
+import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow } from '../lib/tracker'
 import { DEVELOPERS_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
@@ -23,6 +26,9 @@ import { feeText } from '../components/swap/swapConfig'
 const EXPLORER: Record<string, string> = { robinhood: 'https://robinhoodchain.blockscout.com/address/', bsc: 'https://bscscan.com/address/' }
 const card = 'flex flex-col gap-4 rounded-card border border-line bg-surface p-6'
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.06}s ease both` })
+/** 0xd060…9EEC: both ends stay visible, so the checksum tail people verify is never cut off. */
+const middle = (a: string) => (a.length > 16 ? `${a.slice(0, 8)}…${a.slice(-6)}` : a)
+const iconBtn = 'inline-flex size-11 flex-none items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-gold min-[860px]:size-8'
 
 function useNow(ms = 15_000) {
   const [now, setNow] = useState(() => Date.now())
@@ -41,18 +47,19 @@ function CopyAddress({ label, address, chain }: { label: string; address: string
       <span className="font-mono text-[11px] tracking-[1px] text-faint">{label}</span>
       <span className="flex min-w-0 items-center gap-2">
         <code className="min-w-0 flex-1 truncate font-mono text-[13px] text-ink-2" title={address}>
-          {address}
+          <span aria-hidden>{middle(address)}</span>
+          <span className="sr-only">{address}</span>
         </code>
         <button
           type="button"
           onClick={() => copyWithToast(address, 'Address').then((ok) => ok && (setCopied(true), setTimeout(() => setCopied(false), 1500)))}
           aria-label={`Copy ${label.toLowerCase()}`}
-          className="inline-flex size-7 items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-gold"
+          className={iconBtn}
         >
           {copied ? <Check aria-hidden size={13} className="text-green" /> : <Copy aria-hidden size={13} />}
         </button>
         {base && (
-          <a href={base + address} target="_blank" rel="noopener" aria-label={`${label} on the explorer`} className="inline-flex size-7 items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-gold">
+          <a href={base + address} {...newTab} aria-label={`${label} on the explorer (opens in a new tab)`} className={iconBtn}>
             <ExternalLink aria-hidden size={13} />
           </a>
         )}
@@ -82,11 +89,12 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
   const move1h = useMovers('1h', { limit: 1, chain: row.chain, ticker: row.ticker })
   const move24h = useMovers('24h', { limit: 1, chain: row.chain, ticker: row.ticker })
   const chain = data.chains.find((c) => c.key === row.chain)
-  const tone = row.gapPct === null ? undefined : row.gapPct >= 0 ? UP : DOWN
+  const tone = gapColor(row)
   const siblings = data.rows.filter((r) => r.chain === row.chain && r.ticker !== row.ticker)
   const elsewhere = data.rows.filter((r) => r.ticker === row.ticker && r.chain !== row.chain)
   const shareUrl = `https://gullylabs.xyz${stockPath(row)}`
-  const alerts = isLocalHost() ? '/developers#alerts' : `${DEVELOPERS_URL}/#alerts`
+  // The portal's Alerts tab, naming this stock (?alert=chain:TICKER) so the new-alert dialog can open prefilled.
+  const alerts = `${isLocalHost() ? '/developers' : `${DEVELOPERS_URL}/`}?alert=${row.chain}:${row.ticker}#alerts`
   const embed = `<div data-gully-widget="badge" data-ticker="${row.ticker}" data-chain="${row.chain}"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>`
   const [copiedEmbed, setCopiedEmbed] = useState(false)
 
@@ -99,7 +107,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
 
       <section className="px-page pt-10 pb-8">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 font-mono text-[12px] text-faint" style={rise(0)}>
-          <Link to="/tracker" className="inline-flex items-center gap-1 text-muted hover:text-gold">
+          <Link to="/tracker" className="inline-flex min-h-11 items-center gap-1 text-muted hover:text-gold">
             <ArrowLeft aria-hidden size={13} /> Tracker
           </Link>
           <span>/</span>
@@ -115,8 +123,8 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             <StockLogo row={row} size={72} />
             <div className="flex flex-col gap-2">
               <span className={eyebrow}>STOCK TOKEN · {(CHAIN_NAME[row.chain] ?? row.chain).toUpperCase()}</span>
-              <h1 className="m-0 flex flex-wrap items-baseline gap-x-4 font-display text-[clamp(48px,6cqw,84px)] leading-[.9] font-extrabold uppercase">
-                {row.ticker}
+              <h1 className="m-0 flex flex-wrap items-baseline gap-x-4 font-display text-h1 font-extrabold uppercase">
+                {row.ticker}{' '}
                 <span className="font-sans text-[18px] font-normal normal-case text-muted">{row.name}</span>
               </h1>
             </div>
@@ -124,11 +132,11 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           <div className="flex flex-wrap items-center gap-2" style={rise(2)}>
             <StatusBadge r={row} />
             {row.pool?.url && (
-              <a href={row.pool.url} target="_blank" rel="noopener" className="inline-flex min-h-10 items-center gap-2 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover hover:text-bg">
-                Open the pool on DexScreener <ArrowUpRight aria-hidden size={15} />
+              <a href={row.pool.url} {...newTab} className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover hover:text-bg">
+                Open the pool on DexScreener <NewTabMark size={15} className="flex-none" />
               </a>
             )}
-            <a href={xPost(gapPost(row), shareUrl)} target="_blank" rel="noopener" aria-label={`Post ${row.ticker}'s gap on X`} className="inline-flex size-10 items-center justify-center rounded-btn border border-gold-line text-gold hover:border-gold hover:text-gold">
+            <a href={xPost(gapPost(row), shareUrl)} {...newTab} aria-label={`Post ${row.ticker}'s gap on X (opens in a new tab)`} className="inline-flex size-11 items-center justify-center rounded-btn border border-gold-line text-gold hover:border-gold hover:text-gold">
               <SocialIcon name="X" size={14} />
             </a>
           </div>
@@ -161,7 +169,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
       <section className="grid grid-cols-[2fr_1fr] items-start gap-5 px-page pb-8 max-[1099px]:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-5">
           <div className={card} style={rise(4)}>
-            <h2 className="m-0 font-display text-[26px] font-bold uppercase">Gap to fair price</h2>
+            <h2 className="m-0 font-display text-h4 font-bold uppercase">Gap to fair price</h2>
             <GapHistory chain={row.chain} ticker={row.ticker} inLinePct={data.rules.inLinePct} />
             <span className="font-mono text-[11px] leading-[1.5] text-faint">
               {row.pool ? `${row.pool.dex}${row.pool.labels.length ? ` ${row.pool.labels.join('/')}` : ''} · ${row.ticker}/${row.pool.against}` : 'no pool'} · {chain?.fairMethod ?? 'fair from Chainlink'}
@@ -170,24 +178,24 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             </span>
           </div>
           <div className={card} style={rise(5)}>
-            <h2 className="m-0 font-display text-[22px] font-bold uppercase">Pool depth</h2>
+            <h2 className="m-0 font-display text-h4 font-bold uppercase">Pool depth</h2>
             <PoolDepth pool={row.pool} ticker={row.ticker} />
           </div>
         </div>
 
         <div className="flex min-w-0 flex-col gap-5">
-          <div className={card} style={rise(5)}>
-            <h2 className="m-0 font-display text-[22px] font-bold uppercase">Swap {row.ticker}</h2>
-            <StockSwap row={row} />
+          <div id="swap" className={`${card} scroll-mt-24`} style={rise(5)}>
+            <h2 className="m-0 font-display text-h4 font-bold uppercase">Swap {row.ticker}</h2>
+            <StockSwap row={row} alerts={alerts} />
           </div>
           <div className={card} style={rise(6)}>
-            <h2 className="m-0 font-display text-[22px] font-bold uppercase">Contracts</h2>
+            <h2 className="m-0 font-display text-h4 font-bold uppercase">Contracts</h2>
             <CopyAddress label="TOKEN" address={row.token} chain={row.chain} />
             <CopyAddress label="CHAINLINK FEED" address={row.feed} chain={row.chain} />
             {row.pool && <CopyAddress label="POOL" address={row.pool.pair} chain={row.chain} />}
           </div>
           <div className={card} style={rise(7)}>
-            <h2 className="m-0 font-display text-[22px] font-bold uppercase">Follow {row.ticker}</h2>
+            <h2 className="m-0 font-display text-h4 font-bold uppercase">Follow {row.ticker}</h2>
             <a href={alerts} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink hover:border-gold hover:text-ink">
               <BellRing aria-hidden size={16} className="text-gold" /> Alert me when the gap moves
             </a>
@@ -209,7 +217,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
       </section>
 
       <section className="px-page pb-8" aria-labelledby="how-swaps-work">
-        <h2 id="how-swaps-work" className="m-0 mb-4 font-display text-[22px] font-bold uppercase">How swaps work</h2>
+        <h2 id="how-swaps-work" className="m-0 mb-4 font-display text-h4 font-bold uppercase">How swaps work</h2>
         <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5">
           {[
             { q: 'Who runs the swap?', a: `The swap card is LI.FI's widget. LI.FI looks for the best route among the exchanges on ${CHAIN_NAME[row.chain] ?? row.chain} that trade ${row.ticker} and builds the transaction; those exchanges carry it out.` },
@@ -226,13 +234,13 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
       </section>
 
       <section className="px-page pb-16">
-        <h2 className="m-0 mb-4 font-display text-[22px] font-bold uppercase">More on {CHAIN_NAME[row.chain] ?? row.chain}</h2>
+        <h2 className="m-0 mb-4 font-display text-h4 font-bold uppercase">More on {CHAIN_NAME[row.chain] ?? row.chain}</h2>
         <div className="flex flex-wrap gap-2">
           {siblings.map((r) => (
-            <Link key={r.ticker} to={stockPath(r)} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface py-[5px] pr-3 pl-[5px] text-[13px] text-ink-2 transition-colors hover:border-gold hover:text-ink">
+            <Link key={r.ticker} to={stockPath(r)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface py-[5px] pr-3 pl-[5px] text-[13px] text-ink-2 transition-colors hover:border-gold hover:text-ink">
               <StockLogo row={r} size={22} chainBadge={false} />
               <b className="font-display text-[14px]">{r.ticker}</b>
-              <span className="font-mono text-[12px]" style={{ color: r.gapPct === null ? undefined : r.gapPct >= 0 ? UP : DOWN }}>
+              <span className="font-mono text-[12px]" style={{ color: gapColor(r) }}>
                 {fmtGap(r.gapPct)}
               </span>
             </Link>
@@ -251,9 +259,11 @@ export function StockPage() {
   const st = useTracker()
   if (st.k === 'loading')
     return (
-      <section className="px-page py-24">
-        <div className="h-[72px] w-[320px] animate-pulse rounded-card bg-surface" />
+      <section role="status" aria-label="Reading the tracker" className="min-h-[100svh] px-page pt-10 pb-24">
+        <div className="h-[14px] w-[220px] animate-pulse rounded-full bg-surface" />
+        <div className="mt-8 h-[72px] w-[min(420px,100%)] animate-pulse rounded-card bg-surface" />
         <div className="mt-8 h-[110px] animate-pulse rounded-card bg-surface" />
+        <div className="mt-8 h-[420px] animate-pulse rounded-card bg-surface" />
       </section>
     )
   if (st.k === 'error')
@@ -263,7 +273,8 @@ export function StockPage() {
       </section>
     )
   const row = st.data.rows.find((r) => r.chain === chain && r.ticker === ticker.toUpperCase())
-  if (!row) return <Navigate to="/tracker" replace />
+  // A ticker the tracker does not follow (or not on this chain): say so, with a search, not a silent redirect.
+  if (!row) return <NotFound ticker={ticker.toUpperCase()} chain={chain} />
   if (ticker !== row.ticker) return <Navigate to={stockPath(row)} replace />
   return <Body data={st.data} row={row} />
 }

@@ -1,7 +1,8 @@
-import { ArrowUpRight } from 'lucide-react'
+import { Building2, Code2, LayoutGrid, Send, Share2, type LucideIcon } from 'lucide-react'
 import { navGroups, navLinks, socialLinks, type NavEntry } from '../content/site'
 import { useContact } from './ContactContext'
-import { EntryLink } from './LayoutLinks'
+import { EntryLink, NewTabMark } from './LayoutLinks'
+import { newTab } from './LayoutNav'
 import { SocialIcon } from './SocialIcon'
 import { Wordmark } from './Wordmark'
 import { btnGold } from './ui'
@@ -9,23 +10,27 @@ import { btnGold } from './ui'
 /* The footer: the header's groups as columns (Products, Developers, Company, Social), "Start a
    project", and the legal lines. */
 
-const colLabel = 'm-0 font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase'
+const colLabel = 'm-0 inline-flex items-center gap-2 font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase'
 const colLink = 'group inline-flex min-h-11 items-center gap-2 bg-transparent p-0 text-left text-[14px] text-ink-2 transition-colors hover:text-gold'
 const colIcon = 'flex-none text-faint transition-colors group-hover:text-gold'
+const headIcon = 'flex-none text-gold'
 
-function Column({ id, label, items }: { id: string; label: string; items: NavEntry[] }) {
+function Column({ id, label, icon: Icon, items }: { id: string; label: string; icon: LucideIcon; items: NavEntry[] }) {
   return (
     <nav aria-labelledby={`foot-${id}`} className="flex min-w-0 flex-col gap-2">
-      <h2 id={`foot-${id}`} className={colLabel}>
+      {/* A label, not a heading: four extra H2s on every page cluttered the outline. */}
+      <p id={`foot-${id}`} className={colLabel}>
+        <Icon aria-hidden size={14} strokeWidth={1.75} className={headIcon} />
         {label}
-      </h2>
+      </p>
       <ul className="m-0 flex list-none flex-col p-0">
         {items.map((e) => (
           <li key={e.label}>
             <EntryLink e={e} className={colLink}>
-              <e.icon aria-hidden size={14} strokeWidth={1.75} className={colIcon} />
+              <e.icon aria-hidden size={16} strokeWidth={1.75} className={colIcon} />
               {e.label}
-              {e.badge && <span className="font-mono text-[10px] tracking-[.5px] text-gold uppercase">{e.badge}</span>}
+              {e.badge && <span className="font-mono text-[11px] tracking-[.5px] text-gold uppercase">{e.badge}</span>}
+              {e.newTab && <NewTabMark size={12} />}
             </EntryLink>
           </li>
         ))}
@@ -39,7 +44,7 @@ export function Footer() {
   const [products, developers, company] = navGroups
   const [projects, pricing] = navLinks
   // Swap is a section of the stock pages, not a page of its own: the footer lists the tracker once.
-  const productItems = [...products.items.filter((e) => e.label !== 'Swap'), pricing]
+  const productItems = [...products.items.filter((e) => e.label !== 'Swap' && e.label !== 'All products'), pricing]
   const companyItems = [projects, ...company.items]
 
   return (
@@ -49,26 +54,28 @@ export function Footer() {
           <Wordmark size={26} />
           <p className="m-0 text-[14px] leading-[1.55] text-dim">A blockchain development company building and releasing Web3 projects.</p>
           <button type="button" onClick={() => openContact()} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+            <Send aria-hidden size={16} strokeWidth={2} />
             Start a project
-            <ArrowUpRight aria-hidden size={16} strokeWidth={2} />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-8 min-[700px]:grid-cols-4">
-          <Column id="products" label="Products" items={productItems} />
-          <Column id="developers" label="Developers" items={developers.items} />
-          <Column id="company" label="Company" items={companyItems} />
+          <Column id="products" label="Products" icon={LayoutGrid} items={productItems} />
+          <Column id="developers" label="Developers" icon={Code2} items={developers.items} />
+          <Column id="company" label="Company" icon={Building2} items={companyItems} />
           <nav aria-labelledby="foot-social" className="flex min-w-0 flex-col gap-2">
-            <h2 id="foot-social" className={colLabel}>
+            <p id="foot-social" className={colLabel}>
+              <Share2 aria-hidden size={14} strokeWidth={1.75} className={headIcon} />
               Social
-            </h2>
+            </p>
             <ul className="m-0 flex list-none flex-col p-0">
               {socialLinks.map((s) => (
                 <li key={s.label}>
-                  <a href={s.href} target="_blank" rel="noopener" className={colLink}>
+                  <a href={s.href} {...newTab} className={`${colLink} min-w-11`}>
                     <span className={colIcon}>
-                      <SocialIcon name={s.label} size={14} />
+                      <SocialIcon name={s.label} size={16} />
                     </span>
-                    {s.label}
+                    {s.name}
+                    <NewTabMark size={12} />
                   </a>
                 </li>
               ))}

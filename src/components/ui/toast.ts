@@ -26,7 +26,8 @@ let lib: Promise<typeof import('sonner')> | null = null
 /** Loads the toast library (also used by the host, so both share one store). */
 export const loadToasts = () => (lib ??= import('sonner'))
 
-const clock = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+// UTC, like every other time on the site.
+const clock = () => `${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' })} UTC`
 
 function body(detail: ReactNode | undefined) {
   return createElement(

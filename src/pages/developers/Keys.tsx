@@ -1,13 +1,16 @@
-import { Activity, AlertTriangle, AppWindow, ArrowUpRight, BookOpen, Check, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Trash2 } from 'lucide-react'
+import { Activity, AlertTriangle, AppWindow, BookOpen, Check, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { CodeBlock } from '../../docs/CodeBlock'
 import { widgetSnippet } from '../../lib/widgetEmbed'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import { ago, api, fmtDate, type Account, type ApiKey, type RecentRequest, type Usage } from './api'
-import { Spark } from './charts'
+import { Can } from './RoleGate'
+import { useWrite } from './portal'
+import { KeySpark } from './vcharts'
 import { CopyButton, Dialog } from './Dialog'
 import { toastSuccess } from '../../components/ui/toast'
 import { Empty, ErrorLine, Skeleton } from './parts'
+import { ExtLink } from './ExtLink'
 import { chip, input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
 import { keyColors } from './helpers'
 import { group } from './usage'
@@ -80,13 +83,15 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
   }, [loadWeek])
 
   // "Create a key" from the Overview lands here with the dialog open.
-  const dialog: KeyDialog = dialogState ?? (creating && !full ? { kind: 'create' } : null)
+  const canKeys = useWrite('keys', 'create keys').ok
+  const dialog: KeyDialog = dialogState ?? (creating && !full && canKeys ? { kind: 'create' } : null)
 
   const perKey = useMemo(() => {
     if (week.state !== 'ok') return null
     const g = group(week.usage)
-    const out: Record<string, { total: number; spark: number[] }> = {}
-    for (const k of account.keys) out[k.id] = { total: g.reduce((a, b) => a + (b.keys[k.id] ?? 0), 0), spark: g.map((b) => b.keys[k.id] ?? 0) }
+    const out: Record<string, { total: number; spark: number[]; labels: string[] }> = {}
+    const labels = g.map((b) => new Date(b.t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }))
+    for (const k of account.keys) out[k.id] = { total: g.reduce((a, b) => a + (b.keys[k.id] ?? 0), 0), spark: g.map((b) => b.keys[k.id] ?? 0), labels }
     return out
   }, [week, account.keys])
 
@@ -137,23 +142,35 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
             {live.length} of {account.limits.maxKeys} live · {fmt(account.limits.keyPerMin)} requests a minute each
           </span>
         </div>
-        <button
-          type="button"
-          disabled={full}
-          title={full ? 'Revoke a key to create another' : undefined}
-          onClick={() => {
-            setName('')
-            setDialog({ kind: 'create' })
-          }}
-          className={pillGold}
-        >
-          <Plus size={16} aria-hidden /> Create key
-        </button>
+        <Can cat="keys" what="create keys">
+          <button
+            type="button"
+            disabled={full}
+            title={full ? 'Revoke a key to create another' : undefined}
+            onClick={() => {
+              setName('')
+              setDialog({ kind: 'create' })
+            }}
+            className={pillGold}
+          >
+            <Plus size={16} aria-hidden /> Create key
+          </button>
+        </Can>
       </div>
       {full && <p className="m-0 text-[13px] text-muted">All {account.limits.maxKeys} keys are in use. Revoke one to create another.</p>}
 
       {!live.length ? (
-        <Empty icon={<KeyRound size={26} className="text-gold" aria-hidden />} title="No live keys">
+        <Empty
+          icon={<KeyRound size={26} className="text-gold" aria-hidden />}
+          title="No live keys"
+          action={
+            <Can cat="keys" what="create keys">
+              <button type="button" disabled={full} onClick={() => (setName(''), setDialog({ kind: 'create' }))} className={pillGold}>
+                <Plus size={16} aria-hidden /> Create your first key
+              </button>
+            </Can>
+          }
+        >
           Create one and it works immediately: {fmt(account.limits.keyPerMin)} requests a minute instead of {fmt(account.limits.anonymousPerMin)}. The full key is shown once; we keep only a hash of it.
         </Empty>
       ) : (
@@ -188,13 +205,13 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
                     {fmtDate(k.createdAt)}
                     {k.rotatedAt && <span className="block text-faint">rotated {ago(k.rotatedAt)}</span>}
                   </td>
-                  <td className="py-3 pr-3 font-mono text-[12px] text-muted" title={k.lastUsed ?? undefined}>
-                    {ago(k.lastUsed)}
+                  <td className="py-3 pr-3 font-mono text-[12px] text-muted" title={k.lastUsed ? new Date(k.lastUsed).toLocaleString() : 'No request with this key yet'}>
+                    {k.lastUsed ? ago(k.lastUsed) : 'not used yet'}
                   </td>
                   <td className="py-3 pr-3">
                     {perKey ? (
-                      <span className="flex items-center gap-3 font-mono text-[12px] text-ink-2">
-                        <Spark values={perKey[k.id]?.spark ?? []} color={colorOf(k)} w={72} h={22} />
+                      <span className="flex items-center gap-3 font-mono text-[12px] text-ink-2" data-testid="key-spark">
+                        <KeySpark values={perKey[k.id]?.spark ?? []} labels={perKey[k.id]?.labels} color={colorOf(k)} label={`${k.name}: ${fmt(perKey[k.id]?.total ?? 0)} requests in 7 days`} />
                         {fmt(perKey[k.id]?.total ?? 0)}
                       </span>
                     ) : week.state === 'error' ? (
@@ -207,15 +224,17 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
                   </td>
                   <td className="py-3 pr-3 font-mono text-[12px] text-muted">{fmt(k.limit)}/min</td>
                   <td className="py-3 text-right">
-                    <KeyMenu
-                      k={k}
-                      onRename={() => {
-                        setName(k.name)
-                        setDialog({ kind: 'rename', key: k })
-                      }}
-                      onRotate={() => setDialog({ kind: 'rotate', key: k })}
-                      onRevoke={() => setDialog({ kind: 'revoke', key: k })}
-                    />
+                    <Can cat="keys" what="change keys" hide>
+                      <KeyMenu
+                        k={k}
+                        onRename={() => {
+                          setName(k.name)
+                          setDialog({ kind: 'rename', key: k })
+                        }}
+                        onRotate={() => setDialog({ kind: 'rotate', key: k })}
+                        onRevoke={() => setDialog({ kind: 'revoke', key: k })}
+                      />
+                    </Can>
                   </td>
                 </tr>
               ))}
@@ -228,9 +247,12 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
         <span className="text-[13px] text-faint">
           Send a key as <code className="font-mono text-ink-2">Authorization: Bearer gl_live_…</code> from your server, never from browser code.
         </span>
-        <button type="button" onClick={() => setDialog({ kind: 'link' })} className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-mono text-[12px] text-muted hover:text-ink">
-          <Link2 size={14} aria-hidden /> Have a key from the old request form? Link it
-        </button>
+        <Can cat="keys" what="link keys" hide>
+          <button type="button" onClick={() => setDialog({ kind: 'link' })} className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-mono text-[12px] text-muted hover:text-ink">
+            <Link2 size={14} aria-hidden /> Have a key from the old request form? Link it
+          </button>
+        </Can>
+
       </div>
 
       {revoked.length > 0 && (
@@ -443,7 +465,7 @@ function Requests({ account }: { account: Account }) {
           ))}
         </div>
       ) : !rows.length ? (
-        <Empty icon={<Activity size={26} className="text-gold" aria-hidden />} title="No requests yet">
+        <Empty icon={<Activity size={26} className="text-gold" aria-hidden />} title="No requests yet" action={<ExtLink href={`${DOCS_URL}/api`} className={pillSm}>Make a first call: API docs</ExtLink>}>
           Calls made with your keys appear here within seconds. Answers served from the edge cache are not listed.
         </Empty>
       ) : (
@@ -567,12 +589,12 @@ function Quickstart({ account }: { account: Account }) {
         </div>
       ))}
       <div className="flex flex-wrap gap-2 border-t border-line pt-3">
-        <a href={`${DOCS_URL}/api`} className={pillSm}>
-          <BookOpen size={15} aria-hidden /> API reference <ArrowUpRight size={13} aria-hidden />
-        </a>
-        <a href={`${DOCS_URL}/api-keys`} className={pillSm}>
-          <KeyRound size={15} aria-hidden /> Keys and limits <ArrowUpRight size={13} aria-hidden />
-        </a>
+        <ExtLink href={`${DOCS_URL}/api`} className={pillSm}>
+          <BookOpen size={15} aria-hidden /> API reference
+        </ExtLink>
+        <ExtLink href={`${DOCS_URL}/api-keys`} className={pillSm}>
+          <KeyRound size={15} aria-hidden /> Keys and limits
+        </ExtLink>
       </div>
     </section>
   )
@@ -593,9 +615,9 @@ function WidgetPanel() {
         <a href={WIDGET_URL} className={pillGold}>
           <AppWindow size={16} aria-hidden /> Open the widget builder
         </a>
-        <a href={`${DOCS_URL}/widget`} className={pillSm}>
-          <BookOpen size={15} aria-hidden /> Widget guide <ArrowUpRight size={13} aria-hidden />
-        </a>
+        <ExtLink href={`${DOCS_URL}/widget`} className={pillSm}>
+          <BookOpen size={15} aria-hidden /> Widget guide
+        </ExtLink>
       </div>
     </section>
   )

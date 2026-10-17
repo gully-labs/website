@@ -87,7 +87,7 @@ export function GapHeatmap({ rows, inLinePct }: { rows: TrackerRow[]; inLinePct:
             rich: {
               t: { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, lineHeight: 17 },
               g: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, lineHeight: 14 },
-              c: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, lineHeight: 17, opacity: 0.75 },
+              c: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, lineHeight: 17, opacity: 0.75 },
             },
           },
           data: tiles.map((r) => {
@@ -125,7 +125,7 @@ export function GapHeatmap({ rows, inLinePct }: { rows: TrackerRow[]; inLinePct:
         onEvents={{ click: (p: ChartEvent) => p.data?.id && navigate(stockPath({ chain: p.data.id.split(':')[0], ticker: p.data.id.split(':')[1] })) }}
         label={`Gap heatmap of ${tiles.length} trusted stocks, tile size by pool liquidity. Widest gaps: ${widest.map((r) => `${r.ticker} ${fmtGap(r.gapPct)}`).join(', ')}. Arrow keys step through tiles; the table below lists every stock.`}
       />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] text-faint" aria-hidden>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-faint" aria-hidden>
         <span>below fair</span>
         <span className="h-[6px] max-w-[260px] min-w-[80px] flex-1 rounded-full" style={{ background: `linear-gradient(90deg, ${DOWN}, ${NEUTRAL} 42%, ${NEUTRAL} 58%, ${UP})` }} />
         <span>above fair</span>

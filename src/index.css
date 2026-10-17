@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+/* While Barlow Condensed loads, headings draw in a local sans narrowed to its width (size-adjust), so a
+   heading wraps the same before and after the swap and nothing below it moves (CLS). */
+@font-face {
+  font-family: 'Barlow Condensed Fallback';
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Arial'), local('Helvetica Neue'), local('Roboto');
+  size-adjust: 72%;
+  ascent-override: 105%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+}
+
 /* Brand tokens from BRAND.md, plus the few extra values the prototype uses. */
 @theme {
   --color-*: initial;
@@ -18,7 +29,9 @@
   --color-ink-2: #cfd5dc;
   --color-muted: #a6b0bd;
   --color-dim: #8a96a6;
-  --color-faint: #6c7888;
+  /* Raised from #6c7888 (3.5 to 4.4:1) so small labels pass AA (4.5:1) on every surface, the selected
+     console row (#1a2029) and hairline fills (#1d232c) included. */
+  --color-faint: #7f8b9c;
   --color-gold: #e8c060;
   --color-gold-hover: #f4d98c;
   --color-gold-line: #5a4a22;
@@ -29,9 +42,20 @@
   --color-mascot-bg: #24282c;
   --color-error: #ff8a7a;
 
-  --font-display: 'Barlow Condensed', sans-serif;
+  --font-display: 'Barlow Condensed', 'Barlow Condensed Fallback', sans-serif;
   --font-sans: 'Hanken Grotesk', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
+
+  /* One heading scale (design audit P2-19): page title, section title, sub-section, card title.
+     Use the h1 to h4 strings in components/ui.tsx rather than ad-hoc sizes. */
+  --text-h1: clamp(44px, 5.6cqw, 84px);
+  --text-h1--line-height: 0.9;
+  --text-h2: clamp(34px, 3.2cqw, 48px);
+  --text-h2--line-height: 0.95;
+  --text-h3: clamp(24px, 2cqw, 30px);
+  --text-h3--line-height: 1;
+  --text-h4: 22px;
+  --text-h4--line-height: 1.1;
 
   --radius-btn: 4px;
   --radius-input: 6px;
@@ -126,6 +150,21 @@
     outline: 2px solid var(--color-gold);
     outline-offset: 2px;
   }
+}
+
+/* Gold fills (buttons, active pills): a gold ring would vanish against them, so they get an ink ring
+   on a gap of page colour. Unlayered, so it beats any utility that resets the outline. */
+.bg-gold:focus-visible,
+[class*='bg-gold ']:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+/* Keyboard-focusable chart wrappers get the shared ring too (EChart sets outline-none). */
+[role='application']:focus-visible,
+[data-chart]:focus-visible {
+  outline: 2px solid var(--color-gold) !important;
+  outline-offset: 2px;
 }
 
 /* Reduced-motion policy (one policy for CSS, motion, ECharts and NumberFlow).

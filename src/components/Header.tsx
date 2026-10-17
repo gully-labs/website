@@ -2,13 +2,14 @@ import { useCallback, useEffect, useId, useRef, useState, type MouseEvent as Rea
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router'
 import * as NavigationMenu from '@radix-ui/react-navigation-menu'
-import { ArrowUpRight, ChevronDown, Menu, X } from 'lucide-react'
+import { AppWindow, ChevronDown, Menu, Send, X } from 'lucide-react'
 import { launchApp, navGroups, navLinks, socialLinks, type NavEntry, type NavGroup } from '../content/site'
-import { EntryLink } from './LayoutLinks'
-import { entryActive, groupActive } from './LayoutNav'
+import { EntryLink, NewTabMark } from './LayoutLinks'
+import { entryActive, groupActive, newTab } from './LayoutNav'
 import { SocialIcon } from './SocialIcon'
 import { Wordmark } from './Wordmark'
 import { btnGold } from './ui'
+import { useContact } from './ContactContext'
 import './Layout.css'
 
 /* The site header: logo, three grouped menus (Products, Developers, Company) with two plain links
@@ -33,6 +34,19 @@ function useMenuValue() {
     if (v) openedAt.current = performance.now()
     setValue(v)
   }, [])
+  // Escape closes the open menu and puts focus back on its trigger (Radix can leave it on <body> when
+  // the focused item unmounts with the panel).
+  useEffect(() => {
+    if (!value) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      const t = document.querySelector<HTMLElement>(`[data-menu-trigger="${value}"]`)
+      setValue('')
+      requestAnimationFrame(() => t?.focus())
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [value])
   const guard = (id: string) => (e: ReactMouseEvent) => {
     if (value === id && performance.now() - openedAt.current < 400) e.preventDefault()
   }
@@ -41,7 +55,7 @@ function useMenuValue() {
 type Guard = (id: string) => (e: ReactMouseEvent) => void
 
 const trigger =
-  'group relative inline-flex min-h-11 items-center gap-1 rounded-btn px-3 text-[14px] whitespace-nowrap transition-colors hover:text-ink data-[state=open]:text-ink'
+  'group relative inline-flex min-h-11 items-center gap-[6px] rounded-btn px-3 text-[14px] whitespace-nowrap transition-colors hover:text-ink data-[state=open]:text-ink'
 // A short gold bar under the item for the section you are in.
 const activeBar = 'after:absolute after:inset-x-3 after:bottom-[6px] after:h-[2px] after:rounded-full after:bg-gold'
 const panel =
@@ -59,8 +73,8 @@ function EntryBody({ e, active }: { e: NavEntry; active?: boolean }) {
       <span className="flex min-w-0 flex-col gap-[2px]">
         <span className="flex items-center gap-2 text-[14px] font-semibold text-ink">
           {e.label}
-          {e.badge && <span className="rounded-full border border-gold-line px-[7px] py-[1px] font-mono text-[10px] tracking-[.5px] text-gold uppercase">{e.badge}</span>}
-          {e.href && !e.localTo && <ArrowUpRight aria-hidden size={13} className="text-faint" />}
+          {e.badge && <span className={`rounded-full border px-[7px] py-[1px] font-mono text-[11px] tracking-[.5px] uppercase ${e.badge === 'New' ? 'border-gold bg-gold text-bg' : 'border-gold-line text-gold'}`}>{e.badge}</span>}
+          {e.newTab && <NewTabMark />}
         </span>
         <span className="text-[13px] leading-[1.35] text-muted">{e.desc}</span>
       </span>
@@ -74,7 +88,8 @@ function MenuGroup({ g, pathname, hash, wide, guard }: { g: NavGroup; pathname: 
   const active = groupActive(g, pathname, hash)
   return (
     <NavigationMenu.Item value={g.id} className="relative">
-      <NavigationMenu.Trigger onClick={guard(g.id)} className={`${trigger} ${active ? `text-ink ${activeBar}` : 'text-muted'}`}>
+      <NavigationMenu.Trigger onClick={guard(g.id)} data-menu-trigger={g.id} className={`${trigger} ${active ? `text-ink ${activeBar}` : 'text-muted'}`}>
+        <g.icon aria-hidden size={16} strokeWidth={1.75} className={`flex-none transition-colors ${active ? 'text-gold' : 'text-faint group-hover:text-gold group-data-[state=open]:text-gold'}`} />
         {g.label}
         <ChevronDown aria-hidden size={14} strokeWidth={2} className="gl-chevron text-faint" />
       </NavigationMenu.Trigger>
@@ -100,6 +115,7 @@ function PlainLink({ e, pathname, hash }: { e: NavEntry; pathname: string; hash:
     <NavigationMenu.Item>
       <NavigationMenu.Link asChild active={on}>
         <EntryLink e={e} className={`${trigger} ${on ? `text-ink ${activeBar}` : 'text-muted'}`}>
+          <e.icon aria-hidden size={16} strokeWidth={1.75} className={`flex-none transition-colors ${on ? 'text-gold' : 'text-faint group-hover:text-gold'}`} />
           {e.label}
         </EntryLink>
       </NavigationMenu.Link>
@@ -117,6 +133,7 @@ function LaunchApp({ compact }: { compact?: boolean }) {
         <NavigationMenu.Item>
           <NavigationMenu.Link asChild>
             <Link to={launchApp.to} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-4 text-[14px] whitespace-nowrap ${compact ? '' : 'rounded-r-none'}`}>
+              <AppWindow aria-hidden size={16} strokeWidth={2} />
               Launch app
             </Link>
           </NavigationMenu.Link>
@@ -125,6 +142,7 @@ function LaunchApp({ compact }: { compact?: boolean }) {
           <NavigationMenu.Item value="apps" className="relative">
             <NavigationMenu.Trigger
               onClick={menu.guard('apps')}
+              data-menu-trigger="apps"
               aria-label="More apps"
               className={`${btnGold} inline-flex min-h-11 w-11 items-center justify-center rounded-l-none border-l border-[rgba(11,14,19,.25)] data-[state=open]:bg-gold-hover`}
             >
@@ -199,6 +217,7 @@ function SheetGroup({ g, open, onToggle, onPick, pathname, hash }: { g: NavGroup
           className={`flex min-h-14 w-full items-center justify-between gap-3 py-3 text-left font-display text-[24px] font-bold uppercase ${active ? 'text-ink' : 'text-ink-2'}`}
         >
           <span className="flex items-center gap-3">
+            <g.icon aria-hidden size={20} strokeWidth={1.75} className={active ? 'text-gold' : 'text-faint'} />
             {g.label}
             {active && <span aria-hidden className="size-[6px] rounded-full bg-gold" />}
           </span>
@@ -263,6 +282,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
   }, [onClose, returnFocus])
 
   const pick = onClose
+  const { openContact } = useContact()
   return createPortal(
     <div ref={ref} role="dialog" aria-modal="true" aria-label="Site menu" className="gl-sheet fixed inset-0 z-[70] flex flex-col bg-bg font-sans text-ink">
       <div className="flex min-h-16 items-center justify-between gap-4 border-b border-line px-page py-2">
@@ -289,14 +309,29 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
           const on = entryActive(e, pathname, hash)
           return (
             <EntryLink key={e.label} e={e} onPick={pick} current={on} className={`flex min-h-14 items-center gap-3 border-b border-line py-3 font-display text-[24px] font-bold uppercase ${on ? 'text-ink' : 'text-ink-2'}`}>
+              <e.icon aria-hidden size={20} strokeWidth={1.75} className={on ? 'text-gold' : 'text-faint'} />
               {e.label}
               {on && <span aria-hidden className="size-[6px] rounded-full bg-gold" />}
             </EntryLink>
           )
         })}
+        <button
+          type="button"
+          onClick={() => {
+            pick()
+            openContact()
+          }}
+          className={`${btnGold} mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 px-4 text-[15px]`}
+        >
+          <Send aria-hidden size={16} strokeWidth={2} />
+          Start a project
+        </button>
         <div className="mt-6 flex flex-col gap-2">
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">LAUNCH APP</span>
-          <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-3">
+          <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
+            <AppWindow aria-hidden size={14} />
+            LAUNCH APP
+          </span>
+          <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
             {launchApp.items.map((e, i) => (
               <EntryLink
                 key={e.label}
@@ -310,13 +345,14 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
               >
                 <e.icon aria-hidden size={16} strokeWidth={1.75} />
                 {e.label}
+                {'newTab' in e && e.newTab && <NewTabMark size={14} className="flex-none opacity-70" />}
               </EntryLink>
             ))}
           </div>
         </div>
         <div className="mt-6 flex gap-2">
           {socialLinks.map((s) => (
-            <a key={s.label} href={s.href} target="_blank" rel="noopener" aria-label={s.label} className="inline-flex size-11 items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-ink">
+            <a key={s.label} href={s.href} {...newTab} aria-label={`${s.name} (opens in a new tab)`} className="inline-flex size-11 items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-ink">
               <SocialIcon name={s.label} />
             </a>
           ))}

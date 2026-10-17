@@ -374,7 +374,7 @@ export default function AlertsDemo(): JSX.Element {
       {/* Left: what it is, the channel switch, the commands */}
       <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-3 border-line p-4 max-lg:border-b lg:overflow-y-auto lg:border-r">
         <div className="flex flex-col gap-0.5">
-          <span className="font-mono text-[10px] tracking-[1px] text-gold">ALERTS · TRY IT</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-gold">ALERTS · TRY IT</span>
           <b className="font-display text-[22px] leading-[1.05] font-bold uppercase">Gap alerts where you already are</b>
         </div>
         <div role="tablist" aria-label="Channel" className="flex w-fit gap-0.5 rounded-[8px] border border-line p-0.5">
@@ -471,7 +471,7 @@ export default function AlertsDemo(): JSX.Element {
               {WEBHOOK_TEXT}
             </pre>
             <div className="overflow-hidden rounded-[10px] border border-line">
-              <div className="flex justify-between bg-surface px-3 py-2 font-mono text-[10px] tracking-[1px] text-faint">
+              <div className="flex justify-between bg-surface px-3 py-2 font-mono text-[11px] tracking-[1px] text-faint">
                 <span>DELIVERY LOG</span>
                 <span>EXAMPLE</span>
               </div>

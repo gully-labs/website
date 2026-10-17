@@ -11,7 +11,13 @@ function setMeta(attr: 'name' | 'property', key: string, content: string) {
 }
 
 /** Updates the page title and description tags that index.html ships with. */
-export function Seo({ title, description }: { title: string; description: string }) {
+export function Seo({ title, description, noindex = false }: { title: string; description: string; noindex?: boolean }) {
+  // A page that is not one (the 404): keep it out of search results while it is shown.
+  useEffect(() => {
+    if (!noindex) return
+    setMeta('name', 'robots', 'noindex')
+    return () => document.head.querySelector('meta[name="robots"]')?.remove()
+  }, [noindex])
   useEffect(() => {
     const full = `${title} · Gully Labs`
     document.title = full

@@ -10,7 +10,12 @@ export const btnOutline =
 
 export const eyebrow = 'font-mono text-[13px] tracking-[1.5px] text-gold'
 
-export const h2 = 'm-0 font-display text-[clamp(40px,4.5cqw,64px)] leading-[.95] font-extrabold uppercase'
+/* The heading scale (index.css --text-h1 to --text-h4): page title, section title, sub-section title,
+   card title. Every page uses these, so a page's headings step down the same way everywhere. */
+export const h1 = 'm-0 font-display text-h1 font-extrabold uppercase'
+export const h2 = 'm-0 font-display text-h2 font-extrabold uppercase'
+export const h3 = 'm-0 font-display text-h3 font-extrabold uppercase'
+export const h4 = 'm-0 font-display text-h4 font-bold uppercase'
 
 export const statusPill =
   'whitespace-nowrap rounded-full border border-line-strong px-3 py-1 font-mono text-[12px] text-ink-2'

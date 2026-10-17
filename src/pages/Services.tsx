@@ -1,4 +1,6 @@
 import { Link } from 'react-router'
+import { HeroLedger } from '../components/landing/HeroLedger'
+import { useStats } from '../hooks/useStats'
 import { useContact } from '../components/ContactContext'
 import { Seo } from '../components/Seo'
 import { btnGold, eyebrow, SectionHeading } from '../components/ui'
@@ -11,6 +13,7 @@ const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` 
    stepped band, and the projects as proof on their own grounds. Content is the kit's. */
 export function Services() {
   const { openContact } = useContact()
+  const st = useStats()
 
   return (
     <>
@@ -24,7 +27,7 @@ export function Services() {
           <span className={eyebrow} style={rise(0)}>
             SERVICES · THE SAME TEAM, ON YOUR PROJECT
           </span>
-          <h1 className="m-0 font-display text-[clamp(56px,7.8cqw,112px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
+          <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
             Build with the team behind <span className="text-gold">the projects</span>
           </h1>
         </div>
@@ -59,7 +62,7 @@ export function Services() {
                 </span>
                 <span className="font-mono text-[13px] text-gold">{s.n}</span>
               </span>
-              <h2 className="m-0 font-display text-[clamp(30px,3cqw,40px)] leading-[.95] font-extrabold uppercase">{s.name}</h2>
+              <h2 className="m-0 font-display text-h3 font-extrabold uppercase">{s.name}</h2>
               <div className="flex flex-col gap-3 max-[959px]:col-start-2">
                 <span className="text-[16px] leading-[1.55] text-muted">{s.description}</span>
                 <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
@@ -72,12 +75,13 @@ export function Services() {
               </div>
               <div className="flex flex-col gap-1 max-[959px]:col-start-2">
                 <span className="font-display text-[30px] leading-none font-bold">{s.time}</span>
-                <span className="font-mono text-[11px] tracking-[.5px] text-faint">TYPICAL TIMELINE</span>
+                {/* The column header says it on wide screens; repeat it only where the header is hidden. */}
+                <span className="font-mono text-[11px] tracking-[.5px] text-faint min-[960px]:hidden">TYPICAL TIMELINE</span>
               </div>
               <button
                 type="button"
                 onClick={() => openContact(s.type)}
-                className="justify-self-end bg-transparent p-0 text-[15px] font-medium whitespace-nowrap text-gold transition-colors hover:text-gold-hover max-[959px]:col-start-2 max-[959px]:justify-self-start"
+                className="inline-flex min-h-11 items-center justify-self-end bg-transparent p-0 text-[15px] font-medium whitespace-nowrap text-gold transition-colors hover:text-gold-hover max-[959px]:col-start-2 max-[959px]:justify-self-start"
               >
                 Ask about this →
               </button>
@@ -95,7 +99,7 @@ export function Services() {
                 <span className="font-mono text-[12px] tracking-[1px] text-dim">PHASE {st.n}</span>
                 <st.icon aria-hidden size={20} strokeWidth={1.6} className="text-gold" />
               </span>
-              <h3 className="m-0 font-display text-[28px] font-bold uppercase">{st.name}</h3>
+              <h3 className="m-0 font-display text-h4 font-bold uppercase">{st.name}</h3>
               <span className="text-[15px] leading-[1.55] text-muted">{st.description}</span>
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-gold" style={{ animation: `gl-grow-x .8s ${0.3 + i * 0.15}s cubic-bezier(.2,.8,.2,1) both` }} />
             </li>
@@ -106,10 +110,15 @@ export function Services() {
       <section className="flex flex-col gap-10 border-t border-line px-page py-24">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading label="PROOF" title="Built by this team" />
-          <Link to="/#projects" className="text-[16px] font-medium text-gold transition-colors hover:text-gold-hover">
+          <Link to="/#projects" className="inline-flex min-h-11 items-center text-[16px] font-medium text-gold transition-colors hover:text-gold-hover">
             The live ledger →
           </Link>
         </div>
+        <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-start gap-6 max-[1099px]:grid-cols-1">
+          <div className="flex min-w-0 flex-col gap-3">
+            <HeroLedger data={st.k === 'ok' ? st.data : null} state={st.k} />
+            <span className="font-mono text-[11px] text-faint">The venues this team built, read live from each one's own API: daily volume, stacked by venue.</span>
+          </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-4">
           {projects.map((p, i) => (
             <Link
@@ -119,7 +128,7 @@ export function Services() {
               style={rise(i)}
             >
               <div className="flex h-[120px] w-full items-center justify-center" style={{ background: p.bg, padding: p.padSm }}>
-                <img src={p.logo} alt={p.name} loading="lazy" className="block size-full" style={{ objectFit: p.fit }} />
+                <img src={p.logo} alt={p.name} loading="lazy" decoding="async" width={248} height={120} className="block size-full" style={{ objectFit: p.fit }} />
               </div>
               <div className="flex w-full items-center justify-between border-t-2 px-5 py-4 text-[14px]" style={{ borderTopColor: p.accent }}>
                 <span className="font-semibold">{p.name}</span>
@@ -127,6 +136,7 @@ export function Services() {
               </div>
             </Link>
           ))}
+        </div>
         </div>
       </section>
     </>

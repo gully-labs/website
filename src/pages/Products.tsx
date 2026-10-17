@@ -108,7 +108,7 @@ function ProductPage({ p }: { p: Product }) {
             <span className={eyebrow}>{p.eyebrow}</span>
             <span className="rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">{p.status.toUpperCase()}</span>
           </span>
-          <h1 className="m-0 font-display text-[clamp(52px,6.6cqw,104px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
+          <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
             {p.title[0]} <span className="text-gold">{p.title[1]}</span>
           </h1>
           <p className="m-0 max-w-[700px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
@@ -126,11 +126,11 @@ function ProductPage({ p }: { p: Product }) {
                 {p.cta}
               </button>
             )}
-            <a href={p.source.href} target="_blank" rel="noopener" className={`${btnOutline} inline-flex items-center gap-2 px-[26px] py-4 text-[16px]`}>
+            <a href={p.source.href} target="_blank" rel="noopener noreferrer" className={`${btnOutline} inline-flex items-center gap-2 px-[26px] py-4 text-[16px]`}>
               <GitBranch aria-hidden size={18} strokeWidth={1.75} />
               Source: {p.source.label}
               <ArrowUpRight aria-hidden size={16} />
-            </a>
+            <span className="sr-only"> (opens in a new tab)</span></a>
           </div>
         </div>
       </section>
@@ -142,7 +142,7 @@ function ProductPage({ p }: { p: Product }) {
               <span className="flex size-11 items-center justify-center rounded-btn border border-gold-line text-gold">
                 <f.icon aria-hidden size={20} strokeWidth={1.75} />
               </span>
-              <h2 className="m-0 font-display text-[24px] leading-[1.05] font-bold uppercase">{f.title}</h2>
+              <h2 className="m-0 font-display text-h4 font-bold uppercase">{f.title}</h2>
               <p className="m-0 text-[15px] leading-[1.55] text-muted">{f.body}</p>
             </div>
           ))}
@@ -153,7 +153,7 @@ function ProductPage({ p }: { p: Product }) {
         <section className="px-page pb-20" aria-labelledby="figure-title">
           <div className="mb-8 flex flex-col gap-3">
             <span className={eyebrow}>IN THE PRODUCT</span>
-            <h2 id="figure-title" className="m-0 font-display text-[clamp(32px,3.6cqw,48px)] leading-[.95] font-extrabold uppercase">
+            <h2 id="figure-title" className="m-0 font-display text-h2 font-extrabold uppercase">
               {p.figure.title}
             </h2>
             <p className="m-0 max-w-[680px] text-[15px] leading-[1.6] text-muted">{p.figure.body}</p>
@@ -170,7 +170,7 @@ function ProductPage({ p }: { p: Product }) {
           {p.how.map((h, i) => (
             <li key={h.title} className="relative flex flex-col gap-3 bg-bg-alt p-7">
               <span className="font-display text-[44px] leading-none font-extrabold text-gold">{i + 1}</span>
-              <h3 className="m-0 font-display text-[24px] font-bold uppercase">{h.title}</h3>
+              <h3 className="m-0 font-display text-h4 font-bold uppercase">{h.title}</h3>
               <span className="text-[15px] leading-[1.55] text-muted">{h.body}</span>
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-gold" style={{ animation: `gl-grow-x .8s ${0.3 + i * 0.15}s cubic-bezier(.2,.8,.2,1) both` }} />
             </li>
@@ -193,7 +193,7 @@ function Plans() {
     <section className="px-page pb-20" aria-labelledby="plans-title" aria-live="polite">
       <div className="mb-8 flex flex-col gap-3">
         <span className={eyebrow}>PLANS</span>
-        <h2 id="plans-title" className="m-0 font-display text-[clamp(36px,4.4cqw,56px)] leading-[.95] font-extrabold uppercase">
+        <h2 id="plans-title" className="m-0 font-display text-h2 font-extrabold uppercase">
           Start free, <span className="text-gold">pay in crypto</span>
         </h2>
       </div>
