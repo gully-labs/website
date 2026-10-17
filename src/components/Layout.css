@@ -32,4 +32,4 @@
 }
 
 /* Anchor jumps and focus scrolling clear the sticky header. */
-html { scroll-padding-top: 76px; }
+html { scroll-padding-top: 72px; } /* = ANCHOR_OFFSET in src/lib/anchors.ts */

@@ -2,6 +2,7 @@ import { ArrowUpRight, CheckCircle2, Receipt } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { isLocalHost, SITE_URL } from '../../site-host'
 import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, type Payment, type Plan, type PlanId, type Quote } from './api'
+import { PayOnRequest } from './GetStarted'
 import { Empty, ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
 import { mono, panel, panelTitle, pillGold, pillLine, rise } from './styles'
@@ -291,6 +292,8 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
           </div>
         )}
       </section>
+
+      <PayOnRequest />
     </div>
   )
 }

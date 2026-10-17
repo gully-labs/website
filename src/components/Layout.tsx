@@ -8,15 +8,14 @@ import { Footer } from './Footer'
 import { Header } from './Header'
 import { scrollBehavior } from './LayoutNav'
 import { BackToTop } from './LayoutScroll'
+import { scrollToAnchor } from '../lib/anchors'
 
 // The contact modal (and the animation library it uses) loads the first time it is opened, so the
 // landing never downloads it.
 const ContactModal = lazy(() => import('./ContactModal').then((m) => ({ default: m.ContactModal })))
 
-const HEADER_OFFSET = 72
-
-/** Scrolls to the top on page change, or to #hash (minus the sticky header): smoothly, unless the
-    visitor asked for reduced motion. */
+/** Scrolls to the top on page change, or to #hash (src/lib/anchors.ts: just under the sticky header, held
+    there while the layout settles): smoothly, unless the visitor asked for reduced motion. */
 function useScrollOnNavigate() {
   const location = useLocation()
   const navType = useNavigationType()
@@ -25,11 +24,7 @@ function useScrollOnNavigate() {
     if (navType === 'POP' && !location.hash) return
     const id = location.hash.slice(1)
     const timer = setTimeout(() => {
-      const el = id ? document.getElementById(id) : null
-      window.scrollTo({
-        top: el ? el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET : 0,
-        behavior: el ? scrollBehavior() : 'instant',
-      })
+      if (!id || !scrollToAnchor(id, scrollBehavior())) window.scrollTo({ top: 0, behavior: 'instant' })
     }, 20)
     return () => clearTimeout(timer)
   }, [location.key, location.hash, navType])

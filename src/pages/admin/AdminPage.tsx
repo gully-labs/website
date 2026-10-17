@@ -8,6 +8,7 @@ import type { Invoice } from '../pay/invoice'
 import { adminCall } from './payAdmin'
 import { DeliveryLog, EmbedBox, PayLinks, SecretOnce, type Delivery, type Endpoint } from './PayLinks'
 import { AskStudio } from './AskStudio'
+import { TelegramChats } from './TelegramChats'
 import { copyWithToast, flash } from '../../components/ui/toast'
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
@@ -500,7 +501,7 @@ function InvoiceExtras({ token, invoice, reload, onSecret }: { token: string; in
       </div>
       <div className="flex flex-col gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">DELIVERIES</span>
-        {log ? <DeliveryLog rows={log} /> : <span className="font-mono text-[12px] text-faint">Loading…</span>}
+        {log ? <DeliveryLog rows={log} token={token} onChange={loadLog} /> : <span className="font-mono text-[12px] text-faint">Loading…</span>}
       </div>
     </div>
   )
@@ -644,7 +645,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
                       {(i.status === 'open' || i.status === 'expired') && (
                         <button
                           type="button"
-                          onClick={() => window.confirm(`Cancel ${i.number} (${i.title})? Its link stops taking payments.`) && act(`/api/admin/invoices/${i.id}/cancel`).then((e) => setMsg(e ? { ok: false, text: e } : { ok: true, text: `${i.number} cancelled.` }))}
+                          onClick={() => window.confirm(`Cancel ${i.number} (${i.title})? Its link stops taking payments and its webhooks get invoice.cancelled.`) && act(`/api/admin/invoices/${i.id}/cancel`).then((e) => setMsg(e ? { ok: false, text: e } : { ok: true, text: `${i.number} cancelled.` }))}
                           className={`${btn} hover:border-error hover:text-error`}
                         >
                           Cancel
@@ -864,6 +865,8 @@ export function AdminPage() {
                 </div>
               )}
             </section>
+
+            <TelegramChats token={token} />
 
             <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
             <AnalyticsAccounts data={data.analytics} act={act} />

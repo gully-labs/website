@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { EChart } from './EChart'
 import type { ChartEvent } from './chart-utils'
 import { areaPreset, axisTooltip, barsPreset, C, itemTooltip, linePreset, PALETTE, ringPreset, tipHtml } from './chartPresets'
@@ -35,10 +35,24 @@ function Frame({ title, sub, children, aside }: { title: string; sub: string; ch
 /* ---------- Gully Analytics ---------- */
 
 const FUNNEL = [
-  { step: 'Visits', n: 12400 },
-  { step: 'Wallet connected', n: 2180 },
-  { step: 'Transaction sent', n: 640 },
+  { step: 'Visits', short: 'Visits', n: 12400 },
+  { step: 'Wallet connected', short: 'Wallet\nconnected', n: 2180 },
+  { step: 'Transaction sent', short: 'Transaction\nsent', n: 640 },
 ]
+
+/** True on a phone-width window: the funnel then wraps its step names and puts each share under its count. */
+const NARROW = '(max-width: 480px)'
+function useNarrow() {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = window.matchMedia(NARROW)
+      m.addEventListener('change', cb)
+      return () => m.removeEventListener('change', cb)
+    },
+    () => window.matchMedia(NARROW).matches,
+    () => false,
+  )
+}
 const CHAINS = [
   { name: 'Base', n: 41 },
   { name: 'Ethereum', n: 23 },
@@ -50,11 +64,12 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const CONNECTS = { week: [210, 262, 248, 301, 356, 322, 381], prev: [180, 205, 231, 226, 268, 254, 290] }
 
 function Funnel() {
+  const narrow = useNarrow()
   const option = useMemo(
     () => ({
-      grid: { left: 4, right: 70, top: 4, bottom: 4, containLabel: true },
+      grid: { left: 4, right: narrow ? 52 : 70, top: 4, bottom: 4, containLabel: true },
       xAxis: { type: 'value', show: false, max: FUNNEL[0].n },
-      yAxis: { type: 'category', inverse: true, data: FUNNEL.map((f) => f.step), axisLabel: { color: C.ink2, fontSize: 12 }, axisLine: { show: false } },
+      yAxis: { type: 'category', inverse: true, data: FUNNEL.map((f) => (narrow ? f.short : f.step)), axisLabel: { color: C.ink2, fontSize: narrow ? 11 : 12, lineHeight: 13 }, axisLine: { show: false }, axisTick: { show: false } },
       tooltip: axisTooltip((ps: ChartEvent[]) => {
         const i = ps[0]?.dataIndex ?? -1
         const f = FUNNEL[i]
@@ -74,12 +89,12 @@ function Funnel() {
           barWidth: 22,
           showBackground: true,
           backgroundStyle: { color: C.line, borderRadius: 4 },
-          label: { show: true, position: 'right', color: C.ink2, fontSize: 12, formatter: (p: ChartEvent) => `${fmt(p.value)}${p.dataIndex ? ` · ${((p.value / FUNNEL[0].n) * 100).toFixed(1)}%` : ''}` },
+          label: { show: true, position: 'right', color: C.ink2, fontSize: narrow ? 11 : 12, lineHeight: 13, formatter: (p: ChartEvent) => `${fmt(p.value)}${p.dataIndex ? `${narrow ? '\n' : ' · '}${((p.value / FUNNEL[0].n) * 100).toFixed(1)}%` : ''}` },
           data: FUNNEL.map((f, i) => ({ value: f.n, itemStyle: { color: PALETTE[i], borderRadius: 4 } })),
         },
       ],
     }),
-    [],
+    [narrow],
   )
   return (
     <EChart

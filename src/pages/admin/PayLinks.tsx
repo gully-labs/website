@@ -32,6 +32,7 @@ export interface Delivery {
   last: { at: string; status: number | null; ok: boolean; error: string | null; ms: number } | null
   nextAt: string | null
   createdAt: string
+  redeliveryOf: string | null
 }
 
 interface AdminLink {
@@ -100,8 +101,21 @@ export function EmbedBox({ path }: { path: string }) {
   )
 }
 
-/** A delivery log table. */
-export function DeliveryLog({ rows }: { rows: Delivery[] }) {
+/** Sends a finished delivery's event again (same event id, a new attempt series) and says how it went. */
+async function redeliverOne(token: string, d: Delivery): Promise<boolean> {
+  const r = await adminCall<{ delivery: Delivery }>(token, `/api/admin/pay-webhooks/deliveries/${d.id}/redeliver`, {})
+  if (!r.ok) {
+    flash({ ok: false, text: r.error })
+    return false
+  }
+  const n = r.data.delivery
+  flash(n.state === 'delivered' ? { ok: true, text: `${d.type} redelivered (${n.last?.status}, ${n.last?.ms} ms), event ${d.eventId}.` } : { ok: false, text: `Redelivery failed: ${n.last?.error ?? n.last?.status}. It retries on the usual schedule.` })
+  return true
+}
+
+/** A delivery log table. With a token, finished deliveries (not test events) get a Redeliver button. */
+export function DeliveryLog({ rows, token, onChange }: { rows: Delivery[]; token?: string; onChange?: () => void }) {
+  const [busy, setBusy] = useState<string | null>(null)
   if (!rows.length) return <p className="m-0 text-[13px] text-muted">No deliveries yet.</p>
   return (
     <div className="overflow-x-auto">
@@ -113,13 +127,17 @@ export function DeliveryLog({ rows }: { rows: Delivery[] }) {
             <th className="py-2 pr-3 font-medium">TRIES</th>
             <th className="py-2 pr-3 font-medium">LAST ANSWER</th>
             <th className="py-2 pr-3 font-medium">TO</th>
-            <th className="py-2 font-medium">WHEN</th>
+            <th className="py-2 pr-3 font-medium">WHEN</th>
+            {token && <th className="py-2 font-medium"><span className="sr-only">Actions</span></th>}
           </tr>
         </thead>
         <tbody>
           {rows.map((d) => (
             <tr key={d.id} className="border-b border-line font-mono last:border-b-0">
-              <td className="py-2 pr-3 text-ink-2">{d.type}</td>
+              <td className="py-2 pr-3 text-ink-2" title={`event ${d.eventId}`}>
+                {d.type}
+                {d.redeliveryOf ? <span className="block text-[11px] text-faint">redelivery · same event</span> : null}
+              </td>
               <td className={`py-2 pr-3 uppercase ${STATE_CLS[d.state]}`}>
                 {d.state}
                 {d.state === 'pending' && d.nextAt ? <span className="text-faint normal-case"> · next {when(d.nextAt)}</span> : null}
@@ -133,7 +151,27 @@ export function DeliveryLog({ rows }: { rows: Delivery[] }) {
               <td className="max-w-[220px] truncate py-2 pr-3 text-faint" title={d.url}>
                 {d.target} · {d.url}
               </td>
-              <td className="py-2 whitespace-nowrap text-faint">{when(d.createdAt)}</td>
+              <td className="py-2 pr-3 whitespace-nowrap text-faint">{when(d.createdAt)}</td>
+              {token && (
+                <td className="py-1 text-right">
+                  {!d.test && d.state !== 'pending' && (
+                    <button
+                      type="button"
+                      className={`${btn} min-h-8 px-2 text-[12px] ${d.state === 'failed' ? 'border-gold-line text-gold' : ''}`}
+                      disabled={busy !== null}
+                      title={`Send event ${d.eventId} again as a new delivery`}
+                      onClick={async () => {
+                        setBusy(d.id)
+                        await redeliverOne(token, d)
+                        setBusy(null)
+                        onChange?.()
+                      }}
+                    >
+                      {busy === d.id ? 'Sending…' : 'Redeliver'}
+                    </button>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -368,7 +406,7 @@ function LinkDetail({ token, link, reload, onSecret }: { token: string; link: Ad
       </div>
       <div className="flex flex-col gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">WEBHOOK DELIVERIES</span>
-        {data && <DeliveryLog rows={data.deliveries} />}
+        {data && <DeliveryLog rows={data.deliveries} token={token} onChange={load} />}
       </div>
     </div>
   )
@@ -527,7 +565,7 @@ function DefaultWebhook({ token, current, reload, onSecret }: { token: string; c
     <div className="flex flex-col gap-3 border-t border-line pt-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">DEFAULT WEBHOOK</span>
-        <span className={small}>for invoices with no webhook of their own or of their link · events invoice.paid, invoice.expired</span>
+        <span className={small}>for invoices with no webhook of their own or of their link · events invoice.paid, invoice.expired, invoice.cancelled</span>
       </div>
       {current ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -568,7 +606,7 @@ function DefaultWebhook({ token, current, reload, onSecret }: { token: string; c
           {showLog ? 'Hide all deliveries' : 'All deliveries'}
         </button>
       </div>
-      {showLog && (log ? <DeliveryLog rows={log} /> : <span className={small}>Loading…</span>)}
+      {showLog && (log ? <DeliveryLog rows={log} token={token} onChange={loadLog} /> : <span className={small}>Loading…</span>)}
     </div>
   )
 }

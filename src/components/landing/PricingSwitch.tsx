@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowUpRight, Loader2 } from 'lucide-react'
+import { ArrowUpRight, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
 import { useContact } from '../ContactContext'
 import { h2, PORTAL_BILLING } from './links'
@@ -9,7 +9,9 @@ import { h2, PORTAL_BILLING } from './links'
 /* Pricing on the landing: one switch (Tracker API / Gully Analytics / Chain Kit & services) and that
    product's plans as cards, crossfading on a switch. The API and Analytics prices are read from
    GET /api/plans (server/plans.mjs is the one source); Chain Kit and services are quoted. The payment
-   line under the cards says which coins and chains are accepted, from the same read. */
+   line under the cards says which coins and chains are accepted, from the same read.
+   On a phone (< 600 px) the cards are a sideways rail with scroll-snap; previous / next buttons (44 px)
+   step one card at a time and the rail itself stays focusable, so arrow keys still scroll it. */
 
 type Product = 'api' | 'analytics' | 'services'
 type Card = { name: string; price: string; per?: string; feats: string[] }
@@ -29,6 +31,34 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
   const [product, setProduct] = useState<Product>('api')
   const tabs = useRef<Record<string, HTMLButtonElement | null>>({})
   const offer = plans.k === 'ok' ? plans.offer : null
+  const [rail, setRail] = useState<HTMLUListElement | null>(null)
+  const [edge, setEdge] = useState({ prev: false, next: false })
+
+  // Which way the phone rail can still scroll (the buttons disable at the ends).
+  useEffect(() => {
+    if (!rail) return
+    let raf = 0
+    const update = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => setEdge({ prev: rail.scrollLeft > 4, next: rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 4 }))
+    }
+    update()
+    rail.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      cancelAnimationFrame(raf)
+      rail.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [rail])
+
+  const step = (dir: 1 | -1) => {
+    if (!rail) return
+    const card = rail.querySelector('li')
+    const by = card ? card.getBoundingClientRect().width + 12 : rail.clientWidth * 0.8
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    rail.scrollBy({ left: dir * by, behavior: reduce ? 'auto' : 'smooth' })
+  }
 
   let cards: Card[] | null = null
   if (product === 'services')
@@ -81,7 +111,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
   const assets = offer ? [...new Set([...offer.assets].sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'native' ? -1 : 1)).map((a) => a.symbol))] : []
 
   return (
-    <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-20 border-t border-line">
+    <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-[72px] border-t border-line">
       <div className="flex flex-col gap-5 px-page py-12 max-[599px]:py-9">
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.45, ease }} className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
@@ -122,7 +152,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={product + (cards ? 'ok' : plans.k)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
               {cards ? (
-                <ul tabIndex={0} aria-label="Plans" className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3 p-0 max-[599px]:-mx-page max-[599px]:flex max-[599px]:snap-x max-[599px]:snap-mandatory max-[599px]:overflow-x-auto max-[599px]:px-page max-[599px]:pb-1 max-[599px]:[scrollbar-width:none]">
+                <ul ref={setRail} id="price-rail" tabIndex={0} aria-label="Plans" className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3 p-0 max-[599px]:-mx-page max-[599px]:flex max-[599px]:snap-x max-[599px]:snap-mandatory max-[599px]:overflow-x-auto max-[599px]:[scroll-padding-inline:clamp(24px,4.5cqw,64px)] max-[599px]:px-page max-[599px]:pb-1 max-[599px]:[scrollbar-width:none]">
                   {cards.map((c, i) => (
                     <motion.li
                       key={c.name}
@@ -161,6 +191,16 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
             </motion.div>
           </AnimatePresence>
         </div>
+        {cards && cards.length > 1 && (
+          <div className="-mt-2 hidden items-center justify-end gap-2 max-[599px]:flex">
+            <button type="button" aria-label="Previous plan" aria-controls="price-rail" disabled={!edge.prev} onClick={() => step(-1)} className={arrowCls}>
+              <ChevronLeft size={18} aria-hidden />
+            </button>
+            <button type="button" aria-label="Next plan" aria-controls="price-rail" disabled={!edge.next} onClick={() => step(1)} className={arrowCls}>
+              <ChevronRight size={18} aria-hidden />
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="m-0 max-w-[760px] font-mono text-[12px] leading-[1.6] text-dim">
             {offer ? (
@@ -180,3 +220,4 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
 }
 
 const ctaCls = 'inline-flex min-h-11 items-center gap-2 rounded-btn border border-gold-line bg-transparent px-4 text-[14px] font-semibold text-gold transition-colors hover:border-gold hover:text-gold-hover'
+const arrowCls = 'grid size-11 place-items-center rounded-full border border-line-strong bg-surface text-ink-2 transition-colors hover:border-gold hover:text-gold disabled:cursor-default disabled:opacity-35 disabled:hover:border-line-strong disabled:hover:text-ink-2'

@@ -260,7 +260,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
   else body = skeleton(cur.height)
 
   return (
-    <section id="products" aria-labelledby="products-title" className="relative scroll-mt-20 border-t border-line">
+    <section id="products" aria-labelledby="products-title" className="relative scroll-mt-[72px] border-t border-line">
       {/* The deep-link anchors: /#alerts and friends land on the console. */}
       {CONSOLE_TABS.map((id) => (
         <span key={id} id={id} aria-hidden className="pointer-events-none absolute top-0 left-0" />

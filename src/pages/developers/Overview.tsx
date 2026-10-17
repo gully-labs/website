@@ -2,6 +2,7 @@ import { ArrowUpRight, ChartNoAxesCombined, KeyRound, Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ChannelChips, SecretDialog, TelegramCard } from './Alerts'
 import { EventsMeter } from './Analytics'
+import { GetStarted, ToolsRow } from './GetStarted'
 import { alertName, alertRule, alertState, defaultAsset, keyColors, priceText, siteMeta, useAlertActions, useAlertsView } from './helpers'
 import { api, type Account, type AnalyticsUsage, type AnalyticsView, type BillingView, type PlanId, type Range, type Usage } from './api'
 import { DoubleRing, Meter, RequestBars, Spark, type BarSeries } from './charts'
@@ -10,7 +11,7 @@ import { ChainAssetChips } from './PayFlow'
 import { BLUE, chip, LIMITED_COLOR, mono, panel, panelTitle, pillGold, pillGoldLine, pillLine, rise } from './styles'
 import { bucketize, busiestKeyRate, columns, firings, group, RANGE_LABEL } from './usage'
 
-/* The Overview tab of the console: four KPI cards, requests per key (stacked bars), plan limits (the
+/* The Overview tab of the console: the "Get started" checklist and the Tools row (GetStarted.tsx), four KPI cards, requests per key (stacked bars), plan limits (the
    double ring), alerts with the Telegram card, Gully Analytics sites and the "extend your plan" pay
    strip. Each card reads its own endpoint and shows its own loading, empty and unreadable states:
      /api/developer/usage?range=…   requests, 429s, busiest key
@@ -126,6 +127,10 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
 
   return (
     <div className="flex flex-col gap-[14px]">
+      {/* ------------------------------------------------- checklist and tools */}
+      <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
+      <ToolsRow />
+
       {/* ---------------------------------------------------------------- KPIs */}
       <section aria-label="Summary" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3">
         <Kpi i={0} label={`Requests · ${range}`} color="#e8c060" value={usage ? fmt(usage.rangeTotals.total) : null} spark={usage ? grouped.map((g) => g.total) : undefined} unreadable={usageErr} note={usage ? `${fmt(usage.today.total)} today (UTC) · ${fmt(usage.last7d.total)} in 7 days` : 'reading usage…'} />

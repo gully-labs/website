@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-17T18:11:37.628Z",
+ "updatedAt": "2026-10-17T19:27:55.110Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -602,8 +602,8 @@
    "title": "Gully Pay",
    "url": "https://docs.gullylabs.xyz/gully-pay#webhooks",
    "section": "Webhooks",
-   "text": "A pay link, an invoice, or a default endpoint for everything else can have a webhook. When an invoice has its own, or its link has one, events go there; otherwise to the default, if set. invoice.paid (The payment is confirmed and the invoice marked paid.): invoice, link, payment invoice.expired (An open invoice ran out without a payment.): invoice, link webhook.test (The admin pressed Send test event.): target, message https only. No user name or password in the URL. The host must resolve only to public addresses: private, loopback, link-local and reserved ranges are refused, and the request goes to the address that was checked. The signing secret (whsec_…) is shown once, when the endpoint is set. Rotating it shows the new one once; the old one stops at once. Five-second timeout, redirects not followed, the response body is not read.",
-   "updatedAt": "2026-10-17T17:00:51.286Z"
+   "text": "A pay link, an invoice, or a default endpoint for everything else can have a webhook. When an invoice has its own, or its link has one, events go there; otherwise to the default, if set. invoice.paid (The payment is confirmed and the invoice marked paid.): invoice, link, payment invoice.expired (An open invoice ran out without a payment.): invoice, link invoice.cancelled (Gully Labs cancelled the invoice; it can no longer be paid. A cancelled invoice never sends invoice.expired afterwards.): invoice, link webhook.test (The admin pressed Send test event.): target, message https only. No user name or password in the URL. The host must resolve only to public addresses: private, loopback, link-local and reserved ranges are refused, and the request goes to the address that was checked. The signing secret (whsec_…) is shown once, when the endpoint is set. Rotating it shows the new one once; the old one stops at once. Five-second timeout, redirects not followed, the response body is not read.",
+   "updatedAt": "2026-10-17T19:27:55.110Z"
   },
   {
    "id": "a4eaf1024a43",
@@ -620,8 +620,8 @@
    "title": "Gully Pay",
    "url": "https://docs.gullylabs.xyz/gully-pay#retries",
    "section": "Delivery and retries",
-   "text": "The first attempt goes out at once. Any answer other than 2xx, a timeout or a network error is retried after 1, 5, 10, 20 and 30 minutes: six attempts over about an hour. Then the delivery is marked failed. Retries carry the same event id and body; each is signed again with the current secret and timestamp. The queue is stored on disk, so a restart loses nothing: attempts that came due while the server was down go out when it is back. Each link and invoice shows its delivery log in the admin: event, state, attempts, last answer. Events may arrive out of order and, rarely, more than once. Treat invoice.paid as the source of truth for a sale and look the invoice up by id.",
-   "updatedAt": "2026-10-17T17:00:51.286Z"
+   "text": "The first attempt goes out at once. Any answer other than 2xx, a timeout or a network error is retried after 1, 5, 10, 20 and 30 minutes: six attempts over about an hour. Then the delivery is marked failed. Retries carry the same event id and body; each is signed again with the current secret and timestamp. The queue is stored on disk, so a restart loses nothing: attempts that came due while the server was down go out when it is back. Each link and invoice shows its delivery log in the admin: event, state, attempts, last answer. A finished delivery (failed or delivered) can be redelivered from the admin, for example after your endpoint was down for longer than the retries. The same event goes out again, with the same id and body, as a new delivery with its own six attempts. Your handler should already drop an id it has handled. Events may arrive out of order and, rarely, more than once. Treat invoice.paid as the source of truth for a sale and look the invoice up by id.",
+   "updatedAt": "2026-10-17T19:27:55.110Z"
   },
   {
    "id": "5778b557c5ce",
