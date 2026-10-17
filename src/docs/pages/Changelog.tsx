@@ -30,6 +30,11 @@ export function Changelog() {
             <Ext href="https://gullylabs.xyz/chain-kit">Chain Kit</Ext>: a branded Blockscout explorer for your chain, operated by Gully Labs.
           </li>
           <li>The widget links each stock to its page.</li>
+          <li>
+            The <Ext href="https://gullylabs.xyz/">landing page</Ext> describes DeepCore as it is today (launchpad, hosted Launchpads and DEXes, router) and shows its hosted sites, launches in the last 24 hours and dollars in locks, read from <Ext href="https://api.deepcore.fun/v1/overview">api.deepcore.fun</Ext>.
+          </li>
+          <li>A preview of Gully Chains, managed Arbitrum Orbit L3s, starting with Gully Devnet. In development; nothing is live yet.</li>
+          <li>The tracker reads DeepCore pools through DeepCore's own pool manager, never as Uniswap v4 pools.</li>
         </List>
       </Section>
       <Section id="2026-10-16" title="16 October 2026">

@@ -32,6 +32,15 @@ function figure(v: Venue | undefined, c: Col): { n: number | null; note?: string
   return { n: v.fees24hUsd, note: v.fees24hUsd === null ? undefined : '24h' }
 }
 
+/** Small secondary facts a venue publishes beyond the three columns (DeepCore: hosted sites,
+    launches in 24h, dollars in locks). A fact the venue left out reads "—", never 0. */
+function extrasOf(v: Venue | undefined): string | null {
+  if (!v || v.state !== 'ok' || v.key !== 'deepcore') return null
+  const c = v.counts
+  const n = (x: number | null | undefined) => (x === null || x === undefined ? '—' : x.toLocaleString('en-US'))
+  return `${n(c.sites)} hosted site${c.sites === 1 ? '' : 's'} · ${n(c.launches24h)} launch${c.launches24h === 1 ? '' : 'es'} 24h · ${fmtUsd(v.lockedUsd)} in locks`
+}
+
 const initials = (name: string) =>
   name
     .split(/(?=[A-Z])|\s+/)
@@ -128,6 +137,7 @@ export function ProjectRows({ data, state }: { data: Stats | null; state: State 
                       <span className="flex flex-col leading-[1.2]">
                         <b className="font-semibold group-hover:text-gold">{p.name}</b>
                         <span className="text-[12px] text-dim">{p.tagline}</span>
+                        {extrasOf(venue) && <span className="mt-[2px] font-mono text-[11px] text-faint">{extrasOf(venue)}</span>}
                       </span>
                     </Link>
                   </td>
@@ -189,6 +199,7 @@ export function ProjectRows({ data, state }: { data: Stats | null; state: State 
                     <span className="flex min-w-0 flex-col leading-[1.2]">
                       <b className="font-semibold">{p.name}</b>
                       <span className="truncate text-[12px] text-dim">{p.chains.join(' · ')}</span>
+                      {extrasOf(venue) && <span className="mt-[2px] font-mono text-[11px] text-faint">{extrasOf(venue)}</span>}
                     </span>
                   </Link>
                   <a href={p.url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-[13px] text-gold">

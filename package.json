@@ -13,7 +13,8 @@
     "test:pay": "node scripts/test-pay.mjs",
     "test:movers": "node --test scripts/test-movers.mjs",
     "test:analytics": "node scripts/test-analytics.mjs",
-    "test:telegram": "node scripts/test-telegram.mjs"
+    "test:telegram": "node scripts/test-telegram.mjs",
+    "test:deepcore": "node --test scripts/test-deepcore.mjs"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

@@ -15,3 +15,12 @@ export interface StatsDocument {
 }
 export const VENUES: { key: string; read: () => Promise<unknown> }[]
 export function readStats(): Promise<StatsDocument>
+export const DEEPCORE_HOSTS: string[]
+export function deepcoreExtras(items: unknown[]): {
+  sites: number | null
+  sites24h: number | null
+  launches24h: number | null
+  locks: number | null
+  lockedUsd: number | null
+  unpricedLocks: number
+}

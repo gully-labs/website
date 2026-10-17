@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { Activity, ArrowDownUp, ArrowUpRight, BellRing, BookOpen, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, LayoutGrid, Loader2, Newspaper, Puzzle, Wrench, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowDownUp, ArrowUpRight, BellRing, BookOpen, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, LayoutGrid, Loader2, Newspaper, Puzzle, Wrench, type LucideIcon } from 'lucide-react'
 import { projects } from '../../content/projects'
 import { processSteps, services } from '../../content/services'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
@@ -8,8 +8,8 @@ import { DOCS_URL } from '../../site-host'
 import { BLOG_URL, h2, PORTAL_BILLING } from './links'
 import { useContact } from '../ContactContext'
 
-/* The landing's static sections, in the "showroom" layout: the product index, pricing (read from
-   GET /api/plans), services with the four-step process, and the open-source strip. */
+/* The landing's static sections, in the "showroom" layout: the product index, the Gully Chains preview,
+   pricing (read from GET /api/plans), services with the four-step process, and the open-source strip. */
 
 
 export function Kicker({ n, label }: { n: string; label: string }) {
@@ -30,6 +30,7 @@ const TILES: Tile[] = [
   { name: 'Alerts', sub: 'Telegram + webhook', id: 'alerts', icon: BellRing, status: 'LIVE', live: true },
   { name: 'Gully Analytics', sub: 'Wallet-aware analytics', id: 'analytics', icon: ChartNoAxesCombined, status: 'FREE TRIAL', live: true },
   { name: 'Chain Kit', sub: 'Branded explorers', id: 'chainkit', icon: Boxes, status: 'ON REQUEST', live: false },
+  { name: 'Gully Chains', sub: 'Orbit L3s, run by us', id: 'chains', icon: Layers, status: 'IN DEVELOPMENT', live: false },
   { name: 'API + SDK', sub: 'Free, wallet sign-in', id: 'api', icon: Code2, status: 'LIVE', live: true },
   { name: 'Widget', sub: 'One script tag', id: 'widget', icon: Puzzle, status: 'LIVE', live: true },
   { name: 'Gully Pay', sub: 'Crypto billing', id: 'pay', icon: CircleDollarSign, status: 'LIVE', live: true },
@@ -59,6 +60,115 @@ export function ProductIndex() {
           </li>
         ))}
       </ul>
+    </section>
+  )
+}
+
+/* ----------------------------------------------------------- gully chains --- */
+
+/* Not live: a preview of the Orbit L3 work. The repos are public forks in the gully-labs org; nothing
+   here claims a running chain. Gully Labs is not affiliated with Offchain Labs or the Arbitrum
+   Foundation, so no Arbitrum marks, only our own banners. */
+const CHAIN_REPOS: { repo: string; role: string; d: string }[] = [
+  { repo: 'arbitrum-orbit-deployment-ui', role: 'Launch', d: 'Deploy an Orbit chain from the browser' },
+  { repo: 'orbit-setup-script', role: 'Bootstrap', d: 'Bring a new chain up' },
+  { repo: 'orbit-monitoring-tools', role: 'Monitor', d: 'Keep the chain healthy' },
+  { repo: 'arbitrum-token-bridge', role: 'Gully Bridge', d: 'Move tokens on and off the chain' },
+  { repo: 'arbitrum-token-lists', role: 'Tokens', d: 'Token lists for the bridge' },
+  { repo: 'stylus-sdk-rs', role: 'Stylus SDK', d: 'Contracts in Rust' },
+  { repo: 'stylus-hello-world', role: 'Stylus starter', d: 'A first Rust contract' },
+]
+
+const CHAIN_STEPS: { name: string; d: string }[] = [
+  { name: 'Gully Devnet', d: 'A public test L3 on Arbitrum Sepolia, with our Chain Kit explorer, a faucet and a bridge.' },
+  { name: 'Client chains', d: 'Managed Orbit L3s for clients, settling to Arbitrum One, launched and run by us.' },
+  { name: 'Our own L3', d: 'A chain for the Gully venues.' },
+]
+
+const BANNERS = [
+  { repo: 'arbitrum-orbit-deployment-ui', alt: 'Gully Labs banner for the Launch repository: launch a chain' },
+  { repo: 'arbitrum-token-bridge', alt: 'Gully Labs banner for the Gully Bridge repository' },
+]
+
+export function ChainsSection({ n }: { n: string }) {
+  const { openContact } = useContact()
+  return (
+    <section id="chains" aria-labelledby="chains-title" className="scroll-mt-20 border-t border-line">
+      <div className="flex flex-col gap-5 px-page py-12">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-[6px]">
+            <Kicker n={n} label="GULLY CHAINS · IN DEVELOPMENT" />
+            <h2 id="chains-title" className={h2}>
+              Your own chain, run by us
+            </h2>
+            <p className="m-0 max-w-[560px] text-[14px] leading-[1.5] text-muted">
+              Arbitrum Orbit L3 chains, launched and operated by Gully Labs. We have forked and branded the Orbit and Stylus tooling; first comes Gully Devnet, a public test chain. None of it is live yet.
+            </p>
+          </div>
+          <div className="flex flex-[0_1_auto] flex-col items-start gap-2">
+            <span className="flex flex-wrap gap-[6px]">
+              {['Arbitrum Orbit', 'Stylus · Rust', 'Coming soon'].map((t) => (
+                <span key={t} className="rounded-full border border-line-strong px-[9px] py-[3px] text-[12px] text-ink-2">
+                  {t}
+                </span>
+              ))}
+            </span>
+            <button
+              type="button"
+              onClick={() => openContact('Infrastructure')}
+              className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-gold-line bg-transparent px-4 text-[14px] font-semibold text-gold transition-colors hover:border-gold hover:text-gold-hover"
+            >
+              Ask about a chain <ArrowUpRight aria-hidden size={15} />
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-start gap-3">
+          <ol className="m-0 flex list-none flex-col gap-px overflow-hidden rounded-card border border-line bg-line p-0">
+            {CHAIN_STEPS.map((s, i) => (
+              <li key={s.name} className="flex items-start gap-3 bg-surface px-4 py-[14px]">
+                <span className="mt-[2px] font-mono text-[12px] text-gold">{String(i + 1).padStart(2, '0')}</span>
+                <span className="flex min-w-0 flex-col gap-[2px]">
+                  <b className="font-semibold">
+                    {s.name} <span className="ml-1 font-mono text-[10px] font-normal tracking-[1px] text-dim">{i === 0 ? 'NEXT' : 'LATER'}</span>
+                  </b>
+                  <span className="text-[13px] text-muted">{s.d}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <div className="flex flex-col gap-3">
+            {BANNERS.map((b) => (
+              <a key={b.repo} href={`https://github.com/gully-labs/${b.repo}`} target="_blank" rel="noopener" className="block overflow-hidden rounded-card border border-line transition-colors hover:border-gold-line">
+                <img src={`/brand/repos/${b.repo}.svg`} alt={b.alt} width={1280} height={360} loading="lazy" decoding="async" className="block h-auto w-full" />
+              </a>
+            ))}
+          </div>
+        </div>
+        <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,220px),1fr))] gap-2 p-0">
+          {CHAIN_REPOS.map((r) => (
+            <li key={r.repo} className="min-w-0">
+              <a
+                href={`https://github.com/gully-labs/${r.repo}`}
+                target="_blank"
+                rel="noopener"
+                className="flex h-full min-h-11 flex-col gap-[2px] rounded-[10px] border border-line bg-surface px-[14px] py-3 text-ink transition-[border-color,background-color] duration-200 hover:border-gold-line hover:bg-surface-hover hover:text-ink"
+              >
+                <span className="flex items-center justify-between gap-2 font-mono text-[11px] text-gold">
+                  {r.role.toUpperCase()}
+                  <GitFork aria-hidden size={13} />
+                </span>
+                <b className="truncate font-mono text-[12px] font-medium" title={`gully-labs/${r.repo}`}>
+                  gully-labs/{r.repo}
+                </b>
+                <span className="text-[12px] text-dim">{r.d}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">
+          Forks of open-source Offchain Labs repositories. Gully Labs is not affiliated with Offchain Labs or the Arbitrum Foundation.
+        </p>
+      </div>
     </section>
   )
 }
@@ -120,7 +230,7 @@ export function LandingPricing({ plans }: { plans: PlansState }) {
       <div className="flex flex-col gap-5 px-page py-12">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <Kicker n="09" label="PRICING" />
+            <Kicker n="10" label="PRICING" />
             <h2 id="pricing-title" className={h2}>
               Every plan, one page
             </h2>
@@ -203,7 +313,7 @@ export function ServicesBlock() {
       <div className="flex flex-col gap-5 px-page py-12">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <Kicker n="10" label="SERVICES" />
+            <Kicker n="11" label="SERVICES" />
             <h2 id="services-title" className={h2}>
               The same team, on your project
             </h2>
