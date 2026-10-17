@@ -4,7 +4,10 @@
 /** Fired on window when a signed-in request answers 401. */
 export const SESSION_ENDED = 'gully:session-ended'
 
-export type Result<T> = { ok: true; status: number; data: T } | { ok: false; status: number; error: string }
+export type Result<T> = { ok: true; status: number; data: T } | { ok: false; status: number; error: string; code?: string; body?: unknown }
+
+/** Fired on window when a write is refused for the role (403, code 'forbidden-role'); the console toasts it once. */
+export const ROLE_REFUSED = 'gully:role-refused'
 
 export async function api<T = unknown>(path: string, opts: { method?: 'GET' | 'POST'; body?: unknown } = {}): Promise<Result<T>> {
   const method = opts.method ?? 'GET'
@@ -19,7 +22,12 @@ export async function api<T = unknown>(path: string, opts: { method?: 'GET' | 'P
     // A 401 on a signed-in route means the session cookie is gone (signed out in another tab, expired):
     // tell the page, which shows the sign-in screen instead of a wall of "Not signed in" errors.
     if (r.status === 401 && path.startsWith('/api/developer/') && typeof window !== 'undefined') window.dispatchEvent(new Event(SESSION_ENDED))
-    if (!r.ok) return { ok: false, status: r.status, error: (data as { error?: string } | null)?.error ?? `The server answered ${r.status}.` }
+    if (!r.ok) {
+      const body = data as { error?: string; code?: string } | null
+      const error = body?.error ?? `The server answered ${r.status}.`
+      if (r.status === 403 && body?.code === 'forbidden-role' && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(ROLE_REFUSED, { detail: error }))
+      return { ok: false, status: r.status, error, code: body?.code, body: data }
+    }
     return { ok: true, status: r.status, data: data as T }
   } catch {
     return { ok: false, status: 0, error: 'The server could not be reached. Check your connection and try again.' }

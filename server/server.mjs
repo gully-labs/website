@@ -2,6 +2,7 @@
 // SPA fallback, handles POST /api/contact and answers GET /api/stats (the live
 // cross-venue figures, see stats.mjs). No dependencies beyond Node.
 import http from 'node:http'
+import { handleIndexNowKey } from './indexnow.mjs'
 import { readStats } from './stats.mjs'
 import { onSnapshot, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
@@ -138,6 +139,7 @@ const server = http.createServer(async (req, res) => {
   const isLocal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)
   const isAdmin = host.startsWith('admin.')
   // The blog is self-hosted Ghost in its own container; every path on its host goes there.
+  if (handleIndexNowKey(req, res, url)) return
   if (host.startsWith('blog.')) return handleBlog(req, res, url)
   // Gully Analytics (Umami fork) in its own container; every path on its host goes there.
   if (host.startsWith('analytics.')) return handleAnalytics(req, res)

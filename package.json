@@ -21,7 +21,8 @@
     "test:paylinks": "node scripts/test-paylinks.mjs",
     "test:ask": "node scripts/test-ask.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",
-    "ask:index": "node scripts/build-ask-index.mjs"
+    "ask:index": "node scripts/build-ask-index.mjs",
+    "seo:indexnow": "node scripts/indexnow-submit.mjs"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",
