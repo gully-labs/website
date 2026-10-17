@@ -246,7 +246,7 @@ export function Billing({ account, reload }: { account: Account; reload: () => P
                       {p.amount} {p.symbol}
                       {p.price && p.usd && (
                         <span className="block text-[11px] text-faint">
-                          {p.usd} USD at {p.price.answer}
+                          {p.usd} USD at {Number(p.price.answer).toLocaleString('en-US', { maximumFractionDigits: 2 })}
                         </span>
                       )}
                     </td>

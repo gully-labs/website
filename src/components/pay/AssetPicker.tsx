@@ -21,7 +21,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false }: { ass
     <div role="radiogroup" aria-label="Pay with" className="flex flex-col gap-2">
       {byChain(assets).map((g) => (
         <div key={g.chainId} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-input border border-line bg-surface-deep px-3 py-2">
-          <span className="flex w-[132px] shrink-0 items-center gap-2 text-[14px] text-ink-2">
+          <span className="flex w-[132px] shrink-0 items-center gap-2 text-[14px] text-ink-2 max-[600px]:w-full">
             <ChainMark chainKey={g.chainKey} name={g.chain} />
             {g.chain}
           </span>
