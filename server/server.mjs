@@ -98,7 +98,7 @@ function securityHeaders(host) {
   const csp = [
     "default-src 'self'",
     // Cloudflare Web Analytics is enabled on the zone and injects its beacon into every page.
-    "script-src 'self' https://static.cloudflareinsights.com",
+    "script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
