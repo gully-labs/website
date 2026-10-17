@@ -162,7 +162,7 @@
 
   function footer(d, stale) {
     var t = d ? new Date(d.generatedAt) : null
-    var when = t && !isNaN(t) ? (stale ? 'last read ' : 'live \u00b7 ') + t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+    var when = t && !isNaN(t) ? (stale ? 'last read ' : 'live \u00b7 ') + t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) + ' UTC' : ''
     return (
       '<div class="f"><span class="lv"><span class="dot' + (stale || !d ? ' st' : '') + '"></span>' + esc(when) + '</span>' +
       '<a href="' + TRACKER + '" target="_blank" rel="noopener">Gully Labs tracker \u2197</a></div>'
@@ -403,7 +403,7 @@
         var cur = sp.querySelector('.cur')
         cur.style.left = bx + 'px'
         tip.style.left = Math.min(Math.max(bx, 40), rect.width - 40) + 'px'
-        tip.textContent = new Date(best[0] * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' \u00b7 ' + gap(best[1])
+        tip.textContent = new Date(best[0] * 1000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) + ' UTC' + ' \u00b7 ' + gap(best[1])
       })
     }
   }

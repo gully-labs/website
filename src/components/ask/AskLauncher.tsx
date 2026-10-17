@@ -6,7 +6,7 @@ import { askStatus } from './askApi'
 // The panel (and its code) loads the first time it is opened.
 const AskPanel = lazy(() => import('./AskPanel').then((m) => ({ default: m.AskPanel })))
 
-/* "Ask Gully" for the docs header: a button that opens Ask as a side panel on wide screens and a sheet on
+/* "Gully AI" for the docs header: a button that opens Ask as a side panel on wide screens and a sheet on
    phones. Hidden entirely while the server says Ask is not configured. */
 export function AskLauncher() {
   const [on, setOn] = useState(false)
@@ -63,7 +63,7 @@ export function AskLauncher() {
         className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-[rgba(232,192,96,.08)] px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-[rgba(232,192,96,.14)]"
       >
         <MessageCircleQuestion size={16} aria-hidden />
-        <span className="max-[520px]:sr-only">Ask Gully</span>
+        <span className="max-[520px]:sr-only">Gully AI</span>
       </button>
       {/* Portalled to <body>: the docs header's backdrop-filter would otherwise contain a fixed element. */}
       {open &&
@@ -80,9 +80,9 @@ export function AskLauncher() {
           >
             <div className="flex items-center justify-between gap-3">
               <h2 id="ask-gully-title" className="m-0 flex items-center gap-2 font-display text-[24px] leading-none font-bold uppercase">
-                <MessageCircleQuestion size={20} aria-hidden className="text-gold" /> Ask Gully
+                <MessageCircleQuestion size={20} aria-hidden className="text-gold" /> Gully AI
               </h2>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close Ask Gully" className="grid size-11 place-items-center rounded-btn border border-line text-ink-2 transition-colors hover:border-line-hover">
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close Gully AI" className="grid size-11 place-items-center rounded-btn border border-line text-ink-2 transition-colors hover:border-line-hover">
                 <X size={18} aria-hidden />
               </button>
             </div>

@@ -52,7 +52,7 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
     { id: 'api', name: 'API + SDK', icon: Code2, status: 'LIVE', live: true, pitch: `Every tracker row as JSON: ${anon ? `${anon} calls a minute` : 'free calls'} with no key, a free key${free ? ` (${free.perMin.toLocaleString('en-US')} a minute)` : ''} with wallet sign-in, and a typed SDK (MIT).`, cta: { label: 'Get a key', href: PORTAL }, height: 560, Demo: ApiDemo },
     { id: 'widget', name: 'Widget', icon: Puzzle, status: 'LIVE', live: true, pitch: 'One script tag puts a live ticker, a one-stock badge or a table of the widest gaps on any site.', cta: { label: 'Build a widget', to: '/widget' }, height: 520, Demo: WidgetDemo },
     { id: 'pay', name: 'Gully Pay', icon: CircleDollarSign, status: 'LIVE', live: true, pitch: 'Plans paid from your wallet straight to ours in ETH, BNB, USDC or USDT on four chains, checked on chain. No custody.', cta: { label: 'See plans', to: '/#pricing' }, height: 540, Demo: PayDemo },
-    { id: 'ask', name: 'Ask Gully', icon: MessageCircleQuestion, status: ask ? 'LIVE' : 'SOON', live: !!ask, pitch: 'Questions about any Gully product, answered from our docs with the sources cited.', cta: { label: 'Open Gully Ask', to: '/ask' }, height: ask ? 420 : 200 },
+    { id: 'ask', name: 'Gully AI', icon: MessageCircleQuestion, status: ask ? 'LIVE' : 'SOON', live: !!ask, pitch: 'Questions about any Gully product, answered from our docs with the sources cited.', cta: { label: 'Open Gully AI', to: '/ask' }, height: ask ? 420 : 200 },
   ]
 }
 
@@ -147,15 +147,15 @@ function ChainsPane() {
             <a
               href={`https://github.com/gully-labs/${r.repo}`}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="flex h-full min-h-11 flex-col gap-[2px] rounded-[10px] border border-line bg-surface px-3 py-[10px] text-ink transition-[border-color,background-color] duration-200 hover:border-gold-line hover:bg-surface-hover hover:text-ink"
             >
-              <span className="flex items-center justify-between gap-2 font-mono text-[10px] tracking-[1px] text-gold">
+              <span className="flex items-center justify-between gap-2 font-mono text-[11px] tracking-[1px] text-gold">
                 {r.role.toUpperCase()}
                 <GitFork aria-hidden size={12} />
               </span>
               <b className="font-mono text-[12px] leading-[1.35] font-medium [overflow-wrap:anywhere]">gully-labs/{r.repo}</b>
-            </a>
+            <span className="sr-only"> (opens in a new tab)</span></a>
           </li>
         ))}
       </ul>
@@ -175,11 +175,11 @@ function AskPane({ configured }: { configured: boolean | null }) {
     <div className="flex min-h-[200px] flex-col items-start justify-center gap-3 rounded-card border border-dashed border-line-strong bg-surface p-6">
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{configured === null ? 'CHECKING…' : 'COMING ONLINE SOON'}</span>
       <p className="m-0 max-w-[520px] text-[14px] leading-[1.5] text-muted">
-        Gully Ask answers questions about the tracker, the API, Analytics, Chain Kit and Gully Pay from our own docs, and cites where each answer came from.
+        Gully AI answers questions about the tracker, the API, Analytics, Chain Kit and Gully Pay from our own docs, and cites where each answer came from.
         {configured === false ? ' It is not switched on here yet; the docs are open meanwhile.' : ''}
       </p>
       <Link to="/ask" className="inline-flex min-h-11 items-center gap-2 text-[14px] font-medium text-gold hover:text-gold-hover">
-        Go to Gully Ask <ArrowUpRight aria-hidden size={14} />
+        Go to Gully AI <ArrowUpRight aria-hidden size={14} />
       </Link>
     </div>
   )
@@ -306,7 +306,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
                   </span>
                   <span className="flex min-w-0 flex-1 items-center justify-between gap-2 max-[899px]:flex-none">
                     <b className="text-[14px] font-semibold whitespace-nowrap">{t.name}</b>
-                    <span className={`font-mono text-[9px] tracking-[.5px] whitespace-nowrap max-[899px]:hidden ${t.live ? 'text-green' : 'text-dim'}`}>{t.status}</span>
+                    <span className={`font-mono text-[11px] tracking-[.5px] whitespace-nowrap max-[899px]:hidden ${t.live ? 'text-green' : 'text-dim'}`}>{t.status}</span>
                   </span>
                 </button>
               )
@@ -329,7 +329,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
                     <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-[2px]">
                       <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-gold">
                         {cur.name.toUpperCase()}
-                        <span className={`rounded-full border px-[7px] py-px text-[9px] ${cur.live ? 'border-success-line text-green' : 'border-line-strong text-dim'}`}>{cur.status}</span>
+                        <span className={`rounded-full border px-[7px] py-px text-[11px] ${cur.live ? 'border-success-line text-green' : 'border-line-strong text-dim'}`}>{cur.status}</span>
                       </span>
                       <p className="m-0 text-[14px] leading-[1.45] text-ink-2">{cur.pitch}</p>
                     </div>

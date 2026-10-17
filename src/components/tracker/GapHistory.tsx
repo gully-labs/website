@@ -87,7 +87,7 @@ function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; 
     const holeArea = {
       silent: true,
       itemStyle: { color: 'rgba(166,176,189,.05)' },
-      label: { show: true, position: 'insideTop', color: '#5c6878', fontSize: 10, formatter: 'no readings' },
+      label: { show: true, position: 'insideTop', color: '#5c6878', fontSize: 11, formatter: 'no readings' },
       data: holes.map(([a, b]) => [{ xAxis: ms(a) }, { xAxis: ms(b) }]),
     }
     const newest = rows[rows.length - 1]
@@ -121,7 +121,7 @@ function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; 
           markArea: {
             silent: true,
             itemStyle: { color: 'rgba(232,192,96,.07)' },
-            label: { show: true, position: 'insideTopLeft', color: 'rgba(232,192,96,.65)', fontSize: 10, formatter: `±${inLinePct}% in line` },
+            label: { show: true, position: 'insideTopLeft', color: 'rgba(232,192,96,.65)', fontSize: 11, formatter: `±${inLinePct}% in line` },
             data: [[{ yAxis: -inLinePct }, { yAxis: inLinePct }]],
           },
           markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: '#3a4452', width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
@@ -241,11 +241,11 @@ function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="font-mono text-[12px] text-faint">{mode === 'gap' ? 'Gap to fair price' : 'Onchain price against fair (Chainlink)'}</span>
+        <span className="font-mono text-[12px] text-faint">{mode === 'gap' ? `Gap, last ${range} · five-minute snapshots` : `Onchain against fair (Chainlink), last ${range}`}</span>
         {controls}
       </div>
       {body}
-      {option && range === '7d' && <span className="-mt-2 font-mono text-[10px] text-faint">drag the slider{coarse() ? '' : ' or the chart, shift + scroll'} to zoom</span>}
+      {option && range === '7d' && <span className="-mt-2 font-mono text-[11px] text-faint">drag the slider{coarse() ? '' : ' or the chart, shift + scroll'} to zoom</span>}
     </div>
   )
 }

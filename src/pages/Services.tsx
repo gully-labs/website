@@ -24,7 +24,7 @@ export function Services() {
           <span className={eyebrow} style={rise(0)}>
             SERVICES · THE SAME TEAM, ON YOUR PROJECT
           </span>
-          <h1 className="m-0 font-display text-[clamp(56px,7.8cqw,112px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
+          <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
             Build with the team behind <span className="text-gold">the projects</span>
           </h1>
         </div>
@@ -59,7 +59,7 @@ export function Services() {
                 </span>
                 <span className="font-mono text-[13px] text-gold">{s.n}</span>
               </span>
-              <h2 className="m-0 font-display text-[clamp(30px,3cqw,40px)] leading-[.95] font-extrabold uppercase">{s.name}</h2>
+              <h2 className="m-0 font-display text-h3 font-extrabold uppercase">{s.name}</h2>
               <div className="flex flex-col gap-3 max-[959px]:col-start-2">
                 <span className="text-[16px] leading-[1.55] text-muted">{s.description}</span>
                 <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
@@ -95,7 +95,7 @@ export function Services() {
                 <span className="font-mono text-[12px] tracking-[1px] text-dim">PHASE {st.n}</span>
                 <st.icon aria-hidden size={20} strokeWidth={1.6} className="text-gold" />
               </span>
-              <h3 className="m-0 font-display text-[28px] font-bold uppercase">{st.name}</h3>
+              <h3 className="m-0 font-display text-h4 font-bold uppercase">{st.name}</h3>
               <span className="text-[15px] leading-[1.55] text-muted">{st.description}</span>
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-gold" style={{ animation: `gl-grow-x .8s ${0.3 + i * 0.15}s cubic-bezier(.2,.8,.2,1) both` }} />
             </li>

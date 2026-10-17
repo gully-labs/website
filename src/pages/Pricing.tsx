@@ -65,7 +65,7 @@ function SectionHead({ id, eyebrow: label, title }: { id: string; eyebrow: strin
   return (
     <div className="mb-8 flex flex-col gap-3">
       <span className={eyebrow}>{label}</span>
-      <h2 id={id} className="m-0 font-display text-[clamp(32px,3.6cqw,48px)] leading-[.95] font-extrabold uppercase">
+      <h2 id={id} className="m-0 font-display text-h2 font-extrabold uppercase">
         {title}
       </h2>
     </div>
@@ -86,7 +86,7 @@ export function Pricing() {
           <span className={eyebrow} style={rise(0)}>
             PRICING
           </span>
-          <h1 className="m-0 font-display text-[clamp(52px,6.6cqw,96px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
+          <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
             Tracker API and <span className="text-gold">Gully Analytics</span>
           </h1>
           <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
@@ -172,7 +172,7 @@ export function Pricing() {
       <section className="px-page pb-24">
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-10 rounded-card border border-line bg-surface-deep p-8 max-[900px]:grid-cols-1 max-[600px]:p-5">
           <div className="flex flex-col gap-4">
-            <h2 className="m-0 font-display text-[36px] leading-none font-bold uppercase">Questions</h2>
+            <h2 className="m-0 font-display text-h2 font-bold uppercase">Questions</h2>
             <p className="m-0 flex items-start gap-2 text-[14px] leading-[1.6] text-muted">
               <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Paid in ETH, BNB, USDC or USDT on four chains, checked on chain, no custody.
             </p>

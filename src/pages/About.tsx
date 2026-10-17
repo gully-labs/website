@@ -41,7 +41,7 @@ export function About() {
           <span className={eyebrow} style={rise(0)}>
             ABOUT · GULLY LABS
           </span>
-          <h1 className="m-0 font-display text-[clamp(56px,7cqw,104px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
+          <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
             A lab that ships <span className="text-gold">its own products</span>
           </h1>
           <p className="m-0 text-[18px] leading-[1.6] text-muted" style={rise(2)}>

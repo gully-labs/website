@@ -11,8 +11,8 @@ import { StockLogo } from '../tracker/StockLogo'
    (lib/widgetEmbed), so what is copied is exactly what renders on another site. */
 
 const THEMES: Record<WidgetTheme, { bg: string; sf: string; sf2: string; ln: string; ink: string; mut: string; fnt: string; acc: string; site: string; siteLine: string }> = {
-  dark: { bg: '#0b0e13', sf: '#10141a', sf2: '#141922', ln: '#1d232c', ink: '#eef0f2', mut: '#a6b0bd', fnt: '#6c7888', acc: '#e8c060', site: '#0d1116', siteLine: '#1a2029' },
-  light: { bg: '#ffffff', sf: '#f4f6f8', sf2: '#eef1f4', ln: '#dde2e8', ink: '#0b0e13', mut: '#3a4452', fnt: '#6c7888', acc: '#8a6a1a', site: '#f6f7f9', siteLine: '#e2e6ea' },
+  dark: { bg: '#0b0e13', sf: '#10141a', sf2: '#141922', ln: '#1d232c', ink: '#eef0f2', mut: '#a6b0bd', fnt: '#7f8b9c', acc: '#e8c060', site: '#0d1116', siteLine: '#1a2029' },
+  light: { bg: '#ffffff', sf: '#f4f6f8', sf2: '#eef1f4', ln: '#dde2e8', ink: '#0b0e13', mut: '#3a4452', fnt: '#7f8b9c', acc: '#8a6a1a', site: '#f6f7f9', siteLine: '#e2e6ea' },
 }
 type Theme = (typeof THEMES)['dark']
 
@@ -41,7 +41,7 @@ function Pill({ r, t }: { r: TrackerRow; t: Theme }) {
 function Footer({ data, t }: { data: Tracker; t: Theme }) {
   const d = new Date(data.generatedAt)
   return (
-    <div className="flex items-center justify-between gap-2 border-t px-3 py-[7px] text-[10px]" style={{ borderColor: t.ln, color: t.fnt }}>
+    <div className="flex items-center justify-between gap-2 border-t px-3 py-[7px] text-[11px]" style={{ borderColor: t.ln, color: t.fnt }}>
       <span className="inline-flex items-center gap-[6px]">
         <span className="size-[6px] rounded-full" style={{ background: UP }} />
         live · {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -154,7 +154,7 @@ function TablePreview({ rows, t }: { rows: TrackerRow[]; t: Theme }) {
   return (
     <table className="w-full border-collapse">
       <thead>
-        <tr className="text-[10px] tracking-[1px]" style={{ color: t.fnt }}>
+        <tr className="text-[11px] tracking-[1px]" style={{ color: t.fnt }}>
           <th className="px-3 pt-[9px] pb-[6px] text-left font-normal">STOCK</th>
           <th className="px-3 pt-[9px] pb-[6px] text-right font-normal">ONCHAIN</th>
           <th className="px-3 pt-[9px] pb-[6px] text-right font-normal max-[519px]:hidden">FAIR</th>
@@ -173,7 +173,7 @@ function TablePreview({ rows, t }: { rows: TrackerRow[]; t: Theme }) {
                   <StockLogo row={r} size={26} />
                   <span>
                     <b className="font-display text-[15px] leading-none font-extrabold tracking-[.4px]">{r.ticker}</b>
-                    <small className="mt-[2px] block max-w-[140px] truncate text-[10px] max-[519px]:hidden" style={{ color: t.fnt }}>
+                    <small className="mt-[2px] block max-w-[140px] truncate text-[11px] max-[519px]:hidden" style={{ color: t.fnt }}>
                       {r.name}
                     </small>
                   </span>
@@ -259,7 +259,7 @@ export default function WidgetDemo(): JSX.Element {
       {/* Builder */}
       <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-[14px] border-line p-4 min-[720px]:border-r max-[719px]:border-b">
         <div className="flex flex-col gap-[2px]">
-          <span className="font-mono text-[10px] tracking-[1px] text-gold">WIDGET · TRY IT</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-gold">WIDGET · TRY IT</span>
           <b className="font-display text-[22px] leading-[1.05] font-bold uppercase">One script tag, any site</b>
         </div>
         <Group

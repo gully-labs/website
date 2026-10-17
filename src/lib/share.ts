@@ -1,6 +1,6 @@
 import type { Project } from '../content/projects'
 import { SHARE } from '../content/site'
-import { fmtUsd, type Stats } from './stats'
+import type { Stats } from './stats'
 
 /* Share text and intent links. A post about Gully carries the ledger's figures at the moment it
    is composed (never a typed number); a post about a project carries its own tagline, handle and
@@ -13,12 +13,8 @@ export const tgShare = (text: string, url: string) => `https://t.me/share/url?ur
 /** The post about Gully Labs, with the figures the ledger shows right now. */
 export function gullyPost(data: Stats | null): string {
   const live = data ? data.venues.filter((v) => v.state === 'ok').length : null
-  const parts = [`${live ?? 'Five'} live Web3 venues built by ${SHARE.handle}, measured live:`]
-  const T = data?.totals
-  if (T?.volumeAllUsd != null) parts.push(`${fmtUsd(T.volumeAllUsd)} traded all-time`)
-  if (T?.tvlUsd != null) parts.push(`${fmtUsd(T.tvlUsd)} locked`)
-  if (T?.feesAllUsd != null) parts.push(`${fmtUsd(T.feesAllUsd)} in fees`)
-  return `${parts[0]} ${parts.slice(1).join(' · ') || 'launchpads, DEXes, quests and social trading, one ledger.'} ${SHARE.hashtags.join(' ')}`
+  // No dollar figures: early totals undersell the venues in a post that outlives them (design audit P1-1).
+  return `${live ?? 'Five'} live Web3 venues built by ${SHARE.handle}, measured live: launchpads, DEXes, quests and social trading, one ledger. ${SHARE.hashtags.join(' ')}`
 }
 
 /** The post about one project. */

@@ -90,11 +90,11 @@ export function OpenStrip({ data }: { data: Stats | null }) {
             const Icon = o.kind === 'repo' ? GitFork : o.kind === 'docs' ? BookOpen : Newspaper
             return (
               <li key={o.t}>
-                <a href={o.href} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-[6px] rounded-btn px-2 text-[13px] text-ink-2 transition-colors hover:bg-surface hover:text-gold">
+                <a href={o.href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-[6px] rounded-btn px-2 text-[13px] text-ink-2 transition-colors hover:bg-surface hover:text-gold">
                   <Icon aria-hidden size={14} className="text-faint" />
                   {o.t}
                   <ArrowUpRight aria-hidden size={12} className="text-faint" />
-                </a>
+                <span className="sr-only"> (opens in a new tab)</span></a>
               </li>
             )
           })}

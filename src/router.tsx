@@ -1,11 +1,10 @@
-import { createBrowserRouter, Navigate } from 'react-router'
+import { createBrowserRouter } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, ChainKitRoute, DevelopersRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { RouteError } from './pages/RouteError'
-import { TrackerRoute } from './pages/TrackerRoute'
 import { ADMIN_URL, DEVELOPERS_URL, isAdminHost, isDevelopersHost, isDocsHost, isLocalHost } from './site-host'
 
 const mainRoutes = [
@@ -22,13 +21,14 @@ const mainRoutes = [
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
       { path: '/chain-kit', element: <ChainKitRoute /> },
-      { path: '/ask', lazy: () => import('./pages/ask/AskPage').then((m) => ({ Component: m.AskPage })) },
+      { path: '/ask', element: <AskRoute /> },
       // Gully Pay: an invoice anyone with its link can pay (never linked, never indexed).
       { path: '/pay/:id', element: <PayRoute /> },
       // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
       { path: '/pay/l/:id', element: <PayLinkRoute /> },
       { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={DEVELOPERS_URL} /> },
-      { path: '*', element: <Navigate to="/" replace /> },
+      // A path no page owns: a branded 404 with ways back (the server answers it with status 404).
+      { path: '*', element: <NotFoundRoute /> },
     ],
   },
   // The admin dashboard lives on its own host. Locally it is also at /admin; anywhere else /admin

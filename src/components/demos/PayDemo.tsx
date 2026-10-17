@@ -70,7 +70,7 @@ export default function PayDemo(): JSX.Element {
         <Checkout offer={plans.offer} />
       ) : (
         <div className="flex min-h-[320px] w-full flex-col items-center justify-center gap-3 p-6 text-center">
-          <span className="font-mono text-[10px] tracking-[1px] text-gold">GULLY PAY · TRY IT</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-gold">GULLY PAY · TRY IT</span>
           {plans.k === 'loading' ? (
             <span role="status" className="text-muted">
               Reading the plans…
@@ -176,7 +176,7 @@ function Checkout({ offer }: { offer: Offer }) {
       {/* Left: pickers */}
       <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-3 border-line p-4 max-lg:border-b lg:overflow-y-auto lg:border-r">
         <div className="flex flex-col gap-0.5">
-          <span className="font-mono text-[10px] tracking-[1px] text-gold">GULLY PAY · TRY IT</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-gold">GULLY PAY · TRY IT</span>
           <b className="font-display text-[22px] leading-[1.05] font-bold uppercase">Wallet to wallet, no custody</b>
         </div>
         {group(
@@ -208,7 +208,7 @@ function Checkout({ offer }: { offer: Offer }) {
                 {plan.label} · {offer.periodDays} days
               </b>
               <span className="font-mono text-[11px] text-gold">Demo checkout · no payment is made</span>
-              <span className="font-mono text-[10px] text-faint">{inv}</span>
+              <span className="font-mono text-[11px] text-faint">{inv}</span>
             </span>
             <span role="status" className={`flex-none rounded-full px-2.5 py-[3px] text-[12px] font-semibold transition-colors duration-300 ${st.cls}`}>
               {st.label}
@@ -217,7 +217,7 @@ function Checkout({ offer }: { offer: Offer }) {
           <div className="flex flex-wrap items-center gap-4 p-4">
             <div className="relative">
               <FakeQr seed={inv} />
-              <span aria-hidden className="absolute inset-x-0 bottom-1 mx-auto w-fit rounded-[3px] bg-bg px-1.5 font-mono text-[9px] tracking-[1px] text-gold">
+              <span aria-hidden className="absolute inset-x-0 bottom-1 mx-auto w-fit rounded-[3px] bg-bg px-1.5 font-mono text-[11px] tracking-[1px] text-gold">
                 DEMO
               </span>
             </div>

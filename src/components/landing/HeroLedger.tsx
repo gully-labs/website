@@ -22,11 +22,11 @@ function Kpi({ label, span, value, cover, state }: { label: string; span?: strin
   const shown = state === 'ok' && value !== null && value !== undefined
   return (
     <div className="flex min-w-0 flex-col gap-[2px] border-r border-line px-4 py-3 last:border-r-0 max-[459px]:px-3">
-      <span className="truncate font-mono text-[10px] tracking-[1px] text-faint">{label}</span>
+      <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">{label}</span>
       <b className={`font-display text-[30px] leading-none font-bold max-[459px]:text-[22px] ${shown ? 'text-ink' : 'text-dim'}`}>
         {shown ? <Figure value={value} /> : state === 'error' ? 'unreadable' : '—'}
       </b>
-      <span className="truncate font-mono text-[10px] text-faint">
+      <span className="truncate font-mono text-[11px] text-faint">
         {state === 'loading' ? 'reading…' : state === 'error' ? 'could not be read' : cover?.length ? (
           <>
             {span && <span className="max-[459px]:hidden">{span} · </span>}
@@ -94,7 +94,7 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
             borderWidth: 1,
             color: '#eef0f2',
             fontFamily: MONO,
-            fontSize: 10,
+            fontSize: 11,
             formatter: (p: ChartEvent) => (p.axisDimension === 'y' ? fmtUsd(Number(p.value)) : p.value),
           },
         },
@@ -105,10 +105,10 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
           const rows = shown
             .map((p) => {
               const v = valueOn(p.key, t)
-              return `<div style="display:flex;gap:14px;justify-content:space-between"><span><span style="color:${p.accent}">■</span> ${esc(p.name)}</span><b style="font-weight:500;color:${v === null ? '#6c7888' : '#eef0f2'}">${v === null ? 'no reading' : fmtUsd(v)}</b></div>`
+              return `<div style="display:flex;gap:14px;justify-content:space-between"><span><span style="color:${p.accent}">■</span> ${esc(p.name)}</span><b style="font-weight:500;color:${v === null ? '#7f8b9c' : '#eef0f2'}">${v === null ? 'no reading' : fmtUsd(v)}</b></div>`
             })
             .join('')
-          return `<div style="color:#8a96a6;margin-bottom:4px">${fmtDay(t)}${i === D - 1 && isToday ? ' · today, so far' : ''}</div>${rows || '<div style="color:#6c7888">every venue hidden</div>'}<div style="display:flex;gap:14px;justify-content:space-between;border-top:1px solid #2c3540;margin-top:4px;padding-top:4px"><span>day total</span><b style="font-weight:600;color:#e8c060">${fmtUsd(totals[i])}</b></div>`
+          return `<div style="color:#8a96a6;margin-bottom:4px">${fmtDay(t)}${i === D - 1 && isToday ? ' · today, so far' : ''}</div>${rows || '<div style="color:#7f8b9c">every venue hidden</div>'}<div style="display:flex;gap:14px;justify-content:space-between;border-top:1px solid #2c3540;margin-top:4px;padding-top:4px"><span>day total</span><b style="font-weight:600;color:#e8c060">${fmtUsd(totals[i])}</b></div>`
         },
       },
       series: [
@@ -137,7 +137,7 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
           color: '#6fcf6a',
           rippleEffect: { brushType: 'stroke', scale: 3.2, period: 2.2 },
           animationDelay: withSeries.length * 160 + 300,
-          label: { show: true, position: 'top', distance: 8, formatter: isToday ? 'LIVE' : 'LATEST', color: '#6fcf6a', fontFamily: MONO, fontSize: 9, fontWeight: 600 },
+          label: { show: true, position: 'top', distance: 8, formatter: isToday ? 'LIVE' : 'LATEST', color: '#6fcf6a', fontFamily: MONO, fontSize: 11, fontWeight: 600 },
           data: D && armed ? [[D - 1, totals[D - 1]]] : [],
         },
       ],
@@ -207,7 +207,7 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
         )}
       </div>
       <div className="px-[6px] pt-[6px]">{chart}</div>
-      <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 px-4 pt-[6px] pb-3 font-mono text-[10px] text-faint">
+      <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 px-4 pt-[6px] pb-3 font-mono text-[11px] text-faint">
         <span>Daily volume · last {D || '—'} days · press a venue to hide it</span>
         <span>
           {data ? `Live · read ${fmtTime(data.generatedAt)} from each venue's API` : 'Live from each venue’s API'}

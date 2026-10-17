@@ -1,10 +1,22 @@
 import type { HTMLAttributes, MouseEvent, ReactNode, Ref } from 'react'
 import { Link } from 'react-router'
+import { ArrowUpRight } from 'lucide-react'
 import type { NavEntry } from '../content/site'
 import { isLocalHost } from '../site-host'
 import { useContact } from './ContactContext'
+import { newTab } from './LayoutNav'
 
 /* Shared by the header menus, the mobile sheet and the footer: one way to render a nav entry. */
+
+/** The mark on a link that opens another app in a new tab: a small ↗ and, for screen readers, the words. */
+export function NewTabMark({ size = 13, className = 'flex-none text-faint' }: { size?: number; className?: string }) {
+  return (
+    <>
+      <ArrowUpRight aria-hidden size={size} className={className} />
+      <span className="sr-only"> (opens in a new tab)</span>
+    </>
+  )
+}
 
 type EntryProps = { e: NavEntry; onPick?: () => void; current?: boolean; children: ReactNode } & Omit<HTMLAttributes<HTMLElement>, 'children'> & { ref?: Ref<HTMLElement> }
 
@@ -42,7 +54,7 @@ export function EntryLink({ e, onPick, current, children, onClick, ref, ...rest 
       </Link>
     )
   return (
-    <a href={e.href} ref={ref as Ref<HTMLAnchorElement>} {...rest} onClick={click}>
+    <a href={e.href} ref={ref as Ref<HTMLAnchorElement>} {...(e.newTab ? newTab : {})} {...rest} onClick={click}>
       {children}
     </a>
   )

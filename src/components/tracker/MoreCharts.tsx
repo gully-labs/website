@@ -33,8 +33,8 @@ export function GapHistogram({ rows }: { rows: TrackerRow[] }) {
   const option = useMemo(
     () => ({
       grid: { left: 4, right: 4, top: 10, bottom: 4, containLabel: true },
-      xAxis: { type: 'category', data: bins.map((b) => b.label), axisLabel: { fontSize: 10, interval: 0, hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
-      yAxis: { type: 'value', minInterval: 1, splitNumber: 3, axisLabel: { fontSize: 10 } },
+      xAxis: { type: 'category', data: bins.map((b) => b.label), axisLabel: { fontSize: 11, interval: 0, hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
+      yAxis: { type: 'value', minInterval: 1, splitNumber: 3, axisLabel: { fontSize: 11 } },
       tooltip: axisTooltip((ps: ChartEvent[]) => {
         const b = bins[ps[0]?.dataIndex]
         if (!b) return ''
@@ -57,7 +57,7 @@ export function GapHistogram({ rows }: { rows: TrackerRow[] }) {
   return (
     <div className="flex flex-col gap-1">
       <EChart option={option} height={170} steps={{ count: bins.length }} label={`Gap distribution, stocks per band: ${bins.map((b) => `${b.range} ${b.items.length}`).join(', ')}. Arrow keys step through bands.`} />
-      <div className="flex justify-between pl-6 font-mono text-[10px] text-axis" aria-hidden>
+      <div className="flex justify-between pl-6 font-mono text-[11px] text-axis" aria-hidden>
         <span>below fair</span>
         <span>gap %</span>
         <span>above fair</span>
@@ -89,11 +89,11 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
         name: 'pool liquidity (log)',
         nameLocation: 'middle',
         nameGap: 22,
-        axisLabel: { fontSize: 10, formatter: (v: number) => fmtCompactUsd(v).replace('.00', '').replace('.0K', 'K') },
+        axisLabel: { fontSize: 11, formatter: (v: number) => fmtCompactUsd(v).replace('.00', '').replace('.0K', 'K') },
         splitLine: { show: true, lineStyle: { color: '#1a2029' } },
         axisLine: { show: true, lineStyle: { color: '#2c3540' } },
       },
-      yAxis: { type: 'value', min: -Number(ext.toFixed(1)), max: Number(ext.toFixed(1)), splitNumber: 2, axisLabel: { fontSize: 10, formatter: (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%` } },
+      yAxis: { type: 'value', min: -Number(ext.toFixed(1)), max: Number(ext.toFixed(1)), splitNumber: 2, axisLabel: { fontSize: 11, formatter: (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%` } },
       tooltip: itemTooltip((p: ChartEvent) => {
         const r = pts[p.dataIndex]
         if (!r) return ''
@@ -153,7 +153,7 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
         label={`Pool liquidity against gap for ${pts.length} pools. Arrow keys step through pools; the table below lists every one.`}
         onEvents={{ click: (p) => pts[p.dataIndex] && onSelect(idOf(pts[p.dataIndex])) }}
       />
-      <span className="font-mono text-[10px] text-faint">bubble area = 24h volume · dashed = thin pool · shift + scroll to zoom</span>
+      <span className="font-mono text-[11px] text-faint">bubble area = 24h volume · dashed = thin pool · shift + scroll to zoom</span>
     </div>
   )
 }
@@ -206,7 +206,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
             ) : (
               <AnimatedNumber className="font-display text-[22px] leading-none font-extrabold text-ink" value={total} format={NF.compactUsd} countUp />
             )}
-            <span className="mt-1 font-mono text-[10px] text-faint">{cur ? cur.label : 'in pools'}</span>
+            <span className="mt-1 font-mono text-[11px] text-faint">{cur ? cur.label : 'in pools'}</span>
           </span>
         </EChart>
       </div>
@@ -221,7 +221,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
             <i className="size-[9px] flex-none rounded-[2px]" style={{ background: s.color }} />
             <span className="truncate text-ink-2">
               {s.label}
-              {s.chain && <span className="ml-1 font-mono text-[10px] text-faint">{s.chain === 'bsc' ? 'BNB' : 'RH'}</span>}
+              {s.chain && <span className="ml-1 font-mono text-[11px] text-faint">{s.chain === 'bsc' ? 'BNB' : 'RH'}</span>}
             </span>
             <span className="ml-auto font-mono text-[12px] text-muted">{fmtCompactUsd(s.v)}</span>
             <span className="w-11 text-right font-mono text-[12px] text-ink-2">{((s.v / total) * 100).toFixed(1)}%</span>
@@ -309,7 +309,7 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
             {metrics.map((m, j) => (
               <span key={m.k} className="absolute left-0 text-[12px] leading-4 text-muted" style={{ top: j * CC_ROW }}>
                 {m.label}
-                {m.lowerBetter && <span className="ml-1 font-mono text-[10px] text-faint">lower is tighter</span>}
+                {m.lowerBetter && <span className="ml-1 font-mono text-[11px] text-faint">lower is tighter</span>}
               </span>
             ))}
           </div>
