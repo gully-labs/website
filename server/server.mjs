@@ -16,6 +16,7 @@ import { handleBlog } from './blog.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { handlePay } from './invoices.mjs'
+import { geoFor } from './geo.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -262,6 +263,11 @@ const server = http.createServer(async (req, res) => {
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' }),
       (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json' }),
     )
+  }
+  // Whether the stock pages may show the swap here (geo.mjs). Per visitor, so never cached.
+  if (url.pathname === '/api/geo') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    return send(res, 200, JSON.stringify(geoFor(req, isLocal)), { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' })
   }
   if (url.pathname === '/healthz') return send(res, 200, 'ok')
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, '')

@@ -8,6 +8,7 @@ import { handleAdmin } from './server/admin.mjs'
 import { handleDeveloper } from './server/developer.mjs'
 import { handlePay } from './server/invoices.mjs'
 import { publicPlans } from './server/plans.mjs'
+import { geoFor } from './server/geo.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
 function mockContactApi(): Plugin {
@@ -100,6 +101,11 @@ function serverModules(): Plugin {
         if (url.pathname === '/api/plans') {
           res.setHeader('Content-Type', 'application/json')
           return res.end(JSON.stringify(publicPlans()))
+        }
+        if (url.pathname === '/api/geo') {
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Cache-Control', 'private, no-store')
+          return res.end(JSON.stringify(geoFor(req, true)))
         }
         const handler = url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : null
         if (!handler) return next()
