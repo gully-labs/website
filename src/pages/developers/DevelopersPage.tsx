@@ -2,7 +2,8 @@ import { AlertTriangle, ArrowUpRight, BookOpen, ChartNoAxesCombined, KeyRound, L
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Seo } from '../../components/Seo'
 import { DOCS_URL } from '../../site-host'
-import { api, type Account, type Offer } from './api'
+import { api, SESSION_ENDED, type Account, type Offer } from './api'
+import { toastInfo } from '../../components/ui/toast'
 import { Dashboard } from './Dashboard'
 import { mono, pillGold, pillLine } from './styles'
 
@@ -134,6 +135,17 @@ export function DevelopersPage() {
   const [error, setError] = useState<string | null>(null)
 
   const loadAccount = useCallback(() => readSession().then(setSession), [])
+  // A signed-in request answered 401 (the session ended elsewhere): show the sign-in screen, once.
+  useEffect(() => {
+    const ended = () =>
+      setSession((s) => {
+        if (s.state !== 'in') return s
+        toastInfo('Your session ended', { detail: 'Sign in again with your wallet to continue.', id: 'session-ended' })
+        return { state: 'out' }
+      })
+    window.addEventListener(SESSION_ENDED, ended)
+    return () => window.removeEventListener(SESSION_ENDED, ended)
+  }, [])
   useEffect(() => {
     readSession().then(setSession)
   }, [])

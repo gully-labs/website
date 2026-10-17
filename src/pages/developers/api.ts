@@ -1,6 +1,9 @@
 /* The developer dashboard's client for /api/developer/*. The session is an HttpOnly cookie the browser
    sends by itself; every POST carries X-Requested-With, which the server requires (CSRF guard). */
 
+/** Fired on window when a signed-in request answers 401. */
+export const SESSION_ENDED = 'gully:session-ended'
+
 export type Result<T> = { ok: true; status: number; data: T } | { ok: false; status: number; error: string }
 
 export async function api<T = unknown>(path: string, opts: { method?: 'GET' | 'POST'; body?: unknown } = {}): Promise<Result<T>> {
@@ -13,6 +16,9 @@ export async function api<T = unknown>(path: string, opts: { method?: 'GET' | 'P
       body: method === 'POST' ? JSON.stringify(opts.body ?? {}) : undefined,
     })
     const data = await r.json().catch(() => null)
+    // A 401 on a signed-in route means the session cookie is gone (signed out in another tab, expired):
+    // tell the page, which shows the sign-in screen instead of a wall of "Not signed in" errors.
+    if (r.status === 401 && path.startsWith('/api/developer/') && typeof window !== 'undefined') window.dispatchEvent(new Event(SESSION_ENDED))
     if (!r.ok) return { ok: false, status: r.status, error: (data as { error?: string } | null)?.error ?? `The server answered ${r.status}.` }
     return { ok: true, status: r.status, data: data as T }
   } catch {

@@ -75,8 +75,10 @@ const adapter = createAuthenticationAdapter<string>({
     handlers.onSignedIn()
     return true
   },
+  // RainbowKit calls this by itself when the wallet disconnects or switches account (two wallet
+  // extensions fighting over window.ethereum trigger it). The server session is independent of the
+  // connected wallet, so only the dashboard's own Sign out button ends it; here we only reset the modal.
   signOut: async () => {
-    await api('/api/developer/logout', { method: 'POST' })
     handlers.onSignedOut()
   },
 })
