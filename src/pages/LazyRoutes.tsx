@@ -1,124 +1,58 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
+import { chunks } from './routeChunks'
 
 // Each of these is its own chunk; the landing never loads them.
-const Widget = lazy(() => import('./widget/WidgetPage').then((m) => ({ default: m.WidgetPage })))
-const Developers = lazy(() => import('./developers/DevelopersPage').then((m) => ({ default: m.DevelopersPage })))
-const Services = lazy(() => import('./Services').then((m) => ({ default: m.Services })))
-const About = lazy(() => import('./About').then((m) => ({ default: m.About })))
-const ProjectDetail = lazy(() => import('./ProjectDetail').then((m) => ({ default: m.ProjectDetail })))
-const Pricing = lazy(() => import('./Pricing').then((m) => ({ default: m.Pricing })))
-const Admin = lazy(() => import('./admin/AdminPage').then((m) => ({ default: m.AdminPage })))
-const Pay = lazy(() => import('./pay/PayPage').then((m) => ({ default: m.PayPage })))
-const Receipt = lazy(() => import('./pay/Receipt').then((m) => ({ default: m.Receipt })))
-const PayLink = lazy(() => import('./pay/LinkPage').then((m) => ({ default: m.LinkPage })))
+const Widget = lazy(() => chunks.widget().then((m) => ({ default: m.WidgetPage })))
+const Developers = lazy(() => chunks.developers().then((m) => ({ default: m.DevelopersPage })))
+const Services = lazy(() => chunks.services().then((m) => ({ default: m.Services })))
+const About = lazy(() => chunks.about().then((m) => ({ default: m.About })))
+const ProjectDetail = lazy(() => chunks.project().then((m) => ({ default: m.ProjectDetail })))
+const Pricing = lazy(() => chunks.pricing().then((m) => ({ default: m.Pricing })))
+const Admin = lazy(() => chunks.admin().then((m) => ({ default: m.AdminPage })))
+const Pay = lazy(() => chunks.pay().then((m) => ({ default: m.PayPage })))
+const Receipt = lazy(() => chunks.receipt().then((m) => ({ default: m.Receipt })))
+const PayLink = lazy(() => chunks.payLink().then((m) => ({ default: m.LinkPage })))
+const Analytics = lazy(() => chunks.products().then((m) => ({ default: m.Analytics })))
+const ChainKit = lazy(() => chunks.products().then((m) => ({ default: m.ChainKit })))
+const Stock = lazy(() => chunks.stock().then((m) => ({ default: m.StockPage })))
+const Tracker = lazy(() => chunks.tracker().then((m) => ({ default: m.Tracker })))
+const Ask = lazy(() => chunks.ask().then((m) => ({ default: m.AskPage })))
+const NotFound = lazy(() => chunks.notFound().then((m) => ({ default: m.NotFound })))
 
-const fallback = <p className="px-page py-24 font-mono text-[13px] text-faint">Loading…</p>
-
-export function WidgetRoute() {
+/** What a page shows while its chunk loads: a pulsing page outline a full screen tall, so the closing
+    band and the footer stay below the fold instead of flashing up and jumping down (CLS). */
+export function RouteSkeleton() {
+  const bar = 'animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface'
   return (
-    <Suspense fallback={fallback}>
-      <Widget />
-    </Suspense>
+    <div role="status" aria-label="Loading the page" className="flex min-h-[100svh] flex-col gap-6 px-page pt-[72px] pb-24 max-[600px]:pt-10">
+      <div className={`${bar} h-[14px] w-[180px] rounded-full`} />
+      <div className={`${bar} h-[clamp(48px,6cqw,88px)] w-[min(720px,100%)]`} />
+      <div className={`${bar} h-[18px] w-[min(560px,100%)] rounded-full`} />
+      <div className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-4">
+        <div className={`${bar} h-[180px]`} />
+        <div className={`${bar} h-[180px]`} />
+        <div className={`${bar} h-[180px]`} />
+      </div>
+      <div className={`${bar} h-[320px]`} />
+    </div>
   )
 }
 
-export function DevelopersRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <Developers />
-    </Suspense>
-  )
-}
+const page = (node: ReactNode) => <Suspense fallback={<RouteSkeleton />}>{node}</Suspense>
 
-const Analytics = lazy(() => import('./Products').then((m) => ({ default: m.Analytics })))
-const ChainKit = lazy(() => import('./Products').then((m) => ({ default: m.ChainKit })))
-
-export function AnalyticsRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <Analytics />
-    </Suspense>
-  )
-}
-
-export function ChainKitRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <ChainKit />
-    </Suspense>
-  )
-}
-
-const Stock = lazy(() => import('./StockPage').then((m) => ({ default: m.StockPage })))
-
-export function StockRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <Stock />
-    </Suspense>
-  )
-}
-
-export function PricingRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <Pricing />
-    </Suspense>
-  )
-}
-
-export function PayRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <Pay />
-    </Suspense>
-  )
-}
-
-export function PayLinkRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <PayLink />
-    </Suspense>
-  )
-}
-
-export function ReceiptRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <Receipt />
-    </Suspense>
-  )
-}
-
-export function AdminRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <Admin />
-    </Suspense>
-  )
-}
-
-export function ServicesRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <Services />
-    </Suspense>
-  )
-}
-
-export function AboutRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <About />
-    </Suspense>
-  )
-}
-
-export function ProjectDetailRoute() {
-  return (
-    <Suspense fallback={fallback}>
-      <ProjectDetail />
-    </Suspense>
-  )
-}
+export const WidgetRoute = () => page(<Widget />)
+export const DevelopersRoute = () => page(<Developers />)
+export const AnalyticsRoute = () => page(<Analytics />)
+export const ChainKitRoute = () => page(<ChainKit />)
+export const StockRoute = () => page(<Stock />)
+export const PricingRoute = () => page(<Pricing />)
+export const PayRoute = () => page(<Pay />)
+export const PayLinkRoute = () => page(<PayLink />)
+export const ReceiptRoute = () => page(<Receipt />)
+export const AdminRoute = () => page(<Admin />)
+export const ServicesRoute = () => page(<Services />)
+export const AboutRoute = () => page(<About />)
+export const ProjectDetailRoute = () => page(<ProjectDetail />)
+export const TrackerRoute = () => page(<Tracker />)
+export const AskRoute = () => page(<Ask />)
+export const NotFoundRoute = () => page(<NotFound />)

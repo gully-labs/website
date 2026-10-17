@@ -5,7 +5,11 @@ import { toastSuccess } from '../../components/ui/toast'
 import { ago, api, type AlertsView, type GapAlert, type TelegramInfo, type TelegramLink } from './api'
 import { alertName, alertRule, alertState, CHAIN_NAMES, useAlertActions, useAlertsView, type Secret } from './helpers'
 import { CopyButton, Dialog } from './Dialog'
+import { useWrite } from './portal'
+import { Can } from './RoleGate'
+import { AlertTimeline } from './vcharts'
 import { Empty, ErrorLine, Skeleton } from './parts'
+import { ExtLink } from './ExtLink'
 import { input, mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
 
 /* Gap alerts: create, test, pause and delete alerts, and read each one's delivery log. Limits come
@@ -24,10 +28,11 @@ const TG_BLUE = '#2aa3df'
  */
 export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram: TelegramInfo; act: (a: GapAlert, op: string, body?: unknown) => void; busy: string | null }) {
   const on = !!a.telegram
+  const w = useWrite('alerts', 'change alerts')
   const canOn = telegram.enabled && !!telegram.linked
   const canOff = !!a.webhook
-  const disabled = !!busy || (on ? !canOff : !canOn)
-  const why = on ? (canOff ? 'Stop sending this alert to Telegram' : 'Telegram is this alert’s only channel') : canOn ? 'Also send this alert to Telegram' : telegram.enabled ? 'Connect Telegram first' : 'Telegram is not configured on this server'
+  const disabled = !!busy || !w.ok || (on ? !canOff : !canOn)
+  const why = !w.ok ? (w.why ?? '') : on ? (canOff ? 'Stop sending this alert to Telegram' : 'Telegram is this alert’s only channel') : canOn ? 'Also send this alert to Telegram' : telegram.enabled ? 'Connect Telegram first' : 'Telegram is not configured on this server'
   const broken = on && !a.telegram?.linked
   return (
     <span className="flex flex-wrap items-center gap-[6px]">
@@ -183,6 +188,7 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
   const [open, setOpen] = useState(false)
   const st = alertState(a)
   const mine = (op: string) => busy === `${a.id}:${op}`
+  const canEdit = useWrite('alerts', 'change alerts').ok
   return (
     <li className="flex flex-col gap-3 border-t border-line pt-3" style={rise(i)}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -196,6 +202,8 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        {canEdit && (
+        <>
         <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, 'test')}>
           <Send size={14} aria-hidden /> {mine('test') ? 'Sending…' : 'Test'}
         </button>
@@ -216,6 +224,8 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
         <button type="button" className={`${pillSm} hover:!border-error hover:!text-error`} disabled={!!busy} onClick={() => act(a, 'delete')}>
           <Trash2 size={14} aria-hidden /> Delete
         </button>
+        </>
+        )}
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full px-2 font-mono text-[12px] text-muted hover:text-ink">
           <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden /> Delivery log ({a.deliveries.length})
         </button>
@@ -332,14 +342,18 @@ export function TelegramCard({ info, reload, compact = false }: { info: Telegram
           <span className="text-[12px] text-muted">{subline}</span>
         </span>
         {info.enabled && !chat && (
-          <button type="button" onClick={connect} disabled={busy} className={live ? pillLine : pillGold}>
-            {busy ? 'Making a link…' : link ? 'New link' : 'Connect'}
-          </button>
+          <Can cat="telegram" what="connect Telegram">
+            <button type="button" onClick={connect} disabled={busy} className={live ? pillLine : pillGold}>
+              {busy ? 'Making a link…' : link ? 'New link' : 'Connect'}
+            </button>
+          </Can>
         )}
         {chat && (
-          <button type="button" onClick={unlink} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-grid px-4 text-[13px] font-semibold text-ink hover:text-error disabled:opacity-50">
-            <Link2Off size={14} aria-hidden /> Unlink
-          </button>
+          <Can cat="telegram" what="unlink Telegram" hide>
+            <button type="button" onClick={unlink} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-grid px-4 text-[13px] font-semibold text-ink hover:text-error disabled:opacity-50">
+              <Link2Off size={14} aria-hidden /> Unlink
+            </button>
+          </Can>
         )}
       </div>
       {link && live && (
@@ -390,7 +404,8 @@ export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () =>
 
   // "+ New alert" on the Overview lands here with the dialog open (once the plan's room is known).
   const full = !!view && view.limits.used >= view.limits.max
-  const open = opened || (creating && !!view && !full)
+  const canCreate = useWrite('alerts', 'create alerts').ok
+  const open = opened || (creating && !!view && !full && canCreate)
   const closeCreate = () => {
     setOpen(false)
     onCreateDone()
@@ -417,9 +432,11 @@ export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () =>
               {view.limits.used} of {view.limits.max} on {view.limits.planName} · checked every five minutes · at most one delivery per alert every {view.limits.cooldownMinutes} minutes
             </span>
           </div>
-          <button type="button" disabled={full} onClick={() => setOpen(true)} title={full ? 'Your plan’s alerts are all in use' : undefined} className={pillLine}>
-            <Plus size={16} aria-hidden /> New alert
-          </button>
+          <Can cat="alerts" what="create alerts">
+            <button type="button" disabled={full} onClick={() => setOpen(true)} title={full ? 'Your plan’s alerts are all in use' : undefined} className={pillLine}>
+              <Plus size={16} aria-hidden /> New alert
+            </button>
+          </Can>
         </div>
         <TelegramCard info={view.telegram} reload={load} />
         {full && (
@@ -432,7 +449,17 @@ export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () =>
           </p>
         )}
         {!view.alerts.length ? (
-          <Empty icon={<BellRing size={26} className="text-gold" aria-hidden />} title="No alerts yet">
+          <Empty
+            icon={<BellRing size={26} className="text-gold" aria-hidden />}
+            title="No alerts yet"
+            action={
+              <Can cat="alerts" what="create alerts">
+                <button type="button" disabled={full} onClick={() => setOpen(true)} className={pillGold}>
+                  <Plus size={16} aria-hidden /> Create your first alert
+                </button>
+              </Can>
+            }
+          >
             Get a webhook{view.telegram.enabled ? ' or a Telegram message' : ''} when a stock token&apos;s gap to its fair price crosses your line. An alert fires when its condition becomes true and re-arms once it is false again.
           </Empty>
         ) : (
@@ -444,14 +471,25 @@ export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () =>
         )}
         <p className="m-0 border-t border-line pt-3 text-[12px] leading-[1.6] text-faint">
           Alerts look only at stocks the tracker would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature:{' '}
-          <a href={`${DOCS_URL}/plans-alerts`} className="text-ink-2 underline-offset-4 hover:underline">
+          <ExtLink href={`${DOCS_URL}/plans-alerts`} className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:underline">
             Plans &amp; alerts docs
-          </a>
+          </ExtLink>
           .
         </p>
       </section>
 
+      <section className={panel} style={rise(1)} aria-labelledby="fired-title" data-testid="alert-timeline">
+        <div className="flex flex-col gap-[2px]">
+          <h2 id="fired-title" className={panelTitle}>
+            Fired alerts
+          </h2>
+          <span className={mono}>From each alert&apos;s delivery log (its latest deliveries) · green delivered, red failed, hollow test</span>
+        </div>
+        <AlertTimeline alerts={view.alerts} nameOf={alertName} />
+      </section>
+
       <CreateDialog
+
         open={open}
         onClose={closeCreate}
         view={view}

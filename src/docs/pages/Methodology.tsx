@@ -73,6 +73,7 @@ export function Methodology() {
             ['feed-unreadable', 'fair is null', 'The Chainlink feed (or, on BNB Chain, the multiplier) could not be read.'],
             ['pool-unreadable', 'pool read failed', 'DexScreener could not be read for this chain.'],
             ['no-pool', 'onchain is null', 'No pool with a usable price was found.'],
+            ['unverified', 'onchain ≥ 5× or ≤ 1/5 of fair; or |gap| ≥ 15% unless the pool holds $1,000,000+ and was read on chain this cycle', <>The figure is implausible for a tokenised stock: far more often a bad print (a misread venue, an old API reading, a decimals slip) than a price. <C>gapPct</C> is withheld (null), the figure stays in <C>rawGapPct</C>, and <C>untrustedReason</C> says why. Never flagged, ranked, alerted on or recorded in the history.</>],
             ['thin', 'liquidity < $10,000', 'The chosen pool is too small to trust. Shown, never flagged.'],
             ['in-line', '|gap| < 1%', 'Within the noise. Robinhood Chain feeds only move on a 0.5% deviation.'],
             ['drifting', '1% ≤ |gap| < 2%', 'Moving away from fair, not yet flagged.'],
@@ -81,7 +82,14 @@ export function Methodology() {
           ]}
         />
         <P>
-          The thresholds are returned with every response in <C>rules</C> (<C>minLiquidityUsd</C>, <C>inLinePct</C>, <C>flagPct</C>), so a client never has to hard-code them.
+          The thresholds are returned with every response in <C>rules</C> (<C>minLiquidityUsd</C>, <C>inLinePct</C>, <C>flagPct</C>, <C>implausiblePct</C>, <C>trustLiquidityUsd</C>, <C>unitsRatio</C>), so a client never has to hard-code them.
+        </P>
+        <H3 id="trust">Trust and provenance</H3>
+        <P>
+          Every row says whether the tracker stands behind its gap. <C>trusted</C> is true only for <C>premium</C>, <C>discount</C>, <C>drifting</C> and <C>in-line</C> rows whose pool read is fresh; otherwise <C>untrustedReason</C> gives the reason in a sentence (a thin pool, an implausible figure, an unreadable source, or a pool read served from the last good one while sources back off). Top movers and gap alerts only ever use trusted rows; the five-minute history skips every row without a gap (an unverified row included) and every stale pool read.
+        </P>
+        <P>
+          <C>onchainSource</C> says where this cycle’s onchain price came from: <C>chain</C> when the pool contract was read directly, <C>api</C> when it is the price API’s reading for a venue that cannot be re-read on chain. <C>onchainAt</C> is when that price was read, so an API reading shows its own age.
         </P>
       </Section>
 

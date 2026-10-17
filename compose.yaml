@@ -1,7 +1,15 @@
 # Only gully-* resources. Check both host ports are free before changing them.
 name: gully
 services:
+  # The site. Deployed by ops/deploy.sh (ops/DEPLOY.md), NOT by `docker compose up`: the script builds this
+  # service's image as gully-web:<sha>, runs it beside the live one with `docker run` (keep the environment,
+  # volumes and network in ops/deploy.sh run_next() in step with this block), and the gully-edge proxy owns
+  # the host ports and switches between the two without a gap. The `legacy` profile keeps a plain
+  # `docker compose up -d` (for the blog, analytics or backups) from ever recreating gully-web. The old
+  # one-container path stays as an emergency fallback, only after gully-edge is removed (ops/DEPLOY.md):
+  # `docker compose --profile legacy up -d --build web`.
   web:
+    profiles: ["legacy"]
     build:
       context: .
       # Public values baked into the bundle at build time (LI.FI swap, WalletConnect).
@@ -11,7 +19,7 @@ services:
         VITE_WALLETCONNECT_PROJECT_ID: ${VITE_WALLETCONNECT_PROJECT_ID:-}
         VITE_JUPITER_FEE_BPS: ${VITE_JUPITER_FEE_BPS:-}
         VITE_JUPITER_FEE_ACCOUNT: ${VITE_JUPITER_FEE_ACCOUNT:-}
-    image: gully-web:latest
+    image: gully-web:${GULLY_WEB_TAG:-latest}
     container_name: gully-web
     restart: unless-stopped
     environment:

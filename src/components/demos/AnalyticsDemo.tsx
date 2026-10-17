@@ -16,11 +16,13 @@ const CFG: Record<Range, { n: number; unit: string; base: number }> = {
 }
 const W = 600
 const H = 220
+// The same example split as the /analytics page (charts/ProductExamples.tsx), so the two never disagree.
 const CHAINS: [string, number, string][] = [
   ['Base', 41, '#6aa6ff'],
-  ['Ethereum', 27, '#b49cff'],
-  ['BNB Chain', 19, '#e8c060'],
-  ['Arbitrum', 13, '#6fcf6a'],
+  ['Ethereum', 23, '#b49cff'],
+  ['BNB Chain', 17, '#e8c060'],
+  ['Robinhood Chain', 12, '#6fcf6a'],
+  ['Arc', 7, '#ff8a7a'],
 ]
 const PAGES: [string, number][] = [
   ['/', 1],
@@ -128,7 +130,7 @@ export default function AnalyticsDemo(): JSX.Element {
           <span aria-hidden className="size-2 rounded-[2px] bg-gold" />
           app.yourproject.xyz
         </span>
-        <span className="rounded-full border border-gold-line px-2.5 py-1 font-mono text-[10px] tracking-[1px] text-gold">DEMO DATA</span>
+        <span className="rounded-full border border-gold-line px-2.5 py-1 font-mono text-[11px] tracking-[1px] text-gold">DEMO DATA</span>
         <span className="flex items-center gap-2 text-[12px] text-muted">
           <span aria-hidden className="size-2 rounded-full bg-green transition-[box-shadow] duration-[600ms]" style={{ boxShadow: `0 0 0 ${tick % 2 ? 6 : 0}px rgba(111,207,106,.25)` }} />
           <b className="font-mono font-medium text-ink">{live}</b> visitors right now
@@ -158,7 +160,7 @@ export default function AnalyticsDemo(): JSX.Element {
           <div key={k.l} className={`flex flex-col gap-0.5 border-line px-4 py-3 ${i % 2 === 0 ? 'border-r' : 'md:border-r'} ${i < 2 ? 'max-md:border-b' : ''} ${i === 3 ? 'md:border-r-0' : ''}`}>
             <span className="text-[11px] text-dim">{k.l}</span>
             <b className="font-display text-[28px] leading-none font-bold">{k.v}</b>
-            <span className={`font-mono text-[10px] ${k.c}`}>{k.d}</span>
+            <span className={`font-mono text-[11px] ${k.c}`}>{k.d}</span>
           </div>
         ))}
       </div>
@@ -221,7 +223,7 @@ export default function AnalyticsDemo(): JSX.Element {
 
         <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-3 px-4 py-3">
           <div className="flex flex-col gap-1.5">
-            <span className="font-mono text-[10px] tracking-[1px] text-faint">FUNNEL · VISIT TO TRANSACTION</span>
+            <span className="font-mono text-[11px] tracking-[1px] text-faint">FUNNEL · VISIT TO TRANSACTION</span>
             {funnel.map(([l, x], i) => {
               const p = `${((x / d.tv) * 100).toFixed(1)}%`
               return (
@@ -278,7 +280,7 @@ export default function AnalyticsDemo(): JSX.Element {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="font-mono text-[10px] tracking-[1px] text-faint">TOP PAGES</span>
+            <span className="font-mono text-[11px] tracking-[1px] text-faint">TOP PAGES</span>
             {PAGES.map(([path, share]) => (
               <div key={path} className="relative flex justify-between px-2 py-[3px] font-mono text-[12px]">
                 <span aria-hidden className="absolute inset-y-0 left-0 rounded-[4px] bg-[rgba(232,192,96,.08)]" style={{ width: `${share * 100}%` }} />
@@ -310,7 +312,7 @@ export default function AnalyticsDemo(): JSX.Element {
             <span>Reading plans…</span>
           )}
           <a href={ANALYTICS_SIGNUP} className="inline-flex min-h-11 items-center gap-1 text-gold hover:text-gold-hover">
-            Start the free trial <ArrowRight size={12} aria-hidden />
+            Start free trial <ArrowRight size={12} aria-hidden />
           </a>
         </span>
       </div>

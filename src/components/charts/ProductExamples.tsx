@@ -11,7 +11,7 @@ import { areaPreset, axisTooltip, barsPreset, C, itemTooltip, linePreset, PALETT
 const fmt = (n: number) => n.toLocaleString('en-US')
 
 export function ExampleBadge() {
-  return <span className="rounded-full border border-line-strong px-2 py-[2px] font-mono text-[10px] tracking-[1px] text-faint">EXAMPLE DATA</span>
+  return <span className="rounded-full border border-line-strong px-2 py-[2px] font-mono text-[11px] tracking-[1px] text-faint">EXAMPLE DATA</span>
 }
 
 function Frame({ title, sub, children, aside }: { title: string; sub: string; children: React.ReactNode; aside?: React.ReactNode }) {
@@ -129,7 +129,7 @@ function ChainsRing() {
         >
           <span aria-hidden className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span className="font-display text-[22px] leading-none font-extrabold text-ink">{cur ? `${cur.n}%` : '5'}</span>
-            <span className="mt-1 font-mono text-[10px] text-faint">{cur ? cur.name : 'chains'}</span>
+            <span className="mt-1 font-mono text-[11px] text-faint">{cur ? cur.name : 'chains'}</span>
           </span>
         </EChart>
       </div>

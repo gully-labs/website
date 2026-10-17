@@ -4,17 +4,25 @@ import { ChannelChips, SecretDialog, TelegramCard } from './Alerts'
 import { EventsMeter } from './Analytics'
 import { GetStarted, ToolsRow } from './GetStarted'
 import { alertName, alertRule, alertState, defaultAsset, keyColors, priceText, siteMeta, useAlertActions, useAlertsView } from './helpers'
-import { api, type Account, type AnalyticsUsage, type AnalyticsView, type BillingView, type PlanId, type Range, type Usage } from './api'
-import { DoubleRing, Meter, RequestBars, Spark, type BarSeries } from './charts'
+import { api, type Account, type AnalyticsUsage, type AnalyticsView, type BillingView, type PlanId, type Range, type UsageV2 } from './api'
+import { DoubleRing, Meter, Spark } from './charts'
+import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
+import { NF } from '../../components/charts/number-formats'
+import { PendingInvites } from './Invite'
+import { Can } from './RoleGate'
+import { EndpointBars, RequestsChart, StatusDonut, type KeySeries } from './vcharts'
 import { ErrorLine, Skeleton } from './parts'
+import { ExtLink } from './ExtLink'
 import { ChainAssetChips } from './PayFlow'
 import { BLUE, chip, LIMITED_COLOR, mono, panel, panelTitle, pillGold, pillGoldLine, pillLine, rise } from './styles'
-import { bucketize, busiestKeyRate, columns, firings, group, RANGE_LABEL } from './usage'
+import { bucketize, busiestKeyRate, firings, group, RANGE_LABEL } from './usage'
 
-/* The Overview tab of the console: the "Get started" checklist and the Tools row (GetStarted.tsx), four KPI cards, requests per key (stacked bars), plan limits (the
-   double ring), alerts with the Telegram card, Gully Analytics sites and the "extend your plan" pay
+/* The Overview tab of the console: pending workspace invites, the "Get started" checklist and the Tools
+   row (GetStarted.tsx), four KPI cards (animated, with the change against the previous period),
+   requests per key (stacked areas with the previous period dashed, ECharts), answers by status (donut)
+   and by endpoint (bars), plan limits (the double ring), alerts with the Telegram card, Gully Analytics sites and the "extend your plan" pay
    strip. Each card reads its own endpoint and shows its own loading, empty and unreadable states:
-     /api/developer/usage?range=…   requests, 429s, busiest key
+     /api/developer/usage?range=…   requests, 429s, busiest key, previous period, by status, by endpoint
      /api/developer/alerts          alerts, Telegram, firings (from the delivery logs)
      /api/developer/analytics       Gully Analytics account, sites, events (+ /usage for views)
      /api/developer/billing         plans, chains and assets for the pay strip */
@@ -44,11 +52,32 @@ function useGet<T>(path: string | null, every = 0): [Load<T>, () => void] {
 
 /* ------------------------------------------------------------------ KPI card --- */
 
-function Kpi({ label, value, note, spark, color, i, unreadable }: { label: string; value: ReactNode; note: ReactNode; spark?: number[]; color: string; i: number; unreadable?: string | null }) {
+/** The change against the previous period: "▲ 12%" / "▼ 4%" / "new", or "—" when the previous period is unknown. */
+function Delta({ cur, prev, upIsBad = false }: { cur: number | null; prev: number | null | undefined; upIsBad?: boolean }) {
+  if (cur === null || prev === null || prev === undefined)
+    return (
+      <span className="font-mono text-[11px] text-faint" title="The previous period is not fully counted yet">
+        — vs previous
+      </span>
+    )
+  if (prev === 0 && cur === 0) return <span className="font-mono text-[11px] text-faint">= vs previous</span>
+  if (prev === 0) return <span className="font-mono text-[11px] text-gold">new vs previous</span>
+  const pct = ((cur - prev) / prev) * 100
+  const flat = Math.abs(pct) < 0.5
+  const up = pct >= 0
+  const color = flat ? 'text-faint' : up === upIsBad ? 'text-error' : 'text-green'
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-[14px] border border-line bg-surface px-4 py-[14px]" style={{ animation: `gl-rise .5s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }}>
+    <span className={`font-mono text-[11px] ${color}`} title={`Previous period: ${fmt(prev)}`}>
+      {flat ? '=' : up ? '▲' : '▼'} {Math.abs(pct) >= 999 ? '999+' : Math.abs(pct).toFixed(Math.abs(pct) < 10 ? 1 : 0)}% vs previous
+    </span>
+  )
+}
+
+function Kpi({ label, value, note, spark, color, i, unreadable, delta }: { label: string; value: number | null; note: ReactNode; spark?: number[]; color: string; i: number; unreadable?: string | null; delta?: ReactNode }) {
+  return (
+    <div className="flex min-h-[118px] min-w-0 flex-col gap-1 rounded-[14px] border border-line bg-surface px-4 py-[14px]" style={{ animation: `gl-rise .5s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }} data-kpi={label}>
       <span className="text-[12px] text-dim">{label}</span>
-      <span className="flex items-end justify-between gap-2">
+      <span className="flex min-h-[34px] items-end justify-between gap-2">
         {unreadable ? (
           <span className="font-display text-[34px] leading-none font-bold text-faint" title={unreadable}>
             —
@@ -56,11 +85,12 @@ function Kpi({ label, value, note, spark, color, i, unreadable }: { label: strin
         ) : value === null ? (
           <Skeleton h={34} w="55%" />
         ) : (
-          <span className="font-display text-[34px] leading-none font-bold">{value}</span>
+          <AnimatedNumber value={value} format={NF.int} countUp className="font-display text-[34px] leading-none font-bold" />
         )}
         {spark && !unreadable && <Spark values={spark} color={color} />}
       </span>
       <span className={`truncate font-mono text-[11px] ${unreadable ? 'text-error' : 'text-muted'}`}>{unreadable ? 'unreadable right now' : note}</span>
+      {delta && !unreadable && <span className="truncate">{delta}</span>}
     </div>
   )
 }
@@ -92,7 +122,7 @@ function Periods({ value, onChange }: { value: Range; onChange: (r: Range) => vo
 
 export function Overview({ account, go, createKey, createAlert, checkout }: { account: Account; go: (tab: 'keys' | 'alerts' | 'analytics' | 'billing') => void; createKey: () => void; createAlert: () => void; checkout: (plan: PlanId, asset: string | null) => void }) {
   const [range, setRange] = useState<Range>('24h')
-  const [usageS, reloadUsage] = useGet<Usage>(`/api/developer/usage?range=${range}`, 60_000)
+  const [usageS, reloadUsage] = useGet<UsageV2>(`/api/developer/usage?range=${range}`, 60_000)
   const alerts = useAlertsView()
   const actions = useAlertActions(alerts.load)
   const [gaS] = useGet<AnalyticsView>('/api/developer/analytics')
@@ -102,10 +132,9 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
   const stale = usageS.state === 'ok' && usageS.data.range !== range
   const shown = usageS.state === 'ok' ? usageS.data : null
   const grouped = useMemo(() => (shown ? group(shown) : []), [shown])
-  const cols = useMemo(() => (shown ? columns(shown, grouped) : []), [shown, grouped])
   const hasLimited = grouped.length > 0 && grouped.every((g) => g.limited !== undefined)
 
-  const series: BarSeries[] = useMemo(() => {
+  const series: KeySeries[] = useMemo(() => {
     const names = Object.fromEntries((shown?.keys ?? account.keys).map((k) => [k.id, k.name]))
     const used = new Set(grouped.flatMap((g) => Object.keys(g.keys)))
     const colors = keyColors(account.keys)
@@ -127,18 +156,29 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
 
   return (
     <div className="flex flex-col gap-[14px]">
+      <PendingInvites />
       {/* ------------------------------------------------- checklist and tools */}
       <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
       <ToolsRow />
 
       {/* ---------------------------------------------------------------- KPIs */}
       <section aria-label="Summary" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3">
-        <Kpi i={0} label={`Requests · ${range}`} color="#e8c060" value={usage ? fmt(usage.rangeTotals.total) : null} spark={usage ? grouped.map((g) => g.total) : undefined} unreadable={usageErr} note={usage ? `${fmt(usage.today.total)} today (UTC) · ${fmt(usage.last7d.total)} in 7 days` : 'reading usage…'} />
+        <Kpi
+          i={0}
+          label={`Requests · ${range}`}
+          color="#e8c060"
+          value={usage ? usage.rangeTotals.total : null}
+          spark={usage ? grouped.map((g) => g.total) : undefined}
+          unreadable={usageErr}
+          note={usage ? `${fmt(usage.today.total)} today (UTC) · ${fmt(usage.last7d.total)} in 7 days` : 'reading usage…'}
+          delta={usage ? <Delta cur={usage.rangeTotals.total} prev={usage.previous?.total ?? null} /> : null}
+        />
         <Kpi
           i={1}
           label="Rate-limited (429)"
           color={LIMITED_COLOR}
-          value={usage ? fmt(usage.rangeTotals.limited) : null}
+          value={usage ? usage.rangeTotals.limited : null}
+          delta={usage ? <Delta cur={usage.rangeTotals.limited} prev={usage.previous?.limited ?? null} upIsBad /> : null}
           spark={usage && hasLimited ? grouped.map((g) => g.limited ?? 0) : undefined}
           unreadable={usageErr}
           note={usage ? (usage.rangeTotals.total ? `${((usage.rangeTotals.limited / usage.rangeTotals.total) * 100).toFixed(2)}% of calls` : 'no calls in this range') : '…'}
@@ -147,12 +187,12 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           i={2}
           label={`Alerts fired · ${range}`}
           color={BLUE}
-          value={fired ? fmt(fired.length) : alerts.view && !alerts.view.alerts.length ? '0' : null}
+          value={fired ? fired.length : alerts.view && !alerts.view.alerts.length ? 0 : null}
           spark={fired ? bucketize(fired.map((f) => f.at), grouped) : undefined}
           unreadable={alerts.err}
           note={alerts.view ? (alerts.view.alerts.length ? `${fired ? fired.filter((f) => f.telegram).length : 0} via Telegram · from the delivery logs` : 'no alerts set up') : '…'}
         />
-        <Kpi i={3} label="Active keys" color="#8a96a6" value={String(live.length)} note={`of ${account.limits.maxKeys} allowed${shown ? ` · ${usedInRange} used in ${range}` : ''}`} />
+        <Kpi i={3} label="Active keys" color="#8a96a6" value={live.length} note={`of ${account.limits.maxKeys} allowed${shown ? ` · ${usedInRange} used in ${range}` : ''}`} />
       </section>
 
       <div className="flex flex-wrap items-start gap-[14px]">
@@ -173,7 +213,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
                 {hasLimited && (
                   <li className="flex items-center gap-[6px]">
                     <span className="h-[3px] w-[10px] rounded-[1px]" style={{ background: LIMITED_COLOR }} aria-hidden />
-                    429s (inside the bars)
+                    429s
                   </li>
                 )}
               </ul>
@@ -187,30 +227,35 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
               <span className="max-w-[440px] text-[14px] text-muted">
                 A key works the moment it is created: {fmt(account.limits.keyPerMin)} requests a minute instead of {fmt(account.limits.anonymousPerMin)}. Its traffic shows up here.
               </span>
-              <button type="button" onClick={createKey} className={pillGold}>
-                <Plus size={16} aria-hidden /> Create your first key
-              </button>
+              <Can cat="keys" what="create keys">
+                <button type="button" onClick={createKey} className={pillGold}>
+                  <Plus size={16} aria-hidden /> Create your first key
+                </button>
+              </Can>
             </div>
           ) : usageErr && !shown ? (
             <ErrorLine onRetry={reloadUsage}>Usage could not be read: {usageErr}</ErrorLine>
           ) : !shown ? (
-            <Skeleton h={240} />
+            <Skeleton h={286} />
           ) : (
-            <div className={`transition-opacity ${stale ? 'opacity-50' : ''}`} aria-busy={stale}>
-              <RequestBars columns={cols} series={series} showLimited={hasLimited} animKey={`${shown.range}-${shown.points[0]?.t}`} />
-              <div className="mt-2 flex justify-between gap-2 font-mono text-[10px] text-faint">
-                <span>{cols[0]?.label}</span>
-                <span>{RANGE_LABEL[shown.range]} · per {shown.range === '7d' ? '6 hours' : shown.bucket}</span>
-                <span>now</span>
+            <div className={`transition-opacity ${stale ? 'opacity-60' : ''}`} aria-busy={stale} data-testid="requests-chart">
+              <RequestsChart usage={shown} series={series} />
+              <div className="mt-2 flex flex-wrap justify-between gap-2 font-mono text-[10px] text-faint">
+                <span>
+                  {RANGE_LABEL[shown.range]} · per {shown.range === '7d' ? '6 hours' : shown.bucket}
+                </span>
+                <span>{shown.previous ? `previous ${RANGE_LABEL[shown.range]}: ${fmt(shown.previous.total)} requests (dashed: its average per bucket)` : 'previous period: not fully counted yet'}</span>
               </div>
             </div>
           )}
           {!!account.keys.length && !live.length && (
             <p className="m-0 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] px-3 py-2 text-[13px] text-ink-2">
               Every key is revoked. Create a new one to keep calling at the keyed limit.
-              <button type="button" onClick={createKey} className={pillGoldLine}>
-                <Plus size={14} aria-hidden /> Create a key
-              </button>
+              <Can cat="keys" what="create keys">
+                <button type="button" onClick={createKey} className={pillGoldLine}>
+                  <Plus size={14} aria-hidden /> Create a key
+                </button>
+              </Can>
             </p>
           )}
           <p className="m-0 text-[12px] leading-[1.55] text-faint">
@@ -258,6 +303,28 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         </section>
       </div>
 
+      {/* ------------------------------------------------- status and endpoints */}
+      {!!account.keys.length && (
+        <div className="flex flex-wrap items-start gap-[14px]">
+          <section aria-labelledby="ov-status" className={`${panel} min-h-[250px] flex-[1_1_380px]`} style={rise(2)} data-testid="status-donut">
+            <h2 id="ov-status" className={panelTitle}>
+              Answers by status · {range}
+            </h2>
+            {usageErr && !shown ? <ErrorLine onRetry={reloadUsage}>Usage could not be read: {usageErr}</ErrorLine> : !shown ? <Skeleton h={180} /> : <StatusDonut byStatus={shown.byStatus} />}
+          </section>
+          <section aria-labelledby="ov-ep" className={`${panel} min-h-[250px] flex-[1_1_380px]`} style={rise(3)} data-testid="endpoint-bars">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 id="ov-ep" className={panelTitle}>
+                Requests by endpoint · {range}
+              </h2>
+              {shown?.endpointsSince && <span className={mono}>counted since {new Date(shown.endpointsSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+            </div>
+            {usageErr && !shown ? <ErrorLine onRetry={reloadUsage}>Usage could not be read: {usageErr}</ErrorLine> : !shown ? <Skeleton h={120} /> : <EndpointBars byEndpoint={shown.byEndpoint} since={shown.endpointsSince} />}
+          </section>
+        </div>
+      )}
+
+
       <div className="flex flex-wrap items-start gap-[14px]">
         {/* ------------------------------------------------------------ alerts */}
         <section aria-labelledby="ov-alerts" className={`${panel} flex-[1_1_420px]`} style={rise(3)}>
@@ -267,9 +334,11 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
                 Alerts
               </button>
             </h2>
-            <button type="button" onClick={createAlert} disabled={!!alerts.view && alerts.view.limits.used >= alerts.view.limits.max} className={pillLine}>
-              <Plus size={15} aria-hidden /> New alert
-            </button>
+            <Can cat="alerts" what="create alerts">
+              <button type="button" onClick={createAlert} disabled={!!alerts.view && alerts.view.limits.used >= alerts.view.limits.max} className={pillLine}>
+                <Plus size={15} aria-hidden /> New alert
+              </button>
+            </Can>
           </div>
           {alerts.err && !alerts.view ? (
             <ErrorLine onRetry={alerts.load}>Alerts could not be read: {alerts.err}</ErrorLine>
@@ -287,9 +356,11 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
                   <span className="text-[13px] text-muted">
                     Get a webhook{alerts.view.telegram.enabled ? ' or a Telegram message' : ''} when a stock&apos;s gap to its fair price crosses your line. {alerts.view.limits.max} on {alerts.view.limits.planName}.
                   </span>
-                  <button type="button" onClick={createAlert} className={pillGold}>
-                    <Plus size={15} aria-hidden /> Create your first alert
-                  </button>
+                  <Can cat="alerts" what="create alerts">
+                    <button type="button" onClick={createAlert} className={pillGold}>
+                      <Plus size={15} aria-hidden /> Create your first alert
+                    </button>
+                  </Can>
                 </div>
               ) : (
                 <ul className="m-0 flex list-none flex-col gap-[10px] p-0">
@@ -392,9 +463,9 @@ function AnalyticsCard({ s, go }: { s: Load<AnalyticsView>; go: () => void }) {
                 <span className="w-[80px] shrink-0 max-[420px]:hidden">
                   <Meter value={total ? Math.round((site.eventsThisMonth / total) * 1000) : 0} max={1000} label={`${site.domain}: share of this month’s events`} />
                 </span>
-                <a href={site.dashboardUrl} target="_blank" rel="noopener" className="inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-[13px] text-gold hover:text-gold-hover">
-                  Open <ArrowUpRight size={12} aria-hidden />
-                </a>
+                <ExtLink href={site.dashboardUrl} className="inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-[13px] text-gold hover:text-gold-hover">
+                  Open
+                </ExtLink>
               </div>
             )
           })}
@@ -455,9 +526,11 @@ function PayStrip({ s, account, checkout }: { s: Load<BillingView>; account: Acc
           {priceText(cur, target.priceUsdc)}
         </span>
         {cur?.kind === 'native' && <span className="font-mono text-[11px] text-faint">priced from Chainlink when the quote opens</span>}
-        <button type="button" disabled={!o.checkout.enabled || !cur} onClick={() => checkout(target.id, assetId)} className={`${pillGold} px-5`}>
-          {o.checkout.enabled ? `Pay on ${cur?.chain ?? '…'}` : 'Not on sale yet'}
-        </button>
+        <Can cat="billing" what="pay for plans">
+          <button type="button" disabled={!o.checkout.enabled || !cur} onClick={() => checkout(target.id, assetId)} className={`${pillGold} px-5`}>
+            {o.checkout.enabled ? `Pay on ${cur?.chain ?? '…'}` : 'Not on sale yet'}
+          </button>
+        </Can>
       </div>
     </section>
   )

@@ -219,7 +219,12 @@ export function moversPost(m: Movers, mode: 'gap' | 'price'): string {
 export const fmtPrice = (v: number | null) =>
   v === null ? '—' : `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: v < 1 ? 4 : 2 })}`
 
-export const fmtGap = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`)
+/** A gap as a signed percent; anything that rounds to zero reads 0.00%, never -0.00%. */
+export const fmtGap = (v: number | null) => {
+  if (v === null) return '—'
+  const r = Math.round(v * 100) / 100
+  return r === 0 ? '0.00%' : `${r > 0 ? '+' : ''}${r.toFixed(2)}%`
+}
 
 export const fmtCompactUsd = (v: number | null | undefined) => {
   if (v === null || v === undefined) return '—'
@@ -244,6 +249,15 @@ export const stockPath = (r: { chain: string; ticker: string }) => `/tracker/${r
 
 export const UP = '#1f9e89'
 export const DOWN = '#e4572e'
+
+/** The colour of a gap figure in text: teal above, vermilion below, but neutral (undefined, the text
+    colour) while the stock is in line, so a -0.08% next to an "In line" pill never reads as an alarm;
+    faint for a thin pool, whose price is not trusted. */
+export function gapColor(r: { gapPct: number | null; status: TrackerStatus }): string | undefined {
+  if (r.gapPct === null || r.status === 'in-line' || Math.round(r.gapPct * 100) === 0) return undefined
+  if (r.status === 'thin') return '#7f8b9c'
+  return r.gapPct > 0 ? UP : DOWN
+}
 
 export const STATUS_LABEL: Record<TrackerStatus, string> = {
   premium: 'Premium',

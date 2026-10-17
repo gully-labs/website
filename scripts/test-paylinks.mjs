@@ -19,9 +19,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getAddress } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { makeChecker, makeClient } from './test-helpers.mjs'
+import { makeChecker, makeClient, guardTestRun, track } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8793
+await guardTestRun(PORT)
 const BASE = `http://localhost:${PORT}`
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-paylinks-'))
@@ -433,15 +434,19 @@ try {
   check('before the restart: one failed attempt, pending', r.status === 200 && d7?.state === 'pending' && d7.attempts.length === 1)
   hook.status = 200
   hook.got.length = 0
-  const child = spawn(process.execPath, ['--input-type=module', '-e', "const w = await import('./server/pay-webhooks.mjs'); await new Promise((r) => setTimeout(r, 400)); const n = await w.processDue(Date.now() + 3_600_000); console.log('sent', n); process.exit(0)"], {
+  const child = track(spawn(process.execPath, ['--input-type=module', '-e', "const w = await import('./server/pay-webhooks.mjs'); await new Promise((r) => setTimeout(r, 400)); const n = await w.processDue(Date.now() + 3_600_000); console.log('sent', n); process.exit(0)"], {
     cwd: ROOT,
-    env: { ...process.env, ...CHAIN_ENV, DATA_DIR: tmp, GULLY_PAY_WEBHOOK_TICK_MS: '0', GULLY_ALLOW_LOOPBACK_WEBHOOKS: '1', TRACKER_LOOP: 'off', TELEGRAM_BOT_TOKEN: '' },
+    env: { ...process.env, ...CHAIN_ENV, PORT: '0', TLS_PORT: '', DATA_DIR: tmp, GULLY_PAY_WEBHOOK_TICK_MS: '0', GULLY_ALLOW_LOOPBACK_WEBHOOKS: '1', TRACKER_LOOP: 'off', TELEGRAM_BOT_TOKEN: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
-  })
+    // The child must never listen: it only drains the saved webhook queue.
+  }))
   let out = ''
   child.stdout.on('data', (d) => (out += d))
   child.stderr.on('data', (d) => (out += d))
+  // A child that hangs is killed after 20 s instead of keeping this suite (and its server) alive.
+  const killer = setTimeout(() => child.kill('SIGKILL'), 20_000)
   await new Promise((res) => child.on('exit', res))
+  clearTimeout(killer)
   const after = JSON.parse(fs.readFileSync(path.join(tmp, 'pay-webhooks.json'), 'utf8')).deliveries.find((d) => d.id === d7.id)
   check('after a restart the pending delivery is sent from the saved queue', /sent [1-9]/.test(out) && hook.got.some((g) => g.path === '/retry' && JSON.parse(g.body).data?.invoice?.id === inv7.id), out.trim().slice(0, 300))
   check('…signed with the link secret, and recorded as delivered on disk', hook.got.some((g) => merchantVerifies(g, retrySecret)) && after?.state === 'delivered' && after.attempts.length === 2)

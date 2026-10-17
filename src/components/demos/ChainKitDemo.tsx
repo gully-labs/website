@@ -93,7 +93,7 @@ export default function ChainKitDemo(): JSX.Element {
       {/* Left: the controls */}
       <div className="flex min-w-0 flex-[1_1_240px] flex-col gap-4 border-line p-4 max-lg:border-b lg:overflow-y-auto lg:border-r">
         <div className="flex flex-col gap-0.5">
-          <span className="font-mono text-[10px] tracking-[1px] text-gold">CHAIN KIT · TRY IT</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-gold">CHAIN KIT · TRY IT</span>
           <b className="font-display text-[22px] leading-[1.05] font-bold uppercase">Brand your explorer, live</b>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -147,7 +147,7 @@ export default function ChainKitDemo(): JSX.Element {
             ))}
           </div>
         </div>
-        <ul className="m-0 mt-auto flex list-none flex-col gap-1.5 p-0 text-[12px] text-muted">
+        <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0 text-[12px] text-muted">
           <li>Blockscout, open source, run by Gully Labs</li>
           <li>Your domain, logo, colours and token list</li>
           <li>Contract verification and a public API</li>
@@ -231,7 +231,7 @@ export default function ChainKitDemo(): JSX.Element {
                 </div>
                 {blocks.map((b, i) => (
                   <div key={b.n} className="flex items-center gap-2.5 border-b px-3 py-2 text-[12px] last:border-b-0" style={{ borderColor: t.line, background: i === 0 && !reduced ? t.flash : 'transparent' }}>
-                    <span aria-hidden className="grid size-7 place-items-center rounded-[6px] font-mono text-[10px]" style={{ background: t.tint, color: ac }}>
+                    <span aria-hidden className="grid size-7 place-items-center rounded-[6px] font-mono text-[11px]" style={{ background: t.tint, color: ac }}>
                       Bk
                     </span>
                     <span className="flex flex-1 flex-col leading-[1.2]">
@@ -254,7 +254,7 @@ export default function ChainKitDemo(): JSX.Element {
                 </div>
                 {txs.map((x) => (
                   <div key={x.k} className="flex items-center gap-2.5 border-b px-3 py-2 text-[12px] last:border-b-0" style={{ borderColor: t.line }}>
-                    <span className="min-w-[58px] rounded-[4px] border px-1.5 py-0.5 text-center text-[10px]" style={{ borderColor: t.line, color: t.muted }}>
+                    <span className="min-w-[58px] rounded-[4px] border px-1.5 py-0.5 text-center text-[11px]" style={{ borderColor: t.line, color: t.muted }}>
                       {x.m}
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col leading-[1.2]">

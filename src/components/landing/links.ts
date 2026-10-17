@@ -6,5 +6,5 @@ export const PORTAL_ALERTS = isLocalHost() ? '/developers#alerts' : `${DEVELOPER
 export const PORTAL_BILLING = isLocalHost() ? '/developers#billing' : `${DEVELOPERS_URL}/#billing`
 export const BLOG_URL = 'https://blog.gullylabs.xyz'
 
-/** A landing section's title. */
-export const h2 = 'm-0 font-display text-[40px] leading-none font-extrabold uppercase max-[599px]:text-[34px]'
+/** A landing section's title: the shared H2 step (components/ui.tsx). */
+export { h2 } from '../ui'

@@ -1,19 +1,32 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { copyWithToast } from '../../components/ui/toast'
 
-/** A modal dialog: Escape closes, Tab stays inside, focus returns to where it was. */
+/**
+ * A modal dialog, rendered into document.body (a portal): a transformed ancestor such as the tab panel's
+ * gl-rise animation would otherwise trap its fixed backdrop inside the panel. Escape closes, Tab stays
+ * inside, and focus returns to the element that opened it (the trigger).
+ */
 export function Dialog({ open, onClose, title, children, dismissable = true }: { open: boolean; onClose: () => void; title: string; children: ReactNode; dismissable?: boolean }) {
   const panel = useRef<HTMLDivElement>(null)
   const id = useId()
+  // The latest onClose, so a caller's inline function does not re-run the focus effect on every render.
+  const close = useRef(onClose)
+  useEffect(() => {
+    close.current = onClose
+  })
   useEffect(() => {
     if (!open) return
     const previous = document.activeElement as HTMLElement | null
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dismissable) return onClose()
+      if (e.key === 'Escape' && dismissable) {
+        e.stopPropagation()
+        return close.current()
+      }
       if (e.key !== 'Tab' || !panel.current) return
-      const items = panel.current.querySelectorAll<HTMLElement>('button:not([disabled]), input, [href], [tabindex]:not([tabindex="-1"])')
+      const items = [...panel.current.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')].filter((el) => el.offsetParent !== null)
       if (!items.length) return
       const first = items[0]
       const last = items[items.length - 1]
@@ -28,25 +41,28 @@ export function Dialog({ open, onClose, title, children, dismissable = true }: {
     document.addEventListener('keydown', onKey)
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    requestAnimationFrame(() => (panel.current?.querySelector<HTMLElement>('input, [data-autofocus]') ?? panel.current?.querySelector<HTMLElement>('button'))?.focus())
+    const raf = requestAnimationFrame(() => (panel.current?.querySelector<HTMLElement>('[data-autofocus], input:not([disabled]), select, textarea') ?? panel.current?.querySelector<HTMLElement>('button'))?.focus())
     return () => {
+      cancelAnimationFrame(raf)
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = overflow
-      previous?.focus()
+      // Back to the trigger, if it is still on the page (a menu item may have gone with its menu).
+      if (previous && previous.isConnected && previous !== document.body) previous.focus()
     }
-  }, [open, onClose, dismissable])
+  }, [open, dismissable])
 
-  return (
+  if (typeof document === 'undefined') return null
+  return createPortal(
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[100] flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-          <div className="absolute inset-0 bg-[rgba(5,7,10,.72)] backdrop-blur-[3px]" onClick={dismissable ? onClose : undefined} aria-hidden />
+        <motion.div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} data-portal-dialog>
+          <div className="fixed inset-0 bg-[rgba(5,7,10,.72)] backdrop-blur-[3px]" onClick={dismissable ? () => close.current() : undefined} aria-hidden />
           <motion.div
             ref={panel}
             role="dialog"
             aria-modal="true"
             aria-labelledby={id}
-            className="relative flex w-full max-w-[520px] flex-col gap-5 rounded-modal border border-line-strong bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.55)] max-[480px]:p-5"
+            className="relative my-auto flex max-h-[calc(100dvh-32px)] w-full max-w-[520px] flex-col gap-5 overflow-y-auto rounded-modal border border-line-strong bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.55)] max-[480px]:p-5"
             initial={{ y: 16, scale: 0.98 }}
             animate={{ y: 0, scale: 1 }}
             exit={{ y: 8, scale: 0.98 }}
@@ -57,7 +73,7 @@ export function Dialog({ open, onClose, title, children, dismissable = true }: {
                 {title}
               </h2>
               {dismissable && (
-                <button type="button" onClick={onClose} aria-label="Close" className="-mt-2 -mr-2 inline-flex size-10 items-center justify-center rounded-btn text-muted hover:bg-surface-hover hover:text-ink">
+                <button type="button" onClick={() => close.current()} aria-label="Close" className="-mt-2 -mr-2 inline-flex size-11 shrink-0 items-center justify-center rounded-btn text-muted hover:bg-surface-hover hover:text-ink">
                   <X size={18} aria-hidden />
                 </button>
               )}
@@ -66,7 +82,8 @@ export function Dialog({ open, onClose, title, children, dismissable = true }: {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }
 
@@ -83,7 +100,7 @@ export function CopyButton({ text, label = 'Copy', what = 'Text', className = ''
           setTimeout(() => setDone(false), 1600)
         })
       }
-      className={`inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-btn border px-3 font-mono text-[12px] transition-colors ${done ? 'border-success-line text-green' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'} ${className}`}
+      className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-btn border px-3 font-mono text-[12px] transition-colors ${done ? 'border-success-line text-green' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'} ${className}`}
       aria-label={done ? `${what} copied` : `Copy ${what.toLowerCase()}`}
     >
       {done ? 'Copied' : label}

@@ -17,6 +17,8 @@ function formatOf(v: number): Format {
 }
 
 export function Figure({ value }: { value: number }) {
+  // A figure under a dollar reads as "<$1": cents on a headline undersell more than they inform.
+  const tiny = value > 0 && value < 1
   const el = useRef<HTMLSpanElement>(null)
   const [seen, setSeen] = useState(() => typeof IntersectionObserver === 'undefined')
   useEffect(() => {
@@ -26,6 +28,12 @@ export function Figure({ value }: { value: number }) {
     io.observe(node)
     return () => io.disconnect()
   }, [seen])
+  if (tiny)
+    return (
+      <span ref={el} className="inline-block" title={fmtUsd(value)}>
+        {'<$1'}
+      </span>
+    )
   return (
     <span ref={el} className="inline-block">
       <span aria-hidden>

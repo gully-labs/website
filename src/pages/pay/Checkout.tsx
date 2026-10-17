@@ -17,6 +17,10 @@ import { SolanaReferenceWatch } from '../../components/solana/SolanaReferenceWat
 
 const PayWallet = lazy(() => import('../../components/pay/PayWallet'))
 const SolanaPayWallet = lazy(() => import('../../components/solana/SolanaPayWallet'))
+// The live confirmations ring and the native-coin price chart (ECharts loads with them, on demand).
+const ConfirmRing = lazy(() => import('./PayCharts').then((m) => ({ default: m.ConfirmRing })))
+const PriceChart = lazy(() => import('./PayCharts').then((m) => ({ default: m.PriceChart })))
+const chartWait = <span className="block h-[112px] animate-pulse rounded-input bg-surface-deep" />
 
 type Check = { s: 'idle' } | { s: 'checking'; hash: string } | { s: 'pending'; hash: string; confirmations: number; needed: number; message: string } | { s: 'error'; message: string; hash?: string } | { s: 'done'; hash: string }
 
@@ -105,6 +109,7 @@ export function ConfirmBar({ n, needed, done = false }: { n: number; needed: num
 /** The success panel of a paid invoice: amount, chain, explorer link and the receipt. */
 export function PaidPanel({ invoice }: { invoice: Invoice }) {
   const p = invoice.payment
+  const paidAsset = p ? invoice.assets.find((a) => a.id === p.asset) : undefined
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-start gap-3">
@@ -136,6 +141,14 @@ export function PaidPanel({ invoice }: { invoice: Invoice }) {
           <dt className="text-faint">BLOCK</dt>
           <dd className="m-0 text-ink-2">{p.blockNumber}</dd>
         </dl>
+      )}
+      {p && paidAsset && (
+        <div className="grid grid-cols-1 gap-5 rounded-input border border-line bg-bg p-4">
+          <Suspense fallback={chartWait}>
+            <ConfirmRing n={paidAsset.confirmations} needed={paidAsset.confirmations} state="done" chain={p.chain} />
+            {paidAsset.kind === 'native' && p.price && <PriceChart asset={paidAsset} quoted={{ answer: p.price.answer, updatedAt: p.price.updatedAt, label: 'paid at' }} />}
+          </Suspense>
+        </div>
       )}
       <div className="flex flex-wrap gap-3">
         <Link to={`/pay/${invoice.id}/receipt`} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
@@ -369,6 +382,18 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
             )}
           </span>
 
+          <div className={`grid grid-cols-1 gap-5 rounded-input border border-line bg-bg p-4 ${quote.asset.kind === 'native' ? 'md:grid-cols-[minmax(0,240px)_minmax(0,1fr)]' : ''}`}>
+            <Suspense fallback={chartWait}>
+              <ConfirmRing
+                n={check.s === 'pending' ? check.confirmations : 0}
+                needed={check.s === 'pending' ? check.needed : quote.confirmations}
+                state={check.s === 'done' ? 'done' : check.s === 'pending' ? 'pending' : check.s === 'checking' ? 'checking' : 'waiting'}
+                chain={quote.asset.chain}
+              />
+              {quote.asset.kind === 'native' && <PriceChart asset={quote.asset} quoted={quote.price ? { answer: quote.price.answer, updatedAt: quote.price.updatedAt } : null} />}
+            </Suspense>
+          </div>
+
           <div className="grid grid-cols-1 gap-5 border-t border-line pt-5 md:grid-cols-2">
             <div className="flex flex-col gap-3">
               <span className="font-mono text-[11px] tracking-[1px] text-faint">ONE CLICK</span>
@@ -443,7 +468,6 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
                   </a>
                 )}
               </span>
-              <ConfirmBar n={check.s === 'pending' ? check.confirmations : 0} needed={check.s === 'pending' ? check.needed : quote.confirmations} />
             </div>
           )}
           {check.s === 'error' && (
