@@ -20,9 +20,11 @@
 //   GET  /api/admin/analytics                 Gully Analytics accounts: wallet, plan, sites, events this month
 //   POST /api/admin/analytics/:address/plan   { plan: 'starter'|'growth'|'none', days? }  grant for `days` (30) or stop now
 //   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
+//   POST /api/admin/ask/draft, GET /api/admin/ask/log   Gully Ask content studio and ask log (ask.mjs)
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
+import { handleAskAdmin } from './ask.mjs'
 import { adminAnalyticsAccounts, adminAnalyticsDelete, adminAnalyticsSetPlan } from './analytics-accounts.mjs'
 import { alertStats } from './alerts.mjs'
 import { adminSetPlan, allPayments } from './billing.mjs'
@@ -75,6 +77,8 @@ export async function handleAdmin(req, res, url) {
   const p = url.pathname
   if (!p.startsWith('/api/admin/')) return false
   if (!authorised(req, res)) return true
+  // Gully Ask content studio and ask log (ask.mjs): POST /api/admin/ask/draft, GET /api/admin/ask/log.
+  if (p.startsWith('/api/admin/ask/')) return handleAskAdmin(req, res, url)
   const db = developers()
 
   if (p === '/api/admin/overview') {

@@ -2,6 +2,7 @@ import { Activity, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2,
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useResolvedPath } from 'react-router'
 import { Wordmark } from '../components/Wordmark'
+import { AskLauncher } from '../components/ask/AskLauncher'
 import { apiOrigin, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
 
 type Health = 'checking' | 'live' | 'down'
@@ -127,6 +128,7 @@ export function DocsLayout() {
             </NavLink>
           </div>
           <div className="flex items-center gap-2">
+            <AskLauncher />
             <span className="max-[520px]:hidden">
               <ApiPill />
             </span>

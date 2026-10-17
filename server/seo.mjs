@@ -26,6 +26,7 @@ const MAIN = {
   '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security audits from the team behind the Gully Labs projects.'],
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
+  '/ask': ['Ask Gully · Gully Labs', 'Ask a question about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
@@ -93,7 +94,7 @@ export function pageMeta(host, pathname) {
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  const og = p === '/' ? 'home' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
+  const og = p === '/' ? 'home' : p === '/ask' ? 'docs' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
   return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
 }
 

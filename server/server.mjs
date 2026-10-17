@@ -19,6 +19,7 @@ import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { handlePay } from './invoices.mjs'
 import { geoFor } from './geo.mjs'
+import { handleAsk, startAsk } from './ask.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -178,6 +179,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
   }
+  // Gully Ask (ask.mjs): POST /api/ask and GET /api/ask/status.
+  if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status') return void (await handleAsk(req, res, url))
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
   if (url.pathname.startsWith('/api/pay/')) {
     if (await handlePay(req, res, url)) return
@@ -333,6 +336,8 @@ onSnapshot((rows, at) => evaluateAlerts(rows, at))
 if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
 // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
 startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
+// Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.
+startAsk()
 
 // Optional public port for Cloudflare. It speaks both HTTPS and plain HTTP on the
 // same port (sniffing the first byte), so it works whatever the zone's SSL mode is.

@@ -18,8 +18,9 @@
 // ?startgroup= link); only the Telegram user who linked a group may unlink it or mute from it.
 // One chat per account; a newer link replaces the older one.
 //
-// Commands: /gap TICKER [chain], /top, /movers (only when the tracker has movers), /alerts, /help.
-// Chats that are not linked get only /start, /help, /gap and /top; everything else from them is ignored.
+// Commands: /gap TICKER [chain], /top, /movers (only when the tracker has movers), /alerts, /ask QUESTION, /help.
+// Chats that are not linked get only /start, /help, /gap, /top and /ask; everything else from them is ignored.
+// /ask answers through Gully Ask (ask.mjs), limited per chat and by Ask's daily cap.
 // Replies are plain and short, in HTML parse mode with every dynamic piece escaped. A figure that could
 // not be read is said to be unreadable, never shown as zero.
 //
@@ -35,6 +36,7 @@ import { DATA_DIR, json, readJson } from './http.mjs'
 import { alertsForChat, muteAlert } from './alerts.mjs'
 import { randomToken, sha256 } from './store.mjs'
 import * as tracker from './tracker.mjs'
+import { askConfigured, askForChat, MAX_QUESTION } from './ask.mjs'
 
 const FILE = path.join(DATA_DIR, 'telegram.json')
 const SITE = 'https://gullylabs.xyz'
@@ -211,6 +213,7 @@ function commandList() {
     { command: 'gap', description: 'Gap of one stock: /gap NVDA or /gap NVDA bsc' },
     { command: 'top', description: 'The five widest trusted gaps now' },
     ...(movers() ? [{ command: 'movers', description: 'Biggest gap moves in 24 hours' }] : []),
+    { command: 'ask', description: 'Ask about Gully Labs: /ask how do alerts work?' },
     { command: 'alerts', description: 'Your alerts (linked chats)' },
     { command: 'stop', description: 'Unlink this chat from your account' },
     { command: 'help', description: 'What this bot does' },
@@ -312,6 +315,7 @@ const helpText = (linked) =>
     '/gap NVDA · one stock (add <code>bsc</code> or <code>robinhood</code> for one chain)',
     '/top · the five widest trusted gaps now',
     ...(movers() ? ['/movers · biggest gap moves in 24 hours'] : []),
+    '/ask · a question about Gully Labs, answered from the docs',
     ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['Alerts: open the developer dashboard, Alerts tab, and press Connect Telegram.']),
     '',
     `<a href="${SITE}/tracker">gullylabs.xyz/tracker</a>`,
@@ -389,6 +393,19 @@ async function cmdMovers() {
   return `<b>Biggest gap moves, 24 hours</b>\n${lines.join('\n')}\n<a href="${SITE}/tracker">gullylabs.xyz/tracker</a>`
 }
 
+/** /ask QUESTION: Gully Ask's answer, with its sources as links. */
+async function cmdAsk(chatId, question) {
+  if (!askConfigured()) return 'Ask is not available yet. The docs: <a href="https://docs.gullylabs.xyz">docs.gullylabs.xyz</a>'
+  const q = question.replace(/\s+/g, ' ').trim()
+  if (!q) return 'Ask a question after the command: <code>/ask how do gap alerts work?</code>'
+  if (q.length > MAX_QUESTION) return `A question can be at most ${MAX_QUESTION} characters.`
+  const r = await askForChat(chatId, q)
+  if (!r.ok) return esc(r.error)
+  const body = esc(r.answer.replace(/\*\*([^*]+)\*\*/g, '$1'))
+  const sources = r.citations.map((c) => `[${c.n}] <a href="${esc(c.url)}">${esc(c.title)}</a>`)
+  return `${body}${sources.length ? `\n\n<b>Sources</b>\n${sources.join('\n')}` : ''}\n\n<i>Information only, not investment advice.</i>`
+}
+
 function cmdAlerts(link) {
   const list = alertsForChat(link.address)
   if (!list.length) return `No alerts on ${esc(shortAddr(link.address))} yet. Make one in the developer dashboard, Alerts tab, and tick Telegram.`
@@ -398,7 +415,7 @@ function cmdAlerts(link) {
 
 /* ---------------------------------------------------------------- updates --- */
 
-const PUBLIC_COMMANDS = new Set(['start', 'help', 'gap', 'top'])
+const PUBLIC_COMMANDS = new Set(['start', 'help', 'gap', 'top', 'ask'])
 const cmdHits = new Map()
 const seenUpdates = new Set()
 
@@ -447,7 +464,7 @@ async function linkWithCode(msg, code) {
 
 async function onMessage(msg) {
   if (!msg?.chat || typeof msg.text !== 'string') return
-  const m = msg.text.slice(0, 300).match(/^\/([a-z_]{1,32})(?:@([A-Za-z0-9_]{3,64}))?(?:\s+([\s\S]*))?$/i)
+  const m = msg.text.slice(0, 800).match(/^\/([a-z_]{1,32})(?:@([A-Za-z0-9_]{3,64}))?(?:\s+([\s\S]*))?$/i)
   if (!m) return
   const [, rawCmd, at, rawArgs = ''] = m
   if (at) {
@@ -457,6 +474,7 @@ async function onMessage(msg) {
   const cmd = rawCmd.toLowerCase()
   const chatId = String(msg.chat.id)
   const args = rawArgs.trim().slice(0, 100)
+  const longArgs = rawArgs.trim().slice(0, MAX_QUESTION + 1)
   const link = linkOfChat(chatId)
   if (!link && !PUBLIC_COMMANDS.has(cmd)) return
   const gate = commandAllowed(chatId)
@@ -472,6 +490,10 @@ async function onMessage(msg) {
   } else if (cmd === 'help') reply = helpText(!!link)
   else if (cmd === 'gap') reply = await cmdGap(args)
   else if (cmd === 'top') reply = await cmdTop()
+  else if (cmd === 'ask') {
+    tg('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => undefined)
+    reply = await cmdAsk(chatId, longArgs)
+  }
   else if (cmd === 'movers') reply = movers() ? await cmdMovers() : helpText(true)
   else if (cmd === 'alerts') reply = cmdAlerts(link)
   else if (cmd === 'stop') {
