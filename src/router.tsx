@@ -42,14 +42,10 @@ const adminRoutes = [{ path: '*', element: <AdminRoute /> }]
 
 // On the developers host the dashboard is the home page, inside the site chrome; every other page
 // belongs to the main site, so it leaves for it with the same path.
+// The developer console is full-screen: it draws its own header (design B), so no site Layout here.
 const developersRoutes = [
-  {
-    element: <Layout />,
-    children: [
-      { path: '/', element: <DevelopersRoute /> },
-      { path: '*', element: <ToSite /> },
-    ],
-  },
+  { path: '/', element: <DevelopersRoute /> },
+  { path: '*', element: <ToSite /> },
 ]
 
 const routes = isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isDevelopersHost() ? developersRoutes : mainRoutes

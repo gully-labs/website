@@ -1,6 +1,6 @@
 import { BookOpen, Copy, LogOut } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { DOCS_URL } from '../../site-host'
+import { DOCS_URL, SITE_URL } from '../../site-host'
 import { Alerts } from './Alerts'
 import { AnalyticsPanel } from './Analytics'
 import { daysLeft, shortAddress, type Account, type PlanId } from './api'
@@ -179,6 +179,9 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
             </span>
             <PlanPill account={account} />
             <span className="ml-auto flex items-center gap-2">
+              <a href={SITE_URL} className="inline-flex min-h-11 items-center rounded-full px-3 text-[13px] text-muted hover:text-ink max-[480px]:hidden">
+                gullylabs.xyz
+              </a>
               <a href={`${DOCS_URL}/api`} className="inline-flex min-h-11 items-center gap-[6px] rounded-full px-3 text-[13px] text-muted hover:text-ink">
                 <BookOpen size={14} aria-hidden /> Docs
               </a>
