@@ -1,11 +1,15 @@
 import { AlertTriangle, ArrowUpRight, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
-import { VenueLogo } from '../../components/logos/VenueLogo'
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Seo } from '../../components/Seo'
+import { VenueLogo } from '../../components/logos/VenueLogo'
+import { Wordmark } from '../../components/Wordmark'
 import { DOCS_URL } from '../../site-host'
-import { api, SESSION_ENDED, type Account, type Offer } from './api'
-import { toastInfo } from '../../components/ui/toast'
+import { api, ROLE_REFUSED, SESSION_ENDED, type Account, type Me, type Offer, type WorkspaceRef } from './api'
+import { ExtLink } from './ExtLink'
+import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
 import { Dashboard } from './Dashboard'
+import { InviteLanding } from './Invite'
+import { inviteTokenFromHash, PortalContext, type Portal } from './portal'
 import { mono, pillGold, pillLine } from './styles'
 
 /* The developer dashboard (developers.gullylabs.xyz, /developers on localhost). Signed out: what the
@@ -16,11 +20,12 @@ import { mono, pillGold, pillLine } from './styles'
 const loadWallet = () => import('./WalletSignIn')
 const WalletSignIn = lazy(loadWallet)
 
-type Session = { state: 'loading' } | { state: 'out' } | { state: 'blocked'; message: string } | { state: 'error'; message: string } | { state: 'in'; account: Account }
+type Session = { state: 'loading' } | { state: 'out' } | { state: 'blocked'; message: string } | { state: 'error'; message: string } | { state: 'in'; account: Account; me: Me | null }
 
+/** The workspace's account (/account) and who is signed in (/me, portal v2) together. */
 function readSession(): Promise<Session> {
-  return api<Account>('/api/developer/account').then((r) => {
-    if (r.ok) return { state: 'in', account: r.data }
+  return Promise.all([api<Account>('/api/developer/account'), api<Me>('/api/developer/me')]).then(([r, m]) => {
+    if (r.ok) return { state: 'in', account: r.data, me: m.ok ? m.data : null }
     if (r.status === 401) return { state: 'out' }
     if (r.status === 403) return { state: 'blocked', message: r.error }
     return { state: 'error', message: r.error }
@@ -54,7 +59,8 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
       <div className="relative flex w-full max-w-[460px] animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-5 rounded-[14px] border border-line bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-5">
         <div className="flex items-center gap-[10px]">
           <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
-          <span className="font-semibold">Developers</span>
+          <Wordmark size={20} />
+          <span className="font-semibold text-muted">Developers</span>
           <span className="ml-auto font-mono text-[10px] tracking-[1px] text-faint">TRACKER API · ANALYTICS</span>
         </div>
         <div className="flex flex-col gap-2">
@@ -115,9 +121,9 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           })}
         </ol>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-          <a href={`${DOCS_URL}/api`} className="inline-flex min-h-11 items-center gap-2 text-[13px] text-muted hover:text-ink">
+          <ExtLink href={`${DOCS_URL}/api`} className="inline-flex min-h-11 items-center gap-2 text-[13px] text-muted hover:text-ink">
             <BookOpen size={15} aria-hidden /> Read the docs
-          </a>
+          </ExtLink>
           <a href="/widget" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-muted hover:text-gold">
             No code? Embed the widget <ArrowUpRight size={13} aria-hidden />
           </a>
@@ -134,6 +140,18 @@ export function DevelopersPage() {
   const [error, setError] = useState<string | null>(null)
 
   const loadAccount = useCallback(() => readSession().then(setSession), [])
+  const [invite, setInvite] = useState(inviteTokenFromHash)
+  useEffect(() => {
+    const on = () => setInvite(inviteTokenFromHash())
+    window.addEventListener('hashchange', on)
+    return () => window.removeEventListener('hashchange', on)
+  }, [])
+  // A write refused for the role (403 forbidden-role): one toast, whichever tab asked.
+  useEffect(() => {
+    const refused = (e: Event) => toastError("Your role can't do that", { detail: (e as CustomEvent<string>).detail, id: 'forbidden-role' })
+    window.addEventListener(ROLE_REFUSED, refused)
+    return () => window.removeEventListener(ROLE_REFUSED, refused)
+  }, [])
   // A signed-in request answered 401 (the session ended elsewhere): show the sign-in screen, once.
   useEffect(() => {
     const ended = () =>
@@ -167,6 +185,31 @@ export function DevelopersPage() {
     return () => clearTimeout(id)
   }, [wallet.trigger])
 
+  const me = session.state === 'in' ? session.me : null
+  const portal: Portal = useMemo(
+    () => ({
+      me,
+      user: me?.address ?? (session.state === 'in' ? session.account.address : ''),
+      role: me?.active.role ?? 'owner',
+      reloadMe: () =>
+        api<Me>('/api/developer/me').then((r) => {
+          if (r.ok) setSession((s) => (s.state === 'in' ? { ...s, me: r.data } : s))
+        }),
+      refreshAll: () => readSession().then(setSession),
+      switchTo: async (id: string) => {
+        const r = await api<{ active: WorkspaceRef }>('/api/developer/workspace/switch', { method: 'POST', body: { id } })
+        if (!r.ok) {
+          toastError('Could not switch workspace', { detail: r.error })
+          return false
+        }
+        await readSession().then(setSession)
+        toastSuccess(`Switched to ${r.data.active.name}`, { detail: `You are ${r.data.active.role} here.`, id: 'workspace-switch' })
+        return true
+      },
+    }),
+    [me, session],
+  )
+
   const signOut = async () => {
     await api('/api/developer/logout', { method: 'POST' })
     setWallet((w) => ({ ...w, signedOut: w.signedOut + 1 }))
@@ -183,7 +226,14 @@ export function DevelopersPage() {
           </span>
         </section>
       )}
-      {session.state === 'out' && <SignedOut connect={connect} busy={busy} error={error} />}
+      {session.state === 'out' &&
+        (invite ? (
+          <section className="flex min-h-[calc(100vh-200px)] items-center justify-center px-4 py-16">
+            <InviteLanding token={invite} signedIn={false} connect={connect} connecting={busy} onDone={() => setInvite(null)} />
+          </section>
+        ) : (
+          <SignedOut connect={connect} busy={busy} error={error} />
+        ))}
       {(session.state === 'error' || session.state === 'blocked') && (
         <section className="mx-auto flex min-h-[50vh] w-full max-w-[640px] flex-col items-start justify-center gap-4 px-4 py-16">
           <span className={mono}>DEVELOPER CONSOLE</span>
@@ -205,7 +255,12 @@ export function DevelopersPage() {
           </div>
         </section>
       )}
-      {session.state === 'in' && <Dashboard account={session.account} reload={loadAccount} onSignOut={signOut} />}
+      {session.state === 'in' && (
+        <PortalContext.Provider value={portal}>
+          <Dashboard account={session.account} reload={loadAccount} onSignOut={signOut} />
+        </PortalContext.Provider>
+      )}
+
       {wallet.mounted && (
         <Suspense fallback={null}>
           <WalletSignIn
