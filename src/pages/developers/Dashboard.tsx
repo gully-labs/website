@@ -1,5 +1,6 @@
 import { BellRing, BookOpen, Bot, Boxes, Building2, ChartCandlestick, ChartNoAxesCombined, Check, ChevronsUpDown, Copy, CreditCard, History, House, KeyRound, LayoutDashboard, LogOut, Mail, Settings, ShieldCheck, UserRound, Users } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { VenueLogo } from '../../components/logos/VenueLogo'
 import { Wordmark } from '../../components/Wordmark'
 import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
@@ -264,6 +265,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         <div className="mx-auto flex max-w-[1240px] flex-col gap-[10px] px-6 pt-3 max-[480px]:px-4">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <button type="button" onClick={() => go('overview')} className="flex min-h-11 items-center gap-[10px] text-ink" aria-label="Gully Labs Developers: overview">
+              <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
               <Wordmark size={20} />
               <span className="font-semibold text-muted max-[420px]:hidden">Developers</span>
             </button>

@@ -96,5 +96,37 @@
     "from": "https://coin-images.coingecko.com/coins/images/102179332/large/jpmorgan.png",
     "listing": "https://www.geckoterminal.com/bsc/tokens/0xbd49d695ba2cc46c8c603eb62afcd7fff4698281",
     "fetchedAt": "2026-10-16T19:37:09.276Z"
+  },
+  "coin/ETH": {
+    "ticker": "ETH",
+    "file": "/tokens/eth.svg",
+    "from": "https://ethereum.org/images/assets/svgs/eth-diamond-purple.svg",
+    "listing": "https://ethereum.org/en/assets/",
+    "terms": "ethereum.org brand assets, published for public use.",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "coin/BNB": {
+    "ticker": "BNB",
+    "file": "/tokens/bnb.png",
+    "from": "https://bin.bnbstatic.com/static/assets/logos/BNB.png",
+    "listing": "https://www.binance.com (the issuer's own CDN)",
+    "terms": "Binance / BNB Chain brand guidelines: unaltered, no implied endorsement. 192 px is the largest the issuer serves.",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "coin/USDC": {
+    "ticker": "USDC",
+    "file": "/tokens/usdc.svg",
+    "from": "https://6778953.fs1.hubspotusercontent-na1.net/hubfs/6778953/Pressroom/brandkit/logo-downloads/usdc.zip (Token Logo/USDC Token.svg)",
+    "listing": "https://www.circle.com/pressroom#brandkit",
+    "terms": "Circle Brand Use Policy: USDC is a Circle trademark; limited, unaltered, non-endorsing use.",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "coin/USDT": {
+    "ticker": "USDT",
+    "file": "/tokens/usdt.svg",
+    "from": "https://tether.to/images/logoCircle.svg",
+    "listing": "https://tether.to/en/brand-resources",
+    "terms": "Tether's own published logo; Tether brand resources terms apply (unaltered, no implied endorsement).",
+    "fetchedAt": "2026-10-17T12:00:00Z"
   }
 }

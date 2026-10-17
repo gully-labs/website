@@ -1,18 +1,15 @@
 import { useState } from 'react'
+import { logoFit } from '../../content/logoFit'
 import { logoByTicker, logoByToken } from '../../content/stockLogos'
 import type { TrackerRow } from '../../lib/tracker'
+import { Logo } from '../logos/Logo'
+import { chainMark } from '../logos/registry'
 
-/* Chain marks: Robinhood's own site icon, and BNB's logo from its token listing (public/chains/SOURCES.json). */
-const CHAIN_LOGO: Record<string, { src: string; name: string }> = {
-  robinhood: { src: '/chains/robinhood.png', name: 'Robinhood Chain' },
-  bsc: { src: '/chains/bnb.png', name: 'BNB Chain' },
-}
-
-/** A chain's logo, round, at any size. */
-export function ChainLogo({ chain, size = 14, className = '' }: { chain: string; size?: number; className?: string }) {
-  const c = CHAIN_LOGO[chain]
-  if (!c) return null
-  return <img src={c.src} alt="" title={c.name} width={size} height={size} decoding="async" className={`flex-none rounded-full ${className}`} style={{ width: size, height: size }} />
+/** A chain's official mark, round, at the small sizes the tracker uses (registry: components/logos). */
+export function ChainLogo({ chain, size = 14, named = false, className = '' }: { chain: string; size?: number; named?: boolean; className?: string }) {
+  const m = chainMark(chain)
+  if (!m) return null
+  return <Logo mark={m} label={m.name.charAt(0)} size={size} shape="round" alt={named ? m.name : ''} title={m.name} className={className} />
 }
 
 /** The stock's logo: the token's own where it carries the company mark, else the company's site icon,
@@ -21,6 +18,10 @@ export function StockLogo({ row, size = 28, active = false, chainBadge = true }:
   const src = logoByToken[`${row.chain}/${row.token.toLowerCase()}`] ?? logoByTicker[row.ticker]
   const [failed, setFailed] = useState(false)
   const badge = Math.round(size * 0.42)
+  // A filled tile or disc fills the circle; a transparent mark takes the share of the disc measured so the
+  // circle never crops it (content/logoFit.ts), with whole, equal margins so it stays centred and crisp.
+  const fit = src ? logoFit[src] : undefined
+  const inner = fit?.full ? size : size - 2 * Math.round((size * (1 - (fit?.scale ?? 0.82))) / 2)
   return (
     <span className="relative inline-flex flex-none" style={{ width: size, height: size }} aria-hidden>
       {!src || failed ? (
@@ -32,11 +33,11 @@ export function StockLogo({ row, size = 28, active = false, chainBadge = true }:
         </span>
       ) : (
         <span className={`flex size-full items-center justify-center overflow-hidden rounded-full bg-[#fff] ring-1 ${active ? 'ring-gold' : 'ring-line-strong'}`}>
-          <img src={src} alt="" width={size} height={size} loading="lazy" decoding="async" onError={() => setFailed(true)} className="size-[82%] object-contain" />
+          <img src={src} alt="" width={inner} height={inner} loading="lazy" decoding="async" onError={() => setFailed(true)} className={`block max-w-none ${fit?.full ? 'object-cover' : 'object-contain'}`} style={{ width: inner, height: inner }} />
         </span>
       )}
-      {chainBadge && CHAIN_LOGO[row.chain] && (
-        <span className="absolute -right-[3px] -bottom-[3px] rounded-full bg-bg p-[1.5px]">
+      {chainBadge && chainMark(row.chain) && (
+        <span className="absolute -right-[3px] -bottom-[3px] inline-flex rounded-full bg-bg p-[2px]">
           <ChainLogo chain={row.chain} size={badge} />
         </span>
       )}

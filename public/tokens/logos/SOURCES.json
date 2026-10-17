@@ -256,12 +256,12 @@
   },
   "GME": {
     "ticker": "GME",
-    "file": "/tokens/logos/GME.ico",
-    "from": "https://www.gamestop.com/favicon.ico",
+    "file": "/tokens/logos/GME.png",
+    "from": "https://www.gamestop.com/on/demandware.static/Sites-gamestop-us-Site/-/default/dwad10258e/images/favicons/favicon-128.png",
     "site": "gamestop.com",
-    "declaredSize": 32,
-    "fetchedAt": "2026-10-16T19:43:57.033Z",
-    "note": "fetched with curl; the script is refused by gamestop.com"
+    "declaredSize": "128x128",
+    "fetchedAt": "2026-10-17T19:54:42.273Z",
+    "note": "Replaces the 32 px favicon.ico: the 128 px icon the same site declares."
   },
   "META": {
     "ticker": "META",

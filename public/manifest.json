@@ -1,0 +1,12 @@
+{
+  "name": "Gully Labs",
+  "short_name": "Gully Labs",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#0b0e13",
+  "theme_color": "#0b0e13",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon.png", "sizes": "400x400", "type": "image/png", "purpose": "any" }
+  ]
+}
