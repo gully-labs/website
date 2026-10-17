@@ -9,6 +9,9 @@
 //   GET  /api/pay/:id                              the invoice, its accepted assets and, once paid, the payment
 //   POST /api/pay/:id/quote  { asset }             -> { quote }   20 minutes, exact amount in that asset
 //   POST /api/pay/:id/verify { quoteId, txHash }   -> 200 paid | 202 not confirmed yet | 4xx
+//   GET  /api/pay/price?asset=<native asset id>    -> { asset, symbol, chain, chainId, description, price,
+//                                                     roundId, updatedAt, readAt }: the chain's Chainlink USD
+//                                                     price now (readFeed, cached 30 s), for the pay pages' chart
 // Admin API (admin.mjs, behind ADMIN_TOKEN):
 //   adminListInvoices(), adminCreateInvoice(body), adminCancelInvoice(id),
 //   adminSetInvoiceWebhook(id, url), adminRotateInvoiceWebhook(id), adminTestInvoiceWebhook(id)
@@ -19,7 +22,7 @@
 import { checkInvoiceTx, createQuote, findQuote, isHash, badHash, ledger, normHash, paymentView, quoteView, recordPayment, save } from './billing.mjs'
 import { checkEndpoint, deliveries, emitInvoiceCancelled, emitInvoicePaid, endpointView, makeEndpoint, newSecret, sendTest } from './pay-webhooks.mjs'
 import { clientIp, json, readJson } from './http.mjs'
-import { assetById, ASSET_IDS, fmtUsd, parseUsdCents, publicAssets } from './payments.mjs'
+import { assetById, ASSET_IDS, ASSETS, CHAINS, fmtUnits, fmtUsd, parseUsdCents, publicAssets, readFeed } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { randomToken } from './store.mjs'
 
@@ -263,6 +266,17 @@ export async function handlePay(req, res, url) {
   if (url.pathname.startsWith('/api/pay/l/')) return (await import('./paylinks.mjs')).handlePayLink(req, res, url)
   // Merchant stores (merchants.mjs): /api/pay/m/* (their invoices, links, logos), paid to the merchant's wallet.
   if (url.pathname.startsWith('/api/pay/m/')) return (await import('./merchants.mjs')).handleMerchantPay(req, res, url)
+  // The live Chainlink price of a native coin, for the pay pages' "price at quote vs now" chart.
+  if (url.pathname === '/api/pay/price') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    if (!allow('price', clientIp(req), 600, 3_600_000)) return json(res, 429, { error: 'Too many price reads. Try again later.' }), true
+    const a = assetById(String(url.searchParams.get('asset') ?? ''))
+    if (!a || a.kind !== 'native') return json(res, 400, { error: `asset must be a native coin: ${ASSETS.filter((x) => x.kind === 'native').map((x) => x.id).join(', ')}.` }), true
+    const r = await readFeed(a.chainId)
+    if (!r.ok) return json(res, r.status, { error: r.error }), true
+    const p = r.price
+    return json(res, 200, { asset: a.id, symbol: a.symbol, chain: CHAINS[a.chainId].name, chainId: a.chainId, description: p.description, price: fmtUnits(p.answer, p.decimals), roundId: p.roundId, updatedAt: p.updatedAt, readAt: p.readAt }, { 'Cache-Control': 'public, max-age=30' }), true
+  }
   const m = url.pathname.match(/^\/api\/pay\/([^/]+)(?:\/(quote|verify))?$/)
   if (!m) return false
   const inv = findInvoice(m[1])

@@ -4,6 +4,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { defineChain } from 'viem'
 import { createConfig, http } from 'wagmi'
 import { arbitrum, base, bsc, mainnet } from 'wagmi/chains'
+import { APP_URL } from '../../site-host'
 
 /* The wallet set-up shared by sign-in (WalletSignIn) and Gully Pay checkout (components/pay/PayWallet). Both are lazy chunks;
    this module loads with whichever is needed first and never with the site or the dashboard itself.
@@ -28,7 +29,7 @@ const connectors = connectorsForWallets(
       wallets: walletConnectEnabled ? [metaMaskWallet, coinbaseWallet, rabbyWallet, rainbowWallet, trustWallet, walletConnectWallet] : [injectedWallet, coinbaseWallet, rabbyWallet],
     },
   ],
-  { appName: 'Gully Labs Developers', appDescription: 'API keys for the Gully Labs tracker API', appUrl: 'https://developers.gullylabs.xyz', projectId: projectId || 'not-configured' },
+  { appName: 'Gully Labs App', appDescription: 'Keys, alerts, analytics and payments for Gully Labs products', appUrl: APP_URL, projectId: projectId || 'not-configured' },
 )
 
 export const wagmiConfig = createConfig({

@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useState } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { DayBars } from '../../components/charts/DayBars'
 import { byChain } from '../../components/pay/assets'
@@ -11,6 +11,10 @@ import { AskStudio } from './AskStudio'
 import { TelegramChats } from './TelegramChats'
 import { MerchantsAdmin } from './MerchantsAdmin'
 import { copyWithToast, flash } from '../../components/ui/toast'
+import { ChartBox } from '../../components/charts/ChartSkeleton'
+
+// The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
+const AdminCharts = lazy(() => import('./AdminCharts'))
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
    kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site. */
@@ -748,6 +752,10 @@ export function AdminPage() {
               <Tile k="HISTORY" v={o.tracker.history.points.toLocaleString('en-US')} note={`points across ${o.tracker.history.series} series`} />
               <Tile k="PROCESS" v={`${o.process.rssMb} MB`} note={`up ${Math.round(o.process.uptimeSeconds / 3600)}h · ${o.process.node}`} />
             </div>
+
+            <Suspense fallback={<ChartBox height={280} state="loading" />}>
+              <AdminCharts token={token} />
+            </Suspense>
 
             <div className="grid grid-cols-[1.4fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>

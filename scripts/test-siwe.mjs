@@ -11,7 +11,7 @@ import { createSiweMessage } from 'viem/siwe'
 import { concat, encodeAbiParameters, encodeDeployData, encodeFunctionData, erc6492SignatureValidatorByteCode, hashMessage, parseAbi, toHex } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { contractCheckCall, hashPersonalMessage, parseSiwe, recoverAddress } from '../server/siwe.mjs'
-import { makeClient } from './test-helpers.mjs'
+import { hostRequest, hostSignIn, makeClient } from './test-helpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:8797'
 const ADMIN = process.env.ADMIN_TOKEN
@@ -182,6 +182,28 @@ const message = (overrides = {}) => client.siweMessage(account, overrides)
   const out = await post('/api/developer/logout')
   check('logout clears the cookie', out.status === 200 && /Max-Age=0/.test(out.headers.get('set-cookie') ?? ''))
   check('the session is gone after logout', (await call('/api/developer/account')).status === 401)
+}
+
+/* ---------------------------------------- SIWE domain per host (app and old developers host) --- */
+
+// The app (app.gullylabs.xyz) and, during the transition, its old host (developers.gullylabs.xyz) each
+// accept SIWE for their own domain only, and set their own __Host- session cookie.
+for (const host of ['app.gullylabs.xyz', 'developers.gullylabs.xyz']) {
+  const w = privateKeyToAccount(generatePrivateKey())
+  const ok = await hostSignIn(BASE, host, w)
+  const cookie = String(ok.headers['set-cookie'] ?? '')
+  check(`${host}: SIWE for its own domain signs in`, ok.status === 200 && ok.data?.address === w.address.toLowerCase(), ok.data?.error)
+  check(`${host}: the session cookie is __Host-, Secure, host-only`, /^__Host-gl_dev=/.test(cookie) && /; Secure/.test(cookie) && /Path=\//.test(cookie) && !/Domain=/i.test(cookie), cookie.replace(/=[^;]+/, '=…'))
+  const acc = await hostRequest(BASE, host, '/api/developer/account', { headers: { cookie: cookie.split(';')[0] } })
+  check(`${host}: the session reads the account there`, acc.status === 200 && acc.data?.address === w.address.toLowerCase())
+  const other = host.startsWith('app.') ? 'developers.gullylabs.xyz' : 'app.gullylabs.xyz'
+  const cross = await hostSignIn(BASE, host, w, { domain: other })
+  check(`${host}: a message signed for ${other} is refused`, cross.status === 401, cross.data?.error)
+}
+{
+  const w = privateKeyToAccount(generatePrivateKey())
+  const main = await hostSignIn(BASE, 'gullylabs.xyz', w)
+  check('the main site refuses sign-in and names the app', main.status === 400 && /app\.gullylabs\.xyz/.test(main.data?.error ?? ''), main.data?.error)
 }
 
 console.log(`\n${passed} passed, ${failed} failed`)

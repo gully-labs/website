@@ -13,9 +13,10 @@ import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { makeChecker, makeClient } from './test-helpers.mjs'
+import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8793
+await guardTestRun(PORT)
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-analytics-'))
 const ADMIN = crypto.randomBytes(24).toString('hex')
@@ -31,7 +32,9 @@ const { check } = t
 
 /* ------------------------------------------------------------ Umami stub --- */
 
-const umami = { users: new Map(), websites: new Map(), tokens: new Map(), received: [], logins: 0 }
+const APP_SECRET = 'stub-app-secret-' + crypto.randomBytes(12).toString('hex')
+const { parseUserToken } = await import('../server/umami.mjs')
+const umami = { users: new Map(), websites: new Map(), tokens: new Map(), received: [], logins: 0, loginHits: 0, staticHits: 0 }
 umami.users.set('admin-id', { id: 'admin-id', username: 'admin', password: UMAMI_ADMIN_PASSWORD, role: 'admin', deletedAt: null })
 umami.websites.set(GULLY_SITE, { id: GULLY_SITE, name: 'Gully Labs', domain: 'gullylabs.xyz', userId: 'admin-id', createdBy: 'admin-id', deletedAt: null })
 
@@ -52,6 +55,24 @@ const umamiServer = http.createServer((req, res) => {
       data = body ? JSON.parse(body) : null
     } catch {
       return bad('Invalid JSON')
+    }
+    // Pages the proxy caches or replaces (counted, so the tests see what reached Umami).
+    if (p === '/login' && req.method === 'GET') {
+      umami.loginHits++
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' https:;" })
+      return res.end('<!doctype html><title>Umami login</title><form id="umami-login"></form>')
+    }
+    if (p.startsWith('/_next/static/') && req.method === 'GET') {
+      umami.staticHits++
+      res.writeHead(200, { 'content-type': 'application/javascript', 'cache-control': 'public, max-age=31536000, immutable' })
+      return res.end('/* chunk ' + p + ' */')
+    }
+    // Umami's checkAuth for a token the portal minted (umami.mjs mintUserToken), as /api/auth/verify uses it.
+    if (p === '/api/auth/verify' && req.method === 'POST') {
+      const payload = parseUserToken(String(req.headers.authorization ?? '').replace(/^Bearer /, ''), APP_SECRET)
+      const user = payload && umami.users.get(payload.userId)
+      if (!user || user.deletedAt) return unauthorized()
+      return send(200, { id: user.id, username: user.username, role: user.role })
     }
     // Public tracker routes.
     if (p === '/script.js' && req.method === 'GET') {
@@ -93,6 +114,7 @@ const umamiServer = http.createServer((req, res) => {
       const user = umami.users.get(m[1])
       if (!isAdmin && caller.id !== m[1]) return unauthorized()
       if (!user || user.deletedAt) return send(404, { error: { message: 'Not found', status: 404 } })
+      if (req.method === 'GET') return send(200, { id: user.id, username: user.username, role: user.role })
       if (req.method === 'POST') {
         if (data?.password) user.password = data.password
         return send(200, { id: user.id, username: user.username, role: user.role })
@@ -182,6 +204,7 @@ Object.assign(process.env, {
   GULLY_RPC_8453: `http://127.0.0.1:${rpc.address().port}`,
   ANALYTICS_UPSTREAM: `http://127.0.0.1:${umamiServer.address().port}`,
   ANALYTICS_ADMIN_PASSWORD: UMAMI_ADMIN_PASSWORD,
+  ANALYTICS_APP_SECRET: APP_SECRET,
 })
 delete process.env.ANALYTICS_ADMIN_USERNAME
 delete process.env.GULLY_BASE_RPC
@@ -193,10 +216,10 @@ await new Promise((r) => setTimeout(r, 300))
 const admin = (p, method = 'GET', body) => fetch(BASE + p, { method, headers: { authorization: `Bearer ${ADMIN}`, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then(async (r) => ({ status: r.status, data: await r.json().catch(() => null) }))
 
 /** A request to analytics.gullylabs.xyz, which this server proxies to the stub. */
-function proxy(pathname, { method = 'GET', body = null, raw = null } = {}) {
+function proxy(pathname, { method = 'GET', body = null, raw = null, headers = {} } = {}) {
   return new Promise((resolve, reject) => {
     const payload = raw ?? (body === null ? null : Buffer.from(JSON.stringify(body)))
-    const r = http.request({ host: '127.0.0.1', port: PORT, path: pathname, method, headers: { host: 'analytics.gullylabs.xyz', origin: 'https://customer.example', ...(payload ? { 'content-type': 'application/json', 'content-length': payload.length } : {}) } }, (res) => {
+    const r = http.request({ host: '127.0.0.1', port: PORT, path: pathname, method, headers: { host: 'analytics.gullylabs.xyz', origin: 'https://customer.example', ...(payload ? { 'content-type': 'application/json', 'content-length': payload.length } : {}), ...headers } }, (res) => {
       let text = ''
       res.on('data', (d) => (text += d))
       res.on('end', () => {
@@ -255,6 +278,85 @@ try {
 
   r = await ca.post('/api/developer/analytics/password')
   check('reset password sets a new one through the admin API', r.status === 200 && r.data.password !== pwd1 && userA.password === r.data.password)
+
+  /* ------------------------------------------------------------ one-click sign-in --- */
+  const UA = { 'user-agent': 'GullyTest/1.0 (sso)', 'cf-connecting-ip': '203.0.113.10' }
+  const passwordBefore = userA.password
+  check('the account view says one-click sign-in is on', (await ca.call('/api/developer/analytics')).data.account.ssoAvailable === true)
+  check('SSO needs the CSRF header', (await ca.call('/api/developer/analytics/sso', { method: 'POST', body: {} })).status === 403)
+  check('SSO needs a session', (await anon.post('/api/developer/analytics/sso')).status === 401)
+  const { canWrite } = await import('../server/workspaces.mjs')
+  check('SSO is for developer, admin and owner roles, not viewer or billing', canWrite('developer', '/api/developer/analytics/sso') && canWrite('admin', '/api/developer/analytics/sso') && !canWrite('viewer', '/api/developer/analytics/sso') && !canWrite('billing', '/api/developer/analytics/sso'))
+  r = await ca.post('/api/developer/analytics/sso', {}, { headers: UA })
+  const code1 = r.data?.url?.match(/\/sso\?code=([\w-]+)$/)?.[1]
+  check('POST /sso answers a one-time link on the analytics host, valid 60 s', r.status === 201 && r.data.url.startsWith('https://analytics.gullylabs.xyz/sso?code=') && code1?.length === 43 && Math.abs(Date.parse(r.data.expiresAt) - Date.now() - 60_000) < 2_000, JSON.stringify(r.data))
+  const ssoMod = await import('../server/analytics-sso.mjs')
+  check('only a hash of the code is kept', ssoMod.ssoCodeCountForTest() >= 1 && !JSON.stringify([...Object.values(ssoMod)]).includes(code1))
+  let px = await proxy(`/sso?code=${code1}`, { headers: { ...UA, 'cf-connecting-ip': '203.0.113.77', accept: 'text/html' } })
+  const tokenJson = px.text.match(/localStorage\.setItem\('umami\.auth',("(?:[^"\\]|\\.)*")\)/)?.[1]
+  const minted = tokenJson ? JSON.parse(JSON.parse(tokenJson)) : null
+  check('the exchange page stores a token in umami.auth and goes to /dashboard', px.status === 200 && !!minted && px.text.includes("location.replace('/dashboard')"), px.text.slice(0, 200))
+  const nonce = px.headers['content-security-policy']?.match(/'nonce-([^']+)'/)?.[1]
+  check('its one script runs under a per-response CSP nonce; the page is no-store and no-referrer', !!nonce && px.text.includes(`<script nonce="${nonce}">`) && px.headers['cache-control'] === 'no-store' && px.headers['referrer-policy'] === 'no-referrer')
+  const payload = parseUserToken(minted, APP_SECRET)
+  check('the token is a Umami session for the workspace’s Umami user, expiring in 12 h', payload?.userId === userA.id && Math.abs(payload.exp - payload.iat - 12 * 3600) < 2, JSON.stringify(payload))
+  r = await fetch(`${umamiServer ? `http://127.0.0.1:${umamiServer.address().port}` : ''}/api/auth/verify`, { method: 'POST', headers: { authorization: `Bearer ${minted}` } })
+  check('Umami accepts the token (checkAuth semantics)', r.status === 200 && (await r.json()).id === userA.id)
+  check('the password was neither read nor changed', userA.password === passwordBefore && !px.text.includes(passwordBefore))
+  px = await proxy(`/sso?code=${code1}`, { headers: { ...UA, accept: 'text/html' } })
+  check('a code works once', px.status === 410 && !px.text.includes('umami.auth') && /expired or was already used/.test(px.text))
+  const code2 = (await ca.post('/api/developer/analytics/sso', {}, { headers: UA })).data.url.split('code=')[1]
+  px = await proxy(`/sso?code=${code2}`, { headers: { ...UA, 'user-agent': 'OtherBrowser/2', accept: 'text/html' } })
+  check('a code from another browser is refused (and spent)', px.status === 410 && /another browser/.test(px.text))
+  const code3 = (await ca.post('/api/developer/analytics/sso', {}, { headers: UA })).data.url.split('code=')[1]
+  px = await proxy(`/sso?code=${code3}`, { headers: { ...UA, 'cf-connecting-ip': '198.51.100.9', accept: 'text/html' } })
+  check('a code used from another network is refused', px.status === 410)
+  const code4 = (await ca.post('/api/developer/analytics/sso', {}, { headers: UA })).data.url.split('code=')[1]
+  const realNow = Date.now
+  Date.now = () => realNow() + 61_000
+  px = await proxy(`/sso?code=${code4}`, { headers: { ...UA, accept: 'text/html' } })
+  Date.now = realNow
+  check('a code older than 60 s is refused', px.status === 410)
+  check('a made-up code is refused', (await proxy('/sso?code=' + 'x'.repeat(43), { headers: { ...UA, accept: 'text/html' } })).status === 410)
+  let issued = 4
+  while (issued < 10) issued += (await ca.post('/api/developer/analytics/sso', {}, { headers: UA })).status === 201 ? 1 : 100
+  check('codes are rate limited per wallet (10 per 10 minutes)', (await ca.post('/api/developer/analytics/sso', {}, { headers: UA })).status === 429)
+  let fails = 0
+  for (let i = 0; i < 25; i++) if ((await proxy('/sso?code=' + crypto.randomBytes(32).toString('base64url'), { headers: { 'user-agent': 'x', 'cf-connecting-ip': '192.0.2.50' } })).status === 429) fails++
+  check('failed exchanges are rate limited per IP', fails >= 4, `429s: ${fails}`)
+  delete process.env.ANALYTICS_APP_SECRET
+  const noSso = await cb.signIn(wb).then(() => cb.post('/api/developer/analytics/sso'))
+  check('without a workspace account, SSO answers 404', noSso.status === 404)
+  check('without ANALYTICS_APP_SECRET the view says SSO is off', (await ca.call('/api/developer/analytics')).data.account.ssoAvailable === false)
+  process.env.ANALYTICS_APP_SECRET = APP_SECRET
+
+  /* ------------------------------------------------------------ proxy: login, speed, headers --- */
+  const hitsBefore = umami.loginHits
+  px = await proxy('/login', { headers: { accept: 'text/html' } })
+  check('GET /login is the branded way in, with the portal first', px.status === 200 && px.text.includes('Sign in from the developer portal') && px.text.includes('app.gullylabs.xyz/#analytics') && px.text.includes('Reset it in the portal') && px.text.includes('Start the 14-day free trial') && px.text.includes('/login?form=password'))
+  check('the login page runs no script', /script-src 'none'/.test(px.headers['content-security-policy'] ?? '') && !px.text.includes('<script'))
+  await new Promise((res) => setTimeout(res, 150))
+  check('it warms Umami’s password form in the background', umami.loginHits > hitsBefore)
+  const warm = umami.loginHits
+  px = await proxy('/login?form=password', { headers: { accept: 'text/html', 'accept-encoding': 'gzip' } })
+  const px2 = await proxy('/login?form=password', { headers: { accept: 'text/html', 'accept-encoding': 'gzip' } })
+  check('the password form is Umami’s own page, served from the 5-minute cache', px.text.includes('umami-login') && px2.text.includes('umami-login') && umami.loginHits === warm && px2.headers['x-gully-cache'] === 'HIT', `hits ${umami.loginHits} vs ${warm}`)
+  check('Umami’s CSP gains Cloudflare Web Analytics in script-src and connect-src', /script-src[^;]*https:\/\/static\.cloudflareinsights\.com/.test(px.headers['content-security-policy']) && /connect-src[^;]*https:\/\/cloudflareinsights\.com/.test(px.headers['content-security-policy']), px.headers['content-security-policy'])
+  const rscHits = umami.loginHits
+  await proxy('/login', { headers: { rsc: '1', accept: '*/*' } })
+  check('Next’s client-side navigation to /login still reaches Umami', umami.loginHits === rscHits + 1)
+  const s0 = umami.staticHits
+  const c1 = await proxy('/_next/static/chunks/app-abc123.js', { headers: { 'accept-encoding': 'gzip' } })
+  const c2 = await proxy('/_next/static/chunks/app-abc123.js', { headers: { 'accept-encoding': 'gzip' } })
+  check('build chunks are fetched from Umami once, then served from memory', umami.staticHits === s0 + 1 && c2.headers['x-gully-cache'] === 'HIT' && c2.text === c1.text)
+  check('build chunks are immutable for a year', c2.headers['cache-control'] === 'public, max-age=31536000, immutable')
+  px = await proxy('/api/send', { method: 'OPTIONS', headers: { origin: 'https://app.gullylabs.xyz', 'access-control-request-method': 'POST' } })
+  check('the tracker preflight is answered here with CORS', px.status === 204 && px.headers['access-control-allow-origin'] === '*')
+  const up = process.env.ANALYTICS_UPSTREAM
+  process.env.ANALYTICS_UPSTREAM = 'http://127.0.0.1:9'
+  px = await proxy('/api/send', { method: 'POST', body: event(GULLY_SITE) })
+  process.env.ANALYTICS_UPSTREAM = up
+  check('with Umami down, the beacon still gets CORS headers (no console CORS error)', px.status === 502 && px.headers['access-control-allow-origin'] === '*')
 
   /* ------------------------------------------------------------ websites --- */
   check('a bad domain is refused', (await ca.post('/api/developer/analytics/sites', { name: 'Shop', domain: 'not a domain' })).status === 400)

@@ -58,7 +58,7 @@ const adapter = createAuthenticationAdapter<string>({
     createSiweMessage({
       domain: window.location.host,
       address,
-      statement: 'Sign in to the Gully Labs developer dashboard. This request will not trigger a transaction or cost any gas.',
+      statement: 'Sign in to the Gully Labs App. This request will not trigger a transaction or cost any gas.',
       uri: window.location.origin,
       version: '1',
       chainId,
@@ -104,7 +104,7 @@ export default function WalletSignIn({ trigger, signedOut, onSignedIn, onClose, 
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitAuthenticationProvider adapter={adapter} status={status}>
-          <RainbowKitProvider theme={theme} modalSize="compact" appInfo={{ appName: 'Gully Labs Developers', learnMoreUrl: 'https://docs.gullylabs.xyz/api-keys' }}>
+          <RainbowKitProvider theme={theme} modalSize="compact" appInfo={{ appName: 'Gully Labs App', learnMoreUrl: 'https://docs.gullylabs.xyz/api-keys' }}>
             <Opener trigger={trigger} status={status} onClose={onClose} />
             <SignOutSync signedOut={signedOut} />
           </RainbowKitProvider>

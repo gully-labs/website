@@ -141,7 +141,7 @@ export function RequestBars({ columns, series, showLimited, animKey, height = 24
           })}
         </g>
       </svg>
-      <span className="pointer-events-none absolute top-0 left-1 font-mono text-[10px] text-faint">{compact(top)}</span>
+      <span className="pointer-events-none absolute top-0 left-1 font-mono text-[11px] text-faint">{compact(top)}</span>
       {empty && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <span className="rounded-[8px] border border-line bg-surface-deep px-3 py-2 font-mono text-[12px] text-faint">No requests in this range yet</span>

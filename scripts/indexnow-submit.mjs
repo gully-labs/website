@@ -9,7 +9,7 @@ if (!/^[A-Za-z0-9-]{8,128}$/.test(key)) {
   console.error('Set INDEXNOW_KEY (8–128 characters of A-Z, a-z, 0-9, -).')
   process.exit(1)
 }
-const hosts = process.argv.slice(2).length ? process.argv.slice(2) : ['gullylabs.xyz', 'docs.gullylabs.xyz', 'developers.gullylabs.xyz', 'blog.gullylabs.xyz']
+const hosts = process.argv.slice(2).length ? process.argv.slice(2) : ['gullylabs.xyz', 'docs.gullylabs.xyz', 'app.gullylabs.xyz', 'blog.gullylabs.xyz']
 
 async function locs(url, depth = 0) {
   const r = await fetch(url, { signal: AbortSignal.timeout(15_000) })

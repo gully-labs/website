@@ -45,7 +45,7 @@ export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram
           aria-label={`Telegram for ${alertName(a)}: ${on ? 'on' : 'off'}. ${why}`}
           onClick={() => act(a, 'telegram', { on: !on })}
           className="inline-flex min-h-11 items-center gap-[6px] rounded-full border px-3 text-[12px] transition-colors disabled:cursor-not-allowed max-[480px]:px-[10px]"
-          style={{ borderColor: broken ? '#5a2a24' : on ? TG_BLUE : '#2c3540', color: broken ? '#ff8a7a' : on ? '#7cc8ef' : '#6c7888', opacity: disabled && !on ? 0.6 : 1 }}
+          style={{ borderColor: broken ? '#5a2a24' : on ? TG_BLUE : '#2c3540', color: broken ? '#ff8a7a' : on ? '#7cc8ef' : '#7f8b9c', opacity: disabled && !on ? 0.6 : 1 }}
         >
           {on && <Check size={12} aria-hidden />}
           Telegram{broken ? ': no chat' : ''}
@@ -58,9 +58,10 @@ export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram
   )
 }
 
-function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClose: () => void; view: AlertsView; onCreated: (secret: string | null) => void }) {
+function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: { open: boolean; onClose: () => void; view: AlertsView; onCreated: (secret: string | null) => void; initialTarget?: string | null }) {
   const [name, setName] = useState('')
-  const [target, setTarget] = useState('any')
+  // A stock page's "Set an alert" link (?alert=<chain>:<TICKER>#alerts) opens this with that stock chosen.
+  const [target, setTarget] = useState(() => (initialTarget && view.stocks.some((s) => `${s.chain}:${s.ticker}` === initialTarget) ? initialTarget : 'any'))
   const [kind, setKind] = useState<'gap' | 'premium' | 'discount' | 'either' | 'deepcore'>('gap')
   // DeepCore launch alerts, offered when the server lists that kind (with its chains).
   const launchKind = view.kinds?.find((k) => k.id === 'deepcore-launch')
@@ -236,7 +237,7 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
           <p className="m-0 text-[13px] text-faint">Nothing sent yet. Use Test to check your endpoint.</p>
         ) : (
           <div className="overflow-x-auto rounded-[10px] border border-line">
-            <div className="bg-surface-deep px-3 py-2 font-mono text-[10px] tracking-[1px] text-faint">DELIVERY LOG · LAST {a.deliveries.length}</div>
+            <div className="bg-surface-deep px-3 py-2 font-mono text-[11px] tracking-[1px] text-faint">DELIVERY LOG · LAST {a.deliveries.length}</div>
             <table className="w-full min-w-[560px] border-collapse font-mono text-[12px]">
               <thead className="sr-only">
                 <tr>
@@ -397,7 +398,7 @@ export function SecretDialog({ secret, onClose }: { secret: Secret; onClose: () 
   )
 }
 
-export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () => void; creating: boolean; onCreateDone: () => void }) {
+export function Alerts({ goBilling, creating, onCreateDone, prefill = null }: { goBilling: () => void; creating: boolean; onCreateDone: () => void; prefill?: string | null }) {
   const { view, err, load } = useAlertsView()
   const { act, busy, secret, setSecret } = useAlertActions(load)
   const [opened, setOpen] = useState(false)
@@ -489,7 +490,8 @@ export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () =>
       </section>
 
       <CreateDialog
-
+        key={prefill ?? 'any'}
+        initialTarget={prefill}
         open={open}
         onClose={closeCreate}
         view={view}

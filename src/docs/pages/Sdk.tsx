@@ -84,7 +84,7 @@ export function Sdk() {
       <Section id="errors" title="Errors and limits">
         <CodeBlock lang="js" code={ERRORS} />
         <Callout label="Limits">
-          Anonymous calls get 60 a minute per IP. A key from the <Ext href="https://developers.gullylabs.xyz">developer portal</Ext> raises it to 600. The
+          Anonymous calls get 60 a minute per IP. A key from the <Ext href="https://app.gullylabs.xyz">developer portal</Ext> raises it to 600. The
           tracker refreshes every minute, so polling faster returns the same data.
         </Callout>
       </Section>

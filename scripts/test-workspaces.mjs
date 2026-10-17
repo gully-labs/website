@@ -13,9 +13,10 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { makeChecker, makeClient } from './test-helpers.mjs'
+import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8794
+await guardTestRun(PORT)
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-workspaces-'))
 
@@ -102,7 +103,7 @@ try {
   {
     const inv = await O.post('/api/developer/team/invite', { role: 'developer' })
     devLink = inv.data?.link
-    check('link invite: created with a one-time link', inv.status === 201 && /^https:\/\/developers\.gullylabs\.xyz\/#invite=[A-Za-z0-9_-]{32}$/.test(devLink ?? '') && inv.data.invite.kind === 'link' && inv.data.invite.role === 'developer', JSON.stringify(inv.data))
+    check('link invite: created with a one-time link', inv.status === 201 && /^https:\/\/app\.gullylabs\.xyz\/#invite=[A-Za-z0-9_-]{32}$/.test(devLink ?? '') && inv.data.invite.kind === 'link' && inv.data.invite.role === 'developer', JSON.stringify(inv.data))
     const team = await O.call('/api/developer/team')
     check('link invite: listed without its token', team.data.invites.length === 1 && !JSON.stringify(team.data).includes(tokenOf(devLink)))
     check('link invite: only its hash is stored', !fs.readFileSync(path.join(tmp, 'workspaces.json'), 'utf8').includes(tokenOf(devLink)))

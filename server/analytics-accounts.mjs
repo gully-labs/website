@@ -5,6 +5,7 @@
 //   GET  /api/developer/analytics                      account (or null), plans on offer, payments, open checkouts
 //   POST /api/developer/analytics/start                -> 201 { account, password }   the password is shown ONCE
 //   POST /api/developer/analytics/password             -> { password }                a new one, shown once
+//   POST /api/developer/analytics/sso                  -> 201 { url, expiresAt }      one-click sign-in (analytics-sso.mjs)
 //   POST /api/developer/analytics/sites  { name, domain } -> 201 { site }
 //   POST /api/developer/analytics/sites/:id/delete
 //   GET  /api/developer/analytics/usage                Umami's own figures for this month, per site
@@ -26,11 +27,12 @@ import { DATA_DIR, json, readJson } from './http.mjs'
 import { ANALYTICS_GRACE_DAYS, ANALYTICS_PAID_IDS, ANALYTICS_PLANS, ANALYTICS_TRIAL_DAYS, PERIOD_MS, publicPlans } from './plans.mjs'
 import { randomToken } from './store.mjs'
 import * as umami from './umami.mjs'
+import { issueSso } from './analytics-sso.mjs'
 
 const FILE = path.join(DATA_DIR, 'analytics.json')
 const USAGE_FILE = path.join(DATA_DIR, 'analytics-usage.json')
 export const KIND = 'analytics'
-export const DASHBOARD_ORIGIN = 'https://analytics.gullylabs.xyz'
+export const DASHBOARD_ORIGIN = String(process.env.ANALYTICS_PUBLIC_ORIGIN ?? 'https://analytics.gullylabs.xyz').replace(/\/+$/, '')
 const DAY = 86_400_000
 const MONTHS_KEPT = 13
 // Umami's own rule for a website's domain (src/lib/constants.ts, DOMAIN_REGEX).
@@ -119,9 +121,9 @@ export function statusOf(acc, now = Date.now()) {
 }
 
 const BLOCK = {
-  lapsed: { code: 'gully-plan-lapsed', message: 'This Gully Analytics account has no running plan or trial, so events are not recorded. Renew at https://developers.gullylabs.xyz/#analytics.' },
+  lapsed: { code: 'gully-plan-lapsed', message: 'This Gully Analytics account has no running plan or trial, so events are not recorded. Renew at https://app.gullylabs.xyz/#analytics.' },
   sites: { code: 'gully-site-limit', message: 'This website is beyond the number of websites the account’s plan includes, so its events are not recorded.' },
-  quota: { code: 'gully-quota-exceeded', message: 'This Gully Analytics account has used its events for this month. Upgrade at https://developers.gullylabs.xyz/#analytics.' },
+  quota: { code: 'gully-quota-exceeded', message: 'This Gully Analytics account has used its events for this month. Upgrade at https://app.gullylabs.xyz/#analytics.' },
 }
 
 /** Why a website's events are refused right now, or null when they are accepted. */
@@ -176,6 +178,8 @@ function accountView(acc) {
     monthStart: new Date(monthStart()).toISOString(),
     eventsThisMonth: usedBy(acc, key),
     loginUrl: `${DASHBOARD_ORIGIN}/login`,
+    // One-click sign-in (POST /api/developer/analytics/sso) works on this server.
+    ssoAvailable: umami.ssoConfigured(),
     sites: acc.sites.map((s) => {
       const b = blockOf(acc, st, s.id)
       return { id: s.id, name: s.name, domain: s.domain, createdAt: s.createdAt, eventsThisMonth: siteCount(s.id, key), dashboardUrl: dashboardUrl(s.id), blocked: b ? b.code : null }
@@ -334,6 +338,8 @@ export async function handleAnalyticsAccount(req, res, url, address) {
   }
 
   if (!acc) return json(res, 404, { error: 'Start your free trial first.' }), true
+
+  if (p === '/api/developer/analytics/sso') return issueSso(req, res, acc, statusOf)
 
   if (p === '/api/developer/analytics/password') {
     if (!allow('a-password', address, 10, 3_600_000)) return json(res, 429, { error: 'Too many password resets in the last hour. Try again later.' }), true

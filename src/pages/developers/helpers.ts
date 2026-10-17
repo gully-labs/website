@@ -23,8 +23,8 @@ export function alertRule(a: GapAlert) {
 
 export function alertState(a: GapAlert): { t: string; c: string } {
   if (!a.coveredByPlan) return { t: 'not in your plan', c: '#ff8a7a' }
-  if (!a.enabled) return { t: 'paused', c: '#6c7888' }
-  if (a.mutedUntil) return { t: `muted until ${new Date(a.mutedUntil).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`, c: '#6c7888' }
+  if (!a.enabled) return { t: 'paused', c: '#7f8b9c' }
+  if (a.mutedUntil) return { t: `muted until ${new Date(a.mutedUntil).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`, c: '#7f8b9c' }
   if (a.waitingToReArm.length) return { t: `fired ${ago(a.lastFiredAt)} · waits to re-arm`, c: '#e8c060' }
   return { t: 'watching', c: '#6fcf6a' }
 }

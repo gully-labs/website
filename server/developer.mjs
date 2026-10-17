@@ -52,6 +52,7 @@ import { canWrite, forbidden, handleInvitePreview, handleWorkspaceRoutes, roleIn
 import { handleAnalyticsAccount } from './analytics-accounts.mjs'
 import { handleTelegramAccount } from './telegram.mjs'
 import { billingOf, openIntent, verifyPayment } from './billing.mjs'
+import { APP_URL, SIGN_IN_HOSTS } from './hosts.mjs'
 import { bearer, clientIp, json, readJson } from './http.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { verifySiwe, issueNonce } from './siwe.mjs'
@@ -79,7 +80,6 @@ import {
 
 const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,24}$/
 const NAME_RE = /^[\p{L}\p{N} ._\-]{1,40}$/u
-const PROD_HOST = 'developers.gullylabs.xyz'
 const hits = new Map() // `${bucket}:${who}` -> [timestamps]
 
 /** Records a hit and says whether `who` is still under `max` hits per `ms` in this bucket. */
@@ -182,7 +182,8 @@ export async function handleDeveloper(req, res, url) {
     if (!allow('siwe', ip, 20, 600_000)) return json(res, 429, { error: 'Too many sign-in attempts. Try again in ten minutes.' }), true
     const host = hostOf(req)
     const local = isLocalHost(host)
-    if (!local && host !== PROD_HOST) return json(res, 400, { error: `Sign in at https://${PROD_HOST}.` }), true
+    // The SIWE domain must be the host asked (verifySiwe). The old developers host is still accepted while it is retired.
+    if (!local && !SIGN_IN_HOSTS.includes(host)) return json(res, 400, { error: `Sign in at ${APP_URL}.` }), true
     const body = await readJson(req, 24_000)
     const v = await verifySiwe({ message: body?.message, signature: body?.signature, host, secureOrigin: !local })
     if (!v.ok) return json(res, 401, { error: v.error }), true

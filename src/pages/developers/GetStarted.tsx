@@ -145,7 +145,7 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
                   <span className="sr-only"> · {STATE_TEXT[s.state]}</span>
                 </span>
                 <span className="text-[12px] leading-[1.4] text-dim">
-                  {s.state === 'na' || s.state === 'untracked' ? <span className="font-mono text-[10.5px] text-faint uppercase">{STATE_TEXT[s.state]} · </span> : null}
+                  {s.state === 'na' || s.state === 'untracked' ? <span className="font-mono text-[11px] text-faint uppercase">{STATE_TEXT[s.state]} · </span> : null}
                   {s.note}
                 </span>
               </span>
@@ -188,7 +188,7 @@ export function ToolsRow() {
     { href: site('/widget'), icon: <AppWindow size={16} aria-hidden />, title: 'Widget builder', note: 'live fair prices, no key' },
     { href: `${DOCS_URL}/sdk`, icon: <Code2 size={16} aria-hidden />, title: 'SDK', note: 'typed TypeScript client', ext: true },
     { href: `${DOCS_URL}/api`, icon: <BookOpen size={16} aria-hidden />, title: 'API docs', note: 'every endpoint and field', ext: true },
-    { href: site('/ask'), icon: <MessageCircleQuestion size={16} aria-hidden />, title: 'Ask Gully', note: 'questions about the data and docs' },
+    { href: site('/ask'), icon: <MessageCircleQuestion size={16} aria-hidden />, title: 'Gully AI', note: 'questions about the data and docs' },
     {
       href: site('/tracker'),
       icon: <Activity size={16} aria-hidden />,

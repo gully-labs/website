@@ -10,6 +10,7 @@ export const DOC_PAGES = [
   { slug: 'api-keys', title: 'API keys', group: 'Build' },
   { slug: 'plans-alerts', title: 'Plans & alerts', group: 'Build' },
   { slug: 'sdk', title: 'SDK', group: 'Build' },
+  { slug: 'teams', title: 'Teams & workspaces', group: 'Build' },
   { slug: 'analytics', title: 'Gully Analytics', group: 'Products' },
   { slug: 'gully-pay', title: 'Gully Pay', group: 'Products' },
   { slug: 'gully-pay-merchants', title: 'Gully Pay for merchants', group: 'Products' },

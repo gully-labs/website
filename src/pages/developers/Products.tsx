@@ -18,7 +18,7 @@ import { KeySpark, LiveMarker, QuotaRing, StackedDays } from './vcharts'
      Tracker API      /account (keys) + /usage?range=7d (requests sparkline)
      Alerts           /alerts (gap and DeepCore launch alerts, Telegram, firings from the delivery logs)
      Gully Analytics  /analytics (trial or plan, the events ring)
-     Gully Pay        /billing (plan, payments to Gully); merchant checkout is coming (#merchant)
+     Gully Pay        /billing (plan, payments to Gully); merchant stores in the Merchant tab (#merchant)
      Chain Kit        "Request your explorer": the site's enquiry endpoint (POST /api/contact)
      Gully Chains     the Devnet waitlist: the launch list (POST /api/notify, slot 90)
      Gully AI         /api/ask/status, and an inline question (POST /api/ask); recent questions stay in this browser
@@ -76,7 +76,7 @@ function Card({ icon, title, badge, children, foot, id }: { icon: ReactNode; tit
   )
 }
 
-const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[10.5px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-[#5a2a24] text-error' : 'border-line-strong text-muted'}`}>{t}</span>
+const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-[#5a2a24] text-error' : 'border-line-strong text-muted'}`}>{t}</span>
 
 function Stat({ label, value, unknown }: { label: string; value: number | null; unknown?: string }) {
   return (

@@ -174,7 +174,7 @@ export function Team() {
                 <span className="flex min-w-0 flex-[1_1_220px] flex-col">
                   <span className="flex flex-wrap items-center gap-2">
                     <b className="truncate font-semibold">{name ?? shortAddress(m.address)}</b>
-                    {m.you && <span className="rounded-full bg-gold px-2 py-[1px] font-mono text-[10px] font-semibold text-bg">YOU</span>}
+                    {m.you && <span className="rounded-full bg-gold px-2 py-[1px] font-mono text-[11px] font-semibold text-bg">YOU</span>}
                     {name && <span className="font-mono text-[12px] text-faint">{shortAddress(m.address)}</span>}
                   </span>
                   <span className="font-mono text-[11px] text-dim">
@@ -237,7 +237,7 @@ export function Team() {
             label={`Actions per member: ${Object.entries(acts).map(([a, n]) => `${shortAddress(a)} ${n}`).join(', ')}.`}
             rows={view.members
               .map((m): HBar => ({ name: m.you ? `you (${shortAddress(m.address)})` : shortAddress(m.address), value: acts[m.address] ?? 0, color: m.role === 'owner' ? '#e8c060' : m.role === 'admin' ? '#f4d98c' : '#6aa6ff', note: m.role }))
-              .concat(Object.keys(acts).filter((a) => !view.members.some((m) => m.address === a)).map((a) => ({ name: `${shortAddress(a)} (former)`, value: acts[a], color: '#6c7888', note: 'no longer a member' })))
+              .concat(Object.keys(acts).filter((a) => !view.members.some((m) => m.address === a)).map((a) => ({ name: `${shortAddress(a)} (former)`, value: acts[a], color: '#7f8b9c', note: 'no longer a member' })))
               .sort((a, b) => b.value - a.value)}
           />
         )}

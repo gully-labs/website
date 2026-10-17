@@ -9,6 +9,7 @@ const sections = [
   { id: 'paying', title: 'Paying' },
   { id: 'history', title: 'Longer history' },
   { id: 'alerts', title: 'Gap alerts' },
+  { id: 'deepcore-launches', title: 'DeepCore launch alerts' },
   { id: 'payload', title: 'Webhook payload' },
   { id: 'verify', title: 'Verifying the signature' },
   { id: 'telegram', title: 'Telegram' },
@@ -42,6 +43,43 @@ type Delivery = {
     snapshotAt: string             // the tracker snapshot that fired it
   }>
 }`
+
+const LAUNCH = `// An alert of kind 'deepcore-launch'. Same headers, signature and envelope as above.
+type LaunchDelivery = {
+  id: string
+  type: 'alert.triggered' | 'alert.test'
+  createdAt: string
+  alert: {
+    id: string
+    name: string | null
+    kind: 'deepcore-launch'
+    target: { deepcoreChainId: 56 | 999 | 4663 | 8453 | null }   // null = every chain
+    condition: { type: 'deepcore-launch'; chainId: number | null }
+  }
+  events: Array<{                    // oldest launch first; up to 20 in one delivery
+    kind: 'deepcore.launch'
+    chainId: number                  // 56 BNB Chain, 999 HyperEVM, 4663 Robinhood Chain, 8453 Base
+    chainKey: string                 // 'bsc' | 'hyperevm' | 'robinhood' | 'base'
+    chainName: string
+    token: string                    // the new token's address
+    symbol: string | null
+    createdAt: string                // the launch's block time, ISO 8601
+    txHash: string | null
+    pools: Array<{
+      poolId: string | null
+      kind: 'CL' | 'Bin' | null
+      quote: string | null           // the symbol it is paired with
+      locked: boolean | null         // true: DeepCore's indexer has a lock record; null: unknown
+      lockId: string | null
+    }>
+    links: { token: string; launch: string; swap: string }   // pages on deepcore.fun
+    snapshotAt: string               // the DeepCore poll that saw it
+  }>
+}
+
+// Create one from the dashboard, or with the same session API the dashboard uses:
+// POST /api/developer/alerts
+// { "name": "Base launches", "condition": { "type": "deepcore-launch", "chainId": 8453 }, "webhookUrl": "https://…", "telegram": true }`
 
 const VERIFY = `// Node 18+ with Express. Verify against the RAW body, before any JSON parsing.
 import crypto from 'node:crypto'
@@ -151,7 +189,7 @@ export function PlansAlerts() {
         )}
         <List>
           <li>
-            Open <b>Plan &amp; billing</b> on the <Ext href="https://developers.gullylabs.xyz">developer dashboard</Ext>, choose a plan, then a chain and an asset. You get a quote: the exact amount to send and the treasury address, valid for 20 minutes.
+            Open <b>Plan &amp; billing</b> on the <Ext href="https://app.gullylabs.xyz">developer dashboard</Ext>, choose a plan, then a chain and an asset. You get a quote: the exact amount to send and the treasury address, valid for 20 minutes.
           </li>
           <li>
             Stablecoins count one to one with the dollar; the quote adds a few millionths as a tag. ETH and BNB are priced by the Chainlink USD feed on the same chain at the moment of the quote and rounded up, with a unique tail in the last digits. The quote shows the feed, its round and when it last updated. If the feed is more than two hours old, no quote is given in that coin.
@@ -198,6 +236,28 @@ export function PlansAlerts() {
           <li>When a plan lapses, the alerts beyond the Free allowance stay listed but are paused until you delete some or upgrade; the oldest ones keep running.</li>
         </List>
         <H3Note />
+      </Section>
+
+      <Section id="deepcore-launches" title="DeepCore launch alerts">
+        <P>
+          A second kind of alert watches <Ext href="https://deepcore.fun">DeepCore</Ext>, the launchpad and DEX in the Gully Labs family, for new token launches. It has no stock: it watches one DeepCore chain, or every chain when <C>chainId</C> is left empty.
+        </P>
+        <Fields
+          head={['Condition', 'Body', 'Fires when']}
+          rows={[['deepcore-launch', '{ type: "deepcore-launch", chainId }', <>A token launches on DeepCore on that chain: <C>56</C> BNB Chain, <C>999</C> HyperEVM, <C>4663</C> Robinhood Chain or <C>8453</C> Base; <C>null</C> for any of them.</>]]}
+        />
+        <List>
+          <li>DeepCore’s public API (<C>GET /v1/launches</C>) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again.</li>
+          <li>Only launches made after the alert was created count (with an hour of slack for indexer lag), so a new alert does not replay the backlog.</li>
+          <li>One delivery at most every 5 minutes per alert: launches seen in the meantime wait and go out together, up to the 20 most recent.</li>
+          <li>A paused, muted or over-the-plan alert neither sends nor queues: launches it missed are not sent later.</li>
+          <li>It counts against your plan’s alerts like a gap alert, and delivers the same way: webhook, Telegram or both, signed the same way (see below).</li>
+          <li>When DeepCore cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.</li>
+        </List>
+        <CodeBlock lang="js" code={LAUNCH} caption="TypeScript · a launch delivery" />
+        <P>
+          In Telegram, anyone can ask the bot <C>/launches</C> for the five latest DeepCore launches on every chain, or <C>/launches base</C> (also <C>bsc</C>, <C>robinhood</C>, <C>hyperevm</C>, or a chain id) for one chain. It reads the same 90-second cache as the alerts, says when the list is older because DeepCore could not be read, and names any chain DeepCore itself could not read. Launch information is not advice.
+        </P>
       </Section>
 
       <Section id="payload" title="Webhook payload">

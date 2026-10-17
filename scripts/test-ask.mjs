@@ -12,9 +12,10 @@ import fs from 'node:fs'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
-import { makeChecker } from './test-helpers.mjs'
+import { makeChecker, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8796
+await guardTestRun(PORT)
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-ask-'))
 const KEY = `sk-ant-test-${crypto.randomBytes(16).toString('hex')}`

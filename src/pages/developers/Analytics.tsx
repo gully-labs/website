@@ -106,7 +106,7 @@ function StartCard({ view, onStarted }: { view: AnalyticsView; onStarted: (s: Se
     <section className={`${panel} relative gap-4 overflow-hidden`} style={rise(0)} aria-labelledby="ga-start">
       <div aria-hidden className="pointer-events-none absolute -top-32 right-[-12%] size-[420px] rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.12),transparent_62%)]" />
       <div className="relative flex flex-col gap-2">
-        <span className="font-mono text-[10px] tracking-[1px] text-gold">GULLY ANALYTICS</span>
+        <span className="font-mono text-[11px] tracking-[1px] text-gold">GULLY ANALYTICS</span>
         <h2 id="ga-start" className="m-0 font-display text-[clamp(28px,3.4cqw,40px)] leading-[.95] font-bold uppercase">
           Analytics that <span className="text-gold">see the wallet</span>
         </h2>
@@ -328,7 +328,7 @@ function PlanList({ view, account, onBuy }: { view: AnalyticsView; account: Anal
               <div className="flex items-baseline justify-between gap-3">
                 <span className="flex items-center gap-2 text-[15px] font-semibold">
                   {p.name}
-                  {isCur && <span className="rounded-full border border-gold-line px-2 font-mono text-[10px] text-gold">CURRENT</span>}
+                  {isCur && <span className="rounded-full border border-gold-line px-2 font-mono text-[11px] text-gold">CURRENT</span>}
                 </span>
                 <span className="font-display text-[30px] leading-none font-bold">
                   {p.priceUsdc} <span className="font-mono text-[11px] font-normal text-faint">USD / {offer.analytics.periodDays} days</span>

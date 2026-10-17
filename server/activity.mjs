@@ -238,7 +238,7 @@ export async function checkUsageThresholds(now = Date.now()) {
     if (send && profileOf(ws).notify.telegramUsage) {
       const pct = Math.round((peak / limit) * 100)
       const text = threshold === 100
-        ? `Gully Labs API: your key "${keyName}" reached its limit (${peak} requests in one minute; the ${plan.name} plan allows ${limit}). Requests over the limit get 429. Upgrade at https://developers.gullylabs.xyz`
+        ? `Gully Labs API: your key "${keyName}" reached its limit (${peak} requests in one minute; the ${plan.name} plan allows ${limit}). Requests over the limit get 429. Upgrade at https://app.gullylabs.xyz`
         : `Gully Labs API: your key "${keyName}" used ${pct}% of its per-minute limit (${peak} of ${limit} on the ${plan.name} plan) in the last hour.`
       try {
         const r = await send(ws, text)
