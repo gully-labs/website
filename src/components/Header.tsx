@@ -9,8 +9,9 @@ import { btnGold } from './ui'
 
 const WIDE_QUERY = '(min-width: 860px)'
 const deskItem = 'group inline-flex items-center gap-2 border-b-2 py-[6px] text-[15px] transition-colors hover:text-ink'
-// Between 860 and 1240 px the labels give way and the icons carry the menu (each keeps its title and name).
-const deskLabel = 'sr-only min-[1240px]:not-sr-only'
+// Between 860 and 1320 px the labels give way and the icons carry the menu (each keeps its title and name).
+// Measured: with labels the bar needs ~1300 px, so labels at 1240 wrapped the header onto two lines.
+const deskLabel = 'sr-only min-[1320px]:not-sr-only'
 
 export function Header() {
   const { pathname } = useLocation()
@@ -40,7 +41,7 @@ export function Header() {
           <Wordmark size={30} shimmer />
         </Link>
 
-        <nav aria-label="Main" className="hidden items-center gap-5 min-[860px]:flex min-[1240px]:gap-7">
+        <nav aria-label="Main" className="hidden flex-nowrap items-center gap-4 whitespace-nowrap min-[860px]:flex min-[1100px]:gap-5 min-[1480px]:gap-7">
           {navItems.map((n) => (
             <Link
               key={n.label}
@@ -98,7 +99,8 @@ export function Header() {
         inert={!menuOpen}
         className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out min-[860px]:hidden ${menuOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
       >
-        <div className="overflow-hidden">
+        {/* On a short screen (a phone held sideways) the open menu scrolls instead of running off the bottom. */}
+        <div className="max-h-[calc(100dvh-82px)] overflow-hidden overscroll-contain" style={menuOpen ? { overflowY: 'auto' } : undefined}>
             <div className="flex flex-col border-t border-line px-page pt-2 pb-6">
               {navItems.map((n) => (
                 <Link

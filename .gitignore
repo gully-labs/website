@@ -13,3 +13,6 @@ certs/
 .env.*
 !.env.example
 .data/
+
+# Internal notes: kept locally, never published (owner, 2026-10-17)
+CLAUDE.md
