@@ -9,6 +9,7 @@ import { CopyButton, Dialog } from './Dialog'
 import { Empty, ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
 import { input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
+import { toastError, toastSuccess } from '../../components/ui/toast'
 
 /* Gully Analytics, self-serve: start a free trial (the server creates a Gully Analytics login for this
    wallet and shows its password once), add websites, copy the install snippet (with data-web3), watch
@@ -34,7 +35,7 @@ function PasswordDialog({ secret, loginUrl, onClose }: { secret: Secret; loginUr
             <span className="font-mono text-[11px] tracking-[1px] text-faint">USERNAME</span>
             <div className="flex items-center gap-2 rounded-[10px] border border-line bg-bg py-1 pr-1 pl-3">
               <code className="min-w-0 flex-1 font-mono text-[13px] break-all text-ink">{secret.username}</code>
-              <CopyButton text={secret.username} />
+              <CopyButton text={secret.username} what="Username" />
             </div>
           </div>
           <div className="flex flex-col gap-2">
@@ -43,7 +44,7 @@ function PasswordDialog({ secret, loginUrl, onClose }: { secret: Secret; loginUr
               <code className="min-w-0 flex-1 font-mono text-[13px] break-all text-gold" data-testid="analytics-password">
                 {secret.password}
               </code>
-              <CopyButton text={secret.password} />
+              <CopyButton text={secret.password} what="Password" />
             </div>
           </div>
           <a href={loginUrl} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
@@ -92,6 +93,7 @@ function StartCard({ view, onStarted }: { view: AnalyticsView; onStarted: (s: Se
     const r = await api<{ account: AnalyticsAccount; password: string }>('/api/developer/analytics/start', { method: 'POST' })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
+    toastSuccess('Free trial started', { detail: 'Copy your Gully Analytics password now, it is shown once.' })
     onStarted({ username: r.data.account.username, password: r.data.password, first: true })
   }
   return (
@@ -209,6 +211,7 @@ function Websites({ account, origin, reload }: { account: AnalyticsAccount; orig
     const r = await api('/api/developer/analytics/sites', { method: 'POST', body: { name, domain } })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
+    toastSuccess('Website added', { detail: domain.trim() })
     setName('')
     setDomain('')
     await reload()
@@ -218,7 +221,8 @@ function Websites({ account, origin, reload }: { account: AnalyticsAccount; orig
     setBusy(true)
     const r = await api(`/api/developer/analytics/sites/${removing.id}/delete`, { method: 'POST' })
     setBusy(false)
-    if (!r.ok) return setErr(r.error)
+    if (!r.ok) return toastError(`Could not remove ${removing.domain}`, { detail: r.error })
+    toastSuccess('Website removed', { detail: removing.domain })
     setRemoving(null)
     await reload()
   }
@@ -428,7 +432,7 @@ function StatusCard({ account, onReset }: { account: AnalyticsAccount; onReset: 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-muted">
           <KeyRound size={15} className="text-gold" aria-hidden /> Login <code className="font-mono text-[13px] text-ink">{account.username}</code>
-          <CopyButton text={account.username} label="Copy" className="!min-h-9 border-none !px-2 text-[11px]" />
+          <CopyButton text={account.username} what="Username" label="Copy" className="!min-h-9 border-none !px-2 text-[11px]" />
         </span>
         <span className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={onReset} className={pillSm}>
@@ -512,6 +516,7 @@ export function AnalyticsPanel() {
     const r = await api<{ username: string; password: string }>('/api/developer/analytics/password', { method: 'POST' })
     setBusy(false)
     if (!r.ok) return setResetErr(r.error)
+    toastSuccess('Password reset', { detail: 'The old password stopped working.' })
     setConfirmReset(false)
     setSecret({ username: r.data.username, password: r.data.password, first: false })
   }

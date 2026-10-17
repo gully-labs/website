@@ -276,7 +276,6 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           ) : (
             <>
               <TelegramCard info={alerts.view.telegram} reload={alerts.load} compact />
-              {actions.actErr && <ErrorLine>{actions.actErr}</ErrorLine>}
               {!alerts.view.alerts.length ? (
                 <div className="flex flex-col items-start gap-2 border-t border-line pt-3">
                   <b className="font-semibold">No alerts yet</b>

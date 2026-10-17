@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { copyWithToast } from '../components/ui/toast'
 import { Link, Navigate, useParams } from 'react-router'
 import { ArrowLeft, ArrowUpRight, BellRing, Check, Code2, Copy, ExternalLink } from 'lucide-react'
 import { Seo } from '../components/Seo'
@@ -44,7 +45,7 @@ function CopyAddress({ label, address, chain }: { label: string; address: string
         </code>
         <button
           type="button"
-          onClick={() => navigator.clipboard?.writeText(address).then(() => (setCopied(true), setTimeout(() => setCopied(false), 1500)))}
+          onClick={() => copyWithToast(address, 'Address').then((ok) => ok && (setCopied(true), setTimeout(() => setCopied(false), 1500)))}
           aria-label={`Copy ${label.toLowerCase()}`}
           className="inline-flex size-7 items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-gold"
         >
@@ -192,7 +193,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             </a>
             <button
               type="button"
-              onClick={() => navigator.clipboard?.writeText(embed).then(() => (setCopiedEmbed(true), setTimeout(() => setCopiedEmbed(false), 1500)))}
+              onClick={() => copyWithToast(embed, 'Snippet').then((ok) => ok && (setCopiedEmbed(true), setTimeout(() => setCopiedEmbed(false), 1500)))}
               className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong bg-transparent px-4 text-left text-[14px] text-ink hover:border-gold"
             >
               {copiedEmbed ? <Check aria-hidden size={16} className="text-green" /> : <Code2 aria-hidden size={16} className="text-gold" />}

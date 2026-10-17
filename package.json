@@ -29,6 +29,7 @@
     "@lifi/widget": "4.10.2",
     "@lifi/widget-provider": "4.6.2",
     "@number-flow/react": "0.6.2",
+    "@radix-ui/react-navigation-menu": "1.2.22",
     "@rainbow-me/rainbowkit": "^2.2.11",
     "@tanstack/react-query": "^5.104.3",
     "echarts": "^6.1.0",
@@ -38,6 +39,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router": "^8.4.0",
+    "sonner": "2.0.8",
     "viem": "^2.57.7",
     "wagmi": "^2.19.5"
   },

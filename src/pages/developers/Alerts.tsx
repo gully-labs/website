@@ -1,6 +1,7 @@
 import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { DOCS_URL } from '../../site-host'
+import { toastSuccess } from '../../components/ui/toast'
 import { ago, api, type AlertsView, type GapAlert, type TelegramInfo, type TelegramLink } from './api'
 import { alertName, alertRule, alertState, CHAIN_NAMES, useAlertActions, useAlertsView, type Secret } from './helpers'
 import { CopyButton, Dialog } from './Dialog'
@@ -79,6 +80,7 @@ function CreateDialog({ open, onClose, view, onCreated }: { open: boolean; onClo
     setName('')
     setWebhook('')
     setToTelegram(false)
+    toastSuccess('Alert created', { detail: name.trim() || (ticker ? `${ticker} alert` : 'Any-stock alert') })
     onCreated(r.data.secret)
   }
 
@@ -248,6 +250,14 @@ export function TelegramCard({ info, reload, compact = false }: { info: Telegram
   const [now, setNow] = useState(() => Date.now())
   const live = !!link && !info.linked && Date.parse(link.expiresAt) > now
 
+  // The card turns to Connected by itself (polled below); say so once when a link we opened lands.
+  const linkedAt = info.enabled ? (info.linked?.linkedAt ?? null) : null
+  const chatTitle = info.linked?.chatTitle
+  const waiting = !!link
+  useEffect(() => {
+    if (linkedAt && waiting) toastSuccess('Telegram linked', { detail: chatTitle, id: `telegram:${linkedAt}` })
+  }, [linkedAt, waiting, chatTitle])
+
   // While a link is open, look for the chat every five seconds so the card turns to Connected by itself.
   useEffect(() => {
     if (!live) return
@@ -275,6 +285,7 @@ export function TelegramCard({ info, reload, compact = false }: { info: Telegram
     setBusy(false)
     if (!r.ok) return setErr(r.error)
     setLink(null)
+    toastSuccess('Telegram unlinked', { detail: 'Alerts set to Telegram stop arriving there.' })
     reload()
   }
 
@@ -339,7 +350,7 @@ export function SecretDialog({ secret, onClose }: { secret: Secret; onClose: () 
           </p>
           <div className="flex items-center gap-2 rounded-[10px] border border-gold-line bg-bg py-1 pr-1 pl-3">
             <code className="min-w-0 flex-1 font-mono text-[13px] break-all text-gold">{secret.secret}</code>
-            <CopyButton text={secret.secret} />
+            <CopyButton text={secret.secret} what="Signing secret" />
           </div>
           <div className="flex justify-end">
             <button type="button" data-autofocus onClick={onClose} className={pillGold}>
@@ -354,7 +365,7 @@ export function SecretDialog({ secret, onClose }: { secret: Secret; onClose: () 
 
 export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () => void; creating: boolean; onCreateDone: () => void }) {
   const { view, err, load } = useAlertsView()
-  const { act, busy, actErr, note, secret, setSecret } = useAlertActions(load)
+  const { act, busy, secret, setSecret } = useAlertActions(load)
   const [opened, setOpen] = useState(false)
 
   // "+ New alert" on the Overview lands here with the dialog open (once the plan's room is known).
@@ -398,12 +409,6 @@ export function Alerts({ goBilling, creating, onCreateDone }: { goBilling: () =>
               See plans
             </button>{' '}
             for more, or delete one.
-          </p>
-        )}
-        {actErr && <ErrorLine>{actErr}</ErrorLine>}
-        {note && (
-          <p className="m-0 font-mono text-[12px] text-ink-2" role="status">
-            Test: {note}
           </p>
         )}
         {!view.alerts.length ? (

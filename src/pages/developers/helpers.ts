@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ago, api, conditionText, type AlertsView, type AnalyticsBlock, type AnalyticsSite, type AnalyticsUsage, type ApiKey, type GapAlert, type PayAsset } from './api'
 import { keyColor } from './styles'
+import { toastError, toastSuccess } from '../../components/ui/toast'
 
 /* Non-component helpers shared by the console's tabs (kept apart so the component files hot-reload). */
 
@@ -50,24 +51,35 @@ export function useAlertsView() {
 }
 
 /** POST /api/developer/alerts/:id/:op with the busy flag, errors and the test result line. */
+/** What a finished alert action says in its toast (test results have their own). */
+const ALERT_DONE: Record<string, (name: string, body?: unknown) => string> = {
+  pause: (n) => `${n} paused`,
+  resume: (n) => `${n} resumed`,
+  delete: (n) => `${n} deleted`,
+  rotate: () => 'Signing secret rotated',
+  telegram: (n, body) => `Telegram ${(body as { on?: boolean } | undefined)?.on ? 'on' : 'off'} for ${n}`,
+}
+
+/** Alert row actions (test, pause, resume, delete, rotate, Telegram on/off). Outcomes are toasts. */
 export function useAlertActions(load: () => Promise<unknown>) {
   const [busy, setBusy] = useState<string | null>(null)
-  const [actErr, setActErr] = useState<string | null>(null)
-  const [note, setNote] = useState<string | null>(null)
   const [secret, setSecret] = useState<Secret>(null)
   const act = async (a: GapAlert, op: string, body?: unknown) => {
+    const name = alertName(a)
     if (op === 'delete' && !window.confirm(`Delete ${a.name || 'this alert'}? Its delivery log goes with it.`)) return
     setBusy(`${a.id}:${op}`)
-    setActErr(null)
-    setNote(null)
     const r = await api<{ secret?: string; results?: { channel: string; ok: boolean; status: number | null; error: string | null }[] }>(`/api/developer/alerts/${a.id}/${op}`, { method: 'POST', body })
     setBusy(null)
-    if (!r.ok) return setActErr(r.error)
+    if (!r.ok) return toastError(`Could not ${op === 'telegram' ? 'change Telegram for' : op} ${name}`, { detail: r.error, id: `alert:${a.id}` })
     if (op === 'rotate' && r.data.secret) setSecret({ title: 'New signing secret', secret: r.data.secret })
-    if (op === 'test' && r.data.results) setNote(r.data.results.map((x) => `${x.channel}: ${x.ok ? `delivered (${x.status})` : `failed (${x.error ?? x.status})`}`).join(' · '))
+    if (op === 'test' && r.data.results) {
+      const all = r.data.results.every((x) => x.ok)
+      const detail = r.data.results.map((x) => `${x.channel}: ${x.ok ? `delivered (${x.status})` : `failed (${x.error ?? x.status})`}`).join(' · ')
+      ;(all ? toastSuccess : toastError)(all ? `Test sent for ${name}` : `Test failed for ${name}`, { detail, id: `alert:${a.id}` })
+    } else if (ALERT_DONE[op]) toastSuccess(ALERT_DONE[op](name, body), { id: `alert:${a.id}` })
     load()
   }
-  return { act, busy, actErr, note, secret, setSecret }
+  return { act, busy, secret, setSecret }
 }
 
 /* ------------------------------------------------------------- analytics --- */

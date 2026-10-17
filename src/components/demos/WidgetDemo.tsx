@@ -1,4 +1,5 @@
 import { useEffect, useState, type JSX } from 'react'
+import { copyWithToast } from '../ui/toast'
 import { Check, Copy } from 'lucide-react'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPrice, UP, useHistory, useTracker, type Tracker, type TrackerRow } from '../../lib/tracker'
 import { widgetSnippet, type WidgetTheme, type WidgetType } from '../../lib/widgetEmbed'
@@ -289,7 +290,7 @@ export default function WidgetDemo(): JSX.Element {
           </pre>
           <button
             type="button"
-            onClick={() => navigator.clipboard?.writeText(code).then(() => setCopied(true), () => undefined)}
+            onClick={() => copyWithToast(code, 'Snippet').then((ok) => ok && setCopied(true))}
             aria-live="polite"
             className={`inline-flex min-h-11 w-full items-center justify-center gap-2 border-t border-line text-[12px] font-semibold transition-colors ${copied ? 'bg-success-bg text-green' : 'bg-surface text-gold hover:bg-surface-hover'}`}
           >

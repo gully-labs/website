@@ -6,6 +6,7 @@ import { btnOutline } from '../../components/ui'
 import { payApi, type Quote } from './api'
 import { fmtTime, type Invoice } from './invoice'
 import { QrCode } from './QrCode'
+import { copyWithToast, toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
 
 /* The hosted checkout of one invoice (/pay/<id>, also where a pay link lands): plan header and status,
    asset picker grouped by chain, the exact amount, a wallet QR (EIP-681, built by the server), copy
@@ -38,13 +39,11 @@ export function CopyChip({ text, label }: { text: string; label: string }) {
     <button
       type="button"
       onClick={() =>
-        navigator.clipboard?.writeText(text).then(
-          () => {
-            setDone(true)
-            setTimeout(() => setDone(false), 1600)
-          },
-          () => undefined,
-        )
+        copyWithToast(text, label === 'Copy' ? 'Text' : label).then((ok) => {
+          if (!ok) return
+          setDone(true)
+          setTimeout(() => setDone(false), 1600)
+        })
       }
       className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-btn border px-3 font-mono text-[12px] transition-colors ${done ? 'border-success-line text-green' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
       aria-label={done ? `${label} copied` : `Copy ${label}`}
@@ -186,17 +185,29 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
   const phase: Phase = check.s === 'done' ? 'paid' : busy ? 'confirming' : quote ? 'send' : 'choose'
   useEffect(() => onPhase?.(phase), [phase, onPhase])
 
-  const fetchQuote = (id: string) => {
+  const fetchQuote = (id: string, refresh = false) => {
     const me = ++quoteRun.current
     payApi<{ quote: Quote }>(`/api/pay/${invoice.id}/quote`, { method: 'POST', body: { asset: id } }).then((r) => {
       if (me !== quoteRun.current) return
       setLoading(false)
-      if (r.ok) setQuote(r.data.quote)
-      else setQuoteErr(r.error)
+      if (r.ok) {
+        setQuote(r.data.quote)
+        if (refresh) toastSuccess('New quote ready', { id: 'pay:quote', detail: `${r.data.quote.amount} ${r.data.quote.asset.symbol}, valid for 20 minutes.` })
+      } else setQuoteErr(r.error)
     })
   }
 
+  // Say once when a quote runs out (the timer turns into "get a new one").
+  const expiredId = expired && check.s !== 'done' ? quote.id : null
+  useEffect(() => {
+    if (expiredId) toastInfo('Quote expired', { id: 'pay:quote', detail: 'Get a new quote to pay. A payment already sent in time can still be checked.' })
+  }, [expiredId])
+  // Transactions already announced as detected, so polling does not toast again.
+  const seen = useRef(new Set<string>())
+
   const load = (id: string) => {
+    // Asking again for the same asset (the quote ran out) is a refresh; a new asset is a first quote.
+    const refresh = !!quote && quote.asset.id === id
     run.current++
     setAssetId(id)
     setQuote(null)
@@ -204,7 +215,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
     setWalletErr('')
     setCheck({ s: 'idle' })
     setLoading(true)
-    fetchQuote(id)
+    fetchQuote(id, refresh)
   }
 
   useEffect(() => {
@@ -220,18 +231,28 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
     for (let tries = 0; ; tries++) {
       const r = await payApi<{ invoice?: Invoice; error?: string; confirmations?: number; needed?: number }>(`/api/pay/${invoice.id}/verify`, { method: 'POST', body: { quoteId: q.id, txHash } })
       if (me !== run.current) return
+      // One toast per transaction, replaced as it moves on: detected, then confirmed (or not).
+      const tid = `pay:tx:${txHash}`
       if (r.ok && r.status === 200 && r.data.invoice) {
         setCheck({ s: 'done', hash: txHash })
+        toastSuccess('Payment confirmed', { id: tid, detail: `${q.amount} ${q.asset.symbol} on ${q.asset.chain}.`, duration: 8000 })
         onPaid(r.data.invoice)
         return
       }
       if (r.ok && r.status === 202 && tries < 100) {
+        // The chain knows the transaction (in the mempool or mined, awaiting confirmations).
+        if (!seen.current.has(txHash) && !/does not know/i.test(r.data.error ?? '')) {
+          seen.current.add(txHash)
+          toastInfo('Transaction detected', { id: tid, detail: r.data.error ?? 'Waiting for confirmations.' })
+        }
         setCheck({ s: 'pending', hash: txHash, confirmations: r.data.confirmations ?? 0, needed: r.data.needed ?? q.confirmations, message: r.data.error ?? 'Waiting for confirmations.' })
         await new Promise((ok) => setTimeout(ok, 6_000))
         if (me !== run.current) return
         continue
       }
-      setCheck({ s: 'error', hash: txHash, message: r.ok ? `${r.data.error ?? 'Not confirmed yet.'} Still not confirmed after ten minutes: check again later with the same hash.` : r.error })
+      const message = r.ok ? `${r.data.error ?? 'Not confirmed yet.'} Still not confirmed after ten minutes: check again later with the same hash.` : r.error
+      setCheck({ s: 'error', hash: txHash, message })
+      toastError('Payment not confirmed', { id: tid, detail: message })
       return
     }
   }

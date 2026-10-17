@@ -1,0 +1,35 @@
+/* Header menus, the mobile sheet and the scroll hairline (Header.tsx, Layout.tsx).
+   Kept out of index.css, which owns the global reduced-motion rule; under reduced motion these
+   fall back to a plain fade (no movement). */
+
+@keyframes gl-menu-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes gl-menu-out {
+  from { opacity: 1; }
+  to { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes gl-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gl-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes gl-sheet-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+.gl-menu-panel[data-state='open'] { animation: gl-menu-in 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.gl-menu-panel[data-state='closed'] { animation: gl-menu-out 0.12s ease-in both; }
+.gl-sheet { animation: gl-sheet-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.gl-chevron { transition: transform 0.18s ease; }
+[data-state='open'] > .gl-chevron,
+[aria-expanded='true'] > .gl-chevron { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gl-menu-panel[data-state='open'],
+  .gl-sheet { animation: gl-fade-in 0.12s linear both; }
+  .gl-menu-panel[data-state='closed'] { animation: gl-fade-out 0.1s linear both; }
+  .gl-chevron { transition: none; }
+}
+
+/* Anchor jumps and focus scrolling clear the sticky header. */
+html { scroll-padding-top: 76px; }

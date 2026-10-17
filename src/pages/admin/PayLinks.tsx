@@ -5,6 +5,7 @@ import { siteOrigin } from '../pay/api'
 import { embedSnippet } from '../pay/embed'
 import type { Invoice } from '../pay/invoice'
 import { adminCall } from './payAdmin'
+import { copyWithToast, flash } from '../../components/ui/toast'
 
 /* Admin: Gully Pay links (reusable /pay/l/<id> pages that make an invoice per payer), their payments,
    the "Pay with crypto" embed, and merchant webhooks (per link, per invoice, and a global default) with
@@ -71,7 +72,7 @@ export function SecretOnce({ secret, onDone }: { secret: string; onDone: () => v
       <span className="text-[13px] text-ink-2">Webhook signing secret. It is shown this once: store it with the receiving app now.</span>
       <div className="flex flex-wrap items-center gap-2">
         <code className="min-w-0 flex-1 rounded-input border border-line bg-bg px-3 py-2 font-mono text-[13px] break-all text-gold">{secret}</code>
-        <button type="button" className={btn} onClick={() => navigator.clipboard?.writeText(secret).then(() => setCopied(true))}>
+        <button type="button" className={btn} onClick={() => copyWithToast(secret, 'Signing secret').then((ok) => ok && setCopied(true))}>
           {copied ? 'Copied' : 'Copy'}
         </button>
         <button type="button" className={btn} onClick={onDone}>
@@ -91,7 +92,7 @@ export function EmbedBox({ path }: { path: string }) {
       <span className="text-[12px] text-faint">Paste on any site. The link opens the checkout in a new tab; with the script it opens in a popup. The checkout cannot be framed.</span>
       <pre className="m-0 max-h-40 overflow-auto rounded-input border border-line bg-bg p-3 font-mono text-[12px] whitespace-pre-wrap break-all text-ink-2">{code}</pre>
       <div>
-        <button type="button" className={btn} onClick={() => navigator.clipboard?.writeText(code).then(() => setCopied(true))}>
+        <button type="button" className={btn} onClick={() => copyWithToast(code, 'Snippet').then((ok) => ok && setCopied(true))}>
           {copied ? 'Copied' : 'Copy snippet'}
         </button>
       </div>
@@ -294,7 +295,7 @@ function LinkForm({ initial, assets, submitLabel, onSubmit, onCancel }: { initia
 
 function LinkDetail({ token, link, reload, onSecret }: { token: string; link: AdminLink; reload: () => void; onSecret: (s: string) => void }) {
   const [data, setData] = useState<{ invoices: AdminInvoice[]; deliveries: Delivery[] } | null>(null)
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const setMsg = flash
   const load = useCallback(() => {
     adminCall<{ invoices: AdminInvoice[]; deliveries: Delivery[] }>(token, `/api/admin/paylinks/${link.id}`).then((r) => r.ok && setData(r.data))
   }, [token, link.id])
@@ -302,11 +303,10 @@ function LinkDetail({ token, link, reload, onSecret }: { token: string; link: Ad
     load()
   }, [load, link.updatedAt, link.paidUses])
   const run = async (path: string, done: string) => {
-    setMsg(null)
     const r = await adminCall<{ secret?: string; delivery?: Delivery }>(token, path, {})
     if (!r.ok) return setMsg({ ok: false, text: r.error })
     if (r.data.secret) onSecret(r.data.secret)
-    if (r.data.delivery) setMsg({ ok: r.data.delivery.state === 'delivered', text: r.data.delivery.state === 'delivered' ? `Test delivered (${r.data.delivery.last?.status}, ${r.data.delivery.last?.ms} ms).` : `Test failed: ${r.data.delivery.last?.error ?? r.data.delivery.last?.status}` })
+    if (r.data.delivery) setMsg({ ok: r.data.delivery.state === 'delivered', text: r.data.delivery.state === 'delivered' ? `Webhook test delivered (${r.data.delivery.last?.status}, ${r.data.delivery.last?.ms} ms).` : `Webhook test failed: ${r.data.delivery.last?.error ?? r.data.delivery.last?.status}` })
     else setMsg({ ok: true, text: done })
     load()
     reload()
@@ -333,7 +333,6 @@ function LinkDetail({ token, link, reload, onSecret }: { token: string; link: Ad
         ) : (
           <span className="text-[13px] text-muted">No webhook on this link{' '}(events go to the default endpoint, if one is set). Add one with Edit.</span>
         )}
-        {msg && <p className={`m-0 font-mono text-[12px] ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
       </div>
       <div className="flex flex-col gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">PAYMENTS · {link.stats.paid} paid of {link.stats.invoices} checkouts</span>
@@ -384,7 +383,7 @@ export function PayLinks({ token }: { token: string }) {
   const [editing, setEditing] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [secret, setSecret] = useState<string | null>(null)
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const setMsg = flash
 
   const load = useCallback(() => {
     adminCall<NonNullable<typeof data>>(token, '/api/admin/paylinks').then((r) => (r.ok ? (setData(r.data), setErr(null)) : setErr(r.error)))
@@ -397,10 +396,7 @@ export function PayLinks({ token }: { token: string }) {
 
   const copy = (path: string) => {
     const url = `${siteOrigin()}${path}`
-    navigator.clipboard?.writeText(url).then(
-      () => setMsg({ ok: true, text: `Copied ${url}` }),
-      () => setMsg({ ok: false, text: `Copy failed; the link is ${url}` }),
-    )
+    copyWithToast(url, 'Link')
   }
   const act = async (path: string, done: string) => {
     const r = await adminCall(token, path, {})
@@ -416,7 +412,6 @@ export function PayLinks({ token }: { token: string }) {
       </div>
       {err && <p className="m-0 font-mono text-[12px] text-error">{err}</p>}
       {secret && <SecretOnce secret={secret} onDone={() => setSecret(null)} />}
-      {msg && <p className={`m-0 font-mono text-[12px] break-all ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
 
       {data &&
         (creating ? (
@@ -516,15 +511,14 @@ export function PayLinks({ token }: { token: string }) {
 /** The global default endpoint: events of invoices with no endpoint of their own or of their link. */
 function DefaultWebhook({ token, current, reload, onSecret }: { token: string; current: Endpoint | null; reload: () => void; onSecret: (s: string) => void }) {
   const [url, setUrl] = useState('')
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const setMsg = flash
   const [log, setLog] = useState<Delivery[] | null>(null)
   const [showLog, setShowLog] = useState(false)
   const call = async (path: string, body: unknown, done: string) => {
-    setMsg(null)
     const r = await adminCall<{ secret?: string | null; delivery?: Delivery }>(token, path, body)
     if (!r.ok) return setMsg({ ok: false, text: r.error })
     if (r.data.secret) onSecret(r.data.secret)
-    setMsg(r.data.delivery ? { ok: r.data.delivery.state === 'delivered', text: r.data.delivery.state === 'delivered' ? `Test delivered (${r.data.delivery.last?.status}).` : `Test failed: ${r.data.delivery.last?.error ?? r.data.delivery.last?.status}` } : { ok: true, text: done })
+    setMsg(r.data.delivery ? { ok: r.data.delivery.state === 'delivered', text: r.data.delivery.state === 'delivered' ? `Webhook test delivered (${r.data.delivery.last?.status}).` : `Webhook test failed: ${r.data.delivery.last?.error ?? r.data.delivery.last?.status}` } : { ok: true, text: done })
     setUrl('')
     reload()
   }
@@ -562,7 +556,6 @@ function DefaultWebhook({ token, current, reload, onSecret }: { token: string; c
           </button>
         </form>
       )}
-      {msg && <p className={`m-0 font-mono text-[12px] ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
       <div>
         <button
           type="button"

@@ -1,4 +1,5 @@
-import { Activity, BellRing, BookOpen, Boxes, ChartNoAxesCombined, ChartLine, Code2, FileJson, FlaskConical, Info, KeyRound, Layers, Newspaper, Puzzle, Tag, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowLeftRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, FileJson, FlaskConical, History, Info, KeyRound, Layers, Mail, MessageCircleQuestion, Network, Newspaper, Package, Puzzle, Tag, type LucideIcon } from 'lucide-react'
+import { DEVELOPERS_URL, DOCS_URL } from '../site-host'
 
 export const SITE_URL = 'https://gullylabs.xyz'
 
@@ -17,45 +18,77 @@ export const socialLinks = [
 
 export type SocialLabel = (typeof socialLinks)[number]['label']
 
-export const navItems: { label: string; to: string; match: string; icon: LucideIcon }[] = [
-  { label: 'Ledger', to: '/#ledger', match: '/#ledger', icon: ChartLine },
-  { label: 'Projects', to: '/#projects', match: '/projects', icon: FlaskConical },
-  { label: 'Tracker', to: '/tracker', match: '/tracker', icon: Activity },
-  { label: 'Services', to: '/services', match: '/services', icon: Layers },
-  { label: 'About', to: '/about', match: '/about', icon: Info },
+/* ------------------------------------------------------------------ navigation --- */
+
+/** One entry in the header menus, the mobile sheet and the footer. Exactly one destination:
+    `to` (an in-app route or /#section), `href` (another host), or `action: 'contact'` (the contact form).
+    `localTo` replaces `href` on localhost, where the developer portal is served under /developers. */
+export type NavEntry = {
+  label: string
+  desc: string
+  icon: LucideIcon
+  badge?: string
+  /** Paths that light this entry (and its group) up as the current section. */
+  match?: string[]
+} & ({ to: string; href?: never; action?: never } | { href: string; localTo?: string; to?: never; action?: never } | { action: 'contact'; to?: never; href?: never })
+
+export type NavGroup = { id: 'products' | 'developers' | 'company'; label: string; items: NavEntry[] }
+
+const devPortal: NavEntry = { label: 'Developer portal', desc: 'Keys, usage, alerts and billing', href: DEVELOPERS_URL, localTo: '/developers', icon: KeyRound, match: ['/developers'] }
+const analyticsApp: NavEntry = { label: 'Gully Analytics', desc: 'Open the analytics app', href: 'https://analytics.gullylabs.xyz', icon: ChartNoAxesCombined }
+
+export const productsNav: NavGroup = {
+  id: 'products',
+  label: 'Products',
+  items: [
+    { label: 'Stock tracker', desc: 'Stock tokens against their fair price', to: '/tracker', icon: Activity, match: ['/tracker'] },
+    { label: 'Swap', desc: 'Swap from any stock page', to: '/tracker', icon: ArrowLeftRight },
+    { label: 'Alerts', desc: 'Gap alerts by Telegram or webhook', to: '/#alerts', icon: BellRing },
+    { label: 'Gully Analytics', desc: 'Web analytics that see the wallet', to: '/analytics', icon: ChartNoAxesCombined, match: ['/analytics'] },
+    { label: 'Chain Kit', desc: 'Branded block explorers', to: '/chain-kit', icon: Boxes, match: ['/chain-kit'] },
+    { label: 'Gully Chains', desc: 'App chains, launched for you', to: '/#chains', icon: Network, badge: 'Soon' },
+    { label: 'Gully Pay', desc: 'Crypto billing and pay links', to: '/#pay', icon: CircleDollarSign },
+  ],
+}
+
+export const developersNav: NavGroup = {
+  id: 'developers',
+  label: 'Developers',
+  items: [
+    devPortal,
+    { label: 'API docs', desc: 'Free REST API reference', href: `${DOCS_URL}/api`, icon: FileJson },
+    { label: 'SDK', desc: 'TypeScript client, MIT', href: 'https://github.com/gully-labs/sdk', icon: Package },
+    { label: 'Widget', desc: 'One script tag, live prices', to: '/widget', icon: Puzzle, match: ['/widget'] },
+    { label: 'Ask Gully', desc: 'Answers from the docs', to: '/ask', icon: MessageCircleQuestion, match: ['/ask'] },
+    { label: 'Changelog', desc: 'What shipped, and when', href: `${DOCS_URL}/changelog`, icon: History },
+  ],
+}
+
+export const companyNav: NavGroup = {
+  id: 'company',
+  label: 'Company',
+  items: [
+    { label: 'Services', desc: 'Contracts to launch, built with you', to: '/services', icon: Layers, match: ['/services'] },
+    { label: 'About', desc: 'Who we are and how we work', to: '/about', icon: Info, match: ['/about'] },
+    { label: 'Blog', desc: 'Releases and write-ups', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
+    { label: 'Contact', desc: 'Start a project with us', action: 'contact', icon: Mail },
+  ],
+}
+
+export const navGroups: NavGroup[] = [productsNav, developersNav, companyNav]
+
+/** Plain header links, between the Developers and Company menus. */
+export const navLinks: NavEntry[] = [
+  { label: 'Projects', desc: 'The venues we run', to: '/#projects', icon: FlaskConical, match: ['/projects'] },
+  { label: 'Pricing', desc: 'API, alerts and analytics plans', to: '/pricing', icon: Tag, match: ['/pricing'] },
 ]
 
-/** The header's site menu: every section of the landing, each also matching its own page. Deliberately
-    short labels: with labels the bar must still fit on one line from 1320 px (Header.tsx). */
-export const headerNav: { label: string; to: string; match: string; icon: LucideIcon }[] = [
-  { label: 'Projects', to: '/#projects', match: '/projects', icon: FlaskConical },
-  { label: 'Tracker', to: '/#tracker', match: '/tracker', icon: Activity },
-  { label: 'Alerts', to: '/#alerts', match: '/#alerts', icon: BellRing },
-  { label: 'Analytics', to: '/#analytics', match: '/analytics', icon: ChartNoAxesCombined },
-  { label: 'Chain Kit', to: '/#chainkit', match: '/chain-kit', icon: Boxes },
-  { label: 'API', to: '/#api', match: '/#api', icon: FileJson },
-  { label: 'Widget', to: '/#widget', match: '/widget', icon: Puzzle },
-  { label: 'Pricing', to: '/#pricing', match: '/pricing', icon: Tag },
-  { label: 'Services', to: '/#services', match: '/services', icon: Layers },
-]
-
-/** The developer surfaces. Docs is its own host; /developers moves to developers.gullylabs.xyz. */
-export const devLinks: ({ label: string; icon: LucideIcon } & ({ href: string } | { to: string }))[] = [
-  { label: 'Docs', href: 'https://docs.gullylabs.xyz', icon: BookOpen },
-  { label: 'Widget', to: '/widget', icon: Puzzle },
-  { label: 'Developer portal', to: '/developers', icon: KeyRound },
-]
-
-/** Products built on open source, in the footer. */
-export const productLinks: { label: string; to: string; icon: LucideIcon }[] = [
-  { label: 'Gully Analytics', to: '/analytics', icon: ChartNoAxesCombined },
-  { label: 'Chain Kit', to: '/chain-kit', icon: Boxes },
-  { label: 'API pricing', to: '/pricing', icon: Tag },
-]
-
-/** Header entries for developers, after the site sections. */
-export const headerDevItems: { label: string; icon: LucideIcon; href?: string; to?: string; match?: string }[] = [
-  { label: 'Developers', to: '/developers', match: '/developers', icon: Code2 },
-  { label: 'Docs', href: 'https://docs.gullylabs.xyz', icon: BookOpen },
-  { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
-]
+/** The "Launch app" split button: the main part opens the tracker, its menu lists the apps. */
+export const launchApp = {
+  to: '/tracker',
+  items: [
+    { label: 'Tracker', desc: 'Live stock token gaps', to: '/tracker', icon: Activity },
+    devPortal,
+    analyticsApp,
+  ] satisfies NavEntry[],
+}

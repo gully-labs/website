@@ -8,6 +8,7 @@ import type { Invoice } from '../pay/invoice'
 import { adminCall } from './payAdmin'
 import { DeliveryLog, EmbedBox, PayLinks, SecretOnce, type Delivery, type Endpoint } from './PayLinks'
 import { AskStudio } from './AskStudio'
+import { copyWithToast, flash } from '../../components/ui/toast'
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
    kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site. */
@@ -189,10 +190,9 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
   const [address, setAddress] = useState('')
   const [plan, setPlan] = useState('pro')
   const [days, setDays] = useState('30')
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const setMsg = flash
   const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold'
   const grant = async (addr: string, p: string, d?: number) => {
-    setMsg(null)
     const err = await act(`/api/admin/accounts/${addr}/plan`, { plan: p, days: d })
     setMsg(err ? { ok: false, text: err } : { ok: true, text: p === 'free' ? `${addr} is back on Free.` : `${addr} has ${p} for ${d} days.` })
   }
@@ -241,7 +241,6 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
           {plan === 'free' ? 'Revoke plan' : 'Grant plan'}
         </button>
       </form>
-      {msg && <p className={`m-0 font-mono text-[12px] ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
       {!billing.subscriptions.length ? (
         <p className="m-0 text-[14px] text-muted">No wallet has a paid or granted plan yet.</p>
       ) : (
@@ -329,16 +328,14 @@ function AnalyticsAccounts({ data, act }: { data: AnalyticsAdmin; act: (path: st
   const [address, setAddress] = useState('')
   const [plan, setPlan] = useState('starter')
   const [days, setDays] = useState('30')
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const setMsg = flash
   const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold'
   const paid = data.offer.plans.filter((p) => p.priceUsdc > 0)
   const grant = async (addr: string, p: string, d?: number) => {
-    setMsg(null)
     const err = await act(`/api/admin/analytics/${addr}/plan`, { plan: p, days: d })
     setMsg(err ? { ok: false, text: err } : { ok: true, text: p === 'none' ? `${addr}: plan and trial stopped; its events are refused now.` : `${addr} has Analytics ${p} for ${d} days.` })
   }
   const remove = async (addr: string) => {
-    setMsg(null)
     const err = await act(`/api/admin/analytics/${addr}/delete`)
     setMsg(err ? { ok: false, text: err } : { ok: true, text: `${addr}: account, Gully Analytics user and its data deleted.` })
   }
@@ -388,7 +385,6 @@ function AnalyticsAccounts({ data, act }: { data: AnalyticsAdmin; act: (path: st
           {plan === 'none' ? 'Revoke' : 'Grant plan'}
         </button>
       </form>
-      {msg && <p className={`m-0 font-mono text-[12px] ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
       {!data.accounts.length ? (
         <p className="m-0 text-[14px] text-muted">No wallet has started Gully Analytics yet.</p>
       ) : (
@@ -448,7 +444,7 @@ const STATUS_CLS: Record<string, string> = { open: 'text-gold', paid: 'text-gree
 /** Below an invoice row: its "Pay with crypto" embed and its own merchant webhook with the delivery log. */
 function InvoiceExtras({ token, invoice, reload, onSecret }: { token: string; invoice: AdminInvoice; reload: () => void; onSecret: (s: string) => void }) {
   const [url, setUrl] = useState('')
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const setMsg = flash
   const [log, setLog] = useState<Delivery[] | null>(null)
   const loadLog = useCallback(() => {
     adminCall<{ deliveries: Delivery[] }>(token, `/api/admin/invoices/${invoice.id}/deliveries`).then((r) => r.ok && setLog(r.data.deliveries))
@@ -457,11 +453,10 @@ function InvoiceExtras({ token, invoice, reload, onSecret }: { token: string; in
     loadLog()
   }, [loadLog, invoice.status])
   const call = async (path: string, body: unknown, done: string) => {
-    setMsg(null)
     const r = await adminCall<{ secret?: string | null; delivery?: Delivery }>(token, path, body)
     if (!r.ok) return setMsg({ ok: false, text: r.error })
     if (r.data.secret) onSecret(r.data.secret)
-    setMsg(r.data.delivery ? { ok: r.data.delivery.state === 'delivered', text: r.data.delivery.state === 'delivered' ? `Test delivered (${r.data.delivery.last?.status}).` : `Test failed: ${r.data.delivery.last?.error ?? r.data.delivery.last?.status}` } : { ok: true, text: done })
+    setMsg(r.data.delivery ? { ok: r.data.delivery.state === 'delivered', text: r.data.delivery.state === 'delivered' ? `Webhook test delivered (${r.data.delivery.last?.status}).` : `Webhook test failed: ${r.data.delivery.last?.error ?? r.data.delivery.last?.status}` } : { ok: true, text: done })
     setUrl('')
     reload()
     loadLog()
@@ -502,7 +497,6 @@ function InvoiceExtras({ token, invoice, reload, onSecret }: { token: string; in
             </button>
           </form>
         )}
-        {msg && <p className={`m-0 font-mono text-[12px] ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
       </div>
       <div className="flex flex-col gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">DELIVERIES</span>
@@ -520,14 +514,13 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
   const [days, setDays] = useState('30')
   const [hook, setHook] = useState('')
   const [chosen, setChosen] = useState<string[]>(() => assets.map((a) => a.id))
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const setMsg = flash
   const [secret, setSecret] = useState<string | null>(null)
   const [extras, setExtras] = useState<string | null>(null)
   const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
   const link = (path: string) => `${window.location.protocol}//${window.location.host.replace(/^admin\./, '')}${path}`
   const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
   const create = async () => {
-    setMsg(null)
     const r = await adminCall<{ secret: string | null }>(token, '/api/admin/invoices', { title, usd, note, assets: chosen, expiresInDays: Number(days), webhookUrl: hook.trim() || undefined })
     reload()
     if (!r.ok) return setMsg({ ok: false, text: r.error })
@@ -539,10 +532,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
     setHook('')
   }
   const copy = (path: string) =>
-    navigator.clipboard?.writeText(link(path)).then(
-      () => setMsg({ ok: true, text: `Copied ${link(path)}` }),
-      () => setMsg({ ok: false, text: `Copy failed; the link is ${link(path)}` }),
-    )
+    copyWithToast(link(path), 'Link')
   const btn = 'inline-flex min-h-9 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold'
   return (
     <section className={card}>
@@ -601,7 +591,6 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
           </button>
         </div>
       </form>
-      {msg && <p className={`m-0 font-mono text-[12px] break-all ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
       {secret && <SecretOnce secret={secret} onDone={() => setSecret(null)} />}
       {!invoices.length ? (
         <p className="m-0 text-[14px] text-muted">No invoices yet.</p>

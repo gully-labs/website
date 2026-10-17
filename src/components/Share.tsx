@@ -5,18 +5,19 @@ import { SHARE, SITE_URL } from '../content/site'
 import { gullyPost, projectPost, tgShare, xFollow, xPost } from '../lib/share'
 import type { Stats } from '../lib/stats'
 import { SocialIcon } from './SocialIcon'
+import { copyWithToast } from './ui/toast'
 
 /* Sharing controls: the texts and intent links live in lib/share.ts. */
 
-function useCopied(): [boolean, (text: string) => void] {
+function useCopied(): [boolean, (text: string, what?: string) => void] {
   const [copied, setCopied] = useState(false)
   useEffect(() => {
     if (!copied) return
     const id = setTimeout(() => setCopied(false), 1600)
     return () => clearTimeout(id)
   }, [copied])
-  const copy = (text: string) => {
-    navigator.clipboard?.writeText(text).then(() => setCopied(true)).catch(() => undefined)
+  const copy = (text: string, what = 'Link') => {
+    copyWithToast(text, what).then((ok) => ok && setCopied(true))
   }
   return [copied, copy]
 }
@@ -49,7 +50,7 @@ export function ShareBar({ data }: { data: Stats | null }) {
           Share…
         </button>
       ) : (
-        <button type="button" onClick={() => copy(SITE_URL)} className={pill} aria-live="polite">
+        <button type="button" onClick={() => copy(SITE_URL)} className={pill}>
           {copied ? <Check aria-hidden size={14} strokeWidth={2} className="text-green" /> : <Link2 aria-hidden size={14} strokeWidth={1.75} />}
           {copied ? 'Link copied' : 'Copy link'}
         </button>
@@ -93,7 +94,7 @@ export function ShareStrip({ data }: { data: Stats | null }) {
               <SocialIcon name="X" size={14} />
               Post this
             </a>
-            <button type="button" onClick={() => copy(`${text} ${SITE_URL}`)} className={pill} aria-live="polite">
+            <button type="button" onClick={() => copy(`${text} ${SITE_URL}`, 'Post text')} className={pill}>
               {copied ? <Check aria-hidden size={14} strokeWidth={2} className="text-green" /> : <Copy aria-hidden size={14} strokeWidth={1.75} />}
               {copied ? 'Copied' : 'Copy text'}
             </button>
@@ -123,7 +124,7 @@ export function ShareMenu({ project: p, compact = false }: { project: Project; c
           {!compact && 'Send on Telegram'}
         </a>
       )}
-      <button type="button" onClick={() => copy(p.url)} className={btn} title="Copy link" aria-label={`Copy the ${p.name} link`} aria-live="polite">
+      <button type="button" onClick={() => copy(p.url)} className={btn} title="Copy link" aria-label={`Copy the ${p.name} link`}>
         {copied ? (
           <span className="font-mono text-[12px] text-green">✓</span>
         ) : (

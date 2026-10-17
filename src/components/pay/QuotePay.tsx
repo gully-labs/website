@@ -5,6 +5,7 @@ import { CopyButton } from '../../pages/developers/Dialog'
 import { ErrorLine, Skeleton } from '../../pages/developers/parts'
 import { input } from '../../pages/developers/styles'
 import { btnOutline } from '../ui'
+import { toastError, toastInfo, toastSuccess } from '../ui/toast'
 import { AssetPicker, ChainMark } from './AssetPicker'
 
 /* Gully Pay checkout, shared by the dashboard's Plan & billing tab and the public /pay/<invoice> page:
@@ -16,13 +17,13 @@ const PayWallet = lazy(() => import('./PayWallet'))
 
 type Check = { state: 'idle' } | { state: 'checking'; hash: string } | { state: 'pending'; hash: string; message: string } | { state: 'done'; hash: string } | { state: 'error'; message: string; hash?: string }
 
-export function Field({ label, value, copy }: { label: string; value: string; copy?: string }) {
+export function Field({ label, value, copy, what }: { label: string; value: string; copy?: string; what?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <span className="font-mono text-[10.5px] tracking-[1px] text-faint">{label}</span>
       <div className="flex items-center gap-2 rounded-input border border-line bg-bg py-1 pr-1 pl-3">
         <span className="min-w-0 flex-1 font-mono text-[13px] break-all text-ink">{value}</span>
-        {copy !== undefined && <CopyButton text={copy} />}
+        {copy !== undefined && <CopyButton text={copy} what={what} />}
       </div>
     </div>
   )
@@ -75,6 +76,8 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
   // Bumped on unmount, on a new quote and on every new check, so a superseded wait stops.
   const run = useRef(0)
   const quoteRun = useRef(0)
+  // Transactions already announced as detected, so polling does not toast again.
+  const seen = useRef(new Set<string>())
   useEffect(() => {
     const r = run
     return () => void r.current++
@@ -83,17 +86,21 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
   const asset = assets.find((a) => a.id === (quote?.asset.id ?? assetId)) ?? null
   const txLink = (h: string) => (asset ? `${asset.explorer}/tx/${h}` : null)
 
-  const fetchQuote = (id: string) => {
+  const fetchQuote = (id: string, refresh = false) => {
     const me = ++quoteRun.current
     getQuote(id).then((r) => {
       if (me !== quoteRun.current) return
       setLoading(false)
-      if (r.ok) setQuote(r.data.quote)
-      else setQuoteErr(r.error)
+      if (r.ok) {
+        setQuote(r.data.quote)
+        if (refresh) toastSuccess('New quote ready', { id: 'pay:quote', detail: `${r.data.quote.amount} ${r.data.quote.asset.symbol}, valid for 20 minutes.` })
+      } else setQuoteErr(r.error)
     })
   }
 
   const load = (id: string) => {
+    // Asking again for the same asset (the quote ran out) is a refresh; a new asset is a first quote.
+    const refresh = !!quote && quote.asset.id === id
     run.current++
     setAssetId(id)
     setQuote(null)
@@ -101,7 +108,7 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
     setWalletErr('')
     setCheck({ state: 'idle' })
     setLoading(true)
-    fetchQuote(id)
+    fetchQuote(id, refresh)
   }
 
   useEffect(() => {
@@ -118,15 +125,25 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
       const r = await verify(q, txHash)
       if (me !== run.current) return
       // 202 "not confirmed yet" is a 2xx, so api() answers it as ok: it is not a payment yet.
+      // One toast per transaction, replaced as it moves on: found, then confirmed (or not).
+      const tid = `pay:tx:${txHash}`
       if (r.ok && r.status !== 202) {
         setCheck({ state: 'done', hash: txHash })
+        toastSuccess('Payment confirmed', { id: tid, detail: `${q.amount} ${q.asset.symbol} on ${q.asset.chain}.`, duration: 8000 })
         onPaid(r.data, q, txHash)
         return
       }
       const message = r.ok ? ((r.data as { error?: string } | null)?.error ?? 'Waiting for confirmations.') : r.error
       if (r.status !== 202 || tries >= 100) {
-        setCheck({ state: 'error', hash: txHash, message: r.status === 202 ? `${message} Still not confirmed after ten minutes: check again later with the same hash.` : message })
+        const final = r.status === 202 ? `${message} Still not confirmed after ten minutes: check again later with the same hash.` : message
+        setCheck({ state: 'error', hash: txHash, message: final })
+        toastError('Payment not confirmed', { id: tid, detail: final })
         return
+      }
+      // The chain knows the transaction (in the mempool or mined, awaiting confirmations).
+      if (!seen.current.has(txHash) && !/does not know/i.test(message)) {
+        seen.current.add(txHash)
+        toastInfo('Transaction detected', { id: tid, detail: message })
       }
       setCheck({ state: 'pending', hash: txHash, message })
       await new Promise((ok) => setTimeout(ok, 6_000))
@@ -144,6 +161,12 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
   const busy = check.state === 'checking' || check.state === 'pending'
   const left = quote ? Date.parse(quote.expiresAt) - now : 0
   const expired = !!quote && left <= 0
+
+  // Say once when a quote runs out (the timer chip turns into the "get a new one" button).
+  const expiredId = expired && check.state !== 'done' ? quote.id : null
+  useEffect(() => {
+    if (expiredId) toastInfo('Quote expired', { id: 'pay:quote', detail: 'Get a new quote to pay. A payment already sent in time can still be checked.' })
+  }, [expiredId])
 
   return (
     <div className="flex flex-col gap-5">
@@ -187,8 +210,8 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
           </div>
 
           <div className="grid grid-cols-2 gap-4 max-[760px]:grid-cols-1">
-            <Field label="SEND EXACTLY" value={`${quote.amount} ${quote.asset.symbol}`} copy={quote.amount} />
-            <Field label={`TO THE TREASURY ON ${quote.asset.chain.toUpperCase()}`} value={quote.treasury} copy={quote.treasury} />
+            <Field label="SEND EXACTLY" value={`${quote.amount} ${quote.asset.symbol}`} copy={quote.amount} what="Amount" />
+            <Field label={`TO THE TREASURY ON ${quote.asset.chain.toUpperCase()}`} value={quote.treasury} copy={quote.treasury} what="Address" />
           </div>
 
           <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13px] leading-[1.6] text-faint">
