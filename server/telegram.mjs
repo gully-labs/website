@@ -1,4 +1,6 @@
-// The Gully Labs Telegram bot: gap alerts to a linked chat, and a few read-only commands.
+// The Gully Labs Telegram bot: a menu-driven bot (buttons, one message edited in place per screen) for
+// the gap tracker, DeepCore launches, gap alerts to a linked chat and Gully AI. Views and keyboards live
+// in telegram-ui.mjs; this file talks to the Bot API, reads the data and routes updates.
 // No dependency: the Bot API over fetch. Everything is off unless TELEGRAM_BOT_TOKEN is set.
 //
 // Env
@@ -9,51 +11,69 @@
 //
 // Updates arrive by webhook: POST /api/telegram/<path>, where <path> is the first 32 hex of
 // sha256(token) and the secret header must match. On start (startTelegram) the server calls setWebhook
-// for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query), setMyCommands
-// and getMe; failures are logged (without the token) and retried, never fatal.
+// for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query), setMyCommands,
+// setChatMenuButton (commands) and getMe; failures are logged (without the token) and retried, never fatal.
 //
 // Linking (no chat ids to paste): the dashboard asks for a one-time code (10 minutes, single use, only
 // its SHA-256 is stored) and opens https://t.me/<bot>?start=<code>. "/start <code>" links that chat to the
-// wallet account; "/stop" unlinks. A group is linked the same way ("/start <code>" in the group, or the
-// ?startgroup= link); only the Telegram user who linked a group may unlink it or mute from it.
+// wallet account; "/stop" or Settings → Unlink unlinks. A group is linked the same way; only the Telegram
+// user who linked a group may unlink it, create alerts there, or pause, mute, test or delete them.
 // One chat per account; a newer link replaces the older one.
 //
-// Commands: /gap TICKER [chain], /top, /movers (only when the tracker has movers), /launches [chain],
-// /alerts, /ask QUESTION, /help.
-// Chats that are not linked get only /start, /help, /gap, /top, /launches and /ask; everything else from
-// them is ignored. /launches reads DeepCore's latest launches from deepcore.mjs's cache (never more than
-// one DeepCore read per poll interval, however many chats ask).
-// /ask answers through Gully Ask (ask.mjs), limited per chat and by Ask's daily cap.
-// Replies are plain and short, in HTML parse mode with every dynamic piece escaped. A figure that could
-// not be read is said to be unreadable, never shown as zero.
+// /start without a code sends the banner (an animated GIF, public/brand/telegram/banner.gif, built by
+// scripts/build-telegram-banner.mjs) with the main menu. Telegram's file_id for it is kept in
+// DATA_DIR/telegram.json after the first upload and reused. Screens: Stocks (chain → ticker grid → card
+// with a 24h sparkline → alert stepper), Top gaps, Movers (24h/1h), DeepCore launches (chain filter →
+// launch card, new-launch alert), My alerts (pause, resume, mute, test, delete), Gully AI (force_reply)
+// and Settings (mute all, usage notices, unlink). The routes and their callback encoding are listed at
+// the top of telegram-ui.mjs. Typed commands (/gap /top /movers /launches /alerts /ask /stop /help /menu)
+// answer with the matching screen.
 //
-// Sending respects Telegram's limits: at most one message a second per chat, 30 a second overall, and
-// a 429's retry_after is waited out (up to 60 s, three attempts).
+// Alerts are created, paused, resumed, tested and deleted through alerts.mjs's own route handler
+// (handleAlerts) for the linked account, so the bot has exactly the dashboard's validation, plan
+// limits and channel defaults (Telegram on, no webhook). Usage notices go through profile.mjs's route.
 //
-// Stored in DATA_DIR/telegram.json: { links: [...], codes: [...] }.
+// Everything is HTML parse mode with every dynamic piece escaped. A figure that could not be read is
+// said to be unreadable, never shown as zero.
+//
+// Sending and editing respect Telegram's limits: at most one call a second per chat, 30 a second
+// overall, and a 429's retry_after is waited out (up to 60 s, three attempts). Commands, button presses
+// and replies are limited per chat as well.
+//
+// Stored in DATA_DIR/telegram.json: { links: [...], codes: [...], banner: { fileId, sha } }.
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import { Readable } from 'node:stream'
+import { fileURLToPath } from 'node:url'
 import { DATA_DIR, json, readJson } from './http.mjs'
-import { alertsForChat, muteAlert } from './alerts.mjs'
-import { randomToken, sha256 } from './store.mjs'
+import { alertsOf, handleAlerts, muteAlert } from './alerts.mjs'
+import { getAccount, randomToken, sha256 } from './store.mjs'
 import * as tracker from './tracker.mjs'
 import { askConfigured, askForChat, MAX_QUESTION } from './ask.mjs'
 import { DEEPCORE_CHAINS, readLaunches } from './deepcore.mjs'
+import { handleProfileRoutes, profileOf } from './profile.mjs'
+import { workspaceName } from './workspaces.mjs'
+import * as ui from './telegram-ui.mjs'
+
+const { chainName, shortAddr, when, btn, ubtn } = ui
+
+/** HTML-escapes text for Telegram's HTML parse mode. */
+export const esc = ui.esc
 
 const FILE = path.join(DATA_DIR, 'telegram.json')
-const SITE = 'https://gullylabs.xyz'
+const SITE = ui.SITE
 const CODE_TTL_MS = 10 * 60_000
 const PER_CHAT_MS = 1_000
 const GLOBAL_PER_S = 30
 const MAX_RETRY_AFTER_S = 60
 const TIMEOUT_MS = 10_000
 const MAX_TEXT = 3_800 // Telegram's cap is 4096 characters after entities are parsed
+const MAX_CAPTION = 1_000 // Telegram's caption cap is 1024
 const MAX_UPDATE_BYTES = 64_000
 const MUTE_MS = 24 * 3_600_000
-const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
-const TRUSTED = new Set(['in-line', 'drifting', 'premium', 'discount'])
+const BANNER_URL = `${SITE}/brand/telegram/banner.gif`
 
 /* ---------------------------------------------------------------- store --- */
 
@@ -65,6 +85,7 @@ try {
 }
 db.links ??= [] // { address, chatId, chatType, chatTitle, linkedBy, linkedAt }
 db.codes ??= [] // { hash, address, expiresAt, usedAt }
+db.banner ??= null // { fileId, sha } Telegram's file_id of the uploaded banner GIF
 
 function save() {
   const now = Date.now()
@@ -122,12 +143,16 @@ function redact(s) {
 
 /* ------------------------------------------------------------- Bot API --- */
 
-/** One Bot API call. Returns { ok, status, result, retryAfter, error }; never throws. */
+/**
+ * One Bot API call. `body` is JSON, or a FormData for a file upload.
+ * Returns { ok, status, result, retryAfter, error }; never throws.
+ */
 async function tg(method, body) {
   const token = telegramToken()
   if (!token) return { ok: false, status: null, result: null, retryAfter: null, error: 'Telegram is not configured on the server.' }
   try {
-    const r = await fetch(`${apiBase()}/bot${token}/${method}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}), redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) })
+    const form = body instanceof FormData
+    const r = await fetch(`${apiBase()}/bot${token}/${method}`, { method: 'POST', headers: form ? {} : { 'content-type': 'application/json' }, body: form ? body : JSON.stringify(body ?? {}), redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) })
     const j = await r.json().catch(() => null)
     const ok = r.ok && !!j?.ok
     return { ok, status: r.status, result: ok ? j.result : null, retryAfter: Number(j?.parameters?.retry_after) || null, error: ok ? null : redact(j?.description ?? `HTTP ${r.status}`) }
@@ -137,10 +162,10 @@ async function tg(method, body) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-const chatTail = new Map() // chatId -> promise of the last queued send
-const chatNextAt = new Map() // chatId -> earliest time of its next send
-const globalSent = [] // send times within the last second
-const grants = [] // the last 200 { chatId, at } turns granted (tests read the spacing here, not at the network)
+const chatTail = new Map() // chatId -> promise of the last queued call
+const chatNextAt = new Map() // chatId -> earliest time of its next call
+const globalSent = [] // call times within the last second
+const grants = [] // the last 1000 { chatId, at } turns granted (tests read the spacing here, not at the network)
 
 async function waitTurn(chatId) {
   for (;;) {
@@ -151,22 +176,25 @@ async function waitTurn(chatId) {
       globalSent.push(now)
       chatNextAt.set(chatId, now + PER_CHAT_MS)
       grants.push({ chatId, at: now })
-      if (grants.length > 200) grants.shift()
+      if (grants.length > 1_000) grants.shift()
       return
     }
     await sleep(w)
   }
 }
 
-/** Sends one message-like call to a chat through the per-chat queue, honouring 429 retry_after. */
-function sendToChat(chatId, method, body) {
+/**
+ * Runs one message-like call (send or edit) for a chat through the per-chat queue, honouring 429
+ * retry_after. `make()` builds the request body afresh for each attempt (a FormData is single-use).
+ */
+function queued(chatId, method, make) {
   const key = String(chatId)
   const prev = chatTail.get(key) ?? Promise.resolve()
   const run = prev.then(async () => {
     let r
     for (let attempt = 0; attempt < 3; attempt++) {
       await waitTurn(key)
-      r = await tg(method, { chat_id: key, ...body })
+      r = await tg(method, make())
       if (r.status !== 429) return r
       if (!r.retryAfter || r.retryAfter > MAX_RETRY_AFTER_S) return r
       chatNextAt.set(key, Date.now() + r.retryAfter * 1_000)
@@ -178,8 +206,28 @@ function sendToChat(chatId, method, body) {
   tail.then(() => chatTail.get(key) === tail && chatTail.delete(key))
   return run
 }
+const sendToChat = (chatId, method, body) => queued(chatId, method, () => ({ chat_id: String(chatId), ...body }))
 
+const cap = (s, max = MAX_TEXT) => (s.length > max ? s.slice(0, max).replace(/<[^>]*$/, '') + '…' : s)
 const sendText = (chatId, text, extra = {}) => sendToChat(chatId, 'sendMessage', { text: cap(text), parse_mode: 'HTML', disable_web_page_preview: true, ...extra })
+const markup = (keyboard) => ({ inline_keyboard: keyboard })
+
+const NOT_MODIFIED = /message is not modified/i
+
+/**
+ * Shows a view: edits message `editId` in place when given, else sends a new message. "Not modified"
+ * is quiet success; any other failed edit (deleted, too old, not a text message) sends a new message.
+ * @returns {Promise<{ ok: boolean, id: number | null, notModified?: boolean }>}
+ */
+async function show(chatId, view, editId = null) {
+  if (editId) {
+    const r = await sendToChat(chatId, 'editMessageText', { message_id: editId, text: cap(view.text), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: markup(view.keyboard) })
+    if (r.ok) return { ok: true, id: editId }
+    if (NOT_MODIFIED.test(r.error ?? '')) return { ok: true, id: editId, notModified: true }
+  }
+  const r = await sendText(chatId, view.text, { reply_markup: markup(view.keyboard) })
+  return { ok: r.ok, id: r.result?.message_id ?? null }
+}
 
 /* ------------------------------------------------------------ bot info --- */
 
@@ -196,6 +244,7 @@ export async function botUsername() {
   }
   return me.username
 }
+const botId = () => telegramToken()?.split(':')[0] ?? null
 
 /** For the dashboard: whether the bot is on, its name, and the account's linked chat. */
 export async function telegramInfo(address) {
@@ -212,17 +261,16 @@ export async function alertChannels() {
 
 /* -------------------------------------------------------------- startup --- */
 
-// /movers reads the tracker's top movers (GET /api/tracker/movers, tracker.readMovers).
-const movers = () => true
-
+// Command descriptions are plain words: Telegram's command menu does not show emoji reliably.
 function commandList() {
   return [
-    { command: 'gap', description: 'Gap of one stock: /gap NVDA or /gap NVDA bsc' },
-    { command: 'top', description: 'The five widest trusted gaps now' },
-    ...(movers() ? [{ command: 'movers', description: 'Biggest gap moves in 24 hours' }] : []),
-    { command: 'launches', description: 'Latest DeepCore launches: /launches or /launches base' },
-    { command: 'ask', description: 'Ask about Gully Labs: /ask how do alerts work?' },
-    { command: 'alerts', description: 'Your alerts (linked chats)' },
+    { command: 'menu', description: 'Open the main menu' },
+    { command: 'gap', description: 'One stock card, e.g. /gap NVDA or /gap NVDA bsc' },
+    { command: 'top', description: 'Widest trusted gaps right now' },
+    { command: 'movers', description: 'Biggest gap moves in 24 hours' },
+    { command: 'launches', description: 'Latest DeepCore token launches' },
+    { command: 'alerts', description: 'Your alerts: pause, mute, test or delete' },
+    { command: 'ask', description: 'Ask Gully AI, e.g. /ask how do alerts work?' },
     { command: 'stop', description: 'Unlink this chat from your account' },
     { command: 'help', description: 'What this bot does' },
   ]
@@ -230,7 +278,7 @@ function commandList() {
 
 let startTimer = null
 
-/** Registers the webhook and the command list. Safe to call more than once; never throws. */
+/** Registers the webhook, the command list and the menu button. Safe to call more than once; never throws. */
 export async function startTelegram({ attempt = 0 } = {}) {
   const token = telegramToken()
   if (!token) {
@@ -240,9 +288,11 @@ export async function startTelegram({ attempt = 0 } = {}) {
   const url = `${SITE}/api/telegram/${webhookPathFor(token)}`
   const hook = await tg('setWebhook', { url, secret_token: webhookSecretFor(token), allowed_updates: ['message', 'callback_query'], max_connections: 10 })
   const cmds = await tg('setMyCommands', { commands: commandList() })
+  const menuBtn = await tg('setChatMenuButton', { menu_button: { type: 'commands' } })
   const name = await botUsername()
   if (!hook.ok) console.error(`telegram: setWebhook failed: ${hook.error}`)
   if (!cmds.ok) console.error(`telegram: setMyCommands failed: ${cmds.error}`)
+  if (!menuBtn.ok) console.error(`telegram: setChatMenuButton failed: ${menuBtn.error}`)
   if (hook.ok) console.log(`telegram: webhook set${name ? ` for @${name}` : ''}`)
   if ((!hook.ok || !cmds.ok) && attempt < 5) {
     clearTimeout(startTimer)
@@ -251,19 +301,6 @@ export async function startTelegram({ attempt = 0 } = {}) {
   }
   return { ok: hook.ok && cmds.ok, enabled: true }
 }
-
-/* ------------------------------------------------------------ formatting --- */
-
-/** HTML-escapes text for Telegram's HTML parse mode. */
-export const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-const cap = (s) => (s.length > MAX_TEXT ? s.slice(0, MAX_TEXT).replace(/<[^>]*$/, '') + '…' : s)
-const chainName = (k) => CHAIN_NAMES[k] ?? k
-const stockUrl = (chain, ticker) => `${SITE}/tracker/${encodeURIComponent(chain)}/${encodeURIComponent(ticker)}`
-const signed = (n, d = 2) => `${n > 0 ? '+' : ''}${n.toFixed(d)}`
-const usd = (n) => (typeof n === 'number' && Number.isFinite(n) ? `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null)
-const usd0 = (n) => (typeof n === 'number' && Number.isFinite(n) ? `$${Math.round(n).toLocaleString('en-US')}` : null)
-const shortAddr = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`
-const when = (iso) => new Date(iso).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
 
 /* -------------------------------------------------------- account sends --- */
 
@@ -284,233 +321,131 @@ ${esc(String(text ?? ''))}`)
 /* ---------------------------------------------------------- alert sends --- */
 
 /**
- * Sends one alert delivery to Telegram. Called by alerts.mjs.
+ * Sends one alert delivery to Telegram as a compact card. Called by alerts.mjs.
  * @param {{ owner: string, alertId: string, name: string | null, conditionText: string, chatId?: string | null, events: object[], test: boolean }} a
  */
 export async function sendAlertTelegram(a) {
   if (!telegramEnabled()) return { status: null, ok: false, error: 'Telegram is not configured on the server.' }
   const chatId = a.chatId ?? linkedChat(a.owner)?.chatId ?? null
   if (!chatId) return { status: null, ok: false, error: 'No Telegram chat is linked to this account.' }
-  const title = `<b>Gully Labs alert</b>${a.name ? ` “${esc(a.name)}”` : ''}`
-  if (a.test) {
-    const r = await sendText(chatId, `${title}\nTest message (${esc(a.conditionText)}). Deliveries for this alert reach this chat.`)
-    return { status: r.status, ok: r.ok, error: r.error }
-  }
-  if (a.events.some((e) => e.kind === 'deepcore.launch')) {
-    const shownL = a.events.slice(0, 5)
-    const text = `${title}\n${esc(a.conditionText)}\n\n${shownL.map(launchBlock).join('\n\n')}${a.events.length > shownL.length ? `\n…and ${a.events.length - shownL.length} more on deepcore.fun` : ''}`
-    const open = shownL.slice(0, 3).map((e) => ({ text: `Open ${e.symbol ?? 'token'} on DeepCore`.slice(0, 40), url: e.links.token }))
-    const r = await sendText(chatId, text, { reply_markup: { inline_keyboard: [...(open.length ? [open] : []), [{ text: 'Mute 24h', callback_data: `mute:${a.alertId}`.slice(0, 64) }]] } })
-    return { status: r.status, ok: r.ok, error: r.error }
-  }
-  const shown = a.events.slice(0, 5)
-  const blocks = shown.map((e) => {
-    const lines = [`<b>${esc(e.ticker)}</b> · ${esc(e.chainName ?? chainName(e.chain))}`, `Gap <b>${esc(signed(e.gapPct))}%</b> vs fair (${esc(e.status)})`]
-    const on = usd(e.onchain)
-    const fair = usd(e.fair)
-    if (on && fair) lines.push(`On chain ${esc(on)} · fair ${esc(fair)}`)
-    const liq = usd0(e.poolLiquidityUsd)
-    lines.push(liq ? `Pool liquidity ${esc(liq)}` : 'Pool liquidity not reported')
-    lines.push(`<a href="${esc(stockUrl(e.chain, e.ticker))}">${esc(`gullylabs.xyz/tracker/${e.chain}/${e.ticker}`)}</a>`)
-    return lines.join('\n')
-  })
-  const more = a.events.length > shown.length ? `\n…and ${a.events.length - shown.length} more on ${SITE}/tracker` : ''
-  const text = `${title}\n${esc(a.conditionText)}\n\n${blocks.join('\n\n')}${more}`
-  const open = shown.slice(0, 3).map((e) => ({ text: `Open ${e.ticker}`.slice(0, 40), url: stockUrl(e.chain, e.ticker) }))
-  const reply_markup = { inline_keyboard: [...(open.length ? [open] : []), [{ text: 'Mute 24h', callback_data: `mute:${a.alertId}`.slice(0, 64) }]] }
-  const r = await sendText(chatId, text, { reply_markup })
+  const v = ui.deliveryView(a)
+  const r = await sendText(chatId, v.text, v.keyboard ? { reply_markup: markup(v.keyboard) } : {})
   return { status: r.status, ok: r.ok, error: r.error }
 }
 
-/** One DeepCore launch, in the bot's style: token, chain, time, pools and locks as DeepCore states them. */
-function launchBlock(l) {
-  const head = `<b>${esc(l.symbol ?? shortAddr(l.token))}</b> · ${esc(l.chainName)} · ${esc(when(l.createdAt))}`
-  const legs = (l.pools ?? l.legs ?? []).map((g) => {
-    const lock = g.locked === true ? `liquidity locked${g.lockId ? ` (lock #${esc(g.lockId)})` : ''}` : g.locked === false ? 'no liquidity lock' : 'lock not reported'
-    return `${esc(g.kind ?? 'Pool')} pool vs ${esc(g.quote ?? '?')} · ${lock}`
-  })
-  const lines = [head, legs.length ? legs.join('\n') : 'Pool not reported', `<a href="${esc(l.links.token)}">${esc(`deepcore.fun/tokens/${shortAddr(l.token)}`)}</a> · <a href="${esc(l.links.swap)}">swap on DeepCore</a>`]
-  return lines.join('\n')
-}
-
-/* ------------------------------------------------------------- commands --- */
+/* ----------------------------------------------------------- data reads --- */
 
 let readRows = async () => {
   const body = await tracker.readTracker()
-  const open = Object.fromEntries((body?.chains ?? []).map((c) => [c.key, c.sessionOpen]))
-  return (body?.rows ?? []).map((r) => ({ ...r, sessionOpen: open[r.chain] ?? null }))
+  const chains = Object.fromEntries((body?.chains ?? []).map((c) => [c.key, c]))
+  return (body?.rows ?? []).map((r) => ({ ...r, sessionOpen: chains[r.chain]?.sessionOpen ?? null, sessionName: chains[r.chain]?.sessionName ?? null, asOf: body.generatedAt ?? null }))
 }
 let readMoversFn = (window) => tracker.readMovers(window)
-/** Test hooks: replace the tracker read (rows with sessionOpen) and the movers read. */
+let readHistoryFn = (chain, ticker) => tracker.readHistory(chain, ticker)
+let readLaunchesFn = (o) => readLaunches(o)
+let askFn = (chatId, q) => askForChat(chatId, q)
+let askReady = () => askConfigured()
+
+/** Test hooks: replace the tracker read (rows with sessionOpen), movers, history, launches and Ask. */
 export function setTrackerReaderForTest(fn) {
   readRows = fn
 }
 export function setMoversReaderForTest(fn) {
   readMoversFn = fn
 }
-
-const helpText = (linked) =>
-  [
-    '<b>Gully Labs gap bot</b>',
-    'The gap between a tokenised stock’s on-chain price and its Chainlink fair price, from the Gully Labs tracker.',
-    '',
-    '/gap NVDA · one stock (add <code>bsc</code> or <code>robinhood</code> for one chain)',
-    '/top · the five widest trusted gaps now',
-    ...(movers() ? ['/movers · biggest gap moves in 24 hours'] : []),
-    '/launches · the latest token launches on DeepCore (add a chain: <code>bsc</code>, <code>base</code>, <code>robinhood</code>, <code>hyperevm</code>)',
-    '/ask · a question about Gully Labs, answered from the docs',
-    ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['Alerts: open the developer dashboard, Alerts tab, and press Connect Telegram.']),
-    '',
-    `<a href="${SITE}/tracker">gullylabs.xyz/tracker</a>`,
-  ].join('\n')
-
-function rowText(r) {
-  const head = `<b>${esc(r.ticker)}</b> · ${esc(chainName(r.chain))}`
-  const link = `<a href="${esc(stockUrl(r.chain, r.ticker))}">Open ${esc(r.ticker)}</a>`
-  const fair = usd(r.fair)
-  const on = usd(r.onchain)
-  const liq = usd0(r.pool?.liquidityUsd)
-  let body
-  if (r.status === 'feed-unreadable') body = 'The fair price (Chainlink feed) could not be read just now.'
-  else if (r.status === 'pool-unreadable') body = `The pool could not be read just now.${fair ? ` Fair ${esc(fair)}.` : ''}`
-  else if (r.status === 'no-pool') body = `No pool found for this token.${fair ? ` Fair ${esc(fair)}.` : ''}`
-  else if (r.status === 'unverified') body = [`Unverified: ${esc(r.untrustedReason ?? 'the on-chain price could not be confirmed.')}`, `On chain ${esc(on ?? 'unreadable')} · fair ${esc(fair ?? 'unreadable')}`, liq ? `Pool liquidity ${esc(liq)}` : 'Pool liquidity not reported'].join('\n')
-  else if (typeof r.gapPct !== 'number' || !Number.isFinite(r.gapPct)) body = 'The gap could not be read just now.'
-  else {
-    const lines = [`Gap <b>${esc(signed(r.gapPct))}%</b> (${esc(r.status)})`, `On chain ${esc(on ?? 'unreadable')} · fair ${esc(fair ?? 'unreadable')}`, liq ? `Pool liquidity ${esc(liq)}` : 'Pool liquidity not reported']
-    if (r.status === 'thin') lines.push('The pool is too thin for the tracker to flag this gap.')
-    if (r.poolStale) lines.push('The pool read is stale; this gap is not current.')
-    if (r.sessionOpen === false) lines.push('The feed session is closed: the gap is against the last session’s price.')
-    body = lines.join('\n')
-  }
-  return `${head}\n${body}\n${link}`
+export function setHistoryReaderForTest(fn) {
+  readHistoryFn = fn
 }
-
-async function cmdGap(args) {
-  const [rawTicker, rawChain] = args.split(/\s+/).filter(Boolean)
-  if (!rawTicker) return 'Name a stock: <code>/gap NVDA</code>, or <code>/gap NVDA bsc</code> for one chain.'
-  const ticker = rawTicker.toUpperCase().replace(/^\$/, '').slice(0, 12)
-  const chainArg = rawChain?.toLowerCase().slice(0, 20)
-  const chainKey = chainArg ? (['bnb', 'bsc', 'binance'].includes(chainArg) ? 'bsc' : ['robinhood', 'rh', 'hood'].includes(chainArg) ? 'robinhood' : chainArg) : null
-  if (!/^[A-Z.]{1,8}$/.test(ticker)) return 'That is not a ticker. Try <code>/gap NVDA</code>.'
-  const followed = tracker.trackedStocks().filter((s) => s.ticker === ticker && (!chainKey || s.chain === chainKey))
-  if (!followed.length) return `${esc(ticker)}${chainKey ? ` on ${esc(chainName(chainKey))}` : ''} is not a stock the tracker follows. The list: <a href="${SITE}/tracker">gullylabs.xyz/tracker</a>`
-  let rows
-  try {
-    rows = await readRows()
-  } catch {
-    return 'The tracker could not be read just now. Try again in a minute.'
-  }
-  const mine = rows.filter((r) => r.ticker === ticker && (!chainKey || r.chain === chainKey))
-  if (!mine.length) return `The tracker has no row for ${esc(ticker)} right now. Try again in a minute.`
-  return mine.map(rowText).join('\n\n')
-}
-
-const trustedNow = (r) => TRUSTED.has(r.status) && typeof r.gapPct === 'number' && Number.isFinite(r.gapPct) && !r.poolStale && r.sessionOpen !== false
-
-async function cmdTop() {
-  let rows
-  try {
-    rows = await readRows()
-  } catch {
-    return 'The tracker could not be read just now. Try again in a minute.'
-  }
-  const ok = rows.filter(trustedNow).sort((a, b) => Math.abs(b.gapPct) - Math.abs(a.gapPct)).slice(0, 5)
-  const closed = rows.filter((r) => r.sessionOpen === false).length
-  const closedText = closed === 1 ? '1 stock is outside its feed session' : `${closed} stocks are outside their feed session`
-  if (!ok.length) return `No stock has a trusted gap right now (a readable feed and pool, a pool deep enough to count, a fresh read and an open feed session).${closed ? ` ${closedText}.` : ''}\n<a href="${SITE}/tracker">gullylabs.xyz/tracker</a>`
-  const lines = ok.map((r, i) => `${i + 1}. <a href="${esc(stockUrl(r.chain, r.ticker))}">${esc(r.ticker)}</a> · ${esc(chainName(r.chain))}: <b>${esc(signed(r.gapPct))}%</b> (${esc(r.status)})${r.pool?.liquidityUsd ? `, pool ${esc(usd0(r.pool.liquidityUsd))}` : ''}`)
-  return `<b>Widest trusted gaps now</b>\n${lines.join('\n')}${closed ? `\n${closedText} and not ranked.` : ''}\n<a href="${SITE}/tracker">gullylabs.xyz/tracker</a>`
-}
-
-const LAUNCH_CHAIN_ALIASES = { bnb: 56, bsc: 56, binance: 56, hyperevm: 999, hype: 999, hl: 999, robinhood: 4663, rh: 4663, hood: 4663, base: 8453 }
-
-let readLaunchesFn = (o) => readLaunches(o)
-/** Test hook: replace the DeepCore launches read. */
 export function setLaunchesReaderForTest(fn) {
   readLaunchesFn = fn
 }
+export function setAskForTest(fn, ready = () => true) {
+  askFn = fn ?? ((chatId, q) => askForChat(chatId, q))
+  askReady = fn ? ready : () => askConfigured()
+}
 
-/** /launches [chain]: the latest DeepCore launches, newest first. */
-async function cmdLaunches(args) {
-  const arg = args.split(/\s+/).filter(Boolean)[0]?.toLowerCase().slice(0, 20)
-  const chainId = arg ? (LAUNCH_CHAIN_ALIASES[arg] ?? (DEEPCORE_CHAINS[Number(arg)] ? Number(arg) : undefined)) : null
-  if (chainId === undefined) return `DeepCore runs on ${Object.values(DEEPCORE_CHAINS).map((c) => esc(c.key)).join(', ')}. Try <code>/launches</code> or <code>/launches base</code>.`
-  let r
-  try {
-    r = await readLaunchesFn({ chainId, limit: 5 })
-  } catch {
-    r = { state: 'unreadable', launches: [] }
+/** Tracker rows, or null when the tracker cannot be read. */
+const rowsOrNull = () => Promise.resolve().then(readRows).catch(() => null)
+const rowCount = () => rowsOrNull().then((r) => (r?.length ? r.length : null))
+
+/** Runs one of the dashboard's route handlers for the linked account, with a synthetic request. */
+async function callRoute(handler, method, pathname, body, ...args) {
+  const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)])
+  Object.assign(req, { method, headers: { 'user-agent': 'GullyLabsBot' } })
+  const out = { status: 500, data: null }
+  const res = {
+    statusCode: 200,
+    writeHead(s) {
+      out.status = s
+      this.statusCode = s
+    },
+    end(b) {
+      try {
+        out.data = JSON.parse(String(b ?? 'null'))
+      } catch {
+        out.data = null
+      }
+    },
   }
-  const where = chainId ? ` on ${esc(DEEPCORE_CHAINS[chainId].name)}` : ''
-  if (r.state === 'unreadable') return `DeepCore’s launches could not be read just now. Try again in a minute.\n<a href="https://deepcore.fun">deepcore.fun</a>`
-  const unread = (r.chains ?? []).filter((c) => c.status !== 'ok' && (!chainId || c.chainId === chainId)).map((c) => esc(c.name))
-  const notes = []
-  if (r.state === 'stale') notes.push(`<i>DeepCore could not be read just now; this is the list as of ${esc(when(r.asOf))}.</i>`)
-  if (unread.length) notes.push(`<i>DeepCore could not read ${unread.join(', ')}; launches there may be missing.</i>`)
-  if (!r.launches.length) return [`No launches on DeepCore${where} yet.`, ...notes, '<a href="https://deepcore.fun">deepcore.fun</a>'].join('\n')
-  const list = r.launches.map((l, i) => `${i + 1}. ${launchBlock(l)}`)
-  return [`<b>Latest DeepCore launches${where}</b>`, list.join('\n\n'), ...notes, `<i>Read from api.deepcore.fun${r.asOf ? ` at ${esc(when(r.asOf))}` : ''}. Information only.</i>`].join('\n')
+  await handler(req, res, new URL(pathname, 'http://telegram.bot.internal'), ...args)
+  return out
 }
+const alertsCall = (address, method, p, body) => callRoute(handleAlerts, method, p, body, address)
 
-async function cmdMovers() {
-  let m
-  try {
-    m = await readMoversFn('24h')
-  } catch {
-    return 'Movers could not be read just now. Try again in a minute.'
+/* -------------------------------------------------------------- banner --- */
+
+const HERE = path.dirname(fileURLToPath(import.meta.url))
+function bannerFile() {
+  const candidates = [process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand/telegram/banner.gif'), path.join(HERE, '../public/brand/telegram/banner.gif'), path.join(HERE, 'dist/brand/telegram/banner.gif')].filter(Boolean)
+  for (const f of candidates) {
+    try {
+      const buf = fs.readFileSync(f)
+      if (buf.length > 6 && buf.subarray(0, 3).toString() === 'GIF') return { buf, sha: sha256(buf).slice(0, 16) }
+    } catch {
+      /* next */
+    }
   }
-  const list = Array.isArray(m?.byGap) ? m.byGap.slice(0, 5) : null
-  if (!list) return 'Movers could not be read just now. Try again in a minute.'
-  if (!list.length) return esc(m.note ?? 'Not enough snapshots yet to compare with 24 hours ago.')
-  const lines = list.map((e, i) => `${i + 1}. <a href="${esc(stockUrl(e.chain, e.ticker))}">${esc(e.ticker)}</a> · ${esc(chainName(e.chain))}: gap ${esc(signed(e.gapChangePp))} pp in 24h, now ${esc(signed(e.gapNow))}%`)
-  return `<b>Biggest gap moves, 24 hours</b>\n${lines.join('\n')}\n<a href="${SITE}/tracker">gullylabs.xyz/tracker</a>`
+  return null
 }
 
-/** /ask QUESTION: Gully Ask's answer, with its sources as links. */
-async function cmdAsk(chatId, question) {
-  if (!askConfigured()) return 'Ask is not available yet. The docs: <a href="https://docs.gullylabs.xyz">docs.gullylabs.xyz</a>'
-  const q = question.replace(/\s+/g, ' ').trim()
-  if (!q) return 'Ask a question after the command: <code>/ask how do gap alerts work?</code>'
-  if (q.length > MAX_QUESTION) return `A question can be at most ${MAX_QUESTION} characters.`
-  const r = await askForChat(chatId, q)
-  if (!r.ok) return esc(r.error)
-  const body = esc(r.answer.replace(/\*\*([^*]+)\*\*/g, '$1'))
-  const sources = r.citations.map((c) => `[${c.n}] <a href="${esc(c.url)}">${esc(c.title)}</a>`)
-  return `${body}${sources.length ? `\n\n<b>Sources</b>\n${sources.join('\n')}` : ''}\n\n<i>Information only, not investment advice.</i>`
-}
-
-function cmdAlerts(link) {
-  const list = alertsForChat(link.address)
-  if (!list.length) return `No alerts on ${esc(shortAddr(link.address))} yet. Make one in the developer dashboard, Alerts tab, and tick Telegram.`
-  const lines = list.slice(0, 20).map((a) => `• ${esc(a.label)}: ${esc(a.condition)} · <i>${esc(a.state)}</i>${a.telegram ? '' : ' · not sent to Telegram'}`)
-  return `<b>Alerts on ${esc(shortAddr(link.address))}</b>\n${lines.join('\n')}${list.length > 20 ? `\n…and ${list.length - 20} more in the dashboard.` : ''}`
-}
-
-/* ---------------------------------------------------------------- updates --- */
-
-const PUBLIC_COMMANDS = new Set(['start', 'help', 'gap', 'top', 'ask', 'launches'])
-const cmdHits = new Map()
-const seenUpdates = new Set()
-
-/** Per-chat command limit: 20 a minute. Returns 'ok', 'warn' (first refusal) or 'drop'. */
-function commandAllowed(chatId) {
-  const now = Date.now()
-  const s = cmdHits.get(chatId) ?? { list: [], warned: 0 }
-  s.list = s.list.filter((t) => now - t < 60_000)
-  cmdHits.set(chatId, s)
-  if (s.list.length >= 20) {
-    if (now - s.warned < 60_000) return 'drop'
-    s.warned = now
-    return 'warn'
+/** /start: the animated banner with its caption and the main menu. Falls back to a text menu. */
+async function sendBanner(chatId) {
+  const n = await rowCount()
+  const caption = cap(ui.menuCaption(n), MAX_CAPTION)
+  const reply_markup = markup(ui.MENU_KEYBOARD)
+  const file = bannerFile()
+  const sha = file?.sha ?? 'url'
+  const cached = db.banner?.sha === sha ? db.banner.fileId : null
+  const r = await queued(chatId, 'sendAnimation', () => {
+    if (cached) return { chat_id: String(chatId), animation: cached, caption, parse_mode: 'HTML', reply_markup }
+    if (!file) return { chat_id: String(chatId), animation: BANNER_URL, caption, parse_mode: 'HTML', reply_markup }
+    const f = new FormData()
+    f.set('chat_id', String(chatId))
+    f.set('animation', new Blob([file.buf], { type: 'image/gif' }), 'gully-labs.gif')
+    f.set('caption', caption)
+    f.set('parse_mode', 'HTML')
+    f.set('width', '640')
+    f.set('height', '320')
+    f.set('reply_markup', JSON.stringify(reply_markup))
+    return f
+  })
+  const fileId = r.result?.animation?.file_id ?? r.result?.document?.file_id ?? null
+  if (r.ok && fileId && !cached) {
+    db.banner = { fileId, sha }
+    save()
   }
-  s.list.push(now)
-  return 'ok'
+  if (!r.ok) {
+    if (cached) {
+      db.banner = null // a stale file_id: upload again next time
+      save()
+    }
+    const t = await show(chatId, ui.menuView(n))
+    return { ok: t.ok, id: t.id, banner: false }
+  }
+  return { ok: true, id: r.result?.message_id ?? null, banner: true }
 }
-setInterval(() => {
-  const now = Date.now()
-  for (const [k, s] of cmdHits) if (!s.list.some((t) => now - t < 60_000)) cmdHits.delete(k)
-}, 600_000).unref?.()
+
+/* ------------------------------------------------------------- linking --- */
 
 function chatTitleOf(chat) {
   if (chat.type === 'private') return [chat.first_name, chat.last_name].filter(Boolean).join(' ').slice(0, 64) + (chat.username ? ` (@${String(chat.username).slice(0, 32)})` : '')
@@ -533,13 +468,165 @@ async function linkWithCode(msg, code) {
   db.links = db.links.filter((l) => l.address !== c.address && l.chatId !== chatId)
   db.links.push({ address: c.address, chatId, chatType: chat.type, chatTitle: chatTitleOf(chat), linkedBy: fromId, linkedAt: new Date(now).toISOString() })
   save()
-  return `Linked to <b>${esc(shortAddr(c.address))}</b>. Alerts with Telegram delivery arrive here.\n/alerts lists them · /stop unlinks${chat.type === 'private' ? '' : ' (only you can unlink this group)'}.`
+  return `✅ Linked to <b>${esc(shortAddr(c.address))}</b>. Alerts with Telegram delivery arrive here.\nOpen 🔔 My alerts below, or press 🔔 Alert me on any stock card${chat.type === 'private' ? '' : ' (only you can create alerts in, or unlink, this group)'}.`
+}
+
+function unlink(link) {
+  db.links = db.links.filter((l) => l !== link)
+  save()
+}
+
+/** Whether `fromId` may change the account's alerts and link from this chat. */
+const mayAct = (link, fromId) => link.chatType === 'private' || String(fromId) === link.linkedBy
+const blocked = (link) => !!getAccount(link.address)?.blocked
+
+/* ---------------------------------------------------------------- views --- */
+
+const NO_CHANGE = Symbol('no change')
+
+/** The stock card for one chain, with its 24h sparkline. Null for a stock the tracker does not follow. */
+async function stockCard(cc, ticker, from) {
+  const chain = ui.CHAIN_OF[cc]
+  const stock = tracker.trackedStocks().find((s) => s.chain === chain && s.ticker === ticker)
+  if (!stock) return null
+  const rows = await rowsOrNull()
+  const row = rows?.find((r) => r.chain === chain && r.ticker === ticker) ?? null
+  let spark = null
+  try {
+    spark = ui.sparkline(readHistoryFn(chain, ticker))
+  } catch {
+    spark = null
+  }
+  return ui.cardView({ cc, ticker, from, row, name: stock.name, spark })
+}
+
+async function launchesScreen(filter) {
+  const f = Number(filter) || 0
+  let r
+  try {
+    r = await readLaunchesFn({ chainId: f || null, limit: ui.LIST_MAX })
+  } catch {
+    r = { state: 'unreadable', launches: [] }
+  }
+  return ui.launchesView(r, f, DEEPCORE_CHAINS)
+}
+
+async function moversScreen(win) {
+  let m = null
+  try {
+    m = await readMoversFn(win)
+  } catch {
+    m = null
+  }
+  return ui.moversView(m, win)
+}
+
+async function myAlertsScreen(link, page = 1) {
+  if (!link) return ui.linkNeededView('m')
+  return ui.myAlertsView(await alertsOf(link.address), page, DEEPCORE_CHAINS)
+}
+
+const alertById = async (link, id) => (await alertsOf(link.address)).alerts.find((a) => a.id === id) ?? null
+
+async function settingsScreen(link, fromId) {
+  if (!link) return ui.settingsView({ link: null })
+  const tryOr = async (fn) => {
+    try {
+      return await fn()
+    } catch {
+      return null
+    }
+  }
+  const count = await tryOr(async () => (await alertsOf(link.address)).alerts.length)
+  const notify = await tryOr(() => profileOf(link.address).notify ?? null)
+  const workspace = await tryOr(() => workspaceName(link.address))
+  return ui.settingsView({ link, workspace, notify, alertsCount: count, isLinker: String(fromId) === link.linkedBy })
+}
+
+/** Gully AI: the answer screen for one question (Ask's own per-chat and daily limits apply). */
+async function aiAnswer(chatId, question) {
+  if (!askReady()) return { text: '<b>🤖 Gully AI</b>\nGully AI is not available yet. The docs: <a href="https://docs.gullylabs.xyz">docs.gullylabs.xyz</a>', keyboard: [[ubtn('📄 Docs ↗', 'https://docs.gullylabs.xyz'), btn('🏠 Menu', 'm!')]] }
+  const q = String(question).replace(/\s+/g, ' ').trim()
+  if (!q) return { text: '<b>🤖 Gully AI</b>\nType a question after the command: <code>/ask how do gap alerts work?</code>', keyboard: [[btn('💬 Ask', 'ai!'), btn('🏠 Menu', 'm!')]] }
+  if (q.length > MAX_QUESTION) return { text: `<b>🤖 Gully AI</b>\nA question can be at most ${MAX_QUESTION} characters.`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
+  tg('sendChatAction', { chat_id: String(chatId), action: 'typing' }).catch(() => undefined)
+  let r
+  try {
+    r = await askFn(chatId, q)
+  } catch {
+    r = { ok: false, error: 'Gully AI could not answer just now. Try again in a minute.' }
+  }
+  return ui.aiAnswerView(r)
+}
+
+/** Sends a force_reply prompt and remembers what the reply is for. */
+async function prompt(chatId, text, pending, placeholder) {
+  const r = await sendText(chatId, esc(text), { reply_markup: { force_reply: true, input_field_placeholder: placeholder } })
+  if (r.ok) ui.setState(chatId, { pending: { ...pending, promptId: r.result?.message_id ?? null } })
+  return r
+}
+
+/* ------------------------------------------------------------ commands --- */
+
+const LAUNCH_CHAIN_ALIASES = { bnb: 56, bsc: 56, binance: 56, hyperevm: 999, hype: 999, hl: 999, robinhood: 4663, rh: 4663, hood: 4663, base: 8453 }
+const chainArgOf = (a) => (!a ? null : ['bnb', 'bsc', 'binance', 'bn'].includes(a) ? 'bsc' : ['robinhood', 'rh', 'hood'].includes(a) ? 'robinhood' : a)
+
+/** /gap TICKER [chain]: the card, a chain choice, or the stocks screen. */
+async function gapScreen(args) {
+  const [rawTicker, rawChain] = args.split(/\s+/).filter(Boolean)
+  const stocks = tracker.trackedStocks()
+  if (!rawTicker) return ui.chainPickerView(stocks, true)
+  const ticker = rawTicker.toUpperCase().replace(/^\$/, '').slice(0, 12)
+  const chainKey = chainArgOf(rawChain?.toLowerCase().slice(0, 20))
+  if (!/^[A-Z.]{1,8}$/.test(ticker)) return { text: 'That is not a ticker. Try <code>/gap NVDA</code>, or browse 📈 Stocks.', keyboard: [[btn('📈 Stocks', 'stk')], ui.nav('m')] }
+  const followed = stocks.filter((s) => s.ticker === ticker && (!chainKey || s.chain === chainKey))
+  if (!followed.length) return { text: `${esc(ticker)}${chainKey ? ` on ${esc(chainName(chainKey))}` : ''} is not a stock the tracker follows. Browse the list in 📈 Stocks.`, keyboard: [[btn('📈 Stocks', 'stk')], ui.nav('m')] }
+  if (followed.length === 1) return stockCard(ui.CODE_OF[followed[0].chain], ticker, 'x')
+  const rows = await rowsOrNull()
+  return ui.bothChainsView(
+    ticker,
+    followed.map((s) => ({ chain: s.chain, row: rows?.find((r) => r.chain === s.chain && r.ticker === ticker) ?? null })),
+  )
+}
+
+/* ---------------------------------------------------------------- updates --- */
+
+// Unlinked chats may use these; everything else from them is ignored.
+const PUBLIC_COMMANDS = new Set(['start', 'help', 'menu', 'gap', 'top', 'movers', 'ask', 'launches', 'alerts'])
+const hits = new Map()
+const seenUpdates = new Set()
+
+/** Per-chat limit: `max` a minute per bucket. Returns 'ok', 'warn' (first refusal) or 'drop'. */
+function allowed(key, max) {
+  const now = Date.now()
+  const s = hits.get(key) ?? { list: [], warned: 0 }
+  s.list = s.list.filter((t) => now - t < 60_000)
+  hits.set(key, s)
+  if (s.list.length >= max) {
+    if (now - s.warned < 60_000) return 'drop'
+    s.warned = now
+    return 'warn'
+  }
+  s.list.push(now)
+  return 'ok'
+}
+setInterval(() => {
+  const now = Date.now()
+  for (const [k, s] of hits) if (!s.list.some((t) => now - t < 60_000)) hits.delete(k)
+  ui.sweepStates(now)
+}, 600_000).unref?.()
+
+/** Shows a view as a new message and makes it the chat's current screen. */
+async function showNew(chatId, view) {
+  const s = await show(chatId, view)
+  if (s.id) ui.setState(chatId, { viewId: s.id })
+  return s
 }
 
 async function onMessage(msg) {
   if (!msg?.chat || typeof msg.text !== 'string') return
   const m = msg.text.slice(0, 800).match(/^\/([a-z_]{1,32})(?:@([A-Za-z0-9_]{3,64}))?(?:\s+([\s\S]*))?$/i)
-  if (!m) return
+  if (!m) return onText(msg)
   const [, rawCmd, at, rawArgs = ''] = m
   if (at) {
     const name = await botUsername()
@@ -548,52 +635,306 @@ async function onMessage(msg) {
   const cmd = rawCmd.toLowerCase()
   const chatId = String(msg.chat.id)
   const args = rawArgs.trim().slice(0, 100)
-  const longArgs = rawArgs.trim().slice(0, MAX_QUESTION + 1)
   const link = linkOfChat(chatId)
   if (!link && !PUBLIC_COMMANDS.has(cmd)) return
-  const gate = commandAllowed(chatId)
+  const gate = allowed(`cmd:${chatId}`, 20)
   if (gate === 'drop') return
   if (gate === 'warn') return void (await sendText(chatId, 'Too many commands in a minute. Try again shortly.'))
 
-  let reply
+  let view = null
   if (cmd === 'start') {
     const code = args.split(/\s+/)[0]
-    if (code && /^[A-Za-z0-9_-]{16,64}$/.test(code)) reply = await linkWithCode(msg, code)
-    else if (code) reply = 'That link is not valid. Make a new one in the developer dashboard (Alerts tab, Connect Telegram).'
-    else reply = helpText(!!link)
-  } else if (cmd === 'help') reply = helpText(!!link)
-  else if (cmd === 'gap') reply = await cmdGap(args)
-  else if (cmd === 'top') reply = await cmdTop()
-  else if (cmd === 'launches') reply = await cmdLaunches(args)
-  else if (cmd === 'ask') {
-    tg('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => undefined)
-    reply = await cmdAsk(chatId, longArgs)
-  }
-  else if (cmd === 'movers') reply = movers() ? await cmdMovers() : helpText(true)
-  else if (cmd === 'alerts') reply = cmdAlerts(link)
-  else if (cmd === 'stop') {
-    if (link.chatType !== 'private' && String(msg.from?.id) !== link.linkedBy) reply = 'Only the person who linked this group can unlink it.'
+    if (code && /^[A-Za-z0-9_-]{16,64}$/.test(code)) {
+      const text = await linkWithCode(msg, code)
+      if (text) view = { text, keyboard: /^✅/.test(text) ? ui.MENU_KEYBOARD : [[ubtn('🔗 Link wallet ↗', ui.PORTAL_ALERTS)], [btn('🏠 Menu', 'm')]] }
+    } else if (code) view = { text: 'That link is not valid. Make a new one in the developer dashboard (Alerts tab, Connect Telegram).', keyboard: [[ubtn('🔗 Link wallet ↗', ui.PORTAL_ALERTS)], [btn('🏠 Menu', 'm')]] }
     else {
-      db.links = db.links.filter((l) => l !== link)
-      save()
-      reply = 'Unlinked. This chat no longer receives alerts. Link again from the developer dashboard at any time.'
+      const b = await sendBanner(chatId)
+      if (b.id) ui.setState(chatId, b.banner ? { bannerId: b.id, viewId: null, pending: null } : { bannerId: null, viewId: b.id, pending: null })
+      return
+    }
+  } else if (cmd === 'help') view = ui.helpView(!!link)
+  else if (cmd === 'menu') view = ui.menuView(await rowCount())
+  else if (cmd === 'gap') view = await gapScreen(args)
+  else if (cmd === 'top') view = ui.topView(await rowsOrNull())
+  else if (cmd === 'movers') view = await moversScreen('24h')
+  else if (cmd === 'launches') {
+    const a = args.split(/\s+/).filter(Boolean)[0]?.toLowerCase().slice(0, 20)
+    const chainId = a ? (LAUNCH_CHAIN_ALIASES[a] ?? (DEEPCORE_CHAINS[Number(a)] ? Number(a) : undefined)) : 0
+    if (chainId === undefined) view = { text: `DeepCore runs on ${Object.values(DEEPCORE_CHAINS).map((c) => esc(c.key)).join(', ')}. Try <code>/launches</code> or <code>/launches base</code>, or pick a chain below.`, keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], ui.nav('m')] }
+    else view = await launchesScreen(chainId)
+  } else if (cmd === 'ask') {
+    const q = rawArgs.trim().slice(0, MAX_QUESTION + 1)
+    if (!q) return void (await prompt(chatId, ui.AI_PROMPT, { kind: 'ai' }, 'How do gap alerts work?'))
+    view = await aiAnswer(chatId, q)
+  } else if (cmd === 'alerts') view = await myAlertsScreen(link)
+  else if (cmd === 'stop') {
+    if (!mayAct(link, msg.from?.id)) view = { text: 'Only the person who linked this group can unlink it.', keyboard: [[btn('🏠 Menu', 'm')]] }
+    else {
+      unlink(link)
+      view = { text: 'Unlinked. This chat no longer receives alerts. Link again from the developer dashboard at any time.', keyboard: [[ubtn('🔗 Link again ↗', ui.PORTAL_ALERTS), btn('🏠 Menu', 'm')]] }
     }
   } else return
-  if (reply) await sendText(chatId, reply)
+  if (view) await showNew(chatId, view)
 }
 
+/** A plain-text message: the answer to one of the bot's force_reply prompts, or nothing. */
+async function onText(msg) {
+  const chatId = String(msg.chat.id)
+  const st = ui.getState(chatId)
+  const rt = msg.reply_to_message
+  const toBot = !!rt && String(rt.from?.id) === botId()
+  let pending = st?.pending && (msg.chat.type === 'private' || (toBot && rt.message_id === st.pending.promptId)) ? st.pending : null
+  if (!pending && toBot && typeof rt.text === 'string') {
+    // The state expired (or the server restarted): read the request back from the prompt itself.
+    const s = rt.text.match(ui.SEARCH_PROMPT_RE)
+    const c = rt.text.match(ui.CUSTOM_PROMPT_RE)
+    if (s) pending = { kind: 'search', cc: s[1] === 'BNB Chain' ? 'bn' : 'rh' }
+    else if (c) pending = { kind: 'pct', cc: c[2] === 'BNB Chain' ? 'bn' : 'rh', ticker: c[1], from: 'x' }
+    else if (ui.AI_PROMPT_RE.test(rt.text)) pending = { kind: 'ai' }
+  }
+  if (!pending) return
+  const gate = allowed(`cmd:${chatId}`, 20)
+  if (gate === 'drop') return
+  if (gate === 'warn') return void (await sendText(chatId, 'Too many messages in a minute. Try again shortly.'))
+  ui.setState(chatId, { pending: null })
+  const text = msg.text.trim()
+  let view = null
+  if (pending.kind === 'search') {
+    const q = text.slice(0, 40)
+    const { exact, list } = ui.searchMatches(pending.cc, q, tracker.trackedStocks())
+    view = exact ? await stockCard(pending.cc, exact.ticker, 's') : ui.searchResultsView(pending.cc, q, list)
+  } else if (pending.kind === 'ai') view = await aiAnswer(chatId, text.slice(0, MAX_QUESTION + 1))
+  else if (pending.kind === 'pct') {
+    const link = linkOfChat(chatId)
+    const back = `al:${pending.cc}:${pending.ticker}:${pending.from}`
+    const n = Number(text.replace(/^[±+-]\s*/, '').replace(/%$/, '').replace(',', '.').trim())
+    if (!link) view = ui.linkNeededView(`c:${pending.cc}:${pending.ticker}:${pending.from}`)
+    else if (!mayAct(link, msg.from?.id)) return
+    else if (!Number.isFinite(n) || n < 0.1 || n > 100) view = { text: `“${esc(text.slice(0, 20))}” is not a percentage from 0.1 to 100.`, keyboard: [[btn('✏️ Try again', `alx:${pending.cc}:${pending.ticker}:${pending.from}`)], ui.nav(back)] }
+    else view = ui.alertStep2View(pending.cc, pending.ticker, pending.from, Math.round(n * 100) / 100, tracker.FLAG_PCT)
+  }
+  if (view) await showNew(chatId, view)
+}
+
+/**
+ * One button press. Returns the view to show in place, NO_CHANGE, or undefined for a route that is
+ * not (or no longer) known. `c.answer(text, alert)` sends the toast; navigation is answered before
+ * any data is read.
+ */
+async function routeView(route, c) {
+  const { chatId, link, fromId } = c
+  const stocks = tracker.trackedStocks()
+  const actGuard = (what) => {
+    if (!link) return 'This chat is not linked to an account any more.'
+    if (!mayAct(link, fromId)) return `Only the person who linked this group can ${what}.`
+    if (blocked(link)) return 'This account is blocked from the developer programme.'
+    return null
+  }
+  let m
+
+  if (route === 'm') return c.answer(), ui.menuView(await rowCount())
+  if (route === 'stk') return c.answer(), ui.chainPickerView(stocks, true)
+  if ((m = route.match(/^stk:(rh|bn):p(\d{1,2})$/))) return c.answer(), ui.gridView(m[1], Number(m[2]), stocks, await rowsOrNull())
+  if ((m = route.match(/^srch:(rh|bn)$/))) {
+    c.answer('Type a ticker in the reply box')
+    await prompt(chatId, ui.searchPrompt(m[1]), { kind: 'search', cc: m[1] }, 'NVDA')
+    return NO_CHANGE
+  }
+  if ((m = route.match(/^c:(rh|bn):([A-Z.]{1,8}):(\w{1,3})$/)) && ui.fromOk(m[3]) && stocks.some((s) => s.chain === ui.CHAIN_OF[m[1]] && s.ticker === m[2])) {
+    c.answer()
+    return stockCard(m[1], m[2], m[3])
+  }
+  if ((m = route.match(/^(al|alx|alk):(rh|bn):([A-Z.]{1,8}):(\w{1,3})(?::(\d{1,3}(?:\.\d{1,2})?))?(?::([epd]))?$/)) && ui.fromOk(m[4])) {
+    const [, kind, cc, ticker, from, pct, dir] = m
+    if (!stocks.some((s) => s.chain === ui.CHAIN_OF[cc] && s.ticker === ticker)) return undefined
+    if (pct !== undefined && (Number(pct) < 0.1 || Number(pct) > 100)) return undefined
+    const card = `c:${cc}:${ticker}:${from}`
+    if (!link) return c.answer(), ui.linkNeededView(card)
+    if (!mayAct(link, fromId)) return c.answer('Only the person who linked this group can create alerts here.', true), NO_CHANGE
+    if (kind === 'alx') {
+      c.answer('Type a percentage in the reply box')
+      await prompt(chatId, ui.customPctPrompt(cc, ticker), { kind: 'pct', cc, ticker, from }, '1.5')
+      return NO_CHANGE
+    }
+    if (kind === 'al') {
+      c.answer()
+      if (pct === undefined) return ui.alertStep1View(cc, ticker, from)
+      if (dir === undefined) return ui.alertStep2View(cc, ticker, from, Number(pct), tracker.FLAG_PCT)
+      return ui.alertStep3View(cc, ticker, from, Number(pct), dir, tracker.FLAG_PCT)
+    }
+    if (pct === undefined || dir === undefined) return undefined
+    const guard = actGuard('create alerts here')
+    if (guard) return c.answer(guard, true), NO_CHANGE
+    const cond = ui.conditionFor(Number(pct), dir, tracker.FLAG_PCT)
+    const r = await alertsCall(link.address, 'POST', '/api/developer/alerts', { chain: ui.CHAIN_OF[cc], ticker, condition: cond.condition, telegram: true })
+    c.answer(r.status === 201 ? '✅ Alert created' : 'The alert was not created', r.status !== 201)
+    return ui.createdView({ ok: r.status === 201, status: r.status, error: r.data?.error, back: card, what: `${ticker} · ${chainName(ui.CHAIN_OF[cc])}: fires when ${cond.text}.` })
+  }
+  if (route === 'top') return c.answer(), ui.topView(await rowsOrNull())
+  if ((m = route.match(/^mv:(24h|1h)$/))) return c.answer(), moversScreen(m[1])
+  if ((m = route.match(/^dc:(\d{1,5})$/)) && (m[1] === '0' || DEEPCORE_CHAINS[Number(m[1])])) return c.answer(), launchesScreen(m[1])
+  if ((m = route.match(/^dl:(\d{1,5}):([0-9a-f]{40}):(\d{1,5})$/))) {
+    c.answer()
+    let r
+    try {
+      r = await readLaunchesFn({ chainId: Number(m[1]), limit: 50 })
+    } catch {
+      r = { launches: [] }
+    }
+    const l = (r?.launches ?? []).find((x) => String(x.token).toLowerCase() === `0x${m[2]}`) ?? null
+    return ui.launchCardView(l, Number(m[3]) || 0)
+  }
+  if ((m = route.match(/^dla:(\d{1,5})(?::(\d{1,5}))?$/))) {
+    const [, f, cid] = m
+    if (cid !== undefined && cid !== '0' && !DEEPCORE_CHAINS[Number(cid)]) return undefined
+    if (!link) return c.answer(), ui.linkNeededView(`dc:${f}`, 'Launch alerts')
+    if (!mayAct(link, fromId)) return c.answer('Only the person who linked this group can create alerts here.', true), NO_CHANGE
+    c.answer()
+    return cid === undefined ? ui.launchAlertStep1View(f, DEEPCORE_CHAINS) : ui.launchAlertStep2View(f, Number(cid), DEEPCORE_CHAINS)
+  }
+  if ((m = route.match(/^dlk:(\d{1,5})$/))) {
+    const cid = Number(m[1])
+    if (cid !== 0 && !DEEPCORE_CHAINS[cid]) return undefined
+    if (!link) return c.answer(), ui.linkNeededView('dc:0', 'Launch alerts')
+    const guard = actGuard('create alerts here')
+    if (guard) return c.answer(guard, true), NO_CHANGE
+    const r = await alertsCall(link.address, 'POST', '/api/developer/alerts', { condition: { type: 'deepcore-launch', chainId: cid || null }, telegram: true })
+    c.answer(r.status === 201 ? '✅ Alert created' : 'The alert was not created', r.status !== 201)
+    return ui.createdView({ ok: r.status === 201, status: r.status, error: r.data?.error, back: `dc:${cid}`, what: `New DeepCore launches on ${cid ? DEEPCORE_CHAINS[cid].name : 'any chain'}.` })
+  }
+  if ((m = route.match(/^ma(?::p(\d{1,2}))?$/))) return c.answer(), myAlertsScreen(link, Number(m[1] ?? 1))
+  if ((m = route.match(/^(ac|ap|ar|am|at|ad|adx):([\w-]{1,40})$/))) {
+    const [, act, id] = m
+    if (!link) return c.answer(), ui.linkNeededView('m')
+    const a = await alertById(link, id)
+    if (!a) {
+      c.answer('That alert no longer exists.')
+      return myAlertsScreen(link)
+    }
+    if (act === 'ac') return c.answer(), ui.alertCardView(a, DEEPCORE_CHAINS)
+    const guard = actGuard('change its alerts')
+    if (guard) return c.answer(guard, true), NO_CHANGE
+    if (act === 'ad') return c.answer(), ui.deleteConfirmView(a, DEEPCORE_CHAINS)
+    if (act === 'adx') {
+      const r = await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/delete`)
+      c.answer(r.status === 200 ? '🗑 Deleted' : (r.data?.error ?? 'Not deleted'), r.status !== 200)
+      return myAlertsScreen(link)
+    }
+    if (act === 'am') {
+      const r = muteAlert(id, link.address, MUTE_MS)
+      c.answer(r.ok ? `🔕 Muted until ${when(r.mutedUntil)}` : r.error, !r.ok)
+    } else if (act === 'ap' || act === 'ar') {
+      const r = await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/${act === 'ap' ? 'pause' : 'resume'}`)
+      c.answer(r.status === 200 ? (act === 'ap' ? '⏸ Paused' : '▶ Resumed') : (r.data?.error ?? 'Not changed'), r.status !== 200)
+    } else if (act === 'at') {
+      c.answer('🧪 Sending a test…')
+      await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/test`)
+    }
+    const fresh = await alertById(link, id)
+    return fresh ? ui.alertCardView(fresh, DEEPCORE_CHAINS) : myAlertsScreen(link)
+  }
+  if (route === 'ai') {
+    c.answer('Type your question in the reply box')
+    await prompt(chatId, ui.AI_PROMPT, { kind: 'ai' }, 'How do gap alerts work?')
+    return c.forceNew ? NO_CHANGE : ui.aiIntroView()
+  }
+  if ((m = route.match(/^aiq:(\d)$/)) && ui.AI_EXAMPLES[Number(m[1])]) {
+    c.answer('Asking Gully AI…')
+    await showNew(chatId, await aiAnswer(chatId, ui.AI_EXAMPLES[Number(m[1])]))
+    return NO_CHANGE
+  }
+  if (route === 'set') return c.answer(), settingsScreen(link, fromId)
+  if (route === 'smu' || route === 'sul' || route === 'suly' || /^snt:[01]$/.test(route)) {
+    if (!link) return c.answer(), ui.settingsView({ link: null })
+    const guard = actGuard(route === 'smu' ? 'mute its alerts' : route === 'sul' || route === 'suly' ? 'unlink it' : 'change its settings')
+    if (guard) return c.answer(guard, true), NO_CHANGE
+    if (route === 'sul') return c.answer(), ui.unlinkConfirmView(link)
+    if (route === 'suly') {
+      unlink(link)
+      c.answer('🔓 Unlinked')
+      return { text: '<b>🔓 Unlinked</b>\nThis chat no longer receives alerts. Link again from the developer portal at any time.', keyboard: [[ubtn('🔗 Link again ↗', ui.PORTAL_ALERTS)], [btn('🏠 Menu', 'm')]] }
+    }
+    if (route === 'smu') {
+      let n = 0
+      let until = null
+      for (const a of (await alertsOf(link.address)).alerts) {
+        const r = muteAlert(a.id, link.address, MUTE_MS)
+        if (r.ok) {
+          n++
+          until = r.mutedUntil
+        }
+      }
+      c.answer(n ? `🔕 ${n} alert${n === 1 ? '' : 's'} muted until ${when(until)}` : 'No alerts to mute.')
+      return settingsScreen(link, fromId)
+    }
+    const on = route === 'snt:1'
+    const r = await callRoute(handleProfileRoutes, 'POST', '/api/developer/profile', { notify: { telegramUsage: on } }, { user: link.address, workspace: link.address, role: 'owner', sessionId: null })
+    c.answer(r.status === 200 ? `📣 Usage notices ${on ? 'on' : 'off'}` : (r.data?.error ?? 'Not changed'), r.status !== 200)
+    return settingsScreen(link, fromId)
+  }
+  return undefined
+}
+
+/** One button press. Every press is answered exactly once (answerCallbackQuery), as early as possible. */
 async function onCallback(cq) {
-  const answer = (text, alert = false) => tg('answerCallbackQuery', { callback_query_id: String(cq.id), text: text.slice(0, 190), show_alert: alert })
-  const data = typeof cq?.data === 'string' ? cq.data : ''
+  let answering = null
+  const answer = (text = '', alert = false) => {
+    answering ??= tg('answerCallbackQuery', { callback_query_id: String(cq.id), ...(text ? { text: String(text).slice(0, 190), show_alert: alert } : {}) }).catch(() => undefined)
+  }
+  try {
+    await pressed(cq, answer)
+  } finally {
+    answer()
+    await answering
+  }
+}
+
+async function pressed(cq, answer) {
+  const data = typeof cq?.data === 'string' ? cq.data.slice(0, 64) : ''
   const chatId = cq?.message?.chat?.id !== undefined ? String(cq.message.chat.id) : null
   const link = chatId ? linkOfChat(chatId) : null
+  const fromId = cq?.from?.id !== undefined ? String(cq.from.id) : null
+
+  // Mute 24h on an alert delivery.
   const mm = data.match(/^mute:([\w-]{1,40})$/)
-  if (!mm) return answer('Unknown button.')
-  if (!link) return answer('This chat is not linked to an account any more.', true)
-  if (link.chatType !== 'private' && String(cq.from?.id) !== link.linkedBy) return answer('Only the person who linked this group can mute its alerts.', true)
-  const r = muteAlert(mm[1], link.address, MUTE_MS)
-  if (!r.ok) return answer(r.error, true)
-  return answer(`Muted until ${when(r.mutedUntil)}. Resume it any time in the dashboard.`)
+  if (mm || !chatId) {
+    if (!mm) return answer('Unknown button.')
+    if (!link) return answer('This chat is not linked to an account any more.', true)
+    if (!mayAct(link, fromId)) return answer('Only the person who linked this group can mute its alerts.', true)
+    const r = muteAlert(mm[1], link.address, MUTE_MS)
+    if (!r.ok) return answer(r.error, true)
+    return answer(`🔕 Muted until ${when(r.mutedUntil)}. Resume it in 🔔 My alerts.`)
+  }
+  const gate = allowed(`cb:${chatId}`, 60)
+  if (gate !== 'ok') return answer(gate === 'warn' ? 'Too many taps in a minute. Try again shortly.' : '')
+  if (data === 'noop') return answer()
+
+  const forceNew = data.endsWith('!')
+  const route = forceNew ? data.slice(0, -1) : data
+  const src = cq.message
+  const fromBanner = !!(src?.animation || src?.document || (src?.caption !== undefined && src?.text === undefined))
+  let view
+  try {
+    view = await routeView(route, { chatId, link, fromId, answer, forceNew })
+  } catch (e) {
+    console.error('telegram callback:', redact(e?.message ?? e))
+    answer('Something went wrong. Try again in a minute.', true)
+    return
+  }
+  if (view === undefined) {
+    answer('This menu expired, here’s a fresh one')
+    await showNew(chatId, ui.expiredView())
+    return
+  }
+  answer()
+  if (view === NO_CHANGE) return
+  // The banner keeps its place: its first drill-down is a new text message, edited from then on.
+  const st = ui.getState(chatId)
+  let editId = forceNew ? null : (src?.message_id ?? null)
+  if (fromBanner) editId = !forceNew && st?.bannerId === src?.message_id && st?.viewId ? st.viewId : null
+  const s = await show(chatId, view, editId)
+  if (s.id) ui.setState(chatId, fromBanner ? { bannerId: src?.message_id ?? null, viewId: s.id } : { viewId: s.id })
 }
 
 /** Handles one update. Exported for tests through the webhook only. */
@@ -660,8 +1001,7 @@ export async function handleTelegramAccount(req, res, url, address) {
   if (p === '/api/developer/telegram/unlink') {
     const l = linkedChat(address)
     if (!l) return json(res, 200, { ok: true, linked: null }), true
-    db.links = db.links.filter((x) => x !== l)
-    save()
+    unlink(l)
     sendText(l.chatId, 'This chat was unlinked from the developer dashboard. It no longer receives alerts.').catch(() => undefined)
     return json(res, 200, { ok: true, linked: null }), true
   }
