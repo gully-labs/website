@@ -12,6 +12,7 @@ export const DOC_PAGES = [
   { slug: 'sdk', title: 'SDK', group: 'Build' },
   { slug: 'analytics', title: 'Gully Analytics', group: 'Products' },
   { slug: 'gully-pay', title: 'Gully Pay', group: 'Products' },
+  { slug: 'gully-pay-merchants', title: 'Gully Pay for merchants', group: 'Products' },
   { slug: 'changelog', title: 'Changelog', group: 'More' },
 ] as const
 

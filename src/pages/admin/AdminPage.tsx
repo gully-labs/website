@@ -9,6 +9,7 @@ import { adminCall } from './payAdmin'
 import { DeliveryLog, EmbedBox, PayLinks, SecretOnce, type Delivery, type Endpoint } from './PayLinks'
 import { AskStudio } from './AskStudio'
 import { TelegramChats } from './TelegramChats'
+import { MerchantsAdmin } from './MerchantsAdmin'
 import { copyWithToast, flash } from '../../components/ui/toast'
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
@@ -873,6 +874,7 @@ export function AdminPage() {
 
             <Invoices invoices={data.invoices.invoices} assets={data.invoices.assets} act={act} token={token} reload={reload} />
             <PayLinks token={token} />
+            <MerchantsAdmin token={token} />
 
             {data.requests.length > 0 && (
             <section className={card}>

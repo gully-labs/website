@@ -56,6 +56,7 @@ const DOCS_PAGES = {
   '/analytics': ['Gully Analytics · Gully Labs docs', 'Gully Analytics: sign up with a wallet, install the tracker, Web3 events, address privacy modes, plans and what happens at the quota or when a plan lapses.'],
   '/plans-alerts': ['Plans & alerts · Gully Labs docs', 'Paid API plans paid in ETH, BNB, USDC or USDT on four chains, gap alerts by webhook or Telegram, the webhook payload and how to verify its signature.'],
   '/gully-pay': ['Gully Pay · Gully Labs docs', 'Gully Pay: invoices and reusable pay links in ETH, BNB, USDC or USDT, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them.'],
+  '/gully-pay-merchants': ['Gully Pay for merchants · Gully Labs docs', 'Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],
 }

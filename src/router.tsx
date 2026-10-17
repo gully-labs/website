@@ -27,6 +27,10 @@ const mainRoutes = [
       { path: '/pay/:id', element: <PayRoute /> },
       // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
       { path: '/pay/l/:id', element: <PayLinkRoute /> },
+      // Gully Pay for merchants: a store's invoice and link checkouts (paid to the store's wallet), and the draft terms.
+      { path: '/pay/m/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantInvoicePage })) },
+      { path: '/pay/m/l/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantLinkPage })) },
+      { path: '/gully-pay/merchant-terms', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantTermsPage })) },
       { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={DEVELOPERS_URL} /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

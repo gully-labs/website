@@ -1,4 +1,4 @@
-import { BookOpen, Copy, LogOut } from 'lucide-react'
+import { BookOpen, Copy, LogOut, Store } from 'lucide-react'
 import { VenueLogo } from '../../components/logos/VenueLogo'
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { DOCS_URL, SITE_URL } from '../../site-host'
@@ -7,6 +7,7 @@ import { AnalyticsPanel } from './Analytics'
 import { daysLeft, shortAddress, type Account, type PlanId } from './api'
 import { Billing, type CheckoutIntent } from './Billing'
 import { KeysTab } from './Keys'
+import { MerchantTab } from './merchant/MerchantTab'
 import { Overview } from './Overview'
 import { copyWithToast } from '../../components/ui/toast'
 
@@ -15,7 +16,7 @@ import { copyWithToast } from '../../components/ui/toast'
    pricing page links to #billing) and work as an ARIA tablist (arrow keys, Home, End). The old tab
    hashes #quickstart, #requests and #widget open Keys at that section. */
 
-export type Tab = 'overview' | 'keys' | 'alerts' | 'analytics' | 'billing'
+export type Tab = 'overview' | 'keys' | 'alerts' | 'analytics' | 'billing' | 'merchant'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -23,6 +24,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'alerts', label: 'Alerts' },
   { id: 'analytics', label: 'Analytics' },
   { id: 'billing', label: 'Billing' },
+  { id: 'merchant', label: 'Merchant' },
 ]
 const LEGACY: Record<string, Tab> = { quickstart: 'keys', requests: 'keys', widget: 'keys' }
 
@@ -203,6 +205,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
                   onClick={() => setTab(t.id)}
                   className={`min-h-11 shrink-0 border-b-2 px-[14px] font-medium whitespace-nowrap transition-colors -outline-offset-2 ${on ? 'border-gold text-ink' : 'border-transparent text-dim hover:text-ink'}`}
                 >
+                  {t.id === 'merchant' && <Store size={14} aria-hidden className="mr-[6px] -mt-[2px] inline" />}
                   {t.label}
                   {t.id === 'keys' && <span className="ml-2 rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{account.keys.filter((k) => !k.revokedAt).length}</span>}
                 </button>
@@ -234,6 +237,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         {tab === 'keys' && <KeysTab account={account} reload={reload} creating={newKey} onCreateDone={clearNewKey} section={section} />}
         {tab === 'alerts' && <Alerts goBilling={() => go('billing')} creating={newAlert} onCreateDone={clearNewAlert} />}
         {tab === 'analytics' && <AnalyticsPanel />}
+        {tab === 'merchant' && <MerchantTab />}
         {tab === 'billing' && <Billing account={account} reload={reload} intent={intent} onIntentDone={clearIntent} />}
       </div>
     </div>

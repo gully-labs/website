@@ -46,6 +46,7 @@ import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests, u
 import { eventFor, noteTelegramConnect, recordEvent, activityPage, syncTelegram } from './activity.mjs'
 import { handleAlerts } from './alerts.mjs'
 import { handleExport } from './exports.mjs'
+import { handleMerchant } from './merchants.mjs'
 import { handleProfileRoutes } from './profile.mjs'
 import { canWrite, forbidden, handleInvitePreview, handleWorkspaceRoutes, roleIn } from './workspaces.mjs'
 import { handleAnalyticsAccount } from './analytics-accounts.mjs'
@@ -230,7 +231,9 @@ export async function handleDeveloper(req, res, url) {
     p.startsWith('/api/developer/team/') ||
     p === '/api/developer/invite/accept' ||
     p === '/api/developer/activity' ||
-    p.startsWith('/api/developer/export/')
+    p.startsWith('/api/developer/export/') ||
+    p === '/api/developer/merchant' ||
+    p.startsWith('/api/developer/merchant/')
 
   if (accountRoute || v2Route) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -262,6 +265,7 @@ export async function handleDeveloper(req, res, url) {
         return json(res, 200, { workspace: { id: workspace }, ...page }), true
       }
       if (p.startsWith('/api/developer/export/')) return handleExport(req, res, url, ctx)
+      if (p === '/api/developer/merchant' || p.startsWith('/api/developer/merchant/')) return handleMerchant(req, res, url, ctx)
       if (p === '/api/developer/me' || p === '/api/developer/profile' || p === '/api/developer/company' || p.startsWith('/api/developer/sessions')) return handleProfileRoutes(req, res, url, ctx)
       return handleWorkspaceRoutes(req, res, url, ctx)
     }

@@ -91,8 +91,10 @@ function pruneQuotes() {
 }
 
 const usedKey = (chainId, hash) => `${chainId}:${hash}`
+/** Other ledgers that spend transaction hashes (merchants.mjs registers its own): one tx pays for one thing, anywhere. */
+export const externalHashUsed = []
 /** Whether chainId:hash already paid for anything. */
-export const hashUsed = (chainId, hash) => db.payments.some((p) => usedKey(p.chainId, p.txHash) === usedKey(chainId, hash))
+export const hashUsed = (chainId, hash) => db.payments.some((p) => usedKey(p.chainId, p.txHash) === usedKey(chainId, hash)) || externalHashUsed.some((f) => f(chainId, hash))
 
 /* --------------------------------------------------------------- views --- */
 
@@ -219,8 +221,8 @@ const verifying = new Set()
  * When everything holds, `run({ match, read, asset })` records the payment and its answer is returned;
  * otherwise resolves to { ok: false, status, error, pending?, confirmations?, needed? }.
  */
-async function checkTx({ quote, asset, txHash, signer, minRaw, label, run }) {
-  const t = treasury()
+export async function checkTx({ quote, asset, txHash, signer, minRaw, label, run, recipient = null }) {
+  const t = recipient ?? treasury() // a merchant quote (merchants.mjs) names its own recipient
   if (!t) return noTreasury
   if (quote && quote.treasury !== t) return { ok: false, status: 409, error: 'This quote was made for an earlier treasury address. Start a new one.' }
   if (hashUsed(asset.chainId, txHash)) return { ok: false, status: 409, error: 'This transaction has already been used for a payment.' }
