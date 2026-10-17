@@ -1,0 +1,29 @@
+{{!< default}}
+<main id="gl-main" class="gl-main gl-author" tabindex="-1">
+    {{#author}}
+        <header class="gl-archive-head gl-archive-head--author gl-page">
+            {{#if profile_image}}
+                <img class="gl-avatar gl-avatar--xl" src="{{img_url profile_image size="s"}}" alt="" width="112" height="112">
+            {{else}}
+                <span class="gl-avatar gl-avatar--xl gl-avatar--empty" aria-hidden="true">{{> "icons/user"}}</span>
+            {{/if}}
+            <div class="gl-archive-copy">
+                <p class="gl-kicker"><span class="gl-kicker-num">{{> "icons/user"}}</span><span>Author</span></p>
+                <h1 class="gl-archive-title">{{name}}</h1>
+                {{#if bio}}<p class="gl-archive-sub">{{bio}}</p>{{/if}}
+                <ul class="gl-author-links" role="list">
+                    {{#if location}}<li class="gl-meta-item">{{> "icons/house"}}{{location}}</li>{{/if}}
+                    {{#if website}}<li><a class="gl-textlink" href="{{website}}" target="_blank" rel="noopener noreferrer">{{> "icons/link"}}Website{{> "ext-mark"}}</a></li>{{/if}}
+                    {{#if twitter}}<li><a class="gl-textlink" href="{{social_url type="twitter"}}" target="_blank" rel="noopener noreferrer">{{> "icons/brand-x"}}X{{> "ext-mark"}}</a></li>{{/if}}
+                    <li class="gl-meta-item">{{> "icons/file-text"}}{{plural ../pagination.total empty="No posts yet" singular="% post" plural="% posts"}}</li>
+                </ul>
+            </div>
+        </header>
+    {{/author}}
+    <section class="gl-section gl-page" aria-label="Posts">
+        <div class="gl-grid">
+            {{#foreach posts}}{{> "post-card"}}{{/foreach}}
+        </div>
+    </section>
+    {{pagination}}
+</main>

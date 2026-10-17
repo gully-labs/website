@@ -1,0 +1,23 @@
+{{!< default}}
+{{#post}}
+<main id="gl-main" class="gl-main gl-page-template" tabindex="-1">
+    <article class="gl-article {{post_class}}">
+        {{#match @page.show_title_and_feature_image}}
+            <header class="gl-article-head gl-page">
+                <p class="gl-kicker"><span>Gully Labs</span><span class="gl-kicker-sep">/</span><span>Page</span></p>
+                <h1 class="gl-article-title">{{title}}</h1>
+                {{#if custom_excerpt}}<p class="gl-article-dek">{{custom_excerpt}}</p>{{/if}}
+            </header>
+            {{#if feature_image}}
+                <figure class="gl-article-banner gl-page">
+                    {{> "banner" variant="post" seed=slug label=title img=feature_image alt=feature_image_alt eager=true}}
+                    {{#if feature_image_caption}}<figcaption>{{feature_image_caption}}</figcaption>{{/if}}
+                </figure>
+            {{/if}}
+        {{/match}}
+        <section class="gh-content gh-canvas gl-content">
+            {{content}}
+        </section>
+    </article>
+</main>
+{{/post}}

@@ -1,0 +1,18 @@
+{{!-- The last cell of the home grid: on to page 2 when there is one. --}}
+{{#get "posts" limit=@config.posts_per_page fields="id"}}
+{{#match pagination.pages ">" 1}}
+    <a class="gl-tile" href="{{page_url 2}}">
+        <span class="gl-kicker">Archive</span>
+        <span class="gl-tile-title">All posts</span>
+        <span class="gl-tile-sub">Older releases and write-ups</span>
+        <span class="gl-tile-arrow">{{> "icons/arrow-right"}}</span>
+    </a>
+{{else}}
+    <a class="gl-tile gl-tile--quiet" href="https://docs.gullylabs.xyz/changelog" target="_blank" rel="noopener noreferrer">
+        <span class="gl-kicker">Changelog</span>
+        <span class="gl-tile-title">What shipped{{> "ext-mark"}}</span>
+        <span class="gl-tile-sub">Every release, dated, in the docs</span>
+        <span class="gl-tile-arrow">{{> "icons/arrow-up-right"}}</span>
+    </a>
+{{/match}}
+{{/get}}
