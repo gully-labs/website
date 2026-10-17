@@ -9,7 +9,9 @@ const CHAINS = [
   { key: 'bsc', gecko: 'bsc', file: 'server/data/bsc-stocks.json' },
 ]
 const out = 'public/tokens'
-const sources = {}
+// Keep the hand-sourced coin marks (coin/ETH, coin/USDC…) that live in the same file.
+const prev = fs.existsSync(path.join(out, 'SOURCES.json')) ? JSON.parse(fs.readFileSync(path.join(out, 'SOURCES.json'), 'utf8')) : {}
+const sources = Object.fromEntries(Object.entries(prev).filter(([k]) => k.startsWith('coin/')))
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 for (const c of CHAINS) {

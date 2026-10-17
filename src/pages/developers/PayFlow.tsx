@@ -1,4 +1,6 @@
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
+import { ChainMark } from '../../components/pay/AssetPicker'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { QuotePay } from '../../components/pay/QuotePay'
 import type { Offer, PayAsset, Quote, Result } from './api'
@@ -13,8 +15,8 @@ import { chip, pillGold } from './styles'
 /** The chain and asset chips, as two radio groups. */
 export function ChainAssetChips({ assets, value, onChange, disabled }: { assets: PayAsset[]; value: string | null; onChange: (id: string) => void; disabled?: boolean }) {
   const chains = useMemo(() => {
-    const out: { id: number; name: string }[] = []
-    for (const a of assets) if (!out.some((c) => c.id === a.chainId)) out.push({ id: a.chainId, name: a.chain })
+    const out: { id: number; name: string; key: string }[] = []
+    for (const a of assets) if (!out.some((c) => c.id === a.chainId)) out.push({ id: a.chainId, name: a.chain, key: a.chainKey })
     return out
   }, [assets])
   const cur = assets.find((a) => a.id === value) ?? null
@@ -30,6 +32,7 @@ export function ChainAssetChips({ assets, value, onChange, disabled }: { assets:
       <RadioRow label="Chain">
         {chains.map((c) => (
           <Radio key={c.id} on={c.id === chainId} disabled={disabled} onPick={() => pickChain(c.id)}>
+            <ChainMark chainKey={c.key} name={c.name} size={20} />
             {c.name}
           </Radio>
         ))}
@@ -37,6 +40,7 @@ export function ChainAssetChips({ assets, value, onChange, disabled }: { assets:
       <RadioRow label="Asset">
         {onChain.map((a) => (
           <Radio key={a.id} on={a.id === value} disabled={disabled} onPick={() => onChange(a.id)} mono>
+            <TokenLogo symbol={a.symbol} size={20} decorative />
             {a.symbol}
           </Radio>
         ))}

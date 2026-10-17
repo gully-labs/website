@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type JSX } from 'react'
+import { ChainLogo } from '../logos/ChainLogo'
+import { TokenLogo } from '../logos/TokenLogo'
 import { Link } from 'react-router'
 import { ArrowRight, Info } from 'lucide-react'
 import { useReducedMotion } from '../charts/chart-utils'
@@ -155,8 +157,8 @@ function Checkout({ offer }: { offer: Offer }) {
   const st = { open: { label: 'Awaiting payment', cls: 'bg-grid text-ink-2' }, sent: { label: 'Confirming', cls: 'bg-[rgba(232,192,96,.15)] text-gold' }, active: { label: 'Plan active', cls: 'bg-success-bg text-green' } }[phase]
   const inv = `demo-${(hash(planKey + asset.id) % 1e8).toString(36)}`
 
-  const chip = (on: boolean) => `min-h-11 rounded-full border px-3 text-[12px] transition-colors ${on ? 'border-gold bg-gold font-semibold text-bg' : 'border-line-strong text-ink-2 hover:border-line-hover hover:text-ink'}`
-  const group = (label: string, items: { key: string; label: string; on: boolean; pick: () => void }[]) => (
+  const chip = (on: boolean) => `inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[12px] transition-colors ${on ? 'border-gold bg-gold font-semibold text-bg' : 'border-line-strong text-ink-2 hover:border-line-hover hover:text-ink'}`
+  const group = (label: string, items: { key: string; label: string; on: boolean; pick: () => void; icon?: JSX.Element }[]) => (
     <div className="flex flex-col gap-1.5">
       <span id={`pay-${label}`} className="text-[11px] text-dim">
         {label}
@@ -164,6 +166,7 @@ function Checkout({ offer }: { offer: Offer }) {
       <div role="radiogroup" aria-labelledby={`pay-${label}`} className="flex flex-wrap gap-1.5">
         {items.map((it) => (
           <button key={it.key} type="button" role="radio" aria-checked={it.on} onClick={it.pick} className={chip(it.on)}>
+            {it.icon}
             {it.label}
           </button>
         ))}
@@ -185,11 +188,11 @@ function Checkout({ offer }: { offer: Offer }) {
         )}
         {group(
           'Chain',
-          offer.chains.map((c) => ({ key: String(c.id), label: c.name, on: c.id === chain.id, pick: pick(() => (setChainId(c.id), setAssetId(null))) })),
+          offer.chains.map((c) => ({ key: String(c.id), label: c.name, icon: <ChainLogo chain={c.key} size={16} decorative />, on: c.id === chain.id, pick: pick(() => (setChainId(c.id), setAssetId(null))) })),
         )}
         {group(
           'Pay with',
-          assets.map((a) => ({ key: a.id, label: a.symbol, on: a.id === asset.id, pick: pick(() => setAssetId(a.id)) })),
+          assets.map((a) => ({ key: a.id, label: a.symbol, icon: <TokenLogo symbol={a.symbol} size={16} decorative />, on: a.id === asset.id, pick: pick(() => setAssetId(a.id)) })),
         )}
         {!offer.checkout.enabled && (
           <p role="status" className="m-0 flex gap-2 rounded-[8px] border border-line-strong bg-surface-deep px-3 py-2 text-[12px] text-muted">
