@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-17T16:11:06.800Z",
+ "updatedAt": "2026-10-17T17:00:51.286Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -543,6 +543,87 @@
    "updatedAt": "2026-10-17T16:09:52.545Z"
   },
   {
+   "id": "e5604a3a8760",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay",
+   "section": null,
+   "text": "Non-custodial crypto billing: every payment is a plain transfer from the payer’s wallet straight to the treasury, read back from the chain. Invoices, reusable pay links, a hosted checkout and signed webhooks. Gully Pay: invoices and reusable pay links in ETH, BNB, USDC or USDT on four chains, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
+   "id": "c09bfe9ace94",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay#overview",
+   "section": "Overview",
+   "text": "An invoice (/pay/inv_…) asks for one US dollar amount. The payer picks a chain and an asset and gets a quote: the exact amount to send, valid for 20 minutes. Stablecoins count one to one with a unique tag in the last digits; ETH and BNB are priced by the Chainlink USD feed on the same chain. A payment is checked on chain (success, right chain, right asset, the treasury, the exact amount, enough confirmations, never used before) before the invoice is marked paid. The same rules as API plans apply. Base (8453) (10): USDC (6 decimals), ETH Ethereum (1) (6): USDC, USDT (6 decimals), ETH BNB Chain (56) (15): USDT, USDC (18 decimals), BNB Arbitrum (42161) (10): USDC (6 decimals), ETH Nothing is held in between: the transfer goes to the treasury in the payer’s own transaction. If no treasury is configured, every page says checkout is closed and shows no amount or QR.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
+   "id": "aecd2bb90e1b",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay#links",
+   "section": "Pay links",
+   "text": "A pay link (/pay/l/pl_…, an unguessable id) is reusable: every payer who opens it gets an invoice of their own, linked back to the link, then lands in the checkout. Links are made in the admin dashboard. title, description (string): Shown on the link, the checkout and the receipt. amount (fixed | open): A fixed USD amount, or open: the payer types an amount between a minimum and a maximum. The server checks it; the page cannot change it. assets (string[]): Which chain and asset pairs it takes (all by default). active (boolean): Switched off links take no payments. expiresAt (date | null): After it, the link takes no payments. maxUses (number | null): How many paid uses it allows. Checkouts in progress count against it, so a one-off link cannot be paid twice. webhook (https URL | null): Where its events go (webhooks). An invoice made from a link stays open for an hour. Its quote holds 20 minutes and can be renewed. Each address may start ten checkouts from links an hour. A switched-off, expired or used-up link says so plainly and starts no checkout.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
+   "id": "8a09a47ee232",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay#checkout",
+   "section": "The checkout",
+   "text": "Title, amount and a status pill: awaiting payment, confirming, paid, expired or cancelled. Assets grouped by chain; the exact amount, large; a wallet QR; copy buttons for the amount, the treasury address and the token contract. A countdown on the quote, and a new quote when it runs out. A payment sent in time can still be checked after. Pay with wallet sends the exact transfer from a connected wallet. Or send from anywhere and paste the transaction hash. Live confirmations (n / needed), then a receipt with the explorer link, ready to print or save as PDF.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
+   "id": "45322768dcda",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay#qr",
+   "section": "Wallet QR codes",
+   "text": "Every quote carries an uri: an EIP-681 payment request for the exact amount, built on the server from base units (never floating point). The QR encodes it. Wallet support for EIP-681 varies: some read only the address, some ignore the amount or the chain. The checkout always shows the address, the exact amount and the token contract with copy buttons. Check the amount and the network in the wallet before sending.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
+   "id": "8b45ddf7deff",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay#button",
+   "section": "Pay with crypto button",
+   "text": "Paste this on any site to send buyers to a pay link or an invoice. The link alone opens the checkout in a new tab; the optional script opens it in a popup window. The admin shows the snippet for each link and invoice. The checkout cannot be put in an iframe: its pages send frame-ancestors limited to Gully Labs itself, so wallet prompts and the address bar stay visible to the payer.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
+   "id": "4523974623e0",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay#webhooks",
+   "section": "Webhooks",
+   "text": "A pay link, an invoice, or a default endpoint for everything else can have a webhook. When an invoice has its own, or its link has one, events go there; otherwise to the default, if set. invoice.paid (The payment is confirmed and the invoice marked paid.): invoice, link, payment invoice.expired (An open invoice ran out without a payment.): invoice, link webhook.test (The admin pressed Send test event.): target, message https only. No user name or password in the URL. The host must resolve only to public addresses: private, loopback, link-local and reserved ranges are refused, and the request goes to the address that was checked. The signing secret (whsec_…) is shown once, when the endpoint is set. Rotating it shows the new one once; the old one stops at once. Five-second timeout, redirects not followed, the response body is not read.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
+   "id": "a4eaf1024a43",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay#verify",
+   "section": "Verifying the signature",
+   "text": "Every request carries two headers. The signature is an HMAC-SHA256, with your secret, of the timestamp, a dot, and the raw body: X-Gully-Timestamp (unix seconds): When it was sent. Refuse old ones (five minutes) to stop replays. X-Gully-Signature (sha256=<hex>): hex(HMAC-SHA256(secret, `${timestamp}.${rawBody}`)) It is the same scheme as gap alerts, so one verifier serves both.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
+   "id": "d6c7b3a8c771",
+   "source": "Docs",
+   "title": "Gully Pay",
+   "url": "https://docs.gullylabs.xyz/gully-pay#retries",
+   "section": "Delivery and retries",
+   "text": "The first attempt goes out at once. Any answer other than 2xx, a timeout or a network error is retried after 1, 5, 10, 20 and 30 minutes: six attempts over about an hour. Then the delivery is marked failed. Retries carry the same event id and body; each is signed again with the current secret and timestamp. The queue is stored on disk, so a restart loses nothing: attempts that came due while the server was down go out when it is back. Each link and invoice shows its delivery log in the admin: event, state, attempts, last answer. Events may arrive out of order and, rarely, more than once. Treat invoice.paid as the source of truth for a sale and look the invoice up by id.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
+  },
+  {
    "id": "5778b557c5ce",
    "source": "Changelog",
    "title": "Changelog",
@@ -557,8 +638,8 @@
    "title": "Changelog",
    "url": "https://docs.gullylabs.xyz/changelog#2026-10-17",
    "section": "17 October 2026",
-   "text": "A page for every stock token, such as NVDA on Robinhood Chain: live price against fair, gap history, the pool, contracts, alerts and an embed snippet. Plans and gap alerts: higher limits, signed webhook alerts and up to a year of history, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the Gully Labs treasury. Gully Analytics: web analytics that also see wallet connects, chains and transactions. Chain Kit: a branded Blockscout explorer for your chain, operated by Gully Labs. The widget links each stock to its page.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "A page for every stock token, such as NVDA on Robinhood Chain: live price against fair, gap history, the pool, contracts, alerts and an embed snippet. Plans and gap alerts: higher limits, signed webhook alerts and up to a year of history, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the Gully Labs treasury. Gully Analytics: web analytics that also see wallet connects, chains and transactions. Chain Kit: a branded Blockscout explorer for your chain, operated by Gully Labs. The widget links each stock to its page. The landing page describes DeepCore as it is today (launchpad, hosted Launchpads and DEXes, router) and shows its hosted sites, launches in the last 24 hours and dollars in locks, read from api.deepcore.fun. A preview of Gully Chains, managed Arbitrum Orbit L3s, starting with Gully Devnet. In development; nothing is live yet. The tracker reads DeepCore pools through DeepCore's own pool manager, never as Uniswap v4 pools.",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
   },
   {
    "id": "41a073887bfa",
@@ -683,8 +764,8 @@
    "title": "DeepCore, a Gully Labs project",
    "url": "https://gullylabs.xyz/projects/deepcore",
    "section": null,
-   "text": "DeepCore (DeFi infrastructure). Launch on one core. Tokens, Launchpads, DEXes and stock markets on one shared, hardened core, on four chains. Live. Built: Hook-based pool core and launch guards; Launchpad and DEX kits with locked liquidity; Cross-chain index, SDK and hosted sites. Chains: Base; BNB Chain; HyperEVM; Robinhood. DeepCore's own site: https://deepcore.fun/",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "DeepCore (DeFi infrastructure). Launch on one core. A launchpad, hosted Launchpads and DEXes, and a best-price router on one shared liquidity core, at the same addresses on four chains. Live. Built: Launchpad: token, pool and liquidity locked forever in one transaction, with a decaying anti-snipe fee; Hosted Launchpads and DEXes on the core, opened in one transaction; the site earns a share of its fees; Router: best price across DeepCore pools and the major DEXes on each chain; Locks, vesting, airdrops, team splits, multisend, limit orders and DCA; Coming soon: custom domains, a buy bot and market-hours stock pools. Chains: Base; BNB Chain; HyperEVM; Robinhood. DeepCore's own site: https://deepcore.fun/",
+   "updatedAt": "2026-10-17T17:00:51.286Z"
   },
   {
    "id": "fd84560354cb",
