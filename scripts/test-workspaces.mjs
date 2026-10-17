@@ -102,7 +102,7 @@ try {
   {
     const inv = await O.post('/api/developer/team/invite', { role: 'developer' })
     devLink = inv.data?.link
-    check('link invite: created with a one-time link', inv.status === 201 && /^https:\/\/developers\.gullylabs\.xyz\/#invite=[A-Za-z0-9_-]{32}$/.test(devLink ?? '') && inv.data.invite.kind === 'link' && inv.data.invite.role === 'developer', JSON.stringify(inv.data))
+    check('link invite: created with a one-time link', inv.status === 201 && /^https:\/\/app\.gullylabs\.xyz\/#invite=[A-Za-z0-9_-]{32}$/.test(devLink ?? '') && inv.data.invite.kind === 'link' && inv.data.invite.role === 'developer', JSON.stringify(inv.data))
     const team = await O.call('/api/developer/team')
     check('link invite: listed without its token', team.data.invites.length === 1 && !JSON.stringify(team.data).includes(tokenOf(devLink)))
     check('link invite: only its hash is stored', !fs.readFileSync(path.join(tmp, 'workspaces.json'), 'utf8').includes(tokenOf(devLink)))

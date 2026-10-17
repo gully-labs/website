@@ -76,7 +76,7 @@ function Card({ icon, title, badge, children, foot, id }: { icon: ReactNode; tit
   )
 }
 
-const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[10.5px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-[#5a2a24] text-error' : 'border-line-strong text-muted'}`}>{t}</span>
+const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-[#5a2a24] text-error' : 'border-line-strong text-muted'}`}>{t}</span>
 
 function Stat({ label, value, unknown }: { label: string; value: number | null; unknown?: string }) {
   return (

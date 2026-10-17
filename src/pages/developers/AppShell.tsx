@@ -1,4 +1,4 @@
-import { Activity, Bot, BookOpen, Building2, Check, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
+import { Activity, Bot, BookOpen, Building2, ChartCandlestick, Check, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { VenueLogo } from '../../components/logos/VenueLogo'
 import { Wordmark } from '../../components/Wordmark'
@@ -7,18 +7,19 @@ import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
 import { Avatar } from './Avatar'
 import { Menu, menuItem } from './Menu'
-import { declinedInvites, usePortal } from './portal'
+import { declinedInvites, restoreFocus, usePortal } from './portal'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
    Sidebar, top to bottom: the Gully mark and "Gully Labs App", the workspace switcher, the pages (16px
-   icons and labels, the current one marked with aria-current), then Docs ↗, Gully AI, Status and the
-   wallet menu. From 1280px it is open (232px); from 860px to 1279px it starts collapsed to icons
+   icons and labels, the current one marked with aria-current), then Docs ↗, Tracker, Gully AI, Status,
+   the gullylabs.xyz home link and the wallet menu. From 1280px it is open (232px); from 860px to 1279px it starts collapsed to icons
    (64px, labels kept for screen readers and as tooltips); the chevron button toggles it at any width
    and the choice is remembered. Under 860px there is no sidebar: a Menu button in the header opens the
    same items as a bottom sheet (a modal dialog: focus moves in, Tab stays in, Escape closes).
 
-   Header: a Menu button (narrow screens), the breadcrumb (workspace / page), the plan pill, and the
+   Header: a Menu button and the Gully mark linking home (narrow screens, so home is one tap away at every
+   width), the breadcrumb (workspace / page), the plan pill, and the
    wallet menu on narrow screens (wide screens have it at the foot of the sidebar). */
 
 export type NavItem<T extends string> = { id: T; label: string; icon: ReactNode; badge?: ReactNode }
@@ -29,7 +30,7 @@ const WIDE = '(min-width: 1280px)'
 const PREF = 'gully:app-sidebar'
 
 /** A media query as React state. */
-export function useMedia(query: string): boolean {
+function useMedia(query: string): boolean {
   return useSyncExternalStore(
     (cb) => {
       const m = window.matchMedia(query)
@@ -51,7 +52,7 @@ function readPref(): 'open' | 'icons' | null {
 }
 
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
-export const roleTone = (r: Role) => (r === 'owner' ? 'border-gold text-gold' : r === 'admin' ? 'border-gold-line text-gold' : 'border-line-strong text-muted')
+const roleTone = (r: Role) => (r === 'owner' ? 'border-gold text-gold' : r === 'admin' ? 'border-gold-line text-gold' : 'border-line-strong text-muted')
 
 /* ------------------------------------------------------------------ status --- */
 
@@ -103,7 +104,7 @@ function WorkspaceSwitcher({ compact, onTeam }: { compact: boolean; onTeam: () =
           {!compact && (
             <>
               <span className="min-w-0 flex-1 truncate text-left font-medium">{active.name}</span>
-              <span className={`shrink-0 rounded-full border px-[6px] font-mono text-[10px] ${roleTone(role)}`}>{role}</span>
+              <span className={`shrink-0 rounded-full border px-[6px] font-mono text-[11px] ${roleTone(role)}`}>{role}</span>
               <ChevronsUpDown size={14} className="shrink-0 text-faint" aria-hidden />
             </>
           )}
@@ -112,7 +113,7 @@ function WorkspaceSwitcher({ compact, onTeam }: { compact: boolean; onTeam: () =
     >
       {(close) => (
         <>
-          <span className="px-3 pt-2 pb-1 font-mono text-[10.5px] tracking-[1px] text-faint">WORKSPACES</span>
+          <span className="px-3 pt-2 pb-1 font-mono text-[11px] tracking-[1px] text-faint">WORKSPACES</span>
           {me.workspaces.map((w) => (
             <button
               key={w.id}
@@ -128,9 +129,9 @@ function WorkspaceSwitcher({ compact, onTeam }: { compact: boolean; onTeam: () =
               {w.id === me.address ? <UserRound size={ICON} aria-hidden /> : <Building2 size={ICON} aria-hidden />}
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate">{w.name}</span>
-                <span className="font-mono text-[10.5px] text-faint">{w.id === me.address ? 'yours' : `owner ${shortAddress(w.owner)}`}</span>
+                <span className="font-mono text-[11px] text-faint">{w.id === me.address ? 'yours' : `owner ${shortAddress(w.owner)}`}</span>
               </span>
-              <span className={`rounded-full border px-[6px] font-mono text-[10px] ${roleTone(w.role)}`}>{w.role}</span>
+              <span className={`rounded-full border px-[6px] font-mono text-[11px] ${roleTone(w.role)}`}>{w.role}</span>
               {w.id === active.id ? <Check size={ICON} className="text-gold" aria-label="active" /> : <span className="w-4" aria-hidden />}
             </button>
           ))}
@@ -158,7 +159,7 @@ function WorkspaceList({ onDone }: { onDone: () => void }) {
   if (!me) return null
   return (
     <div className="flex flex-col gap-1" role="group" aria-label="Workspaces">
-      <span className="px-1 font-mono text-[10.5px] tracking-[1px] text-faint">WORKSPACE</span>
+      <span className="px-1 font-mono text-[11px] tracking-[1px] text-faint">WORKSPACE</span>
       {me.workspaces.map((w) => {
         const on = w.id === me.active.id
         return (
@@ -175,7 +176,7 @@ function WorkspaceList({ onDone }: { onDone: () => void }) {
           >
             {w.id === me.address ? <UserRound size={ICON} aria-hidden /> : <Building2 size={ICON} className="text-gold" aria-hidden />}
             <span className="min-w-0 flex-1 truncate">{w.name}</span>
-            <span className={`rounded-full border px-[6px] font-mono text-[10px] ${roleTone(w.role)}`}>{w.role}</span>
+            <span className={`rounded-full border px-[6px] font-mono text-[11px] ${roleTone(w.role)}`}>{w.role}</span>
             {on && <Check size={ICON} className="text-gold" aria-label="active" />}
           </button>
         )
@@ -213,7 +214,7 @@ function WalletMenu({ onSignOut, go, compact = false, placement = 'down' }: { on
     >
       {(close) => (
         <>
-          <span className="px-3 pt-2 font-mono text-[10.5px] break-all text-faint">{address}</span>
+          <span className="px-3 pt-2 font-mono text-[11px] break-all text-faint">{address}</span>
           <span className="px-3 pb-2 text-[11px] text-faint">{me?.profile.ens ? `${me.profile.ens} · ` : ''}signed in with this wallet (SIWE)</span>
           {[
             ...(pending ? [item(<Mail size={ICON} aria-hidden />, `${pending} invite${pending === 1 ? '' : 's'} waiting`, go.invites, 'text-gold')] : []),
@@ -260,7 +261,7 @@ function PlanPill({ account }: { account: Account }) {
   const soon = left !== null && left <= 7
   return (
     <span className="flex min-h-[30px] items-center gap-2 rounded-full border border-line px-[10px] text-[13px] whitespace-nowrap" title={account.plan.expiresAt ? `Runs until ${new Date(account.plan.expiresAt).toLocaleString()}` : undefined} data-testid="plan-pill">
-      <span className="size-2 rounded-full" style={{ background: !paid ? '#6c7888' : soon ? '#ff8a7a' : '#e8c060' }} aria-hidden />
+      <span className="size-2 rounded-full" style={{ background: !paid ? '#7f8b9c' : soon ? '#ff8a7a' : '#e8c060' }} aria-hidden />
       {account.plan.name} plan
       {left !== null && <span className={`${soon ? 'text-error' : 'text-muted'} max-[520px]:hidden`}>· {left === 0 ? 'ends today' : `${left} day${left === 1 ? '' : 's'} left`}</span>}
     </span>
@@ -313,6 +314,11 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
         </a>
       </li>
       <li>
+        <a href={site('/tracker')} className={footItem(compact)} title={compact ? 'Tracker' : undefined}>
+          <ChartCandlestick size={ICON} aria-hidden /> {txt('Tracker')}
+        </a>
+      </li>
+      <li>
         <a href={site('/ask')} className={footItem(compact)} title={compact ? 'Gully AI' : undefined}>
           <Bot size={ICON} aria-hidden /> {txt('Gully AI')}
         </a>
@@ -324,7 +330,7 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
             <span className={`absolute -right-[3px] -bottom-[2px] size-[7px] rounded-full border border-bg ${healthDot[health]}`} aria-hidden />
           </span>
           {txt('Status')}
-          {compact ? <span className="sr-only">: {healthText[health]}</span> : <span className="font-mono text-[10.5px] text-faint">{healthText[health]}</span>}
+          {compact ? <span className="sr-only">: {healthText[health]}</span> : <span className="font-mono text-[11px] text-faint">{healthText[health]}</span>}
         </button>
       </li>
       <li>
@@ -363,7 +369,7 @@ function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void
     return () => {
       cancelAnimationFrame(id)
       document.body.style.overflow = overflow
-      prev?.focus?.()
+      restoreFocus(prev)
     }
   }, [open])
   if (!open) return null
@@ -435,14 +441,11 @@ export function AppShell<T extends string>({
   const wide = useMedia(WIDE)
   const [pref, setPref] = useState(readPref)
   const compact = !narrow && (pref ? pref === 'icons' : !wide)
-  const [sheet, setSheet] = useState(false)
+  const [sheetWanted, setSheet] = useState(false)
+  // The sheet exists only in the narrow layout: widening the window closes it.
+  const sheet = sheetWanted && narrow
   const health = useHealth()
   const menuBtn = useRef<HTMLButtonElement>(null)
-
-  // Leaving the narrow layout closes the sheet.
-  useEffect(() => {
-    if (!narrow) setSheet(false)
-  }, [narrow])
 
   const toggle = () => {
     const next = compact ? 'open' : 'icons'
@@ -497,7 +500,9 @@ export function AppShell<T extends string>({
                 <button ref={menuBtn} type="button" onClick={() => setSheet(true)} className="-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] text-ink hover:bg-surface-hover" aria-label="Open menu" aria-haspopup="dialog" aria-expanded={sheet} data-testid="menu-button">
                   <MenuIcon size={20} aria-hidden />
                 </button>
-                <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
+                <a href={SITE_URL} className="inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] hover:bg-surface-hover" aria-label="Gully Labs home" data-testid="home-link-header">
+                  <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
+                </a>
               </>
             )}
             <nav aria-label="Breadcrumb" className="min-w-0 flex-1">

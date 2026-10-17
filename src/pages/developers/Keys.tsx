@@ -129,7 +129,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
 
   const colors = keyColors(account.keys)
   const colorOf = (k: ApiKey) => colors[k.id]
-  const th = 'py-2 pr-3 text-left font-mono text-[10.5px] font-medium tracking-[1px] text-faint'
+  const th = 'py-2 pr-3 text-left font-mono text-[11px] font-medium tracking-[1px] text-faint'
 
   return (
     <section className={panel} style={rise(0)} aria-labelledby="keys-title">
@@ -442,7 +442,7 @@ function Requests({ account }: { account: Account }) {
     return () => clearInterval(id)
   }, [fetchRows])
   const colors = keyColors(account.keys)
-  const colorOfId = (id: string) => colors[id] ?? '#6c7888'
+  const colorOfId = (id: string) => colors[id] ?? '#7f8b9c'
   return (
     <section id="requests" className={`${panel} scroll-mt-24`} style={rise(1)} aria-labelledby="req-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -472,7 +472,7 @@ function Requests({ account }: { account: Account }) {
         <div className="-mx-4 overflow-x-auto px-4">
           <table className="w-full min-w-[620px] border-collapse text-[13px]">
             <thead>
-              <tr className="border-b border-line text-left font-mono text-[10.5px] tracking-[1px] text-faint">
+              <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
                 <th className="py-2 pr-3 font-medium">TIME</th>
                 <th className="py-2 pr-3 font-medium">REQUEST</th>
                 <th className="py-2 pr-3 font-medium">KEY</th>

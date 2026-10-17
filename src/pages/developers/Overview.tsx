@@ -240,7 +240,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           ) : (
             <div className={`transition-opacity ${stale ? 'opacity-60' : ''}`} aria-busy={stale} data-testid="requests-chart">
               <RequestsChart usage={shown} series={series} />
-              <div className="mt-2 flex flex-wrap justify-between gap-2 font-mono text-[10px] text-faint">
+              <div className="mt-2 flex flex-wrap justify-between gap-2 font-mono text-[11px] text-faint">
                 <span>
                   {RANGE_LABEL[shown.range]} · per {shown.range === '7d' ? '6 hours' : shown.bucket}
                 </span>
@@ -272,7 +272,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
             <DoubleRing outer={ringOuter} inner={ringInner} label={`Busiest key averaged ${busiest ? busiest.perMin.toFixed(1) : 'unknown'} calls a minute over one ${busiest?.over ?? 'bucket'}, against a limit of ${limit} per key; ${alertUsed ?? 'unknown'} of ${alertMax} alerts in use.`}>
               <span className="flex flex-col">
                 <span className="font-display text-[26px] leading-none font-bold">{ringOuter === null ? '—' : ringOuter > 0 && ringOuter < 1 ? '<1%' : `${Math.round(ringOuter)}%`}</span>
-                <span className="text-[10px] text-dim">of limit</span>
+                <span className="text-[11px] text-dim">of limit</span>
               </span>
             </DoubleRing>
             <dl className="m-0 flex min-w-0 flex-col gap-[10px] text-[13px]">

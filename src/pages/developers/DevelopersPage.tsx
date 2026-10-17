@@ -8,7 +8,7 @@ import { ExtLink } from './ExtLink'
 import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
 import { Dashboard } from './Dashboard'
 import { InviteLanding } from './Invite'
-import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, type Portal } from './portal'
+import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, restoreFocusSoon, type Portal } from './portal'
 import { mono, pillGold, pillLine } from './styles'
 
 /* The Gully Labs App, the developer dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
@@ -60,7 +60,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
           <Wordmark size={20} />
           <span className="font-semibold text-muted">App</span>
-          <span className="ml-auto font-mono text-[10px] tracking-[1px] text-faint">TRACKER API · ANALYTICS</span>
+          <span className="ml-auto font-mono text-[11px] tracking-[1px] text-faint">TRACKER API · ANALYTICS</span>
         </div>
         <div className="flex flex-col gap-2">
           <h1 className="m-0 font-display text-[34px] leading-[.95] font-bold uppercase">
@@ -92,7 +92,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
             Here for Gully Analytics? Connect your wallet: the Analytics tab of your console starts the free trial.
           </p>
         )}
-        <button type="button" onClick={connect} disabled={busy} className={`${pillGold} min-h-12 w-full text-[16px] disabled:opacity-70`}>
+        <button type="button" onClick={connect} disabled={busy} data-focus-fallback data-testid="connect-wallet" className={`${pillGold} min-h-12 w-full text-[16px] disabled:opacity-70`}>
           {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Wallet size={18} aria-hidden />}
           {busy ? 'Opening wallets…' : 'Connect wallet'}
         </button>
@@ -219,6 +219,8 @@ export function DevelopersPage() {
     await api('/api/developer/logout', { method: 'POST' })
     setWallet((w) => ({ ...w, signedOut: w.signedOut + 1 }))
     setSession({ state: 'out' })
+    // The wallet menu that started this is gone: focus lands on Connect wallet.
+    restoreFocusSoon()
   }
 
   return (
@@ -272,9 +274,13 @@ export function DevelopersPage() {
             signedOut={wallet.signedOut}
             onSignedIn={() => {
               setError(null)
-              loadAccount()
+              loadAccount().then(() => restoreFocusSoon())
             }}
-            onClose={() => setBusy(false)}
+            onClose={() => {
+              // The wallet modal was dismissed: focus goes back to Connect wallet (P1-7).
+              setBusy(false)
+              restoreFocusSoon()
+            }}
             onError={setError}
           />
         </Suspense>

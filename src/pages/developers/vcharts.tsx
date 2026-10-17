@@ -120,7 +120,7 @@ export function StatusDonut({ byStatus, height = 180 }: { byStatus: UsageV2['byS
         <EChart option={option} height={height} skeleton="ring" label={`Answers by status: ${STATUS.map((s) => `${s.name} ${fmt(byStatus[s.k])}`).join(', ')}.`}>
           <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
             <AnimatedNumber value={total} format={NF.int} countUp className="font-display text-[26px] leading-none font-bold" />
-            <span className="text-[10px] text-dim">answers</span>
+            <span className="text-[11px] text-dim">answers</span>
           </span>
         </EChart>
       </div>
@@ -266,7 +266,7 @@ export function QuotaRing({ slices, quota, size = 150, caption }: { slices: Ring
         <EChart option={option} height={size} skeleton="ring" label={`${caption}: ${fmt(used)} of ${fmt(quota)} events (${pct === null ? 'unknown' : `${pct.toFixed(1)}%`}).`}>
           <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
             <AnimatedNumber value={pct === null ? null : Math.min(999, pct)} format={{ maximumFractionDigits: pct !== null && pct < 10 ? 1 : 0 }} suffix="%" countUp className={`font-display text-[24px] leading-none font-bold ${pct !== null && pct >= 100 ? 'text-error' : ''}`} />
-            <span className="text-[10px] text-dim">of quota</span>
+            <span className="text-[11px] text-dim">of quota</span>
           </span>
         </EChart>
       </div>

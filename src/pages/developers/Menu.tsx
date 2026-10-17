@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { restoreFocus } from './portal'
 
 /* A dropdown menu for the app's sidebar and header (workspace switcher, wallet menu): a button with
    aria-haspopup, a role="menu" panel, the first item focused on open, arrow keys / Home / End move
@@ -30,7 +31,7 @@ export function Menu({ label, button, buttonClass, children, align = 'right', pl
     if (back) setRefocus((n) => n + 1)
   }
   useEffect(() => {
-    if (refocus) trigger.current?.focus()
+    if (refocus) restoreFocus(trigger.current)
   }, [refocus])
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {

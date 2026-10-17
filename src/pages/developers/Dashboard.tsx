@@ -67,17 +67,36 @@ function useView(): [View, (t: Tab, section?: string | null) => void, () => void
   return [state, set, reread]
 }
 
+/** `?alert=<chain>:<TICKER>` with #alerts (the stock pages' "Set an alert" links): that stock, or null. */
+function alertFromUrl(): string | null {
+  if (window.location.hash !== '#alerts') return null
+  const v = new URLSearchParams(window.location.search).get('alert') ?? ''
+  const m = v.match(/^([a-z]{2,12}):([A-Za-z.]{1,8})$/)
+  return m ? `${m[1]}:${m[2].toUpperCase()}` : null
+}
+
 export function Dashboard({ account, reload, onSignOut }: { account: Account; reload: () => Promise<void>; onSignOut: () => void }) {
   const [view, setTab, reread] = useView()
   const { tab, section } = view
   const { me } = usePortal()
   const [intent, setIntent] = useState<CheckoutIntent>(null)
   const [newKey, setNewKey] = useState(false)
-  const [newAlert, setNewAlert] = useState(false)
+  // Arriving from a stock page opens the New gap alert dialog with that stock chosen.
+  const [alertFor, setAlertFor] = useState(alertFromUrl)
+  const [newAlert, setNewAlert] = useState(() => alertFor !== null)
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('alert')) return
+    const q = new URLSearchParams(window.location.search)
+    q.delete('alert')
+    history.replaceState(null, '', window.location.pathname + (q.size ? `?${q}` : '') + window.location.hash)
+  }, [])
 
   const clearIntent = useCallback(() => setIntent(null), [])
   const clearNewKey = useCallback(() => setNewKey(false), [])
-  const clearNewAlert = useCallback(() => setNewAlert(false), [])
+  const clearNewAlert = useCallback(() => {
+    setNewAlert(false)
+    setAlertFor(null)
+  }, [])
   const go = useCallback(
     (t: Tab, s: string | null = null) => {
       setTab(t, s)
@@ -114,7 +133,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         </div>
       )}
 
-      <main key={`${wsKey}:${tab}`} id={`panel-${tab}`} aria-label={page} tabIndex={-1} data-testid="app-page" data-page={tab} className="mx-auto min-h-[60vh] w-full max-w-[1240px] animate-[gl-rise_.3s_cubic-bezier(.2,.8,.2,1)_both] px-6 pt-5 pb-16 outline-none max-[480px]:px-4">
+      <main key={`${wsKey}:${tab}`} id={`panel-${tab}`} aria-label={page} tabIndex={-1} data-focus-fallback data-testid="app-page" data-page={tab} className="mx-auto min-h-[60vh] w-full max-w-[1240px] animate-[gl-rise_.3s_cubic-bezier(.2,.8,.2,1)_both] px-6 pt-5 pb-16 outline-none max-[480px]:px-4">
         {tab === 'overview' && (
           <Overview
             account={account}
@@ -135,7 +154,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         )}
         {tab === 'products' && <Products account={account} go={go} />}
         {tab === 'keys' && <KeysTab account={account} reload={reload} creating={newKey} onCreateDone={clearNewKey} section={section} />}
-        {tab === 'alerts' && <Alerts goBilling={() => go('billing')} creating={newAlert} onCreateDone={clearNewAlert} />}
+        {tab === 'alerts' && <Alerts goBilling={() => go('billing')} creating={newAlert} onCreateDone={clearNewAlert} prefill={alertFor} />}
         {tab === 'analytics' && <AnalyticsPanel />}
         {tab === 'billing' && <Billing account={account} reload={reload} intent={intent} onIntentDone={clearIntent} />}
         {tab === 'team' && <Team />}

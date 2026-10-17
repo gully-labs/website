@@ -194,7 +194,7 @@ export function ActivityTab() {
             <button key={k.id} data-k={k.id} type="button" role="radio" aria-checked={kind === k.id} tabIndex={kind === k.id ? 0 : -1} onClick={() => setKind(k.id)} className={`${chip(kind === k.id)} min-h-9 px-3 text-[12px] max-[600px]:min-h-11`}>
               {k.id !== 'all' && <i className="inline-block size-[7px] rounded-full" style={{ background: KIND_COLOR[k.id] }} aria-hidden />}
               {k.label}
-              {k.id !== 'all' && counts[k.id] ? <span className="font-mono text-[10px] opacity-70">{counts[k.id]}</span> : null}
+              {k.id !== 'all' && counts[k.id] ? <span className="font-mono text-[11px] opacity-70">{counts[k.id]}</span> : null}
             </button>
           ))}
         </div>
@@ -226,7 +226,7 @@ export function ActivityTab() {
               const [what, on] = describe(e)
               return (
                 <li key={e.id} className="flex flex-col" style={{ animation: `gl-rise .35s ${Math.min(i, 12) * 0.03}s ease both` }}>
-                  {head && <span className="pt-3 pb-1 font-mono text-[10.5px] tracking-[1px] text-faint uppercase">{day}</span>}
+                  {head && <span className="pt-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint uppercase">{day}</span>}
                   <div className="flex items-start gap-3 border-l-2 py-[10px] pl-3" style={{ borderColor: KIND_COLOR[k] }}>
                     {e.actor === 'system' ? <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface-deep font-display text-[13px] font-bold text-gold">G</span> : <Avatar address={e.actor} src={e.actor === user ? me?.profile.avatar : null} size={28} />}
                     <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
