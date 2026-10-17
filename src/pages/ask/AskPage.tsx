@@ -32,7 +32,7 @@ export function AskPage() {
     <>
       <Seo title="Gully AI" description="Ask Gully AI about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources." />
       <section className="px-page pt-[72px] pb-24 max-[600px]:pt-10">
-        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-[minmax(0,1fr)_360px] items-start gap-10 max-[1099px]:max-w-[760px] max-[1099px]:grid-cols-1">
+        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-[minmax(0,1fr)_400px] items-start gap-10 max-[1099px]:max-w-[760px] max-[1099px]:grid-cols-1">
           <div className="flex min-w-0 flex-col gap-8">
             <header className="flex flex-col gap-4">
               <span className={eyebrow}>GULLY AI</span>
@@ -74,7 +74,7 @@ export function AskPage() {
               <span className="text-[12px] leading-[1.5] text-muted">Gully AI reads these live when you ask about a stock. Press a bar to open its page.</span>
               <div className="flex flex-wrap gap-x-4">
                 <Link to="/tracker" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-gold hover:text-gold-hover">
-                  <Activity aria-hidden size={14} /> Open the tracker
+                  <Activity aria-hidden size={14} /> Launch app
                 </Link>
                 <Link to="/pricing" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-gold hover:text-gold-hover">
                   <Tag aria-hidden size={14} /> Plans and alerts

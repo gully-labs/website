@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { EChart } from './EChart'
 import type { ChartEvent } from './chart-utils'
-import { axisTooltip, barsPreset, C, PALETTE, tipHtml } from './chartPresets'
+import { axisTooltip, barsPreset, C, tipHtml } from './chartPresets'
 
 /* The tracker API plans side by side, from GET /api/plans (the same read as the plan cards): one
    bar per tier for the chosen limit. Switching the limit glides each bar to its new length; hover or
@@ -56,7 +56,8 @@ export function PlanLimits({ tiers }: { tiers: LimitTier[] }) {
           showBackground: true,
           backgroundStyle: { color: C.line, borderRadius: 4 },
           label: { show: true, position: 'right', color: C.ink2, fontSize: 12, formatter: (p: ChartEvent) => fmt(p.value) },
-          data: tiers.map((t, i) => ({ value: val(t), itemStyle: { color: i === 0 ? C.lineHover : PALETTE[(i - 1) % PALETTE.length], borderRadius: 4 } })),
+          // One hue stepping up with the tier (design audit P2-26): the bigger the plan, the stronger the gold.
+          data: tiers.map((t, i) => ({ value: val(t), itemStyle: { color: i === 0 ? C.lineHover : `rgba(232,192,96,${(0.35 + (0.65 * i) / Math.max(1, tiers.length - 1)).toFixed(2)})`, borderRadius: 4 } })),
         },
       ],
     }),

@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
 import { FlaskConical, Handshake } from 'lucide-react'
 import { Seo } from '../components/Seo'
-import { eyebrow } from '../components/ui'
+import { VenueBars, VenueTimeline } from '../components/charts/VenueCharts'
+import { eyebrow, h2 } from '../components/ui'
 import { comingSoon, projects } from '../content/projects'
 import { IN_THE_LAB, PROJECTS_LIVE } from '../content/stats'
 import { useCountUp } from '../hooks/useCountUp'
@@ -54,7 +55,7 @@ export function About() {
           </p>
         </div>
         <div className="relative aspect-square overflow-hidden rounded-modal bg-mascot-bg" style={rise(2)}>
-          <img src="/assets/mascot-scientist.png" alt="Gully Labs chief scientist" className="absolute inset-0 size-full animate-float-slow object-cover" />
+          <img src="/assets/mascot-scientist.webp" width={800} height={800} alt="Gully Labs chief scientist" className="absolute inset-0 size-full animate-float-slow object-cover" />
         </div>
       </section>
 
@@ -83,6 +84,27 @@ export function About() {
         </p>
       </section>
 
+      <section aria-labelledby="venues-title" className="flex flex-col gap-8 px-page pb-24">
+        <div className="flex flex-col gap-3">
+          <span className={eyebrow}>THE VENUES · LIVE</span>
+          <h2 id="venues-title" className={h2}>
+            What we shipped, <span className="text-gold">measured</span>
+          </h2>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] gap-5">
+          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6">
+            <h3 className="m-0 font-display text-h4 font-bold uppercase">Measured since</h3>
+            <span className="-mt-2 font-mono text-[11px] text-faint">from the start of each venue's all-time count to today</span>
+            <VenueTimeline st={st} />
+          </div>
+          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6">
+            <h3 className="m-0 font-display text-h4 font-bold uppercase">Side by side</h3>
+            <span className="-mt-2 font-mono text-[11px] text-faint">each venue's own figure, read live</span>
+            <VenueBars st={st} />
+          </div>
+        </div>
+      </section>
+
       <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,400px),1fr))] gap-5 border-t border-line bg-bg-alt px-page py-24">
         <Link to="/#projects" className={linkCard} style={rise(0)}>
           <span className="flex items-center justify-between">
@@ -95,7 +117,7 @@ export function About() {
           <span className="text-[16px] leading-[1.55] text-muted">
             {cap(words[projects.length + comingSoon.length])} projects funded and built in-house. {cap(words[projects.length])} are live.
           </span>
-          <span className="mt-2 text-[15px] text-gold">See the projects →</span>
+          <span className="mt-2 inline-flex min-h-11 items-center text-[15px] text-gold">See the projects →</span>
           <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
         </Link>
         <Link to="/services" className={linkCard} style={rise(1)}>
@@ -107,7 +129,7 @@ export function About() {
           </span>
           <span className="font-display text-[40px] leading-none font-extrabold uppercase">Partner work</span>
           <span className="text-[16px] leading-[1.55] text-muted">Smart contracts, dApps, infrastructure and audits for teams building on-chain.</span>
-          <span className="mt-2 text-[15px] text-gold">See the services →</span>
+          <span className="mt-2 inline-flex min-h-11 items-center text-[15px] text-gold">See the services →</span>
           <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
         </Link>
       </section>

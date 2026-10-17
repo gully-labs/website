@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpRight, BellRing, Check, History, Loader2, ShieldCheck, Zap } from 'lucide-react'
-import { AnalyticsPlanCards } from '../components/AnalyticsPlans'
+import { Link } from 'react-router'
+import { ArrowUpRight, BellRing, Boxes, Check, History, Layers, Send, ShieldCheck, Zap } from 'lucide-react'
+import { useContact } from '../components/ContactContext'
+import { NewTabMark } from '../components/LayoutLinks'
+import { newTab } from '../components/LayoutNav'
+import { NF } from '../components/charts/number-formats'
+import { AnalyticsPlanCards, PlanSkeleton } from '../components/AnalyticsPlans'
 import { usePlans } from '../lib/plans'
 import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
@@ -72,6 +77,44 @@ function SectionHead({ id, eyebrow: label, title }: { id: string; eyebrow: strin
   )
 }
 
+const USD0 = { ...NF.usd, minimumFractionDigits: 0, maximumFractionDigits: 0 }
+
+/** Chain Kit and services have no list price: one short block so /pricing covers every product. */
+function OnRequest() {
+  const { openContact } = useContact()
+  const items = [
+    { icon: Boxes, name: 'Chain Kit', body: 'A branded Blockscout explorer for your chain, run by us. Priced to your chain’s size and history.', to: '/chain-kit', type: 'Infrastructure' as const },
+    { icon: Layers, name: 'Services', body: 'Smart contracts, dApps, infrastructure and audits. Quoted per project after a first call.', to: '/services', type: 'Other' as const },
+  ]
+  return (
+    <section id="on-request" className="scroll-mt-24 border-t border-line px-page pt-16 pb-16" aria-labelledby="on-request-title">
+      <SectionHead id="on-request-title" eyebrow="CHAIN KIT & SERVICES" title="On request" />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-4">
+        {items.map((it) => (
+          <div key={it.name} className="flex flex-col gap-4 rounded-card border border-line bg-surface p-7">
+            <span className="flex items-center gap-3">
+              <span className="flex size-11 items-center justify-center rounded-btn border border-gold-line text-gold">
+                <it.icon aria-hidden size={20} strokeWidth={1.75} />
+              </span>
+              <h3 className="m-0 font-display text-h4 font-bold uppercase">{it.name}</h3>
+              <span className="ml-auto rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">ON REQUEST</span>
+            </span>
+            <p className="m-0 text-[15px] leading-[1.55] text-muted">{it.body}</p>
+            <div className="mt-auto flex flex-wrap gap-3">
+              <button type="button" onClick={() => openContact(it.type)} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+                <Send aria-hidden size={16} /> Start a project
+              </button>
+              <Link to={it.to} className="inline-flex min-h-11 items-center gap-1 text-[15px] text-gold hover:text-gold-hover">
+                {it.name} <ArrowUpRight aria-hidden size={15} />
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function Pricing() {
   const [state, retry] = usePlans()
   const offer = state.k === 'ok' ? state.offer : null
@@ -97,11 +140,7 @@ export function Pricing() {
 
       <section id="api" className="scroll-mt-24 px-page pb-16" aria-live="polite" aria-labelledby="api-title">
         <SectionHead id="api-title" eyebrow="TRACKER API" title="More calls, alerts and history" />
-        {state.k === 'loading' && (
-          <p className="m-0 inline-flex items-center gap-3 font-mono text-[13px] text-faint">
-            <Loader2 size={16} className="animate-spin" aria-hidden /> Reading the plans…
-          </p>
-        )}
+        {state.k === 'loading' && <PlanSkeleton />}
         {state.k === 'error' && (
           <div className="flex flex-wrap items-center gap-4 rounded-card border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-6 py-5 text-[15px] text-error" role="alert">
             The plans could not be read: {state.message}
@@ -126,8 +165,8 @@ export function Pricing() {
                     <div className="relative flex flex-col gap-2">
                       <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
                       <span className="flex items-baseline gap-2">
-                        <AnimatedNumber className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`} value={p.priceUsdc} countUp />
-                        <span className="font-mono text-[13px] text-muted">{p.priceUsdc ? `USD / ${offer.periodDays} days` : 'free, no time limit'}</span>
+                        <AnimatedNumber className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`} value={p.priceUsdc} format={USD0} countUp />
+                        <span className="font-mono text-[13px] text-muted">{p.priceUsdc ? `/ ${offer.periodDays} days` : 'free, no time limit'}</span>
                       </span>
                     </div>
                     <ul className="relative m-0 flex list-none flex-col gap-3 p-0 text-[15px] text-ink-2">
@@ -145,7 +184,7 @@ export function Pricing() {
                       </li>
                     </ul>
                     <a href={DASHBOARD} className={`${featured ? btnGold : btnOutline} relative mt-auto inline-flex min-h-12 items-center justify-center gap-2 px-6 text-[16px]`}>
-                      {p.priceUsdc ? (offer.checkout.enabled ? `Get ${p.name}` : 'Open the dashboard') : 'Get a free key'} <ArrowUpRight size={16} aria-hidden />
+                      {p.priceUsdc ? (offer.checkout.enabled ? `Get ${p.name}` : 'Open the dashboard') : 'Get a key'} <ArrowUpRight size={16} aria-hidden />
                     </a>
                   </div>
                 )
@@ -169,6 +208,8 @@ export function Pricing() {
         <AnalyticsPlanCards state={state} retry={retry} delay={3} />
       </section>
 
+      <OnRequest />
+
       <section className="px-page pb-24">
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-10 rounded-card border border-line bg-surface-deep p-8 max-[900px]:grid-cols-1 max-[600px]:p-5">
           <div className="flex flex-col gap-4">
@@ -176,8 +217,8 @@ export function Pricing() {
             <p className="m-0 flex items-start gap-2 text-[14px] leading-[1.6] text-muted">
               <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Paid in ETH, BNB, USDC or USDT on four chains, checked on chain, no custody.
             </p>
-            <a href={`${DOCS_URL}/plans-alerts`} className="inline-flex items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
-              Plans &amp; alerts docs <ArrowUpRight size={13} aria-hidden />
+            <a href={`${DOCS_URL}/plans-alerts`} {...newTab} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
+              Plans &amp; alerts docs <NewTabMark size={13} />
             </a>
           </div>
           <dl className="m-0 flex flex-col gap-6">

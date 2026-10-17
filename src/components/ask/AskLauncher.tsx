@@ -1,4 +1,4 @@
-import { MessageCircleQuestion, X } from 'lucide-react'
+import { Sparkles, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { askStatus } from './askApi'
@@ -62,7 +62,7 @@ export function AskLauncher() {
         aria-expanded={open}
         className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-[rgba(232,192,96,.08)] px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-[rgba(232,192,96,.14)]"
       >
-        <MessageCircleQuestion size={16} aria-hidden />
+        <Sparkles size={16} aria-hidden />
         <span className="max-[520px]:sr-only">Gully AI</span>
       </button>
       {/* Portalled to <body>: the docs header's backdrop-filter would otherwise contain a fixed element. */}
@@ -80,7 +80,7 @@ export function AskLauncher() {
           >
             <div className="flex items-center justify-between gap-3">
               <h2 id="ask-gully-title" className="m-0 flex items-center gap-2 font-display text-[24px] leading-none font-bold uppercase">
-                <MessageCircleQuestion size={20} aria-hidden className="text-gold" /> Gully AI
+                <Sparkles size={20} aria-hidden className="text-gold" /> Gully AI
               </h2>
               <button type="button" onClick={() => setOpen(false)} aria-label="Close Gully AI" className="grid size-11 place-items-center rounded-btn border border-line text-ink-2 transition-colors hover:border-line-hover">
                 <X size={18} aria-hidden />

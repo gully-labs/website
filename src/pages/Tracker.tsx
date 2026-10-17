@@ -128,7 +128,7 @@ export function Tracker() {
                 {c.name} · {c.sessionOpen ? 'open' : 'closed'}
               </span>
             ))}
-            <a href={xPost(shareText, SHARE_URL)} {...newTab} aria-label="Share the tracker on X (opens in a new tab)" className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[13px] font-semibold text-bg transition-colors hover:bg-gold-hover hover:text-bg">
+            <a href={xPost(shareText, SHARE_URL)} {...newTab} aria-label="Share the tracker on X (opens in a new tab)" className="inline-flex min-h-9 max-[859px]:min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[13px] font-semibold text-bg transition-colors hover:bg-gold-hover hover:text-bg">
               <SocialIcon name="X" size={13} />
               Share
             </a>
@@ -152,7 +152,17 @@ export function Tracker() {
           ))}
         </div>
 
-        {st.k === 'loading' && <p className="m-0 font-mono text-[13px] text-faint">Reading every feed and pool…</p>}
+        {st.k === 'loading' && (
+          // Holds the page's shape while the first read lands, so the footer never rises and drops.
+          <div role="status" aria-label="Reading every feed and pool" className="flex min-h-[100svh] flex-col gap-4">
+            <div className="h-[86px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface" />
+            <div className="h-[230px] animate-[gl-skeleton_1.4s_.1s_ease-in-out_infinite] rounded-card bg-surface" />
+            <div className="grid grid-cols-3 gap-4 max-[1199px]:grid-cols-2 max-[759px]:grid-cols-1">
+              <div className="h-[420px] animate-[gl-skeleton_1.4s_.2s_ease-in-out_infinite] rounded-card bg-surface" />
+              <div className="col-span-2 h-[420px] animate-[gl-skeleton_1.4s_.3s_ease-in-out_infinite] rounded-card bg-surface max-[1199px]:col-span-1" />
+            </div>
+          </div>
+        )}
         {st.k === 'error' && <p className="m-0 font-mono text-[13px] text-error">The tracker could not be read just now. It retries every minute.</p>}
         {data?.chains.some((c) => c.poolsStale) && (
           <p className="m-0 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-2 font-mono text-[12px] text-ink-2">

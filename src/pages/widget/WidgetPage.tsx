@@ -47,7 +47,7 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
           role="radio"
           aria-checked={value === o.key}
           onClick={() => onChange(o.key)}
-          className={`min-h-10 flex-1 rounded-btn px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${value === o.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
+          className={`min-h-11 flex-1 rounded-btn px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${value === o.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
         >
           {o.name}
         </button>

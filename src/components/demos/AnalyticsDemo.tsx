@@ -16,11 +16,13 @@ const CFG: Record<Range, { n: number; unit: string; base: number }> = {
 }
 const W = 600
 const H = 220
+// The same example split as the /analytics page (charts/ProductExamples.tsx), so the two never disagree.
 const CHAINS: [string, number, string][] = [
   ['Base', 41, '#6aa6ff'],
-  ['Ethereum', 27, '#b49cff'],
-  ['BNB Chain', 19, '#e8c060'],
-  ['Arbitrum', 13, '#6fcf6a'],
+  ['Ethereum', 23, '#b49cff'],
+  ['BNB Chain', 17, '#e8c060'],
+  ['Robinhood Chain', 12, '#6fcf6a'],
+  ['Arc', 7, '#ff8a7a'],
 ]
 const PAGES: [string, number][] = [
   ['/', 1],
@@ -310,7 +312,7 @@ export default function AnalyticsDemo(): JSX.Element {
             <span>Reading plans…</span>
           )}
           <a href={ANALYTICS_SIGNUP} className="inline-flex min-h-11 items-center gap-1 text-gold hover:text-gold-hover">
-            Start the free trial <ArrowRight size={12} aria-hidden />
+            Start free trial <ArrowRight size={12} aria-hidden />
           </a>
         </span>
       </div>

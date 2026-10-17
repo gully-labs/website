@@ -18,11 +18,22 @@ const okOnly = (data: Stats | null) => (data ? data.venues.filter((v): v is Venu
 const MONO = "'IBM Plex Mono', monospace"
 const DAY = 86400
 
-function Kpi({ label, span, value, cover, state }: { label: string; span?: string; value: number | null | undefined; cover?: string[]; state: State }) {
+function Kpi({ label, short, span, value, cover, state }: { label: string; short?: string; span?: string; value: number | null | undefined; cover?: string[]; state: State }) {
   const shown = state === 'ok' && value !== null && value !== undefined
   return (
     <div className="flex min-w-0 flex-col gap-[2px] border-r border-line px-4 py-3 last:border-r-0 max-[459px]:px-3">
-      <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">{label}</span>
+      <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">
+        {short ? (
+          <>
+            <span className="max-[459px]:hidden">{label}</span>
+            <abbr title={label} className="no-underline min-[460px]:hidden">
+              {short}
+            </abbr>
+          </>
+        ) : (
+          label
+        )}
+      </span>
       <b className={`font-display text-[30px] leading-none font-bold max-[459px]:text-[22px] ${shown ? 'text-ink' : 'text-dim'}`}>
         {shown ? <Figure value={value} /> : state === 'error' ? 'unreadable' : '—'}
       </b>
@@ -42,7 +53,7 @@ function Kpi({ label, span, value, cover, state }: { label: string; span?: strin
 
 export function HeroLedger({ data, state }: { data: Stats | null; state: State }) {
   const [hidden, setHidden] = useState<Record<string, boolean>>({})
-  const [range, setRange] = useState<Range>(30)
+  const [picked, setRange] = useState<Range | null>(null)
   const reduced = useReducedMotion()
   // The bars are handed to the chart two frames after it exists. The wrapper's first ResizeObserver
   // pass calls resize(), which finishes any running animation at once; data that arrives after it
@@ -59,6 +70,9 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
   const allDays = [...new Set(ok.flatMap((v) => v.daily.map((d) => d.t)))].sort((a, b) => a - b).slice(-30)
   // The range switch only appears when there is more than a week to show.
   const canRange = allDays.length > 7
+  // Default to 7D while the 30-day view would be mostly empty (fewer than half its days have a reading).
+  const filled = allDays.filter((t) => ok.some((v) => (v.daily.find((d) => d.t === t)?.v ?? 0) > 0)).length
+  const range: Range = picked ?? (filled < 15 ? 7 : 30)
   const days = canRange ? allDays.slice(-range) : allDays
   const D = days.length
   const valueOn = (key: string, t: number) => byKey[key]?.daily.find((d) => d.t === t)?.v ?? null
@@ -167,9 +181,17 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
 
   return (
     <div className="min-w-0 overflow-hidden rounded-card border border-line bg-surface transition-[border-color] duration-300 hover:border-line-strong">
+      {/* Provenance first: where these figures come from, and when they were read. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line px-4 py-2 font-mono text-[11px] text-faint">
+        <span className="inline-flex items-center gap-2 text-ink-2">
+          <span aria-hidden className="size-[6px] flex-none rounded-full bg-green" style={{ animation: 'gl-pulse-ring 1.8s infinite' }} />
+          LIVE LEDGER · READ FROM EACH VENUE'S OWN API
+        </span>
+        <span>{data ? `read ${fmtTime(data.generatedAt)}` : state === 'error' ? 'could not be read' : 'reading…'}</span>
+      </div>
       <div className="grid grid-cols-3 border-b border-line">
+        <Kpi label="VALUE LOCKED" short="TVL" value={T?.tvlUsd} cover={T?.covers.tvlUsd} state={state} />
         <Kpi label="VOLUME" span="all-time" value={T?.volumeAllUsd} cover={T?.covers.volumeAllUsd} state={state} />
-        <Kpi label="VALUE LOCKED" value={T?.tvlUsd} cover={T?.covers.tvlUsd} state={state} />
         <Kpi label="FEES" span="all-time" value={T?.feesAllUsd} cover={T?.covers.feesAllUsd} state={state} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-x-2 px-[14px] pt-1">
@@ -177,18 +199,28 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
           {projects.map((p) => {
             const has = withSeries.includes(p)
             const on = has && !hidden[p.key]
+            // A venue with no daily series is a legend entry that says so, not a dimmed dead button.
+            if (state === 'ok' && !has)
+              return (
+                <span key={p.key} title={`${p.name} publishes no daily series, so it has no bars`} className="inline-flex min-h-11 items-center text-[12px]">
+                  <span className="inline-flex min-h-[30px] items-center gap-[6px] rounded-full border border-dashed border-line px-[10px] text-muted">
+                    <span aria-hidden className="size-2 rounded-[2px] opacity-60" style={{ background: p.accent }} />
+                    {p.name}
+                    <span className="font-mono text-[11px] text-faint">no series</span>
+                  </span>
+                </span>
+              )
             return (
               <button
                 key={p.key}
                 type="button"
                 aria-pressed={on}
-                disabled={state === 'ok' && !has}
-                title={state === 'ok' && !has ? `${p.name} publishes no daily series` : undefined}
+                disabled={state !== 'ok'}
                 onClick={() => setHidden((h) => ({ ...h, [p.key]: !h[p.key] }))}
                 className="group inline-flex min-h-11 items-center bg-transparent p-0 text-[12px] disabled:cursor-default"
               >
                 {/* The button is 44 px tall for touch; the pill inside is the visible chip. */}
-                <span className={`inline-flex min-h-[30px] items-center gap-[6px] rounded-full border px-[10px] transition-[color,opacity,border-color] duration-200 group-enabled:group-hover:border-line-hover ${on ? 'border-line-strong text-ink' : 'border-line text-faint opacity-55'}`}>
+                <span className={`inline-flex min-h-[30px] items-center gap-[6px] rounded-full border px-[10px] transition-[color,opacity,border-color] duration-200 group-enabled:group-hover:border-line-hover ${on ? 'border-line-strong text-ink' : 'border-line text-faint opacity-70'}`}>
                   <span aria-hidden className={`size-2 rounded-[2px] transition-transform duration-200 ${on ? 'scale-100' : 'scale-75'}`} style={{ background: p.accent }} />
                   {p.name}
                 </span>
@@ -196,23 +228,21 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
             )
           })}
         </div>
-        {canRange && (
+      </div>
+      <div className="px-[6px] pt-[6px]">{chart}</div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pt-[2px] pb-2 font-mono text-[11px] text-faint">
+        <span>Daily volume · last {D || '—'} days · press a venue to hide it</span>
+        {/* While loading the switch is held (disabled) so the row does not wrap differently when the data lands. */}
+        {(canRange || state === 'loading') && (
           <div role="group" aria-label="Range" className="flex gap-[2px] rounded-[8px] border border-line p-[2px]">
             {([7, 30] as Range[]).map((r) => (
-              <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)} className={seg(range === r)}>
+              <button key={r} type="button" aria-pressed={range === r} disabled={state === 'loading'} onClick={() => setRange(r)} className={seg(range === r)}>
                 {r}D
               </button>
             ))}
           </div>
         )}
-      </div>
-      <div className="px-[6px] pt-[6px]">{chart}</div>
-      <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 px-4 pt-[6px] pb-3 font-mono text-[11px] text-faint">
-        <span>Daily volume · last {D || '—'} days · press a venue to hide it</span>
-        <span>
-          {data ? `Live · read ${fmtTime(data.generatedAt)} from each venue's API` : 'Live from each venue’s API'}
-          {T?.unread.length ? ` · ${T.unread.map(nameOf).join(', ')} unreadable` : ''}
-        </span>
+        {T?.unread.length ? <span>{T.unread.map(nameOf).join(', ')} unreadable</span> : null}
       </div>
     </div>
   )

@@ -55,7 +55,7 @@ function useMenuValue() {
 type Guard = (id: string) => (e: ReactMouseEvent) => void
 
 const trigger =
-  'group relative inline-flex min-h-11 items-center gap-1 rounded-btn px-3 text-[14px] whitespace-nowrap transition-colors hover:text-ink data-[state=open]:text-ink'
+  'group relative inline-flex min-h-11 items-center gap-[6px] rounded-btn px-3 text-[14px] whitespace-nowrap transition-colors hover:text-ink data-[state=open]:text-ink'
 // A short gold bar under the item for the section you are in.
 const activeBar = 'after:absolute after:inset-x-3 after:bottom-[6px] after:h-[2px] after:rounded-full after:bg-gold'
 const panel =
@@ -114,7 +114,7 @@ function PlainLink({ e, pathname, hash }: { e: NavEntry; pathname: string; hash:
   return (
     <NavigationMenu.Item>
       <NavigationMenu.Link asChild active={on}>
-        <EntryLink e={e} className={`${trigger} gap-[6px] ${on ? `text-ink ${activeBar}` : 'text-muted'}`}>
+        <EntryLink e={e} className={`${trigger} ${on ? `text-ink ${activeBar}` : 'text-muted'}`}>
           <e.icon aria-hidden size={16} strokeWidth={1.75} className={`flex-none transition-colors ${on ? 'text-gold' : 'text-faint group-hover:text-gold'}`} />
           {e.label}
         </EntryLink>

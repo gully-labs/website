@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { motion } from 'motion/react'
 import { ArrowUpRight } from 'lucide-react'
-import { comingSoon, projects, TOTAL_SLOTS, type Project } from '../content/projects'
+import { comingSoon, projects, type Project } from '../content/projects'
 import { fmtTime, fmtUsd, sourceHost, type Point, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
 import { BlinkDot } from './ui'
@@ -96,7 +96,7 @@ function Metric({ p, venue, c, max, state, active }: { p: Project; venue?: Venue
   else
     text = (
       <>
-        {fmtUsd(f.n)}
+        {f.n > 0 && f.n < 1 ? <span title={fmtUsd(f.n)}>{'<$1'}</span> : fmtUsd(f.n)}
         {f.note && <span className="ml-1 text-[11px] text-faint">{f.note}</span>}
       </>
     )
@@ -181,7 +181,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
               <div className="flex items-start gap-3">
                 <VenueLogo venue={p.key} name={p.name} size={40} decorative className="ring-1 ring-line-strong transition-transform duration-200 group-hover:scale-105" />
                 <span className="flex min-w-0 flex-1 flex-col leading-[1.25]">
-                  <Link to={`/projects/${p.slug}`} className="w-fit font-semibold text-ink hover:text-gold">
+                  <Link to={`/projects/${p.slug}`} className="relative w-fit font-semibold text-ink before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:text-gold">
                     {p.name}
                   </Link>
                   <span className="text-[12px] text-dim">{p.tagline}</span>
@@ -204,7 +204,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
               </dl>
               <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-2">
                 <span className="min-w-0 font-mono text-[11px] leading-[1.4] text-faint">{extras ?? (state === 'ok' && venue?.state === 'ok' ? `read ${fmtTime(venue.source.readAt)}` : '')}</span>
-                <a href={p.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 flex-none items-center gap-1 text-[13px] text-gold hover:text-gold-hover">
+                <a href={p.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 min-w-11 flex-none items-center justify-end gap-1 text-[13px] text-gold hover:text-gold-hover">
                   Visit <ArrowUpRight aria-hidden size={13} />
                   <span className="sr-only"> {p.name}</span>
                 <span className="sr-only"> (opens in a new tab)</span></a>
@@ -225,7 +225,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
               <BlinkDot color="gold" />+ {WORDS[comingSoon.length] ?? comingSoon.length} venue{comingSoon.length === 1 ? '' : 's'} in development
             </span>
             <span className="font-display text-[26px] leading-none font-extrabold text-dim uppercase">
-              Slot {comingSoon.join(', ')} / {TOTAL_SLOTS}
+              Project {comingSoon.join(', ')} · in the lab
             </span>
             <NotifyMe slot={comingSoon[0]} />
           </motion.li>

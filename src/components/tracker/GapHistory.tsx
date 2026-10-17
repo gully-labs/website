@@ -180,7 +180,7 @@ function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; 
     }
   }, [pts, rows, holes, mode, range, inLinePct])
 
-  const seg = (on: boolean) => `rounded-btn px-3 py-[6px] font-mono text-[12px] transition-colors ${on ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`
+  const seg = (on: boolean) => `rounded-btn px-3 py-[6px] font-mono max-[859px]:min-h-11 max-[859px]:min-w-11 text-[12px] transition-colors ${on ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`
   const controls = (
     <div className="flex flex-wrap gap-2">
       <div role="group" aria-label="Show" className="flex gap-1 rounded-input border border-line bg-bg p-1">

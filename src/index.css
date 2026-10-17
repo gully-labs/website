@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+/* While Barlow Condensed loads, headings draw in a local sans narrowed to its width (size-adjust), so a
+   heading wraps the same before and after the swap and nothing below it moves (CLS). */
+@font-face {
+  font-family: 'Barlow Condensed Fallback';
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Arial'), local('Helvetica Neue'), local('Roboto');
+  size-adjust: 72%;
+  ascent-override: 105%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+}
+
 /* Brand tokens from BRAND.md, plus the few extra values the prototype uses. */
 @theme {
   --color-*: initial;
@@ -31,7 +42,7 @@
   --color-mascot-bg: #24282c;
   --color-error: #ff8a7a;
 
-  --font-display: 'Barlow Condensed', sans-serif;
+  --font-display: 'Barlow Condensed', 'Barlow Condensed Fallback', sans-serif;
   --font-sans: 'Hanken Grotesk', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 

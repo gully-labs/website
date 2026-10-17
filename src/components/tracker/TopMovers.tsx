@@ -31,7 +31,7 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
           role="radio"
           aria-checked={value === o.key}
           onClick={() => onChange(o.key)}
-          className={`min-h-8 rounded-btn px-3 max-[859px]:min-h-11 font-mono text-[12px] whitespace-nowrap transition-colors ${value === o.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
+          className={`min-h-8 rounded-btn px-3 max-[859px]:min-h-11 max-[859px]:min-w-11 font-mono text-[12px] whitespace-nowrap transition-colors ${value === o.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
         >
           {o.name}
         </button>
@@ -124,14 +124,13 @@ export function TopMovers({ chain }: { chain: string }) {
 }
 
 /** Whether the strip can scroll further left or right, kept current as it scrolls or resizes. */
-function useScrollEdges(count: number) {
-  const ref = useRef<HTMLUListElement>(null)
+function useScrollEdges(ref: React.RefObject<HTMLUListElement | null>, count: number) {
   const [edges, setEdges] = useState({ prev: false, next: false })
   const measure = useCallback(() => {
     const el = ref.current
     if (!el) return
     setEdges({ prev: el.scrollLeft > 4, next: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 })
-  }, [])
+  }, [ref])
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -143,9 +142,9 @@ function useScrollEdges(count: number) {
       el.removeEventListener('scroll', measure)
       ro.disconnect()
     }
-  }, [measure, count])
+  }, [ref, measure, count])
   const page = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * Math.max(224, ref.current.clientWidth - 224), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
-  return { ref, edges, page }
+  return { edges, page }
 }
 
 const arrowBtn = 'absolute top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-line-strong bg-surface-deep text-ink shadow-[0_6px_18px_rgba(0,0,0,.45)] transition-colors hover:border-gold hover:text-gold max-[599px]:hidden'
@@ -159,7 +158,8 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
   const data = st.k === 'ok' ? st.data : null
   const list = data ? (mode === 'gap' ? data.byGap : data.byPrice) : []
   const max = Math.max(0, ...list.map((m) => Math.abs((mode === 'gap' ? m.gapChangePp : m.priceChangePct) ?? 0)))
-  const strip = useScrollEdges(list.length)
+  const stripRef = useRef<HTMLUListElement>(null)
+  const strip = useScrollEdges(stripRef, list.length)
   // The edge that has more cards behind it fades out, so a cut-off card reads as "scroll for more".
   const mask = strip.edges.prev && strip.edges.next ? 'linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 64px), transparent)' : strip.edges.next ? 'linear-gradient(to right, #000 calc(100% - 64px), transparent)' : strip.edges.prev ? 'linear-gradient(to right, transparent, #000 48px)' : undefined
 
@@ -232,7 +232,7 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
             <ChevronRight aria-hidden size={18} />
           </button>
         )}
-        <ul ref={strip.ref} aria-label={`Top ${mode === 'gap' ? 'gap' : 'price'} moves over ${win}`} className="m-0 -mx-1 flex list-none snap-x gap-3 overflow-x-auto px-1 pt-[3px] pb-2 [scrollbar-width:thin]" style={{ maskImage: mask, WebkitMaskImage: mask }}>
+        <ul ref={stripRef} aria-label={`Top ${mode === 'gap' ? 'gap' : 'price'} moves over ${win}`} className="m-0 -mx-1 flex list-none snap-x gap-3 overflow-x-auto px-1 pt-[3px] pb-2 [scrollbar-width:thin]" style={{ maskImage: mask, WebkitMaskImage: mask }}>
           <AnimatePresence mode="popLayout">
             {list.map((m, i) => (
               <motion.li

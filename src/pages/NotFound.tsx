@@ -39,7 +39,7 @@ export function NotFound({ ticker, chain }: { ticker?: string; chain?: string })
           </p>
           <div className="flex flex-wrap gap-3">
             <Link to="/tracker" className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
-              <Activity aria-hidden size={16} /> Open the tracker
+              <Activity aria-hidden size={16} /> Launch app
             </Link>
             <a href={DOCS_URL} {...newTab} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
               <BookOpen aria-hidden size={16} /> Docs

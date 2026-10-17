@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, MessageCircleQuestion, Puzzle, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, Puzzle, Sparkles, type LucideIcon } from 'lucide-react'
 import { askStatus } from '../ask/askApi'
 import { useContact } from '../ContactContext'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
@@ -44,15 +44,15 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
   const anon = offer?.anonymous.perMin
   const free = offer?.plans.find((p) => p.id === 'free')
   return [
-    { id: 'tracker', name: 'Tracker + Swap', icon: Activity, status: 'LIVE', live: true, pitch: 'Every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price, every minute, with a swap on each stock page.', cta: { label: 'Open the tracker', to: '/tracker' }, height: 560, Demo: TrackerDemo },
+    { id: 'tracker', name: 'Tracker + Swap', icon: Activity, status: 'LIVE', live: true, pitch: 'Every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price, every minute, with a swap on each stock page.', cta: { label: 'Launch app', to: '/tracker' }, height: 560, Demo: TrackerDemo },
     { id: 'alerts', name: 'Alerts', icon: BellRing, status: 'LIVE', live: true, pitch: 'Set a gap rule once; get a Telegram message with Open and Mute buttons, a signed webhook, or both.', cta: { label: 'Set an alert', href: PORTAL_ALERTS }, height: 560, Demo: AlertsDemo },
-    { id: 'analytics', name: 'Gully Analytics', icon: ChartNoAxesCombined, status: trial ? `${trial} DAYS FREE` : 'FREE TRIAL', live: true, pitch: 'Page views next to wallet connects, chains and transactions. Cookie-free, built on Umami, sign up with your wallet.', cta: { label: 'Start the free trial', href: ANALYTICS_SIGNUP }, height: 600, Demo: AnalyticsDemo },
+    { id: 'analytics', name: 'Gully Analytics', icon: ChartNoAxesCombined, status: 'FREE TRIAL', live: true, pitch: `Page views next to wallet connects, chains and transactions. Cookie-free, built on Umami, sign up with your wallet${trial ? `, ${trial} days free` : ''}.`, cta: { label: 'Start free trial', href: ANALYTICS_SIGNUP }, height: 600, Demo: AnalyticsDemo },
     { id: 'chainkit', name: 'Chain Kit', icon: Boxes, status: 'ON REQUEST', live: false, pitch: 'A Blockscout explorer with your domain, colours, token list and API, run by us. Change the brand below and watch it update.', cta: { label: 'Explore Chain Kit', to: '/chain-kit' }, height: 620, Demo: ChainKitDemo },
     { id: 'chains', name: 'Gully Chains', icon: Layers, status: 'SOON', live: false, pitch: 'Arbitrum Orbit L3 chains, launched and operated by Gully Labs. In development: none of it is live yet.', cta: { label: 'Ask about a chain', contact: true }, height: 360 },
     { id: 'api', name: 'API + SDK', icon: Code2, status: 'LIVE', live: true, pitch: `Every tracker row as JSON: ${anon ? `${anon} calls a minute` : 'free calls'} with no key, a free key${free ? ` (${free.perMin.toLocaleString('en-US')} a minute)` : ''} with wallet sign-in, and a typed SDK (MIT).`, cta: { label: 'Get a key', href: PORTAL }, height: 560, Demo: ApiDemo },
     { id: 'widget', name: 'Widget', icon: Puzzle, status: 'LIVE', live: true, pitch: 'One script tag puts a live ticker, a one-stock badge or a table of the widest gaps on any site.', cta: { label: 'Build a widget', to: '/widget' }, height: 520, Demo: WidgetDemo },
     { id: 'pay', name: 'Gully Pay', icon: CircleDollarSign, status: 'LIVE', live: true, pitch: 'Plans paid from your wallet straight to ours in ETH, BNB, USDC or USDT on four chains, checked on chain. No custody.', cta: { label: 'See plans', to: '/#pricing' }, height: 540, Demo: PayDemo },
-    { id: 'ask', name: 'Gully AI', icon: MessageCircleQuestion, status: ask ? 'LIVE' : 'SOON', live: !!ask, pitch: 'Questions about any Gully product, answered from our docs with the sources cited.', cta: { label: 'Open Gully AI', to: '/ask' }, height: ask ? 420 : 200 },
+    { id: 'ask', name: 'Gully AI', icon: Sparkles, status: ask ? 'LIVE' : 'SOON', live: !!ask, pitch: 'Questions about any Gully product, answered from our docs with the sources cited.', cta: { label: 'Open Gully AI', to: '/ask' }, height: ask ? 560 : 200 },
   ]
 }
 
@@ -298,7 +298,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
                   aria-controls="console-panel"
                   tabIndex={on ? 0 : -1}
                   onClick={() => choose(t.id)}
-                  className={`group relative flex min-h-12 flex-none items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-[border-color,background-color,color] duration-200 max-[899px]:min-h-11 max-[899px]:rounded-full max-[899px]:py-1 ${on ? 'border-gold-line bg-grid text-ink' : 'border-transparent bg-transparent text-muted hover:border-line hover:bg-surface hover:text-ink max-[899px]:border-line'}`}
+                  className={`group relative flex min-h-12 flex-none items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-[border-color,background-color,color] duration-200 max-[899px]:min-h-11 max-[899px]:rounded-full max-[899px]:py-1 ${on ? 'border-gold-line bg-grid text-ink' : 'border-transparent bg-transparent text-muted hover:bg-surface-hover hover:text-ink max-[899px]:border-line'}`}
                 >
                   {on && <motion.span layoutId="console-rail" aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gold max-[899px]:hidden" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                   <span className={`grid size-8 flex-none place-items-center rounded-[8px] transition-colors max-[899px]:size-6 max-[899px]:bg-transparent ${on ? 'bg-bg text-gold' : 'bg-surface text-dim group-hover:text-gold'}`}>
@@ -320,7 +320,8 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
             onAnimationComplete={() => setMoving(false)}
             // Clipped only while the height eases, so a demo's own menus and tooltips are never cut.
             style={{ overflow: moving ? 'hidden' : 'visible' }}
-            className="min-w-0"
+            // From 900 px up the pane holds the tallest demo's height, so switching tabs never moves the page.
+            className="min-w-0 min-[900px]:min-h-[880px]"
           >
             <div ref={inner} id="console-panel" role="tabpanel" aria-labelledby={`console-tab-${cur.id}`} className="min-w-0">
               <AnimatePresence mode="wait" initial={false}>

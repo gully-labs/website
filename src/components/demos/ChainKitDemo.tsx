@@ -147,7 +147,7 @@ export default function ChainKitDemo(): JSX.Element {
             ))}
           </div>
         </div>
-        <ul className="m-0 mt-auto flex list-none flex-col gap-1.5 p-0 text-[12px] text-muted">
+        <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0 text-[12px] text-muted">
           <li>Blockscout, open source, run by Gully Labs</li>
           <li>Your domain, logo, colours and token list</li>
           <li>Contract verification and a public API</li>

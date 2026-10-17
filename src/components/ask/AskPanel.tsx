@@ -40,7 +40,7 @@ function renumber(a: AskAnswer): AskAnswer {
   const to = new Map(order.map((n, i) => [n, i + 1]))
   return {
     ...a,
-    answer: a.answer.replace(/\[(\d{1,2})\]/g, (all, n) => (to.has(Number(n)) ? `[${to.get(Number(n))}]` : '')),
+    answer: a.answer.replace(/\[(\d{1,2})\]/g, (_m, n) => (to.has(Number(n)) ? `[${to.get(Number(n))}]` : '')),
     citations: a.citations.map((c) => ({ ...c, n: to.get(c.n)! })).sort((x, y) => x.n - y.n),
   }
 }
@@ -216,7 +216,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
     return (
       <div role="status" className="flex flex-col gap-3 rounded-card border border-line bg-surface p-6">
         <span className="font-mono text-[11px] tracking-[1px] text-gold">GULLY AI</span>
-        <p className="m-0 text-[16px] text-ink">Ask is not available yet.</p>
+        <p className="m-0 text-[16px] text-ink">Gully AI is not switched on here yet.</p>
         <p className="m-0 text-[14px] leading-[1.6] text-muted">
           Until it is, the answers are in the <a href="https://docs.gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">docs</a>, and the team is one message away through the{' '}
           <a href="https://gullylabs.xyz/services?contact=1" className="text-gold underline decoration-gold-line underline-offset-2">contact form</a>.
