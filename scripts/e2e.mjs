@@ -212,7 +212,7 @@ await step('tracker', async () => {
   const p2 = await ctx2.newPage()
   const w2 = watch(p2, 'stock page, blocked region')
   await p2.goto(BASE + '/tracker/robinhood/NVDA')
-  await p2.getByText("Swapping this token isn't available in your region.").waitFor()
+  await p2.getByText(/Swapping NVDA isn't offered in your region/).waitFor()
   check('swap: a blocked region gets the notice and no swap', (await p2.getByRole('checkbox', { name: 'I understand' }).count()) === 0)
   await w2.verify()
   await ctx2.close()
@@ -227,7 +227,7 @@ await step('widget builder', async () => {
   await page.goto(BASE + '/widget')
   await page.getByRole('radiogroup', { name: 'Widget type' }).getByRole('radio', { name: 'Table' }).click()
   await page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'Light' }).click()
-  await page.locator('#widget-limit').selectOption('10')
+  await page.getByRole('radiogroup', { name: 'Rows' }).getByRole('radio', { name: '10', exact: true }).click()
   await page.getByRole('button', { name: 'Copy code' }).click()
   await page.getByText('Snippet copied').first().waitFor()
   const clip = await page.evaluate(() => navigator.clipboard.readText())
@@ -343,7 +343,9 @@ await step('portal', async () => {
   // Activity lists what happened, in the UI.
   await appNav.getByRole('link', { name: /^Activity/ }).click()
   await page.getByRole('heading', { name: 'Activity' }).waitFor()
-  const actText = await page.locator('section[aria-labelledby="act-title"]').textContent()
+  // The heading renders before GET /api/developer/activity answers (skeleton rows meanwhile): wait for the list.
+  await page.locator('[data-testid="activity-list"] > li').first().waitFor({ timeout: 10_000 })
+  const actText = await page.locator('[data-testid="activity-list"]').textContent()
   check('activity: the log shows the key, alert and team changes', /key/i.test(actText) && /alert/i.test(actText) && /invite|member|role/i.test(actText), actText?.slice(0, 160))
   // CSV downloads from Billing.
   await appNav.getByRole('link', { name: /^Billing/ }).click()
