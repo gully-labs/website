@@ -12,7 +12,10 @@
 //   - a gap under IN_LINE_PCT is "in line" (Robinhood feeds only move on a 0.5% deviation);
 //   - outside a chain's feed session the feed holds its last value, so the gap is labelled against
 //     the last session, never presented as a live mispricing;
-//   - a token whose pool or feed could not be read is reported as such, never as zero.
+//   - a token whose pool or feed could not be read is reported as such, never as zero;
+//   - an implausible gap (IMPLAUSIBLE_PCT or more, unless the pool is deep and was read on chain this
+//     cycle; or a price UNITS_RATIO off fair) is "unverified": its gap is withheld, with the reason
+//     (assessRow). Each row says whether its price was read on chain or is an API's reading, and when.
 // Scale: every visitor shares one upstream read per CACHE_MS, and the responses are edge-cacheable.
 // History: one snapshot per token every SNAPSHOT_MS, kept for 7 days in TRACKER_DATA (a volume).
 
@@ -43,6 +46,15 @@ const KEEP_MS = 7 * 86_400_000
 export const MIN_LIQUIDITY_USD = 10_000
 export const IN_LINE_PCT = 1
 export const FLAG_PCT = 2
+/* Plausibility. A tokenised stock with a live arbitrage path does not sit 15% off its feed in a real
+   pool; a number that wide is far more often a bad print (an API's misread of an unusual venue, a
+   stale reading, a decimals slip) than a price. So a gap of IMPLAUSIBLE_PCT or more is believed only
+   from a pool of TRUST_LIQUIDITY_USD or more whose price was read on chain this cycle; otherwise the
+   row is "unverified": its gap is withheld (null), kept as rawGapPct, and the reason is stated.
+   A price UNITS_RATIO times fair or more (either way) is a units error whatever the pool. */
+export const IMPLAUSIBLE_PCT = 15
+export const TRUST_LIQUIDITY_USD = 1_000_000
+export const UNITS_RATIO = 5
 const SOUND_QUOTES = new Set(['WETH', 'ETH', 'WBNB', 'BNB', 'USDC', 'USDG', 'USDT', 'USD1', 'FDUSD'])
 const DATA_FILE = process.env.TRACKER_DATA ?? path.join(here, '..', '.tracker-history.json')
 
@@ -95,8 +107,19 @@ async function readFeeds(chain) {
   })
 }
 
-/** The deepest pool for one token, preferring pools priced against a native coin or a dollar stable. */
-function bestPool(token, pairs) {
+/** Whether a pool's price can be re-read on chain each refresh (onchainPriceCall): a v3 pool (slot0),
+    a Uniswap v4 or DeepCore pool (32-byte id). Anything else (Metric, v2 pairs, unknown venues) is
+    priced only by the API that found it, once an hour. */
+export function onchainReadable(p) {
+  if (!p?.pair) return false
+  if (p.pair.length === 66 || isDeepcorePool(p)) return true
+  if ((p.labels ?? []).some((l) => /^v[34]$/i.test(String(l)))) return true
+  return /(^|-)v3($|-)|slipstream|(^|-)cl($|-)/i.test(String(p.dex ?? ''))
+}
+
+/** The deepest pool for one token: pools against a native coin or a dollar stable first, then pools
+    whose price can be re-read on chain (when deep enough to count), then liquidity. */
+export function bestPool(token, pairs) {
   const lower = token.toLowerCase()
   const rows = pairs
     .filter((p) => p.baseToken?.address?.toLowerCase() === lower || p.quoteToken?.address?.toLowerCase() === lower)
@@ -107,13 +130,55 @@ function bestPool(token, pairs) {
       const native = num(p.priceNative)
       // DexScreener prices the BASE token; a stock on the quote side is priceUsd / priceNative.
       const price = isBase ? usd : usd !== null && native ? usd / native : null
-      return { price, liquidityUsd: num(p.liquidity?.usd) ?? 0, volume24hUsd: num(p.volume?.h24) ?? 0, dex: p.dexId, labels: p.labels ?? [], other: other?.symbol ?? '?', quoteAddr: other?.address ?? null, url: p.url, pair: p.pairAddress, sound: SOUND_QUOTES.has(String(other?.symbol ?? '').toUpperCase()) }
+      const row = { price, liquidityUsd: num(p.liquidity?.usd) ?? 0, volume24hUsd: num(p.volume?.h24) ?? 0, dex: p.dexId, labels: p.labels ?? [], other: other?.symbol ?? '?', quoteAddr: other?.address ?? null, url: p.url, pair: p.pairAddress, sound: SOUND_QUOTES.has(String(other?.symbol ?? '').toUpperCase()) }
+      return { ...row, readable: onchainReadable(row) }
     })
     .filter((r) => r.price !== null && r.price > 0)
   if (!rows.length) return null
-  rows.sort((a, b) => Number(b.sound) - Number(a.sound) || b.liquidityUsd - a.liquidityUsd)
-  const best = rows[0]
-  return { ...best, pools: rows.length, totalLiquidityUsd: rows.reduce((a, r) => a + r.liquidityUsd, 0), totalVolume24hUsd: rows.reduce((a, r) => a + r.volume24hUsd, 0) }
+  // De-duplicate (the batch and per-token answers overlap).
+  const seen = new Set()
+  const unique = rows.filter((r) => (seen.has(String(r.pair).toLowerCase()) ? false : (seen.add(String(r.pair).toLowerCase()), true)))
+  const usable = (r) => r.readable && r.liquidityUsd >= MIN_LIQUIDITY_USD
+  unique.sort((a, b) => Number(b.sound) - Number(a.sound) || Number(usable(b)) - Number(usable(a)) || b.liquidityUsd - a.liquidityUsd)
+  const best = unique[0]
+  return { ...best, priced: 'api', pools: unique.length, totalLiquidityUsd: unique.reduce((a, r) => a + r.liquidityUsd, 0), totalVolume24hUsd: unique.reduce((a, r) => a + r.volume24hUsd, 0) }
+}
+
+/**
+ * The trust verdict for one row, from its fair price and its pool. Pure; exported for the tests.
+ * Returns { gapPct, rawGapPct, status, trusted, untrustedReason }. An "unverified" row keeps its
+ * on-chain price but its gap is null, so no chart, ranking, alert or history ever uses it.
+ */
+export function assessRow({ fair, pool, now = Date.now() }) {
+  const p = pool
+  const onchain = p && !p.error ? (p.price ?? null) : null
+  const rawGapPct = fair && onchain ? ((onchain - fair) / fair) * 100 : null
+  const out = (status, untrustedReason = null, gapPct = rawGapPct) => ({ gapPct, rawGapPct, status, trusted: !untrustedReason && ['premium', 'discount', 'drifting', 'in-line'].includes(status), untrustedReason })
+  if (fair === null || fair === undefined) return out('feed-unreadable', 'The fair price (Chainlink feed) could not be read.', null)
+  if (p?.error) return out('pool-unreadable', 'The pool could not be read.', null)
+  if (onchain === null) return out('no-pool', 'No pool with a usable price was found.', null)
+  const ratio = onchain / fair
+  const liq = Number(p.liquidityUsd) || 0
+  const usd0 = (n) => `$${Math.round(n).toLocaleString('en-US')}`
+  if (ratio >= UNITS_RATIO || ratio <= 1 / UNITS_RATIO)
+    return out('unverified', `The on-chain price is ${ratio >= 1 ? ratio.toFixed(1) + '×' : '1/' + (1 / ratio).toFixed(1)} the fair price: a units or decimals error in the pool read, not a price.`, null)
+  if (liq < MIN_LIQUIDITY_USD) return out('thin', `The pool holds ${usd0(liq)}, under the ${usd0(MIN_LIQUIDITY_USD)} needed to flag a gap.`)
+  if (Math.abs(rawGapPct) >= IMPLAUSIBLE_PCT) {
+    const onChain = p.priced === 'chain'
+    const deep = liq >= TRUST_LIQUIDITY_USD
+    if (!onChain || !deep) {
+      const why = []
+      if (!onChain) {
+        const at = Number(p.pricedAt) || null
+        const age = at ? Math.max(0, Math.round((now - at) / 60_000)) : null
+        why.push(`its price is ${p.source ?? 'the price API'}’s reading${age !== null ? ` from ${age} min ago` : ''}, which could not be confirmed on chain (the ${p.dex ?? 'pool'} contract cannot be re-read)`)
+      }
+      if (!deep) why.push(`the pool holds ${usd0(liq)}, under the ${usd0(TRUST_LIQUIDITY_USD)} a gap this wide needs`)
+      return out('unverified', `A ${Math.abs(rawGapPct).toFixed(1)}% gap is implausible for a tokenised stock, and ${why.join('; and ')}. Shown unverified, not as a ${rawGapPct > 0 ? 'premium' : 'discount'}.`, null)
+    }
+  }
+  const g = rawGapPct
+  return out(Math.abs(g) < IN_LINE_PCT ? 'in-line' : Math.abs(g) >= FLAG_PCT ? (g > 0 ? 'premium' : 'discount') : 'drifting')
 }
 
 /* Resilience: an upstream refusal never blanks the page. After a 429 the chain backs off (doubling,
@@ -224,8 +289,11 @@ async function readPoolsGecko(chain) {
     const dexId = String(top?.relationships?.dex?.data?.id ?? 'unknown')
     const sides = [top?.relationships?.base_token?.data?.id, top?.relationships?.quote_token?.data?.id].map((id) => String(id ?? '').split('_')[1] ?? '')
     const quoteAddr = sides.find((a) => a && a.toLowerCase() !== addr.toLowerCase()) ?? null
-    return {
+    const row = {
       price,
+      priced: 'api',
+      pricedAt: Date.now(),
+      source: 'GeckoTerminal',
       liquidityUsd: num(top?.attributes?.reserve_in_usd) ?? 0,
       volume24hUsd: num(top?.attributes?.volume_usd?.h24) ?? 0,
       dex: dexId.replace(/-(robinhood|bsc)$/, ''),
@@ -239,6 +307,7 @@ async function readPoolsGecko(chain) {
       totalLiquidityUsd: num(t.attributes?.total_reserve_in_usd) ?? 0,
       totalVolume24hUsd: num(t.attributes?.volume_usd?.h24) ?? 0,
     }
+    return { ...row, readable: onchainReadable(row) }
   })
 }
 
@@ -305,23 +374,27 @@ async function readPoolsOnchain(chain, fairByToken) {
   const dec = (a) => (a === ZERO ? 18 : decimalsCache.get(`${chain.key}:${a}`))
 
   let repriced = 0
+  // A pool that cannot be re-read keeps the API's price from discovery, labelled as such (priced 'api',
+  // with that read's time), never passed off as an on-chain read.
+  const kept = (p) => (p && !p.error ? { ...p, priced: 'api', pricedAt: p.pricedAt ?? cached.at, source: p.source ?? cached.source ?? 'DexScreener' } : p)
+  const now = Date.now()
   const result = pools.map((p, i) => {
     const x = plan[i]
-    if (!x) return p
+    if (!x) return kept(p)
     const r = out.get(x.id)?.result
-    if (!r || r.length < 66) return p
+    if (!r || r.length < 66) return kept(p)
     const sqrt = Number(word(r, 0)) / 2 ** 96
     const tokenIs0 = x.token < x.quote
     const d0 = dec(tokenIs0 ? x.token : x.quote)
     const d1 = dec(tokenIs0 ? x.quote : x.token)
-    if (!sqrt || d0 === undefined || d1 === undefined) return p
+    if (!sqrt || d0 === undefined || d1 === undefined) return kept(p)
     const zeroInOne = sqrt * sqrt * 10 ** (d0 - d1) // price of currency0 in units of currency1
     const inQuote = tokenIs0 ? zeroInOne : 1 / zeroInOne
     const sym = String(p.other ?? '').toUpperCase()
     const quoteUsd = STABLES.has(sym) ? 1 : chain.nativeQuotes.includes(sym) ? nativeUsd : (fairByToken.get(x.quote) ?? null)
-    if (!quoteUsd || !Number.isFinite(inQuote) || inQuote <= 0) return p
+    if (!quoteUsd || !Number.isFinite(inQuote) || inQuote <= 0) return kept(p)
     repriced++
-    return { ...p, price: inQuote * quoteUsd }
+    return { ...p, price: inQuote * quoteUsd, priced: 'chain', pricedAt: now }
   })
   if (!repriced) throw new Error('no pool could be re-priced on chain')
   return result
@@ -344,8 +417,27 @@ async function readPools(chain) {
     if (!res.ok) throw new Error(`DexScreener HTTP ${res.status}`)
     pairs.push(...((await res.json()) ?? []))
   }
-  return tokens.map((t) => bestPool(t, pairs))
+  const at = Date.now()
+  const out = tokens.map((t) => bestPool(t, pairs))
+  /* The batch endpoint answers ONE pair per token, DexScreener's own pick (by volume), which can be a
+     venue whose price cannot be re-read on chain (Metric, a v2 pair) while a far deeper v3/v4 pool
+     exists. For those tokens, and tokens with no pool, ask for every pair of the token (token-pairs,
+     a separate 300/min limit) and choose again. Capped per discovery; a refusal keeps the batch pick. */
+  const recheck = tokens.map((t, i) => [t, i]).filter(([, i]) => !out[i] || !out[i].readable).slice(0, PAIR_RECHECK_MAX)
+  for (const [t, i] of recheck) {
+    try {
+      const r = await fetch(`${DEX_PAIRS}/${chain.dex}/${t}`, { headers: { accept: 'application/json', 'user-agent': UA }, signal: AbortSignal.timeout(15_000) })
+      if (!r.ok) break
+      const all = await r.json()
+      if (Array.isArray(all) && all.length) out[i] = bestPool(t, [...pairs, ...all]) ?? out[i]
+    } catch {
+      break
+    }
+  }
+  return out.map((p) => (p ? { ...p, pricedAt: at, source: 'DexScreener' } : p))
 }
+const DEX_PAIRS = 'https://api.dexscreener.com/token-pairs/v1'
+const PAIR_RECHECK_MAX = 15
 
 /** Whether a chain's feeds are live now. Robinhood: Chainlink's us_equities_24/5, Sunday 20:00 to
     Friday 20:00 New York. BSC: NYSE regular hours, 09:30 to 16:00 New York, weekdays (holidays are
@@ -423,6 +515,31 @@ function record(rows, at) {
 /** Every token the tracker follows, for validating alert targets. */
 export const trackedStocks = () => CHAINS.flatMap((c) => c.table.stocks.map((s) => ({ chain: c.key, ticker: s.ticker, name: s.name })))
 
+/** One followed token by chain key and address (any case), with the chain id, or null. */
+export function stockByToken(chainKey, address) {
+  const c = CHAINS.find((x) => x.key === chainKey)
+  const a = String(address ?? '').toLowerCase()
+  const s = c?.table.stocks.find((x) => x.token.toLowerCase() === a)
+  return s ? { chain: c.key, chainId: c.id, ticker: s.ticker, name: s.name, token: s.token } : null
+}
+
+/** A token's decimals(), read on chain once and cached for the process (decimals never change). */
+export async function readTokenDecimals(chainKey, address) {
+  const c = CHAINS.find((x) => x.key === chainKey)
+  if (!c) throw new Error(`unknown chain ${chainKey}`)
+  const a = String(address).toLowerCase()
+  if (a === ZERO) return 18
+  const k = `${c.key}:${a}`
+  if (decimalsCache.has(k)) return decimalsCache.get(k)
+  const out = await rpcBatch(c, [{ jsonrpc: '2.0', id: 0, method: 'eth_call', params: [{ to: a, data: '0x313ce567' }, 'latest'] }])
+  const r = out.get(0)?.result
+  if (!r || r.length < 66) throw new Error('decimals unreadable')
+  const d = Number(BigInt(r))
+  if (!(d >= 0 && d <= 36)) throw new Error('decimals out of range')
+  decimalsCache.set(k, d)
+  return d
+}
+
 /* Snapshot listeners (gap alerts): called with the rows and time of every recorded snapshot. */
 const snapshotListeners = new Set()
 export function onSnapshot(fn) {
@@ -480,10 +597,9 @@ async function buildChain(chain, at) {
     const p = pools[i]
     const fair = f && !f.error ? f.price : null
     const onchain = p && !p.error ? p.price : null
-    const gapPct = fair && onchain ? ((onchain - fair) / fair) * 100 : null
-    const liquid = !!p && !p.error && p.liquidityUsd >= MIN_LIQUIDITY_USD
-    const status =
-      fair === null ? 'feed-unreadable' : p?.error ? 'pool-unreadable' : onchain === null ? 'no-pool' : !liquid ? 'thin' : Math.abs(gapPct) < IN_LINE_PCT ? 'in-line' : Math.abs(gapPct) >= FLAG_PCT ? (gapPct > 0 ? 'premium' : 'discount') : 'drifting'
+    const verdict = assessRow({ fair, pool: p ? { ...p, source: p.source ?? (poolRead.source === 'on chain' ? undefined : poolRead.source) } : p, now: at })
+    const { gapPct, status } = verdict
+    const stale = !!poolRead.stale
     return {
       chain: chain.key,
       ticker: s.ticker,
@@ -498,7 +614,15 @@ async function buildChain(chain, at) {
       onchain,
       gapPct,
       status,
-      pool: p && !p.error ? { dex: p.dex, labels: p.labels, against: p.other, url: p.url, pair: p.pair, liquidityUsd: p.liquidityUsd, volume24hUsd: p.volume24hUsd, pools: p.pools, totalLiquidityUsd: p.totalLiquidityUsd, totalVolume24hUsd: p.totalVolume24hUsd } : null,
+      /** The gap before the plausibility guard; differs from gapPct only on an "unverified" row. */
+      rawGapPct: verdict.rawGapPct,
+      /** Whether the tracker stands behind this gap (a flaggable status, fresh pool read), and why not. */
+      trusted: verdict.trusted && !stale,
+      untrustedReason: verdict.untrustedReason ?? (stale ? 'The pool read is the last good one, served while the price source backs off.' : null),
+      /** Where the on-chain price came from this cycle: 'chain' (the pool read on chain) or 'api' (the price API's reading at onchainAt). */
+      onchainSource: onchain === null ? null : p.priced === 'chain' ? 'chain' : 'api',
+      onchainAt: onchain === null ? null : new Date(p.pricedAt ?? poolRead.asOf ?? at).toISOString(),
+      pool: p && !p.error ? { dex: p.dex, labels: p.labels, against: p.other, url: p.url, pair: p.pair, liquidityUsd: p.liquidityUsd, volume24hUsd: p.volume24hUsd, pools: p.pools, totalLiquidityUsd: p.totalLiquidityUsd, totalVolume24hUsd: p.totalVolume24hUsd, readableOnChain: p.readable ?? onchainReadable(p) } : null,
       poolError: p?.error ?? null,
       ...logosFor(chain.key, s),
     }
@@ -527,7 +651,7 @@ async function build() {
   return {
     generatedAt: new Date(at).toISOString(),
     chains: parts.map((p) => p.chain),
-    rules: { minLiquidityUsd: MIN_LIQUIDITY_USD, inLinePct: IN_LINE_PCT, flagPct: FLAG_PCT },
+    rules: { minLiquidityUsd: MIN_LIQUIDITY_USD, inLinePct: IN_LINE_PCT, flagPct: FLAG_PCT, implausiblePct: IMPLAUSIBLE_PCT, trustLiquidityUsd: TRUST_LIQUIDITY_USD, unitsRatio: UNITS_RATIO },
     sources: {
       fair: 'Chainlink feeds, read on chain with latestRoundData(); on BNB Chain multiplied by each bStock’s uiMultiplier()',
       onchain: 'each token’s deepest pool (pools against a native coin or dollar stable first), priced directly on chain every refresh (v3 slot0, v4 StateView); DexScreener, or GeckoTerminal when it refuses, finds the pool and reports liquidity and volume once an hour',

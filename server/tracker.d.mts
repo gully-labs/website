@@ -15,3 +15,11 @@ export function trackerHealth(): unknown
 export const DEEPCORE_CL_POOL_MANAGER: string
 export function isDeepcorePool(p: { dex?: string | null; poolManager?: string | null } | null | undefined): boolean
 export function onchainPriceCall(chain: { stateView: string | null; deepcoreCl?: string | null }, p: { pair?: string | null; dex?: string | null; poolManager?: string | null } | null | undefined): { to: string; data: string } | null
+export const IMPLAUSIBLE_PCT: number
+export const TRUST_LIQUIDITY_USD: number
+export const UNITS_RATIO: number
+export function onchainReadable(p: { pair?: string | null; dex?: string | null; labels?: string[] | null; poolManager?: string | null } | null | undefined): boolean
+export function bestPool(token: string, pairs: unknown[]): (Record<string, unknown> & { price: number; liquidityUsd: number; readable: boolean; priced: 'api' }) | null
+export function assessRow(a: { fair: number | null; pool: Record<string, unknown> | null | undefined; now?: number }): { gapPct: number | null; rawGapPct: number | null; status: string; trusted: boolean; untrustedReason: string | null }
+export function stockByToken(chainKey: string, address: string): { chain: string; chainId: number; ticker: string; name: string; token: string } | null
+export function readTokenDecimals(chainKey: string, address: string): Promise<number>

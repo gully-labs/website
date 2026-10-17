@@ -126,7 +126,12 @@ const ROWS = [
   row({ ticker: 'META', name: 'Meta', status: 'in-line', gapPct: 0.4, fair: 700, onchain: 702.8 }),
   row({ ticker: 'MSFT', name: 'Microsoft', chain: 'bsc', status: 'premium', gapPct: 12, sessionOpen: false }),
   row({ ticker: 'AMZN', name: 'Amazon', status: 'premium', gapPct: 7, poolStale: true }),
+  row({ ticker: 'GOOGL', name: 'Alphabet', status: 'unverified', gapPct: null, rawGapPct: -29.45, fair: 706.52, onchain: 498.46, pool: { liquidityUsd: 269_113 }, untrustedReason: 'A 29.4% gap is implausible for a tokenised stock, and its price could not be confirmed on chain.' }),
 ]
+
+// DeepCore launches as deepcore.mjs's readLaunches returns them (shapes from api.deepcore.fun/v1/launches).
+const dcLaunch = (o) => ({ chainId: 4663, chainKey: 'robinhood', chainName: 'Robinhood Chain', token: '0x8d901a1b3f3a57f9c36a71382fa183476c41545b', symbol: 'DTC', createdAt: '2026-10-11T08:20:21.000Z', legs: [{ poolId: '0xb506', kind: 'CL', quote: 'WETH', locked: true, lockId: '1' }], links: { token: 'https://deepcore.fun/tokens/0x8d901a1b3f3a57f9c36a71382fa183476c41545b?net=robinhood', swap: 'https://deepcore.fun/app/swap?net=robinhood&in=0x0000000000000000000000000000000000000000&out=0x8d901a1b3f3a57f9c36a71382fa183476c41545b' }, ...o })
+const LAUNCHES = [dcLaunch({ chainId: 8453, chainKey: 'base', chainName: 'Base', token: '0x1111111111111111111111111111111111111111', symbol: '<b>X&', createdAt: '2026-10-17T18:00:00.000Z', legs: [{ kind: 'Bin', quote: 'USDC', locked: false }], links: { token: 'https://deepcore.fun/tokens/0x1111111111111111111111111111111111111111?net=base', swap: 'https://deepcore.fun/app/swap?net=base&in=0x0&out=0x1111' } }), dcLaunch({})]
 
 const wallet = privateKeyToAccount(generatePrivateKey())
 const me = wallet.address.toLowerCase()
@@ -159,6 +164,7 @@ try {
   check('startup: setMyCommands lists gap, top, alerts, stop, help', ['gap', 'top', 'alerts', 'stop', 'help'].every((c) => cmds.includes(c)), cmds.join())
   check('startup: /movers is offered (the tracker has movers)', cmds.includes('movers'))
   check('startup: /ask is in the command list', cmds.includes('ask'))
+  check('startup: /launches is in the command list', cmds.includes('launches'))
   check('startup: getMe read the bot name', calls.some((c) => c.method === 'getMe'))
   check('startup is idempotent (a second run succeeds)', (await tg.startTelegram()).ok)
   const ch1 = await dev.call('/api/alerts/channels')
@@ -220,6 +226,41 @@ try {
   check('/top: a failed tracker read is said honestly', /could not be read just now/.test(lastText(338)))
   tg.setTrackerReaderForTest(async () => ROWS)
   check('HTML escaping: < > & " are escaped', tg.esc('<b>"x" & y</b>') === '&lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt;')
+
+  /* ----------------------------------------------------------- unverified --- */
+  await say(privateChat(339), '/gap GOOGL')
+  const unv = lastText(339)
+  check('/gap: an unverified price says so with the reason, and shows no gap', /Unverified: A 29\.4% gap is implausible/.test(unv) && !/Gap <b>/.test(unv) && unv.includes('On chain $498.46'), unv)
+  check('/top leaves out unverified rows', !/GOOGL/.test(lastText(337)))
+
+  /* ------------------------------------------------------------- /launches --- */
+  const asked = []
+  tg.setLaunchesReaderForTest(async (o) => {
+    asked.push(o)
+    const l = LAUNCHES.filter((x) => o.chainId === null || x.chainId === o.chainId)
+    return { state: 'ok', launches: l, asOf: '2026-10-17T19:00:00.000Z', chains: [{ chainId: 999, name: 'HyperEVM', status: 'unreadable', total: null }] }
+  })
+  await say(privateChat(340), '/launches')
+  const ln = lastText(340)
+  check('/launches answers in an unlinked chat (public, read-only)', /Latest DeepCore launches/.test(ln), ln)
+  check('/launches lists token, chain, time, pool and lock, newest first', ln.indexOf('Base · 2026-10-17 18:00 UTC') > 0 && ln.indexOf('<b>DTC</b> · Robinhood Chain · 2026-10-11 08:20 UTC') > ln.indexOf('Base ·') && ln.includes('CL pool vs WETH · liquidity locked (lock #1)') && ln.includes('Bin pool vs USDC · no liquidity lock'))
+  check('/launches links each token on deepcore.fun and its swap page', ln.includes('href="https://deepcore.fun/tokens/0x8d901a1b3f3a57f9c36a71382fa183476c41545b?net=robinhood"') && ln.includes('>swap on DeepCore</a>'))
+  check('/launches escapes the token symbol', ln.includes('&lt;b&gt;X&amp;') && !ln.includes('<b><b>X'))
+  check('/launches names a chain DeepCore could not read', /could not read HyperEVM/.test(ln))
+  check('/launches says where it read from', /Read from api\.deepcore\.fun at 2026-10-17 19:00 UTC/.test(ln))
+  await say(privateChat(340), '/launches base')
+  check('/launches base filters to one chain', asked.at(-1).chainId === 8453 && /on Base<\/b>/.test(lastText(340)) && !/DTC/.test(lastText(340)))
+  await say(privateChat(340), '/launches solana')
+  check('/launches with an unknown chain lists DeepCore’s chains', /DeepCore runs on bsc, hyperevm, robinhood, base/.test(lastText(340)))
+  tg.setLaunchesReaderForTest(async () => ({ state: 'unreadable', launches: [], asOf: null, chains: [] }))
+  await say(privateChat(340), '/launches')
+  check('/launches: an unreadable API is said honestly, never "no launches"', /could not be read just now/.test(lastText(340)) && !/No launches/.test(lastText(340)))
+  tg.setLaunchesReaderForTest(async () => ({ state: 'stale', launches: [LAUNCHES[1]], asOf: '2026-10-17T18:00:00.000Z', chains: [] }))
+  await say(privateChat(340), '/launches')
+  check('/launches: a stale list is labelled with its time', /this is the list as of 2026-10-17 18:00 UTC/.test(lastText(340)))
+  tg.setLaunchesReaderForTest(async () => ({ state: 'ok', launches: [], asOf: '2026-10-17T18:00:00.000Z', chains: [] }))
+  await say(privateChat(340), '/launches base')
+  check('/launches with none says so', /No launches on DeepCore on Base yet/.test(lastText(340)))
 
   /* ---------------------------------------------------------------- /ask --- */
   await say(privateChat(600), '/ask how do alerts work?')
@@ -291,6 +332,14 @@ try {
   check('buttons: "Open NVDA" to the stock page and "Mute 24h"', kb.some((b) => b.text === 'Open NVDA' && b.url === 'https://gullylabs.xyz/tracker/robinhood/NVDA') && kb.some((b) => b.text === 'Mute 24h' && b.callback_data === `mute:${alertId}`))
   const log1 = (await dev.call('/api/developer/alerts')).data.alerts.find((a) => a.id === alertId).deliveries
   check('the delivery log records the Telegram send', log1.length === 1 && log1[0].channel === 'telegram' && log1[0].ok && log1[0].status === 200)
+
+  /* --------------------------------------------- DeepCore launch alert --- */
+  const ev = { kind: 'deepcore.launch', chainId: 4663, chainKey: 'robinhood', chainName: 'Robinhood Chain', token: LAUNCHES[1].token, symbol: 'DTC', createdAt: LAUNCHES[1].createdAt, pools: LAUNCHES[1].legs, links: LAUNCHES[1].links }
+  const lr = await tg.sendAlertTelegram({ owner: me, alertId: 'dcalert1', name: 'Launches', conditionText: 'new DeepCore launch on any chain', events: [ev], test: false })
+  const lmsg = sent(111).at(-1)
+  check('a DeepCore launch alert reaches the linked chat', lr.ok && /Gully Labs alert<\/b> “Launches”/.test(lmsg.body.text) && /new DeepCore launch on any chain/.test(lmsg.body.text) && lmsg.body.text.includes('<b>DTC</b> · Robinhood Chain'), lmsg?.body.text)
+  const lkb = lmsg.body.reply_markup?.inline_keyboard?.flat() ?? []
+  check('launch alert buttons: "Open DTC on DeepCore" and "Mute 24h"', lkb.some((b) => b.text === 'Open DTC on DeepCore' && b.url === LAUNCHES[1].links.token) && lkb.some((b) => b.callback_data === 'mute:dcalert1'))
 
   /* -------------------------------------------------------------- Mute --- */
   await press(privateChat(444), `mute:${alertId}`)

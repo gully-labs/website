@@ -202,7 +202,16 @@ export interface BillingView {
 
 /* -------------------------------------------------------------------- alerts --- */
 
-export type AlertCondition = { type: 'gap'; pct: number } | { type: 'status'; status: 'premium' | 'discount' | 'either' }
+export type AlertCondition = { type: 'gap'; pct: number } | { type: 'status'; status: 'premium' | 'discount' | 'either' } | { type: 'deepcore-launch'; chainId: number | null }
+
+/** An alert kind the server offers (GET /api/developer/alerts `kinds`). */
+export interface AlertKind {
+  id: 'gap' | 'deepcore-launch'
+  label: string
+  target: 'stock' | 'deepcore-chain'
+  chains?: { chainId: number; name: string }[]
+  cooldownMinutes?: number
+}
 
 export interface Delivery {
   id: string
@@ -259,9 +268,12 @@ export interface AlertsView {
   limits: { plan: PlanId; planName: string; max: number; used: number; cooldownMinutes: number; flagPct: number }
   telegram: TelegramInfo
   stocks: { chain: string; ticker: string; name: string }[]
+  /** Absent on an older server. */
+  kinds?: AlertKind[]
 }
 
-export const conditionText = (c: AlertCondition) => (c.type === 'gap' ? `Gap ≥ ${c.pct}% either way` : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
+const DEEPCORE_CHAIN_NAMES: Record<number, string> = { 56: 'BNB Chain', 999: 'HyperEVM', 4663: 'Robinhood Chain', 8453: 'Base' }
+export const conditionText = (c: AlertCondition) => (c.type === 'deepcore-launch' ? `New DeepCore launch on ${c.chainId ? (DEEPCORE_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? `Gap ≥ ${c.pct}% either way` : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
 
 export const fmtUsd0 = (n: number) => n.toLocaleString('en-US')
 
