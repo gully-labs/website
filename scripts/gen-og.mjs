@@ -89,6 +89,18 @@ const CARDS = [
     file: 'og-developers.png',
     html: page({ eyebrow: 'Developer portal', title: 'Build on <em>live data</em>', body: 'API keys, usage and quickstarts for the Gully Labs tracker API.', url: 'developers.gullylabs.xyz', right: codeCard('curl gullylabs.xyz/api/tracker \\<br>&nbsp;&nbsp;-H "Authorization: Bearer <span style="color:#1f9e89">gl_live_…</span>"') }),
   },
+  {
+    file: 'og-pricing.png',
+    html: page({ eyebrow: 'Pricing · tracker API', title: 'More calls, <em>alerts and history</em>', body: 'Pay in USDC on Base from your own wallet. No card, no custody, nothing that renews behind your back.', url: 'gullylabs.xyz/pricing', right: codeCard('<span style="color:#6c7888"># gap alert, signed</span><br>POST your-app.com/hook<br>X-Gully-Signature: <span style="color:#1f9e89">sha256=…</span><br><br>{ <span style="color:#e8c060">"ticker"</span>: "NVDA",<br>&nbsp;&nbsp;<span style="color:#e8c060">"gapPct"</span>: 2.4 }'), titleSize: 88 }),
+  },
+  {
+    file: 'og-analytics.png',
+    html: page({ eyebrow: 'Gully Analytics', title: 'Analytics that see <em>the wallet</em>', body: 'Page views plus wallet connects, chains and transactions, with a visit → wallet → transaction funnel.', url: 'gullylabs.xyz/analytics', right: codeCard('&lt;<span style="color:#e8c060">script</span> defer<br>&nbsp;&nbsp;src="analytics.gullylabs.xyz/script.js"<br>&nbsp;&nbsp;data-web3="<span style="color:#1f9e89">true</span>"&gt;<br>&lt;/<span style="color:#e8c060">script</span>&gt;'), titleSize: 88 }),
+  },
+  {
+    file: 'og-chain-kit.png',
+    html: page({ eyebrow: 'Chain Kit', title: 'An explorer for <em>your chain</em>', body: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.', url: 'gullylabs.xyz/chain-kit', right: codeCard('<span style="color:#6c7888"># your chain, your brand</span><br>CHAIN_ID=<span style="color:#1f9e89">4663</span><br>CHAIN_TYPE=<span style="color:#1f9e89">arbitrum</span><br>NETWORK_NAME="Your Chain"<br>ACCENT=<span style="color:#e8c060">#E8C060</span>'), titleSize: 92 }),
+  },
   ...PROJECTS.map((p) => ({
     file: `og-project-${p.slug}.png`,
     html: page({

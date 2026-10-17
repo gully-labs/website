@@ -67,7 +67,53 @@ services:
       retries: 30
     mem_limit: 640m
 
+  # Gully Analytics: our Umami fork (github.com/gully-labs/umami, branch gully/analytics). No host
+  # port: gully-web forwards analytics.gullylabs.xyz to it (server/analytics.mjs). The image is built
+  # off the box and loaded with `docker load` (a Next.js build needs ~4 GB this shared box can't spare).
+  # Secrets (ANALYTICS_DB_PASSWORD, ANALYTICS_APP_SECRET, ANALYTICS_2FA_KEY) are in .env on the box only.
+  analytics:
+    image: gully-analytics:${ANALYTICS_TAG:-latest}
+    container_name: gully-analytics
+    restart: unless-stopped
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://gully:${ANALYTICS_DB_PASSWORD:?set ANALYTICS_DB_PASSWORD in .env}@gully-analytics-db:5432/gully_analytics
+      APP_SECRET: ${ANALYTICS_APP_SECRET:?set ANALYTICS_APP_SECRET in .env}
+      TWO_FACTOR_ENCRYPTION_KEY: ${ANALYTICS_2FA_KEY:?set ANALYTICS_2FA_KEY in .env}
+      DISABLE_TELEMETRY: "1"
+      DISABLE_UPDATES: "1"
+    init: true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    mem_limit: 768m
+
+  analytics-db:
+    image: postgres:16-alpine
+    container_name: gully-analytics-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gully_analytics
+      POSTGRES_USER: gully
+      POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWORD:?set ANALYTICS_DB_PASSWORD in .env}
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=40"]
+    volumes:
+      - gully-analytics-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gully -d gully_analytics"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 512m
+
 volumes:
+  gully-analytics-db:
+    name: gully-analytics-db
   gully-web-data:
     name: gully-web-data
   gully-blog-content:

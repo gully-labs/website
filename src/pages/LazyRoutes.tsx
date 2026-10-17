@@ -27,6 +27,25 @@ export function DevelopersRoute() {
   )
 }
 
+const Analytics = lazy(() => import('./Products').then((m) => ({ default: m.Analytics })))
+const ChainKit = lazy(() => import('./Products').then((m) => ({ default: m.ChainKit })))
+
+export function AnalyticsRoute() {
+  return (
+    <Suspense fallback={fallback}>
+      <Analytics />
+    </Suspense>
+  )
+}
+
+export function ChainKitRoute() {
+  return (
+    <Suspense fallback={fallback}>
+      <ChainKit />
+    </Suspense>
+  )
+}
+
 export function PricingRoute() {
   return (
     <Suspense fallback={fallback}>

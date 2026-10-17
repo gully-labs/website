@@ -12,6 +12,7 @@ import { clientIp, DATA_DIR, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { handleBlog } from './blog.mjs'
+import { handleAnalytics } from './analytics.mjs'
 import { handleDeveloper } from './developer.mjs'
 import https from 'node:https'
 import net from 'node:net'
@@ -96,6 +97,8 @@ const server = http.createServer(async (req, res) => {
   const isAdmin = host.startsWith('admin.')
   // The blog is self-hosted Ghost in its own container; every path on its host goes there.
   if (host.startsWith('blog.')) return handleBlog(req, res, url)
+  // Gully Analytics (Umami fork) in its own container; every path on its host goes there.
+  if (host.startsWith('analytics.')) return handleAnalytics(req, res)
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
   }

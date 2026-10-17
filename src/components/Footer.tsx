@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { Mail, Newspaper } from 'lucide-react'
 import { projects } from '../content/projects'
-import { devLinks, navItems, socialLinks } from '../content/site'
+import { devLinks, navItems, productLinks, socialLinks } from '../content/site'
 import { useContact } from './ContactContext'
 import { SocialIcon } from './SocialIcon'
 import { Wordmark } from './Wordmark'
@@ -46,6 +46,15 @@ export function Footer() {
               <Link key={p.slug} to={`/projects/${p.slug}`} className={colLink}>
                 <span aria-hidden className="size-2 flex-none rounded-full" style={{ background: p.accent }} />
                 {p.name}
+              </Link>
+            ))}
+          </nav>
+          <nav aria-label="Products" className="flex flex-col items-start gap-3">
+            <span className={colLabel}>PRODUCTS</span>
+            {productLinks.map((d) => (
+              <Link key={d.label} to={d.to} className={colLink}>
+                <d.icon aria-hidden size={15} strokeWidth={1.75} className={colIcon} />
+                {d.label}
               </Link>
             ))}
           </nav>

@@ -22,6 +22,8 @@ const MAIN = {
   '/pricing': ['Pricing: tracker API plans · Gully Labs', 'Plans for the Gully Labs tracker API: higher rate limits, gap alerts by webhook and longer history, paid in USDC on Base with no custody.'],
   '/widget': ['Tracker widget · Gully Labs', 'Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps.'],
   '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security audits from the team behind the Gully Labs projects.'],
+  '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel.'],
+  '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
@@ -70,8 +72,7 @@ export function pageMeta(host, pathname) {
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  // Pricing has no card of its own yet; it shares the developer portal's.
-  const og = p === '/' ? 'home' : p === '/pricing' ? 'developers' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
+  const og = p === '/' ? 'home' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
   return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
 }
 
