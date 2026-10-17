@@ -937,6 +937,68 @@ async function pressed(cq, answer) {
   if (s.id) ui.setState(chatId, fromBanner ? { bannerId: src?.message_id ?? null, viewId: s.id } : { viewId: s.id })
 }
 
+/* ------------------------------------------------------- channel gate --- */
+
+/* Using the bot (menus, commands, Gully AI) requires following the Gully Labs News channel. Set with
+   TELEGRAM_REQUIRED_CHANNEL (default @GullyLabsNews; "off" disables it). Telegram only answers
+   getChatMember for a channel when the bot is an administrator there, so if the check itself fails the
+   bot lets people through rather than locking everyone out. Alert deliveries and their Mute buttons
+   are never gated: they are part of a service people may have paid for. */
+const requiredChannel = () => {
+  const v = String(process.env.TELEGRAM_REQUIRED_CHANNEL ?? '@GullyLabsNews').trim()
+  return !v || v.toLowerCase() === 'off' ? null : v.startsWith('@') || /^-?\d+$/.test(v) ? v : `@${v}`
+}
+const channelUrl = (ch) => (ch.startsWith('@') ? `https://t.me/${ch.slice(1)}` : 'https://t.me/GullyLabsNews')
+const memberCache = new Map() // userId -> { ok, until }
+let gateBroken = 0 // time the check last failed for a reason other than "not a member"
+
+/** true when the user follows the channel, or when membership cannot be checked. */
+async function followsChannel(userId, { fresh = false } = {}) {
+  const ch = requiredChannel()
+  if (!ch || !userId) return true
+  const hit = memberCache.get(userId)
+  if (!fresh && hit && hit.until > Date.now()) return hit.ok
+  const r = await tg('getChatMember', { chat_id: ch, user_id: Number(userId) })
+  if (!r.ok) {
+    if (Date.now() - gateBroken > 600_000) console.warn(`telegram: cannot check ${ch} membership (${r.error}); letting users through. Make the bot an admin of the channel.`)
+    gateBroken = Date.now()
+    return true
+  }
+  const st = r.result?.status
+  const ok = st === 'creator' || st === 'administrator' || st === 'member' || (st === 'restricted' && r.result?.is_member === true)
+  memberCache.set(userId, { ok, until: Date.now() + (ok ? 30 * 60_000 : 20_000) })
+  if (memberCache.size > 5_000) memberCache.delete(memberCache.keys().next().value)
+  return ok
+}
+
+const gateView = (ch) => ({
+  text: '<b>📣 Follow Gully Labs News to use this bot</b>\nLaunches, product updates and market notes from Gully Labs. Join the channel, then tap <b>I’ve joined</b>.',
+  keyboard: [[ubtn(`📣 Join ${ch.startsWith('@') ? ch : 'the channel'} ↗`, channelUrl(ch))], [btn('✅ I’ve joined', 'jchk')]],
+})
+
+/** Gate for one update: true when it may proceed. Answers the update itself when it may not. */
+async function gate(u) {
+  const ch = requiredChannel()
+  if (!ch) return true
+  const cq = u?.callback_query
+  const msg = u?.message
+  const from = cq?.from ?? msg?.from
+  if (!from || from.is_bot) return true
+  if (msg && msg.chat?.type !== 'private' && !/^\//.test(String(msg.text ?? ''))) return true // group chatter is never ours
+  if (cq && /^mute:/.test(String(cq.data ?? ''))) return true // controls on alert deliveries
+  const chatId = String((cq?.message?.chat ?? msg?.chat)?.id ?? from.id)
+  if (cq && cq.data === 'jchk') {
+    const ok = await followsChannel(String(from.id), { fresh: true })
+    await tg('answerCallbackQuery', { callback_query_id: String(cq.id), text: ok ? 'Thanks for following! Opening the menu.' : 'Not joined yet: join the channel, then tap again.', show_alert: !ok }).catch(() => undefined)
+    if (ok) await showNew(chatId, ui.menuView(await rowCount()))
+    return false
+  }
+  if (await followsChannel(String(from.id))) return true
+  if (cq) await tg('answerCallbackQuery', { callback_query_id: String(cq.id), text: 'Follow Gully Labs News first.' }).catch(() => undefined)
+  await showNew(chatId, gateView(ch))
+  return false
+}
+
 /** Handles one update. Exported for tests through the webhook only. */
 async function onUpdate(u) {
   if (typeof u?.update_id === 'number') {
@@ -944,6 +1006,7 @@ async function onUpdate(u) {
     seenUpdates.add(u.update_id)
     if (seenUpdates.size > 1_000) seenUpdates.delete(seenUpdates.values().next().value)
   }
+  if (!(await gate(u))) return
   if (u?.callback_query) return onCallback(u.callback_query)
   if (u?.message) return onMessage(u.message)
 }
