@@ -33,8 +33,8 @@ const load = (f) => JSON.parse(fs.readFileSync(path.join(here, 'data', f), 'utf8
 export const DEEPCORE_CL_POOL_MANAGER = '0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC'
 
 const CHAINS = [
-  { id: 4663, key: 'robinhood', name: 'Robinhood Chain', dex: 'robinhood', gecko: 'robinhood', rpcs: ['https://rpc.mainnet.chain.robinhood.com', 'https://rpc.ordofi.network'], session: '24/5', stateView: '0xf3334192d15450cdd385c8b70e03f9a6bd9e673b', deepcoreCl: DEEPCORE_CL_POOL_MANAGER, nativeUsdFeed: '0x78f3556b67e17df817d51ef5a990cdaf09e8d3a9', nativeQuotes: ['WETH', 'ETH'], table: load('robinhood-stocks.json'), multiplier: false },
-  { id: 56, key: 'bsc', name: 'BNB Chain', dex: 'bsc', gecko: 'bsc', rpcs: ['https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-rpc.publicnode.com'], session: 'nyse', stateView: null, deepcoreCl: DEEPCORE_CL_POOL_MANAGER, nativeUsdFeed: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE', nativeQuotes: ['WBNB', 'BNB'], table: load('bsc-stocks.json'), multiplier: true },
+  { id: 4663, key: 'robinhood', name: 'Robinhood Chain', dex: 'robinhood', gecko: 'robinhood', rpcs: ['https://rpc.ordofi.network', 'https://robinhood-rpc.publicnode.com', 'https://rpc.mainnet.chain.robinhood.com', 'https://robinhood.drpc.org'], session: '24/5', stateView: '0xf3334192d15450cdd385c8b70e03f9a6bd9e673b', deepcoreCl: DEEPCORE_CL_POOL_MANAGER, nativeUsdFeed: '0x78f3556b67e17df817d51ef5a990cdaf09e8d3a9', nativeQuotes: ['WETH', 'ETH'], table: load('robinhood-stocks.json'), multiplier: false },
+  { id: 56, key: 'bsc', name: 'BNB Chain', dex: 'bsc', gecko: 'bsc', rpcs: ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed1.ninicoin.io', 'https://bsc-dataseed.bnbchain.org', 'https://bsc-dataseed1.defibit.io', 'https://bsc-dataseed3.bnbchain.org', 'https://bsc-dataseed2.bnbchain.org'], session: 'nyse', stateView: null, deepcoreCl: DEEPCORE_CL_POOL_MANAGER, nativeUsdFeed: '0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE', nativeQuotes: ['WBNB', 'BNB'], table: load('bsc-stocks.json'), multiplier: true },
 ]
 
 const DEX = 'https://api.dexscreener.com/tokens/v1'
@@ -63,17 +63,36 @@ const num = (v) => {
   return typeof n === 'number' && Number.isFinite(n) ? n : null
 }
 
+/* RPC URLs for a chain: GULLY_RPC_<chainId> (comma-separated, e.g. a private dRPC URL) first, then the
+   public defaults above. Automatic fallback: a URL that fails (timeout, HTTP error, rate limit, not a
+   batch answer) steps aside for a cool-off of 30 s doubling to 10 min, and is tried again only when no
+   healthy URL is left. */
+const rpcCooling = new Map() // url -> { until, strikes }
+function rpcUrls(chain) {
+  const env = String(process.env[`GULLY_RPC_${chain.id}`] ?? '').split(',').map((u) => u.trim()).filter(Boolean)
+  const all = [...new Set([...env, ...chain.rpcs])]
+  const now = Date.now()
+  const healthy = all.filter((u) => (rpcCooling.get(u)?.until ?? 0) <= now)
+  const cold = all.filter((u) => (rpcCooling.get(u)?.until ?? 0) > now).sort((a, b) => rpcCooling.get(a).until - rpcCooling.get(b).until)
+  return [...healthy, ...cold]
+}
+
 async function rpcBatch(chain, calls) {
   let last
-  for (const url of chain.rpcs) {
+  for (const url of rpcUrls(chain)) {
     try {
-      const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(calls), signal: AbortSignal.timeout(15_000) })
+      const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(calls), signal: AbortSignal.timeout(10_000) })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const out = await res.json()
       if (!Array.isArray(out)) throw new Error('not a batch answer')
+      rpcCooling.delete(url)
       return new Map(out.map((r) => [r.id, r]))
     } catch (e) {
       last = e
+      const c = rpcCooling.get(url) ?? { until: 0, strikes: 0 }
+      c.strikes = Math.min(c.strikes + 1, 6)
+      c.until = Date.now() + Math.min(30_000 * 2 ** (c.strikes - 1), 600_000)
+      rpcCooling.set(url, c)
     }
   }
   throw last
