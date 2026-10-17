@@ -6,6 +6,8 @@ import { ShareMenu } from '../components/Share'
 import { btnOutline, statusPill } from '../components/ui'
 import { projectNumber, projects, TOTAL_SLOTS } from '../content/projects'
 import { useStats } from '../hooks/useStats'
+import { ChainLogo } from '../components/logos/ChainLogo'
+import { chainMark } from '../components/logos/registry'
 import { fmtTime, fmtUsd, metricsOf, sourceHost } from '../lib/stats'
 
 const cardTitle = 'm-0 font-display text-[28px] font-bold uppercase'
@@ -77,7 +79,8 @@ export function ProjectDetail() {
           <p className="m-0 max-w-[560px] text-[18px] leading-[1.6] text-muted">{p.description}</p>
           <div className="flex flex-wrap gap-2">
             {p.chains.map((c) => (
-              <span key={c} className="rounded-full border border-line-strong px-[10px] py-[3px] font-mono text-[11px] tracking-[.5px] text-muted">
+              <span key={c} className="inline-flex items-center gap-1.5 rounded-full border border-line-strong py-[3px] pr-[10px] pl-[4px] font-mono text-[11px] tracking-[.5px] text-muted">
+                {chainMark(c) ? <ChainLogo chain={c} size={16} decorative /> : <span className="w-[6px]" />}
                 {c}
               </span>
             ))}

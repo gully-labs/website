@@ -1,17 +1,24 @@
 import type { PayAsset } from '../../pages/developers/api'
 import { byChain } from './assets'
+import { ChainLogo } from '../logos/ChainLogo'
+import { TokenLogo } from '../logos/TokenLogo'
+import { chainMark } from '../logos/registry'
 
-/* Chain + asset picker for Gully Pay. Only BNB Chain has a logo in public/chains (from its own listing);
-   Base, Ethereum and Arbitrum get a neutral monogram rather than a drawn logo. */
+/* Chain + asset picker for Gully Pay, with each chain's and asset's official mark (public/chains,
+   public/tokens; sources in their SOURCES.json). */
 
-const CHAIN_LOGO: Record<string, string> = { bnb: '/chains/bnb.png' }
+export function ChainMark({ chainKey, name, size = 24 }: { chainKey: string; name: string; size?: 12 | 16 | 20 | 24 | 32 }) {
+  return <ChainLogo chain={chainMark(chainKey) ? chainKey : name} size={size} decorative />
+}
 
-export function ChainMark({ chainKey, name, size = 22 }: { chainKey: string; name: string; size?: number }) {
-  const logo = CHAIN_LOGO[chainKey]
-  if (logo) return <img src={logo} alt="" width={size} height={size} className="shrink-0 rounded-full" style={{ width: size, height: size }} />
+/** An asset's mark with its chain's mark in the corner (USDC on Base, ETH on Arbitrum…). */
+export function AssetMark({ asset }: { asset: Pick<PayAsset, 'symbol' | 'chainKey' | 'chain'> }) {
   return (
-    <span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-full border border-line-strong bg-surface-deep font-mono font-medium text-muted" style={{ width: size, height: size, fontSize: Math.round(size * 0.45) }}>
-      {name.charAt(0).toUpperCase()}
+    <span className="relative inline-flex size-6 flex-none" aria-hidden>
+      <TokenLogo symbol={asset.symbol} size={24} decorative />
+      <span className="absolute -right-[4px] -bottom-[4px] inline-flex rounded-full bg-bg p-px">
+        <ChainMark chainKey={asset.chainKey} name={asset.chain} size={12} />
+      </span>
     </span>
   )
 }
@@ -22,7 +29,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false }: { ass
       {byChain(assets).map((g) => (
         <div key={g.chainId} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-input border border-line bg-surface-deep px-3 py-2">
           <span className="flex w-[132px] shrink-0 items-center gap-2 text-[14px] text-ink-2 max-[600px]:w-full">
-            <ChainMark chainKey={g.chainKey} name={g.chain} />
+            <ChainMark chainKey={g.chainKey} name={g.chain} size={24} />
             {g.chain}
           </span>
           <div className="flex flex-1 flex-wrap gap-2">
@@ -39,6 +46,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false }: { ass
                   onClick={() => onChange(a.id)}
                   className={`inline-flex min-h-11 min-w-[84px] items-center justify-center gap-2 rounded-btn border px-3 font-mono text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-gold bg-[rgba(232,192,96,.08)] text-gold' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
                 >
+                  <TokenLogo symbol={a.symbol} size={20} decorative />
                   {a.symbol}
                   <span className={`text-[10px] tracking-[.5px] ${on ? 'text-gold' : 'text-faint'}`}>{a.kind === 'native' ? 'COIN' : 'STABLE'}</span>
                 </button>

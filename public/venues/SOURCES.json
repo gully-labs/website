@@ -1,0 +1,43 @@
+{
+  "cartel-family": {
+    "file": "/venues/cartel-family.png",
+    "from": "https://cartel.family/static/icon-512.png",
+    "page": "https://cartel.family/app.webmanifest",
+    "note": "its PWA icon, resized 512 to 256 px",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "deepcore": {
+    "file": "/venues/deepcore.png",
+    "from": "https://deepcore.fun/identity/emblem-512.png",
+    "page": "https://deepcore.fun/identity",
+    "note": "the trident emblem from the identity page (not the outdated Latch kit in the deepcore repo), resized to 256 px; the card banner /assets/deepcore.png is https://deepcore.fun/identity/logo/lockup-on-dark-2x.png",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "peddleswap": {
+    "file": "/venues/peddleswap.png",
+    "from": "https://peddleswap.xyz/pwa/icon-512.png",
+    "page": "https://peddleswap.xyz/manifest.webmanifest",
+    "note": "its PWA icon, resized 512 to 256 px",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "peddles": {
+    "file": "/venues/peddles.svg",
+    "from": "https://peddles.xyz/brand/svg/app-icon-ink.svg",
+    "page": "https://peddles.xyz/manifest.webmanifest",
+    "note": "its app icon SVG, unchanged but for whitespace",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "peddlequest": {
+    "file": "/venues/peddlequest.png",
+    "from": "https://peddlequest.xyz/android-chrome-512x512.png",
+    "page": "https://peddlequest.xyz/manifest.json",
+    "note": "its PWA icon, resized 512 to 256 px",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "_terms": "All five are Gully Labs venues; marks used with the owner's permission.",
+  "gully": {
+    "file": "/brand/gully-mark-96.png",
+    "from": "/favicon.png (Gully Labs own mark)",
+    "note": "resized 400 to 96 px for the developer portal header"
+  }
+}

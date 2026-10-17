@@ -1,4 +1,5 @@
 import { AlertTriangle, ArrowUpRight, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
+import { VenueLogo } from '../../components/logos/VenueLogo'
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Seo } from '../../components/Seo'
 import { DOCS_URL } from '../../site-host'
@@ -52,9 +53,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
       <div aria-hidden className="pointer-events-none absolute top-[-200px] left-1/2 size-[640px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.12),transparent_62%)]" />
       <div className="relative flex w-full max-w-[460px] animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-5 rounded-[14px] border border-line bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-5">
         <div className="flex items-center gap-[10px]">
-          <span aria-hidden className="grid size-[26px] place-items-center rounded-[8px] bg-gold font-display text-[17px] font-extrabold text-bg">
-            G
-          </span>
+          <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
           <span className="font-semibold">Developers</span>
           <span className="ml-auto font-mono text-[10px] tracking-[1px] text-faint">TRACKER API · ANALYTICS</span>
         </div>
