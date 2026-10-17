@@ -20,6 +20,7 @@
     "test:tracker-trust": "node --test scripts/test-tracker-trust.mjs",
     "test:paylinks": "node scripts/test-paylinks.mjs",
     "test:ask": "node scripts/test-ask.mjs",
+    "test:workspaces": "node scripts/test-workspaces.mjs",
     "ask:index": "node scripts/build-ask-index.mjs"
   },
   "dependencies": {

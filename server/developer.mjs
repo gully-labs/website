@@ -21,6 +21,19 @@
 //   GET|POST /api/developer/analytics…        Gully Analytics self-serve: trial, websites, plan (analytics-accounts.mjs)
 //   GET|POST /api/developer/telegram…         link a Telegram chat to the account (telegram.mjs)
 //
+// Developer portal v2 (workspaces.mjs, profile.mjs, activity.mjs, exports.mjs):
+//   GET  /api/developer/me                    (with a session; a Bearer key still gets the legacy view below)
+//   POST /api/developer/profile | company,  GET /api/developer/sessions,  POST /api/developer/sessions/revoke
+//   POST /api/developer/workspace/switch | name,  GET /api/developer/team,  POST /api/developer/team/…
+//   GET  /api/developer/invite/:token (public preview),  POST /api/developer/invite/accept
+//   GET  /api/developer/activity?cursor=,  GET /api/developer/export/usage.csv | payments.csv
+//
+// Workspaces: every signed-in route runs in the session's active workspace (the wallet's own by default).
+// The gate checks membership on every request, resolves `address` to the workspace owner and calls the
+// handlers unchanged, so keys, alerts, analytics, billing and Telegram stay keyed by the owner. Every
+// POST is checked against the role's write permissions (workspaces.mjs, canWrite). The acting wallet and
+// role are on req.gully = { user, workspace, role, sessionId, ip } for handlers that need them.
+//
 // Sessions: an HttpOnly, SameSite=Lax cookie (Secure off localhost) holding a random id; only its
 // SHA-256 is stored (sessions.json), 30 days. CSRF: every POST must carry `X-Requested-With: gully`
 // (a header a foreign page cannot send without a CORS preflight we never grant) and, when the browser
@@ -29,8 +42,12 @@
 // Legacy (kept so existing key holders keep working; no longer in the UI):
 //   POST /api/developer/request, POST /api/developer/claim, GET /api/developer/me, POST /api/developer/rotate
 
-import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests } from './access.mjs'
+import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests, usageExtras } from './access.mjs'
+import { eventFor, noteTelegramConnect, recordEvent, activityPage, syncTelegram } from './activity.mjs'
 import { handleAlerts } from './alerts.mjs'
+import { handleExport } from './exports.mjs'
+import { handleProfileRoutes } from './profile.mjs'
+import { canWrite, forbidden, handleInvitePreview, handleWorkspaceRoutes, roleIn } from './workspaces.mjs'
 import { handleAnalyticsAccount } from './analytics-accounts.mjs'
 import { handleTelegramAccount } from './telegram.mjs'
 import { billingOf, openIntent, verifyPayment } from './billing.mjs'
@@ -52,9 +69,11 @@ import {
   rotateKeySecret,
   safeEqual,
   saveDevelopers,
+  setSessionWorkspace,
   sha256,
   SESSION_TTL_MS,
   touchAccount,
+  touchSession,
 } from './store.mjs'
 
 const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,24}$/
@@ -168,7 +187,7 @@ export async function handleDeveloper(req, res, url) {
     if (!v.ok) return json(res, 401, { error: v.error }), true
     if (getAccount(v.address)?.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact hello@gullylabs.xyz.' }), true
     touchAccount(v.address)
-    const id = createSession(v.address)
+    const id = createSession(v.address, { userAgent: String(req.headers['user-agent'] ?? '') })
     return json(res, 200, { address: v.address }, { 'Set-Cookie': sessionCookie(req, id, Math.floor(SESSION_TTL_MS / 1000)) }), true
   }
 
@@ -197,21 +216,102 @@ export async function handleDeveloper(req, res, url) {
     p.startsWith('/api/developer/analytics/') ||
     p === '/api/developer/telegram' ||
     p.startsWith('/api/developer/telegram/')
-  if (accountRoute) {
+  // Portal v2: the public invite preview, then the signed-in routes of the new modules.
+  if (p.startsWith('/api/developer/invite/') && p !== '/api/developer/invite/accept') return handleInvitePreview(req, res, url)
+  const v2Route =
+    (p === '/api/developer/me' && !bearer(req)) ||
+    p === '/api/developer/profile' ||
+    p === '/api/developer/company' ||
+    p === '/api/developer/sessions' ||
+    p === '/api/developer/sessions/revoke' ||
+    p === '/api/developer/workspace/switch' ||
+    p === '/api/developer/workspace/name' ||
+    p === '/api/developer/team' ||
+    p.startsWith('/api/developer/team/') ||
+    p === '/api/developer/invite/accept' ||
+    p === '/api/developer/activity' ||
+    p.startsWith('/api/developer/export/')
+
+  if (accountRoute || v2Route) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
     if (!post && req.method !== 'GET') return json(res, 405, { error: 'GET or POST only' }), true
     const s = currentSession(req)
     if (!s) return json(res, 401, { error: 'Not signed in.' }), true
-    const address = s.address
-    const account = getAccount(address)
+    const user = s.address
+    const account = getAccount(user)
     if (!account || account.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact hello@gullylabs.xyz.' }), true
+
+    // The active workspace, re-checked on every request: a removed member falls back to their own.
+    let workspace = s.activeWorkspace ?? user
+    let role = roleIn(user, workspace)
+    if (!role) {
+      workspace = user
+      role = 'owner'
+      if (s.activeWorkspace) setSessionWorkspace(s.id, null)
+    }
+    touchSession(s.id)
+    if (post && !canWrite(role, p)) return forbidden(res, role)
+    const ctx = { user, workspace, role, sessionId: s.id, ip, clearCookie: sessionCookie(req, '', 0) }
+    req.gully = ctx
+
+    if (v2Route) {
+      if (p === '/api/developer/activity') {
+        if (post) return json(res, 405, { error: 'GET only' }), true
+        const page = activityPage(workspace, url.searchParams.get('cursor') || null)
+        if (!page) return json(res, 400, { error: 'That cursor is not valid any more. Load the log from the start.' }), true
+        return json(res, 200, { workspace: { id: workspace }, ...page }), true
+      }
+      if (p.startsWith('/api/developer/export/')) return handleExport(req, res, url, ctx)
+      if (p === '/api/developer/me' || p === '/api/developer/profile' || p === '/api/developer/company' || p.startsWith('/api/developer/sessions')) return handleProfileRoutes(req, res, url, ctx)
+      return handleWorkspaceRoutes(req, res, url, ctx)
+    }
+
+    // The older routes run unchanged for the workspace owner's address; successful changes are logged.
+    const sub = p.slice('/api/developer'.length)
+    const km = post ? sub.match(/^\/keys\/([\w-]{1,40})\/rename$/) : null
+    const pre = km ? { keyName: keysOf(workspace).find((k) => k.id === km[1])?.name ?? null } : {}
+    let captured = null
+    if (post) {
+      const end = res.end
+      res.end = function (chunk, ...rest) {
+        if (typeof chunk === 'string' && chunk.length < 200_000) captured = chunk
+        return end.call(this, chunk, ...rest)
+      }
+    }
+    const handled = await ownerRoutes(req, res, url, workspace, p, post)
+    try {
+      if (post) {
+        if (p === '/api/developer/telegram/connect' && res.statusCode === 200) noteTelegramConnect(workspace, user)
+        let body = null
+        try {
+          body = captured ? JSON.parse(captured) : null
+        } catch {
+          /* not json */
+        }
+        const e = eventFor('POST', sub, res.statusCode, body, pre)
+        if (e) recordEvent(workspace, { actor: user, ...e })
+      }
+      if (p.startsWith('/api/developer/telegram') || p.startsWith('/api/developer/alerts') || p === '/api/developer/account') syncTelegram(workspace, user)
+    } catch (err) {
+      console.error('activity:', err?.message ?? err)
+    }
+    return handled
+  }
+
+  return legacyRoutes(req, res, url, p, post, ip)
+}
+
+/** The account routes as they were before workspaces, for the wallet `address` (the workspace owner). */
+async function ownerRoutes(req, res, url, address, p, post) {
+  {
     const mine = keysOf(address)
 
     if (p === '/api/developer/account') return json(res, 200, accountView(address)), true
 
     if (p === '/api/developer/usage') {
       const range = url.searchParams.get('range') ?? '24h'
-      return json(res, 200, { ...accountUsage(mine.map((k) => k.id), range), keys: mine.map((k) => ({ id: k.id, name: k.name, prefix: k.prefix, revoked: !!k.revokedAt })) }), true
+      const ids = mine.map((k) => k.id)
+      return json(res, 200, { ...accountUsage(ids, range), ...usageExtras(ids, range), keys: mine.map((k) => ({ id: k.id, name: k.name, prefix: k.prefix, revoked: !!k.revokedAt })) }), true
     }
 
     if (p === '/api/developer/requests') {
@@ -289,7 +389,10 @@ export async function handleDeveloper(req, res, url) {
     saveDevelopers()
     return json(res, 200, { key: keyView(key) }), true
   }
+}
 
+/** The legacy routes (manual approval flow, Bearer-key views). */
+async function legacyRoutes(req, res, url, p, post, ip) {
   /* ---------- legacy: manual approval flow ---------- */
 
   if (p === '/api/developer/request') {
