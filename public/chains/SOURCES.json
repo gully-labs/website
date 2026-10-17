@@ -1,4 +1,58 @@
 {
-  "robinhood": { "file": "/chains/robinhood.png", "from": "https://robinhood.com (its own site icon, via https://www.google.com/s2/favicons?domain=robinhood.com&sz=256)", "fetchedAt": "2026-10-16T19:48:11Z" },
-  "bsc": { "file": "/chains/bnb.png", "from": "https://coin-images.coingecko.com/coins/images/12591/large/binance-coin-logo.png (BNB's logo on its GeckoTerminal/CoinGecko listing)", "fetchedAt": "2026-10-16T19:48:11Z" }
+  "robinhood": {
+    "file": "/chains/robinhood.png",
+    "from": "https://robinhood.com (its own site icon, via https://www.google.com/s2/favicons?domain=robinhood.com&sz=256)",
+    "fetchedAt": "2026-10-16T19:48:11Z",
+    "terms": "Robinhood's own site icon; nominative use only."
+  },
+  "bsc": {
+    "file": "/chains/bnb-chain.svg",
+    "from": "https://static.bnbchain.org/home-ui/static/images/logo.svg",
+    "page": "https://www.bnbchain.org/en/brand-guidelines",
+    "terms": "BNB Chain brand guidelines: use the official yellow mark unaltered; it must not imply endorsement or sponsorship by BNB Chain (case-by-case approval for anything more).",
+    "fetchedAt": "2026-10-17T12:00:00Z",
+    "note": "/chains/bnb.png (the BNB coin, from CoinGecko) is kept: server/tracker.mjs and scripts/gen-og.mjs still use it."
+  },
+  "base": {
+    "file": "/chains/base.svg",
+    "from": "https://github.com/base/brand-kit/blob/main/logo/TheSquare/Digital/Base_square_blue.svg",
+    "page": "https://base.org/brand",
+    "terms": "Base brand kit (Coinbase). No licence file in the repo; use per Base's brand guide (guides/brand-guide.pdf): unaltered marks, no implied partnership.",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "ethereum": {
+    "file": "/chains/ethereum.svg",
+    "from": "https://ethereum.org/images/assets/svgs/eth-diamond-purple.svg",
+    "page": "https://ethereum.org/en/assets/",
+    "terms": "ethereum.org brand assets page, published for public use (ethereum.org repository is MIT licensed).",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "arbitrum": {
+    "file": "/chains/arbitrum.svg",
+    "from": "https://github.com/OffchainLabs/arbitrum-token-bridge/blob/master/packages/app/public/images/ArbitrumLogo.svg",
+    "page": "https://arbitrumfoundation.notion.site/Arbitrum-Brand-Kit-48751dc5e03240a5872496283f088f79",
+    "terms": "Offchain Labs' own published Arbitrum logo (repo licence NOASSERTION). Arbitrum Foundation brand kit terms apply: unaltered, no implied affiliation. Used only to name Arbitrum as a Gully Pay payment network; the Gully Chains section keeps no Arbitrum marks.",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "hyperevm": {
+    "file": "/chains/hyperevm.png",
+    "from": "https://app.hyperliquid.xyz/android-chrome-512x512.png",
+    "page": "https://app.hyperliquid.xyz/manifest.json",
+    "terms": "Hyperliquid's own app icon (resized 512 to 256 px); disc colour #042420 from hyperliquid.xyz. No published brand licence: nominative use only.",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "solana": {
+    "file": "/chains/solana.svg",
+    "from": "https://solana.com/src/img/branding/solanaLogoMark.svg",
+    "page": "https://solana.com/branding",
+    "terms": "Solana Foundation brand assets: keep the artwork unaltered (no effects, outlines or recolouring); see the Foundation Brand Guidelines.",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "arc": {
+    "file": "/chains/arc.svg",
+    "from": "https://6778953.fs1.hubspotusercontent-na1.net/hubfs/6778953/Brand/Arc/Arc_Logos.zip (Arc Network Icon/Arc_network.svg)",
+    "page": "https://www.circle.com/pressroom#brandkit",
+    "terms": "Circle Brand Use Policy (https://6778953.fs1.hubspotusercontent-na1.net/hubfs/6778953/CircleBrandUsePolicy.pdf): Arc is a Circle mark; limited, unaltered, non-endorsing use only.",
+    "fetchedAt": "2026-10-17T12:00:00Z"
+  }
 }

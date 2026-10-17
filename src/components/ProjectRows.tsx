@@ -6,6 +6,9 @@ import { comingSoon, projects, TOTAL_SLOTS, type Project } from '../content/proj
 import { fmtTime, fmtUsd, sourceHost, type Point, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
 import { BlinkDot } from './ui'
+import { ChainLogo } from './logos/ChainLogo'
+import { VenueLogo } from './logos/VenueLogo'
+import { chainMark } from './logos/registry'
 
 /* The projects as compact cards: venue badge, name, tagline, chains, status, a sparkline of its daily
    volume that draws in when it scrolls into view, then volume, value locked and fees, each with a bar
@@ -44,15 +47,6 @@ function extrasOf(v: Venue | undefined): string | null {
   const n = (x: number | null | undefined) => (x === null || x === undefined ? '—' : x.toLocaleString('en-US'))
   return `${n(c.sites)} hosted site${c.sites === 1 ? '' : 's'} · ${n(c.launches24h)} launch${c.launches24h === 1 ? '' : 'es'} 24h · ${fmtUsd(v.lockedUsd)} in locks`
 }
-
-const initials = (name: string) =>
-  name
-    .split(/(?=[A-Z])|\s+/)
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five']
 const ease = [0.2, 0.8, 0.2, 1] as const
@@ -185,9 +179,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
               className="group flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4 transition-[border-color,background-color,box-shadow] duration-200 hover:border-line-hover hover:bg-surface-hover hover:shadow-[0_10px_30px_rgba(0,0,0,.35)]"
             >
               <div className="flex items-start gap-3">
-                <span aria-hidden className="grid size-[38px] flex-none place-items-center rounded-[9px] font-display text-[16px] font-extrabold text-bg transition-transform duration-200 group-hover:scale-105" style={{ background: p.accent }}>
-                  {initials(p.name)}
-                </span>
+                <VenueLogo venue={p.key} name={p.name} size={40} decorative className="ring-1 ring-line-strong transition-transform duration-200 group-hover:scale-105" />
                 <span className="flex min-w-0 flex-1 flex-col leading-[1.25]">
                   <Link to={`/projects/${p.slug}`} className="w-fit font-semibold text-ink hover:text-gold">
                     {p.name}
@@ -196,7 +188,14 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
                 </span>
                 <span className={`flex-none rounded-full border px-2 py-px font-mono text-[11px] ${venue?.state === 'error' ? 'border-line-strong text-error' : 'border-success-line text-green'}`}>{venue?.state === 'error' ? 'UNREAD' : p.status.toUpperCase()}</span>
               </div>
-              <span className="-mt-1 font-mono text-[11px] text-faint">{p.chains.join(' · ')}</span>
+              <span className="-mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] text-faint">
+                {p.chains.map((c) => (
+                  <span key={c} className="inline-flex items-center gap-1.5">
+                    {chainMark(c) && <ChainLogo chain={c} size={14} decorative />}
+                    {c}
+                  </span>
+                ))}
+              </span>
               <Spark p={p} daily={venue ? (venue.state === 'ok' ? venue.daily : null) : []} state={state} />
               <dl className="m-0 grid grid-cols-3 gap-3">
                 {COLS.map((c) => (

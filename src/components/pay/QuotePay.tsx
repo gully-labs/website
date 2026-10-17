@@ -6,7 +6,7 @@ import { ErrorLine, Skeleton } from '../../pages/developers/parts'
 import { input } from '../../pages/developers/styles'
 import { btnOutline } from '../ui'
 import { toastError, toastInfo, toastSuccess } from '../ui/toast'
-import { AssetPicker, ChainMark } from './AssetPicker'
+import { AssetMark, AssetPicker } from './AssetPicker'
 
 /* Gully Pay checkout, shared by the dashboard's Plan & billing tab and the public /pay/<invoice> page:
    pick a chain and asset, get a 20-minute quote (exact amount, treasury, price source), pay with one
@@ -192,7 +192,7 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
         <div className={`flex flex-col gap-4 ${showPicker ? 'border-t border-line pt-5' : ''}`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="inline-flex items-center gap-2 text-[15px] text-ink">
-              <ChainMark chainKey={asset.chainKey} name={asset.chain} size={24} />
+              <AssetMark asset={asset} />
               {quote.asset.symbol} on {quote.asset.chain}
               <span className="font-mono text-[12px] text-faint">
                 · {label} · {quote.usd} USD

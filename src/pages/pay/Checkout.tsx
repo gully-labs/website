@@ -1,7 +1,7 @@
 import { ArrowUpRight, CheckCircle2, Clock, Copy, CreditCard, FileText, Loader2, Printer, RefreshCw, ShieldCheck, TriangleAlert } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { AssetPicker, ChainMark } from '../../components/pay/AssetPicker'
+import { AssetMark, AssetPicker } from '../../components/pay/AssetPicker'
 import { btnOutline } from '../../components/ui'
 import { payApi, type Quote } from './api'
 import { fmtTime, type Invoice } from './invoice'
@@ -298,7 +298,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
         <div className="flex flex-col gap-5 border-t border-line pt-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="inline-flex min-w-0 items-center gap-2 text-[15px] text-ink">
-              <ChainMark chainKey={asset.chainKey} name={asset.chain} size={24} />
+              <AssetMark asset={asset} />
               {quote.asset.symbol} on {quote.asset.chain}
             </span>
             {expired ? (

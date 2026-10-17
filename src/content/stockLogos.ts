@@ -50,7 +50,7 @@ export const logoByTicker: Record<string, string> = {
   "SNDK": "/tokens/logos/SNDK.svg",
   "SPY": "/tokens/logos/SPY.png",
   "COIN": "/tokens/logos/COIN.png",
-  "GME": "/tokens/logos/GME.ico",
+  "GME": "/tokens/logos/GME.png",
   "META": "/tokens/logos/META.svg",
   "TSM": "/tokens/logos/TSM.png"
 }

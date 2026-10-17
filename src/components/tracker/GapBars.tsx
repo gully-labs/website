@@ -135,7 +135,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
                 >
                   <StockLogo row={r} size={16} chainBadge={false} active={sel} />
                   <span className="truncate">{r.ticker}</span>
-                  {multi && <ChainLogo chain={r.chain} size={10} />}
+                  {multi && <ChainLogo chain={r.chain} size={10} named />}
                 </button>
               </li>
             )
