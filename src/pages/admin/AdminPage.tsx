@@ -7,6 +7,7 @@ import type { PayAsset } from '../developers/api'
 import type { Invoice } from '../pay/invoice'
 import { adminCall } from './payAdmin'
 import { DeliveryLog, EmbedBox, PayLinks, SecretOnce, type Delivery, type Endpoint } from './PayLinks'
+import { AskStudio } from './AskStudio'
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
    kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site. */
@@ -1043,6 +1044,8 @@ export function AdminPage() {
                 </ul>
               )}
             </section>
+
+            <AskStudio token={token} />
           </>
         )}
       </main>

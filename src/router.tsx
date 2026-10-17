@@ -22,6 +22,7 @@ const mainRoutes = [
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
       { path: '/chain-kit', element: <ChainKitRoute /> },
+      { path: '/ask', lazy: () => import('./pages/ask/AskPage').then((m) => ({ Component: m.AskPage })) },
       // Gully Pay: an invoice anyone with its link can pay (never linked, never indexed).
       { path: '/pay/:id', element: <PayRoute /> },
       // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.

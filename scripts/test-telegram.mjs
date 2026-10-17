@@ -63,6 +63,20 @@ const stub = http.createServer((req, res) => {
 })
 await new Promise((r) => stub.listen(0, '127.0.0.1', r))
 
+// A stub of the Anthropic Messages API for /ask (Gully Ask). Every answer cites source 1 and carries HTML
+// that must arrive escaped.
+const claudeCalls = []
+const claude = http.createServer((req, res) => {
+  let raw = ''
+  req.on('data', (c) => (raw += c))
+  req.on('end', () => {
+    claudeCalls.push(JSON.parse(raw || '{}'))
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ content: [{ type: 'text', text: 'Alerts can go to **Telegram** <b>now</b> [1].' }], stop_reason: 'end_turn', usage: { input_tokens: 10, output_tokens: 5 } }))
+  })
+})
+await new Promise((r) => claude.listen(0, '127.0.0.1', r))
+
 /* ------------------------------------------------------------ start server --- */
 
 Object.assign(process.env, {
@@ -78,7 +92,11 @@ Object.assign(process.env, {
   GULLY_RPC_8453: 'http://127.0.0.1:9',
   GULLY_RPC_42161: 'http://127.0.0.1:9',
   TELEGRAM_API: `http://127.0.0.1:${stub.address().port}`,
+  ANTHROPIC_API_URL: `http://127.0.0.1:${claude.address().port}`,
+  ASK_REMOTE: 'off',
 })
+delete process.env.ANTHROPIC_API_KEY
+delete process.env.ASK_DAILY_LIMIT
 delete process.env.TELEGRAM_BOT_TOKEN
 delete process.env.TELEGRAM_WEBHOOK_SECRET
 delete process.env.GULLY_TREASURY_ADDRESS
@@ -140,6 +158,7 @@ try {
   const cmds = calls.find((c) => c.method === 'setMyCommands')?.body.commands.map((c) => c.command) ?? []
   check('startup: setMyCommands lists gap, top, alerts, stop, help', ['gap', 'top', 'alerts', 'stop', 'help'].every((c) => cmds.includes(c)), cmds.join())
   check('startup: /movers is offered (the tracker has movers)', cmds.includes('movers'))
+  check('startup: /ask is in the command list', cmds.includes('ask'))
   check('startup: getMe read the bot name', calls.some((c) => c.method === 'getMe'))
   check('startup is idempotent (a second run succeeds)', (await tg.startTelegram()).ok)
   const ch1 = await dev.call('/api/alerts/channels')
@@ -201,6 +220,32 @@ try {
   check('/top: a failed tracker read is said honestly', /could not be read just now/.test(lastText(338)))
   tg.setTrackerReaderForTest(async () => ROWS)
   check('HTML escaping: < > & " are escaped', tg.esc('<b>"x" & y</b>') === '&lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt;')
+
+  /* ---------------------------------------------------------------- /ask --- */
+  await say(privateChat(600), '/ask how do alerts work?')
+  check('/ask without ANTHROPIC_API_KEY says Ask is not available yet', /Ask is not available yet/.test(lastText(600)) && claudeCalls.length === 0)
+  process.env.ANTHROPIC_API_KEY = `sk-ant-test-${crypto.randomBytes(12).toString('hex')}`
+  await say(privateChat(601), '/ask how do Telegram alerts work?')
+  const askText = lastText(601)
+  check('/ask in an unlinked chat answers through Gully Ask', claudeCalls.length === 1 && /Alerts can go to Telegram/.test(askText), askText)
+  check('/ask escapes the answer’s HTML and keeps the citation', askText.includes('&lt;b&gt;now&lt;/b&gt; [1]') && !askText.includes('<b>now</b>'))
+  check('/ask lists its sources as links and says it is not advice', /<b>Sources<\/b>\n\[1\] <a href="https:\/\/docs\.gullylabs\.xyz\/plans-alerts/.test(askText) && /not investment advice/.test(askText))
+  check('/ask is sent as HTML with link previews off', sent(601).at(-1).body.parse_mode === 'HTML' && sent(601).at(-1).body.disable_web_page_preview === true)
+  await say(ada, '/ask what are the plans?')
+  check('/ask works in a linked chat too', /Alerts can go to Telegram/.test(lastText(111)))
+  await say(privateChat(602), '/ask')
+  check('/ask with no question says how to ask', /Ask a question after the command/.test(lastText(602)))
+  await say(privateChat(602), `/ask ${'x'.repeat(501)}`)
+  check('/ask with a question over 500 characters is refused', /at most 500 characters/.test(lastText(602)))
+  const before602 = claudeCalls.length
+  for (let i = 0; i < 6; i++) await say(privateChat(603), `/ask question ${i}?`)
+  await new Promise((r) => setTimeout(r, 6_500))
+  check('/ask: at most 5 a minute per chat', claudeCalls.length - before602 === 5 && /At most 5 questions a minute/.test(lastText(603)), `${claudeCalls.length - before602} answered; ${lastText(603)}`)
+  process.env.ASK_DAILY_LIMIT = '1'
+  await say(privateChat(604), '/ask one more?')
+  check('/ask shares Ask’s daily cap', /as many questions as it can today/.test(lastText(604)))
+  delete process.env.ASK_DAILY_LIMIT
+  check('/ask: the Claude API never sees the chat id', !JSON.stringify(claudeCalls).includes('603'))
 
   /* -------------------------------------------------- unknown chats --- */
   const before = calls.length

@@ -1,0 +1,753 @@
+{
+ "version": 1,
+ "updatedAt": "2026-10-17T16:11:06.800Z",
+ "chunks": [
+  {
+   "id": "783da129e921",
+   "source": "Docs",
+   "title": "Tokenised stocks, priced two ways",
+   "url": "https://docs.gullylabs.xyz/",
+   "section": null,
+   "text": "The Gully Labs tracker checks every tokenised stock on Robinhood Chain and BNB Chain against its fair price, live. These docs cover how it works, the public API it is built on, and the widget that puts it on your own page. Docs for the Gully Labs stock token tracker: how its fair and onchain prices are read, the public API, the embeddable widget and API keys.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "7aa5dc9b7774",
+   "source": "Docs",
+   "title": "Tokenised stocks, priced two ways",
+   "url": "https://docs.gullylabs.xyz/#what-it-is",
+   "section": "What the tracker is",
+   "text": "For each stock token the tracker reads two prices: the fair price, from the Chainlink feed for that stock, read on chain; and the onchain price, what the token trades at in its deepest pool. The difference, as a percentage of fair, is the gap. A token trading above its fair price is at a premium; below it, at a discount. The live page is at gullylabs.xyz/tracker. Everything it shows comes from the same public API these docs describe.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "9f45867057fc",
+   "source": "Docs",
+   "title": "Tokenised stocks, priced two ways",
+   "url": "https://docs.gullylabs.xyz/#quick-start",
+   "section": "Quick start",
+   "text": "Read the whole tracker as JSON. No key is needed: Or put a live ticker on a web page: The API reference lists every field; the widget guide every option. Build a widget visually at gullylabs.xyz/widget.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "998025bd8487",
+   "source": "Docs",
+   "title": "Tokenised stocks, priced two ways",
+   "url": "https://docs.gullylabs.xyz/#sources",
+   "section": "Where the numbers come from",
+   "text": "Fair prices are Chainlink feeds read on chain with latestRoundData(). Onchain prices are read from each token’s deepest pool on chain; DexScreener and GeckoTerminal only find the pool. Nothing is estimated or typed in: a price that cannot be read is reported as unreadable, never as zero. The methodology gives the exact rules. The tracker reports what two public sources say. It is not investment advice, and a gap is not a promise that anyone can trade it away.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "e20f8be116a1",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology",
+   "section": null,
+   "text": "How each number is read, how the gap is computed, and the rules that keep a small pool or a closed market from making a headline. How the Gully Labs tracker reads a stock token's fair price from Chainlink and its onchain price from the deepest pool, and the rules that decide when a gap is flagged.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "daeb40a1788f",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology#two-prices",
+   "section": "Two prices",
+   "text": "For every token in the tracker’s feed table, on every chain it covers, two numbers are read live on each refresh: Fair: the Chainlink feed for that stock, read on chain. Onchain: the token’s price in its deepest pool, read straight from that pool’s contract. Both are in US dollars per token. Each is either a number or unreadable; an unreadable price is never replaced with zero or with an older figure.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "a01097e2d4ed",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology#fair",
+   "section": "Fair price",
+   "text": "Every feed is read with latestRoundData() in one batched call per chain. A round whose answer is zero or negative, or whose update time is zero, counts as unreadable. The answer is scaled by the feed’s decimals. Robinhood Chain The feeds price the token itself (feedPrices: \"tokenized-instrument\"), so fair is the feed’s answer. BNB Chain The feeds price the underlying share (feedPrices: \"underlying-share\"). One raw bStock token is a number of shares given by the token’s own uiMultiplier() (ERC-8056, where 1e18 means 1.0). The multiplier is read on chain on every refresh, because the issuer changes it at a split. If the multiplier cannot be read, or reads as zero, the fair price is unreadable for that token. The multiplier used is returned in each row as multiplier.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "0b457fbff29b",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology#onchain",
+   "section": "Onchain price",
+   "text": "Once an hour the tracker asks DexScreener (GeckoTerminal if DexScreener refuses) for every pool of every token, 30 tokens per request. For each token it keeps the pools with a positive price and picks one: pools quoted against a native coin or a dollar stablecoin come first (WETH, ETH, WBNB, BNB, USDC, USDG, USDT, USD1, FDUSD), then the deepest by liquidity. Between those reads, every refresh prices the chosen pool from the chain itself: slot0() on a v3 pool, StateView.getSlot0 on a Uniswap v4 pool. The pool’s ratio is turned into dollars with $1 for a dollar stablecoin, Chainlink’s ETH/USD or BNB/USD feed for the native coin, and this cycle’s fair price where the quote is itself a stock token. The chain’s poolSource says on chain when this is the source. The row’s pool object names the pool used, its liquidity and 24-hour volume, and totals across every pool found for the token. Liquidity and volume come from the hourly read, because the chain does not publish them in a usable form.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "2a6e028ee212",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology#gap",
+   "section": "The gap and its status",
+   "text": "Every row carries a status, decided in this order: feed-unreadable (fair is null): The Chainlink feed (or, on BNB Chain, the multiplier) could not be read. pool-unreadable (pool read failed): DexScreener could not be read for this chain. no-pool (onchain is null): No pool with a usable price was found. thin (liquidity < $10,000): The chosen pool is too small to trust. Shown, never flagged. in-line (|gap| < 1%): Within the noise. Robinhood Chain feeds only move on a 0.5% deviation. drifting (1% ≤ |gap| < 2%): Moving away from fair, not yet flagged. premium (gap ≥ 2%): Flagged: trading above fair. discount (gap ≤ −2%): Flagged: trading below fair. The thresholds are returned with every response in rules (minLiquidityUsd, inLinePct, flagPct), so a client never has to hard-code them.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "9d2d39a53f88",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology#sessions",
+   "section": "Market sessions",
+   "text": "Stock feeds follow market hours. Each chain reports whether its session is open now: Robinhood Chain, 24/5: Chainlink’s US equities 24/5 session, Sunday 20:00 to Friday 20:00, New York time. BNB Chain, NYSE hours: 09:30 to 16:00 New York time, Monday to Friday. Outside its session a feed holds its last value, so the gap is measured against the last session’s close, not presented as a live mispricing. Market holidays are not modelled: on a holiday the session reads as open and the feed’s update time, returned as feedUpdatedAt, shows how old the fair price is.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "d9bae05f1a5b",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology#freshness",
+   "section": "Refresh, staleness, history",
+   "text": "The tracker reads its sources at most once every two minutes. Every visitor and every API caller share that one read. If the chain cannot be read and neither API answers, that chain backs off (one minute, doubling, at most 30 minutes) and keeps serving its last good pool read, marked poolsStale: true with its time in poolsAsOf, and poolStale: true on each row. A pool read older than six hours is dropped rather than shown. Fair prices stay live throughout. Every five minutes one snapshot per token is recorded, and kept for seven days. Rows without a gap, or with a stale pool read, are not recorded. The history endpoint serves them.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "42ebc4b882ff",
+   "source": "Docs",
+   "title": "Tracker methodology",
+   "url": "https://docs.gullylabs.xyz/methodology#limits",
+   "section": "Limits",
+   "text": "The onchain price is one pool’s price as DexScreener reports it, not a volume-weighted average across venues. Liquidity figures are DexScreener’s, in US dollars. Only tokens in the tracker’s verified feed tables are covered; a stock token without a Chainlink feed on its chain does not appear. A gap may not be tradable: pool depth, fees, slippage and issuer rules all stand between a gap and a profit. The tracker reports what Chainlink and the pools say, with the rules above. It is not investment advice and makes no promise about any token.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "fae4a12bf5d7",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api",
+   "section": null,
+   "text": "Three read-only JSON endpoints. No key is needed to start; a key raises your rate limit. The Gully Labs tracker API: GET /api/tracker, GET /api/tracker/history and GET /api/tracker/movers, every response field, caching, CORS, rate limits, API keys and errors, with a real example response.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "dbee1d92300b",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#basics",
+   "section": "Basics",
+   "text": "Base URL (https://gullylabs.xyz): Every endpoint lives under /api/tracker. Methods (GET, OPTIONS): Anything else answers 405. Format (JSON): UTF-8. Times are ISO 8601 in UTC, except history points, which use Unix seconds. CORS (Access-Control-Allow-Origin: *): Call it from any browser origin. Preflight allows the Authorization and Content-Type headers. Auth (Optional): Send Authorization: Bearer <key> for a higher limit. See API keys. Prices are US dollars per token. Any price may be null, meaning it could not be read; it is never replaced with zero.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "3a4c7040af79",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#tracker",
+   "section": "GET /api/tracker",
+   "text": "The whole tracker: every chain, the rules, the sources and one row per token. Top level generatedAt (string (ISO)): When this answer was built. chains (Chain[]): One entry per chain, below. rules (object): The thresholds in force: minLiquidityUsd (pools below are “thin”), inLinePct (gaps below are “in line”), flagPct (gaps at or above are flagged). sources (object): fair and onchain describe the two price sources; tables names the feed table used per chain. rows (Row[]): One per token. See Rows. chains[] key (string): Chain key used everywhere else: robinhood or bsc. id (number): EVM chain id (4663, 56). name (string): Display name. sessionOpen (boolean): Whether the chain’s feed session is open now. See sessions. sessionName (string): 24/5 or NYSE hours. fairMethod (string): How fair is derived on this chain, in words. poolsAsOf (string | null): Time of the pool read in use. poolsStale (boolean): True when the pool read is the last good one, served while every price source for that chain is backing off. poolSource (string | null): Where pool prices came from this cycle: on chain, DexScreener or GeckoTerminal.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "4ee8912f6048",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#rows",
+   "section": "Rows",
+   "text": "chain (string): Chain key. ticker (string): Stock ticker, e.g. NVDA. name (string): Company name. token (string): Token contract address. feed (string): Chainlink feed address. fair (number | null): Fair price in USD per token. feedPrices (string): tokenized-instrument (the feed prices the token) or underlying-share (it prices the share). multiplier (number | null): Shares per token from uiMultiplier() on BNB Chain; 1 on Robinhood Chain; null when the feed could not be read. feedUpdatedAt (string | null): When the feed last updated. feedError (string | null): Why the feed could not be read, if it could not. onchain (number | null): Price in the chosen pool, USD per token. gapPct (number | null): (onchain − fair) / fair × 100. Null unless both prices were read. status (string): One of premium, discount, drifting, in-line, thin, no-pool, pool-unreadable, feed-unreadable. Rules in the methodology. pool (Pool | null): The pool used, below. poolError (string | null): Why pools could not be read, if they could not. logo (string | null): The stock’s logo: the token’s own where it carries the company mark, else the company’s own site icon. An absolute URL on gullylabs.xyz. chainLogo (string | null): The chain’s logo, an absolute URL on gullylabs.xyz. poolStale (boolean): True when the pool figures are the last good read rather than a fresh one. pool dex (string): The venue’s id, as DexScreener or GeckoTerminal names it. labels (string[]): Venue labels, e.g. v3. against (string): Symbol of the other token in the pool. url (string): The pool on DexScreener or GeckoTerminal. pair (string): Pool address. liquidityUsd (number): Liquidity of this pool. volume24hUsd (number): 24-hour volume of this pool. pools (number): How many pools with a price were found for the token. totalLiquidityUsd (number): Liquidity summed over those pools. totalVolume24hUsd (number): 24-hour volume summed over those pools.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "54037d4d698f",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#history",
+   "section": "GET /api/tracker/history",
+   "text": "One token’s gap history: a snapshot every five minutes. Seven days are open to everyone; paid plans keep more (see Plans & alerts). chain (string): Chain key, default robinhood. 2 to 12 lowercase letters. ticker (string, required): 1 to 8 letters or dots; case does not matter. days (integer, optional): Window in days, from 1 up to what your plan includes. Without it you get the last seven days, as before. Over your plan’s limit answers 403; past seven days the answer adds days and is not cached publicly. The answer is { chain, ticker, points }, where each point is a tuple [unixSeconds, gapPct, onchain, fair], oldest first. A chain or ticker the tracker does not know returns an empty points array, not an error.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "d76a006ed470",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#movers",
+   "section": "GET /api/tracker/movers",
+   "text": "Top movers: how each token’s gap to fair, and its onchain price, changed over the last hour or day, computed from the same five-minute snapshots as the history. For every token the latest snapshot is compared with the snapshot closest to one window earlier. Only tokens whose status is trusted right now (premium, discount, drifting or in-line) and that have both points are ranked; nothing is interpolated. window (string, optional): 24h (default) or 1h. limit (integer, optional): How many rows per ranking, 1 to 50, default 10. chain (string, optional): Rank one chain only, e.g. bsc. ticker (string, optional): With chain: also return that token’s own change in stock (null when it has none). Top level window (string): 1h or 24h. windowSeconds (number): 3600 or 86400. toleranceSeconds (number): How far the earlier snapshot may sit from exactly one window ago: 15 minutes for 1h, 2 hours for 24h. Further than that and the token is left out. asOf (string | null): The newest snapshot compared. Null when nothing could be compared. from, to (string | null): The comparison times: to is asOf, from one window earlier. Each row carries its own exact pair. eligible (number): Tokens with both points and a trusted status. left (object): Why the others are out: untrusted, noHistory, staleHistory (latest snapshot over 30 minutes old), tooShort. historyHours (number): How many hours the longest series covers.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "50d681d88906",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#movers",
+   "section": "GET /api/tracker/movers",
+   "text": "and a trusted status. left (object): Why the others are out: untrusted, noHistory, staleHistory (latest snapshot over 30 minutes old), tooShort. historyHours (number): How many hours the longest series covers. note (string | null): Set when nothing could be ranked, e.g. Needs 24h of snapshots: the longest series so far covers 6.5 h. byGap (Mover[]): Largest absolute gap change first. byPrice (Mover[]): Largest absolute onchain price change first. stock (Mover | null): Only with chain and ticker. Mover chain, ticker, name, token (string): As in the tracker rows. status, gapPct, onchain, fair (see Rows): The token’s current status and prices, as in /api/tracker. liquidityUsd (number | null): Liquidity of the pool its price comes from. gapThen, gapNow (number): Gap % in the earlier and the latest snapshot. gapChangePp (number): gapNow − gapThen, in percentage points. onchainThen, onchainNow (number): Onchain price in the two snapshots. priceChangePct (number | null): Onchain price change in %. from, to (string): Times of the two snapshots compared. spark ([unixSeconds, gapPct][]): The gap over the window, at most 48 points, for a sparkline.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "a62142f45ae7",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#caching",
+   "section": "Caching",
+   "text": "/api/tracker (public, max-age=30, s-maxage=60, stale-while-revalidate=300): The data itself refreshes about every two minutes. /api/tracker/history (public, max-age=60, s-maxage=120, stale-while-revalidate=600): A new point is added every five minutes. /api/tracker/movers (public, max-age=30, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute per window. Counted by the same rate limit. Answers are cacheable at the edge, so polling more than once a minute gains nothing. A sensible client polls every one to two minutes and keeps its last good answer when a request fails.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "b6495844f160",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#rate-limits",
+   "section": "Rate limits",
+   "text": "Anonymous requests are limited to 60 a minute per IP address. Requests that carry an API key in Authorization: Bearer <key> are counted against the key instead, at 600 a minute. Windows are fixed one-minute windows. An unknown or revoked key answers 401. Every response also states the limit in force, so a client can read it rather than hard-code it: X-RateLimit-Limit (success): Requests allowed per minute: 60 anonymous, 600 with a Free key, more on a paid plan. X-RateLimit-Remaining (success): Requests left in it. Retry-After (429): Seconds to wait before trying again. Need more? Get a free key, instantly. A key on a paid plan gets that plan’s higher limit; see Plans & alerts.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "452970a749d4",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#errors",
+   "section": "Errors",
+   "text": "Errors are JSON with a single error string. 400 (history: chain or ticker malformed): Check the parameters. Body: {\"error\":\"chain and ticker\"}. 400 (movers: window, limit, chain or ticker malformed): Use window=1h or 24h, a limit from 1 to 50, and a ticker only with a chain. 405 (a method other than GET or OPTIONS): Use GET. 401 (unknown or revoked API key): Check the key, or request one at developers.gullylabs.xyz. 403 (history: days beyond what your plan includes): Ask for fewer days, or move to a plan with more history. The body names your limit in historyDays. 429 (rate limit exceeded): Wait for Retry-After seconds, or use an API key. 502 (the tracker could not be built at all): Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "9eb94f89f74e",
+   "source": "Docs",
+   "title": "API reference",
+   "url": "https://docs.gullylabs.xyz/api#examples",
+   "section": "Examples",
+   "text": "Example response A real answer from /api/tracker, fetched, trimmed from rows to two (one per chain). Your answer will differ: it is live. The API reports what Chainlink and the pools say. It is not investment advice.",
+   "updatedAt": "2026-10-17T16:10:49.167Z"
+  },
+  {
+   "id": "b7c9ba6c8aed",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget",
+   "section": null,
+   "text": "Live tracker data on any page, from one script tag and one element. No build step, no dependencies, no key. Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps. Every option, theming, behaviour and the CSP it needs.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "ceff12f68fca",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget#quick-start",
+   "section": "Quick start",
+   "text": "Add an element where the widget should appear, and the script once per page: Prefer to click? The widget builder sets every option with a live preview and writes the snippet for you.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "83fa5b62171d",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget#options",
+   "section": "Options",
+   "text": "Every option is a data attribute on the element. All but the type are optional. data-gully-widget (ticker | badge | table): Which widget. Anything else draws a ticker. data-chain (all | robinhood | bsc): Which chain’s stocks. Default all. On a badge it picks the chain when a ticker exists on both. data-ticker (e.g. NVDA): Badge only, required: the stock to show. data-theme (dark | light): Default dark. data-limit (number, 1 to 60): Ticker: how many stocks in the strip (default every stock). Table: how many rows (default 5). data-api (URL): API base. Default https://gullylabs.xyz. Only needed for testing against another deployment.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "4b055c9e810d",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget#ticker",
+   "section": "Ticker",
+   "text": "A smooth scrolling strip of every stock with a readable gap: ticker, onchain price, gap to fair. It pauses while the pointer is over it or it has keyboard focus.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "2b8a67d3a9c4",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget#badge",
+   "section": "Badge",
+   "text": "One stock: its ticker, onchain price and gap to fair, with the fair price and its source underneath. A thin pool or a closed market is said so in the caption.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "fc8b66e2e875",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget#table",
+   "section": "Table",
+   "text": "The widest gaps, largest first, from pools deep enough to trust (thin pools are left out). With data-chain=\"all\" each row names its chain.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "65a09ce6be6a",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget#theming",
+   "section": "Theming and size",
+   "text": "Two themes, dark and light. Gaps outside the in-line band are teal above fair and vermilion below; in-line gaps and thin pools stay neutral. Ticker and table fill the width of their element; a badge is at most 340 px wide. Size the element to size the widget. Below 360 px the table drops its fair column so nothing is cut off. The widget draws inside its own shadow root, so your CSS does not reach in and its CSS does not leak out. The outer box is exposed as a part: [data-gully-widget]::part(widget) can set its border radius or shadow.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "8fd54a623945",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget#behaviour",
+   "section": "Behaviour",
+   "text": "One request to the API per page, however many widgets share it, repeated every 60 seconds. If a refresh fails, the last good figures stay on screen and the footer reads “last read” instead of “live”. Before the first answer the widget says it is reading; if that fails, it says so and retries every minute. Errors stay inside the widget. Nothing is thrown into your page. Widgets added after the page loads, for example by a single-page app, are picked up automatically. window.GullyWidget.scan() forces a scan. Under prefers-reduced-motion the ticker stops scrolling and becomes a strip you can scroll by hand. Every widget carries a small “Gully Labs tracker” link to the live tracker. It is part of the free embed and stays. The widget never sends an API key and should not: anything in a page’s HTML is public. Its requests are anonymous and edge-cached. For heavier use, call the API from your server with a key.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "2b8ad97c0fb7",
+   "source": "Docs",
+   "title": "Widget guide",
+   "url": "https://docs.gullylabs.xyz/widget#csp",
+   "section": "Content Security Policy",
+   "text": "If your site sends a Content Security Policy, allow the script and its one API origin: Add these to the directives you already have. The widget styles itself with a constructed stylesheet, so it needs no style-src 'unsafe-inline' in browsers that support them; older browsers fall back to a <style> element inside the shadow root. Subresource integrity widget.js is updated in place at the same address, so an integrity hash would break on the next release. Use the CSP above instead.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "cd42753b32a5",
+   "source": "Docs",
+   "title": "SDK",
+   "url": "https://docs.gullylabs.xyz/sdk",
+   "section": null,
+   "text": "Two small MIT packages: a typed client for the tracker API, and the widget with a loader and a React component. Both are optional; the API and the widget work without them. The Gully Labs SDK: a typed TypeScript client for the stock token tracker API, and the embeddable widget with a React component.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "5d034a178334",
+   "source": "Docs",
+   "title": "SDK",
+   "url": "https://docs.gullylabs.xyz/sdk#packages",
+   "section": "Packages",
+   "text": "@gullylabs/tracker: a typed client with no dependencies. Runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget: loads widget.js once and mounts widgets, with @gullylabs/widget/react for React. Source: github.com/gully-labs/sdk.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "4392c5b4a649",
+   "source": "Docs",
+   "title": "SDK",
+   "url": "https://docs.gullylabs.xyz/sdk#tracker",
+   "section": "Tracker client",
+   "text": "Rows are the same objects the API reference describes. A price that cannot be read is null, never zero; isTrusted(row) keeps the rows the tracker itself would chart. tracker.rateLimit holds the limit the last response reported.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "f15342d6ea83",
+   "source": "Docs",
+   "title": "SDK",
+   "url": "https://docs.gullylabs.xyz/sdk#widget",
+   "section": "Widget",
+   "text": "Every option of the widget guide is a prop. To self-host the script, copy @gullylabs/widget/widget.js to your site and pass its URL as scriptSrc.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "f7ecb62fa4e8",
+   "source": "Docs",
+   "title": "SDK",
+   "url": "https://docs.gullylabs.xyz/sdk#errors",
+   "section": "Errors and limits",
+   "text": "Anonymous calls get 60 a minute per IP. A key from the developer portal raises it to 600. The tracker refreshes every minute, so polling faster returns the same data.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "917c37ad9844",
+   "source": "Docs",
+   "title": "API keys",
+   "url": "https://docs.gullylabs.xyz/api-keys",
+   "section": null,
+   "text": "The API is open without a key. A key raises your rate limit and counts your requests against your own allowance instead of your IP address. When you need a Gully Labs API key, how to get one instantly by signing in with a wallet, how to send it as a Bearer token, and how rate limits are reported.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "1c27667df4e4",
+   "source": "Docs",
+   "title": "API keys",
+   "url": "https://docs.gullylabs.xyz/api-keys#when",
+   "section": "When you need one",
+   "text": "Not for the widget: it is anonymous and shares one cached request per page. Not for trying the API, or for a page that reads it once a minute. Yes for a backend, bot or app that calls the API often, or from shared infrastructure where many callers share one IP address.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "8de609e46023",
+   "source": "Docs",
+   "title": "API keys",
+   "url": "https://docs.gullylabs.xyz/api-keys#get",
+   "section": "Getting a key",
+   "text": "Keys are free and issued instantly at developers.gullylabs.xyz. There is no form and no approval: Press Connect wallet and pick any browser wallet or Coinbase Wallet. Your wallet address is your account; there is no email or password. Sign the message your wallet shows. It is Sign-In with Ethereum (EIP-4361): a signature, not a transaction, so it costs nothing and moves nothing. It names developers.gullylabs.xyz, expires after ten minutes and can be used once. Open API keys, press Create key and name it. The key works at once. Copy it then: it is shown in full only once, because we store only a hash of it. Smart-contract wallets (EIP-1271, including ones not deployed yet, ERC-6492) are accepted on Ethereum, Base, BNB Chain and Robinhood Chain. A sign-in lasts 30 days on that browser.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "a0300b79df15",
+   "source": "Docs",
+   "title": "API keys",
+   "url": "https://docs.gullylabs.xyz/api-keys#manage",
+   "section": "Managing keys",
+   "text": "A wallet can hold up to five live keys. Each has its own 600-a-minute allowance. Rotate gives a key a new secret and stops the old one immediately; its name and usage history stay. Revoke stops a key for good. The dashboard shows requests per hour or day for each key, the error rate, and the last 50 requests with status and latency. Answers served from the edge cache never reach our servers and are not counted. A key issued through the earlier request form keeps working. Link it to your wallet from the API keys page to manage it there.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "6c8751a8138a",
+   "source": "Docs",
+   "title": "API keys",
+   "url": "https://docs.gullylabs.xyz/api-keys#using",
+   "section": "Using a key",
+   "text": "Send it in the Authorization header as a Bearer token, on either endpoint:",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "c185e583f07e",
+   "source": "Docs",
+   "title": "API keys",
+   "url": "https://docs.gullylabs.xyz/api-keys#limits",
+   "section": "Limits",
+   "text": "Every successful response carries X-RateLimit-Limit and X-RateLimit-Remaining. Past the limit the API answers 429 with a Retry-After header in seconds. Today that is 60 requests a minute per IP address without a key and 600 a minute with one; read the headers rather than hard-coding either, because they can change. Details in the API reference. The data refreshes about every two minutes, so polling more often than once a minute returns the same answer.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "0518086764b2",
+   "source": "Docs",
+   "title": "API keys",
+   "url": "https://docs.gullylabs.xyz/api-keys#safety",
+   "section": "Keeping it safe",
+   "text": "Keep the key on a server or in an environment variable. Anything shipped to a browser, an app bundle or a public repository is public. Do not put a key in the widget snippet: the widget does not read one. If a key is exposed, rotate or revoke it on the developers dashboard; the old secret stops working at once. To serve many browser users, call the API from your server with your key and cache the answer for a minute. Your users then never touch the limit.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "c0243ae9e28f",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts",
+   "section": null,
+   "text": "The API stays free. Paid plans raise the per-key rate limit, add gap alerts and keep a longer history. You pay in ETH, BNB, USDC or USDT from your own wallet straight to ours. Paid plans for the Gully Labs tracker API, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "f8c0162a74fc",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#plans",
+   "section": "Plans",
+   "text": "A plan belongs to your wallet account and applies to every key it holds. The limits below are read live from GET /api/plans, the same source the pricing page and the dashboard use.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "cb11ee9b88d9",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#paying",
+   "section": "Paying",
+   "text": "Prices are in US dollars. You pay in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the Gully Labs treasury wallet, which is the same address on every chain. Open Plan & billing on the developer dashboard, choose a plan, then a chain and an asset. You get a quote: the exact amount to send and the treasury address, valid for 20 minutes. Stablecoins count one to one with the dollar; the quote adds a few millionths as a tag. ETH and BNB are priced by the Chainlink USD feed on the same chain at the moment of the quote and rounded up, with a unique tail in the last digits. The quote shows the feed, its round and when it last updated. If the feed is more than two hours old, no quote is given in that coin. Press Pay with a wallet for a one-click transfer (the wallet is asked to switch to the quote’s chain), or send the amount from any wallet or exchange and paste the transaction hash. The server reads the receipt and the transaction from a public node of that chain and checks that they agree. A payment counts when it succeeded, is on the quote’s chain, paid the treasury in the quoted asset, has the confirmations above, and its hash was never used before on any chain. The plan starts the moment it is confirmed.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "6b95eb883658",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#paying",
+   "section": "Paying",
+   "text": "chain, paid the treasury in the quoted asset, has the confirmations above, and its hash was never used before on any chain. The plan starts the moment it is confirmed. From the wallet you signed in with, at least the price counts: any stablecoin amount from the dollar price up, or at least the quoted amount of ETH or BNB (paying more is accepted, paying less is refused and says by how much). From any other wallet or an exchange, send the exact quoted amount: its last digits tag the payment as yours, so nobody watching the treasury can claim it. A coin payment must be mined while its quote holds (ten minutes of grace). A payment buys days. Paying again for the same plan adds them to the end; a different plan starts that day. Nothing renews by itself: to cancel, don’t pay again. When a plan lapses you are back on Free and your keys keep working at the Free limit. The payment goes straight to the treasury wallet in your own transfer. We hold no balance and no card, and nothing leaves your wallet unless you sign it. Other Gully Labs work (Chain Kit, Gully Analytics, services) is billed with an invoice link of the form gullylabs.xyz/pay/…. It takes the same assets and checks; since nobody signs in there, a payment matches an invoice only by the exact quoted amount. Once paid, the page links the transaction and a printable receipt.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "e6e2691ff462",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#history",
+   "section": "Longer history",
+   "text": "GET /api/tracker/history takes days, up to what your plan includes. Without it the answer is the last seven days, unchanged. Asking for more than your plan includes answers 403 with your limit in historyDays. History is what the tracker recorded since long-term storage began; days before that are simply absent, never filled in.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "32eb54f1a2f7",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#alerts",
+   "section": "Gap alerts",
+   "text": "An alert watches one stock (chain and ticker) or every stock the tracker follows, for one condition: gap ({ type: \"gap\", pct }): The gap between on-chain and fair price is at least pct percent, above or below. status ({ type: \"status\", status }): The tracker flags the stock premium, discount, or either. Alerts are checked on every tracker snapshot, every five minutes. Per stock, an alert fires when its condition becomes true and re-arms once it is false again. It does not repeat while the condition simply stays true. Each alert sends at most one delivery every 30 minutes. Stocks that trigger during that pause go out with the next delivery if their condition still holds. Only rows the tracker would itself flag count: a readable feed and pool, a pool deep enough to flag, a fresh pool read and an open feed session. Anything else neither fires nor re-arms. Each delivery is logged in the dashboard with its HTTP status (the last 50 per alert). Use Test to send an alert.test delivery with no events. When a plan lapses, the alerts beyond the Free allowance stay listed but are paused until you delete some or upgrade; the oldest ones keep running.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "034735424bbd",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#payload",
+   "section": "Webhook payload",
+   "text": "We POST JSON with these headers: Content-Type: application/json, X-Gully-Timestamp (Unix seconds) and X-Gully-Signature (sha256= and the hex HMAC). Answer with any 2xx within 5 seconds; we do not follow redirects and do not retry, and the status is shown in your delivery log.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "5adab24ca9b0",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#verify",
+   "section": "Verifying the signature",
+   "text": "The signature is HMAC-SHA256 with the alert’s secret over `${timestamp}.${rawBody}`. The secret (whsec_…) is shown once when you create the alert; New secret replaces it. Compare in constant time and refuse old timestamps. Webhook URLs must be https:// on a public address. The host is resolved before every delivery and private, loopback, link-local and other reserved addresses are refused. See API keys for keeping secrets out of browser code; the same applies here.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "23910550ce77",
+   "source": "Docs",
+   "title": "Plans & alerts",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#telegram",
+   "section": "Telegram",
+   "text": "An alert can message a Telegram chat as well as, or instead of, calling a webhook. In the Alerts tab of the dashboard press Connect Telegram: it opens the bot with a one-time code (ten minutes, single use) that links the chat to your wallet account, so there is no chat id to copy. Add to a group does the same for a group; only the person who linked a group can unlink it. Then tick Telegram on any alert. Each message names the stock and chain, the gap, the on-chain and fair prices, the status and the pool liquidity, with a link to the stock page. Open NVDA opens the stock page; Mute 24h pauses that alert, on every channel, for 24 hours. Resume in the dashboard ends a mute early. Deliveries appear in the alert's log like webhook ones, with the result Telegram gave. In the chat, /alerts lists your alerts and /stop unlinks. Anyone can ask the bot /gap NVDA (or /gap NVDA bsc) and /top for the five widest trusted gaps. A figure the tracker could not read is said to be unreadable, never shown as zero. Which channels the server offers is public at GET /api/alerts/channels.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "7fb0b6c4a793",
+   "source": "Docs",
+   "title": "Gully Analytics",
+   "url": "https://docs.gullylabs.xyz/analytics",
+   "section": null,
+   "text": "Privacy-friendly web analytics with Web3 tracking for dapps: page views plus wallet connects, chain switches and transactions. It is a fork of Umami; everything Umami does still works. Gully Analytics: sign up with a wallet, install the tracker, Web3 events, address privacy modes, plans and what happens at the quota or when a plan lapses.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "6d2dffcd3af1",
+   "source": "Docs",
+   "title": "Gully Analytics",
+   "url": "https://docs.gullylabs.xyz/analytics#start",
+   "section": "Sign up",
+   "text": "Open the developer portal, connect a wallet and sign the sign-in message (no transaction, no gas). In the Analytics tab press Start free trial. The server creates a Gully Analytics login for your wallet and shows its password once; copy it. We do not keep the password. Reset password in the same tab sets a new one and signs out open sessions. Add a website with its name and domain. The tab shows its website id, the install snippet, a link to its dashboard and the events counted this month. The free trial runs once per wallet. After it, choose a plan in the same tab to keep recording.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "f24fce492305",
+   "source": "Docs",
+   "title": "Gully Analytics",
+   "url": "https://docs.gullylabs.xyz/analytics#install",
+   "section": "Install the tracker",
+   "text": "Put the snippet on every page, before the closing head tag. The Analytics tab gives it with your website id filled in. Without data-web3=\"true\" the script behaves exactly like the Umami tracker. The usual Umami attributes (data-domains, data-do-not-track, data-tag, data-before-send, …) still apply, and Web3 events respect them.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "8076cba437fa",
+   "source": "Docs",
+   "title": "Gully Analytics",
+   "url": "https://docs.gullylabs.xyz/analytics#web3",
+   "section": "Web3 events",
+   "text": "The script finds wallets through EIP-6963 and window.ethereum and watches what your dapp asks of them. It never calls a wallet method itself, so it cannot trigger a wallet prompt. All four events are standard custom events with event data, so they also show under Events, Goals, Funnels and filters. chainId is a decimal number; wallet is the wallet’s EIP-6963 id (io.metamask, io.rabby, …) or its name. You can send these events yourself too, and the Web3 dashboard reads them the same:",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "f796a79c30e7",
+   "source": "Docs",
+   "title": "Gully Analytics",
+   "url": "https://docs.gullylabs.xyz/analytics#privacy",
+   "section": "Privacy modes",
+   "text": "data-web3-address decides what is stored about the wallet address: hash (default) (counted): The first 16 hex characters of the SHA-256 of the lowercase address. Wallets can be counted; the address cannot be read back. full (counted): The lowercase address. none (not counted): Nothing. Unique wallets and transactions per wallet show 0 or a dash. Hashing needs a secure context (HTTPS or localhost); on plain HTTP the address is dropped rather than sent in clear. A hash of a public address is pseudonymous, not anonymous: anyone with a candidate address can hash it and compare. Use none if that matters for your users.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "59930da6f0eb",
+   "source": "Docs",
+   "title": "Gully Analytics",
+   "url": "https://docs.gullylabs.xyz/analytics#plans",
+   "section": "Plans and limits",
+   "text": "The plans below are read live from GET /api/plans (field analytics), the same source the pricing page and the dashboard use. An event is any call the tracker makes for one of your websites: page views, custom events and Web3 events. They are counted across your websites per calendar month in UTC. At the limit, new events are not recorded until the month turns or you upgrade. The tracker gets an HTTP 402 answer and stops sending for the rest of that page view. Websites beyond what your plan includes (after a downgrade, say) do not record until you remove some or upgrade; the oldest ones keep recording. Paying works like the tracker API plans (see Paying): ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the treasury, checked on chain. A payment buys days; paying again for the same plan adds them to the end. Nothing renews by itself. When a trial or plan ends, recording stops. Your dashboard stays readable for days; after that the account and its data may be deleted.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "fa0baa6b243a",
+   "source": "Docs",
+   "title": "Gully Analytics",
+   "url": "https://docs.gullylabs.xyz/analytics#dashboard",
+   "section": "Dashboard and API",
+   "text": "Sign in at analytics.gullylabs.xyz with the login from the Analytics tab. Each website has the usual Umami views plus a Web3 tab: unique wallets, connects, connect rate, transactions, transactions per wallet, a visit → connect → transaction funnel, chains, wallet apps and the top pages by connects. The Umami REST API works with your own login: sign in with POST /api/auth/login and send the token as Authorization: Bearer …. The Web3 figures are at GET /api/websites/{websiteId}/web3?startAt=…&endAt=…. The source is public: gully-labs/umami, MIT licensed like Umami.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "5778b557c5ce",
+   "source": "Changelog",
+   "title": "Changelog",
+   "url": "https://docs.gullylabs.xyz/changelog",
+   "section": null,
+   "text": "What changed, newest first. What changed in the Gully Labs tracker, its API, the widget and these docs.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "4d7f719fcf69",
+   "source": "Changelog",
+   "title": "Changelog",
+   "url": "https://docs.gullylabs.xyz/changelog#2026-10-17",
+   "section": "17 October 2026",
+   "text": "A page for every stock token, such as NVDA on Robinhood Chain: live price against fair, gap history, the pool, contracts, alerts and an embed snippet. Plans and gap alerts: higher limits, signed webhook alerts and up to a year of history, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the Gully Labs treasury. Gully Analytics: web analytics that also see wallet connects, chains and transactions. Chain Kit: a branded Blockscout explorer for your chain, operated by Gully Labs. The widget links each stock to its page.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "41a073887bfa",
+   "source": "Changelog",
+   "title": "Changelog",
+   "url": "https://docs.gullylabs.xyz/changelog#2026-10-16",
+   "section": "16 October 2026",
+   "text": "The tracker launched: tokenised stocks on Robinhood Chain and BNB Chain against their Chainlink fair price, with a gap history per token. The public API: /api/tracker and /api/tracker/history. The embeddable widget (ticker, badge, table) and its builder. API keys for higher rate limits. These docs. Onchain prices are now read straight from each token’s deepest pool every refresh; DexScreener and GeckoTerminal only find the pool and report its depth. Every row carries logo and chainLogo, and every chain reports its poolSource. Widget v2: real logos, coloured gaps, value flashes on change, a 24-hour gap chart on the badge, and a sortable, clickable table. The developer portal: sign in with a wallet and create keys instantly, with usage charts and a request log. The SDK: @gullylabs/tracker and @gullylabs/widget.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "b0e370f78bcc",
+   "source": "Site",
+   "title": "Gully Analytics",
+   "url": "https://gullylabs.xyz/analytics",
+   "section": null,
+   "text": "Analytics that see the wallet. Page views alone don’t tell a dapp what worked. Gully Analytics adds what happens next: which visits connected a wallet, on which chain, with which wallet app, and which went on to send a transaction. Free trial. Built on Umami, MIT licensed. Our changes are MIT too. Start free trial Wallet connects. Detected through EIP-6963 and window.ethereum, by observing the wallet, never by prompting it. Chains and switches. Every connect, chain switch and transaction carries its chain, named for Ethereum, Base, BNB Chain, Robinhood Chain, Arc and more. Visit → wallet → transaction. A funnel from session to connected wallet to sent transaction, plus top pages by connects and wallet apps used. Addresses hashed by default. Unique wallets are counted from a one-way hash of the address. Full addresses or none are one attribute away. Everything Umami does. Page views, referrers, countries, devices, events and goals, cookie-free, on a dashboard you own. Opt-in, small, open. Web3 tracking turns on with one attribute; the whole script stays a few kilobytes. The source is public. Sign in and add your site. Connect a wallet in the developer portal, start the free trial and add your domain. Add the script. One tag on your dapp, with data-web3=\"true\". Use your dapp as usual. Connects, chain switches and transactions are recorded as they happen. Read the Web3 tab. Wallets, connect rate, transactions, chains and the funnel for any date range. Gully Analytics. Privacy-friendly web analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "1079b813e8ad",
+   "source": "Site",
+   "title": "Chain Kit",
+   "url": "https://gullylabs.xyz/chain-kit",
+   "section": null,
+   "text": "An explorer for your chain. A new chain needs a block explorer on day one. Chain Kit is Blockscout, the open-source explorer, set up for your chain, in your brand, and run by the team that builds on these chains every day. Available on request. Built on Blockscout, GPL-3.0. Our deployment layer is GPL-3.0 too. Talk to us about your chain Full explorer. Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts, from Blockscout. Your brand. Your name, logos, colours and links across the explorer, configured rather than forked, so upgrades stay simple. Rollups included. Profiles for Arbitrum Nitro and Orbit chains like Robinhood Chain, and for chains like Arc with a stablecoin as gas. Operated for you. Provisioning, TLS, backups, upgrades and monitoring, with a runbook for every common failure. Sized honestly. A busy rollup needs terabytes; a young chain needs far less. We size the server and the RPC to your chain before anything is promised. Open source. Everything we add is public and GPL-3.0 like Blockscout itself. You are never locked in. Tell us about your chain. Chain id, RPC, settlement layer and how much history you need. We size and deploy. A dedicated server, your branding and the indexer, on a domain of your choice. Launch and run. We keep it indexed, upgraded and backed up while you build the chain. Chain Kit. A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "ef9882920fd9",
+   "source": "Site",
+   "title": "API pricing",
+   "url": "https://gullylabs.xyz/pricing",
+   "section": null,
+   "text": "Plans for the Gully Labs tracker API and for Gully Analytics, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, with no custody.",
+   "updatedAt": "2026-10-17T16:10:49.167Z"
+  },
+  {
+   "id": "faaefd127565",
+   "source": "Site",
+   "title": "API pricing",
+   "url": "https://gullylabs.xyz/pricing",
+   "section": "Tracker API and Gully Analytics",
+   "text": "Two products, priced separately. The tracker API stays free and open; paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. Gully Analytics starts with a free trial. You pay in ETH, BNB, USDC or USDT from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "d223112ecdb5",
+   "source": "Site",
+   "title": "API pricing",
+   "url": "https://gullylabs.xyz/pricing",
+   "section": "Questions",
+   "text": "Paid in ETH, BNB, USDC or USDT on four chains, checked on chain, no custody. Plans & alerts docs",
+   "updatedAt": "2026-10-17T16:11:06.800Z"
+  },
+  {
+   "id": "7ecec8552521",
+   "source": "Site",
+   "title": "API pricing",
+   "url": "https://gullylabs.xyz/pricing",
+   "section": "Questions",
+   "text": "Q: How do I pay? A: In ETH, BNB, USDC or USDT on (live value). Pick a plan in the developer dashboard, then a chain and an asset; it gives a quote with the exact amount and the Gully Labs treasury address, valid for 20 minutes. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash. Q: What do I pay in? A: Prices are in US dollars. (live value) Stablecoins are counted one to one with the dollar. ETH and BNB are priced by the Chainlink USD feed on the same chain when you ask for the quote, rounded up; if that feed has not updated for two hours, no quote is given in that coin. Q: Do you hold my funds? A: No. Your coin or stablecoin goes straight to the Gully Labs treasury wallet in one transfer, the same as paying any address. There is no deposit, balance or card on file, and nothing is ever taken from your wallet without you signing it. Q: How is a payment checked? A: The server reads the transaction from a public node of its chain: it must have succeeded, paid the treasury at least the plan’s price in the quoted asset, and have enough blocks on top ((live value)). Each transaction counts once, on any chain. The plan starts the moment it is confirmed.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "4c508aaaaedc",
+   "source": "Site",
+   "title": "API pricing",
+   "url": "https://gullylabs.xyz/pricing",
+   "section": "Questions",
+   "text": "the plan’s price in the quoted asset, and have enough blocks on top ((live value)). Each transaction counts once, on any chain. The plan starts the moment it is confirmed. Q: How do I cancel? A: Just don’t renew. A payment buys (live value) days and nothing renews by itself; when the days run out the account returns to Free with its keys still working at the Free limit. Q: Can I extend or switch? A: Paying again for the same plan adds days to the end of the current period. A different plan starts the day you pay for it; the days left on the old one are not carried over. Q: When does Gully Analytics stop recording? A: At the monthly event limit of your plan, until the month turns (UTC) or you upgrade; and when a trial or plan ends without being extended. Your dashboard stays readable for (live value) days after a plan ends; after that the account may be deleted. Plans are bought in the Analytics tab of the developer dashboard. Q: Can alerts come to Telegram? Q: What does Free include? A: Keys, usage charts and the request log, as today, with the limits shown above. Calling the API without any key keeps working too, at the anonymous limit.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "17f4efb3fb82",
+   "source": "Site",
+   "title": "Services",
+   "url": "https://gullylabs.xyz/services",
+   "section": null,
+   "text": "Smart contracts, dApps, chain infrastructure and security audits from the team behind the Gully Labs projects.",
+   "updatedAt": "2026-10-17T16:10:49.167Z"
+  },
+  {
+   "id": "f7f5d72f5042",
+   "source": "Site",
+   "title": "Services",
+   "url": "https://gullylabs.xyz/services",
+   "section": "Build with the team behind the projects",
+   "text": "We take on a small number of partner engagements alongside our own releases, using the same people and the same stack.",
+   "updatedAt": "2026-10-17T16:10:49.167Z"
+  },
+  {
+   "id": "c25c6a4a4899",
+   "source": "Site",
+   "title": "About Gully Labs",
+   "url": "https://gullylabs.xyz/about",
+   "section": null,
+   "text": "Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.",
+   "updatedAt": "2026-10-17T16:10:49.167Z"
+  },
+  {
+   "id": "8d81c93ea2a3",
+   "source": "Site",
+   "title": "About Gully Labs",
+   "url": "https://gullylabs.xyz/about",
+   "section": "A lab that ships its own products",
+   "text": "Gully Labs is a blockchain development company. We design, build and release Web3 projects under our own name, from trading communities to DeFi infrastructure. Running our own products keeps our engineering honest. Partners get a team that has shipped to mainnet and supported what it shipped.",
+   "updatedAt": "2026-10-17T16:10:49.167Z"
+  },
+  {
+   "id": "f6c9c9ef7449",
+   "source": "Site",
+   "title": "Cartel Family, a Gully Labs project",
+   "url": "https://gullylabs.xyz/projects/cartel-family",
+   "section": null,
+   "text": "Cartel Family (Social trading). We trade as one. Live markets, automated strategies and shared trades across chains. Live. Built: Member portal and wallet sign-in; Live market data and price alerts; Copy trading and shared trade feed. Chains: Solana; Multi-chain. Cartel Family's own site: https://cartel.family/",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "7af5757e090a",
+   "source": "Site",
+   "title": "DeepCore, a Gully Labs project",
+   "url": "https://gullylabs.xyz/projects/deepcore",
+   "section": null,
+   "text": "DeepCore (DeFi infrastructure). Launch on one core. Tokens, Launchpads, DEXes and stock markets on one shared, hardened core, on four chains. Live. Built: Hook-based pool core and launch guards; Launchpad and DEX kits with locked liquidity; Cross-chain index, SDK and hosted sites. Chains: Base; BNB Chain; HyperEVM; Robinhood. DeepCore's own site: https://deepcore.fun/",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "fd84560354cb",
+   "source": "Site",
+   "title": "PeddleSwap, a Gully Labs project",
+   "url": "https://gullylabs.xyz/projects/peddleswap",
+   "section": null,
+   "text": "PeddleSwap (DEX). Swap. Lock. Launch. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks. Live. Built: AMM and router contracts; Swap, liquidity and locker interface; Analytics and indexing. Chains: Robinhood; Base; Arc. PeddleSwap's own site: https://peddleswap.xyz/",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "45b21eabdb7c",
+   "source": "Site",
+   "title": "Peddles, a Gully Labs project",
+   "url": "https://gullylabs.xyz/projects/peddles",
+   "section": null,
+   "text": "Peddles (Launchpad). Launch, trade and play. Memecoins paired to tokenised stocks. Holders are paid in that stock. Live. Built: Stock-paired launch contracts and holder rewards; Terminal, perps and trade bot; Arcade: a game for every coin. Chains: Base; Robinhood; BNB Chain; Arc. Peddles's own site: https://peddles.xyz/",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "e038ac6c6f1a",
+   "source": "Site",
+   "title": "PeddleQuest, a Gully Labs project",
+   "url": "https://gullylabs.xyz/projects/peddlequest",
+   "section": null,
+   "text": "PeddleQuest (Quest to earn). Quest on-chain, earn the proof. Verified quests on four chains. XP, soulbound badges, reward pools escrowed first. Live. Built: On-chain quest verification and escrow; XP, crates and soulbound badges; Quest wizard and sybil rules for projects. Chains: Base; Robinhood; BNB Chain; Arc. PeddleQuest's own site: https://peddlequest.xyz/",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "c59b727cef48",
+   "source": "Site",
+   "title": "Services",
+   "url": "https://gullylabs.xyz/services",
+   "section": "What we build",
+   "text": "Smart Contracts. Solidity and Rust contracts designed, tested and deployed to mainnet. Typical timeline: 6–12 weeks. Includes: Token and NFT standards; DeFi protocols; Upgradeable architectures. dApps & Frontends. Wallet-connected web and mobile apps people can actually use. Typical timeline: 8–16 weeks. Includes: Wallet integration; Indexing and APIs; Web and mobile clients. Chain Infrastructure. Nodes, rollups, bridges and the plumbing underneath. Typical timeline: 8–20 weeks. Includes: L2 and appchain setup; Bridges and oracles; Node operations. Security & Audits. Review, testing and hardening before and after launch. Typical timeline: 2–6 weeks. Includes: Code review; Fuzzing and invariant tests; Post-launch monitoring.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "85e02c6302dc",
+   "source": "Site",
+   "title": "Services",
+   "url": "https://gullylabs.xyz/services",
+   "section": "How we work",
+   "text": "Discover. Scope the product, the chain and the token model. Prototype. A working testnet build in weeks, not quarters. Build & audit. Production contracts, apps and independent review. Launch. Mainnet release, monitoring and ongoing support.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "31b70074b8dd",
+   "source": "Site",
+   "title": "Services",
+   "url": "https://gullylabs.xyz/services",
+   "section": "Budgets",
+   "text": "The contact form offers these project budget ranges: < $50k, $50–150k, $150k+, Not sure. Send an enquiry from the Services page or any \"Talk to us\" button.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "3a7a9f90ec9e",
+   "source": "Site",
+   "title": "Gully Labs links and contact",
+   "url": "https://gullylabs.xyz/",
+   "section": null,
+   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/peddlesnews. Docs: https://docs.gullylabs.xyz. Widget: https://gullylabs.xyz/widget. Developer portal: https://developers.gullylabs.xyz. Blog: https://blog.gullylabs.xyz. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. API pricing: https://gullylabs.xyz/pricing. For project enquiries use the contact form on https://gullylabs.xyz/services.",
+   "updatedAt": "2026-10-17T16:10:49.167Z"
+  }
+ ]
+}
