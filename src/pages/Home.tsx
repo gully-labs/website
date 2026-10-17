@@ -28,12 +28,12 @@ export function Home() {
       <section className="grid grid-cols-[1.1fr_.9fr] items-center gap-[clamp(32px,4cqw,72px)] px-page pt-[72px] pb-10 max-[959px]:grid-cols-1">
         <div className="flex flex-col gap-[26px]">
           <Link
-            to="/tracker"
+            to="/analytics"
             className="group inline-flex w-fit items-center gap-3 rounded-full border border-line-strong bg-surface py-[5px] pr-4 pl-[5px] text-[14px] text-ink-2 transition-colors hover:border-gold hover:text-ink"
             style={{ animation: 'gl-rise .6s ease both' }}
           >
             <span className="rounded-full bg-gold px-[10px] py-[3px] font-mono text-[11px] font-medium tracking-[1px] text-bg">NEW</span>
-            Live stock token tracker, free API and widget
+            Gully Analytics is live: web analytics that see the wallet
             <ArrowRight aria-hidden size={15} className="text-gold transition-transform group-hover:translate-x-[3px]" />
           </Link>
           <span className={`${eyebrow} animate-[gl-rise_.6s_ease_both]`}>GULLY LABS · {words[projects.length].toUpperCase()} VENUES · ONE LEDGER</span>
