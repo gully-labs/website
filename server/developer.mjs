@@ -14,8 +14,9 @@
 //   GET  /api/developer/usage?range=24h|7d|30d
 //   GET  /api/developer/requests              last 50 requests made with this wallet's keys
 //   GET  /api/developer/billing               plan in force, payments, open checkouts, plans on offer
-//   POST /api/developer/checkout { plan }     -> { intent }  exact USDC amount and treasury (billing.mjs)
-//   POST /api/developer/checkout/verify { plan, txHash } -> 200 plan applied | 202 not confirmed yet | 4xx
+//   POST /api/developer/checkout { plan, asset? }  -> { intent }  a 20-minute quote: exact amount in that asset
+//                                             (default USDC on Base) and the treasury (billing.mjs, payments.mjs)
+//   POST /api/developer/checkout/verify { plan, txHash, quoteId? } -> 200 plan applied | 202 not confirmed yet | 4xx
 //   GET|POST /api/developer/alerts…           gap alerts (alerts.mjs)
 //
 // Sessions: an HttpOnly, SameSite=Lax cookie (Secure off localhost) holding a random id; only its
@@ -219,14 +220,14 @@ export async function handleDeveloper(req, res, url) {
     if (p === '/api/developer/checkout') {
       if (!allow('checkout', address, 30, 3_600_000)) return json(res, 429, { error: 'Too many checkouts started in the last hour. Try again later.' }), true
       const body = await readJson(req, 1_000)
-      const r = openIntent(address, String(body?.plan ?? ''))
+      const r = await openIntent(address, String(body?.plan ?? ''), body?.asset ? String(body.asset) : undefined)
       return r.ok ? json(res, 200, { intent: r.intent }) : json(res, r.status, { error: r.error }), true
     }
 
     if (p === '/api/developer/checkout/verify') {
       if (!allow('verify', address, 60, 3_600_000)) return json(res, 429, { error: 'Too many payment checks in the last hour. Try again later.' }), true
       const body = await readJson(req, 1_000)
-      const r = await verifyPayment(address, String(body?.plan ?? ''), body?.txHash)
+      const r = await verifyPayment(address, String(body?.plan ?? ''), body?.txHash, body?.quoteId ? String(body.quoteId) : null)
       if (r.ok) return json(res, 200, { payment: r.payment, plan: r.plan }), true
       return json(res, r.status, { error: r.error, ...(r.pending ? { pending: true, confirmations: r.confirmations, needed: r.needed } : {}) }), true
     }

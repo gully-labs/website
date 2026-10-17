@@ -14,11 +14,16 @@
 //   POST /api/admin/enquiries/:id/handled     { handled: boolean }
 //   GET  /api/admin/billing                   subscriptions (wallets with a plan), every payment, checkout state
 //   POST /api/admin/accounts/:address/plan    { plan: 'pro'|'business'|'free', days? }  grant for `days` (30) or revoke
+//   GET  /api/admin/invoices                  every invoice (Gully Pay), newest first, and the accepted assets
+//   POST /api/admin/invoices                  { title, usd, note?, assets?, expiresInDays? } -> 201 { invoice }
+//   POST /api/admin/invoices/:id/cancel
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
 import { alertStats } from './alerts.mjs'
 import { adminSetPlan, allPayments } from './billing.mjs'
+import { adminCancelInvoice, adminCreateInvoice, adminListInvoices } from './invoices.mjs'
+import { publicAssets } from './payments.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
@@ -146,6 +151,20 @@ export async function handleAdmin(req, res, url) {
     const body = await readJson(req, 1_000)
     const r = adminSetPlan(m[1], String(body?.plan ?? ''), body?.days ?? 30)
     return (r.ok ? json(res, 200, { address: m[1], plan: r.plan }) : json(res, r.status, { error: r.error }), true)
+  }
+
+  if (p === '/api/admin/invoices') {
+    if (req.method === 'GET') return json(res, 200, { invoices: adminListInvoices(), assets: publicAssets() }), true
+    if (req.method !== 'POST') return json(res, 405, { error: 'GET or POST only' }), true
+    const r = adminCreateInvoice(await readJson(req, 4_000))
+    return (r.ok ? json(res, 201, { invoice: r.invoice }) : json(res, r.status, { error: r.error }), true)
+  }
+
+  m = p.match(/^\/api\/admin\/invoices\/([\w-]+)\/cancel$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const r = adminCancelInvoice(m[1])
+    return (r.ok ? json(res, 200, { invoice: r.invoice }) : json(res, r.status, { error: r.error }), true)
   }
 
   if (p === '/api/admin/enquiries') return json(res, 200, { enquiries: [...listEnquiries()].reverse() }), true

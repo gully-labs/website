@@ -5,7 +5,8 @@
 // It starts the real server IN THIS PROCESS on port 8791 with a fresh temporary DATA_DIR, so it can
 // call the exported test hooks (alert evaluation with synthetic tracker rows, synthetic snapshots for
 // the history archive). Nothing upstream is read: the tracker loop is off (TRACKER_LOOP=off) and Base
-// is a local JSON-RPC stub (GULLY_BASE_RPC). Webhooks go to a local receiver, which is allowed only
+// is a local JSON-RPC stub (GULLY_BASE_RPC; the other chains point at a closed port). Multi-chain and
+// invoice payments are tested in test-pay.mjs. Webhooks go to a local receiver, which is allowed only
 // because GULLY_ALLOW_LOOPBACK_WEBHOOKS=1 is set here. A random wallet signs in; no real wallet is used.
 
 import crypto from 'node:crypto'
@@ -16,7 +17,7 @@ import path from 'node:path'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { makeChecker, makeClient } from './test-helpers.mjs'
 
-const PORT = 8791
+const PORT = Number(process.env.TEST_PORT) || 8791
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-paid-'))
 const ADMIN = crypto.randomBytes(24).toString('hex')
@@ -32,6 +33,7 @@ const { check } = t
 
 const HEAD = 1_000_000
 const receipts = new Map() // hash -> receipt
+const txs = new Map() // hash -> transaction
 const blockTime = new Map() // block number -> unix seconds
 const pad = (a) => '0x' + a.toLowerCase().replace(/^0x/, '').padStart(64, '0')
 const hex = (n) => '0x' + BigInt(n).toString(16)
@@ -39,7 +41,8 @@ const randHash = () => '0x' + crypto.randomBytes(32).toString('hex')
 function addTx({ token = USDC, from, to = TREASURY, value, status = '0x1', block = HEAD - 20, minedAt = Math.floor(Date.now() / 1000) }) {
   const hash = randHash()
   blockTime.set(block, minedAt)
-  receipts.set(hash, { transactionHash: hash, status, blockNumber: hex(block), logs: [{ address: token, topics: [TRANSFER, pad(from), pad(to)], data: pad(hex(value)) }] })
+  receipts.set(hash, { transactionHash: hash, status, blockNumber: hex(block), from, logs: [{ address: token, topics: [TRANSFER, pad(from), pad(to)], data: pad(hex(value)) }] })
+  txs.set(hash, { hash, from, to: token, value: '0x0', blockNumber: hex(block), chainId: hex(8453) })
   return hash
 }
 const rpcStub = http.createServer((req, res) => {
@@ -48,7 +51,9 @@ const rpcStub = http.createServer((req, res) => {
   req.on('end', () => {
     const q = JSON.parse(body)
     let result = null
-    if (q.method === 'eth_blockNumber') result = hex(HEAD)
+    if (q.method === 'eth_chainId') result = hex(8453)
+    else if (q.method === 'eth_blockNumber') result = hex(HEAD)
+    else if (q.method === 'eth_getTransactionByHash') result = txs.get(q.params[0]) ?? null
     else if (q.method === 'eth_getTransactionReceipt') result = receipts.get(q.params[0]) ?? null
     else if (q.method === 'eth_getBlockByNumber') {
       const n = Number(BigInt(q.params[0]))
@@ -85,6 +90,10 @@ Object.assign(process.env, {
   ADMIN_TOKEN: ADMIN,
   TRACKER_LOOP: 'off',
   GULLY_BASE_RPC: `http://127.0.0.1:${rpcStub.address().port}`,
+  // The other chains are never reached here (a closed port), so nothing upstream is read.
+  GULLY_RPC_1: 'http://127.0.0.1:9',
+  GULLY_RPC_56: 'http://127.0.0.1:9',
+  GULLY_RPC_42161: 'http://127.0.0.1:9',
   GULLY_TREASURY_ADDRESS: TREASURY,
   GULLY_ALLOW_LOOPBACK_WEBHOOKS: '1',
 })

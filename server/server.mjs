@@ -14,6 +14,7 @@ import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { handleBlog } from './blog.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { handleDeveloper } from './developer.mjs'
+import { handlePay } from './invoices.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -127,6 +128,11 @@ const server = http.createServer(async (req, res) => {
   }
   if (url.pathname.startsWith('/api/developer/')) {
     if (await handleDeveloper(req, res, url)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
+  // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
+  if (url.pathname.startsWith('/api/pay/')) {
+    if (await handlePay(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
   let access = null
