@@ -75,3 +75,7 @@ echarts.registerTheme('gully', {
 })
 
 export { echarts }
+
+// The landing hero ledger's pulsing "live" marker on the latest day (HeroLedger.tsx).
+import { EffectScatterChart } from 'echarts/charts'
+echarts.use([EffectScatterChart])

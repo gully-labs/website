@@ -1,27 +1,40 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { projects } from '../../content/projects'
 import { fmtDay, fmtTime, fmtUsd, nameOf, type Stats, type VenueOk } from '../../lib/stats'
+import { EChart } from '../charts/EChart'
+import { esc, useReducedMotion, type ChartEvent } from '../charts/chart-utils'
+import { Figure } from './Figure'
 
-/* The hero's ledger card: three combined figures, then the venues' own daily volume stacked.
-   Everything is read from /api/stats (useStats); nothing here is sample data. A venue that publishes
-   no daily series is not drawn, and a day a venue did not report adds nothing to the stack and reads
-   "no reading" in the tooltip, never zero. The chips are the legend: press one to hide that venue. */
-
-const W = 600
-const H = 220
-const MAX_DAYS = 30
+/* The hero's ledger card: three combined figures that count up, then the venues' own daily volume as
+   stacked bars (ECharts, through the shared wrapper). Everything is read from /api/stats (useStats);
+   nothing here is sample data. A venue that publishes no daily series is not drawn, and a day a venue
+   did not report adds nothing to its stack and reads "no reading" in the tooltip, never zero. The chips
+   are the legend: press one to hide that venue and the rest re-stack. A refresh merges into the live
+   chart, so the bars move to their new heights instead of redrawing. */
 
 type State = 'loading' | 'error' | 'ok'
+type Range = 7 | 30
 const okOnly = (data: Stats | null) => (data ? data.venues.filter((v): v is VenueOk => v.state === 'ok') : [])
+const MONO = "'IBM Plex Mono', monospace"
+const DAY = 86400
 
 function Kpi({ label, span, value, cover, state }: { label: string; span?: string; value: number | null | undefined; cover?: string[]; state: State }) {
   const shown = state === 'ok' && value !== null && value !== undefined
   return (
     <div className="flex min-w-0 flex-col gap-[2px] border-r border-line px-4 py-3 last:border-r-0 max-[459px]:px-3">
       <span className="truncate font-mono text-[10px] tracking-[1px] text-faint">{label}</span>
-      <b className={`font-display text-[30px] leading-none font-bold max-[459px]:text-[24px] ${shown ? 'text-ink' : 'text-dim'}`}>{shown ? fmtUsd(value) : state === 'error' ? 'unreadable' : '—'}</b>
+      <b className={`font-display text-[30px] leading-none font-bold max-[459px]:text-[22px] ${shown ? 'text-ink' : 'text-dim'}`}>
+        {shown ? <Figure value={value} /> : state === 'error' ? 'unreadable' : '—'}
+      </b>
       <span className="truncate font-mono text-[10px] text-faint">
-        {state === 'loading' ? 'reading…' : state === 'error' ? 'could not be read' : cover?.length ? `${span ? `${span} · ` : ''}${cover.length}/${projects.length} venues` : 'not published'}
+        {state === 'loading' ? 'reading…' : state === 'error' ? 'could not be read' : cover?.length ? (
+          <>
+            {span && <span className="max-[459px]:hidden">{span} · </span>}
+            {cover.length}/{projects.length} venues
+          </>
+        ) : (
+          'not published'
+        )}
       </span>
     </div>
   )
@@ -29,45 +42,110 @@ function Kpi({ label, span, value, cover, state }: { label: string; span?: strin
 
 export function HeroLedger({ data, state }: { data: Stats | null; state: State }) {
   const [hidden, setHidden] = useState<Record<string, boolean>>({})
-  const [day, setDay] = useState<number | null>(null)
+  const [range, setRange] = useState<Range>(30)
+  const reduced = useReducedMotion()
+  // The bars are handed to the chart two frames after it exists. The wrapper's first ResizeObserver
+  // pass calls resize(), which finishes any running animation at once; data that arrives after it
+  // grows in as it should.
+  const [armed, setArmed] = useState(false)
+  const onChart = useCallback((c: unknown) => {
+    if (!c) return setArmed(false)
+    requestAnimationFrame(() => requestAnimationFrame(() => setArmed(true)))
+  }, [])
 
   const ok = okOnly(data)
   const byKey = Object.fromEntries(ok.map((v) => [v.key, v]))
   const withSeries = projects.filter((p) => (byKey[p.key]?.daily.length ?? 0) > 1)
-  const days = [...new Set(ok.flatMap((v) => v.daily.map((d) => d.t)))].sort((a, b) => a - b).slice(-MAX_DAYS)
+  const allDays = [...new Set(ok.flatMap((v) => v.daily.map((d) => d.t)))].sort((a, b) => a - b).slice(-30)
+  // The range switch only appears when there is more than a week to show.
+  const canRange = allDays.length > 7
+  const days = canRange ? allDays.slice(-range) : allDays
+  const D = days.length
   const valueOn = (key: string, t: number) => byKey[key]?.daily.find((d) => d.t === t)?.v ?? null
   const shown = withSeries.filter((p) => !hidden[p.key])
-
-  const D = days.length
   const totals = days.map((t) => shown.reduce((a, p) => a + (valueOn(p.key, t) ?? 0), 0))
-  const max = Math.max(1, ...totals) * 1.1
-  const X = (i: number) => (D > 1 ? (i / (D - 1)) * W : 0)
-  const Y = (v: number) => H - (v / max) * (H - 8)
+  const last = days[D - 1]
+  // "LIVE" only when the last bar is the day of the read (UTC); otherwise it is the latest day read.
+  const isToday = last !== undefined && !!data && Math.floor(Date.parse(data.generatedAt) / 1000 / DAY) === Math.floor(last / DAY)
 
-  // Each venue is a band from the running base to base + its value; hidden venues are flat (zero
-  // thickness) so the paths keep their shape and the rest re-stack with a transition.
-  const layers: { key: string; color: string; d: string }[] = []
-  let base = days.map(() => 0)
-  for (const p of withSeries) {
-    const top = base.map((b, i) => b + (hidden[p.key] ? 0 : (valueOn(p.key, days[i]) ?? 0)))
-    const up = top.map((v, i) => `${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' L')
-    const down = base.map((_, i) => `${X(D - 1 - i).toFixed(1)} ${Y(base[D - 1 - i]).toFixed(1)}`).join(' L')
-    layers.push({ key: p.key, color: p.accent, d: `M${up} L${down} Z` })
-    base = top
-  }
-
-  const pick = (clientX: number, el: HTMLElement) => {
-    const r = el.getBoundingClientRect()
-    if (D < 2 || r.width <= 0) return
-    setDay(Math.max(0, Math.min(D - 1, Math.round(((clientX - r.left) / r.width) * (D - 1)))))
-  }
-  const onKey = (e: React.KeyboardEvent) => {
-    if (D < 2) return
-    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      e.preventDefault()
-      setDay((d) => Math.max(0, Math.min(D - 1, (d ?? D - 1) + (e.key === 'ArrowRight' ? 1 : -1))))
-    } else if (e.key === 'Escape') setDay(null)
-  }
+  const key = `${data?.generatedAt}|${range}|${days.join()}|${withSeries.map((p) => p.key).join()}|${JSON.stringify(hidden)}|${reduced}|${armed}`
+  const option = useMemo(
+    () => ({
+      animationDuration: 650,
+      animationEasing: 'cubicOut',
+      animationDurationUpdate: 650,
+      animationEasingUpdate: 'cubicInOut',
+      // The chips are the legend; this hidden one carries their on/off state, so a toggle re-stacks
+      // with animation instead of redrawing.
+      legend: { show: false, selected: Object.fromEntries(withSeries.map((p) => [p.key, !hidden[p.key]])) },
+      grid: { left: 2, right: 10, top: 22, bottom: 2, containLabel: true },
+      xAxis: { type: 'category', data: days.map(fmtDay), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
+      yAxis: { type: 'value', splitNumber: 3, axisLabel: { formatter: (v: number) => fmtUsd(v).replace(/\.00$/, '') } },
+      tooltip: {
+        trigger: 'axis',
+        confine: true,
+        axisPointer: {
+          type: 'cross',
+          crossStyle: { color: '#5c6878', type: 'dashed' },
+          lineStyle: { color: '#5c6878', type: 'dashed' },
+          label: {
+            backgroundColor: '#1a2029',
+            borderColor: '#2c3540',
+            borderWidth: 1,
+            color: '#eef0f2',
+            fontFamily: MONO,
+            fontSize: 10,
+            formatter: (p: ChartEvent) => (p.axisDimension === 'y' ? fmtUsd(Number(p.value)) : p.value),
+          },
+        },
+        formatter: (ps: ChartEvent[]) => {
+          const i = ps[0]?.dataIndex
+          const t = days[i]
+          if (t === undefined) return ''
+          const rows = shown
+            .map((p) => {
+              const v = valueOn(p.key, t)
+              return `<div style="display:flex;gap:14px;justify-content:space-between"><span><span style="color:${p.accent}">■</span> ${esc(p.name)}</span><b style="font-weight:500;color:${v === null ? '#6c7888' : '#eef0f2'}">${v === null ? 'no reading' : fmtUsd(v)}</b></div>`
+            })
+            .join('')
+          return `<div style="color:#8a96a6;margin-bottom:4px">${fmtDay(t)}${i === D - 1 && isToday ? ' · today, so far' : ''}</div>${rows || '<div style="color:#6c7888">every venue hidden</div>'}<div style="display:flex;gap:14px;justify-content:space-between;border-top:1px solid #2c3540;margin-top:4px;padding-top:4px"><span>day total</span><b style="font-weight:600;color:#e8c060">${fmtUsd(totals[i])}</b></div>`
+        },
+      },
+      series: [
+        ...withSeries.map((p, j) => ({
+          id: p.key,
+          name: p.key,
+          type: 'bar',
+          stack: 'volume',
+          barCategoryGap: '30%',
+          barMaxWidth: 26,
+          color: p.accent,
+          itemStyle: { borderRadius: 2 },
+          data: days.map((t) => (armed ? valueOn(p.key, t) : null)),
+          // Each venue's bars rise after the one below it, left to right.
+          animationDelay: (i: number) => j * 160 + i * 14,
+          emphasis: { focus: 'series' },
+          blur: { itemStyle: { opacity: 0.35 } },
+        })),
+        {
+          id: 'live',
+          type: reduced ? 'scatter' : 'effectScatter',
+          silent: true,
+          tooltip: { show: false },
+          z: 10,
+          symbolSize: 7,
+          color: '#6fcf6a',
+          rippleEffect: { brushType: 'stroke', scale: 3.2, period: 2.2 },
+          animationDelay: withSeries.length * 160 + 300,
+          label: { show: true, position: 'top', distance: 8, formatter: isToday ? 'LIVE' : 'LATEST', color: '#6fcf6a', fontFamily: MONO, fontSize: 9, fontWeight: 600 },
+          data: D && armed ? [[D - 1, totals[D - 1]]] : [],
+        },
+      ],
+    }),
+    // `key` holds the read, the range, the drawn venues, the toggles and the motion setting
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [key],
+  )
 
   const T = data?.totals
   let chart: React.ReactNode
@@ -76,89 +154,57 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
   else if (D < 2 || !withSeries.length) chart = <p className="m-0 flex h-[230px] items-center justify-center px-4 text-center font-mono text-[12px] text-faint">No venue publishes a daily series yet, so there is nothing to stack.</p>
   else
     chart = (
-      <div
-        className="relative touch-pan-y outline-none"
-        tabIndex={0}
-        role="img"
-        aria-label={`Daily volume by venue, stacked, last ${D} days. ${days.map((t, i) => `${fmtDay(t)} ${fmtUsd(totals[i])}`).join(', ')}. Arrow keys step through days.`}
-        onPointerMove={(e) => pick(e.clientX, e.currentTarget)}
-        onPointerDown={(e) => pick(e.clientX, e.currentTarget)}
-        onPointerLeave={() => setDay(null)}
-        onKeyDown={onKey}
-        onBlur={() => setDay(null)}
-      >
-        <svg aria-hidden viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block h-[230px] w-full">
-          <g stroke="#1a2029">
-            <line x1="0" y1="55" x2={W} y2="55" />
-            <line x1="0" y1="110" x2={W} y2="110" />
-            <line x1="0" y1="165" x2={W} y2="165" />
-          </g>
-          {layers.map((l) => (
-            <path
-              key={l.key}
-              d={l.d}
-              fill={l.color}
-              fillOpacity={0.8}
-              stroke="#10141a"
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-              style={{ d: `path('${l.d}')`, transition: 'd .6s cubic-bezier(.2,.8,.2,1)' } as React.CSSProperties}
-            />
-          ))}
-          {day !== null && <line x1={X(day)} y1="0" x2={X(day)} y2={H} stroke="#eef0f2" strokeOpacity=".5" vectorEffect="non-scaling-stroke" />}
-        </svg>
-        <span className="pointer-events-none absolute top-1 right-2 font-mono text-[10px] text-faint">{fmtUsd(max / 1.1)}</span>
-        {day !== null && (
-          <div
-            className="pointer-events-none absolute top-[10px] grid grid-cols-[auto_auto_auto] items-center gap-x-[10px] gap-y-[2px] rounded-[6px] border border-line-strong bg-[rgba(13,17,22,.96)] px-[10px] py-2 font-mono text-[11px]"
-            style={{ left: `${(day / (D - 1)) * 100}%`, transform: `translateX(${day > D * 0.6 ? '-105%' : '10px'})` }}
-          >
-            <span className="col-span-full text-faint">
-              {fmtDay(days[day])} · {fmtUsd(totals[day])}
-            </span>
-            {shown.map((p) => {
-              const v = valueOn(p.key, days[day])
-              return [
-                <span key={`${p.key}c`} className="size-2 rounded-[2px]" style={{ background: p.accent }} />,
-                <span key={`${p.key}n`} className="text-muted">
-                  {p.name}
-                </span>,
-                <span key={`${p.key}v`} className={`text-right ${v === null ? 'text-faint' : ''}`}>
-                  {v === null ? 'no reading' : fmtUsd(v)}
-                </span>,
-              ]
-            })}
-          </div>
-        )}
-      </div>
+      <EChart
+        option={option}
+        height={230}
+        steps={{ count: D }}
+        onChart={onChart}
+        label={`Daily volume by venue, stacked, last ${D} days. ${days.map((t, i) => `${fmtDay(t)} ${fmtUsd(totals[i])}`).join(', ')}. Arrow keys step through the days.`}
+      />
     )
 
+  const seg = (on: boolean) => `min-h-11 min-w-11 rounded-[6px] px-[10px] font-mono text-[11px] transition-colors duration-200 ${on ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`
+
   return (
-    <div className="min-w-0 overflow-hidden rounded-card border border-line bg-surface">
+    <div className="min-w-0 overflow-hidden rounded-card border border-line bg-surface transition-[border-color] duration-300 hover:border-line-strong">
       <div className="grid grid-cols-3 border-b border-line">
         <Kpi label="VOLUME" span="all-time" value={T?.volumeAllUsd} cover={T?.covers.volumeAllUsd} state={state} />
         <Kpi label="VALUE LOCKED" value={T?.tvlUsd} cover={T?.covers.tvlUsd} state={state} />
         <Kpi label="FEES" span="all-time" value={T?.feesAllUsd} cover={T?.covers.feesAllUsd} state={state} />
       </div>
-      <div className="flex flex-wrap gap-[6px] px-[14px] pt-[10px]" role="group" aria-label="Venues in the chart">
-        {projects.map((p) => {
-          const has = withSeries.includes(p)
-          const on = has && !hidden[p.key]
-          return (
-            <button
-              key={p.key}
-              type="button"
-              aria-pressed={on}
-              disabled={state === 'ok' && !has}
-              title={state === 'ok' && !has ? `${p.name} publishes no daily series` : undefined}
-              onClick={() => (setHidden((h) => ({ ...h, [p.key]: !h[p.key] })), setDay(null))}
-              className={`inline-flex min-h-[30px] items-center gap-[6px] rounded-full border border-line-strong bg-transparent px-[10px] text-[12px] transition-[color,opacity] duration-200 disabled:cursor-default ${on ? 'text-ink' : 'text-faint opacity-55'}`}
-            >
-              <span aria-hidden className="size-2 rounded-[2px]" style={{ background: p.accent }} />
-              {p.name}
-            </button>
-          )
-        })}
+      <div className="flex flex-wrap items-center justify-between gap-x-2 px-[14px] pt-1">
+        <div className="flex flex-wrap gap-x-[6px]" role="group" aria-label="Venues in the chart">
+          {projects.map((p) => {
+            const has = withSeries.includes(p)
+            const on = has && !hidden[p.key]
+            return (
+              <button
+                key={p.key}
+                type="button"
+                aria-pressed={on}
+                disabled={state === 'ok' && !has}
+                title={state === 'ok' && !has ? `${p.name} publishes no daily series` : undefined}
+                onClick={() => setHidden((h) => ({ ...h, [p.key]: !h[p.key] }))}
+                className="group inline-flex min-h-11 items-center bg-transparent p-0 text-[12px] disabled:cursor-default"
+              >
+                {/* The button is 44 px tall for touch; the pill inside is the visible chip. */}
+                <span className={`inline-flex min-h-[30px] items-center gap-[6px] rounded-full border px-[10px] transition-[color,opacity,border-color] duration-200 group-enabled:group-hover:border-line-hover ${on ? 'border-line-strong text-ink' : 'border-line text-faint opacity-55'}`}>
+                  <span aria-hidden className={`size-2 rounded-[2px] transition-transform duration-200 ${on ? 'scale-100' : 'scale-75'}`} style={{ background: p.accent }} />
+                  {p.name}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        {canRange && (
+          <div role="group" aria-label="Range" className="flex gap-[2px] rounded-[8px] border border-line p-[2px]">
+            {([7, 30] as Range[]).map((r) => (
+              <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)} className={seg(range === r)}>
+                {r}D
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="px-[6px] pt-[6px]">{chart}</div>
       <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 px-4 pt-[6px] pb-3 font-mono text-[10px] text-faint">
