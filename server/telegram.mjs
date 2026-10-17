@@ -262,6 +262,22 @@ const usd0 = (n) => (typeof n === 'number' && Number.isFinite(n) ? `$${Math.roun
 const shortAddr = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`
 const when = (iso) => new Date(iso).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
 
+/* -------------------------------------------------------- account sends --- */
+
+/**
+ * Plain-text notice to an account's linked chat (usage thresholds and similar, from activity.mjs).
+ * The text is escaped here, so callers pass plain text. Never throws.
+ * @returns {Promise<{ ok: boolean, status: number | null, error: string | null }>}
+ */
+export async function sendAccountTelegram(address, text) {
+  if (!telegramEnabled()) return { ok: false, status: null, error: 'Telegram is not configured on the server.' }
+  const chatId = linkedChat(String(address ?? '').toLowerCase())?.chatId ?? linkedChat(address)?.chatId ?? null
+  if (!chatId) return { ok: false, status: null, error: 'No Telegram chat is linked to this account.' }
+  const r = await sendText(chatId, `<b>Gully Labs</b>
+${esc(String(text ?? ''))}`)
+  return { ok: r.ok, status: r.status ?? null, error: r.error ?? null }
+}
+
 /* ---------------------------------------------------------- alert sends --- */
 
 /**
