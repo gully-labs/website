@@ -10,11 +10,12 @@
   },
   "SPCX": {
     "ticker": "SPCX",
-    "file": "/tokens/logos/SPCX.ico",
-    "from": "https://www.spacex.com/assets/favicon-spacex.ico",
+    "file": "/tokens/logos/SPCX.svg",
+    "from": "https://www.spacex.com/ (header logo SVG)",
     "site": "spacex.com",
-    "declaredSize": 32,
-    "fetchedAt": "2026-10-16T19:38:01.301Z"
+    "size": "vector",
+    "fetchedAt": "2026-10-17T00:09:36.746Z",
+    "note": "the X and swoosh cropped from the vector wordmark in spacex.com’s own header, drawn black for a light disc"
   },
   "USO": {
     "ticker": "USO",
@@ -229,11 +230,12 @@
   },
   "SNDK": {
     "ticker": "SNDK",
-    "file": "/tokens/logos/SNDK.ico",
-    "from": "https://www.sandisk.com/content/dam/sandisk/en-us/portal-assets/logos/favicon.ico",
+    "file": "/tokens/logos/SNDK.svg",
+    "from": "https://www.sandisk.com/content/dam/store/en-us/assets/home-page/brand-logos/sandisk/sandisk-logo-white.svg",
     "site": "sandisk.com",
-    "declaredSize": 32,
-    "fetchedAt": "2026-10-16T19:38:16.058Z"
+    "size": "vector",
+    "fetchedAt": "2026-10-17T00:09:36.746Z",
+    "note": "the S of SanDisk’s own vector wordmark, in the red (#e10600) sampled from sandisk.com’s favicon"
   },
   "SPY": {
     "ticker": "SPY",

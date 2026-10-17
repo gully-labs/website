@@ -21,7 +21,7 @@ export const logoByToken: Record<string, string> = {
 
 export const logoByTicker: Record<string, string> = {
   "NVDA": "/tokens/logos/NVDA.svg",
-  "SPCX": "/tokens/logos/SPCX.ico",
+  "SPCX": "/tokens/logos/SPCX.svg",
   "USO": "/tokens/logos/USO.png",
   "TSLA": "/tokens/logos/TSLA.png",
   "CLSK": "/tokens/logos/CLSK.png",
@@ -47,7 +47,7 @@ export const logoByTicker: Record<string, string> = {
   "AMZN": "/tokens/logos/AMZN.png",
   "ORCL": "/tokens/logos/ORCL.png",
   "MU": "/tokens/logos/MU.png",
-  "SNDK": "/tokens/logos/SNDK.ico",
+  "SNDK": "/tokens/logos/SNDK.svg",
   "SPY": "/tokens/logos/SPY.png",
   "COIN": "/tokens/logos/COIN.png",
   "GME": "/tokens/logos/GME.ico",
