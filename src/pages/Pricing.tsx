@@ -29,10 +29,20 @@ function usePlans(): [State, () => void] {
   return [state, () => (setState({ k: 'loading' }), setN((x) => x + 1))]
 }
 
+const chainList = (o: Offer | null) => (o ? o.chains.map((c) => c.name).join(', ').replace(/, ([^,]*)$/, ' or $1') : 'Base, Ethereum, BNB Chain or Arbitrum')
+const assetList = (o: Offer | null) =>
+  o
+    ? o.chains
+        .map((c) => `On ${c.name}: ${o.assets.filter((a) => a.chainId === c.id).map((a) => a.symbol).join(', ')}.`)
+        .join(' ')
+    : ''
+const confirmationList = (o: Offer | null) => (o ? o.chains.map((c) => `${c.name} ${c.confirmations}`).join(', ') : 'a few, depending on the chain')
+
 const FAQ = (o: Offer | null): { q: string; a: string }[] => [
-  { q: 'How do I pay?', a: `In USDC on ${o?.chain.name ?? 'Base'}. Pick a plan in the developer dashboard; it shows the exact amount and the Gully Labs treasury address. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash.` },
-  { q: 'Do you hold my funds?', a: 'No. The USDC goes straight to the Gully Labs treasury wallet in one transfer, the same as paying any address. There is no deposit, balance or card on file, and nothing is ever taken from your wallet without you signing it.' },
-  { q: 'How is a payment checked?', a: `The server reads the transaction from a public ${o?.chain.name ?? 'Base'} node: it must have succeeded, moved at least the plan’s price in USDC to the treasury, and have a few blocks on top. Each transaction counts once. The plan starts the moment it is confirmed.` },
+  { q: 'How do I pay?', a: `In ETH, BNB, USDC or USDT on ${chainList(o)}. Pick a plan in the developer dashboard, then a chain and an asset; it gives a quote with the exact amount and the Gully Labs treasury address, valid for 20 minutes. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash.` },
+  { q: 'What do I pay in?', a: `Prices are in US dollars. ${assetList(o)} Stablecoins are counted one to one with the dollar. ETH and BNB are priced by the Chainlink USD feed on the same chain when you ask for the quote, rounded up; if that feed has not updated for two hours, no quote is given in that coin.` },
+  { q: 'Do you hold my funds?', a: 'No. Your coin or stablecoin goes straight to the Gully Labs treasury wallet in one transfer, the same as paying any address. There is no deposit, balance or card on file, and nothing is ever taken from your wallet without you signing it.' },
+  { q: 'How is a payment checked?', a: `The server reads the transaction from a public node of its chain: it must have succeeded, paid the treasury at least the plan’s price in the quoted asset, and have enough blocks on top (${confirmationList(o)}). Each transaction counts once, on any chain. The plan starts the moment it is confirmed.` },
   { q: 'How do I cancel?', a: `Just don’t renew. A payment buys ${o?.periodDays ?? 30} days and nothing renews by itself; when the days run out the account returns to Free with its keys still working at the Free limit.` },
   { q: 'Can I extend or switch?', a: 'Paying again for the same plan adds days to the end of the current period. A different plan starts the day you pay for it; the days left on the old one are not carried over.' },
   { q: 'What does Free include?', a: 'Keys, usage charts and the request log, as today, with the limits shown above. Calling the API without any key keeps working too, at the anonymous limit.' },
@@ -43,7 +53,7 @@ export function Pricing() {
   const offer = state.k === 'ok' ? state.offer : null
   return (
     <>
-      <Seo title="Pricing" description="Plans for the Gully Labs tracker API: higher rate limits, gap alerts by webhook and longer history, paid in USDC on Base with no custody." />
+      <Seo title="Pricing" description="Plans for the Gully Labs tracker API: higher rate limits, gap alerts by webhook and longer history, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, with no custody." />
 
       <section className="relative overflow-hidden px-page pt-[72px] pb-12">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.14),transparent_62%)]" />
@@ -55,7 +65,7 @@ export function Pricing() {
             More calls, <span className="text-gold">alerts and history</span>
           </h1>
           <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
-            The tracker API stays free and open. Paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. You pay in USDC from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.
+            The tracker API stays free and open. Paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. You pay in ETH, BNB, USDC or USDT from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.
           </p>
         </div>
       </section>
@@ -91,7 +101,7 @@ export function Pricing() {
                       <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
                       <span className="flex items-baseline gap-2">
                         <span className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`}>{p.priceUsdc}</span>
-                        <span className="font-mono text-[13px] text-muted">{p.priceUsdc ? `USDC / ${offer.periodDays} days` : 'free, no time limit'}</span>
+                        <span className="font-mono text-[13px] text-muted">{p.priceUsdc ? `USD / ${offer.periodDays} days` : 'free, no time limit'}</span>
                       </span>
                     </div>
                     <ul className="relative m-0 flex list-none flex-col gap-3 p-0 text-[15px] text-ink-2">
@@ -116,7 +126,7 @@ export function Pricing() {
               })}
             </div>
             <p className="m-0 font-mono text-[12px] leading-[1.7] text-faint">
-              Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history. Prices in {offer.currency} on {offer.chain.name}. Limits protect our servers; answers served from the edge cache do not count against them.
+              Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history. Prices in US dollars, paid in ETH, BNB, USDC or USDT on {chainList(offer)}. Limits protect our servers; answers served from the edge cache do not count against them.
             </p>
           </div>
         )}
@@ -127,7 +137,7 @@ export function Pricing() {
           <div className="flex flex-col gap-4">
             <h2 className="m-0 font-display text-[36px] leading-none font-bold uppercase">Questions</h2>
             <p className="m-0 flex items-start gap-2 text-[14px] leading-[1.6] text-muted">
-              <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Paid in USDC on Base, checked on chain, no custody.
+              <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Paid in ETH, BNB, USDC or USDT on four chains, checked on chain, no custody.
             </p>
             <a href={`${DOCS_URL}/plans-alerts`} className="inline-flex items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
               Plans &amp; alerts docs <ArrowUpRight size={13} aria-hidden />

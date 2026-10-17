@@ -1,6 +1,9 @@
 import { DocLink, DocPage, Ext, List, Section } from '../DocPage'
 
-const sections = [{ id: '2026-10-16', title: '16 October 2026' }]
+const sections = [
+  { id: '2026-10-17', title: '17 October 2026' },
+  { id: '2026-10-16', title: '16 October 2026' },
+]
 
 export function Changelog() {
   return (
@@ -12,6 +15,23 @@ export function Changelog() {
       lead="What changed, newest first."
       sections={sections}
     >
+      <Section id="2026-10-17" title="17 October 2026">
+        <List>
+          <li>
+            A page for every stock token, such as <Ext href="https://gullylabs.xyz/tracker/robinhood/NVDA">NVDA on Robinhood Chain</Ext>: live price against fair, gap history, the pool, contracts, alerts and an embed snippet.
+          </li>
+          <li>
+            <DocLink to="plans-alerts">Plans and gap alerts</DocLink>: higher limits, signed webhook alerts and up to a year of history, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the Gully Labs treasury.
+          </li>
+          <li>
+            <Ext href="https://gullylabs.xyz/analytics">Gully Analytics</Ext>: web analytics that also see wallet connects, chains and transactions.
+          </li>
+          <li>
+            <Ext href="https://gullylabs.xyz/chain-kit">Chain Kit</Ext>: a branded Blockscout explorer for your chain, operated by Gully Labs.
+          </li>
+          <li>The widget links each stock to its page.</li>
+        </List>
+      </Section>
       <Section id="2026-10-16" title="16 October 2026">
         <List>
           <li>

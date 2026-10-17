@@ -5,6 +5,7 @@ import { readStats } from './server/stats.mjs'
 import { readHistory, readTracker } from './server/tracker.mjs'
 import { handleAdmin } from './server/admin.mjs'
 import { handleDeveloper } from './server/developer.mjs'
+import { handlePay } from './server/invoices.mjs'
 import { publicPlans } from './server/plans.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
@@ -87,7 +88,7 @@ function serverModules(): Plugin {
           res.setHeader('Content-Type', 'application/json')
           return res.end(JSON.stringify(publicPlans()))
         }
-        const handler = url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : null
+        const handler = url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : null
         if (!handler) return next()
         handler(req, res, url).then((done) => {
           if (done) return

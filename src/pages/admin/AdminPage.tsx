@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { DayBars } from '../../components/charts/DayBars'
+import { byChain } from '../../components/pay/assets'
 import { Wordmark } from '../../components/Wordmark'
+import type { PayAsset } from '../developers/api'
+import type { Invoice } from '../pay/invoice'
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
    kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site. */
@@ -55,7 +58,7 @@ interface DevAccount {
 }
 interface Billing {
   subscriptions: { address: string; plan: string; since: string | null; expiresAt: string; source: string | null; active: boolean }[]
-  payments: { txHash: string; address: string; plan: string; amount: string; from: string; at: string; expiresAt: string }[]
+  payments: { txHash: string; kind: 'plan' | 'invoice'; address: string | null; plan: string | null; invoiceId: string | null; amount: string; symbol: string; chain: string; usd: string | null; txUrl: string | null; from: string; at: string; expiresAt: string | null }[]
   offer: { plans: { id: string; name: string; priceUsdc: number }[]; checkout: { enabled: boolean; treasury: string | null; reason?: string } }
   alerts: { total: number; enabled: number; owners: number }
 }
@@ -98,7 +101,7 @@ function setToken(t: string | null) {
 }
 
 function useAdmin(token: string | null) {
-  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; accounts: DevAccount[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[]; billing: Billing } | null>(null)
+  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; accounts: DevAccount[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[]; billing: Billing; invoices: { invoices: AdminInvoice[]; assets: PayAsset[] } } | null>(null)
   const [err, setErr] = useState<{ status: number; message: string } | null>(null)
   const load = useCallback(async () => {
     if (!token) return
@@ -109,8 +112,8 @@ function useAdmin(token: string | null) {
       return d
     }
     try {
-      const [overview, dev, enq, launch, billing] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries'), get('/api/admin/launch-list'), get('/api/admin/billing')])
-      setData({ overview, requests: dev.requests, keys: dev.keys, accounts: dev.accounts ?? [], enquiries: enq.enquiries, launch: launch.rows, billing })
+      const [overview, dev, enq, launch, billing, invoices] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries'), get('/api/admin/launch-list'), get('/api/admin/billing'), get('/api/admin/invoices')])
+      setData({ overview, requests: dev.requests, keys: dev.keys, accounts: dev.accounts ?? [], enquiries: enq.enquiries, launch: launch.rows, billing, invoices })
       setErr(null)
     } catch (e) {
       const x = e as { status?: number; message?: string }
@@ -173,7 +176,8 @@ function Login({ onToken, error }: { onToken: (t: string) => void; error: string
 }
 
 /** Paid plans: who has one, every payment, and a manual grant / revoke. */
-function Subscriptions({ billing, accounts, act }: { billing: Billing; accounts: DevAccount[]; act: (path: string, body?: unknown) => Promise<string | null> }) {
+function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing; accounts: DevAccount[]; act: (path: string, body?: unknown) => Promise<string | null>; invoices: AdminInvoice[] }) {
+  const invoiceNumber = (id: string | null) => invoices.find((i) => i.id === id)?.number ?? id ?? '—'
   const [address, setAddress] = useState('')
   const [plan, setPlan] = useState('pro')
   const [days, setDays] = useState('30')
@@ -275,23 +279,177 @@ function Subscriptions({ billing, accounts, act }: { billing: Billing; accounts:
             <thead>
               <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
                 <th className="py-2 pr-3 font-medium">WHEN</th>
-                <th className="py-2 pr-3 font-medium">WALLET</th>
-                <th className="py-2 pr-3 font-medium">PLAN</th>
+                <th className="py-2 pr-3 font-medium">FOR</th>
+                <th className="py-2 pr-3 font-medium">FROM</th>
                 <th className="py-2 pr-3 font-medium">AMOUNT</th>
+                <th className="py-2 pr-3 font-medium">CHAIN</th>
                 <th className="py-2 pr-3 font-medium">TRANSACTION</th>
               </tr>
             </thead>
             <tbody className="font-mono">
               {billing.payments.map((p) => (
-                <tr key={p.txHash} className="border-b border-line last:border-b-0">
+                <tr key={`${p.chain}:${p.txHash}`} className="border-b border-line last:border-b-0">
                   <td className="py-2 pr-3 text-faint">{when(p.at)}</td>
-                  <td className="py-2 pr-3 text-ink-2">{p.address}</td>
-                  <td className="py-2 pr-3 uppercase">{p.plan}</td>
-                  <td className="py-2 pr-3">{p.amount} USDC</td>
+                  <td className="py-2 pr-3">{p.kind === 'plan' ? <span className="uppercase">{p.plan}</span> : `Invoice ${invoiceNumber(p.invoiceId)}`}</td>
+                  <td className="py-2 pr-3 text-ink-2">{p.kind === 'plan' ? p.address : p.from}</td>
                   <td className="py-2 pr-3">
-                    <a href={`https://basescan.org/tx/${p.txHash}`} target="_blank" rel="noopener" className="text-ink-2 hover:text-gold">
-                      {p.txHash.slice(0, 10)}…
-                    </a>
+                    {p.amount} {p.symbol}
+                    {p.usd && <span className="block text-[11px] text-faint">{p.usd} USD</span>}
+                  </td>
+                  <td className="py-2 pr-3 text-faint">{p.chain}</td>
+                  <td className="py-2 pr-3">
+                    {p.txUrl ? (
+                      <a href={p.txUrl} target="_blank" rel="noopener" className="text-ink-2 hover:text-gold">
+                        {p.txHash.slice(0, 10)}…
+                      </a>
+                    ) : (
+                      p.txHash.slice(0, 10)
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+type AdminInvoice = Invoice & { path: string }
+const STATUS_CLS: Record<string, string> = { open: 'text-gold', paid: 'text-green', expired: 'text-faint', cancelled: 'text-faint' }
+
+/* Gully Pay invoices for everything that is not an API plan. The link is the only way to the pay page. */
+function Invoices({ invoices, assets, act }: { invoices: AdminInvoice[]; assets: PayAsset[]; act: (path: string, body?: unknown) => Promise<string | null> }) {
+  const [title, setTitle] = useState('')
+  const [usd, setUsd] = useState('')
+  const [note, setNote] = useState('')
+  const [days, setDays] = useState('30')
+  const [chosen, setChosen] = useState<string[]>(() => assets.map((a) => a.id))
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
+  const link = (path: string) => `${window.location.protocol}//${window.location.host.replace(/^admin\./, '')}${path}`
+  const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
+  const create = async () => {
+    setMsg(null)
+    const err = await act('/api/admin/invoices', { title, usd, note, assets: chosen, expiresInDays: Number(days) })
+    if (err) return setMsg({ ok: false, text: err })
+    setMsg({ ok: true, text: 'Invoice created: copy its link from the top of the list.' })
+    setTitle('')
+    setUsd('')
+    setNote('')
+  }
+  const copy = (path: string) =>
+    navigator.clipboard?.writeText(link(path)).then(
+      () => setMsg({ ok: true, text: `Copied ${link(path)}` }),
+      () => setMsg({ ok: false, text: `Copy failed; the link is ${link(path)}` }),
+    )
+  const btn = 'inline-flex min-h-9 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold'
+  return (
+    <section className={card}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className={h2}>Invoices</h2>
+        <span className={small}>Gully Pay · Chain Kit, Gully Analytics, services · anyone with the link can pay</span>
+      </div>
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          create()
+        }}
+      >
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="flex min-w-[min(100%,320px)] flex-[2] flex-col gap-1 text-[12px] text-faint">
+            Title
+            <input className={field} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required placeholder="Chain Kit: first month" />
+          </label>
+          <label className="flex w-[140px] flex-col gap-1 text-[12px] text-faint">
+            Amount (USD)
+            <input className={`${field} font-mono`} value={usd} onChange={(e) => setUsd(e.target.value)} required inputMode="decimal" pattern="[0-9]{1,9}([.][0-9]{1,2})?" placeholder="1500" />
+          </label>
+          <label className="flex w-[110px] flex-col gap-1 text-[12px] text-faint">
+            Valid (days)
+            <input className={`${field} font-mono`} type="number" min={1} max={365} value={days} onChange={(e) => setDays(e.target.value)} required />
+          </label>
+        </div>
+        <label className="flex flex-col gap-1 text-[12px] text-faint">
+          Note for the customer (optional; shown on the pay page and the receipt)
+          <textarea className={`${field} h-auto min-h-[64px] py-2`} value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} />
+        </label>
+        <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+          <legend className="mb-1 text-[12px] text-faint">Accepted assets</legend>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {byChain(assets).map((g) => (
+              <div key={g.chainId} className="flex flex-wrap items-center gap-2 font-mono text-[12px]">
+                <span className="text-muted">{g.chain}</span>
+                {g.assets.map((a) => (
+                  <label key={a.id} className={`inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-btn border px-2 ${chosen.includes(a.id) ? 'border-gold text-gold' : 'border-line-strong text-ink-2'}`}>
+                    <input type="checkbox" className="accent-gold" checked={chosen.includes(a.id)} onChange={() => toggle(a.id)} />
+                    {a.symbol}
+                  </label>
+                ))}
+              </div>
+            ))}
+          </div>
+        </fieldset>
+        <div>
+          <button type="submit" disabled={!chosen.length} className="h-10 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-50">
+            Create invoice
+          </button>
+        </div>
+      </form>
+      {msg && <p className={`m-0 font-mono text-[12px] break-all ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
+      {!invoices.length ? (
+        <p className="m-0 text-[14px] text-muted">No invoices yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
+                <th className="py-2 pr-3 font-medium">NO.</th>
+                <th className="py-2 pr-3 font-medium">TITLE</th>
+                <th className="py-2 pr-3 font-medium">USD</th>
+                <th className="py-2 pr-3 font-medium">STATUS</th>
+                <th className="py-2 pr-3 font-medium">EXPIRES</th>
+                <th className="py-2 pr-3 font-medium">PAYMENT</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((i) => (
+                <tr key={i.id} className="border-b border-line last:border-b-0">
+                  <td className="py-3 pr-3 font-mono text-[12px] text-faint">{i.number}</td>
+                  <td className="py-3 pr-3 text-ink-2">{i.title}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px]">{i.usd}</td>
+                  <td className={`py-3 pr-3 font-mono text-[12px] uppercase ${STATUS_CLS[i.status]}`}>{i.status}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px] text-faint">{when(i.expiresAt)}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px]">
+                    {i.payment ? (
+                      <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener" className="text-ink-2 hover:text-gold">
+                        {i.payment.amount} {i.payment.symbol} · {i.payment.chain}
+                      </a>
+                    ) : (
+                      <span className="text-faint">—</span>
+                    )}
+                  </td>
+                  <td className="py-3 text-right whitespace-nowrap">
+                    <span className="inline-flex gap-2">
+                      <button type="button" onClick={() => copy(i.path)} className={btn}>
+                        Copy link
+                      </button>
+                      <a href={link(i.status === 'paid' ? `${i.path}/receipt` : i.path)} target="_blank" rel="noopener" className={btn}>
+                        {i.status === 'paid' ? 'Receipt' : 'Open'}
+                      </a>
+                      {(i.status === 'open' || i.status === 'expired') && (
+                        <button
+                          type="button"
+                          onClick={() => window.confirm(`Cancel ${i.number} (${i.title})? Its link stops taking payments.`) && act(`/api/admin/invoices/${i.id}/cancel`).then((e) => setMsg(e ? { ok: false, text: e } : { ok: true, text: `${i.number} cancelled.` }))}
+                          className={`${btn} hover:border-error hover:text-error`}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -498,7 +656,9 @@ export function AdminPage() {
               )}
             </section>
 
-            <Subscriptions billing={data.billing} accounts={data.accounts} act={act} />
+            <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
+
+            <Invoices invoices={data.invoices.invoices} assets={data.invoices.assets} act={act} />
 
             {data.requests.length > 0 && (
             <section className={card}>
