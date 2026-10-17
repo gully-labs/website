@@ -6,9 +6,11 @@ import { StockLogo } from '../components/tracker/StockLogo'
 import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
 import { GapBars } from '../components/tracker/GapBars'
+import { GapHeatmap } from '../components/tracker/GapHeatmap'
 import { GapHistory } from '../components/tracker/GapHistory'
 import { ChainCompare, GapHistogram, LiquidityRing, LiquidityScatter } from '../components/tracker/MoreCharts'
 import { StatusBadge, TrackerTable } from '../components/tracker/TrackerTable'
+import { TopMovers } from '../components/tracker/TopMovers'
 import { useCountUp } from '../hooks/useCountUp'
 import { xPost } from '../lib/share'
 import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, stockPath, UP, useTracker, type TrackerRow } from '../lib/tracker'
@@ -165,6 +167,7 @@ export function Tracker() {
             <Kpi label="VOLUME 24H" value={volume} fmt={(v) => fmtCompactUsd(v)} note="all pools" />
           </div>
         )}
+        {data && <TopMovers chain={chain} />}
       </section>
 
       {data && (
@@ -238,10 +241,13 @@ export function Tracker() {
           </section>
 
           <section className="grid grid-cols-[1fr_1fr] gap-4 px-page pb-6 max-[759px]:grid-cols-1">
-            <Card i={4} title="Where the liquidity is" sub="deepest stock pools, all venues">
+            <Card i={4} title="Gap heatmap" sub="every trusted stock · tile size = pool liquidity · colour = gap · click a tile for its page" className="col-span-2 max-[759px]:col-span-1">
+              <GapHeatmap rows={rows} inLinePct={data.rules.inLinePct} />
+            </Card>
+            <Card i={5} title="Where the liquidity is" sub="deepest stock pools, all venues">
               <LiquidityRing rows={rows} />
             </Card>
-            <Card i={5} title="Chain against chain" sub="Robinhood Chain and BNB Chain">
+            <Card i={6} title="Chain against chain" sub="Robinhood Chain and BNB Chain">
               <ChainCompare rows={data.rows} chains={chains} />
             </Card>
           </section>

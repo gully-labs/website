@@ -2,7 +2,7 @@
    registered, and this module is loaded on demand by EChart.tsx, so it never sits in the entry
    chunk. Apache ECharts, Apache-2.0. */
 import * as echarts from 'echarts/core'
-import { BarChart, LineChart, PieChart, ScatterChart } from 'echarts/charts'
+import { BarChart, LineChart, PieChart, ScatterChart, TreemapChart } from 'echarts/charts'
 import {
   DataZoomInsideComponent,
   DataZoomSliderComponent,
@@ -20,6 +20,7 @@ echarts.use([
   LineChart,
   PieChart,
   ScatterChart,
+  TreemapChart,
   DataZoomInsideComponent,
   DataZoomSliderComponent,
   GridComponent,

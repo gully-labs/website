@@ -8,7 +8,7 @@ import { ChainLogo, StockLogo } from '../components/tracker/StockLogo'
 import { StatusBadge } from '../components/tracker/TrackerTable'
 import { useCountUp } from '../hooks/useCountUp'
 import { xPost } from '../lib/share'
-import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapPost, stockPath, UP, useTracker, type Tracker, type TrackerRow } from '../lib/tracker'
+import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, fmtPrice, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow } from '../lib/tracker'
 import { DEVELOPERS_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 
@@ -61,8 +61,21 @@ function Price({ value }: { value: number | null }) {
   return <>{value === null ? '—' : fmtPrice(n)}</>
 }
 
+/** One window's gap change for this stock, from /api/tracker/movers, with why when there is none. */
+type KpiCell = { k: string; v: React.ReactNode; c?: string; n: string }
+
+function moveCell(k: string, st: Load<Movers>, row: TrackerRow): KpiCell {
+  if (st.k === 'loading') return { k, v: '…', n: 'reading snapshots' }
+  if (st.k === 'error') return { k, v: '—', n: 'could not be read' }
+  const m = st.data.stock
+  if (!m) return { k, v: '—', n: !['premium', 'discount', 'drifting', 'in-line'].includes(row.status) ? 'not a trusted pool now' : `needs ${st.data.window} of snapshots` }
+  return { k, v: fmtPp(m.gapChangePp), c: m.gapChangePp === 0 ? undefined : m.gapChangePp > 0 ? UP : DOWN, n: `${fmtGap(m.gapThen)} → ${fmtGap(m.gapNow)}` }
+}
+
 function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
   const now = useNow()
+  const move1h = useMovers('1h', { limit: 1, chain: row.chain, ticker: row.ticker })
+  const move24h = useMovers('24h', { limit: 1, chain: row.chain, ticker: row.ticker })
   const chain = data.chains.find((c) => c.key === row.chain)
   const tone = row.gapPct === null ? undefined : row.gapPct >= 0 ? UP : DOWN
   const siblings = data.rows.filter((r) => r.chain === row.chain && r.ticker !== row.ticker)
@@ -116,16 +129,20 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           </div>
         </div>
 
-        <dl className="m-0 mt-8 grid grid-cols-6 gap-px overflow-hidden rounded-card border border-line bg-line max-[1099px]:grid-cols-3 max-[599px]:grid-cols-2" style={rise(3)}>
-          {[
-            { k: 'ONCHAIN', v: <Price value={row.onchain} />, n: row.pool ? `${row.ticker}/${row.pool.against}` : 'no pool' },
-            { k: 'FAIR', v: <Price value={row.fair} />, n: `Chainlink · ${ageText(row.feedUpdatedAt, now)}` },
-            { k: 'GAP', v: fmtGap(row.gapPct), c: tone, n: row.status === 'thin' ? 'thin pool, not trusted' : 'onchain vs fair' },
-            { k: 'LIQUIDITY', v: fmtCompactUsd(row.pool?.liquidityUsd), n: 'deepest pool' },
-            { k: 'VOLUME 24H', v: fmtCompactUsd(row.pool?.volume24hUsd), n: 'deepest pool' },
-            { k: 'ALL POOLS', v: row.pool ? String(row.pool.pools) : '—', n: row.pool ? `${fmtCompactUsd(row.pool.totalLiquidityUsd)} liquidity` : 'none found' },
-          ].map((m) => (
-            <div key={m.k} className="flex flex-col gap-1 bg-surface px-5 py-4">
+        <dl className="m-0 mt-8 grid grid-cols-8 gap-px overflow-hidden rounded-card border border-line bg-line max-[1279px]:grid-cols-4 max-[599px]:grid-cols-2" style={rise(3)}>
+          {(
+            [
+              { k: 'ONCHAIN', v: <Price value={row.onchain} />, n: row.pool ? `${row.ticker}/${row.pool.against}` : 'no pool' },
+              { k: 'FAIR', v: <Price value={row.fair} />, n: `Chainlink · ${ageText(row.feedUpdatedAt, now)}` },
+              { k: 'GAP', v: fmtGap(row.gapPct), c: tone, n: row.status === 'thin' ? 'thin pool, not trusted' : 'onchain vs fair' },
+              moveCell('GAP Δ 1H', move1h, row),
+              moveCell('GAP Δ 24H', move24h, row),
+              { k: 'LIQUIDITY', v: fmtCompactUsd(row.pool?.liquidityUsd), n: 'deepest pool' },
+              { k: 'VOLUME 24H', v: fmtCompactUsd(row.pool?.volume24hUsd), n: 'deepest pool' },
+              { k: 'ALL POOLS', v: row.pool ? String(row.pool.pools) : '—', n: row.pool ? `${fmtCompactUsd(row.pool.totalLiquidityUsd)} liquidity` : 'none found' },
+            ] as KpiCell[]
+          ).map((m) => (
+            <div key={m.k} className="flex min-w-0 flex-col gap-1 bg-surface px-5 py-4">
               <dt className="font-mono text-[11px] tracking-[1px] text-faint">{m.k}</dt>
               <dd className="m-0 font-display text-[30px] leading-none font-bold" style={{ color: m.c }}>
                 {m.v}

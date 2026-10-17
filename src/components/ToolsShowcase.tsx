@@ -3,7 +3,7 @@ import { Activity, ArrowUpRight, BellRing, KeyRound, Package, Puzzle, type Lucid
 import { StockLogo } from './tracker/StockLogo'
 import { SectionHeading } from './ui'
 import { DEVELOPERS_URL } from '../site-host'
-import { CHAIN_SHORT, DOWN, fmtGap, UP, useTracker, type TrackerRow } from '../lib/tracker'
+import { CHAIN_SHORT, DOWN, fmtGap, fmtPp, UP, useMovers, useTracker, type TrackerRow } from '../lib/tracker'
 
 const TRUSTED = new Set(['premium', 'discount', 'drifting', 'in-line'])
 
@@ -24,6 +24,8 @@ const PRODUCTS = [
 /* The landing's "new" section: the tracker as a live preview (real reads only), then the developer tools. */
 export function ToolsShowcase() {
   const st = useTracker()
+  const movers = useMovers('24h', { limit: 1 })
+  const mover = movers.k === 'ok' ? (movers.data.byGap[0] ?? null) : null
   const rows = st.k === 'ok' ? st.data.rows : []
   const trusted = rows.filter((r) => TRUSTED.has(r.status) && r.gapPct !== null)
   const widest = [...trusted].sort((a, b) => Math.abs(b.gapPct!) - Math.abs(a.gapPct!)).slice(0, 5)
@@ -116,6 +118,17 @@ export function ToolsShowcase() {
               </div>
             )
           })}
+          {mover && (
+            <span className="mt-1 flex flex-wrap items-baseline gap-x-2 rounded-[8px] border border-line px-3 py-2 font-mono text-[12px] text-muted">
+              <span className="text-[11px] tracking-[1px] text-faint">BIGGEST MOVER 24H</span>
+              <b className="font-display text-[15px] font-bold text-ink">{mover.ticker}</b>
+              <span className="text-faint">{CHAIN_SHORT[mover.chain] ?? mover.chain}</span>
+              <span style={{ color: mover.gapChangePp > 0 ? UP : mover.gapChangePp < 0 ? DOWN : undefined }}>gap {fmtPp(mover.gapChangePp)}</span>
+              <span className="text-faint">
+                ({fmtGap(mover.gapThen)} → {fmtGap(mover.gapNow)})
+              </span>
+            </span>
+          )}
           {st.k === 'ok' && <span className="mt-1 font-mono text-[11px] text-faint">Read from Chainlink and the pools themselves. Not investment advice.</span>}
         </div>
       </Link>

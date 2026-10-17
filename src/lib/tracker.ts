@@ -122,6 +122,88 @@ export function useHistory(chain: string | null, ticker: string | null): Load<Hi
   return state.key === key ? state.load : { k: 'loading' }
 }
 
+/* /api/tracker/movers (server/movers.mjs): each trusted token's gap and price change over a window,
+   from the tracker's own snapshots. Empty lists with a `note` when there is not enough history. */
+export type MoverWindow = '1h' | '24h'
+
+export interface Mover {
+  chain: string
+  ticker: string
+  name: string
+  token: string
+  status: TrackerStatus
+  gapPct: number
+  onchain: number | null
+  fair: number | null
+  liquidityUsd: number | null
+  gapThen: number
+  gapNow: number
+  /** Percentage points, now minus then. */
+  gapChangePp: number
+  onchainThen: number
+  onchainNow: number
+  priceChangePct: number | null
+  from: string
+  to: string
+  /** [unixSeconds, gapPct], at most 48 points over the window. */
+  spark: [number, number][]
+}
+
+export interface Movers {
+  window: MoverWindow
+  windowSeconds: number
+  toleranceSeconds: number
+  asOf: string | null
+  from: string | null
+  to: string | null
+  eligible: number
+  historyHours: number
+  note: string | null
+  limit: number
+  chain: string | null
+  byGap: Mover[]
+  byPrice: Mover[]
+  stock?: Mover | null
+}
+
+/** Top movers over one window, re-read every minute; a failed re-read keeps the last good answer. */
+export function useMovers(window: MoverWindow, opts: { limit?: number; chain?: string; ticker?: string } = {}): Load<Movers> {
+  const q = new URLSearchParams({ window, limit: String(opts.limit ?? 10) })
+  if (opts.chain) q.set('chain', opts.chain)
+  if (opts.ticker) q.set('ticker', opts.ticker)
+  const key = q.toString()
+  const [state, setState] = useState<{ key: string | null; load: Load<Movers> }>({ key: null, load: { k: 'loading' } })
+  useEffect(() => {
+    let alive = true
+    const tick = () =>
+      fetch(`/api/tracker/movers?${key}`, { headers: { accept: 'application/json' } })
+        .then((r) => (r.ok ? (r.json() as Promise<Movers>) : Promise.reject(new Error(String(r.status)))))
+        .then(
+          (data) => alive && setState({ key, load: { k: 'ok', data } }),
+          () => alive && setState((s) => (s.key === key && s.load.k === 'ok' ? s : { key, load: { k: 'error' } })),
+        )
+    tick()
+    const id = setInterval(tick, REFRESH_MS)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [key])
+  return state.key === key ? state.load : { k: 'loading' }
+}
+
+/** A change in percentage points, signed. */
+export const fmtPp = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(2)} pp`)
+export const fmtPct = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : v < 0 ? '−' : '±'}${Math.abs(v).toFixed(2)}%`)
+
+/** The post a visitor shares about the top movers, from the figures on screen. */
+export function moversPost(m: Movers, mode: 'gap' | 'price'): string {
+  const list = (mode === 'gap' ? m.byGap : m.byPrice).slice(0, 3)
+  if (!list.length) return 'Live fair-price tracker for tokenised stocks by @Gully_Labs'
+  const items = list.map((e) => (mode === 'gap' ? `$${e.ticker} ${fmtPp(e.gapChangePp).replace(' pp', 'pp')} (now ${fmtGap(e.gapNow)})` : `$${e.ticker} ${fmtPct(e.priceChangePct)}`))
+  return `Biggest stock token ${mode === 'gap' ? 'gap moves vs fair price' : 'onchain price moves'}, last ${m.window}: ${items.join(' · ')}. Live tracker by @Gully_Labs`
+}
+
 export const fmtPrice = (v: number | null) =>
   v === null ? '—' : `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: v < 1 ? 4 : 2 })}`
 

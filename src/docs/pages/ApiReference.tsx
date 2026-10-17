@@ -7,6 +7,7 @@ const sections = [
   { id: 'tracker', title: 'GET /api/tracker' },
   { id: 'rows', title: 'Rows' },
   { id: 'history', title: 'GET /api/tracker/history' },
+  { id: 'movers', title: 'GET /api/tracker/movers' },
   { id: 'caching', title: 'Caching' },
   { id: 'rate-limits', title: 'Rate limits' },
   { id: 'errors', title: 'Errors' },
@@ -20,7 +21,11 @@ curl -i https://gullylabs.xyz/api/tracker \\
   -H "Authorization: Bearer $GULLY_API_KEY"
 
 # one token's gap history
-curl "https://gullylabs.xyz/api/tracker/history?chain=robinhood&ticker=NVDA"`
+curl "https://gullylabs.xyz/api/tracker/history?chain=robinhood&ticker=NVDA"
+
+# the five biggest gap moves over the last hour, and NVDA's own 24h change
+curl "https://gullylabs.xyz/api/tracker/movers?window=1h&limit=5"
+curl "https://gullylabs.xyz/api/tracker/movers?window=24h&chain=robinhood&ticker=NVDA"`
 
 const FETCH = `const res = await fetch('https://gullylabs.xyz/api/tracker')
 if (res.status === 429) {
@@ -42,15 +47,15 @@ export function ApiReference() {
       slug="api"
       eyebrow="BUILD · API"
       title="API reference"
-      description="The Gully Labs tracker API: GET /api/tracker and GET /api/tracker/history, every response field, caching, CORS, rate limits, API keys and errors, with a real example response."
-      lead="Two read-only JSON endpoints. No key is needed to start; a key raises your rate limit."
+      description="The Gully Labs tracker API: GET /api/tracker, GET /api/tracker/history and GET /api/tracker/movers, every response field, caching, CORS, rate limits, API keys and errors, with a real example response."
+      lead="Three read-only JSON endpoints. No key is needed to start; a key raises your rate limit."
       sections={sections}
     >
       <Section id="basics" title="Basics">
         <Fields
           head={['Item', 'Value', 'Notes']}
           rows={[
-            ['Base URL', 'https://gullylabs.xyz', 'Both endpoints live under /api/tracker.'],
+            ['Base URL', 'https://gullylabs.xyz', 'Every endpoint lives under /api/tracker.'],
             ['Methods', 'GET, OPTIONS', 'Anything else answers 405.'],
             ['Format', 'JSON', 'UTF-8. Times are ISO 8601 in UTC, except history points, which use Unix seconds.'],
             ['CORS', 'Access-Control-Allow-Origin: *', 'Call it from any browser origin. Preflight allows the Authorization and Content-Type headers.'],
@@ -144,12 +149,59 @@ export function ApiReference() {
         <CodeBlock lang="json" caption={`EXAMPLE · REAL RESPONSE, ${FETCHED_AT}`} code={EXAMPLE_HISTORY} />
       </Section>
 
+      <Section id="movers" title="GET /api/tracker/movers">
+        <P>
+          Top movers: how each token’s gap to fair, and its onchain price, changed over the last hour or day, computed from the same five-minute snapshots as the history. For every token the latest snapshot is compared with the snapshot closest to one window earlier. Only tokens whose status is trusted right now (<C>premium</C>, <C>discount</C>, <C>drifting</C> or <C>in-line</C>) and that have both points are ranked; nothing is interpolated.
+        </P>
+        <Fields
+          head={['Parameter', 'Type', 'Meaning']}
+          rows={[
+            ['window', 'string, optional', <><C>24h</C> (default) or <C>1h</C>.</>],
+            ['limit', 'integer, optional', <>How many rows per ranking, 1 to 50, default 10.</>],
+            ['chain', 'string, optional', <>Rank one chain only, e.g. <C>bsc</C>.</>],
+            ['ticker', 'string, optional', <>With <C>chain</C>: also return that token’s own change in <C>stock</C> (null when it has none).</>],
+          ]}
+        />
+        <H3>Top level</H3>
+        <Fields
+          rows={[
+            ['window', 'string', <><C>1h</C> or <C>24h</C>.</>],
+            ['windowSeconds', 'number', '3600 or 86400.'],
+            ['toleranceSeconds', 'number', 'How far the earlier snapshot may sit from exactly one window ago: 15 minutes for 1h, 2 hours for 24h. Further than that and the token is left out.'],
+            ['asOf', 'string | null', 'The newest snapshot compared. Null when nothing could be compared.'],
+            ['from, to', 'string | null', <>The comparison times: <C>to</C> is <C>asOf</C>, <C>from</C> one window earlier. Each row carries its own exact pair.</>],
+            ['eligible', 'number', 'Tokens with both points and a trusted status.'],
+            ['left', 'object', <>Why the others are out: <C>untrusted</C>, <C>noHistory</C>, <C>staleHistory</C> (latest snapshot over 30 minutes old), <C>tooShort</C>.</>],
+            ['historyHours', 'number', 'How many hours the longest series covers.'],
+            ['note', 'string | null', <>Set when nothing could be ranked, e.g. <C>Needs 24h of snapshots: the longest series so far covers 6.5 h.</C></>],
+            ['byGap', 'Mover[]', 'Largest absolute gap change first.'],
+            ['byPrice', 'Mover[]', 'Largest absolute onchain price change first.'],
+            ['stock', 'Mover | null', <>Only with <C>chain</C> and <C>ticker</C>.</>],
+          ]}
+        />
+        <H3>Mover</H3>
+        <Fields
+          rows={[
+            ['chain, ticker, name, token', 'string', 'As in the tracker rows.'],
+            ['status, gapPct, onchain, fair', 'see Rows', 'The token’s current status and prices, as in /api/tracker.'],
+            ['liquidityUsd', 'number | null', 'Liquidity of the pool its price comes from.'],
+            ['gapThen, gapNow', 'number', 'Gap % in the earlier and the latest snapshot.'],
+            ['gapChangePp', 'number', 'gapNow − gapThen, in percentage points.'],
+            ['onchainThen, onchainNow', 'number', 'Onchain price in the two snapshots.'],
+            ['priceChangePct', 'number | null', 'Onchain price change in %.'],
+            ['from, to', 'string', 'Times of the two snapshots compared.'],
+            ['spark', '[unixSeconds, gapPct][]', 'The gap over the window, at most 48 points, for a sparkline.'],
+          ]}
+        />
+      </Section>
+
       <Section id="caching" title="Caching">
         <Fields
           head={['Endpoint', 'Cache-Control', 'Notes']}
           rows={[
             ['/api/tracker', 'public, max-age=30, s-maxage=60, stale-while-revalidate=300', 'The data itself refreshes about every two minutes.'],
             ['/api/tracker/history', 'public, max-age=60, s-maxage=120, stale-while-revalidate=600', 'A new point is added every five minutes.'],
+            ['/api/tracker/movers', 'public, max-age=30, s-maxage=60, stale-while-revalidate=300', 'Computed at most once a minute per window. Counted by the same rate limit.'],
           ]}
         />
         <P>Answers are cacheable at the edge, so polling more than once a minute gains nothing. A sensible client polls every one to two minutes and keeps its last good answer when a request fails.</P>
@@ -180,6 +232,7 @@ export function ApiReference() {
           head={['Status', 'When', 'What to do']}
           rows={[
             ['400', 'history: chain or ticker malformed', <>Check the parameters. Body: <C>{'{"error":"chain and ticker"}'}</C>.</>],
+            ['400', 'movers: window, limit, chain or ticker malformed', <>Use <C>window=1h</C> or <C>24h</C>, a <C>limit</C> from 1 to 50, and a <C>ticker</C> only with a <C>chain</C>.</>],
             ['405', 'a method other than GET or OPTIONS', 'Use GET.'],
             ['401', 'unknown or revoked API key', 'Check the key, or request one at developers.gullylabs.xyz.'],
             ['403', 'history: days beyond what your plan includes',<>Ask for fewer days, or move to a plan with more history. The body names your limit in <C>historyDays</C>.</>],

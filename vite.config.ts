@@ -2,7 +2,8 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { readStats } from './server/stats.mjs'
-import { readHistory, readTracker } from './server/tracker.mjs'
+import { readHistory, readMovers, readTracker } from './server/tracker.mjs'
+import { shapeMovers } from './server/movers.mjs'
 import { handleAdmin } from './server/admin.mjs'
 import { handleDeveloper } from './server/developer.mjs'
 import { handlePay } from './server/invoices.mjs'
@@ -59,6 +60,18 @@ function trackerApi(): Plugin {
         const ticker = q.get('ticker') ?? ''
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ chain, ticker: ticker.toUpperCase(), points: readHistory(chain, ticker) }))
+      })
+      server.middlewares.use('/api/tracker/movers', (req, res) => {
+        const q = new URL(req.url ?? '', 'http://x').searchParams
+        const window = q.get('window') ?? '24h'
+        res.setHeader('Content-Type', 'application/json')
+        readMovers(window).then(
+          (full) => res.end(JSON.stringify(shapeMovers(full, { limit: Number(q.get('limit') ?? 10), chain: q.get('chain'), ticker: q.get('ticker')?.toUpperCase() ?? null }))),
+          (err: unknown) => {
+            res.statusCode = 502
+            res.end(JSON.stringify({ error: String(err) }))
+          },
+        )
       })
       server.middlewares.use('/api/tracker', (req, res, next) => {
         if ((req.url ?? '/').replace(/\?.*$/, '') !== '/') return next()

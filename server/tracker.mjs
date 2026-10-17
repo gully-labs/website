@@ -20,6 +20,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATA_DIR } from './http.mjs'
+import { computeMovers, MOVER_WINDOWS } from './movers.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const load = (f) => JSON.parse(fs.readFileSync(path.join(here, 'data', f), 'utf8'))
@@ -538,6 +539,20 @@ export async function readTracker() {
 /** One token's gap history: [unixSeconds, gapPct, onchain, fair][]. */
 export function readHistory(chainKey, ticker) {
   return history[histKey(String(chainKey).toLowerCase(), String(ticker).toUpperCase())] ?? []
+}
+
+/* Top movers (movers.mjs) over one window, from the live rows and the in-memory history. Every
+   visitor shares one computation per window per MOVERS_CACHE_MS. */
+const MOVERS_CACHE_MS = 60_000
+const moversCache = new Map()
+export async function readMovers(window = '24h') {
+  if (!MOVER_WINDOWS[window]) throw new Error(`unknown window ${window}`)
+  const hit = moversCache.get(window)
+  if (hit && Date.now() - hit.at < MOVERS_CACHE_MS) return hit.body
+  const tracker = await readTracker()
+  const body = computeMovers({ rows: tracker.rows, historyOf: readHistory, window })
+  moversCache.set(window, { at: Date.now(), body })
+  return body
 }
 
 /**

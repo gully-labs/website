@@ -3,7 +3,8 @@
 // cross-venue figures, see stats.mjs). No dependencies beyond Node.
 import http from 'node:http'
 import { readStats } from './stats.mjs'
-import { onSnapshot, readHistory, readHistoryDays, readTracker, startTrackerLoop } from './tracker.mjs'
+import { onSnapshot, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
+import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts } from './alerts.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
@@ -234,6 +235,21 @@ const server = http.createServer(async (req, res) => {
     // Within the public 7 days the answer is the same for everyone; past it, it depends on the key.
     const cache = days <= ANONYMOUS.historyDays ? 'public, max-age=60, s-maxage=120, stale-while-revalidate=600' : 'private, max-age=60'
     return send(res, 200, JSON.stringify({ chain, ticker, days, points: readHistoryDays(chain, ticker, days) }), { 'Content-Type': 'application/json', 'Cache-Control': cache, ...(days > ANONYMOUS.historyDays ? { Vary: 'Authorization' } : {}) })
+  }
+  // Top movers: each trusted token's gap and price change over 1h or 24h, from the snapshots above.
+  if (url.pathname === '/api/tracker/movers') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    const window = url.searchParams.get('window') ?? '24h'
+    const limit = Number(url.searchParams.get('limit') ?? 10)
+    const chain = url.searchParams.get('chain')?.toLowerCase() ?? null
+    const ticker = url.searchParams.get('ticker')?.toUpperCase() ?? null
+    if (window !== '1h' && window !== '24h') return send(res, 400, JSON.stringify({ error: 'window must be 1h or 24h' }), { 'Content-Type': 'application/json' })
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) return send(res, 400, JSON.stringify({ error: 'limit must be a whole number from 1 to 50' }), { 'Content-Type': 'application/json' })
+    if ((chain !== null && !/^[a-z]{2,12}$/.test(chain)) || (ticker !== null && (!chain || !/^[A-Z.]{1,8}$/.test(ticker)))) return send(res, 400, JSON.stringify({ error: 'chain, and ticker with a chain' }), { 'Content-Type': 'application/json' })
+    return readMovers(window).then(
+      (full) => send(res, 200, JSON.stringify(shapeMovers(full, { limit, chain, ticker })), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' }),
+      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+    )
   }
   // The paid tiers: limits and prices from plans.mjs, and whether checkout is open. Public.
   if (url.pathname === '/api/plans') {
