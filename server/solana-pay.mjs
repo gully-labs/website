@@ -19,16 +19,17 @@
 // Every address below was checked on mainnet (getAccountInfo, jsonParsed) on 2026-10-17:
 //   USDC EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v  mint, 6 decimals, SPL Token program
 //   USDT Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB  mint, 6 decimals, SPL Token program
-//   SOL/USD Pyth price account 7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE (PriceUpdateV2, owner
-//     rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ; Pyth's sponsored push feed, shard 0, feed id
-//     0xef0d8b6f…b56d), updated every few seconds.
+// SOL is priced like the EVM coins, by a Chainlink feed read with latestRoundData(): Chainlink's SOL / USD
+// on Arbitrum, 0x24ceA4b8ce57cdA5058b924B9B9987992450590c (Chainlink's feed directory; checked on chain
+// 2026-10-17: description "SOL / USD", 8 decimals, 0.1% deviation, 24 h heartbeat). payments.readFeed
+// reads it through Arbitrum's RPCs (feed.chainId); answers older than two hours give no SOL quote.
 //
 // Env:
 //   GULLY_SOLANA_TREASURY  the receiving wallet (a Squads vault is fine). Unset: Solana checkout is off,
 //                          its assets are not offered and every page says so. No fallback, ever.
 //   GULLY_RPC_SOLANA       RPC URLs (solana.mjs).
 
-import { associatedTokenAddress, decodePriceUpdateV2, isSolanaAddress, isSolanaSignature, readAccounts, solanaRpc, TOKEN_PROGRAM } from './solana.mjs'
+import { associatedTokenAddress, isSolanaAddress, isSolanaSignature, solanaRpc, TOKEN_PROGRAM } from './solana.mjs'
 
 /** Solana has no EVM chain id; the ledger keys chains by number, so it uses LI.FI's id for Solana. */
 export const SOLANA_CHAIN_ID = 1151111081099710
@@ -43,10 +44,9 @@ export const SOLANA_CHAIN = {
   // "1 confirmation" here means finalized (31+ confirmed blocks on top, roughly 13 s).
   confirmations: 1,
   rpcs: [],
-  feed: { address: '7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE', decimals: 8, description: 'SOL / USD', maxAgeSec: 2 * 3600 },
+  // Chainlink SOL / USD on Arbitrum (chainId 42161), read through Arbitrum's RPCs by payments.readFeed.
+  feed: { address: '0x24cea4b8ce57cda5058b924b9b9987992450590c', chainId: 42161, decimals: 8, description: 'SOL / USD', maxAgeSec: 2 * 3600, explorer: 'https://arbiscan.io' },
 }
-
-export const SOL_USD_FEED_ID = '0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d'
 
 /** tagStep: a SOL quote's unique tail is in lamports (1e-9 SOL), not on the 1e9-wei grid EVM coins use. */
 export const SOLANA_ASSETS = [
@@ -64,33 +64,6 @@ export function solanaTreasury() {
 }
 
 export const solanaPayOn = () => solanaTreasury() !== null
-
-/* ------------------------------------------------------------- price --- */
-
-let solCache = null
-
-/** SOL/USD from Pyth's on-chain price account, in readFeed's shape: { ok, price } or { ok: false, status, error }. */
-export async function readSolUsd() {
-  const f = SOLANA_CHAIN.feed
-  let price = solCache && Date.now() - solCache.at < 30_000 ? solCache.value : null
-  if (!price) {
-    let acc
-    try {
-      ;[acc] = await readAccounts([f.address])
-    } catch (e) {
-      return { ok: false, status: 502, error: `The SOL / USD price could not be read just now (${String(e?.message ?? e)}). Pay in a stablecoin or try again shortly.` }
-    }
-    const d = acc ? decodePriceUpdateV2(acc.data) : null
-    if (!d || d.feedId !== SOL_USD_FEED_ID) return { ok: false, status: 502, error: 'The SOL / USD price account gave an unreadable answer. Pay in a stablecoin or try again shortly.' }
-    price = { feed: f.address, description: f.description, decimals: -d.exponent, roundId: String(d.postedSlot), answer: d.price.toString(), updatedAt: new Date(d.publishTime * 1000).toISOString(), readAt: new Date().toISOString() }
-    solCache = { at: Date.now(), value: price }
-  }
-  const age = (Date.now() - Date.parse(price.updatedAt)) / 1000
-  if (BigInt(price.answer) <= 0n) return { ok: false, status: 503, error: 'The SOL / USD feed reports no valid price. Pay in a stablecoin for now.' }
-  if (age > f.maxAgeSec || age < -300) return { ok: false, status: 503, error: `The SOL / USD price is stale (last updated ${price.updatedAt}), so no quote is given in SOL. Pay in a stablecoin or try again later.` }
-  return { ok: true, price }
-}
-export const clearSolPriceForTest = () => (solCache = null)
 
 /* -------------------------------------------------------- Solana Pay URL --- */
 

@@ -1,4 +1,4 @@
-// Solana end to end, with no upstream call: RPC failover, Pyth account decoding (a real mainnet fixture),
+// Solana end to end, with no upstream call: RPC failover, Chainlink feed decoding (real recorded answers),
 // PDA/ATA derivation, pool-account decoders, the tracker's Solana rows and trust rules, history and movers,
 // the Jupiter quote/swap proxy (fee on and off, geo 451), Solana Pay URLs, and payment verification for
 // invoices and plans (right recipient, wrong recipient, wrong mint, under-payment, reuse, not finalized).
@@ -6,8 +6,8 @@
 //   npm run test:solana                (TEST_PORT overrides the port, default 8797)
 //
 // The real server runs IN THIS PROCESS with a temporary DATA_DIR. Local stubs stand in for Solana JSON-RPC
-// (two URLs: the first always fails, to prove failover), DexScreener, Pyth Hermes and Jupiter. (The EVM chains'
-// part of /api/tracker is not under test and may try their public nodes; nothing Solana leaves this machine.)
+// (two URLs: the first always fails, to prove failover), the EVM chains whose Chainlink feeds price the xStocks
+// (BNB Chain, Robinhood Chain, Ethereum, and Arbitrum for SOL / USD), DexScreener, the xStocks API and Jupiter.
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -24,11 +24,12 @@ const ADMIN = crypto.randomBytes(24).toString('hex')
 const t = makeChecker()
 const { check } = t
 const here = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'))
-const fixture = JSON.parse(fs.readFileSync(path.join(here, 'fixtures', 'pyth-sol-usd.json'), 'utf8'))
+const CL = JSON.parse(fs.readFileSync(path.join(here, 'fixtures', 'chainlink-feeds.json'), 'utf8'))
+const loadTable = (f) => JSON.parse(fs.readFileSync(path.join(here, '..', 'server', 'data', f), 'utf8')).stocks
 const TABLE = JSON.parse(fs.readFileSync(path.join(here, '..', 'server', 'data', 'solana-stocks.json'), 'utf8'))
 
 const S = await import('../server/solana.mjs')
-const { b58encode, b58decode, associatedTokenAddress, findProgramAddress, decodePriceUpdateV2, pythNumber } = S
+const { b58encode, b58decode, associatedTokenAddress } = S
 const rand32 = () => b58encode(crypto.randomBytes(32))
 const randSig = () => b58encode(crypto.randomBytes(64))
 
@@ -36,7 +37,7 @@ const USDC = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 const USDT = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'
 const WSOL = 'So11111111111111111111111111111111111111112'
 const TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
-const SOL_FEED = '7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE'
+const SOL_FEED = '0x24cea4b8ce57cda5058b924b9b9987992450590c' // Chainlink SOL / USD on Arbitrum
 const TREASURY = rand32()
 const TREASURY_USDC = associatedTokenAddress(TREASURY, USDC)
 const FEE_WALLET = rand32()
@@ -44,17 +45,7 @@ const EVM_TREASURY = privateKeyToAccount(generatePrivateKey()).address.toLowerCa
 
 /* ------------------------------------------------------------- fixtures --- */
 
-// The real SOL/USD account, with its publish time moved to now so it is fresh for the quote.
-function pythAccount(base64, { feedId, price, expo = -8, publishTime = Math.floor(Date.now() / 1000) - 5 } = {}) {
-  const b = Buffer.from(base64, 'base64')
-  const o = b[40] === 0 ? 42 : 41
-  if (feedId) Buffer.from(feedId.replace(/^0x/, ''), 'hex').copy(b, o)
-  if (price !== undefined) b.writeBigInt64LE(BigInt(price), o + 32)
-  b.writeInt32LE(expo, o + 48)
-  b.writeBigInt64LE(BigInt(publishTime), o + 52)
-  return b
-}
-const SOL_PRICE = 150_00000000n // $150, exponent -8
+const SOL_PRICE = 150_00000000n // $150, 8 decimals (the Arbitrum stub's SOL / USD answer)
 
 // Pool accounts: a Whirlpool (stock 0, against USDC), a Raydium CLMM (stock 1, against SOL), a DLMM (stock 2).
 const stocks = TABLE.stocks
@@ -99,18 +90,35 @@ let rpcCalls = 0
 function setAccount(addr, owner, data, parsed = null) {
   accounts.set(addr, { owner, data, parsed })
 }
-// Fair share prices: Pyth through Hermes (with a key) for tokens with a Pyth id, the issuer's quote for the rest.
-const SHARE = { [s0.ticker]: 200, [s1.ticker]: 100, [s2.ticker]: 50, ...(s3 ? { [s3.ticker]: 10 } : {}) }
-const NO_PYTH = stocks.find((s) => !s.pythFeedId)
-setAccount(SOL_FEED, 'rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ', pythAccount(fixture.base64, { price: SOL_PRICE }))
+// Fair share prices: Chainlink feeds on EVM stubs. Recorded real answers for NVDA, AAPL and TSLA on BNB Chain,
+// AAPL on Robinhood Chain and STRC on Ethereum; a synthetic answer (SHARE, else 100) for every other feed.
+// INTC's Robinhood feed answers nothing (unreadable), so it falls back to the issuer's quote.
+const SHARE = { [s0.ticker]: 200, ...(s3 ? { [s3.ticker]: 10 } : {}) }
+const fix = (chainId, ticker) => CL.feeds.find((f) => f.chainId === chainId && f.ticker === ticker)
+const answerOf = (hex, dec = 8) => Number(BigInt.asIntN(256, BigInt('0x' + hex.slice(66, 130)))) / 10 ** dec
+const FEED_OF = new Map() // `${chainId}:${feed lower}` -> ticker
+for (const [chainId, file] of [[56, 'bsc-stocks.json'], [4663, 'robinhood-stocks.json']]) for (const x of loadTable(file)) FEED_OF.set(`${chainId}:${x.feed.toLowerCase()}`, x.ticker)
+for (const x of TABLE.chainlinkExtra ?? []) FEED_OF.set(`${x.chainId}:${x.feed.toLowerCase()}`, x.ticker)
+FEED_OF.set(`42161:${SOL_FEED}`, 'SOL')
+const { fairFeedFor } = await import('../server/solana-tracker.mjs')
+/** The share price the stubs give a ticker's chosen feed (what the tracker should multiply). */
+const shareOf = (ticker) => {
+  const f = fairFeedFor(ticker)
+  const real = f && fix(f.chainId, ticker)
+  return real ? answerOf(real.latestRoundData, real.decimals) : (SHARE[ticker] ?? 100)
+}
+const NO_FEED = stocks.find((s) => !fairFeedFor(s.ticker))
 // Mints: a multiplier of 1.02 on stock 0 (a dividend), 1 elsewhere.
 for (const s of stocks) setAccount(s.token, 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', Buffer.alloc(82), { type: 'mint', info: { decimals: s.decimals, extensions: [{ extension: 'scaledUiAmountConfig', state: { multiplier: s === s0 ? '1.02' : '1', newMultiplier: '1', newMultiplierEffectiveTimestamp: 0 } }] } })
-// Stock 0 on chain at 204.0 * 1.001 (in line); stock 1 at 0.6 SOL = $90 vs $100 fair (-10%: a discount);
+// Stock 0 on chain at 204.0 * 1.001 (in line); stock 1 10% under fair, in SOL (a discount);
 // stock 2 at 30% under fair in a thin pool (still "thin"); stock 3 has no pool.
+const fair1 = shareOf(s1.ticker)
+const fair2 = shareOf(s2.ticker)
 const p0 = 204 * 1.001
+const solPerS1 = (0.9 * fair1) / 150
 setAccount(POOL0, 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc', whirlpool(s0.token, USDC, p0 * 10 ** (6 - s0.decimals)))
-setAccount(POOL1, 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK', raydium(WSOL < s1.token ? WSOL : s1.token, WSOL < s1.token ? s1.token : WSOL, WSOL < s1.token ? (1 / 0.6) * 10 ** (s1.decimals - 9) : 0.6 * 10 ** (9 - s1.decimals)))
-const bin = Math.round(Math.log(35 * 10 ** (6 - s2.decimals)) / Math.log(1 + 25 / 10_000))
+setAccount(POOL1, 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK', raydium(WSOL < s1.token ? WSOL : s1.token, WSOL < s1.token ? s1.token : WSOL, WSOL < s1.token ? (1 / solPerS1) * 10 ** (s1.decimals - 9) : solPerS1 * 10 ** (9 - s1.decimals)))
+const bin = Math.round(Math.log(0.7 * fair2 * 10 ** (6 - s2.decimals)) / Math.log(1 + 25 / 10_000))
 setAccount(POOL2, 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo', dlmm(s2.token, USDC, 25, bin))
 // The fee wallet has a USDC account (fee on USDC swaps) but none for wSOL.
 setAccount(associatedTokenAddress(FEE_WALLET, USDC), TOKEN, Buffer.alloc(165))
@@ -163,22 +171,39 @@ const goodRpc = await listen(async (req, res) => {
 const pair = (s, addr, dexId, labels, other, priceUsd, liq) => ({ chainId: 'solana', dexId, labels, url: `https://dexscreener.com/solana/${addr}`, pairAddress: addr, baseToken: { address: s.token, symbol: s.symbol }, quoteToken: other, priceNative: '1', priceUsd: String(priceUsd), liquidity: { usd: liq }, volume: { h24: 1000 } })
 const dexPairs = [
   pair(s0, POOL0, 'orca', [], { address: USDC, symbol: 'USDC' }, 210, 2_000_000),
-  pair(s1, POOL1, 'raydium', ['CLMM'], { address: WSOL, symbol: 'SOL' }, 95, 500_000),
-  pair(s2, POOL2, 'meteora', ['DLMM'], { address: USDC, symbol: 'USDC' }, 36, 4_000),
+  pair(s1, POOL1, 'raydium', ['CLMM'], { address: WSOL, symbol: 'SOL' }, 0.9 * fair1, 500_000),
+  pair(s2, POOL2, 'meteora', ['DLMM'], { address: USDC, symbol: 'USDC' }, 0.7 * fair2, 4_000),
 ]
 let dexHits = 0
 const dexStub = await listen((req, res) => { dexHits++; sendJson(res, 200, req.url.includes('token-pairs') ? [] : dexPairs) })
-let hermesHits = 0
-const hermesStub = await listen((req, res) => {
-  hermesHits++
-  if (req.headers.authorization !== 'Bearer test-pyth-key') return sendJson(res, 401, { error: 'unauthorized' })
-  const ids = [...new URL(req.url, 'http://x').searchParams.getAll('ids[]')]
-  const parsed = ids.map((id) => {
-    const s = stocks.find((x) => x.pythFeedId?.replace(/^0x/, '') === id)
-    return { id, price: { price: String(Math.round((SHARE[s?.ticker] ?? 42) * 1e5)), conf: '100', expo: -5, publish_time: Math.floor(Date.now() / 1000) - 3 } }
+/* ---------------------------------------------------- EVM (Chainlink) stubs --- */
+
+const word = (n) => BigInt.asUintN(256, BigInt(n)).toString(16).padStart(64, '0')
+const round = (answer, at = Math.floor(Date.now() / 1000) - 60) => '0x' + word(7) + word(answer) + word(at) + word(at) + word(7)
+const evmHits = {}
+function evmAnswer(chainId, q) {
+  if (q.method === 'eth_chainId') return '0x' + chainId.toString(16)
+  if (q.method === 'eth_blockNumber') return '0x10'
+  if (q.method !== 'eth_call') return null
+  const { to, data } = q.params[0]
+  if (data === '0xa60bf13d') return '0x' + word(10n ** 18n) // a bStock's uiMultiplier(): 1.0
+  if (data !== '0xfeaf968c') return '0x'
+  const ticker = FEED_OF.get(`${chainId}:${String(to).toLowerCase()}`)
+  if (chainId === 42161 && ticker === 'SOL') return round(SOL_PRICE)
+  if (chainId === 4663 && ticker === 'INTC') return '0x'
+  const real = ticker && fix(chainId, ticker)
+  if (real) return real.latestRoundData
+  return round(BigInt(Math.round((SHARE[ticker] ?? 100) * 1e8)))
+}
+const evm = {}
+for (const chainId of [56, 4663, 1, 42161]) {
+  evm[chainId] = await listen(async (req, res) => {
+    evmHits[chainId] = (evmHits[chainId] ?? 0) + 1
+    const q = JSON.parse(await readBody(req))
+    const one = (x) => ({ jsonrpc: '2.0', id: x.id, result: evmAnswer(chainId, x) })
+    sendJson(res, 200, Array.isArray(q) ? q.map(one) : one(q))
   })
-  sendJson(res, 200, { parsed })
-})
+}
 
 const backedStub = await listen((req, res) => {
   const sym = new URL(req.url, 'http://x').searchParams.get('symbol')
@@ -222,14 +247,12 @@ Object.assign(process.env, {
   SOLANA_RPC_ONLY_ENV: '1',
   SOLANA_DEXSCREENER: `${url(dexStub)}/tokens/v1/solana`,
   SOLANA_DEXSCREENER_PAIRS: `${url(dexStub)}/token-pairs/v1/solana`,
-  PYTH_HERMES: url(hermesStub),
-  PYTH_API_KEY: 'test-pyth-key',
   XSTOCKS_API: url(backedStub),
   JUPITER_API: url(jupStub),
   // The EVM chains are not under test here: no price API for them (their Chainlink reads may still try public nodes).
   TRACKER_SKIP_APIS: '1',
 })
-for (const id of [4663, 56]) process.env[`GULLY_RPC_${id}`] = 'http://127.0.0.1:9'
+for (const id of [56, 4663, 1, 42161]) process.env[`GULLY_RPC_${id}`] = url(evm[id])
 delete process.env.JUPITER_FEE_BPS
 delete process.env.JUPITER_FEE_ACCOUNT
 delete process.env.VITE_JUPITER_FEE_BPS
@@ -271,21 +294,19 @@ try {
   /* ----------------------------------------------------------- primitives --- */
   check('base58 round trip of the USDC mint', b58encode(b58decode(USDC)) === USDC)
   check('ATA derivation matches a real mainnet USDC account', associatedTokenAddress('5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9', USDC) === 'FzbcyEZ9m8xjtergWgWDq7mfPoHEbboBF791B6cTpzbq')
-  check('PDA derivation gives Pyth’s sponsored SOL/USD account', findProgramAddress([Uint8Array.of(0, 0), Buffer.from(fixture.feedId.slice(2), 'hex')], 'pythWSnswVUd12oZpeFP8e9CVaEqJg25g1Vtc2biRsT')[0] === SOL_FEED)
-  const d = decodePriceUpdateV2(Buffer.from(fixture.base64, 'base64'))
-  check('the recorded Pyth SOL/USD account decodes (feed id, full verification, exponent -8)', d && d.feedId === fixture.feedId && d.verification === 'full' && d.exponent === -8 && d.postedSlot > 0, JSON.stringify(d, (k, v) => (typeof v === 'bigint' ? String(v) : v)))
-  check('the recorded price is a plausible SOL price', pythNumber(d.price, d.exponent) > 5 && pythNumber(d.price, d.exponent) < 5_000, String(pythNumber(d.price, d.exponent)))
-  const partial = Buffer.concat([Buffer.from(fixture.base64, 'base64').subarray(0, 40), Buffer.from([0, 3]), Buffer.from(fixture.base64, 'base64').subarray(41, 133)])
-  const dp = decodePriceUpdateV2(partial)
-  check('a Partial-verification account (one extra byte) decodes to the same price', dp?.verification === 'partial' && dp.price === d.price && dp.publishTime === d.publishTime)
-  const wrong = Buffer.from(fixture.base64, 'base64')
-  wrong[0] ^= 1
-  check('another account type (wrong discriminator) is refused', decodePriceUpdateV2(wrong) === null)
+  const { decodeLatestRound } = await import('../server/solana-tracker.mjs')
+  for (const [chainId, ticker] of [[56, 'NVDA'], [56, 'AAPL'], [56, 'TSLA'], [4663, 'AAPL'], [1, 'STRC'], [42161, 'SOL']]) {
+    const f = fix(chainId, ticker)
+    const d = decodeLatestRound(f.latestRoundData, f.decimals)
+    check(`recorded Chainlink ${f.description} on chain ${chainId} decodes to a plausible price`, d && d.price > 1 && d.price < 5_000 && d.updatedAt > 1_700_000_000 && new RegExp(`${ticker} / USD$`).test(f.description) && f.decimals === 8, `${d?.price} ${f.description}`)
+  }
+  check('a zero or empty Chainlink answer is unreadable, never zero', decodeLatestRound(round(0n), 8) === null && decodeLatestRound('0x', 8) === null)
+  check('NVDA, AAPL and TSLA are priced by BNB Chain feeds; STRC by the verified Ethereum feed', fairFeedFor('NVDA')?.chainId === 56 && fairFeedFor('AAPL')?.chainId === 56 && fairFeedFor('TSLA')?.chainId === 56 && fairFeedFor('STRC')?.chainId === 1)
 
   check('Whirlpool decoder: price and mint check', Math.abs(poolPrice('whirlpool', accounts.get(POOL0).data, s0.token, USDC, (m) => (m === s0.token ? s0.decimals : 6)) - p0) < 0.01)
   check('Whirlpool decoder refuses a pool of other mints', poolPrice('whirlpool', accounts.get(POOL0).data, s0.token, USDT, (m) => (m === s0.token ? s0.decimals : 6)) === null)
-  check('Raydium CLMM decoder: 0.6 SOL', Math.abs(poolPrice('raydium-clmm', accounts.get(POOL1).data, s1.token, WSOL, (m) => (m === s1.token ? s1.decimals : 9)) - 0.6) < 1e-6)
-  check('Meteora DLMM decoder: about 35 USDC', Math.abs(poolPrice('meteora-dlmm', accounts.get(POOL2).data, s2.token, USDC, (m) => (m === s2.token ? s2.decimals : 6)) - 35) < 0.1)
+  check('Raydium CLMM decoder: the price in SOL', Math.abs(poolPrice('raydium-clmm', accounts.get(POOL1).data, s1.token, WSOL, (m) => (m === s1.token ? s1.decimals : 9)) / solPerS1 - 1) < 1e-6)
+  check('Meteora DLMM decoder: the active bin price in USDC', Math.abs(poolPrice('meteora-dlmm', accounts.get(POOL2).data, s2.token, USDC, (m) => (m === s2.token ? s2.decimals : 6)) / (0.7 * fair2) - 1) < 0.003)
   check('ScaledUiAmount: a scheduled multiplier applies once due', multiplierOf({ extensions: [{ extension: 'scaledUiAmountConfig', state: { multiplier: '1.0', newMultiplier: '1.05', newMultiplierEffectiveTimestamp: 100 } }] }, 200) === 1.05 && multiplierOf({ extensions: [{ extension: 'scaledUiAmountConfig', state: { multiplier: '1.0', newMultiplier: '1.05', newMultiplierEffectiveTimestamp: 300 } }] }, 200) === 1)
   check('bestSolanaPool prefers a sound, re-readable pool', bestSolanaPool(s0.token, dexPairs)?.pair === POOL0 && bestSolanaPool(s0.token, dexPairs).readable === true)
 
@@ -309,18 +330,28 @@ try {
   /* -------------------------------------------------------------- tracker --- */
   const tr = await get('/api/tracker')
   const chain = tr.data?.chains?.find((c) => c.key === 'solana')
-  check('the tracker lists Solana as a chain', tr.status === 200 && chain?.name === 'Solana' && chain.sessionName === 'NYSE hours', JSON.stringify(tr.data?.chains))
+  check('the tracker lists Solana as a chain', tr.status === 200 && chain?.name === 'Solana' && /per feed/.test(chain.sessionName), JSON.stringify(tr.data?.chains))
   const rows = (tr.data?.rows ?? []).filter((r) => r.chain === 'solana')
   check(`every xStock in the table has a row (${stocks.length})`, rows.length === stocks.length)
   const r0 = rows.find((r) => r.ticker === s0.ticker)
-  check('fair = Pyth share price × on-chain multiplier', Math.abs(r0.fair - 204) < 1e-6 && r0.multiplier === 1.02 && r0.fairSource === 'Pyth' && hermesHits > 0, `${r0.fair} ${r0.multiplier} ${r0.fairSource}`)
-  if (NO_PYTH) {
-    const rn = rows.find((r) => r.ticker === NO_PYTH.ticker)
-    check('a token with no Pyth feed is priced by the issuer’s quote, and says so', rn.fair === 42 && rn.fairSource === 'xStocks (issuer)', `${rn.fair} ${rn.fairSource}`)
+  check('fair = Chainlink share price × on-chain multiplier (Robinhood Chain feed, 24/5 session)', Math.abs(r0.fair - 204) < 1e-6 && r0.multiplier === 1.02 && r0.fairSource === `chainlink:${fairFeedFor(s0.ticker).chainId}` && (evmHits[fairFeedFor(s0.ticker).chainId] ?? 0) > 0, `${r0.fair} ${r0.multiplier} ${r0.fairSource}`)
+  const rNvda = rows.find((r) => r.ticker === 'NVDA')
+  check('NVDA: fair is the recorded real BNB Chain answer, with that feed and its NYSE session', rNvda && Math.abs(rNvda.fair - shareOf('NVDA')) < 1e-9 && rNvda.fairSource === 'chainlink:56' && rNvda.feed.toLowerCase() === fairFeedFor('NVDA').feed.toLowerCase() && rNvda.sessionName === 'NYSE hours' && typeof rNvda.sessionOpen === 'boolean', JSON.stringify({ fair: rNvda?.fair, src: rNvda?.fairSource, s: rNvda?.sessionName }))
+  for (const tk of ['AAPL', 'TSLA']) {
+    const rr = rows.find((r) => r.ticker === tk)
+    if (rr) check(`${tk}: fair = recorded Chainlink answer × multiplier`, Math.abs(rr.fair - shareOf(tk) * rr.multiplier) < 1e-6 && rr.fairSource === 'chainlink:56')
   }
+  const rStrc = rows.find((r) => r.ticker === 'STRC')
+  if (rStrc) check('STRC: priced by the Ethereum Chainlink feed (24/5)', rStrc.fairSource === 'chainlink:1' && Math.abs(rStrc.fair - shareOf('STRC') * rStrc.multiplier) < 1e-6 && rStrc.sessionName === '24/5')
+  if (NO_FEED) {
+    const rn = rows.find((r) => r.ticker === NO_FEED.ticker)
+    check('a ticker with no Chainlink feed is priced by the issuer’s quote, and says so', rn.fair === 42 && rn.fairSource === 'backed', `${rn.fair} ${rn.fairSource}`)
+  }
+  const rIntc = rows.find((r) => r.ticker === 'INTC')
+  if (rIntc) check('an unreadable Chainlink feed falls back to the issuer’s quote (backed)', rIntc.fairSource === 'backed' && rIntc.fair === 42, `${rIntc.fair} ${rIntc.fairSource}`)
   check('the Whirlpool is read on chain (onchainSource chain) and in line', r0.onchainSource === 'chain' && Math.abs(r0.onchain - p0) < 0.05 && r0.status === 'in-line' && r0.trusted === true, `${r0.onchain} ${r0.status}`)
   const r1 = rows.find((r) => r.ticker === s1.ticker)
-  check('a Raydium CLMM pool against SOL is priced with Pyth SOL/USD: a 10% discount', r1.onchainSource === 'chain' && Math.abs(r1.onchain - 90) < 0.01 && r1.status === 'discount' && Math.abs(r1.gapPct + 10) < 0.01, `${r1.onchain} ${r1.status} ${r1.gapPct}`)
+  check('a Raydium CLMM pool against SOL is priced with Chainlink SOL / USD: a 10% discount', r1.onchainSource === 'chain' && Math.abs(r1.onchain / (0.9 * fair1) - 1) < 1e-6 && r1.status === 'discount' && Math.abs(r1.gapPct + 10) < 0.01, `${r1.onchain} ${r1.status} ${r1.gapPct}`)
   const r2 = rows.find((r) => r.ticker === s2.ticker)
   check('a thin pool is shown but never flagged', r2.status === 'thin' && r2.trusted === false && /under the \$10,000/.test(r2.untrustedReason ?? ''), `${r2.status} ${r2.untrustedReason}`)
   if (s3) {
@@ -435,13 +466,13 @@ try {
   r = await dev.post('/api/developer/checkout/verify', { quoteId: pq.id, txHash: addTx({ amount: BigInt(pq.amountRaw), reference: pq.reference }) })
   check('an exact USDC payment on Solana buys Pro', r.status === 200 && r.data?.plan?.id === 'pro' && r.data.payment.chain === 'Solana', JSON.stringify(r.data).slice(0, 300))
 
-  // SOL, priced by Pyth's SOL/USD account.
+  // SOL, priced by Chainlink's SOL / USD feed on Arbitrum.
   const sq = (await post(`/api/pay/${inv.id}/quote`, { asset: 'solana-sol' }))
   check('the invoice is paid, so no new quote (409 or 4xx)', sq.status >= 400)
   const inv2 = (await admin('/api/admin/invoices', 'POST', { title: 'SOL invoice', usd: '30', assets: ['solana-sol'] })).data.invoice
   const q2 = (await post(`/api/pay/${inv2.id}/quote`, { asset: 'solana-sol' })).data?.quote
   const lamports = (3000n * 10n ** 17n + SOL_PRICE * 100n - 1n) / (SOL_PRICE * 100n)
-  check('a SOL quote is priced by Pyth SOL/USD, rounded up, with a lamport tag', q2 && BigInt(q2.amountRaw) >= lamports && BigInt(q2.amountRaw) - lamports < 20_000n && q2.price?.description === 'SOL / USD' && q2.price.answer === '150', JSON.stringify(q2))
+  check('a SOL quote is priced by Chainlink SOL / USD (Arbitrum), rounded up, with a lamport tag', q2 && BigInt(q2.amountRaw) >= lamports && BigInt(q2.amountRaw) - lamports < 20_000n && q2.price?.description === 'SOL / USD' && q2.price.answer === '150' && q2.price.feed === SOL_FEED && evmHits[42161] > 0, JSON.stringify(q2))
   r = await post(`/api/pay/${inv2.id}/verify`, { quoteId: q2.id, txHash: addTx({ mint: null, amount: BigInt(q2.amountRaw), to: rand32() }) })
   check('refused: SOL to another address', r.status === 422 && /another address/.test(r.data?.error), r.data?.error)
   r = await post(`/api/pay/${inv2.id}/verify`, { quoteId: q2.id, txHash: addTx({ mint: null, amount: BigInt(q2.amountRaw) }) })

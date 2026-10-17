@@ -28,10 +28,12 @@ export const PORTAL = 'https://app.gullylabs.xyz'
 export const PORTAL_ALERTS = `${PORTAL}/#alerts`
 export const PORTAL_BILLING = `${PORTAL}/#billing`
 export const DEEPCORE = 'https://deepcore.fun'
-export const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
+export const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', solana: 'Solana' }
 /** Tracker chain key <-> two-letter route code. */
-export const CHAIN_OF = { rh: 'robinhood', bn: 'bsc' }
-export const CODE_OF = { robinhood: 'rh', bsc: 'bn' }
+export const CHAIN_OF = { rh: 'robinhood', bn: 'bsc', sl: 'solana' }
+export const CODE_OF = { robinhood: 'rh', bsc: 'bn', solana: 'sl' }
+/** The two-letter code of a chain named in a prompt (read back after a restart). */
+export const codeOfName = (name) => (name === 'BNB Chain' ? 'bn' : name === 'Solana' ? 'sl' : 'rh')
 export const GRID_PAGE = 12
 export const LIST_MAX = 8
 export const ALERTS_PAGE = 8
@@ -49,7 +51,7 @@ export const usd = (n) => (num(n) ? `$${n.toLocaleString('en-US', { minimumFract
 export const usd0 = (n) => (num(n) ? `$${Math.round(n).toLocaleString('en-US')}` : null)
 export const shortAddr = (a) => `${String(a).slice(0, 6)}…${String(a).slice(-4)}`
 export const when = (iso) => new Date(iso).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
-const shortChain = (k) => (k === 'robinhood' ? 'RH' : k === 'bsc' ? 'BNB' : k)
+const shortChain = (k) => (k === 'robinhood' ? 'RH' : k === 'bsc' ? 'BNB' : k === 'solana' ? 'SOL' : k)
 
 /** "just now", "4m ago", "2h ago", "3d ago". */
 export function ago(iso, now = Date.now()) {
@@ -91,7 +93,7 @@ export function menuCaption(n) {
   const count = num(n) && n > 0 ? `${n} stock tokens` : 'Stock tokens'
   return [
     '<b>Gully Labs</b> · stock tokens vs their fair price, live.',
-    `📈 ${count} on Robinhood Chain and BNB Chain · 🔔 gap alerts right here · 🤖 Gully AI answers.`,
+    `📈 ${count} on Robinhood Chain, BNB Chain and Solana · 🔔 gap alerts right here · 🤖 Gully AI answers.`,
     '',
     '<i>Information only, not investment advice.</i>',
   ].join('\n')
@@ -105,7 +107,7 @@ export function helpView(linked) {
     '<b>Gully Labs bot</b>',
     'The gap between a tokenised stock’s on-chain price and its Chainlink fair price, from the Gully Labs tracker. Everything is behind the buttons below; typed commands still work:',
     '',
-    '/gap NVDA · one stock (add <code>bsc</code> or <code>robinhood</code>)',
+    '/gap NVDA · one stock (add <code>bsc</code>, <code>robinhood</code> or <code>solana</code>)',
     '/top · widest trusted gaps now',
     '/movers · biggest gap moves',
     '/launches · latest DeepCore launches',
@@ -181,7 +183,7 @@ export function cardBack(cc, from) {
 export function chainPickerView(stocks, rowsOk) {
   const count = (k) => stocks.filter((s) => s.chain === k).length
   const text = ['<b>📈 Stocks</b>', 'Pick a chain to see its stock tokens and their gap to the fair price.', ...(rowsOk ? [] : ['', '<i>The tracker could not be read just now; status colours are missing.</i>'])].join('\n')
-  return { text, keyboard: [[btn(`Robinhood Chain · ${count('robinhood')}`, 'stk:rh:p1'), btn(`BNB Chain · ${count('bsc')}`, 'stk:bn:p1')], nav('m')] }
+  return { text, keyboard: [[btn(`Robinhood Chain · ${count('robinhood')}`, 'stk:rh:p1'), btn(`BNB Chain · ${count('bsc')}`, 'stk:bn:p1')], [btn(`Solana · ${count('solana')}`, 'stk:sl:p1')], nav('m')] }
 }
 
 /** The ticker grid: 3 per row, alphabetical, GRID_PAGE per page, status colour from the live rows. */
@@ -203,7 +205,7 @@ export function gridView(cc, page, stocks, rowsList) {
 }
 
 export const searchPrompt = (cc) => `🔍 Search ${chainName(CHAIN_OF[cc])}: type a ticker or a company name, e.g. NVDA.`
-export const SEARCH_PROMPT_RE = /^🔍 Search (Robinhood Chain|BNB Chain):/
+export const SEARCH_PROMPT_RE = /^🔍 Search (Robinhood Chain|BNB Chain|Solana):/
 
 /** Search: an exact ticker opens its card (caller); otherwise matches on ticker or name. */
 export function searchMatches(cc, query, stocks) {
@@ -309,7 +311,7 @@ export function alertStep3View(cc, ticker, from, pct, dir, flagPct) {
 }
 
 export const customPctPrompt = (cc, ticker) => `✏️ Custom threshold for ${ticker} on ${chainName(CHAIN_OF[cc])}: type a percentage from 0.1 to 100, e.g. 1.5.`
-export const CUSTOM_PROMPT_RE = /^✏️ Custom threshold for ([A-Z.]{1,8}) on (Robinhood Chain|BNB Chain):/
+export const CUSTOM_PROMPT_RE = /^✏️ Custom threshold for ([A-Z.]{1,8}) on (Robinhood Chain|BNB Chain|Solana):/
 
 /** After a create: success, the plan limit (with Upgrade) or the alerts module's error. */
 export function createdView({ ok, status, error, back, what }) {

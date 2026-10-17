@@ -7,7 +7,7 @@ import { payApi, type Quote } from './api'
 import { fmtTime, type Invoice } from './invoice'
 import { QrCode } from './QrCode'
 import { copyWithToast, toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
-import { isSolanaChain, isSolanaSignature, priceSource } from '../../components/solana/constants'
+import { feedExplorer, isSolanaChain, isSolanaSignature, priceSource } from '../../components/solana/constants'
 import { SolanaReferenceWatch } from '../../components/solana/SolanaReferenceWatch'
 
 /* The hosted checkout of one invoice (/pay/<id>, also where a pay link lands): plan header and status,
@@ -374,10 +374,10 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
               <>
                 {' '}
                 · price from the{' '}
-                <a href={`${asset.explorer}/address/${quote.price.feed}`} target="_blank" rel="noopener" className="text-dim underline-offset-4 hover:underline">
-                  {priceSource(quote.chainId)} {quote.price.description} {isSolanaChain(quote.chainId) ? 'price account' : 'feed'}
+                <a href={`${feedExplorer(quote.chainId, asset.explorer)}/address/${quote.price.feed}`} target="_blank" rel="noopener" className="text-dim underline-offset-4 hover:underline">
+                  {priceSource(quote.chainId)} {quote.price.description} feed
                 </a>
-                , {isSolanaChain(quote.chainId) ? 'slot' : 'round'} {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}
+                , round {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}
               </>
             )}
           </span>

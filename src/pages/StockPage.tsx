@@ -14,7 +14,7 @@ import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF } from '../components/charts/number-formats'
 import { PoolDepth } from '../components/tracker/PoolDepth'
 import { xPost } from '../lib/share'
-import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow } from '../lib/tracker'
+import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow, fairFeedChain, fairSourceLabel } from '../lib/tracker'
 import { DEVELOPERS_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
@@ -23,7 +23,7 @@ import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
 /* One stock token on one chain: everything the tracker knows about it, read live. Nothing on this page is
    typed in; a value that could not be read says so. */
 
-const EXPLORER: Record<string, string> = { robinhood: 'https://robinhoodchain.blockscout.com/address/', bsc: 'https://bscscan.com/address/', solana: 'https://solscan.io/account/' }
+const EXPLORER: Record<string, string> = { robinhood: 'https://robinhoodchain.blockscout.com/address/', bsc: 'https://bscscan.com/address/', ethereum: 'https://etherscan.io/address/', solana: 'https://solscan.io/account/' }
 const card = 'flex flex-col gap-4 rounded-card border border-line bg-surface p-6'
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.06}s ease both` })
 /** 0xd060…9EEC: both ends stay visible, so the checksum tail people verify is never cut off. */
@@ -102,7 +102,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
     <>
       <Seo
         title={`${row.ticker} token price vs fair value`}
-        description={`${row.name} (${row.ticker}) token on ${CHAIN_NAME[row.chain] ?? row.chain}: its price in its deepest pool against the ${row.fairSource ?? 'Chainlink'} fair price, the gap, pool depth and history, read live.`}
+        description={`${row.name} (${row.ticker}) token on ${CHAIN_NAME[row.chain] ?? row.chain}: its price in its deepest pool against its ${fairSourceLabel(row)} fair price, the gap, pool depth and history, read live.`}
       />
 
       <section className="px-page pt-10 pb-8">
@@ -146,7 +146,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           {(
             [
               { k: 'ONCHAIN', v: <Price value={row.onchain} />, n: row.pool ? `${row.ticker}/${row.pool.against}` : 'no pool' },
-              { k: 'FAIR', v: <Price value={row.fair} />, n: `${row.fairSource ?? 'Chainlink'} · ${ageText(row.feedUpdatedAt, now)}` },
+              { k: 'FAIR', v: <Price value={row.fair} />, n: `${fairSourceLabel(row)} · ${ageText(row.feedUpdatedAt, now)}` },
               { k: 'GAP', v: <AnimatedNumber value={row.gapPct} format={NF.signed2} suffix="%" countUp />, c: tone, n: row.status === 'thin' ? 'thin pool, not trusted' : 'onchain vs fair' },
               moveCell('GAP Δ 1H', move1h, row),
               moveCell('GAP Δ 24H', move24h, row),
@@ -174,7 +174,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             <span className="font-mono text-[11px] leading-[1.5] text-faint">
               {row.pool ? `${row.pool.dex}${row.pool.labels.length ? ` ${row.pool.labels.join('/')}` : ''} · ${row.ticker}/${row.pool.against}` : 'no pool'} · {chain?.fairMethod ?? 'fair from Chainlink'}
               {row.feedPrices === 'underlying-share' && row.multiplier !== null ? ` · share × ${row.multiplier.toFixed(6)}` : ''}
-              {chain ? ` · market ${chain.sessionOpen ? 'open' : 'closed'} (${chain.sessionName})` : ''}
+              {chain ? ` · market ${(row.sessionOpen ?? chain.sessionOpen) ? 'open' : 'closed'} (${row.sessionName ?? chain.sessionName})` : ''}
             </span>
           </div>
           <div className={card} style={rise(5)}>
@@ -191,7 +191,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           <div className={card} style={rise(6)}>
             <h2 className="m-0 font-display text-h4 font-bold uppercase">Contracts</h2>
             <CopyAddress label="TOKEN" address={row.token} chain={row.chain} />
-            <CopyAddress label={row.chain === 'solana' ? (row.fairSource === 'Pyth' ? 'PYTH FEED ID' : 'FAIR PRICE SOURCE') : 'CHAINLINK FEED'} address={row.feed} chain={row.chain === 'solana' ? '' : row.chain} />
+            <CopyAddress label={row.fairSource === 'backed' ? 'FAIR PRICE SOURCE' : row.chain === 'solana' ? `CHAINLINK FEED · ${fairSourceLabel(row).replace('Chainlink on ', '').toUpperCase()}` : 'CHAINLINK FEED'} address={row.feed} chain={fairFeedChain(row)} />
             {row.pool && <CopyAddress label="POOL" address={row.pool.pair} chain={row.chain} />}
           </div>
           <div className={card} style={rise(7)}>

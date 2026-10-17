@@ -3,24 +3,26 @@
 // heatmap, /gap, /top and alerts work unchanged (tracker.mjs calls buildSolanaChain from build()).
 //
 // Two numbers per token, both read live:
-//   - FAIR: the underlying US share's price, times the token's on-chain multiplier. Pyth Equity.US
-//     through Hermes when PYTH_API_KEY is set, else the issuer's own quote (Backed's xStocks API). xStocks carry Token-2022's ScaledUiAmount extension: one token is
-//     `multiplier` shares (dividends are paid by raising it), so fair = share price x multiplier. The
-//     multiplier is read from the mint every refresh, with a scheduled new multiplier applied from its
-//     effective time. Each row names its source (fairSource).
+//   - FAIR: the underlying share's price from a Chainlink equity feed read on an EVM chain (BNB Chain,
+//     Robinhood Chain, or a verified Ethereum feed), else the issuer's own quote (Backed's xStocks API),
+//     times the token's on-chain multiplier. xStocks carry Token-2022's ScaledUiAmount extension: one
+//     token is `multiplier` shares (dividends raise it, splits multiply it), so fair = share price x
+//     multiplier. The multiplier is read from the mint every refresh; a scheduled new multiplier applies
+//     from its effective time. Each row names its source (fairSource: chainlink:<chainId> or backed).
 //   - ONCHAIN: what the token trades at in its deepest pool. DexScreener finds the pool (and reports
 //     liquidity and volume) once an hour; between discoveries the pool's price is read straight from
 //     the pool account when it is an Orca Whirlpool, a Raydium CLMM or a Meteora DLMM pool (each layout
 //     is checked against the pool's own mints before it is believed). Any other pool keeps DexScreener's
 //     price, labelled 'api' with its time.
 // Trust rules: assessRow from tracker.mjs, unchanged (thresholds, units guard, "unverified").
-// Session: the fair price moves with the underlying's regular session (NYSE hours), so the session is 'nyse'.
+// Session: each row follows its feed's own session (BNB Chain NYSE hours, Robinhood/Ethereum 24/5).
 
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { b58encode as bs58, decodePriceUpdateV2, isSolanaAddress, pythNumber, readAccounts, solanaRpc, WSOL_MINT } from './solana.mjs'
-import { SOL_USD_FEED_ID, SOLANA_CHAIN, SOLANA_CHAIN_ID } from './solana-pay.mjs'
+import { b58encode as bs58, isSolanaAddress, readAccounts, solanaRpc, WSOL_MINT } from './solana.mjs'
+import { SOLANA_CHAIN_ID } from './solana-pay.mjs'
+import { readFeed } from './payments.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const TABLE = JSON.parse(fs.readFileSync(path.join(here, 'data', 'solana-stocks.json'), 'utf8'))
@@ -32,7 +34,6 @@ export const solanaStocks = () => TABLE.stocks
 
 const DEX = 'https://api.dexscreener.com/tokens/v1/solana'
 const DEX_PAIRS = 'https://api.dexscreener.com/token-pairs/v1/solana'
-const HERMES = () => (process.env.PYTH_HERMES ?? 'https://hermes.pyth.network').replace(/\/+$/, '')
 const UA = 'gullylabs-tracker/1 (+https://gullylabs.xyz/tracker)'
 const DISCOVERY_MS = 60 * 60_000
 const STALE_LIMIT_MS = 6 * 3_600_000
@@ -167,7 +168,7 @@ async function discover() {
   return out.map((p) => (p ? { ...p, pricedAt: at, source: 'DexScreener', discoveryPrice: p.price } : p))
 }
 
-/** Re-prices every re-readable pool from its account. Quote coins: USDC/USDT at $1, SOL at Pyth's SOL/USD. */
+/** Re-prices every re-readable pool from its account. Quote coins: USDC/USDT at $1, SOL at Chainlink's SOL / USD. */
 async function repriceOnchain(pools, solUsd) {
   const plan = pools.map((p) => (p && !p.error && p.readable && p.pair && isSolanaAddress(p.pair) && p.quoteAddr ? p : null))
   const addrs = plan.filter(Boolean).map((p) => p.pair)
@@ -245,14 +246,33 @@ async function readMultipliers() {
   return out
 }
 
-/**
- * Fair share prices, each { price, updatedAt (unix s), source } or { error }:
- *   - Pyth Equity.US.<T>/USD through Hermes when PYTH_API_KEY is set (Hermes needs a key for prices
- *     since 2026-08-26), for every token with a Pyth id;
- *   - otherwise, and for any token Pyth did not answer, the issuer's own quote of the underlying:
- *     Backed's GET /api/v1/collateral/quote?symbol=<T> (keyless, cached a minute per symbol).
- * Pyth's on-chain Equity.US push accounts are not used: on Solana they are mostly missing or stale.
- */
+/* ------------------------------------------------------------- fair --- */
+
+/* Fair share prices come from Chainlink equity feeds already read on EVM chains, never from a Solana
+   oracle (none covers xStocks; see solana-research.md). For each ticker, the first of:
+     1. BNB Chain (56): data/bsc-stocks.json, feeds that price the underlying SHARE, NYSE hours;
+     2. Robinhood Chain (4663): data/robinhood-stocks.json, Chainlink's us_equities_24/5 feeds;
+     3. TABLE.chainlinkExtra: official Chainlink feeds on Ethereum (1) for tickers neither covers, each
+        checked on chain (description, decimals, latestRoundData) and in Chainlink's feed directory.
+   Then, for a ticker with no feed (or a feed that cannot be read), the issuer's own quote of the
+   underlying: Backed's GET /api/v1/collateral/quote?symbol=<T> (keyless, cached a minute per symbol).
+   Fair per raw token = that share price x the xStock's effective multiplier. Session rules are each
+   feed's own, exactly as the tracker applies them on its chain: outside the session the feed holds its
+   last value, and the row says so (sessionOpen false, with the feed time). */
+const FEED_TABLES = [
+  { chainId: 56, file: 'bsc-stocks.json', session: 'nyse' },
+  { chainId: 4663, file: 'robinhood-stocks.json', session: '24/5' },
+]
+const sessionOf = (marketHours) => (/nyse/i.test(String(marketHours)) ? 'nyse' : '24/5')
+const FEEDS = new Map() // ticker -> { chainId, feed, decimals, session }
+for (const t of FEED_TABLES) {
+  for (const s of JSON.parse(fs.readFileSync(path.join(here, 'data', t.file), 'utf8')).stocks) if (!FEEDS.has(s.ticker)) FEEDS.set(s.ticker, { chainId: t.chainId, feed: s.feed, decimals: s.feedDecimals, session: t.session })
+}
+for (const x of TABLE.chainlinkExtra ?? []) if (!FEEDS.has(x.ticker)) FEEDS.set(x.ticker, { chainId: x.chainId, feed: x.feed, decimals: x.decimals, session: sessionOf(x.marketHours) })
+
+/** The Chainlink feed the Solana tracker uses for a ticker, or null (then the issuer's quote). */
+export const fairFeedFor = (ticker) => FEEDS.get(ticker) ?? null
+
 const BACKED = () => (process.env.XSTOCKS_API ?? 'https://api.xstocks.fi').replace(/\/+$/, '')
 const backedCache = new Map() // symbol -> { at, value }
 
@@ -264,39 +284,59 @@ async function backedQuote(symbol) {
   const j = await r.json()
   const price = num(j?.quote)
   const at = Date.parse(j?.timestamp ?? '')
-  const value = price > 0 && Number.isFinite(at) ? { price, updatedAt: Math.floor(at / 1000), source: 'backed' } : { error: 'no quote for this symbol' }
+  const value = price > 0 && Number.isFinite(at) ? { price, updatedAt: Math.floor(at / 1000), source: 'backed', session: 'nyse' } : { error: 'no quote for this symbol' }
   backedCache.set(symbol, { at: Date.now(), value })
   return value
 }
 
-async function readFair() {
+/** latestRoundData() answer as { price, updatedAt } or null. Exported for the tests. */
+export function decodeLatestRound(hex, decimals) {
+  if (typeof hex !== 'string' || hex.length < 2 + 64 * 5) return null
+  const w = (k) => BigInt('0x' + hex.slice(2 + 64 * k, 2 + 64 * (k + 1)))
+  const answer = BigInt.asIntN(256, w(1))
+  const updatedAt = Number(w(3))
+  if (answer <= 0n || !updatedAt) return null
+  return { price: Number(answer) / 10 ** decimals, updatedAt }
+}
+
+/**
+ * Each stock's fair share price: { price, updatedAt (unix s), source: 'chainlink:<chainId>' | 'backed', session } or { error }.
+ * `evmBatch(chainId, calls)` reads Robinhood Chain and BNB Chain through the tracker's own RPC failover;
+ * `evmCall(chainId, to, data)` reads any other chain through Gully Pay's (payments.rpc).
+ */
+async function readFair({ evmBatch, evmCall }) {
   const stocks = TABLE.stocks
   const out = stocks.map(() => ({ error: 'not read' }))
-  const key = process.env.PYTH_API_KEY
-  const viaPyth = key ? stocks.map((s, i) => [s, i]).filter(([s]) => s.pythFeedId) : []
-  for (let k = 0; k < viaPyth.length; k += 50) {
-    const slice = viaPyth.slice(k, k + 50)
-    const q = slice.map(([s]) => `ids[]=${s.pythFeedId.replace(/^0x/, '')}`).join('&')
-    try {
-      const r = await fetch(`${HERMES()}/v2/updates/price/latest?${q}&parsed=true&ignore_invalid_price_ids=true`, { headers: { accept: 'application/json', 'user-agent': UA, authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(12_000) })
-      if (!r.ok) throw new Error(`Hermes HTTP ${r.status}`)
-      const j = await r.json()
-      const byId = new Map((j?.parsed ?? []).map((p) => ['0x' + String(p.id).replace(/^0x/, ''), p]))
-      for (const [s, i] of slice) {
-        const p = byId.get(s.pythFeedId)
-        const price = p ? Number(p.price?.price) * 10 ** Number(p.price?.expo) : null
-        if (p && price > 0) out[i] = { price, updatedAt: Number(p.price.publish_time), source: 'pyth' }
+  const byChain = new Map()
+  stocks.forEach((s, i) => {
+    const f = fairFeedFor(s.ticker)
+    if (f) byChain.set(f.chainId, [...(byChain.get(f.chainId) ?? []), [i, f]])
+  })
+  await Promise.all(
+    [...byChain].map(async ([chainId, list]) => {
+      try {
+        let answers
+        if (chainId === 56 || chainId === 4663) {
+          const m = await evmBatch(chainId, list.map(([, f], k) => ({ jsonrpc: '2.0', id: k, method: 'eth_call', params: [{ to: f.feed, data: '0xfeaf968c' }, 'latest'] })))
+          answers = list.map((_, k) => m.get(k)?.result)
+        } else answers = await Promise.all(list.map(([, f]) => evmCall(chainId, f.feed, '0xfeaf968c').catch(() => null)))
+        list.forEach(([i, f], k) => {
+          const d = decodeLatestRound(answers[k], f.decimals)
+          out[i] = d ? { ...d, source: `chainlink:${chainId}`, session: f.session, feed: f.feed } : { error: `Chainlink feed on chain ${chainId} unreadable` }
+        })
+      } catch (e) {
+        for (const [i] of list) out[i] = { error: String(e?.message ?? e).slice(0, 120) }
       }
-    } catch {
-      /* the issuer's quote below */
-    }
-  }
+    }),
+  )
   const rest = stocks.map((s, i) => [s, i]).filter(([, i]) => out[i].error)
   for (let k = 0; k < rest.length; k += 8) {
     await Promise.all(
       rest.slice(k, k + 8).map(async ([s, i]) => {
         try {
-          out[i] = await backedQuote(s.backedSymbol ?? s.ticker)
+          const q = await backedQuote(s.backedSymbol ?? s.ticker)
+          // A Chainlink feed that failed is named alongside the fallback's own failure.
+          out[i] = q.error ? { error: out[i].error === 'not read' ? q.error : `${out[i].error}; issuer quote: ${q.error}` } : q
         } catch (e) {
           out[i] = { error: String(e?.message ?? e).slice(0, 120) }
         }
@@ -306,12 +346,11 @@ async function readFair() {
   return out
 }
 
-/** SOL/USD from Pyth's sponsored on-chain account (the same one Gully Pay prices SOL with), or null. */
+/** SOL/USD from Chainlink (the same feed Gully Pay prices SOL with), or null when unreadable or stale. */
 async function readSolUsdNumber() {
   try {
-    const [acc] = await readAccounts([SOLANA_CHAIN.feed.address])
-    const d = acc ? decodePriceUpdateV2(acc.data) : null
-    return d && d.feedId === SOL_USD_FEED_ID && d.price > 0n && Date.now() / 1000 - d.publishTime < 3600 ? pythNumber(d.price, d.exponent) : null
+    const r = await readFeed(SOLANA_CHAIN_ID)
+    return r.ok ? Number(r.price.answer) / 10 ** r.price.decimals : null
   } catch {
     return null
   }
@@ -324,11 +363,10 @@ async function readSolUsdNumber() {
  * tracker.mjs's own assessRow, sessionOpen and logosFor, passed in so this module never imports the
  * tracker (no import cycle) and the trust rules stay one function.
  */
-export async function buildSolanaChain(at, { assessRow, sessionOpen, logosFor }) {
+export async function buildSolanaChain(at, { assessRow, sessionOpen, logosFor, evmBatch, evmCall }) {
   const stocks = TABLE.stocks
-  const open = sessionOpen('nyse', new Date(at))
   const fail = (e) => stocks.map(() => ({ error: String(e?.message ?? e).slice(0, 160) }))
-  const [fair, mults, solUsd] = await Promise.all([readFair().catch(fail), readMultipliers().catch((e) => fail(e)), readSolUsdNumber()])
+  const [fair, mults, solUsd] = await Promise.all([readFair({ evmBatch, evmCall }).catch(fail), readMultipliers().catch((e) => fail(e)), readSolUsdNumber()])
   const poolRead = await readPools(solUsd).catch((e) => ({ pools: fail(e), asOf: null, stale: false, source: null }))
   const rows = stocks.map((s, i) => {
     const f = fair[i]
@@ -346,8 +384,11 @@ export async function buildSolanaChain(at, { assessRow, sessionOpen, logosFor })
       name: s.name,
       token: s.token,
       symbol: s.symbol,
-      feed: f?.source === 'pyth' ? s.pythFeedId : `xStocks collateral quote · ${s.backedSymbol ?? s.ticker}`,
-      fairSource: f?.source === 'pyth' ? 'Pyth' : f?.source === 'backed' ? 'xStocks (issuer)' : 'Pyth or xStocks',
+      feed: f?.feed ?? fairFeedFor(s.ticker)?.feed ?? `xStocks collateral quote · ${s.backedSymbol ?? s.ticker}`,
+      fairSource: f?.source ?? (fairFeedFor(s.ticker) ? `chainlink:${fairFeedFor(s.ticker).chainId}` : 'backed'),
+      /** The fair price's own session (its feed's market hours); closed = the last session's price. */
+      sessionOpen: sessionOpen(f?.session ?? fairFeedFor(s.ticker)?.session ?? 'nyse', new Date(at)),
+      sessionName: (f?.session ?? fairFeedFor(s.ticker)?.session ?? 'nyse') === 'nyse' ? 'NYSE hours' : '24/5',
       fair: fairPrice,
       feedPrices: 'underlying-share',
       multiplier: m,
@@ -372,12 +413,13 @@ export async function buildSolanaChain(at, { assessRow, sessionOpen, logosFor })
       key: 'solana',
       id: SOLANA_CHAIN_ID,
       name: 'Solana',
-      sessionOpen: open,
-      sessionName: 'NYSE hours',
+      // Rows carry their own feed's session; the chain is "open" while any of them is.
+      sessionOpen: rows.some((r) => r.sessionOpen),
+      sessionName: 'per feed: NYSE hours or 24/5',
       poolsAsOf: poolRead.asOf ? new Date(poolRead.asOf).toISOString() : null,
       poolsStale: !!poolRead.stale,
       poolSource: poolRead.source ?? null,
-      fairMethod: `Share price from ${process.env.PYTH_API_KEY ? 'Pyth (Hermes), else the issuer’s quote,' : 'the issuer’s own quote (xStocks API)'} × the token’s on-chain multiplier (Token-2022 scaled UI amount)`,
+      fairMethod: 'Share price from Chainlink (BNB Chain, Robinhood Chain or Ethereum feeds), else the issuer’s quote (xStocks API), × the token’s on-chain multiplier (Token-2022 scaled UI amount)',
     },
     rows,
   }

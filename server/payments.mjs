@@ -19,7 +19,7 @@
 //   GULLY_CONFIRMATIONS_<chainId> confirmations for one chain
 
 import { keccak_256 } from './vendor/noble.mjs'
-import { isSolanaAsset, readSolanaPayment, readSolUsd, SOLANA_ASSETS, SOLANA_CHAIN, SOLANA_CHAIN_ID, solanaPayOn } from './solana-pay.mjs'
+import { isSolanaAsset, readSolanaPayment, SOLANA_ASSETS, SOLANA_CHAIN, SOLANA_CHAIN_ID, solanaPayOn } from './solana-pay.mjs'
 
 /** A Chainlink answer older than this is stale and no quote is given in that coin. */
 export const FEED_MAX_AGE_SEC = 2 * 3600
@@ -247,14 +247,14 @@ const feedCache = new Map() // chainId -> { at, value }
  * price = { feed, description, decimals, roundId, answer, updatedAt, readAt } (big numbers as strings).
  */
 export async function readFeed(chainId) {
-  if (chainId === SOLANA_CHAIN_ID) return readSolUsd()
   const c = CHAINS[chainId]
   const hit = feedCache.get(chainId)
   let price = hit && Date.now() - hit.at < 30_000 ? hit.value : null
   if (!price) {
     let out
     try {
-      out = await rpc(chainId, 'eth_call', [{ to: c.feed.address, data: LATEST_ROUND_DATA }, 'latest'])
+      // A chain without feeds of its own (Solana) names the EVM chain its feed is read on (feed.chainId).
+      out = await rpc(c.feed.chainId ?? chainId, 'eth_call', [{ to: c.feed.address, data: LATEST_ROUND_DATA }, 'latest'])
     } catch (e) {
       return { ok: false, status: 502, error: `The ${c.feed.description} price on ${c.name} could not be read just now (${String(e?.message ?? e)}). Pay in a stablecoin or try again shortly.` }
     }

@@ -45,8 +45,11 @@ export interface TrackerRow {
   onchainAt?: string | null
   /** The pool read is the chain's last good one, served while the source is backing off. */
   poolStale?: boolean
-  /** Who priced `fair` where it is not Chainlink (Solana: "Pyth (on chain)" or "Pyth (Hermes)"). */
+  /** Solana: who priced `fair`, 'chainlink:<chainId>' (a Chainlink feed on that EVM chain) or 'backed' (the issuer's quote). */
   fairSource?: string
+  /** Solana: the fair price's own session (its feed's market hours); closed = the last session's price. */
+  sessionOpen?: boolean
+  sessionName?: string
   /** The token's own symbol where it differs from the ticker (Solana xStocks: AAPLx). */
   symbol?: string
 }
@@ -269,6 +272,21 @@ export const STATUS_LABEL: Record<TrackerStatus, string> = {
   'no-pool': 'No pool',
   'pool-unreadable': 'Pool unreadable',
   'feed-unreadable': 'Feed unreadable',
+}
+
+const FEED_CHAIN: Record<string, string> = { '56': 'BNB Chain', '4663': 'Robinhood Chain', '1': 'Ethereum', '42161': 'Arbitrum' }
+/** A row's fair-price source in words: "Chainlink on BNB Chain", "xStocks issuer quote", or plain Chainlink. */
+export const fairSourceLabel = (r: Pick<TrackerRow, 'fairSource'>) => {
+  const s = r.fairSource
+  if (!s) return 'Chainlink'
+  if (s === 'backed') return 'xStocks issuer quote'
+  const m = /^chainlink:(\d+)$/.exec(s)
+  return m ? `Chainlink on ${FEED_CHAIN[m[1]] ?? `chain ${m[1]}`}` : s
+}
+/** Explorer for a row's fair feed: the feed's own chain for Solana rows, else the row's chain. */
+export const fairFeedChain = (r: Pick<TrackerRow, 'chain' | 'fairSource'>) => {
+  const m = /^chainlink:(\d+)$/.exec(r.fairSource ?? '')
+  return r.chain !== 'solana' ? r.chain : m ? ({ '56': 'bsc', '4663': 'robinhood', '1': 'ethereum' } as Record<string, string>)[m[1]] ?? '' : ''
 }
 
 export const CHAIN_NAME: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', solana: 'Solana' }

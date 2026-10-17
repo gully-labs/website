@@ -1,6 +1,6 @@
 // Solana over plain JSON-RPC and fetch, with no SDK: RPC failover, base58, associated token account
 // derivation (program-derived addresses need an ed25519 "off the curve" check, done here with BigInt),
-// and decoding of the one account layout the tracker and Gully Pay read (Pyth's PriceUpdateV2).
+// and batched account reads.
 //
 // RPC URLs: GULLY_RPC_SOLANA (comma-separated; the owner's private dRPC URL goes first on the server),
 // then the public defaults below (each answered getSlot / getAccountInfo when checked; see
@@ -270,42 +270,6 @@ export function findProgramAddress(seeds, programId) {
 export function associatedTokenAddress(owner, mint, tokenProgram = TOKEN_PROGRAM) {
   return findProgramAddress([b58decode(owner), b58decode(tokenProgram), b58decode(mint)], ASSOCIATED_TOKEN_PROGRAM)[0]
 }
-
-/* ----------------------------------------------------- Pyth price update --- */
-
-// Pyth's pull-oracle price account (PriceUpdateV2, owned by the Pyth Solana Receiver program
-// rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ). Borsh layout:
-//   0   8  anchor discriminator
-//   8  32  write_authority
-//  40   1  verification_level: 0 = Partial { num_signatures: u8 } (one more byte), 1 = Full
-//   then price_message: feed_id [32], price i64, conf u64, exponent i32, publish_time i64,
-//        prev_publish_time i64, ema_price i64, ema_conf u64; then posted_slot u64.
-export const PYTH_RECEIVER_PROGRAM = 'rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ'
-export const PRICE_UPDATE_V2_DISCRIMINATOR = '22f123639d7ef4cd'
-
-/** Decodes a PriceUpdateV2 account (bytes). Returns null when the bytes are not one. */
-export function decodePriceUpdateV2(bytes) {
-  const b = Buffer.from(bytes)
-  if (b.length < 8 + 32 + 1 + 32 + 8 * 2 + 4 + 8 * 5) return null
-  if (b.subarray(0, 8).toString('hex') !== PRICE_UPDATE_V2_DISCRIMINATOR) return null
-  const level = b[40]
-  if (level !== 0 && level !== 1) return null
-  let o = level === 0 ? 42 : 41
-  const feedId = '0x' + b.subarray(o, o + 32).toString('hex')
-  o += 32
-  const price = b.readBigInt64LE(o)
-  const conf = b.readBigUInt64LE(o + 8)
-  const exponent = b.readInt32LE(o + 16)
-  const publishTime = Number(b.readBigInt64LE(o + 20))
-  const prevPublishTime = Number(b.readBigInt64LE(o + 28))
-  const emaPrice = b.readBigInt64LE(o + 36)
-  const emaConf = b.readBigUInt64LE(o + 44)
-  const postedSlot = Number(b.readBigUInt64LE(o + 52))
-  return { verification: level === 1 ? 'full' : 'partial', feedId, price, conf, exponent, publishTime, prevPublishTime, emaPrice, emaConf, postedSlot }
-}
-
-/** A Pyth integer price with its exponent as a JS number (prices here are far inside double precision). */
-export const pythNumber = (price, exponent) => Number(price) * 10 ** exponent
 
 /** getAccountInfo for several accounts as raw bytes (null for a missing account), in one batch. */
 export async function readAccounts(addresses, { commitment = 'confirmed' } = {}) {

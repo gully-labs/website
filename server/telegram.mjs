@@ -569,7 +569,7 @@ async function prompt(chatId, text, pending, placeholder) {
 /* ------------------------------------------------------------ commands --- */
 
 const LAUNCH_CHAIN_ALIASES = { bnb: 56, bsc: 56, binance: 56, hyperevm: 999, hype: 999, hl: 999, robinhood: 4663, rh: 4663, hood: 4663, base: 8453 }
-const chainArgOf = (a) => (!a ? null : ['bnb', 'bsc', 'binance', 'bn'].includes(a) ? 'bsc' : ['robinhood', 'rh', 'hood'].includes(a) ? 'robinhood' : a)
+const chainArgOf = (a) => (!a ? null : ['bnb', 'bsc', 'binance', 'bn'].includes(a) ? 'bsc' : ['robinhood', 'rh', 'hood'].includes(a) ? 'robinhood' : ['solana', 'sol', 'sl'].includes(a) ? 'solana' : a)
 
 /** /gap TICKER [chain]: the card, a chain choice, or the stocks screen. */
 async function gapScreen(args) {
@@ -689,8 +689,8 @@ async function onText(msg) {
     // The state expired (or the server restarted): read the request back from the prompt itself.
     const s = rt.text.match(ui.SEARCH_PROMPT_RE)
     const c = rt.text.match(ui.CUSTOM_PROMPT_RE)
-    if (s) pending = { kind: 'search', cc: s[1] === 'BNB Chain' ? 'bn' : 'rh' }
-    else if (c) pending = { kind: 'pct', cc: c[2] === 'BNB Chain' ? 'bn' : 'rh', ticker: c[1], from: 'x' }
+    if (s) pending = { kind: 'search', cc: ui.codeOfName(s[1]) }
+    else if (c) pending = { kind: 'pct', cc: ui.codeOfName(c[2]), ticker: c[1], from: 'x' }
     else if (ui.AI_PROMPT_RE.test(rt.text)) pending = { kind: 'ai' }
   }
   if (!pending) return
@@ -735,17 +735,17 @@ async function routeView(route, c) {
 
   if (route === 'm') return c.answer(), ui.menuView(await rowCount())
   if (route === 'stk') return c.answer(), ui.chainPickerView(stocks, true)
-  if ((m = route.match(/^stk:(rh|bn):p(\d{1,2})$/))) return c.answer(), ui.gridView(m[1], Number(m[2]), stocks, await rowsOrNull())
-  if ((m = route.match(/^srch:(rh|bn)$/))) {
+  if ((m = route.match(/^stk:(rh|bn|sl):p(\d{1,2})$/))) return c.answer(), ui.gridView(m[1], Number(m[2]), stocks, await rowsOrNull())
+  if ((m = route.match(/^srch:(rh|bn|sl)$/))) {
     c.answer('Type a ticker in the reply box')
     await prompt(chatId, ui.searchPrompt(m[1]), { kind: 'search', cc: m[1] }, 'NVDA')
     return NO_CHANGE
   }
-  if ((m = route.match(/^c:(rh|bn):([A-Z.]{1,8}):(\w{1,3})$/)) && ui.fromOk(m[3]) && stocks.some((s) => s.chain === ui.CHAIN_OF[m[1]] && s.ticker === m[2])) {
+  if ((m = route.match(/^c:(rh|bn|sl):([A-Z.]{1,8}):(\w{1,3})$/)) && ui.fromOk(m[3]) && stocks.some((s) => s.chain === ui.CHAIN_OF[m[1]] && s.ticker === m[2])) {
     c.answer()
     return stockCard(m[1], m[2], m[3])
   }
-  if ((m = route.match(/^(al|alx|alk):(rh|bn):([A-Z.]{1,8}):(\w{1,3})(?::(\d{1,3}(?:\.\d{1,2})?))?(?::([epd]))?$/)) && ui.fromOk(m[4])) {
+  if ((m = route.match(/^(al|alx|alk):(rh|bn|sl):([A-Z.]{1,8}):(\w{1,3})(?::(\d{1,3}(?:\.\d{1,2})?))?(?::([epd]))?$/)) && ui.fromOk(m[4])) {
     const [, kind, cc, ticker, from, pct, dir] = m
     if (!stocks.some((s) => s.chain === ui.CHAIN_OF[cc] && s.ticker === ticker)) return undefined
     if (pct !== undefined && (Number(pct) < 0.1 || Number(pct) > 100)) return undefined

@@ -11,5 +11,7 @@ export const isSolanaSignature = (v: string) => /^[1-9A-HJ-NP-Za-km-z]{64,90}$/.
 
 export const isSolanaChain = (chainId: number | null | undefined) => chainId === SOLANA_CHAIN_ID
 
-/** Who prices a coin quote on this chain: Pyth's SOL / USD account on Solana, Chainlink on the EVM chains. */
-export const priceSource = (chainId: number | null | undefined) => (chainId === SOLANA_CHAIN_ID ? 'Pyth' : 'Chainlink')
+/** Who prices a coin quote: Chainlink everywhere; SOL is priced by Chainlink's SOL / USD feed on Arbitrum. */
+export const priceSource = (chainId: number | null | undefined) => (chainId === SOLANA_CHAIN_ID ? 'Chainlink (Arbitrum)' : 'Chainlink')
+/** Where a quote's price feed lives: Arbiscan for Solana's SOL / USD feed, else the asset's own explorer. */
+export const feedExplorer = (chainId: number | null | undefined, explorer: string) => (chainId === SOLANA_CHAIN_ID ? 'https://arbiscan.io' : explorer)

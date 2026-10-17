@@ -7,7 +7,7 @@ import { input } from '../../pages/developers/styles'
 import { btnOutline } from '../ui'
 import { toastError, toastInfo, toastSuccess } from '../ui/toast'
 import { AssetMark, AssetPicker } from './AssetPicker'
-import { isSolanaChain, isSolanaSignature, priceSource } from '../solana/constants'
+import { feedExplorer, isSolanaChain, isSolanaSignature, priceSource } from '../solana/constants'
 import { SolanaReferenceWatch } from '../solana/SolanaReferenceWatch'
 
 /* Gully Pay checkout, shared by the dashboard's Plan & billing tab and the public /pay/<invoice> page:
@@ -236,10 +236,10 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
             {quote.price && (
               <li>
                 Priced at 1 {quote.asset.symbol} = {Number(quote.price.answer).toLocaleString('en-US', { maximumFractionDigits: 2 })} USD by the{' '}
-                <a href={`${asset.explorer}/address/${quote.price.feed}`} target="_blank" rel="noopener" className="text-ink-2 underline-offset-4 hover:underline">
-                  {priceSource(quote.chainId)} {quote.price.description} {isSolanaChain(quote.chainId) ? 'price account' : 'feed'}
+                <a href={`${feedExplorer(quote.chainId, asset.explorer)}/address/${quote.price.feed}`} target="_blank" rel="noopener" className="text-ink-2 underline-offset-4 hover:underline">
+                  {priceSource(quote.chainId)} {quote.price.description} feed
                 </a>{' '}
-                ({isSolanaChain(quote.chainId) ? 'slot' : 'round'} {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}, updated {minutesAgo(quote.price.updatedAt, now)}), rounded up.
+                (round {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}, updated {minutesAgo(quote.price.updatedAt, now)}), rounded up.
               </li>
             )}
             <li>
