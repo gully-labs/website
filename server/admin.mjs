@@ -17,9 +17,13 @@
 //   GET  /api/admin/invoices                  every invoice (Gully Pay), newest first, and the accepted assets
 //   POST /api/admin/invoices                  { title, usd, note?, assets?, expiresInDays? } -> 201 { invoice }
 //   POST /api/admin/invoices/:id/cancel
+//   GET  /api/admin/analytics                 Gully Analytics accounts: wallet, plan, sites, events this month
+//   POST /api/admin/analytics/:address/plan   { plan: 'starter'|'growth'|'none', days? }  grant for `days` (30) or stop now
+//   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
+import { adminAnalyticsAccounts, adminAnalyticsDelete, adminAnalyticsSetPlan } from './analytics-accounts.mjs'
 import { alertStats } from './alerts.mjs'
 import { adminSetPlan, allPayments } from './billing.mjs'
 import { adminCancelInvoice, adminCreateInvoice, adminListInvoices } from './invoices.mjs'
@@ -27,6 +31,7 @@ import { publicAssets } from './payments.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
+import { umamiConfigured } from './umami.mjs'
 import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
 
@@ -165,6 +170,20 @@ export async function handleAdmin(req, res, url) {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
     const r = adminCancelInvoice(m[1])
     return (r.ok ? json(res, 200, { invoice: r.invoice }) : json(res, r.status, { error: r.error }), true)
+  }
+
+  if (p === '/api/admin/analytics') return json(res, 200, { configured: umamiConfigured(), accounts: adminAnalyticsAccounts(), offer: publicPlans().analytics }), true
+
+  m = p.match(/^\/api\/admin\/analytics\/(0x[0-9a-f]{40})\/(plan|delete)$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    if (m[2] === 'delete') {
+      const r = await adminAnalyticsDelete(m[1])
+      return (r.ok ? json(res, 200, { address: m[1], deleted: true }) : json(res, r.status, { error: r.error }), true)
+    }
+    const body = await readJson(req, 1_000)
+    const r = adminAnalyticsSetPlan(m[1], String(body?.plan ?? ''), body?.days ?? 30)
+    return (r.ok ? json(res, 200, { account: r.account }) : json(res, r.status, { error: r.error }), true)
   }
 
   if (p === '/api/admin/enquiries') return json(res, 200, { enquiries: [...listEnquiries()].reverse() }), true

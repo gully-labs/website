@@ -1,33 +1,16 @@
 import { ArrowUpRight, BellRing, Check, History, Loader2, ShieldCheck, Zap } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { AnalyticsPlanCards } from '../components/AnalyticsPlans'
+import { usePlans } from '../lib/plans'
 import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
 import { DEVELOPERS_URL, DOCS_URL, isLocalHost } from '../site-host'
 import type { Offer } from './developers/api'
 
-/* The paid tiers of the tracker API. Every price and limit is read from GET /api/plans (server/plans.mjs);
-   nothing numeric is typed into this page. */
+/* The paid tiers of the tracker API and the Gully Analytics plans, in two sections. Every price and limit
+   is read from GET /api/plans (server/plans.mjs); nothing numeric is typed into this page. */
 
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` })
 const DASHBOARD = isLocalHost() ? '/developers#billing' : `${DEVELOPERS_URL}/#billing`
-
-type State = { k: 'loading' } | { k: 'error'; message: string } | { k: 'ok'; offer: Offer }
-
-function usePlans(): [State, () => void] {
-  const [state, setState] = useState<State>({ k: 'loading' })
-  const [n, setN] = useState(0)
-  useEffect(() => {
-    let alive = true
-    fetch('/api/plans')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`The server answered ${r.status}.`))))
-      .then((offer: Offer) => alive && setState({ k: 'ok', offer }))
-      .catch((e: unknown) => alive && setState({ k: 'error', message: e instanceof Error ? e.message : 'The plans could not be read.' }))
-    return () => {
-      alive = false
-    }
-  }, [n])
-  return [state, () => (setState({ k: 'loading' }), setN((x) => x + 1))]
-}
 
 const chainList = (o: Offer | null) => (o ? o.chains.map((c) => c.name).join(', ').replace(/, ([^,]*)$/, ' or $1') : 'Base, Ethereum, BNB Chain or Arbitrum')
 const assetList = (o: Offer | null) =>
@@ -45,32 +28,45 @@ const FAQ = (o: Offer | null): { q: string; a: string }[] => [
   { q: 'How is a payment checked?', a: `The server reads the transaction from a public node of its chain: it must have succeeded, paid the treasury at least the plan’s price in the quoted asset, and have enough blocks on top (${confirmationList(o)}). Each transaction counts once, on any chain. The plan starts the moment it is confirmed.` },
   { q: 'How do I cancel?', a: `Just don’t renew. A payment buys ${o?.periodDays ?? 30} days and nothing renews by itself; when the days run out the account returns to Free with its keys still working at the Free limit.` },
   { q: 'Can I extend or switch?', a: 'Paying again for the same plan adds days to the end of the current period. A different plan starts the day you pay for it; the days left on the old one are not carried over.' },
+  { q: 'When does Gully Analytics stop recording?', a: `At the monthly event limit of your plan, until the month turns (UTC) or you upgrade; and when a trial or plan ends without being extended. Your dashboard stays readable for ${o?.analytics?.graceDays ?? 30} days after a plan ends; after that the account may be deleted. Plans are bought in the Analytics tab of the developer dashboard.` },
   { q: 'What does Free include?', a: 'Keys, usage charts and the request log, as today, with the limits shown above. Calling the API without any key keeps working too, at the anonymous limit.' },
 ]
+
+function SectionHead({ id, eyebrow: label, title }: { id: string; eyebrow: string; title: string }) {
+  return (
+    <div className="mb-8 flex flex-col gap-3">
+      <span className={eyebrow}>{label}</span>
+      <h2 id={id} className="m-0 font-display text-[clamp(32px,3.6cqw,48px)] leading-[.95] font-extrabold uppercase">
+        {title}
+      </h2>
+    </div>
+  )
+}
 
 export function Pricing() {
   const [state, retry] = usePlans()
   const offer = state.k === 'ok' ? state.offer : null
   return (
     <>
-      <Seo title="Pricing" description="Plans for the Gully Labs tracker API: higher rate limits, gap alerts by webhook and longer history, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, with no custody." />
+      <Seo title="Pricing" description="Plans for the Gully Labs tracker API and for Gully Analytics, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, with no custody." />
 
       <section className="relative overflow-hidden px-page pt-[72px] pb-12">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.14),transparent_62%)]" />
         <div className="relative flex max-w-[860px] flex-col gap-6">
           <span className={eyebrow} style={rise(0)}>
-            PRICING · TRACKER API
+            PRICING
           </span>
           <h1 className="m-0 font-display text-[clamp(52px,6.6cqw,96px)] leading-[.9] font-extrabold uppercase" style={rise(1)}>
-            More calls, <span className="text-gold">alerts and history</span>
+            Tracker API and <span className="text-gold">Gully Analytics</span>
           </h1>
           <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
-            The tracker API stays free and open. Paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. You pay in ETH, BNB, USDC or USDT from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.
+            Two products, priced separately. The tracker API stays free and open; paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. Gully Analytics starts with a free trial. You pay in ETH, BNB, USDC or USDT from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.
           </p>
         </div>
       </section>
 
-      <section className="px-page pb-16" aria-live="polite">
+      <section id="api" className="scroll-mt-24 px-page pb-16" aria-live="polite" aria-labelledby="api-title">
+        <SectionHead id="api-title" eyebrow="TRACKER API" title="More calls, alerts and history" />
         {state.k === 'loading' && (
           <p className="m-0 inline-flex items-center gap-3 font-mono text-[13px] text-faint">
             <Loader2 size={16} className="animate-spin" aria-hidden /> Reading the plans…
@@ -130,6 +126,11 @@ export function Pricing() {
             </p>
           </div>
         )}
+      </section>
+
+      <section id="analytics" className="scroll-mt-24 border-t border-line px-page pt-16 pb-16" aria-live="polite" aria-labelledby="analytics-title">
+        <SectionHead id="analytics-title" eyebrow="GULLY ANALYTICS" title="Web analytics that see the wallet" />
+        <AnalyticsPlanCards state={state} retry={retry} delay={3} />
       </section>
 
       <section className="px-page pb-24">

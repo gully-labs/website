@@ -19,6 +19,27 @@ export const PLANS = {
   business: { id: 'business', name: 'Business', priceUsdc: 199, perMin: 10_000, alerts: 100, historyDays: 365, maxKeys: 5 },
 }
 
+/* ------------------------------------------------------ Gully Analytics --- */
+
+// OWNER-EDITABLE: Gully Analytics plans (self-serve sign-up in the developer portal, enforced by the
+// proxy in analytics.mjs). `sites` is how many websites an account may track; `eventsPerMonth` is how
+// many tracker calls (page views and custom events, counted per UTC calendar month across all of the
+// account's sites) are accepted before the proxy refuses more. THE PRICES ARE PLACEHOLDERS until the
+// owner sets them. Pages read all of this through GET /api/plans (field `analytics`); nothing is typed
+// into a page.
+export const ANALYTICS_PLANS = {
+  trial: { id: 'trial', name: 'Free trial', priceUsdc: 0, sites: 1, eventsPerMonth: 10_000 },
+  starter: { id: 'starter', name: 'Starter', priceUsdc: 19, sites: 3, eventsPerMonth: 100_000 },
+  growth: { id: 'growth', name: 'Growth', priceUsdc: 79, sites: 10, eventsPerMonth: 1_000_000 },
+}
+/** Length of the free trial, once per wallet. */
+export const ANALYTICS_TRIAL_DAYS = 14
+/** After a trial or plan lapses, events are refused but the dashboard stays readable this long; then the admin may delete the account. */
+export const ANALYTICS_GRACE_DAYS = 30
+export const ANALYTICS_PAID_IDS = Object.values(ANALYTICS_PLANS)
+  .filter((p) => p.priceUsdc > 0)
+  .map((p) => p.id)
+
 /** No key at all: per IP address. */
 export const ANONYMOUS = { perMin: 60, historyDays: 7 }
 
@@ -62,6 +83,7 @@ export function publicPlans() {
     periodDays: PERIOD_DAYS,
     anonymous: ANONYMOUS,
     plans: Object.values(PLANS),
+    analytics: { plans: Object.values(ANALYTICS_PLANS), trialDays: ANALYTICS_TRIAL_DAYS, graceDays: ANALYTICS_GRACE_DAYS, periodDays: PERIOD_DAYS },
     checkout: t ? { enabled: true, treasury: t } : { enabled: false, treasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
   }
 }

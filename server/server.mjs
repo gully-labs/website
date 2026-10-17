@@ -13,6 +13,7 @@ import { handleAdmin } from './admin.mjs'
 import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { handleBlog } from './blog.mjs'
 import { handleAnalytics } from './analytics.mjs'
+import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { handlePay } from './invoices.mjs'
 import https from 'node:https'
@@ -295,7 +296,7 @@ archiveAssets()
 
 server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
 // Keep the last minute of API usage across a restart or redeploy.
-for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), process.exit(0)))
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), flushAnalyticsUsage(), process.exit(0)))
 // Gap alerts are evaluated on every recorded tracker snapshot.
 onSnapshot((rows, at) => evaluateAlerts(rows, at))
 // TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.

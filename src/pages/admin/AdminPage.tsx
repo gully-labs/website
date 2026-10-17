@@ -58,9 +58,14 @@ interface DevAccount {
 }
 interface Billing {
   subscriptions: { address: string; plan: string; since: string | null; expiresAt: string; source: string | null; active: boolean }[]
-  payments: { txHash: string; kind: 'plan' | 'invoice'; address: string | null; plan: string | null; invoiceId: string | null; amount: string; symbol: string; chain: string; usd: string | null; txUrl: string | null; from: string; at: string; expiresAt: string | null }[]
+  payments: { txHash: string; kind: 'plan' | 'invoice' | 'analytics'; address: string | null; plan: string | null; invoiceId: string | null; amount: string; symbol: string; chain: string; usd: string | null; txUrl: string | null; from: string; at: string; expiresAt: string | null }[]
   offer: { plans: { id: string; name: string; priceUsdc: number }[]; checkout: { enabled: boolean; treasury: string | null; reason?: string } }
   alerts: { total: number; enabled: number; owners: number }
+}
+interface AnalyticsAdmin {
+  configured: boolean
+  accounts: { address: string; username: string; createdAt: string; state: 'trial' | 'active' | 'lapsed'; plan: string | null; planName: string | null; expiresAt: string | null; source: string | null; lapsedAt: string | null; readableUntil: string | null; deletable: boolean; sites: number; eventsThisMonth: number; eventsLimit: number | null }[]
+  offer: { plans: { id: string; name: string; priceUsdc: number; sites: number; eventsPerMonth: number }[]; trialDays: number; graceDays: number; periodDays: number }
 }
 interface Enquiry {
   id: string
@@ -101,7 +106,7 @@ function setToken(t: string | null) {
 }
 
 function useAdmin(token: string | null) {
-  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; accounts: DevAccount[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[]; billing: Billing; invoices: { invoices: AdminInvoice[]; assets: PayAsset[] } } | null>(null)
+  const [data, setData] = useState<{ overview: Overview; requests: Req[]; keys: Key[]; accounts: DevAccount[]; enquiries: Enquiry[]; launch: { email: string; slot: string; addedAt: string }[]; billing: Billing; invoices: { invoices: AdminInvoice[]; assets: PayAsset[] }; analytics: AnalyticsAdmin } | null>(null)
   const [err, setErr] = useState<{ status: number; message: string } | null>(null)
   const load = useCallback(async () => {
     if (!token) return
@@ -112,8 +117,8 @@ function useAdmin(token: string | null) {
       return d
     }
     try {
-      const [overview, dev, enq, launch, billing, invoices] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries'), get('/api/admin/launch-list'), get('/api/admin/billing'), get('/api/admin/invoices')])
-      setData({ overview, requests: dev.requests, keys: dev.keys, accounts: dev.accounts ?? [], enquiries: enq.enquiries, launch: launch.rows, billing, invoices })
+      const [overview, dev, enq, launch, billing, invoices, analytics] = await Promise.all([get('/api/admin/overview'), get('/api/admin/developers'), get('/api/admin/enquiries'), get('/api/admin/launch-list'), get('/api/admin/billing'), get('/api/admin/invoices'), get('/api/admin/analytics')])
+      setData({ overview, requests: dev.requests, keys: dev.keys, accounts: dev.accounts ?? [], enquiries: enq.enquiries, launch: launch.rows, billing, invoices, analytics })
       setErr(null)
     } catch (e) {
       const x = e as { status?: number; message?: string }
@@ -290,8 +295,8 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
               {billing.payments.map((p) => (
                 <tr key={`${p.chain}:${p.txHash}`} className="border-b border-line last:border-b-0">
                   <td className="py-2 pr-3 text-faint">{when(p.at)}</td>
-                  <td className="py-2 pr-3">{p.kind === 'plan' ? <span className="uppercase">{p.plan}</span> : `Invoice ${invoiceNumber(p.invoiceId)}`}</td>
-                  <td className="py-2 pr-3 text-ink-2">{p.kind === 'plan' ? p.address : p.from}</td>
+                  <td className="py-2 pr-3">{p.kind === 'plan' ? <span className="uppercase">{p.plan}</span> : p.kind === 'analytics' ? <span className="uppercase">Analytics {p.plan}</span> : `Invoice ${invoiceNumber(p.invoiceId)}`}</td>
+                  <td className="py-2 pr-3 text-ink-2">{p.kind === 'invoice' ? p.from : p.address}</td>
                   <td className="py-2 pr-3">
                     {p.amount} {p.symbol}
                     {p.usd && <span className="block text-[11px] text-faint">{p.usd} USD</span>}
@@ -304,6 +309,124 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
                       </a>
                     ) : (
                       p.txHash.slice(0, 10)
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+/** Gully Analytics accounts (self-serve): plan, websites, events this month; grant, revoke, delete. */
+function AnalyticsAccounts({ data, act }: { data: AnalyticsAdmin; act: (path: string, body?: unknown) => Promise<string | null> }) {
+  const [address, setAddress] = useState('')
+  const [plan, setPlan] = useState('starter')
+  const [days, setDays] = useState('30')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold'
+  const paid = data.offer.plans.filter((p) => p.priceUsdc > 0)
+  const grant = async (addr: string, p: string, d?: number) => {
+    setMsg(null)
+    const err = await act(`/api/admin/analytics/${addr}/plan`, { plan: p, days: d })
+    setMsg(err ? { ok: false, text: err } : { ok: true, text: p === 'none' ? `${addr}: plan and trial stopped; its events are refused now.` : `${addr} has Analytics ${p} for ${d} days.` })
+  }
+  const remove = async (addr: string) => {
+    setMsg(null)
+    const err = await act(`/api/admin/analytics/${addr}/delete`)
+    setMsg(err ? { ok: false, text: err } : { ok: true, text: `${addr}: account, Gully Analytics user and its data deleted.` })
+  }
+  const stateCls = { trial: 'text-gold', active: 'text-green', lapsed: 'text-error' }
+  return (
+    <section className={card}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className={h2}>Gully Analytics</h2>
+        <span className={small}>
+          {data.configured ? 'self-serve on' : 'self-serve off: ANALYTICS_ADMIN_PASSWORD is not set'} · {data.accounts.length} account{data.accounts.length === 1 ? '' : 's'} · lapsed accounts stay readable {data.offer.graceDays} days, then can be deleted
+        </span>
+      </div>
+      <form
+        className="flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          grant(address.trim().toLowerCase(), plan, Number(days))
+        }}
+      >
+        <label className="flex min-w-[min(100%,360px)] flex-1 flex-col gap-1 text-[12px] text-faint">
+          Wallet
+          <input list="admin-analytics-wallets" className={field} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" />
+          <datalist id="admin-analytics-wallets">
+            {data.accounts.map((a) => (
+              <option key={a.address} value={a.address} />
+            ))}
+          </datalist>
+        </label>
+        <label className="flex flex-col gap-1 text-[12px] text-faint">
+          Plan
+          <select className={field} value={plan} onChange={(e) => setPlan(e.target.value)}>
+            {paid.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+            <option value="none">none (revoke)</option>
+          </select>
+        </label>
+        {plan !== 'none' && (
+          <label className="flex w-[90px] flex-col gap-1 text-[12px] text-faint">
+            Days
+            <input className={field} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} required />
+          </label>
+        )}
+        <button type="submit" className="h-10 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover">
+          {plan === 'none' ? 'Revoke' : 'Grant plan'}
+        </button>
+      </form>
+      {msg && <p className={`m-0 font-mono text-[12px] ${msg.ok ? 'text-green' : 'text-error'}`}>{msg.text}</p>}
+      {!data.accounts.length ? (
+        <p className="m-0 text-[14px] text-muted">No wallet has started Gully Analytics yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[14px]">
+            <thead>
+              <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
+                <th className="py-2 pr-3 font-medium">WALLET</th>
+                <th className="py-2 pr-3 font-medium">LOGIN</th>
+                <th className="py-2 pr-3 font-medium">PLAN</th>
+                <th className="py-2 pr-3 font-medium">UNTIL</th>
+                <th className="py-2 pr-3 font-medium">SITES</th>
+                <th className="py-2 pr-3 font-medium">EVENTS THIS MONTH</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {data.accounts.map((a) => (
+                <tr key={a.address} className="border-b border-line last:border-b-0">
+                  <td className="py-3 pr-3 font-mono text-[12px] text-ink-2">{a.address}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px] text-faint">{a.username}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px]">
+                    <span className={stateCls[a.state]}>{a.state === 'lapsed' ? 'lapsed' : a.planName}</span>
+                    {a.source && a.state === 'active' && <span className="block text-[11px] text-faint">{a.source}</span>}
+                  </td>
+                  <td className="py-3 pr-3 font-mono text-[12px] text-faint">{a.state === 'lapsed' ? `readable to ${when(a.readableUntil)}` : when(a.expiresAt)}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px]">{a.sites}</td>
+                  <td className="py-3 pr-3 font-mono text-[12px]">
+                    {a.eventsThisMonth.toLocaleString('en-US')}
+                    {a.eventsLimit !== null && <span className="text-faint"> / {a.eventsLimit.toLocaleString('en-US')}</span>}
+                  </td>
+                  <td className="py-3 text-right whitespace-nowrap">
+                    {a.state !== 'lapsed' && (
+                      <button type="button" onClick={() => window.confirm(`Stop Gully Analytics for ${a.address}? Its events are refused from now.`) && grant(a.address, 'none')} className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error">
+                        Revoke
+                      </button>
+                    )}
+                    {a.deletable && (
+                      <button type="button" onClick={() => window.confirm(`Delete the Gully Analytics account of ${a.address}, its user and all its data? This cannot be undone.`) && remove(a.address)} className="rounded-btn border border-error px-3 py-[6px] text-[13px] text-error hover:bg-[rgba(255,138,122,.08)]">
+                        Delete
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -657,6 +780,7 @@ export function AdminPage() {
             </section>
 
             <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
+            <AnalyticsAccounts data={data.analytics} act={act} />
 
             <Invoices invoices={data.invoices.invoices} assets={data.invoices.assets} act={act} />
 

@@ -1,11 +1,12 @@
 import { motion } from 'motion/react'
-import { Activity, AlertTriangle, AppWindow, ArrowUpRight, BellRing, BookOpen, Check, CreditCard, KeyRound, LayoutDashboard, LogOut, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Terminal, Trash2, Wallet } from 'lucide-react'
+import { Activity, AlertTriangle, AppWindow, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Check, CreditCard, KeyRound, LayoutDashboard, LogOut, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Terminal, Trash2, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { btnGold, btnOutline } from '../../components/ui'
 import { CodeBlock } from '../../docs/CodeBlock'
 import { widgetSnippet } from '../../lib/widgetEmbed'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import { Alerts } from './Alerts'
+import { AnalyticsPanel } from './Analytics'
 import { ago, api, fmtDate, shortAddress, type Account, type ApiKey, type Range, type RecentRequest, type Usage } from './api'
 import { Billing } from './Billing'
 import { CopyButton, Dialog } from './Dialog'
@@ -13,17 +14,18 @@ import { ErrorLine, Skeleton } from './parts'
 import { card, cardTitle, iconBtn, input, rise, sub } from './styles'
 import { UsageChart } from './UsageChart'
 
-/* The signed-in developer dashboard: overview (usage), API keys, plan & billing, alerts, quickstart,
-   recent requests, widget. Every figure is read from /api/developer/*; loading, empty and error states
+/* The signed-in developer dashboard: overview (usage), API keys, plan & billing, alerts, Gully Analytics,
+   quickstart, recent requests, widget. Every figure is read from /api/developer/*; loading, empty and error states
    are distinct. */
 
-export type Tab = 'overview' | 'keys' | 'billing' | 'alerts' | 'quickstart' | 'requests' | 'widget'
+export type Tab = 'overview' | 'keys' | 'billing' | 'alerts' | 'analytics' | 'quickstart' | 'requests' | 'widget'
 
 const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'keys', label: 'API keys', icon: KeyRound },
   { id: 'billing', label: 'Plan & billing', icon: CreditCard },
   { id: 'alerts', label: 'Alerts', icon: BellRing },
+  { id: 'analytics', label: 'Analytics', icon: ChartNoAxesCombined },
   { id: 'quickstart', label: 'Quickstart', icon: Terminal },
   { id: 'requests', label: 'Requests', icon: Activity },
   { id: 'widget', label: 'Widget', icon: AppWindow },
@@ -739,12 +741,19 @@ function WidgetPanel() {
 export function Dashboard({ account, reload, onSignOut }: { account: Account; reload: () => Promise<void>; onSignOut: () => void }) {
   const [tab, setTab] = useTab()
   const goKeys = () => setTab('keys')
+  // On narrow screens the tabs scroll sideways: keep the current one in view (e.g. arriving at #analytics).
+  const navRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const el = navRef.current?.querySelector<HTMLElement>('[aria-current="page"]')
+    const nav = navRef.current
+    if (el && nav && nav.scrollWidth > nav.clientWidth) nav.scrollLeft += el.getBoundingClientRect().left - nav.getBoundingClientRect().left - 16
+  }, [tab])
   return (
     <section className="flex flex-col gap-6 px-page pt-10 pb-24">
       <div className="flex flex-wrap items-center justify-between gap-4" style={rise(0)}>
         <div className="flex flex-col gap-2">
           <span className="font-mono text-[13px] tracking-[1.5px] text-gold">DEVELOPER DASHBOARD</span>
-          <h1 className="m-0 font-display text-[clamp(36px,4.4cqw,56px)] leading-[.92] font-extrabold uppercase">Tracker API</h1>
+          <h1 className="m-0 font-display text-[clamp(36px,4.4cqw,56px)] leading-[.92] font-extrabold uppercase">{tab === 'analytics' ? 'Gully Analytics' : 'Tracker API'}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex min-h-11 items-center gap-3 rounded-btn border border-line-strong bg-surface px-3" title={account.address}>
@@ -762,7 +771,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
       </div>
 
       <div className="grid grid-cols-[220px_minmax(0,1fr)] items-start gap-6 max-[960px]:grid-cols-1">
-        <nav aria-label="Dashboard" className="sticky top-24 flex flex-col gap-1 max-[960px]:static max-[960px]:-mx-1 max-[960px]:flex-row max-[960px]:overflow-x-auto max-[960px]:px-1 max-[960px]:pb-1">
+        <nav ref={navRef} aria-label="Dashboard" className="sticky top-24 flex flex-col gap-1 max-[960px]:static max-[960px]:-mx-1 max-[960px]:flex-row max-[960px]:overflow-x-auto max-[960px]:px-1 max-[960px]:pb-1">
           {TABS.map((t) => {
             const Icon = t.icon
             const on = tab === t.id
@@ -806,6 +815,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
           {tab === 'keys' && <Keys account={account} reload={reload} />}
           {tab === 'billing' && <Billing account={account} reload={reload} />}
           {tab === 'alerts' && <Alerts goBilling={() => setTab('billing')} />}
+          {tab === 'analytics' && <AnalyticsPanel />}
           {tab === 'quickstart' && <Quickstart account={account} goKeys={goKeys} />}
           {tab === 'requests' && <Requests />}
           {tab === 'widget' && <WidgetPanel />}
