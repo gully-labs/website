@@ -3,9 +3,9 @@ import { coinbaseWallet, injectedWallet, metaMaskWallet, rabbyWallet, rainbowWal
 import { QueryClient } from '@tanstack/react-query'
 import { defineChain } from 'viem'
 import { createConfig, http } from 'wagmi'
-import { base, bsc, mainnet } from 'wagmi/chains'
+import { arbitrum, base, bsc, mainnet } from 'wagmi/chains'
 
-/* The wallet set-up shared by sign-in (WalletSignIn) and USDC checkout (PayUsdc). Both are lazy chunks;
+/* The wallet set-up shared by sign-in (WalletSignIn) and Gully Pay checkout (components/pay/PayWallet). Both are lazy chunks;
    this module loads with whichever is needed first and never with the site or the dashboard itself.
    Injected wallets (any EIP-6963 browser wallet) and Coinbase Wallet need no configuration;
    WalletConnect wallets appear only when VITE_WALLETCONNECT_PROJECT_ID is set at build time. */
@@ -32,9 +32,9 @@ const connectors = connectorsForWallets(
 )
 
 export const wagmiConfig = createConfig({
-  chains: [mainnet, base, bsc, robinhood],
+  chains: [mainnet, base, bsc, arbitrum, robinhood],
   connectors,
-  transports: { [mainnet.id]: http(), [base.id]: http(), [bsc.id]: http(), [robinhood.id]: http() },
+  transports: { [mainnet.id]: http(), [base.id]: http(), [bsc.id]: http(), [arbitrum.id]: http(), [robinhood.id]: http() },
   ssr: false,
 })
 

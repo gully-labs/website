@@ -133,6 +133,7 @@ export function paymentView(p) {
     amount: fmtUnits(p.amountRaw, p.decimals ?? a?.decimals ?? 6),
     usd: p.usdCents != null ? fmtUsd(p.usdCents) : null,
     from: p.from,
+    to: p.to ?? null,
     blockNumber: p.blockNumber,
     at: p.at,
     txUrl: CHAINS[p.chainId] ? txUrl(p.chainId, p.txHash) : null,
@@ -259,7 +260,7 @@ async function checkTx({ quote, asset, txHash, signer, minRaw, label, run }) {
 
 /** Records a checked payment and marks its quote paid. */
 export function recordPayment(fields, quote) {
-  const payment = { id: randomToken(9), at: new Date().toISOString(), ...fields }
+  const payment = { id: randomToken(9), at: new Date().toISOString(), to: quote?.treasury ?? treasury(), ...fields }
   db.payments.push(payment)
   if (quote) quote.paidAt = payment.at
   pruneQuotes()

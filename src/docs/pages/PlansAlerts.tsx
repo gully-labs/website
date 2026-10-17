@@ -90,8 +90,8 @@ export function PlansAlerts() {
       slug="plans-alerts"
       eyebrow="BUILD · PLANS & ALERTS"
       title="Plans & alerts"
-      description="Paid plans for the Gully Labs tracker API, paid in USDC on Base with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature."
-      lead="The API stays free. Paid plans raise the per-key rate limit, add gap alerts and keep a longer history. You pay in USDC from your own wallet straight to ours."
+      description="Paid plans for the Gully Labs tracker API, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature."
+      lead="The API stays free. Paid plans raise the per-key rate limit, add gap alerts and keep a longer history. You pay in ETH, BNB, USDC or USDT from your own wallet straight to ours."
       sections={sections}
     >
       <Section id="plans" title="Plans">
@@ -104,7 +104,7 @@ export function PlansAlerts() {
           <>
             <Fields
               head={['Plan', 'Price', 'Includes']}
-              rows={offer.plans.map((p) => [p.name, p.priceUsdc ? `${p.priceUsdc} USDC / ${offer.periodDays} days` : 'free', `${p.perMin.toLocaleString('en-US')} requests a minute per key, ${p.alerts} alert${p.alerts === 1 ? '' : 's'}, ${p.historyDays} days of history, up to ${p.maxKeys} keys`])}
+              rows={offer.plans.map((p) => [p.name, p.priceUsdc ? `${p.priceUsdc} USD / ${offer.periodDays} days` : 'free', `${p.perMin.toLocaleString('en-US')} requests a minute per key, ${p.alerts} alert${p.alerts === 1 ? '' : 's'}, ${p.historyDays} days of history, up to ${p.maxKeys} keys`])}
             />
             <P>
               Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history.
@@ -115,22 +115,44 @@ export function PlansAlerts() {
       </Section>
 
       <Section id="paying" title="Paying">
+        <P>
+          Prices are in US dollars. You pay in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the Gully Labs treasury wallet, which is the same address on every chain.
+        </P>
+        {offer && offer !== 'error' && (
+          <Fields
+            head={['Chain', 'Confirmations', 'Assets']}
+            rows={offer.chains.map((c): [string, string, string] => [
+              `${c.name} (${c.id})`,
+              String(c.confirmations),
+              offer.assets
+                .filter((a) => a.chainId === c.id)
+                .map((a) => (a.kind === 'native' ? `${a.symbol} (priced by Chainlink ${a.feed?.description})` : `${a.symbol} ${a.address?.slice(0, 6)}…${a.address?.slice(-4)}`))
+                .join(', '),
+            ])}
+          />
+        )}
         <List>
           <li>
-            Open <b>Plan &amp; billing</b> on the <Ext href="https://developers.gullylabs.xyz">developer dashboard</Ext> and choose a plan. It shows the exact USDC amount and the Gully Labs treasury address on Base.
+            Open <b>Plan &amp; billing</b> on the <Ext href="https://developers.gullylabs.xyz">developer dashboard</Ext>, choose a plan, then a chain and an asset. You get a quote: the exact amount to send and the treasury address, valid for 20 minutes.
           </li>
           <li>
-            Press <b>Pay with a wallet</b> for a one-click USDC transfer, or send the amount from any wallet or exchange and paste the transaction hash.
+            Stablecoins count one to one with the dollar; the quote adds a few millionths as a tag. ETH and BNB are priced by the Chainlink USD feed on the same chain at the moment of the quote and rounded up, with a unique tail in the last digits. The quote shows the feed, its round and when it last updated. If the feed is more than two hours old, no quote is given in that coin.
           </li>
           <li>
-            The server reads the transaction from a public Base node. It counts when it succeeded, sent at least the plan’s price in USDC (<C>0x8335…2913</C>) to the treasury, has a few blocks on top, and was never used before. The plan starts the moment it is confirmed.
+            Press <b>Pay with a wallet</b> for a one-click transfer (the wallet is asked to switch to the quote’s chain), or send the amount from any wallet or exchange and paste the transaction hash.
           </li>
           <li>
-            A payment from the wallet you signed in with always matches you. From any other wallet, send the exact amount the checkout shows: its last digits tag the payment as yours, so nobody watching the treasury can claim it.
+            The server reads the receipt and the transaction from a public node of that chain and checks that they agree. A payment counts when it succeeded, is on the quote’s chain, paid the treasury in the quoted asset, has the confirmations above, and its hash was never used before on any chain. The plan starts the moment it is confirmed.
+          </li>
+          <li>
+            From the wallet you signed in with, at least the price counts: any stablecoin amount from the dollar price up, or at least the quoted amount of ETH or BNB (paying more is accepted, paying less is refused and says by how much). From any other wallet or an exchange, send the exact quoted amount: its last digits tag the payment as yours, so nobody watching the treasury can claim it. A coin payment must be mined while its quote holds (ten minutes of grace).
           </li>
           <li>A payment buys {offer && offer !== 'error' ? offer.periodDays : 30} days. Paying again for the same plan adds them to the end; a different plan starts that day. Nothing renews by itself: to cancel, don’t pay again. When a plan lapses you are back on Free and your keys keep working at the Free limit.</li>
         </List>
-        <Callout label="NO CUSTODY">The USDC goes straight to the treasury wallet in your own transfer. We hold no balance and no card, and nothing leaves your wallet unless you sign it.</Callout>
+        <Callout label="NO CUSTODY">The payment goes straight to the treasury wallet in your own transfer. We hold no balance and no card, and nothing leaves your wallet unless you sign it.</Callout>
+        <P>
+          Other Gully Labs work (Chain Kit, Gully Analytics, services) is billed with an invoice link of the form <C>gullylabs.xyz/pay/…</C>. It takes the same assets and checks; since nobody signs in there, a payment matches an invoice only by the exact quoted amount. Once paid, the page links the transaction and a printable receipt.
+        </P>
       </Section>
 
       <Section id="history" title="Longer history">

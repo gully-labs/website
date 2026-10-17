@@ -54,39 +54,75 @@ export interface Plan {
   maxKeys: number
 }
 
-/** GET /api/plans: the tiers and whether they can be bought. Prices live only on the server. */
+/** One accepted payment asset (server/payments.mjs). */
+export interface PayAsset {
+  id: string
+  chainId: number
+  chain: string
+  chainKey: string
+  symbol: string
+  name: string
+  kind: 'token' | 'native'
+  address: string | null
+  decimals: number
+  confirmations: number
+  explorer: string
+  feed: { address: string; description: string } | null
+}
+
+/** GET /api/plans: the tiers, the accepted assets and whether they can be bought. Prices live only on the server. */
 export interface Offer {
-  currency: 'USDC'
-  chain: { id: number; name: string }
-  token: { address: string; symbol: string; decimals: number }
+  currency: 'USD'
+  chains: { id: number; name: string; key: string; explorer: string; confirmations: number }[]
+  assets: PayAsset[]
   periodDays: number
   anonymous: { perMin: number; historyDays: number }
   plans: Plan[]
-  checkout: { enabled: true; treasury: string; minConfirmations: number } | { enabled: false; treasury: null; reason: string }
+  checkout: { enabled: true; treasury: string } | { enabled: false; treasury: null; reason: string }
 }
 
-export interface Intent {
+/** A 20-minute quote: the exact amount to send in one asset, for a plan or an invoice. */
+export interface Quote {
   id: string
-  plan: PlanId
+  kind: 'plan' | 'invoice'
+  plan: PlanId | null
+  invoiceId: string | null
+  asset: { id: string; chainId: number; chain: string; symbol: string; kind: 'token' | 'native'; address: string | null; decimals: number }
+  usd: string
   amount: string
   amountRaw: string
-  priceUsdc: number
+  minAmount: string
   treasury: string
-  token: string
   chainId: number
+  token: string | null
+  confirmations: number
+  priceUsdc: number | null
+  price: { feed: string; description: string; roundId: string; answer: string; updatedAt: string } | null
   createdAt: string
   expiresAt: string
 }
+export type Intent = Quote
 
 export interface Payment {
+  id: string | null
+  kind: 'plan' | 'invoice'
   txHash: string
-  plan: PlanId
+  chainId: number
+  chain: string
+  asset: string
+  symbol: string
   amount: string
+  usd: string | null
   from: string
+  to: string | null
   blockNumber: number
   at: string
-  periodStart: string
-  expiresAt: string
+  txUrl: string | null
+  price: { description: string; answer: string; updatedAt: string; roundId: string; feed: string } | null
+  plan: PlanId | null
+  periodStart: string | null
+  expiresAt: string | null
+  invoiceId: string | null
 }
 
 export interface BillingView {
