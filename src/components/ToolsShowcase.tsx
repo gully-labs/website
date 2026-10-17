@@ -10,7 +10,7 @@ const TRUSTED = new Set(['premium', 'discount', 'drifting', 'in-line'])
 type Card = { icon: LucideIcon; label: string; title: string; body: string; cta: string } & ({ to: string } | { href: string })
 const CARDS: Card[] = [
   { icon: KeyRound, label: 'BUILD', title: 'Developer portal', body: 'Sign in with your wallet, get an API key in seconds and watch your usage live. 60 calls a minute are free with no key.', cta: 'Open the portal', href: DEVELOPERS_URL },
-  { icon: BellRing, label: 'ALERTS', title: 'Plans & gap alerts', body: 'Higher limits, a year of gap history and signed webhook alerts when a stock drifts from its fair price. Paid in crypto, no custody.', cta: 'See the plans', to: '/pricing' },
+  { icon: BellRing, label: 'ALERTS', title: 'Plans & gap alerts', body: 'Higher limits, a year of gap history and alerts when a stock drifts from its fair price, to a signed webhook or straight to Telegram. Paid in crypto, no custody.', cta: 'See the plans', to: '/pricing' },
   { icon: Package, label: 'SDK', title: 'TypeScript SDK', body: 'A typed client for the API and the widget as a React component. Open source, MIT.', cta: 'View on GitHub', href: 'https://github.com/gully-labs/sdk' },
   { icon: Puzzle, label: 'EMBED', title: 'Tracker widget', body: 'One script tag puts a live ticker, a one-stock badge or a table of the widest gaps on any site.', cta: 'Build a widget', to: '/widget' },
 ]
@@ -58,7 +58,7 @@ export function ToolsShowcase() {
           </h3>
           <p className="m-0 max-w-[480px] text-[16px] leading-[1.6] text-muted">
             Every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price. The gap, the depth
-            and the feed time, refreshed every minute.
+            and the feed time, refreshed every minute, with the day’s top movers, a gap heatmap and a page per stock where you can swap it in place.
           </p>
           <dl className="m-0 grid grid-cols-3 gap-4 border-t border-line pt-5">
             {[

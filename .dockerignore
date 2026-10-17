@@ -4,3 +4,5 @@ compare/out
 .git
 .vercel
 certs
+.env
+.env.*

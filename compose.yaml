@@ -2,7 +2,13 @@
 name: gully
 services:
   web:
-    build: .
+    build:
+      context: .
+      # Public values baked into the bundle at build time (LI.FI swap, WalletConnect).
+      args:
+        VITE_LIFI_INTEGRATOR: ${VITE_LIFI_INTEGRATOR:-}
+        VITE_LIFI_FEE: ${VITE_LIFI_FEE:-}
+        VITE_WALLETCONNECT_PROJECT_ID: ${VITE_WALLETCONNECT_PROJECT_ID:-}
     image: gully-web:latest
     container_name: gully-web
     restart: unless-stopped
