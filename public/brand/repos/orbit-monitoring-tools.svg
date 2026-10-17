@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-label="Gully Labs · Keep it healthy">
+<title>Gully Labs · Keep it healthy</title>
+<style>@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style>
+<defs>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#141A22" stroke-width="1"/></pattern>
+<radialGradient id="glow" cx="78%" cy="45%" r="45%"><stop offset="0" stop-color="#E8C060" stop-opacity=".16"/><stop offset="1" stop-color="#E8C060" stop-opacity="0"/></radialGradient>
+<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="#0B0E13"/><stop offset=".55" stop-color="#0B0E13" stop-opacity=".2"/><stop offset="1" stop-color="#0B0E13" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="1280" height="360" fill="#0B0E13"/><rect width="1280" height="360" fill="url(#grid)"/><rect width="1280" height="360" fill="url(#glow)"/><rect width="760" height="360" fill="url(#fade)"/>
+<rect x="0" y="0" width="1280" height="3" fill="#E8C060"/>
+<g transform="translate(64 62)">
+<rect width="40" height="40" rx="9" fill="#E8C060"/><text x="20" y="30" text-anchor="middle" font-family="'Barlow Condensed','Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="28" fill="#0B0E13">G</text>
+<text x="56" y="27" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" letter-spacing="2.5" fill="#E8C060">GULLY CHAINS · MONITOR</text>
+</g>
+<text x="64" y="192" font-family="'Barlow Condensed','Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="76" fill="#EEF0F2" textLength="640" lengthAdjust="spacingAndGlyphs">KEEP IT HEALTHY</text>
+<text x="66" y="236" font-family="Helvetica Neue,Arial,sans-serif" font-size="22" fill="#A6B0BD">Blocks, batches and balances, watched around the clock.</text>
+<text x="66" y="300" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="14" fill="#6C7888">gully-labs/orbit-monitoring-tools · fork of OffchainLabs/orbit-monitoring-tools</text>
+<clipPath id="mc"><rect x="770" y="70" width="440" height="130" rx="10"/></clipPath><rect x="770" y="70" width="440" height="130" rx="10" fill="#0D1116" stroke="#1D232C"/>
+<g clip-path="url(#mc)"><g><animateTransform attributeName="transform" type="translate" from="770 75" to="290 75" dur="5s" repeatCount="indefinite"/>
+<path d="M0 60 L60 60 L75 20 L90 100 L105 60 L200 60 L215 30 L230 90 L245 60 L340 60 L355 20 L370 100 L385 60 L480 60" fill="none" stroke="#E8C060" stroke-width="2.5"/><path d="M0 60 L60 60 L75 20 L90 100 L105 60 L200 60 L215 30 L230 90 L245 60 L340 60 L355 20 L370 100 L385 60 L480 60" transform="translate(480 0)" fill="none" stroke="#E8C060" stroke-width="2.5"/></g></g><circle cx="782" cy="227" r="6" fill="#6FCF6A"><animate attributeName="r" values="5;8;5" dur="1.6s" begin="0s" repeatCount="indefinite"/></circle>
+<text x="800" y="232" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" fill="#EEF0F2">blocks</text><text x="1210" y="232" text-anchor="end" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" fill="#6FCF6A">producing</text><circle cx="782" cy="257" r="6" fill="#6FCF6A"><animate attributeName="r" values="5;8;5" dur="1.6s" begin="0.3s" repeatCount="indefinite"/></circle>
+<text x="800" y="262" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" fill="#EEF0F2">batch poster</text><text x="1210" y="262" text-anchor="end" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" fill="#6FCF6A">funded</text><circle cx="782" cy="287" r="6" fill="#6AA6FF"><animate attributeName="r" values="5;8;5" dur="1.6s" begin="0.6s" repeatCount="indefinite"/></circle>
+<text x="800" y="292" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" fill="#EEF0F2">explorer</text><text x="1210" y="292" text-anchor="end" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" fill="#6AA6FF">in sync</text>
+</svg>

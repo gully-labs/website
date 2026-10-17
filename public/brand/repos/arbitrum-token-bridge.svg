@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-label="Gully Labs · Gully Bridge">
+<title>Gully Labs · Gully Bridge</title>
+<style>@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style>
+<defs>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#141A22" stroke-width="1"/></pattern>
+<radialGradient id="glow" cx="78%" cy="45%" r="45%"><stop offset="0" stop-color="#E8C060" stop-opacity=".16"/><stop offset="1" stop-color="#E8C060" stop-opacity="0"/></radialGradient>
+<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="#0B0E13"/><stop offset=".55" stop-color="#0B0E13" stop-opacity=".2"/><stop offset="1" stop-color="#0B0E13" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="1280" height="360" fill="#0B0E13"/><rect width="1280" height="360" fill="url(#grid)"/><rect width="1280" height="360" fill="url(#glow)"/><rect width="760" height="360" fill="url(#fade)"/>
+<rect x="0" y="0" width="1280" height="3" fill="#E8C060"/>
+<g transform="translate(64 62)">
+<rect width="40" height="40" rx="9" fill="#E8C060"/><text x="20" y="30" text-anchor="middle" font-family="'Barlow Condensed','Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="28" fill="#0B0E13">G</text>
+<text x="56" y="27" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" letter-spacing="2.5" fill="#E8C060">GULLY CHAINS · BRIDGE</text>
+</g>
+<text x="64" y="192" font-family="'Barlow Condensed','Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="76" fill="#EEF0F2" >GULLY BRIDGE</text>
+<text x="66" y="236" font-family="Helvetica Neue,Arial,sans-serif" font-size="22" fill="#A6B0BD">Move assets between a chain and its parent.</text>
+<text x="66" y="300" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="14" fill="#6C7888">gully-labs/arbitrum-token-bridge · fork of OffchainLabs/arbitrum-token-bridge</text>
+<path id="arc" d="M840 230 C 920 90, 1060 90, 1140 230" fill="none" stroke="#2C3540" stroke-width="2" stroke-dasharray="6 8"/>
+<circle cx="840" cy="230" r="42" fill="#131820" stroke="#6AA6FF" stroke-width="2"/><text x="840" y="236" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="13" fill="#6AA6FF">parent</text>
+<circle cx="1140" cy="230" r="42" fill="#131820" stroke="#E8C060" stroke-width="2"/><text x="1140" y="236" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="13" fill="#E8C060">your chain</text><circle r="9" fill="#E8C060"><animateMotion dur="3s" begin="0s" repeatCount="indefinite" path="M840 230 C 920 90, 1060 90, 1140 230"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3s" begin="0s" repeatCount="indefinite"/></circle><circle r="9" fill="#E8C060"><animateMotion dur="3s" begin="1s" repeatCount="indefinite" path="M840 230 C 920 90, 1060 90, 1140 230"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3s" begin="1s" repeatCount="indefinite"/></circle><circle r="9" fill="#E8C060"><animateMotion dur="3s" begin="2s" repeatCount="indefinite" path="M840 230 C 920 90, 1060 90, 1140 230"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3s" begin="2s" repeatCount="indefinite"/></circle><text x="990" y="300" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" fill="#A6B0BD">deposit · withdraw · any ERC-20</text>
+</svg>

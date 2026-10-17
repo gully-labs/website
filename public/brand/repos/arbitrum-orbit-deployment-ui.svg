@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-label="Gully Labs · Launch a chain">
+<title>Gully Labs · Launch a chain</title>
+<style>@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style>
+<defs>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#141A22" stroke-width="1"/></pattern>
+<radialGradient id="glow" cx="78%" cy="45%" r="45%"><stop offset="0" stop-color="#E8C060" stop-opacity=".16"/><stop offset="1" stop-color="#E8C060" stop-opacity="0"/></radialGradient>
+<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="#0B0E13"/><stop offset=".55" stop-color="#0B0E13" stop-opacity=".2"/><stop offset="1" stop-color="#0B0E13" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="1280" height="360" fill="#0B0E13"/><rect width="1280" height="360" fill="url(#grid)"/><rect width="1280" height="360" fill="url(#glow)"/><rect width="760" height="360" fill="url(#fade)"/>
+<rect x="0" y="0" width="1280" height="3" fill="#E8C060"/>
+<g transform="translate(64 62)">
+<rect width="40" height="40" rx="9" fill="#E8C060"/><text x="20" y="30" text-anchor="middle" font-family="'Barlow Condensed','Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="28" fill="#0B0E13">G</text>
+<text x="56" y="27" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" letter-spacing="2.5" fill="#E8C060">GULLY CHAINS · LAUNCH</text>
+</g>
+<text x="64" y="192" font-family="'Barlow Condensed','Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="76" fill="#EEF0F2" textLength="640" lengthAdjust="spacingAndGlyphs">LAUNCH A CHAIN</text>
+<text x="66" y="236" font-family="Helvetica Neue,Arial,sans-serif" font-size="22" fill="#A6B0BD">Deploy an Arbitrum Orbit chain from the browser.</text>
+<text x="66" y="300" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="14" fill="#6C7888">gully-labs/arbitrum-orbit-deployment-ui · fork of OffchainLabs/arbitrum-orbit-deployment-ui</text>
+<g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="6s" begin="0.0s" repeatCount="indefinite"/>
+<rect x="790" y="150" width="64" height="64" rx="10" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="822" y="188" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="13" fill="#A6B0BD">#4812</text>
+</g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="6s" begin="0.5s" repeatCount="indefinite"/>
+<rect x="878" y="150" width="64" height="64" rx="10" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="910" y="188" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="13" fill="#A6B0BD">#4813</text>
+<line x1="854" y1="182" x2="878" y2="182" stroke="#E8C060" stroke-width="2" stroke-dasharray="4 4"/></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="6s" begin="1.0s" repeatCount="indefinite"/>
+<rect x="966" y="150" width="64" height="64" rx="10" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="998" y="188" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="13" fill="#A6B0BD">#4814</text>
+<line x1="942" y1="182" x2="966" y2="182" stroke="#E8C060" stroke-width="2" stroke-dasharray="4 4"/></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="6s" begin="1.5s" repeatCount="indefinite"/>
+<rect x="1054" y="150" width="64" height="64" rx="10" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="1086" y="188" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="13" fill="#A6B0BD">#4815</text>
+<line x1="1030" y1="182" x2="1054" y2="182" stroke="#E8C060" stroke-width="2" stroke-dasharray="4 4"/></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="6s" begin="2.0s" repeatCount="indefinite"/>
+<rect x="1142" y="150" width="64" height="64" rx="10" fill="#131820" stroke="#E8C060" stroke-width="2"/>
+<text x="1174" y="188" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="13" fill="#E8C060">#4816</text>
+<line x1="1118" y1="182" x2="1142" y2="182" stroke="#E8C060" stroke-width="2" stroke-dasharray="4 4"/></g><text x="790" y="262" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" fill="#6FCF6A" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.4;0.45;0.85;1" dur="6s" repeatCount="indefinite"/>✓ rollup deployed · chain live</text>
+</svg>

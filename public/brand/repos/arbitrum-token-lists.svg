@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-label="Gully Labs · Token lists">
+<title>Gully Labs · Token lists</title>
+<style>@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style>
+<defs>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#141A22" stroke-width="1"/></pattern>
+<radialGradient id="glow" cx="78%" cy="45%" r="45%"><stop offset="0" stop-color="#E8C060" stop-opacity=".16"/><stop offset="1" stop-color="#E8C060" stop-opacity="0"/></radialGradient>
+<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="#0B0E13"/><stop offset=".55" stop-color="#0B0E13" stop-opacity=".2"/><stop offset="1" stop-color="#0B0E13" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="1280" height="360" fill="#0B0E13"/><rect width="1280" height="360" fill="url(#grid)"/><rect width="1280" height="360" fill="url(#glow)"/><rect width="760" height="360" fill="url(#fade)"/>
+<rect x="0" y="0" width="1280" height="3" fill="#E8C060"/>
+<g transform="translate(64 62)">
+<rect width="40" height="40" rx="9" fill="#E8C060"/><text x="20" y="30" text-anchor="middle" font-family="'Barlow Condensed','Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="28" fill="#0B0E13">G</text>
+<text x="56" y="27" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="15" letter-spacing="2.5" fill="#E8C060">GULLY CHAINS · TOKENS</text>
+</g>
+<text x="64" y="192" font-family="'Barlow Condensed','Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="76" fill="#EEF0F2" >TOKEN LISTS</text>
+<text x="66" y="236" font-family="Helvetica Neue,Arial,sans-serif" font-size="22" fill="#A6B0BD">The tokens every Gully chain and app agree on.</text>
+<text x="66" y="300" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="14" fill="#6C7888">gully-labs/arbitrum-token-lists · fork of OffchainLabs/arbitrum-token-lists</text>
+<g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="0.00s" repeatCount="indefinite"/>
+<circle cx="810" cy="140" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="810" y="145" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">ETH</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="0.18s" repeatCount="indefinite"/>
+<circle cx="882" cy="140" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="882" y="145" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">USDC</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="0.36s" repeatCount="indefinite"/>
+<circle cx="954" cy="140" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="954" y="145" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">USDT</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="0.54s" repeatCount="indefinite"/>
+<circle cx="1026" cy="140" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="1026" y="145" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">WBTC</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="0.72s" repeatCount="indefinite"/>
+<circle cx="1098" cy="140" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="1098" y="145" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">NVDA</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="0.90s" repeatCount="indefinite"/>
+<circle cx="1170" cy="140" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="1170" y="145" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">TSLA</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="1.08s" repeatCount="indefinite"/>
+<circle cx="810" cy="236" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="810" y="241" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">ARB</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="1.26s" repeatCount="indefinite"/>
+<circle cx="882" cy="236" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="882" y="241" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">DAI</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="1.44s" repeatCount="indefinite"/>
+<circle cx="954" cy="236" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="954" y="241" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">LINK</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="1.62s" repeatCount="indefinite"/>
+<circle cx="1026" cy="236" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="1026" y="241" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">COIN</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="1.80s" repeatCount="indefinite"/>
+<circle cx="1098" cy="236" r="28" fill="#131820" stroke="#2C3540" stroke-width="2"/>
+<text x="1098" y="241" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#EEF0F2">AAPL</text></g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.06;0.9;1" dur="6s" begin="1.98s" repeatCount="indefinite"/>
+<circle cx="1170" cy="236" r="28" fill="#E8C060" stroke="#E8C060" stroke-width="2"/>
+<text x="1170" y="241" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace" font-size="12" font-weight="600" fill="#0B0E13">GLY</text></g>
+</svg>
