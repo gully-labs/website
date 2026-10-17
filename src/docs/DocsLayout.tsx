@@ -72,7 +72,7 @@ function Sidebar({ onPick }: { onPick: () => void }) {
         {[
           { label: 'Live tracker', href: `${SITE}/tracker`, icon: Activity },
           { label: 'Widget builder', href: `${SITE}/widget`, icon: Puzzle },
-          { label: 'Developer portal', href: 'https://developers.gullylabs.xyz', icon: KeyRound },
+          { label: 'Developer portal', href: 'https://app.gullylabs.xyz', icon: KeyRound },
         ].map((l) => (
           <a key={l.href} href={l.href} className="group flex min-h-10 items-center gap-3 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
             <l.icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />

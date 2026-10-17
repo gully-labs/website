@@ -234,7 +234,7 @@ export function ApiReference() {
             ['400', 'history: chain or ticker malformed', <>Check the parameters. Body: <C>{'{"error":"chain and ticker"}'}</C>.</>],
             ['400', 'movers: window, limit, chain or ticker malformed', <>Use <C>window=1h</C> or <C>24h</C>, a <C>limit</C> from 1 to 50, and a <C>ticker</C> only with a <C>chain</C>.</>],
             ['405', 'a method other than GET or OPTIONS', 'Use GET.'],
-            ['401', 'unknown or revoked API key', 'Check the key, or request one at developers.gullylabs.xyz.'],
+            ['401', 'unknown or revoked API key', 'Check the key, or request one at app.gullylabs.xyz.'],
             ['403', 'history: days beyond what your plan includes',<>Ask for fewer days, or move to a plan with more history. The body names your limit in <C>historyDays</C>.</>],
             ['429', 'rate limit exceeded', 'Wait for Retry-After seconds, or use an API key.'],
             ['502', 'the tracker could not be built at all', 'Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.'],

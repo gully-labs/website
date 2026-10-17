@@ -26,6 +26,11 @@ export const ROLE_TEXT: Record<Role, string> = {
   viewer: 'Reads everything, changes nothing.',
 }
 
+export const APP_NAME = 'Gully Labs App'
+/** The app's home title; the server sends the same one (server/seo.mjs APP_TITLE). */
+export const APP_TITLE = `${APP_NAME} · keys, alerts, analytics, payments`
+export const APP_DESCRIPTION = 'Sign in with your wallet to create Gully Labs API keys instantly, set gap and launch alerts, run Gully Analytics, and pay for plans and invoices in crypto, with your team in one workspace.'
+
 export const MEMBER_ROLES: MemberRole[] = ['admin', 'developer', 'billing', 'viewer']
 
 export interface Portal {

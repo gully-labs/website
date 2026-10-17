@@ -64,7 +64,7 @@ export function AnalyticsDocs() {
       <Section id="start" title="Sign up">
         <List>
           <li>
-            Open the <Ext href="https://developers.gullylabs.xyz/#analytics">developer portal</Ext>, connect a wallet and sign the sign-in message (no transaction, no gas).
+            Open the <Ext href="https://app.gullylabs.xyz/#analytics">developer portal</Ext>, connect a wallet and sign the sign-in message (no transaction, no gas).
           </li>
           <li>
             In the <b>Analytics</b> tab press <b>Start free trial</b>. The server creates a Gully Analytics login for your wallet and shows its password once; copy it. We do not keep the password. <b>Reset password</b> in the same tab sets a new one and signs out open sessions.

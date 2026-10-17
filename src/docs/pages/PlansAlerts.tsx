@@ -151,7 +151,7 @@ export function PlansAlerts() {
         )}
         <List>
           <li>
-            Open <b>Plan &amp; billing</b> on the <Ext href="https://developers.gullylabs.xyz">developer dashboard</Ext>, choose a plan, then a chain and an asset. You get a quote: the exact amount to send and the treasury address, valid for 20 minutes.
+            Open <b>Plan &amp; billing</b> on the <Ext href="https://app.gullylabs.xyz">developer dashboard</Ext>, choose a plan, then a chain and an asset. You get a quote: the exact amount to send and the treasury address, valid for 20 minutes.
           </li>
           <li>
             Stablecoins count one to one with the dollar; the quote adds a few millionths as a tag. ETH and BNB are priced by the Chainlink USD feed on the same chain at the moment of the quote and rounded up, with a unique tail in the last digits. The quote shows the feed, its round and when it last updated. If the feed is more than two hours old, no quote is given in that coin.

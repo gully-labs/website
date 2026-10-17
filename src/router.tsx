@@ -6,7 +6,7 @@ import { AboutRoute, AdminRoute, AnalyticsRoute, ChainKitRoute, DevelopersRoute,
 import { GoTo, ToSite } from './pages/GoTo'
 import { RouteError } from './pages/RouteError'
 import { TrackerRoute } from './pages/TrackerRoute'
-import { ADMIN_URL, DEVELOPERS_URL, isAdminHost, isDevelopersHost, isDocsHost, isLocalHost } from './site-host'
+import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isLocalHost } from './site-host'
 
 const mainRoutes = [
   {
@@ -27,13 +27,16 @@ const mainRoutes = [
       { path: '/pay/:id', element: <PayRoute /> },
       // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
       { path: '/pay/l/:id', element: <PayLinkRoute /> },
-      { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={DEVELOPERS_URL} /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
   // The admin dashboard lives on its own host. Locally it is also at /admin; anywhere else /admin
   // sends you there (the server answers that path with a 301 before the app even loads).
   { path: '/admin', element: isLocalHost() ? <AdminRoute /> : <GoTo url={ADMIN_URL} /> },
+  // The Gully Labs App lives on app.gullylabs.xyz, full screen with its own sidebar. Locally it is at /app
+  // and, under its old name, /developers; anywhere else both leave for the app (the server 301s first).
+  { path: '/app', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
+  { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
   // A paid invoice's receipt prints on its own, without the site's header and footer.
   { path: '/pay/:id/receipt', element: <ReceiptRoute /> },
   // Development only: the docs site under /docs on the main host. In production it lives on its own host.
@@ -43,15 +46,15 @@ const mainRoutes = [
 // On the admin host every path is the dashboard; it has its own chrome (no site header or footer).
 const adminRoutes = [{ path: '*', element: <AdminRoute /> }]
 
-// On the developers host the dashboard is the home page, inside the site chrome; every other page
+// On the app host (and developers.*, its old name) the dashboard is the home page; every other page
 // belongs to the main site, so it leaves for it with the same path.
-// The developer console is full-screen: it draws its own header (design B), so no site Layout here.
-const developersRoutes = [
+// The app is full-screen: it draws its own sidebar and header, so no site Layout here.
+const appRoutes = [
   { path: '/', element: <DevelopersRoute /> },
   { path: '*', element: <ToSite /> },
 ]
 
-const routes = isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isDevelopersHost() ? developersRoutes : mainRoutes
+const routes = isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isAppHost() ? appRoutes : mainRoutes
 
 // One error boundary over every host's routes: a page left open across a deploy reloads onto the new
 // build instead of showing React Router's default error screen.

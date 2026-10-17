@@ -111,7 +111,7 @@ export function apiAccess(req) {
   const secret = bearer(req)
   if (secret) {
     const key = findKey(secret)
-    if (!key) return { ok: false, status: 401, error: 'Unknown or revoked API key. Create one at https://developers.gullylabs.xyz.' }
+    if (!key) return { ok: false, status: 401, error: 'Unknown or revoked API key. Create one at https://app.gullylabs.xyz.' }
     // A wallet's key gets its plan's limit; a legacy key with no wallet keeps its own (the Free limit).
     const plan = key.owner ? planOf(key.owner) : { ...PLANS.free, perMin: key.limit }
     const c = count(`key:${key.id}`, plan.perMin)
@@ -124,7 +124,7 @@ export function apiAccess(req) {
   tally(null, !c.allowed)
   return c.allowed
     ? { ok: true, keyId: null, limit: ANON_LIMIT_PER_MIN, remaining: c.remaining, plan: 'anonymous', historyDays: ANONYMOUS.historyDays }
-    : { ok: false, status: 429, error: `Anonymous limit is ${ANON_LIMIT_PER_MIN} requests a minute. A free API key raises it: https://developers.gullylabs.xyz.`, retryAfter: c.retryAfter }
+    : { ok: false, status: 429, error: `Anonymous limit is ${ANON_LIMIT_PER_MIN} requests a minute. A free API key raises it: https://app.gullylabs.xyz.`, retryAfter: c.retryAfter }
 }
 
 // Hour bucket: [total, 2xx/3xx, 4xx other than 429, 429, 5xx]

@@ -4,10 +4,11 @@
 // The <Seo> component keeps matching titles in the browser; keep the two in step.
 
 import fs from 'node:fs'
+import { APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
 
 const SITE = 'https://gullylabs.xyz'
 const DOCS = 'https://docs.gullylabs.xyz'
-const DEV = 'https://developers.gullylabs.xyz'
+const APP = APP_URL
 
 // Project copy, restated from src/content/projects.ts (the server cannot import TypeScript).
 const PROJECTS = {
@@ -79,6 +80,9 @@ const TRACKER_LD = {
   distribution: [{ '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: `${SITE}/api/tracker` }],
 }
 
+export const APP_TITLE = 'Gully Labs App · keys, alerts, analytics, payments'
+const APP_DESCRIPTION = 'Sign in with your wallet to create Gully Labs API keys instantly, set gap and launch alerts, run Gully Analytics, and pay for plans and invoices in crypto, with your team in one workspace.'
+
 /** Head tags for one request. `found: false` means no page owns the path (served as a 404). */
 export function pageMeta(host, pathname) {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'
@@ -87,8 +91,9 @@ export function pageMeta(host, pathname) {
     if (m) return { title: m[0], description: m[1], canonical: DOCS + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-docs.png` }
     return { title: 'Not found · Gully Labs docs', description: DOCS_PAGES['/'][1], canonical: null, found: false }
   }
-  if (host.startsWith('developers.'))
-    return { title: 'Developer portal · Gully Labs', description: 'Sign in with your wallet to create Gully Labs API keys instantly, see your usage of the tracker API, and start a Gully Analytics trial.', canonical: `${DEV}/`, found: true, image: `${SITE}/social/og-developers.png` }
+  // The Gully Labs App (its old developers host only answers 301s for pages, but names the app if asked).
+  if (isAppHost(host) || isLegacyDevelopersHost(host))
+    return { title: APP_TITLE, description: APP_DESCRIPTION, canonical: `${APP}/`, found: true, image: `${SITE}/social/og-developers.png` }
   if (host.startsWith('admin.')) return { title: 'Admin · Gully Labs', description: 'Private.', canonical: null, found: true, noindex: true }
   // Gully Pay invoices and receipts: real pages for whoever holds the link, never indexed.
   if (/^\/pay\/inv_[\w-]{22}(\/receipt)?$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Labs' : 'Invoice · Gully Labs', description: 'Pay a Gully Labs invoice in ETH, BNB, USDC or USDT, straight to the Gully Labs treasury.', canonical: null, found: true, noindex: true }
@@ -130,16 +135,19 @@ export function renderHead(source, meta) {
 /** robots.txt per host. */
 export function robotsFor(host) {
   if (host.startsWith('admin.')) return 'User-agent: *\nDisallow: /\n'
-  const base = host.startsWith('docs.') ? DOCS : host.startsWith('developers.') ? DEV : SITE
+  // The old developers host names the app's sitemap: it has none of its own any more.
+  const base = host.startsWith('docs.') ? DOCS : isAppHost(host) || isLegacyDevelopersHost(host) ? APP : SITE
   return `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml\n`
 }
 
-/** sitemap.xml per host: each host lists only its own pages, as the protocol requires. */
+/** sitemap.xml per host: each host lists only its own pages, as the protocol requires. null: the host has
+    none (the old developers host, whose pages all moved to the app). */
 export function sitemapFor(host) {
+  if (isLegacyDevelopersHost(host)) return null
   const today = new Date().toISOString().slice(0, 10)
   let urls
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
-  else if (host.startsWith('developers.')) urls = [[`${DEV}/`, '0.6', 'monthly']]
+  else if (isAppHost(host)) urls = [[`${APP}/`, '0.6', 'monthly']]
   else
     urls = Object.keys(MAIN).map((p) => [
       SITE + (p === '/' ? '/' : p),

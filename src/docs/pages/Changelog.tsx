@@ -61,7 +61,7 @@ export function Changelog() {
           </li>
           <li>Widget v2: real logos, coloured gaps, value flashes on change, a 24-hour gap chart on the badge, and a sortable, clickable table.</li>
           <li>
-            The <Ext href="https://developers.gullylabs.xyz">developer portal</Ext>: sign in with a wallet and create keys instantly, with usage charts and a request log.
+            The <Ext href="https://app.gullylabs.xyz">developer portal</Ext>: sign in with a wallet and create keys instantly, with usage charts and a request log.
           </li>
           <li>
             The <DocLink to="sdk">SDK</DocLink>: <code className="font-mono text-[.9em] text-ink">@gullylabs/tracker</code> and{' '}

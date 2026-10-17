@@ -1,6 +1,5 @@
 import { AlertTriangle, ArrowUpRight, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { Seo } from '../../components/Seo'
 import { VenueLogo } from '../../components/logos/VenueLogo'
 import { Wordmark } from '../../components/Wordmark'
 import { DOCS_URL } from '../../site-host'
@@ -9,10 +8,10 @@ import { ExtLink } from './ExtLink'
 import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
 import { Dashboard } from './Dashboard'
 import { InviteLanding } from './Invite'
-import { inviteTokenFromHash, PortalContext, type Portal } from './portal'
+import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, type Portal } from './portal'
 import { mono, pillGold, pillLine } from './styles'
 
-/* The developer dashboard (developers.gullylabs.xyz, /developers on localhost). Signed out: what the
+/* The Gully Labs App, the developer dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
    free tier is and a "Connect wallet" button. Signing in is Sign-In with Ethereum: the wallet signs a
    message (no transaction, no gas) and the server sets an HttpOnly session cookie. The wallet libraries
    load only when that button is pressed; the signed-in dashboard itself never needs them. */
@@ -60,7 +59,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
         <div className="flex items-center gap-[10px]">
           <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
           <Wordmark size={20} />
-          <span className="font-semibold text-muted">Developers</span>
+          <span className="font-semibold text-muted">App</span>
           <span className="ml-auto font-mono text-[10px] tracking-[1px] text-faint">TRACKER API · ANALYTICS</span>
         </div>
         <div className="flex flex-col gap-2">
@@ -185,6 +184,12 @@ export function DevelopersPage() {
     return () => clearTimeout(id)
   }, [wallet.trigger])
 
+  // The app's title and description (signed in, the Dashboard names the page in the title instead).
+  useEffect(() => {
+    if (session.state !== 'in') document.title = APP_TITLE
+    document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', APP_DESCRIPTION)
+  }, [session.state])
+
   const me = session.state === 'in' ? session.me : null
   const portal: Portal = useMemo(
     () => ({
@@ -218,7 +223,6 @@ export function DevelopersPage() {
 
   return (
     <>
-      <Seo title="Developers" description="Free API keys for the Gully Labs tracker API and Gully Analytics trials: sign in with your wallet, create keys instantly and see your usage." />
       {session.state === 'loading' && (
         <section className="flex min-h-[50vh] items-center justify-center px-4">
           <span className="inline-flex items-center gap-3 font-mono text-[13px] text-faint">
@@ -236,7 +240,7 @@ export function DevelopersPage() {
         ))}
       {(session.state === 'error' || session.state === 'blocked') && (
         <section className="mx-auto flex min-h-[50vh] w-full max-w-[640px] flex-col items-start justify-center gap-4 px-4 py-16">
-          <span className={mono}>DEVELOPER CONSOLE</span>
+          <span className={mono}>GULLY LABS APP</span>
           <p className="m-0 flex max-w-[640px] items-start gap-3 text-[17px] leading-[1.55] text-error" role="alert">
             <AlertTriangle size={20} className="mt-[3px] shrink-0" aria-hidden />
             {session.state === 'blocked' ? session.message : `The dashboard could not be loaded: ${session.message}`}

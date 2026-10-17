@@ -17,6 +17,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { recordEvent } from './activity.mjs'
+import { APP_URL } from './hosts.mjs'
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { getAccount, lastSeenOf, randomToken, resetSessionsWorkspace, safeEqual, setSessionWorkspace, sha256 } from './store.mjs'
 
@@ -26,7 +27,7 @@ export const MEMBER_ROLES = ['admin', 'developer', 'billing', 'viewer']
 export const INVITE_TTL_MS = 7 * 86_400_000
 export const MAX_OPEN_INVITES = 20
 export const MAX_MEMBERS = 25
-export const INVITE_LINK = 'https://developers.gullylabs.xyz/#invite='
+export const INVITE_LINK = `${APP_URL}/#invite=`
 const ADDR_RE = /^0x[0-9a-f]{40}$/
 const TOKEN_RE = /^[A-Za-z0-9_-]{20,64}$/
 const WS_NAME_RE = /^[\p{L}\p{N} ._'’&()\-]{1,40}$/u

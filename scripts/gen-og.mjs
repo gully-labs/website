@@ -87,7 +87,7 @@ const CARDS = [
   },
   {
     file: 'og-developers.png',
-    html: page({ eyebrow: 'Developer portal', title: 'Build on <em>live data</em>', body: 'API keys, usage and quickstarts for the Gully Labs tracker API.', url: 'developers.gullylabs.xyz', right: codeCard('curl gullylabs.xyz/api/tracker \\<br>&nbsp;&nbsp;-H "Authorization: Bearer <span style="color:#1f9e89">gl_live_…</span>"') }),
+    html: page({ eyebrow: 'Gully Labs App', title: 'Build on <em>live data</em>', body: 'API keys, alerts, analytics and payments for every Gully Labs product, in one app.', url: 'app.gullylabs.xyz', right: codeCard('curl gullylabs.xyz/api/tracker \\<br>&nbsp;&nbsp;-H "Authorization: Bearer <span style="color:#1f9e89">gl_live_…</span>"') }),
   },
   {
     file: 'og-pricing.png',

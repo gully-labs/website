@@ -119,9 +119,9 @@ export function statusOf(acc, now = Date.now()) {
 }
 
 const BLOCK = {
-  lapsed: { code: 'gully-plan-lapsed', message: 'This Gully Analytics account has no running plan or trial, so events are not recorded. Renew at https://developers.gullylabs.xyz/#analytics.' },
+  lapsed: { code: 'gully-plan-lapsed', message: 'This Gully Analytics account has no running plan or trial, so events are not recorded. Renew at https://app.gullylabs.xyz/#analytics.' },
   sites: { code: 'gully-site-limit', message: 'This website is beyond the number of websites the account’s plan includes, so its events are not recorded.' },
-  quota: { code: 'gully-quota-exceeded', message: 'This Gully Analytics account has used its events for this month. Upgrade at https://developers.gullylabs.xyz/#analytics.' },
+  quota: { code: 'gully-quota-exceeded', message: 'This Gully Analytics account has used its events for this month. Upgrade at https://app.gullylabs.xyz/#analytics.' },
 }
 
 /** Why a website's events are refused right now, or null when they are accepted. */
