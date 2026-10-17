@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "compare": "node compare/compare.mjs --kit",
     "test:paid": "node scripts/test-paid.mjs",
-    "test:pay": "node scripts/test-pay.mjs"
+    "test:pay": "node scripts/test-pay.mjs",
+    "test:telegram": "node scripts/test-telegram.mjs"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

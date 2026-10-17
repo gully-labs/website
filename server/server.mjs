@@ -5,6 +5,7 @@ import http from 'node:http'
 import { readStats } from './stats.mjs'
 import { onSnapshot, readHistory, readHistoryDays, readTracker, startTrackerLoop } from './tracker.mjs'
 import { evaluateAlerts } from './alerts.mjs'
+import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
@@ -167,6 +168,13 @@ const server = http.createServer(async (req, res) => {
     if (await handleDeveloper(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // Telegram's webhook (telegram.mjs): 404 unless the bot is configured and the secret path matches.
+  if (url.pathname.startsWith('/api/telegram/')) return void (await handleTelegramWebhook(req, res, url))
+  // Which alert delivery channels this server offers (the pricing page and the docs read it). Public.
+  if (url.pathname === '/api/alerts/channels') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
+  }
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
   if (url.pathname.startsWith('/api/pay/')) {
     if (await handlePay(req, res, url)) return
@@ -300,6 +308,8 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), pr
 onSnapshot((rows, at) => evaluateAlerts(rows, at))
 // TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.
 if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
+// The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
+startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
 
 // Optional public port for Cloudflare. It speaks both HTTPS and plain HTTP on the
 // same port (sniffing the first byte), so it works whatever the zone's SSL mode is.

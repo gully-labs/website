@@ -7,8 +7,9 @@
 //   delivery   webhook: POST JSON to an https URL, signed with a per-alert secret (shown once):
 //                X-Gully-Timestamp: <unix seconds>
 //                X-Gully-Signature: sha256=<hex HMAC-SHA256(secret, "<timestamp>.<raw body>")>
-//              telegram: only when TELEGRAM_BOT_TOKEN is set; the user gives the chat id the bot
-//                tells them after /start
+//              telegram: only when TELEGRAM_BOT_TOKEN is set; to the chat linked to the account with
+//                the dashboard's Connect Telegram (telegram.mjs). Messages carry "Open <TICKER>" and
+//                "Mute 24h" buttons; Mute pauses the alert (every channel) for 24 hours.
 //
 // Evaluated on every tracker snapshot (tracker.mjs onSnapshot, every five minutes). Per alert and per
 // stock: it fires when the condition BECOMES true and re-arms once it is false again. An alert sends
@@ -35,6 +36,7 @@ import { DATA_DIR, json, readJson } from './http.mjs'
 import { planOf } from './plans.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { FLAG_PCT, trackedStocks } from './tracker.mjs'
+import { linkedChat, sendAlertTelegram, telegramEnabled, telegramInfo } from './telegram.mjs'
 
 const FILE = path.join(DATA_DIR, 'alerts.json')
 export const COOLDOWN_MS = 30 * 60_000
@@ -64,43 +66,6 @@ function save() {
 }
 
 const loopbackAllowed = () => process.env.GULLY_ALLOW_LOOPBACK_WEBHOOKS === '1'
-
-/* ------------------------------------------------------------ telegram --- */
-
-const telegramToken = () => {
-  const t = String(process.env.TELEGRAM_BOT_TOKEN ?? '').trim()
-  return /^\d+:[\w-]{20,}$/.test(t) ? t : null
-}
-let botInfo = { token: null, username: null, at: 0 }
-
-/** Whether Telegram delivery is available, and the bot's @username (read once from getMe). */
-export async function telegramInfo() {
-  const token = telegramToken()
-  if (!token) return { enabled: false, bot: null }
-  if (botInfo.token !== token || (!botInfo.username && Date.now() - botInfo.at > 60_000)) {
-    botInfo = { token, username: null, at: Date.now() }
-    try {
-      const r = await fetch(`https://api.telegram.org/bot${token}/getMe`, { signal: AbortSignal.timeout(TIMEOUT_MS) })
-      const j = await r.json()
-      if (j?.ok && j.result?.username) botInfo.username = j.result.username
-    } catch {
-      /* shown as enabled without a name; delivery reports its own errors */
-    }
-  }
-  return { enabled: true, bot: botInfo.username }
-}
-
-async function sendTelegram(chatId, text) {
-  const token = telegramToken()
-  if (!token) return { status: null, ok: false, error: 'Telegram is not configured on the server.' }
-  try {
-    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }), redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) })
-    const j = await r.json().catch(() => null)
-    return { status: r.status, ok: r.ok && !!j?.ok, error: r.ok && j?.ok ? null : String(j?.description ?? `HTTP ${r.status}`).slice(0, 200) }
-  } catch (e) {
-    return { status: null, ok: false, error: String(e?.name === 'TimeoutError' ? 'timed out after 5 s' : (e?.message ?? e)).slice(0, 200) }
-  }
-}
 
 /* ------------------------------------------------------------ SSRF guard --- */
 
@@ -278,12 +243,6 @@ function payloadOf(alert, events, test, at) {
   }
 }
 
-function telegramText(alert, events, test) {
-  if (test) return `Gully Labs: test message for your alert${alert.name ? ` "${alert.name}"` : ''} (${conditionText(alert.condition)}). Deliveries reach this chat.`
-  const lines = events.map((e) => `${e.ticker} on ${e.chainName}: ${e.gapPct > 0 ? '+' : ''}${e.gapPct}% vs fair (${e.status})${e.fair !== null && e.onchain !== null ? `, fair $${e.fair.toFixed(2)}, on chain $${e.onchain.toFixed(2)}` : ''}`)
-  return `Gully Labs alert${alert.name ? ` "${alert.name}"` : ''}: ${conditionText(alert.condition)}\n${lines.join('\n')}\nhttps://gullylabs.xyz/tracker`
-}
-
 /** Sends one delivery on every channel of an alert and logs each outcome. */
 async function deliver(alert, events, test, at = Date.now()) {
   const payload = payloadOf(alert, events, test, at)
@@ -296,7 +255,7 @@ async function deliver(alert, events, test, at = Date.now()) {
   }
   if (alert.telegram) {
     const t0 = Date.now()
-    const r = await sendTelegram(alert.telegram.chatId, telegramText(alert, events, test))
+    const r = await sendAlertTelegram({ owner: alert.owner, alertId: alert.id, name: alert.name || null, conditionText: conditionText(alert.condition), chatId: alert.telegram.chatId ?? null, events, test })
     results.push({ channel: 'telegram', ...r, ms: Date.now() - t0 })
   }
   const live = db.alerts.find((a) => a.id === alert.id)
@@ -321,6 +280,7 @@ export async function evaluateAlerts(rows, at = Date.now()) {
   const sends = []
   for (const alert of db.alerts) {
     if (!alert.enabled || !covered.has(alert.id)) continue
+    if (alert.mutedUntil && Date.parse(alert.mutedUntil) > at) continue // muted from Telegram: neither fires nor re-arms
     const triggered = []
     for (const r of rows) {
       if (alert.chain && (r.chain !== alert.chain || r.ticker !== alert.ticker)) continue
@@ -354,8 +314,9 @@ function view(a, covered) {
     ticker: a.ticker,
     condition: a.condition,
     webhook: a.webhook ? { url: a.webhook.url } : null,
-    telegram: a.telegram ? { chatId: a.telegram.chatId } : null,
+    telegram: a.telegram ? { chatTitle: (a.telegram.chatId ? null : linkedChat(a.owner)?.chatTitle) ?? null, linked: !!(a.telegram.chatId || linkedChat(a.owner)) } : null,
     enabled: a.enabled,
+    mutedUntil: a.mutedUntil && Date.parse(a.mutedUntil) > Date.now() ? a.mutedUntil : null,
     coveredByPlan: covered.has(a.id),
     armed: Object.keys(a.disarmed).length === 0,
     waitingToReArm: Object.keys(a.disarmed),
@@ -373,7 +334,7 @@ export async function alertsOf(address) {
   return {
     alerts: mine.map((a) => view(a, covered)).reverse(),
     limits: { plan: plan.id, planName: plan.name, max: plan.alerts, used: mine.length, cooldownMinutes: COOLDOWN_MS / 60_000, flagPct: FLAG_PCT },
-    telegram: await telegramInfo(),
+    telegram: await telegramInfo(address),
     stocks: trackedStocks(),
   }
 }
@@ -395,8 +356,9 @@ const newSecret = () => `whsec_${randomToken(24)}`
 /**
  * /api/developer/alerts* for a signed-in wallet (developer.mjs has already checked the session and CSRF).
  *   GET  /api/developer/alerts
- *   POST /api/developer/alerts                    { name?, chain?, ticker?, condition, webhookUrl?, telegramChatId? } -> { alert, secret? }
- *   POST /api/developer/alerts/:id/pause|resume|delete|test|rotate
+ *   POST /api/developer/alerts                    { name?, chain?, ticker?, condition, webhookUrl?, telegram?: true } -> { alert, secret? }
+ *   POST /api/developer/alerts/:id/pause|resume|delete|test|rotate     (resume also ends a Telegram mute)
+ *   POST /api/developer/alerts/:id/telegram       { on: boolean }   Telegram delivery on or off
  */
 export async function handleAlerts(req, res, url, address) {
   const p = url.pathname
@@ -441,13 +403,14 @@ export async function handleAlerts(req, res, url, address) {
       webhook = { url: form.url.toString(), secret }
     }
     let telegram = null
-    if (body?.telegramChatId !== undefined && body?.telegramChatId !== null && body?.telegramChatId !== '') {
-      if (!telegramToken()) return json(res, 400, { error: 'Telegram delivery is not available on this server.' }), true
-      const chatId = String(body.telegramChatId).trim()
-      if (!/^-?\d{1,20}$/.test(chatId)) return json(res, 400, { error: 'The Telegram chat id is a number; the bot tells you yours after /start.' }), true
-      telegram = { chatId }
+    const wantsTelegram = body?.telegram === true || (body?.telegramChatId !== undefined && body?.telegramChatId !== null && body?.telegramChatId !== '')
+    if (wantsTelegram) {
+      if (!telegramEnabled()) return json(res, 400, { error: 'Telegram delivery is not available on this server.' }), true
+      if (body?.telegram !== true) return json(res, 400, { error: 'Chat ids are no longer pasted: press Connect Telegram in the Alerts tab, then tick Telegram.' }), true
+      if (!linkedChat(address)) return json(res, 400, { error: 'Connect Telegram first (Alerts tab), then tick Telegram.' }), true
+      telegram = { linked: true }
     }
-    if (!webhook && !telegram) return json(res, 400, { error: 'Give a webhook URL or a Telegram chat id to deliver to.' }), true
+    if (!webhook && !telegram) return json(res, 400, { error: 'Give a webhook URL, or tick Telegram, to deliver to.' }), true
 
     const alert = { id: randomToken(9), owner: address, name, chain, ticker, condition, webhook, telegram, enabled: true, createdAt: new Date().toISOString(), lastFiredAt: null, disarmed: {}, deliveries: [] }
     db.alerts.push(alert)
@@ -455,7 +418,7 @@ export async function handleAlerts(req, res, url, address) {
     return json(res, 201, { alert: view(alert, coveredIds(address)), secret }), true
   }
 
-  const m = p.match(/^\/api\/developer\/alerts\/([\w-]{1,40})\/(pause|resume|delete|test|rotate)$/)
+  const m = p.match(/^\/api\/developer\/alerts\/([\w-]{1,40})\/(pause|resume|delete|test|rotate|telegram)$/)
   if (!m) return json(res, 404, { error: 'not found' }), true
   const alert = db.alerts.find((a) => a.id === m[1] && a.owner === address)
   if (!alert) return json(res, 404, { error: 'No such alert on this account.' }), true
@@ -467,6 +430,20 @@ export async function handleAlerts(req, res, url, address) {
   }
   if (m[2] === 'pause' || m[2] === 'resume') {
     alert.enabled = m[2] === 'resume'
+    if (alert.enabled) delete alert.mutedUntil
+    save()
+    return json(res, 200, { alert: view(alert, coveredIds(address)) }), true
+  }
+  if (m[2] === 'telegram') {
+    const body = await readJson(req, 500)
+    if (body?.on === true) {
+      if (!telegramEnabled()) return json(res, 400, { error: 'Telegram delivery is not available on this server.' }), true
+      if (!linkedChat(address)) return json(res, 400, { error: 'Connect Telegram first, above.' }), true
+      alert.telegram = { linked: true }
+    } else if (body?.on === false) {
+      if (!alert.webhook) return json(res, 409, { error: 'This alert has no webhook; Telegram is its only channel. Delete the alert instead.' }), true
+      alert.telegram = null
+    } else return json(res, 400, { error: 'Send { "on": true } or { "on": false }.' }), true
     save()
     return json(res, 200, { alert: view(alert, coveredIds(address)) }), true
   }
@@ -485,3 +462,28 @@ export async function handleAlerts(req, res, url, address) {
 
 /** Admin: counts for the overview. */
 export const alertStats = () => ({ total: db.alerts.length, enabled: db.alerts.filter((a) => a.enabled).length, owners: new Set(db.alerts.map((a) => a.owner)).size })
+
+/* --------------------------------------------------------- for the bot --- */
+
+/** Mutes one alert of `owner` for `ms` (Telegram's Mute 24h button). */
+export function muteAlert(id, owner, ms) {
+  const alert = db.alerts.find((a) => a.id === id)
+  if (!alert || alert.owner !== owner) return { ok: false, error: 'This alert does not belong to the account linked to this chat.' }
+  alert.mutedUntil = new Date(Date.now() + ms).toISOString()
+  save()
+  return { ok: true, mutedUntil: alert.mutedUntil }
+}
+
+/** One account's alerts, in words, for the bot's /alerts. */
+export function alertsForChat(owner) {
+  const covered = coveredIds(owner)
+  const now = Date.now()
+  return db.alerts
+    .filter((a) => a.owner === owner)
+    .map((a) => ({
+      label: a.name || (a.ticker ? `${a.ticker} on ${CHAIN_NAMES[a.chain] ?? a.chain}` : 'Any stock'),
+      condition: conditionText(a.condition),
+      state: !covered.has(a.id) ? 'not in your plan' : !a.enabled ? 'paused' : a.mutedUntil && Date.parse(a.mutedUntil) > now ? `muted until ${new Date(a.mutedUntil).toISOString().replace('T', ' ').slice(0, 16)} UTC` : Object.keys(a.disarmed).length ? 'fired, waits to re-arm' : 'watching',
+      telegram: !!a.telegram,
+    }))
+}

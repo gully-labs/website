@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Offer } from '../../pages/developers/api'
+import type { AlertChannels, Offer } from '../../pages/developers/api'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { apiOrigin } from '../nav'
@@ -83,8 +83,26 @@ function useOffer() {
   return offer
 }
 
+function useChannels() {
+  const [ch, setCh] = useState<AlertChannels | null | 'error'>(null)
+  useEffect(() => {
+    let alive = true
+    fetch(`${apiOrigin()}/api/alerts/channels`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then(
+        (c: AlertChannels) => alive && setCh(c),
+        () => alive && setCh('error'),
+      )
+    return () => {
+      alive = false
+    }
+  }, [])
+  return ch
+}
+
 export function PlansAlerts() {
   const offer = useOffer()
+  const channels = useChannels()
   return (
     <DocPage
       slug="plans-alerts"
@@ -200,8 +218,26 @@ export function PlansAlerts() {
       </Section>
 
       <Section id="telegram" title="Telegram">
+        {channels === null && <P>Checking whether this server has its Telegram bot configured…</P>}
+        {channels === 'error' && <Callout label="UNAVAILABLE">Whether Telegram is configured could not be read just now (GET /api/alerts/channels). The Alerts tab of the dashboard always shows it.</Callout>}
+        {channels && channels !== 'error' && !channels.telegram.enabled && (
+          <Callout label="NOT CONFIGURED YET">Telegram delivery works only when the server has its bot configured, and it is not configured yet. Everything below applies once it is; webhooks work today.</Callout>
+        )}
         <P>
-          When the server has a Telegram bot configured, an alert can also message a chat: send <C>/start</C> to the bot, paste the chat id it replies with into the alert, and press Test. When no bot is configured the dashboard does not offer Telegram.
+          An alert can message a Telegram chat as well as, or instead of, calling a webhook{channels && channels !== 'error' && channels.telegram.bot ? <> (the bot is <Ext href={`https://t.me/${channels.telegram.bot}`}>@{channels.telegram.bot}</Ext>)</> : null}. In the Alerts tab of the dashboard press <C>Connect Telegram</C>: it opens the bot with a one-time code (ten minutes, single use) that links the chat to your wallet account, so there is no chat id to copy. <C>Add to a group</C> does the same for a group; only the person who linked a group can unlink it. Then tick Telegram on any alert.
+        </P>
+        <List>
+          <li>Each message names the stock and chain, the gap, the on-chain and fair prices, the status and the pool liquidity, with a link to the stock page.</li>
+          <li>
+            <C>Open NVDA</C> opens the stock page; <C>Mute 24h</C> pauses that alert, on every channel, for 24 hours. <C>Resume</C> in the dashboard ends a mute early.
+          </li>
+          <li>Deliveries appear in the alert&apos;s log like webhook ones, with the result Telegram gave.</li>
+          <li>
+            In the chat, <C>/alerts</C> lists your alerts and <C>/stop</C> unlinks. Anyone can ask the bot <C>/gap NVDA</C> (or <C>/gap NVDA bsc</C>) and <C>/top</C> for the five widest trusted gaps. A figure the tracker could not read is said to be unreadable, never shown as zero.
+          </li>
+        </List>
+        <P>
+          Which channels the server offers is public at <C>GET /api/alerts/channels</C>.
         </P>
       </Section>
     </DocPage>
