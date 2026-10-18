@@ -8,17 +8,17 @@ import { useReducedMotion } from '../charts/chart-utils'
 
 const NAMES = ['Your Chain', 'Nova L2', 'Orbit Testnet']
 const ACCENTS: [string, string][] = [
-  ['#e8c060', 'Gold'],
-  ['#6aa6ff', 'Blue'],
-  ['#6fcf6a', 'Green'],
-  ['#ff7ab6', 'Pink'],
-  ['#b49cff', 'Violet'],
+  ['#d9b563', 'Gold'],
+  ['#5aa9e6', 'Blue'],
+  ['#74c27b', 'Green'],
+  ['#f2704a', 'Orange'],
+  ['#c98bdb', 'Violet'],
 ]
 const METHODS = ['Transfer', 'Swap', 'Mint', 'Approve', 'Deposit']
 const START_HEIGHT = 4_812_000
 const THEMES = {
-  dark: { bg: '#0d1116', surface: '#131820', ink: '#eef0f2', muted: '#8a96a6', line: '#1d232c', tint: '#1a2029', flash: 'rgba(255,255,255,.04)' },
-  light: { bg: '#f6f7f9', surface: '#ffffff', ink: '#12161c', muted: '#5c6878', line: '#e2e6ea', tint: '#eef1f5', flash: 'rgba(0,0,0,.03)' },
+  dark: { bg: 'var(--color-bg-alt)', surface: 'var(--color-surface-hover)', ink: 'var(--color-ink)', muted: 'var(--color-dim)', line: 'var(--color-line)', tint: 'var(--color-grid)', flash: 'rgba(255,255,255,.04)' },
+  light: { bg: 'var(--color-paper-site)', surface: 'var(--color-paper)', ink: 'var(--color-bg)', muted: 'var(--color-axis)', line: 'var(--color-paper-site-line)', tint: 'var(--color-ink)', flash: 'rgba(0,0,0,.03)' },
 }
 
 const hash = (s: string) => {
@@ -160,7 +160,7 @@ export default function ChainKitDemo(): JSX.Element {
       {/* Right: the explorer */}
       <div className="min-w-0 flex-[999_1_640px] bg-bg p-3.5">
         <div className={`overflow-hidden rounded-[10px] border border-line ${fade}`} style={{ background: t.bg, color: t.ink }}>
-          <div className="flex items-center gap-2 border-b border-line bg-[#161b22] px-3 py-2">
+          <div className="flex items-center gap-2 border-b border-line bg-surface-hover px-3 py-2">
             <span aria-hidden className="flex gap-[5px]">
               <span className="size-[9px] rounded-full bg-line-hover" />
               <span className="size-[9px] rounded-full bg-line-hover" />
@@ -208,7 +208,7 @@ export default function ChainKitDemo(): JSX.Element {
             </form>
             {res && (
               <div role="status" className="flex items-center gap-2.5 rounded-[8px] border px-3 py-2.5 text-[12px]" style={{ borderColor: t.line, background: t.surface }}>
-                <span className="flex-none rounded-[4px] px-2 py-0.5 font-semibold" style={res.ok ? { background: ac, color: '#0b0e13' } : { border: `1px solid ${t.line}`, color: t.muted }}>
+                <span className="flex-none rounded-[4px] px-2 py-0.5 font-semibold" style={res.ok ? { background: ac, color: '#0d141c' } : { border: `1px solid ${t.line}`, color: t.muted }}>
                   {res.kind}
                 </span>
                 <span className="truncate font-mono">{res.text}</span>

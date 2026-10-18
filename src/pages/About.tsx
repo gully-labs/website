@@ -10,7 +10,7 @@ import { useStats } from '../hooks/useStats'
 import { fmtTime, fmtUsd, nameOf } from '../lib/stats'
 
 const linkCard =
-  'group relative flex flex-col gap-[14px] overflow-hidden rounded-card border border-line bg-surface p-9 text-left text-ink transition-colors hover:border-gold hover:text-ink'
+  'group relative flex flex-col gap-[14px] overflow-hidden rounded-card border border-line bg-surface p-7 text-left text-ink transition-colors hover:border-gold hover:text-ink'
 
 const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six']
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
@@ -92,12 +92,12 @@ export function About() {
           </h2>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] gap-5">
-          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6">
+          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
             <h3 className="m-0 font-display text-h4 font-bold uppercase">Measured since</h3>
             <span className="-mt-2 font-mono text-[11px] text-faint">from the start of each venue's all-time count to today</span>
             <VenueTimeline st={st} />
           </div>
-          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6">
+          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
             <h3 className="m-0 font-display text-h4 font-bold uppercase">Side by side</h3>
             <span className="-mt-2 font-mono text-[11px] text-faint">each venue's own figure, read live</span>
             <VenueBars st={st} />

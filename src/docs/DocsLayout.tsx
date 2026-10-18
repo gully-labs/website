@@ -1,6 +1,7 @@
 import { Activity, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2, History, Home, KeyRound, Layers, Menu, MessageCircleQuestion, Milestone, Package, Puzzle, Store, Tags, Users, Wallet, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useResolvedPath } from 'react-router'
+import { newTab } from '../components/LayoutNav'
 import { Wordmark } from '../components/brand'
 import { AskLauncher } from '../components/ask/AskLauncher'
 import { apiOrigin, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
@@ -77,7 +78,7 @@ function Sidebar({ onPick }: { onPick: () => void }) {
           { label: 'Pricing', href: `${SITE}/pricing`, icon: Tags },
           { label: 'Developer portal', href: 'https://app.gullylabs.xyz', icon: KeyRound },
         ].map((l) => (
-          <a key={l.href} href={l.href} className="group flex min-h-10 items-center gap-3 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
+          <a key={l.href} href={l.href} {...newTab} className="group flex min-h-10 items-center gap-3 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
             <l.icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
             <span className="flex-1">{l.label}</span>
             <ArrowUpRight size={14} aria-hidden className="text-faint" />
@@ -109,10 +110,10 @@ export function DocsLayout() {
   return (
     <DocsBase.Provider value={home}>
       <ScrollRestoration />
-      <a href="#docs-main" className="absolute top-2 left-2 z-50 -translate-y-20 rounded-btn bg-gold px-3 py-2 text-[14px] font-semibold text-bg focus:translate-y-0">
+      <a href="#docs-main" className="absolute top-2 left-2 z-50 inline-flex min-h-11 -translate-y-20 items-center rounded-btn bg-gold px-3 text-[14px] font-semibold text-bg focus:translate-y-0">
         Skip to content
       </a>
-      <header className="sticky top-0 z-40 border-b border-line bg-[rgba(11,14,19,.86)] backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-md">
         <div className="mx-auto flex h-[64px] max-w-[1440px] items-center justify-between gap-4 px-6 max-[600px]:gap-2 max-[600px]:px-4">
           <div className="flex min-w-0 items-center gap-3 max-[600px]:gap-2">
             <button
@@ -136,10 +137,10 @@ export function DocsLayout() {
             <span className="max-[520px]:hidden">
               <ApiPill />
             </span>
-            <a href={`${SITE}/tracker`} className="inline-flex min-h-11 items-center gap-1 rounded-btn px-3 text-[14px] text-muted transition-colors hover:text-ink max-[700px]:hidden">
+            <a href={`${SITE}/tracker`} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-btn px-3 text-[14px] text-muted transition-colors hover:text-ink max-[700px]:hidden">
               Tracker <ArrowUpRight size={14} aria-hidden />
             </a>
-            <a href={SITE} className="inline-flex min-h-11 items-center gap-1 rounded-btn border border-line-strong px-3 text-[14px] text-ink transition-colors hover:border-gold hover:text-ink">
+            <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-btn border border-line-strong px-3 text-[14px] text-ink transition-colors hover:border-gold hover:text-ink">
               <span className="max-[389px]:hidden">gullylabs.xyz</span>
               <span className="sr-only min-[390px]:hidden">gullylabs.xyz</span> <ArrowUpRight size={14} aria-hidden />
             </a>
@@ -168,8 +169,8 @@ export function DocsLayout() {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-6 py-6 font-mono text-[12px] text-faint max-[600px]:px-4">
           <span>© Gully Labs · tracker data from Chainlink and DexScreener</span>
-          <a href={SITE} className="text-muted transition-colors hover:text-ink">
-            gullylabs.xyz
+          <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 text-muted transition-colors hover:text-ink">
+            gullylabs.xyz <ArrowUpRight size={12} aria-hidden />
           </a>
         </div>
       </footer>

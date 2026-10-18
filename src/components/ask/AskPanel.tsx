@@ -2,7 +2,8 @@ import { ArrowUpRight, CornerDownLeft, LoaderCircle, RotateCcw, Sparkles, Thumbs
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { AskFailure, askStatus, postAsk, postFeedback, type AskAnswer, type AskStatus, type Citation, type LiveCite, type Turn } from './askApi'
 import { Actions, LiveCard } from './AskCards'
-import { asOfLabel, hrefProps } from './askFormat'
+import { asOfLabel } from './askFormat'
+import { newTab } from '../LayoutNav'
 import { toastError } from '../ui/toast'
 import { isLocalHost, SITE_URL } from '../../site-host'
 
@@ -38,8 +39,16 @@ const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tra
 
 type Exchange = { id: number; q: string; a: AskAnswer | null; error: string | null; rating?: 'up' | 'down' | null }
 
-const isOwnHost = (u: string) => /^https:\/\/([\w-]+\.)?gullylabs\.xyz(\/|$)/.test(u)
-const linkProps = hrefProps
+/** The host this page is on: a link to it opens in place; any other host (the docs, the app, GitHub) opens in a new tab. */
+const isOwnHost = (u: string) => {
+  try {
+    return new URL(u, window.location.href).host === window.location.host
+  } catch {
+    return false
+  }
+}
+/** Another host's link opens in a new tab; this host's open in place. */
+const linkProps = (u: string) => (isOwnHost(u) ? {} : { target: '_blank', rel: 'noopener noreferrer' })
 
 /** Numbers the sources 1..n in the order the answer first cites them (sources it never cites follow),
     and rewrites the [n] markers to match, so the markers read in order and the list has no gaps. */
@@ -85,7 +94,7 @@ function inline(text: string, cites: Citation[], key: string, live: LiveCite[] =
       const c = cites.find((x) => x.n === Number(m![2]))
       out.push(
         c ? (
-          <a key={k} href={c.url} {...linkProps(c.url)} title={c.title} className="mx-[1px] inline-flex min-w-[20px] items-center justify-center rounded-[4px] border border-gold-line px-[4px] align-[2px] font-mono text-[11px] leading-[16px] text-gold no-underline hover:bg-gold hover:text-bg">
+          <a key={k} href={c.url} {...linkProps(c.url)} title={c.title} className="mx-[1px] inline-flex min-w-[20px] items-center justify-center rounded-btn border border-gold-line px-[4px] align-[2px] font-mono text-[11px] leading-[16px] text-gold no-underline hover:bg-gold hover:text-bg">
             {c.n}
           </a>
         ) : null,
@@ -161,7 +170,7 @@ function Sources({ cites, live }: { cites: Citation[]; live: LiveCite[] }) {
         {cites.map((c) => (
           <li key={c.n}>
             <a href={c.url} {...linkProps(c.url)} className="group flex min-h-11 items-center gap-3 rounded-btn border border-line px-3 py-2 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover">
-              <span className="grid size-6 shrink-0 place-items-center rounded-[5px] border border-gold-line font-mono text-[11px] text-gold">{c.n}</span>
+              <span className="grid size-6 shrink-0 place-items-center rounded-btn border border-gold-line font-mono text-[11px] text-gold">{c.n}</span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-[14px]">{c.title}</span>
                 <span className="truncate font-mono text-[11px] text-faint">
@@ -253,23 +262,23 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
   if (status === 'loading')
     return (
       <div role="status" aria-label="Loading Gully AI" className="flex flex-col gap-3">
-        <div className="h-[14px] w-[160px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-full bg-surface" />
+        <div className="h-[14px] w-[160px] gl-skeleton rounded-full bg-surface" />
         <div className="flex flex-wrap gap-2">
           {[220, 180, 240].map((w) => (
-            <div key={w} className="h-11 animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-full bg-surface" style={{ width: w }} />
+            <div key={w} className="h-11 gl-skeleton rounded-full bg-surface" style={{ width: w }} />
           ))}
         </div>
-        <div className="h-[92px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[12px] bg-surface" />
+        <div className="h-[92px] gl-skeleton rounded-card bg-surface" />
       </div>
     )
   if (!status || !status.configured)
     return (
-      <div role="status" className="flex flex-col gap-3 rounded-card border border-line bg-surface p-6">
+      <div role="status" className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5">
         <span className="font-mono text-[11px] tracking-[1px] text-gold">GULLY AI</span>
         <p className="m-0 text-[16px] text-ink">Gully AI is not switched on here yet.</p>
         <p className="m-0 text-[14px] leading-[1.6] text-muted">
-          Until it is, the answers are in the <a href="https://docs.gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">docs</a>, and the team is one message away through the{' '}
-          <a href="https://gullylabs.xyz/services?contact=1" className="text-gold underline decoration-gold-line underline-offset-2">contact form</a>.
+          Until it is, the answers are in the <a href="https://docs.gullylabs.xyz" {...newTab} className="text-gold underline decoration-gold-line underline-offset-2">docs<span className="sr-only"> (opens in a new tab)</span></a>, and the team is one message away through the{' '}
+          <a href="https://gullylabs.xyz/services?contact=1" {...linkProps('https://gullylabs.xyz/services?contact=1')} className="text-gold underline decoration-gold-line underline-offset-2">contact form</a>.
         </p>
       </div>
     )
@@ -298,7 +307,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
         <div role="log" aria-live="polite" aria-relevant="additions" aria-label="Answers" className="flex flex-col gap-6">
           {log.map((e, i) => (
             <article key={e.id} ref={i === log.length - 1 ? lastRef : undefined} aria-label={`Question: ${e.q}`} className="flex flex-col gap-3">
-              <p className="m-0 self-end rounded-[12px] rounded-br-[4px] border border-line-strong bg-surface-hover px-4 py-2 text-[15px] text-ink">{e.q}</p>
+              <p className="m-0 self-end rounded-card rounded-br-btn border border-line-strong bg-surface-hover px-4 py-2 text-[15px] text-ink">{e.q}</p>
               {e.a ? (
                 <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
                   <AnswerText text={e.a.answer} cites={e.a.citations} live={e.a.live ?? []} />
@@ -356,7 +365,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
         <label htmlFor={`${ids}-q`} className="font-mono text-[11px] tracking-[1px] text-faint">
           {log.length ? 'ASK A FOLLOW-UP' : 'YOUR QUESTION'}
         </label>
-        <div className={`flex items-end gap-2 rounded-[12px] border bg-surface-deep p-2 transition-colors focus-within:border-gold ${tooLong ? 'border-error' : 'border-line-strong'}`}>
+        <div className={`flex items-end gap-2 rounded-card border bg-surface-deep p-2 transition-colors focus-within:border-gold ${tooLong ? 'border-error' : 'border-line-strong'}`}>
           <textarea
             ref={inputRef}
             id={`${ids}-q`}

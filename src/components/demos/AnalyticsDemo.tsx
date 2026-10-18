@@ -18,10 +18,10 @@ const W = 600
 const H = 220
 // The same example split as the /analytics page (charts/ProductExamples.tsx), so the two never disagree.
 const CHAINS: [string, number, string][] = [
-  ['Base', 41, '#6aa6ff'],
-  ['Ethereum', 23, '#b49cff'],
-  ['BNB Chain', 17, '#e8c060'],
-  ['Robinhood Chain', 12, '#6fcf6a'],
+  ['Base', 41, '#5aa9e6'],
+  ['Ethereum', 23, '#c98bdb'],
+  ['BNB Chain', 17, '#d9b563'],
+  ['Robinhood Chain', 12, '#74c27b'],
   ['Arc', 7, '#ff8a7a'],
 ]
 const PAGES: [string, number][] = [
@@ -132,7 +132,7 @@ export default function AnalyticsDemo(): JSX.Element {
         </span>
         <span className="rounded-full border border-gold-line px-2.5 py-1 font-mono text-[11px] tracking-[1px] text-gold">DEMO DATA</span>
         <span className="flex items-center gap-2 text-[12px] text-muted">
-          <span aria-hidden className="size-2 rounded-full bg-green transition-[box-shadow] duration-[600ms]" style={{ boxShadow: `0 0 0 ${tick % 2 ? 6 : 0}px rgba(111,207,106,.25)` }} />
+          <span aria-hidden className="size-2 rounded-full bg-green transition-[box-shadow] duration-[600ms]" style={{ boxShadow: `0 0 0 ${tick % 2 ? 6 : 0}px rgba(116,194,123,.25)` }} />
           <b className="font-mono font-medium text-ink">{live}</b> visitors right now
         </span>
         <div role="tablist" aria-label="Range" className="ml-auto flex gap-0.5 rounded-[6px] border border-line p-0.5">
@@ -188,16 +188,16 @@ export default function AnalyticsDemo(): JSX.Element {
             onKeyDown={onChartKey}
           >
             <svg aria-hidden viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block h-[180px] w-full lg:h-[230px]">
-              <g stroke="#1a2029">
+              <g stroke="#1c2531">
                 <line x1="0" y1="55" x2={W} y2="55" />
                 <line x1="0" y1="110" x2={W} y2="110" />
                 <line x1="0" y1="165" x2={W} y2="165" />
               </g>
-              <path d={d.paths.va} style={pathStyle(d.paths.va)} fill="rgba(90,74,34,.55)" />
-              <path d={d.paths.vl} style={pathStyle(d.paths.vl)} fill="none" stroke="#b8953f" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-              <path d={d.paths.wa} style={pathStyle(d.paths.wa)} fill="rgba(232,192,96,.35)" />
-              <path d={d.paths.wl} style={pathStyle(d.paths.wl)} fill="none" stroke="#e8c060" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-              {hover !== null && <line x1={d.X(hover)} y1="0" x2={d.X(hover)} y2={H} stroke="#3a4452" vectorEffect="non-scaling-stroke" />}
+              <path d={d.paths.va} style={pathStyle(d.paths.va)} fill="rgba(85,76,52,.55)" />
+              <path d={d.paths.vl} style={pathStyle(d.paths.vl)} fill="none" stroke="#c9a24e" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+              <path d={d.paths.wa} style={pathStyle(d.paths.wa)} fill="rgba(217,181,99,.35)" />
+              <path d={d.paths.wl} style={pathStyle(d.paths.wl)} fill="none" stroke="#d9b563" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+              {hover !== null && <line x1={d.X(hover)} y1="0" x2={d.X(hover)} y2={H} stroke="#3a4656" vectorEffect="non-scaling-stroke" />}
               {d.v.map((_, j) => (
                 <rect key={j} x={d.X(j) - W / (d.n - 1) / 2} y="0" width={W / (d.n - 1)} height={H} fill="transparent" onMouseEnter={() => setHover(j)} />
               ))}
@@ -205,12 +205,12 @@ export default function AnalyticsDemo(): JSX.Element {
             {hover !== null && (
               <div
                 role="status"
-                className="pointer-events-none absolute top-2 grid grid-cols-[auto_auto] gap-x-3.5 gap-y-0.5 rounded-[6px] border border-line-strong bg-[rgba(13,17,22,.96)] px-2.5 py-2 font-mono text-[11px]"
+                className="pointer-events-none absolute top-2 grid grid-cols-[auto_auto] gap-x-3.5 gap-y-0.5 rounded-[6px] border border-line-strong bg-[rgba(17,25,35,.96)] px-2.5 py-2 font-mono text-[11px]"
                 style={{ left: `${(hover / (d.n - 1)) * 100}%`, transform: `translateX(${hover > d.n * 0.6 ? '-105%' : '10px'})` }}
               >
                 <span className="text-faint">{d.n - 1 - hover === 0 ? 'now' : `${d.n - 1 - hover} ${unit} ago`}</span>
                 <span />
-                <span className="text-[#b8953f]">visitors</span>
+                <span className="text-[#c9a24e]">visitors</span>
                 <span>{fmt(d.v[hover])}</span>
                 <span className="text-gold">wallets</span>
                 <span>{fmt(d.w[hover])}</span>
@@ -230,7 +230,7 @@ export default function AnalyticsDemo(): JSX.Element {
                 <div key={l} className="grid grid-cols-[96px_minmax(0,1fr)_46px] items-center gap-2">
                   <span className="text-[12px] text-ink-2">{l}</span>
                   <span className="h-3.5 overflow-hidden rounded-[4px] bg-grid">
-                    <span className="block h-full rounded-[4px]" style={{ width: p, background: i === 0 ? '#2c3540' : `rgba(232,192,96,${0.4 + i * 0.2})`, transition: `width .7s ${EASE}` }} />
+                    <span className="block h-full rounded-[4px]" style={{ width: p, background: i === 0 ? '#2a3542' : `rgba(217,181,99,${0.4 + i * 0.2})`, transition: `width .7s ${EASE}` }} />
                   </span>
                   <span className="text-right font-mono text-[11px]">{p}</span>
                 </div>
@@ -240,7 +240,7 @@ export default function AnalyticsDemo(): JSX.Element {
 
           <div className="flex items-center gap-3.5" onMouseLeave={() => setChain(null)}>
             <svg role="img" aria-label="Wallet connections by chain" viewBox="0 0 100 100" className="size-20 flex-none -rotate-90">
-              <circle cx="50" cy="50" r="38" fill="none" stroke="#1a2029" strokeWidth="12" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#1c2531" strokeWidth="12" />
               {ring.map((c) => (
                 <circle
                   key={c.l}
@@ -283,7 +283,7 @@ export default function AnalyticsDemo(): JSX.Element {
             <span className="font-mono text-[11px] tracking-[1px] text-faint">TOP PAGES</span>
             {PAGES.map(([path, share]) => (
               <div key={path} className="relative flex justify-between px-2 py-[3px] font-mono text-[12px]">
-                <span aria-hidden className="absolute inset-y-0 left-0 rounded-[4px] bg-[rgba(232,192,96,.08)]" style={{ width: `${share * 100}%` }} />
+                <span aria-hidden className="absolute inset-y-0 left-0 rounded-[4px] bg-[rgba(217,181,99,.08)]" style={{ width: `${share * 100}%` }} />
                 <span className="relative">{path}</span>
                 <span className="relative text-muted">{fmt(Math.round(d.tv * 0.4 * share))}</span>
               </div>

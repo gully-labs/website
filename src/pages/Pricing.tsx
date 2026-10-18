@@ -132,13 +132,13 @@ export function Pricing() {
       <Seo title="Pricing" description="Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche, with no custody." />
 
       <section className="relative overflow-hidden px-page pt-[72px] pb-12">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.14),transparent_62%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.14),transparent_62%)]" />
         <div className="relative flex max-w-[860px] flex-col gap-6">
           <span className={eyebrow} style={rise(0)}>
             PRICING
           </span>
           <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-            Tracker API and <span className="text-gold">Gully Analytics</span>
+            Tracker API and <span className="text-gold whitespace-nowrap">Gully Analytics</span>
           </h1>
           <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
             Two products, priced separately. The tracker API stays free and open; paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. Gully Analytics starts with a free trial. You pay in ETH, BNB, USDC or USDT from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.
@@ -150,7 +150,7 @@ export function Pricing() {
         <SectionHead id="api-title" eyebrow="TRACKER API" title="More calls, alerts and history" />
         {state.k === 'loading' && <PlanSkeleton />}
         {state.k === 'error' && (
-          <div className="flex flex-wrap items-center gap-4 rounded-card border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-6 py-5 text-[15px] text-error" role="alert">
+          <div className="flex flex-wrap items-center gap-4 rounded-card border border-error-line bg-error/6 px-6 py-5 text-[15px] text-error" role="alert">
             The plans could not be read: {state.message}
             <button type="button" onClick={retry} className={`${btnOutline} min-h-11 px-5 text-[14px]`}>
               Try again
@@ -169,7 +169,7 @@ export function Pricing() {
                 const featured = p.id === 'pro'
                 return (
                   <div key={p.id} className={`relative flex flex-col gap-6 overflow-hidden rounded-card border bg-surface p-7 ${featured ? 'border-gold-line' : 'border-line'}`} style={rise(3 + i)}>
-                    {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(232,192,96,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
+                    {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(217,181,99,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
                     <div className="relative flex flex-col gap-2">
                       <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
                       <span className="flex items-baseline gap-2">

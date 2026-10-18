@@ -25,7 +25,7 @@ const Tg = lazy(() => chunks.tg().then((m) => ({ default: m.TgApp })))
 /** What a page shows while its chunk loads: a pulsing page outline a full screen tall, so the closing
     band and the footer stay below the fold instead of flashing up and jumping down (CLS). */
 export function RouteSkeleton() {
-  const bar = 'animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface'
+  const bar = 'gl-skeleton rounded-card bg-surface'
   return (
     <div role="status" aria-label="Loading the page" className="flex min-h-[100svh] flex-col gap-6 px-page pt-[72px] pb-24 max-[600px]:pt-10">
       <div className={`${bar} h-[14px] w-[180px] rounded-full`} />
