@@ -50,7 +50,7 @@ export function AskPage() {
               </span>
               <span className="flex flex-col gap-1">
                 {status === 'loading' ? (
-                  <span aria-hidden className="h-[34px] w-[90px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[6px] bg-surface-deep" />
+                  <span aria-hidden className="h-[34px] w-[90px] gl-skeleton rounded-input bg-surface-deep" />
                 ) : st?.indexSize ? (
                   <AnimatedNumber className="font-display text-[34px] leading-none font-bold" value={st.indexSize} format={NF.int} countUp />
                 ) : (

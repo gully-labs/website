@@ -10,18 +10,18 @@ const BARS = [42, 64, 38, 80, 56, 70, 48, 62]
 export function ChartSkeleton({ variant = 'bars', className = '' }: { variant?: SkeletonVariant; className?: string }) {
   const pulse = (i: number) => ({ animation: `gl-skeleton 1.6s ${(i * 0.08).toFixed(2)}s ease-in-out infinite` })
   return (
-    <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[6px] ${className}`}>
+    <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden rounded-input ${className}`}>
       {variant === 'bars' && (
         <div className="flex size-full items-end gap-[5%] px-[4%] pb-3">
           {BARS.map((h, i) => (
-            <span key={i} className="flex-1 rounded-t-[3px] bg-line" style={{ height: `${h}%`, ...pulse(i) }} />
+            <span key={i} className="flex-1 rounded-t-bar bg-line" style={{ height: `${h}%`, ...pulse(i) }} />
           ))}
         </div>
       )}
       {variant === 'line' && (
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="size-full" style={pulse(0)}>
-          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12 L100,40 L0,40 Z" fill="#1d232c" />
-          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12" fill="none" stroke="#2c3540" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12 L100,40 L0,40 Z" fill="#1f2935" />
+          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12" fill="none" stroke="#2a3542" strokeWidth={2} vectorEffect="non-scaling-stroke" />
         </svg>
       )}
       {variant === 'ring' && (
@@ -36,7 +36,7 @@ export function ChartSkeleton({ variant = 'bars', className = '' }: { variant?: 
 /** "Couldn't load" inside the chart's box, with a retry button when the caller can retry. */
 export function ChartError({ message = "Couldn't load this chart.", onRetry, className = '' }: { message?: string; onRetry?: () => void; className?: string }) {
   return (
-    <div role="alert" className={`absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[6px] border border-dashed border-line-strong bg-surface-deep/60 p-4 text-center ${className}`}>
+    <div role="alert" className={`absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-input border border-dashed border-line-strong bg-surface-deep/60 p-4 text-center ${className}`}>
       <span className="font-mono text-[12px] leading-[1.5] text-faint">{message}</span>
       {onRetry && (
         <button

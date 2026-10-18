@@ -102,14 +102,14 @@ function ProductPage({ p }: { p: Product }) {
     <>
       <Seo title={p.seo.title} description={p.seo.description} />
       <section className="relative overflow-hidden px-page pt-[72px] pb-16">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.14),transparent_62%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.14),transparent_62%)]" />
         <div className="relative flex max-w-[900px] flex-col gap-6">
           <span className="flex flex-wrap items-center gap-3" style={rise(0)}>
             <span className={eyebrow}>{p.eyebrow}</span>
             <span className="rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">{p.status.toUpperCase()}</span>
           </span>
           <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-            {p.title[0]} <span className="text-gold">{p.title[1]}</span>
+            {p.title[0]} <span className="text-gold whitespace-nowrap">{p.title[1]}</span>
           </h1>
           <p className="m-0 max-w-[700px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
             {p.lead}

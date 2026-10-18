@@ -6,7 +6,7 @@ import type { Stats } from '../../lib/stats'
 import { DOCS_URL } from '../../site-host'
 import { ShareBar } from '../Share'
 import { useContact } from '../ContactContext'
-import { BLOG_URL, h2 } from './links'
+import { BLOG_URL, eyebrow, h2 } from './links'
 
 /* The landing's closing sections: the four services in one row with the four-step process inline and
    a "Start a project" call, then a slim strip of the open-source repos, docs, blog and share links. */
@@ -20,7 +20,7 @@ export function ServicesBlock() {
       <div className="flex flex-col gap-5 px-page py-12 max-[599px]:py-9">
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.45, ease }} className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <span className="font-mono text-[11px] tracking-[1.5px] text-gold">SERVICES</span>
+            <span className={eyebrow}>SERVICES</span>
             <h2 id="services-title" className={h2}>
               The same team, on your project
             </h2>
@@ -85,7 +85,7 @@ export function OpenStrip({ data }: { data: Stats | null }) {
     <section id="open" aria-label="Open source, docs, blog and sharing" className="scroll-mt-[72px] border-t border-line">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-page py-6">
         <ul className="m-0 flex list-none flex-wrap items-center gap-x-1 gap-y-1 p-0">
-          <li className="mr-2 font-mono text-[11px] tracking-[1.5px] text-gold">OPEN SOURCE</li>
+          <li className={`mr-2 ${eyebrow}`}>OPEN SOURCE</li>
           {OPENS.map((o) => {
             const Icon = o.kind === 'repo' ? GitFork : o.kind === 'docs' ? BookOpen : Newspaper
             return (

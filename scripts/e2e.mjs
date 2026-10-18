@@ -17,6 +17,7 @@ import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { blockedOutbound, bootServer, historyFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
+import { auditPage, IN_PLACE_HOSTS, tokenColors } from './e2e-audit.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
 await guardTestRun(PORT, { watchdogMs: 8 * 60_000 })
@@ -90,6 +91,15 @@ function watch(page, label) {
       issues.length = 0
     },
   }
+}
+
+const TOKENS = tokenColors()
+/** The pixel-pass design audit (scripts/e2e-audit.mjs): text size, token colours, external links. */
+async function designAudit(page, label) {
+  const a = await page.evaluate(auditPage, { allowed: TOKENS, inPlace: IN_PLACE_HOSTS })
+  check(`${label}: no text under 11 px`, a.small.length === 0, a.small.slice(0, 3).map((s) => `${s.size}px ${s.sel} "${s.text}"`).join(' | '))
+  check(`${label}: no off-token colours`, a.offToken.length === 0, a.offToken.slice(0, 4).map((o) => `${o.color} ${o.kind} x${o.count} ${o.sample}`).join(' | '))
+  check(`${label}: links to other hosts open in a new tab with noopener`, a.ext.length === 0, a.ext.slice(0, 3).map((e) => `${e.href} ${e.sel}`).join(' | '))
 }
 
 async function noHorizontalScroll(page, label) {
@@ -860,6 +870,7 @@ await step('security', async () => {
     check('security: sub-tabs are a real tablist with icons', (await page.getByRole('tablist', { name: 'Security sections' }).getByRole('tab').count()) === 5 && (await page.getByRole('tab', { name: 'New scan' }).getAttribute('aria-selected')) === 'true')
     check('security: chain choices carry the chain marks', (await page.getByRole('radiogroup', { name: 'Chain' }).locator('img').count()) >= 5)
     await shot(page, 'security-step1-input')
+    await designAudit(page, `security-step1-input at ${page.viewportSize().width}`)
     await page.getByRole('button', { name: /Next: scope and cost/ }).click()
     check('security: step 1 refuses a missing address', await page.getByText(/Enter the contract address/).isVisible())
     await page.getByRole('radio', { name: /Base/ }).click()
@@ -871,11 +882,13 @@ await step('security', async () => {
     const fold = await page.getByTestId('confirm-scan').boundingBox()
     check('security: step 2 fits above the fold at 1440x900', !!fold && fold.y + fold.height <= 900, JSON.stringify(fold))
     await shot(page, 'security-step2-scope')
+    await designAudit(page, `security-step2-scope at ${page.viewportSize().width}`)
     await page.getByTestId('confirm-scan').click()
     await page.getByTestId('scan-progress').waitFor()
     await page.waitForFunction(() => ['fetching', 'analysing', 'triaging', 'reporting'].includes(document.querySelector('[data-testid="scan-progress"]')?.getAttribute('data-status') ?? ''), null, { timeout: 10_000 })
     check('security: step 4 shows live progress per step', (await page.locator('[data-testid="scan-progress"] [aria-current="step"]').count()) === 1)
     await shot(page, 'security-step4-running')
+    await designAudit(page, `security-step4-running at ${page.viewportSize().width}`)
     await page.getByTestId('report-body').waitFor({ timeout: 20_000 })
     await page.getByTestId('severity-charts').waitFor()
     check('security: the report has the mode label, charts, tools (ran and not run) and findings', /AI review only/.test((await page.getByTestId('mode-label').first().textContent()) ?? '') && (await page.locator('[data-testid="severity-charts"] [data-chart]').count()) === 2 && (await page.locator('[data-tool-status="not-run"]').count()) >= 1 && (await page.locator('[data-finding]').count()) >= 2)
@@ -890,6 +903,7 @@ await step('security', async () => {
     const head = await page.getByTestId('severity-charts').boundingBox()
     check('security: the report charts are above the fold at 1440x900', !!head && head.y < 900, JSON.stringify(head))
     await shot(page, 'security-step5-report')
+    await designAudit(page, `security-step5-report at ${page.viewportSize().width}`)
     reportId = await page.getByTestId('scan-detail').getAttribute('data-scan')
     await page.getByRole('switch').click()
     await page.getByTestId('public-link').waitFor()
@@ -905,14 +919,17 @@ await step('security', async () => {
     await page.getByTestId('pay-step').waitFor({ timeout: 10_000 })
     check('security: step 3 is Gully Pay for the scan invoice', (await page.getByRole('link', { name: /Open the invoice page/ }).getAttribute('target')) === '_blank')
     await shot(page, 'security-step3-pay')
+    await designAudit(page, `security-step3-pay at ${page.viewportSize().width}`)
     await page.getByRole('tab', { name: 'Scans' }).click()
     await page.getByTestId('scan-list').waitFor()
     check('security: the scans list shows both, one awaiting payment', (await page.locator('[data-scan-row]').count()) === 2 && (await page.locator('[data-scan-row] [data-status="awaiting_payment"]').count()) === 1)
     await shot(page, 'security-scans')
+    await designAudit(page, `security-scans at ${page.viewportSize().width}`)
     await page.getByRole('tab', { name: 'Monitors' }).click()
     await page.getByTestId('monitor-limits').getByText(/on Business/).waitFor({ timeout: 10_000 })
     check('security: the Monitors sub-tab (part 3) with the plan limits', /1 on Free/.test((await page.getByTestId('monitor-limits').textContent()) ?? '') && /10 on Pro/.test((await page.getByTestId('monitor-limits').textContent()) ?? ''))
     await shot(page, 'security-monitors')
+    await designAudit(page, `security-monitors at ${page.viewportSize().width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i, /Failed to load resource/])
     await ctx.close()
   }
@@ -929,16 +946,19 @@ await step('security', async () => {
     await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
     await noHorizontalScroll(page, 'security step 1')
     await shot(page, 'security-step1-input')
+    await designAudit(page, `security-step1-input at ${page.viewportSize().width}`)
     await page.getByRole('radio', { name: /Smart contract repo/ }).click()
     await page.getByPlaceholder(/owner\/name or https/).fill(stubs.REPO)
     await page.getByRole('button', { name: /Next: scope and cost/ }).click()
     await page.getByTestId('cost').waitFor()
     await noHorizontalScroll(page, 'security step 2')
     await shot(page, 'security-step2-scope')
+    await designAudit(page, `security-step2-scope at ${page.viewportSize().width}`)
     await page.getByTestId('confirm-scan').click()
     await page.getByTestId('report-body').waitFor({ timeout: 25_000 })
     await noHorizontalScroll(page, 'security report')
     await shot(page, 'security-step5-report')
+    await designAudit(page, `security-step5-report at ${page.viewportSize().width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
@@ -958,16 +978,29 @@ await step('security', async () => {
     if (mobile) await noHorizontalScroll(page, '/security')
     else check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('a[href="/security"] svg').count()) > 0 && (await page.locator('a[href="/score"] svg').count()) > 0)
     await shot(page, 'security-page')
+    await designAudit(page, `security-page at ${page.viewportSize().width}`)
     await page.goto(BASE + '/security/reports')
     await page.getByTestId('report-index').waitFor()
     check(`/security/reports at ${width}: lists the published report`, (await page.locator(`a[href="/security/reports/${reportId}"]`).count()) === 1)
     if (mobile) await noHorizontalScroll(page, '/security/reports')
     await shot(page, 'security-reports')
+    await designAudit(page, `security-reports at ${page.viewportSize().width}`)
     await page.goto(`${BASE}/security/reports/${reportId}`)
     await page.getByTestId('public-report').waitFor()
     check(`public report at ${width}: kit-branded page, not-an-audit notice, findings, no PoC, noindex`, (await page.getByTestId('not-audit').isVisible()) && (await page.locator('[data-finding]').count()) === findingCount && (await page.getByTestId('poc').count()) === 0 && (await page.locator('meta[name="robots"][content="noindex"]').count()) >= 1 && (await page.locator('[data-brand]').count()) > 0)
     if (mobile) await noHorizontalScroll(page, 'public report')
     await shot(page, 'security-public-report')
+    await designAudit(page, `security-public-report at ${page.viewportSize().width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  {
+    const ctx = await newContext()
+    const page = await ctx.newPage()
+    const w = watch(page, '/score at 1440')
+    await page.goto(BASE + '/score')
+    await page.waitForLoadState('networkidle').catch(() => {})
+    await designAudit(page, '/score at 1440')
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
@@ -1064,6 +1097,7 @@ await step('docs', async () => {
         check('docs /widget: the live examples render (widget.js allowed by the CSP)', true)
       }
       if (mobile) await noHorizontalScroll(page, `docs /${slug}`)
+      else await designAudit(page, `docs /${slug}`)
       // The L3 roadmap reads public parent-chain RPCs in the browser; this harness aborts every off-localhost request.
       await w.verify(slug === 'roadmap-l3' ? [/ERR_BLOCKED_BY_CLIENT/] : [])
     }
@@ -1179,12 +1213,14 @@ await step('404s', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/security', '/security/reports', '/services', '/about', '/legal/privacy', '/developers', '/links']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/developers', '/legal/privacy', '/links']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/developers') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
     await page.waitForLoadState('networkidle').catch(() => {})
     await noHorizontalScroll(page, p)
+    // The public pages only: the app (/developers) is another team's surface.
+    if (p !== '/developers') await designAudit(page, `${p} at 390`)
     await w.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   }
   await ctx.close()

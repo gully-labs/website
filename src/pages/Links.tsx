@@ -147,7 +147,7 @@ export function LinksPage() {
                     <span className="text-[16px] font-semibold leading-[1.25] text-ink-2">Holder Map</span>
                     <span className="text-[13px] leading-[1.4] text-muted">Coming soon</span>
                   </span>
-                  <span className="flex-none rounded-full border border-gold-line px-2 py-0.5 font-mono text-[10px] tracking-[1px] text-gold">SOON</span>
+                  <span className="flex-none rounded-full border border-gold-line px-2 py-0.5 font-mono text-[11px] tracking-[1px] text-gold">SOON</span>
                 </div>
               )}
             </nav>

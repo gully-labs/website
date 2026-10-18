@@ -59,7 +59,7 @@ function unavailable(req, res) {
     return res.end(JSON.stringify({ error: { message: 'Gully Analytics is starting or unavailable.', code: 'unavailable', status: 502 } }))
   }
   res.writeHead(502, { 'Content-Type': 'text/html; charset=utf-8', 'Retry-After': '30', 'Cache-Control': 'no-store' })
-  res.end('<!doctype html><title>Gully Analytics</title><body style="background:#0b0e13;color:#a6b0bd;font:16px system-ui;padding:48px">Gully Analytics is starting or unavailable. Try again in a minute. <a style="color:#e8c060" href="https://gullylabs.xyz/">Back to Gully Labs</a></body>')
+  res.end('<!doctype html><title>Gully Analytics</title><body style="background:#0d141c;color:#aeb5be;font:16px system-ui;padding:48px">Gully Analytics is starting or unavailable. Try again in a minute. <a style="color:#d9b563" href="https://gullylabs.xyz/">Back to Gully Labs</a></body>')
 }
 
 /** Umami's CSP, plus Cloudflare Web Analytics (script and beacon), which the zone injects into pages. */

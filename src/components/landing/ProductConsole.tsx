@@ -7,7 +7,7 @@ import { useContact } from '../ContactContext'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
 import { DOCS_URL } from '../../site-host'
 import { PORTAL, PORTAL_ALERTS } from './links'
-import { h2 } from './links'
+import { eyebrow, h2 } from './links'
 
 /* One product console in place of a section per product: a rail of tabs on the left (a scrolling chip
    row on a phone) and, on the right, the chosen product's one-line pitch, its call to action and its
@@ -133,7 +133,7 @@ const CHAIN_STEPS: { name: string; when: string; d: string }[] = [
 function ChainsPane() {
   return (
     <div className="flex flex-col gap-3">
-      <ol className="m-0 grid list-none grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-line bg-line p-0 max-[699px]:grid-cols-1">
+      <ol className="m-0 grid list-none grid-cols-3 gap-px overflow-hidden rounded-panel border border-line bg-line p-0 max-[699px]:grid-cols-1">
         {CHAIN_STEPS.map((s, i) => (
           <li key={s.name} className="flex flex-col gap-1 bg-surface px-4 py-3">
             <span className="font-mono text-[11px] text-gold">
@@ -151,7 +151,7 @@ function ChainsPane() {
               href={`https://github.com/gully-labs/${r.repo}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-full min-h-11 flex-col gap-[2px] rounded-[10px] border border-line bg-surface px-3 py-[10px] text-ink transition-[border-color,background-color] duration-200 hover:border-gold-line hover:bg-surface-hover hover:text-ink"
+              className="flex h-full min-h-11 flex-col gap-[2px] rounded-panel border border-line bg-surface px-3 py-[10px] text-ink transition-[border-color,background-color] duration-200 hover:border-gold-line hover:bg-surface-hover hover:text-ink"
             >
               <span className="flex items-center justify-between gap-2 font-mono text-[11px] tracking-[1px] text-gold">
                 {r.role.toUpperCase()}
@@ -197,12 +197,12 @@ function SecurityPane() {
 function AskPane({ configured }: { configured: boolean | null }) {
   if (configured)
     return (
-      <Suspense fallback={<div aria-hidden className="h-[420px] animate-pulse rounded-card border border-line bg-surface" />}>
+      <Suspense fallback={<div aria-hidden className="h-[420px] gl-skeleton rounded-card border border-line bg-surface" />}>
         <AskPanel />
       </Suspense>
     )
   return (
-    <div className="flex min-h-[200px] flex-col items-start justify-center gap-3 rounded-card border border-dashed border-line-strong bg-surface p-6">
+    <div className="flex min-h-[200px] flex-col items-start justify-center gap-3 rounded-card border border-dashed border-line-strong bg-surface p-5">
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{configured === null ? 'CHECKING…' : 'COMING ONLINE SOON'}</span>
       <p className="m-0 max-w-[520px] text-[14px] leading-[1.5] text-muted">
         Gully AI answers questions about the tracker, the API, Analytics, Chain Kit and Gully Pay from our own docs, and cites where each answer came from.
@@ -277,7 +277,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
     return () => ro.disconnect()
   }, [])
 
-  const skeleton = (height: number) => <div aria-hidden className="animate-pulse rounded-card border border-line bg-surface" style={{ height, maxHeight: 'calc(100vh - 120px)' }} />
+  const skeleton = (height: number) => <div aria-hidden className="gl-skeleton rounded-card border border-line bg-surface" style={{ height, maxHeight: 'calc(100vh - 120px)' }} />
   let body: ReactNode
   if (cur.id === 'chains') body = <ChainsPane />
   else if (cur.id === 'security') body = <SecurityPane />
@@ -299,7 +299,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
       <div className="flex flex-col gap-5 px-page py-12 max-[599px]:py-9">
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }} className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <span className="font-mono text-[11px] tracking-[1.5px] text-gold">PRODUCTS · TRY EACH ONE HERE</span>
+            <span className={eyebrow}>PRODUCTS · TRY EACH ONE HERE</span>
             <h2 id="products-title" className={h2}>
               Everything we ship
             </h2>
@@ -329,10 +329,10 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
                   aria-controls="console-panel"
                   tabIndex={on ? 0 : -1}
                   onClick={() => choose(t.id)}
-                  className={`group relative flex min-h-12 flex-none items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-[border-color,background-color,color] duration-200 max-[899px]:min-h-11 max-[899px]:rounded-full max-[899px]:py-1 ${on ? 'border-gold-line bg-grid text-ink' : 'border-transparent bg-transparent text-muted hover:bg-surface-hover hover:text-ink max-[899px]:border-line'}`}
+                  className={`group relative flex min-h-12 flex-none items-center gap-3 rounded-panel border px-3 py-2 text-left transition-[border-color,background-color,color] duration-200 max-[899px]:min-h-11 max-[899px]:rounded-full max-[899px]:py-1 ${on ? 'border-gold-line bg-grid text-ink' : 'border-transparent bg-transparent text-muted hover:bg-surface-hover hover:text-ink max-[899px]:border-line'}`}
                 >
                   {on && <motion.span layoutId="console-rail" aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gold max-[899px]:hidden" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
-                  <span className={`grid size-8 flex-none place-items-center rounded-[8px] transition-colors max-[899px]:size-6 max-[899px]:bg-transparent ${on ? 'bg-bg text-gold' : 'bg-surface text-dim group-hover:text-gold'}`}>
+                  <span className={`grid size-8 flex-none place-items-center rounded-tile transition-colors max-[899px]:size-6 max-[899px]:bg-transparent ${on ? 'bg-bg text-gold' : 'bg-surface text-dim group-hover:text-gold'}`}>
                     <t.icon aria-hidden size={16} strokeWidth={2} />
                   </span>
                   <span className="flex min-w-0 flex-1 items-center justify-between gap-2 max-[899px]:flex-none">

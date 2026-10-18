@@ -7,6 +7,7 @@ import { SocialIcon } from '../SocialIcon'
 import { StockLogo } from './StockLogo'
 import { useReducedMotion } from '../charts/chart-utils'
 import { ChartBox } from '../charts/ChartSkeleton'
+import { CHART_H } from '../charts/chartPresets'
 import { xPost } from '../../lib/share'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPct, fmtPp, moversPost, stockPath, UP, useMovers, type Mover, type MoverWindow } from '../../lib/tracker'
 
@@ -56,7 +57,7 @@ function Spark({ points, color }: { points: [number, number][]; color: string })
   const d = points.map((p, i) => `${i ? 'L' : 'M'}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join('')
   return (
     <svg aria-hidden width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block overflow-visible">
-      <line x1={0} x2={W} y1={y(0)} y2={y(0)} stroke="#2c3540" strokeDasharray="2 3" />
+      <line x1={0} x2={W} y1={y(0)} y2={y(0)} stroke="#2a3542" strokeDasharray="2 3" />
       <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" pathLength={1} style={{ strokeDasharray: 1, animation: 'gl-draw .9s .15s ease-out both' }} />
       <circle cx={x(t1)} cy={y(vals[vals.length - 1])} r={2.2} fill={color} />
     </svg>
@@ -77,7 +78,7 @@ function MoveBar({ value, max, color }: { value: number | null; max: number; col
     <span aria-hidden className="block h-[3px] overflow-hidden rounded-full bg-line">
       <span
         className="block h-full origin-left rounded-full"
-        style={{ width: `${pct}%`, background: color ?? '#a6b0bd', transition: 'width .7s cubic-bezier(.2,.8,.2,1)', animation: 'gl-grow-x .8s .25s cubic-bezier(.2,.8,.2,1) both' }}
+        style={{ width: `${pct}%`, background: color ?? '#aeb5be', transition: 'width .7s cubic-bezier(.2,.8,.2,1)', animation: 'gl-grow-x .8s .25s cubic-bezier(.2,.8,.2,1) both' }}
       />
     </span>
   )
@@ -92,7 +93,7 @@ function MoverCard({ m, mode, win, max }: { m: Mover; mode: Mode; win: MoverWind
     <Link
       to={stockPath(m)}
       aria-label={`${m.ticker} on ${CHAIN_SHORT[m.chain] ?? m.chain}: ${what} ${mainText} over ${win}, gap now ${fmtGap(m.gapPct)}. Open its page.`}
-      className="group flex h-full w-[212px] flex-col gap-3 rounded-[10px] border border-line bg-surface-deep p-3 text-ink transition-[border-color,transform] duration-200 hover:-translate-y-[2px] hover:border-gold hover:text-ink"
+      className="group flex h-full w-[212px] flex-col gap-3 rounded-panel border border-line bg-surface-deep p-3 text-ink transition-[border-color,transform] duration-200 hover:-translate-y-[2px] hover:border-gold hover:text-ink"
     >
       <span className="flex items-center gap-[10px]">
         <StockLogo row={m} size={30} />
@@ -112,7 +113,7 @@ function MoverCard({ m, mode, win, max }: { m: Mover; mode: Mode; win: MoverWind
         </span>
         <MoveBar value={main} max={max} color={tone(main)} />
       </span>
-      <Spark points={m.spark} color={tone(m.gapNow) ?? '#a6b0bd'} />
+      <Spark points={m.spark} color={tone(m.gapNow) ?? '#aeb5be'} />
     </Link>
   )
 }
@@ -210,11 +211,11 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
       {st.k === 'loading' && (
         <div aria-hidden className="flex gap-3 overflow-hidden">
           {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="h-[150px] w-[212px] flex-none animate-pulse rounded-[10px] bg-surface-deep" />
+            <div key={i} className="h-[150px] w-[212px] flex-none gl-skeleton rounded-panel bg-surface-deep" />
           ))}
         </div>
       )}
-      {st.k === 'error' && <ChartBox height={150} state="error" message="Couldn't load the movers. It also retries every minute." onRetry={onRetry} />}
+      {st.k === 'error' && <ChartBox height={CHART_H.sm} state="error" message="Couldn't load the movers. It also retries every minute." onRetry={onRetry} />}
       {data && list.length === 0 && (
         <p className="m-0 py-4 font-mono text-[12px] text-faint">
           {data.note ?? (chain !== 'all' ? `No trusted pool on this chain has ${win} of snapshots yet.` : `No trusted pool has ${win} of snapshots yet.`)}

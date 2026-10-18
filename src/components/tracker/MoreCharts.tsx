@@ -4,7 +4,7 @@ import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../charts/number-formats'
-import { axisTooltip, barsPreset, C, itemTooltip, PALETTE, ringPreset, tipHtml } from '../charts/chartPresets'
+import { axisTooltip, barsPreset, C, CHART_H, itemTooltip, PALETTE, ringPreset, tipHtml } from '../charts/chartPresets'
 import { ChainLogo } from './StockLogo'
 import { CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
@@ -34,7 +34,7 @@ export function GapHistogram({ rows }: { rows: TrackerRow[] }) {
   const option = useMemo(
     () => ({
       grid: { left: 4, right: 4, top: 10, bottom: 4, containLabel: true },
-      xAxis: { type: 'category', data: bins.map((b) => b.label), axisLabel: { fontSize: 11, interval: 0, hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
+      xAxis: { type: 'category', data: bins.map((b) => b.label), axisLabel: { fontSize: 11, interval: 0, hideOverlap: true }, axisLine: { lineStyle: { color: '#2a3542' } } },
       yAxis: { type: 'value', minInterval: 1, splitNumber: 3, axisLabel: { fontSize: 11 } },
       tooltip: axisTooltip((ps: ChartEvent[]) => {
         const b = bins[ps[0]?.dataIndex]
@@ -57,8 +57,8 @@ export function GapHistogram({ rows }: { rows: TrackerRow[] }) {
   if (!t.length) return <p className="m-0 py-6 font-mono text-[12px] text-faint">No trusted pools to plot yet.</p>
   return (
     <div className="flex flex-col gap-1">
-      <EChart option={option} height={170} steps={{ count: bins.length }} label={`Gap distribution, stocks per band: ${bins.map((b) => `${b.range} ${b.items.length}`).join(', ')}. Arrow keys step through bands.`} />
-      <div className="flex justify-between pl-6 font-mono text-[11px] text-axis" aria-hidden>
+      <EChart option={option} height={CHART_H.sm} steps={{ count: bins.length }} label={`Gap distribution, stocks per band: ${bins.map((b) => `${b.range} ${b.items.length}`).join(', ')}. Arrow keys step through bands.`} />
+      <div className="flex justify-between pl-6 font-mono text-[11px] text-faint" aria-hidden>
         <span>below fair</span>
         <span>gap %</span>
         <span>above fair</span>
@@ -91,8 +91,8 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
         nameLocation: 'middle',
         nameGap: 22,
         axisLabel: { fontSize: 11, formatter: (v: number) => fmtCompactUsd(v).replace('.00', '').replace('.0K', 'K') },
-        splitLine: { show: true, lineStyle: { color: '#1a2029' } },
-        axisLine: { show: true, lineStyle: { color: '#2c3540' } },
+        splitLine: { show: true, lineStyle: { color: '#1c2531' } },
+        axisLine: { show: true, lineStyle: { color: '#2a3542' } },
       },
       yAxis: { type: 'value', min: -Number(ext.toFixed(1)), max: Number(ext.toFixed(1)), splitNumber: 2, axisLabel: { fontSize: 11, formatter: (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%` } },
       tooltip: itemTooltip((p: ChartEvent) => {
@@ -132,10 +132,10 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
           animationDuration: 700,
           animationEasing: 'backOut',
           animationDelay: (i: number) => Math.min(i * 18, 600),
-          emphasis: { focus: 'self', scale: 1.35, label: { show: true, position: 'top', color: '#eef0f2', fontSize: 11, formatter: (p: ChartEvent) => pts[p.dataIndex]?.ticker ?? '' } },
+          emphasis: { focus: 'self', scale: 1.35, label: { show: true, position: 'top', color: '#f4f2ec', fontSize: 11, formatter: (p: ChartEvent) => pts[p.dataIndex]?.ticker ?? '' } },
           blur: { itemStyle: { opacity: 0.25 } },
-          markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: '#3a4452', width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
-          markArea: { silent: true, itemStyle: { color: 'rgba(232,192,96,.05)' }, label: { show: false }, data: [[{ yAxis: -inLinePct }, { yAxis: inLinePct }]] },
+          markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: '#3a4656', width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
+          markArea: { silent: true, itemStyle: { color: 'rgba(217,181,99,.05)' }, label: { show: false }, data: [[{ yAxis: -inLinePct }, { yAxis: inLinePct }]] },
         },
       ],
     }
@@ -147,7 +147,7 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
     <div className="flex flex-col gap-1">
       <EChart
         option={option}
-        height={210}
+        height={CHART_H.md}
         renderer="canvas"
         replaceMerge={['series', 'dataZoom']}
         steps={{ count: pts.length }}
@@ -169,7 +169,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
   const palette = [PALETTE[0], PALETTE[2], PALETTE[1], PALETTE[3], PALETTE[4], PALETTE[5], PALETTE[6], PALETTE[7]]
   const top = withPool.slice(0, 7).map((r, i) => ({ id: idOf(r), label: r.ticker, chain: r.chain, v: r.pool!.totalLiquidityUsd, color: palette[i] }))
   const rest = total - top.reduce((a, s) => a + s.v, 0)
-  const slices = rest > 0 ? [...top, { id: 'other', label: `${withPool.length - top.length} others`, chain: '', v: rest, color: '#3a4452' }] : top
+  const slices = rest > 0 ? [...top, { id: 'other', label: `${withPool.length - top.length} others`, chain: '', v: rest, color: '#3a4656' }] : top
   const key = slices.map((s) => `${s.id}=${s.v}`).join('|')
   const option = useMemo(
     () => ({
@@ -194,7 +194,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
       <div className="relative size-[150px] flex-none">
         <EChart
           option={option}
-          height={150}
+          height={CHART_H.sm}
           skeleton="ring"
           steps={{ count: slices.length }}
           onChart={(c) => (chart.current = c)}
@@ -217,9 +217,9 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
             key={s.id}
             onMouseEnter={() => (setHover(s.id), point(s.id, true))}
             onMouseLeave={() => (setHover(null), point(s.id, false))}
-            className={`flex items-center gap-2 rounded-[4px] px-1 text-[13px] transition-colors ${hover === s.id ? 'bg-surface-hover' : ''}`}
+            className={`flex items-center gap-2 rounded-btn px-1 text-[13px] transition-colors ${hover === s.id ? 'bg-surface-hover' : ''}`}
           >
-            <i className="size-[9px] flex-none rounded-[2px]" style={{ background: s.color }} />
+            <i className="size-[9px] flex-none rounded-bar" style={{ background: s.color }} />
             <span className="truncate text-ink-2">
               {s.label}
               {s.chain && <ChainLogo chain={s.chain} size={12} named className="ml-1.5 align-[-2px]" />}
@@ -256,7 +256,7 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
     { k: 'liquidity', label: 'Pool liquidity', get: (s) => s.liquidity, fmt: fmtCompactUsd, nf: NF.compactUsd },
     { k: 'volume', label: 'Volume 24h', get: (s) => s.volume, fmt: fmtCompactUsd, nf: NF.compactUsd },
   ]
-  const colors = ['#e8c060', '#5aa9e6']
+  const colors = ['#d9b563', '#5aa9e6']
   const table = metrics.map((m) => stats.map((s) => m.get(s)))
   const fmtCell = (j: number, i: number) => (table[j][i] === null ? '—' : metrics[j].fmt(table[j][i]!))
   const key = JSON.stringify(table) + stats.map((s) => s.name).join()
@@ -278,7 +278,7 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
           yAxisIndex: j,
           barWidth: 10,
           showBackground: true,
-          backgroundStyle: { color: '#1d232c', borderRadius: 5 },
+          backgroundStyle: { color: '#1f2935', borderRadius: 5 },
           animationDelay: (i: number) => j * 90 + i * 50,
           data: table[j].map((v, i) => ({ value: v === null ? null : Math.max(2, (v / max) * 100), itemStyle: { color: colors[i], borderRadius: 5 } })),
         }
@@ -294,7 +294,7 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
         <div className="flex gap-4 font-mono text-[11px] text-faint">
           {stats.map((s, i) => (
             <span key={s.key} className="inline-flex items-center gap-2">
-              <i className="size-[9px] rounded-[2px]" style={{ background: colors[i] }} />
+              <i className="size-[9px] rounded-bar" style={{ background: colors[i] }} />
               {s.name}
             </span>
           ))}

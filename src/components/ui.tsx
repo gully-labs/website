@@ -17,6 +17,9 @@ export const h2 = 'm-0 font-display text-h2 font-extrabold uppercase'
 export const h3 = 'm-0 font-display text-h3 font-extrabold uppercase'
 export const h4 = 'm-0 font-display text-h4 font-bold uppercase'
 
+/** The one line a chart or list shows when it has nothing to draw yet. */
+export const emptyNote = 'm-0 py-6 font-mono text-[12px] leading-[1.5] text-faint'
+
 export const statusPill =
   'whitespace-nowrap rounded-full border border-line-strong px-3 py-1 font-mono text-[12px] text-ink-2'
 

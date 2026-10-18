@@ -96,19 +96,19 @@ export function WidgetPage() {
     <>
       <Seo title="Tracker widget" description="Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps, read from Chainlink and the pools themselves." />
 
-      <section className="flex flex-col gap-5 px-page pt-[64px] pb-10">
+      <section className="flex flex-col gap-5 px-page pt-[72px] pb-10">
         <span className={eyebrow} style={rise(0)}>
           WIDGET · EMBED THE TRACKER
         </span>
         <h1 className="m-0 max-w-[900px] font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-          Put the live gap <span className="text-gold">on your page</span>
+          Put the live gap <span className="text-gold whitespace-nowrap">on your page</span>
         </h1>
         <p className="m-0 max-w-[720px] text-[18px] leading-[1.55] text-muted" style={rise(2)}>
           One script tag and one element. Every figure is read live from the tracker, refreshed every minute, and drawn inside its own shadow root so it never clashes with your styles.
         </p>
       </section>
 
-      <section className="grid grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start gap-5 px-page pb-[96px] max-[960px]:grid-cols-1">
+      <section className="grid grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start gap-5 px-page pb-24 max-[960px]:grid-cols-1">
         <div className={card} style={rise(3)}>
           <h2 className="m-0 font-display text-h4 font-bold uppercase">Build it</h2>
 
@@ -173,7 +173,7 @@ export function WidgetPage() {
               <h2 className="m-0 font-display text-h4 font-bold uppercase">Live preview</h2>
               <span className="font-mono text-[12px] text-faint">the real widget.js, live data</span>
             </div>
-            <div className={`grid min-h-[140px] place-items-center rounded-[10px] border border-line p-6 transition-colors duration-300 max-[600px]:p-3 ${theme === 'light' ? 'bg-ink' : 'bg-bg'}`}>
+            <div className={`grid min-h-[140px] place-items-center rounded-panel border border-line p-6 transition-colors duration-300 max-[600px]:p-3 ${theme === 'light' ? 'bg-ink' : 'bg-bg'}`}>
               <div className={`w-full min-w-0 ${type === 'badge' ? 'max-w-[340px]' : ''}`}>
                 {ready ? (
                   <LiveWidget options={options} />
@@ -195,7 +195,7 @@ export function WidgetPage() {
             {chartRow && data ? (
               <GapHistory chain={chartRow.chain} ticker={chartRow.ticker} inLinePct={data.rules.inLinePct} />
             ) : (
-              <div aria-hidden className="h-[260px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[10px] bg-surface-deep" />
+              <div aria-hidden className="h-[260px] gl-skeleton rounded-panel bg-surface-deep" />
             )}
             <span className="text-[13px] leading-[1.5] text-muted">{type === 'badge' ? 'The stock in your badge, over time.' : 'The deepest pool on the chosen chain, over time. Pick Badge to chart any stock.'}</span>
           </div>

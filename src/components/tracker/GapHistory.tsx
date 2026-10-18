@@ -83,11 +83,11 @@ function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; 
     const ms = (p: HistoryPoint) => p[0] * 1000
     const line = (k: 1 | 2 | 3) => rows.map((p) => (p ? [ms(p), p[k]] : [null, null]))
     const bridge = (k: 1 | 2 | 3) => holes.flatMap(([a, b], i) => [...(i ? [[null, null]] : []), [ms(a), a[k]], [ms(b), b[k]]])
-    const bridgeStyle = { type: 'line', silent: true, symbol: 'none', smooth: false, lineStyle: { width: 1, type: [1, 4], color: '#5c6878' }, tooltip: { show: false }, z: 1 }
+    const bridgeStyle = { type: 'line', silent: true, symbol: 'none', smooth: false, lineStyle: { width: 1, type: [1, 4], color: '#5f6a78' }, tooltip: { show: false }, z: 1 }
     const holeArea = {
       silent: true,
-      itemStyle: { color: 'rgba(166,176,189,.05)' },
-      label: { show: true, position: 'insideTop', color: '#5c6878', fontSize: 11, formatter: 'no readings' },
+      itemStyle: { color: 'rgba(174,181,190,.05)' },
+      label: { show: true, position: 'insideTop', color: '#5f6a78', fontSize: 11, formatter: 'no readings' },
       data: holes.map(([a, b]) => [{ xAxis: ms(a) }, { xAxis: ms(b) }]),
     }
     const newest = rows[rows.length - 1]
@@ -120,11 +120,11 @@ function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; 
           z: 3,
           markArea: {
             silent: true,
-            itemStyle: { color: 'rgba(232,192,96,.07)' },
-            label: { show: true, position: 'insideTopLeft', color: 'rgba(232,192,96,.65)', fontSize: 11, formatter: `±${inLinePct}% in line` },
+            itemStyle: { color: 'rgba(217,181,99,.07)' },
+            label: { show: true, position: 'insideTopLeft', color: 'rgba(217,181,99,.65)', fontSize: 11, formatter: `±${inLinePct}% in line` },
             data: [[{ yAxis: -inLinePct }, { yAxis: inLinePct }]],
           },
-          markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: '#3a4452', width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
+          markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: '#3a4656', width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
         },
         { id: 'gap-bridge', ...bridgeStyle, data: bridge(1), markArea: holeArea },
         livePoint(newest ? [ms(newest), newest[1]] : null, newest && newest[1] < 0 ? DOWN : UP),

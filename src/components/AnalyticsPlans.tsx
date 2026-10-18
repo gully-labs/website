@@ -12,7 +12,7 @@ export function AnalyticsPlanCards({ state, retry, delay = 0 }: { state: PlansSt
   if (state.k === 'loading') return <PlanSkeleton />
   if (state.k === 'error')
     return (
-      <div className="flex flex-wrap items-center gap-4 rounded-card border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-6 py-5 text-[15px] text-error" role="alert">
+      <div className="flex flex-wrap items-center gap-4 rounded-card border border-error-line bg-error/6 px-6 py-5 text-[15px] text-error" role="alert">
         The plans could not be read: {state.message}
         <button type="button" onClick={retry} className={`${btnOutline} min-h-11 px-5 text-[14px]`}>
           Try again
@@ -34,7 +34,7 @@ export function AnalyticsPlanCards({ state, retry, delay = 0 }: { state: PlansSt
           const featured = p.id === 'starter'
           return (
             <div key={p.id} className={`relative flex flex-col gap-6 overflow-hidden rounded-card border bg-surface p-7 ${featured ? 'border-gold-line' : 'border-line'}`} style={rise(i)}>
-              {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(232,192,96,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
+              {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(217,181,99,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
               <div className="relative flex flex-col gap-2">
                 <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
                 <span className="flex items-baseline gap-2">
@@ -73,7 +73,7 @@ export function PlanSkeleton() {
   return (
     <div role="status" aria-label="Reading the plans" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-[430px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card border border-line bg-surface" style={{ animationDelay: `${i * 0.12}s` }} />
+        <div key={i} className="h-[430px] gl-skeleton rounded-card border border-line bg-surface" style={{ animationDelay: `${i * 0.12}s` }} />
       ))}
     </div>
   )

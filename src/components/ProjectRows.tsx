@@ -6,6 +6,7 @@ import { comingSoon, projects, type Project } from '../content/projects'
 import { fmtTime, fmtUsd, sourceHost, type Point, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
 import { BlinkDot } from './ui'
+import { segBtnFrame, segGroup, segText } from './ui/seg'
 import { ChainLogo } from './logos/ChainLogo'
 import { VenueLogo } from './logos/VenueLogo'
 import { chainMark } from './logos/registry'
@@ -110,9 +111,9 @@ function Metric({ p, venue, c, max, state, active }: { p: Project; venue?: Venue
       </dt>
       <dd className="m-0 flex flex-col gap-1">
         <span className="truncate font-mono text-[13px] whitespace-nowrap">{text}</span>
-        <span aria-hidden className="h-1 overflow-hidden rounded-[2px] bg-grid">
+        <span aria-hidden className="h-1 overflow-hidden rounded-bar bg-grid">
           <motion.span
-            className="block h-full origin-left rounded-[2px] transition-[width] duration-700"
+            className="block h-full origin-left rounded-bar transition-[width] duration-700"
             style={{ width: `${w}%`, background: p.accent }}
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -136,7 +137,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="group" aria-label="Sort the projects by" className="flex gap-[2px] rounded-[8px] border border-line p-[2px]">
+        <div role="group" aria-label="Sort the projects by" className={segGroup}>
           {COLS.map((c) => {
             const on = sort === c.key
             return (
@@ -145,9 +146,9 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
                 type="button"
                 aria-pressed={on}
                 onClick={() => setSort(c.key)}
-                className={`relative min-h-11 min-w-[72px] rounded-[6px] bg-transparent px-3 font-mono text-[11px] tracking-[1px] transition-colors duration-200 ${on ? 'text-bg' : 'text-muted hover:text-ink'}`}
+                className={`${segBtnFrame} ${segText(on)} relative min-w-[72px] tracking-[1px] duration-200`}
               >
-                {on && <motion.span layoutId="project-sort" aria-hidden className="absolute inset-0 rounded-[6px] bg-gold" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
+                {on && <motion.span layoutId="project-sort" aria-hidden className="absolute inset-0 rounded-btn bg-gold" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                 <span className="relative">{c.label} ↓</span>
               </button>
             )
