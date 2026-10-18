@@ -14,6 +14,7 @@ export const DOC_PAGES = [
   { slug: 'analytics', title: 'Gully Analytics', group: 'Products' },
   { slug: 'gully-pay', title: 'Gully Pay', group: 'Products' },
   { slug: 'gully-pay-merchants', title: 'Gully Pay for merchants', group: 'Products' },
+  { slug: 'roadmap', title: 'Roadmap', group: 'More' },
   { slug: 'roadmap-l3', title: 'Roadmap: Gully L3', group: 'More' },
   { slug: 'changelog', title: 'Changelog', group: 'More' },
 ] as const

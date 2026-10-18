@@ -40,6 +40,9 @@ export function RoadmapL3() {
             ['S2 · Gully L3', 'Production, settling to Arbitrum One (recommended)', 'Planned. Gully venues, Gully Pay, Warp Routes for USDC and ETH, aggregator listings.'],
           ]}
         />
+        <P>
+          The Gully L3 is one track of the <DocLink to="roadmap">Roadmap</DocLink>, next to Audits & Security.
+        </P>
       </Section>
 
       <Section id="what" title="What the Gully L3 is">
