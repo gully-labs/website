@@ -108,6 +108,17 @@ export function MerchantTab() {
           )}
         </div>
       )}
+      {!view.profile.name && (
+        <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-gold-line bg-[rgba(232,192,96,.06)] px-5 py-4" role="status" data-testid="finish-profile">
+          <Store size={22} className="shrink-0 text-gold" aria-hidden />
+          <span className="min-w-0 flex-[1_1_240px] text-[14px] leading-[1.55] text-ink">
+            <b>Finish your store profile.</b> Until you name the store, your checkouts say “Store” with your wallet address. A name, a logo and a support email make them yours.
+          </span>
+          <a href="#m-profile" onClick={(e) => (e.preventDefault(), document.getElementById('m-profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))} className={pillGold}>
+            Set up the profile
+          </a>
+        </div>
+      )}
       {!f.paused && f.outstandingUsd > 0 && (
         <p className="m-0 rounded-[14px] border border-gold-line bg-[rgba(232,192,96,.06)] px-5 py-3 text-[14px] text-ink-2" role="status">
           A fee statement of {usd(f.outstandingUsd)} is open. Pay it within {f.pauseAfterDays} days of issue to keep checkout running (see Fees below).
