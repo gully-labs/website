@@ -415,7 +415,7 @@ await step('admin', async () => {
 
 /* ------------------------------------------------------------- docs --- */
 
-const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'changelog']
+const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap-l3', 'changelog']
 await step('docs', async () => {
   for (const [width, mobile] of [[1440, false], [390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
@@ -429,7 +429,8 @@ await step('docs', async () => {
         check('docs /widget: the live examples render (widget.js allowed by the CSP)', true)
       }
       if (mobile) await noHorizontalScroll(page, `docs /${slug}`)
-      await w.verify()
+      // The L3 roadmap reads public parent-chain RPCs in the browser; this harness aborts every off-localhost request.
+      await w.verify(slug === 'roadmap-l3' ? [/ERR_BLOCKED_BY_CLIENT/] : [])
     }
     if (mobile) {
       // The header's Gully AI button must not sit on the DOCS pill.
