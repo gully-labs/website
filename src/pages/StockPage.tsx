@@ -19,7 +19,8 @@ import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapP
 import { APP_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
-import { HolderMap } from '../components/holders/HolderMap'
+import { StockHolders } from '../components/holders/StockHolders'
+import { TokenLogo } from '../components/logos/TokenLogo'
 import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
 
 /* One stock token on one chain: everything the tracker knows about it, read live. Nothing on this page is
@@ -223,19 +224,14 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             </button>
             {elsewhere.map((r) => (
               <Link key={r.chain} to={stockPath(r)} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink hover:border-gold hover:text-ink">
-                <ChainLogo chain={r.chain} size={16} /> {r.ticker} on {CHAIN_NAME[r.chain] ?? r.chain} · {fmtGap(r.gapPct)}
+                <TokenLogo symbol={r.ticker} chain={r.chain} address={r.token} size={16} decorative /> {r.ticker} on {CHAIN_NAME[r.chain] ?? r.chain} · {fmtGap(r.gapPct)}
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="px-page pb-8" aria-labelledby="who-holds" id="holders">
-        <h2 id="who-holds" className="m-0 mb-4 font-display text-h4 font-bold uppercase">
-          Who holds {row.ticker}?
-        </h2>
-        <HolderMap chain={row.chain} token={row.ticker} tradeHref="#swap" />
-      </section>
+      <StockHolders chain={row.chain} ticker={row.ticker} chainName={CHAIN_NAME[row.chain] ?? row.chain} />
 
       <section className="px-page pb-8" aria-labelledby="how-swaps-work">
         <h2 id="how-swaps-work" className="m-0 mb-4 font-display text-h4 font-bold uppercase">How swaps work</h2>

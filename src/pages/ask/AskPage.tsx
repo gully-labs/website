@@ -74,7 +74,7 @@ export function AskPage() {
               <span className="text-[12px] leading-[1.5] text-muted">Gully AI reads these live when you ask about a stock. Press a bar to open its page.</span>
               <div className="flex flex-wrap gap-x-4">
                 <Link to="/tracker" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-gold hover:text-gold-hover">
-                  <Activity aria-hidden size={14} /> Launch app
+                  <Activity aria-hidden size={14} /> Stock tracker
                 </Link>
                 <Link to="/pricing" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-gold hover:text-gold-hover">
                   <Tag aria-hidden size={14} /> Plans and alerts

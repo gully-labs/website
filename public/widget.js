@@ -13,6 +13,8 @@
   if (window.GullyWidget) return
   var DEFAULT_API = 'https://gullylabs.xyz'
   var TRACKER = 'https://gullylabs.xyz/tracker'
+  // The kit's neutral token glyph (a slate disc with a coin ring), used when no logo loads. Never ticker letters.
+  var GLYPH = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#1f2935"/><circle cx="32" cy="32" r="15" fill="none" stroke="#aeb5bd" stroke-width="4"/></svg>')
   var REFRESH = 60000
   var HISTORY_REFRESH = 300000
   var UP = '#26ab94'
@@ -43,7 +45,7 @@
     '.lg{position:relative;display:inline-flex;flex:none;width:var(--s,20px);height:var(--s,20px)}' +
     '.lg .c{width:100%;height:100%;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 0 0 1px var(--ln)}' +
     '.lg .c img{width:82%;height:82%;object-fit:contain}' +
-    '.lg .c.t{background:var(--sf2);color:var(--ink);font:800 calc(var(--s,20px)*.36)/1 "Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.3px}' +
+    '.lg .c.t{background:var(--sf2)}.lg .c.t img{width:100%;height:100%}' +
     '.lg .ch{position:absolute;right:-2px;bottom:-2px;width:calc(var(--s,20px)*.44);height:calc(var(--s,20px)*.44);border-radius:50%;box-shadow:0 0 0 1.5px var(--bg);background:var(--bg)}' +
     /* gap pill */
     '.pl{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;font-weight:600;font-size:12px;background:var(--sf2);color:var(--mut);transition:background .4s,color .4s}' +
@@ -113,11 +115,12 @@
     return TRACKER + '/' + encodeURIComponent(r.chain) + '/' + encodeURIComponent(r.ticker)
   }
   function logo(r, size, withChain) {
-    var src = safeUrl(r.logo)
+    // No company logo in the answer: the Gully Labs logo service (xStocks, DexScreener, Jupiter ...) by chain and token.
+    var src = safeUrl(r.logo) || (r.chain && r.token && /^[A-Za-z0-9]{20,66}$/.test(String(r.token)) ? DEFAULT_API + '/api/logo/' + encodeURIComponent(r.chain) + '/' + r.token + '.png?s=' + (size > 32 ? 128 : 64) : null)
     var ch = withChain && safeUrl(r.chainLogo)
     var inner = src
-      ? '<span class="c"><img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="' + esc(src) + '" data-t="' + esc(r.ticker.slice(0, 4)) + '"></span>'
-      : '<span class="c t">' + esc(r.ticker.slice(0, 4)) + '</span>'
+      ? '<span class="c"><img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="' + esc(src) + '" ></span>'
+      : '<span class="c t"><img alt="" src="' + GLYPH + '"></span>'
     return '<span class="lg" style="--s:' + size + 'px" aria-hidden="true">' + inner + (ch ? '<img class="ch" alt="" loading="lazy" referrerpolicy="no-referrer" src="' + esc(ch) + '">' : '') + '</span>'
   }
   function pill(r) {
@@ -359,13 +362,15 @@
   }
 
   function wire(w) {
-    // Logos a host page blocks fall back to the ticker's letters.
+    // Logos a host page blocks fall back to the neutral token glyph.
     var imgs = w.box.querySelectorAll('.lg .c img')
     for (var i = 0; i < imgs.length; i++)
       imgs[i].addEventListener('error', function (e) {
         var c = e.target.parentNode
+        // A logo the host page blocks or that fails: the neutral token glyph, never letters.
         c.className = 'c t'
-        c.textContent = e.target.getAttribute('data-t') || ''
+        e.target.removeAttribute('srcset')
+        if (e.target.src !== GLYPH) e.target.src = GLYPH
       })
     var chs = w.box.querySelectorAll('.lg .ch')
     for (var j = 0; j < chs.length; j++)

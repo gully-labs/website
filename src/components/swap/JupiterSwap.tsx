@@ -8,6 +8,7 @@ import { useSolanaWallet } from '../solana/useSolanaWallet'
 import { b58encode, fromBase64, toBase64 } from '../solana/tx'
 import { signAndSend } from '../solana/walletStandard'
 import { btnGold } from '../ui'
+import { TokenLogo } from '../logos/TokenLogo'
 import { jupiterFeeText } from './swapConfig'
 import { track } from '../../lib/track'
 
@@ -119,13 +120,15 @@ export default function JupiterSwap({ row }: { row: TrackerRow }) {
         {side === 'buy' ? (
           <div role="radiogroup" aria-label="Pay with" className="flex h-11 overflow-hidden rounded-input border border-line-strong">
             {(['USDC', 'SOL'] as const).map((c) => (
-              <button key={c} type="button" role="radio" aria-checked={coin === c} onClick={() => setCoin(c)} disabled={busy} className={`min-w-[58px] px-3 font-mono text-[12px] ${coin === c ? 'bg-gold text-bg' : 'text-muted hover:text-ink'}`}>
-                {c}
+              <button key={c} type="button" role="radio" aria-checked={coin === c} onClick={() => setCoin(c)} disabled={busy} className={`inline-flex min-w-[58px] items-center justify-center gap-1.5 px-3 font-mono text-[12px] ${coin === c ? 'bg-gold text-bg' : 'text-muted hover:text-ink'}`}>
+                <TokenLogo symbol={c} size={16} decorative /> {c}
               </button>
             ))}
           </div>
         ) : (
-          <span className="flex h-11 items-center px-2 font-mono text-[12px] text-muted">{sym}</span>
+          <span className="flex h-11 items-center gap-1.5 px-2 font-mono text-[12px] text-muted">
+            <TokenLogo symbol={sym} chain={row.chain} address={row.token} size={16} decorative /> {sym}
+          </span>
         )}
       </div>
       <button
@@ -142,8 +145,8 @@ export default function JupiterSwap({ row }: { row: TrackerRow }) {
       {side === 'sell' && (
         <div role="radiogroup" aria-label="Receive" className="flex h-10 self-start overflow-hidden rounded-input border border-line-strong">
           {(['USDC', 'SOL'] as const).map((c) => (
-            <button key={c} type="button" role="radio" aria-checked={coin === c} onClick={() => setCoin(c)} disabled={busy} className={`px-3 font-mono text-[12px] ${coin === c ? 'bg-gold text-bg' : 'text-muted hover:text-ink'}`}>
-              for {c}
+            <button key={c} type="button" role="radio" aria-checked={coin === c} onClick={() => setCoin(c)} disabled={busy} className={`inline-flex items-center gap-1.5 px-3 font-mono text-[12px] ${coin === c ? 'bg-gold text-bg' : 'text-muted hover:text-ink'}`}>
+              <TokenLogo symbol={c} size={16} decorative /> for {c}
             </button>
           ))}
         </div>

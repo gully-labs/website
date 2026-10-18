@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
-import { axisTooltip, barsPreset, tipHtml } from '../charts/chartPresets'
+import { axisTooltip, barsPreset, tipHtml, C } from '../charts/chartPresets'
 import { ChainLogo, StockLogo } from './StockLogo'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
@@ -66,14 +66,14 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
         max: extent,
         interval: extent / 2,
         axisLabel: { margin: 6, formatter: (v: number) => `${v > 0 ? '+' : ''}${Number.isInteger(v) ? v : v.toFixed(1)}%` },
-        splitLine: { lineStyle: { color: '#1c2531' } },
+        splitLine: { lineStyle: { color: C.grid } },
       },
       yAxis: {
         type: 'category',
         inverse: true,
         data: byId.map(id),
         axisLabel: { show: false },
-        axisLine: { lineStyle: { color: '#2a3542' } },
+        axisLine: { lineStyle: { color: C.lineStrong } },
         animationDuration: 300,
         animationDurationUpdate: SORT_MS,
       },
@@ -106,7 +106,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
               value: g,
               itemStyle: {
                 color: thin ? 'rgba(0,0,0,0)' : c,
-                borderColor: sel ? '#d9b563' : c,
+                borderColor: sel ? C.gold : c,
                 borderWidth: thin || sel ? 1.5 : 0,
                 borderType: thin ? 'dashed' : 'solid',
                 borderRadius: 2,

@@ -1,8 +1,11 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Activity, ArrowRight, ArrowUpRight, BellRing, Bot, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, Gauge, GitFork, Layers, Puzzle, Radar, ShieldCheck, Sparkles, Users, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowRight, ArrowUpRight, BellRing, Bot, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, Gauge, GitFork, Layers, Puzzle, Radar, ScanSearch, ShieldCheck, Sparkles, Users, type LucideIcon } from 'lucide-react'
 import { askStatus } from '../ask/askApi'
+import { GhostChart } from '../charts/GhostChart'
+import { useJson, type ScoreIndex } from '../../pages/score/api'
+import { WeightsRing } from '../../pages/score/charts'
 import { useContact } from '../ContactContext'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
 import { PORTAL, PORTAL_ALERTS } from './links'
@@ -16,6 +19,7 @@ import { eyebrow, h2 } from './links'
    choosing a tab rewrites the hash in place, without a jump. */
 
 const TrackerDemo = lazy(() => import('../demos/TrackerDemo'))
+const HolderPane = lazy(() => import('./HolderPane'))
 const AlertsDemo = lazy(() => import('../demos/AlertsDemo'))
 const AnalyticsDemo = lazy(() => import('../demos/AnalyticsDemo'))
 const ChainKitDemo = lazy(() => import('../demos/ChainKitDemo'))
@@ -47,7 +51,8 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
   const payChains = offer ? [...offer.chains.map((c) => c.name), ...((offer.checkout as { solanaTreasury?: string | null }).solanaTreasury ? ['Solana'] : [])] : []
   const payOn = payChains.length > 1 ? `${payChains.slice(0, -1).join(', ')} or ${payChains[payChains.length - 1]}` : payChains[0]
   return [
-    { id: 'tracker', name: 'Tracker + Swap', icon: Activity, status: 'LIVE', live: true, pitch: 'Every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price, every minute, with a swap on each stock page.', cta: { label: 'Launch app', to: '/tracker' }, height: 560, Demo: TrackerDemo },
+    { id: 'tracker', name: 'Stock tracker', icon: Activity, status: 'LIVE', live: true, pitch: 'Every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price, every minute, with a swap on each stock page.', cta: { label: 'Open the Stock tracker', to: '/tracker' }, height: 560, Demo: TrackerDemo },
+    { id: 'holders', name: 'Holder Map', icon: ScanSearch, status: 'LIVE', live: true, pitch: 'Who really holds a token, checked live: the biggest wallets as bubbles, the latest transfers moving between them, and a health score for the launch.', cta: { label: 'Open the Holder Map', to: '/holders' }, height: 460, Demo: HolderPane },
     { id: 'alerts', name: 'Alerts', icon: BellRing, status: 'LIVE', live: true, pitch: 'Set a gap rule once; get a Telegram message with Open and Mute buttons, a signed webhook, or both.', cta: { label: 'Set an alert', href: PORTAL_ALERTS }, height: 560, Demo: AlertsDemo },
     { id: 'analytics', name: 'Gully Analytics', icon: ChartNoAxesCombined, status: 'FREE TRIAL', live: true, pitch: `Page views next to wallet connects, chains and transactions. Cookie-free, built on Umami, sign up with your wallet${trial ? `, ${trial} days free` : ''}.`, cta: { label: 'Start free trial', href: ANALYTICS_SIGNUP }, height: 600, Demo: AnalyticsDemo },
     { id: 'chainkit', name: 'Chain Kit', icon: Boxes, status: 'ON REQUEST', live: false, pitch: 'A Blockscout explorer with your domain, colours, token list and API, run by us. Change the brand below and watch it update.', cta: { label: 'Explore Chain Kit', to: '/chain-kit' }, height: 620, Demo: ChainKitDemo },
@@ -60,7 +65,7 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
   ]
 }
 
-const CONSOLE_TABS = ['tracker', 'alerts', 'analytics', 'chainkit', 'chains', 'security', 'api', 'widget', 'pay', 'ask']
+const CONSOLE_TABS = ['tracker', 'holders', 'alerts', 'analytics', 'chainkit', 'chains', 'security', 'api', 'widget', 'pay', 'ask']
 
 const NEAR = '400px 0px'
 const FAR = '1400px 0px'
@@ -181,9 +186,19 @@ const SECURITY_STEPS: { name: string; icon: LucideIcon; when: 'LIVE' | 'ON REQUE
 ]
 
 function SecurityPane() {
+  const [sc] = useJson<ScoreIndex>('/api/score', 60_000)
   return (
     <div className="flex flex-col gap-3">
-      <ol className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,190px),1fr))] gap-px overflow-hidden rounded-[10px] border border-line bg-line p-0">
+      <div className="flex flex-wrap items-center gap-4 rounded-panel border border-line bg-surface px-4 py-3" data-console-score>
+        <div className="w-[160px] flex-none max-[480px]:mx-auto">
+          {sc.state === 'ok' ? <WeightsRing parts={sc.data.methodology.components} size={160} /> : <GhostChart height={160} variant="ring" label={sc.state === 'error' ? 'The weights could not be read' : 'Reading the weights'} badge={false} framed={false} />}
+        </div>
+        <div className="flex min-w-[200px] flex-1 flex-col gap-1">
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">WHAT THE GULLY SCORE COUNTS · LIVE FROM /api/score</span>
+          <span className="text-[13px] leading-[1.45] text-muted">Each slice is one part of the score and its weight; hover one for its source. Missing data is left out, never counted as zero.</span>
+        </div>
+      </div>
+      <ol className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,190px),1fr))] gap-px overflow-hidden rounded-panel border border-line bg-line p-0">
         {SECURITY_STEPS.map((s) => {
           const inner = (
             <>

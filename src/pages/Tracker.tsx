@@ -18,6 +18,7 @@ import { NF, type NumberFormat } from '../components/charts/number-formats'
 import { eyebrow } from '../components/ui'
 import { xPost } from '../lib/share'
 import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, gapPost, stockPath, UP, useTracker, type TrackerRow, fairSourceLabel } from '../lib/tracker'
+import { C } from '../components/charts/chartPresets'
 
 const SHARE_URL = 'https://gullylabs.xyz/tracker'
 const rise = (i: number) => ({ animation: `gl-rise .5s ${i * 0.05}s ease both` })
@@ -175,7 +176,7 @@ export function Tracker() {
           <div key={`${data.generatedAt}-${chain}`} className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line" style={rise(5)}>
             <Kpi label="STOCKS" value={rows.length} nf={NF.int} note={`${trusted.length} trusted pools`} />
             <Kpi label="TYPICAL GAP" value={median} nf={NF.fixed2} suffix="%" note="median" />
-            <Kpi label="OFF BY 2%+" value={flagged} nf={NF.int} tone={flagged ? '#d9b563' : undefined} note="flagged now" />
+            <Kpi label="OFF BY 2%+" value={flagged} nf={NF.int} tone={flagged ? C.gold : undefined} note="flagged now" />
             <Kpi label="TOP PREMIUM" value={premium?.gapPct ?? null} nf={NF.signed2} suffix="%" tone={UP} note={premium ? premium.ticker : 'none'} />
             <Kpi label="TOP DISCOUNT" value={discount?.gapPct ?? null} nf={NF.signed2} suffix="%" tone={DOWN} note={discount ? discount.ticker : 'none'} />
             <Kpi label="LIQUIDITY" value={liquidity} nf={NF.compactUsd} note="all pools" />

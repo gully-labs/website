@@ -34,7 +34,7 @@ export function GapHistogram({ rows }: { rows: TrackerRow[] }) {
   const option = useMemo(
     () => ({
       grid: { left: 4, right: 4, top: 10, bottom: 4, containLabel: true },
-      xAxis: { type: 'category', data: bins.map((b) => b.label), axisLabel: { fontSize: 11, interval: 0, hideOverlap: true }, axisLine: { lineStyle: { color: '#2a3542' } } },
+      xAxis: { type: 'category', data: bins.map((b) => b.label), axisLabel: { fontSize: 11, interval: 0, hideOverlap: true }, axisLine: { lineStyle: { color: C.lineStrong } } },
       yAxis: { type: 'value', minInterval: 1, splitNumber: 3, axisLabel: { fontSize: 11 } },
       tooltip: axisTooltip((ps: ChartEvent[]) => {
         const b = bins[ps[0]?.dataIndex]
@@ -91,8 +91,8 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
         nameLocation: 'middle',
         nameGap: 22,
         axisLabel: { fontSize: 11, formatter: (v: number) => fmtCompactUsd(v).replace('.00', '').replace('.0K', 'K') },
-        splitLine: { show: true, lineStyle: { color: '#1c2531' } },
-        axisLine: { show: true, lineStyle: { color: '#2a3542' } },
+        splitLine: { show: true, lineStyle: { color: C.grid } },
+        axisLine: { show: true, lineStyle: { color: C.lineStrong } },
       },
       yAxis: { type: 'value', min: -Number(ext.toFixed(1)), max: Number(ext.toFixed(1)), splitNumber: 2, axisLabel: { fontSize: 11, formatter: (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%` } },
       tooltip: itemTooltip((p: ChartEvent) => {
@@ -132,9 +132,9 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
           animationDuration: 700,
           animationEasing: 'backOut',
           animationDelay: (i: number) => Math.min(i * 18, 600),
-          emphasis: { focus: 'self', scale: 1.35, label: { show: true, position: 'top', color: '#f4f2ec', fontSize: 11, formatter: (p: ChartEvent) => pts[p.dataIndex]?.ticker ?? '' } },
+          emphasis: { focus: 'self', scale: 1.35, label: { show: true, position: 'top', color: C.ink, fontSize: 11, formatter: (p: ChartEvent) => pts[p.dataIndex]?.ticker ?? '' } },
           blur: { itemStyle: { opacity: 0.25 } },
-          markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: '#3a4656', width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
+          markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: C.lineHover, width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
           markArea: { silent: true, itemStyle: { color: 'rgba(217,181,99,.05)' }, label: { show: false }, data: [[{ yAxis: -inLinePct }, { yAxis: inLinePct }]] },
         },
       ],
@@ -169,7 +169,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
   const palette = [PALETTE[0], PALETTE[2], PALETTE[1], PALETTE[3], PALETTE[4], PALETTE[5], PALETTE[6], PALETTE[7]]
   const top = withPool.slice(0, 7).map((r, i) => ({ id: idOf(r), label: r.ticker, chain: r.chain, v: r.pool!.totalLiquidityUsd, color: palette[i] }))
   const rest = total - top.reduce((a, s) => a + s.v, 0)
-  const slices = rest > 0 ? [...top, { id: 'other', label: `${withPool.length - top.length} others`, chain: '', v: rest, color: '#3a4656' }] : top
+  const slices = rest > 0 ? [...top, { id: 'other', label: `${withPool.length - top.length} others`, chain: '', v: rest, color: C.lineHover }] : top
   const key = slices.map((s) => `${s.id}=${s.v}`).join('|')
   const option = useMemo(
     () => ({
@@ -256,7 +256,7 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
     { k: 'liquidity', label: 'Pool liquidity', get: (s) => s.liquidity, fmt: fmtCompactUsd, nf: NF.compactUsd },
     { k: 'volume', label: 'Volume 24h', get: (s) => s.volume, fmt: fmtCompactUsd, nf: NF.compactUsd },
   ]
-  const colors = ['#d9b563', '#5aa9e6']
+  const colors = [C.gold, C.blue]
   const table = metrics.map((m) => stats.map((s) => m.get(s)))
   const fmtCell = (j: number, i: number) => (table[j][i] === null ? '—' : metrics[j].fmt(table[j][i]!))
   const key = JSON.stringify(table) + stats.map((s) => s.name).join()
@@ -278,7 +278,7 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
           yAxisIndex: j,
           barWidth: 10,
           showBackground: true,
-          backgroundStyle: { color: '#1f2935', borderRadius: 5 },
+          backgroundStyle: { color: C.line, borderRadius: 5 },
           animationDelay: (i: number) => j * 90 + i * 50,
           data: table[j].map((v, i) => ({ value: v === null ? null : Math.max(2, (v / max) * 100), itemStyle: { color: colors[i], borderRadius: 5 } })),
         }
