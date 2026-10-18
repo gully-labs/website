@@ -1,0 +1,179 @@
+{
+  "chainId": 84532,
+  "rpc": "https://sepolia.base.org",
+  "explorer": "https://sepolia.basescan.org",
+  "startedAt": "2026-10-18T06:39:42.240Z",
+  "payer": "0x18D679735B5D4c5Ead2B0a3F12F12aF4bD110CAD",
+  "steps": [
+    {
+      "id": "a1",
+      "title": "S1 Safe: creation recovered from the chain",
+      "ok": true,
+      "detail": "tx 0x07ab8d5e8933bc608bc63293639c381dc8d46280ea5427194c776833a61a38e3 (block 48258688), source chain, saltNonce 0x1a14c8cd37b",
+      "tx": "0x07ab8d5e8933bc608bc63293639c381dc8d46280ea5427194c776833a61a38e3"
+    },
+    {
+      "id": "a2",
+      "title": "S1 Safe: initializer decodes to setup()",
+      "ok": true,
+      "detail": "owner 0x7329e717276d7C05E8C2D6Ed772114b93b34bFA4, threshold 1, fallback 0x0000000000000000000000000000000000000000"
+    },
+    {
+      "id": "a3",
+      "title": "S1 Safe: CREATE2 prediction from the recovered inputs equals its address",
+      "ok": true,
+      "detail": "0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84"
+    },
+    {
+      "id": "a4",
+      "title": "S1 Safe: plan for OP Sepolia (not sent: no OP Sepolia ETH)",
+      "ok": true,
+      "detail": "factory 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67, calldata 516 bytes, predicted 0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84, checks 6/6",
+      "calldata": {
+        "to": "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
+        "data": "0x1688f0b900000000000000000000000029fcb43b46531bca003ddc8fcb67ffe91900c7620000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000001a14c8cd37b0000000000000000000000000000000000000000000000000000000000000164b63e800d0000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000007329e717276d7c05e8c2d6ed772114b93b34bfa4000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "value": "0x0"
+      },
+      "checks": [
+        {
+          "id": "origin-read",
+          "label": "Safe read on Base Sepolia",
+          "ok": true,
+          "detail": "SafeL2 1.4.1, 1 owner, threshold 1"
+        },
+        {
+          "id": "creation-recovered",
+          "label": "Creation transaction recovered",
+          "ok": true,
+          "detail": "from the chain’s history (block 48258688)"
+        },
+        {
+          "id": "origin-prediction",
+          "label": "CREATE2 address recomputed on Base Sepolia",
+          "ok": true,
+          "detail": "equals the Safe’s address"
+        },
+        {
+          "id": "target-factory",
+          "label": "SafeProxyFactory 1.4.1 on OP Sepolia",
+          "ok": true,
+          "detail": "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67, code hash matches"
+        },
+        {
+          "id": "target-singleton",
+          "label": "SafeL2 1.4.1 on OP Sepolia",
+          "ok": true,
+          "detail": "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762, code hash matches"
+        },
+        {
+          "id": "target-prediction",
+          "label": "CREATE2 address on OP Sepolia",
+          "ok": true,
+          "detail": "equals the Safe’s address"
+        }
+      ],
+      "gas": {
+        "estimate": 239544,
+        "estimateHex": "0x3a7b8",
+        "gasPrice": "1000250",
+        "gasPriceGwei": 0.00100025,
+        "costWei": "239603886000",
+        "cost": "0.00000024 ETH",
+        "symbol": "ETH",
+        "from": null,
+        "error": null
+      }
+    },
+    {
+      "id": "b1",
+      "title": "new Safe: server plan (1-of-1, SafeL2 1.4.1, CompatibilityFallbackHandler)",
+      "ok": true,
+      "detail": "predicted 0x396879A480516d94e7d0500134842a9db73Ee4aA, saltNonce 0xe1526eb333a6f013fb0496215544649a27259b847d278e7040b55c11149d38d8, gas ≈ 262468 (0.00000157 ETH)",
+      "predicted": "0x396879A480516d94e7d0500134842a9db73Ee4aA",
+      "saltNonce": "0xe1526eb333a6f013fb0496215544649a27259b847d278e7040b55c11149d38d8",
+      "gas": {
+        "estimate": 262468,
+        "estimateHex": "0x40144",
+        "gasPrice": "6000000",
+        "gasPriceGwei": 0.006,
+        "costWei": "1574808000000",
+        "cost": "0.00000157 ETH",
+        "symbol": "ETH",
+        "from": "0x18D679735B5D4c5Ead2B0a3F12F12aF4bD110CAD",
+        "error": null
+      },
+      "salt": "live-1792305590985"
+    },
+    {
+      "id": "b2",
+      "title": "new Safe: the address is recomputed before sending",
+      "ok": true,
+      "detail": "0x396879A480516d94e7d0500134842a9db73Ee4aA"
+    },
+    {
+      "id": "b3",
+      "title": "new Safe: the server-built calldata sent by the test wallet",
+      "ok": true,
+      "detail": "https://sepolia.basescan.org/tx/0xed4c2827c576e2885597974aadaf2fba3ac73a30ff907a977f66bd1fe1aa65d5",
+      "tx": "0xed4c2827c576e2885597974aadaf2fba3ac73a30ff907a977f66bd1fe1aa65d5"
+    },
+    {
+      "id": "b4",
+      "title": "new Safe: deploymentStatus follows sent -> mined -> verified (code + getOwners)",
+      "ok": true,
+      "detail": "verified, block 48268653, gas used 259243, owners [\"0x7329e717276d7C05E8C2D6Ed772114b93b34bFA4\"], threshold 1, version 1.4.1",
+      "tx": "0xed4c2827c576e2885597974aadaf2fba3ac73a30ff907a977f66bd1fe1aa65d5",
+      "status": {
+        "ok": true,
+        "chainId": 84532,
+        "hash": "0xed4c2827c576e2885597974aadaf2fba3ac73a30ff907a977f66bd1fe1aa65d5",
+        "txUrl": "https://sepolia.basescan.org/tx/0xed4c2827c576e2885597974aadaf2fba3ac73a30ff907a977f66bd1fe1aa65d5",
+        "address": "0x396879A480516d94e7d0500134842a9db73Ee4aA",
+        "explorerUrl": "https://sepolia.basescan.org/address/0x396879A480516d94e7d0500134842a9db73Ee4aA",
+        "state": "verified",
+        "blockNumber": 48268653,
+        "gasUsed": 259243,
+        "status": "0x1",
+        "created": true,
+        "owners": [
+          "0x7329e717276d7C05E8C2D6Ed772114b93b34bFA4"
+        ],
+        "threshold": 1,
+        "version": "1.4.1",
+        "singletonName": "SafeL2"
+      }
+    },
+    {
+      "id": "b5",
+      "title": "new Safe: eth_getCode at the predicted address, read independently with viem",
+      "ok": true,
+      "detail": "171 bytes, https://sepolia.basescan.org/address/0x396879A480516d94e7d0500134842a9db73Ee4aA"
+    },
+    {
+      "id": "b6",
+      "title": "new Safe: planning it again reports alreadyDeployed",
+      "ok": true,
+      "detail": "safe"
+    },
+    {
+      "id": "b7",
+      "title": "new Safe: plan for OP Sepolia uses our record, same address (not sent)",
+      "ok": true,
+      "detail": "source record, predicted 0x396879A480516d94e7d0500134842a9db73Ee4aA, calldata identical to Base Sepolia's: true",
+      "calldata": {
+        "to": "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
+        "data": "0x1688f0b900000000000000000000000029fcb43b46531bca003ddc8fcb67ffe91900c7620000000000000000000000000000000000000000000000000000000000000060e1526eb333a6f013fb0496215544649a27259b847d278e7040b55c11149d38d80000000000000000000000000000000000000000000000000000000000000164b63e800d0000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000fd0732dc9e303f09fcef3a7388ad10a83459ec9900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000007329e717276d7c05e8c2d6ed772114b93b34bfa4000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "value": "0x0"
+      }
+    },
+    {
+      "id": "b8",
+      "title": "new Safe: without the record, the chain’s history recovers the same inputs",
+      "ok": true,
+      "detail": "source chain, saltNonce 0xe1526eb333a6f013fb0496215544649a27259b847d278e7040b55c11149d38d8"
+    }
+  ],
+  "payerBalanceBefore": "0.048514827824442562",
+  "payerBalanceAfter": "0.048513272366442384",
+  "finishedAt": "2026-10-18T06:40:02.680Z"
+}

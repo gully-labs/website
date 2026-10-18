@@ -43,6 +43,12 @@ const CHAIN_ALIAS: Record<string, string> = {
   'polygon pos': 'polygon',
   avax: 'avalanche',
   'avalanche c-chain': 'avalanche',
+  'base-sepolia': 'base',
+  'base sepolia': 'base',
+  'op-sepolia': 'optimism',
+  'op sepolia': 'optimism',
+  'arbitrum-sepolia': 'arbitrum',
+  'arbitrum sepolia': 'arbitrum',
 }
 
 export function chainMark(key: string | null | undefined): Mark | null {

@@ -52,6 +52,7 @@ import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, 
 import { CHAIN_LIST, publicAssets, rpc } from './payments.mjs'
 import { checkTreasuryChains, treasuryStatus } from './treasury-chains.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
+import { handleAdminSafe } from './safe-deploy.mjs'
 import { planOf, publicPlans, treasury } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
 import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
@@ -138,6 +139,8 @@ export async function handleAdmin(req, res, url) {
   if (p.startsWith('/api/admin/ask/')) return handleAskAdmin(req, res, url)
   if (p === '/api/admin/merchants' || p.startsWith('/api/admin/merchants/')) return handleMerchantsAdmin(req, res, url)
   if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
+  // The treasury Safe per chain and its one-click deployment (safe-deploy.mjs).
+  if (p.startsWith('/api/admin/safe/')) return handleAdminSafe(req, res, url)
   const db = developers()
 
   // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so

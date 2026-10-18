@@ -126,9 +126,59 @@ export const telegramCalls = []
 
 const FEEDS = { 8453: 2_400_00000000n, 1: 2_500_00000000n, 56: 700_00000000n, 42161: 2_450_00000000n, 10: 2_400_00000000n, 137: 9_000000n, 43114: 10_00000000n }
 
+/* Safe deployment (server/safe-deploy.mjs): real Safe 1.4.1 bytes and the real creations of two 1-of-1 Safes on
+   Base Sepolia (scripts/fixtures/safe-v141.json): `safe` 0x041F9F5F… is the treasury here, `safe2` 0x396879A4… (the
+   one deployed live through the server's calldata) is the merchant's store wallet. Both have code on Base (8453) with
+   their creation transactions and logs; Safe's factory, SafeL2 and fallback handler have code on every chain but BNB
+   Chain (56), so Arbitrum/Ethereum are deployable and BNB Chain is refused. Addresses lower-case. */
+export const SAFE_FIXTURE = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/fixtures/safe-v141.json'), 'utf8'))
+const SF = SAFE_FIXTURE
+const SAFES = [
+  { address: SF.safe.address.toLowerCase(), view: SF.safe, creation: SF.creation, block: Number(BigInt(SF.creation.tx.blockNumber)) },
+  { address: SF.safe2.address.toLowerCase(), view: SF.safe2, creation: SF.safe2.creation, block: Number(BigInt(SF.safe2.creation.tx.blockNumber)) },
+]
+const SAFE_ADDR = SAFES[0].address
+const SAFE_HEAD = Math.max(...SAFES.map((s) => s.block)) + 1000
+const SAFE_CODE = { [SF.contracts.factory.address]: SF.contracts.factory.code, [SF.contracts.safeL2.address]: SF.contracts.safeL2.code, [SF.contracts.safe.address]: SF.contracts.safe.code, [SF.contracts.fallback.address]: SF.contracts.fallback.code }
+const padAddr = (a) => '0x' + String(a).toLowerCase().replace(/^0x/, '').padStart(64, '0')
+function safeRpcAnswer(chainId, q) {
+  const p = q.params ?? []
+  const to = String(p[0]?.to ?? p[0] ?? '').toLowerCase()
+  const safe = SAFES.find((s) => s.address === to)
+  const byTx = (h) => SAFES.find((s) => s.creation.tx.hash === h)
+  if (q.method === 'eth_getCode') {
+    if (safe) return chainId === 8453 && !(p[1] !== 'latest' && Number(BigInt(p[1])) < safe.block) ? SF.contracts.proxy.code : '0x'
+    return chainId !== 56 && SAFE_CODE[to] ? SAFE_CODE[to] : '0x'
+  }
+  if (q.method === 'eth_getStorageAt') return safe && chainId === 8453 && p[1] === '0x0' ? padAddr(SF.contracts.safeL2.address) : padAddr('0x0')
+  if (q.method === 'eth_estimateGas') return hex(236_880)
+  if (q.method === 'eth_gasPrice') return hex(1_000_000_000)
+  if (q.method === 'eth_getLogs') {
+    const from = Number(BigInt(p[0].fromBlock))
+    const toB = p[0].toBlock === 'latest' ? SAFE_HEAD : Number(BigInt(p[0].toBlock))
+    if (chainId !== 8453) return []
+    return SAFES.filter((s) => from <= s.block && toB >= s.block).flatMap((s) => s.creation.receipt.logs.filter((l) => !p[0].topics || l.topics[0] === p[0].topics[0]))
+  }
+  if (q.method === 'eth_getTransactionByHash') return chainId === 8453 ? (byTx(p[0])?.creation.tx ?? null) : null
+  if (q.method === 'eth_getTransactionReceipt') return chainId === 8453 ? (byTx(p[0])?.creation.receipt ?? null) : null
+  if (q.method === 'eth_call') {
+    const data = String(p[0]?.data ?? '')
+    if (to === SF.contracts.factory.address && data === '0x53e5d935') return '0x' + word(32) + word((SF.proxyCreationCode.length - 2) / 2) + SF.proxyCreationCode.slice(2).padEnd(Math.ceil((SF.proxyCreationCode.length - 2) / 64) * 64, '0')
+    if (safe && chainId === 8453) {
+      if (data === '0xa0e67e2b') return safe.view.owners
+      if (data === '0xe75235b8') return safe.view.threshold
+      if (data === '0xffa1ad74') return safe.view.version
+      if (data.startsWith('0xcc2f8452')) return safe.view.modulesPaginated
+    }
+  }
+  return undefined
+}
+
 function rpcAnswer(chainId, q) {
   if (q.method === 'eth_chainId') return hex(chainId)
-  if (q.method === 'eth_blockNumber') return hex(5_000_000)
+  if (q.method === 'eth_blockNumber') return hex(SAFE_HEAD)
+  const safe = safeRpcAnswer(chainId, q)
+  if (safe !== undefined) return safe
   if (q.method === 'eth_getBlockByNumber') return { number: q.params[0], timestamp: hex(nowSec()) }
   if (q.method === 'eth_getTransactionReceipt' || q.method === 'eth_getTransactionByHash') return null
   // Every address is a plain wallet (no code): merchant receiving wallets register as EOAs.
@@ -245,7 +295,9 @@ export async function bootServer({ port }) {
   if (!fs.existsSync(path.join(DIST, 'index.html'))) throw new Error('dist/ is missing: run `npm run build` first (test:e2e serves the built site).')
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-e2e-'))
   const admin = crypto.randomBytes(24).toString('hex')
-  const treasury = '0x' + crypto.randomBytes(20).toString('hex')
+  // The treasury is the fixture Safe: a Safe on Base, undeployed elsewhere, so the admin's Treasury Safe card and
+  // the merchant tab's "Deploy Safe on <chain>" have something to show (safeRpcAnswer).
+  const treasury = SAFE_ADDR
   Object.assign(process.env, {
     PORT: String(port),
     DATA_DIR: tmp,
@@ -260,7 +312,8 @@ export async function bootServer({ port }) {
     ANTHROPIC_API_KEY: 'sk-ant-e2e-' + 'x'.repeat(30),
     TELEGRAM_BOT_TOKEN: E2E_BOT_TOKEN,
     DEEPCORE_API: 'https://deepcore-api.e2e.invalid',
-    ...Object.fromEntries(Object.keys(FEEDS).map((id) => [`GULLY_RPC_${id}`, `https://rpc-${id}.e2e.invalid`])),
+    // Every payment chain, plus the extra Safe chains the admin's Treasury Safe card reads (10, 137, 43114).
+    ...Object.fromEntries([...Object.keys(FEEDS), 10, 137, 43114].map((id) => [`GULLY_RPC_${id}`, `https://rpc-${id}.e2e.invalid`])),
   })
   for (const k of ['GULLY_BASE_RPC', 'GULLY_MIN_CONFIRMATIONS', 'ANALYTICS_ADMIN_PASSWORD', 'ANTHROPIC_API_URL', 'TELEGRAM_API']) delete process.env[k]
   stubServerFetch()

@@ -83,6 +83,7 @@ import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, 
 import { treasury } from './plans.mjs'
 import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { isFeeProxy } from './fee-proxy-guard.mjs'
+import { handleMerchantSafe } from './safe-deploy.mjs'
 import { isSolanaAsset } from './solana-pay.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { sendAccountTelegram } from './telegram.mjs'
@@ -1201,6 +1202,8 @@ const reply = (res, r, okBody) => (r.ok ? json(res, r.status && r.status !== 200
  */
 export async function handleMerchant(req, res, url, ctx) {
   const p = url.pathname
+  // One-click Safe deployment (safe-deploy.mjs): plan and follow a Safe deployment the merchant's wallet sends.
+  if (p.startsWith('/api/developer/merchant/safe')) return handleMerchantSafe(req, res, url, ctx)
   const post = req.method === 'POST'
   const { workspace: ws, role, user } = ctx
   const ev = (action, target = null, detail = null) => {

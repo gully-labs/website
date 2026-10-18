@@ -184,3 +184,60 @@ Transactions from interrupted attempts are also in the wallet's history. They ar
   That run stopped on the same stale read before it called `verify`.
 
 Since then, every read is pinned to the latest mined block and retried while the load-balanced RPC lags.
+
+## Safe deployment (one-click, `server/safe-deploy.mjs`)
+
+Run on 2026-10-18 (UTC) on **Base Sepolia (84532)** with the same test wallet (`scripts/testnet-safe-deploy.mjs`, 12 of 12
+steps passed; raw data in `contracts/testnet-safe-results.json`). The server never held a key: it built the factory call and the
+test wallet signed and sent it, exactly as a merchant's or the admin's wallet does behind the "Deploy Safe on <chain>" button.
+
+| Role | Address |
+|---|---|
+| Existing Safe from S1 (origin) | [`0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84`](https://sepolia.basescan.org/address/0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84) |
+| **New Safe, deployed through the server's calldata** | [`0x396879A480516d94e7d0500134842a9db73Ee4aA`](https://sepolia.basescan.org/address/0x396879A480516d94e7d0500134842a9db73Ee4aA) |
+| Owner of both (TREASURY_ADDR) | `0x7329e717276d7C05E8C2D6Ed772114b93b34bFA4` |
+| Payer / signer (test wallet) | `0x18D679735B5D4c5Ead2B0a3F12F12aF4bD110CAD` |
+| Safe v1.4.1 SafeProxyFactory / SafeL2 / CompatibilityFallbackHandler | `0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67` / `0x29fcB43b46531BcA003ddC8FCB67FFE91900C762` / `0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99` |
+
+### (a) Recovering an existing Safe's creation and predicting its address
+
+| # | Step | Result |
+|---|---|---|
+| A1 | Find the creation of the S1 Safe without any hint: binary search over `eth_getCode` for the first block with code, then that block's `ProxyCreation` log | ✓ [0x07ab8d5e…](https://sepolia.basescan.org/tx/0x07ab8d5e8933bc608bc63293639c381dc8d46280ea5427194c776833a61a38e3), block 48258688, `saltNonce 0x1a14c8cd37b` |
+| A2 | Decode the initializer: `setup([0x7329…bFA4], 1, 0, 0x, fallback 0x0, token 0x0, 0, 0x0)` | ✓ |
+| A3 | Recompute CREATE2(factory, keccak(initializer) ++ saltNonce, keccak(proxyCreationCode ++ singleton)) | ✓ `0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84` = the Safe's address |
+| A4 | Plan its copy on **OP Sepolia** (the factory, SafeL2 and handler are there with the pinned code hashes): 6 of 6 checks, predicted address equals the Safe's, 516-byte `createProxyWithNonce` calldata ready | ✓ not sent: the test wallets hold no OP Sepolia ETH |
+
+### (b) A new Safe, built by the server and sent by the wallet
+
+| # | Step | Result | Tx | Gas |
+|---|---|---|---|---|
+| B1 | `planNew`: 1-of-1 Safe, SafeL2 1.4.1, CompatibilityFallbackHandler, deterministic salt nonce `0xe1526eb333…` (scope `testnet`, salt `live-1792305590985`), predicted `0x396879A480516d94e7d0500134842a9db73Ee4aA`, gas estimate 262,468 (0.00000157 ETH) | ✓ | | |
+| B2 | The address recomputed from the plan's own inputs before sending | ✓ equal | | |
+| B3 | The wallet sends the server's calldata to the factory | ✓ | [0xed4c2827…](https://sepolia.basescan.org/tx/0xed4c2827c576e2885597974aadaf2fba3ac73a30ff907a977f66bd1fe1aa65d5) | 259,243 used |
+| B4 | `deploymentStatus`: sent → mined (block 48268653) → verified: `eth_getCode` non-empty, `getOwners()` = [0x7329…bFA4], threshold 1, VERSION 1.4.1 | ✓ | | |
+| B5 | Independent read with viem: 171 bytes of proxy code at the predicted address | ✓ | | |
+| B6 | Planning the same Safe again: `alreadyDeployed`, kind `safe` | ✓ | | |
+| B7 | Plan its copy on OP Sepolia from our record: same address, calldata byte-identical to Base Sepolia's | ✓ not sent | | |
+| B8 | Forget the record and plan again: the chain's history recovers the same salt nonce and inputs | ✓ | | |
+
+Payer balance 0.04851482 → 0.04851327 ETH: the only spend was B3's gas.
+
+### (c) The same address on a second testnet
+
+Not sent: neither test wallet holds OP Sepolia or Arbitrum Sepolia ETH (balances read 0 on 2026-10-17; Sepolia too). The
+plan for OP Sepolia was computed live in A4 and B7 (factory, singleton and handler present with the pinned hashes,
+predicted address equal, calldata identical). To finish it by hand:
+
+1. Fund the test wallet on OP Sepolia (any faucet, ~0.001 ETH).
+2. `GULLY_TESTNET_CHAINS=84532,11155420 GULLY_TESTNET_ENV=<env file> node scripts/testnet-safe-deploy.mjs` plans again, or
+   call `planReproduce({ address, targetChainId: 11155420 })` from the module: the result's `tx.to` / `tx.data` are the call.
+3. Send `tx` from the funded wallet (viem `sendTransaction`), then `deploymentStatus({ chainId: 11155420, hash, address })`
+   until `verified`; the Safe appears at the same address on
+   [sepolia-optimism.etherscan.io](https://sepolia-optimism.etherscan.io/address/0x396879A480516d94e7d0500134842a9db73Ee4aA).
+
+In the app the same three steps are the button: the admin panel's **Treasury Safe** card and the merchant tab's wallet rows
+show "Deploy Safe on <chain>" where the Safe has no code; the stepper runs sent → mined → verified and re-runs the chain
+inspection. `npm run test:safe-deploy` covers the refusals the testnet cannot show (no factory, a tampered factory, a
+prediction that differs, a fee-proxy target, a Safe with no origin) against the real Safe 1.4.1 bytes in
+`scripts/fixtures/safe-v141.json`.
