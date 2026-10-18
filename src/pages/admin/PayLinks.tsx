@@ -6,6 +6,7 @@ import { embedSnippet } from '../pay/embed'
 import type { Invoice } from '../pay/invoice'
 import { adminCall } from './payAdmin'
 import { copyWithToast, flash } from '../../components/ui/toast'
+import { ArrowMark } from './newTab'
 
 /* Admin: Gully Pay links (reusable /pay/l/<id> pages that make an invoice per payer), their payments,
    the "Pay with crypto" embed, and merchant webhooks (per link, per invoice, and a global default) with
@@ -389,8 +390,9 @@ function LinkDetail({ token, link, reload, onSecret }: { token: string; link: Ad
                     <td className={`py-2 pr-3 uppercase ${STATE_CLS[i.status]}`}>{i.status}</td>
                     <td className="py-2 pr-3">
                       {i.payment ? (
-                        <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener" className="text-ink-2 hover:text-gold">
+                        <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener noreferrer" className="text-ink-2 hover:text-gold">
                           {i.payment.amount} {i.payment.symbol} · {i.payment.chain} · from {i.payment.from.slice(0, 8)}…
+                          <ArrowMark />
                         </a>
                       ) : (
                         <span className="text-faint">—</span>
@@ -498,8 +500,9 @@ export function PayLinks({ token }: { token: string }) {
                   <button type="button" onClick={() => copy(l.path)} className={btn}>
                     Copy link
                   </button>
-                  <a href={`${siteOrigin()}${l.path}`} target="_blank" rel="noopener" className={btn}>
+                  <a href={`${siteOrigin()}${l.path}`} target="_blank" rel="noopener noreferrer" className={btn}>
                     Open
+                    <ArrowMark />
                   </a>
                   <button type="button" onClick={() => setOpen(open === l.id ? null : l.id)} className={btn} aria-expanded={open === l.id}>
                     {open === l.id ? 'Hide details' : 'Payments & embed'}

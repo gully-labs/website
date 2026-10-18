@@ -154,7 +154,7 @@ function RangeToggle({ value, onChange }: { value: SeriesRange; onChange: (r: Se
   return (
     <div role="radiogroup" aria-label="Range" onKeyDown={onKey} className="flex gap-[2px] rounded-full border border-line p-[3px]">
       {opts.map((o) => (
-        <button key={o} data-v={o} type="button" role="radio" aria-checked={value === o} tabIndex={value === o ? 0 : -1} onClick={() => onChange(o)} className={`${chip(value === o, true)} min-h-[30px] border-0 px-3 text-[11px] max-[600px]:min-h-11`}>
+        <button key={o} data-v={o} type="button" role="radio" aria-checked={value === o} tabIndex={value === o ? 0 : -1} onClick={() => onChange(o)} className={`${chip(value === o, true)} min-h-[30px] relative after:absolute after:inset-x-0 after:-inset-y-[7px] border-0 px-3 text-[11px] max-[600px]:min-h-11`}>
           {o}
         </button>
       ))}
@@ -238,7 +238,7 @@ export function AnalyticsTraffic({ account }: { account: AnalyticsAccount }) {
         </GhostCurves>
       ) : (
         <div className={`flex flex-col gap-2 transition-opacity ${stale ? 'opacity-60' : ''}`} aria-busy={stale}>
-          <EChart option={option!} height={160} skeleton="line" label={`Page views and visitors per day over the last ${range === '7d' ? '7' : '30'} days: ${fmt(pv ?? 0)} views, ${fmt(vis ?? 0)} visitors.`} />
+          <EChart option={option!} height={160} skeleton="line" label={`Page views and visitors per day over the last ${range === '7d' ? '7' : '30'} days: ${pv == null ? 'views not tracked yet' : `${fmt(pv)} views`}, ${vis == null ? 'visitors not tracked yet' : `${fmt(vis)} visitors`}.`} />
           <Legend kinds={[{ id: 'pv', name: 'page views', color: C.gold, total: pv ?? undefined }, { id: 'vis', name: 'visitors', color: BLUE, total: vis ?? undefined }]} />
         </div>
       )}

@@ -1,4 +1,4 @@
-import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, ShieldCheck, ShieldPlus, Store, Trash2 } from 'lucide-react'
+import { CheckCircle2, Loader2, RefreshCw, ShieldAlert, ShieldCheck, ShieldPlus, Store, Trash2 } from 'lucide-react'
 import { lazy, Suspense, useRef, useState, type FormEvent } from 'react'
 import { Mascot } from '../../../components/brand'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
@@ -10,6 +10,7 @@ import { chip, input, pillGold, pillSm } from '../styles'
 import { InfoTip } from '../ui'
 import { KIND_TEXT, payOrigin, type MerchantView, type MerchantWallet } from './api'
 import { Confirm, Field, Section } from './parts'
+import { ExtLink } from '../ExtLink'
 
 /* Store profile (shown on the checkout) and the receiving wallets, one per chain. The forms are their own
    components so the setup stepper (MerchantTab) shows the same form as the Wallets and Profile tabs. */
@@ -154,9 +155,13 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
             {live ? 'receiving' : w.status === 'not-deployed' ? 'not deployed' : 'off'}
           </span>
         </span>
-        <a href={w.explorerUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center gap-1 font-mono text-[12px] break-all text-ink-2 underline-offset-4 hover:text-gold hover:underline">
-          {w.address} <ArrowUpRight size={11} aria-hidden className="shrink-0" />
-        </a>
+        {w.explorerUrl ? (
+          <ExtLink href={w.explorerUrl} className="inline-flex min-h-11 min-w-0 items-center gap-1 font-mono text-[12px] break-all text-ink-2 underline-offset-4 hover:text-gold hover:underline">
+            {w.address}
+          </ExtLink>
+        ) : (
+          <span className="font-mono text-[12px] break-all text-ink-2">{w.address}</span>
+        )}
         <span className="text-[12px] text-dim">
           {KIND_TEXT[w.kind]} · checked {new Date(w.checkedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
           {w.status === 'not-deployed' && ` · Deploy your contract on ${w.chain} at this address; we check every hour and it switches on by itself.`}
@@ -387,18 +392,18 @@ export function WalletForm({ view, onChange }: { view: MerchantView; onChange: (
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-[3px] size-4 shrink-0 accent-[#d9b563]" required />
           <span>
             I agree to the{' '}
-            <a href={`${payOrigin()}${view.terms.path}`} target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-4 hover:text-gold-hover">
+            <ExtLink href={`${payOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
               Gully Pay merchant terms ↗
-            </a>{' '}
+            </ExtLink>{' '}
             for this workspace: a fee per payment only, payments go straight to our wallet, and refunds and taxes are ours.
           </span>
         </label>
       ) : (
         <span className="font-mono text-[11px] text-faint lg:col-span-2">
           Merchant terms {view.terms.accepted?.version} accepted {new Date(view.terms.accepted!.acceptedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
-          <a href={`${payOrigin()}${view.terms.path}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-gold">
+          <ExtLink href={`${payOrigin()}${view.terms.path}`} className="underline underline-offset-4 hover:text-gold">
             read them ↗
-          </a>
+          </ExtLink>
         </span>
       )}
       {err && (

@@ -1,10 +1,11 @@
-import { Ban, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Ban, FileText, Link2, Loader2, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
 import { api } from '../api'
 import { chip, input, mono, pillGold, pillLine, pillSm } from '../styles'
 import { fmtDay, type MerchantInvoice, type MerchantLink, type MerchantView } from './api'
 import { AssetChips, Confirm, Field, Section, ShareBox, StatusPill } from './parts'
+import { EmptyLine } from '../parts'
 
 /* Pay links (fixed or open amount) and invoices (line items, due date, customer). Each has its checkout
    URL, a QR and the "Pay with crypto" button snippet. */
@@ -145,7 +146,7 @@ export function LinksSection({ view, reload }: { view: MerchantView; reload: () 
           }}
         />
       )}
-      {view.links.length === 0 && !creating && <p className="m-0 text-[13px] text-muted">No pay link yet.</p>}
+      {view.links.length === 0 && !creating && <EmptyLine icon={<Link2 size={14} aria-hidden />}>No pay link yet. Each link you create lists here with its views, checkouts and payments.</EmptyLine>}
       <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 xl:grid-cols-2">
         {view.links.map((l) => (
           <li key={l.id} className="flex min-w-0 flex-col gap-2 rounded-[12px] border border-line bg-bg p-3 transition-colors hover:border-line-strong">
@@ -286,7 +287,7 @@ export function InvoicesSection({ view, reload }: { view: MerchantView; reload: 
           }}
         />
       )}
-      {view.invoices.length === 0 && !creating && <p className="m-0 text-[13px] text-muted">No invoice yet.</p>}
+      {view.invoices.length === 0 && !creating && <EmptyLine icon={<FileText size={14} aria-hidden />}>No invoice yet. Invoices you send list here with their state.</EmptyLine>}
       <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 xl:grid-cols-2">
         {view.invoices.map((i) => (
           <li key={i.id} className="flex min-w-0 flex-col gap-2 rounded-[12px] border border-line bg-bg p-3 transition-colors hover:border-line-strong">

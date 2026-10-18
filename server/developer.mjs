@@ -28,6 +28,11 @@
 //   GET  /api/developer/invite/:token (public preview),  POST /api/developer/invite/accept
 //   GET  /api/developer/activity?cursor=,  GET /api/developer/export/usage.csv | payments.csv
 //   GET|POST /api/developer/security…        Gully Security: scans, reports, publishing (security-routes.mjs)
+//   GET  /api/developer/chain-kit             -> { request, waitlist: { joined, at }, stats: { requests, waitlist, daily } }
+//                                             this workspace's Chain Kit request, the wallet's devnet waitlist row,
+//                                             and everyone's counts per UTC day for 30 days (store.mjs)
+//   POST /api/developer/chain-kit/request { email, chain }  -> the view above; also saved as a contact enquiry
+//   POST /api/developer/chains-waitlist { email }           -> the view above + { already }  Gully Chains devnet waitlist
 //
 // Workspaces: every signed-in route runs in the session's active workspace (the wallet's own by default).
 // The gate checks membership on every request, resolves `address` to the workspace owner and calls the
@@ -41,7 +46,9 @@
 // sends an Origin, it must be this host.
 //
 // Legacy (kept so existing key holders keep working; no longer in the UI):
-//   POST /api/developer/request, POST /api/developer/claim, GET /api/developer/me, POST /api/developer/rotate
+//   POST /api/developer/claim, GET /api/developer/me (Bearer key), POST /api/developer/rotate
+//   POST /api/developer/request answers 410 Gone: keys are issued in the app (wallet sign-in) now.
+//   GULLY_LEGACY_KEY_REQUESTS=1 turns the old request form back on.
 
 import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests, usageExtras } from './access.mjs'
 import { eventFor, noteTelegramConnect, recordEvent, activityPage, syncTelegram } from './activity.mjs'
@@ -60,6 +67,14 @@ import { bearer, clientIp, json, readJson } from './http.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { verifySiwe, issueNonce } from './siwe.mjs'
 import {
+  addChainKitRequest,
+  addEnquiry,
+  chainKitDaily,
+  chainKitRequestOf,
+  chainKitRequests,
+  chainsWaitlist,
+  joinChainsWaitlist,
+  waitlistRowOf,
   createSession,
   deleteSession,
   developers,
@@ -268,7 +283,11 @@ export async function handleDeveloper(req, res, url) {
     p.startsWith('/api/developer/security/') ||
     // Gully Security monitoring (sec-monitor.mjs).
     p === '/api/developer/monitors' ||
-    p.startsWith('/api/developer/monitors/')
+    p.startsWith('/api/developer/monitors/') ||
+    // Chain Kit requests and the Gully Chains devnet waitlist (store.mjs).
+    p === '/api/developer/chain-kit' ||
+    p === '/api/developer/chain-kit/request' ||
+    p === '/api/developer/chains-waitlist'
 
   if (accountRoute || v2Route) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -303,6 +322,7 @@ export async function handleDeveloper(req, res, url) {
       if (p === '/api/developer/merchant' || p.startsWith('/api/developer/merchant/')) return handleMerchant(req, res, url, ctx)
       if (p === '/api/developer/security' || p.startsWith('/api/developer/security/')) return handleSecurity(req, res, url, ctx)
       if (p === '/api/developer/monitors' || p.startsWith('/api/developer/monitors/')) return handleMonitors(req, res, url, ctx)
+      if (p === '/api/developer/chain-kit' || p === '/api/developer/chain-kit/request' || p === '/api/developer/chains-waitlist') return chainKitRoutes(req, res, p, post, ctx)
       if (p === '/api/developer/me' || p === '/api/developer/profile' || p === '/api/developer/company' || p.startsWith('/api/developer/sessions')) return handleProfileRoutes(req, res, url, ctx)
       return handleWorkspaceRoutes(req, res, url, ctx)
     }
@@ -432,12 +452,44 @@ async function ownerRoutes(req, res, url, address, p, post) {
   }
 }
 
+/** Chain Kit requests and the Gully Chains devnet waitlist: server state, so they follow the account across devices. */
+async function chainKitRoutes(req, res, p, post, { user, workspace }) {
+  const view = () => {
+    const r = chainKitRequestOf(workspace)
+    const w = waitlistRowOf(user)
+    return {
+      request: r ? { at: r.at, chain: r.chain, email: r.email, status: r.status } : null,
+      waitlist: { joined: !!w, at: w?.at ?? null },
+      stats: { requests: chainKitRequests().length, waitlist: chainsWaitlist().length, daily: chainKitDaily(30) },
+    }
+  }
+  if (p === '/api/developer/chain-kit') {
+    if (post) return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, view()), true
+  }
+  if (!post) return json(res, 405, { error: 'POST only' }), true
+  if (!allow('chainkit', user, 10, 3_600_000)) return json(res, 429, { error: 'Too many requests. Try again in an hour.' }), true
+  const body = await readJson(req)
+  const email = clean(body?.email, 254).toLowerCase()
+  if (!EMAIL_RE.test(email)) return json(res, 400, { error: 'A valid email is required.' }), true
+  if (p === '/api/developer/chain-kit/request') {
+    const chain = clean(body?.chain, 200)
+    addChainKitRequest({ address: user, workspace, email, chain })
+    // Also an enquiry, so the admin dashboard's enquiries list shows it as before.
+    addEnquiry({ name: user, email, types: ['Infrastructure'], budget: '', message: `Topic: Chain Kit — request an explorer\nChain: ${chain || '(not given)'}\nWorkspace: ${workspace}\nRequested by: ${user}` })
+    return json(res, 200, view()), true
+  }
+  const { already } = joinChainsWaitlist({ address: user, workspace, email })
+  return json(res, 200, { ...view(), already }), true
+}
+
 /** The legacy routes (manual approval flow, Bearer-key views). */
 async function legacyRoutes(req, res, url, p, post, ip) {
   /* ---------- legacy: manual approval flow ---------- */
 
   if (p === '/api/developer/request') {
     if (!post) return json(res, 405, { error: 'POST only' }), true
+    if (process.env.GULLY_LEGACY_KEY_REQUESTS !== '1') return json(res, 410, { error: 'Key requests moved to the app: sign in with your wallet at app.gullylabs.xyz and create a key there.' }), true
     if (!allow('request', ip, 5, 3_600_000)) return json(res, 429, { error: 'Too many requests from this address. Try again in an hour.' }), true
     const body = await readJson(req)
     const email = clean(body?.email, 254).toLowerCase()

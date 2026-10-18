@@ -90,7 +90,7 @@ function TopBar({ brand }: { brand: Brand }) {
     <header className="border-b border-line bg-bg">
       <div className="mx-auto flex min-h-16 w-full max-w-[1120px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
         {brand.gully ? (
-          <a href="https://gullylabs.xyz" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center rounded-btn" aria-label="Gully Labs (opens in a new tab)">
+          <a href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-btn" aria-label="Gully Labs (opens in a new tab)">
             <GullyLockup height={34} />
           </a>
         ) : (
@@ -108,9 +108,9 @@ function TopBar({ brand }: { brand: Brand }) {
                 )}
               </span>
               {brand.website && (
-                <a href={brand.website} target="_blank" rel="noopener nofollow" className="inline-flex min-w-0 items-center gap-1 truncate font-mono text-[12px] text-dim underline-offset-4 hover:text-ink hover:underline">
+                <a href={brand.website} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex min-w-0 items-center gap-1 truncate font-mono text-[12px] text-dim underline-offset-4 hover:text-ink hover:underline">
                   {hostOf(brand.website)} <ExternalLink size={11} aria-hidden />
-                </a>
+                <span className="sr-only"> (opens in a new tab)</span></a>
               )}
             </span>
           </div>
@@ -127,16 +127,16 @@ function Foot({ brand }: { brand: Brand }) {
   return (
     <footer className="mt-auto border-t border-line">
       <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-5 text-[12px] text-faint sm:px-6">
-        <a href="https://gullylabs.xyz" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-2 font-mono tracking-[1px] text-faint hover:text-ink" aria-label="Powered by Gully Pay (opens in a new tab)">
+        <a href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 font-mono tracking-[1px] text-faint hover:text-ink" aria-label="Powered by Gully Pay (opens in a new tab)">
           POWERED BY <GullyMark size={20} /> <span className="text-gold">GULLY PAY</span>
         </a>
         <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-5">
-          <a href="/legal/merchant-terms" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
+          <a href="/legal/merchant-terms" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
             Merchant terms <ExternalLink size={11} aria-hidden />
-          </a>
-          <a href="/legal/privacy" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
+          <span className="sr-only"> (opens in a new tab)</span></a>
+          <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
             Privacy <ExternalLink size={11} aria-hidden />
-          </a>
+          <span className="sr-only"> (opens in a new tab)</span></a>
           {!brand.gully && brand.supportEmail && (
             <a href={`mailto:${brand.supportEmail}`} className="inline-flex min-h-11 items-center underline-offset-4 hover:text-ink hover:underline">
               Contact {storeName(brand)}
@@ -193,7 +193,7 @@ export function MobilePayBar({ total, children }: { total: string; children: Rea
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-[rgba(11,14,19,.94)] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur lg:hidden" role="region" aria-label="Pay">
       <div className="mx-auto flex max-w-[640px] items-center justify-between gap-3">
         <span className="flex min-w-0 flex-col leading-tight">
-          <span className="font-mono text-[10.5px] tracking-[1px] text-faint">TOTAL</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">TOTAL</span>
           <b className="truncate text-[17px] font-semibold text-ink">{total}</b>
         </span>
         {children}

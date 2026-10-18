@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { NF } from '../../../components/charts/number-formats'
 import { TokenLogo } from '../../../components/logos/TokenLogo'
 import { ChainConfirmations, PriceChart } from '../../pay/PayCharts'
-import { fmtDate, type BillingView } from '../api'
+import { fmtDate, usdOf, type BillingView } from '../api'
 import { ErrorLine, Skeleton } from '../parts'
 import { chip, pillGold, pillSm } from '../styles'
 import { LiveMarker, StackedDays } from '../vcharts'
@@ -24,8 +24,15 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
   const natives = useMemo(() => (offer ? offer.assets.filter((a) => a.kind === 'native' && a.feed) : []), [offer])
   const [coin, setCoin] = useState<string | null>(null)
   const asset = natives.find((a) => a.id === coin) ?? natives[0] ?? null
-  const usd = v ? v.payments.reduce((t, p) => t + Number(p.usd ?? 0), 0) : null
-  const days = useMemo(() => (v ? [...v.payments].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { usd: Math.round(Number(p.usd ?? 0)) } })) : []), [v])
+  // Unknown USD values are left out of the total and the chart, never counted as $0 (owner rule).
+  const known = useMemo(() => (v ? v.payments.filter((p) => usdOf(p) !== null) : []), [v])
+  const missing = v ? v.payments.length - known.length : 0
+  const usd = v && known.length ? known.reduce((t, p) => t + (usdOf(p) as number), 0) : null
+  const usdUnknown = s.k === 'error' ? 'unreadable' : !v ? '…' : v.payments.length ? '—' : 'none yet'
+  const usdNote = !v ? 'in USD at quote time' : missing && known.length ? `partial: ${missing} without a USD value` : missing ? 'USD value not recorded' : 'in USD at quote time'
+  const usdTitle = missing ? `${missing} of ${v?.payments.length} payment${missing === 1 ? '' : 's'} have no recorded USD value, so they are left out of this total and the chart.` : undefined
+  const days = useMemo(() => [...known].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { usd: Math.round((usdOf(p) as number) * 100) / 100 } })), [known])
+  const chainNames = offer ? offer.chains.map((c) => c.name).filter(Boolean) : []
   const pending = s.k === 'error' ? 'unreadable' : '…'
   const status: Status = !v ? (s.k === 'error' ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }) : offer?.checkout.enabled ? { tone: 'live', text: 'checkout open' } : { tone: 'idle', text: 'checkout closed here' }
 
@@ -34,7 +41,7 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
       <ServiceHeader
         icon={CircleDollarSign}
         title="Gully Pay"
-        desc="Crypto payments straight to a wallet: ETH, BNB, USDC and USDT on Base, Ethereum, BNB Chain and Arbitrum, checked on chain."
+        desc={`Crypto payments straight to a wallet, checked on chain${chainNames.length ? `: ${chainNames.join(', ')}` : ' on every chain checkout supports'}.`}
         status={status}
         docs={docsPage('gully-pay')}
         page={{ href: sitePage('/#pay') }}
@@ -45,7 +52,7 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
         }
         tiles={[
           { label: 'PAYMENTS', value: v?.payments.length, unknown: pending, note: 'to Gully, this workspace' },
-          { label: 'PAID', value: usd === null ? null : Math.round(usd), format: NF.compactUsd, unknown: pending, note: 'in USD at quote time' },
+          { label: 'PAID', value: usd === null ? null : Math.round(usd), format: NF.compactUsd, unknown: usdUnknown, note: usdNote, title: usdTitle },
           { label: 'ASSETS', value: offer?.assets.length, unknown: pending, note: offer ? `${offer.chains.length} chains` : 'accepted' },
           { label: 'OPEN QUOTES', value: v?.intents.length, unknown: pending, note: '20 minutes each' },
         ]}
@@ -58,7 +65,9 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
           {!v ? (
             <Skeleton h={170} />
           ) : days.length ? (
-            <StackedDays height={170} days={days} kinds={[{ id: 'usd', name: 'USD', color: '#74c27b' }]} label={`Payments over time: ${v.payments.length}.`} />
+            <StackedDays height={170} days={days} kinds={[{ id: 'usd', name: 'USD', color: '#74c27b' }]} label={`Payments over time: ${known.length}${missing ? `, plus ${missing} with no USD value (not charted)` : ''}.`} />
+          ) : v.payments.length ? (
+            <LiveMarker text={`${v.payments.length} payment${v.payments.length === 1 ? '' : 's'} with no recorded USD value: nothing to chart (see Billing)`} height={170} />
           ) : (
             <LiveMarker text="No payments yet: pay for a plan from Billing and it charts here" height={170} />
           )}

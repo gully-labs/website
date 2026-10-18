@@ -1,4 +1,4 @@
-import { AppWindow, ArrowRight, ArrowUpRight, BellRing, Bot, Boxes, ChartNoAxesCombined, Check, Code2, CreditCard, KeyRound, Loader2, Network, Send, Store } from 'lucide-react'
+import { AppWindow, ArrowRight, BellRing, Bot, Boxes, ChartNoAxesCombined, Check, Code2, CreditCard, KeyRound, Loader2, Network, Send, Store } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { NF } from '../../components/charts/number-formats'
@@ -24,8 +24,9 @@ import { LaunchHolders } from '../../components/holders/LaunchHolders'
      Alerts           /alerts (gap and DeepCore launch alerts, Telegram, firings from the delivery logs)
      Gully Analytics  /analytics (trial or plan, the events ring)
      Gully Pay        /billing (plan, payments to Gully); merchant stores in the Merchant tab (#merchant)
-     Chain Kit        "Request your explorer": the site's enquiry endpoint (POST /api/contact)
-     Gully Chains     the Devnet waitlist: the launch list (POST /api/notify, slot 90)
+     Chain Kit        "Request your explorer": server state (GET /api/developer/chain-kit, POST …/chain-kit/request),
+                      also saved as an enquiry for the admin; requests and sign-ups per day chart under it
+     Gully Chains     the Devnet waitlist: server state (POST /api/developer/chains-waitlist)
      Gully AI         /api/ask/status, and an inline question (POST /api/ask); recent questions stay in this browser
      Holder Map       the latest DeepCore launches (/api/deepcore/launches), each linking to its map
      Widget and SDK   links, with the API's live health
@@ -89,7 +90,7 @@ function Stat({ label, value, unknown }: { label: string; value: number | null; 
 }
 
 const goBtn = (go: (t: Tab) => void, t: Tab, text: string) => (
-  <button type="button" onClick={() => go(t)} className={`${pillSm} min-h-9`}>
+  <button type="button" onClick={() => go(t)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
     {text} <ArrowRight size={14} aria-hidden />
   </button>
 )
@@ -182,7 +183,7 @@ function AnalyticsCard({ s, go }: { s: Load<AnalyticsView>; go: (t: Tab) => void
     <Card
       icon={<ChartNoAxesCombined size={16} aria-hidden />}
       title="Gully Analytics"
-      badge={a ? pill(a.state === 'trial' ? `trial · ${daysLeft(a.expiresAt) ?? '?'}d left` : a.state === 'active' ? (a.plan?.name ?? 'active') : 'ended', a.state === 'lapsed' ? 'red' : 'gold') : null}
+      badge={a ? pill(a.state === 'trial' ? (daysLeft(a.expiresAt) === null ? 'trial · end date not tracked yet' : `trial · ${daysLeft(a.expiresAt)}d left`) : a.state === 'active' ? (a.plan?.name ?? 'active') : 'ended', a.state === 'lapsed' ? 'red' : 'gold') : null}
       foot={goBtn(go, 'analytics', a ? 'Open analytics' : 'Start the free trial')}
     >
       {s.k === 'error' ? (
@@ -245,18 +246,41 @@ function PayCard({ s, go }: { s: Load<BillingView>; go: (t: Tab) => void }) {
 
 function MerchantCard() {
   return (
-    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('live', 'green')} foot={<a href="#merchant" className={`${pillSm} min-h-9`}>Open your store <ArrowRight size={14} aria-hidden /></a>}>
+    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('live', 'green')} foot={<a href="#merchant" className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>Open your store <ArrowRight size={14} aria-hidden /></a>}>
       <InfoTip summary="Pay links, invoices and a checkout, self-serve">Take crypto payments yourself: pay links, invoices and a “Pay with crypto” button with signed webhooks, run from this workspace.</InfoTip>
       <LiveMarker text="Non-custodial: straight to your wallet · fee per payment only" height={44} />
     </Card>
   )
 }
 
+/** GET /api/developer/chain-kit: this workspace's Chain Kit request, your devnet waitlist row, everyone's counts per day. */
+export type ChainKitState = {
+  request: { at: string; chain: string | null; email: string; status: string } | null
+  waitlist: { joined: boolean; at: string | null }
+  stats: { requests: number; waitlist: number; daily: { day: string; requests: number; waitlist: number }[] }
+  already?: boolean
+}
+
+const CK_KINDS = [
+  { id: 'requests', name: 'Explorer requests', color: '#d9b563' },
+  { id: 'waitlist', name: 'Devnet waitlist', color: '#5aa9e6' },
+]
+
+/** Requests and waitlist sign-ups per day for 30 days, from every account (live, server state). */
+function ChainKitDays({ s, height = 64 }: { s: ChainKitState | null; height?: number }) {
+  if (!s) return <Skeleton h={height} />
+  const { requests, waitlist, daily } = s.stats
+  if (!requests && !waitlist) return <LiveMarker text="No requests in the last 30 days yet: each one charts here" height={height} />
+  return <StackedDays height={height} days={daily.map((d) => ({ label: d.day.slice(5), values: { requests: d.requests, waitlist: d.waitlist } }))} kinds={CK_KINDS} label={`Last 30 days: ${requests} explorer requests and ${waitlist} devnet waitlist sign-ups in total.`} />
+}
+
 export function ChainKitCard() {
   const { me } = usePortal()
   const ws = me?.active
-  const key = `gully:chainkit-requested:${ws?.id ?? ''}`
-  const [done, setDone] = useState<string | null>(() => store.get<string | null>(key, null))
+  const ck = usePoll<ChainKitState>('/api/developer/chain-kit', 60_000)
+  const [fresh, setFresh] = useState<ChainKitState | null>(null)
+  const state = fresh ?? ck.data
+  const done = state?.request ?? null
   const [email, setEmail] = useState(me?.profile.email ?? '')
   const [chain, setChain] = useState('')
   const [busy, setBusy] = useState(false)
@@ -264,69 +288,80 @@ export function ChainKitCard() {
     e.preventDefault()
     if (!ws) return
     setBusy(true)
-    const r = await api('/api/contact', {
-      method: 'POST',
-      body: { name: me?.profile.displayName ?? me?.address ?? '', email: email.trim(), types: ['Infrastructure'], budget: '', message: `Topic: Chain Kit — request an explorer\nChain: ${chain.trim() || '(not given)'}\nWorkspace: ${ws.name} (${ws.id})\nRequested by: ${me?.address}` },
-    })
+    const r = await api<ChainKitState>('/api/developer/chain-kit/request', { method: 'POST', body: { email: email.trim(), chain: chain.trim() } })
     setBusy(false)
     if (!r.ok) return toastError('The request could not be sent', { detail: r.status === 400 ? 'Check the email address.' : r.error })
-    const at = new Date().toISOString()
-    store.set(key, at)
-    setDone(at)
+    setFresh(r.data)
+    void ck.reload()
     toastSuccess('Explorer requested', { detail: 'Gully Labs will write to you about your chain.' })
   }
   return (
-    <Card icon={<Boxes size={16} aria-hidden />} title="Chain Kit" badge={done ? pill('requested', 'green') : pill('on request')} foot={<a href={site('/chain-kit')} target="_blank" rel="noopener noreferrer" className={`${pillSm} min-h-9`}>What Chain Kit is <ArrowUpRight size={14} aria-hidden /><span className="sr-only"> (opens in a new tab)</span></a>}>
+    <Card icon={<Boxes size={16} aria-hidden />} title="Chain Kit" badge={done ? pill('requested', 'green') : pill('on request')} foot={<ExtLink href={site('/chain-kit')} className={`${pillSm} min-h-11`}>What Chain Kit is</ExtLink>}>
       <span className="text-[12px] text-dim">An explorer, faucet and status page for your chain, run for you.</span>
-      {done ? (
+      {!state && !ck.error && !ck.timedOut ? (
+        <Skeleton h={44} />
+      ) : done ? (
         <p className="m-0 flex items-center gap-2 rounded-[10px] border border-success-line px-3 py-2 text-[13px] text-ink-2" data-testid="chainkit-requested">
-          <Check size={15} className="text-green" aria-hidden /> Requested {fmtDate(done)} for {ws?.name}. We reply by email.
+          <Check size={15} className="text-green" aria-hidden /> Requested {fmtDate(done.at)} for {ws?.name}{done.chain ? ` (${done.chain})` : ''}. We reply by email.
         </p>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-2">
-          <input className={`${input} h-9 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email to reach you" aria-label="Email" name="chainkit-email" />
-          <input className={`${input} h-9 text-[14px]`} value={chain} onChange={(e) => setChain(e.target.value)} placeholder="Your chain (name, chain id, RPC)" aria-label="Your chain" maxLength={200} name="chainkit-chain" />
-          <button type="submit" disabled={busy || !ws} className={`${pillGold} min-h-9`}>
+          <input className={`${input} h-11 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email to reach you" aria-label="Email" name="chainkit-email" />
+          <input className={`${input} h-11 text-[14px]`} value={chain} onChange={(e) => setChain(e.target.value)} placeholder="Your chain (name, chain id, RPC)" aria-label="Your chain" maxLength={200} name="chainkit-chain" />
+          <button type="submit" disabled={busy || !ws} className={`${pillGold} min-h-11`}>
             {busy && <Loader2 size={15} className="animate-spin" aria-hidden />} Request your explorer
           </button>
         </form>
       )}
+      <ChainKitDays s={state} />
+      {ck.error && <RefreshChip error={ck.error} onRetry={() => void ck.reload()} />}
     </Card>
   )
 }
 
 function ChainsCard() {
   const { me } = usePortal()
-  const [done, setDone] = useState<string | null>(() => store.get<string | null>('gully:devnet-waitlist', null))
+  const ck = usePoll<ChainKitState>('/api/developer/chain-kit', 60_000)
+  const [fresh, setFresh] = useState<ChainKitState | null>(null)
+  const state = fresh ?? ck.data
+  const done = state?.waitlist.joined ? state.waitlist.at : null
   const [email, setEmail] = useState(me?.profile.email ?? '')
   const [busy, setBusy] = useState(false)
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
-    const r = await api<{ alreadyOnList?: boolean }>('/api/notify', { method: 'POST', body: { email: email.trim(), slot: '90' } })
+    const r = await api<ChainKitState>('/api/developer/chains-waitlist', { method: 'POST', body: { email: email.trim() } })
     setBusy(false)
     if (!r.ok) return toastError('Could not join the waitlist', { detail: r.error })
-    const at = new Date().toISOString()
-    store.set('gully:devnet-waitlist', at)
-    setDone(at)
-    toastSuccess(r.data.alreadyOnList ? 'Already on the Devnet waitlist' : 'You are on the Devnet waitlist', { detail: email.trim() })
+    setFresh(r.data)
+    void ck.reload()
+    toastSuccess(r.data.already ? 'Already on the Devnet waitlist' : 'You are on the Devnet waitlist', { detail: email.trim() })
   }
   return (
     <Card icon={<Network size={16} aria-hidden />} title="Gully Chains" badge={done ? pill('on the waitlist', 'green') : pill('soon', 'gold')}>
       <span className="text-[12px] text-dim">App chains, launched for you. The Devnet opens to the waitlist first.</span>
-      <LiveMarker text="Gully Devnet: in development" height={40} />
-      {done ? (
+      {state ? (
+        <span className="font-mono text-[11px] text-faint">
+          <AnimatedNumber value={state.stats.waitlist} countUp /> on the Devnet waitlist · Gully Devnet: in development
+        </span>
+      ) : (
+        <LiveMarker text="Gully Devnet: in development" height={40} />
+      )}
+      {!state && !ck.error && !ck.timedOut ? (
+        <Skeleton h={44} />
+      ) : done ? (
         <p className="m-0 flex items-center gap-2 text-[13px] text-ink-2" data-testid="devnet-joined">
           <Check size={15} className="text-green" aria-hidden /> Joined {fmtDate(done)}. We email you when it opens.
         </p>
       ) : (
         <form onSubmit={submit} className="flex gap-2 max-[420px]:flex-col">
-          <input className={`${input} h-9 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" aria-label="Email for the Devnet waitlist" name="devnet-email" />
-          <button type="submit" disabled={busy} className={`${pillGold} min-h-9 shrink-0`}>
+          <input className={`${input} h-11 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" aria-label="Email for the Devnet waitlist" name="devnet-email" />
+          <button type="submit" disabled={busy} className={`${pillGold} min-h-11 shrink-0`}>
             Join the waitlist
           </button>
         </form>
       )}
+      {ck.error && <RefreshChip error={ck.error} onRetry={() => void ck.reload()} />}
     </Card>
   )
 }
@@ -365,7 +400,7 @@ function AiCard({ go }: { go: (t: Tab) => void }) {
       ) : status === true ? (
         <form onSubmit={ask} className="flex gap-2">
           <input className={`${input} h-9 text-[14px]`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask about the data or the API…" maxLength={500} aria-label="Ask Gully AI" name="ask" />
-          <button type="submit" disabled={busy || !q.trim()} className={`${pillGold} min-h-9 shrink-0`} aria-label="Ask">
+          <button type="submit" disabled={busy || !q.trim()} className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] shrink-0`} aria-label="Ask">
             {busy ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Send size={15} aria-hidden />}
           </button>
         </form>
@@ -414,14 +449,14 @@ function WidgetCard({ go }: { go: (t: Tab) => void }) {
     }
   }, [])
   return (
-    <Card icon={<AppWindow size={16} aria-hidden />} title="Widget builder and SDK" badge={up === null ? null : up ? pill('API up', 'green') : pill('API unreachable', 'red')}>
+    <Card icon={<AppWindow size={16} aria-hidden />} title="Widget builder and SDK" badge={up === null ? null : up ? pill('API online', 'green') : pill('API unreachable', 'red')}>
       <span className="text-[12px] text-dim">Live fair prices on any page with two lines of HTML, no key; or the typed SDK.</span>
       <LiveMarker text={up === null ? 'Checking the API…' : up ? 'Public API answering now' : 'The API did not answer the health check'} height={40} />
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => go('widgets')} className={`${pillSm} min-h-9`}>
+        <button type="button" onClick={() => go('widgets')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
           <AppWindow size={14} aria-hidden /> Widget builder
         </button>
-        <ExtLink href={`${DOCS_URL}/sdk`} className={`${pillSm} min-h-9`}>
+        <ExtLink href={`${DOCS_URL}/sdk`} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
           <Code2 size={14} aria-hidden /> SDK docs
         </ExtLink>
       </div>

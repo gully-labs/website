@@ -17,13 +17,30 @@ import { columns, group } from './usage'
 const fmt = (n: number) => n.toLocaleString('en-US')
 const compact = (n: number) => (n >= 10_000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n))
 
-/** The "not tracked yet" box, same height as the chart it stands in for. */
+/** An animated empty chart box (owner rule: empty states still move): a pulsing live dot, the message,
+    and a light sweeping along the baseline, the same height as the chart it stands in for. */
+export function EmptyChart({ height, title, children }: { height: number; title: string; children?: React.ReactNode }) {
+  return (
+    <div className="relative flex flex-col items-center justify-center gap-1 overflow-hidden rounded-[10px] border border-dashed border-line-strong px-4 text-center" style={{ height }} data-testid="empty-chart">
+      <span className="flex items-center gap-2">
+        <span className="relative grid size-3 shrink-0 place-items-center" aria-hidden>
+          <span className="absolute size-3 rounded-full bg-gold/40" style={{ animation: 'gl-live-pulse 2.4s ease-out infinite' }} />
+          <span className="size-[7px] rounded-full bg-gold" />
+        </span>
+        <span className="font-mono text-[12px] text-faint">{title}</span>
+      </span>
+      {children && <span className="max-w-[320px] text-[12px] leading-[1.5] text-dim">{children}</span>}
+      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.5),transparent)]" style={{ animation: 'gl-scan 3.2s linear infinite' }} />
+    </div>
+  )
+}
+
+/** The "not tracked yet" box, same height as the chart it stands in for (animated). */
 export function NotTracked({ height, children }: { height: number; children?: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-1 rounded-[10px] border border-dashed border-line-strong px-4 text-center" style={{ height }}>
-      <span className="font-mono text-[12px] text-faint">not tracked yet</span>
-      {children && <span className="max-w-[320px] text-[12px] leading-[1.5] text-dim">{children}</span>}
-    </div>
+    <EmptyChart height={height} title="not tracked yet">
+      {children}
+    </EmptyChart>
   )
 }
 
@@ -168,9 +185,7 @@ export function EndpointBars({ byEndpoint, since }: { byEndpoint: UsageV2['byEnd
   if (!byEndpoint) return <NotTracked height={120}>Per-endpoint counts are recorded from now on; older traffic has none.</NotTracked>
   if (!rows.length)
     return (
-      <div className="flex h-[120px] items-center justify-center rounded-[10px] border border-dashed border-line-strong font-mono text-[12px] text-faint">
-        No requests in this range{since ? ` · counted since ${new Date(since).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
-      </div>
+      <EmptyChart height={120} title={`No requests in this range${since ? ` · counted since ${new Date(since).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`} />
     )
   return <EChart option={option} height={height} label={`Requests by endpoint: ${rows.map((r) => `${r.endpoint} ${fmt(r.count)}`).join(', ')}.`} />
 }
@@ -230,7 +245,7 @@ export function AlertTimeline({ alerts, nameOf }: { alerts: GapAlert[]; nameOf: 
       series: [scatter('ok', 'delivered', '#74c27b', pts((d) => !d.test && d.ok)), scatter('fail', 'failed', LIMITED_COLOR, pts((d) => !d.test && !d.ok)), scatter('test', 'test', C.dim, pts((d) => d.test), true)],
     }
   }, [withLog, nameOf])
-  if (!withLog.length) return <div className="flex h-[140px] items-center justify-center rounded-[10px] border border-dashed border-line-strong px-4 text-center font-mono text-[12px] text-faint">No deliveries yet: firings and tests appear here as they happen</div>
+  if (!withLog.length) return <EmptyChart height={140} title="No deliveries yet: firings and tests appear here as they happen" />
   const fired = withLog.reduce((a, x) => a + x.deliveries.filter((d) => !d.test).length, 0)
   return <EChart option={option} height={height} label={`Alert deliveries over time: ${fired} firings across ${withLog.length} alerts.`} />
 }

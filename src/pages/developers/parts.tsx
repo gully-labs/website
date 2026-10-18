@@ -9,7 +9,7 @@ export function ErrorLine({ children, onRetry }: { children: ReactNode; onRetry?
       <AlertTriangle size={16} aria-hidden />
       <span className="min-w-0 flex-1">{children}</span>
       {onRetry && (
-        <button type="button" onClick={onRetry} className="font-mono text-[12px] text-ink-2 underline underline-offset-4 hover:text-ink">
+        <button type="button" onClick={onRetry} className="-my-2 inline-flex min-h-11 items-center px-2 font-mono text-[12px] text-ink-2 underline underline-offset-4 hover:text-ink">
           Retry
         </button>
       )}
@@ -19,6 +19,21 @@ export function ErrorLine({ children, onRetry }: { children: ReactNode; onRetry?
 
 export function Skeleton({ h = 20, w = '100%' }: { h?: number; w?: number | string }) {
   return <span aria-hidden className="block animate-shimmer rounded-[4px] bg-[linear-gradient(90deg,#131820_0%,#1a2029_50%,#131820_100%)] bg-[length:200%_100%]" style={{ height: h, width: w }} />
+}
+
+/** A one-line empty list (no pay link yet, no delivery yet): a softly pulsing icon and a light sweeping the
+    dashed border, so an empty list reads as waiting, not dead. */
+export function EmptyLine({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <p className="relative m-0 flex items-center gap-3 overflow-hidden rounded-input border border-dashed border-line-strong px-3 py-3 text-[13px] text-muted" data-empty>
+      <span className="relative grid size-7 shrink-0 place-items-center text-gold">
+        <span aria-hidden className="absolute inset-0 rounded-full border border-gold-line" style={{ animation: 'gl-live-pulse 2.6s ease-out infinite' }} />
+        {icon}
+      </span>
+      <span className="min-w-0">{children}</span>
+      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.45),transparent)]" style={{ animation: 'gl-scan 3.6s linear infinite' }} />
+    </p>
+  )
 }
 
 /** A dashed empty state with a softly pulsing icon (it is waiting for something, not dead), a title, a

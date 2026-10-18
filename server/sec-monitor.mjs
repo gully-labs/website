@@ -47,6 +47,7 @@ import { planOf } from './plans.mjs'
 import { CHAINS, CHAIN_LIST, fmtUnits, rpc as payRpc } from './payments.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { linkedChat, sendAccountTelegram, telegramEnabled } from './telegram.mjs'
+import { monitorAlertKeyboard } from './telegram-ui.mjs'
 import { keccak_256 } from './vendor/noble.mjs'
 
 const FILE = () => path.join(DATA_DIR, 'sec-monitor.json')
@@ -172,7 +173,7 @@ function save() {
 /* -------------------------------------------------------- injectable bits --- */
 
 let rpc = payRpc
-let sendTelegram = (owner, text) => sendAccountTelegram(owner, text)
+let sendTelegram = (owner, text, opts) => sendAccountTelegram(owner, text, opts)
 let sendWebhook = (url, secret, body) => postWebhook(url, secret, body, { userAgent: 'GullyLabs-Monitor/1 (+https://docs.gullylabs.xyz/gully-score)' })
 const listeners = new Set()
 
@@ -444,6 +445,26 @@ function liveMonitors() {
   return db.monitors.filter((m) => m.enabled && covered.has(m.id))
 }
 
+/* ---------------------------------------------------------------- health --- */
+
+// The loop's own health for the admin Health view: the last pass, how long it took, how late it is, and failures.
+const health = { lastTickAt: null, lastTickMs: null, ticks: 0, errors: 0, lastError: null, lastErrorAt: null }
+function noteTick(at, ms, failed) {
+  health.lastTickAt = new Date(at).toISOString()
+  health.lastTickMs = ms
+  health.ticks++
+  if (failed.length) {
+    health.errors += failed.length
+    health.lastError = String(failed[0].error ?? 'a chain could not be read').slice(0, 160)
+    health.lastErrorAt = new Date(at).toISOString()
+  }
+}
+/** { lastTickAt, lastTickMs, lagMs, ticks, errors, lastError, lastErrorAt }: lagMs is how far past its minute the next pass is (0 when on time), null before the first pass. */
+export function monitorHealth(now = Date.now()) {
+  const last = health.lastTickAt ? Date.parse(health.lastTickAt) : null
+  return { ...health, lagMs: last === null ? null : Math.max(0, now - last - LOOP_MS) }
+}
+
 /* -------------------------------------------------------------- the pass --- */
 
 let pass = 0
@@ -454,6 +475,7 @@ const ranges = new Map() // chainId -> current range
 /** One pass over every chain with a live monitor. Resolves to { chains: { [id]: { ok, from, to, events, error } } }. */
 export function tickMonitorsNow({ now = Date.now() } = {}) {
   if (running) return running
+  const t0 = Date.now()
   running = (async () => {
     pass++
     const live = liveMonitors()
@@ -484,8 +506,14 @@ export function tickMonitorsNow({ now = Date.now() } = {}) {
     const cut = now - SENT_KEEP_MS
     for (const [k, at] of Object.entries(db.sent)) if (at < cut) delete db.sent[k]
     save()
+    noteTick(now, Date.now() - t0, Object.values(out).filter((c) => c && c.ok === false && !c.skipped))
     return { pass, chains: out }
-  })().finally(() => (running = null))
+  })()
+    .catch((e) => {
+      noteTick(now, Date.now() - t0, [{ error: String(e?.message ?? e).slice(0, 160) }])
+      throw e
+    })
+    .finally(() => (running = null))
   return running
 }
 
@@ -713,10 +741,13 @@ async function deliver(m, recs, test, at = Date.now()) {
     const r = await sendWebhook(m.webhook.url, m.webhook.secret, JSON.stringify(payload))
     results.push({ channel: 'webhook', ok: !!r?.ok, status: r?.status ?? null, error: r?.error ?? null, ms: Date.now() - t0 })
   }
-  if (m.telegram) {
+  const muted = !test && m.mutedUntil && Date.parse(m.mutedUntil) > at
+  if (m.telegram && !muted) {
     const t0 = Date.now()
     const text = test ? `Test from Gully Security monitoring: alerts for ${m.name || short(m.address)} will arrive here.` : recs.map((r) => r.text).join('\n')
-    const r = await sendTelegram(m.workspace, text).catch((e) => ({ ok: false, error: String(e?.message ?? e) }))
+    // Open (the transaction, or the contract), Mute 24h and My monitors under every alert (telegram-ui.mjs).
+    const keyboard = test ? null : monitorAlertKeyboard(m.id, recs.find((r) => r.link)?.link ?? addrLink(m.chainId, m.address))
+    const r = await sendTelegram(m.workspace, text, { keyboard }).catch((e) => ({ ok: false, error: String(e?.message ?? e) }))
     results.push({ channel: 'telegram', ok: !!r?.ok, status: r?.status ?? null, error: r?.error ?? null, ms: Date.now() - t0 })
   }
   m.deliveries = [...(m.deliveries ?? []), ...results.map((r) => ({ id: payload.id, at: payload.createdAt, test, ...r, events: recs.length }))].slice(-KEEP_DELIVERIES)
@@ -769,6 +800,7 @@ function view(m, covered) {
     telegram: !!m.telegram,
     publicScore: m.publicScore !== false,
     enabled: m.enabled,
+    mutedUntil: m.mutedUntil && Date.parse(m.mutedUntil) > Date.now() ? m.mutedUntil : null,
     coveredByPlan: covered.has(m.id),
     createdAt: m.createdAt,
     lastCheckedAt: m.lastCheckedAt ?? null,
@@ -934,6 +966,24 @@ export function startSecMonitor() {
   first.unref?.()
   timer = setInterval(tick, LOOP_MS)
   timer.unref?.()
+}
+
+/** Mute a monitor's Telegram alerts for `ms` (the bot's Mute 24h). Its webhook still fires; events are still recorded. */
+export function muteMonitor(id, workspace, ms) {
+  const m = db.monitors.find((x) => x.id === id)
+  if (!m || m.workspace !== workspace) return { ok: false, error: 'This monitor does not belong to the account linked to this chat.' }
+  m.mutedUntil = new Date(Date.now() + ms).toISOString()
+  save()
+  return { ok: true, mutedUntil: m.mutedUntil }
+}
+/** Pause (false) or resume (true) a monitor, for the bot. */
+export function setMonitorEnabled(id, workspace, enabled) {
+  const m = db.monitors.find((x) => x.id === id)
+  if (!m || m.workspace !== workspace) return { ok: false, error: 'This monitor does not belong to the account linked to this chat.' }
+  m.enabled = !!enabled
+  if (m.enabled) delete m.mutedUntil
+  save()
+  return { ok: true, enabled: m.enabled }
 }
 
 /** Admin overview counts. */

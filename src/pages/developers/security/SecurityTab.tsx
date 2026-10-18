@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, FileText, Gauge, List, Plus, Radar, ScanSearch, ShieldCheck, Users } from 'lucide-react'
+import { BookOpen, FileText, Gauge, List, Plus, Radar, ScanSearch, ShieldCheck, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { axisTooltip, barsPreset, C, tipHtml } from '../../../components/charts/chartPresets'
 import { EChart } from '../../../components/charts/EChart'
@@ -15,6 +15,7 @@ import { ScanDetail, StatusChip, TargetMark } from './ScanDetail'
 import { useSubTab } from '../subtab'
 import { InfoTip, SubPanel, SubTabs } from '../ui'
 import { subFromSection, useOverview, useScans, type SecuritySub } from './useSecurity'
+import { ExtLink } from '../ExtLink'
 
 /* The app's Security page (#security): Gully Security for the active workspace.
    Sub-tabs (a real tablist, arrow keys move between them): Scans (every scan with its live status and a
@@ -113,9 +114,8 @@ function MonitorLimits() {
           <b className="text-ink">{p.monitors}</b> on {p.name}
         </span>
       ))}
-      <a href={site('/score')} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex min-h-11 items-center gap-2 text-gold underline-offset-4 hover:underline">
-        <Gauge size={14} aria-hidden /> Gully Score <ArrowUpRight size={13} aria-hidden />
-        <span className="sr-only"> (opens in a new tab)</span>
+      <a href="#score" className="ml-auto inline-flex min-h-11 items-center gap-2 text-gold underline-offset-4 hover:underline">
+        <Gauge size={14} aria-hidden /> Gully Score
       </a>
     </div>
   )
@@ -187,16 +187,15 @@ export function SecurityTab({ section }: { section: string | null }) {
             <span aria-hidden className={`size-2 rounded-full ${o.engine.worker || o.engine.ai ? 'animate-[gl-blink_1.6s_ease-in-out_infinite] motion-reduce:animate-none' : ''} ${o.engine.worker ? 'bg-green' : o.engine.ai ? 'bg-gold' : 'bg-faint'}`} />
             {o.engine.worker ? 'Static tools + AI review' : o.engine.ai ? 'AI review only' : 'Scanning unavailable'}
           </span>
-          <a href={`${DOCS_URL}/gully-security`} target="_blank" rel="noopener noreferrer" className={pillSm}>
-            <BookOpen size={14} aria-hidden /> Docs <ArrowUpRight size={13} aria-hidden />
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
+          <ExtLink href={`${DOCS_URL}/gully-security`} className={pillSm}>
+            <BookOpen size={14} aria-hidden /> Docs
+          </ExtLink>
         </div>
         <InfoTip summary="Automated scans of contracts and code. A scan is not an audit.">
           Automated scans of contracts and code: findings with locations, draft proofs of concept and the tools that ran. A scan is not an audit; for people reading your code, request a Security Review.{' '}
-          <a href={site('/security')} target="_blank" rel="noopener noreferrer" className="text-gold underline-offset-4 hover:underline">
-            What each tier covers<span className="sr-only"> (opens in a new tab)</span> ↗
-          </a>
+          <ExtLink href={site('/security')} arrow={false} className="text-gold underline-offset-4 hover:underline">
+            What each tier covers ↗
+          </ExtLink>
         </InfoTip>
       </header>
       <SubTabs

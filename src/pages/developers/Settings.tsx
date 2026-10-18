@@ -12,6 +12,7 @@ import { fmtDateTime, usePortal, useWrite } from './portal'
 import { Can } from './RoleGate'
 import { StackedDays } from './vcharts'
 import { input, mono, panel, panelTitle, pillGold, pillSm, rise } from './styles'
+import { ExtLink } from './ExtLink'
 
 /* The Settings tab (portal v2):
    - Profile (this wallet, every role): display name, contact email, the ENS / Basename found by the
@@ -77,9 +78,9 @@ function PrivacyCard() {
       <p className="m-0 text-[14px] leading-[1.6] text-ink-2">
         The privacy policy lists what the app, Gully AI, Gully Analytics, the Telegram bot and Gully Pay collect, who else sees it and how long it is kept. To see, export or delete your data, email hello@gullylabs.xyz.
       </p>
-      <a href={site('/legal/privacy')} target="_blank" rel="noopener noreferrer" className={`${pillSm} self-start`}>
+      <ExtLink href={site('/legal/privacy')} className={`${pillSm} self-start`}>
         Privacy policy <ExternalLink size={12} aria-hidden />
-      </a>
+      </ExtLink>
     </section>
   )
 }
@@ -154,7 +155,7 @@ function ProfileCard() {
             </label>
             <div className="col-span-full flex flex-wrap items-center justify-between gap-3">
               <span className="text-[12px] text-faint">Optional. Used only to reach you about your account; never shared.</span>
-              <button type="submit" disabled={busy === 'save'} className={`${pillGold} min-h-9`}>
+              <button type="submit" disabled={busy === 'save'} className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
                 Save profile
               </button>
             </div>
@@ -243,7 +244,7 @@ function CompanyCard() {
           <div className="col-span-full flex flex-wrap items-center justify-between gap-3">
             <span className="text-[12px] text-faint">{w.ok ? 'Optional. Leave a field empty to remove it.' : w.why}</span>
             <Can cat="company" what="change the company details">
-              <button type="submit" disabled={busy} className={`${pillGold} min-h-9`}>
+              <button type="submit" disabled={busy} className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
                 Save company
               </button>
             </Can>
@@ -295,7 +296,7 @@ function SessionsCard() {
           </div>
           <RefreshChip error={list ? sp.error : null} onRetry={load} />
         </div>
-        <button type="button" disabled={!others || busy === 'others'} onClick={() => revoke('others')} className={`${pillSm} min-h-9`}>
+        <button type="button" disabled={!others || busy === 'others'} onClick={() => revoke('others')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
           <LogOut size={14} aria-hidden /> Sign out all others
         </button>
       </div>
@@ -305,7 +306,7 @@ function SessionsCard() {
         <Skeleton h={120} />
       ) : (
         <>
-        {list.length > 1 && (
+        {list.length > 0 && (
           <div data-testid="sessions-chart">
             <StackedDays
               height={110}
@@ -339,7 +340,7 @@ function SessionsCard() {
                   signed in {fmtDateTime(s.createdAt)} · last seen {ago(s.lastSeenAt)} · ends {fmtDateTime(s.expiresAt)}
                 </span>
               </span>
-              <button type="button" disabled={busy === s.id} onClick={() => revoke(s.id)} className={`${pillSm} min-h-9 hover:!border-error hover:!text-error`}>
+              <button type="button" disabled={busy === s.id} onClick={() => revoke(s.id)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] hover:!border-error hover:!text-error`}>
                 <LogOut size={13} aria-hidden /> {s.current ? 'Sign out' : 'Revoke'}
               </button>
             </li>

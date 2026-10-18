@@ -63,7 +63,7 @@ function Body() {
       <Section
         icon={<Activity size={15} aria-hidden />}
         title="API"
-        state={<span className={`font-mono text-[11px] ${h === 'up' ? 'text-green' : h === 'down' ? 'text-error' : 'text-faint'}`}>{h === 'up' ? 'online' : h === 'down' ? 'unreachable' : 'checking…'}</span>}
+        state={<span className={`font-mono text-[11px] ${h === 'up' ? 'text-green' : h === 'down' ? 'text-error' : 'text-faint'}`}>{h === 'up' ? 'API online' : h === 'down' ? 'API unreachable' : 'checking…'}</span>}
       >
         <div className="grid grid-cols-2 gap-2">
           <span className="flex flex-col">

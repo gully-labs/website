@@ -255,7 +255,7 @@ try {
   const scoped = (type) => cmdCalls.find((c) => (c.body.scope?.type ?? 'default') === type)?.body.commands ?? []
   const cmdList = scoped('all_private_chats')
   const cmds = cmdList.map((c) => c.command)
-  check('startup: private chats see start, app, gap, top, movers, launches, alerts, ask, help, stop (in that order, no scan)', JSON.stringify(cmds) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'alerts', 'ask', 'help', 'stop']), cmds.join())
+  check('startup: private chats see start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop (in that order, no scan)', JSON.stringify(cmds) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'help', 'stop']), cmds.join())
   check('startup: groups see gap, top, launches, help only', JSON.stringify(scoped('all_group_chats').map((c) => c.command)) === JSON.stringify(['gap', 'top', 'launches', 'help']), scoped('all_group_chats').map((c) => c.command).join())
   check('startup: the default scope gets the private list', JSON.stringify(scoped('default').map((c) => c.command)) === JSON.stringify(cmds))
   check('startup: command descriptions are short, plain and start with an emoji (3 to 60 characters)', cmdCalls.flatMap((c) => c.body.commands).every((c) => c.description.length >= 3 && c.description.length <= 60 && /^\p{Extended_Pictographic}/u.test(c.description)), cmdList.map((c) => c.description).join(' | '))
@@ -302,9 +302,9 @@ try {
   const cap1 = an1?.body.caption ?? ''
   check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · see if stock tokens trade above or below the real share price.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain, BNB Chain and Solana`) && cap1.includes('🔔 alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
-  check('the banner carries the main menu: 📱 Open app, then 8 buttons in 4 rows', menuKb.length === 5 && flat(menuKb).length === 9 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📱 Open app', '📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 App dashboard ↗', '⚙️ Settings']))
+  check('the banner carries the main menu: 📱 Open app, then 11 buttons in 5 rows', menuKb.length === 6 && flat(menuKb).length === 12 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📱 Open app', '📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '👥 Holder Map', '🛡 Security', '💼 App dashboard ↗', '🧭 More', '⚙️ Settings']))
   check('📱 Open app is an inline web_app button to the Mini App (private chat)', menuKb[0]?.[0]?.web_app?.url === 'https://gullylabs.xyz/tg' && menuKb[0][0].callback_data === undefined && menuKb[0][0].url === undefined)
-  check('the menu: App dashboard is a url button, the others are routes', button(menuKb, /App dashboard/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
+  check('the menu: App dashboard is a url button, the others are routes', button(menuKb, /App dashboard/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'hm', 'sec', 'more', 'set']))
   const storedBanner = JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner
   check('the banner file_id is stored after the first upload, keyed on the hash of the MP4', storedBanner?.fileId === BANNER_FILE_ID && storedBanner.sha === crypto.createHash('sha256').update(BANNER_MP4).digest('hex').slice(0, 16), JSON.stringify(storedBanner))
   await say(privateChat(801), '/start')
@@ -338,9 +338,15 @@ try {
   check('/gap NVDA robinhood answers with the stock card', /🔴 <b>NVDA<\/b> · Robinhood Chain/.test(card.text), card.text)
   check('card: the gap as a sentence, token and real share price, liquidity, market open', card.text.includes('NVDA token is <b>3.10% above</b> the real share price.') && card.text.includes('Token $185.58 · Real share $180.00') && card.text.includes('💧 Liquidity $50,000') && card.text.includes('☀️ Market open.'), card.text)
   check('card: "Updated 3 min ago" and the information-only line', /Updated 3 min ago · Information only, not advice\./.test(card.text), card.text)
-  check('card buttons: Alert me, Refresh / Holders / Open page (url), Back, Menu', JSON.stringify(card.kb.map((r) => r.map((b) => b.text))) === JSON.stringify([['🔔 Alert me', '🔄 Refresh'], ['👥 Holders'], ['🌐 Open page ↗', '⬅ Back', '🏠 Menu']]) && button(card.kb, /Open page/).url === 'https://gullylabs.xyz/tracker/robinhood/NVDA')
-  const hb = button(card.kb, /Holders/)
+  check('card buttons without holder data: Alert me, Refresh / Open page (url), Back, Menu (no empty Holders row)', JSON.stringify(card.kb.map((r) => r.map((b) => b.text))) === JSON.stringify([['🔔 Alert me', '🔄 Refresh'], ['🌐 Open page ↗', '⬅ Back', '🏠 Menu']]) && button(card.kb, /Open page/).url === 'https://gullylabs.xyz/tracker/robinhood/NVDA', JSON.stringify(card.kb.map((r) => r.map((b) => b.text))))
+  tg.setHolderAvailabilityForTest(() => ({ robinhood: { available: true, reason: null, needs: null }, bsc: { available: false, reason: 'x', needs: 'x' } }))
+  await say(privateChat(333), '/gap NVDA robinhood')
+  const card2 = view(333)
+  check('card buttons with holder data: Alert me, Refresh / Holders / Open page (url), Back, Menu', JSON.stringify(card2.kb.map((r) => r.map((b) => b.text))) === JSON.stringify([['🔔 Alert me', '🔄 Refresh'], ['👥 Holders'], ['🌐 Open page ↗', '⬅ Back', '🏠 Menu']]), JSON.stringify(card2.kb.map((r) => r.map((b) => b.text))))
+  const hb = button(card2.kb, /Holders/)
   check('card: 👥 Holders in a private chat opens the Mini App’s holder screen (web_app)', hb?.web_app?.url === 'https://gullylabs.xyz/tg?holders=robinhood%3ANVDA' && hb.callback_data === undefined && hb.url === undefined, JSON.stringify(hb))
+  await say(privateChat(335), '/gap NVDA bsc')
+  check('card: a chain without holder data has no 👥 Holders', !flat(view(335).kb).some((b) => /Holders/.test(b.text)), JSON.stringify(view(335).kb))
   check('/gap is sent as HTML with link previews off', sent(333).at(-1).body.parse_mode === 'HTML' && sent(333).at(-1).body.disable_web_page_preview === true)
   await say(privateChat(334), '/gap nvda bsc')
   check('/gap NVDA bsc: thin trading is ⚪ and says "not enough trading" (no "pool", no "thin")', /⚪ <b>NVDA<\/b> · BNB Chain/.test(view(334).text) && /⚪ Not enough trading to compare right now\./.test(view(334).text) && !/pool|thin/i.test(view(334).text), view(334).text)
@@ -459,6 +465,7 @@ try {
   const gkb = sent(-100200).at(-1)?.body.reply_markup?.inline_keyboard ?? []
   const ghb = flat(gkb).find((b) => b.text === '👥 Holders')
   check('group: 👥 Holders is a link to the site’s Holder Map (no web_app in groups)', !!ghb && ghb.url === 'https://gullylabs.xyz/holders/robinhood/TSLA' && !ghb.web_app, `${JSON.stringify(gkb).slice(0, 300)} | ${lastText(-100200).slice(0, 160)}`)
+  tg.setHolderAvailabilityForTest(null)
 
   /* ---------------------------------------------------- alerts → Telegram --- */
   const created = await dev.post('/api/developer/alerts', { name: 'NVDA wide', chain: 'robinhood', ticker: 'NVDA', condition: { type: 'gap', pct: 2 }, telegram: true })
@@ -473,7 +480,7 @@ try {
 
   tg.setMoversReaderForTest(async (w) => ({ window: w, byGap: [{ chain: 'bsc', ticker: 'TSLA', gapChangePp: -1.5, gapNow: -2.25 }], note: null }))
   await say(ada, '/movers')
-  check('/movers lists movers as buttons to their cards', /Movers · 24h/.test(view(111).text) && flat(view(111).kb)[0].text === '1. TSLA · BNB  −1.50 pts → −2.25%' && data(view(111).kb)[0] === 'c:bn:TSLA:m24', flat(view(111).kb)[0].text)
+  check('/movers lists movers as buttons to their cards', /Movers · 24h/.test(view(111).text) && flat(view(111).kb)[0].text === '1. TSLA · BNB  moved −1.50 → now −2.25%' && data(view(111).kb)[0] === 'c:bn:TSLA:m24', flat(view(111).kb)[0].text)
   tg.setMoversReaderForTest(async () => ({ byGap: [], note: 'Needs 24h of snapshots: the longest series so far covers 3 h.' }))
   await say(ada, '/movers')
   check('/movers with too little history says so in plain words (not the internal note)', /Not enough history yet to compare with 24h ago/.test(view(111).text) && !/snapshots/.test(view(111).text), view(111).text)
@@ -593,7 +600,7 @@ try {
   await press(c820, 'mv:24h', { msgId: null })
   check('Movers: 24h / 1h toggles, Refresh, Back, Menu', ['mv:24h', 'mv:1h'].every((d) => data(view(820).kb).includes(d)) && hasNav(view(820).kb) && /• 24h •/.test(JSON.stringify(view(820).kb)))
   await press(c820, 'mv:1h')
-  check('Movers: the 1h window', /Movers · 1h/.test(view(820).text) && data(view(820).kb)[0] === 'c:bn:TSLA:m1' && /\+0\.50 pts/.test(flat(view(820).kb)[0].text))
+  check('Movers: the 1h window', /Movers · 1h/.test(view(820).text) && data(view(820).kb)[0] === 'c:bn:TSLA:m1' && /moved \+0\.50 → now/.test(flat(view(820).kb)[0].text))
   await press(c820, 'c:bn:TSLA:m1')
   check('card from movers: Back returns to movers', button(view(820).kb, /Back/).callback_data === 'mv:1h')
   await press(c820, 'top')
@@ -750,7 +757,7 @@ try {
   /* ------------------------------------------------------------ settings --- */
   await press(ada, 'set')
   const st = view(111)
-  check('⚙️ Settings: wallet (short), workspace, chat, alerts, usage notices', st.text.includes(`Wallet: <code>${me.slice(0, 6)}…${me.slice(-4)}</code>`) && /Workspace: /.test(st.text) && /Chat: this private chat/.test(st.text) && /Alerts: 1/.test(st.text) && /Usage notices: off/.test(st.text), st.text)
+  check('⚙️ Settings: wallet (short), workspace, chat, alerts, usage notices', st.text.includes(`Wallet: <code>${me.slice(0, 6)}…${me.slice(-4)}</code>`) && /Team: /.test(st.text) && /Chat: this private chat/.test(st.text) && /Alerts: 1/.test(st.text) && /Usage notices: off/.test(st.text), st.text)
   check('Settings buttons: Mute all, Usage notices, Announcements, Unlink, Back, Menu', JSON.stringify(data(st.kb)) === JSON.stringify(['smu', 'snt:1', 'san:0', 'sul', 'm', 'm']), JSON.stringify(data(st.kb)))
   check('Settings shows announcements on', /Announcements: on/.test(st.text))
   await press(ada, 'snt:1')
@@ -856,6 +863,31 @@ try {
   await say(ng3, '/help')
   check('gate: if membership cannot be checked, the bot fails open', !/Follow Gully Labs News/.test(lastText(9903)) && lastText(9903).length > 0)
   memberCheckBroken = false
+
+  // N-29: in groups the join screen goes to a non-member once per half hour; commands for other bots never meet it.
+  const ngGroup = { id: -100777, type: 'supergroup', title: 'Traders' }
+  nonMembers.add(9904)
+  await say(ngGroup, '/top@OtherBot', 9904)
+  check('group gate: a command for another bot is not answered with the join screen', sent(-100777).length === 0)
+  await say(ngGroup, '/top', 9904)
+  await say(ngGroup, '/movers', 9904)
+  await say(ngGroup, '/gap NVDA', 9904)
+  check('group gate: a non-member’s commands show the join screen once, not every time', sent(-100777).filter((c) => /Follow Gully Labs News/.test(c.body.text ?? '')).length === 1, String(sent(-100777).length))
+  nonMembers.delete(9904)
+
+  // Holder Map, Security, More and /score answer in plain words.
+  await say(privateChat(9905), '/holders')
+  check('/holders: what the Holder Map is, with connected cluster and deployer explained', /Holder Map/.test(lastText(9905)) && /connected cluster/.test(lastText(9905)) && /deployer/.test(lastText(9905)))
+  await say(privateChat(9906), '/security')
+  check('/security: scans, Gully Score and monitors', /Gully Security/.test(lastText(9906)) && /Gully Score/.test(lastText(9906)) && /Monitors/.test(lastText(9906)))
+  await say(privateChat(9907), '/score 0x00000000000000000000000000000000000000aa base')
+  check('/score 0x… base: a button to that contract’s score page', flat(view(9907).kb).some((b) => b.url === 'https://gullylabs.xyz/score/base/0x00000000000000000000000000000000000000aa'), JSON.stringify(view(9907).kb))
+  await say(privateChat(9908), '/score nope')
+  check('/score with no address says what an address looks like', /not a contract address/.test(lastText(9908)))
+  await press(privateChat(9909), 'mmu:mon_abcdefghijkl', { msgId: null })
+  check('monitor Mute on an unlinked chat is answered plainly (never gated)', /not linked/.test(lastAnswer().text ?? ''), lastAnswer().text)
+  const hh = tg.botWebhookHealth()
+  check('webhook health: updates are counted, no message content', hh.enabled === true && hh.updates > 100 && typeof hh.errors === 'number' && !JSON.stringify(hh).includes('/score'), JSON.stringify(hh))
 
   /* ---------------------------------------------------- bot users, /app, announcements --- */
   await postUpdate({ message: { message_id: 1, date: Math.floor(Date.now() / 1000), chat: privateChat(9920, 'Dora'), from: { id: 9920, is_bot: false, first_name: 'Dora', language_code: 'de' }, text: '/start' } })

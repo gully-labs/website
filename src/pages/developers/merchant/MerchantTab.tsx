@@ -13,6 +13,7 @@ import { InvoicesSection, LinksSection, NewLink } from './LinksInvoices'
 import { NetworkStrip } from './Network'
 import { ShareBox } from './parts'
 import { ProfileForm, ProfileSection, WalletForm, WalletsSection } from './Setup'
+import { ExtLink } from '../ExtLink'
 
 /* The portal's Merchant tab (#merchant): Gully Pay for other businesses. A workspace sets its receiving
    wallets and store profile, makes pay links and invoices, watches its payments, pays its fee statements
@@ -90,7 +91,7 @@ export function MerchantTab() {
           {state.text}
         </span>
         {!view.profile.name && (
-          <button type="button" onClick={() => setSub('profile')} className="inline-flex min-h-[28px] items-center gap-2 rounded-full border border-gold-line px-3 text-[12px] text-gold hover:border-gold" data-testid="finish-profile">
+          <button type="button" onClick={() => setSub('profile')} className="inline-flex min-h-[28px] relative after:absolute after:inset-x-0 after:-inset-y-[8px] items-center gap-2 rounded-full border border-gold-line px-3 text-[12px] text-gold hover:border-gold" data-testid="finish-profile">
             <Store size={13} aria-hidden /> Store not named yet
           </button>
         )}
@@ -99,15 +100,15 @@ export function MerchantTab() {
           <a href="/api/developer/merchant/export/payments.csv" className={pillSm} download>
             <Download size={14} aria-hidden /> CSV
           </a>
-          <a href={`${DOCS_URL}/gully-pay-merchants`} target="_blank" rel="noopener noreferrer" className={pillSm}>
+          <ExtLink href={`${DOCS_URL}/gully-pay-merchants`} className={pillSm}>
             <BookOpen size={14} aria-hidden /> Docs ↗
-          </a>
+          </ExtLink>
         </span>
         <InfoTip className="basis-full" summary={`Non-custodial · ${f.ratePct}% per payment after your first ${usd(f.freeUsd)}, no monthly fee.`}>
           {view.nonCustodial} Fee: {f.ratePct}% per payment after your first {usd(f.freeUsd)}, no monthly fee.{' '}
-          <a href={`${payOrigin()}${view.terms.path}`} target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-4 hover:text-gold-hover">
+          <ExtLink href={`${payOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
             Merchant terms ↗
-          </a>
+          </ExtLink>
         </InfoTip>
       </header>
 
@@ -118,9 +119,9 @@ export function MerchantTab() {
             <b>Your checkout is paused.</b> Fee statement {overdue?.number} (${overdue?.usd}) is more than {f.pauseAfterDays} days unpaid, so no new payment can start. Paying it resumes checkout at once.
           </span>
           {overdue && (
-            <a href={`${payOrigin()}${overdue.payPath}`} target="_blank" rel="noopener noreferrer" className={pillGold}>
+            <ExtLink href={`${payOrigin()}${overdue.payPath}`} className={pillGold}>
               Pay now ↗
-            </a>
+            </ExtLink>
           )}
         </div>
       )}

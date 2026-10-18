@@ -147,7 +147,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : 'New gap alert'}>
+    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : kind === 'deepcore' ? 'New DeepCore launch alert' : 'New gap alert'}>
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <label className={fieldLabel}>
           <span>
@@ -257,7 +257,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
           {kind === 'holders'
             ? holdersKind?.available === false
               ? 'Holder alerts come with the Pro plan.'
-              : `Cluster Watch: the token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Sells" and "falls from its high" fire when the cluster or the deployer moves tokens out. Counts as one of your plan's alerts.`
+              : `Holder alert: the token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Sells" and "falls from its high" fire when the cluster or the deployer moves tokens out. Counts as one of your plan's alerts.`
             : kind === 'deepcore'
             ? `Once per new launch read from DeepCore's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
             : kind === 'gap' ? <>Only pools deep enough to flag count; the gap is the on-chain price against fair.</> : <>Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
@@ -336,7 +336,7 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
               </button>
             </>
           )}
-          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-9 items-center gap-1 rounded-full px-2 font-mono text-[11px] text-muted hover:text-ink max-[859px]:min-h-11">
+          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 rounded-full px-2 font-mono text-[11px] text-muted hover:text-ink max-[859px]:min-h-11">
             <ChevronDown size={13} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden /> Log ({a.deliveries.length})
           </button>
         </span>
@@ -469,12 +469,12 @@ export function TelegramCard({ info, reload, compact = false }: { info: Telegram
       </div>
       {link && live && (
         <div className="flex flex-wrap gap-2">
-          <a href={link.link} target="_blank" rel="noopener noreferrer" className={pillGold}>
+          <ExtLink href={link.link} className={pillGold}>
             <ExternalLink size={15} aria-hidden /> Open {info.bot ? `@${info.bot}` : 'the bot'}
-          </a>
-          <a href={link.groupLink} target="_blank" rel="noopener noreferrer" className={pillLine}>
+          </ExtLink>
+          <ExtLink href={link.groupLink} className={pillLine}>
             <Users size={15} aria-hidden /> Add to a group
-          </a>
+          </ExtLink>
         </div>
       )}
       {!compact && chat && <span className="text-[12px] leading-[1.55] text-muted">Tick Telegram on an alert to have it sent here, with Open and Mute 24h buttons. In the chat, /alerts lists your alerts, /gap NVDA and /top read the tracker, and /stop unlinks.</span>}
@@ -635,7 +635,7 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
       {full && (
         <p className="m-0 text-[13px] text-muted">
           Every alert your plan includes is in use.{' '}
-          <button type="button" onClick={goBilling} className="min-h-9 text-gold underline-offset-4 hover:underline">
+          <button type="button" onClick={goBilling} className="min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] text-gold underline-offset-4 hover:underline">
             See plans
           </button>{' '}
           for more, or delete one.

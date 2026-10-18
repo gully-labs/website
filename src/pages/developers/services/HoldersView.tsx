@@ -1,15 +1,18 @@
 import { ScanSearch } from 'lucide-react'
+import { useMemo } from 'react'
 import { LaunchHolders } from '../../../components/holders/LaunchHolders'
 import { isLocalHost } from '../../../site-host'
+import { Skeleton } from '../parts'
 import { panel } from '../styles'
+import { EmptyChart, StackedDays } from '../vcharts'
 import { docsPage, sitePage } from './links'
-import { ServiceHeader, type Status } from './ServiceHeader'
-import { useLaunches } from './useDeepcore'
+import { Section, ServiceHeader, type Status } from './ServiceHeader'
+import { deepcoreColor, useLaunches } from './useDeepcore'
 
 /* Holder Map, in the app: who holds a DeepCore launch or a stock token (bundled buys, the deployer, connected
    wallets, a replay). The maps themselves are public pages (/holders/<chain>/<token>, a new tab from here);
-   this page lists the latest launches with their maps, live from the launch poller, and Cluster Watch alerts
-   are set in the Alerts tab. */
+   this page charts and lists the latest launches with their maps, live from the launch poller, and holder
+   alerts are set in the Alerts tab. */
 
 export default function HoldersView() {
   const dc = useLaunches()
@@ -17,13 +20,27 @@ export default function HoldersView() {
   const pending = dc.k === 'error' ? 'unreadable' : '…'
   const now = d?.asOf ? Date.parse(d.asOf) : 0
   const day = d ? d.launches.filter((l) => now - Date.parse(l.createdAt) < 86_400_000) : []
+  // Launches with a Holder Map per day (the poller's list spans at most 14 days), stacked by chain.
+  const kinds = useMemo(() => (d ? [...new Map(d.launches.map((l) => [l.chainId, l.chainName])).entries()].map(([id, name]) => ({ id: String(id), name, color: deepcoreColor(id) })) : []), [d])
+  const perDay = useMemo(() => {
+    if (!d?.launches.length) return []
+    const oldest = Math.min(...d.launches.map((l) => Date.parse(l.createdAt)))
+    const today = new Date()
+    const n = Math.min(14, Math.max(2, Math.ceil((today.getTime() - oldest) / 86_400_000) + 1))
+    return Array.from({ length: n }, (_, i) => {
+      const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (n - 1 - i))
+      const values: Record<string, number> = {}
+      for (const l of d.launches) if (new Date(l.createdAt).toDateString() === day.toDateString()) values[String(l.chainId)] = (values[String(l.chainId)] ?? 0) + 1
+      return { label: day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), values }
+    })
+  }, [d])
   const status: Status = d ? (d.state === 'ok' ? { tone: 'live', text: 'live launches' } : { tone: 'down', text: d.state }) : dc.k === 'error' ? { tone: 'down', text: 'launches unreadable' } : { tone: 'checking', text: 'reading…' }
   return (
     <>
       <ServiceHeader
         icon={ScanSearch}
         title="Holder Map"
-        desc="Who holds a DeepCore launch or a stock token: bundled buys, the deployer, connected wallets and a replay. Cluster Watch alerts arrive in the Alerts tab."
+        desc="Who holds a DeepCore launch or a stock token: bundled buys, the deployer, connected wallets and a replay. Holder alerts arrive in the Alerts tab."
         status={status}
         docs={docsPage('holder-map')}
         page={{ href: sitePage('/holders') }}
@@ -33,6 +50,15 @@ export default function HoldersView() {
           { label: 'CHAINS', value: d?.chains.length, unknown: pending, note: d ? d.chains.map((c) => c.name).join(', ') : 'watched' },
         ]}
       />
+      <Section title="Launches with a Holder Map" sub="per day, by chain · live from the launch poller, every minute">
+        {!d ? (
+          dc.k === 'error' ? <EmptyChart height={150} title="Launches unreadable right now: retrying every minute" /> : <Skeleton h={150} />
+        ) : perDay.length ? (
+          <StackedDays height={150} days={perDay} kinds={kinds} label={`Launches with a Holder Map per day over ${perDay.length} days: ${d.launches.length} in total.`} />
+        ) : (
+          <EmptyChart height={150} title="No launch yet: each one charts here as the poller sees it" />
+        )}
+      </Section>
       <section className={panel} aria-label="Latest launches with their Holder Maps" data-testid="holders-launches">
         <LaunchHolders external={!isLocalHost()} limit={8} />
       </section>

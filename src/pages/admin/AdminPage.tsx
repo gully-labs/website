@@ -19,12 +19,19 @@ import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { FeeProxyBanner, FeeProxyCard, type FeeProxyStatus } from './FeeProxyCard'
 import { isFeeProxy } from '../../../server/fee-proxy-guard.mjs'
 import { ChainLogo } from '../../components/logos/ChainLogo'
+import { toastError } from '../../components/ui/toast'
+import { AdminNav } from './AdminNav'
+import { sectionCls } from './adminSections'
+import { HealthCard } from './HealthCard'
+import { AlertsAdmin, ChainKitAdmin, WorkspacesAdmin } from './OpsAdmin'
+import { ArrowMark } from './newTab'
 
 // The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
 const AdminCharts = lazy(() => import('./AdminCharts'))
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
-   kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site. */
+   kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site.
+   A sticky section nav (AdminNav) jumps between the sections below; Health comes first. */
 
 interface Overview {
   generatedAt: string
@@ -383,8 +390,9 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
                   <td className="py-2 pr-3 text-faint">{p.chain}</td>
                   <td className="py-2 pr-3">
                     {p.txUrl ? (
-                      <a href={p.txUrl} target="_blank" rel="noopener" className="text-ink-2 hover:text-gold">
+                      <a href={p.txUrl} target="_blank" rel="noopener noreferrer" className="text-ink-2 hover:text-gold">
                         {p.txHash.slice(0, 10)}…
+                        <ArrowMark />
                       </a>
                     ) : (
                       p.txHash.slice(0, 10)
@@ -700,8 +708,9 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
                   <td className="py-3 pr-3 font-mono text-[12px] text-faint">{when(i.expiresAt)}</td>
                   <td className="py-3 pr-3 font-mono text-[12px]">
                     {i.payment ? (
-                      <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener" className="text-ink-2 hover:text-gold">
+                      <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener noreferrer" className="text-ink-2 hover:text-gold">
                         {i.payment.amount} {i.payment.symbol} · {i.payment.chain}
+                        <ArrowMark />
                       </a>
                     ) : (
                       <span className="text-faint">—</span>
@@ -712,8 +721,9 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
                       <button type="button" onClick={() => copy(i.path)} className={btn}>
                         Copy link
                       </button>
-                      <a href={link(i.status === 'paid' ? `${i.path}/receipt` : i.path)} target="_blank" rel="noopener" className={btn}>
+                      <a href={link(i.status === 'paid' ? `${i.path}/receipt` : i.path)} target="_blank" rel="noopener noreferrer" className={btn}>
                         {i.status === 'paid' ? 'Receipt' : 'Open'}
+                        <ArrowMark />
                       </a>
                       <button type="button" onClick={() => setExtras(extras === i.id ? null : i.id)} className={btn} aria-expanded={extras === i.id}>
                         {extras === i.id ? 'Hide' : 'Embed & webhook'}
@@ -806,15 +816,20 @@ export function AdminPage() {
             Sign out
           </button>
         </div>
+        <AdminNav />
       </header>
 
       <main className="flex flex-col gap-5 px-page py-8">
         {err && data && <p className="m-0 rounded-input border border-error/40 px-4 py-3 font-mono text-[12px] text-error">Last refresh failed: {err.message}. Showing the previous read.</p>}
         <FeeProxyBanner s={o?.feeProxy} />
+        <div id="health" className={sectionCls}>
+          <HealthCard token={token} />
+        </div>
         {!o ? (
           <p className="m-0 font-mono text-[13px] text-faint">Reading the server…</p>
         ) : (
           <>
+            <div id="overview" className={sectionCls}>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,170px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
               <Tile k="API REQUESTS TODAY" v={((o.api.days.at(-1)?.anonymous ?? 0) + (o.api.days.at(-1)?.keyed ?? 0)).toLocaleString('en-US')} note={`${o.api.days.at(-1)?.limited ?? 0} rate-limited`} />
               <Tile k="DEVELOPERS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#d9b563' : undefined} />
@@ -830,7 +845,9 @@ export function AdminPage() {
             </Suspense>
 
             <FeeProxyCard s={o.feeProxy} act={act} />
+            </div>
 
+            <div id="traffic" className={sectionCls}>
             <div className="grid grid-cols-[1.4fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -895,7 +912,9 @@ export function AdminPage() {
                 )}
               </section>
             </div>
+            </div>
 
+            <div id="developers" className={sectionCls}>
             <section className={card}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className={h2}>Developer wallets</h2>
@@ -949,20 +968,6 @@ export function AdminPage() {
               )}
             </section>
 
-            <SecurityCard token={token} />
-
-            <TelegramChats token={token} />
-            <TelegramChannel token={token} />
-            <TelegramBroadcasts token={token} />
-
-            <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
-            <TreasurySafe token={token} />
-            <AnalyticsAccounts data={data.analytics} act={act} />
-
-            <Invoices invoices={data.invoices.invoices} assets={data.invoices.assets} act={act} token={token} reload={reload} />
-            <PayLinks token={token} />
-            <MerchantsAdmin token={token} />
-
             {data.requests.length > 0 && (
             <section className={card}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -992,6 +997,7 @@ export function AdminPage() {
                             {r.url && (
                               <a href={r.url} target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] text-gold">
                                 {r.url.replace(/^https?:\/\//, '')}
+                                <ArrowMark />
                               </a>
                             )}
                           </td>
@@ -1023,8 +1029,7 @@ export function AdminPage() {
             </section>
             )}
 
-            <div className="grid grid-cols-[1fr_1fr] gap-5 max-[1099px]:grid-cols-1">
-              <section className={card}>
+            <section className={card}>
                 <h2 className={h2}>API keys</h2>
                 {!data.keys.length ? (
                   <p className="m-0 text-[14px] text-muted">No keys issued yet.</p>
@@ -1057,7 +1062,40 @@ export function AdminPage() {
                   </ul>
                 )}
               </section>
+            </div>
 
+            <div id="alerts" className={sectionCls}>
+              <AlertsAdmin token={token} />
+            </div>
+            <div id="workspaces" className={sectionCls}>
+              <WorkspacesAdmin token={token} />
+            </div>
+            <div id="security" className={sectionCls}>
+              <SecurityCard token={token} />
+            </div>
+            <div id="telegram" className={sectionCls}>
+              <TelegramChats token={token} />
+              <TelegramChannel token={token} />
+              <TelegramBroadcasts token={token} />
+            </div>
+            <div id="billing" className={sectionCls}>
+              <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
+              <TreasurySafe token={token} />
+            </div>
+            <div id="pay" className={sectionCls}>
+              <Invoices invoices={data.invoices.invoices} assets={data.invoices.assets} act={act} token={token} reload={reload} />
+              <PayLinks token={token} />
+              <MerchantsAdmin token={token} />
+            </div>
+            <div id="analytics" className={sectionCls}>
+              <AnalyticsAccounts data={data.analytics} act={act} />
+            </div>
+            <div id="chainkit" className={sectionCls}>
+              <ChainKitAdmin token={token} />
+            </div>
+
+            <div id="inbox" className={sectionCls}>
+            <div className="grid grid-cols-[1fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>
                 <h2 className={h2}>Enquiries</h2>
                 {!data.enquiries.length ? (
@@ -1096,8 +1134,11 @@ export function AdminPage() {
                 <button
                   type="button"
                   onClick={async () => {
-                    const r = await fetch('/api/admin/launch-list?format=csv', { headers: { authorization: `Bearer ${token}` } })
-                    if (!r.ok) return
+                    const r = await fetch('/api/admin/launch-list?format=csv', { headers: { authorization: `Bearer ${token}` } }).catch(() => null)
+                    if (!r?.ok) {
+                      const d = r ? await r.json().catch(() => null) : null
+                      return toastError('The CSV could not be downloaded', { detail: d?.error ?? (r ? `HTTP ${r.status}` : 'The server could not be reached.') })
+                    }
                     const url = URL.createObjectURL(await r.blob())
                     const a = document.createElement('a')
                     a.href = url
@@ -1126,7 +1167,11 @@ export function AdminPage() {
               )}
             </section>
 
-            <AskStudio token={token} />
+            </div>
+
+            <div id="ai" className={sectionCls}>
+              <AskStudio token={token} />
+            </div>
           </>
         )}
       </main>

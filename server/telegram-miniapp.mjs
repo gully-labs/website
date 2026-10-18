@@ -20,12 +20,14 @@
 // one, so someone who left the channel can still stop what they set up. If membership cannot be checked the
 // gate lets people through, as the bot does.
 //
-//   GET  /api/tg/me[?fresh=1]          -> { user, gate, linked, portal }
+//   GET  /api/tg/me[?fresh=1]          -> { user, gate, linked, portal, announcements, holderChains }
+//   POST /api/tg/announcements         { on: boolean } -> { announcements }   Gully Labs news in the private chat (never gated)
 //   GET  /api/tg/sparks                -> { sparks: { "<chain>:<TICKER>": number[] } }   24h of gap, ~24 points
 //   GET  /api/tg/launches[?chain=<id>] -> DeepCore launches (deepcore.mjs readLaunches)
 //   GET  /api/tg/alerts                -> the linked account's alerts and limits
 //   POST /api/tg/alerts                { chain, ticker, pct, direction } -> 201 { alert }   (Telegram delivery)
 //                                      { kind: 'holders', chain, token, metric?, above?, dropPts? } -> a Holder Map alert
+//                                      { kind: 'deepcore-launch', chainId?: number | null } -> a new-launch alert (null: any chain)
 //   POST /api/tg/alerts/:id/pause|resume|test|delete
 
 import crypto from 'node:crypto'
@@ -34,7 +36,8 @@ import { getAccount } from './store.mjs'
 import { alertsOf } from './alerts.mjs'
 import { readLaunches, DEEPCORE_CHAINS } from './deepcore.mjs'
 import { readHistory, trackedStocks } from './tracker.mjs'
-import { alertsRouteFor, channelUrl, followsChannel, linkForTelegramUser, requiredChannel, telegramToken } from './telegram.mjs'
+import { alertsRouteFor, channelUrl, followsChannel, holderStockChains, linkForTelegramUser, requiredChannel, telegramToken } from './telegram.mjs'
+import { botUser, setOptOut } from './telegram-users.mjs'
 
 export const INIT_DATA_MAX_AGE_S = 24 * 3600
 const MAX_INIT_DATA = 4_096
@@ -157,7 +160,18 @@ export async function handleMiniApp(req, res, url) {
   if (p === '/api/tg/me') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
     const linked = link ? { chatType: link.chatType, chatTitle: link.chatTitle, account: `${link.address.slice(0, 6)}…${link.address.slice(-4)}`, blocked } : null
-    return json(res, 200, { user, gate, linked, portal: `${PORTAL}/#alerts` }), true
+    // announcements: whether Gully Labs news reaches the user's private chat with the bot (bot-users.json).
+    // holderChains: the stock chains whose Holder Map has data (DeepCore launches always have one).
+    return json(res, 200, { user, gate, linked, portal: `${PORTAL}/#alerts`, announcements: !botUser(user.id)?.optedOut, holderChains: holderStockChains() }), true
+  }
+  // Announcements on or off: account management, never gated (like the bot's Settings switch).
+  if (p === '/api/tg/announcements') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    if (!allow(`a:${user.id}`, 20)) return json(res, 429, { error: 'Too many changes in a minute. Try again shortly.' }), true
+    const body = await readJson(req, 200)
+    if (typeof body?.on !== 'boolean') return json(res, 400, { error: 'Say on: true or on: false.' }), true
+    setOptOut(user.id, !body.on, { language_code: user.languageCode ?? undefined })
+    return json(res, 200, { announcements: body.on }), true
   }
   // Exits stay open without the channel: see one's alerts, pause or delete one.
   const exit = (p === '/api/tg/alerts' && req.method === 'GET') || (req.method === 'POST' && /^\/api\/tg\/alerts\/[\w-]{1,40}\/(pause|delete)$/.test(p))
@@ -190,7 +204,9 @@ export async function handleMiniApp(req, res, url) {
       const body = await readJson(req, 2_000)
       // A holder alert (Holder Map): the token's top cluster (or top 10) passing a share; alerts.mjs validates it.
       const r =
-        body?.kind === 'holders'
+        body?.kind === 'deepcore-launch'
+          ? await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', { condition: { type: 'deepcore-launch', chainId: body?.chainId ? Number(body.chainId) : null }, telegram: true })
+          : body?.kind === 'holders'
           ? await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', {
               condition: { type: 'holders', chain: body?.chain, token: body?.token, metric: body?.metric ?? 'cluster', above: body?.above ?? null, dropPts: body?.dropPts ?? null },
               telegram: true,

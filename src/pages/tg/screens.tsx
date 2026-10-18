@@ -1,7 +1,8 @@
+import { BellRing, Layers, Link2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { EChart } from '../../components/charts/EChart'
-import { alpha, barsPreset, sparklinePreset } from '../../components/charts/chartPresets'
+import { alpha, barsPreset, C, PALETTE, sparklinePreset } from '../../components/charts/chartPresets'
 import { NF } from '../../components/charts/number-formats'
 import { StockLogo } from '../../components/tracker/StockLogo'
 import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, UP, useHistory, type Load, type Tracker, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
@@ -30,6 +31,12 @@ const TG_STATUS: Record<TrackerStatus, string> = {
 }
 const statusLabel = (r: TrackerRow) => (r.sessionOpen === false ? 'Market closed' : TG_STATUS[r.status] ?? r.status)
 const NOT_ENOUGH = 'Not enough trading to compare right now.'
+/** An API refusal in plain words: the server's own sentence for a 4xx, never a raw failure. */
+function friendlyError(r: { status: number; error: string }, fallback = 'Something went wrong. Try again in a minute.') {
+  if (!r.status || r.status >= 500) return r.status === 0 ? 'No connection right now. Check your internet and try again.' : fallback
+  const e = String(r.error ?? '').trim()
+  return e && e.length <= 200 && /[.!?]$/.test(e) && !/[{}<>]|\b(?:error|exception|undefined|null|fetch)\b/i.test(e) ? e : fallback
+}
 const TG_DIRECTIONS: { id: GapDirection; label: string }[] = [
   { id: 'above', label: '▲ Above' },
   { id: 'below', label: '▼ Below' },
@@ -55,14 +62,44 @@ const plainCondition = (cond: AlertCondition | HolderCondition, chains: Record<s
   if (c.type === 'gap') return c.direction === 'above' ? `▲ ${c.pct}% or more above the real share price` : c.direction === 'below' ? `▼ ${c.pct}% or more below the real share price` : `↕ ${c.pct}% or more above or below the real share price`
   return c.status === 'either' ? 'Well above or below the real share price' : c.status === 'premium' ? 'Well above the real share price' : c.status === 'discount' ? 'Well below the real share price' : String(c.status)
 }
-export type Me = { user: { id: string; firstName: string; username: string | null }; gate: { required: boolean; follows: boolean; channel: string | null; url: string | null }; linked: { chatType: string; chatTitle: string; account: string; blocked: boolean } | null; portal: string }
+export type Me = {
+  user: { id: string; firstName: string; username: string | null }
+  gate: { required: boolean; follows: boolean; channel: string | null; url: string | null }
+  linked: { chatType: string; chatTitle: string; account: string; blocked: boolean } | null
+  portal: string
+  /** Gully Labs news in the private chat with the bot (absent on an older server: treated as on). */
+  announcements?: boolean
+  /** The stock chains whose Holder Map has data (DeepCore launches always have one). Absent: none. */
+  holderChains?: string[]
+}
+
+/** Opens a link outside the Mini App (Telegram's in-app browser or the system one): links to the site, the app and docs never replace the Mini App. */
+export function ExternalLink({ wa, href, children, className = '' }: { wa: WebApp; href: string; children: React.ReactNode; className?: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => {
+        e.preventDefault()
+        haptic.tap()
+        wa.openLink(href)
+      }}
+      className={className}
+    >
+      {children}
+      <span aria-hidden> ↗</span>
+      <span className="sr-only"> (opens outside the app)</span>
+    </a>
+  )
+}
 
 const trusted = (r: TrackerRow) => r.gapPct !== null && ['premium', 'discount', 'drifting', 'in-line'].includes(r.status) && !r.poolStale && r.sessionOpen !== false
 const gapHex = (v: number | null | undefined, fallback: string) => (typeof v !== 'number' || Math.round(v * 100) === 0 ? fallback : v > 0 ? UP : DOWN)
 
 /* ---------- small parts ---------- */
 
-export function Chips<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+export function Chips<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string; icon?: React.ReactNode }[]; onChange: (v: T) => void; label: string }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex gap-[6px] overflow-x-auto pb-1 [scrollbar-width:none]">
       {options.map((o) => (
@@ -75,8 +112,9 @@ export function Chips<T extends string>({ value, options, onChange, label }: { v
             if (o.id !== value) haptic.select()
             onChange(o.id)
           }}
-          className={`min-h-9 flex-none rounded-full border px-[14px] text-[13px] font-medium transition-colors ${value === o.id ? 'border-gold bg-gold text-[var(--tg-btn-text,#0b0e13)]' : 'border-line bg-surface text-muted'}`}
+          className={`inline-flex min-h-11 flex-none items-center gap-[6px] rounded-full border px-[14px] text-[13px] font-medium transition-colors ${value === o.id ? 'border-gold bg-gold text-[var(--tg-btn-text,var(--color-bg))]' : 'border-line bg-surface text-muted'}`}
         >
+          {o.icon}
           {o.label}
         </button>
       ))}
@@ -93,7 +131,7 @@ function Section({ title, children, right }: { title: string; children: React.Re
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between px-1">
-        <h2 className="m-0 text-[12px] font-semibold tracking-[0.06em] text-[var(--tg-section-head,#a6b0bd)] uppercase">{title}</h2>
+        <h2 className="m-0 text-[12px] font-semibold tracking-[0.06em] text-[var(--tg-section-head,var(--color-muted))] uppercase">{title}</h2>
         {right}
       </div>
       {children}
@@ -114,7 +152,7 @@ export function Notice({ title, children, action }: { title: string; children: R
 }
 
 export function Button({ children, onClick, tone = 'main', disabled }: { children: React.ReactNode; onClick: () => void; tone?: 'main' | 'line' | 'danger'; disabled?: boolean }) {
-  const cls = tone === 'main' ? 'bg-gold text-[var(--tg-btn-text,#0b0e13)]' : tone === 'danger' ? 'border border-line text-error' : 'border border-line text-ink'
+  const cls = tone === 'main' ? 'bg-gold text-[var(--tg-btn-text,var(--color-bg))]' : tone === 'danger' ? 'border border-line text-error' : 'border border-line text-ink'
   return (
     <button
       type="button"
@@ -143,11 +181,11 @@ function ListSkeleton({ n = 6 }: { n?: number }) {
 /* ---------- gaps ---------- */
 
 type ChainFilter = 'all' | 'robinhood' | 'bsc' | 'solana'
-const CHAIN_OPTIONS: { id: ChainFilter; label: string }[] = [
-  { id: 'all', label: 'All chains' },
-  { id: 'robinhood', label: 'Robinhood' },
-  { id: 'bsc', label: 'BNB' },
-  { id: 'solana', label: 'Solana' },
+const CHAIN_OPTIONS: { id: ChainFilter; label: string; icon: React.ReactNode }[] = [
+  { id: 'all', label: 'All chains', icon: <Layers size={14} aria-hidden /> },
+  { id: 'robinhood', label: 'Robinhood', icon: <Link2 size={14} aria-hidden /> },
+  { id: 'bsc', label: 'BNB', icon: <Link2 size={14} aria-hidden /> },
+  { id: 'solana', label: 'Solana', icon: <Link2 size={14} aria-hidden /> },
 ]
 
 export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; tracker: Load<Tracker>; onOpen: (r: TrackerRow) => void; ink: string }) {
@@ -183,18 +221,18 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
                       haptic.tap()
                       onOpen(r)
                     }}
-                    className={`${card} grid w-full grid-cols-[34px_minmax(0,1fr)_64px_76px] items-center gap-3 px-3 py-[10px] text-left active:opacity-80`}
+                    className={`${card} grid w-full grid-cols-[34px_minmax(0,1fr)_52px_auto] items-center gap-2 px-3 min-[420px]:grid-cols-[34px_minmax(0,1fr)_64px_76px] min-[420px]:gap-3 max-[359px]:grid-cols-[34px_minmax(0,1fr)_auto] py-[10px] text-left active:opacity-80`}
                     aria-label={`${r.ticker} on ${CHAIN_NAME[r.chain] ?? r.chain}: gap ${fmtGap(r.gapPct)}, ${statusLabel(r)}`}
                   >
                     <StockLogo row={r} size={34} />
                     <span className="flex min-w-0 flex-col">
                       <span className="flex items-center gap-[6px]">
                         <span className="font-semibold text-ink">{r.symbol ?? r.ticker}</span>
-                        <span className="rounded-[4px] border border-line px-1 font-mono text-[10px] text-faint">{CHAIN_SHORT[r.chain] ?? r.chain}</span>
+                        <span className="rounded-[4px] border border-line px-1 font-mono text-[11px] text-faint">{CHAIN_SHORT[r.chain] ?? r.chain}</span>
                       </span>
                       <span className="truncate text-[12px] text-muted">{r.name}</span>
                     </span>
-                    <span className="block h-[30px]" aria-hidden>
+                    <span className="block h-[30px] max-[359px]:hidden" aria-hidden>
                       {spark && spark.length > 1 ? <Spark data={spark} color={gapHex(spark.at(-1), ink)} label={`${r.ticker} gap over 24 hours`} /> : <span className="block h-full border-b border-dashed border-line" />}
                     </span>
                     <span className="flex flex-col items-end">
@@ -237,7 +275,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
     return { data: pts.map((p) => Math.round(p[1] * 100) / 100), labels: pts.map((p) => new Date(p[0] * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })) }
   }, [history])
 
-  // Telegram's MainButton creates the alert (or, without a linked wallet, opens the portal).
+  // Telegram's MainButton creates the alert (or, without a linked wallet, opens the app dashboard).
   const create = useRef<() => void>(() => undefined)
   useEffect(() => {
     create.current = async () => {
@@ -258,14 +296,14 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
         onAlertsChanged()
       } else {
         haptic.fail()
-        setResult({ ok: false, text: r.error })
+        setResult({ ok: false, text: friendlyError(r, 'The alert was not created. Try again in a minute.') })
       }
     }
   })
   useEffect(() => {
     const mb = wa.MainButton
     const click = () => create.current()
-    mb.setParams({ text: me.linked ? (valid ? `Create alert · ${TG_DIRECTIONS.find((d) => d.id === direction)!.label} ${threshold}%` : 'Pick a threshold from 0.1 to 100%') : 'Link wallet in the portal', is_visible: !!row, is_active: !me.linked || valid })
+    mb.setParams({ text: me.linked ? (valid ? `Create alert · ${TG_DIRECTIONS.find((d) => d.id === direction)!.label} ${threshold}%` : 'Pick a threshold from 0.1 to 100%') : 'Link wallet in the app', is_visible: !!row, is_active: !me.linked || valid })
     mb.onClick(click)
     return () => {
       mb.offClick(click)
@@ -297,7 +335,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
             <span className="text-[12px] text-faint">Gap to the real share price</span>
             <AnimatedNumber value={ok || row.status === 'thin' ? row.gapPct : null} format={NF.signed2} suffix="%" countUp className="font-mono text-[34px] leading-none font-semibold" style={{ color: ok ? color : undefined }} />
           </div>
-          <span className="rounded-full border px-[10px] py-[3px] text-[12px]" style={{ borderColor: ok ? alpha(color.startsWith('#') ? color : '#7f8b9c', 0.5) : undefined, color: ok ? color : undefined }}>
+          <span className="rounded-full border px-[10px] py-[3px] text-[12px]" style={{ borderColor: ok ? alpha(color.startsWith('#') ? color : C.faint, 0.5) : undefined, color: ok ? color : undefined }}>
             {statusLabel(row)}
           </span>
         </div>
@@ -324,9 +362,9 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
         </dl>
         {row.sessionOpen === false && <p className="m-0 text-[12px] leading-[1.5] text-faint">🌙 Market closed: compared with the last closing price.</p>}
         {!ok && row.sessionOpen !== false && <p className="m-0 text-[12px] leading-[1.5] text-faint">{NOT_ENOUGH}</p>}
-        <button type="button" onClick={() => wa.openLink(`${SITE}/tracker/${row.chain}/${row.ticker}`)} className="self-start text-[13px] text-[var(--tg-link,#e8c060)]">
-          Open the full page ↗
-        </button>
+        <ExternalLink wa={wa} href={`${SITE}/tracker/${row.chain}/${row.ticker}`} className="inline-flex min-h-11 items-center self-start text-[13px] text-[var(--tg-link,var(--color-gold))]">
+          Open the full page
+        </ExternalLink>
       </div>
 
       {onHolders && (
@@ -349,7 +387,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
                   setPct(p)
                   setCustom('')
                 }}
-                className={`min-h-9 rounded-full border px-[14px] font-mono text-[13px] ${!custom && pct === p ? 'border-gold bg-gold text-[var(--tg-btn-text,#0b0e13)]' : 'border-line text-muted'}`}
+                className={`min-h-9 rounded-full border px-[14px] font-mono text-[13px] ${!custom && pct === p ? 'border-gold bg-gold text-[var(--tg-btn-text,var(--color-bg))]' : 'border-line text-muted'}`}
               >
                 {p}%
               </button>
@@ -381,17 +419,37 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
 type Launch = { key: string; chainId: number; chainKey: string; chainName: string; token: string; symbol: string | null; createdAt: string; legs: { kind: string | null; quote: string | null; locked: boolean | null }[]; links: { token: string } }
 type Launches = { state: 'ok' | 'stale' | 'unreadable'; launches: Launch[]; asOf: string | null; error: string | null; chainNames: Record<string, string> }
 const LAUNCH_CHAINS = [
-  { id: '0', label: 'All' },
-  { id: '56', label: 'BNB' },
-  { id: '999', label: 'HyperEVM' },
-  { id: '4663', label: 'Robinhood' },
-  { id: '8453', label: 'Base' },
+  { id: '0', label: 'All', icon: <Layers size={14} aria-hidden /> },
+  { id: '56', label: 'BNB', icon: <Link2 size={14} aria-hidden /> },
+  { id: '999', label: 'HyperEVM', icon: <Link2 size={14} aria-hidden /> },
+  { id: '4663', label: 'Robinhood', icon: <Link2 size={14} aria-hidden /> },
+  { id: '8453', label: 'Base', icon: <Link2 size={14} aria-hidden /> },
 ]
-const CHAIN_COLORS: Record<number, string> = { 56: '#e8c060', 999: '#1f9e89', 4663: '#5aa9e6', 8453: '#c98bdb' }
+// The kit's categorical palette (charts need concrete colours; ECharts cannot read CSS variables).
+const CHAIN_COLORS: Record<number, string> = { 56: PALETTE[0], 999: PALETTE[2], 4663: PALETTE[1], 8453: PALETTE[3] }
 const CHAIN_LABEL: Record<number, string> = { 56: 'BNB', 999: 'HyperEVM', 4663: 'Robinhood', 8453: 'Base' }
 
-export function LaunchesTab({ wa, initData, ink, onHolders }: { wa: WebApp; initData: string; ink: string; onHolders?: (chain: string, token: string) => void }) {
+export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged }: { wa: WebApp; initData: string; ink: string; me?: Me; onHolders?: (chain: string, token: string) => void; onAlertsChanged?: () => void }) {
   const [chain, setChain] = useState('0')
+  const [alertMsg, setAlertMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [alertBusy, setAlertBusy] = useState(false)
+  // A new-launch alert for the chain picked above (any chain on "All"), delivered to the linked chat (P1-19).
+  const launchAlert = async () => {
+    if (!me) return
+    if (!me.linked) return wa.openLink(me.portal)
+    if (alertBusy) return
+    setAlertBusy(true)
+    const r = await tgApi<{ alert: GapAlert }>(initData, '/api/tg/alerts', { method: 'POST', body: { kind: 'deepcore-launch', chainId: chain === '0' ? null : Number(chain) } })
+    setAlertBusy(false)
+    if (r.ok) {
+      haptic.ok()
+      setAlertMsg({ ok: true, text: `Alert created: ${plainCondition(r.data.alert.condition)}. It arrives in your linked chat.` })
+      onAlertsChanged?.()
+    } else {
+      haptic.fail()
+      setAlertMsg({ ok: false, text: friendlyError(r, 'The alert was not created. Try again in a minute.') })
+    }
+  }
   const { load } = useTgApi<Launches>(initData, `/api/tg/launches${chain === '0' ? '' : `?chain=${chain}`}`, 90_000)
   const now = useNow()
   const counts = useMemo(() => {
@@ -407,7 +465,7 @@ export function LaunchesTab({ wa, initData, ink, onHolders }: { wa: WebApp; init
         xAxis: { type: 'category', data: counts.map((c) => c.name), axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: ink, fontSize: 11, interval: 0, fontFamily: 'Hanken Grotesk, sans-serif' } },
         yAxis: { type: 'value', show: false },
         tooltip: { show: false },
-        series: [{ id: 'launches', ...barsPreset({ radius: [5, 5, 0, 0] }), barMaxWidth: 34, label: { show: true, position: 'top', color: ink, fontSize: 11 }, data: counts.map((c) => ({ value: c.n, itemStyle: { color: CHAIN_COLORS[c.id] ?? '#7f8b9c' } })) }],
+        series: [{ id: 'launches', ...barsPreset({ radius: [5, 5, 0, 0] }), barMaxWidth: 34, label: { show: true, position: 'top', color: ink, fontSize: 11 }, data: counts.map((c) => ({ value: c.n, itemStyle: { color: CHAIN_COLORS[c.id] ?? C.faint } })) }],
       },
     [counts, ink],
   )
@@ -415,6 +473,20 @@ export function LaunchesTab({ wa, initData, ink, onHolders }: { wa: WebApp; init
   return (
     <div className="flex flex-col gap-3">
       <Chips value={chain} options={LAUNCH_CHAINS} onChange={setChain} label="DeepCore chain" />
+      {me && (
+        <div className="flex flex-col gap-1">
+          <Button tone="line" onClick={launchAlert} disabled={alertBusy}>
+            <span className="inline-flex items-center gap-2">
+              <BellRing size={16} aria-hidden /> {me.linked ? `Alert me on new launches${chain === '0' ? '' : ` on ${LAUNCH_CHAIN_NAMES[Number(chain)] ?? 'this chain'}`}` : 'Link your wallet in the app for launch alerts'}
+            </span>
+          </Button>
+          {alertMsg && (
+            <p role="status" className={`m-0 px-1 text-[13px] ${alertMsg.ok ? 'text-green' : 'text-error'}`}>
+              {alertMsg.text}
+            </p>
+          )}
+        </div>
+      )}
       {load.k === 'loading' && <ListSkeleton n={5} />}
       {load.k === 'error' && <Notice title="Launches aren’t available right now">Try again in a minute.</Notice>}
       {load.k === 'ok' && load.data.state === 'unreadable' && <Notice title="DeepCore isn’t answering right now">Try again in a minute.</Notice>}
@@ -442,7 +514,7 @@ export function LaunchesTab({ wa, initData, ink, onHolders }: { wa: WebApp; init
                       aria-label={`${l.symbol ?? 'New token'} on ${l.chainName}: open on DeepCore`}
                       className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-[14px] px-3 py-[10px] text-left active:opacity-80"
                     >
-                      <span className="flex size-[34px] flex-none items-center justify-center rounded-full font-display text-[13px] font-bold text-[#0b0e13]" style={{ background: CHAIN_COLORS[l.chainId] ?? '#7f8b9c' }} aria-hidden>
+                      <span className="flex size-[34px] flex-none items-center justify-center rounded-full font-display text-[13px] font-bold text-bg" style={{ background: CHAIN_COLORS[l.chainId] ?? C.faint }} aria-hidden>
                         {(l.symbol ?? '?').slice(0, 3)}
                       </span>
                       <span className="flex min-w-0 flex-1 flex-col">
@@ -485,12 +557,42 @@ export function LaunchesTab({ wa, initData, ink, onHolders }: { wa: WebApp; init
 
 type AlertsData = { alerts: GapAlert[]; limits: { planName: string; max: number; used: number } }
 
-function alertStateText(a: GapAlert) {
-  if (!a.coveredByPlan) return { t: 'Not in your plan', c: '#ff8a7a' }
-  if (!a.enabled) return { t: 'Paused', c: '#7f8b9c' }
-  if (a.mutedUntil) return { t: 'Muted', c: '#7f8b9c' }
-  if (a.waitingToReArm.length) return { t: (a.condition as AlertCondition | HolderCondition).type === 'holders' ? 'Fired · watching again once it falls back' : 'Fired · watching again once the gap closes', c: '#e8c060' }
-  return { t: 'Watching', c: '#6fcf6a' }
+/** Whether a mute is still running at `now`: the server clears expired mutes on read, but a screen left open must not show a stale "Muted". */
+const mutedNow = (mutedUntil: string | null | undefined, now: number) => {
+  const t = mutedUntil ? Date.parse(mutedUntil) : NaN
+  return Number.isFinite(t) && t > now
+}
+function alertStateText(a: GapAlert, now: number) {
+  if (!a.coveredByPlan) return { t: 'Not in your plan', c: 'text-error', dot: 'bg-error' }
+  if (!a.enabled) return { t: 'Paused', c: 'text-faint', dot: 'bg-faint' }
+  if (mutedNow(a.mutedUntil, now)) return { t: 'Muted', c: 'text-faint', dot: 'bg-faint' }
+  if (a.waitingToReArm.length) return { t: (a.condition as AlertCondition | HolderCondition).type === 'holders' ? 'Fired · watching again once it falls back' : 'Fired · watching again once the gap closes', c: 'text-gold', dot: 'bg-gold' }
+  return { t: 'Watching', c: 'text-green', dot: 'bg-green' }
+}
+
+/** Reads again when the Mini App comes back into view (window focus, the page shown again, Telegram's "activated"). */
+function useRefreshOnFocus(wa: WebApp, reload: () => void) {
+  useEffect(() => {
+    const on = () => {
+      if (document.visibilityState !== 'hidden') reload()
+    }
+    window.addEventListener('focus', on)
+    document.addEventListener('visibilitychange', on)
+    try {
+      wa.onEvent('activated', on)
+    } catch {
+      /* older clients */
+    }
+    return () => {
+      window.removeEventListener('focus', on)
+      document.removeEventListener('visibilitychange', on)
+      try {
+        wa.offEvent('activated', on)
+      } catch {
+        /* older clients */
+      }
+    }
+  }, [wa, reload])
 }
 
 /** `exitsOnly`: shown under the News channel join screen, so someone who left the channel can still pause or
@@ -499,6 +601,22 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = 
   const { load, reload } = useTgApi<AlertsData>(initData, me.linked ? `/api/tg/alerts?v=${version}` : null, 60_000)
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+  useRefreshOnFocus(wa, reload)
+  // Re-evaluate the state at the next mute expiry (and every 30 s), so "Muted" turns into the real state on time.
+  const nextExpiry = useMemo(() => {
+    if (load.k !== 'ok') return null
+    const ts = load.data.alerts.map((a) => (a.mutedUntil ? Date.parse(a.mutedUntil) : NaN)).filter((t) => Number.isFinite(t) && t > now)
+    return ts.length ? Math.min(...ts) : null
+  }, [load, now])
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 30_000)
+    const at = nextExpiry ? setTimeout(() => setNow(Date.now()), Math.min(2 ** 31 - 1, Math.max(0, nextExpiry - Date.now()) + 250)) : null
+    return () => {
+      clearInterval(tick)
+      if (at) clearTimeout(at)
+    }
+  }, [nextExpiry])
 
   if (!me.linked)
     return (
@@ -520,7 +638,7 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = 
       setMsg({ ok: true, text: op === 'test' ? 'Test sent to your linked chat.' : op === 'delete' ? 'Alert deleted.' : op === 'pause' ? 'Alert paused.' : 'Alert resumed.' })
     } else {
       haptic.fail()
-      setMsg({ ok: false, text: r.error })
+      setMsg({ ok: false, text: friendlyError(r, 'Not changed. Try again in a minute.') })
     }
     reload()
   }
@@ -542,7 +660,7 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = 
           {!load.data.alerts.length && <p className="m-0 px-1 text-[13px] text-muted">No alerts yet. Open a stock and set one with the button at the bottom.</p>}
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {load.data.alerts.map((a) => {
-              const st = alertStateText(a)
+              const st = alertStateText(a, now)
               const hc = (a.condition as AlertCondition | HolderCondition).type === 'holders' ? (a.condition as unknown as HolderCondition) : null
               const label = a.name || (hc ? `🫧 ${hc.symbol ?? shortToken(hc.token)} holders · ${HOLDER_CHAIN_NAMES[hc.chain] ?? hc.chain}` : a.condition.type === 'deepcore-launch' ? 'DeepCore launches' : a.ticker ? `${a.ticker} · ${CHAIN_SHORT[a.chain ?? ''] ?? a.chain}` : 'Any stock')
               return (
@@ -556,8 +674,8 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = 
                       <span className="block truncate font-semibold">{label}</span>
                       <span className="block text-[13px] text-muted">{plainCondition(a.condition)}</span>
                     </button>
-                    <span className="flex flex-none items-center gap-1 text-[12px]" style={{ color: st.c }}>
-                      <span className="size-[7px] rounded-full" style={{ background: st.c }} aria-hidden />
+                    <span className={`flex flex-none items-center gap-1 text-[12px] ${st.c}`}>
+                      <span className={`size-[7px] rounded-full ${st.dot}`} aria-hidden />
                       {st.t}
                     </span>
                   </div>
@@ -612,7 +730,7 @@ export function HoldersScreen({ wa, initData, me, chain, token, onAlertsChanged 
       onAlertsChanged()
     } else {
       haptic.fail()
-      setResult({ ok: false, text: r.error })
+      setResult({ ok: false, text: friendlyError(r, 'The alert was not created. Try again in a minute.') })
     }
   }
   return (
@@ -620,7 +738,7 @@ export function HoldersScreen({ wa, initData, me, chain, token, onAlertsChanged 
       <div className="flex flex-col gap-1">
         <h1 className="m-0 font-display text-[30px] leading-none font-bold">👥 Who holds this?</h1>
         <p className="m-0 text-[13px] leading-[1.5] text-muted">
-          The biggest wallets on {name}, sized by how much they hold. Wallets that sent tokens to each other are joined, and joined wallets are often one person or team.
+          The biggest wallets on {name}, sized by how much they hold. Wallets that sent tokens to each other are joined into a <b>connected cluster</b>, and a cluster is often one person or team. The <b>deployer</b> is the wallet that created the token.
         </p>
       </div>
       <HolderMap chain={chain} token={token} compact />
@@ -628,9 +746,9 @@ export function HoldersScreen({ wa, initData, me, chain, token, onAlertsChanged 
         <div className={`${card} flex flex-col gap-3 p-4`}>
           <span className="text-[13px] text-muted">When the largest connected cluster holds at least</span>
           <Chips value={line} options={HOLDER_LINES.map((p) => ({ id: p, label: `${p}%` }))} onChange={setLine} label="Cluster share" />
-          {!me.linked && <p className="m-0 text-[12px] leading-[1.5] text-faint">Link this Telegram account to a wallet once: developer portal, Alerts tab, Connect Telegram.</p>}
+          {!me.linked && <p className="m-0 text-[12px] leading-[1.5] text-faint">Link this Telegram account to a wallet once: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram.</p>}
           <Button onClick={create} disabled={busy}>
-            {me.linked ? `🔔 Alert me at ${line}%` : 'Link wallet in the portal'}
+            {me.linked ? `🔔 Alert me at ${line}%` : 'Link wallet in the app'}
           </Button>
           {result && (
             <p role="status" className="m-0 text-[13px]" style={{ color: result.ok ? UP : undefined }}>
@@ -639,6 +757,55 @@ export function HoldersScreen({ wa, initData, me, chain, token, onAlertsChanged 
           )}
         </div>
       </Section>
+    </div>
+  )
+}
+
+/* ---------- announcements ---------- */
+
+/** Gully Labs news in the private chat with the bot, on or off (the bot's Settings switch). Alerts are never affected. */
+export function AnnouncementsSwitch({ initData, me }: { initData: string; me: Me }) {
+  const [on, setOn] = useState<boolean>(me.announcements !== false)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const flip = async () => {
+    if (busy) return
+    setBusy(true)
+    setErr(null)
+    const r = await tgApi<{ announcements: boolean }>(initData, '/api/tg/announcements', { method: 'POST', body: { on: !on } })
+    setBusy(false)
+    if (r.ok) {
+      haptic.ok()
+      setOn(r.data.announcements)
+    } else {
+      haptic.fail()
+      setErr(friendlyError(r, 'Not changed. Try again in a minute.'))
+    }
+  }
+  return (
+    <div className={`${card} flex flex-col gap-2 p-4`}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex min-w-0 flex-col">
+          <span className="font-semibold">📣 Gully Labs announcements</span>
+          <span className="text-[13px] text-muted">News in your chat with the bot. Alerts keep arriving either way.</span>
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          aria-label="Gully Labs announcements"
+          disabled={busy}
+          onClick={flip}
+          className={`relative h-11 w-[64px] flex-none rounded-full border transition-colors disabled:opacity-60 ${on ? 'border-gold bg-gold' : 'border-line bg-bg'}`}
+        >
+          <span className={`absolute top-1/2 size-7 -translate-y-1/2 rounded-full transition-[left] duration-200 ${on ? 'left-[30px] bg-bg' : 'left-[4px] bg-faint'}`} aria-hidden />
+        </button>
+      </div>
+      {err && (
+        <p role="status" className="m-0 text-[13px] text-error">
+          {err}
+        </p>
+      )}
     </div>
   )
 }

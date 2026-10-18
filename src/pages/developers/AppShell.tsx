@@ -10,6 +10,7 @@ import { StatusDialog } from './services/StatusDialog'
 import { Avatar } from './Avatar'
 import { Menu, menuItem } from './Menu'
 import { declinedInvites, restoreFocus, usePortal } from './portal'
+import { ExtLink } from './ExtLink'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
@@ -79,7 +80,7 @@ function WorkspaceSwitcher({ compact, onTeam }: { compact: boolean; onTeam: () =
       testId="workspace-switcher"
       align="left"
       width={300}
-      buttonClass={`flex min-h-[34px] w-full items-center gap-2 rounded-[10px] border border-line-strong bg-surface text-[13px] text-ink transition-colors hover:border-line-hover ${compact ? 'justify-center px-0' : 'px-3'}`}
+      buttonClass={`flex min-h-[34px] relative after:absolute after:inset-x-0 after:-inset-y-[5px] w-full items-center gap-2 rounded-[10px] border border-line-strong bg-surface text-[13px] text-ink transition-colors hover:border-line-hover ${compact ? 'justify-center px-0' : 'px-3'}`}
       button={
         <>
           <Building2 size={ICON} className="shrink-0 text-gold" aria-hidden />
@@ -185,7 +186,7 @@ function WalletMenu({ onSignOut, go, compact = false, placement = 'down' }: { on
       width={250}
       align={inSidebar ? 'left' : 'right'}
       placement={placement}
-      buttonClass={`relative flex ${inSidebar ? 'min-h-9' : 'min-h-11'} items-center gap-2 rounded-full border border-line-strong bg-surface font-mono text-[12px] text-ink transition-colors hover:border-line-hover ${compact ? 'justify-center px-[9px]' : 'px-2 pr-3'} ${inSidebar && !compact ? 'w-full' : ''}`}
+      buttonClass={`relative flex ${inSidebar ? 'min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]' : 'min-h-11'} items-center gap-2 rounded-full border border-line-strong bg-surface font-mono text-[12px] text-ink transition-colors hover:border-line-hover ${compact ? 'justify-center px-[9px]' : 'px-2 pr-3'} ${inSidebar && !compact ? 'w-full' : ''}`}
       button={
         <>
           <Avatar address={address} src={me?.profile.avatar} size={24} />
@@ -367,10 +368,9 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
   return (
     <ul className="m-0 flex list-none flex-col gap-[2px] p-0">
       <li>
-        <a href={`${DOCS_URL}/api`} target="_blank" rel="noopener noreferrer" className={footItem(compact)} title={compact ? 'Docs (opens in a new tab)' : undefined}>
+        <ExtLink href={`${DOCS_URL}/api`} arrow={false} className={footItem(compact)} title={compact ? 'Docs (opens in a new tab)' : undefined}>
           <BookOpen size={ICON} aria-hidden /> {txt('Docs ↗')}
-          {compact && <span className="sr-only"> (opens in a new tab)</span>}
-        </a>
+        </ExtLink>
       </li>
       <li>
         <button type="button" onClick={onStatus} className={`${footItem(compact)} w-full text-left`} title={compact ? `Status: ${healthText[health]}` : undefined} data-testid="status-link" data-health={health}>
@@ -383,9 +383,9 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
         </button>
       </li>
       <li>
-        <a href={SITE_URL} target="_blank" rel="noopener noreferrer" className={footItem(compact)} title={compact ? 'Gully Labs home' : undefined} data-testid="home-link">
-          <House size={ICON} aria-hidden /> {txt('gullylabs.xyz')}
-        </a>
+        <ExtLink href={SITE_URL} arrow={false} className={footItem(compact)} title={compact ? 'Gully Labs home (opens in a new tab)' : undefined} data-testid="home-link">
+          <House size={ICON} aria-hidden /> {txt('gullylabs.xyz ↗')}
+        </ExtLink>
       </li>
     </ul>
   )
@@ -401,26 +401,26 @@ function HeaderLinks({ health, onStatus }: { health: Health; onStatus: () => voi
   )
   return (
     <div className="flex items-center gap-[2px]" data-testid="header-links">
-      <a href={`${DOCS_URL}/api`} target="_blank" rel="noopener noreferrer" className={btn} aria-label="Docs (opens in a new tab)">
+      <ExtLink href={`${DOCS_URL}/api`} arrow={false} className={btn} aria-label="Docs (opens in a new tab)">
         <BookOpen size={ICON} aria-hidden />
         {tip('Docs ↗')}
-      </a>
+      </ExtLink>
       <button type="button" onClick={onStatus} className={btn} aria-label={`Status: ${healthText[health]}`} data-testid="status-link" data-health={health}>
         <Activity size={ICON} aria-hidden />
         <span className={`absolute right-[7px] bottom-[7px] size-[7px] rounded-full border border-bg ${healthDot[health]}`} aria-hidden />
         {tip(`Status · ${healthText[health]}`)}
       </button>
-      <a href={SITE_URL} target="_blank" rel="noopener noreferrer" className={btn} aria-label="Gully Labs home (opens in a new tab)" data-testid="home-link">
+      <ExtLink href={SITE_URL} arrow={false} className={btn} aria-label="Gully Labs home (opens in a new tab)" data-testid="home-link">
         <House size={ICON} aria-hidden />
         {tip('gullylabs.xyz ↗')}
-      </a>
+      </ExtLink>
     </div>
   )
 }
 
 function Brand({ compact, onHome }: { compact: boolean; onHome: () => void }) {
   return (
-    <button type="button" onClick={onHome} className={`flex min-h-8 min-w-0 items-center gap-[10px] text-ink ${compact ? 'justify-center' : ''}`} aria-label="Gully Labs App: overview" data-testid="app-brand">
+    <button type="button" onClick={onHome} className={`flex min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] min-w-0 items-center gap-[10px] text-ink ${compact ? 'justify-center' : ''}`} aria-label="Gully Labs App: overview" data-testid="app-brand">
       <Mascot size={24} decorative />
       {!compact && (
         <span className="flex min-w-0 items-center gap-2">
@@ -480,7 +480,7 @@ function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void
       >
         <span className="mx-auto mt-1 h-1 w-10 shrink-0 rounded-full bg-line-strong" aria-hidden />
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY LABS APP</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">APP DASHBOARD</span>
           <button type="button" onClick={onClose} className="inline-flex size-11 items-center justify-center rounded-full text-muted hover:text-ink" aria-label="Close menu">
             <X size={18} aria-hidden />
           </button>
@@ -599,7 +599,7 @@ export function AppShell<T extends string>({
             <div className={compact ? 'w-full' : 'min-w-0 flex-1'}>
               <WorkspaceSwitcher compact={compact} onTeam={wallet.team} />
             </div>
-            <button type="button" onClick={toggle} title={compact ? 'Expand sidebar' : 'Collapse to icons'} className="inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-faint transition-colors hover:bg-surface-hover hover:text-ink" aria-label={compact ? 'Expand sidebar' : 'Collapse sidebar to icons'} aria-expanded={!compact} data-testid="sidebar-toggle">
+            <button type="button" onClick={toggle} title={compact ? 'Expand sidebar' : 'Collapse to icons'} className="inline-flex size-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] shrink-0 items-center justify-center rounded-[10px] text-faint transition-colors hover:bg-surface-hover hover:text-ink" aria-label={compact ? 'Expand sidebar' : 'Collapse sidebar to icons'} aria-expanded={!compact} data-testid="sidebar-toggle">
               {compact ? <ChevronsRight size={ICON} aria-hidden /> : <ChevronsLeft size={ICON} aria-hidden />}
             </button>
           </div>
@@ -622,9 +622,9 @@ export function AppShell<T extends string>({
                 <button ref={menuBtn} type="button" onClick={() => setSheet(true)} className="-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] text-ink hover:bg-surface-hover" aria-label="Open menu" aria-haspopup="dialog" aria-expanded={sheet} data-testid="menu-button">
                   <MenuIcon size={20} aria-hidden />
                 </button>
-                <a href={SITE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] hover:bg-surface-hover" aria-label="Gully Labs home" data-testid="home-link-header">
+                <ExtLink href={SITE_URL} arrow={false} className="inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] hover:bg-surface-hover" aria-label="Gully Labs home (opens in a new tab)" data-testid="home-link-header">
                   <Mascot size={24} decorative />
-                </a>
+                </ExtLink>
               </>
             )}
             <nav aria-label="Breadcrumb" className="min-w-0 flex-1">

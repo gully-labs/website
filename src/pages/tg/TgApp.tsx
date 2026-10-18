@@ -1,8 +1,9 @@
+import { BellRing, ChartNoAxesColumn, Rocket } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
 import { useTracker, type TrackerRow } from '../../lib/tracker'
 import { useTgApi } from './hooks'
-import { AlertsTab, Button, Chips, GapsTab, HoldersScreen, LaunchesTab, Notice, StockScreen, type Me } from './screens'
+import { AlertsTab, AnnouncementsSwitch, Button, Chips, GapsTab, HoldersScreen, LaunchesTab, Notice, StockScreen, type Me } from './screens'
 import { haptic, isLight, loadTelegram, themeVars, type ThemeParams, type WebApp } from './sdk'
 
 /* The Gully Labs Telegram Mini App (gullylabs.xyz/tg, its own lazy chunk). Opened from @GullyLabsBot's
@@ -33,10 +34,10 @@ function holdersStart(wa: WebApp): Screen | null {
   if (!raw || !/^[a-z]{2,12}$/.test(raw[0]) || !/^[A-Za-z0-9]{1,64}$/.test(raw[1])) return null
   return { k: 'holders', chain: raw[0], token: raw[1] }
 }
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'gaps', label: 'Gaps' },
-  { id: 'launches', label: 'Launches' },
-  { id: 'alerts', label: 'My alerts' },
+const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  { id: 'gaps', label: 'Gaps', icon: <ChartNoAxesColumn size={14} aria-hidden /> },
+  { id: 'launches', label: 'Launches', icon: <Rocket size={14} aria-hidden /> },
+  { id: 'alerts', label: 'My alerts', icon: <BellRing size={14} aria-hidden /> },
 ]
 const BOT_URL = 'https://t.me/GullyLabsBot'
 
@@ -114,7 +115,7 @@ function OutsideTelegram() {
   return (
     <div className="flex flex-col gap-4 pt-8">
       <Brand />
-      <Notice title="Open this inside Telegram" action={<a href={BOT_URL} className="inline-flex min-h-11 items-center justify-center rounded-[10px] bg-gold px-4 text-[14px] font-semibold text-[var(--tg-btn-text,#0b0e13)]">Open @GullyLabsBot ↗</a>}>
+      <Notice title="Open this inside Telegram" action={<a href={BOT_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-[10px] bg-gold px-4 text-[14px] font-semibold text-[var(--tg-btn-text,var(--color-bg))]">Open @GullyLabsBot ↗</a>}>
         This is the Gully Labs Telegram app. Open it from the bot&apos;s menu button, or use the full tracker at{' '}
         <a href="/tracker" className="text-gold underline-offset-4 hover:underline">
           gullylabs.xyz/tracker
@@ -175,8 +176,8 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
     return (
       <div className="flex flex-col gap-4 pt-4">
         <Brand />
-        <Notice title={me.status === 401 ? 'This session has expired' : 'The app could not start'} action={me.status === 401 ? <Button onClick={() => wa.close()}>Close and reopen</Button> : undefined}>
-          {me.status === 401 ? 'Telegram signs each app session for 24 hours. Close the app and open it again from the bot.' : me.error}
+        <Notice title={me.status === 401 ? 'This session has expired' : 'The app could not start'} action={<Button onClick={() => wa.close()}>Close and reopen</Button>}>
+          {me.status === 401 ? 'Telegram signs each app session for 24 hours. Close the app and open it again from the bot.' : me.status === 0 ? 'No connection right now. Check your internet, then close the app and open it again.' : me.status === 429 ? 'Too many requests in a minute. Wait a moment, then open the app again.' : 'Something went wrong on our side. Close the app and open it again in a minute.'}
         </Notice>
       </div>
     )
@@ -211,6 +212,8 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
   const rowOf = (chain: string, ticker: string): TrackerRow | null => (tracker.k === 'ok' ? (tracker.data.rows.find((r) => r.chain === chain && r.ticker === ticker) ?? null) : null)
   const openStock = (chain: string, ticker: string) => setStack((s) => [...s, { k: 'stock', chain, ticker }])
   const openHolders = (chain: string, token: string) => setStack((s) => [...s, { k: 'holders', chain, token }])
+  // Stock tokens get "Who holds?" only on chains where the Holder Map has data (DeepCore launches always do).
+  const stockHolders = (chain: string) => (m.holderChains ?? []).includes(chain)
 
   return (
     <>
@@ -228,7 +231,7 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
         tracker.k === 'loading' ? (
           <Boot />
         ) : (
-          <StockScreen key={`${top.chain}:${top.ticker}`} wa={wa} initData={initData} row={rowOf(top.chain, top.ticker)} me={m} ink={ink} onAlertsChanged={() => setAlertsVersion((v) => v + 1)} onHolders={() => openHolders(top.chain, top.ticker)} />
+          <StockScreen key={`${top.chain}:${top.ticker}`} wa={wa} initData={initData} row={rowOf(top.chain, top.ticker)} me={m} ink={ink} onAlertsChanged={() => setAlertsVersion((v) => v + 1)} onHolders={stockHolders(top.chain) ? () => openHolders(top.chain, top.ticker) : undefined} />
         )
       ) : (
         <>
@@ -236,8 +239,13 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
             <Chips value={tab} options={TABS} onChange={setTab} label="Section" />
           </div>
           {tab === 'gaps' && <GapsTab initData={initData} tracker={tracker} ink={ink} onOpen={(r) => openStock(r.chain, r.ticker)} />}
-          {tab === 'launches' && <LaunchesTab wa={wa} initData={initData} ink={ink} onHolders={openHolders} />}
-          {tab === 'alerts' && <AlertsTab wa={wa} initData={initData} me={m} version={alertsVersion} onOpenStock={openStock} />}
+          {tab === 'launches' && <LaunchesTab wa={wa} initData={initData} ink={ink} me={m} onHolders={openHolders} onAlertsChanged={() => setAlertsVersion((v) => v + 1)} />}
+          {tab === 'alerts' && (
+            <>
+              <AlertsTab wa={wa} initData={initData} me={m} version={alertsVersion} onOpenStock={openStock} />
+              <AnnouncementsSwitch initData={initData} me={m} />
+            </>
+          )}
         </>
       )}
     </>

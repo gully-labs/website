@@ -11,7 +11,7 @@ import { Section, ServiceHeader, type Status } from './ServiceHeader'
 /* Chain Kit, in the app: a branded Blockscout explorer for your chain, run by Gully Labs. The live
    figures are the chains Gully's own indexer reads right now (GET /api/tracker: chains, tokens indexed,
    feeds answering, pools read), charted chain against chain; the explorer request is the Products
-   page's Chain Kit card (one form, one place). What an explorer draws is shown with example data,
+   page's Chain Kit card (one form, one place; server state with a live requests-per-day chart). What an explorer draws is shown with example data,
    badged as such. */
 
 export default function ChainKitView() {

@@ -54,7 +54,10 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
     return v.length ? (v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2) : null
   })()
   const flagged = rows.filter((r) => r.status === 'premium' || r.status === 'discount').length
-  const liquidity = data ? rows.reduce((a, r) => a + (r.pool?.totalLiquidityUsd ?? 0), 0) : null
+  // Pools with no readable liquidity are left out, never counted as $0; the note says when the sum is partial.
+  const liqKnown = rows.filter((r) => typeof r.pool?.totalLiquidityUsd === 'number' && Number.isFinite(r.pool.totalLiquidityUsd))
+  const liquidity = data && liqKnown.length ? liqKnown.reduce((a, r) => a + (r.pool!.totalLiquidityUsd as number), 0) : null
+  const liqMissing = rows.length - liqKnown.length
   const needle = q.trim().toLowerCase()
   const shown = useMemo(
     () =>
@@ -82,7 +85,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
           { label: 'OFF BY 2%+', value: data ? flagged : null, unknown: pending, tone: flagged ? '#d9b563' : undefined, note: 'flagged now' },
           { label: 'TYPICAL GAP', value: median, format: NF.fixed2, suffix: '%', unknown: st.k === 'ok' ? 'not tracked yet' : pending, note: 'median, trusted pools' },
           { label: 'WIDEST', value: byAbs[0]?.gapPct ?? null, format: NF.signed2, suffix: '%', unknown: st.k === 'ok' ? 'none' : pending, tone: (byAbs[0]?.gapPct ?? 0) >= 0 ? UP : DOWN, note: byAbs[0] ? `${byAbs[0].ticker} · ${CHAIN_SHORT[byAbs[0].chain] ?? byAbs[0].chain}` : '—' },
-          { label: 'LIQUIDITY', value: liquidity, format: NF.compactUsd, unknown: pending, note: 'all pools' },
+          { label: 'LIQUIDITY', value: liquidity, format: NF.compactUsd, unknown: data ? 'not tracked yet' : pending, note: data && liqMissing && liqKnown.length ? `partial: ${liqMissing} pool${liqMissing === 1 ? '' : 's'} unreadable` : 'all pools', title: data && liqMissing ? `${liqMissing} of ${rows.length} pools have no readable liquidity; they are left out of this sum.` : undefined },
         ]}
       />
 
@@ -124,7 +127,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
           title="Live stocks"
           sub={data ? `${shown.length} of ${rows.length} · refreshed every minute` : 'reading every feed and pool…'}
           aside={
-            <label className="relative flex min-h-10 w-[200px] max-w-full items-center">
+            <label className="relative flex min-h-10 relative after:absolute after:inset-x-0 after:-inset-y-[2px] w-[200px] max-w-full items-center">
               <span className="sr-only">Search stocks</span>
               <Search size={14} aria-hidden className="pointer-events-none absolute left-3 text-faint" />
               <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="NVDA, Tesla…" aria-label="Search stocks" className="h-10 w-full rounded-full border border-line-strong bg-bg pr-3 pl-8 text-[13px] text-ink outline-none focus:border-gold" />
@@ -179,11 +182,11 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
                         </td>
                         <td className="px-4 py-[6px]">
                           <span className="flex items-center justify-end gap-1">
-                            <button type="button" onClick={() => ctx.createAlert(id)} aria-label={`Add a gap alert for ${r.ticker} on ${CHAIN_NAME[r.chain] ?? r.chain}`} title="Add a gap alert" className="inline-flex min-h-9 items-center gap-1 rounded-full border border-gold-line px-[10px] text-[12px] text-gold transition-colors hover:border-gold max-[859px]:min-h-11">
+                            <button type="button" onClick={() => ctx.createAlert(id)} aria-label={`Add a gap alert for ${r.ticker} on ${CHAIN_NAME[r.chain] ?? r.chain}`} title="Add a gap alert" className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 rounded-full border border-gold-line px-[10px] text-[12px] text-gold transition-colors hover:border-gold max-[859px]:min-h-11">
                               <BellPlus size={13} aria-hidden />
                               <span className="max-[640px]:sr-only">Alert</span>
                             </button>
-                            <ExtLink href={sitePage(stockPath(r))} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line-strong px-[10px] text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink max-[859px]:min-h-11">
+                            <ExtLink href={sitePage(stockPath(r))} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 rounded-full border border-line-strong px-[10px] text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink max-[859px]:min-h-11">
                               <span className="max-[640px]:sr-only">Page</span>
                               <span className="sr-only"> for {r.ticker}</span>
                             </ExtLink>

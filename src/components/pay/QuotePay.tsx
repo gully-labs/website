@@ -223,9 +223,9 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
               {quote.asset.kind === 'token' ? (
                 <>
                   Token:{' '}
-                  <a href={`${asset.explorer}/token/${quote.asset.address}`} target="_blank" rel="noopener" className="font-mono text-ink-2 underline-offset-4 hover:underline">
+                  <a href={`${asset.explorer}/token/${quote.asset.address}`} target="_blank" rel="noopener noreferrer" className="font-mono text-ink-2 underline-offset-4 hover:underline">
                     {quote.asset.symbol} {short(quote.asset.address ?? '')}
-                  </a>{' '}
+                  <span aria-hidden> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>{' '}
                   ({quote.asset.decimals} decimals).
                 </>
               ) : (
@@ -236,9 +236,9 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
             {quote.price && (
               <li>
                 Priced at 1 {quote.asset.symbol} = {Number(quote.price.answer).toLocaleString('en-US', { maximumFractionDigits: 2 })} USD by the{' '}
-                <a href={`${feedExplorer(quote.chainId, asset.explorer)}/address/${quote.price.feed}`} target="_blank" rel="noopener" className="text-ink-2 underline-offset-4 hover:underline">
+                <a href={`${feedExplorer(quote.chainId, asset.explorer)}/address/${quote.price.feed}`} target="_blank" rel="noopener noreferrer" className="text-ink-2 underline-offset-4 hover:underline">
                   {priceSource(quote.chainId)} {quote.price.description} feed
-                </a>{' '}
+                <span aria-hidden> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>{' '}
                 (round {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}, updated {minutesAgo(quote.price.updatedAt, now)}), rounded up.
               </li>
             )}
@@ -318,9 +318,9 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
             <p className="m-0 inline-flex flex-wrap items-center gap-2 font-mono text-[12px] text-muted" role="status">
               <Loader2 size={14} className="animate-spin" aria-hidden /> Pending: {check.message} Checking every few seconds.{' '}
               {txLink(check.hash) && (
-                <a href={txLink(check.hash)!} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:underline">
+                <a href={txLink(check.hash)!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:underline">
                   View on explorer <ArrowUpRight size={11} aria-hidden />
-                </a>
+                <span className="sr-only"> (opens in a new tab)</span></a>
               )}
             </p>
           )}

@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUpRight, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
+import { AlertTriangle, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
@@ -88,7 +88,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
         {window.location.hash === '#analytics' && (
           <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
             <ChartNoAxesCombined size={18} className="mt-[3px] shrink-0 text-gold" aria-hidden />
-            Here for Gully Analytics? Connect your wallet: the Analytics tab of your console starts the free trial.
+            Here for Gully Analytics? Connect your wallet: the Analytics tab of the app starts the free trial.
           </p>
         )}
         <button type="button" onClick={connect} disabled={busy} data-focus-fallback data-testid="connect-wallet" className={`${pillGold} min-h-12 w-full text-[16px] disabled:opacity-70`}>
@@ -122,9 +122,9 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           <ExtLink href={`${DOCS_URL}/api`} className="inline-flex min-h-11 items-center gap-2 text-[13px] text-muted hover:text-ink">
             <BookOpen size={15} aria-hidden /> Read the docs
           </ExtLink>
-          <a href={isLocalHost() ? '/widget' : `${SITE_URL}/widget`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-muted hover:text-gold">
-            No code? Embed the widget <ArrowUpRight size={13} aria-hidden />
-          </a>
+          <ExtLink href={isLocalHost() ? '/widget' : `${SITE_URL}/widget`} className="inline-flex min-h-11 items-center gap-1 text-[13px] text-muted hover:text-gold">
+            No code? Embed the widget
+          </ExtLink>
         </div>
       </div>
     </section>
@@ -266,7 +266,7 @@ export function DevelopersPage() {
         ))}
       {(session.state === 'error' || session.state === 'blocked') && (
         <section className="mx-auto flex min-h-[50vh] w-full max-w-[640px] flex-col items-start justify-center gap-4 px-4 py-16">
-          <span className={mono}>GULLY LABS APP</span>
+          <span className={mono}>APP DASHBOARD</span>
           <p className="m-0 flex max-w-[640px] items-start gap-3 text-[17px] leading-[1.55] text-error" role="alert">
             <AlertTriangle size={20} className="mt-[3px] shrink-0" aria-hidden />
             {session.state === 'blocked' ? session.message : `The dashboard could not be loaded: ${session.message}`}

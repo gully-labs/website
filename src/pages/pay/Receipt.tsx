@@ -20,9 +20,9 @@ function Row({ k, v, mono = false, href }: { k: string; v: string; mono?: boolea
       <dt className="font-mono text-[11px] tracking-[1px] text-[#5c6878]">{k}</dt>
       <dd className={`m-0 break-all text-[#0b0e13] ${mono ? 'font-mono text-[13px]' : 'text-[15px]'}`}>
         {href ? (
-          <a href={href} target="_blank" rel="noopener" className="underline decoration-[#9aa4b2] underline-offset-2 print:no-underline">
+          <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-[#9aa4b2] underline-offset-2 print:no-underline">
             {v}
-          </a>
+          <span aria-hidden className="print:hidden"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
         ) : (
           v
         )}
@@ -113,7 +113,7 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
               <table className="w-full border-collapse text-[14px]">
                 <caption className="sr-only">Line items</caption>
                 <thead>
-                  <tr className="border-b border-[#d9dde3] text-left font-mono text-[10.5px] tracking-[1px] text-[#5c6878]">
+                  <tr className="border-b border-[#d9dde3] text-left font-mono text-[11px] tracking-[1px] text-[#5c6878]">
                     <th scope="col" className="py-2 pr-3 font-normal">
                       ITEM
                     </th>
