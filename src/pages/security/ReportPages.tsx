@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowUpRight, FileSearch, FileText, Info, Printer, ScanSearc
 import { Link, useParams } from 'react-router'
 import { Lockup } from '../../components/brand'
 import { ChainLogo } from '../../components/logos/ChainLogo'
+import { LiveScans } from '../../components/security/LiveScans'
 import { ModeBadge, ReportBody } from '../../components/security/ReportBody'
 import { SeverityCharts } from '../../components/security/SeverityCharts'
 import { chainLogoKey, fmtWhen, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, type PublicReport, type PublicReportListItem } from '../../components/security/types'
@@ -42,12 +43,15 @@ export function ReportsIndex() {
             <h1 className="m-0 font-display text-h2 font-extrabold uppercase">
               Scan reports, <span className="text-gold">in the open</span>
             </h1>
-            <p className="m-0 max-w-[680px] text-[15px] leading-[1.6] text-muted">Reports listed here were published by the owners of the code. Each is an automated scan, not an audit.</p>
+            <p className="m-0 max-w-[680px] text-[15px] leading-[1.6] text-muted">Reports listed here were published by the owners of the code. Each is an automated scan, not an audit; for now scans are an AI review only, and each report’s label says so.</p>
           </div>
           <a href={SCAN_APP_URL} target="_blank" rel="noopener noreferrer" className={`${btnGold} inline-flex items-center gap-2 px-5 py-3 text-[15px]`}>
             <ScanSearch size={16} aria-hidden /> Scan your code <ArrowUpRight size={15} aria-hidden />
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
+        </div>
+        <div className="mb-6 max-w-[560px]">
+          <LiveScans />
         </div>
         {s.k === 'loading' && <div className="h-[160px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface" />}
         {s.k === 'error' && (

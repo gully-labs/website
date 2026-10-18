@@ -7,14 +7,16 @@ import { eyebrow } from '../../components/ui'
    (github.com/basecamp/policies, CC BY 4.0; attribution and the list of changes at the foot of the page, as
    the licence requires). Every statement about what is collected and how long it is kept was checked
    against the code on 2026-10-18 (server/store.mjs, workspaces.mjs, activity.mjs, access.mjs, ask.mjs,
-   telegram*.mjs, billing.mjs, merchants.mjs, analytics.mjs, index.html, compose.yaml, ops/backup.sh).
+   telegram*.mjs, telegram-broadcast.mjs, telegram-users.mjs, billing.mjs, merchants.mjs, analytics.mjs,
+   security-routes.mjs, security-store.mjs, security/*.mjs, sec-monitor.mjs, gully-score.mjs, holders*.mjs,
+   index.html, compose.yaml, ops/backup.sh).
    When one of those changes what it stores or how long it keeps it, change this page and PRIVACY_VERSION.
    Section ids are s1…s12: Gully AI's index (scripts/build-ask-index.mjs) cites them. */
 
 export const PRIVACY_VERSION = '2026-10-18'
 const BASECAMP_URL = 'https://github.com/basecamp/policies'
 const CC_URL = 'https://creativecommons.org/licenses/by/4.0/'
-const SECTIONS = ['Who we are', 'What we collect', 'Gully Analytics', 'Gully AI', 'Telegram', 'Gully Pay and public chains', 'Cookies and browser storage', 'Who else sees data', 'How long we keep it', 'Security', 'Your choices', 'Changes and contact']
+const SECTIONS = ['Who we are', 'What we collect', 'Gully Analytics', 'Gully AI', 'Telegram', 'Gully Security', 'Holder Map and Gully Score', 'Gully Pay and public chains', 'Cookies and browser storage', 'Who else sees data', 'How long we keep it', 'Security', 'Your choices', 'Changes and contact']
 
 function S({ n, title, children }: { n: number; title: string; children: ReactNode }) {
   return (
@@ -47,6 +49,15 @@ const RETENTION: [string, string][] = [
   ['Unpaid payment quotes', 'Deleted 7 days after they expire'],
   ['Webhook deliveries', 'The newest 1,000 for Gully Pay; the newest 50 per gap alert'],
   ['Contact form messages', 'The newest 5,000 messages'],
+  ['Security scans: the code, the fetched sources, tool output and the report', 'Deleted once the scan is finished and 180 days old, when our server next restarts after that; the scan’s entry in your list (without the code) is not deleted automatically'],
+  ['Code uploaded for a scan', 'Moved into the scan when it starts; deleted at once if a free scan cannot start or you cancel an unpaid scan; the upload of a paid scan left unpaid stays until you cancel it'],
+  ['Published scan reports', 'Public until unpublished; after that the copy stays on our server, not shown, and is not deleted automatically'],
+  ['Security Review requests', 'The newest 5,000 requests'],
+  ['Security monitors', 'Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries'],
+  ['Gully Score results and history', 'Not deleted automatically (who looked a score up is not recorded)'],
+  ['Holder Map view counts', 'Reset every UTC day; the key that hashes visitors is never written down'],
+  ['Telegram announcements: deliveries and opened links', 'The newest 200 announcements'],
+  ['Telegram bot records (first and last seen, language, opt-out)', 'Not deleted automatically today'],
   ['Backups of all of the above', '7 days'],
   ['Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data', 'Not deleted automatically today; ask us and we delete what the law lets us'],
 ]
@@ -54,7 +65,7 @@ const RETENTION: [string, string][] = [
 export function PrivacyPage() {
   return (
     <>
-      <Seo title="Privacy policy" description="What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, the Telegram bot and Gully Pay, why, who else sees it and how long it is kept." />
+      <Seo title="Privacy policy" description="What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, Gully Security, the Holder Map, the Telegram bot and Gully Pay, why, who else sees it and how long it is kept." />
       <HtmlComment text="Draft: review by counsel before relying on it." />
       <article className="relative px-page pt-[64px] pb-24 max-[600px]:pt-10">
         <div className="mx-auto flex max-w-[820px] flex-col gap-10">
@@ -78,7 +89,7 @@ export function PrivacyPage() {
             <P>
               Gully Labs (“<b>we</b>”, “<b>us</b>”) builds and runs these sites and services. We decide what personal data they collect and why, so we are responsible for it. If you run a Gully Pay store or use Gully Analytics on your own site, you are responsible for your own customers’ and visitors’ data, and we process it for you to provide the service.
             </P>
-            <P>Questions or requests about your data: hello@gullylabs.xyz.</P>
+            <P>Questions or requests about your data: <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a>.</P>
           </S>
 
           <S n={2} title="What we collect">
@@ -124,10 +135,43 @@ export function PrivacyPage() {
             <P>
               Using @GullyLabsBot requires following the Gully Labs News channel; the bot checks this with Telegram and remembers the answer for up to 30 minutes, in memory only. If you link a chat to your wallet for alerts, we keep the chat id and type, the chat’s title (for a private chat, your first and last name and @username as Telegram gives them), your Telegram user id and when you linked it. Link codes are kept only as hashes and expire after 10 minutes. You can unlink at any time with /stop or in the bot’s settings.
             </P>
+            <P>
+              <b>Bot records.</b> For every chat that uses the bot we keep when it was first and last seen, its language, whether it is linked to a wallet, whether it follows the News channel, whether it has blocked the bot or switched announcements off, and how it found the bot. No names and no message text are kept in these records.
+            </P>
+            <P>
+              <b>Announcements.</b> The bot sometimes sends news to chats chosen by those records (for example, linked chats, chats with alerts, followers of the News channel, a language, or chats active recently). For each announcement we keep, per recipient chat, whether it was delivered (with Telegram’s message id or error). Its buttons go through a link made for that recipient, so when you open one we record that this recipient opened it, once; we don’t record when, your IP address or your browser. Our operators see delivery and opens with chat ids shortened to their last 4 digits. Every announcement has a 🔕 Stop announcements button, and Settings switches them off and on again; that never affects your alerts.
+            </P>
             <P>The Mini App checks Telegram’s signed launch data to know who you are and stores nothing: no cookie and no session.</P>
           </S>
 
-          <S n={6} title="Gully Pay and public chains">
+          <S n={6} title="Gully Security">
+            <P>
+              <b>Scans.</b> When your workspace runs an AI Security Scan we keep a record of it: the workspace, the wallet that started it, when, what was scanned (a contract address and chain, a GitHub repository and commit, or an uploaded file’s name and size), its price or invoice and its status. To run the scan we store the code on our server: the file you upload, the full text of the source files fetched from the chain’s explorer or GitHub or unpacked from your upload, the tools’ output, the AI’s findings and the report. For a web2 scan, files named <code className="font-mono text-[.9em]">.env</code> are stored with the rest of the code but are never sent to the AI or the scanning tools. Please don’t upload secrets.
+            </P>
+            <P>
+              <b>Who sees it.</b> Members of your workspace see its scans and reports; developers, admins and owners can start and cancel them. Gully Labs operators can see the list of scans (who started one, the target and its status). To review the code, the files in scope are sent to Anthropic (Claude) after common secret patterns (API keys, private-key blocks and similar) are replaced; that check works by pattern and can miss a secret. When our static-tools worker runs (it does not yet), it receives the code too, on our own servers. The contract address and chain are sent to Etherscan, Blockscout or Sourcify to fetch verified source, the repository and commit to GitHub, and for web2 scans the dependency list in package-lock.json to the npm registry.
+            </P>
+            <P>
+              <b>Publishing.</b> A workspace owner or admin can publish a finished report. It then becomes public: the target, the findings, file paths with their hashes, and any code comments the scan flagged as attempts to instruct the AI; draft proof-of-concept code and the workspace are left out. Search engines are asked not to index it unless the publisher allows it. Published reports count towards that contract’s Gully Score. Unpublishing takes the report off the site at once; the copy stays on our server, not shown.
+            </P>
+            <P>
+              <b>Security Review requests.</b> When you ask for a quote we keep what you send (name, email, project, scope, repository, contract, company, timeline) and the signed-in wallet if there is one. The request also goes to our enquiries inbox and to our operators’ Telegram chat. Requests are limited per IP address and email in memory only; the IP is not stored.
+            </P>
+            <P>
+              <b>Monitors.</b> For each contract your workspace watches we keep the contract, chain and name, your alert thresholds, your webhook address and its signing secret, whether Telegram is on, whether the contract may be listed publicly, the contract’s last read state, its last 100 events and the last 50 alert deliveries. The contract is read through public blockchain nodes. Events a monitor sees are public chain data and count in that contract’s public Gully Score; switching listing off keeps the contract off the public list of scores, not out of its score.
+            </P>
+          </S>
+
+          <S n={7} title="Holder Map and Gully Score">
+            <P>
+              <b>Holder Map.</b> Looking up a map needs no account. To show the maps opened most today we count one view per visitor per token per day, using a hash of the IP address made with a random key that is held in memory only and replaced every day; the counts are reset each UTC day. New maps are limited per IP address for a minute, in memory only. To build a map we send the token’s address (never anything about you) to DeepCore, Blockscout, Moralis, Solana nodes and public blockchain nodes. Holder alerts are kept like other alerts, until you delete them.
+            </P>
+            <P>
+              <b>Gully Score.</b> Looking up a score needs no account and we don’t record who looked. We keep each contract’s latest score and its history. The contract address is sent to Sourcify, Etherscan and public blockchain nodes to read its evidence. Lookups are limited per IP address in memory only.
+            </P>
+          </S>
+
+          <S n={8} title="Gully Pay and public chains">
             <P>
               Payments happen on public blockchains. A transaction, the addresses in it and the amount are public and permanent, and nobody (us included) can change or delete them. We never hold your funds.
             </P>
@@ -139,7 +183,7 @@ export function PrivacyPage() {
             </P>
           </S>
 
-          <S n={7} title="Cookies and browser storage">
+          <S n={9} title="Cookies and browser storage">
             <L>
               <li>
                 <b>One cookie of ours:</b> the app’s sign-in cookie (__Host-gl_dev), only after you sign in. It is HttpOnly, sent only to the app over HTTPS, and lasts 30 days or until you sign out.
@@ -154,14 +198,20 @@ export function PrivacyPage() {
             </L>
           </S>
 
-          <S n={8} title="Who else sees data">
+          <S n={10} title="Who else sees data">
             <P>We don’t sell personal data or share it for advertising. These services see some of it because they carry or power what you use:</P>
             <L>
               <li>
                 <b>Cloudflare</b> carries all traffic to our sites, so it sees your IP address and requests, and tells our server your country. Its Web Analytics beacon runs on our pages.
               </li>
               <li>
-                <b>Anthropic</b> and, when switched on, <b>Voyage AI</b>: Gully AI questions, as above.
+                <b>Anthropic</b> and, when switched on, <b>Voyage AI</b>: Gully AI questions, as above. Anthropic also reviews the code of Gully Security scans.
+              </li>
+              <li>
+                <b>Etherscan, Blockscout, Sourcify, GitHub and the npm registry</b>: the contract, repository or dependency list a Gully Security scan or a Gully Score reads, as above.
+              </li>
+              <li>
+                <b>DeepCore, Blockscout and Moralis</b>: token addresses for the Holder Map, as above.
               </li>
               <li>
                 <b>Telegram</b>: everything you send to or receive from the bot.
@@ -179,7 +229,7 @@ export function PrivacyPage() {
             <P>We may disclose data when the law requires it, to protect our users or services from fraud or abuse, or to a buyer if Gully Labs is sold, under this policy.</P>
           </S>
 
-          <S n={9} title="How long we keep it">
+          <S n={11} title="How long we keep it">
             <div className="overflow-x-auto rounded-card border border-line">
               <table className="w-full border-collapse text-left text-[14px]">
                 <caption className="sr-only">Retention periods</caption>
@@ -201,53 +251,54 @@ export function PrivacyPage() {
                 </tbody>
               </table>
             </div>
-            <P>Sessions last 30 days. Gully AI questions and ratings are kept 90 days. The activity log keeps 180 days. Backups are kept 7 days. Accounts, payments and stores are not deleted automatically today.</P>
+            <P>Sessions last 30 days. Gully AI questions and ratings are kept 90 days. The activity log keeps 180 days, and so does a security scan’s code. Backups are kept 7 days. Accounts, payments and stores are not deleted automatically today.</P>
           </S>
 
-          <S n={10} title="Security">
+          <S n={12} title="Security">
             <P>
-              We store hashes instead of secrets wherever we can (session ids, API keys, invite and link codes, IP addresses in the Gully AI log), use HTTPS everywhere, and back the data up every night to the same server, keeping 7 days. No system is perfectly secure; if a breach affects your data, we will tell you as the law requires.
+              We store hashes instead of secrets wherever we can (session ids, API keys, invite and link codes, IP addresses in the Gully AI log and the Holder Map counts), use HTTPS everywhere, and back the data up every night to the same server, keeping 7 days. No system is perfectly secure; if a breach affects your data, we will tell you as the law requires.
             </P>
           </S>
 
-          <S n={11} title="Your choices">
+          <S n={13} title="Your choices">
             <L>
               <li>Sign out, or revoke any session, in the app’s Settings.</li>
               <li>Revoke API keys, delete alerts, remove webhooks and switch off pay links in the app.</li>
-              <li>Unlink Telegram with /stop or in the bot’s settings.</li>
+              <li>Unlink Telegram with /stop or in the bot’s settings, and switch announcements off with 🔕 Stop announcements or in Settings.</li>
+              <li>Delete a monitor, or unpublish a scan report, in the app; ask us to delete a scan’s code before the 180 days are up.</li>
               <li>Opt out of Gully Analytics as described above, or use a browser that blocks scripts.</li>
               <li>
-                Ask us at hello@gullylabs.xyz to see, correct, export or delete what we hold about you off-chain. The app doesn’t have a self-service “delete my account” button yet, so email us and we will do it. We may keep payment records where the law requires, and we can’t delete anything that is on a public blockchain.
+                Ask us at <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a> to see, correct, export or delete what we hold about you off-chain. The app doesn’t have a self-service “delete my account” button yet, so email us and we will do it. We may keep payment records where the law requires, and we can’t delete anything that is on a public blockchain.
               </li>
             </L>
             <P>Depending on where you live, you may also have the right to object to or restrict how we use your data, and to complain to your data protection authority.</P>
             <P>Our services are not meant for anyone under 18.</P>
           </S>
 
-          <S n={12} title="Changes and contact">
+          <S n={14} title="Changes and contact">
             <P>
-              When we change this policy we update the version date at the top, and for a material change we say so on the site. Our server and our providers may process data in countries other than yours. Questions, requests or complaints: hello@gullylabs.xyz.
+              When we change this policy we update the version date at the top, and for a material change we say so on the site. Our server and our providers may process data in countries other than yours. Questions, requests or complaints: <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a>.
             </P>
           </S>
 
           <footer className="flex flex-col gap-3 border-t border-line pt-6 font-mono text-[12px] leading-[1.7] text-faint">
             <p className="m-0">
               Adapted from the{' '}
-              <a href={BASECAMP_URL} target="_blank" rel="noopener" className="text-dim underline underline-offset-4 hover:text-gold">
+              <a href={BASECAMP_URL} target="_blank" rel="noopener noreferrer" className="text-dim underline underline-offset-4 hover:text-gold">
                 Basecamp open-source policies
               </a>{' '}
               by 37signals LLC, used under{' '}
-              <a href={CC_URL} target="_blank" rel="noopener license" className="text-dim underline underline-offset-4 hover:text-gold">
+              <a href={CC_URL} target="_blank" rel="noopener noreferrer license" className="text-dim underline underline-offset-4 hover:text-gold">
                 CC BY 4.0
               </a>
-              . Changes made: rewritten for Gully Labs’ own products (wallet sign-in, workspaces, API usage, Gully Analytics, Gully AI, the Telegram bot and Gully Pay on public blockchains); retention periods replaced with the ones our code enforces; Basecamp-specific products, staff-access and law-enforcement sections shortened. 37signals does not endorse this policy. This policy is also available under CC BY 4.0.
+              . Changes made: rewritten for Gully Labs’ own products (wallet sign-in, workspaces, API usage, Gully Analytics, Gully AI, Gully Security, the Holder Map, the Telegram bot and Gully Pay on public blockchains); retention periods replaced with the ones our code enforces; Basecamp-specific products, staff-access and law-enforcement sections shortened. 37signals does not endorse this policy. This policy is also available under CC BY 4.0.
             </p>
             <p className="m-0">
               <Link to="/legal/merchant-terms" className="hover:text-gold">
                 Gully Pay merchant terms
               </Link>{' '}
               ·{' '}
-              <a href="https://docs.gullylabs.xyz/analytics" target="_blank" rel="noopener" className={ext}>
+              <a href="https://docs.gullylabs.xyz/analytics" target="_blank" rel="noopener noreferrer" className={ext}>
                 Gully Analytics docs
               </a>{' '}
               ·{' '}

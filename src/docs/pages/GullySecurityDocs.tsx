@@ -122,8 +122,8 @@ export function GullySecurityDocs() {
       slug="gully-security"
       eyebrow="PRODUCTS · GULLY SECURITY"
       title="Gully Security"
-      description="Gully Security: the AI Security Scan (inputs, steps, quotas and payment), reading a report, publishing it, and requesting a human Security Review."
-      lead="Scan contracts and code from the app, read the findings with their locations and draft proofs of concept, and ask people for a Security Review when a scan is not enough."
+      description="Gully Security: the AI Security Scan (live; an AI review only for now), reading and publishing a report, the Gully Score and monitors, and requesting a human Security Review (quoted on request). Full audits are not offered."
+      lead="Scan contracts and code from the app, read the findings with their locations and draft proofs of concept, and ask people for a Security Review when a scan is not enough. Live today: the AI Security Scan, the Gully Score and contract monitors."
       sections={sections}
     >
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-3">
@@ -134,13 +134,16 @@ export function GullySecurityDocs() {
       <Section id="tiers" title="Tiers">
         <List>
           <li>
-            <b>AI Security Scan</b>: automated and self-serve, in the app. Static analysers and an AI pass look for known vulnerability classes; the findings are de-duplicated and ranked.
+            <b>AI Security Scan</b> (live): automated and self-serve, in the app. For now it is an AI review only: our static-tools worker is not running yet, so Slither, Aderyn and fuzzing do not run, and every report says so in its label and lists those tools as not run. The AI reads the code for known vulnerability classes and ranks what it finds.
           </li>
           <li>
-            <b>Security Review</b>: people read your code, check the findings by hand and write up what they find. Quoted per project after a request.
+            <b>Security Review</b> (on request): people read your code, check the findings by hand and write up what they find. Quoted per project after a request.
           </li>
           <li>
-            <b>Audit</b>: a premium tier planned for later. It is not offered today.
+            <b>Audit</b>: planned for later. It is not offered today and cannot be requested yet.
+          </li>
+          <li>
+            <b>Gully Score and monitors</b> (live): see <Ext href={`${SITE}/score`}>the Gully Score</Ext> and the Monitors tab of the app.
           </li>
         </List>
         <Callout label="Not an audit">A scan can miss issues (business logic, economic and cross-contract attacks, off-chain risks) and can report false positives. Every report says so. Gully Labs has not audited any project.</Callout>
@@ -218,7 +221,7 @@ export function GullySecurityDocs() {
             ['POST …/scans/:id/cancel', 'developer, admin, owner', 'Cancels before payment (and the invoice) or while running.'],
             ['POST …/scans/:id/publish', 'admin, owner', '{ published, indexable? }'],
             ['GET /api/security/reports[/:id]', 'anyone', 'Published reports only.'],
-            ['POST /api/security/review-requests', 'anyone', 'A request for a Security Review or an Audit.'],
+            ['POST /api/security/review-requests', 'anyone', 'A request for a Security Review (audits are not offered yet).'],
           ]}
         />
         <CodeBlock code={SCAN_SHAPE} lang="js" />

@@ -47,6 +47,8 @@ const isOwnHost = (u: string) => {
     return false
   }
 }
+/** Our own sites: only these URLs in an answer become links (anything else stays plain text). */
+const GULLY_URL = /^https:\/\/([\w-]+\.)?gullylabs\.xyz(\/|$)/
 /** Another host's link opens in a new tab; this host's open in place. */
 const linkProps = (u: string) => (isOwnHost(u) ? {} : { target: '_blank', rel: 'noopener noreferrer' })
 
@@ -101,9 +103,10 @@ function inline(text: string, cites: Citation[], key: string, live: LiveCite[] =
       )
     } else if (m[3]) {
       out.push(
-        isOwnHost(m[3]) ? (
-          <a key={k} href={m[3]} className="break-all text-gold underline decoration-gold-line underline-offset-2">
+        GULLY_URL.test(m[3]) ? (
+          <a key={k} href={m[3]} {...linkProps(m[3])} className="break-all text-gold underline decoration-gold-line underline-offset-2">
             {m[3].replace(/^https:\/\//, '')}
+            {!isOwnHost(m[3]) && <span className="sr-only"> (opens in a new tab)</span>}
           </a>
         ) : (
           m[3]
@@ -390,7 +393,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
         </div>
         <div id={`${ids}-hint`} className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-faint">
           <span className="inline-flex items-center gap-1">
-            <Sparkles size={12} aria-hidden className="text-gold" /> Answers from the Gully Labs docs, site and live data, with sources. Information only, not advice. Questions are kept 90 days (<a href={isLocalHost() ? '/legal/privacy#s4' : `${SITE_URL}/legal/privacy#s4`} className="underline underline-offset-2 hover:text-gold">privacy</a>).
+            <Sparkles size={12} aria-hidden className="text-gold" /> Answers from the Gully Labs docs, site and live data, with sources. Information only, not advice. Questions are kept 90 days (<a href={isLocalHost() ? '/legal/privacy#s4' : `${SITE_URL}/legal/privacy#s4`} {...linkProps(isLocalHost() ? '/legal/privacy' : `${SITE_URL}/legal/privacy`)} className="underline underline-offset-2 hover:text-gold">privacy</a>).
           </span>
           <span className={tooLong ? 'text-error' : undefined}>
             {q.length}/{MAX}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Search } from 'lucide-react'
+import { CircleDashed, Radar, Search } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { EChart } from '../components/charts/EChart'
 import { axisTooltip, barsPreset, itemTooltip, tipHtml } from '../components/charts/chartPresets'
@@ -8,7 +8,7 @@ import { ChartSkeleton } from '../components/charts/ChartSkeleton'
 import { ScoreRing } from '../components/holders/parts'
 import { K } from '../components/holders/theme'
 import { eyebrow } from '../components/ui'
-import { getJson, type CheckedLaunch, type CheckedLaunches, type ResolveMatch, type TopScanned } from '../lib/holders'
+import { getJson, type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveMatch, type TopScanned } from '../lib/holders'
 import { ageText } from '../lib/tracker'
 
 /* /holders: the Holder Map's front door. A search for any DeepCore launch or tracked stock token
@@ -67,11 +67,12 @@ export function HoldersLanding() {
   const now = useNow()
   const feed = usePoll<CheckedLaunches>('/api/holders/launches', 30_000)
   const top = usePoll<TopScanned>('/api/holders/top?limit=10', 60_000)
+  const sources = usePoll<HolderSources>('/api/holders/sources', 0)
   return (
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
       <Seo
         title="Holder Map: who really holds a token"
-        description="Search any DeepCore launch or tokenised stock and see who holds it: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part."
+        description="See who holds any DeepCore launch: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part. Tokenised stocks follow chain by chain."
       />
       <section className="flex flex-col gap-4">
         <span className={eyebrow}>HOLDER MAP · GULLY LABS</span>
@@ -80,6 +81,7 @@ export function HoldersLanding() {
           Paste a token address or a ticker. See the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every new DeepCore launch: bundled buys, snipers, the deployer’s share and record.
         </p>
         <SearchBox />
+        <Sources s={sources} />
       </section>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] items-start gap-5">
@@ -125,6 +127,26 @@ export function HoldersLanding() {
         ))}
       </section>
     </div>
+  )
+}
+
+/** Where maps work today, read from GET /api/holders/sources (no figures typed in). */
+function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
+  if (s.k !== 'ok') return null
+  const launches = s.data.chains.filter((c) => c.launches).map((c) => c.name)
+  const stockChains = s.data.chains.filter((c) => ['robinhood', 'bsc', 'solana'].includes(c.chain))
+  return (
+    <ul className="m-0 flex max-w-[760px] list-none flex-wrap gap-2 p-0 font-mono text-[12px]" aria-label="Where Holder Maps work today" data-holder-sources>
+      <li className="inline-flex min-h-9 items-center gap-2 rounded-full border border-gold/40 px-3 text-ink">
+        <Radar aria-hidden size={14} className="text-gold" /> DeepCore launches · live on {launches.join(', ')}
+      </li>
+      {stockChains.map((c) => (
+        <li key={c.chain} className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 ${c.stocks ? 'border-gold/40 text-ink' : 'border-line text-muted'}`}>
+          {c.stocks ? <Radar aria-hidden size={14} className="text-gold" /> : <CircleDashed aria-hidden size={14} className="animate-[spin_6s_linear_infinite] text-faint motion-reduce:animate-none" />}
+          Stocks on {c.name} · {c.stocks ? 'live' : 'coming soon'}
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -176,7 +198,10 @@ function SearchBox() {
                 <Link to={m.path} className="flex min-h-11 items-center gap-3 rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
                   <span className="font-semibold text-ink">{m.symbol ?? `${m.token.slice(0, 6)}…${m.token.slice(-4)}`}</span>
                   <span className="font-mono text-[12px] text-faint">{m.chainName}</span>
-                  <span className="ml-auto font-mono text-[11px] text-dim">{m.kind === 'deepcore-launch' ? 'DeepCore launch' : 'Stock token'}</span>
+                  <span className="ml-auto font-mono text-[11px] text-dim">
+                    {m.kind === 'deepcore-launch' ? 'DeepCore launch' : 'Stock token'}
+                    {m.available === false ? ' · coming soon' : ''}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -291,7 +316,7 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
           </span>
         </div>
       )}
-      {!list.length && <p className="m-0 text-[14px] text-kit-text-muted">No launches yet. New DeepCore launches appear here within 30 seconds.</p>}
+      {!list.length && <p className="m-0 text-[14px] text-kit-text-muted">No launches yet.</p>}
       <ul className="m-0 flex list-none flex-col gap-2 p-0" data-launch-feed>
         {list.slice(0, 12).map((l, i) => (
           <FeedRow key={`${l.chainKey}:${l.token}`} l={l} i={i} now={now} />

@@ -7,7 +7,7 @@ import { Seo } from '../../components/Seo'
 import { eyebrow, h1 } from '../../components/ui'
 import { APP_URL, DOCS_URL } from '../../site-host'
 import { bandColor, fmtDate, shortAddr, useJson, type ScoreIndex as Index } from './api'
-import { BandBars } from './charts'
+import { BandBars, WeightsRing } from './charts'
 
 /* /score: every listed Gully Score (a contract a workspace watches and lets be listed, or one with a published
    Gully Security report), a lookup for any other contract, and the methodology in short. All read from
@@ -137,8 +137,13 @@ export function ScoreIndex() {
           <h2 id="how" className={cardTitle}>
             <Scale aria-hidden size={20} className="text-gold" /> What goes in
           </h2>
+          {s.state === 'loading' && <div role="status" aria-label="Reading the methodology" className="h-[200px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-input bg-surface-deep" />}
+          {s.state === 'error' && <p className="m-0 text-[14px] text-muted">The methodology could not be read just now. It is also in the docs below.</p>}
           {data && (
             <>
+              <div className="flex justify-center">
+                <WeightsRing parts={data.methodology.components} />
+              </div>
               <ul className="m-0 flex list-none flex-col gap-3 p-0">
                 {data.methodology.components.map((c) => {
                   const Icon = ICONS[c.id] ?? Scale
@@ -168,7 +173,7 @@ export function ScoreIndex() {
             <a href={`${DOCS_URL}/gully-score`} {...newTab} className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
               Full methodology <NewTabMark size={12} className="flex-none text-gold" />
             </a>
-            <a href={APP_URL} {...newTab} className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
+            <a href={`${APP_URL}/#security-monitors`} {...newTab} className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
               Watch a contract <NewTabMark size={12} className="flex-none text-gold" />
             </a>
           </div>

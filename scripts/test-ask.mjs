@@ -190,7 +190,7 @@ try {
   /* ----------------------------------------------------- new sources --- */
   const has = (pred) => local.chunks.some(pred)
   check('sources: the privacy policy, by numbered section (#s4 is Gully AI)', has((c) => c.source === 'Legal' && c.url === 'https://gullylabs.xyz/legal/privacy#s4' && c.section === 'Gully AI' && /90 days/.test(c.text)))
-  check('sources: the privacy retention table is indexed as prose', has((c) => c.url === 'https://gullylabs.xyz/legal/privacy#s9' && /Sign-in sessions: 30 days/.test(c.text)))
+  check('sources: the privacy retention table is indexed as prose', has((c) => c.url === 'https://gullylabs.xyz/legal/privacy#s11' && /Sign-in sessions: 30 days/.test(c.text)))
   check('sources: the merchant terms, by numbered section', has((c) => c.source === 'Legal' && /\/legal\/merchant-terms#s5$/.test(c.url) && c.section))
   check('sources: contracts/CHOICE.md and TESTNET-RESULTS.md at their GitHub section anchors', has((c) => c.source === 'Gully Pay contracts' && /contracts\/CHOICE\.md#[a-z0-9-]+$/.test(c.url)) && has((c) => /contracts\/TESTNET-RESULTS\.md#/.test(c.url)))
   check('sources: no 32-byte hex (keys, hashes) and no full addresses in the contract notes and roadmap', local.chunks.filter((c) => c.source === 'Gully Pay contracts' || c.source === 'Roadmap').every((c) => !/0x[0-9a-fA-F]{64}/.test(c.text) && !/0x[0-9a-fA-F]{40}/.test(c.text) && !/private[ _-]?key\s*[=:]/i.test(c.text)))
@@ -293,6 +293,16 @@ try {
   check('get_ledger: totals and venues, only known fields', lg.totals.tvlUsd === 1234 && lg.venues[0].key === 'deepcore' && !('secret' in lg.venues[0]))
   const ac = await ask.runTool('get_alert_channels', {})
   check('get_alert_channels: webhook on, Telegram off here', ac.webhook === true && ac.telegram === false)
+
+  /* ------------------------------------------------------ Gully Security --- */
+  const secOffer = await ask.runTool('get_security_offer', {})
+  check('get_security_offer: scan, score and monitors live; review quoted on request; audit not offered', secOffer.live?.length === 3 && secOffer.scan.status === 'live' && secOffer.review.status === 'quoted on request' && secOffer.audit.status === 'not offered yet' && typeof secOffer.scan.priceUsd === 'number', JSON.stringify(secOffer).slice(0, 300))
+  check('get_security_offer: without the static-tools worker a scan is an AI review only, and Slither/Aderyn are said not to run', secOffer.scan.staticToolsRunning === false && /AI review only/.test(secOffer.scan.mode) && /do NOT run/.test(secOffer.scan.mode), secOffer.scan.mode)
+  check('get_security_offer: monitors per plan come from plans.mjs', Object.keys(secOffer.monitors.contractsPerPlan).length >= 2)
+  const pr = await ask.runTool('get_published_reports', {})
+  check('get_published_reports: an empty list says nothing is published yet', pr.total === 0 && pr.reports.length === 0 && /No scan report has been published yet/.test(pr.note))
+  const gsBad = await ask.runTool('get_gully_score', { chain: 'mars', address: '0x' + '1'.repeat(40) })
+  check('get_gully_score: an unknown chain is an error, never a score', !!gsBad.error && gsBad.score === undefined)
 
   /* ------------------------------------------------------------ DeepCore --- */
   const dl = await ask.runTool('deepcore_launches', {})
@@ -491,6 +501,15 @@ try {
   const d2 = await ask.retrieve('another question entirely')
   check('embeddings down: falls back to BM25 cleanly, then leaves the API alone for a minute', d1.mode === 'bm25' && d2.mode === 'bm25' && embedCalls.length === callsAfterFail && embed.embedStatus().lastError?.includes('500'), JSON.stringify(embed.embedStatus()))
   embedDown = false
+  // The key "appears" on a running server: a question (or the 10-minute check) starts the sync by itself,
+  // at most once a minute, and hybrid comes on once the vectors are there. No index rebuild.
+  embed.resetEmbeddingsForTest()
+  ask.resetEnsureEmbeddingsForTest()
+  check('embeddings switch on by themselves: a missing set of vectors starts one background sync', ask.ensureEmbeddings() === true && ask.ensureEmbeddings() === false)
+  await ask.syncEmbeddingsNow()
+  await ask.syncEmbeddingsNow()
+  const hy = await ask.retrieve('Gully Pay chains')
+  check('embeddings switch on by themselves: hybrid once the sync is done', hy.mode === 'hybrid' && ask.askStatus().retrieval === 'hybrid', JSON.stringify({ mode: hy.mode, st: embed.embedStatus(), r: ask.askStatus().retrieval }))
   delete process.env.VOYAGE_API_KEY
   embed.resetEmbeddingsForTest()
 

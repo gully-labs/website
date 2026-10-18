@@ -2,7 +2,8 @@ import { CheckCircle2, Send, ShieldCheck, Users } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import type { ScanChain } from './types'
 
-/* "Request a review": asks Gully Labs for a quote for a human Security Review (or, later, an Audit). Posts to
+/* "Request a review": asks Gully Labs for a quote for a human Security Review. A full Audit is not offered
+   yet, so it is not offered as a choice here until server/plans.mjs SECURITY.audit.available is true. Posts to
    POST /api/security/review-requests; the request is stored, lands in the admin inbox and pings the
    operators' Telegram chat when one is set. Nothing is booked or paid here: we reply with a quote. Used on
    /security and in the app's Security tab (`source="app"`). */
@@ -57,11 +58,20 @@ export function ReviewRequestForm({ source = 'site', chains, auditAvailable = fa
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4" aria-label="Request a security review" data-testid="review-form">
-      <div role="radiogroup" aria-label="What you are asking for" className="flex flex-wrap gap-2">
+      {!auditAvailable && (
+        <p className="m-0 flex items-start gap-3 rounded-[12px] border border-gold bg-gold/[.07] px-3 py-[10px]">
+          <Users size={16} aria-hidden className="mt-[2px] flex-none text-gold" />
+          <span className="flex flex-col">
+            <span className="text-[14px] font-semibold text-ink">Security Review, quoted on request</span>
+            <span className="text-[12px] text-muted">People read your code and report. A full Audit is not offered yet.</span>
+          </span>
+        </p>
+      )}
+      <div role="radiogroup" aria-label="What you are asking for" className="flex flex-wrap gap-2" hidden={!auditAvailable}>
         {(
           [
             ['review', 'Security Review', 'People read your code and report; quoted per project', <Users key="u" size={16} aria-hidden />],
-            ['audit', 'Audit', auditAvailable ? 'The premium tier' : 'Not offered yet: ask and we will tell you when', <ShieldCheck key="s" size={16} aria-hidden />],
+            ['audit', 'Audit', 'The premium tier, quoted per project', <ShieldCheck key="s" size={16} aria-hidden />],
           ] as const
         ).map(([id, name, text, icon]) => (
           <button key={id} type="button" role="radio" aria-checked={tier === id} onClick={() => setTier(id)} className={`flex min-h-11 flex-[1_1_220px] items-start gap-3 rounded-[12px] border px-3 py-[10px] text-left transition-colors ${tier === id ? 'border-gold bg-gold/[.07]' : 'border-line-strong hover:border-line-hover'}`}>

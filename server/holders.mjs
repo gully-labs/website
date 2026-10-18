@@ -90,12 +90,44 @@ export const chainKeyOf = (x) => {
 }
 export const addressUrl = (chainKey, a) => (chainKey === 'solana' ? `https://solscan.io/account/${a}` : `${HOLDER_CHAINS[chainKey].explorer}/address/${a}`)
 
-/** Why a chain has no holder data without a key, and the env var that fixes it. */
-export function missingKeyReason(chainKey) {
-  const c = HOLDER_CHAINS[chainKey]
-  if (c.holders === 'blockscout') return { env: 'BLOCKSCOUT_API_KEY', reason: `Holder data is not available on ${c.name} yet: the site needs a Blockscout API key (BLOCKSCOUT_API_KEY).` }
-  if (c.holders === 'moralis') return { env: 'MORALIS_API_KEY', reason: `Holder data is not available on ${c.name} yet: the site needs a Moralis API key (MORALIS_API_KEY).` }
-  return null
+/** The env var each holder source needs, for operators only (admin health). Never sent to the public. */
+const SOURCE_ENV = { blockscout: 'BLOCKSCOUT_API_KEY', moralis: 'MORALIS_API_KEY', 'solana-rpc': 'GULLY_RPC_SOLANA' }
+const solanaRpcSet = () => String(process.env.GULLY_RPC_SOLANA ?? '').trim() !== ''
+
+/** The words users see when a chain's holder source is not set up yet: no env names, no jargon. */
+export const comingSoonReason = (chainKey) => `Holder data for ${HOLDER_CHAINS[chainKey]?.name ?? chainKey} is coming soon. DeepCore launches already have live maps.`
+
+/**
+ * Whether the Holder Map can draw tokens of `kind` on a chain right now.
+ *   kind 'stock' (default): the chain's holder source is configured (Blockscout key, Moralis key or a
+ *     private Solana RPC). Without it every stock token on that chain is "coming soon".
+ *   kind 'deepcore-launch': DeepCore runs on the chain (its own log index; no key needed).
+ * Used to keep "coming soon" pages out of the sitemap (seo.mjs) and to hide the bot's "👥 Holders" button.
+ */
+export function holdersAvailable(chain, kind = 'stock') {
+  const ck = chainKeyOf(chain)
+  if (!ck) return false
+  const c = HOLDER_CHAINS[ck]
+  if (kind === 'deepcore-launch') return ck !== 'solana' && !!DEEPCORE_CHAINS[c.id]
+  if (c.holders === 'blockscout') return blockscoutKey() !== ''
+  if (c.holders === 'moralis') return moralisKey() !== ''
+  if (c.holders === 'solana-rpc') return solanaRpcSet()
+  return false
+}
+
+/**
+ * For the Telegram bot: show the "👥 Holders" button for (chain, token)? A tracked stock ticker or token
+ * follows its chain's stock source; anything else is a DeepCore launch.
+ */
+export function holdersButtonVisible(chain, token) {
+  const ck = chainKeyOf(chain)
+  if (!ck) return false
+  return findStock(ck, token) ? holdersAvailable(ck, 'stock') : holdersAvailable(ck, 'deepcore-launch')
+}
+
+/** Per-chain source health for operators (admin): which source each chain uses, whether it is set, and its env var. */
+export function holdersSourceHealth() {
+  return Object.entries(HOLDER_CHAINS).map(([key, c]) => ({ chain: key, name: c.name, source: c.holders, env: SOURCE_ENV[c.holders] ?? null, stocks: holdersAvailable(key, 'stock'), launches: holdersAvailable(key, 'deepcore-launch') }))
 }
 
 /* ------------------------------------------------------------------ helpers --- */
@@ -853,8 +885,8 @@ export function findStock(chainKey, tokenOrTicker) {
   return t.find((s) => s.ticker.toUpperCase() === q.toUpperCase() || String(s.symbol ?? '').toUpperCase() === q.toUpperCase() || (chainKey === 'solana' ? s.token === q : lower(s.token) === lower(q))) ?? null
 }
 
-/** A response for a token the map cannot draw: the reason, and the env var that would fix it. */
-const unavailable = (chainKey, token, kind, reason, extra = {}) => ({ state: 'unavailable', kind, chain: { key: chainKey, id: HOLDER_CHAINS[chainKey].id, name: HOLDER_CHAINS[chainKey].name }, token: { address: token, ...(extra.token ?? {}) }, reason, needs: extra.needs ?? null, asOf: new Date().toISOString() })
+/** A response for a token the map cannot draw, in plain words. `comingSoon` = the chain's source is not set up yet. */
+const unavailable = (chainKey, token, kind, reason, extra = {}) => ({ state: 'unavailable', kind, chain: { key: chainKey, id: HOLDER_CHAINS[chainKey].id, name: HOLDER_CHAINS[chainKey].name }, token: { address: token, ...(extra.token ?? {}) }, reason, comingSoon: !!extra.comingSoon, asOf: new Date().toISOString() })
 
 let trackerRowFn = async (chainKey, ticker) => (await readTracker())?.rows?.find((r) => r.chain === chainKey && r.ticker === ticker) ?? null
 let fairHistoryFn = (chainKey, ticker) => readHistory(chainKey, ticker)
@@ -907,12 +939,11 @@ export async function computeHolderMap(chainKey, tokenIn, tier = 'pro') {
     if (c.holders === 'blockscout') h = await readBlockscoutHolders(chainKey, token, want)
     else if (c.holders === 'moralis') h = await readMoralisHolders(chainKey, token, want)
     else h = await readSolanaHolders(token)
-    if (h.error === 'no-key') {
-      const need = missingKeyReason(chainKey)
-      return unavailable(chainKey, token, kind, need.reason, { needs: need.env, token: { symbol } })
+    if (h.error === 'no-key' || (h.error === 'solana-rpc' && !solanaRpcSet())) return unavailable(chainKey, token, kind, comingSoonReason(chainKey), { comingSoon: true, token: { symbol } })
+    if (h.error) {
+      console.warn(`holders: ${chainKey} ${token}: ${String(h.detail ?? h.error).slice(0, 120)}`)
+      return unavailable(chainKey, token, kind, `Holder data could not be read on ${c.name} just now. It is tried again in a few minutes.`, { token: { symbol } })
     }
-    if (h.error === 'solana-rpc') return unavailable(chainKey, token, kind, 'Holder data is not available on Solana yet: Solana’s public servers refuse this lookup, and a private Solana RPC (GULLY_RPC_SOLANA) fixes it.', { needs: 'GULLY_RPC_SOLANA', token: { symbol } })
-    if (h.error) return unavailable(chainKey, token, kind, `Holder data could not be read on ${c.name} just now (${h.error}).`, { token: { symbol } })
     holders = h.holders
     holderCount = h.count ?? null
     supply = h.supply ?? null
@@ -946,7 +977,7 @@ export async function computeHolderMap(chainKey, tokenIn, tier = 'pro') {
       const r = await getJson(`${BLOCKSCOUT_API()}/${c.id}/api/v2/addresses/${launch.creator}/transactions?filter=from&apikey=${encodeURIComponent(blockscoutKey())}`)
       const items = Array.isArray(r.body?.items) ? r.body.items : null
       funding = items ? { checked: true, recipients: items.filter((t) => isAddr(t?.to?.hash) && /^[1-9]\d*$/.test(String(t.value ?? ''))).map((t) => lower(t.to.hash)), reason: null } : { checked: false, recipients: [], reason: 'Coin transfers from the deployer could not be read just now.' }
-    } else funding = { checked: false, recipients: [], reason: c.holders === 'blockscout' ? 'Coin transfers from the deployer are not checked yet (needs BLOCKSCOUT_API_KEY).' : `Coin transfers from the deployer are not checked on ${c.name} yet.` }
+    } else funding = { checked: false, recipients: [], reason: `Coin transfers from the deployer are not checked on ${c.name} yet.` }
   }
 
   // Block times for the replay frames and the buy prices, when the logs do not carry them.
@@ -1080,12 +1111,15 @@ export function holdersCsv(map) {
 export async function handleHolders(req, res, url, access = null) {
   const p = url.pathname
   const features0 = holderMapFeatures(access?.plan ?? 'anonymous')
-  if (p === '/api/holders/launches' || p === '/api/holders/top' || p === '/api/holders/resolve') {
+  if (p === '/api/holders/launches' || p === '/api/holders/top' || p === '/api/holders/resolve' || p === '/api/holders/sources') {
     if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }), true
     if (p === '/api/holders/launches') return json(res, 200, await readLaunchFeed({ limit: 12 }), { 'Cache-Control': 'public, max-age=15' }), true
     if (p === '/api/holders/top') return json(res, 200, topScans(Math.min(20, Math.max(1, Number(url.searchParams.get('limit')) || 10))), { 'Cache-Control': 'public, max-age=60' }), true
+    // Which chains have maps today, in plain words (no env names): the landing page's "where maps work".
+    if (p === '/api/holders/sources') return json(res, 200, { chains: holdersSourceHealth().map(({ chain, name, stocks, launches }) => ({ chain, name, stocks, launches })) }, { 'Cache-Control': 'public, max-age=60' }), true
     const q = String(url.searchParams.get('q') ?? '').slice(0, 64)
-    return json(res, 200, await resolveHolders(q), { 'Cache-Control': 'public, max-age=60' }), true
+    const r = await resolveHolders(q)
+    return json(res, 200, { matches: r.matches.map((m) => ({ ...m, available: holdersAvailable(m.chain, m.kind) })) }, { 'Cache-Control': 'public, max-age=60' }), true
   }
   const sub = p.match(/^\/api\/holders\/([a-z0-9]{2,12})\/([A-Za-z0-9]{1,64})\/(live|wallet\/([A-Za-z0-9]{32,44}))$/)
   if (sub) {
@@ -1115,16 +1149,20 @@ export async function handleHolders(req, res, url, access = null) {
   const tier = kind === 'card' ? 'free' : features.tier
   const body = await readHolderMap(chainKey, token, { ip: clientIp(req), tier })
   if (kind === 'card') {
-    if (body.state !== 'ok') return json(res, STATUS[body.state] ?? 502, { error: body.reason ?? 'No map' }), true
-    const { renderHolderCard } = await import('./holders-card.mjs')
+    // Always an image: the map's card, or a branded "coming soon / not ready" card. Never JSON.
+    const card = await import('./holders-card.mjs')
+    const ok = body.state === 'ok'
+    let png = null
     try {
-      const png = await renderHolderCard(body)
-      res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': String(png.length), 'Cache-Control': 'public, max-age=300' })
-      res.end(req.method === 'HEAD' ? undefined : png)
+      png = ok ? await card.renderHolderCard(body) : await card.renderHolderStatusCard(body)
     } catch (e) {
       console.error('holders card:', e?.message ?? e)
-      json(res, 502, { error: 'The share card could not be drawn just now.' })
+      png = card.fallbackCardPng()
     }
+    if (!png) return json(res, 503, { error: 'The share card could not be drawn just now.' }), true
+    const status = body.state === 'not-found' ? 404 : 200
+    res.writeHead(status, { 'Content-Type': 'image/png', 'Content-Length': String(png.length), 'Cache-Control': ok || body.comingSoon ? 'public, max-age=300' : 'public, max-age=60' })
+    res.end(req.method === 'HEAD' ? undefined : png)
     return true
   }
   if (kind === 'csv') {
