@@ -50,6 +50,7 @@ import { adminCancelInvoice, adminCreateInvoice, adminInvoiceDeliveries, adminLi
 import { adminCreateLink, adminLinkDetail, adminListLinks, adminRotateLinkSecret, adminSetLinkActive, adminTestLinkWebhook, adminUpdateLink } from './paylinks.mjs'
 import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, setDefaultEndpoint, webhookStats } from './pay-webhooks.mjs'
 import { publicAssets } from './payments.mjs'
+import { handleMerchantsAdmin } from './merchants.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
@@ -127,6 +128,7 @@ export async function handleAdmin(req, res, url) {
   if (!authorised(req, res)) return true
   // Gully Ask content studio and ask log (ask.mjs): POST /api/admin/ask/draft, GET /api/admin/ask/log.
   if (p.startsWith('/api/admin/ask/')) return handleAskAdmin(req, res, url)
+  if (p === '/api/admin/merchants' || p.startsWith('/api/admin/merchants/')) return handleMerchantsAdmin(req, res, url)
   if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
   const db = developers()
 

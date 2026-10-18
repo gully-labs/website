@@ -95,11 +95,16 @@ export const endpointView = (w) => (w ? { url: w.url, createdAt: w.createdAt ?? 
 
 /* -------------------------------------------------------------- targets --- */
 
+/** Endpoint kinds owned by other modules (merchants.mjs: 'merchant' -> the workspace's endpoint), by target id. */
+const targetResolvers = new Map()
+export const registerWebhookTarget = (name, endpointOfId) => targetResolvers.set(name, endpointOfId)
+
 const findLink = (id) => (id ? (ledger().links.find((l) => l.id === id) ?? null) : null)
 const findInvoice = (id) => ledger().invoices.find((i) => i.id === id) ?? null
 
 /** The endpoint record a delivery goes to, read at send time so a rotated secret signs retries. */
 function endpointOf(d) {
+  if (targetResolvers.has(d.target)) return targetResolvers.get(d.target)(d.targetId)
   if (d.target === 'default') return db.default
   if (d.target === 'link') return findLink(d.targetId)?.webhook ?? null
   if (d.target === 'invoice') return findInvoice(d.targetId)?.webhook ?? null
@@ -168,8 +173,7 @@ function cancelledEvent(inv) {
   return { id: `evt_${randomToken(12)}`, type: 'invoice.cancelled', createdAt: new Date().toISOString(), data: { invoice: invoiceBrief(inv), link: linkBrief(inv.linkId) } }
 }
 
-function enqueue(event, inv) {
-  const targets = targetsFor(inv)
+export function enqueue(event, inv, targets = targetsFor(inv)) {
   const body = JSON.stringify(event)
   const now = Date.now()
   for (const t of targets) {
@@ -287,7 +291,7 @@ export const deliveriesForTest = () => db.deliveries
  * { target: 'link'|'invoice'|'default', targetId, linkId?, invoiceId? }.
  */
 export async function sendTest(t) {
-  const ep = t.target === 'default' ? db.default : t.target === 'link' ? findLink(t.targetId)?.webhook : findInvoice(t.targetId)?.webhook
+  const ep = targetResolvers.has(t.target) ? targetResolvers.get(t.target)(t.targetId) : t.target === 'default' ? db.default : t.target === 'link' ? findLink(t.targetId)?.webhook : findInvoice(t.targetId)?.webhook
   if (!ep) return { ok: false, status: 409, error: 'No webhook endpoint is set here.' }
   const event = { id: `evt_${randomToken(12)}`, type: 'webhook.test', createdAt: new Date().toISOString(), data: { target: { type: t.target, id: t.targetId ?? null }, message: 'A test event from Gully Pay. If you can read this and the signature checks out, the endpoint is ready.' } }
   const d = { id: `whd_${randomToken(9)}`, eventId: event.id, type: event.type, test: true, target: t.target, targetId: t.targetId ?? null, url: ep.url, invoiceId: t.invoiceId ?? null, linkId: t.linkId ?? null, body: JSON.stringify(event), state: 'pending', attempts: [], nextAt: null, createdAt: event.createdAt, finishedAt: null }
@@ -342,9 +346,9 @@ export function deliveryView(d) {
 }
 
 /** Deliveries matching a filter, newest first. */
-export function deliveries({ linkId, invoiceId, target, limit = 50 } = {}) {
+export function deliveries({ linkId, invoiceId, target, targetId, limit = 50 } = {}) {
   return db.deliveries
-    .filter((d) => (linkId === undefined || d.linkId === linkId) && (invoiceId === undefined || d.invoiceId === invoiceId) && (target === undefined || d.target === target))
+    .filter((d) => (linkId === undefined || d.linkId === linkId) && (invoiceId === undefined || d.invoiceId === invoiceId) && (target === undefined || d.target === target) && (targetId === undefined || d.targetId === targetId))
     .slice(-limit)
     .reverse()
     .map(deliveryView)

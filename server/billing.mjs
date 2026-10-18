@@ -97,8 +97,10 @@ function pruneQuotes() {
 }
 
 const usedKey = (chainId, hash) => `${chainId}:${hash}`
+/** Other ledgers that spend transaction hashes (merchants.mjs registers its own): one tx pays for one thing, anywhere. */
+export const externalHashUsed = []
 /** Whether chainId:hash already paid for anything. */
-export const hashUsed = (chainId, hash) => db.payments.some((p) => usedKey(p.chainId, p.txHash) === usedKey(chainId, hash))
+export const hashUsed = (chainId, hash) => db.payments.some((p) => usedKey(p.chainId, p.txHash) === usedKey(chainId, hash)) || externalHashUsed.some((f) => f(chainId, hash))
 
 /* --------------------------------------------------------------- views --- */
 
@@ -233,9 +235,9 @@ const verifying = new Set()
  * When everything holds, `run({ match, read, asset })` records the payment and its answer is returned;
  * otherwise resolves to { ok: false, status, error, pending?, confirmations?, needed? }.
  */
-async function checkTx({ quote, asset, txHash, signer, minRaw, label, run }) {
-  if (!treasury()) return noTreasury
-  const t = treasuryFor(asset)
+export async function checkTx({ quote, asset, txHash, signer, minRaw, label, run, recipient = null }) {
+  if (!recipient && !treasury()) return noTreasury
+  const t = recipient ?? treasuryFor(asset) // a merchant quote (merchants.mjs) names its own recipient
   if (!t) return noSolanaTreasury
   if (isSolanaAsset(asset) !== isSolanaSignature(txHash)) return isSolanaAsset(asset) ? { ok: false, status: 400, error: 'This quote is on Solana: give the transaction signature (base58, 87 or 88 characters), not a 0x hash.' } : badHash
   if (quote && quote.treasury !== t) return { ok: false, status: 409, error: 'This quote was made for an earlier treasury address. Start a new one.' }

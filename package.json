@@ -23,6 +23,7 @@
     "test:feeproxy": "node scripts/test-fee-proxy.mjs",
     "test:ask": "node scripts/test-ask.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",
+    "test:merchants": "node scripts/test-merchants.mjs",
     "test:solana": "node scripts/test-solana.mjs",
     "test:app-host": "node scripts/test-app-host.mjs",
     "ask:index": "node scripts/build-ask-index.mjs",
