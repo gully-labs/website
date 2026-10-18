@@ -139,7 +139,7 @@ export function MerchantTermsPage() {
               <FeeCurve />
             </figure>
             <P>
-              <b>5.2 Statements.</b> Every Monday at 00:00 UTC we issue a statement for fees accrued and not yet billed, once they reach {cfg ? money(cfg.minStatementUsd) : 'the minimum shown in your portal'}; smaller amounts roll into the next week. A statement is a Gully Labs invoice, payable in crypto through the Gully Pay checkout, and is due within {days} days of issue.
+              <b>5.2 Statements.</b> Every Monday at 00:00 UTC we issue a statement for fees accrued and not yet billed, once they reach {cfg ? money(cfg.minStatementUsd) : 'the minimum shown in your portal'}; smaller amounts roll into the next week. A statement is a Gully Labs invoice, payable in crypto through the Gully Pay checkout, and is due within {days} days of issue. When a customer pays in a stablecoin from a connected wallet, the fee on that payment may instead be deducted at payment time, in the same transaction, through Request Network’s open-source fee contract (ERC20FeeProxy), which sends it straight to Gully Labs; a statement then bills only the fees not collected that way.
             </P>
             <P>
               <b>5.3 Disputes.</b> If you disagree in good faith with a statement, tell us at hello@gullylabs.xyz before it is due and pay any undisputed part on time. We will work with you to resolve it within 15 days.

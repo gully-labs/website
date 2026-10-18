@@ -20,7 +20,7 @@ export function FeesSection({ view }: { view: MerchantView }) {
       title="Fees and statements"
       sub={
         <>
-          A {f.ratePct}% transaction fee, nothing monthly. Your first {usd(f.freeUsd)} of lifetime volume is free. Statements every Monday (00:00 UTC) once you owe {usd(f.minStatementUsd)} or more; unpaid {f.pauseAfterDays} days after issue, checkout pauses until paid.{' '}
+          A {f.ratePct}% transaction fee, nothing monthly. Your first {usd(f.freeUsd)} of lifetime volume is free. When a customer pays a stablecoin from a connected wallet, the fee is taken in the same transaction through Request Network’s open-source fee contract; everything else goes on a statement every Monday (00:00 UTC) once you owe {usd(f.minStatementUsd)} or more; unpaid {f.pauseAfterDays} days after issue, checkout pauses until paid.{' '}
           <a href={`${payOrigin()}${view.terms.path}#s5`} target="_blank" rel="noopener" className="text-gold underline underline-offset-4 hover:text-gold-hover">
             Fee terms
           </a>
@@ -48,6 +48,31 @@ export function FeesSection({ view }: { view: MerchantView }) {
             <AnimatedNumber value={f.paidUsd} format={NF.usd} />
           </span>
           <span className={mono}>{usd(f.accruedUsd)} accrued in all</span>
+        </div>
+        <div className="col-span-2 flex flex-col gap-2 rounded-[12px] border border-line bg-bg px-4 py-3 lg:col-span-4">
+          <span className={label}>How your fees were taken</span>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-3">
+            <div className="flex min-w-0 flex-col gap-[2px]">
+              <span className="font-display text-[20px] leading-none font-extrabold text-ink">
+                <AnimatedNumber value={f.collectedUsd} format={NF.usd} />
+              </span>
+              <span className={mono}>
+                collected on chain at payment time · {f.collectedPayments} payment{f.collectedPayments === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div className="flex min-w-0 flex-col gap-[2px]">
+              <span className="font-display text-[20px] leading-none font-extrabold text-ink">
+                <AnimatedNumber value={f.billedUsd} format={NF.usd} />
+              </span>
+              <span className={mono}>billed on statements</span>
+            </div>
+            <div className="flex min-w-0 flex-col gap-[2px]">
+              <span className="font-display text-[20px] leading-none font-extrabold text-ink">
+                <AnimatedNumber value={f.unbilledUsd} format={NF.usd} />
+              </span>
+              <span className={mono}>not billed yet</span>
+            </div>
+          </div>
         </div>
         <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-bg px-4 py-3">
           <span className={label}>Free allowance left</span>

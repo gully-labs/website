@@ -141,20 +141,23 @@ cd contracts && forge test        # 27 passed, 0 failed (Base 6, Ethereum 9, BNB
 | Checkout copy | `src/pages/pay/Checkout.tsx` | states the merchant and fee amounts, and that the wallet asks for an approval first |
 | Verification | `readPayment` → `creditFeeProxy` / `feeProxyPayments` | a `TransferWithReferenceAndFee` from the known proxy, for this token and payee, with `feeAddress ==` treasury and both `Transfer` logs from the same payer present, turns that payer's credit into `amount + fee` and attaches `{ fee, ref }`. The exact-amount match against the quote then holds. Plain transfers are unchanged |
 | QR / EIP-681 | unchanged | a plain transfer of the full total to the merchant; it carries no `fee`, so the fee is invoiced as today |
-| Tests | `npm run test:feeproxy` (33 checks, chain stubbed) | call data is decoded with viem; spoofed events (wrong emitter, wrong fee address, missing fee leg, fee from another wallet, another merchant) are ignored |
+| Tests | `npm run test:feeproxy` (35 checks, chain stubbed) | call data is decoded with viem; spoofed events (wrong emitter, wrong fee address, missing fee leg, fee from another wallet, another merchant) are ignored |
 
-### Hooks for the merchants branch (`feat/pay-merchants`)
+### Wired into the merchants code (`feat/merchant-feesplit`)
 
-The only changes in `server/payments.mjs` are one line in `readPayment` and new functions at the end of the file,
-so it should merge cleanly. The merchants code needs to:
+`server/merchants.mjs` uses the hooks as follows:
 
-1. When it creates a merchant quote whose fee applies (the store has passed its free $5k), call
-   `withFeeSplit(quote, { bps: GULLY_PAY_MERCHANT_FEE_BPS, feeTo: treasury() })` and save the quote.
-   `quote.treasury` must be the merchant wallet, as it already is there.
-2. In `checkTx`'s `run({ match })`, record `match.fee` (BigInt base units, set only when the fee was paid on chain)
-   on the payment. The weekly fee statement then skips that payment's fee instead of invoicing it again.
-3. Pass the Gully treasury when it differs from the environment. `creditFeeProxy(…, feeTo)` defaults to
-   `GULLY_TREASURY_ADDRESS`, the same value `plans.treasury()` returns.
+1. `createQuote` sizes the fee exactly like `merchant-fees.mjs` `accrue()` with the store's volume so far, so it
+   covers only the part of the payment above the remaining free allowance, converts it to the token's base units
+   (1:1) and calls `withFeeSplit(quote, { bps, feeTo: treasury(), feeRaw })`. A fully free payment gets no split;
+   coins and chains without a proxy stay plain transfers. `quote.treasury` is the merchant wallet.
+2. In `checkTx`'s `run({ match })`, `match.fee` (set only when the fee leg went to `GULLY_TREASURY_ADDRESS`) is
+   recorded on the payment (`feeRaw`) and on its fee row as `collectedMicros` (capped at the fee accrued) with
+   `onchain: true`. A statement bills `feeMicros − collectedMicros`, so collected + billed = accrued exactly and
+   nothing is billed twice or refunded. A proxy payment whose fee is above the quoted one is refused (it would
+   have come out of the merchant's share).
+3. `creditFeeProxy(…, feeTo)` keeps its default, `GULLY_TREASURY_ADDRESS`, the same value `plans.treasury()`
+   returns.
 
 ## Limits and follow-ups
 
