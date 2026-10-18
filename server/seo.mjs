@@ -29,6 +29,7 @@ const MAIN = {
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
+  '/links': ['Links · Gully Labs', 'Every Gully Labs link in one place: the site, the app, the stock tracker, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the Telegram bot and the news channel.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]

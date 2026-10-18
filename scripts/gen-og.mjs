@@ -106,6 +106,7 @@ const CARDS = [
     file: 'og-chain-kit.png',
     html: page({ eyebrow: 'Chain Kit', title: 'An explorer for <em>your chain</em>', body: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.', url: 'gullylabs.xyz/chain-kit', right: codeCard('<span style="color:#6c7888"># your chain, your brand</span><br>CHAIN_ID=<span style="color:#1f9e89">4663</span><br>CHAIN_TYPE=<span style="color:#1f9e89">arbitrum</span><br>NETWORK_NAME="Your Chain"<br>ACCENT=<span style="color:#e8c060">#E8C060</span>'), titleSize: 92 }),
   },
+  { file: 'og-links.png', html: page({ eyebrow: 'Links', titleSize: 92, title: 'Every Gully Labs <em>link</em>', body: 'The site, the app, the tracker, Gully AI, docs, the Telegram bot and the news channel.', url: 'gullylabs.xyz/links', right: mascot }) },
   ...PROJECTS.map((p) => ({
     file: `og-project-${p.slug}.png`,
     html: page({
