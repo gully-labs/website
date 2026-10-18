@@ -21,6 +21,8 @@ import { Empty, ErrorLine, Skeleton } from './parts'
 import { ExtLink } from './ExtLink'
 import { chip, input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
 import { keyColors } from './helpers'
+import { ServiceHeader } from './services/ServiceHeader'
+import { docsPage } from './services/links'
 import { group } from './usage'
 
 /* The Keys tab: a two-step setup stepper (create a key, make a first call), then sub-tabs that show one
@@ -182,7 +184,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
               setName('')
               setDialog({ kind: 'create' })
             }}
-            className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}
+            className={`${pillGold} min-h-11`}
           >
             <Plus size={16} aria-hidden /> Create key
           </button>
@@ -469,8 +471,8 @@ function LinkDialog({ open, onClose, reload }: { open: boolean; onClose: () => v
 /* ---------------------------------------------------------------- requests --- */
 
 function statusTone(s: number) {
-  if (s === 429) return 'border-[#5a2a24] text-error'
-  if (s >= 500) return 'border-[#5a2a24] text-error'
+  if (s === 429) return 'border-error-line text-error'
+  if (s >= 500) return 'border-error-line text-error'
   if (s >= 400) return 'border-gold-line text-gold'
   return 'border-success-line text-green'
 }
@@ -606,7 +608,7 @@ function Quickstart({ account }: { account: Account }) {
         </div>
         <div role="radiogroup" aria-label="Language" className="flex gap-[2px] rounded-full border border-line p-[3px]">
           {langs.map((o) => (
-            <button key={o.v} type="button" role="radio" aria-checked={lang === o.v} onClick={() => setLang(o.v)} className={`${chip(lang === o.v, true)} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] border-0 max-[480px]:min-h-11`}>
+            <button key={o.v} type="button" role="radio" aria-checked={lang === o.v} onClick={() => setLang(o.v)} className={`${chip(lang === o.v, true)} min-h-11 border-0 max-[480px]:min-h-11`}>
               {o.l}
             </button>
           ))}
@@ -690,6 +692,7 @@ export function KeysTab({ account, reload, creating, onCreateDone, section }: { 
   const first = live[0]
   return (
     <div className="flex flex-col gap-2">
+      <ServiceHeader icon={KeyRound} title="API keys" desc="Keys for the Tracker API, how much each one is used, and the quickstart to make a first call." status={{ tone: live.length ? 'live' : 'idle', text: live.length ? `${live.length} live key${live.length === 1 ? '' : 's'}` : 'no key yet' }} docs={docsPage('api-keys')} />
       <Stepper
         title="Set up the API"
         testId="keys-stepper"
@@ -712,7 +715,7 @@ export function KeysTab({ account, reload, creating, onCreateDone, section }: { 
                     setSub('keys')
                     setAskCreate(true)
                   }}
-                  className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}
+                  className={`${pillGold} min-h-11`}
                 >
                   <Plus size={16} aria-hidden /> Create key
                 </button>
@@ -723,7 +726,7 @@ export function KeysTab({ account, reload, creating, onCreateDone, section }: { 
               <code className="min-w-0 flex-[1_1_320px] truncate rounded-[8px] bg-surface-deep px-3 py-2 font-mono text-[12px] text-ink-2">
                 curl -H &quot;Authorization: Bearer {first ? `${first.prefix}…` : 'gl_live_…'}&quot; {API_ORIGIN}/api/tracker
               </code>
-              <button type="button" onClick={() => setSub('quickstart')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+              <button type="button" onClick={() => setSub('quickstart')} className={`${pillSm} min-h-11`}>
                 <Code2 size={14} aria-hidden /> Quickstart
               </button>
               <span className="w-full font-mono text-[11px] text-faint">Done as soon as the server sees a request with one of your keys.</span>

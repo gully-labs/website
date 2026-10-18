@@ -54,7 +54,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
   return (
     <section className="relative flex min-h-[calc(100vh-200px)] items-center justify-center overflow-hidden px-4 py-16">
       <div aria-hidden className="pointer-events-none absolute top-[-200px] left-1/2 size-[640px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.12),transparent_62%)]" />
-      <div className="relative flex w-full max-w-[460px] animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-5 rounded-[14px] border border-line bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-5">
+      <div className="relative flex w-full max-w-[460px] animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-5 rounded-card border border-line bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-5">
         <div className="flex items-center gap-[10px]">
           <Mascot size={24} decorative />
           <Wordmark height={20} />
@@ -65,7 +65,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           <h1 className="m-0 font-display text-[34px] leading-[.95] font-bold uppercase">
             Sign in with <span className="text-gold">your wallet</span>
           </h1>
-          <p className="m-0 text-[14px] leading-[1.6] text-muted">Your address is your account: no email, no password. Create API keys instantly, set gap alerts, run Gully Analytics and pay for a plan, all from one console.</p>
+          <p className="m-0 text-[14px] leading-[1.6] text-muted">Your address is your account: no email, no password. Create API keys instantly, set gap alerts, run Gully Analytics and pay for a plan, all from one app.</p>
         </div>
         {tiers ? (
           <dl className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-line bg-line">

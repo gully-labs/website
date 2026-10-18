@@ -155,7 +155,7 @@ function ProfileCard() {
             </label>
             <div className="col-span-full flex flex-wrap items-center justify-between gap-3">
               <span className="text-[12px] text-faint">Optional. Used only to reach you about your account; never shared.</span>
-              <button type="submit" disabled={busy === 'save'} className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+              <button type="submit" disabled={busy === 'save'} className={`${pillGold} min-h-11`}>
                 Save profile
               </button>
             </div>
@@ -244,7 +244,7 @@ function CompanyCard() {
           <div className="col-span-full flex flex-wrap items-center justify-between gap-3">
             <span className="text-[12px] text-faint">{w.ok ? 'Optional. Leave a field empty to remove it.' : w.why}</span>
             <Can cat="company" what="change the company details">
-              <button type="submit" disabled={busy} className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+              <button type="submit" disabled={busy} className={`${pillGold} min-h-11`}>
                 Save company
               </button>
             </Can>
@@ -296,7 +296,7 @@ function SessionsCard() {
           </div>
           <RefreshChip error={list ? sp.error : null} onRetry={load} />
         </div>
-        <button type="button" disabled={!others || busy === 'others'} onClick={() => revoke('others')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+        <button type="button" disabled={!others || busy === 'others'} onClick={() => revoke('others')} className={`${pillSm} min-h-11`}>
           <LogOut size={14} aria-hidden /> Sign out all others
         </button>
       </div>
@@ -340,7 +340,7 @@ function SessionsCard() {
                   signed in {fmtDateTime(s.createdAt)} · last seen {ago(s.lastSeenAt)} · ends {fmtDateTime(s.expiresAt)}
                 </span>
               </span>
-              <button type="button" disabled={busy === s.id} onClick={() => revoke(s.id)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] hover:!border-error hover:!text-error`}>
+              <button type="button" disabled={busy === s.id} onClick={() => revoke(s.id)} className={`${pillSm} min-h-11 hover:!border-error hover:!text-error`}>
                 <LogOut size={13} aria-hidden /> {s.current ? 'Sign out' : 'Revoke'}
               </button>
             </li>

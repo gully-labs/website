@@ -17,7 +17,7 @@ import { ExtLink } from '../ExtLink'
     to the one-line `sub`. */
 export function Section({ id, title, sub, info, action, children }: { id: string; title: string; sub?: ReactNode; info?: ReactNode; action?: ReactNode; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="flex min-w-0 scroll-mt-28 flex-col gap-3 rounded-[14px] border border-line bg-surface p-4 max-[600px]:p-3">
+    <section id={id} aria-labelledby={`${id}-h`} className="flex min-w-0 scroll-mt-28 flex-col gap-3 rounded-card border border-line bg-surface p-4 max-[600px]:p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-[1_1_240px] flex-col gap-[2px]">
           <h2 id={`${id}-h`} className="m-0 text-[15px] leading-tight font-semibold text-ink">
@@ -83,7 +83,7 @@ const STATUS_CLS: Record<string, string> = {
   open: 'border-line-strong text-ink-2',
   active: 'border-success-line text-green',
   paid: 'border-success-line text-green',
-  overdue: 'border-[#5a2a24] text-error',
+  overdue: 'border-error-line text-error',
   expired: 'border-line-strong text-faint',
   cancelled: 'border-line-strong text-faint',
   inactive: 'border-line-strong text-faint',

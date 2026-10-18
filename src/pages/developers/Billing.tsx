@@ -13,6 +13,8 @@ import { useSubTab } from './subtab'
 import { InfoTip, RefreshChip, SubPanel, SubTabs, Unknown } from './ui'
 import { ExtLink } from './ExtLink'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
+import { ServiceHeader } from './services/ServiceHeader'
+import { docsPage } from './services/links'
 import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, type Payment, type Plan, type PlanId, type Quote, usdOf } from './api'
 import { ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
@@ -166,6 +168,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
 
   return (
     <div className="flex flex-col gap-2">
+      <ServiceHeader icon={CreditCard} title="Billing" desc="Your plan and what it includes, how to pay for it, and every payment to Gully Labs." status={{ tone: cur.id === 'free' ? 'idle' : 'live', text: `${cur.name} plan` }} docs={docsPage('gully-pay')} />
       <SubTabs
         label="Billing sections"
         idBase="billing"
@@ -221,13 +224,13 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2" data-testid="csv-exports">
-                  <a href="/api/developer/export/payments.csv" download className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+                  <a href="/api/developer/export/payments.csv" download className={`${pillSm} min-h-11`}>
                     <Download size={14} aria-hidden /> Payments CSV
                   </a>
                   <span className="flex items-center gap-1 rounded-full border border-line px-1">
                     <span className="pl-2 font-mono text-[11px] text-faint">Usage CSV</span>
                     {(['24h', '7d', '30d'] as const).map((r) => (
-                      <a key={r} href={`/api/developer/export/usage.csv?range=${r}`} download className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] min-w-9 items-center justify-center rounded-full px-2 font-mono text-[12px] text-ink-2 hover:text-gold max-[600px]:min-h-11 max-[600px]:min-w-11" aria-label={`Download usage CSV, last ${r}`}>
+                      <a key={r} href={`/api/developer/export/usage.csv?range=${r}`} download className="inline-flex min-h-11 min-w-9 items-center justify-center rounded-full px-2 font-mono text-[12px] text-ink-2 hover:text-gold max-[600px]:min-h-11 max-[600px]:min-w-11" aria-label={`Download usage CSV, last ${r}`}>
                         {r}
                       </a>
                     ))}
@@ -251,7 +254,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                 <GhostCurves height={130} title="Your payments will draw here">
                   <Receipt size={20} className="text-gold" aria-hidden />
                   <span className="max-w-[460px] text-[13px] text-muted">Payments you make for a plan chart here by date and amount.</span>
-                  <button type="button" onClick={() => setSub('plans')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+                  <button type="button" onClick={() => setSub('plans')} className={`${pillSm} min-h-11`}>
                     <CreditCard size={14} aria-hidden /> See the plans
                   </button>
                 </GhostCurves>
@@ -287,7 +290,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                       Priced in USD · paid in {[...new Set(offer.assets.map((a) => a.symbol))].join(', ')} on {offer.chains.length} chains · {offer.periodDays} days per payment · nothing to cancel
                     </span>
                   </div>
-                  <ExtLink href={PRICING_URL} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
+                  <ExtLink href={PRICING_URL} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
                     Pricing page and FAQ
                   </ExtLink>
                 </div>
@@ -336,7 +339,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
             </div>
             {!view.payments.length ? (
               <GhostCurves height={120} title="Your payments will be listed here">
-                <button type="button" onClick={() => setSub('plans')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+                <button type="button" onClick={() => setSub('plans')} className={`${pillSm} min-h-11`}>
                   <CreditCard size={14} aria-hidden /> See the plans
                 </button>
               </GhostCurves>
@@ -376,7 +379,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                         </td>
                         <td className="py-2 pr-3 text-right">
                           {p.txUrl ? (
-                            <ExtLink href={p.txUrl} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 text-ink-2 hover:text-gold">
+                            <ExtLink href={p.txUrl} className="inline-flex min-h-11 items-center gap-1 text-ink-2 hover:text-gold">
                               {shortAddress(p.txHash)}
                               <span className="sr-only"> on the explorer</span>
                             </ExtLink>
@@ -385,7 +388,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                           )}
                         </td>
                         <td className="py-2 text-right">
-                          <a href={`#receipt=${p.chainId}:${p.txHash}`} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 text-ink-2 hover:text-gold">
+                          <a href={`#receipt=${p.chainId}:${p.txHash}`} className="inline-flex min-h-11 items-center gap-1 text-ink-2 hover:text-gold">
                             <FileText size={13} aria-hidden /> Receipt
                           </a>
                         </td>
@@ -413,10 +416,10 @@ function SelfServePay() {
         </h2>
         <span className="text-[13px] text-muted">Pay links, invoices, a hosted checkout and signed webhooks: set up your store in the Merchant tab, self-serve.</span>
       </span>
-      <a href="#merchant" className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+      <a href="#merchant" className={`${pillGold} min-h-11`}>
         <Store size={15} aria-hidden /> Open Merchant
       </a>
-      <ExtLink href={`${DOCS_URL}/gully-pay`} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+      <ExtLink href={`${DOCS_URL}/gully-pay`} className={`${pillSm} min-h-11`}>
         <BookOpen size={14} aria-hidden /> How it works
       </ExtLink>
     </section>

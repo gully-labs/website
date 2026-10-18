@@ -47,7 +47,7 @@ export function NetworkStrip({ view }: { view: MerchantView }) {
   }, [rows])
 
   return (
-    <section aria-labelledby="m-net-h" className="flex min-w-0 flex-col gap-2 rounded-[14px] border border-line bg-surface p-4 max-[600px]:p-3" data-testid="merchant-network">
+    <section aria-labelledby="m-net-h" className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-4 max-[600px]:p-3" data-testid="merchant-network">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h3 id="m-net-h" className="m-0 flex items-center gap-2 text-[14px] font-semibold text-ink">
           <Fuel size={15} className="text-gold" aria-hidden /> Gas per payment, now

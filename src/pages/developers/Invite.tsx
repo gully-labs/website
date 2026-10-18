@@ -41,7 +41,7 @@ export function PendingInvites() {
   return (
     <section aria-label="Workspace invites" className="flex flex-col gap-2" data-testid="pending-invites">
       {list.map((inv) => (
-        <div key={inv.id} className="flex flex-wrap items-center gap-3 rounded-[14px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3">
+        <div key={inv.id} className="flex flex-wrap items-center gap-3 rounded-card border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3">
           <MailOpen size={18} className="shrink-0 text-gold" aria-hidden />
           <span className="flex min-w-0 flex-[1_1_260px] flex-col">
             <span className="text-[14px]">
@@ -132,7 +132,7 @@ export function InviteLanding({ token, signedIn, connect, connecting, onDone }: 
       ) : s.k === 'error' ? (
         <Problem title="The invite could not be read" text={s.message} onClose={dismiss} />
       ) : s.p.state !== 'open' || !s.p.valid ? (
-        <Problem title={s.p.state === 'open' ? 'This workspace is no longer available' : STATE_TEXT[s.p.state].title} text={s.p.state === 'open' ? 'Its owner can no longer use the developer console.' : STATE_TEXT[s.p.state].text} onClose={dismiss} />
+        <Problem title={s.p.state === 'open' ? 'This workspace is no longer available' : STATE_TEXT[s.p.state].title} text={s.p.state === 'open' ? 'Its owner can no longer use the app.' : STATE_TEXT[s.p.state].text} onClose={dismiss} />
       ) : (
         <>
           <h2 id="invite-title" className="m-0 font-display text-[30px] leading-[1.05] font-bold uppercase">
@@ -154,7 +154,7 @@ export function InviteLanding({ token, signedIn, connect, connecting, onDone }: 
             </dd>
           </dl>
           {err && (
-            <p className="m-0 flex items-start gap-2 rounded-[10px] border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-3 py-2 text-[14px] text-error" role="alert">
+            <p className="m-0 flex items-start gap-2 rounded-[10px] border border-error-line bg-[rgba(255,138,122,.06)] px-3 py-2 text-[14px] text-error" role="alert">
               <AlertTriangle size={16} className="mt-[2px] shrink-0" aria-hidden />
               <span>
                 {err.text}

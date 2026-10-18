@@ -27,7 +27,7 @@ export const isServiceTab = (id: string): id is ServiceTab => SERVICE_TABS.some(
 export const NAV_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Workspace', ids: ['overview', 'activity', 'team', 'settings'] },
   { label: 'Services', ids: ['products', 'tracker', 'pay', 'merchant', 'security', 'score', 'chain-kit', 'ai', 'deepcore', 'holders', 'widgets', 'telegram'] },
-  { label: 'Developer', ids: ['keys', 'alerts', 'analytics'] },
+  { label: 'Tools', ids: ['keys', 'alerts', 'analytics'] },
   { label: 'Account', ids: ['billing'] },
 ]
 

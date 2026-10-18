@@ -567,7 +567,7 @@ await step('app services', async () => {
   const appNav = page.getByRole('navigation', { name: 'App pages' })
   await appNav.waitFor()
   const groups = await appNav.locator('[data-nav-group]').evaluateAll((els) => els.map((e) => e.getAttribute('data-nav-group')))
-  check('sidebar: grouped Workspace, Services, Developer, Account', JSON.stringify(groups) === JSON.stringify(['Workspace', 'Services', 'Developer', 'Account']), JSON.stringify(groups))
+  check('sidebar: grouped Workspace, Services, Tools, Account', JSON.stringify(groups) === JSON.stringify(['Workspace', 'Services', 'Tools', 'Account']), JSON.stringify(groups))
   const iconless = await appNav.locator('a').evaluateAll((as) => as.filter((a) => !a.querySelector('svg')).map((a) => a.textContent))
   check('sidebar: every item has an icon', iconless.length === 0, iconless.join(', '))
   check('sidebar: Merchant sits under Services', (await appNav.locator('[data-nav-group="Services"]').getByRole('link', { name: /^Merchant/ }).count()) === 1)

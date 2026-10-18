@@ -199,7 +199,7 @@ export function ActivityTab() {
         </div>
         <div role="radiogroup" aria-label="Show" onKeyDown={onKey} className="flex flex-wrap gap-[6px]">
           {KINDS.map((k) => (
-            <button key={k.id} data-k={k.id} type="button" role="radio" aria-checked={kind === k.id} tabIndex={kind === k.id ? 0 : -1} onClick={() => setKind(k.id)} className={`${chip(kind === k.id)} min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] gap-[6px] px-[10px] text-[12px] max-[600px]:min-h-11`}>
+            <button key={k.id} data-k={k.id} type="button" role="radio" aria-checked={kind === k.id} tabIndex={kind === k.id ? 0 : -1} onClick={() => setKind(k.id)} className={`${chip(kind === k.id)} min-h-11 gap-[6px] px-[10px] text-[12px] max-[600px]:min-h-11`}>
               <k.icon size={13} aria-hidden style={k.id === 'all' ? undefined : { color: kind === k.id ? undefined : KIND_COLOR[k.id] }} />
               {k.label}
               {k.id !== 'all' && counts[k.id] ? <span className="font-mono text-[11px] opacity-70">{counts[k.id]}</span> : null}
@@ -271,7 +271,7 @@ export function ActivityTab() {
             })}
           </ol>
           {cursor ? (
-            <button type="button" disabled={more} onClick={() => void loadMore(cursor)} className={`${pillLine} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] self-center`}>
+            <button type="button" disabled={more} onClick={() => void loadMore(cursor)} className={`${pillLine} min-h-11 self-center`}>
               {more && <Loader2 size={15} className="animate-spin" aria-hidden />} Load more
             </button>
           ) : (

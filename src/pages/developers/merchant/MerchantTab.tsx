@@ -1,4 +1,4 @@
-import { BookOpen, ChartColumn, CircleDollarSign, Download, FileText, Link2, PauseCircle, Share2, Store, UserRound, Wallet, Webhook } from 'lucide-react'
+import { ChartColumn, CircleDollarSign, Download, FileText, Link2, PauseCircle, Share2, Store, UserRound, Wallet, Webhook } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { DOCS_URL } from '../../../site-host'
 import { usePoll } from '../poll'
@@ -14,6 +14,7 @@ import { NetworkStrip } from './Network'
 import { ShareBox } from './parts'
 import { ProfileForm, ProfileSection, WalletForm, WalletsSection } from './Setup'
 import { ExtLink } from '../ExtLink'
+import { ServiceHeader } from '../services/ServiceHeader'
 
 /* The portal's Merchant tab (#merchant): Gully Pay for other businesses. A workspace sets its receiving
    wallets and store profile, makes pay links and invoices, watches its payments, pays its fee statements
@@ -59,7 +60,6 @@ export function MerchantTab() {
 
   const f = view.fees
   const overdue = f.statements.find((s) => s.state === 'overdue')
-  const state = f.paused ? { text: 'Checkout paused', cls: 'border-[#5a2a24] text-error' } : view.ready ? { text: 'Checkout live', cls: 'border-success-line text-green' } : { text: 'Not set up yet', cls: 'border-line-strong text-faint' }
   const liveWallets = view.wallets.filter((w) => w.enabled && w.status === 'ok')
   const firstLink = view.links.find((l) => l.active) ?? view.links[0] ?? null
   const steps: Step[] = [
@@ -80,40 +80,36 @@ export function MerchantTab() {
 
   return (
     <div className="flex flex-col gap-2" data-testid="merchant-tab">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[14px] border border-line bg-surface px-4 py-3 max-[600px]:px-3" style={view.profile.accent ? { borderTop: `3px solid ${view.profile.accent}` } : undefined}>
-        {view.profile.logoUrl ? <img src={view.profile.logoUrl} alt="" className="size-9 rounded-[10px] object-contain" /> : <Store size={24} className="text-gold" aria-hidden />}
-        <div className="flex min-w-0 flex-[1_1_220px] flex-col">
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY PAY FOR MERCHANTS</span>
-          <h1 className="m-0 truncate text-[18px] leading-tight font-semibold text-ink">{view.profile.displayName}</h1>
-        </div>
-        <span className={`inline-flex min-h-[28px] items-center gap-2 rounded-full border px-3 text-[12px] ${state.cls}`} data-testid="checkout-state">
-          <span aria-hidden className={`size-2 rounded-full ${f.paused ? 'bg-error' : view.ready ? 'animate-[gl-blink_1.6s_ease-in-out_infinite] bg-green' : 'bg-faint'}`} />
-          {state.text}
-        </span>
+      <ServiceHeader
+        icon={Store}
+        logo={view.profile.logoUrl ? <img src={view.profile.logoUrl} alt="" className="size-10 rounded-[10px] object-contain" /> : undefined}
+        eyebrow="GULLY PAY FOR MERCHANTS"
+        title={view.profile.displayName}
+        accent={view.profile.accent}
+        status={f.paused ? { tone: 'down', text: 'Checkout paused' } : view.ready ? { tone: 'live', text: 'Checkout live' } : { tone: 'idle', text: 'Not set up yet' }}
+        docs={`${DOCS_URL}/gully-pay-merchants`}
+        actions={
+          <a href="/api/developer/merchant/export/payments.csv" className={pillSm} download>
+            <Download size={14} aria-hidden /> CSV
+          </a>
+        }
+      >
         {!view.profile.name && (
-          <button type="button" onClick={() => setSub('profile')} className="inline-flex min-h-[28px] relative after:absolute after:inset-x-0 after:-inset-y-[8px] items-center gap-2 rounded-full border border-gold-line px-3 text-[12px] text-gold hover:border-gold" data-testid="finish-profile">
+          <button type="button" onClick={() => setSub('profile')} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-gold-line px-3 text-[12px] text-gold hover:border-gold" data-testid="finish-profile">
             <Store size={13} aria-hidden /> Store not named yet
           </button>
         )}
         <RefreshChip error={poll.stale ? poll.error : null} onRetry={() => void poll.reload()} />
-        <span className="flex flex-wrap gap-2">
-          <a href="/api/developer/merchant/export/payments.csv" className={pillSm} download>
-            <Download size={14} aria-hidden /> CSV
-          </a>
-          <ExtLink href={`${DOCS_URL}/gully-pay-merchants`} className={pillSm}>
-            <BookOpen size={14} aria-hidden /> Docs ↗
-          </ExtLink>
-        </span>
-        <InfoTip className="basis-full" summary={`Non-custodial · ${f.ratePct}% per payment after your first ${usd(f.freeUsd)}, no monthly fee.`}>
+      </ServiceHeader>
+        <InfoTip summary={`Non-custodial · ${f.ratePct}% per payment after your first ${usd(f.freeUsd)}, no monthly fee.`}>
           {view.nonCustodial} Fee: {f.ratePct}% per payment after your first {usd(f.freeUsd)}, no monthly fee.{' '}
           <ExtLink href={`${payOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
             Merchant terms ↗
           </ExtLink>
         </InfoTip>
-      </header>
 
       {f.paused && (
-        <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-4 py-3" role="alert">
+        <div className="flex flex-wrap items-center gap-3 rounded-card border border-error-line bg-[rgba(255,138,122,.06)] px-4 py-3" role="alert">
           <PauseCircle size={20} className="shrink-0 text-error" aria-hidden />
           <span className="min-w-0 flex-[1_1_240px] text-[13px] leading-[1.5] text-ink">
             <b>Your checkout is paused.</b> Fee statement {overdue?.number} (${overdue?.usd}) is more than {f.pauseAfterDays} days unpaid, so no new payment can start. Paying it resumes checkout at once.

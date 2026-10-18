@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-18T19:46:28.270Z",
+ "updatedAt": "2026-10-18T22:32:48.320Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -350,8 +350,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#caching",
    "section": "Caching",
-   "text": "/api/tracker (public, max-age=30, s-maxage=60, stale-while-revalidate=300): The data itself refreshes about every two minutes. /api/tracker/history (public, max-age=60, s-maxage=120, stale-while-revalidate=600): A new point is added every five minutes. /api/tracker/movers (public, max-age=30, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute per window. Counted by the same rate limit. /api/tracker/gap-index (public, max-age=60, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute. /api/holders/… (public, max-age=15 to 300): Per route in the Holder Map table; maps are built at most every five minutes. /api/score, /api/score/… (public, max-age=60 (methodology 300, badge 3600)): Scores are recomputed at most every six hours. /api/status (public, max-age=30): Checks run every 60 seconds. /api/stats (public, max-age=30): Each project is read at most once a minute. /api/plans, /api/alerts/channels (public, max-age=60): /api/pay/gas (public, max-age=60): Read from the chains at most every three minutes. /api/geo, /api/ask, /api/pay/:id … (private / no-store): Per visitor or per payment: never cached. Answers are cacheable at the edge, so polling more than once a minute gains nothing. A sensible client polls every one to two minutes and keeps its last good answer when a request fails.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "/api/tracker (public, max-age=30, s-maxage=60, stale-while-revalidate=300): The data itself refreshes about every two minutes. /api/tracker/history (public, max-age=60, s-maxage=120, stale-while-revalidate=600): A new point is added every five minutes. /api/tracker/movers (public, max-age=30, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute per window. Counted by the same rate limit. /api/tracker/gap-index (public, max-age=60, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute. /api/holders/… (public, max-age=15 to 300): Per route in the Holder Map table; maps are built at most every five minutes. /api/score, /api/score/… (public, max-age=60 (methodology 300, badge 3600)): Scores are recomputed at most every six hours. /api/status (public, max-age=30): Checks run every 60 seconds. /api/stats (public, max-age=30): Each project is read at most once a minute. /api/plans, /api/alerts/channels (public, max-age=60): /api/pay/gas (public, max-age=60): Read from the chains at most every three minutes. /api/chain/fee-history (public, max-age=20): Base fee per gas over the last 128 blocks on Arbitrum One, Base and Arbitrum Sepolia ({ blocks, chains[]: key, name, role, gwei[], newest, error }), for the Gully L3 roadmap chart. Read at most every 20 seconds. /api/geo, /api/ask, /api/pay/:id … (private / no-store): Per visitor or per payment: never cached. Answers are cacheable at the edge, so polling more than once a minute gains nothing. A sensible client polls every one to two minutes and keeps its last good answer when a request fails.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "b6495844f160",
@@ -584,8 +584,8 @@
    "title": "Plans & alerts",
    "url": "https://docs.gullylabs.xyz/plans-alerts",
    "section": null,
-   "text": "The API stays free. Paid plans raise the per-key rate limit, add gap alerts and keep a longer history. You pay in ETH, BNB, USDC or USDT from your own wallet straight to ours. Paid plans for the Gully Labs tracker API, paid in USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "The API stays free. Paid plans raise the per-key rate limit, add gap alerts and keep a longer history. You pay in ETH, BNB, USDC or USDT from your own wallet straight to ours. Paid plans for the Gully Labs tracker API, paid in USDC, USDT or the chain's own coin on the chains where the Gully Labs treasury is deployed, with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "f8c0162a74fc",
@@ -638,8 +638,8 @@
    "title": "Plans & alerts",
    "url": "https://docs.gullylabs.xyz/plans-alerts#alerts",
    "section": "Gap alerts",
-   "text": "An alert watches one stock (chain and ticker) or every stock the tracker follows, for one condition: gap ({ type: \"gap\", pct, direction }): The gap between on-chain and fair price is at least pct percent. direction picks the side: above a premium (gap ≥ +pct), below a discount (gap ≤ −pct), or both (the default, and what alerts made before directions read as). status ({ type: \"status\", status }): The tracker flags the stock premium, discount, or either. Alerts are checked on every tracker snapshot, every five minutes. Per stock, an alert fires when its condition becomes true and re-arms once it is false again. It does not repeat while the condition simply stays true. Each alert sends at most one delivery every 30 minutes. Stocks that trigger during that pause go out with the next delivery if their condition still holds. Only rows the tracker would itself flag count: a readable feed and pool, a pool deep enough to flag, a fresh pool read and an open feed session. Anything else neither fires nor re-arms. Each delivery is logged in the dashboard with its HTTP status (the last 50 per alert). Use Test to send an alert.test delivery with no events. When a plan lapses, the alerts beyond the Free allowance stay listed but are paused until you delete some or upgrade; the oldest ones keep running.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "An alert watches one stock (chain and ticker) or every stock the tracker follows, for one condition: gap ({ type: \"gap\", pct, direction }): The gap between onchain and fair price is at least pct percent. direction picks the side: above a premium (gap ≥ +pct), below a discount (gap ≤ −pct), or both (the default, and what alerts made before directions read as). status ({ type: \"status\", status }): The tracker flags the stock premium, discount, or either. Alerts are checked on every tracker snapshot, every five minutes. Per stock, an alert fires when its condition becomes true and re-arms once it is false again. It does not repeat while the condition simply stays true. Each alert sends at most one delivery every 30 minutes. Stocks that trigger during that pause go out with the next delivery if their condition still holds. Only rows the tracker would itself flag count: a readable feed and pool, a pool deep enough to flag, a fresh pool read and an open feed session. Anything else neither fires nor re-arms. Each delivery is logged in the dashboard with its HTTP status (the last 50 per alert). Use Test to send an alert.test delivery with no events. When a plan lapses, the alerts beyond the Free allowance stay listed but are paused until you delete some or upgrade; the oldest ones keep running.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "14dc9ff4aec8",
@@ -683,8 +683,8 @@
    "title": "Plans & alerts",
    "url": "https://docs.gullylabs.xyz/plans-alerts#telegram",
    "section": "Telegram",
-   "text": "An alert can message a Telegram chat as well as, or instead of, calling a webhook. In the Alerts tab of the dashboard press Connect Telegram: it opens the bot with a one-time code (ten minutes, single use) that links the chat to your wallet account, so there is no chat id to copy. Add to a group does the same for a group; only the person who linked a group can unlink it. Then tick Telegram on any alert. Each message names the stock and chain, the gap, the on-chain and fair prices, the status and the pool liquidity, with a link to the stock page. Open NVDA opens the stock page; Mute 24h pauses that alert, on every channel, for 24 hours. Resume in the dashboard ends a mute early. Deliveries appear in the alert's log like webhook ones, with the result Telegram gave. In the chat, /alerts lists your alerts and /stop unlinks. Anyone can ask the bot /gap NVDA (or /gap NVDA bsc) and /top for the five widest trusted gaps. A figure the tracker could not read is said to be unreadable, never shown as zero. Which channels the server offers is public at GET /api/alerts/channels.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "An alert can message a Telegram chat as well as, or instead of, calling a webhook. In the Alerts tab of the dashboard press Connect Telegram: it opens the bot with a one-time code (ten minutes, single use) that links the chat to your wallet account, so there is no chat id to copy. Add to a group does the same for a group; only the person who linked a group can unlink it. Then tick Telegram on any alert. Each message names the stock and chain, the gap, the onchain and fair prices, the status and the pool liquidity, with a link to the stock page. Open NVDA opens the stock page; Mute 24h pauses that alert, on every channel, for 24 hours. Resume in the dashboard ends a mute early. Deliveries appear in the alert's log like webhook ones, with the result Telegram gave. In the chat, /alerts lists your alerts and /stop unlinks. Anyone can ask the bot /gap NVDA (or /gap NVDA bsc) and /top for the five widest trusted gaps. A figure the tracker could not read is said to be unreadable, never shown as zero. Which channels the server offers is public at GET /api/alerts/channels.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "c5f50ab0f64d",
@@ -1034,8 +1034,8 @@
    "title": "Gully Pay for merchants",
    "url": "https://docs.gullylabs.xyz/gully-pay-merchants#overview",
    "section": "Overview",
-   "text": "Every workspace in the app dashboard can be a store. Open the Merchant tab (app.gullylabs.xyz/#merchant), add a receiving wallet and name the store: from then on your pay links and invoices take payments. The checkout, quotes and on-chain checks are the same as Gully Pay uses for Gully Labs itself; the only difference is where the money goes: your wallet. The payer sends a plain transfer from their wallet to yours, in their own transaction. We read it back from a public node of that chain. Nothing passes through an account of ours, and we cannot move, hold or refund a payment.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Every workspace in the app dashboard can be a store. Open the Merchant tab (app.gullylabs.xyz/#merchant), add a receiving wallet and name the store: from then on your pay links and invoices take payments. The checkout, quotes and onchain checks are the same as Gully Pay uses for Gully Labs itself; the only difference is where the money goes: your wallet. The payer sends a plain transfer from their wallet to yours, in their own transaction. We read it back from a public node of that chain. Nothing passes through an account of ours, and we cannot move, hold or refund a payment.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "0a332018b4bf",
@@ -1241,8 +1241,17 @@
    "title": "Gully Score",
    "url": "https://docs.gullylabs.xyz/gully-score#components",
    "section": "Components and weights",
-   "text": "The weights below are read live from the score service, the same numbers every score page uses. The score is the weighted average of the parts that could be read. Code verified: an exact Sourcify match scores 100, a partial match 85, no published source 0. Who controls it: nobody (ownership given up) or a Safe needing two or more signatures 100, a timelock 80, an unrecognised contract 50, a Safe any one signer can use 40, a single wallet 15. Delay on changes: two days or more 100, one day 90, six hours 60, anything shorter 40, none 0. Can the code change: fixed code 100, upgradeable 30. Recent privileged changes: 100 less 25 for each change in the last 30 days. Liquidity locked: the share of the launch pools with a lock record, for DeepCore launches. Holder spread: the Holder Map’s Launch Health, or from the top-10 share (20% or less is 100, 90% or more is 0). Gully Security review: 100 less 40 per critical, 20 per high, 5 per medium and 1 per low finding (unresolved ones when the report says). Age: a year or more 100, six months 85, three months 70, a month 50, a week 30, younger 10.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "The weights below are read live from the score service, the same numbers every score page uses. The score is the weighted average of the parts that could be read. Code verified: a full Sourcify match scores 100, a partial match 85, no published source 0. Who controls it: nobody (ownership given up) or a Safe needing two or more signatures 100, a timelock 80, an unrecognised contract 50, a Safe any one signer can use 40, a single wallet 15. Delay on changes: two days or more 100, one day 90, six hours 60, anything shorter 40, none 0. Can the code change: fixed code 100, upgradeable 30. Recent privileged changes: 100 less 25 for each change in the last 30 days. Liquidity locked: the share of the launch pools with a lock record, for DeepCore launches. Holder spread: the Holder Map’s Launch Health, or from the top-10 share (20% or less is 100, 90% or more is 0). Gully Security review: 100 less 40 per critical, 20 per high, 5 per medium and 1 per low finding (unresolved ones when the report says). Age: a year or more 100, six months 85, three months 70, a month 50, a week 30, younger 10.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
+  },
+  {
+   "id": "935bfce69c6d",
+   "source": "Docs",
+   "title": "Gully Score",
+   "url": "https://docs.gullylabs.xyz/gully-score#verified-source",
+   "section": "Verified source: Sourcify first",
+   "text": "Sourcify is the primary source for \"Code verified\". It recompiles the published source and compares it with the code on chain, and anyone can repeat that check. A full match means the compiled code and its metadata match exactly; a partial match means the code matches but the metadata (comments, file names) differs. The part names which one it is and links to the contract on sourcify.dev. Etherscan is asked only when Sourcify has no match, and only where an Etherscan key is configured. Gully Security scans read source in the same order. Gully Labs verifies the contracts it deploys and relies on there too: the list, with each status, is in contracts/CHOICE.md.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "632756fe530d",
@@ -1700,8 +1709,17 @@
    "title": "Status",
    "url": "https://docs.gullylabs.xyz/status#checks",
    "section": "What each check means",
-   "text": "Checks run every 60 seconds on the server. Public API (platform): This server is answering. The detail says how long it has been up Tracker: Robinhood Chain, BNB Chain, Solana (tracker): The chain’s pools were read in the last 15 minutes. Up to an hour old, or a failed read being retried, is degraded; older is down DeepCore launch poller (deepcore): The last good poll is within three poll intervals; within ten is degraded Telegram bot webhook (telegram): Telegram’s getWebhookInfo shows a webhook registered. A delivery error in the last 10 minutes, or more than 100 updates waiting, is degraded. See the Telegram bot page Gully Pay RPC, per payment chain (payments): A node answers eth_blockNumber (Solana: getSlot). Slower than 4 s is degraded Gully AI (ai): Configured, with a non-empty search index Security scan engine (security): The AI scan is configured. The detail says whether the static-analysis tools are running and what is queued Contract monitors (security): Watched contracts are read without errors; a chain failing in the last 10 minutes is degraded Holder Map sources, per chain (holders): The chain has a holder data source configured on this server off means the part is not configured on this server (for example the bot without its token): it is shown, but it is not an outage. unknown means the check could not tell, for example before the first read after a restart. “Security scan engine: up” means the AI scan can run. It is not an audit, and a clean scan is not a guarantee. See Gully Security.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Checks run every 60 seconds on the server. Public API (platform): This server is answering. The detail says how long it has been up Tracker: Robinhood Chain, BNB Chain, Solana (tracker): The chain’s token prices were read on chain in the last 10 minutes (the newest price reading, not the hourly pool discovery). 10 to 30 minutes old is degraded; older, or no price read at all, is down DeepCore launch poller (deepcore): The last good poll is within three poll intervals; within ten is degraded Telegram bot webhook (telegram): Telegram’s getWebhookInfo shows a webhook registered. A delivery error in the last 10 minutes, or more than 100 updates waiting, is degraded. See the Telegram bot page Telegram bot: News channel gate (telegram): Telegram’s getChatMember shows the bot is an admin of the News channel. If it is not, the gate cannot check membership and lets everyone through: degraded Gully Pay RPC, per payment chain (payments): A node answers eth_blockNumber (Solana: getSlot). Slower than 4 s is degraded Gully Pay fee proxies (payments): The treasury is not a fee proxy contract (if it is, checkout is refused: down), and no payment sits on a fee proxy waiting for recovery (degraded) Gully AI (ai): Configured, with a non-empty search index, and the AI provider answering for our account (a billing or key problem is degraded until an answer succeeds again)",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
+  },
+  {
+   "id": "7a1040e6d346",
+   "source": "Docs",
+   "title": "Status",
+   "url": "https://docs.gullylabs.xyz/status#checks",
+   "section": "What each check means",
+   "text": "(degraded) Gully AI (ai): Configured, with a non-empty search index, and the AI provider answering for our account (a billing or key problem is degraded until an answer succeeds again) Security scan engine (security): The AI scan is configured. The detail says whether the static-analysis tools are running and what is queued Contract monitors (security): Watched contracts are read without errors; a chain failing in the last 10 minutes is degraded Holder Map sources, per chain (holders): The chain has a holder data source configured on this server off means the part is not configured on this server (for example the bot without its token): it is shown, but it is not an outage. unknown means the check could not tell, for example before the first read after a restart. “Security scan engine: up” means the AI scan can run. It is not an audit, and a clean scan is not a guarantee. See Gully Security.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "47cabdcd093b",
@@ -1763,8 +1781,8 @@
    "title": "Roadmap",
    "url": "https://docs.gullylabs.xyz/roadmap#security",
    "section": "Gully Security",
-   "text": "Gully Labs does not audit anything today and has published no audit reports. Live now: the AI Security Scan (an AI review only until our static-tools worker runs, and labelled so on every report), the Gully Score and contract monitors. A human Security Review is quoted on request. Audits open only when the people, the process and the public record behind them exist, and the changelog will say when they do. Security work on both halves of a Web3 product: the smart contracts, and the code around them. Contract audits cover Solidity on the EVM chains we already work with. Code audits cover what usually goes wrong next to the contracts: dApp frontends, backends and APIs, key management, wallet-connect and signing flows, infrastructure and CI. It follows what the established security firms offer (audits, public reports, a public project score and on-chain monitoring), and the rules below are written against what their critics point out: scores whose weights are not published, badges that read as endorsements, and reports that do not say which code they covered.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Gully Labs does not audit anything today and has published no audit reports. Live now: the AI Security Scan (an AI review only until our static-tools worker runs, and labelled so on every report), the Gully Score and contract monitors. A human Security Review is quoted on request. Audits open only when the people, the process and the public record behind them exist, and the changelog will say when they do. Security work on both halves of a Web3 product: the smart contracts, and the code around them. Contract audits cover Solidity on the EVM chains we already work with. Code audits cover what usually goes wrong next to the contracts: dApp frontends, backends and APIs, key management, wallet-connect and signing flows, infrastructure and CI. It follows what the established security firms offer (audits, public reports, a public project score and onchain monitoring), and the rules below are written against what their critics point out: scores whose weights are not published, badges that read as endorsements, and reports that do not say which code they covered.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "eef138406a9a",
@@ -1835,8 +1853,8 @@
    "title": "Roadmap: Gully L3",
    "url": "https://docs.gullylabs.xyz/roadmap-l3#settlement",
    "section": "Settlement chain",
-   "text": "Both Arbitrum One and Base have canonical RollupCreator factories, so either can be the parent. The spec recommends Arbitrum One: the tooling we forked, the Chain Kit profile, the tracker’s Robinhood Chain coverage and the Arbitrum ecosystem programs are all Arbitrum-shaped, and Base liquidity still reaches the L3 through a Base→L3 Warp Route and, later, the aggregators. The public devnet settles to Arbitrum Sepolia. The parent’s gas price is one input to what posting a batch costs. These are the base fees on the candidates right now, read from their public RPCs in your browser; a chain that cannot be read says so. The other input, the parent’s own L1 data component, varies with Ethereum blob prices and is not reported by any public RPC, so the spec asks for a real batch to be measured on each testnet before the decision is final.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Both Arbitrum One and Base have canonical RollupCreator factories, so either can be the parent. The spec recommends Arbitrum One: the tooling we forked, the Chain Kit profile, the tracker’s Robinhood Chain coverage and the Arbitrum ecosystem programs are all Arbitrum-shaped, and Base liquidity still reaches the L3 through a Base→L3 Warp Route and, later, the aggregators. The public devnet settles to Arbitrum Sepolia. The parent’s gas price is one input to what posting a batch costs. These are the base fees on the candidates right now, read from their public RPCs by our server; a chain that cannot be read says so. The other input, the parent’s own L1 data component, varies with Ethereum blob prices and is not reported by any public RPC, so the spec asks for a real batch to be measured on each testnet before the decision is final.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "df0bf8910f15",
@@ -1925,8 +1943,8 @@
    "title": "Changelog",
    "url": "https://docs.gullylabs.xyz/changelog",
    "section": null,
-   "text": "What changed, newest first. What changed in Gully Labs products: the tracker and its API, the widget, Holder Map, Gully Security, Gully Score, Gully Pay, the bot and these docs.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "What changed, newest first. What changed in Gully Labs products: the tracker and its API, the widget, Holder Map, Gully Security, Gully Score, Gully Pay, the bot and these docs. What is running now, live from the status checks (every part below, checked every minute):",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "d6ba2f2a0eae",
@@ -2179,6 +2197,42 @@
    "section": "System status",
    "text": "Every part of the stack we can check from our own server, checked once a minute: the API, how fresh the tracker is on each chain, the DeepCore launch poller, the Telegram bot, the payment RPCs, Gully AI, the security scan engine, contract monitors and the Holder Map sources. Not configured means the feature is switched off on this server, not broken. What each check means GET /api/status",
    "updatedAt": "2026-10-18T19:46:28.270Z"
+  },
+  {
+   "id": "33b5b79c35a2",
+   "source": "Site",
+   "title": "Stock token tracker",
+   "url": "https://gullylabs.xyz/tracker",
+   "section": null,
+   "text": "Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, with the gap, pool depth and feed time. Read from Chainlink (or, for some Solana xStocks, the issuer) and the pools themselves.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
+  },
+  {
+   "id": "e386696a4751",
+   "source": "Site",
+   "title": "Stock token tracker",
+   "url": "https://gullylabs.xyz/tracker",
+   "section": "Is your stock token fairly priced?",
+   "text": "Every tokenised stock on Robinhood Chain, BNB Chain and Solana: its price in its deepest pool against its fair price from Chainlink (for Solana xStocks without a feed, the issuer's quote).",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
+  },
+  {
+   "id": "f2bf08065367",
+   "source": "Site",
+   "title": "Tracker widget",
+   "url": "https://gullylabs.xyz/widget",
+   "section": null,
+   "text": "Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps, read from Chainlink and the pools themselves.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
+  },
+  {
+   "id": "d5ce52268f16",
+   "source": "Site",
+   "title": "Tracker widget",
+   "url": "https://gullylabs.xyz/widget",
+   "section": "Put the live gap on your page",
+   "text": "One script tag and one element. Every figure is read live from the tracker, refreshed every minute, and drawn inside its own shadow root so it never clashes with your styles.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "a7d127ffd712",
@@ -2474,8 +2528,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s6",
    "section": "Gully Security",
-   "text": "The request also goes to our enquiries inbox and to our operators’ Telegram chat. Requests are limited per IP address and email in memory only; the IP is not stored. Monitors. For each contract your workspace watches we keep the contract, chain and name, your alert thresholds, your webhook address and its signing secret, whether Telegram is on, whether the contract may be listed publicly, the contract’s last read state, its last 100 events and the last 50 alert deliveries. The contract is read through public blockchain nodes. Events a monitor sees are public chain data and count in that contract’s public Gully Score; switching listing off keeps the contract off the public list of scores, not out of its score.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "The request also goes to our enquiries inbox and to our operators’ Telegram chat. Requests are limited per IP address and email in memory only; the IP is not stored. Monitors. For each contract your workspace watches we keep the contract, chain and name, your alert thresholds, your webhook address and its signing secret, whether Telegram is on, whether the contract may be listed publicly, the contract’s last read state, its last 100 events and the last 50 alert deliveries. The contract is read through public blockchain nodes. Events a monitor sees are public chain data. A monitor whose listing is on adds them to that contract’s public Gully Score. With listing off, nothing the monitor records reaches the public: not the contract’s score, the public list of scores, the sitemap, score badges or Gully AI; a score already worked out from it is dropped and worked out again without it.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "6e72d93e5c5e",
@@ -2519,8 +2573,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s11",
    "section": "How long we keep it",
-   "text": "Sessions last 30 days. Gully AI questions and ratings are kept 90 days. The activity log keeps 180 days, and so does a security scan’s code. Backups are kept 7 days. Accounts, payments and stores are not deleted automatically today. Sign-in sessions: 30 days from sign-in (at most 20 per wallet), or until you sign out or revoke them. Team invites: 7 days to accept; closed invites are deleted 30 days after they close. Workspace activity log: The newest 1,000 events, none older than 180 days. API usage counts per key: Hourly counts 31 days; the last 50 requests and daily totals until the key or account is deleted. Gully AI questions and ratings: 90 days. Telegram link codes: 10 minutes to use; deleted a day after they expire. Unpaid payment quotes: Deleted 7 days after they expire. Webhook deliveries: The newest 1,000 for Gully Pay; the newest 50 per gap alert. Contact form messages: The newest 5,000 messages. Security scans: the code, the fetched sources, tool output and the report: Deleted once the scan is finished and 180 days old, when our server next restarts after that; the scan’s entry in your list (without the code) is not deleted automatically. Code uploaded for a scan: Moved into the scan when it starts; deleted at once if a free scan cannot start or you cancel an unpaid scan; the upload of a paid scan left unpaid stays until you cancel it.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Sessions last 30 days. Gully AI questions and ratings are kept 90 days. The activity log keeps 180 days, and so does a security scan’s code. Backups are kept 7 days. Accounts, payments and stores are not deleted automatically today. Sign-in sessions: 30 days from sign-in (at most 20 per wallet), or until you sign out or revoke them. Team invites: 7 days to accept; closed invites are deleted 30 days after they close. Workspace activity log: The newest 1,000 events, none older than 180 days. API usage counts per key: Hourly counts 31 days; the last 50 requests and daily totals until the key or account is deleted. Gully AI questions and ratings: 90 days. Telegram link codes: 10 minutes to use; deleted a day after they expire. Unpaid payment quotes: Deleted 7 days after they expire. Webhook deliveries: The newest 1,000 for Gully Pay; the newest 50 per gap alert. Contact form messages: The newest 5,000 messages. Security scans: the code, the fetched sources, tool output and the report: Deleted within a day of the scan being finished and 180 days old (a daily clean-up); the scan’s entry in your list (without the code) is not deleted automatically. Code uploaded for a scan: Moved into the scan when it starts; deleted at once if a free scan cannot start or you cancel an unpaid scan; a paid scan left unpaid for 24 hours has its uploaded code deleted and its invoice cancelled.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "82866a68c3c7",
@@ -2528,8 +2582,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s11",
    "section": "How long we keep it",
-   "text": "it starts; deleted at once if a free scan cannot start or you cancel an unpaid scan; the upload of a paid scan left unpaid stays until you cancel it. Published scan reports: Public until unpublished; after that the copy stays on our server, not shown, and is not deleted automatically. Security Review requests: The newest 5,000 requests. Security monitors: Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries. Gully Score results and history: Not deleted automatically (who looked a score up is not recorded). Holder Map view counts: Reset every UTC day; the key that hashes visitors is never written down. Telegram announcements: deliveries and opened links: The newest 200 announcements. Telegram bot records (first and last seen, language, opt-out): Not deleted automatically today. Backups of all of the above: 7 days. Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data: Not deleted automatically today; ask us and we delete what the law lets us.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "once if a free scan cannot start or you cancel an unpaid scan; a paid scan left unpaid for 24 hours has its uploaded code deleted and its invoice cancelled. Published scan reports: Public until unpublished; after that the copy stays on our server, not shown, and is not deleted automatically. Security Review requests: The newest 5,000 requests. Security monitors: Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries. Gully Score results and history: Not deleted automatically (who looked a score up is not recorded). Holder Map view counts: Reset every UTC day; the key that hashes visitors is never written down. Telegram announcements: deliveries and opened links: The newest 200 announcements. Telegram bot records (first and last seen, language, opt-out): Not deleted automatically today. Backups of all of the above: 7 days. Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data: Not deleted automatically today; ask us and we delete what the law lets us.",
+   "updatedAt": "2026-10-18T22:32:48.320Z"
   },
   {
    "id": "3032bbf70e8e",

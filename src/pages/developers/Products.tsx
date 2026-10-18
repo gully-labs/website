@@ -1,6 +1,7 @@
-import { AppWindow, ArrowRight, BellRing, Bot, Boxes, ChartNoAxesCombined, Check, Code2, CreditCard, KeyRound, Loader2, Network, Send, Store } from 'lucide-react'
+import { AppWindow, ArrowRight, BellRing, Bot, Boxes, ChartNoAxesCombined, Check, Code2, CreditCard, Gauge, KeyRound, Loader2, Network, Send, ShieldCheck, Store } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
+import { MiniBars } from '../../components/charts/MiniBars'
 import { NF } from '../../components/charts/number-formats'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
@@ -16,6 +17,8 @@ import { KeySpark, LiveMarker, QuotaRing, StackedDays } from './vcharts'
 import type { Load } from './services/useLoad'
 import type { ServiceTab } from './services/nav'
 import { LaunchHolders } from '../../components/holders/LaunchHolders'
+import type { ScanView } from '../../components/security/types'
+import { bandColor, useJson, type ScoreIndex } from '../score/api'
 
 /* The Products tab: every Gully product in one hub, each card with its live state for the ACTIVE
    workspace and a live chart where data exists (a pulsing live marker where it does not yet; a
@@ -36,7 +39,7 @@ import { LaunchHolders } from '../../components/holders/LaunchHolders'
 
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
 const fmt = (n: number) => n.toLocaleString('en-US')
-type Tab = 'keys' | 'alerts' | 'analytics' | 'billing' | ServiceTab
+type Tab = 'keys' | 'alerts' | 'analytics' | 'billing' | 'security' | ServiceTab
 const store = {
   get<T>(k: string, d: T): T {
     try {
@@ -78,7 +81,7 @@ function useCard<T>(path: string, every: number): Load<T> & { refreshErr: string
   return { k: 'loading', refreshErr: null, retry }
 }
 
-const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-[#5a2a24] text-error' : 'border-line-strong text-muted'}`}>{t}</span>
+const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-error-line text-error' : 'border-line-strong text-muted'}`}>{t}</span>
 
 function Stat({ label, value, unknown }: { label: string; value: number | null; unknown?: string }) {
   return (
@@ -90,7 +93,7 @@ function Stat({ label, value, unknown }: { label: string; value: number | null; 
 }
 
 const goBtn = (go: (t: Tab) => void, t: Tab, text: string) => (
-  <button type="button" onClick={() => go(t)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+  <button type="button" onClick={() => go(t)} className={`${pillSm} min-h-11`}>
     {text} <ArrowRight size={14} aria-hidden />
   </button>
 )
@@ -115,6 +118,8 @@ export function Products({ account, go }: { account: Account; go: (t: Tab) => vo
       <ChainsCard />
       <AiCard go={go} />
       <HolderMapCard />
+      <SecurityCard go={go} />
+      <ScoreCard go={go} />
       <WidgetCard go={go} />
     </div>
     </div>
@@ -246,7 +251,7 @@ function PayCard({ s, go }: { s: Load<BillingView>; go: (t: Tab) => void }) {
 
 function MerchantCard() {
   return (
-    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('live', 'green')} foot={<a href="#merchant" className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>Open your store <ArrowRight size={14} aria-hidden /></a>}>
+    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('live', 'green')} foot={<a href="#merchant" className={`${pillSm} min-h-11`}>Open your store <ArrowRight size={14} aria-hidden /></a>}>
       <InfoTip summary="Pay links, invoices and a checkout, self-serve">Take crypto payments yourself: pay links, invoices and a “Pay with crypto” button with signed webhooks, run from this workspace.</InfoTip>
       <LiveMarker text="Non-custodial: straight to your wallet · fee per payment only" height={44} />
     </Card>
@@ -400,7 +405,7 @@ function AiCard({ go }: { go: (t: Tab) => void }) {
       ) : status === true ? (
         <form onSubmit={ask} className="flex gap-2">
           <input className={`${input} h-9 text-[14px]`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask about the data or the API…" maxLength={500} aria-label="Ask Gully AI" name="ask" />
-          <button type="submit" disabled={busy || !q.trim()} className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] shrink-0`} aria-label="Ask">
+          <button type="submit" disabled={busy || !q.trim()} className={`${pillGold} min-h-11 shrink-0`} aria-label="Ask">
             {busy ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Send size={15} aria-hidden />}
           </button>
         </form>
@@ -437,6 +442,45 @@ function HolderMapCard() {
   )
 }
 
+/** Gully Security: the workspace's scans, per day for the last week (GET /api/developer/security/scans). */
+function SecurityCard({ go }: { go: (t: Tab) => void }) {
+  const s = useCard<{ scans: ScanView[] }>('/api/developer/security/scans', 60_000)
+  const scans = s.k === 'ok' ? s.data.scans : null
+  const bars = useMemo(() => {
+    if (!scans) return []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today)
+      d.setDate(today.getDate() - (6 - i))
+      return { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), value: scans.filter((x) => new Date(x.createdAt).toDateString() === d.toDateString()).length }
+    })
+  }, [scans])
+  return (
+    <Card icon={<ShieldCheck size={16} aria-hidden />} title="Gully Security" badge={scans ? pill(`${scans.length} scan${scans.length === 1 ? '' : 's'}`, scans.length ? 'gold' : 'dim') : null} foot={goBtn(go, 'security', 'Open Security')}>
+      <p className="m-0 text-[13px] leading-[1.55] text-muted">Scan a contract or a code upload, keep a signed report, and watch deployed contracts for changes.</p>
+      {s.k === 'error' ? <LiveMarker text="Security: not readable right now" /> : !scans ? <Skeleton h={64} /> : <MiniBars bars={bars} label={`Security scans per day over the last 7 days: ${scans.length} in total.`} height={64} emptyLabel="No scan yet: your scans chart here" />}
+    </Card>
+  )
+}
+
+/** Gully Score: how the listed contracts spread over the four bands (GET /api/score). */
+function ScoreCard({ go }: { go: (t: Tab) => void }) {
+  const [s] = useJson<ScoreIndex>('/api/score', 120_000)
+  const d = s.state === 'ok' ? s.data : null
+  const bars = useMemo(() => {
+    if (!d) return []
+    const band = (name: string, color: string, test: (n: number) => boolean) => ({ label: name, color, value: d.scores.filter((r) => r.score !== null && test(r.score)).length })
+    return [band('Strong 80+', bandColor(90), (n) => n >= 80), band('Fair 60–79', bandColor(70), (n) => n >= 60 && n < 80), band('Weak 40–59', bandColor(50), (n) => n >= 40 && n < 60), band('Poor <40', bandColor(10), (n) => n < 40)]
+  }, [d])
+  return (
+    <Card icon={<Gauge size={16} aria-hidden />} title="Gully Score" badge={d ? pill(`${d.scores.length} listed`, d.scores.length ? 'gold' : 'dim') : null} foot={goBtn(go, 'score', 'Open Gully Score')}>
+      <p className="m-0 text-[13px] leading-[1.55] text-muted">A 0 to 100 reading of how a contract is controlled and has behaved, from public evidence only.</p>
+      {s.state === 'error' ? <LiveMarker text="Score: not readable right now" /> : !d ? <Skeleton h={64} /> : <MiniBars bars={bars} orientation="rows" label={`Listed contracts by Gully Score band: ${d.scores.length} listed.`} emptyLabel="No contract is listed yet" />}
+    </Card>
+  )
+}
+
 function WidgetCard({ go }: { go: (t: Tab) => void }) {
   const [up, setUp] = useState<boolean | null>(null)
   useEffect(() => {
@@ -453,10 +497,10 @@ function WidgetCard({ go }: { go: (t: Tab) => void }) {
       <span className="text-[12px] text-dim">Live fair prices on any page with two lines of HTML, no key; or the typed SDK.</span>
       <LiveMarker text={up === null ? 'Checking the API…' : up ? 'Public API answering now' : 'The API did not answer the health check'} height={40} />
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => go('widgets')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+        <button type="button" onClick={() => go('widgets')} className={`${pillSm} min-h-11`}>
           <AppWindow size={14} aria-hidden /> Widget builder
         </button>
-        <ExtLink href={`${DOCS_URL}/sdk`} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+        <ExtLink href={`${DOCS_URL}/sdk`} className={`${pillSm} min-h-11`}>
           <Code2 size={14} aria-hidden /> SDK docs
         </ExtLink>
       </div>

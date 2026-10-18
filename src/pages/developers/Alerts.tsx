@@ -2,6 +2,7 @@ import { track } from '../../lib/track'
 import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, History, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { DOCS_URL } from '../../site-host'
+import { ServiceHeader } from './services/ServiceHeader'
 import { toastSuccess } from '../../components/ui/toast'
 import { ago, api, GAP_DIRECTIONS, type AlertsView, type GapAlert, type GapDirection, type TelegramInfo, type TelegramLink } from './api'
 import { alertName, alertRule, alertState, CHAIN_NAMES, useAlertActions, useAlertsView, type Secret } from './helpers'
@@ -61,7 +62,7 @@ function DirectionControl({ value, onChange, pct }: { value: GapDirection; onCha
 }
 const fieldLabel = 'flex flex-col gap-2 text-[14px] text-ink-2'
 /** A compact row action (36px on desktop, 44px touch targets on narrow screens). */
-const rowBtn = 'inline-flex min-h-9 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-50 max-[859px]:min-h-11'
+const rowBtn = 'inline-flex min-h-11 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-50 max-[859px]:min-h-11'
 const TG_BLUE = '#5aa9e6'
 
 /**
@@ -88,7 +89,7 @@ export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram
           aria-label={`Telegram for ${alertName(a)}: ${on ? 'on' : 'off'}. ${why}`}
           onClick={() => act(a, 'telegram', { on: !on })}
           className="inline-flex min-h-11 items-center gap-[6px] rounded-full border px-3 text-[12px] transition-colors disabled:cursor-not-allowed max-[480px]:px-[10px]"
-          style={{ borderColor: broken ? '#5a2a24' : on ? TG_BLUE : '#2a3542', color: broken ? '#ff8a7a' : on ? '#5aa9e6' : '#8a94a1', opacity: disabled && !on ? 0.6 : 1 }}
+          style={{ borderColor: broken ? 'var(--color-error-line)' : on ? TG_BLUE : '#2a3542', color: broken ? '#ff8a7a' : on ? '#5aa9e6' : '#8a94a1', opacity: disabled && !on ? 0.6 : 1 }}
         >
           {on && <Check size={12} aria-hidden />}
           Telegram{broken ? ': no chat' : ''}
@@ -338,7 +339,7 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
               </button>
             </>
           )}
-          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 rounded-full px-2 font-mono text-[11px] text-muted hover:text-ink max-[859px]:min-h-11">
+          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-11 items-center gap-1 rounded-full px-2 font-mono text-[11px] text-muted hover:text-ink max-[859px]:min-h-11">
             <ChevronDown size={13} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden /> Log ({a.deliveries.length})
           </button>
         </span>
@@ -520,9 +521,9 @@ function AlertsSetup({ view, reload, onCreate, act, busy, full }: { view: Alerts
   const tested = view.alerts.some((a) => a.deliveries.some((d) => d.test))
   const first = view.alerts.find((a) => a.coveredByPlan) ?? view.alerts[0] ?? null
   const steps = [
-    ...(view.telegram.enabled ? [{ id: 'telegram', label: 'Connect Telegram', done: !!view.telegram.linked }] : []),
-    { id: 'create', label: 'Create an alert', done: view.alerts.length > 0 },
-    { id: 'test', label: 'Send a test', done: tested },
+    ...(view.telegram.enabled ? [{ id: 'telegram', label: 'Connect Telegram', icon: <Send size={13} aria-hidden />, done: !!view.telegram.linked }] : []),
+    { id: 'create', label: 'Create an alert', icon: <Plus size={13} aria-hidden />, done: view.alerts.length > 0 },
+    { id: 'test', label: 'Send a test', icon: <Play size={13} aria-hidden />, done: tested },
   ]
   return (
     <Stepper title="Set up alerts" steps={steps} testId="alerts-stepper">
@@ -618,6 +619,7 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
   const deliveries = view.alerts.reduce((t, a) => t + a.deliveries.length, 0)
   return (
     <div className="flex flex-col gap-2">
+      <ServiceHeader icon={BellRing} title="Alerts" desc="A webhook or a Telegram message when a stock token's gap crosses your line, or when DeepCore launches a token." status={{ tone: view.alerts.length ? 'live' : 'idle', text: `${view.limits.used} of ${view.limits.max} in use` }} docs={`${DOCS_URL}/plans-alerts`} />
       <div className="flex flex-wrap items-center gap-2">
         <InfoTip className="flex-1" summary={`${view.limits.used} of ${view.limits.max} alerts on ${view.limits.planName} · checked every five minutes`}>
           An alert fires when its condition becomes true and re-arms once it is false again, at most one delivery per alert every {view.limits.cooldownMinutes} minutes. Alerts look only at stocks the tracker would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature are in the{' '}
@@ -638,7 +640,7 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
       {full && (
         <p className="m-0 text-[13px] text-muted">
           Every alert your plan includes is in use.{' '}
-          <button type="button" onClick={goBilling} className="min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] text-gold underline-offset-4 hover:underline">
+          <button type="button" onClick={goBilling} className="min-h-11 text-gold underline-offset-4 hover:underline">
             See plans
           </button>{' '}
           for more, or delete one.

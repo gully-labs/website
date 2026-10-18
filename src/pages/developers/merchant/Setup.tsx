@@ -150,7 +150,7 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
       <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-[2px]">
         <span className="flex flex-wrap items-center gap-2 text-[14px] text-ink">
           {w.chain}
-          <span className={`inline-flex items-center gap-1 rounded-full border px-2 font-mono text-[11px] ${live ? 'border-success-line text-green' : w.status === 'not-deployed' ? 'border-[#5a2a24] text-error' : 'border-line-strong text-faint'}`}>
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2 font-mono text-[11px] ${live ? 'border-success-line text-green' : w.status === 'not-deployed' ? 'border-error-line text-error' : 'border-line-strong text-faint'}`}>
             {live ? <CheckCircle2 size={11} aria-hidden /> : w.status === 'not-deployed' ? <ShieldAlert size={11} aria-hidden /> : null}
             {live ? 'receiving' : w.status === 'not-deployed' ? 'not deployed' : 'off'}
           </span>
@@ -365,7 +365,7 @@ export function WalletForm({ view, onChange }: { view: MerchantView; onChange: (
       <div className="flex flex-wrap items-center gap-2 lg:self-end" role="radiogroup" aria-label="Wallet type">
         <span className="text-[12px] text-dim">Type</span>
         <button type="button" role="radio" aria-checked={type === 'eoa'} className={chip(type === 'eoa')} onClick={() => setType('eoa')}>
-          Normal wallet (EOA)
+          Regular wallet
         </button>
         <button type="button" role="radio" aria-checked={type === 'contract'} className={chip(type === 'contract')} onClick={() => setType('contract')}>
           Safe or smart account

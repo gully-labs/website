@@ -1,5 +1,6 @@
 import { ScanSearch } from 'lucide-react'
 import { useMemo } from 'react'
+import { HolderMapMini } from '../../../components/holders/HolderMapMini'
 import { LaunchHolders } from '../../../components/holders/LaunchHolders'
 import { isLocalHost } from '../../../site-host'
 import { Skeleton } from '../parts'
@@ -18,6 +19,7 @@ export default function HoldersView() {
   const dc = useLaunches()
   const d = dc.k === 'ok' ? dc.data : null
   const pending = dc.k === 'error' ? 'unreadable' : '…'
+  const newest = d?.launches.length ? [...d.launches].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0] : null
   const now = d?.asOf ? Date.parse(d.asOf) : 0
   const day = d ? d.launches.filter((l) => now - Date.parse(l.createdAt) < 86_400_000) : []
   // Launches with a Holder Map per day (the poller's list spans at most 14 days), stacked by chain.
@@ -64,6 +66,11 @@ export default function HoldersView() {
       <section className={panel} aria-label="Latest launches with their Holder Maps" data-testid="holders-launches">
         <LaunchHolders external={!isLocalHost()} limit={8} />
       </section>
+      {newest?.chainKey && (
+        <Section title={`Newest map${newest.symbol ? `: ${newest.symbol}` : ''}`} sub="the animated mini map of the latest launch · live" className="col-span-full">
+          <HolderMapMini chain={newest.chainKey} token={newest.token} external={!isLocalHost()} />
+        </Section>
+      )}
       </div>
     </>
   )

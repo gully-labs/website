@@ -48,7 +48,7 @@ export default function AiView() {
         ]}
       />
       <div className="grid grid-cols-[minmax(0,1fr)_340px] items-start gap-4 max-[1100px]:grid-cols-1">
-        <section aria-label="Chat with Gully AI" className="flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-4" data-testid="app-ask">
+        <section aria-label="Chat with Gully AI" className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4" data-testid="app-ask">
           <AskPanel variant="page" />
         </section>
         <Section title="Widest gaps now" sub="live · Gully AI reads these when you ask about a stock">
