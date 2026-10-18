@@ -95,6 +95,9 @@ Object.assign(process.env, {
   GULLY_RPC_1: 'http://127.0.0.1:9',
   GULLY_RPC_56: 'http://127.0.0.1:9',
   GULLY_RPC_42161: 'http://127.0.0.1:9',
+  GULLY_RPC_10: 'http://127.0.0.1:9',
+  GULLY_RPC_137: 'http://127.0.0.1:9',
+  GULLY_RPC_43114: 'http://127.0.0.1:9',
   GULLY_TREASURY_ADDRESS: TREASURY,
   GULLY_ALLOW_LOOPBACK_WEBHOOKS: '1',
 })

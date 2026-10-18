@@ -206,7 +206,7 @@ function StoreLinkView({ link, viewer }: { link: StoreLink; viewer: Viewer | nul
         {link.state !== 'active' && <LinkClosed state={link.state} text={link.stateText} brand={brand} viewer={viewer} />}
         {link.state === 'active' && link.checkout.paused && <Paused brand={brand} viewer={viewer} />}
         {link.state === 'active' && !link.checkout.enabled && !link.checkout.paused && <Unavailable brand={brand} reason={link.checkout.reason} viewer={viewer} />}
-        {live && <LinkForm link={link} api={`/api/pay/m/l/${link.id}/invoice`} brand={brand} />}
+        {live && <LinkForm link={link} api={`/api/pay/m/l/${link.id}/invoice`} brand={brand} showFee />}
       </PayPanel>
     </CheckoutFrame>
   )

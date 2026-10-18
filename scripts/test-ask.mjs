@@ -100,6 +100,9 @@ Object.assign(process.env, {
   GULLY_RPC_56: 'http://127.0.0.1:9',
   GULLY_RPC_8453: 'http://127.0.0.1:9',
   GULLY_RPC_42161: 'http://127.0.0.1:9',
+  GULLY_RPC_10: 'http://127.0.0.1:9',
+  GULLY_RPC_137: 'http://127.0.0.1:9',
+  GULLY_RPC_43114: 'http://127.0.0.1:9',
 })
 for (const k of ['DEEPCORE_LOOP', 'ANTHROPIC_API_KEY', 'TELEGRAM_BOT_TOKEN', 'GHOST_CONTENT_KEY', 'ASK_DAILY_LIMIT', 'ASK_IP_PER_MIN', 'ASK_IP_PER_DAY', 'ASK_MODEL', 'ASK_DRAFT_MODEL', 'GULLY_TREASURY_ADDRESS']) delete process.env[k]
 await import('../server/server.mjs')

@@ -32,7 +32,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { assetById, ASSET_IDS, blockTime, CHAINS, confirmationsFor, DEFAULT_ASSET, fmtUnits, fmtUsd, MAX_TAG, paymentUri, quoteAmount, readFeed, readPayment, txUrl } from './payments.mjs'
-import { quoteSplit } from './payments.mjs'
+import { chainOffered, quoteSplit } from './payments.mjs'
 import { guardQuoteView, guardRecipient, refuse } from './pay-guard.mjs'
 import { PAID_PLAN_IDS, PERIOD_MS, planOf, PLANS, treasury } from './plans.mjs'
 import { getAccount, randomToken, saveDevelopers } from './store.mjs'
@@ -190,6 +190,8 @@ export async function createQuote({ kind, assetId, usdCents, address = null, pla
   if (!asset) return { ok: false, status: 400, error: `Choose an asset: ${ASSET_IDS.join(', ')}.` }
   const t = treasuryFor(asset)
   if (!t) return noSolanaTreasury
+  // The treasury is a Safe: no quote on a chain where it is not deployed (treasury-chains.mjs), the payment could be lost.
+  if (!chainOffered(asset.chainId)) return { ok: false, status: 409, error: `Payments on ${CHAINS[asset.chainId].name} are not open yet: the Gully Labs treasury is not deployed there. Choose another chain.` }
   guardRecipient(t, `new ${kind} quote`, { chainId: asset.chainId }) // never store a quote that pays a fee proxy
   let price = null
   if (asset.kind === 'native') {

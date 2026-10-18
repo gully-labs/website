@@ -306,6 +306,24 @@ async function start(address) {
   }
 }
 
+/**
+ * Websites the user added in the Gully Analytics dashboard itself (not through the app) belong to the
+ * account too: list them here and count them against the plan. Read at most once a minute per account.
+ */
+const adoptedAt = new Map()
+async function adoptDashboardSites(acc) {
+  const last = adoptedAt.get(acc.umamiUserId) ?? 0
+  if (Date.now() - last < Number(process.env.ANALYTICS_ADOPT_MS ?? 60_000)) return
+  adoptedAt.set(acc.umamiUserId, Date.now())
+  const r = await umami.websitesOf(acc.umamiUserId)
+  if (!r.ok) return
+  const known = new Set(acc.sites.map((s) => s.id))
+  const added = r.websites.filter((w) => !known.has(w.id))
+  if (!added.length) return
+  for (const w of added) acc.sites.push({ id: w.id, name: w.name || w.domain, domain: w.domain, createdAt: w.createdAt ?? new Date().toISOString(), source: 'dashboard' })
+  await save()
+}
+
 /** Every /api/developer/analytics* route for a signed-in wallet (developer.mjs checks the session and CSRF). */
 export async function handleAnalyticsAccount(req, res, url, address) {
   const p = url.pathname
@@ -314,6 +332,7 @@ export async function handleAnalyticsAccount(req, res, url, address) {
 
   if (p === '/api/developer/analytics') {
     if (post) return json(res, 405, { error: 'GET only' }), true
+    if (acc) await adoptDashboardSites(acc)
     return json(res, 200, { configured: umami.umamiConfigured(), trialAvailable: !db.trialsUsed.includes(address), account: acc ? accountView(acc) : null, offer: publicPlans(), dashboardOrigin: DASHBOARD_ORIGIN, ...productBilling(KIND, address) }), true
   }
 

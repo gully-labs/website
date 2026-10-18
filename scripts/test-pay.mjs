@@ -23,8 +23,12 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-pay-'))
 const ADMIN = crypto.randomBytes(24).toString('hex')
 const TREASURY = privateKeyToAccount(generatePrivateKey()).address.toLowerCase()
 const TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-const TOKENS = { baseUsdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', ethUsdt: '0xdac17f958d2ee523a2206206994597c13d831ec7', bnbUsdt: '0x55d398326f99059ff775485246999027b3197955', arbUsdc: '0xaf88d065e77c8cc2239327c5edb3a432268e5831' }
-const FEEDS = { 8453: '0x71041dddad3595f9ced3dccfbe3d1f4b0a16bb70', 1: '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', 56: '0x0567f2323251f0aab15c8dfb1967e4e8a7d42aee', 42161: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612' }
+const TOKENS = { baseUsdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', ethUsdt: '0xdac17f958d2ee523a2206206994597c13d831ec7', bnbUsdt: '0x55d398326f99059ff775485246999027b3197955', arbUsdc: '0xaf88d065e77c8cc2239327c5edb3a432268e5831', opUsdc: '0x0b2c639c533813f4aa9d7837caf62653d097ff85', polygonUsdc: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', avaxUsdt: '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7' }
+const FEEDS = { 8453: '0x71041dddad3595f9ced3dccfbe3d1f4b0a16bb70', 1: '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', 56: '0x0567f2323251f0aab15c8dfb1967e4e8a7d42aee', 42161: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612', 10: '0x13e3ee699d1909e989722e753853ae30b17e08c5', 137: '0xab594600376ec9fd91f8e885dadf0ce036862de0', 43114: '0x0a77230d17318075983913bc2145db16c7366156' }
+/** Runtime code the stubs answer for the treasury per chain ('0x' = none, so an EOA treasury to start with). */
+const treasuryCode = {}
+/** Chains whose eth_getCode answers an RPC error (node down), for the treasury gate. */
+const codeDown = new Set()
 
 const t = makeChecker()
 const { check } = t
@@ -56,7 +60,13 @@ function makeChain(chainId, answer) {
       let result = null
       if (q.method === 'eth_chainId') result = hex(chainId)
       else if (q.method === 'eth_blockNumber') result = hex(c.head)
-      else if (q.method === 'eth_getTransactionReceipt') result = c.receipts.get(q.params[0]) ?? null
+      else if (q.method === 'eth_getCode') {
+        if (codeDown.has(chainId)) {
+          res.writeHead(200, { 'content-type': 'application/json' })
+          return res.end(JSON.stringify({ jsonrpc: '2.0', id: q.id, error: { code: -32000, message: 'stub: node down' } }))
+        }
+        result = String(q.params[0]).toLowerCase() === TREASURY ? (treasuryCode[chainId] ?? '0x') : '0x'
+      } else if (q.method === 'eth_getTransactionReceipt') result = c.receipts.get(q.params[0]) ?? null
       else if (q.method === 'eth_getTransactionByHash') result = c.txs.get(q.params[0]) ?? null
       else if (q.method === 'eth_getBlockByNumber') {
         const n = Number(BigInt(q.params[0]))
@@ -73,9 +83,9 @@ function makeChain(chainId, answer) {
   return c
 }
 
-const chains = { 8453: makeChain(8453, 2_400_00000000n), 1: makeChain(1, 2_500_00000000n), 56: makeChain(56, 700_00000000n), 42161: makeChain(42161, 2_450_00000000n) }
+const chains = { 8453: makeChain(8453, 2_400_00000000n), 1: makeChain(1, 2_500_00000000n), 56: makeChain(56, 700_00000000n), 42161: makeChain(42161, 2_450_00000000n), 10: makeChain(10, 2_400_00000000n), 137: makeChain(137, 9_000000n), 43114: makeChain(43114, 10_00000000n) }
 for (const c of Object.values(chains)) await new Promise((r) => c.server.listen(0, '127.0.0.1', r))
-const [base, eth, bnb, arb] = [chains[8453], chains[1], chains[56], chains[42161]]
+const [base, eth, bnb, arb, op, polygon, avax] = [chains[8453], chains[1], chains[56], chains[42161], chains[10], chains[137], chains[43114]]
 
 /* ------------------------------------------- legacy data (migration test) --- */
 
@@ -121,8 +131,11 @@ const payPost = (p, body) => anon.post(p, body)
 try {
   /* ------------------------------------------------------------ offer --- */
   const plans = (await anon.call('/api/plans')).data
-  check('GET /api/plans lists ten assets on four chains', plans.assets.length === 10 && plans.chains.map((c) => c.id).join() === '8453,1,56,42161', plans.assets.map((a) => a.id).join())
-  check('confirmations per chain: Ethereum 6, Base 10, BNB Chain 15, Arbitrum 10', plans.chains.map((c) => c.confirmations).join() === '10,6,15,10')
+  check('GET /api/plans lists 18 assets on seven chains (an EOA treasury: every chain offered)', plans.assets.length === 18 && plans.chains.map((c) => c.id).join() === '8453,1,56,42161,10,137,43114', plans.assets.map((a) => a.id).join())
+  check('confirmations per chain: Ethereum 6, Base 10, BNB Chain 15, Arbitrum 10, OP Mainnet 10, Polygon 64, Avalanche 2', plans.chains.map((c) => c.confirmations).join() === '10,6,15,10,10,64,2')
+  const noProxy = [137, 43114] // Polygon's and Avalanche's proxies are not Base's build (contracts/CHOICE.md): plain transfers
+  check('every chain but Polygon and Avalanche reports a verified fee proxy, usable now (feeSplit) with an EOA treasury', plans.chains.every((c) => c.feeProxy === !noProxy.includes(c.id) && c.feeSplit === !noProxy.includes(c.id)) && plans.assets.every((a) => a.feeSplit === (a.kind === 'token' && !noProxy.includes(a.chainId))), JSON.stringify(plans.chains.map((c) => [c.id, c.feeProxy, c.feeSplit])))
+  check('the new chains carry the on-chain-checked assets: OP USDC/USDT/ETH, Polygon USDC/POL, Avalanche USDC/USDT/AVAX', ['op-usdc', 'op-usdt', 'op-eth', 'polygon-usdc', 'polygon-pol', 'avax-usdc', 'avax-usdt', 'avax-avax'].every((id) => plans.assets.some((a) => a.id === id)) && plans.assets.find((a) => a.id === 'polygon-pol').feed.description === 'MATIC / USD' && plans.assets.find((a) => a.id === 'avax-avax').feed.description === 'AVAX / USD' && plans.assets.find((a) => a.id === 'op-usdc').address === TOKENS.opUsdc)
   check('the BNB Chain stablecoins have 18 decimals', plans.assets.filter((a) => a.chainId === 56 && a.kind === 'token').every((a) => a.decimals === 18))
   check('no RPC URL is published', !JSON.stringify(plans).includes('127.0.0.1') && !JSON.stringify(plans).includes('publicnode'))
 
@@ -224,6 +237,65 @@ try {
   const bill = (await dev.call('/api/developer/billing')).data
   check('billing lists every chain paid on', new Set(bill.payments.map((p) => p.chainId)).size === 4, JSON.stringify(bill.payments.map((p) => p.chainId)))
 
+  /* -------------------------------------------- new chains: quotes and payments --- */
+  const qpol = (await checkout('pro', 'polygon-pol')).data?.intent
+  const needPol = (4900n * 10n ** 26n + 9_000000n * 100n - 1n) / (9_000000n * 100n)
+  check('a POL quote on Polygon is priced by the MATIC / USD feed (POL = MATIC 1:1), rounded up', !!qpol && qpol.price?.description === 'MATIC / USD' && BigInt(qpol.amountRaw) > needPol && qpol.confirmations === 64 && qpol.asset.symbol === 'POL', JSON.stringify(qpol?.price))
+  r = await verify(qpol.id, polygon.add({ from: me, value: BigInt(qpol.amountRaw), block: polygon.head - 40 }))
+  check('pending: 41 of 64 confirmations on Polygon (202)', r.status === 202 && r.data?.needed === 64 && r.data?.confirmations === 41, r.data?.error)
+  r = await verify(qpol.id, polygon.add({ from: me, value: BigInt(qpol.amountRaw), block: polygon.head - 70 }))
+  check('an exact POL payment buys Pro; the receipt links to Polygonscan', r.status === 200 && r.data.payment.symbol === 'POL' && /^https:\/\/polygonscan\.com\/tx\/0x/.test(r.data.payment.txUrl), r.data?.error)
+  const qav = (await checkout('business', 'avax-usdt')).data?.intent
+  r = await verify(qav.id, avax.add({ from: stranger, value: BigInt(qav.amountRaw), token: TOKENS.avaxUsdt, block: avax.head }))
+  check('USDT on Avalanche from another wallet, exact amount, 1 of 2 confirmations is pending', r.status === 202 && r.data?.needed === 2, r.data?.error)
+  r = await verify(qav.id, avax.add({ from: stranger, value: BigInt(qav.amountRaw), token: TOKENS.avaxUsdt }))
+  check('USDT on Avalanche (6 decimals, on-chain symbol USDt) is matched and links to Snowtrace', r.status === 200 && r.data.payment.symbol === 'USDT' && /snowtrace\.io\/tx\//.test(r.data.payment.txUrl), r.data?.error)
+  const qop = (await checkout('pro', 'op-eth')).data?.intent
+  r = await verify(qop.id, op.add({ from: me, value: BigInt(qop.amountRaw), token: TOKENS.opUsdc }))
+  check('refused: a USDC transfer on an OP Mainnet ETH quote', r.status === 422, r.data?.error)
+  r = await verify(qop.id, op.add({ from: me, value: BigInt(qop.amountRaw) }))
+  check('an ETH payment on OP Mainnet buys Pro; the receipt links to optimistic.etherscan.io', r.status === 200 && r.data.payment.chainId === 10 && /optimistic\.etherscan\.io\/tx\//.test(r.data.payment.txUrl), r.data?.error)
+
+  /* ------------------------------------------ the treasury deployment gate --- */
+  // The treasury becomes a Safe deployed on the four original chains only: the three new chains close (not in
+  // /api/plans, no quotes), the admin panel says what to do, and deploying the Safe on one of them reopens it.
+  const recheck = () => admin('/api/admin/treasury/check', 'POST')
+  for (const id of [8453, 1, 56, 42161]) treasuryCode[id] = '0x6080604052' + '00'.repeat(20)
+  let tr = (await recheck()).data?.treasury
+  check('gate: the treasury is seen as a contract (Safe) once any chain has code at its address', tr?.kind === 'contract' && tr.chains.find((c) => c.chainId === 8453).status === 'deployed', JSON.stringify(tr?.chains?.map((c) => [c.chainId, c.status])))
+  const missing = tr.chains.filter((c) => c.status === 'missing').map((c) => c.chainId)
+  check('gate: OP Mainnet, Polygon and Avalanche are "missing" and not offered', missing.join() === '10,137,43114' && tr.chains.filter((c) => !c.offered).map((c) => c.chainId).join() === '10,137,43114')
+  const msg = tr.chains.find((c) => c.chainId === 137).message
+  check('gate: the admin message tells the owner what to do', /^Treasury not deployed on Polygon \u2014 deploy the Safe at the same address via https:\/\/app\.safe\.global, then it switches on by itself\./.test(msg), msg)
+  const plans2 = (await anon.call('/api/plans')).data
+  check('gate: /api/plans now lists four chains and 10 assets; nothing on the closed chains', plans2.chains.map((c) => c.id).join() === '8453,1,56,42161' && plans2.assets.length === 10 && !plans2.assets.some((a) => [10, 137, 43114].includes(a.chainId)))
+  r = await checkout('pro', 'op-usdc')
+  check('gate: a quote on a closed chain is refused (409) and names the chain', r.status === 409 && /OP Mainnet.*not deployed/.test(r.data?.error), r.data?.error)
+  const invG = (await admin('/api/admin/invoices', 'POST', { title: 'Gate', usd: '10' })).data.invoice
+  check('gate: an invoice taking every asset lists only the open chains', invG.assets.length === 10 && !invG.assets.some((a) => a.chainId === 43114))
+  r = await payPost(`/api/pay/${invG.id}/quote`, { asset: 'avax-usdc' })
+  check('gate: an invoice quote on a closed chain is refused (409)', r.status === 409, r.data?.error)
+  const abG = (await admin('/api/admin/billing')).data
+  check('gate: admin billing carries the per-chain treasury state', abG.treasury?.kind === 'contract' && abG.treasury.chains.length === 7 && abG.treasury.safeApp === 'https://app.safe.global')
+  codeDown.add(42161)
+  tr = (await recheck()).data.treasury
+  check('gate: a chain that cannot be read keeps what it knew (Arbitrum stays deployed on a node error)', tr.chains.find((c) => c.chainId === 42161).status === 'deployed' && tr.chains.find((c) => c.chainId === 42161).offered)
+  codeDown.delete(42161)
+  codeDown.add(10)
+  treasuryCode[10] = '0x6080604052'
+  tr = (await recheck()).data.treasury
+  check('gate: a closed chain whose node is down stays closed (what was known is kept, the error shown, not offered)', tr.chains.find((c) => c.chainId === 10).status === 'missing' && /node down/.test(tr.chains.find((c) => c.chainId === 10).error ?? '') && !tr.chains.find((c) => c.chainId === 10).offered, JSON.stringify(tr.chains.find((c) => c.chainId === 10)))
+  codeDown.delete(10)
+  tr = (await recheck()).data.treasury
+  check('gate: the Safe deployed on OP Mainnet reopens it by itself at the next check', tr.chains.find((c) => c.chainId === 10).status === 'deployed' && tr.chains.find((c) => c.chainId === 10).offered && (await anon.call('/api/plans')).data.chains.map((c) => c.id).join() === '8453,1,56,42161,10')
+  const qg = (await checkout('pro', 'op-usdc')).data?.intent
+  r = await verify(qg.id, op.add({ from: me, value: 49_000_000n, token: TOKENS.opUsdc }))
+  check('gate: USDC on OP Mainnet pays a plan once the chain is open', !!qg && r.status === 200 && r.data.payment.chainId === 10, r.data?.error)
+  check('gate: paying Gully Labs itself is a plain transfer (no split) even where the proxy exists', qg.split === null)
+  for (const id of Object.keys(treasuryCode)) delete treasuryCode[id]
+  tr = (await recheck()).data.treasury
+  check('gate: back to an EOA treasury (code nowhere): every chain open again', tr.kind === 'eoa' && tr.chains.every((c) => c.offered) && (await anon.call('/api/plans')).data.chains.length === 7)
+
   /* --------------------------------------------------------- invoices --- */
   check('admin invoices need the admin token (401)', (await admin('/api/admin/invoices', 'GET', undefined, 'x'.repeat(48))).status === 401)
   check('refused: an invoice without a title', (await admin('/api/admin/invoices', 'POST', { usd: '100' })).status === 400)
@@ -263,7 +335,7 @@ try {
   check('admin cannot cancel a paid invoice', (await admin(`/api/admin/invoices/${inv.id}/cancel`, 'POST')).status === 409)
 
   const inv2 = (await admin('/api/admin/invoices', 'POST', { title: 'Gully Analytics: annual', usd: '600.50' })).data.invoice
-  check('an invoice with no asset list takes every asset', inv2.assets.length === 10 && inv2.usd === '600.50')
+  check('an invoice with no asset list takes every asset', inv2.assets.length === 18 && inv2.usd === '600.50')
   const iq2 = (await payPost(`/api/pay/${inv2.id}/quote`, { asset: 'bnb-bnb' })).data?.quote
   check('an invoice quote in BNB, priced by the feed', !!iq2 && iq2.price?.description === 'BNB / USD' && BigInt(iq2.amountRaw) > (60050n * 10n ** 26n) / (700_00000000n * 100n))
   r = await payPost(`/api/pay/${inv2.id}/verify`, { quoteId: iq2.id, txHash: bnb.add({ from: stranger, value: BigInt(iq2.amountRaw), block: bnb.head - 10 }) })
@@ -337,7 +409,7 @@ try {
   const tg = []
   Mon.setFeeProxyNotifierForTest(async (text) => (tg.push(text), { ok: true, status: 200, error: null }))
   let fp = await admin('/api/admin/fee-proxy/check', 'POST')
-  check('monitor: POST /api/admin/fee-proxy/check reads every proxy on every chain: all zero, no alert', fp.status === 200 && fp.data.feeProxy.alerts.length === 0 && fp.data.feeProxy.chains.length === 4 && fp.data.feeProxy.chains.every((c) => c.checkedAt && !c.error && c.proxies.length >= 2 && c.proxies.every((p) => p.balances.length >= 2 && p.balances.every((b) => b.raw === '0'))), JSON.stringify(fp.data?.feeProxy?.chains?.map((c) => [c.chain, c.error])))
+  check('monitor: POST /api/admin/fee-proxy/check reads every proxy on every chain: all zero, no alert', fp.status === 200 && fp.data.feeProxy.alerts.length === 0 && fp.data.feeProxy.chains.length === 7 && fp.data.feeProxy.chains.every((c) => c.checkedAt && !c.error && c.proxies.length >= 2 && c.proxies.every((p) => p.balances.length >= 2 && p.balances.every((b) => b.raw === '0'))), JSON.stringify(fp.data?.feeProxy?.chains?.map((c) => [c.chain, c.error])))
   check('monitor: GET is not allowed on the check endpoint', (await admin('/api/admin/fee-proxy/check')).status === 405)
   base.balances.set(`${TOKENS.baseUsdc}:${PROXY.toLowerCase()}`, 7_250_000n)
   Mon.clearFeeProxyCacheForTest()

@@ -107,6 +107,14 @@ export async function createWebsiteFor(userId, name, domain) {
   return { ok: true, website: { id, name: c.data.name ?? name, domain: c.data.domain ?? domain } }
 }
 
+/** The websites a user owns in Gully Analytics, including ones they added in the dashboard itself. */
+export async function websitesOf(userId) {
+  const r = await call('GET', `/api/users/${encodeURIComponent(userId)}/websites?pageSize=200`)
+  if (!r.ok) return r
+  const list = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.data) ? r.data.data : []
+  return { ok: true, websites: list.filter((w) => w && typeof w.id === 'string' && !w.deletedAt).map((w) => ({ id: w.id, name: w.name ?? '', domain: w.domain ?? '', createdAt: w.createdAt ?? null })) }
+}
+
 /** Umami's own figures for a website between two instants: page views, visitors, visits and custom events. */
 export async function websiteStats(id, startAt, endAt) {
   const q = `startAt=${startAt}&endAt=${endAt}`

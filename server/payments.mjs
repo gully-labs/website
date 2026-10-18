@@ -1,7 +1,7 @@
 // Gully Pay: the chains and assets a payment can be made in, how each is priced, and how a payment
 // transaction is read from a public node. Used by plan checkout (billing.mjs) and general invoices
 // (invoices.mjs). No custody: every payment is a plain transfer straight to GULLY_TREASURY_ADDRESS,
-// the same EVM address on every chain listed here.
+// the same EVM address on every chain listed here (a Safe: offered only where it is deployed, treasury-chains.mjs).
 //
 // Every contract address below was checked on its own chain on 2026-10-16 with eth_call:
 //   tokens: symbol() and decimals();   feeds: description(), decimals() and latestRoundData().
@@ -9,6 +9,15 @@
 //   Ethereum  USDC 0xA0b8…eB48 (USDC, 6), USDT 0xdAC1…1ec7 (USDT, 6)   ETH / USD 0x5f4e…8419 (8)
 //   BNB Chain USDT 0x55d3…7955 (USDT, 18), USDC 0x8AC7…580d (USDC, 18)  BNB / USD 0x0567…2aeE (8)
 //   Arbitrum  USDC 0xaf88…5831 (USDC, 6)                 ETH / USD 0x639F…a612 (8)
+// Checked the same way on 2026-10-18 (eth_call through 3 to 6 public RPCs each; see contracts/CHOICE.md):
+//   OP Mainnet USDC 0x0b2C…Ff85 (USDC, 6, Circle native), USDT 0x94b0…8e58 (USDT, 6, "Tether USD", the OP standard
+//              bridge's, about 300M supply; Tether's USDT0 "USD₮0" at 0x01bF…1071 is not offered, as on Polygon)
+//                                                         ETH / USD 0x13e3…08c5 (8)
+//   Polygon    USDC 0x3c49…3359 (USDC, 6, Circle native)  MATIC / USD 0xAB59…2dE0 (8): Chainlink prices POL under
+//              its MATIC / USD feed (POL replaced MATIC 1:1 in 2024). The old USDT at 0xc213…8e8F now reads
+//              symbol "USDT0" (Tether's omnichain token), so it is NOT offered until the owner decides.
+//   Avalanche  USDC 0xB97E…8a6E (USDC, 6, Circle native), USDT 0x9702…A8c7 (on-chain symbol "USDt", name
+//              "TetherToken", 6, Tether's native issuance)  AVAX / USD 0x0A77…6156 (8)
 // Do not add an address here without checking it the same way.
 //
 // Env:
@@ -17,12 +26,15 @@
 //   GULLY_BASE_RPC                older name for GULLY_RPC_8453, still honoured
 //   GULLY_MIN_CONFIRMATIONS       older override for Base's confirmations, still honoured
 //   GULLY_CONFIRMATIONS_<chainId> confirmations for one chain
+//   GULLY_TREASURY_CHECK_MS, GULLY_TREASURY_KIND   the treasury deployment gate (treasury-chains.mjs): a chain where
+//                                 the Safe treasury has no code is not offered and gets no fee split
 //   GULLY_TESTNET_CHAINS          TESTNET ONLY, unset in production: comma-separated testnet chain ids to offer as well
 //                                 (only 84532, Base Sepolia, is known). Ignored when NODE_ENV=production.
 //   GULLY_FEEPROXY_<chainId>      the ERC20FeeProxy on such a testnet chain (Request has none there; see
 //                                 contracts/TESTNET-RESULTS.md). Read only for chains in GULLY_TESTNET_CHAINS.
 
 import { isFeeProxy, recipientViolations, SPLIT_PROXIES } from './fee-proxy-guard.mjs'
+import { treasuryDeployedOn } from './treasury-chains.mjs'
 import { keccak_256 } from './vendor/noble.mjs'
 import { isSolanaAsset, readSolanaPayment, SOLANA_ASSETS, SOLANA_CHAIN, SOLANA_CHAIN_ID, solanaPayOn } from './solana-pay.mjs'
 
@@ -47,7 +59,7 @@ export const CHAINS = {
     explorer: 'https://etherscan.io',
     explorerName: 'Etherscan',
     confirmations: 6,
-    rpcs: ['https://eth.drpc.org', 'https://eth-mainnet.public.blastapi.io', 'https://rpc.mevblocker.io', 'https://ethereum-rpc.publicnode.com', 'https://rpc.flashbots.net', 'https://mainnet.gateway.tenderly.co'],
+    rpcs: ['https://eth.drpc.org', 'https://rpc.mevblocker.io', 'https://ethereum-rpc.publicnode.com', 'https://rpc.flashbots.net', 'https://mainnet.gateway.tenderly.co'],
     feed: { address: '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
   56: {
@@ -69,6 +81,46 @@ export const CHAINS = {
     confirmations: 10,
     rpcs: ['https://arbitrum.drpc.org', 'https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc', 'https://arbitrum.gateway.tenderly.co', 'https://arbitrum.meowrpc.com', 'https://1rpc.io/arb'],
     feed: { address: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC },
+  },
+  // Added 2026-10-18 (feat/pay-chains). Each RPC below answered eth_chainId, eth_blockNumber, eth_getCode,
+  // eth_gasPrice and the feed's latestRoundData twice from the dev machine that day, except where noted (several
+  // public hosts fail there with a TLS interception error the production box does not have; contracts/CHOICE.md).
+  // Left out after that test: api.zan.top (eth_call refused without an account), blastapi (shut down), onfinality
+  // and tatum (rate limit / paid plan).
+  10: {
+    id: 10,
+    key: 'optimism',
+    name: 'OP Mainnet',
+    explorer: 'https://optimistic.etherscan.io',
+    explorerName: 'Etherscan (OP Mainnet)',
+    confirmations: 10,
+    rpcs: ['https://mainnet.optimism.io', 'https://optimism-rpc.publicnode.com', 'https://optimism.drpc.org', 'https://op-pokt.nodies.app', 'https://10.rpc.thirdweb.com', 'https://optimism.publicnode.com'],
+    feed: { address: '0x13e3ee699d1909e989722e753853ae30b17e08c5', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC },
+  },
+  137: {
+    id: 137,
+    key: 'polygon',
+    name: 'Polygon',
+    explorer: 'https://polygonscan.com',
+    explorerName: 'Polygonscan',
+    // Polygon PoS finalises through Heimdall milestones in about a minute; 64 blocks (about two minutes) is past it.
+    confirmations: 64,
+    // publicnode and thirdweb answered from the dev machine; drpc, polygon-rpc.com (Polygon Labs), 1rpc and
+    // tenderly could not be reached from it (TLS interception there) and sit behind them; the cool-off steps past
+    // any that fails.
+    rpcs: ['https://polygon-bor.publicnode.com', 'https://137.rpc.thirdweb.com', 'https://polygon.drpc.org', 'https://polygon-rpc.com', 'https://1rpc.io/matic', 'https://polygon.gateway.tenderly.co'],
+    feed: { address: '0xab594600376ec9fd91f8e885dadf0ce036862de0', decimals: 8, description: 'MATIC / USD', maxAgeSec: FEED_MAX_AGE_SEC },
+  },
+  43114: {
+    id: 43114,
+    key: 'avalanche',
+    name: 'Avalanche',
+    explorer: 'https://snowtrace.io',
+    explorerName: 'Snowtrace',
+    // Avalanche consensus finalises a block in about a second; two blocks is a margin, not a wait.
+    confirmations: 2,
+    rpcs: ['https://api.avax.network/ext/bc/C/rpc', 'https://avalanche-c-chain-rpc.publicnode.com', 'https://avalanche.drpc.org', 'https://43114.rpc.thirdweb.com', 'https://avalanche.publicnode.com', 'https://avalanche-c-chain.publicnode.com'],
+    feed: { address: '0x0a77230d17318075983913bc2145db16c7366156', decimals: 8, description: 'AVAX / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
 }
 
@@ -92,9 +144,14 @@ const TESTNET_IDS = process.env.NODE_ENV === 'production' ? [] : [...new Set(Str
 for (const id of TESTNET_IDS) CHAINS[id] = TESTNETS[id].chain
 
 /** The EVM chains in display order (object keys that are numbers would sort by id). Testnets only when enabled. */
-export const CHAIN_LIST = [8453, 1, 56, 42161, ...TESTNET_IDS].map((id) => CHAINS[id])
-/** Every chain a payment can be made on right now: the EVM chains, plus Solana when its treasury is set. */
-export const publicChains = () => [...CHAIN_LIST, ...(solanaPayOn() ? [SOLANA_CHAIN] : [])]
+export const CHAIN_LIST = [8453, 1, 56, 42161, 10, 137, 43114, ...TESTNET_IDS].map((id) => CHAINS[id])
+/** Whether Gully Labs' own treasury may be paid on a chain (treasury-chains.mjs). Solana has its own treasury. */
+export const chainOffered = (chainId) => chainId === SOLANA_CHAIN_ID || treasuryDeployedOn(chainId)
+/**
+ * Every chain a payment to Gully Labs can be made on right now: the EVM chains where the treasury is deployed,
+ * plus Solana when its treasury is set. `{ all: true }` lists every configured chain, gate or not (admin, merchants).
+ */
+export const publicChains = ({ all = false } = {}) => [...CHAIN_LIST.filter((c) => all || chainOffered(c.id)), ...(solanaPayOn() ? [SOLANA_CHAIN] : [])]
 
 /** Accepted assets, in the order the picker shows them. `native` coins are priced by their chain's feed. */
 export const ASSETS = [
@@ -108,6 +165,14 @@ export const ASSETS = [
   { id: 'bnb-bnb', chainId: 56, symbol: 'BNB', name: 'BNB', kind: 'native', address: null, decimals: 18 },
   { id: 'arb-usdc', chainId: 42161, symbol: 'USDC', name: 'USD Coin', kind: 'token', address: '0xaf88d065e77c8cc2239327c5edb3a432268e5831', decimals: 6 },
   { id: 'arb-eth', chainId: 42161, symbol: 'ETH', name: 'Ether', kind: 'native', address: null, decimals: 18 },
+  { id: 'op-usdc', chainId: 10, symbol: 'USDC', name: 'USD Coin', kind: 'token', address: '0x0b2c639c533813f4aa9d7837caf62653d097ff85', decimals: 6 },
+  { id: 'op-usdt', chainId: 10, symbol: 'USDT', name: 'Tether USD', kind: 'token', address: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58', decimals: 6 },
+  { id: 'op-eth', chainId: 10, symbol: 'ETH', name: 'Ether', kind: 'native', address: null, decimals: 18 },
+  { id: 'polygon-usdc', chainId: 137, symbol: 'USDC', name: 'USD Coin', kind: 'token', address: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', decimals: 6 },
+  { id: 'polygon-pol', chainId: 137, symbol: 'POL', name: 'Polygon Ecosystem Token', kind: 'native', address: null, decimals: 18 },
+  { id: 'avax-usdc', chainId: 43114, symbol: 'USDC', name: 'USD Coin', kind: 'token', address: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e', decimals: 6 },
+  { id: 'avax-usdt', chainId: 43114, symbol: 'USDT', name: 'Tether USD', kind: 'token', address: '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7', decimals: 6 },
+  { id: 'avax-avax', chainId: 43114, symbol: 'AVAX', name: 'Avalanche', kind: 'native', address: null, decimals: 18 },
   ...SOLANA_ASSETS,
   ...TESTNET_IDS.flatMap((id) => TESTNETS[id].assets),
 ]
@@ -132,13 +197,21 @@ export function rpcsFor(chainId) {
 export const txUrl = (chainId, hash) => `${CHAINS[chainId].explorer}/tx/${hash}`
 export const addressUrl = (chainId, a) => `${CHAINS[chainId].explorer}/address/${a}`
 
-/** What the browser is told about the assets: no RPC URLs, nothing secret. */
-export function publicAssets() {
-  return ASSETS.filter((a) => !isSolanaAsset(a) || solanaPayOn()).map((a) => {
+/**
+ * What the browser is told about the assets: no RPC URLs, nothing secret. Only chains where the treasury is
+ * deployed (chainOffered), unless `{ all: true }` (merchant stores: their own wallet is the gate there).
+ * `feeSplit`: a token on a chain with a verified fee proxy AND a deployed treasury, so a merchant fee can be
+ * collected in the payment itself (withFeeSplit); elsewhere the fee is invoiced.
+ */
+export function publicAssets({ all = false } = {}) {
+  return ASSETS.filter((a) => (!isSolanaAsset(a) || solanaPayOn()) && (all || chainOffered(a.chainId))).map((a) => {
     const c = CHAINS[a.chainId]
-    return { id: a.id, chainId: a.chainId, chain: c.name, chainKey: c.key, symbol: a.symbol, name: a.name, kind: a.kind, address: a.address, decimals: a.decimals, confirmations: confirmationsFor(a.chainId), explorer: c.explorer, feed: a.kind === 'native' ? { address: c.feed.address, description: c.feed.description } : null }
+    return { id: a.id, chainId: a.chainId, chain: c.name, chainKey: c.key, symbol: a.symbol, name: a.name, kind: a.kind, address: a.address, decimals: a.decimals, confirmations: confirmationsFor(a.chainId), explorer: c.explorer, feed: a.kind === 'native' ? { address: c.feed.address, description: c.feed.description } : null, feeSplit: feeSplitOn(a.chainId) && a.kind === 'token' }
   })
 }
+
+/** Whether a merchant fee can ride inside the payment on a chain: a verified ERC20FeeProxy and a deployed treasury. */
+export const feeSplitOn = (chainId) => !!FEE_PROXIES[chainId] && treasuryDeployedOn(chainId)
 
 /* ------------------------------------------------------------- amounts --- */
 
@@ -456,6 +529,8 @@ export function withFeeSplit(quote, { bps, feeTo, feeRaw = null }) {
   // A proxy as recipient or fee address is never split (and pay-guard.mjs refuses the quote outright).
   if (isFeeProxy(feeTo) || isFeeProxy(quote.treasury)) return quote
   if (feeTo.toLowerCase() === quote.treasury.toLowerCase()) return quote
+  // The fee leg goes to the Safe treasury: never on a chain where it is not deployed (the fee is invoiced instead).
+  if (!treasuryDeployedOn(a.chainId)) return quote
   return Object.assign(quote, { feeRaw: fee.toString(), feeTo: feeTo.toLowerCase(), ref: paymentReference(quote.id) })
 }
 

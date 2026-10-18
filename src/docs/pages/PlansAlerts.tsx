@@ -146,7 +146,7 @@ export function PlansAlerts() {
       slug="plans-alerts"
       eyebrow="BUILD · PLANS & ALERTS"
       title="Plans & alerts"
-      description="Paid plans for the Gully Labs tracker API, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature."
+      description="Paid plans for the Gully Labs tracker API, paid in USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature."
       lead="The API stays free. Paid plans raise the per-key rate limit, add gap alerts and keep a longer history. You pay in ETH, BNB, USDC or USDT from your own wallet straight to ours."
       sections={sections}
     >
@@ -172,7 +172,7 @@ export function PlansAlerts() {
 
       <Section id="paying" title="Paying">
         <P>
-          Prices are in US dollars. You pay in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the Gully Labs treasury wallet, which is the same address on every chain.
+          Prices are in US dollars. You pay in USDC, USDT or the chain's own coin (ETH, BNB, POL, AVAX) on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche, straight to the Gully Labs treasury wallet, which is the same address on every chain. The treasury is a Safe, so a chain is offered only once the Safe is deployed there; the list below is the live one.
         </P>
         {offer && offer !== 'error' && (
           <Fields
