@@ -12,10 +12,10 @@ export function ChainMark({ chainKey, name, size = 24 }: { chainKey: string; nam
 }
 
 /** An asset's mark with its chain's mark in the corner (USDC on Base, ETH on Arbitrum…). */
-export function AssetMark({ asset }: { asset: Pick<PayAsset, 'symbol' | 'chainKey' | 'chain'> }) {
+export function AssetMark({ asset }: { asset: Pick<PayAsset, 'symbol' | 'chainKey' | 'chain'> & Partial<Pick<PayAsset, 'address'>> }) {
   return (
     <span className="relative inline-flex size-6 flex-none" aria-hidden>
-      <TokenLogo symbol={asset.symbol} size={24} decorative />
+      <TokenLogo symbol={asset.symbol} chain={asset.chainKey} address={asset.address} size={24} decorative />
       <span className="absolute -right-[4px] -bottom-[4px] inline-flex rounded-full bg-bg p-px">
         <ChainMark chainKey={asset.chainKey} name={asset.chain} size={12} />
       </span>
@@ -50,7 +50,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false, showFee
                   onClick={() => onChange(a.id)}
                   className={`inline-flex min-h-11 min-w-[84px] items-center justify-center gap-2 rounded-btn border px-3 font-mono text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-gold bg-[rgba(217,181,99,.08)] text-gold' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
                 >
-                  <TokenLogo symbol={a.symbol} size={20} decorative />
+                  <TokenLogo symbol={a.symbol} chain={a.chainKey} address={a.address} size={20} decorative />
                   {a.symbol}
                   <span className={`text-[11px] tracking-[.5px] ${on ? 'text-gold' : 'text-faint'}`}>{a.kind === 'native' ? 'COIN' : 'STABLE'}</span>
                 </button>
