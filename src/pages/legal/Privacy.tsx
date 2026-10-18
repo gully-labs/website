@@ -247,7 +247,7 @@ export function PrivacyPage() {
                 Gully Pay merchant terms
               </Link>{' '}
               ·{' '}
-              <a href="https://docs.gullylabs.xyz/analytics" target="_blank" rel="noopener noreferrer" className={ext}>
+              <a href="https://docs.gullylabs.xyz/analytics" target="_blank" rel="noopener" className={ext}>
                 Gully Analytics docs
               </a>{' '}
               ·{' '}
