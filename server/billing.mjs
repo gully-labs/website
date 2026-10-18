@@ -32,6 +32,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { assetById, ASSET_IDS, blockTime, CHAINS, confirmationsFor, DEFAULT_ASSET, fmtUnits, fmtUsd, MAX_TAG, paymentUri, quoteAmount, readFeed, readPayment, txUrl } from './payments.mjs'
+import { quoteSplit } from './payments.mjs'
 import { PAID_PLAN_IDS, PERIOD_MS, planOf, PLANS, treasury } from './plans.mjs'
 import { getAccount, randomToken, saveDevelopers } from './store.mjs'
 
@@ -115,6 +116,8 @@ export function quoteView(q) {
     token: a.address,
     // EIP-681 wallet link for the exact amount (the pay page's QR). Built here, the one source of truth.
     uri: paymentUri(a, q.treasury, q.amountRaw),
+    // One-transaction merchant + fee payment through the fee proxy (payments.mjs withFeeSplit), or null.
+    split: quoteSplit(q),
     confirmations: confirmationsFor(a.chainId),
     // Kept for pages built before multi-chain payments.
     priceUsdc: q.plan && PLANS[q.plan] ? PLANS[q.plan].priceUsdc : null,

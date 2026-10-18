@@ -19,6 +19,7 @@
     "test:deepcore-alerts": "node scripts/test-deepcore-alerts.mjs",
     "test:tracker-trust": "node --test scripts/test-tracker-trust.mjs",
     "test:paylinks": "node scripts/test-paylinks.mjs",
+    "test:feeproxy": "node scripts/test-fee-proxy.mjs",
     "test:ask": "node scripts/test-ask.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",
     "test:app-host": "node scripts/test-app-host.mjs",
