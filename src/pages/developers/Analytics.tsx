@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { CodeBlock } from '../../docs/CodeBlock'
 import { DOCS_URL } from '../../site-host'
 import { api, daysLeft, fmtDate, shortAddress, type AnalyticsAccount, type AnalyticsPlan, type AnalyticsSite, type AnalyticsUsage, type AnalyticsView, type Payment, type Quote } from './api'
-import { Meter } from './charts'
+import { GhostCurves, Meter } from './charts'
+import { AnalyticsTraffic } from './tabcharts'
 import { BLOCK_TEXT, siteMeta, type SiteUsage } from './helpers'
 import { CopyButton, Dialog } from './Dialog'
 import { Empty, ErrorLine, Skeleton } from './parts'
@@ -133,6 +134,9 @@ function StartCard({ view, onStarted }: { view: AnalyticsView; onStarted: (s: Se
           Self-serve sign-up is not switched on on this server yet. Write to hello@gullylabs.xyz for early access.
         </p>
       )}
+      <GhostCurves height={140} title="Your page views and visitors will draw here">
+        <span className="max-w-[460px] text-[13px] text-muted">Once a website of yours records, its last 30 days chart here, read live from Gully Analytics.</span>
+      </GhostCurves>
       {err && <ErrorLine>{err}</ErrorLine>}
       <div className="relative flex flex-wrap items-center gap-2">
         <Can cat="analytics" what="start Gully Analytics">
@@ -601,6 +605,7 @@ export function AnalyticsPanel() {
             />
           ) : (
             <>
+              <AnalyticsTraffic account={a} />
               <Websites account={a} origin={view.dashboardOrigin} reload={load} />
               <PlanList view={view} account={a} onBuy={setBuying} />
             </>

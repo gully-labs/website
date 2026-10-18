@@ -116,6 +116,15 @@ export async function websiteStats(id, startAt, endAt) {
   return { ok: true, stats: { pageviews: n(s.data?.pageviews), visitors: n(s.data?.visitors), visits: n(s.data?.visits), customEvents: e.ok ? n(e.data?.events) : null } }
 }
 
+/** Umami's page views and visitors per UTC day between two instants (its /pageviews series; `sessions` is its visitors). */
+export async function websiteSeries(id, startAt, endAt) {
+  const r = await call('GET', `/api/websites/${encodeURIComponent(id)}/pageviews?startAt=${startAt}&endAt=${endAt}&unit=day&timezone=UTC`)
+  if (!r.ok) return r
+  // A point is { x: '2026-10-17 00:00:00' | ISO, y: n }; the day key is its first ten characters.
+  const pick = (list) => (Array.isArray(list) ? list.map((p) => ({ day: String(p.x).slice(0, 10), n: Number.isFinite(Number(p.y)) ? Number(p.y) : 0 })) : [])
+  return { ok: true, pageviews: pick(r.data?.pageviews), visitors: pick(r.data?.sessions) }
+}
+
 /** The Umami user as the admin sees it (404 once deleted). */
 export const getUser = (userId) => call('GET', `/api/users/${encodeURIComponent(userId)}`)
 

@@ -118,6 +118,9 @@ function watch(page, label) {
   }
 }
 
+/** True once an ECharts chart inside `sel` has drawn (the kit fades the chart in over its skeleton). */
+const drawnIn = (page, sel) => page.locator(`${sel} [data-chart].opacity-100 svg`).first().waitFor({ timeout: 15_000 }).then(() => true, () => false)
+
 async function noHorizontalScroll(page, label) {
   const w = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth])
   check(`${label}: no horizontal scroll at ${w[1]} px`, w[0] <= w[1], `scrollWidth ${w[0]}`)
@@ -327,6 +330,10 @@ await step('portal', async () => {
   const secret = await page.locator('[data-testid="new-secret"]').textContent({ timeout: 10_000 })
   check('keys: a key is created and its secret shown once', /^gl_/.test(secret?.trim() ?? ''), secret?.slice(0, 12))
   await page.getByRole('button', { name: 'I have saved it' }).click()
+  // Every workspace tab has one compact live chart; with nothing counted yet it is the ghosted placeholder, never a flat zero.
+  await page.locator('[data-testid="keys-traffic"] [data-testid="ghost-chart"]').waitFor({ timeout: 10_000 })
+  check('keys: with no calls yet the traffic chart is the ghosted "Your traffic will draw here"', (await page.locator('[data-testid="keys-traffic"]').getByText('Your traffic will draw here').count()) === 1)
+  check('keys: the new key\u2019s row has a ghosted spark, not a flat line', (await page.locator('[data-testid="key-spark"] svg[data-ghost]').count()) === 1)
   await page.getByRole('button', { name: 'Actions for e2e key' }).click()
   await page.getByRole('menuitem', { name: 'Rename' }).click()
   const rn = page.getByRole('dialog', { name: 'Rename key' })
@@ -356,10 +363,12 @@ await step('portal', async () => {
   await page.getByRole('button', { name: 'Pause', exact: true }).first().click()
   await page.getByText(/paused/).first().waitFor()
   check('alerts: pause', true)
+  check('alerts: the deliveries-per-day chart draws from the test delivery', await drawnIn(page, '[data-testid="alert-fires"]'))
   // Gully Analytics tab (sign-up is off on this server: it must say so, not break).
   await appNav.getByRole('link', { name: /^Analytics/ }).click()
   await page.getByText(/not switched on/).first().waitFor()
   check('analytics tab: says self-serve is off here', true)
+  check('analytics tab: the traffic placeholder curve draws while there is no account', (await page.getByTestId('ghost-chart').getByText('Your page views and visitors will draw here').count()) === 1)
   await w.verify()
 
   // Team: invite by link, the second wallet accepts in its own browser, role change, removal.
@@ -394,6 +403,7 @@ await step('portal', async () => {
   await page.getByRole('dialog', { name: 'Remove member' }).getByRole('button', { name: 'Remove', exact: true }).click()
   await sel.waitFor({ state: 'detached', timeout: 10_000 })
   check('team: the owner removes the member', true)
+  check('team: actions per member draw as bars', await drawnIn(page, '[data-testid="team-activity-chart"]'))
   // Activity lists what happened, in the UI.
   await appNav.getByRole('link', { name: /^Activity/ }).click()
   await page.getByRole('heading', { name: 'Activity' }).waitFor()
@@ -401,6 +411,10 @@ await step('portal', async () => {
   await page.locator('[data-testid="activity-list"] > li').first().waitFor({ timeout: 10_000 })
   const actText = await page.locator('[data-testid="activity-list"]').textContent()
   check('activity: the log shows the key, alert and team changes', /key/i.test(actText) && /alert/i.test(actText) && /invite|member|role/i.test(actText), actText?.slice(0, 160))
+  check('activity: events per day draw as stacked bars', await drawnIn(page, '[data-testid="activity-chart"]'))
+  await page.getByRole('radiogroup', { name: 'Show' }).getByRole('radio', { name: /^Billing/ }).click()
+  check('activity: a filter with nothing in 14 days shows the ghosted curve, not zero bars', (await page.locator('[data-testid="activity-chart"] [data-testid="ghost-chart"]').count()) === 1)
+  await page.getByRole('radiogroup', { name: 'Show' }).getByRole('radio', { name: /^All/ }).click()
   // CSV downloads from Billing.
   await appNav.getByRole('link', { name: /^Billing/ }).click()
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: /Payments CSV/ }).click()])
@@ -409,11 +423,38 @@ await step('portal', async () => {
   const [dl2] = await Promise.all([page.waitForEvent('download'), usageLink.click()])
   const csv = fs.readFileSync(await dl2.path(), 'utf8')
   check('CSV: usage downloads with its header row', csv.startsWith('time,key,'), csv.slice(0, 40))
+  check('billing: plan usage rings draw (keys and alerts against the plan)', await drawnIn(page, '[data-testid="plan-usage"]') && (await page.locator('[data-testid="plan-usage"] [data-chart]').count()) === 2)
+  check('billing: with no payments the chart is the ghosted "Your payments will draw here"', (await page.getByTestId('ghost-chart').getByText('Your payments will draw here').count()) === 1)
+  // Overview with a key but no traffic: the requests chart is the ghosted placeholder, not a flat zero.
+  await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
+  await page.getByTestId('ghost-chart').waitFor({ timeout: 15_000 })
+  check('overview: a key with no calls yet gets "Your traffic will draw here"', (await page.getByTestId('ghost-chart').getByText('Your traffic will draw here').count()) === 1)
   await w.verify()
   await ctx.close()
 })
 
 /* ------------------------------------------------------------- app services --- */
+
+/** The Overview's market band draws live, non-zero network series: widest gaps, the 24h gap index, DeepCore launches per chain, the API round trip. */
+async function overviewIsLive(page, label) {
+  const band = page.getByTestId('market-band')
+  await band.waitFor({ timeout: 15_000 })
+  // Charts draw once scrolled into view, so each tile is brought on screen first (at 390 px the band is taller than the viewport).
+  const drawn = (id) => band.getByTestId(id).scrollIntoViewIfNeeded().then(() => band.getByTestId(id).locator('[data-chart].opacity-100 svg').first().waitFor({ timeout: 20_000 })).then(() => true, () => false)
+  const figure = async (id) => (await band.getByTestId(id).locator('[role="img"][aria-label]').first().getAttribute('aria-label').catch(() => null)) ?? ''
+  check(`${label}: the widest-gaps bars draw`, await drawn('mk-gaps'))
+  const gap = await figure('mk-gaps')
+  check(`${label}: the widest gap is a live, non-zero percent`, /^[+-]\d+\.\d{2}%$/.test(gap) && parseFloat(gap) !== 0, gap)
+  check(`${label}: the 24h gap index draws from the seeded history`, await drawn('mk-index'))
+  const idx = await figure('mk-index')
+  check(`${label}: the gap index figure is non-zero`, /^\d+\.\d{2}%$/.test(idx) && parseFloat(idx) > 0, idx)
+  check(`${label}: DeepCore launches per chain draw`, await drawn('mk-deepcore'))
+  const dc = await figure('mk-deepcore')
+  check(`${label}: five launches in the last 24 h, the newest named`, dc === '5' && /E2E0 on Robinhood Chain/.test(await band.getByTestId('mk-newest').textContent()), dc)
+  check(`${label}: the API round-trip sparkline draws from /healthz`, await drawn('mk-status'))
+  const ms = await figure('mk-status')
+  check(`${label}: the round trip is a live millisecond figure`, /^\d+ ms$/.test(ms), ms)
+}
 
 const SERVICES = [
   ['tracker', 'Tracker'],
@@ -439,7 +480,16 @@ await step('app services', async () => {
   const iconless = await appNav.locator('a').evaluateAll((as) => as.filter((a) => !a.querySelector('svg')).map((a) => a.textContent))
   check('sidebar: every item has an icon', iconless.length === 0, iconless.join(', '))
   check('sidebar: Merchant sits under Services', (await appNav.locator('[data-nav-group="Services"]').getByRole('link', { name: /^Merchant/ }).count()) === 1)
-  await shot(page, 'app-1440-overview')
+  // The Overview of a brand-new workspace: live NETWORK charts first (the stubbed tracker, its seeded
+  // history, the launch list and this browser's /healthz round trips), then the workspace's own figures
+  // in words ("none yet") with ghosted placeholder curves, never flat zeros.
+  await overviewIsLive(page, 'overview, new workspace')
+  const kpis = await page.locator('[data-kpi] [data-none]').evaluateAll((els) => els.map((e) => e.textContent.trim()))
+  check('overview: a new workspace reads "none yet", not 0', kpis.length === 4 && kpis.every((k) => /^none/.test(k)), JSON.stringify(kpis))
+  check('overview: the workspace band is labelled YOU, the market band NETWORK', (await page.getByTestId('you-title').getByText('YOU', { exact: true }).count()) === 1 && (await page.getByTestId('market-band').getByText('NETWORK · LIVE').count()) === 1)
+  const ghost = page.getByTestId('ghost-chart')
+  check('overview: with no keys the requests chart is a ghosted "Your traffic will draw here"', (await ghost.count()) === 1 && (await ghost.getByText('Your traffic will draw here').count()) === 1 && (await ghost.locator('svg path').count()) >= 2)
+  await shot(page, 'app-1440-overview-new')
   for (const [id, label] of SERVICES) {
     await appNav.getByRole('link', { name: label, exact: true }).click()
     const view = page.locator(`[data-service="${id}"]`)
@@ -488,6 +538,9 @@ await step('app services', async () => {
   const mp = await m.newPage()
   const mw = watch(mp, 'app services 390')
   await mp.goto(BASE + '/app')
+  await overviewIsLive(mp, 'overview at 390')
+  await noHorizontalScroll(mp, 'app overview')
+  await shot(mp, 'app-390-overview-new')
   await mp.getByTestId('menu-button').tap()
   const sheet = mp.getByTestId('app-sheet')
   await sheet.waitFor()

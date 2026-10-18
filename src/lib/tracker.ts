@@ -82,8 +82,8 @@ export type Load<T> = { k: 'loading' } | { k: 'error' } | { k: 'ok'; data: T }
 
 const REFRESH_MS = 60_000
 
-/** The tracker, refreshed every minute; a failed refresh keeps the last good read. */
-export function useTracker(): Load<Tracker> {
+/** The tracker, refreshed every minute (or every `refreshMs`); a failed refresh keeps the last good read. */
+export function useTracker(refreshMs = REFRESH_MS): Load<Tracker> {
   const [state, setState] = useState<Load<Tracker>>({ k: 'loading' })
   useEffect(() => {
     let alive = true
@@ -95,12 +95,12 @@ export function useTracker(): Load<Tracker> {
           () => alive && setState((s) => (s.k === 'ok' ? s : { k: 'error' })),
         )
     tick()
-    const id = setInterval(tick, REFRESH_MS)
+    const id = setInterval(tick, refreshMs)
     return () => {
       alive = false
       clearInterval(id)
     }
-  }, [])
+  }, [refreshMs])
   return state
 }
 

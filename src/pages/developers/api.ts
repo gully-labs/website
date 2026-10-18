@@ -157,6 +157,15 @@ export interface AnalyticsUsage {
   sites: ({ id: string; ok: true; stats: { pageviews: number | null; visitors: number | null; visits: number | null; customEvents: number | null } } | { id: string; ok: false; error: string })[]
 }
 
+/** GET /api/developer/analytics/series?range=7d|30d: page views and visitors per UTC day, summed over the sites Umami answered for. */
+export interface AnalyticsSeries {
+  range: '7d' | '30d'
+  from: string
+  to: string
+  days: { t: string; pageviews: number; visitors: number }[]
+  sites: { id: string; ok: boolean; error?: string }[]
+}
+
 /** A 20-minute quote: the exact amount to send in one asset, for a plan or an invoice. */
 export interface Quote {
   id: string

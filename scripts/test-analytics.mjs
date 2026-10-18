@@ -132,7 +132,7 @@ const umamiServer = http.createServer((req, res) => {
       umami.websites.set(w.id, w)
       return send(200, { ...w, shareId: null })
     }
-    m = p.match(/^\/api\/websites\/([\w-]+)(\/transfer|\/stats|\/events\/stats)?$/)
+    m = p.match(/^\/api\/websites\/([\w-]+)(\/transfer|\/stats|\/events\/stats|\/pageviews)?$/)
     if (m) {
       const w = umami.websites.get(m[1])
       if (!w || w.deletedAt) return send(404, { error: { message: 'Not found', status: 404 } })
@@ -148,6 +148,14 @@ const umamiServer = http.createServer((req, res) => {
         return send(200, { pageviews: n, visitors: 1, visits: 1, bounces: 0, totaltime: 0, comparison: {} })
       }
       if (m[2] === '/events/stats' && req.method === 'GET') return send(200, { events: 0, visitors: 0, visits: 0, uniqueEvents: 0, comparison: {} })
+      if (m[2] === '/pageviews' && req.method === 'GET') {
+        // Umami's series: one point per UTC day, { x: 'YYYY-MM-DD 00:00:00', y }; every page view the stub received lands on today.
+        if (u.searchParams.get('unit') !== 'day' || u.searchParams.get('timezone') !== 'UTC') return bad('unit=day&timezone=UTC expected')
+        const n = umami.received.filter((x) => x === w.id).length
+        const today = new Date().toISOString().slice(0, 10)
+        const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+        return send(200, { pageviews: [{ x: `${yesterday} 00:00:00`, y: 3 }, { x: `${today} 00:00:00`, y: n }], sessions: [{ x: `${yesterday} 00:00:00`, y: 2 }, { x: `${today} 00:00:00`, y: 1 }] })
+      }
       if (!m[2] && req.method === 'DELETE') {
         w.deletedAt = new Date().toISOString()
         return send(200, { ok: true })
@@ -398,6 +406,12 @@ try {
   check('the account shows 10,000 events and the site as over quota', r.data.account.eventsThisMonth === 10_000 && r.data.account.sites[0].blocked === 'gully-quota-exceeded')
   r = await ca.call('/api/developer/analytics/usage')
   check('usage reads Umami’s own figures for this month', r.status === 200 && r.data.sites[0].ok && r.data.sites[0].stats.pageviews === umami.received.filter((x) => x === siteA.id).length && r.data.sites[0].stats.customEvents === 0, JSON.stringify(r.data))
+  r = await ca.call('/api/developer/analytics/series?range=7d')
+  const todayRow = r.data?.days?.at(-1)
+  check('the traffic series answers 7 UTC days, oldest first, summed from Umami’s /pageviews (sessions = visitors)', r.status === 200 && r.data.range === '7d' && r.data.days.length === 7 && todayRow?.t.slice(0, 10) === new Date().toISOString().slice(0, 10) && todayRow.pageviews === umami.received.filter((x) => x === siteA.id).length && todayRow.visitors === 1 && r.data.days.at(-2)?.pageviews === 3 && r.data.sites[0].ok === true, JSON.stringify(r.data))
+  r = await ca.call('/api/developer/analytics/series?range=30d')
+  check('range=30d answers 30 days; anything else is 7d', r.status === 200 && r.data.days.length === 30 && (await ca.call('/api/developer/analytics/series?range=1y')).data.range === '7d')
+  check('the series needs a session and an account', (await anon.call('/api/developer/analytics/series')).status === 401)
   accounts.flushAnalyticsUsage()
   const persisted = JSON.parse(fs.readFileSync(path.join(tmp, 'analytics-usage.json'), 'utf8'))
   check('the counts are persisted in DATA_DIR', Object.values(persisted.months)[0]?.[siteA.id] === 10_000)

@@ -1,5 +1,5 @@
 import { BellRing, Lock, LockOpen, Rocket } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { NF } from '../../../components/charts/number-formats'
 import { useStats } from '../../../hooks/useStats'
 import type { VenueOk } from '../../../lib/stats'
@@ -10,6 +10,7 @@ import { chip, pillSm } from '../styles'
 import { KeySpark, LiveMarker, StackedDays } from '../vcharts'
 import { sitePage, type ServiceCtx } from './links'
 import { Section, ServiceHeader, type Status } from './ServiceHeader'
+import { deepcoreColor, useLaunches } from './useDeepcore'
 
 /* DeepCore launches, in the app: the newest launches on every DeepCore chain from the server's launch
    poller (GET /api/deepcore/launches, the same cache the launch alerts and the Telegram bot read; read
@@ -17,32 +18,7 @@ import { Section, ServiceHeader, type Status } from './ServiceHeader'
    (GET /api/stats). A list the poller could not refresh is labelled stale; one it never read is
    unreadable, never empty. */
 
-type Launch = { key: string; chainId: number; chainName: string; token: string; symbol: string | null; createdAt: string; legs: { quote: string | null; locked: boolean | null }[]; links: { token: string; swap: string } }
-type Launches = { state: 'ok' | 'stale' | 'unreadable'; launches: Launch[]; asOf: string | null; chains: { chainId: number; name: string; status: 'ok' | 'unreadable'; total: number | null }[]; error: string | null; pollSeconds: number }
-
-const CHAIN_COLORS: Record<number, string> = { 4663: '#e8c060', 56: '#f3ba2f', 8453: '#6aa6ff', 999: '#4fd1c5' }
-const colorOf = (id: number) => CHAIN_COLORS[id] ?? '#a6b0bd'
-
-function useLaunches() {
-  const [s, setS] = useState<{ k: 'loading' } | { k: 'error' } | { k: 'ok'; data: Launches }>({ k: 'loading' })
-  useEffect(() => {
-    let alive = true
-    const read = () =>
-      fetch('/api/deepcore/launches', { headers: { accept: 'application/json' } })
-        .then((r) => (r.ok ? (r.json() as Promise<Launches>) : Promise.reject(new Error(String(r.status)))))
-        .then(
-          (data) => alive && setS({ k: 'ok', data }),
-          () => alive && setS((p) => (p.k === 'ok' ? p : { k: 'error' })),
-        )
-    read()
-    const id = setInterval(read, 60_000)
-    return () => {
-      alive = false
-      clearInterval(id)
-    }
-  }, [])
-  return s
-}
+const colorOf = deepcoreColor
 
 export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
   const s = useLaunches()

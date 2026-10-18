@@ -9,6 +9,7 @@
 //   POST /api/developer/analytics/sites  { name, domain } -> 201 { site }
 //   POST /api/developer/analytics/sites/:id/delete
 //   GET  /api/developer/analytics/usage                Umami's own figures for this month, per site
+//   GET  /api/developer/analytics/series?range=7d|30d  page views and visitors per UTC day, summed over the sites
 //   POST /api/developer/analytics/checkout { plan, asset? } -> { intent }   (Gully Pay quote, billing.mjs)
 //   POST /api/developer/analytics/checkout/verify { quoteId, txHash } -> 200 { payment, account } | 202 | 4xx
 //
@@ -327,6 +328,29 @@ export async function handleAnalyticsAccount(req, res, url, address) {
       return r.ok ? { id: s.id, ok: true, stats: r.stats } : { id: s.id, ok: false, error: r.error }
     }))
     return json(res, 200, { from: new Date(from).toISOString(), to: new Date(to).toISOString(), sites }), true
+  }
+
+  if (p === '/api/developer/analytics/series') {
+    if (post) return json(res, 405, { error: 'GET only' }), true
+    if (!acc) return json(res, 404, { error: 'Start your free trial first.' }), true
+    if (!allow('a-series', address, 240, 3_600_000)) return json(res, 429, { error: 'Too many traffic reads in the last hour. Try again later.' }), true
+    const range = url.searchParams.get('range') === '30d' ? '30d' : '7d'
+    const n = range === '30d' ? 30 : 7
+    const to = Date.now()
+    const today = new Date(to)
+    const from = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - (n - 1) * 86_400_000
+    const reads = await Promise.all(acc.sites.map(async (s) => {
+      const r = await umami.websiteSeries(s.id, from, to)
+      return r.ok ? { id: s.id, ok: true, pageviews: r.pageviews, visitors: r.visitors } : { id: s.id, ok: false, error: r.error }
+    }))
+    // One row per UTC day, oldest first, summed over the sites Umami answered for (an unreadable site is named, never counted as 0).
+    const days = Array.from({ length: n }, (_, i) => {
+      const t = new Date(from + i * 86_400_000).toISOString()
+      const day = t.slice(0, 10)
+      const sum = (key) => reads.reduce((a, s) => a + (s.ok ? s[key].filter((p) => p.day === day).reduce((b, p) => b + p.n, 0) : 0), 0)
+      return { t, pageviews: sum('pageviews'), visitors: sum('visitors') }
+    })
+    return json(res, 200, { range, from: new Date(from).toISOString(), to: new Date(to).toISOString(), days, sites: reads.map((s) => (s.ok ? { id: s.id, ok: true } : { id: s.id, ok: false, error: s.error })) }), true
   }
 
   if (!post) return json(res, 405, { error: 'POST only' }), true

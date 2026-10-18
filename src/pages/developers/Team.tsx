@@ -8,6 +8,7 @@ import { ErrorLine, Skeleton } from './parts'
 import { MEMBER_ROLES, ROLE_TEXT, untilText, usePortal, useWrite } from './portal'
 import { Can } from './RoleGate'
 import { HBars, LiveMarker, type HBar } from './vcharts'
+import { GhostCurves } from './charts'
 import type { ActivityPage } from './api'
 import { chip, input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
 
@@ -231,7 +232,9 @@ export function Team() {
         ) : acts === 'error' ? (
           <LiveMarker text="Activity counts: not readable right now" />
         ) : !Object.keys(acts).length ? (
-          <LiveMarker text="No changes logged yet: member activity charts here as it happens" />
+          <GhostCurves height={140} title="Member activity will draw here">
+            <span className="max-w-[460px] text-[13px] text-muted">Key, alert, billing and team changes count here per member as they happen.</span>
+          </GhostCurves>
         ) : (
           <HBars
             label={`Actions per member: ${Object.entries(acts).map(([a, n]) => `${shortAddress(a)} ${n}`).join(', ')}.`}

@@ -7,6 +7,8 @@ import { ago, api, fmtDate, type Account, type ApiKey, type RecentRequest, type 
 import { Can } from './RoleGate'
 import { useWrite } from './portal'
 import { KeySpark } from './vcharts'
+import { GhostSpark } from './charts'
+import { KeysTraffic } from './tabcharts'
 import { CopyButton, Dialog } from './Dialog'
 import { toastSuccess } from '../../components/ui/toast'
 import { Empty, ErrorLine, Skeleton } from './parts'
@@ -159,6 +161,8 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
       </div>
       {full && <p className="m-0 text-[13px] text-muted">All {account.limits.maxKeys} keys are in use. Revoke one to create another.</p>}
 
+      <KeysTraffic week={week} hasKeys={live.length > 0} />
+
       {!live.length ? (
         <Empty
           icon={<KeyRound size={26} className="text-gold" aria-hidden />}
@@ -211,7 +215,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
                   <td className="py-3 pr-3">
                     {perKey ? (
                       <span className="flex items-center gap-3 font-mono text-[12px] text-ink-2" data-testid="key-spark">
-                        <KeySpark values={perKey[k.id]?.spark ?? []} labels={perKey[k.id]?.labels} color={colorOf(k)} label={`${k.name}: ${fmt(perKey[k.id]?.total ?? 0)} requests in 7 days`} />
+                        {perKey[k.id]?.total ? <KeySpark values={perKey[k.id]?.spark ?? []} labels={perKey[k.id]?.labels} color={colorOf(k)} label={`${k.name}: ${fmt(perKey[k.id]?.total ?? 0)} requests in 7 days`} /> : <GhostSpark color={colorOf(k)} w={96} />}
                         {fmt(perKey[k.id]?.total ?? 0)}
                       </span>
                     ) : week.state === 'error' ? (

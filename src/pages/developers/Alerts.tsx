@@ -7,7 +7,7 @@ import { alertName, alertRule, alertState, CHAIN_NAMES, useAlertActions, useAler
 import { CopyButton, Dialog } from './Dialog'
 import { useWrite } from './portal'
 import { Can } from './RoleGate'
-import { AlertTimeline } from './vcharts'
+import { AlertFires } from './tabcharts'
 import { Empty, ErrorLine, Skeleton } from './parts'
 import { ExtLink } from './ExtLink'
 import { input, mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
@@ -522,9 +522,9 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null }: { 
           <h2 id="fired-title" className={panelTitle}>
             Fired alerts
           </h2>
-          <span className={mono}>From each alert&apos;s delivery log (its latest deliveries) · green delivered, red failed, hollow test</span>
+          <span className={mono}>From each alert&apos;s delivery log: deliveries a day over 30 days, then each alert&apos;s own · green delivered, red failed, hollow test</span>
         </div>
-        <AlertTimeline alerts={view.alerts} nameOf={alertName} />
+        <AlertFires alerts={view.alerts} nameOf={alertName} />
       </section>
 
       <CreateDialog

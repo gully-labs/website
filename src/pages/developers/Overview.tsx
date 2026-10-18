@@ -5,7 +5,8 @@ import { EventsMeter } from './Analytics'
 import { GetStarted, ToolsRow } from './GetStarted'
 import { alertName, alertRule, alertState, defaultAsset, keyColors, priceText, siteMeta, useAlertActions, useAlertsView } from './helpers'
 import { api, type Account, type AnalyticsUsage, type AnalyticsView, type BillingView, type PlanId, type Range, type UsageV2 } from './api'
-import { DoubleRing, Meter, Spark } from './charts'
+import { DoubleRing, GhostCurves, GhostSpark, Meter, Spark } from './charts'
+import { MarketBand } from './services/MarketBand'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { NF } from '../../components/charts/number-formats'
 import { PendingInvites } from './Invite'
@@ -73,7 +74,8 @@ function Delta({ cur, prev, upIsBad = false }: { cur: number | null; prev: numbe
   )
 }
 
-function Kpi({ label, value, note, spark, color, i, unreadable, delta }: { label: string; value: number | null; note: ReactNode; spark?: number[]; color: string; i: number; unreadable?: string | null; delta?: ReactNode }) {
+/** `none` is what a zero says in words ("none yet"): a workspace with nothing counted yet reads as that, never as a flat 0. */
+function Kpi({ label, value, note, spark, color, i, unreadable, delta, none }: { label: string; value: number | null; note: ReactNode; spark?: number[]; color: string; i: number; unreadable?: string | null; delta?: ReactNode; none?: string }) {
   return (
     <div className="flex min-h-[118px] min-w-0 flex-col gap-1 rounded-[14px] border border-line bg-surface px-4 py-[14px]" style={{ animation: `gl-rise .5s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }} data-kpi={label}>
       <span className="text-[12px] text-dim">{label}</span>
@@ -84,10 +86,14 @@ function Kpi({ label, value, note, spark, color, i, unreadable, delta }: { label
           </span>
         ) : value === null ? (
           <Skeleton h={34} w="55%" />
+        ) : value === 0 && none ? (
+          <span className="flex h-[34px] items-end font-mono text-[13px] text-faint" data-none>
+            {none}
+          </span>
         ) : (
           <AnimatedNumber value={value} format={NF.int} countUp className="font-display text-[34px] leading-none font-bold" />
         )}
-        {spark && !unreadable && <Spark values={spark} color={color} />}
+        {spark && !unreadable && (spark.some((v) => v > 0) ? <Spark values={spark} color={color} /> : <GhostSpark color={color} />)}
       </span>
       <span className={`truncate font-mono text-[11px] ${unreadable ? 'text-error' : 'text-muted'}`}>{unreadable ? 'unreadable right now' : note}</span>
       {delta && !unreadable && <span className="truncate">{delta}</span>}
@@ -120,7 +126,7 @@ function Periods({ value, onChange }: { value: Range; onChange: (r: Range) => vo
 
 /* -------------------------------------------------------------------- page --- */
 
-export function Overview({ account, go, createKey, createAlert, checkout }: { account: Account; go: (tab: 'keys' | 'alerts' | 'analytics' | 'billing') => void; createKey: () => void; createAlert: () => void; checkout: (plan: PlanId, asset: string | null) => void }) {
+export function Overview({ account, go, createKey, createAlert, checkout }: { account: Account; go: (tab: 'keys' | 'alerts' | 'analytics' | 'billing' | 'tracker') => void; createKey: () => void; createAlert: () => void; checkout: (plan: PlanId, asset: string | null) => void }) {
   const [range, setRange] = useState<Range>('24h')
   const [usageS, reloadUsage] = useGet<UsageV2>(`/api/developer/usage?range=${range}`, 60_000)
   const alerts = useAlertsView()
@@ -157,17 +163,25 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
   return (
     <div className="flex flex-col gap-[14px]">
       <PendingInvites />
+      {/* Live network data first, so even a brand-new workspace opens on moving charts. */}
+      <MarketBand onPick={() => go('tracker')} />
       {/* ------------------------------------------------- checklist and tools */}
       <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
       <ToolsRow />
 
       {/* ---------------------------------------------------------------- KPIs */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="you-title">
+        <h2 className="m-0 text-[15px] font-semibold text-ink">Your workspace</h2>
+        <span className="inline-flex items-center gap-2 rounded-full border border-gold-line bg-[rgba(232,192,96,.06)] px-[10px] py-[2px] font-mono text-[11px] text-gold">YOU</span>
+        <span className="font-mono text-[11px] text-faint">your keys, alerts and traffic only</span>
+      </div>
       <section aria-label="Summary" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3">
         <Kpi
           i={0}
           label={`Requests · ${range}`}
           color="#e8c060"
           value={usage ? usage.rangeTotals.total : null}
+          none={account.keys.length ? `none in ${range}` : 'none yet'}
           spark={usage ? grouped.map((g) => g.total) : undefined}
           unreadable={usageErr}
           note={usage ? `${fmt(usage.today.total)} today (UTC) · ${fmt(usage.last7d.total)} in 7 days` : 'reading usage…'}
@@ -178,6 +192,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           label="Rate-limited (429)"
           color={LIMITED_COLOR}
           value={usage ? usage.rangeTotals.limited : null}
+          none="none"
           delta={usage ? <Delta cur={usage.rangeTotals.limited} prev={usage.previous?.limited ?? null} upIsBad /> : null}
           spark={usage && hasLimited ? grouped.map((g) => g.limited ?? 0) : undefined}
           unreadable={usageErr}
@@ -188,11 +203,12 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           label={`Alerts fired · ${range}`}
           color={BLUE}
           value={fired ? fired.length : alerts.view && !alerts.view.alerts.length ? 0 : null}
+          none={alerts.view?.alerts.length ? 'none' : 'none yet'}
           spark={fired ? bucketize(fired.map((f) => f.at), grouped) : undefined}
           unreadable={alerts.err}
           note={alerts.view ? (alerts.view.alerts.length ? `${fired ? fired.filter((f) => f.telegram).length : 0} via Telegram · from the delivery logs` : 'no alerts set up') : '…'}
         />
-        <Kpi i={3} label="Active keys" color="#8a96a6" value={live.length} note={`of ${account.limits.maxKeys} allowed${shown ? ` · ${usedInRange} used in ${range}` : ''}`} />
+        <Kpi i={3} label="Active keys" color="#8a96a6" value={live.length} none="none yet" note={`of ${account.limits.maxKeys} allowed${shown ? ` · ${usedInRange} used in ${range}` : ''}`} />
       </section>
 
       <div className="flex flex-wrap items-start gap-[14px]">
@@ -221,10 +237,9 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
             <Periods value={range} onChange={setRange} />
           </div>
           {!account.keys.length ? (
-            <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-[12px] border border-dashed border-line-strong px-6 py-8 text-center">
-              <KeyRound size={26} className="text-gold" aria-hidden />
-              <b className="text-[16px] font-semibold">No keys yet, so no requests to chart</b>
-              <span className="max-w-[440px] text-[14px] text-muted">
+            <GhostCurves height={286} title="Your traffic will draw here">
+              <KeyRound size={22} className="text-gold" aria-hidden />
+              <span className="max-w-[440px] text-[13px] text-muted">
                 A key works the moment it is created: {fmt(account.limits.keyPerMin)} requests a minute instead of {fmt(account.limits.anonymousPerMin)}. Its traffic shows up here.
               </span>
               <Can cat="keys" what="create keys">
@@ -232,11 +247,17 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
                   <Plus size={16} aria-hidden /> Create your first key
                 </button>
               </Can>
-            </div>
+            </GhostCurves>
           ) : usageErr && !shown ? (
             <ErrorLine onRetry={reloadUsage}>Usage could not be read: {usageErr}</ErrorLine>
           ) : !shown ? (
             <Skeleton h={286} />
+          ) : !shown.rangeTotals.total && !shown.previous?.total ? (
+            <GhostCurves height={286} title="Your traffic will draw here">
+              <span className="max-w-[440px] text-[13px] text-muted">
+                No calls with your keys in the last {RANGE_LABEL[shown.range]}. Send one with <code className="font-mono text-[12px] text-ink-2">Authorization: Bearer</code> and your key and it charts here, per key, within the hour.
+              </span>
+            </GhostCurves>
           ) : (
             <div className={`transition-opacity ${stale ? 'opacity-60' : ''}`} aria-busy={stale} data-testid="requests-chart">
               <RequestsChart usage={shown} series={series} />

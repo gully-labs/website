@@ -217,3 +217,47 @@ export function Meter({ value, max, label, tone }: { value: number; max: number;
     </span>
   )
 }
+
+/* ------------------------------------------------------------- ghosts --- */
+
+/* Placeholders for a chart whose data does not exist yet (a new workspace): ghosted curves that draw
+   in and breathe, clearly labelled, never read as data. Their shape is fixed (not sample numbers) and
+   they carry no values, axes or tooltips. Under reduced motion they fade in once and hold still. */
+
+const GHOST_A = 'M0 70 C 40 62, 70 40, 110 46 S 180 22, 220 30 S 300 12, 340 20 S 400 8, 440 14'
+const GHOST_B = 'M0 84 C 50 80, 90 66, 130 70 S 200 54, 250 58 S 330 44, 370 48 S 420 40, 440 42'
+
+/** A ghosted mini trend for a KPI with nothing to draw yet. */
+export function GhostSpark({ color, w = 80, h = 28 }: { color: string; w?: number; h?: number }) {
+  return (
+    <svg viewBox="0 0 440 96" width={w} height={h} preserveAspectRatio="none" className="block shrink-0 overflow-visible" aria-hidden data-ghost>
+      <path d={GHOST_A} fill="none" stroke={color} strokeOpacity={0.45} strokeWidth={2} strokeDasharray="6 6" vectorEffect="non-scaling-stroke" style={{ animation: 'gl-skeleton 2.6s ease-in-out infinite' }} />
+    </svg>
+  )
+}
+
+/** A ghosted chart area: two curves drawing in, a scan line, and the label in the middle. */
+export function GhostCurves({ height, title, children, colors = ['#e8c060', '#6aa6ff'] }: { height: number; title: string; children?: ReactNode; colors?: [string, string] }) {
+  const id = useId().replace(/:/g, '')
+  return (
+    <div className="relative overflow-hidden rounded-[12px] border border-dashed border-line-strong" style={{ height }} data-testid="ghost-chart">
+      <svg viewBox="0 0 440 96" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[70%] w-full" aria-hidden>
+        <defs>
+          <linearGradient id={`g${id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={colors[0]} stopOpacity={0.16} />
+            <stop offset="1" stopColor={colors[0]} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <path d={`${GHOST_A} L 440 96 L 0 96 Z`} fill={`url(#g${id})`} style={{ animation: 'gl-fade 1.2s .3s ease both' }} />
+        <path d={GHOST_A} pathLength={1} fill="none" stroke={colors[0]} strokeOpacity={0.5} strokeWidth={2} vectorEffect="non-scaling-stroke" style={{ strokeDasharray: 1, animation: `gl-draw 1.6s ${EASE} both` }} />
+        <path d={GHOST_B} pathLength={1} fill="none" stroke={colors[1]} strokeOpacity={0.4} strokeWidth={1.5} vectorEffect="non-scaling-stroke" style={{ strokeDasharray: 1, animation: `gl-draw 1.6s .25s ${EASE} both` }} />
+      </svg>
+      <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(232,192,96,.07),transparent)]" style={{ animation: 'gl-scan 4.5s linear infinite' }} />
+      <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+        <span className="rounded-full border border-line-strong bg-surface px-2 py-[2px] font-mono text-[11px] tracking-[1px] text-faint">SHAPE ONLY · NOT YOUR DATA</span>
+        <b className="text-[15px] font-semibold text-ink">{title}</b>
+        {children}
+      </div>
+    </div>
+  )
+}

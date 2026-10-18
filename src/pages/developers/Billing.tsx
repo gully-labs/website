@@ -3,12 +3,14 @@ import { usePortal, useWrite } from './portal'
 import { Can } from './RoleGate'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { TokenLogo } from '../../components/logos/TokenLogo'
-import { LiveMarker, StackedDays } from './vcharts'
+import { StackedDays } from './vcharts'
+import { GhostCurves } from './charts'
+import { PlanUsage } from './tabcharts'
 import { useCallback, useEffect, useState } from 'react'
 import { isLocalHost, SITE_URL } from '../../site-host'
 import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, type Payment, type Plan, type PlanId, type Quote } from './api'
 import { PayOnRequest } from './GetStarted'
-import { Empty, ErrorLine, Skeleton } from './parts'
+import { ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
 import { mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
 
@@ -179,6 +181,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
             <Limits p={cur} />
           </div>
         </div>
+        <PlanUsage account={account} payments={view.payments} />
         <p className="m-0 flex items-start gap-2 rounded-[10px] border border-line bg-surface-deep px-3 py-2 text-[13px] leading-[1.55] text-ink-2" data-testid="workspace-pays">
           <Users size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden />
           <span>
@@ -280,13 +283,15 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
             />
           </div>
         ) : (
-          <LiveMarker text="Waiting for the first payment: it charts here with its amount and date" />
+          <GhostCurves height={160} title="Your payments will draw here">
+            <Receipt size={22} className="text-gold" aria-hidden />
+            <span className="max-w-[460px] text-[13px] text-muted">Payments you make for a plan chart here by date and amount, each with its transaction on the chain’s explorer.</span>
+            <button type="button" onClick={() => document.getElementById('plans-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className={pillSm}>
+              See the plans
+            </button>
+          </GhostCurves>
         )}
-        {!view.payments.length ? (
-          <Empty icon={<Receipt size={26} className="text-gold" aria-hidden />} title="No payments yet" action={<button type="button" onClick={() => document.getElementById('plans-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className={pillSm}>See the plans</button>}>
-            Payments you make for a plan appear here with their transaction on the chain’s explorer.
-          </Empty>
-        ) : (
+        {view.payments.length > 0 && (
           <div className="-mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[720px] border-collapse text-[13px]">
               <thead>

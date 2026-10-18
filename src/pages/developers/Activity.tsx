@@ -2,7 +2,8 @@ import { History, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { ago, api, shortAddress, type ActivityEvent, type ActivityPage } from './api'
 import { Avatar } from './Avatar'
-import { Empty, ErrorLine, Skeleton } from './parts'
+import { ErrorLine, Skeleton } from './parts'
+import { GhostCurves } from './charts'
 import { fmtDateTime, usePortal } from './portal'
 import { chip, mono, panel, panelTitle, pillLine, rise } from './styles'
 import { StackedDays, type DayStack } from './vcharts'
@@ -209,13 +210,20 @@ export function ActivityTab() {
           ))}
         </div>
       ) : !events.length ? (
-        <Empty icon={<History size={26} className="text-gold" aria-hidden />} title="Nothing yet">
-          Key, alert, billing and team changes made from now on are listed here with who made them.
-        </Empty>
+        <GhostCurves height={170} title="Your activity will draw here">
+          <History size={22} className="text-gold" aria-hidden />
+          <span className="max-w-[460px] text-[13px] text-muted">Key, alert, billing and team changes made from now on are listed here with who made them, and counted per day.</span>
+        </GhostCurves>
       ) : (
         <>
           <div data-testid="activity-chart">
-            <StackedDays days={perDay} kinds={(Object.keys(KIND_COLOR) as Kind[]).map((k) => ({ id: k, name: k, color: KIND_COLOR[k] }))} label={`Events per day over the last 14 days: ${shown.length} events loaded.`} height={150} />
+            {perDay.some((d) => Object.keys(d.values).length) ? (
+              <StackedDays days={perDay} kinds={(Object.keys(KIND_COLOR) as Kind[]).map((k) => ({ id: k, name: k, color: KIND_COLOR[k] }))} label={`Events per day over the last 14 days: ${shown.length} events loaded.`} height={150} />
+            ) : (
+              <GhostCurves height={150} title={`No ${kind === 'all' ? '' : `${KINDS.find((k) => k.id === kind)?.label.toLowerCase() ?? ''} `}events in the last 14 days`}>
+                <span className="text-[13px] text-muted">Older events are listed below; new ones count here by day.</span>
+              </GhostCurves>
+            )}
           </div>
           {!shown.length && <p className="m-0 py-6 text-center text-[14px] text-faint">No {KINDS.find((k) => k.id === kind)?.label.toLowerCase()} events{cursor ? ' in the events loaded so far' : ''}.</p>}
           <ol className="relative m-0 flex list-none flex-col p-0" data-testid="activity-list">
