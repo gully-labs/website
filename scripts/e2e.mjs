@@ -15,6 +15,7 @@ import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { blockedOutbound, bootServer, historyFixture, ROOT, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
+import { auditPage, IN_PLACE_HOSTS, tokenColors } from './e2e-audit.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
 await guardTestRun(PORT, { watchdogMs: 8 * 60_000 })
@@ -80,6 +81,15 @@ function watch(page, label) {
       issues.length = 0
     },
   }
+}
+
+const TOKENS = tokenColors()
+/** The pixel-pass design audit (scripts/e2e-audit.mjs): text size, token colours, external links. */
+async function designAudit(page, label) {
+  const a = await page.evaluate(auditPage, { allowed: TOKENS, inPlace: IN_PLACE_HOSTS })
+  check(`${label}: no text under 11 px`, a.small.length === 0, a.small.slice(0, 3).map((s) => `${s.size}px ${s.sel} "${s.text}"`).join(' | '))
+  check(`${label}: no off-token colours`, a.offToken.length === 0, a.offToken.slice(0, 4).map((o) => `${o.color} ${o.kind} x${o.count} ${o.sample}`).join(' | '))
+  check(`${label}: links to other hosts open in a new tab with noopener`, a.ext.length === 0, a.ext.slice(0, 3).map((e) => `${e.href} ${e.sel}`).join(' | '))
 }
 
 async function noHorizontalScroll(page, label) {
@@ -429,6 +439,7 @@ await step('docs', async () => {
         check('docs /widget: the live examples render (widget.js allowed by the CSP)', true)
       }
       if (mobile) await noHorizontalScroll(page, `docs /${slug}`)
+      else await designAudit(page, `docs /${slug}`)
       await w.verify()
     }
     if (mobile) {
@@ -461,12 +472,14 @@ await step('404s', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/developers']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/projects/deepcore', '/developers']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/developers') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
     await page.waitForLoadState('networkidle').catch(() => {})
     await noHorizontalScroll(page, p)
+    // The public pages only: the app (/developers) is another team's surface.
+    if (p !== '/developers') await designAudit(page, `${p} at 390`)
     await w.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   }
   await ctx.close()

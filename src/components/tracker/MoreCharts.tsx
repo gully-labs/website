@@ -191,7 +191,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
   const point = (sid: string | null, on: boolean) => sid && chart.current?.dispatchAction({ type: on ? 'highlight' : 'downplay', seriesIndex: 0, name: sid })
   return (
     <div className="flex items-center gap-5 max-[480px]:flex-col">
-      <div className={`relative size-[${CHART_H.sm}px] flex-none`}>
+      <div className="relative size-[150px] flex-none">
         <EChart
           option={option}
           height={CHART_H.sm}

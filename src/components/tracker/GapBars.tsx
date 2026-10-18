@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
@@ -6,7 +6,22 @@ import { axisTooltip, barsPreset, tipHtml } from '../charts/chartPresets'
 import { ChainLogo, StockLogo } from './StockLogo'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
-const ROW = 24 // px per stock: the label column and the chart's category bands share it exactly
+// px per stock: the label column and the chart's category bands share it exactly. On a phone each
+// row is a 44 px tap target, so fewer rows show before "show all".
+const ROW_WIDE = 24
+const ROW_TOUCH = 44
+const TOUCH = '(max-width: 859px)'
+function useTouchRows() {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = window.matchMedia(TOUCH)
+      m.addEventListener('change', cb)
+      return () => m.removeEventListener('change', cb)
+    },
+    () => window.matchMedia(TOUCH).matches,
+    () => false,
+  )
+}
 const TOP = 22 // px above the first row, for the axis labels
 const BOTTOM = 4
 const SORT_MS = 650 // update animation length
@@ -21,7 +36,9 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
   const [all, setAll] = useState(false)
   const chart = useRef<EChartsType | null>(null)
   const multi = new Set(rows.map((r) => r.chain)).size > 1
-  const TOP_N = 16
+  const touch = useTouchRows()
+  const ROW = touch ? ROW_TOUCH : ROW_WIDE
+  const TOP_N = touch ? 10 : 16
   const withGap = rows.filter((r) => r.gapPct !== null)
 
   // The widest gaps first so the chart stays compact; "show all" lists every stock.
@@ -31,7 +48,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
   // to its new value. (ECharts' realtimeSort was tried: its order drifted from the labels.)
   const byId = [...shown].sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0) || (id(a) < id(b) ? -1 : 1))
   const ranked = byId
-  const key = byId.map((r) => `${id(r)}=${r.gapPct}:${r.status}`).join('|') + `|${selected}|${inLinePct}`
+  const key = byId.map((r) => `${id(r)}=${r.gapPct}:${r.status}`).join('|') + `|${selected}|${inLinePct}|${ROW}`
 
   const option = useMemo(() => {
     if (!byId.length) return null

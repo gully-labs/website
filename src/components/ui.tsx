@@ -17,12 +17,6 @@ export const h2 = 'm-0 font-display text-h2 font-extrabold uppercase'
 export const h3 = 'm-0 font-display text-h3 font-extrabold uppercase'
 export const h4 = 'm-0 font-display text-h4 font-bold uppercase'
 
-/* A segmented control: the group, and one of its buttons (`on` is the chosen one). The same
-   recipe on the ledger, the project sort, the venue charts, the pricing switch and the tracker. */
-export const segGroup = 'flex w-fit max-w-full gap-1 rounded-input border border-line bg-surface p-1'
-export const segBtn = (on: boolean) =>
-  `min-h-11 rounded-btn px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${on ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`
-
 /** The one line a chart or list shows when it has nothing to draw yet. */
 export const emptyNote = 'm-0 py-6 font-mono text-[12px] leading-[1.5] text-faint'
 

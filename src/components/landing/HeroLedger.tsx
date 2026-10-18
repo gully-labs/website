@@ -4,7 +4,7 @@ import { fmtDay, fmtTime, fmtUsd, nameOf, type Stats, type VenueOk } from '../..
 import { EChart } from '../charts/EChart'
 import { esc, useReducedMotion, type ChartEvent } from '../charts/chart-utils'
 import { CHART_H } from '../charts/chartPresets'
-import { segBtn, segGroup } from '../ui'
+import { segBtn, segGroup } from '../ui/seg'
 import { Figure } from './Figure'
 
 /* The hero's ledger card: three combined figures that count up, then the venues' own daily volume as
@@ -165,7 +165,7 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
 
   const T = data?.totals
   let chart: React.ReactNode
-  if (state === 'loading') chart = <div className={`h-[${CHART_H.md}px] gl-skeleton rounded-tile bg-surface-deep`} />
+  if (state === 'loading') chart = <div className="h-[220px] gl-skeleton rounded-tile bg-surface-deep" />
   else if (state === 'error' || !data) chart = <p className="m-0 flex h-[220px] items-center justify-center font-mono text-[12px] text-error">The venues could not be read. Try again in a minute.</p>
   else if (D < 2 || !withSeries.length) chart = <p className="m-0 flex h-[220px] items-center justify-center px-4 text-center font-mono text-[12px] text-faint">No venue publishes a daily series yet, so there is nothing to stack.</p>
   else
