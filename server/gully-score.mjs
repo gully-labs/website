@@ -13,7 +13,8 @@
 //   - Informational only: not an endorsement, not investment advice.
 //
 // Components (weights in COMPONENTS; the score is the weighted mean of the available ones, rounded):
-//   verified        source code verified (Sourcify; Etherscan too when ETHERSCAN_API_KEY is set)
+//   verified        source code verified: Sourcify first (full match 100, partial 85, linked to sourcify.dev);
+//                   Etherscan V2 only as the fallback when ETHERSCAN_API_KEY is set
 //   control         who can change it: nobody, a Safe needing 2+ signatures, a timelock, another contract, or one wallet
 //   timelock        whether changes wait behind a delay (OpenZeppelin TimelockController getMinDelay, Compound delay)
 //   upgradeability  whether its code can be swapped (ERC-1967 / beacon / ZeppelinOS slots, Sourcify's proxy check)
@@ -62,7 +63,7 @@ const UA = 'gullylabs-score/1 (+https://gullylabs.xyz/score)'
 
 /** The components, in display order. Weights add up to 100. */
 export const COMPONENTS = [
-  { id: 'verified', label: 'Code verified', weight: 15, source: 'Sourcify (sourcify.dev); Etherscan when configured', what: 'Is the source code published and matched to what is on chain, so anyone can read what it does?' },
+  { id: 'verified', label: 'Code verified', weight: 15, source: 'Sourcify (sourcify.dev) first, full or partial match; Etherscan V2 as the fallback when configured', what: 'Is the source code published and matched to what is on chain, so anyone can read what it does?' },
   { id: 'control', label: 'Who controls it', weight: 20, source: 'owner(), the proxy admin and Safe getThreshold()/getOwners(), read from the chain', what: 'Can one wallet change it, or does a change need several signatures, a delay, or is nobody in control?' },
   { id: 'timelock', label: 'Delay on changes', weight: 10, source: 'TimelockController getMinDelay() / Timelock delay() on the controller, read from the chain', what: 'Do changes wait behind a public delay, so users can see them coming?' },
   { id: 'upgradeability', label: 'Can the code change', weight: 10, source: 'ERC-1967, beacon and ZeppelinOS proxy slots, and Sourcify’s proxy check', what: 'Can the code this address runs be swapped for different code?' },
@@ -164,7 +165,15 @@ async function getJson(url, { timeout = 10_000, headers = {} } = {}) {
   return { status: r.status, ok: r.ok, body }
 }
 
-/** Sourcify's record: { verified: true|false, match, name, deployment, proxy } or { error } when it could not be read. */
+/** Sourcify's v2 match ("exact_match" | "match") in plain words: full or partial (null when not verified). */
+export const sourcifyMatch = (m) => (m === 'exact_match' ? 'full' : m === 'match' ? 'partial' : null)
+/** The contract's page on sourcify.dev (its verified files, match and compiler). */
+export const sourcifyContractUrl = (chainId, address) => `https://repo.sourcify.dev/${chainId}/${address}`
+
+/**
+ * Sourcify's record: { verified: true|false, match, name, deployment, proxy } or { error } when it could not be read.
+ * Sourcify is the primary source for "Code verified" and the deployment block; Etherscan V2 is only the fallback.
+ */
 async function sourcify(chainId, address, now) {
   const k = `sourcify:${chainId}:${address}`
   const hit = db.cache[k]
@@ -294,14 +303,19 @@ async function doCompute(chainId, address, now) {
   if (!okHex(code) || code.length <= 2) return { error: `There is no contract at this address on ${chain.name}.`, status: 404 }
 
   const explorer = (a) => `${chain.explorer}/address/${a}`
-  const [ctl, src, esc] = await Promise.all([readControl(chainId, address).catch(() => null), sourcify(chainId, address, now), etherscan(chainId, address, now)])
+  const [ctl, src] = await Promise.all([readControl(chainId, address).catch(() => null), sourcify(chainId, address, now)])
+  // Sourcify first. Etherscan V2 (only with ETHERSCAN_API_KEY) is asked only for what Sourcify did not give: a
+  // verified source, or the deployment block for the age.
+  const esc = src.verified && src.deployment?.blockNumber ? null : await etherscan(chainId, address, now)
+  const srcMatch = sourcifyMatch(src.match)
   const nameOut = await tryCall(chainId, address, SEL.name).catch(() => null)
   const symOut = await tryCall(chainId, address, SEL.symbol).catch(() => null)
   const facts = monitorFacts(chainId, address)
   const parts = []
 
   // verified
-  if (src.verified || esc?.verified) parts.push(ok('verified', src.match === 'exact_match' || esc?.verified ? 100 : 85, src.verified ? (src.match === 'exact_match' ? 'Exact match' : 'Partial match') : 'Verified', src.verified ? `The source code is published on Sourcify and ${src.match === 'exact_match' ? 'matches the deployed code exactly' : 'matches the deployed code (metadata differs)'}.` : 'The source code is published on Etherscan.', [src.verified ? { label: 'Sourcify', url: `https://repo.sourcify.dev/${chainId}/${address}` } : { label: chain.explorerName ?? 'Explorer', url: `${explorer(address)}#code` }]))
+  if (src.verified) parts.push(ok('verified', srcMatch === 'full' ? 100 : 85, srcMatch === 'full' ? 'Full match (Sourcify)' : 'Partial match (Sourcify)', `The source code is verified on Sourcify: ${srcMatch === 'full' ? 'a full match, so the compiled code and its metadata match the deployed code exactly' : 'a partial match, so the compiled code matches the deployed code but its metadata (comments, file names) differs'}.`, [{ label: `Sourcify: ${srcMatch} match`, url: sourcifyContractUrl(chainId, address) }], { provider: 'sourcify', match: srcMatch }))
+  else if (esc?.verified) parts.push(ok('verified', 100, 'Verified (Etherscan)', 'The source code is published on Etherscan; Sourcify has no match for it.', [{ label: chain.explorerName ?? 'Explorer', url: `${explorer(address)}#code` }], { provider: 'etherscan', match: null }))
   else if (src.verified === false && (!esc || esc.verified === false)) parts.push(ok('verified', 0, 'Not verified', 'No published source code matches this contract, so nobody can check what it does from its code.', [{ label: 'Sourcify lookup', url: `https://sourcify.dev/#/lookup/${address}` }]))
   else parts.push(na('verified', `${src.error ?? 'The verification service could not be read'}; checked again later.`))
 
@@ -400,11 +414,15 @@ async function doCompute(chainId, address, now) {
   } else parts.push(na('review', 'There is no published Gully Security report on this contract. Only published reports count; nobody can buy this.'))
 
   // age
-  let createdAt = esc?.createdAt ?? null
-  let createdTx = esc?.creationTx ?? null
-  if (!createdAt && src.deployment?.blockNumber) {
+  let createdAt = null
+  let createdTx = null
+  if (src.deployment?.blockNumber) {
     createdAt = await blockTime(chainId, src.deployment.blockNumber).catch(() => null)
-    createdTx = src.deployment.transactionHash ?? null
+    createdTx = createdAt ? (src.deployment.transactionHash ?? null) : null
+  }
+  if (!createdAt && esc?.createdAt) {
+    createdAt = esc.createdAt
+    createdTx = esc.creationTx ?? null
   }
   if (createdAt) {
     const d = Math.floor(days(now - Date.parse(createdAt)))

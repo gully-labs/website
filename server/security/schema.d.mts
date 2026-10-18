@@ -106,6 +106,10 @@ export interface Target {
   /** null when not applicable (repo/upload). */
   verified: boolean | null
   sourceProvider?: 'etherscan' | 'blockscout' | 'sourcify' | null
+  /** Sourcify's match when the source came from Sourcify: full (metadata too) or partial; null otherwise. */
+  sourceMatch?: 'full' | 'partial' | null
+  /** The contract's page on sourcify.dev when the source came from Sourcify. */
+  sourceUrl?: string | null
   contractName?: string | null
   compiler?: { version: string | null; optimizer: boolean | null; runs: number | null; evmVersion: string | null } | null
   proxy?: { isProxy: boolean; implementation: string | null; kind: string | null } | null

@@ -84,6 +84,8 @@ export interface Report {
     explorerUrl?: string | null
     verified: boolean | null
     sourceProvider?: string | null
+    sourceMatch?: 'full' | 'partial' | null
+    sourceUrl?: string | null
     contractName?: string | null
     compiler?: { version: string | null } | null
     repo: { url: string; owner: string; name: string; ref: string; commit: string } | null
@@ -244,7 +246,7 @@ export function targetRows(t: Report['target']): [string, string][] {
   const rows: [string, string | null | undefined][] = [
     ['Contract', t.address ? `${t.contractName ? `${t.contractName} at ` : ''}${t.address}` : null],
     ['Chain', t.chainName ?? (t.chainId ? `chain ${t.chainId}` : null)],
-    ['Source', t.type === 'address' ? (t.verified ? `verified (${t.sourceProvider ?? 'explorer'})` : 'not verified') : null],
+    ['Source', t.type === 'address' ? (t.verified ? `verified (${t.sourceProvider ?? 'explorer'}${t.sourceMatch ? `, ${t.sourceMatch} match` : ''})` : 'not verified') : null],
     ['Compiler', t.compiler?.version ?? null],
     ['Repository', t.repo ? `${t.repo.owner}/${t.repo.name}` : null],
     ['Commit', t.repo?.commit ?? null],

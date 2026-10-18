@@ -59,6 +59,8 @@ async function stageFetch(scan, dir) {
       explorerUrl: `${chain.explorer}/address/${inp.address}`,
       verified: a.verified,
       sourceProvider: a.provider,
+      sourceMatch: a.sourceMatch,
+      sourceUrl: a.sourceUrl,
       contractName: a.contractName,
       compiler: a.compiler,
       proxy: a.proxy,
