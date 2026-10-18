@@ -88,6 +88,36 @@ export function holderMapFeatures(planId) {
   return { ...own, tier: own.replay ? 'pro' : 'free', gated: true }
 }
 
+/* ----------------------------------------------- Holder Map: Deep check --- */
+
+// OWNER-EDITABLE: the paid Holder Map "Deep check" (holders-deep.mjs computes it, holders-deep-routes.mjs sells
+// it through Gully Pay; pages read this through GET /api/plans, field `holderDeep`). One check is one
+// (chain, token). Payment only buys the computation: it never changes what a check finds.
+//   priceUsd             per token, in whole US dollars
+//   freePerMonth         free checks per UTC calendar month by the workspace's API plan (PLANS ids)
+//   bundleScanDiscountPct  percent off when bought together with a PAID Gully Security scan of the same
+//                        contract (SECURITY.scan): the scan must be paid for, in the same workspace, and
+//                        a scan discounts one check only
+//   maxActive            checks one workspace may have running or queued at once
+//   maxRunning           checks running at once on the server (they share the RPCs)
+//   budgets              the hard limits of one check; one that reaches a limit finishes "partial"
+//                        with the reason. rpcCalls: JSON-RPC calls; logSpans: log reads (a DeepCore log
+//                        page or an eth_getLogs session); explorerCalls: explorer/API reads (Blockscout,
+//                        DeepCore account activity); ms: wall time; holders: unlabelled holders whose
+//                        funding is traced; hops: funder hops followed per holder
+export const HOLDER_DEEP = {
+  id: 'holder-deep',
+  name: 'Holder Map Deep check',
+  priceUsd: 9,
+  freePerMonth: { free: 0, pro: 3, business: 3 },
+  bundleScanDiscountPct: 20,
+  maxActive: 3,
+  maxRunning: 2,
+  budgets: { rpcCalls: 150, logSpans: 12, explorerCalls: 60, ms: 120_000, holders: 12, hops: 3 },
+}
+/** The price in cents of one Deep check, with the Security-scan bundle discount when `bundled`. */
+export const holderDeepPriceCents = (bundled = false) => Math.round(HOLDER_DEEP.priceUsd * 100 * (bundled ? 1 - HOLDER_DEEP.bundleScanDiscountPct / 100 : 1))
+
 /** No key at all: per IP address. */
 export const ANONYMOUS = { perMin: 60, historyDays: 7 }
 
@@ -136,6 +166,7 @@ export function publicPlans({ treasuryOverride } = {}) {
     holderMap: { gated: holderMapGated(), tiers: HOLDER_MAP.tiers },
     analytics: { plans: Object.values(ANALYTICS_PLANS), trialDays: ANALYTICS_TRIAL_DAYS, graceDays: ANALYTICS_GRACE_DAYS, periodDays: PERIOD_DAYS },
     security: SECURITY,
+    holderDeep: HOLDER_DEEP,
     // A treasury that is a fee proxy is never shown (pay-guard.mjs: logged, PaymentGuardError, 500).
     checkout: t ? { enabled: true, treasury: guardRecipient(t, 'plans checkout'), solanaTreasury: solanaTreasury() } : { enabled: false, treasury: null, solanaTreasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
   }

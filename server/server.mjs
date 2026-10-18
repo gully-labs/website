@@ -11,6 +11,7 @@ import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore 
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
+import { handleHolderDeep, startDeepRunner } from './holders-deep-routes.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
@@ -272,6 +273,8 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/status') return void (await handleStatus(req, res))
   // Gully Security (security-routes.mjs): published reports, the scan counter, review requests.
   if (url.pathname.startsWith('/api/security/')) return void ((await handleSecurityPublic(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
+  // Holder Map Deep check (holders-deep-routes.mjs): paid per token through Gully Pay.
+  if (url.pathname === '/api/holders/deep' || url.pathname.startsWith('/api/holders/deep/')) return void (await handleHolderDeep(req, res, url))
   let access = null
   // /api/plans is metered like the tracker (P2-22): it is in access.mjs ENDPOINTS, so a key's dashboard counts it.
   if (url.pathname.startsWith('/api/tracker') || url.pathname.startsWith('/api/holders/') || url.pathname === '/api/plans') {
@@ -467,6 +470,7 @@ function startLoops() {
   startFeeProxyMonitor()
   // Gully Security's scan queue (server/security): requeues interrupted scans and starts the runner.
   startSecurityEngine()
+  startDeepRunner() // Holder Map Deep checks interrupted by a restart run again
   // Gully Security monitoring: watched contracts read every minute, alerts by Telegram and webhook (sec-monitor.mjs).
   startSecMonitor()
   // Gully Score: listed scores refreshed every 6 hours, and soon after a monitored change (gully-score.mjs).
