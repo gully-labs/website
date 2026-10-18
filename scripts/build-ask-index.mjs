@@ -411,7 +411,10 @@ const stripHtml = (s) => clean(String(s).replace(/<[^>]+>/g, ' ').replace(/&lt;/
 
 /** The bot's own words: menu, help (with and without a linked wallet), the Gully AI intro and the command list. */
 function telegramChunks() {
-  const commands = [...read('server/telegram.mjs').matchAll(/\{ command: '(\w+)', description: '([^']+)' \}/g)].map((m) => `/${m[1]}: ${m[2]}.`)
+  // server/telegram.mjs keeps the menu's commands in `const COMMANDS = { name: '<emoji> description', … }` (read as text:
+  // importing the bot module here would start its side effects). The leading emoji is dropped for the index.
+  const block = read('server/telegram.mjs').match(/const COMMANDS = \{([\s\S]*?)\r?\n\}/)?.[1] ?? ''
+  const commands = [...block.matchAll(/^\s+(\w+): '([^']+)',?\r?$/gm)].map((m) => `/${m[1]}: ${m[2].replace(/^[^\p{L}\p{N}/]+/u, '')}.`)
   if (!commands.length) throw new Error('server/telegram.mjs: no bot commands found')
   const help = [...new Set([...helpView(false).text.split('\n'), ...helpView(true).text.split('\n')])].map(stripHtml).filter(Boolean)
   return [
