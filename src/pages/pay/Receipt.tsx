@@ -1,5 +1,5 @@
 import { ArrowLeft, Printer } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { storeName, type Brand } from './brand'
 import { GullyLockup, GullyMark } from './CheckoutFrame'
@@ -11,6 +11,11 @@ import type { OrderItem } from './OrderSummary'
    payment as verified on chain). ?print=1 opens the print dialog once the receipt has loaded ("Download
    receipt" on the checkout: print to PDF). Our own receipts carry the kit lockup; a store's carries the
    store's logo and name, with "via Gully Pay" at the foot. */
+
+// Live charts on screen only (the printed receipt stays black on white): the confirmations the payment had, and for
+// a coin payment its Chainlink price now against the price it was paid at (PayCharts.tsx, ECharts on demand).
+const ConfirmRing = lazy(() => import('./PayCharts').then((m) => ({ default: m.ConfirmRing })))
+const PriceChart = lazy(() => import('./PayCharts').then((m) => ({ default: m.PriceChart })))
 
 type ReceiptInvoice = Invoice & { merchant?: Brand; items?: OrderItem[]; customer?: { name: string } | null }
 
@@ -41,6 +46,7 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
   const p = inv?.payment ?? null
   const store = inv?.merchant ?? null
   const who = store ? storeName(store) : 'Gully Labs'
+  const paidAsset = p ? inv?.assets.find((a) => a.id === p.asset) : undefined
 
   useEffect(() => {
     document.title = `Receipt${inv ? ` · ${who}` : ''} · Gully Pay`
@@ -159,6 +165,15 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
               <Row k="TRANSACTION" v={p.txHash} mono href={p.txUrl} />
               <Row k="BLOCK" v={String(p.blockNumber)} mono />
             </dl>
+
+            {paidAsset && (
+              <section aria-label="Live checks" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] items-center gap-5 rounded-card bg-bg p-4 print:hidden" data-testid="receipt-live">
+                <Suspense fallback={<span className="h-[150px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-input bg-surface" />}>
+                  <ConfirmRing n={paidAsset.confirmations} needed={paidAsset.confirmations} state="done" chain={p.chain} />
+                  {paidAsset.kind === 'native' && p.price && <PriceChart asset={paidAsset} quoted={{ answer: p.price.answer, updatedAt: p.price.updatedAt, label: 'paid at' }} />}
+                </Suspense>
+              </section>
+            )}
 
             <p className="m-0 text-[12px] leading-[1.6] text-[#5c6878]">
               This receipt records a payment checked on chain by Gully Pay: the transaction succeeded, paid {store ? `${who}'s wallet` : 'the Gully Labs treasury'} exactly the amount quoted for this invoice, and had the chain’s required confirmations. Anyone can check it on the chain’s explorer with the transaction hash above. {store ? `${who} is the seller; questions about the order go to it.` : ''} It is not a tax invoice.

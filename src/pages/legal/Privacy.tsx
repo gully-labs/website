@@ -51,8 +51,8 @@ const RETENTION: [string, string][] = [
   ['Unpaid payment quotes', 'Deleted 7 days after they expire'],
   ['Webhook deliveries', 'The newest 1,000 for Gully Pay; the newest 50 per gap alert'],
   ['Contact form messages', 'The newest 5,000 messages'],
-  ['Security scans: the code, the fetched sources, tool output and the report', 'Deleted once the scan is finished and 180 days old, when our server next restarts after that; the scan’s entry in your list (without the code) is not deleted automatically'],
-  ['Code uploaded for a scan', 'Moved into the scan when it starts; deleted at once if a free scan cannot start or you cancel an unpaid scan; the upload of a paid scan left unpaid stays until you cancel it'],
+  ['Security scans: the code, the fetched sources, tool output and the report', 'Deleted within a day of the scan being finished and 180 days old (a daily clean-up); the scan’s entry in your list (without the code) is not deleted automatically'],
+  ['Code uploaded for a scan', 'Moved into the scan when it starts; deleted at once if a free scan cannot start or you cancel an unpaid scan; a paid scan left unpaid for 24 hours has its uploaded code deleted and its invoice cancelled'],
   ['Published scan reports', 'Public until unpublished; after that the copy stays on our server, not shown, and is not deleted automatically'],
   ['Security Review requests', 'The newest 5,000 requests'],
   ['Security monitors', 'Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries'],
@@ -205,7 +205,7 @@ export function PrivacyPage() {
               <b>Security Review requests.</b> When you ask for a quote we keep what you send (name, email, project, scope, repository, contract, company, timeline) and the signed-in wallet if there is one. The request also goes to our enquiries inbox and to our operators’ Telegram chat. Requests are limited per IP address and email in memory only; the IP is not stored.
             </P>
             <P>
-              <b>Monitors.</b> For each contract your workspace watches we keep the contract, chain and name, your alert thresholds, your webhook address and its signing secret, whether Telegram is on, whether the contract may be listed publicly, the contract’s last read state, its last 100 events and the last 50 alert deliveries. The contract is read through public blockchain nodes. Events a monitor sees are public chain data and count in that contract’s public Gully Score; switching listing off keeps the contract off the public list of scores, not out of its score.
+              <b>Monitors.</b> For each contract your workspace watches we keep the contract, chain and name, your alert thresholds, your webhook address and its signing secret, whether Telegram is on, whether the contract may be listed publicly, the contract’s last read state, its last 100 events and the last 50 alert deliveries. The contract is read through public blockchain nodes. Events a monitor sees are public chain data. A monitor whose listing is on adds them to that contract’s public Gully Score. With listing off, nothing the monitor records reaches the public: not the contract’s score, the public list of scores, the sitemap, score badges or Gully AI; a score already worked out from it is dropped and worked out again without it.
             </P>
           </S>
 

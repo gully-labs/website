@@ -273,7 +273,8 @@ async function handleRequest(req, res) {
   // Gully Security (security-routes.mjs): published reports, the scan counter, review requests.
   if (url.pathname.startsWith('/api/security/')) return void ((await handleSecurityPublic(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
   let access = null
-  if (url.pathname.startsWith('/api/tracker') || url.pathname.startsWith('/api/holders/')) {
+  // /api/plans is metered like the tracker (P2-22): it is in access.mjs ENDPOINTS, so a key's dashboard counts it.
+  if (url.pathname.startsWith('/api/tracker') || url.pathname.startsWith('/api/holders/') || url.pathname === '/api/plans') {
     if (req.method === 'OPTIONS') return send(res, 204, '', CORS)
     access = apiAccess(req)
     // Keyed requests are recorded (status class, latency) for the holder's dashboard once answered.

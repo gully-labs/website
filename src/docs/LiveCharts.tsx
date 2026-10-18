@@ -504,7 +504,7 @@ export function GasCostChart() {
             Gas price from each chain (eth_gasPrice), coin price from the chain’s own Chainlink feed, L1 data fee from the OP Stack oracle or Arbitrum’s NodeInterface. The payer’s wallet pays it; Gully Pay adds nothing.
             {unpriced.map((c) => (
               <span key={c.chainId} className="block">
-                {c.name}: {c.ok ? (c.note ?? 'no USD cost: not tracked yet') : `unreadable (${c.error ?? 'no answer'})`}
+                {c.name}: {c.ok ? (c.note ?? 'no USD cost: not tracked yet') : 'unreadable'}
               </span>
             ))}
           </>

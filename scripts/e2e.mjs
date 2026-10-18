@@ -406,7 +406,7 @@ await step('portal', async () => {
   // Every workspace tab has one compact live chart; with nothing counted yet it is the ghosted placeholder, never a flat zero.
   await page.locator('[data-testid="keys-traffic"] [data-testid="ghost-chart"]').waitFor({ timeout: 10_000 })
   check('keys: with no calls yet the traffic chart is the ghosted "Your traffic will draw here"', (await page.locator('[data-testid="keys-traffic"]').getByText('Your traffic will draw here').count()) === 1)
-  check('keys: the new key\u2019s row has a ghosted spark, not a flat line', (await page.locator('[data-testid="key-spark"] svg[data-ghost]').count()) === 1)
+  check('keys: the new key\u2019s row has a ghosted spark, not a flat line', (await page.locator('[data-testid="key-spark"] span[data-ghost]').count()) === 1)
   await page.getByRole('button', { name: 'Actions for e2e key' }).click()
   await page.getByRole('menuitem', { name: 'Rename' }).click()
   const rn = page.getByRole('dialog', { name: 'Rename key' })
@@ -550,6 +550,7 @@ const SERVICES = [
   ['pay', 'Gully Pay'],
   ['chain-kit', 'Chain Kit'],
   ['ai', 'Gully AI'],
+  ['score', 'Gully Score'],
   ['deepcore', 'DeepCore launches'],
   ['holders', 'Holder Map'],
   ['widgets', 'Widgets'],
@@ -1196,6 +1197,10 @@ await step('merchant checkout', async () => {
         await p.waitForURL(/\/receipt$/)
         await p.getByTestId('receipt-page').waitFor()
         check('store receipt: names the store, the lines and PAID IN FULL', (await p.getByText('PAID IN FULL').count()) === 1 && (await p.getByTestId('receipt-page').getByText('Acme Coffee').count()) >= 1 && (await p.getByTestId('receipt-page').getByText('Descaler, 500 ml').count()) === 1)
+        // P1-7: a live chart on the receipt (screen only): the confirmations ring draws from the invoice API.
+        const live = p.getByTestId('receipt-live')
+        await live.scrollIntoViewIfNeeded()
+        check('store receipt: a live chart draws on screen', await live.locator('[data-chart]').first().waitFor({ timeout: 15_000 }).then(() => p.waitForFunction(() => !!document.querySelector('[data-testid="receipt-live"] [data-chart] svg'), null, { timeout: 15_000 })).then(() => true, () => false))
         await shotFull(p, 'merchant-receipt')
       }
       await ww.verify()
