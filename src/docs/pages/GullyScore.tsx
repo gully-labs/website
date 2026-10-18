@@ -45,7 +45,7 @@ GET /score/base/0x…/badge.svg           # the badge (never computes; shows wha
 
 const EMBED = `<!-- Badge: an image that links back to the score page -->
 <a href="https://gullylabs.xyz/score/base/0x…" target="_blank" rel="noopener noreferrer">
-  <img src="https://gullylabs.xyz/score/base/0x…/badge.svg" alt="Gully Score" width="232" height="48">
+  <img src="https://gullylabs.xyz/score/base/0x…/badge.svg" alt="Gully Score" width="260" height="48">
 </a>
 
 <!-- Live widget: the score ring, the date and the link, refreshed every 5 minutes -->

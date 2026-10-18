@@ -33,7 +33,7 @@ export function StockSearch({ initial = '' }: { initial?: string }) {
         />
       </span>
       {st.k === 'loading' && <div aria-hidden className="h-[96px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface" />}
-      {st.k === 'error' && <p className="m-0 font-mono text-[12px] text-faint">The tracker could not be read just now; try the tracker page.</p>}
+      {st.k === 'error' && <p className="m-0 font-mono text-[12px] text-faint">The tracker could not be read just now; try the Stock tracker page.</p>}
       {st.k === 'ok' && (
         <>
           {needle && !matches.length && <p className="m-0 font-mono text-[12px] text-faint">Nothing matches “{q.trim()}”. The widest gaps right now:</p>}

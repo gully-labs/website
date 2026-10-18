@@ -162,6 +162,9 @@ function jobView(job, scan, { full = false } = {}) {
     indexable: !!job.indexable,
     publicUrl: job.published ? `/security/reports/${job.id}` : null,
     startError: job.state === 'awaiting_payment' && job.startError ? job.startError : null,
+    cancelReason: job.cancelReason ?? null,
+    uploadDeletedAt: job.uploadDeletedAt ?? null,
+    history: job.history ?? [],
     ...(full ? { report: status === 'done' ? readReport(job.scanId) : null, failure: status === 'failed' ? failureText(scan) : null } : {}),
   }
 }
@@ -230,6 +233,39 @@ async function startJob(job) {
   } finally {
     starting.delete(job.id)
   }
+}
+
+/** How long an unpaid scan's uploaded code is kept. */
+export const UNPAID_UPLOAD_MS = 24 * 3_600_000
+
+/**
+ * Deletes the uploaded code of scans left unpaid for 24 hours, cancels their invoice (the scan could no longer
+ * run) and records it in the scan's history. Run every hour by security-engine.mjs housekeeping. Returns job ids.
+ */
+export function sweepUnpaidUploads({ now = Date.now() } = {}) {
+  const done = []
+  for (const job of jobs()) {
+    if (job.state !== 'awaiting_payment' || !job.upload || now - Date.parse(job.createdAt) < UNPAID_UPLOAD_MS) continue
+    if (job.invoiceId && adminInvoice(job.invoiceId)?.status === 'paid') continue // paid: reconcile starts it
+    fs.rmSync(uploadPath(job), { force: true })
+    if (job.invoiceId) {
+      try {
+        adminCancelInvoice(job.invoiceId)
+      } catch {
+        /* already closed */
+      }
+    }
+    const at = new Date(now).toISOString()
+    job.state = 'cancelled'
+    job.status = 'cancelled'
+    job.cancelledAt = at
+    job.cancelReason = 'unpaid-24h'
+    job.uploadDeletedAt = at
+    job.history = [...(job.history ?? []), { at, event: 'upload-deleted', text: 'Uploaded code deleted: the scan was unpaid for 24 hours.' }]
+    done.push(job.id)
+  }
+  if (done.length) save()
+  return done
 }
 
 /** A paid job whose invoice is paid but whose scan has not started (a restart, an engine hiccup): start it. */
@@ -517,6 +553,16 @@ export async function handleSecurityPublic(req, res, url) {
   const p = url.pathname
   const ip = clientIp(req)
 
+  // Preflight. The reads are open to any origin (GET, HEAD); the review form is same-origin only, so its
+  // preflight grants no origin (a foreign page cannot send X-Requested-With).
+  if (req.method === 'OPTIONS') {
+    if (p === '/api/security/review-requests') return res.writeHead(204, { Allow: 'POST, OPTIONS' }).end(), true
+    if (p === '/api/security/reports' || p === '/api/security/stats' || p.startsWith('/api/security/reports/')) {
+      return res.writeHead(204, { Allow: 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Max-Age': '86400' }).end(), true
+    }
+    return false
+  }
+
   if (p === '/api/security/review-requests') {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
     if (req.headers['x-requested-with'] !== 'gully') return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -548,7 +594,7 @@ export async function handleSecurityPublic(req, res, url) {
     return json(res, 201, { request: { id: review.id, tier: review.tier, status: review.status } }), true
   }
 
-  if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+  if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }, { Allow: 'GET, HEAD, OPTIONS' }), true
   if (!allow('read', ip, 600, 3_600_000)) return json(res, 429, { error: 'Too many requests. Try again later.' }), true
 
   // Public reads: the docs host reads the counter cross-origin, like /api/plans.
@@ -560,9 +606,9 @@ export async function handleSecurityPublic(req, res, url) {
   const m = p.match(/^\/api\/security\/reports\/([^/]+?)(\/report\.html)?$/)
   if (m) {
     const job = isJobId(m[1]) ? published(m[1]) : null
-    if (!job?.snapshot) return json(res, 404, { error: 'No published report has that address. The owner may have taken it down.' }, { 'X-Robots-Tag': 'noindex' }), true
+    if (!job?.snapshot) return json(res, 404, { error: 'No published report has that address. The owner may have taken it down.' }, { 'X-Robots-Tag': 'noindex', 'Access-Control-Allow-Origin': '*' }), true
     if (m[2]) return sendHtml(res, renderReportHtml(job.snapshot, { standalone: true }), { noindex: !job.indexable })
-    return json(res, 200, { report: { ...job.snapshot, ...publicView(job) } }, { 'Cache-Control': 'public, max-age=30', ...(job.indexable ? {} : { 'X-Robots-Tag': 'noindex' }) }), true
+    return json(res, 200, { report: { ...job.snapshot, ...publicView(job) } }, { 'Cache-Control': 'public, max-age=30', 'Access-Control-Allow-Origin': '*', ...(job.indexable ? {} : { 'X-Robots-Tag': 'noindex' }) }), true
   }
   return false
 }

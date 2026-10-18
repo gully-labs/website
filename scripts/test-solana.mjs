@@ -450,6 +450,19 @@ try {
   const good = addTx({ amount: exact, reference: iq.reference })
   const found = await get(`/api/solana/pay/find?quote=${iq.id}`)
   check('the payment is found by its reference key', found.status === 200 && found.data.signatures.some((s) => s.signature === good), JSON.stringify(found.data))
+  // Hardening: the per-address limit comes before the 404, so unknown quote ids cannot be probed without limit,
+  // and a Solana read failure never echoes the RPC's own error text.
+  {
+    const { resetSolanaLimitsForTest, FINDS_PER_MIN } = await import('../server/solana-routes.mjs')
+    resetSolanaLimitsForTest()
+    let unknown = null
+    for (let i = 0; i <= FINDS_PER_MIN && !unknown; i++) {
+      const r = await get(`/api/solana/pay/find?quote=nope-${i}`)
+      if (r.status === 429) unknown = r
+    }
+    check('pay/find: unknown quote ids are rate-limited (429), not an endless 404', unknown?.status === 429, unknown ? '' : 'never limited')
+    resetSolanaLimitsForTest()
+  }
   r = await verify(good)
   check('the exact USDC payment to the treasury’s associated account pays the invoice', r.status === 200 && r.data?.invoice?.status === 'paid' && r.data.invoice.payment?.txUrl === `https://solscan.io/tx/${good}`, JSON.stringify(r.data).slice(0, 300))
   check('the signature is kept case-sensitive in the ledger', r.data?.invoice?.payment?.txHash === good)

@@ -4,6 +4,7 @@ import { Wordmark } from '../../components/brand'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { api, type BillingView, type Payment } from './api'
 import { fmtDateTime, usePortal } from './portal'
+import { ExtLink } from './ExtLink'
 
 /* A printable receipt for one plan payment (#receipt=<chainId>:<txHash>), in the style of the Gully Pay
    receipt (src/pages/pay/Receipt.tsx): black on white, one page, no console chrome when printed. The
@@ -16,10 +17,9 @@ function Row({ k, v, mono = false, href }: { k: string; v: string; mono?: boolea
       <dt className="font-mono text-[11px] tracking-[1px] text-[#5f6a78]">{k}</dt>
       <dd className={`m-0 break-all text-[#0d141c] ${mono ? 'font-mono text-[13px]' : 'text-[15px]'}`}>
         {href ? (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-[#949daa] underline-offset-2 print:no-underline">
+          <ExtLink href={href} arrow={false} className="underline decoration-[#949daa] underline-offset-2 print:no-underline">
             {v}
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
+          </ExtLink>
         ) : (
           v
         )}

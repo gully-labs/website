@@ -12,6 +12,7 @@
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
+import zlib from 'node:zlib'
 import os from 'node:os'
 import path from 'node:path'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
@@ -65,6 +66,34 @@ const forbiddenRole = (r) => r.status === 403 && r.data?.code === 'forbidden-rol
 const adminCall = (p, body) => fetch(BASE + p, { method: body ? 'POST' : 'GET', headers: { authorization: `Bearer ${ADMIN}`, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then(async (r) => ({ status: r.status, data: await r.json().catch(() => null), headers: r.headers }))
 const pub = (p, init) => fetch(BASE + p, init).then(async (r) => ({ status: r.status, data: await r.json().catch(() => null), headers: r.headers }))
 const VERIFIED = { kind: 'address', chain: 'base', address: stubs.ADDR_VERIFIED }
+/** A one-file zip (stored, no compression): enough for the engine's input checks. */
+function storedZip(name, text) {
+  const data = Buffer.from(text)
+  const n = Buffer.from(name)
+  const crc = zlib.crc32(data)
+  const local = Buffer.alloc(30)
+  local.writeUInt32LE(0x04034b50, 0)
+  local.writeUInt16LE(20, 4)
+  local.writeUInt32LE(crc, 14)
+  local.writeUInt32LE(data.length, 18)
+  local.writeUInt32LE(data.length, 22)
+  local.writeUInt16LE(n.length, 26)
+  const central = Buffer.alloc(46)
+  central.writeUInt32LE(0x02014b50, 0)
+  central.writeUInt16LE(20, 4)
+  central.writeUInt16LE(20, 6)
+  central.writeUInt32LE(crc, 16)
+  central.writeUInt32LE(data.length, 20)
+  central.writeUInt32LE(data.length, 24)
+  central.writeUInt16LE(n.length, 28)
+  const end = Buffer.alloc(22)
+  end.writeUInt32LE(0x06054b50, 0)
+  end.writeUInt16LE(1, 8)
+  end.writeUInt16LE(1, 10)
+  end.writeUInt32LE(46 + n.length, 12)
+  end.writeUInt32LE(30 + n.length + data.length, 16)
+  return Buffer.concat([local, n, data, central, n, end])
+}
 const create = (client, input, extra = {}) => client.post('/api/developer/security/scans', { input, ...extra })
 /** Polls one scan until `until(view)` or the timeout. */
 async function waitFor(client, id, until, ms = 20_000) {
@@ -292,6 +321,53 @@ try {
     check('stored: no upload bytes in the job records', !JSON.stringify(raw.jobs).includes('"data"'))
     check('plans: GET /api/plans carries the security offer', (await pub('/api/plans')).data.security.scan.priceUsd === SECURITY.scan.priceUsd)
     check('head tags: /security and /security/reports are pages', seo.pageMeta('gullylabs.xyz', '/security').found && seo.pageMeta('gullylabs.xyz', '/security/reports').found)
+  }
+  /* ------------------------------------------- privacy: housekeeping --- */
+  {
+    // CORS: the published-report JSON is open to any origin like the other public reads; preflights answer 204.
+    const list = await pub('/api/security/reports')
+    const one = list.data.reports[0]?.id ?? 'sec_nonexistent00000'
+    const rr = await pub(`/api/security/reports/${one}`)
+    check('CORS: /api/security/reports/:id has Access-Control-Allow-Origin: *', rr.headers.get('access-control-allow-origin') === '*', `${rr.status} ${rr.headers.get('access-control-allow-origin')}`)
+    const pre = await fetch(`${BASE}/api/security/reports/${one}`, { method: 'OPTIONS', headers: { origin: 'https://docs.gullylabs.xyz', 'access-control-request-method': 'GET' } })
+    check('CORS: OPTIONS on a public security read is 204 with Allow and the CORS headers', pre.status === 204 && /GET/.test(pre.headers.get('allow') ?? '') && pre.headers.get('access-control-allow-origin') === '*' && /GET/.test(pre.headers.get('access-control-allow-methods') ?? ''), `${pre.status} ${pre.headers.get('allow')}`)
+    const preStats = await fetch(`${BASE}/api/security/stats`, { method: 'OPTIONS' })
+    check('CORS: OPTIONS /api/security/stats is 204', preStats.status === 204 && preStats.headers.get('access-control-allow-origin') === '*')
+    const preReview = await fetch(`${BASE}/api/security/review-requests`, { method: 'OPTIONS', headers: { origin: 'https://evil.example' } })
+    check('CORS: the review form preflight grants no origin (same-origin only)', preReview.status === 204 && !preReview.headers.get('access-control-allow-origin') && /POST/.test(preReview.headers.get('allow') ?? ''))
+
+    // (b) An unpaid scan's uploaded code is deleted after 24 hours, the invoice cancelled, and it is in the history.
+    // No free scans left for anyone, so this one waits for payment.
+    const freeBefore = { ...SECURITY.scan.freePerMonth }
+    for (const k of Object.keys(SECURITY.scan.freePerMonth)) SECURITY.scan.freePerMonth[k] = 0
+    const up = await create(D, { kind: 'upload' }, { upload: { name: 'unpaid.zip', data: storedZip('src/Unpaid.sol', 'pragma solidity ^0.8.20; contract Unpaid { uint x; }').toString('base64') }, expect: { priceUsd: SECURITY.scan.priceUsd } })
+    Object.assign(SECURITY.scan.freePerMonth, freeBefore)
+    const upId = up.data?.scan?.id
+    const file = path.join(tmp, 'security-uploads', `${upId}.bin`)
+    check('unpaid upload: (setup) 202 awaiting payment, bytes on disk', up.status === 202 && up.data.scan.status === 'awaiting_payment' && fs.existsSync(file), `${up.status} ${JSON.stringify(up.data).slice(0, 200)}`)
+    check('unpaid upload: kept before 24 h', routes.sweepUnpaidUploads({ now: Date.now() + 23 * 3_600_000 }).length === 0 && fs.existsSync(file))
+    const swept = routes.sweepUnpaidUploads({ now: Date.now() + 25 * 3_600_000 })
+    check('unpaid upload: deleted once unpaid for 24 h', swept.includes(upId) && !fs.existsSync(file), JSON.stringify(swept))
+    const after = (await D.call(`/api/developer/security/scans/${upId}`)).data?.scan
+    check('unpaid upload: the scan is cancelled and its history says the upload was deleted', after?.status === 'cancelled' && after.cancelReason === 'unpaid-24h' && after.history.some((h) => h.event === 'upload-deleted' && /unpaid for 24 hours/.test(h.text)), JSON.stringify(after ?? null).slice(0, 300))
+    check('unpaid upload: its invoice is cancelled, so it cannot be paid for a scan that cannot run', (await pub(`/api/pay/${up.data?.payment?.invoiceId}`)).data?.invoice?.status === 'cancelled')
+    check('unpaid upload: a second sweep changes nothing', routes.sweepUnpaidUploads({ now: Date.now() + 26 * 3_600_000 }).length === 0)
+
+    // Admin Health: Holder Map sources from holders.mjs holdersSourceHealth(): env var names only, never values.
+    const h = await adminCall('/api/admin/health')
+    const hm = h.data?.holders ?? []
+    check('admin health: Holder Map sources per chain (source, env name, stocks, launches)', h.status === 200 && hm.length >= 5 && hm.every((c) => typeof c.available === 'boolean' && typeof c.launches === 'boolean' && 'env' in c && 'source' in c) && hm.find((c) => c.chain === 'robinhood')?.reason === 'not configured: BLOCKSCOUT_API_KEY', JSON.stringify(hm).slice(0, 300))
+    check('admin health: DeepCore launches map on Base without a key', hm.find((c) => c.chain === 'base')?.launches === true)
+
+    // (c) The 180-day prune runs daily from the engine's start (startLoops), not only at boot.
+    check('housekeeping: started with the engine, prune daily and the upload sweep hourly', JSON.stringify(engineAdapter.housekeepingForTest()) === JSON.stringify([86_400_000, 3_600_000]), JSON.stringify(engineAdapter.housekeepingForTest()))
+    const scansDir = path.join(tmp, 'security', 'scans')
+    const before = fs.existsSync(scansDir) ? fs.readdirSync(scansDir).length : 0
+    const none = await engineAdapter.housekeepNow({ now: Date.now() + 179 * 86_400_000, sweep: false })
+    check('prune: nothing younger than 180 days is removed', none.pruned.length === 0 && before > 0, `${before} ${JSON.stringify(none)}`)
+    const old = await engineAdapter.housekeepNow({ now: Date.now() + 181 * 86_400_000, sweep: false })
+    const left = fs.existsSync(scansDir) ? fs.readdirSync(scansDir) : []
+    check('prune: finished scans older than 180 days go, with their folders (report included)', old.pruned.length > 0 && old.pruned.every((id) => !left.includes(id)), `${JSON.stringify(old.pruned)} left ${left.length}`)
   }
 } catch (e) {
   check(`no exception (${String(e?.stack ?? e).split('\n').slice(0, 3).join(' | ')})`, false)

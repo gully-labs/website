@@ -400,17 +400,21 @@ export async function handleDeepcoreQuote(req, res, url, geo = { allowed: false,
   const amt = toRaw(url.searchParams.get('amount'), 18)
   if (!amt || Number(amt.amount) > 1_000) return json(res, 400, { error: 'amount must be a positive number of the native coin, at most 1000', code: 'BAD_AMOUNT' }), true
 
-  const key = `${chainId}:${stock.token.toLowerCase()}:${amt.raw}`
-  const hit = quoteCache.get(key)
+  // The per-IP limit comes first: a cache hit still counts, so the cache cannot be used to get around it.
   const now = Date.now()
-  if (hit && now - hit.at < QUOTE_CACHE_MS) {
-    const done = hit.promise ? await hit.promise : hit
-    return json(res, done.status, { ...done.body, cached: true }, { 'Cache-Control': 'public, max-age=10' }), true
-  }
   const ip = clientIp(req)
   const list = (ipHits.get(ip) ?? []).filter((t) => now - t < 60_000)
   if (list.length >= PER_IP_PER_MIN) return json(res, 429, { error: 'Too many quotes from this address. Wait a minute.', code: 'RATE_LIMITED' }, { 'Retry-After': '30' }), true
   ipHits.set(ip, [...list, now])
+
+  const key = `${chainId}:${stock.token.toLowerCase()}:${amt.raw}`
+  const hit = quoteCache.get(key)
+  if (hit && now - hit.at < QUOTE_CACHE_MS) {
+    const done = hit.promise ? await hit.promise : hit
+    // Only good quotes are cached; an in-flight request that failed is answered as it is, never marked cached.
+    if (done.status === 200) return json(res, 200, { ...done.body, cached: true }, { 'Cache-Control': 'public, max-age=10' }), true
+    return json(res, done.status, done.body, { 'Cache-Control': 'no-store' }), true
+  }
 
   const promise = (async () => {
     let decimalsOut
@@ -424,14 +428,18 @@ export async function handleDeepcoreQuote(req, res, url, geo = { allowed: false,
     if (r.status === 404 || r.body?.error?.code === 'NO_ROUTE') return { status: 404, body: { error: 'DeepCore’s router has no route for this pair right now.', code: 'NO_ROUTE', links: deepcoreLinks(chainId, stock.token) } }
     if (r.status === 429) return { status: 429, body: { error: 'DeepCore’s quote limit is reached for the moment. Try again in a minute.', code: 'BUSY' } }
     const d = r.body?.data
-    if (!r.ok || !d || !/^\d+$/.test(String(d.amountOut ?? ''))) return { status: 502, body: { error: 'DeepCore’s quote could not be read just now.', code: 'UNREADABLE', detail: r.error ?? 'unexpected answer shape' } }
+    if (!r.ok || !d || !/^\d+$/.test(String(d.amountOut ?? ''))) {
+      console.warn(`deepcore quote: unreadable answer (${r.status ?? 'no status'}): ${String(r.error ?? 'unexpected answer shape').slice(0, 200)}`)
+      return { status: 502, body: { error: 'DeepCore’s quote could not be read just now.', code: 'UNREADABLE' } }
+    }
     return { status: 200, body: { quote: shapeQuote(d, { chainKey, chainId, stock, amount: amt.amount, decimalsOut }) } }
   })()
   quoteCache.set(key, { at: now, promise })
   const done = await promise
-  // Failures are cached briefly too, so a refusing upstream is not hammered; a busy answer is not.
-  if (done.status === 429) quoteCache.delete(key)
-  else quoteCache.set(key, { at: now, ...done })
+  // Only a good quote is cached. Errors are not: the next ask tries again (the site-wide upstream budget and the
+  // per-IP limit above still keep a refusing upstream from being hammered).
+  if (done.status === 200) quoteCache.set(key, { at: now, ...done })
+  else quoteCache.delete(key)
   return json(res, done.status, done.body, { 'Cache-Control': done.status === 200 ? 'public, max-age=10' : 'no-store' }), true
 }
 

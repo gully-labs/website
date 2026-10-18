@@ -109,7 +109,7 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
             Next: <b className="font-medium text-ink">{next.label}</b>
           </span>
         )}
-        <button type="button" onClick={() => setUnfolded(true)} className="inline-flex min-h-9 items-center gap-1 rounded-full bg-gold px-3 text-[13px] font-semibold text-bg transition-colors hover:bg-gold-hover" aria-expanded={false} data-testid={`${testId}-continue`}>
+        <button type="button" onClick={() => setUnfolded(true)} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 rounded-full bg-gold px-3 text-[13px] font-semibold text-bg transition-colors hover:bg-gold-hover" aria-expanded={false} data-testid={`${testId}-continue`}>
           Continue <ChevronDown size={13} aria-hidden />
         </button>
       </section>
@@ -127,7 +127,7 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
         <span className="h-[3px] min-w-[40px] flex-1 overflow-hidden rounded-full bg-surface-deep" role="progressbar" aria-label={`${title} progress`} aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done}>
           <span className="block h-full w-full origin-left rounded-full bg-green" style={{ animation: 'gl-grow-x .6s cubic-bezier(.2,.8,.2,1) both' }} />
         </span>
-        <button type="button" onClick={() => setUnfolded(true)} className="inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-[12px] text-muted hover:text-ink" aria-expanded={false}>
+        <button type="button" onClick={() => setUnfolded(true)} className="inline-flex min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] items-center gap-1 rounded-full px-2 text-[12px] text-muted hover:text-ink" aria-expanded={false}>
           Steps <ChevronDown size={13} aria-hidden />
         </button>
       </section>
@@ -143,7 +143,7 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
           {done}/{steps.length}
         </span>
         {(all || startFolded) && (
-          <button type="button" onClick={() => setUnfolded(false)} className="ml-auto inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-[12px] text-muted hover:text-ink" aria-expanded>
+          <button type="button" onClick={() => setUnfolded(false)} className="ml-auto inline-flex min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] items-center gap-1 rounded-full px-2 text-[12px] text-muted hover:text-ink" aria-expanded>
             Fold <ChevronDown size={13} className="rotate-180" aria-hidden />
           </button>
         )}
@@ -200,7 +200,7 @@ export function InfoTip({ summary, children, className = '' }: { summary: ReactN
   return (
     <span ref={box} className={`relative flex min-w-0 items-center gap-1 text-[12px] text-dim ${className}`} data-testid="info-tip">
       <span className="min-w-0 truncate">{summary}</span>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={id} aria-label="More about this" className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:text-gold">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={id} aria-label="More about this" className="inline-flex size-7 relative after:absolute after:inset-x-0 after:-inset-y-[8px] shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:text-gold">
         <Info size={ICON} aria-hidden />
       </button>
       {open && (
@@ -242,7 +242,7 @@ export function KpiTile({ label, icon, children, note, i = 0 }: { label: string;
 export function RefreshChip({ error, onRetry, className = '' }: { error: string | null; onRetry: () => void; className?: string }) {
   if (!error) return null
   return (
-    <button type="button" onClick={onRetry} title={`The last refresh failed: ${error}. Retrying on its own; press to retry now.`} className={`inline-flex min-h-7 items-center gap-[6px] rounded-full border border-[rgba(255,138,122,.35)] bg-[rgba(255,138,122,.06)] px-[10px] font-mono text-[11px] text-error transition-colors hover:border-error ${className}`} data-testid="refresh-chip" style={{ animation: 'gl-fade .2s ease both' }}>
+    <button type="button" onClick={onRetry} title={`The last refresh failed: ${error}. Retrying on its own; press to retry now.`} className={`inline-flex min-h-7 relative after:absolute after:inset-x-0 after:-inset-y-[8px] items-center gap-[6px] rounded-full border border-[rgba(255,138,122,.35)] bg-[rgba(255,138,122,.06)] px-[10px] font-mono text-[11px] text-error transition-colors hover:border-error ${className}`} data-testid="refresh-chip" style={{ animation: 'gl-fade .2s ease both' }}>
       <RefreshCw size={12} aria-hidden /> couldn&apos;t refresh · retry
     </button>
   )

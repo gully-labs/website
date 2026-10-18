@@ -119,7 +119,8 @@ export function resetScoresForTest() {
 export const reloadScoresForTest = () => (db = load())
 /** e2e and tests: store a result as if computed (the page reads it like any other). */
 export function putScoreForTest(result) {
-  db.scores[keyOf(result.chainId, result.address)] = result
+  // A seeded score has no monitor behind it: it is marked so publicSafe() does not drop it for that.
+  db.scores[keyOf(result.chainId, result.address)] = { ...result, seededForTest: true }
   save()
 }
 
@@ -490,6 +491,8 @@ export function methodology() {
 export function scoreIndex() {
   const listed = new Set(listedContracts().map((c) => keyOf(c.chainId, c.address)))
   const rows = Object.values(db.scores)
+    .map(publicSafe)
+    .filter(Boolean)
     .filter((r) => listed.has(keyOf(r.chainId, r.address)) || isListed(r.chainId, r.address))
     .map((r) => ({ chainId: r.chainId, chainKey: r.chainKey, chainName: r.chainName, address: r.address, name: r.name, symbol: r.symbol, score: r.score, grade: r.grade, coverage: r.coverage, computedAt: r.computedAt, change: r.history.length > 1 && r.score !== null && r.history[r.history.length - 2].score !== null ? r.score - r.history[r.history.length - 2].score : null }))
   rows.sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.address.localeCompare(b.address))
@@ -503,7 +506,7 @@ export function scorePageMeta(p) {
   const chain = chainOf(m[1])
   if (!chain || chain.key !== m[1]) return { found: false }
   const address = m[2].toLowerCase()
-  const r = db.scores[keyOf(chain.id, address)]
+  const r = publicSafe(db.scores[keyOf(chain.id, address)])
   const label = r?.name ? `${r.name}${r.symbol ? ` (${r.symbol})` : ''}` : short(address)
   return {
     found: true,
@@ -538,17 +541,17 @@ export function badgeSvg(r, chain, address) {
   const href = `${SITE}/score/${chain.key}/${address}`
   const title = score === null ? `Gully Score: ${sub}` : `Gully Score ${score} out of 100 (${grade(score)}), ${date}`
   const m = mark()
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="232" height="48" viewBox="0 0 232 48" role="img" aria-label="${xmlEsc(title)}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="260" height="48" viewBox="0 0 260 48" role="img" aria-label="${xmlEsc(title)}">
 <title>${xmlEsc(title)}</title>
 <defs><linearGradient id="gb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2A3542"/><stop offset=".4" stop-color="#6F7560"/><stop offset=".85" stop-color="#D9B563"/><stop offset="1" stop-color="#F2D58A"/></linearGradient></defs>
-<a xlink:href="${xmlEsc(href)}" href="${xmlEsc(href)}" target="_blank">
-<rect x=".5" y=".5" width="231" height="47" rx="8" fill="#0D141C" stroke="#2A3542"/>
+<a xlink:href="${xmlEsc(href)}" href="${xmlEsc(href)}" target="_blank" rel="noopener noreferrer">
+<rect x=".5" y=".5" width="259" height="47" rx="8" fill="#0D141C" stroke="#2A3542"/>
 ${m ? `<image x="8" y="8" width="32" height="32" href="${m}" xlink:href="${m}"/>` : ''}
 <text x="48" y="21" fill="#F4F2EC" font-family="'Barlow Condensed','Arial Narrow',Arial,sans-serif" font-weight="700" font-size="14" letter-spacing=".6">GULLY SCORE</text>
-<text x="48" y="36" fill="#7D8794" font-family="'JetBrains Mono','IBM Plex Mono',Menlo,monospace" font-size="9.5">${xmlEsc(sub)}</text>
-<rect x="160" y="8" width="64" height="32" rx="6" fill="#151D28" stroke="#2A3542"/>
-<text x="192" y="31" text-anchor="middle" fill="${score === null ? '#AEB5BE' : '#D9B563'}" font-family="'Barlow Condensed','Arial Narrow',Arial,sans-serif" font-weight="700" font-size="${score === null ? 16 : 22}">${xmlEsc(big)}</text>
-<rect x="8" y="44" width="216" height="1.5" fill="url(#gb)"/>
+<text x="48" y="36" fill="#7D8794" font-family="'IBM Plex Mono','JetBrains Mono',Menlo,monospace" font-size="11">${xmlEsc(sub)}</text>
+<rect x="188" y="8" width="64" height="32" rx="6" fill="#151D28" stroke="#2A3542"/>
+<text x="220" y="31" text-anchor="middle" fill="${score === null ? '#AEB5BE' : '#D9B563'}" font-family="'Barlow Condensed','Arial Narrow',Arial,sans-serif" font-weight="700" font-size="${score === null ? 16 : 22}">${xmlEsc(big)}</text>
+<rect x="8" y="44" width="244" height="1.5" fill="url(#gb)"/>
 </a>
 </svg>`
 }
@@ -568,12 +571,27 @@ function allow(ip) {
 const CORS = { 'Access-Control-Allow-Origin': '*' }
 
 /** The score for a chain/address pair: cached, or computed when stale (rate limited). */
-async function scoreFor(req, chain, address) {
+const scoreFor = (req, chain, address) => scoreForIp(clientIp(req), chain, address)
+/**
+ * A stored score whose "recent changes" came from monitoring that is no longer public (the monitor was removed or
+ * switched to publicScore: false) is dropped, so it is worked out again without those facts and never served.
+ */
+export function publicSafe(r) {
+  if (!r) return null
+  const usedMonitoring = r.components?.some((c) => c.id === 'changes' && c.available)
+  if (usedMonitoring && !r.seededForTest && !monitorFacts(r.chainId, r.address)) {
+    delete db.scores[keyOf(r.chainId, r.address)]
+    return null
+  }
+  return r
+}
+
+async function scoreForIp(ip, chain, address) {
   const k = keyOf(chain.id, address)
-  const have = db.scores[k]
+  const have = publicSafe(db.scores[k])
   if (have && Date.now() - Date.parse(have.computedAt) < TTL_MS) return { result: have }
   const busy = inflight.size >= MAX_INFLIGHT && !inflight.has(k)
-  if (busy || !allow(clientIp(req))) {
+  if (busy || !allow(ip)) {
     if (have) return { result: have, stale: true }
     return { error: 'Too many scores are being worked out right now. Try again in a minute.', status: 429 }
   }
@@ -581,6 +599,24 @@ async function scoreFor(req, chain, address) {
   if (r.error && have) return { result: have, stale: true }
   return r
 }
+
+/**
+ * One contract's public score for in-process callers (Gully AI's get_gully_score): the same cache, TTL and
+ * per-caller limit as GET /api/score/:chain/:address. `chain` is a chain key or id; `caller` is the rate-limit
+ * key (the asker's hashed IP or chat). Resolves the public view, or { error, status }.
+ */
+export async function readScoreFor(chainIn, addressIn, caller = 'ask') {
+  const chain = chainOf(String(chainIn ?? '').toLowerCase())
+  if (!chain) return { error: `Unknown chain. Scores cover ${monitorChains().map((c) => c.key).join(', ')}.`, status: 404 }
+  const address = String(addressIn ?? '').trim().toLowerCase()
+  if (!ADDR_RE.test(address) || address === ZERO) return { error: 'Not a contract address.', status: 400 }
+  const r = await scoreForIp(`ask:${caller}`, chain, address)
+  if (r.error) return r
+  return { ...publicView(r.result), stale: !!r.stale }
+}
+
+/** The chains a score can be looked up on (key and name). */
+export const scoreChains = () => monitorChains().map(({ id, key, name }) => ({ id, key, name }))
 
 /** /api/score*, and /score/:chain/:address/badge.svg. Returns true when answered. */
 export async function handleScore(req, res, url) {
@@ -599,7 +635,7 @@ export async function handleScore(req, res, url) {
   if (!ADDR_RE.test(address) || address === ZERO) return json(res, 400, { error: 'Not a contract address.' }, CORS), true
   if (badge) {
     // The badge never computes: it shows what is stored (a page view computes it first).
-    const r = db.scores[keyOf(chain.id, address)] ?? null
+    const r = publicSafe(db.scores[keyOf(chain.id, address)] ?? null)
     res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...CORS, 'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'" })
     return res.end(req.method === 'HEAD' ? undefined : badgeSvg(r, chain, address)), true
   }
@@ -613,7 +649,8 @@ export async function handleScore(req, res, url) {
 const pending = new Set()
 // A monitored change refreshes that contract's score soon after (the "recent changes" component moves).
 onMonitorEvents((m, recs) => {
-  if (recs.some((r) => r.privileged)) pending.add(keyOf(m.chainId, m.address))
+  // A private monitor (publicScore: false) never moves a public score.
+  if (m.publicScore !== false && recs.some((r) => r.privileged)) pending.add(keyOf(m.chainId, m.address))
 })
 
 let timer = null

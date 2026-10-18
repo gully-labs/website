@@ -6,6 +6,7 @@ import { ArrowRight, Info } from 'lucide-react'
 import { useReducedMotion } from '../charts/chart-utils'
 import { usePlans } from '../../lib/plans'
 import type { Offer, PayAsset } from '../../pages/developers/api'
+import { track } from '../../lib/track'
 
 /* Landing demo: a Gully Pay checkout. The plans, prices, chains, assets and the confirmations each chain
    needs are the real GET /api/plans answer. Nothing is paid: there is no address on it, the payment
@@ -210,7 +211,7 @@ function Checkout({ offer }: { offer: Offer }) {
               <b className="font-semibold">
                 {plan.label} · {offer.periodDays} days
               </b>
-              <span className="font-mono text-[11px] text-gold">Demo checkout · no payment is made</span>
+              <span className="font-mono text-[11px] text-gold">Example checkout · no payment is made</span>
               <span className="font-mono text-[11px] text-faint">{inv}</span>
             </span>
             <span role="status" className={`flex-none rounded-full px-2.5 py-[3px] text-[12px] font-semibold transition-colors duration-300 ${st.cls}`}>
@@ -221,7 +222,7 @@ function Checkout({ offer }: { offer: Offer }) {
             <div className="relative">
               <FakeQr seed={inv} />
               <span aria-hidden className="absolute inset-x-0 bottom-1 mx-auto w-fit rounded-[3px] bg-bg px-1.5 font-mono text-[11px] tracking-[1px] text-gold">
-                DEMO
+                EXAMPLE
               </span>
             </div>
             <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-1.5">
@@ -279,7 +280,7 @@ function Checkout({ offer }: { offer: Offer }) {
           <span className="text-[12px] text-muted">
             Native coins are priced from Chainlink when the quote opens. Nothing renews by itself; paying again adds {offer.periodDays} days.
           </span>
-          <Link to="/pricing" className="inline-flex min-h-11 w-fit items-center gap-1.5 text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
+          <Link to="/pricing" onClick={() => track('cta-click', { cta: 'see-plans', page: location.pathname })} className="inline-flex min-h-11 w-fit items-center gap-1.5 text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
             See every plan <ArrowRight size={12} aria-hidden />
           </Link>
         </div>

@@ -9,5 +9,5 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').repl
 /** HTML to paste: the link alone works; the script only upgrades it to a popup. */
 export function embedSnippet(origin: string, path: string, label = 'Pay with crypto') {
   const href = `${origin}${path}`
-  return `<a href="${esc(href)}" target="_blank" rel="noopener" data-gully-pay="popup" style="${STYLE}">${esc(label)}</a>\n<script src="${esc(origin)}/pay-button.js" async></script>`
+  return `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" data-gully-pay="popup" style="${STYLE}">${esc(label)}</a>\n<script src="${esc(origin)}/pay-button.js" async></script>`
 }

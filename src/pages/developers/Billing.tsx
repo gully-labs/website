@@ -1,4 +1,5 @@
-import { ArrowUpRight, BookOpen, CheckCircle2, CreditCard, Download, FileText, History, LayoutDashboard, Receipt, Store, Users } from 'lucide-react'
+import { track } from '../../lib/track'
+import { BookOpen, CheckCircle2, CreditCard, Download, FileText, History, LayoutDashboard, Receipt, Store, Users } from 'lucide-react'
 import { usePortal, useWrite } from './portal'
 import { Can } from './RoleGate'
 import { ChainLogo } from '../../components/logos/ChainLogo'
@@ -12,7 +13,7 @@ import { useSubTab } from './subtab'
 import { InfoTip, RefreshChip, SubPanel, SubTabs, Unknown } from './ui'
 import { ExtLink } from './ExtLink'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
-import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, type Payment, type Plan, type PlanId, type Quote } from './api'
+import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, type Payment, type Plan, type PlanId, type Quote, usdOf } from './api'
 import { ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
 import { mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
@@ -66,9 +67,9 @@ function PlanCheckout({ plan, view, initialAsset, autoQuote, onPaid, onCancel }:
               {done.amount} {done.symbol} received on {done.chain}. {plan.name} runs until {fmtDate(done.expiresAt)}. Your keys have the new limit now.
             </span>
             {done.txUrl && (
-              <a href={done.txUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-gold">
-                {shortAddress(done.txHash)} <ArrowUpRight size={12} aria-hidden />
-              </a>
+              <ExtLink href={done.txUrl} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-gold">
+                {shortAddress(done.txHash)}
+              </ExtLink>
             )}
           </div>
         </div>
@@ -108,7 +109,9 @@ function PlanCheckout({ plan, view, initialAsset, autoQuote, onPaid, onCancel }:
         autoQuote={autoQuote}
         getQuote={(asset) => api<{ intent: Quote }>('/api/developer/checkout', { method: 'POST', body: { plan: plan.id, asset } }).then((r) => (r.ok ? { ...r, data: { quote: r.data.intent } } : r))}
         verify={(q, txHash) => api('/api/developer/checkout/verify', { method: 'POST', body: { plan: plan.id, quoteId: q.id, txHash } })}
+        trackAs={{ kind: 'plan', plan: plan.id }}
         onPaid={(data) => {
+          track('plan-upgraded', { plan: plan.id })
           setDone((data as { payment: Payment }).payment)
           onPaid()
         }}
@@ -121,10 +124,6 @@ const BILLING_SUBS = ['plan', 'plans', 'history'] as const
 type BillingSub = (typeof BILLING_SUBS)[number]
 
 /** A payment's USD value, or null when the server did not record one (never read as 0). */
-const usdOf = (p: Payment): number | null => {
-  const v = p.usd === null || p.usd === undefined || p.usd === '' ? NaN : Number(p.usd)
-  return Number.isFinite(v) ? v : null
-}
 
 export function Billing({ account, reload, intent, onIntentDone }: { account: Account; reload: () => Promise<void>; intent: CheckoutIntent; onIntentDone: () => void }) {
   const poll = usePoll<BillingView>('/api/developer/billing', 0)
@@ -222,13 +221,13 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2" data-testid="csv-exports">
-                  <a href="/api/developer/export/payments.csv" download className={`${pillSm} min-h-9`}>
+                  <a href="/api/developer/export/payments.csv" download className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
                     <Download size={14} aria-hidden /> Payments CSV
                   </a>
                   <span className="flex items-center gap-1 rounded-full border border-line px-1">
                     <span className="pl-2 font-mono text-[11px] text-faint">Usage CSV</span>
                     {(['24h', '7d', '30d'] as const).map((r) => (
-                      <a key={r} href={`/api/developer/export/usage.csv?range=${r}`} download className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full px-2 font-mono text-[12px] text-ink-2 hover:text-gold max-[600px]:min-h-11 max-[600px]:min-w-11" aria-label={`Download usage CSV, last ${r}`}>
+                      <a key={r} href={`/api/developer/export/usage.csv?range=${r}`} download className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] min-w-9 items-center justify-center rounded-full px-2 font-mono text-[12px] text-ink-2 hover:text-gold max-[600px]:min-h-11 max-[600px]:min-w-11" aria-label={`Download usage CSV, last ${r}`}>
                         {r}
                       </a>
                     ))}
@@ -252,7 +251,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                 <GhostCurves height={130} title="Your payments will draw here">
                   <Receipt size={20} className="text-gold" aria-hidden />
                   <span className="max-w-[460px] text-[13px] text-muted">Payments you make for a plan chart here by date and amount.</span>
-                  <button type="button" onClick={() => setSub('plans')} className={`${pillSm} min-h-9`}>
+                  <button type="button" onClick={() => setSub('plans')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
                     <CreditCard size={14} aria-hidden /> See the plans
                   </button>
                 </GhostCurves>
@@ -288,10 +287,9 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                       Priced in USD · paid in {[...new Set(offer.assets.map((a) => a.symbol))].join(', ')} on {offer.chains.length} chains · {offer.periodDays} days per payment · nothing to cancel
                     </span>
                   </div>
-                  <a href={PRICING_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
-                    Pricing page and FAQ <ArrowUpRight size={12} aria-hidden />
-                    <span className="sr-only"> (opens in a new tab)</span>
-                  </a>
+                  <ExtLink href={PRICING_URL} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
+                    Pricing page and FAQ
+                  </ExtLink>
                 </div>
                 {!offer.checkout.enabled && (
                   <p className="m-0 rounded-[10px] border border-line-strong bg-surface-deep px-3 py-2 text-[13px] text-ink-2" role="status">
@@ -314,7 +312,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                         </div>
                         <Limits p={p} />
                         <Can cat="billing" what="pay for plans" block>
-                          <button type="button" disabled={!offer.checkout.enabled} onClick={() => setBuying({ plan: p, asset: null, auto: false })} className={`${isCur ? pillLine : pillGold} min-h-10 w-full`} data-checkout={p.id}>
+                          <button type="button" disabled={!offer.checkout.enabled} onClick={() => setBuying({ plan: p, asset: null, auto: false })} className={`${isCur ? pillLine : pillGold} min-h-10 relative after:absolute after:inset-x-0 after:-inset-y-[2px] w-full`} data-checkout={p.id}>
                             {!offer.checkout.enabled ? 'Not on sale yet' : isCur ? `Extend ${p.name} by ${offer.periodDays} days` : `Choose ${p.name}`}
                           </button>
                         </Can>
@@ -338,7 +336,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
             </div>
             {!view.payments.length ? (
               <GhostCurves height={120} title="Your payments will be listed here">
-                <button type="button" onClick={() => setSub('plans')} className={`${pillSm} min-h-9`}>
+                <button type="button" onClick={() => setSub('plans')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
                   <CreditCard size={14} aria-hidden /> See the plans
                 </button>
               </GhostCurves>
@@ -378,16 +376,16 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                         </td>
                         <td className="py-2 pr-3 text-right">
                           {p.txUrl ? (
-                            <a href={p.txUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center gap-1 text-ink-2 hover:text-gold">
-                              {shortAddress(p.txHash)} <ArrowUpRight size={12} aria-hidden />
-                              <span className="sr-only"> on the explorer (opens in a new tab)</span>
-                            </a>
+                            <ExtLink href={p.txUrl} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 text-ink-2 hover:text-gold">
+                              {shortAddress(p.txHash)}
+                              <span className="sr-only"> on the explorer</span>
+                            </ExtLink>
                           ) : (
                             <span className="text-ink-2">{shortAddress(p.txHash)}</span>
                           )}
                         </td>
                         <td className="py-2 text-right">
-                          <a href={`#receipt=${p.chainId}:${p.txHash}`} className="inline-flex min-h-9 items-center gap-1 text-ink-2 hover:text-gold">
+                          <a href={`#receipt=${p.chainId}:${p.txHash}`} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 text-ink-2 hover:text-gold">
                             <FileText size={13} aria-hidden /> Receipt
                           </a>
                         </td>
@@ -415,10 +413,10 @@ function SelfServePay() {
         </h2>
         <span className="text-[13px] text-muted">Pay links, invoices, a hosted checkout and signed webhooks: set up your store in the Merchant tab, self-serve.</span>
       </span>
-      <a href="#merchant" className={`${pillGold} min-h-9`}>
+      <a href="#merchant" className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
         <Store size={15} aria-hidden /> Open Merchant
       </a>
-      <ExtLink href={`${DOCS_URL}/gully-pay`} className={`${pillSm} min-h-9`}>
+      <ExtLink href={`${DOCS_URL}/gully-pay`} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
         <BookOpen size={14} aria-hidden /> How it works
       </ExtLink>
     </section>

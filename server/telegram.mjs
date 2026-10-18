@@ -14,7 +14,8 @@
 // Updates arrive by webhook: POST /api/telegram/<path>, where <path> is the first 32 hex of
 // sha256(token) and the secret header must match. On start (startTelegram) the server calls setWebhook
 // for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query), setMyCommands
-// per scope (private chats: start, app, gap, top, movers, launches, alerts, ask, help, stop; groups: gap,
+// per scope (private chats: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help,
+// stop; /menu and /monitors work when typed; groups: gap,
 // top, launches, help; the default scope gets the private list), setChatMenuButton { type: 'commands' } so
 // the Menu button next to the text box lists those commands, and getMe; failures are logged (without the
 // token) and retried, never fatal. The Mini App opens from the "📱 Open app" inline web_app button on the
@@ -58,6 +59,7 @@
 //
 // Stored in DATA_DIR/telegram.json: { links: [...], codes: [...], banner: { fileId, sha } }.
 
+import { chainKeyOf, findStock, holdersAvailable, holdersButtonVisible } from './holders.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -151,6 +153,41 @@ function apiBase() {
   }
   return 'https://api.telegram.org'
 }
+
+/* ---------------------------------------------------------- Holder Map data --- */
+
+/* Whether a "👥 Holders" button leads to a map with data: server/holders.mjs decides (holdersButtonVisible:
+   a tracked stock follows its chain's holder source, anything else is a DeepCore launch; holdersAvailable for a
+   chain's stock tokens). Never throws: a failing check hides the button. */
+let holderVisibleOverride = null
+
+/** Whether a "👥 Holders" button for (chain, token) leads to a map with data. */
+export function holderChainAvailable(chain, token) {
+  try {
+    if (!holderVisibleOverride) return holdersButtonVisible(chain, token) === true
+    const ck = chainKeyOf(chain)
+    return !!ck && (findStock(ck, token) ? holderVisibleOverride(ck, 'stock') === true : holdersAvailable(ck, 'deepcore-launch'))
+  } catch {
+    return false
+  }
+}
+/** The stock chains whose Holder Map has data now (for the Mini App and the bot's Holder Map screen). */
+export const holderStockChains = () =>
+  ['robinhood', 'bsc', 'solana'].filter((k) => {
+    try {
+      return holderVisibleOverride ? holderVisibleOverride(k, 'stock') === true : holdersAvailable(k, 'stock')
+    } catch {
+      return false
+    }
+  })
+/** Tests only: fn(chainKey, 'stock') -> boolean replaces "is this chain's stock source configured" (null: holders.mjs decides). */
+export const setHolderAvailabilityForTest = (fn) => (holderVisibleOverride = fn)
+
+/* ----------------------------------------------------------- webhook health --- */
+
+const hookHealth = { updates: 0, errors: 0, lastUpdateAt: null, lastError: null, lastErrorAt: null }
+/** For the admin Health view: webhook updates handled and handler errors since start. No tokens, no message content. */
+export const botWebhookHealth = () => ({ enabled: telegramEnabled(), ...hookHealth })
 
 /** The webhook path segment: first 32 hex of sha256(token). */
 export const webhookPathFor = (token) => sha256(String(token)).slice(0, 32)
@@ -279,7 +316,8 @@ const botId = () => telegramToken()?.split(':')[0] ?? null
 export async function telegramInfo(address) {
   if (!telegramEnabled()) return { enabled: false, bot: null, linked: null }
   const l = address ? linkedChat(address) : null
-  return { enabled: true, bot: await botUsername(), linked: l ? { chatType: l.chatType, chatTitle: l.chatTitle, linkedAt: l.linkedAt } : null }
+  // announcements: the linked private chat's broadcast switch (true on, false off); null for a group or no link.
+  return { enabled: true, bot: await botUsername(), linked: l ? { chatType: l.chatType, chatTitle: l.chatTitle, linkedAt: l.linkedAt } : null, announcements: l && l.chatType === 'private' ? !botUser(l.chatId)?.optedOut : null }
 }
 
 /** GET /api/alerts/channels: which delivery channels this server offers. Public. */
@@ -299,13 +337,16 @@ const COMMANDS = {
   top: '🔥 Furthest from the real share price',
   movers: '🚀 Biggest gap moves in 24 hours',
   launches: '🛰 Newest tokens launched on DeepCore',
+  holders: '👥 Holder Map: who holds a token',
   alerts: '🔔 Your alerts: pause, mute, test or delete',
+  security: '🛡 Contract scans, Gully Score and monitors',
+  score: '🏅 A contract’s Gully Score, e.g. /score 0x…',
   ask: '🤖 Ask Gully AI a question',
   help: '❓ What this bot does',
   stop: '🔕 Stop announcements, or unlink this chat',
 }
 const SCOPE_COMMANDS = {
-  private: ['start', 'app', 'gap', 'top', 'movers', 'launches', 'alerts', 'ask', 'help', 'stop'],
+  private: ['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'help', 'stop'],
   group: ['gap', 'top', 'launches', 'help'],
 }
 /** The command list for one scope ('private' or 'group'). */
@@ -340,7 +381,7 @@ export const menuButton = () => ({ type: 'commands' })
 function keyboardFor(chatId, kb) {
   if (!kb) return kb
   const priv = Number(chatId) > 0
-  const out = ui.resolveHoldersButtons(kb, priv, miniAppUrl())
+  const out = ui.resolveHoldersButtons(kb, priv, miniAppUrl(), holderChainAvailable)
   if (kb !== ui.MENU_KEYBOARD || !priv) return out
   return [[ui.appBtn(miniAppUrl())], ...out]
 }
@@ -382,12 +423,13 @@ export async function startTelegram({ attempt = 0 } = {}) {
  * The text is escaped here, so callers pass plain text. Never throws.
  * @returns {Promise<{ ok: boolean, status: number | null, error: string | null }>}
  */
-export async function sendAccountTelegram(address, text) {
+export async function sendAccountTelegram(address, text, { keyboard = null } = {}) {
   if (!telegramEnabled()) return { ok: false, status: null, error: 'Telegram is not configured on the server.' }
   const chatId = linkedChat(String(address ?? '').toLowerCase())?.chatId ?? linkedChat(address)?.chatId ?? null
   if (!chatId) return { ok: false, status: null, error: 'No Telegram chat is linked to this account.' }
+  const kb = Array.isArray(keyboard) && keyboard.length ? keyboardFor(chatId, keyboard) : null
   const r = await sendText(chatId, `<b>Gully Labs</b>
-${esc(String(text ?? ''))}`)
+${esc(String(text ?? ''))}`, kb ? { reply_markup: { inline_keyboard: kb } } : {})
   return { ok: r.ok, status: r.status ?? null, error: r.error ?? null }
 }
 
@@ -642,6 +684,42 @@ async function myAlertsScreen(link, page = 1) {
 
 const alertById = async (link, id) => (await alertsOf(link.address)).alerts.find((a) => a.id === id) ?? null
 
+/* Gully Security monitors (sec-monitor.mjs, which imports this file: loaded lazily to keep the import graph one-way). */
+const secMonitor = () => import('./sec-monitor.mjs')
+
+async function monitorsScreen(link, page = 1) {
+  if (!link) return ui.linkNeededView('sec', 'Monitors')
+  try {
+    return ui.monitorsView((await secMonitor()).monitorsOf(link.address), page)
+  } catch {
+    return { text: '<b>📡 My monitors</b>\nYour monitors aren’t available right now. Try again in a minute.', keyboard: [ui.nav('sec')] }
+  }
+}
+async function monitorById(link, id) {
+  try {
+    return (await secMonitor()).monitorsOf(link.address).monitors.find((m) => m.id === id) ?? null
+  } catch {
+    return null
+  }
+}
+
+/** /score 0x… [chain]: a link to that contract's Gully Score page (Base when no chain is given). */
+async function scoreScreen(args) {
+  const [rawAddr, rawChain] = String(args ?? '').split(/\s+/).filter(Boolean)
+  const addr = String(rawAddr ?? '').toLowerCase()
+  if (!rawAddr) return ui.scoreLookupView(null, null)
+  if (!/^0x[0-9a-f]{40}$/.test(addr)) return { text: '<b>🏅 Gully Score</b>\nThat is not a contract address. It starts with 0x and has 40 letters and digits after it.', keyboard: [ui.nav('sec')] }
+  let chain = null
+  try {
+    const sm = await secMonitor()
+    chain = sm.chainOf(rawChain ?? 'base')
+    if (!chain && rawChain) return { text: `<b>🏅 Gully Score</b>\nPick one of these chains: ${esc(sm.monitorChains().map((c) => c.name).join(', '))}.`, keyboard: [ui.nav('sec')] }
+  } catch {
+    chain = null
+  }
+  return ui.scoreLookupView(chain ? { key: chain.key, name: chain.name } : { key: 'base', name: 'Base' }, addr)
+}
+
 /** Announcements state for a private chat (true on, false off), null for groups. */
 const announceOf = (chatId) => (Number(chatId) > 0 ? !botUser(chatId)?.optedOut : null)
 
@@ -710,7 +788,7 @@ async function gapScreen(args) {
 /* ---------------------------------------------------------------- updates --- */
 
 // Unlinked chats may use these; everything else from them is ignored.
-const PUBLIC_COMMANDS = new Set(['start', 'help', 'menu', 'app', 'gap', 'top', 'movers', 'ask', 'launches', 'alerts'])
+const PUBLIC_COMMANDS = new Set(['start', 'help', 'menu', 'app', 'gap', 'top', 'movers', 'ask', 'launches', 'alerts', 'holders', 'security', 'score', 'monitors', 'more'])
 const hits = new Map()
 const seenUpdates = new Set()
 
@@ -799,6 +877,11 @@ async function onMessage(msg) {
     if (!q) return void (await prompt(chatId, ui.AI_PROMPT, { kind: 'ai' }, 'How do gap alerts work?'))
     view = await aiAnswer(chatId, q)
   } else if (cmd === 'alerts') view = await myAlertsScreen(link)
+  else if (cmd === 'holders') view = ui.holderMapView(holderStockChains())
+  else if (cmd === 'security') view = ui.securityView(!!link)
+  else if (cmd === 'more') view = ui.moreView()
+  else if (cmd === 'monitors') view = await monitorsScreen(link)
+  else if (cmd === 'score') view = await scoreScreen(args)
   else if (cmd === 'stop') {
     if (!mayAct(link, msg.from?.id)) view = { text: 'Only the person who linked this group can unlink it.', keyboard: [[btn('🏠 Menu', 'm')]] }
     else {
@@ -957,21 +1040,42 @@ async function routeView(route, c) {
     if (act === 'ad') return c.answer(), ui.deleteConfirmView(a, DEEPCORE_CHAINS)
     if (act === 'adx') {
       const r = await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/delete`)
-      c.answer(r.status === 200 ? '🗑 Deleted' : (r.data?.error ?? 'Not deleted'), r.status !== 200)
+      c.answer(r.status === 200 ? '🗑 Deleted' : ui.friendlyError(r.data?.error, 'Not deleted. Try again in a minute.'), r.status !== 200)
       return myAlertsScreen(link)
     }
     if (act === 'am') {
       const r = muteAlert(id, link.address, MUTE_MS)
-      c.answer(r.ok ? `🔕 Muted ${ui.forTime(r.mutedUntil)}` : r.error, !r.ok)
+      c.answer(r.ok ? `🔕 Muted ${ui.forTime(r.mutedUntil)}` : ui.friendlyError(r.error, 'Not muted. Try again in a minute.'), !r.ok)
     } else if (act === 'ap' || act === 'ar') {
       const r = await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/${act === 'ap' ? 'pause' : 'resume'}`)
-      c.answer(r.status === 200 ? (act === 'ap' ? '⏸ Paused' : '▶ Resumed') : (r.data?.error ?? 'Not changed'), r.status !== 200)
+      c.answer(r.status === 200 ? (act === 'ap' ? '⏸ Paused' : '▶ Resumed') : ui.friendlyError(r.data?.error, 'Not changed. Try again in a minute.'), r.status !== 200)
     } else if (act === 'at') {
       c.answer('🧪 Sending a test…')
       await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/test`)
     }
     const fresh = await alertById(link, id)
     return fresh ? ui.alertCardView(fresh, DEEPCORE_CHAINS) : myAlertsScreen(link)
+  }
+  if (route === 'hm') return c.answer(), ui.holderMapView(holderStockChains())
+  if (route === 'sec') return c.answer(), ui.securityView(!!link)
+  if (route === 'more') return c.answer(), ui.moreView()
+  if ((m = route.match(/^mon(?::p(\d{1,2}))?$/))) return c.answer(), monitorsScreen(link, Number(m[1] ?? 1))
+  if ((m = route.match(/^(mo|mop|mor|mom):(mon_[\w-]{12})$/))) {
+    const [, act, id] = m
+    if (!link) return c.answer(), ui.linkNeededView('sec', 'Monitors')
+    const mon = await monitorById(link, id)
+    if (!mon) {
+      c.answer('That monitor no longer exists.')
+      return monitorsScreen(link)
+    }
+    if (act === 'mo') return c.answer(), ui.monitorCardView(mon)
+    const guard = actGuard('change its monitors')
+    if (guard) return c.answer(guard, true), NO_CHANGE
+    const sm = await secMonitor()
+    const r = act === 'mom' ? sm.muteMonitor(id, link.address, MUTE_MS) : sm.setMonitorEnabled(id, link.address, act === 'mor')
+    c.answer(r.ok ? (act === 'mom' ? `🔕 Muted ${ui.forTime(r.mutedUntil)}` : act === 'mop' ? '⏸ Paused' : '▶ Resumed') : ui.friendlyError(r.error, 'Not changed. Try again in a minute.'), !r.ok)
+    const fresh = await monitorById(link, id)
+    return fresh ? ui.monitorCardView(fresh) : monitorsScreen(link)
   }
   if (route === 'ai') {
     c.answer('Type your question in the reply box')
@@ -1015,7 +1119,7 @@ async function routeView(route, c) {
     }
     const on = route === 'snt:1'
     const r = await callRoute(handleProfileRoutes, 'POST', '/api/developer/profile', { notify: { telegramUsage: on } }, { user: link.address, workspace: link.address, role: 'owner', sessionId: null })
-    c.answer(r.status === 200 ? `📣 Usage notices ${on ? 'on' : 'off'}` : (r.data?.error ?? 'Not changed'), r.status !== 200)
+    c.answer(r.status === 200 ? `📣 Usage notices ${on ? 'on' : 'off'}` : ui.friendlyError(r.data?.error, 'Not changed. Try again in a minute.'), r.status !== 200)
     return settingsScreen(link, fromId, chatId)
   }
   return undefined
@@ -1055,6 +1159,21 @@ async function pressed(cq, answer) {
     return answer(off ? '🔕 Announcements off. Alerts still arrive. Switch them back on in ⚙️ Settings.' : '📣 Announcements on again.', off)
   }
 
+  // Mute 24h on a monitor alert (Gully Security): never gated, like the alert Mute below.
+  const mmu = data.match(/^mmu:(mon_[\w-]{12})$/)
+  if (mmu && chatId) {
+    if (!link) return answer('This chat is not linked to an account any more.', true)
+    if (!mayAct(link, fromId)) return answer('Only the person who linked this group can mute its monitors.', true)
+    let r
+    try {
+      r = (await secMonitor()).muteMonitor(mmu[1], link.address, MUTE_MS)
+    } catch {
+      r = { ok: false, error: 'Not muted. Try again in a minute.' }
+    }
+    if (!r.ok) return answer(ui.friendlyError(r.error, 'Not muted. Try again in a minute.'), true)
+    return answer(`🔕 Monitor muted ${ui.forTime(r.mutedUntil)}. Resume it in 📡 My monitors.`)
+  }
+
   // Mute 24h on an alert delivery.
   const mm = data.match(/^mute:([\w-]{1,40})$/)
   if (mm || !chatId) {
@@ -1062,7 +1181,7 @@ async function pressed(cq, answer) {
     if (!link) return answer('This chat is not linked to an account any more.', true)
     if (!mayAct(link, fromId)) return answer('Only the person who linked this group can mute its alerts.', true)
     const r = muteAlert(mm[1], link.address, MUTE_MS)
-    if (!r.ok) return answer(r.error, true)
+    if (!r.ok) return answer(ui.friendlyError(r.error, 'Not muted. Try again in a minute.'), true)
     return answer(`🔕 Muted ${ui.forTime(r.mutedUntil)}. Resume it in 🔔 My alerts.`)
   }
   const gate = allowed(`cb:${chatId}`, 60)
@@ -1139,8 +1258,12 @@ const gateView = (ch) => ({
   keyboard: [[ubtn(`📣 Join ${ch.startsWith('@') ? ch : 'the channel'} ↗`, channelUrl(ch))], [btn('✅ I’ve joined', 'jchk')]],
 })
 
-const EXIT_ROUTES = /^(?:mute:[\w-]+|bco|bci|ma(?::p\d{1,2})?|ac:[\w-]+|am:[\w-]+|ap:[\w-]+|ad:[\w-]+|adx:[\w-]+|set|smu|sul|suly|san:[01]|snt:0)!?$/
-const EXIT_COMMANDS = /^\/(?:stop|alerts)(?:@\w+)?(?:\s|$)|^\/start(?:@\w+)?\s+[A-Za-z0-9_-]{16,64}\s*$/i
+const EXIT_ROUTES = /^(?:mute:[\w-]+|mmu:[\w-]+|bco|bci|ma(?::p\d{1,2})?|ac:[\w-]+|am:[\w-]+|ap:[\w-]+|ad:[\w-]+|adx:[\w-]+|mon(?::p\d{1,2})?|mo:[\w-]+|mop:[\w-]+|mom:[\w-]+|set|smu|sul|suly|san:[01]|snt:0)!?$/
+const EXIT_COMMANDS = /^\/(?:stop|alerts|monitors)(?:@\w+)?(?:\s|$)|^\/start(?:@\w+)?\s+[A-Za-z0-9_-]{16,64}\s*$/i
+// In groups the join screen goes to a non-follower at most once per GROUP_GATE_MS, so members' commands do not
+// fill the group with it; their other commands are dropped quietly in the meantime.
+const GROUP_GATE_MS = 30 * 60_000
+const groupGateShown = new Map() // `${chatId}:${userId}` -> time shown
 
 /** Gate for one update: true when it may proceed. Answers the update itself when it may not. */
 async function gate(u) {
@@ -1150,7 +1273,20 @@ async function gate(u) {
   const msg = u?.message
   const from = cq?.from ?? msg?.from
   if (!from || from.is_bot) return true
-  if (msg && msg.chat?.type !== 'private' && !/^\//.test(String(msg.text ?? ''))) return true // group chatter is never ours
+  const inGroup = (cq?.message?.chat ?? msg?.chat)?.type !== undefined && (cq?.message?.chat ?? msg?.chat).type !== 'private'
+  if (msg && inGroup) {
+    const t = String(msg.text ?? '')
+    if (!/^\//.test(t)) return true // group chatter is never ours
+    // A command for another bot, or one this bot does not answer in this chat, is ignored later anyway: no gate.
+    const cm = t.slice(0, 800).match(/^\/([a-z_]{1,32})(?:@([A-Za-z0-9_]{3,64}))?(?:\s|$)/i)
+    if (!cm) return true
+    if (cm[2]) {
+      const name = await botUsername()
+      if (!name || cm[2].toLowerCase() !== name.toLowerCase()) return true
+    }
+    const known = PUBLIC_COMMANDS.has(cm[1].toLowerCase()) || cm[1].toLowerCase() === 'stop'
+    if (!known && !linkOfChat(String(msg.chat.id))) return true
+  }
   // The exits are never gated (owner rule: muting is never gated): someone who left the channel can still see
   // their alerts and mute, pause or delete them, mute all, unlink, switch announcements or usage notices off,
   // stop, and link or unlink an account. Only feature use (stocks, gaps, new alerts, Gully AI...) waits.
@@ -1164,7 +1300,16 @@ async function gate(u) {
     return false
   }
   if (await followsChannel(String(from.id))) return true
-  if (cq) await tg('answerCallbackQuery', { callback_query_id: String(cq.id), text: 'Follow Gully Labs News first.' }).catch(() => undefined)
+  if (cq) await tg('answerCallbackQuery', { callback_query_id: String(cq.id), text: 'Follow Gully Labs News first.', show_alert: inGroup }).catch(() => undefined)
+  if (inGroup) {
+    // A button press in a group gets the toast only; a command gets the join screen once per member per half hour.
+    if (cq) return false
+    const key = `${chatId}:${from.id}`
+    const at = groupGateShown.get(key) ?? 0
+    if (Date.now() - at < GROUP_GATE_MS) return false
+    groupGateShown.set(key, Date.now())
+    if (groupGateShown.size > 5_000) groupGateShown.delete(groupGateShown.keys().next().value)
+  }
   await showNew(chatId, gateView(ch))
   return false
 }
@@ -1207,10 +1352,15 @@ export async function handleTelegramWebhook(req, res, url) {
   if (!safeEqual(req.headers['x-telegram-bot-api-secret-token'] ?? '', webhookSecretFor(token))) return json(res, 401, { error: 'bad secret' }), true
   const update = await readJson(req, MAX_UPDATE_BYTES)
   if (!update || typeof update !== 'object') return json(res, 400, { error: 'bad update' }), true
+  hookHealth.updates++
+  hookHealth.lastUpdateAt = new Date().toISOString()
   try {
     await onUpdate(update)
   } catch (e) {
     console.error('telegram update:', redact(e?.message ?? e))
+    hookHealth.errors++
+    hookHealth.lastError = redact(e?.name ? `${e.name}: ${e.message ?? ''}` : (e ?? 'error')).slice(0, 160)
+    hookHealth.lastErrorAt = new Date().toISOString()
   }
   return json(res, 200, { ok: true }), true
 }
@@ -1221,6 +1371,7 @@ const linkHits = new Map()
  *   GET  /api/developer/telegram           -> { enabled, bot, linked }
  *   POST /api/developer/telegram/connect   -> { link, groupLink, expiresAt }   one-time, 10 minutes
  *   POST /api/developer/telegram/unlink
+ *   POST /api/developer/telegram/announcements { on }   the linked private chat's Gully Labs announcements
  */
 export async function handleTelegramAccount(req, res, url, address) {
   const p = url.pathname
@@ -1239,6 +1390,14 @@ export async function handleTelegramAccount(req, res, url, address) {
     db.codes.push({ hash: sha256(code), address, expiresAt: new Date(now + CODE_TTL_MS).toISOString(), usedAt: null })
     save()
     return json(res, 200, { link: `https://t.me/${bot}?start=${code}`, groupLink: `https://t.me/${bot}?startgroup=${code}`, expiresAt: new Date(now + CODE_TTL_MS).toISOString() }), true
+  }
+  if (p === '/api/developer/telegram/announcements') {
+    const l = linkedChat(address)
+    if (!l || l.chatType !== 'private') return json(res, 409, { error: 'Announcements go to a linked private chat only. Link your own chat with the bot first.' }), true
+    const body = await readJson(req, 200)
+    if (typeof body?.on !== 'boolean') return json(res, 400, { error: 'Say on: true or on: false.' }), true
+    setOptOut(l.chatId, !body.on)
+    return json(res, 200, { ok: true, announcements: body.on }), true
   }
   if (p === '/api/developer/telegram/unlink') {
     const l = linkedChat(address)
@@ -1264,6 +1423,15 @@ export function onAnnouncementOptOut(fn) {
 
 /** Admin overview counts. */
 export const telegramStats = () => ({ enabled: telegramEnabled(), links: db.links.length })
+
+/** Admin: remove an account's chat link (the chat is told). True when there was one. */
+export function adminUnlinkTelegram(address) {
+  const l = linkedChat(String(address ?? '').toLowerCase()) ?? linkedChat(address)
+  if (!l) return false
+  unlink(l)
+  sendText(l.chatId, 'This chat was unlinked from its Gully Labs account by an administrator. It no longer receives alerts.').catch(() => undefined)
+  return true
+}
 
 /** Test hook: every open link code expires now. */
 export function expireLinkCodesForTest() {

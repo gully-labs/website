@@ -52,7 +52,7 @@ export function OrderSummary({
       <table className="w-full border-collapse text-[14px]" data-testid="order-items">
         <caption className="sr-only">Line items</caption>
         <thead>
-          <tr className="border-b border-line text-left font-mono text-[10.5px] tracking-[1px] text-faint">
+          <tr className="border-b border-line text-left font-mono text-[11px] tracking-[1px] text-faint">
             <th scope="col" className="py-2 pr-3 font-normal">
               ITEM
             </th>

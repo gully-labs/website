@@ -96,7 +96,7 @@ const CARDS = [
   },
   {
     file: 'og-pricing.png',
-    html: page({ eyebrow: 'Pricing · tracker API', title: 'More calls, <em>alerts and history</em>', body: 'Pay in USDC on Base from your own wallet. No card, no custody, nothing that renews behind your back.', url: 'gullylabs.xyz/pricing', right: codeCard('<span style="color:#6c7888"># gap alert, signed</span><br>POST your-app.com/hook<br>X-Gully-Signature: <span style="color:#26ab94">sha256=…</span><br><br>{ <span style="color:#d9b563">"ticker"</span>: "NVDA",<br>&nbsp;&nbsp;<span style="color:#d9b563">"gapPct"</span>: 2.4 }'), titleSize: 88 }),
+    html: page({ eyebrow: 'Pricing · tracker API', title: 'More calls, <em>alerts and history</em>', body: 'Pay in ETH, BNB, USDC or USDT from your own wallet. No card, no custody, nothing that renews behind your back.', url: 'gullylabs.xyz/pricing', right: codeCard('<span style="color:#6c7888"># gap alert, signed</span><br>POST your-app.com/hook<br>X-Gully-Signature: <span style="color:#26ab94">sha256=…</span><br><br>{ <span style="color:#d9b563">"ticker"</span>: "NVDA",<br>&nbsp;&nbsp;<span style="color:#d9b563">"gapPct"</span>: 2.4 }'), titleSize: 88 }),
   },
   {
     file: 'og-analytics.png',
@@ -105,6 +105,22 @@ const CARDS = [
   {
     file: 'og-chain-kit.png',
     html: page({ eyebrow: 'Chain Kit', title: 'An explorer for <em>your chain</em>', body: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.', url: 'gullylabs.xyz/chain-kit', right: codeCard('<span style="color:#6c7888"># your chain, your brand</span><br>CHAIN_ID=<span style="color:#26ab94">4663</span><br>CHAIN_TYPE=<span style="color:#26ab94">arbitrum</span><br>NETWORK_NAME="Your Chain"<br>ACCENT=<span style="color:#d9b563">#D9B563</span>'), titleSize: 92 }),
+  },
+  {
+    file: 'og-security.png',
+    html: page({ eyebrow: 'Gully Security', title: 'Scan it <em>before they do</em>', body: 'The AI Security Scan for a deployed contract or a repository, and Security Review requests. Not an audit.', url: 'gullylabs.xyz/security', right: codeCard('<span style="color:#6c7888"># AI Security Scan</span><br>target: <span style="color:#26ab94">0x8d90…545b</span><br>chain: Base<br><br><span style="color:#d9b563">findings</span> by severity<br><span style="color:#6c7888"># with the limits of a scan</span>'), titleSize: 92 }),
+  },
+  {
+    file: 'og-holders.png',
+    html: page({ eyebrow: 'Holder Map', title: 'Who really <em>holds it?</em>', body: 'The biggest wallets, the ones that trade with each other, and a plain check of every DeepCore launch.', url: 'gullylabs.xyz/holders', right: mascot, titleSize: 96 }),
+  },
+  {
+    file: 'og-score.png',
+    html: page({ eyebrow: 'Gully Score', title: 'A contract score <em>you can check</em>', body: 'From public evidence only: verified code, who controls it, upgrades, delays and recent privileged changes.', url: 'gullylabs.xyz/score', right: mascot, titleSize: 88 }),
+  },
+  {
+    file: 'og-status.png',
+    html: page({ eyebrow: 'Status', title: 'Gully Labs <em>status</em>', body: 'The API, the tracker on every chain, the bot, payments, Gully AI and security, checked every minute.', url: 'gullylabs.xyz/status', right: codeCard('<span style="color:#d9b563">GET</span> /api/status<br><br>{ <span style="color:#d9b563">"overall"</span>: "<span style="color:#26ab94">operational</span>",<br>&nbsp;&nbsp;<span style="color:#d9b563">"components"</span>: [ … ],<br>&nbsp;&nbsp;<span style="color:#d9b563">"incidents"</span>: [ … ] }'), titleSize: 96 }),
   },
   { file: 'og-links.png', html: page({ eyebrow: 'Links', titleSize: 92, title: 'Every Gully Labs <em>link</em>', body: 'The site, the app, the tracker, Gully AI, docs, the Telegram bot and the news channel.', url: 'gullylabs.xyz/links', right: mascot }) },
   ...PROJECTS.map((p) => ({

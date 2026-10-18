@@ -1,10 +1,12 @@
-import { Activity, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2, Gauge, History, Home, KeyRound, Layers, Menu, MessageCircleQuestion, Milestone, Package, Puzzle, ScanSearch, ShieldCheck, Store, Tags, Users, Wallet, X, type LucideIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { NavLink, Outlet, ScrollRestoration, useResolvedPath } from 'react-router'
+import { Activity, ArrowLeftRight, BellRing, Blocks, BookOpen, Bot, ChartNoAxesCombined, Code2, Gauge, HeartPulse, History, Home, KeyRound, Layers, Lock, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Puzzle, ScanSearch, Search, Send, ShieldCheck, Store, Tags, Users, Wallet, X, type LucideIcon } from 'lucide-react'
+import { useContext, useEffect, useId, useMemo, useState } from 'react'
+import { NavLink, Outlet, ScrollRestoration, useNavigate, useResolvedPath } from 'react-router'
+import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
 import { Wordmark } from '../components/brand'
 import { AskLauncher } from '../components/ask/AskLauncher'
-import { apiOrigin, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
+import { track } from '../lib/track'
+import { apiOrigin, DOC_KEYWORDS, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
 
 type Health = 'checking' | 'live' | 'down'
 
@@ -36,7 +38,131 @@ function ApiPill() {
   )
 }
 
-const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, 'gully-pay-merchants': Store, 'gully-security': ShieldCheck, 'gully-score': Gauge, teams: Users, roadmap: Milestone, 'roadmap-l3': Layers, changelog: History, 'holder-map': ScanSearch }
+const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, 'gully-pay-merchants': Store, 'gully-security': ShieldCheck, 'gully-score': Gauge, teams: Users, roadmap: Milestone, 'roadmap-l3': Layers, changelog: History, 'holder-map': ScanSearch, 'gully-ai': Bot, telegram: Send, swaps: ArrowLeftRight, solana: Orbit, 'chain-kit': Blocks, status: HeartPulse }
+
+/** Links to the rest of Gully Labs: all on another host, so each opens in a new tab with the ↗ marker. */
+const GULLY_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
+  { label: 'Live tracker', href: `${SITE}/tracker`, icon: Activity },
+  { label: 'Holder Map', href: `${SITE}/holders`, icon: ScanSearch },
+  { label: 'Security', href: `${SITE}/security`, icon: ShieldCheck },
+  { label: 'Gully Score', href: `${SITE}/score`, icon: Gauge },
+  { label: 'Widget builder', href: `${SITE}/widget`, icon: Puzzle },
+  { label: 'Gully AI', href: `${SITE}/ask`, icon: MessageCircleQuestion },
+  { label: 'Alerts', href: `${SITE}/#alerts`, icon: BellRing },
+  { label: 'Pricing', href: `${SITE}/pricing`, icon: Tags },
+  { label: 'Status', href: `${SITE}/status`, icon: HeartPulse },
+  { label: 'Telegram bot', href: 'https://t.me/GullyLabsBot', icon: Send },
+  { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
+  { label: 'Privacy', href: `${SITE}/legal/privacy`, icon: Lock },
+  { label: 'App dashboard', href: 'https://app.gullylabs.xyz', icon: KeyRound },
+]
+
+type Hit = { slug: DocSlug; title: string; group: string }
+
+/** Pages whose title or keywords contain every word of the query; title matches first. */
+function searchDocs(query: string): Hit[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+  if (!words.length) return []
+  const scored: { hit: Hit; score: number }[] = []
+  for (const p of DOC_PAGES) {
+    const title = p.title.toLowerCase()
+    const keys = DOC_KEYWORDS[p.slug] ?? []
+    let score = 0
+    let all = true
+    for (const w of words) {
+      if (title.includes(w)) score += title.startsWith(w) ? 3 : 2
+      else if (keys.some((k) => k.includes(w))) score += 1
+      else {
+        all = false
+        break
+      }
+    }
+    if (all) scored.push({ hit: { slug: p.slug, title: p.title, group: p.group }, score })
+  }
+  return scored.sort((a, b) => b.score - a.score).map((x) => x.hit)
+}
+
+/** The sidebar search: filters the pages by title and keywords; Enter opens the first match. */
+function DocSearch({ onPick }: { onPick: () => void }) {
+  const [q, setQ] = useState('')
+  const id = useId()
+  const navigate = useNavigate()
+  const base = useContext(DocsBase).replace(/\/+$/, '')
+  const hrefOf = (slug: DocSlug) => `${base}${slug ? `/${slug}` : ''}` || '/'
+  const query = q.trim()
+  const hits = useMemo(() => searchDocs(query), [query])
+
+  // Analytics: one event once typing has stopped for 800 ms, for queries of two characters or more.
+  useEffect(() => {
+    if (query.length < 2) return
+    const t = setTimeout(() => track('docs-search', { q: query, results: hits.length }), 800)
+    return () => clearTimeout(t)
+  }, [query, hits.length])
+
+  const open = (slug: DocSlug) => {
+    track('docs-search-open', { slug: slug || 'overview' })
+    setQ('')
+    onPick()
+  }
+
+  return (
+    <div className="flex flex-col gap-2" role="search">
+      <label htmlFor={`${id}-q`} className="sr-only">
+        Search the docs
+      </label>
+      <div className="relative">
+        <Search aria-hidden size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-faint" />
+        <input
+          id={`${id}-q`}
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && hits[0]) {
+              e.preventDefault()
+              const first = hits[0]
+              open(first.slug)
+              navigate(hrefOf(first.slug))
+            } else if (e.key === 'Escape' && q) {
+              e.stopPropagation()
+              setQ('')
+            }
+          }}
+          placeholder="Search the docs"
+          autoComplete="off"
+          spellCheck={false}
+          aria-controls={`${id}-results`}
+          aria-describedby={`${id}-count`}
+          className="min-h-11 w-full rounded-input border border-line-strong bg-surface-deep pr-3 pl-9 text-[16px] text-ink placeholder:text-faint focus:border-gold focus:outline-none"
+        />
+      </div>
+      <span id={`${id}-count`} role="status" aria-live="polite" className={query ? 'px-1 font-mono text-[11px] text-faint' : 'sr-only'}>
+        {query ? (hits.length ? `${hits.length} page${hits.length === 1 ? '' : 's'} · Enter opens the first` : 'No page matches. Try Gully AI (⌘K).') : ''}
+      </span>
+      {query && hits.length > 0 && (
+        <ul id={`${id}-results`} className="m-0 flex list-none flex-col gap-1 p-0" style={{ animation: 'gl-fade .15s ease both' }}>
+          {hits.map((h, i) => {
+            const Icon = DOC_ICON[h.slug]
+            return (
+              <li key={h.slug}>
+                <NavLink
+                  to={hrefOf(h.slug)}
+                  end
+                  onClick={() => open(h.slug)}
+                  className={`group flex min-h-11 items-center gap-3 rounded-btn px-3 text-[14px] transition-colors hover:bg-surface hover:text-ink ${i === 0 ? 'bg-surface text-ink' : 'text-muted'}`}
+                >
+                  <Icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
+                  <span className="flex-1">{h.title}</span>
+                  <span className="font-mono text-[11px] text-faint">{h.group}</span>
+                </NavLink>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 function SideLink({ slug, title, onPick }: { slug: DocSlug; title: string; onPick: () => void }) {
   const href = useDocHref(slug)
@@ -47,7 +173,7 @@ function SideLink({ slug, title, onPick }: { slug: DocSlug; title: string; onPic
       end
       onClick={onPick}
       className={({ isActive }) =>
-        `group relative flex min-h-10 items-center gap-3 rounded-btn px-3 text-[14px] transition-colors ${isActive ? 'bg-surface text-ink before:absolute before:inset-y-2 before:left-0 before:w-[2px] before:rounded-full before:bg-gold [&_svg]:text-gold' : 'text-muted hover:bg-surface hover:text-ink'}`
+        `group relative flex min-h-11 items-center gap-3 rounded-btn px-3 text-[14px] transition-colors ${isActive ? 'bg-surface text-ink before:absolute before:inset-y-2 before:left-0 before:w-[2px] before:rounded-full before:bg-gold [&_svg]:text-gold' : 'text-muted hover:bg-surface hover:text-ink'}`
       }
     >
       <Icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
@@ -60,6 +186,7 @@ function Sidebar({ onPick }: { onPick: () => void }) {
   const groups = [...new Set(DOC_PAGES.map((p) => p.group))]
   return (
     <nav aria-label="Docs" className="flex flex-col gap-6">
+      <DocSearch onPick={onPick} />
       {groups.map((g) => (
         <div key={g} className="flex flex-col gap-1">
           <span className="px-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint">{g.toUpperCase()}</span>
@@ -70,18 +197,11 @@ function Sidebar({ onPick }: { onPick: () => void }) {
       ))}
       <div className="flex flex-col gap-1 border-t border-line pt-5">
         <span className="px-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint">GULLY LABS</span>
-        {[
-          { label: 'Live tracker', href: `${SITE}/tracker`, icon: Activity },
-          { label: 'Widget builder', href: `${SITE}/widget`, icon: Puzzle },
-          { label: 'Gully AI', href: `${SITE}/ask`, icon: MessageCircleQuestion },
-          { label: 'Alerts', href: `${SITE}/#alerts`, icon: BellRing },
-          { label: 'Pricing', href: `${SITE}/pricing`, icon: Tags },
-          { label: 'App dashboard', href: 'https://app.gullylabs.xyz', icon: KeyRound },
-        ].map((l) => (
-          <a key={l.href} href={l.href} {...newTab} className="group flex min-h-10 items-center gap-3 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
+        {GULLY_LINKS.map((l) => (
+          <a key={l.href} href={l.href} {...newTab} className="group flex min-h-11 items-center gap-3 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
             <l.icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
             <span className="flex-1">{l.label}</span>
-            <ArrowUpRight size={14} aria-hidden className="text-faint" />
+            <NewTabMark size={14} />
           </a>
         ))}
       </div>
@@ -127,7 +247,13 @@ export function DocsLayout() {
               {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
             </button>
             <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline" aria-label="Gully Labs Docs, home">
-              <Wordmark height={24} />
+              {/* A smaller wordmark on narrow phones, so the menu, Gully AI and site buttons fit at 390 px. */}
+              <span className="flex max-[479px]:hidden">
+                <Wordmark height={24} decorative />
+              </span>
+              <span className="hidden max-[479px]:flex">
+                <Wordmark height={20} decorative />
+              </span>
               {/* Below 440px the header has no room for the pill beside the menu, Ask and site buttons. */}
               <span className="shrink-0 rounded-full border border-gold-line px-[9px] py-[2px] font-mono text-[11px] tracking-[1px] text-gold max-[439px]:hidden">DOCS</span>
             </NavLink>
@@ -138,11 +264,11 @@ export function DocsLayout() {
               <ApiPill />
             </span>
             <a href={`${SITE}/tracker`} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-btn px-3 text-[14px] text-muted transition-colors hover:text-ink max-[700px]:hidden">
-              Tracker <ArrowUpRight size={14} aria-hidden />
+              Tracker <NewTabMark size={14} className="flex-none" />
             </a>
-            <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-btn border border-line-strong px-3 text-[14px] text-ink transition-colors hover:border-gold hover:text-ink">
-              <span className="max-[389px]:hidden">gullylabs.xyz</span>
-              <span className="sr-only min-[390px]:hidden">gullylabs.xyz</span> <ArrowUpRight size={14} aria-hidden />
+            <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-btn border border-line-strong px-3 text-[14px] whitespace-nowrap text-ink transition-colors hover:border-gold hover:text-ink max-[479px]:px-2 max-[479px]:text-[13px]">
+              gullylabs.xyz
+              <NewTabMark size={14} className="flex-none" />
             </a>
           </div>
         </div>
@@ -169,9 +295,20 @@ export function DocsLayout() {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-6 py-6 font-mono text-[12px] text-faint max-[600px]:px-4">
           <span>© Gully Labs · tracker data from Chainlink and DexScreener</span>
-          <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 text-muted transition-colors hover:text-ink">
-            gullylabs.xyz <ArrowUpRight size={12} aria-hidden />
-          </a>
+          <nav aria-label="Gully Labs" className="flex flex-wrap items-center gap-x-5">
+            {[
+              { label: 'Status', href: `${SITE}/status`, icon: HeartPulse },
+              { label: 'Privacy', href: `${SITE}/legal/privacy`, icon: Lock },
+              { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
+              { label: 'gullylabs.xyz', href: SITE, icon: Home },
+            ].map((l) => (
+              <a key={l.href} href={l.href} {...newTab} className="inline-flex min-h-11 items-center gap-[6px] text-muted transition-colors hover:text-ink">
+                <l.icon aria-hidden size={13} strokeWidth={1.75} className="flex-none" />
+                {l.label}
+                <NewTabMark size={12} />
+              </a>
+            ))}
+          </nav>
         </div>
       </footer>
     </DocsBase.Provider>

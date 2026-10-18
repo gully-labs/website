@@ -92,14 +92,16 @@ async function handleRpc(req, res) {
 
 async function handleFind(req, res, url) {
   if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+  // Rate-limit first, so the 404 cannot be used to probe quote ids without limit.
+  if (!allow('find', clientIp(req), FINDS_PER_MIN)) return json(res, 429, { error: 'Too many checks from this address. Wait a minute.' }, { 'Retry-After': '20' }), true
   const quote = findQuote(String(url.searchParams.get('quote') ?? ''))
   if (!quote || !quote.reference) return json(res, 404, { error: 'No such Solana quote.' }), true
-  if (!allow('find', clientIp(req), FINDS_PER_MIN)) return json(res, 429, { error: 'Too many checks from this address. Wait a minute.' }, { 'Retry-After': '20' }), true
   try {
     const found = await findByReference(quote.reference, { limit: 10 })
     return json(res, 200, { reference: quote.reference, paid: !!quote.paidAt, signatures: found }), true
   } catch (e) {
-    return json(res, 502, { error: `Solana could not be read just now (${String(e?.message ?? e).slice(0, 120)}). Try again in a minute.` }), true
+    console.warn(`solana pay find: ${String(e?.message ?? e).slice(0, 200)}`)
+    return json(res, 502, { error: 'Solana could not be read just now. Try again in a minute.' }), true
   }
 }
 

@@ -259,6 +259,10 @@ const SITE_PAGES = [
   { file: 'src/pages/Services.tsx', url: '/services', title: 'Services' },
   { file: 'src/pages/About.tsx', url: '/about', title: 'About Gully Labs' },
   { file: 'src/pages/security/SecurityPage.tsx', url: '/security', title: 'Gully Security', consts: { TIERS: { section: 'Tiers' }, HOW: { section: 'How a scan works' } } },
+  { file: 'src/pages/HoldersLanding.tsx', url: '/holders', title: 'Holder Map' },
+  { file: 'src/pages/score/ScoreIndex.tsx', url: '/score', title: 'Gully Score' },
+  { file: 'src/pages/Status.tsx', url: '/status', title: 'Status' },
+  { file: 'src/components/landing/ProductConsole.tsx', jsx: false, consts: { SECURITY_STEPS: { url: '/#security', title: 'Gully Security on the home page', section: 'What is live, on request and not offered' } } },
 ]
 
 /** Splits paragraphs (with HEADING markers) into sections. */
@@ -326,20 +330,34 @@ function siteChunks() {
   }
   const site = parse('src/content/site.ts')
   const links = []
-  for (const name of ['socialLinks', 'devLinks', 'headerDevItems', 'productLinks']) {
-    const arr = topConst(site, name)
-    for (const el of arr && ts.isArrayLiteralExpression(arr) ? arr.elements : []) {
-      if (!ts.isObjectLiteralExpression(el)) continue
-      const get = (k) => {
-        const p = el.properties.find((x) => ts.isPropertyAssignment(x) && keyOf(x) === k)
-        return p ? literal(p.initializer) : null
-      }
-      const label = get('label')
-      const to = get('to')
-      const href = get('href') ?? (to === '/developers' || to === '/app' ? 'https://app.gullylabs.xyz' : to ? SITE + to : null)
-      if (label && href && !links.some((l) => l.endsWith(href))) links.push(`${label}: ${href}`)
+  // Every { label, to | href } object in the site's menus (nested groups included) and the socials.
+  const resolveHref = (node) => {
+    if (!node) return null
+    const lit = literal(node)
+    if (lit) return lit
+    if (ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node))
+      return node.getText(site).slice(1, -1).replace(/\$\{DOCS_URL\}/g, 'https://docs.gullylabs.xyz').replace(/\$\{APP_URL\}/g, 'https://app.gullylabs.xyz').replace(/\$\{SITE_URL\}/g, SITE)
+    if (ts.isIdentifier(node)) return { APP_URL: 'https://app.gullylabs.xyz', DOCS_URL: 'https://docs.gullylabs.xyz', SITE_URL: SITE }[node.text] ?? null
+    return null
+  }
+  for (const name of ['socialLinks', 'productsNav', 'developersNav', 'companyNav', 'navLinks']) {
+    const init = topConst(site, name)
+    if (!init) throw new Error(`src/content/site.ts: no const ${name}`)
+    for (const el of findAll(init, (n) => ts.isObjectLiteralExpression(n))) {
+      const prop = (k) => el.properties.find((x) => ts.isPropertyAssignment(x) && keyOf(x) === k)?.initializer ?? null
+      const label = literal(prop('label'))
+      const to = literal(prop('to'))
+      const href = resolveHref(prop('href')) ?? (to === '/developers' || to === '/app' ? 'https://app.gullylabs.xyz' : to ? SITE + to : null)
+      const desc = literal(prop('desc'))
+      if (label && href && !/\$\{/.test(href) && !links.some((l) => l.includes(`: ${href}`))) links.push(`${label}: ${href}`)
     }
   }
+  // The /links hub's own list (read as text, campaign tags dropped): only what the menus above do not already name.
+  const hub = read('src/pages/Links.tsx')
+  const hubLinks = [...hub.matchAll(/label: '([^']+)', desc: '[^']+', href: (?:utm\()?'([^']+)'/g)]
+  if (hubLinks.length < 10) throw new Error('src/pages/Links.tsx: the link list was not found')
+  for (const [, label, href] of hubLinks) if (!links.some((l) => l.includes(`: ${href.replace(/\/$/, '')}`))) links.push(`${label}: ${href}`)
+  links.push(`Every link in one place: ${SITE}/links`)
   chunks.push(...chunkSection({ source: 'Site', title: 'Gully Labs links and contact', url: `${SITE}/`, section: null, paragraphs: [`Where to find Gully Labs. ${links.join('. ')}. For project enquiries use the contact form on ${SITE}/services.`] }))
   return chunks
 }
@@ -348,7 +366,7 @@ function siteChunks() {
 
 const LEGAL_PAGES = [
   { file: 'src/pages/legal/MerchantTerms.tsx', url: '/legal/merchant-terms', title: 'Gully Pay merchant terms' },
-  { file: 'src/pages/legal/Privacy.tsx', url: '/legal/privacy', title: 'Privacy policy', table: { name: 'RETENTION', section: 9 } },
+  { file: 'src/pages/legal/Privacy.tsx', url: '/legal/privacy', title: 'Privacy policy', table: { name: 'RETENTION', section: 11 } },
 ]
 
 /** The legal pages: the header's prose, then each numbered <S n={k} title="…"> at #s<k>. */

@@ -15,7 +15,7 @@ for (const k of ['BLOCKSCOUT_API_KEY', 'MORALIS_API_KEY', 'HOLDER_MAP_GATED', 'J
 
 const H = await import('../server/holders.mjs')
 const A = await import('../server/alerts.mjs')
-const { renderHolderCardSvg } = await import('../server/holders-card.mjs')
+const { renderHolderCardSvg, renderHolderStatusCardSvg } = await import('../server/holders-card.mjs')
 
 const TOPIC = H.TRANSFER_TOPIC
 const ZERO = '0x' + '0'.repeat(40)
@@ -225,23 +225,77 @@ test('a token that is neither a launch nor a tracked stock is refused (no upstre
   assert.equal(m.state, 'not-found')
 })
 
-test('without a key a chain degrades with the reason and the env var to set', async () => {
+test('without a key a chain degrades to a plain "coming soon", never an env-var name', async () => {
   H.resetHoldersForTest()
+  const noEnv = (m) => assert.ok(!/_KEY|GULLY_RPC|API key|RPC/.test(JSON.stringify(m)), `no env names or jargon: ${m.reason}`)
   const rh = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
   assert.equal(rh.state, 'unavailable')
-  assert.equal(rh.needs, 'BLOCKSCOUT_API_KEY')
-  assert.match(rh.reason, /not available on Robinhood Chain yet/)
+  assert.equal(rh.comingSoon, true)
+  assert.equal(rh.reason, 'Holder data for Robinhood Chain is coming soon. DeepCore launches already have live maps.')
+  noEnv(rh)
   const bsc = await H.computeHolderMap('bsc', 'AAPL', 'pro')
-  assert.equal(bsc.needs, 'MORALIS_API_KEY')
+  assert.equal(bsc.comingSoon, true)
+  noEnv(bsc)
   const real = globalThis.fetch
+  const rpc = process.env.GULLY_RPC_SOLANA
   globalThis.fetch = async () => new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, error: { code: 429, message: 'Too many requests' } }), { status: 429 })
   try {
+    // A private RPC is set but fails: "could not be read just now", not "coming soon".
     const sol = await H.computeHolderMap('solana', 'CRCL', 'pro')
     assert.equal(sol.state, 'unavailable')
-    assert.equal(sol.needs, 'GULLY_RPC_SOLANA')
+    assert.equal(sol.comingSoon, false)
+    noEnv(sol)
+    delete process.env.GULLY_RPC_SOLANA
+    const sol2 = await H.computeHolderMap('solana', 'CRCL', 'pro')
+    assert.equal(sol2.comingSoon, true)
+    assert.match(sol2.reason, /Holder data for Solana is coming soon/)
+    noEnv(sol2)
   } finally {
     globalThis.fetch = real
+    process.env.GULLY_RPC_SOLANA = rpc
   }
+})
+
+test('holdersAvailable / holdersButtonVisible follow the data keys; launches never need one', () => {
+  const rpc = process.env.GULLY_RPC_SOLANA
+  try {
+    assert.equal(H.holdersAvailable('robinhood'), false)
+    assert.equal(H.holdersAvailable('bsc'), false)
+    assert.equal(H.holdersAvailable('robinhood', 'deepcore-launch'), true)
+    assert.equal(H.holdersAvailable('bsc', 'deepcore-launch'), true)
+    assert.equal(H.holdersAvailable('solana', 'deepcore-launch'), false)
+    assert.equal(H.holdersAvailable('mars'), false)
+    assert.equal(H.holdersAvailable('4663'), false, 'chain ids work too')
+    assert.equal(H.holdersButtonVisible('robinhood', 'NVDA'), false, 'stock card: hidden without the key')
+    assert.equal(H.holdersButtonVisible('robinhood', TOKEN), true, 'launch: always shown')
+    process.env.BLOCKSCOUT_API_KEY = 'k'
+    process.env.MORALIS_API_KEY = 'k'
+    assert.equal(H.holdersAvailable('robinhood'), true)
+    assert.equal(H.holdersAvailable('bsc'), true)
+    assert.equal(H.holdersButtonVisible('robinhood', 'NVDA'), true)
+    delete process.env.GULLY_RPC_SOLANA
+    assert.equal(H.holdersAvailable('solana'), false)
+    process.env.GULLY_RPC_SOLANA = 'https://sol.test'
+    assert.equal(H.holdersAvailable('solana'), true)
+    const health = H.holdersSourceHealth()
+    assert.equal(health.find((h) => h.chain === 'robinhood').env, 'BLOCKSCOUT_API_KEY')
+  } finally {
+    delete process.env.BLOCKSCOUT_API_KEY
+    delete process.env.MORALIS_API_KEY
+    process.env.GULLY_RPC_SOLANA = rpc
+  }
+})
+
+test('card.png for a chain with no data yet is a branded PNG, never JSON', async () => {
+  H.resetHoldersForTest()
+  const r = fakeRes()
+  await H.handleHolders({ method: 'GET', url: '/api/holders/robinhood/NVDA/card.png', headers: { 'x-forwarded-for': '198.51.100.9' }, socket: { remoteAddress: '198.51.100.9' } }, r, new URL('http://x/api/holders/robinhood/NVDA/card.png'), null)
+  assert.equal(r.out.status, 200)
+  assert.equal(r.out.headers['Content-Type'], 'image/png')
+  assert.deepEqual([...r.out.body.subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47])
+  const svg = renderHolderStatusCardSvg({ state: 'unavailable', comingSoon: true, chain: { name: 'Robinhood Chain' }, token: { symbol: 'NVDA' } })
+  assert.match(svg, /MAP COMING SOON/)
+  assert.match(svg, /NVDA/)
 })
 
 test('with a Blockscout key: top holders, exchange tags, recent-transfer links and the fair overlay', async () => {

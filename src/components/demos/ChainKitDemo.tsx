@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent, type JSX } from 'react'
 import { Link } from 'react-router'
-import { ArrowRight, Search } from 'lucide-react'
+import { ArrowRight, Boxes, Search } from 'lucide-react'
+import { track } from '../../lib/track'
 import { useReducedMotion } from '../charts/chart-utils'
 
 /* Landing demo: a Blockscout-style explorer that rebrands live (Chain Kit). Every block, transaction
-   and figure in it is simulated and labelled "Demo explorer"; nothing is read from a chain. */
+   and figure in it is simulated and labelled "Example explorer"; nothing is read from a chain. */
 
 const NAMES = ['Your Chain', 'Nova L2', 'Orbit Testnet']
 const ACCENTS: [string, string][] = [
@@ -152,7 +153,7 @@ export default function ChainKitDemo(): JSX.Element {
           <li>Your domain, logo, colours and token list</li>
           <li>Contract verification and a public API</li>
         </ul>
-        <Link to="/chain-kit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-gold font-semibold text-bg transition-colors hover:bg-gold-hover">
+        <Link to="/chain-kit" onClick={() => track('cta-click', { cta: 'request-chain-kit', page: location.pathname })} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-gold font-semibold text-bg transition-colors hover:bg-gold-hover">
           Request Chain Kit <ArrowRight size={15} aria-hidden />
         </Link>
       </div>
@@ -167,12 +168,12 @@ export default function ChainKitDemo(): JSX.Element {
               <span className="size-[9px] rounded-full bg-line-hover" />
             </span>
             <span className="flex-1 truncate text-center font-mono text-[11px] text-dim">explorer.{slug}.xyz</span>
-            <span className="rounded-full border border-gold-line px-2 py-0.5 font-mono text-[9.5px] tracking-[.5px] text-gold">DEMO EXPLORER</span>
+            <span className="rounded-full border border-gold-line px-2 py-0.5 font-mono text-[11px] tracking-[.5px] text-gold">EXAMPLE EXPLORER</span>
           </div>
           <div className={`flex flex-wrap items-center gap-x-3.5 gap-y-1.5 border-b px-4 py-3 ${fade}`} style={{ borderColor: t.line }}>
             <span className="flex items-center gap-2">
-              <span aria-hidden className={`grid size-[26px] place-items-center rounded-[7px] font-extrabold text-bg ${fade}`} style={{ background: ac }}>
-                {chainName[0]}
+              <span aria-hidden className={`grid size-[26px] place-items-center rounded-[7px] text-bg ${fade}`} style={{ background: ac }}>
+                <Boxes size={15} strokeWidth={2.2} />
               </span>
               <b className="text-[15px]">{chainName}</b>
             </span>

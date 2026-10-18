@@ -1,4 +1,4 @@
-import { CheckCircle2, Gift, Hourglass, KeyRound, Loader2, Receipt, RotateCcw, Send } from 'lucide-react'
+import { CheckCircle2, Gift, Hourglass, KeyRound, Loader2, Receipt, RotateCcw, Send, Webhook } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
 import { NF } from '../../../components/charts/number-formats'
@@ -8,6 +8,8 @@ import { input, mono, pillGold, pillLine, pillSm } from '../styles'
 import { KpiRow, KpiTile } from '../ui'
 import { fmtDay, fmtWhen, payOrigin, usd, type MerchantView } from './api'
 import { Field, Section, StatusPill } from './parts'
+import { EmptyLine } from '../parts'
+import { ExtLink } from '../ExtLink'
 
 /* Fees (balance, free allowance, weekly statements with Pay now) and the store's webhook. */
 
@@ -23,9 +25,9 @@ export function FeesSection({ view }: { view: MerchantView }) {
       info={
         <>
           A {f.ratePct}% transaction fee, nothing monthly. Your first {usd(f.freeUsd)} of lifetime volume is free. When a customer pays a stablecoin from a connected wallet, the fee is taken in the same transaction through Request Network’s open-source fee contract; everything else goes on a statement every Monday (00:00 UTC) once you owe {usd(f.minStatementUsd)} or more; unpaid {f.pauseAfterDays} days after issue, checkout pauses until paid.{' '}
-          <a href={`${payOrigin()}${view.terms.path}#s5`} target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-4 hover:text-gold-hover">
+          <ExtLink href={`${payOrigin()}${view.terms.path}#s5`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
             Fee terms ↗
-          </a>
+          </ExtLink>
         </>
       }
     >
@@ -54,7 +56,7 @@ export function FeesSection({ view }: { view: MerchantView }) {
         </span>
       </div>
       {f.statements.length === 0 ? (
-        <p className="m-0 text-[13px] text-muted">No statement yet.</p>
+        <EmptyLine icon={<Receipt size={14} aria-hidden />}>No statement yet. A statement appears here on a Monday once you owe the minimum.</EmptyLine>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px] border-collapse text-[13px]">
@@ -84,9 +86,9 @@ export function FeesSection({ view }: { view: MerchantView }) {
                   </td>
                   <td className="py-2 text-right">
                     {(s.state === 'open' || s.state === 'overdue') && (
-                      <a href={`${payOrigin()}${s.payPath}`} target="_blank" rel="noopener noreferrer" className={`${s.state === 'overdue' ? pillGold : pillLine} !min-h-10 !px-3 !text-[13px]`}>
+                      <ExtLink href={`${payOrigin()}${s.payPath}`} className={`${s.state === 'overdue' ? pillGold : pillLine} !min-h-10 relative after:absolute after:inset-x-0 after:-inset-y-[2px] !px-3 !text-[13px]`}>
                         Pay now ↗
-                      </a>
+                      </ExtLink>
                     )}
                   </td>
                 </tr>
@@ -205,7 +207,7 @@ export function WebhooksSection({ view, reload }: { view: MerchantView; reload: 
           </table>
         </div>
       ) : (
-        <p className="m-0 text-[13px] text-faint">No delivery yet.</p>
+        <EmptyLine icon={<Webhook size={14} aria-hidden />}>No delivery yet. Each webhook delivery lists here as it happens.</EmptyLine>
       )}
     </Section>
   )

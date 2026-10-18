@@ -413,6 +413,8 @@ export function stubServerFetch() {
       if (method === 'getMe') return jsonResponse({ ok: true, result: { id: 7000000001, is_bot: true, username: 'GullyE2EBot' } })
       if (method === 'getChatMember') return jsonResponse({ ok: true, result: { status: 'member', user: { id: Number(JSON.parse(String(init.body ?? '{}')).user_id) } } })
       if (method === 'sendMessage') return jsonResponse({ ok: true, result: { message_id: telegramCalls.length, chat: { id: 1 } } })
+      // The status page's webhook check (server/status.mjs): a registered webhook with nothing waiting.
+      if (method === 'getWebhookInfo') return jsonResponse({ ok: true, result: { url: 'https://localhost/api/telegram/e2e', has_custom_certificate: false, pending_update_count: 0 } })
       return jsonResponse({ ok: true, result: true })
     }
     blockedOutbound.push(url.slice(0, 120))

@@ -1,5 +1,8 @@
-import { ArrowUpRight, Check, Globe, Wallet } from 'lucide-react'
+import { Check, Globe, Wallet } from 'lucide-react'
 import { ANALYTICS_SIGNUP, type PlansState } from '../lib/plans'
+import { track } from '../lib/track'
+import { NewTabMark } from './LayoutLinks'
+import { newTab } from './LayoutNav'
 import { btnGold, btnOutline } from './ui'
 
 /* Gully Analytics plans, shared by the /analytics product page and /pricing. Every price and limit is read
@@ -54,8 +57,8 @@ export function AnalyticsPlanCards({ state, retry, delay = 0 }: { state: PlansSt
                 </li>
               </ul>
               {/* Only the recommended plan is gold; the trial is a gold outline, the rest plain outlines. */}
-              <a href={ANALYTICS_SIGNUP} className={`${featured ? btnGold : trial ? `${btnOutline} border-gold-line text-gold hover:text-gold` : btnOutline} relative mt-auto inline-flex min-h-12 items-center justify-center gap-2 px-6 text-[16px]`}>
-                {trial ? 'Start free trial' : offer.checkout.enabled ? `Get ${p.name}` : 'Open the dashboard'} <ArrowUpRight size={16} aria-hidden />
+              <a href={ANALYTICS_SIGNUP} {...newTab} onClick={() => track('plan-click', { plan: p.id, product: 'analytics', trial, page: location.pathname })} className={`${featured ? btnGold : trial ? `${btnOutline} border-gold-line text-gold hover:text-gold` : btnOutline} relative mt-auto inline-flex min-h-12 items-center justify-center gap-2 px-6 text-[16px]`}>
+                {trial ? 'Start free trial' : offer.checkout.enabled ? `Get ${p.name}` : 'Open the dashboard'} <NewTabMark size={16} className="flex-none" />
               </a>
             </div>
           )

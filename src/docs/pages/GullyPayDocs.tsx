@@ -1,10 +1,11 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Fields, List, P, Section } from '../DocPage'
-import { PayCoverage } from '../LiveCharts'
+import { GasCostChart, PayCoverage } from '../LiveCharts'
 
 const sections = [
   { id: 'overview', title: 'Overview' },
   { id: 'chains', title: 'Chains, treasury and the fee' },
+  { id: 'gas', title: 'Gas per chain' },
   { id: 'links', title: 'Pay links' },
   { id: 'checkout', title: 'The checkout' },
   { id: 'qr', title: 'Wallet QR codes' },
@@ -188,6 +189,27 @@ export function GullyPayDocs() {
         />
         <P>
           Each new chain's proxy was read with <C>eth_getCode</C> through three or more public RPCs and its runtime, metadata stripped, compared with Base's <C>0x1892…b814</C>; only a byte-identical one is used for a split (OP Mainnet). Polygon's and Avalanche's are other builds of the same source, so those chains stay on plain transfers with the fee invoiced. The addresses, hashes and what each RPC answered are in <C>contracts/CHOICE.md</C>. <C>GET /api/plans</C> carries <C>feeProxy</C> (verified contract exists) and <C>feeSplit</C> (usable now) per chain.
+        </P>
+      </Section>
+
+      <Section id="gas" title="Gas per chain">
+        <P>
+          Gas is paid by the payer, in the chain’s own coin, from their own wallet. Gully Pay adds nothing to it, and neither the merchant nor Gully Labs pays it. What it costs depends on the kind of payment and the chain:
+        </P>
+        <Fields
+          head={['Payment', 'Transactions', 'Where']}
+          rows={[
+            ['Stablecoin, fee in the payment', <>one <C>approve</C> (skipped when the allowance is already set) and one fee-proxy call that pays the merchant and the fee together</>, 'merchant stores on chains where the fee proxy is usable (feeSplit true in GET /api/plans)'],
+            ['Stablecoin, plain', <>one ERC-20 <C>transfer</C></>, 'Gully Labs invoices and plans, and stores on every other chain'],
+            ['Native coin', 'one plain transfer, the cheapest of the three', 'every chain'],
+          ]}
+        />
+        <P>
+          On the rollups the cost has two parts: the L2 execution gas, and an L1 data fee for posting the transaction to Ethereum (read from the OP Stack <C>GasPriceOracle</C> on Base and OP Mainnet, from <C>NodeInterface</C> on Arbitrum). That is why Ethereum itself costs many times what an L2 does, and why the chart below uses a log scale. Below, live: what one payment costs right now on each chain, from <C>GET /api/pay/gas</C>. Hover a chain for the gas price, the coin price, the L1 fee and the gas units assumed; the server re-reads every few minutes, and a chain it could not read is named, never drawn as zero.
+        </P>
+        <GasCostChart />
+        <P>
+          The figures come from the chain itself: <C>eth_gasPrice</C> on the chain and the coin’s USD price from the chain’s own Chainlink feed. When the feed cannot be read the USD cost is left out rather than guessed. A wallet may add a priority tip on top; the payer’s wallet shows the exact fee before they sign.
         </P>
       </Section>
 

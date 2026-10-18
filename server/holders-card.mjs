@@ -192,6 +192,97 @@ export function renderHolderCardSvg(map) {
   return ctx.toSvg()
 }
 
+/**
+ * The card for a token with no map to draw (chain source not set up yet, not a mapped token, or a read
+ * that failed): the kit's wordmark and mascot, the token and chain, and a plain "coming soon" line. Share
+ * previews always get a real image, never JSON.
+ */
+export function renderHolderStatusCardSvg(body = {}) {
+  const ctx = new SvgContext(W, H, loadFonts())
+  ctx.fillStyle = K.night
+  ctx.fillRect(0, 0, W, H)
+  ctx.strokeStyle = K.midnight
+  ctx.lineWidth = 1
+  for (let x = 40; x < W; x += 40) {
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, H)
+    ctx.stroke()
+  }
+  for (let y = 30; y < H; y += 40) {
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(W, y)
+    ctx.stroke()
+  }
+  // Placeholder rings where the bubbles will be: outlines only, so nothing reads as data.
+  const rings = [[300, 300, 120], [170, 420, 64], [440, 200, 56], [420, 450, 44], [160, 190, 38], [300, 520, 26], [520, 330, 30]]
+  ctx.lineWidth = 2
+  for (const [x, y, r] of rings) {
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.strokeStyle = K.slate
+    ctx.stroke()
+  }
+  ctx.beginPath()
+  ctx.arc(300, 300, 10, 0, Math.PI * 2)
+  ctx.fillStyle = K.gold
+  ctx.fill()
+
+  const X = 640
+  const TW = W - X - 50
+  ctx.kitWordmark(X, 52, 0.2, 'dark')
+  const m = mascotUri()
+  if (m) ctx.out.push(`<image x="${W - 50 - 88}" y="34" width="88" height="84" href="${m}"/>`)
+  ctx.font = '500 16px "IBM Plex Mono"'
+  ctx.fillStyle = K.gold
+  ctx.fillText('HOLDER MAP', X, 118)
+  ctx.font = '800 72px "Barlow Condensed"'
+  ctx.fillStyle = K.bone
+  const title = String(body.token?.symbol ?? (body.token?.address ? `${String(body.token.address).slice(0, 6)}…${String(body.token.address).slice(-4)}` : 'Holder Map')).slice(0, 14)
+  ctx.fillText(title, X, 192)
+  ctx.font = '500 18px "IBM Plex Mono"'
+  ctx.fillStyle = K.muted
+  if (body.chain?.name) ctx.fillText(body.chain.name, X, 226)
+  ctx.font = '800 44px "Barlow Condensed"'
+  ctx.fillStyle = K.pale
+  const head = body.state === 'not-found' ? 'NO MAP FOR THIS TOKEN' : body.comingSoon ? 'MAP COMING SOON' : 'MAP NOT READY YET'
+  ctx.fillText(head, X, 300)
+  ctx.font = '500 18px "IBM Plex Mono"'
+  ctx.fillStyle = K.bone
+  const line = body.state === 'not-found' ? 'The Holder Map covers DeepCore launches and the tokenised stocks the tracker follows.' : body.comingSoon ? `Holder data for ${body.chain?.name ?? 'this chain'} is coming soon. DeepCore launches already have live maps.` : 'The holders could not be read just now. Open the page to try again.'
+  let y = 346
+  for (const l of wrap(ctx, line, TW, 4)) {
+    ctx.fillText(l, X, y)
+    y += 26
+  }
+  ctx.font = '500 15px "IBM Plex Mono"'
+  ctx.fillStyle = K.dim
+  ctx.fillText('Information only, not advice', X, 566)
+  ctx.fillStyle = K.gold
+  ctx.fillText('gullylabs.xyz/holders', X, 592)
+  return ctx.toSvg()
+}
+
+const toPng = async (svg) => {
+  const { Resvg } = await loadResvg()
+  const r = new Resvg(svg, { fitTo: { mode: 'original' }, font: { fontBuffers: loadFonts().map((f) => new Uint8Array(f.buf)), loadSystemFonts: false, defaultFontFamily: 'IBM Plex Mono' }, shapeRendering: 2, textRendering: 1 })
+  const img = r.render()
+  const png = Buffer.from(img.asPng())
+  img.free()
+  r.free()
+  return png
+}
+
+/** The "coming soon / not ready" card as PNG bytes. */
+export const renderHolderStatusCard = (body) => toPng(renderHolderStatusCardSvg(body))
+
+/** The site's static share image, the last resort when a card cannot be drawn at all (null if missing). */
+export function fallbackCardPng() {
+  const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'social', 'og-image-1200x630.png'), path.join(HERE, 'dist', 'social', 'og-image-1200x630.png'), path.join(HERE, '..', 'public', 'social', 'og-image-1200x630.png'))
+  return p ? fs.readFileSync(p) : null
+}
+
 /** The card as PNG bytes. */
 export async function renderHolderCard(map) {
   const { Resvg } = await loadResvg()

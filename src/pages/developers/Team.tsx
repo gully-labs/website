@@ -119,12 +119,12 @@ export function Team() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Can cat="team" what="rename the workspace" hide>
-              <button type="button" onClick={() => setRenaming(true)} className={`${pillSm} min-h-9`}>
+              <button type="button" onClick={() => setRenaming(true)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
                 <Pencil size={14} aria-hidden /> Rename
               </button>
             </Can>
             <Can cat="team" what="invite members">
-              <button type="button" disabled={full || invitesFull} title={full ? `A workspace can have ${view.limits.maxMembers} members.` : invitesFull ? `${view.limits.maxOpenInvites} invites are open. Revoke one first.` : undefined} onClick={() => setInviting(true)} className={`${pillGold} min-h-9`}>
+              <button type="button" disabled={full || invitesFull} title={full ? `A workspace can have ${view.limits.maxMembers} members.` : invitesFull ? `${view.limits.maxOpenInvites} invites are open. Revoke one first.` : undefined} onClick={() => setInviting(true)} className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
                 <UserPlus size={16} aria-hidden /> Invite
               </button>
             </Can>
@@ -185,7 +185,7 @@ export function Team() {
                     </span>
                   )}
                   {manage && (
-                    <button type="button" onClick={() => setRemoving(m)} aria-label={`Remove ${shortAddress(m.address)}`} className="inline-flex size-9 items-center justify-center rounded-full border border-line-strong text-muted transition-colors hover:border-error hover:text-error">
+                    <button type="button" onClick={() => setRemoving(m)} aria-label={`Remove ${shortAddress(m.address)}`} className="inline-flex size-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center justify-center rounded-full border border-line-strong text-muted transition-colors hover:border-error hover:text-error">
                       <Trash2 size={14} aria-hidden />
                     </button>
                   )}
@@ -197,7 +197,7 @@ export function Team() {
         {role !== 'owner' && (
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
             <span className="text-[12px] text-muted">You are a member ({role}). Your own workspace stays yours.</span>
-            <button type="button" onClick={() => setLeaving(true)} className={`${pillSm} min-h-9 hover:!border-error hover:!text-error`}>
+            <button type="button" onClick={() => setLeaving(true)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] hover:!border-error hover:!text-error`}>
               <LogOut size={14} aria-hidden /> Leave workspace
             </button>
           </div>
@@ -257,7 +257,7 @@ export function Team() {
                   </span>
                 </span>
                 {team.ok && (inv.role !== 'admin' || role === 'owner') && (
-                  <button type="button" disabled={busy === `inv:${inv.id}`} onClick={() => revoke(inv)} className={`${pillSm} min-h-9 hover:!border-error hover:!text-error`}>
+                  <button type="button" disabled={busy === `inv:${inv.id}`} onClick={() => revoke(inv)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] hover:!border-error hover:!text-error`}>
                     <X size={13} aria-hidden /> Revoke
                   </button>
                 )}
@@ -295,7 +295,7 @@ export function Team() {
       <Dialog open={leaving} onClose={() => setLeaving(false)} title="Leave workspace">
         <div className="flex flex-col gap-4">
           <p className="m-0 text-[15px] leading-[1.6] text-muted">
-            You lose access to <b className="text-ink">{ws.name}</b> and the console switches back to your own workspace. To come back you need a new invite.
+            You lose access to <b className="text-ink">{ws.name}</b> and the app switches back to your own workspace. To come back you need a new invite.
           </p>
           <div className="flex flex-wrap justify-end gap-2">
             <button type="button" onClick={() => setLeaving(false)} className={pillLine}>
@@ -399,7 +399,7 @@ function InviteDialog({ open, onClose, myRole, days, onCreated }: { open: boolea
             <label className="flex flex-col gap-2 text-[14px] text-ink-2">
               Wallet address
               <input className={`${input} font-mono text-[13px]`} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="0x…" autoComplete="off" spellCheck={false} autoCapitalize="off" required name="invite-address" />
-              <span className="text-[12px] text-faint">They accept it from their console after signing in with that wallet.</span>
+              <span className="text-[12px] text-faint">They accept it in the app after signing in with that wallet.</span>
             </label>
           ) : (
             <p className="m-0 text-[13px] leading-[1.55] text-muted">A one-time link anyone can use to join. Send it privately; it expires in {days} days.</p>

@@ -89,6 +89,7 @@ export function PayFlow({
   getQuote,
   verify,
   onPaid,
+  trackAs = { kind: 'plan' },
 }: {
   offer: Offer
   usd: number
@@ -98,6 +99,8 @@ export function PayFlow({
   getQuote: (assetId: string) => Promise<Result<{ quote: Quote }>>
   verify: (q: Quote, txHash: string) => Promise<Result<unknown>>
   onPaid: (data: unknown) => void
+  /** Analytics: what is being bought (checkout-started / checkout-paid). */
+  trackAs?: { kind: string; plan?: string }
 }) {
   const [asset, setAsset] = useState<string | null>(() => defaultAsset(offer.assets, initialAsset))
   const [quoting, setQuoting] = useState(autoQuote && !!asset)
@@ -114,7 +117,7 @@ export function PayFlow({
             <ArrowLeft size={14} aria-hidden /> Change chain or asset
           </button>
         </div>
-        <QuotePay key={asset} assets={offer.assets} label={label} match="wallet" initialAsset={asset} showPicker={false} getQuote={getQuote} verify={verify} onPaid={(d) => onPaid(d)} />
+        <QuotePay key={asset} assets={offer.assets} label={label} match="wallet" initialAsset={asset} showPicker={false} getQuote={getQuote} verify={verify} onPaid={(d) => onPaid(d)} trackAs={trackAs} />
       </div>
     )
 

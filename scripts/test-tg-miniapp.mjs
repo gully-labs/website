@@ -190,6 +190,18 @@ try {
   const list = await call('/api/tg/alerts')
   check('alerts: the list is the wallet’s own', list.status === 200 && list.data.alerts.length === 1 && list.data.alerts[0].id === id && list.data.limits.max === 1)
 
+  /* ------------------------------------------- launch alerts, announcements, holder chains (N-24, P1-19, N-1) --- */
+  const launchAlert = await call('/api/tg/alerts', { method: 'POST', body: { kind: 'deepcore-launch', chainId: 8453 } })
+  check('create: a DeepCore launch alert goes through the alerts module (Free plan full: 403, not a 400)', launchAlert.status === 403, JSON.stringify(launchAlert.data))
+  const me1 = await call('/api/tg/me')
+  check('me: says whether announcements are on, and which stock chains have holder data', me1.data.announcements === true && Array.isArray(me1.data.holderChains), JSON.stringify(me1.data))
+  const off = await call('/api/tg/announcements', { method: 'POST', body: { on: false } })
+  check('announcements: switched off from the Mini App', off.status === 200 && off.data.announcements === false && (await call('/api/tg/me')).data.announcements === false)
+  const badAnn = await call('/api/tg/announcements', { method: 'POST', body: { on: 'yes' } })
+  check('announcements: anything but a boolean is 400', badAnn.status === 400)
+  const onAgain = await call('/api/tg/announcements', { method: 'POST', body: { on: true } })
+  check('announcements: back on', onAgain.status === 200 && (await call('/api/tg/me')).data.announcements === true)
+
   const row = (o) => ({ chain: 'robinhood', ticker: 'NVDA', name: 'NVIDIA', status: 'premium', gapPct: 3.1, fair: 180, onchain: 185.58, poolStale: false, sessionOpen: true, feedUpdatedAt: new Date().toISOString(), pool: { liquidityUsd: 50_000 }, ...o })
   const sends = () => calls.filter((c) => c.method === 'sendMessage' && String(c.body.chat_id) === String(LINKED_USER))
   let at = Date.now()

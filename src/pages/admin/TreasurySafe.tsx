@@ -4,6 +4,7 @@ import { ChainLogo } from '../../components/logos/ChainLogo'
 import type { Fetched, SafePlan, SafeStatus } from '../../components/pay/SafeDeploy'
 import { toastSuccess } from '../../components/ui/toast'
 import { adminCall } from './payAdmin'
+import { NewTabNote } from './newTab'
 
 /* Admin: the treasury (GULLY_TREASURY_ADDRESS) on every chain Gully Pay takes payments on, plus the chains
    lined up for it (OP Mainnet, Polygon, Avalanche). A Safe exists only where it was deployed: a chain where
@@ -124,6 +125,7 @@ export function TreasurySafe({ token }: { token: string }) {
                   </span>
                   <a href={r.explorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
                     {r.explorerUrl.replace(/^https?:\/\//, '').split('/')[0]} <ArrowUpRight size={11} aria-hidden />
+                    <NewTabNote />
                   </a>
                   {r.error && <span className="text-[12px] text-faint">{r.error}</span>}
                   {r.kind === 'eoa' && eoaEverywhere && <span className="text-[12px] text-faint">Receives as a normal wallet.</span>}

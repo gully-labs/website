@@ -21,6 +21,8 @@ export type Tile = {
   unknown?: string
   note?: ReactNode
   tone?: string
+  /** A hover/focus explanation, e.g. why a total is partial. */
+  title?: string
 }
 
 const dot: Record<Status['tone'], string> = { live: 'bg-green', down: 'bg-error', checking: 'bg-faint', idle: 'bg-gold' }
@@ -40,7 +42,7 @@ export function StatusPill({ s }: { s: Status }) {
 export function KpiTile({ t, i }: { t: Tile; i: number }) {
   const known = typeof t.value === 'number' && Number.isFinite(t.value)
   return (
-    <div className="group relative flex min-w-0 flex-col gap-1 bg-surface px-4 py-3 shadow-[1px_0_0_var(--color-line),0_1px_0_var(--color-line)]" style={{ animation: `gl-rise .4s ${i * 0.04}s ease both` }} data-tile={t.label}>
+    <div className="group relative flex min-w-0 flex-col gap-1 bg-surface px-4 py-3 shadow-[1px_0_0_var(--color-line),0_1px_0_var(--color-line)]" style={{ animation: `gl-rise .4s ${i * 0.04}s ease both` }} data-tile={t.label} title={t.title} tabIndex={t.title ? 0 : undefined}>
       <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">{t.label}</span>
       {known ? (
         <AnimatedNumber className="font-display text-[26px] leading-none font-bold" style={{ color: t.tone }} value={t.value} format={t.format ?? NF.int} prefix={t.prefix} suffix={t.suffix} countUp />

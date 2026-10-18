@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { eyebrow as eyebrowCls } from '../components/ui'
@@ -149,7 +149,7 @@ export function P({ children }: { children: ReactNode }) {
 }
 
 export function C({ children }: { children: ReactNode }) {
-  return <code className="rounded-btn border border-line bg-surface-deep px-[5px] py-[1px] font-mono text-[.88em] break-words text-ink">{children}</code>
+  return <code className="rounded-btn border border-line bg-surface-deep px-[5px] py-[1px] font-mono text-[max(11px,.88em)] break-words text-ink">{children}</code>
 }
 
 export function List({ children }: { children: ReactNode }) {
@@ -165,21 +165,27 @@ export function Callout({ label, children, tone = 'gold' }: { label: string; chi
   )
 }
 
-/** A field table that stacks into cards on phones, so nothing scrolls sideways. */
-export function Fields({ rows, head = ['Field', 'Type', 'Meaning'] }: { rows: [string, string, ReactNode][]; head?: [string, string, string] }) {
+/**
+ * A field table that stacks into cards on phones, so nothing scrolls sideways. `routes` is the endpoint-table
+ * layout: path, a wide description, then a narrow mono column for limits and caching.
+ */
+export function Fields({ rows, head = ['Field', 'Type', 'Meaning'], variant = 'fields' }: { rows: [string, ReactNode, ReactNode][]; head?: [string, string, string]; variant?: 'fields' | 'routes' }) {
+  const grid = variant === 'routes' ? 'grid-cols-[minmax(0,1.1fr)_minmax(0,2.2fr)_minmax(0,.9fr)]' : 'grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)_minmax(0,2.2fr)]'
+  const mono = 'font-mono text-[12px] break-words text-dim'
+  const text = 'text-[14px] leading-[1.6] text-ink-2'
   return (
     <div className="overflow-hidden rounded-panel border border-line">
-      <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)_minmax(0,2.2fr)] gap-4 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] tracking-[1px] text-faint max-[640px]:hidden">
+      <div className={`grid ${grid} gap-4 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] tracking-[1px] text-faint max-[640px]:hidden`}>
         {head.map((h) => (
           <span key={h}>{h.toUpperCase()}</span>
         ))}
       </div>
       <div className="divide-y divide-line">
         {rows.map(([f, t, m]) => (
-          <div key={f} className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)_minmax(0,2.2fr)] gap-4 px-4 py-3 transition-colors hover:bg-surface max-[640px]:grid-cols-1 max-[640px]:gap-1">
+          <div key={f} className={`grid ${grid} gap-4 px-4 py-3 transition-colors hover:bg-surface max-[640px]:grid-cols-1 max-[640px]:gap-1`}>
             <span className="font-mono text-[13px] break-words text-gold">{f}</span>
-            <span className="font-mono text-[12px] break-words text-dim">{t}</span>
-            <span className="text-[14px] leading-[1.6] text-ink-2">{m}</span>
+            <span className={variant === 'routes' ? text : mono}>{t}</span>
+            <span className={variant === 'routes' ? mono : text}>{m}</span>
           </div>
         ))}
       </div>
@@ -197,10 +203,13 @@ export function DocLink({ to, hash, children }: { to: DocSlug; hash?: string; ch
   )
 }
 
+/** A link to another host: opens in a new tab, marked with ↗ (and said aloud for screen readers). */
 export function Ext({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-gold underline decoration-gold-line underline-offset-[3px] transition-colors hover:decoration-gold">
       {children}
+      <ArrowUpRight size={12} aria-hidden className="ml-[2px] inline-block align-[-1px]" />
+      <span className="sr-only"> (opens in a new tab)</span>
     </a>
   )
 }

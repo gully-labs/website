@@ -1,11 +1,10 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, Puzzle, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowRight, ArrowUpRight, BellRing, Bot, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, Gauge, GitFork, Layers, Puzzle, Radar, ShieldCheck, Sparkles, Users, type LucideIcon } from 'lucide-react'
 import { askStatus } from '../ask/askApi'
 import { useContact } from '../ContactContext'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
-import { DOCS_URL } from '../../site-host'
 import { PORTAL, PORTAL_ALERTS } from './links'
 import { eyebrow, h2 } from './links'
 
@@ -44,16 +43,19 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
   const trial = offer?.analytics.trialDays
   const anon = offer?.anonymous.perMin
   const free = offer?.plans.find((p) => p.id === 'free')
+  // The chains checkout takes today, from GET /api/plans (Solana only when its treasury is set).
+  const payChains = offer ? [...offer.chains.map((c) => c.name), ...((offer.checkout as { solanaTreasury?: string | null }).solanaTreasury ? ['Solana'] : [])] : []
+  const payOn = payChains.length > 1 ? `${payChains.slice(0, -1).join(', ')} or ${payChains[payChains.length - 1]}` : payChains[0]
   return [
     { id: 'tracker', name: 'Tracker + Swap', icon: Activity, status: 'LIVE', live: true, pitch: 'Every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price, every minute, with a swap on each stock page.', cta: { label: 'Launch app', to: '/tracker' }, height: 560, Demo: TrackerDemo },
     { id: 'alerts', name: 'Alerts', icon: BellRing, status: 'LIVE', live: true, pitch: 'Set a gap rule once; get a Telegram message with Open and Mute buttons, a signed webhook, or both.', cta: { label: 'Set an alert', href: PORTAL_ALERTS }, height: 560, Demo: AlertsDemo },
     { id: 'analytics', name: 'Gully Analytics', icon: ChartNoAxesCombined, status: 'FREE TRIAL', live: true, pitch: `Page views next to wallet connects, chains and transactions. Cookie-free, built on Umami, sign up with your wallet${trial ? `, ${trial} days free` : ''}.`, cta: { label: 'Start free trial', href: ANALYTICS_SIGNUP }, height: 600, Demo: AnalyticsDemo },
     { id: 'chainkit', name: 'Chain Kit', icon: Boxes, status: 'ON REQUEST', live: false, pitch: 'A Blockscout explorer with your domain, colours, token list and API, run by us. Change the brand below and watch it update.', cta: { label: 'Explore Chain Kit', to: '/chain-kit' }, height: 620, Demo: ChainKitDemo },
     { id: 'chains', name: 'Gully Chains', icon: Layers, status: 'SOON', live: false, pitch: 'Arbitrum Orbit L3 chains, launched and operated by Gully Labs. In development: none of it is live yet.', cta: { label: 'Ask about a chain', contact: true }, height: 360 },
-    { id: 'security', name: 'Security', icon: ShieldCheck, status: 'PLANNED', live: false, pitch: 'Audits & Security is on the roadmap: AI security scans, then security reviews, smart-contract and code audits, and a transparent Gully Score with monitoring. Not offered yet.', cta: { label: 'Read the roadmap', href: `${DOCS_URL}/roadmap#security`, newTab: true }, height: 360 },
+    { id: 'security', name: 'Gully Security', icon: ShieldCheck, status: 'LIVE', live: true, pitch: 'The AI Security Scan, the Gully Score and contract monitors are live. Scans are an AI review only for now, and each report says so. A human Security Review is quoted on request; a full audit is not offered yet.', cta: { label: 'Open Gully Security', to: '/security' }, height: 360 },
     { id: 'api', name: 'API + SDK', icon: Code2, status: 'LIVE', live: true, pitch: `Every tracker row as JSON: ${anon ? `${anon} calls a minute` : 'free calls'} with no key, a free key${free ? ` (${free.perMin.toLocaleString('en-US')} a minute)` : ''} with wallet sign-in, and a typed SDK (MIT).`, cta: { label: 'Get a key', href: PORTAL }, height: 560, Demo: ApiDemo },
     { id: 'widget', name: 'Widget', icon: Puzzle, status: 'LIVE', live: true, pitch: 'One script tag puts a live ticker, a one-stock badge or a table of the widest gaps on any site.', cta: { label: 'Build a widget', to: '/widget' }, height: 520, Demo: WidgetDemo },
-    { id: 'pay', name: 'Gully Pay', icon: CircleDollarSign, status: 'LIVE', live: true, pitch: 'Plans paid from your wallet straight to ours in ETH, BNB, USDC or USDT on four chains, checked on chain. No custody.', cta: { label: 'See plans', to: '/#pricing' }, height: 540, Demo: PayDemo },
+    { id: 'pay', name: 'Gully Pay', icon: CircleDollarSign, status: 'LIVE', live: true, pitch: `Plans paid from your wallet straight to ours in ETH, BNB, USDC or USDT${payOn ? ` on ${payOn}` : ''}, checked on chain. No custody.`, cta: { label: 'See plans', to: '/#pricing' }, height: 540, Demo: PayDemo },
     { id: 'ask', name: 'Gully AI', icon: Sparkles, status: ask ? 'LIVE' : 'SOON', live: !!ask, pitch: 'Questions about any Gully product, answered from our docs with the sources cited.', cta: { label: 'Open Gully AI', to: '/ask' }, height: ask ? 560 : 200 },
   ]
 }
@@ -87,7 +89,7 @@ function CtaButton({ cta }: { cta: Cta }) {
   const inner = (
     <>
       {cta.label}
-      <ArrowUpRight aria-hidden size={15} />
+      {cta.newTab ? <ArrowUpRight aria-hidden size={15} /> : <ArrowRight aria-hidden size={15} />}
     </>
   )
   if (cta.contact)
@@ -167,29 +169,46 @@ function ChainsPane() {
   )
 }
 
-/* Not offered: the Audits & Security track of the roadmap (docs /roadmap). Nothing here claims an audit. */
-const SECURITY_STEPS: { name: string; d: string }[] = [
-  { name: 'AI Security Scan', d: 'Self-serve: Slither, Aderyn, fuzz and invariant runs, AI triage. Paid with Gully Pay.' },
-  { name: 'Security Reviews', d: 'Two reviewers, every fix reviewed, a public report pinned to a commit hash.' },
-  { name: 'Audits', d: 'Smart-contract audits, and code audits of frontends, backends, APIs, keys and CI.' },
-  { name: 'Gully Score + monitoring', d: 'A public score with every weight and source shown, no pay-to-rank, and admin-key alerts.' },
+/* Gully Security as it stands (the docs Roadmap's Audits & Security track): what is live, what is quoted on
+   request and what is not offered. Scans are an AI review only until the static-tools worker runs, so no
+   Slither, Aderyn or fuzzing is claimed. Nothing here claims an audit. */
+const SECURITY_STEPS: { name: string; icon: LucideIcon; when: 'LIVE' | 'ON REQUEST' | 'NOT OFFERED YET'; d: string; to?: string }[] = [
+  { name: 'AI Security Scan', icon: Bot, when: 'LIVE', d: 'Self-serve in the app. An AI review only for now: static tools and fuzzing are not run yet, and every report says so.', to: '/security' },
+  { name: 'Gully Score', icon: Gauge, when: 'LIVE', d: 'A public 0 to 100 score from public evidence, with every weight and source shown. No pay-to-rank.', to: '/score' },
+  { name: 'Monitors', icon: Radar, when: 'LIVE', d: 'Privileged changes and large outflows on the contracts you watch, by Telegram or webhook.', to: '/security#monitoring' },
+  { name: 'Security Review', icon: Users, when: 'ON REQUEST', d: 'People read your code and write up what they find. Quoted per project.', to: '/security#request' },
+  { name: 'Full Audit', icon: ShieldCheck, when: 'NOT OFFERED YET', d: 'Planned as a later tier. We do not sell audits today.' },
 ]
 
 function SecurityPane() {
   return (
     <div className="flex flex-col gap-3">
-      <ol className="m-0 grid list-none grid-cols-4 gap-px overflow-hidden rounded-[10px] border border-line bg-line p-0 max-[1099px]:grid-cols-2 max-[599px]:grid-cols-1">
-        {SECURITY_STEPS.map((s, i) => (
-          <li key={s.name} className="flex flex-col gap-1 bg-surface px-4 py-3">
-            <span className="font-mono text-[11px] text-gold">
-              {String(i + 1).padStart(2, '0')} · <span className="text-dim">PLANNED</span>
-            </span>
-            <b className="font-semibold">{s.name}</b>
-            <span className="text-[13px] leading-[1.45] text-muted">{s.d}</span>
-          </li>
-        ))}
+      <ol className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,190px),1fr))] gap-px overflow-hidden rounded-[10px] border border-line bg-line p-0">
+        {SECURITY_STEPS.map((s) => {
+          const inner = (
+            <>
+              <span className="flex items-center justify-between gap-2">
+                <s.icon aria-hidden size={16} className={s.when === 'LIVE' ? 'text-gold' : 'text-dim'} />
+                <span className={`font-mono text-[11px] tracking-[.5px] ${s.when === 'LIVE' ? 'text-green' : 'text-dim'}`}>{s.when}</span>
+              </span>
+              <b className="font-semibold">{s.name}</b>
+              <span className="text-[13px] leading-[1.45] text-muted">{s.d}</span>
+            </>
+          )
+          return (
+            <li key={s.name} className="flex bg-surface">
+              {s.to ? (
+                <Link to={s.to} className="flex w-full flex-col gap-1 px-4 py-3 text-ink transition-colors hover:bg-surface-hover hover:text-ink">
+                  {inner}
+                </Link>
+              ) : (
+                <div className="flex w-full flex-col gap-1 px-4 py-3">{inner}</div>
+              )}
+            </li>
+          )
+        })}
       </ol>
-      <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">Today we offer Security &amp; Testing: code review, fuzzing and invariant tests, and post-launch monitoring.</p>
+      <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">A scan is not an audit and is no guarantee of safety. Gully Labs has not audited any project.</p>
     </div>
   )
 }
@@ -209,7 +228,7 @@ function AskPane({ configured }: { configured: boolean | null }) {
         {configured === false ? ' It is not switched on here yet; the docs are open meanwhile.' : ''}
       </p>
       <Link to="/ask" className="inline-flex min-h-11 items-center gap-2 text-[14px] font-medium text-gold hover:text-gold-hover">
-        Go to Gully AI <ArrowUpRight aria-hidden size={14} />
+        Go to Gully AI <ArrowRight aria-hidden size={14} />
       </Link>
     </div>
   )

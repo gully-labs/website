@@ -1,3 +1,4 @@
+import { track } from '../../../lib/track'
 import { Activity, Gauge, Pause, Play, Plus, Radar, RotateCw, Send, ShieldAlert, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { barsPreset, axisTooltip, C, PALETTE, tipHtml } from '../../../components/charts/chartPresets'
@@ -118,6 +119,7 @@ function AddDialog({ open, onClose, view, onAdded }: { open: boolean; onClose: (
     setBusy(false)
     if (!r.ok) return setErr(r.error)
     toastSuccess('Now watching', { detail: name.trim() || short(address.trim()) })
+    track('monitor-created', { chain })
     setAddress('')
     setName('')
     setWebhook('')

@@ -1,5 +1,9 @@
-import { BellRing, Megaphone, MessageCircle, Send } from 'lucide-react'
-import { useMemo } from 'react'
+import { BellRing, Loader2, Megaphone, MessageCircle, Send } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toastError, toastSuccess } from '../../../components/ui/toast'
+import { api } from '../api'
+import { usePoll } from '../poll'
+import { useWrite } from '../portal'
 import { useAlertsView } from '../helpers'
 import { TelegramCard } from '../Alerts'
 import { ExtLink } from '../ExtLink'
@@ -15,6 +19,56 @@ import { Section, ServiceHeader, type Status } from './ServiceHeader'
    channel, which the bot asks every user to follow. */
 
 const NEWS = 'https://t.me/GullyLabsNews'
+
+/** GET /api/developer/telegram: `announcements` is the linked private chat's news switch (null: a group, or no link). */
+type TelegramAccount = { enabled: boolean; bot: string | null; linked: { chatType: string; chatTitle: string } | null; announcements?: boolean | null }
+
+/**
+ * Gully Labs announcements in the linked private chat, on or off: the same switch as the bot's Settings and the
+ * Mini App (N-24). Alerts are never affected. Groups never get announcements, so a group link shows why.
+ */
+function AnnouncementsCard() {
+  const info = usePoll<TelegramAccount>('/api/developer/telegram', 120_000)
+  const [busy, setBusy] = useState(false)
+  const [local, setLocal] = useState<boolean | null>(null)
+  const write = useWrite('telegram', 'change Telegram settings')
+  const d = info.data
+  const on = local ?? d?.announcements ?? null
+  const flip = async () => {
+    if (on === null || busy) return
+    setBusy(true)
+    const r = await api<{ announcements: boolean }>('/api/developer/telegram/announcements', { method: 'POST', body: { on: !on } })
+    setBusy(false)
+    if (!r.ok) return toastError('Announcements not changed', { detail: r.status >= 500 || !r.status ? 'Try again in a minute.' : r.error })
+    setLocal(r.data.announcements)
+    toastSuccess(r.data.announcements ? 'Announcements on' : 'Announcements off', { detail: 'Alerts keep arriving either way.' })
+  }
+  return (
+    <Section title="Announcements" sub="Gully Labs news in your chat with the bot">
+      {!d ? (
+        info.error || info.timedOut ? <p className="m-0 text-[13px] text-muted">Not readable right now.</p> : <Skeleton h={44} />
+      ) : on === null ? (
+        <p className="m-0 text-[13px] text-muted">{d.linked ? 'Announcements go to private chats only; this workspace is linked to a group.' : 'Link your own chat with the bot above to choose.'}</p>
+      ) : (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[13px] text-ink-2">{on ? 'On: you get launches and product news.' : 'Off: only your alerts arrive.'}</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={on}
+            aria-label="Gully Labs announcements in Telegram"
+            disabled={busy || !write.ok}
+            title={write.why}
+            onClick={flip}
+            className={`relative inline-flex h-11 w-[64px] flex-none items-center rounded-full border transition-colors disabled:opacity-60 ${on ? 'border-gold bg-gold' : 'border-line bg-surface-deep'}`}
+          >
+            {busy ? <Loader2 size={16} className="mx-auto animate-spin text-ink" aria-hidden /> : <span className={`absolute top-1/2 size-7 -translate-y-1/2 rounded-full transition-[left] duration-200 ${on ? 'left-[30px] bg-bg' : 'left-[4px] bg-faint'}`} aria-hidden />}
+          </button>
+        </div>
+      )}
+    </Section>
+  )
+}
 
 export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
   const { view, err, load } = useAlertsView()
@@ -55,7 +109,8 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
 
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start gap-4 max-[1100px]:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-4">
-          {view ? <TelegramCard info={view.telegram} reload={load} /> : <Skeleton h={160} />}
+          {view ? <TelegramCard info={view.telegram} reload={load} from="telegram" /> : <Skeleton h={160} />}
+          <AnnouncementsCard />
           <Section title="Channel and bot" sub="the bot asks every user to follow the News channel">
             <div className="flex flex-wrap gap-2">
               <ExtLink href={NEWS} className={pillGold}>

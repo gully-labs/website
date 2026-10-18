@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowUpRight, BookOpen, KeyRound, Puzzle } from 'lucide-react'
+import { ArrowRight, BookOpen, KeyRound, Puzzle } from 'lucide-react'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
 import { APP_URL, DOCS_URL } from '../site-host'
@@ -57,7 +57,7 @@ function Card({ title, sub, children, i, className = '' }: { title: string; sub?
 const BUILD = [
   { title: 'Public API', body: 'Every row on this page as JSON, plus 7 days of gap history. 60 calls a minute with no key.', href: `${DOCS_URL}/api`, icon: BookOpen, ext: true },
   { title: 'Embed widget', body: 'One script tag puts a live gap card for any stock on your site.', href: '/widget', icon: Puzzle, ext: false },
-  { title: 'App dashboard', body: 'Sign in with a wallet and create API keys instantly: 600 calls a minute, with usage in one place.', href: APP_URL, icon: KeyRound, ext: false },
+  { title: 'App dashboard', body: 'Sign in with a wallet and create API keys instantly: 600 calls a minute, with usage in one place.', href: APP_URL, icon: KeyRound, ext: true },
 ]
 
 export function Tracker() {
@@ -281,7 +281,7 @@ export function Tracker() {
                   <span className="flex min-w-0 flex-col gap-1">
                     <span className="flex items-center gap-2 font-display text-[18px] font-bold uppercase">
                       {b.title}
-                      {b.ext ? <NewTabMark size={15} className="text-faint transition-colors group-hover:text-gold" /> : <ArrowUpRight aria-hidden size={15} className="text-faint transition-colors group-hover:text-gold" />}
+                      {b.ext ? <NewTabMark size={15} className="text-faint transition-colors group-hover:text-gold" /> : <ArrowRight aria-hidden size={15} className="text-faint transition-colors group-hover:text-gold" />}
                     </span>
                     <span className="text-[14px] leading-[1.5] text-muted">{b.body}</span>
                   </span>

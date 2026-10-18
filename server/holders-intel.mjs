@@ -14,6 +14,7 @@
 //   snipers    10  wallets whose first buy came in the first blocks of trading
 //   record     15  the deployer's earlier DeepCore launches: liquidity pulled or tokens sold by the deployer
 
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
@@ -284,17 +285,30 @@ function loadScans() {
   scans.items ??= {}
   return scans
 }
-/** Counts one view of a map (at most once per IP per token per day). */
-export function recordScan(chainKey, token, symbol, kind, ip) {
-  const s = loadScans()
+/* Visitors are counted by a keyed hash of the IP, never the IP itself. The key is random, held in memory
+   only and replaced every UTC day, so a tag cannot be turned back into an address or matched across days. */
+let tagKey = { day: '', key: null }
+function visitorTag(ip, day) {
+  if (tagKey.day !== day) tagKey = { day, key: crypto.randomBytes(32) }
+  return crypto.createHmac('sha256', tagKey.key).update(String(ip ?? '')).digest('hex').slice(0, 16)
+}
+/** Starts a new day: yesterday's counts and visitor tags are dropped (and the file is rewritten). */
+function rollDay(s) {
   const day = new Date().toISOString().slice(0, 10)
   if (s.day !== day) {
     s.day = day
     s.items = {}
+    scansDirty = true
   }
+  return day
+}
+/** Counts one view of a map (at most once per visitor per token per day). */
+export function recordScan(chainKey, token, symbol, kind, ip) {
+  const s = loadScans()
+  const day = rollDay(s)
   const k = `${chainKey}|${token}`
   const e = (s.items[k] ??= { chain: chainKey, token, symbol, kind, scans: 0, ips: [] })
-  const tag = String(ip ?? '').slice(-12)
+  const tag = visitorTag(ip, day)
   if (e.ips.includes(tag)) return
   e.ips.push(tag)
   if (e.ips.length > 2000) e.ips.splice(0, e.ips.length - 2000)
@@ -305,6 +319,7 @@ export function recordScan(chainKey, token, symbol, kind, ip) {
 }
 export function topScans(limit = 10) {
   const s = loadScans()
+  rollDay(s)
   return { day: s.day, items: Object.values(s.items).sort((a, b) => b.scans - a.scans).slice(0, limit).map((e) => ({ chain: e.chain, token: e.token, symbol: e.symbol, kind: e.kind, scans: e.scans, path: pagePath(e.chain, e.token) })) }
 }
 export function flushScans() {

@@ -1,4 +1,4 @@
-import { DocLink, DocPage, Ext, List, Section } from '../DocPage'
+import { C, DocLink, DocPage, Ext, List, Section } from '../DocPage'
 
 const sections = [
   { id: '2026-10-18', title: '18 October 2026' },
@@ -12,20 +12,38 @@ export function Changelog() {
       slug="changelog"
       eyebrow="MORE · CHANGELOG"
       title="Changelog"
-      description="What changed in the Gully Labs tracker, its API, the widget and these docs."
+      description="What changed in Gully Labs products: the tracker and its API, the widget, Holder Map, Gully Security, Gully Score, Gully Pay, the bot and these docs."
       lead="What changed, newest first."
       sections={sections}
     >
       <Section id="2026-10-18" title="18 October 2026">
         <List>
           <li>
-            A general <DocLink to="roadmap">Roadmap</DocLink> page listing each track with its status. New on it, and planned only: <DocLink to="roadmap" hash="security">Audits &amp; Security</DocLink>, in stages from an AI security scan to security reviews, smart-contract and code audits, and a transparent Gully Score with monitoring. Nothing on it is offered yet; today's security service is still Security &amp; Testing.
+            <DocLink to="gully-security">Gully Security</DocLink> is live: the <Ext href="https://gullylabs.xyz/security">AI Security Scan</Ext> of a deployed contract, a GitHub repository at a commit, an upload or a web2 codebase, run from the app, with free scans each month by plan. For now it is an AI review only: our static-tools worker is not running yet, so no Slither, Aderyn or fuzzing runs, and every report is labelled “AI review only”. Reports can be published at a stable link (<Ext href="https://gullylabs.xyz/security/reports">published reports</Ext>). A human Security Review is quoted on request. A full audit is not offered.
+          </li>
+          <li>
+            The <DocLink to="gully-score">Gully Score</DocLink> is live at <Ext href="https://gullylabs.xyz/score">gullylabs.xyz/score</Ext>: a 0 to 100 score for any contract from public evidence, every weight and source shown, with an embeddable badge. Contract monitors are live in the app: privileged changes and large outflows on the contracts you watch, by Telegram or signed webhook.
+          </li>
+          <li>
+            The <DocLink to="holder-map">Holder Map</DocLink> is live for every DeepCore launch at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext>: who holds a token, the wallets that trade with each other, bundled launch buys, the deployer’s record and a health score, with holder alerts. Maps for tokenised stocks open chain by chain; until a chain’s holder data is connected its pages say “coming soon”.
+          </li>
+          <li>
+            A general <DocLink to="roadmap">Roadmap</DocLink> page listing each track with its status: the Gully L3 (planned) and <DocLink to="roadmap" hash="security">Gully Security</DocLink> (scan, score and monitors live; reviews on request; audits not offered).
+          </li>
+          <li>
+            Telegram announcements from @GullyLabsBot, with a 🔕 Stop announcements button on every one; alerts are never affected. See the <Ext href="https://gullylabs.xyz/legal/privacy">privacy policy</Ext> for what an announcement records.
           </li>
           <li>
             <DocLink to="gully-pay">Gully Pay</DocLink> on three more chains: OP Mainnet (USDC, USDT, ETH), Polygon (USDC, POL) and Avalanche (USDC, USDT, AVAX). Every token and Chainlink feed was read on chain first. Request Network's fee proxy was compared byte for byte with Base's: OP Mainnet's matches and will carry the merchant fee inside the payment once the treasury Safe is deployed there; Polygon's and Avalanche's are other builds, so the fee is invoiced there. Each chain opens for Gully Labs' own checkout once the treasury Safe is deployed on it.
           </li>
           <li>
             The treasury is a Safe, so each chain is now <DocLink to="gully-pay" hash="chains">offered only where the Safe is deployed</DocLink>; the server checks hourly and the admin panel says what to do. Merchant stores get the in-payment fee on the same condition; elsewhere the fee is invoiced as before. A store's own Safe that is not deployed on a chain yet is read again every hour and switches on by itself once it is.
+          </li>
+          <li>
+            A public <Ext href="https://gullylabs.xyz/status">status page</Ext> and <C>GET /api/status</C>: the API, tracker freshness on each chain, the DeepCore launch poller, the Telegram bot webhook, Gully Pay RPCs per chain, Gully AI, the security scan engine, contract monitors and Holder Map sources, checked every minute by the server, with 24 h uptime and the incident history. See <DocLink to="status">Status</DocLink>.
+          </li>
+          <li>
+            New docs pages: <DocLink to="gully-ai">Gully AI</DocLink>, the <DocLink to="telegram">Telegram bot and Mini App</DocLink>, <DocLink to="chain-kit">Chain Kit</DocLink>, <DocLink to="swaps">Swaps</DocLink> (LI.FI on EVM chains, Jupiter on Solana), <DocLink to="solana">Solana</DocLink> and <DocLink to="status">Status</DocLink>. The <DocLink to="api">API reference</DocLink> now covers every public endpoint group, including <C>/api/pay/gas</C>, <C>/api/tracker/gap-index</C>, <C>/api/holders</C>, <C>/api/score</C> and <C>/api/status</C>; unknown <C>/api/</C> paths answer a JSON 404. The docs have a search box and a live chart on every page.
           </li>
         </List>
       </Section>

@@ -1,0 +1,76 @@
+import { Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
+import { EmptyPulse, StatusChip, StatusHistory } from '../ProductCharts'
+
+const sections = [
+  { id: 'what', title: 'What Chain Kit is' },
+  { id: 'included', title: 'What is included' },
+  { id: 'request', title: 'Requesting an explorer' },
+  { id: 'status', title: 'Status' },
+  { id: 'licence', title: 'Open source' },
+]
+
+export function ChainKitDocs() {
+  return (
+    <DocPage
+      slug="chain-kit"
+      eyebrow="PRODUCTS · CHAIN KIT"
+      title="Chain Kit"
+      description="Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. What is included, how to request one from the app, and its status."
+      lead="A new chain needs a block explorer on day one. Chain Kit is Blockscout, the open-source explorer, set up for your chain, in your brand, and run for you by Gully Labs."
+      sections={sections}
+    >
+      <Section id="what" title="What Chain Kit is">
+        <P>
+          Chain Kit is a managed deployment of <Ext href="https://github.com/blockscout/blockscout">Blockscout</Ext> for one EVM chain. We size the server and the RPC for your chain, deploy the indexer and the explorer on a domain you choose,
+          apply your branding through configuration rather than a fork, and keep it indexed, upgraded and backed up.
+        </P>
+        <P>
+          It is available on request today. The product page is <Ext href="https://gullylabs.xyz/chain-kit">gullylabs.xyz/chain-kit</Ext>.
+        </P>
+      </Section>
+
+      <Section id="included" title="What is included">
+        <Fields
+          head={['Part', 'Scope', 'Notes']}
+          rows={[
+            ['Full explorer', 'Blockscout', 'Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts'],
+            ['Your brand', 'configuration', 'Your name, logos, colours and links across the explorer, so upgrades stay simple'],
+            ['Rollups', 'profiles', 'Arbitrum Nitro and Orbit chains like Robinhood Chain, and chains with a stablecoin as gas'],
+            ['Operations', 'run for you', 'Provisioning, TLS, backups, upgrades and monitoring, with a runbook for common failures'],
+            ['Sizing', 'before any promise', 'A busy rollup needs terabytes; a young chain far less. We size it to your chain first'],
+          ]}
+        />
+      </Section>
+
+      <Section id="request" title="Requesting an explorer">
+        <List>
+          <li>
+            Sign in to the app at <Ext href="https://app.gullylabs.xyz/#chain-kit">app.gullylabs.xyz</Ext> and open <strong className="text-ink">Chain Kit</strong> under Services.
+          </li>
+          <li>Give an email to reach you and your chain: its name, chain id and an RPC. Then press “Request your explorer”.</li>
+          <li>The card shows “requested” with the date for your workspace. We reply by email with questions about history, settlement layer and sizing.</li>
+        </List>
+        <P>
+          You can also write to us from the contact form at <Ext href="https://gullylabs.xyz/services">gullylabs.xyz/services</Ext> (topic: Infrastructure).
+        </P>
+      </Section>
+
+      <Section id="status" title="Status">
+        <P>
+          Chain Kit explorers run on their own servers, so they are not part of this API yet and publish no figures here: the chart below says so rather than drawing made-up numbers. What is live is the Gully Labs API the request goes through,
+          checked every minute by our <DocLink to="status">status checks</DocLink>.
+        </P>
+        <StatusChip id="api" label="PUBLIC API NOW" />
+        <StatusHistory ids={['api']} title="PUBLIC API, LAST 24 H" />
+        <EmptyPulse text="No Chain Kit explorer reports to this API yet: nothing to chart, nothing shown as zero." />
+      </Section>
+
+      <Section id="licence" title="Open source">
+        <P>
+          Blockscout is GPL-3.0, and our deployment layer is GPL-3.0 too: everything we add is public at <Ext href="https://github.com/gully-labs/blockscout/tree/gully/chain-kit/gully">gully-labs/blockscout</Ext>. You are never locked in.
+        </P>
+        <Callout label="NO INVENTED FIGURES">The product page’s “charts on day one” are illustrations badged as example data. This page charts only what our API actually reports.</Callout>
+      </Section>
+    </DocPage>
+  )
+}

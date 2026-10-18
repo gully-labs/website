@@ -62,8 +62,9 @@ function Unavailable({ children, row, alerts }: { children: React.ReactNode; row
       </p>
       <div className="flex flex-col gap-2">
         {alerts && (
-          <a href={alerts} className={`${action} border-gold-line`}>
+          <a href={alerts} {...(/^https?:/.test(alerts) ? newTab : {})} className={`${action} border-gold-line`}>
             <BellRing aria-hidden size={16} className="flex-none text-gold" /> Get a gap alert for {row.ticker}
+            {/^https?:/.test(alerts) && <NewTabMark size={14} />}
           </a>
         )}
         {row.pool?.url && (

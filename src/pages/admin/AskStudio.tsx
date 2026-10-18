@@ -2,6 +2,7 @@ import { Check, Copy, LoaderCircle, RotateCcw, Wand2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { copyWithToast } from '../../components/ui/toast'
 import { MiniBars } from '../../components/ask/AskCards'
+import { ArrowMark } from './newTab'
 
 /* Gully Ask in the admin dashboard: the content studio (drafts from the docs and live data, never
    posted anywhere), the ask log (what people ask, and how often Ask had no answer), and the
@@ -173,8 +174,9 @@ function Studio({ token, configured }: { token: string; configured: boolean }) {
               {draft.sources.map((s) => (
                 <li key={s.n} className="flex items-baseline gap-2 text-[13px]">
                   <span className={`font-mono ${s.cited ? 'text-gold' : 'text-faint'}`}>[{s.n}]</span>
-                  <a href={s.url} target="_blank" rel="noopener" className="truncate text-ink-2 hover:text-gold">
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="truncate text-ink-2 hover:text-gold">
                     {s.title}
+                    <ArrowMark />
                   </a>
                   <span className={small}>
                     {s.source}

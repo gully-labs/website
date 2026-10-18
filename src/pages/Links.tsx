@@ -1,19 +1,22 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { Activity, BookOpen, Bot, Boxes, ChartNoAxesCombined, CircleDollarSign, Globe, LayoutDashboard, Megaphone, Network, Orbit, Newspaper, Sparkles, Tag, type LucideIcon } from 'lucide-react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Activity, BookOpen, Bot, Boxes, ChartNoAxesCombined, CircleDollarSign, Gauge, Globe, LayoutDashboard, Map as MapIcon, Megaphone, Network, Orbit, Newspaper, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
 import { Lockup } from '../components/brand'
+import { EChart } from '../components/charts/EChart'
+import { axisTooltip, barsPreset, C, tipHtml } from '../components/charts/chartPresets'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
 import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
-import { MoversRow } from '../components/tracker/MoversRow'
 import type { SocialLabel } from '../content/site'
+import { CHAIN_SHORT, DOWN, fmtGap, fmtPp, stockPath, UP, useMovers } from '../lib/tracker'
 
 /* /links: the link hub for bios and KOL posts (linktree-style). One column of every Gully Labs
    destination, each opening in a new tab. Web links carry the KOL campaign's UTM tags so Gully
    Analytics can attribute the visit; t.me, x.com and GitHub links carry none. The background is the
    brand kit's treatment (radial night gradient, 1 px bone grid, gold glow behind the lockup): the grid
-   drifts and the glow pulses, and both rest still under reduced motion (src/index.css). The movers row
-   is the page's live element: the biggest 24h gap moves from the tracker. */
+   drifts and the glow pulses, and both rest still under reduced motion (src/index.css). The live element is
+   the movers chart (the kit's EChart): the biggest 24h gap moves from the tracker, read every minute. */
 
 const UTM = 'utm_source=kol&utm_medium=links&utm_campaign=launch'
 const utm = (url: string) => `${url}${url.includes('?') ? '&' : '?'}${UTM}`
@@ -53,6 +56,9 @@ function groups(pay: PayCfg | null): Group[] {
     {
       title: 'Products',
       items: [
+        { label: 'Holder Map', desc: 'Who really holds a DeepCore launch: clusters, bundled buys, a health score', href: utm('https://gullylabs.xyz/holders'), icon: Orbit },
+        { label: 'Gully Security', desc: 'AI Security Scan of a contract or codebase; reviews quoted on request', href: utm('https://gullylabs.xyz/security'), icon: ShieldCheck },
+        { label: 'Gully Score', desc: 'A 0 to 100 contract score from public evidence, every weight shown', href: utm('https://gullylabs.xyz/score'), icon: Gauge },
         { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources', href: utm('https://gullylabs.xyz/ask'), icon: Sparkles },
         { label: 'Gully Analytics', desc: 'Web analytics that see the wallet', href: utm('https://gullylabs.xyz/analytics'), icon: ChartNoAxesCombined },
         {
@@ -70,6 +76,7 @@ function groups(pay: PayCfg | null): Group[] {
       items: [
         { label: 'Docs', desc: 'Methodology, API, widget and products', href: utm('https://docs.gullylabs.xyz/'), icon: BookOpen },
         { label: 'Blog', desc: 'Releases and write-ups', href: utm('https://blog.gullylabs.xyz/'), icon: Newspaper },
+        { label: 'Roadmap', desc: 'What is live, on request and planned, track by track', href: utm('https://docs.gullylabs.xyz/roadmap'), icon: MapIcon },
         { label: 'L3 roadmap', desc: 'The plan for the Gully L3. In development', href: utm('https://docs.gullylabs.xyz/roadmap-l3'), icon: Network },
       ],
     },
@@ -107,12 +114,65 @@ function LinkRow({ item, i }: { item: Item; i: number }) {
   )
 }
 
+/** The biggest 24h gap moves (GET /api/tracker/movers, every minute) as the kit's bar chart; each bar and
+    each ticker below opens that stock's page. Unknown history says so; nothing is drawn as zero. */
+function LiveMovers() {
+  const st = useMovers('24h', { limit: 6 })
+  const navigate = useNavigate()
+  const list = useMemo(() => (st.k === 'ok' ? st.data.byGap.slice(0, 6) : []), [st])
+  const option = useMemo(() => {
+    const rows = [...list].reverse()
+    return {
+      grid: { left: 4, right: 40, top: 4, bottom: 4, containLabel: true },
+      tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
+        const m = rows[ps[0]?.dataIndex ?? 0]
+        return m ? tipHtml({ title: `${m.ticker} · ${CHAIN_SHORT[m.chain] ?? m.chain}`, rows: [{ name: 'Gap 24h ago', value: fmtGap(m.gapThen) }, { name: 'Gap now', value: fmtGap(m.gapNow) }, { name: 'Change', value: fmtPp(m.gapChangePp), valueColor: m.gapChangePp > 0 ? UP : m.gapChangePp < 0 ? DOWN : C.muted }] }) : ''
+      }, 'shadow'),
+      xAxis: { type: 'value', axisLabel: { show: false }, splitLine: { show: false } },
+      yAxis: { type: 'category', data: rows.map((m) => m.ticker), axisLabel: { color: C.muted, fontSize: 12 }, axisLine: { show: false }, axisTick: { show: false } },
+      series: [
+        {
+          ...barsPreset({ horizontal: true, stagger: 60 }),
+          id: 'moves',
+          barMaxWidth: 16,
+          data: rows.map((m) => ({ value: m.gapChangePp, itemStyle: { color: m.gapChangePp > 0 ? UP : m.gapChangePp < 0 ? DOWN : C.muted } })),
+          label: { show: true, position: 'right', color: C.muted, fontSize: 11, formatter: (x: { dataIndex: number }) => fmtPp(rows[x.dataIndex].gapChangePp) },
+        },
+      ],
+    }
+  }, [list])
+  if (st.k === 'loading') return <div aria-hidden className="h-[180px] gl-skeleton rounded-[12px] bg-surface" />
+  if (st.k === 'error') return <p className="m-0 font-mono text-[12px] text-faint">The live movers could not be read just now; they retry every minute.</p>
+  if (!list.length) return <p className="m-0 gl-skeleton font-mono text-[12px] text-faint">{st.data.note ?? 'Not tracked yet: the tracker needs 24h of snapshots.'}</p>
+  const rows = [...list].reverse()
+  return (
+    <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-surface/85 p-3">
+      <EChart
+        option={option}
+        height={Math.max(150, list.length * 30)}
+        label={`Biggest 24h gap moves: ${list.map((m) => `${m.ticker} ${fmtPp(m.gapChangePp)}`).join(', ')}`}
+        steps={{ count: list.length }}
+        onEvents={{ click: (p) => { const m = rows[(p as { dataIndex?: number }).dataIndex ?? -1]; if (m) navigate(stockPath(m)) } }}
+      />
+      <ul aria-label="Open a mover" className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+        {list.map((m) => (
+          <li key={`${m.chain}:${m.ticker}`}>
+            <Link to={stockPath(m)} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 font-mono text-[12px] text-ink hover:border-gold">
+              <Activity aria-hidden size={13} className="text-gold" /> {m.ticker} <span className="text-faint">{CHAIN_SHORT[m.chain] ?? m.chain}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export function LinksPage() {
   const pay = usePayConfig()
   let n = 0
   return (
     <>
-      <Seo title="Links" description="Every Gully Labs link in one place: the site, the app, the stock tracker, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the Telegram bot and the news channel." />
+      <Seo title="Links" description="Every Gully Labs link in one place: the site, the app, the stock tracker, the Holder Map, Gully Security, Gully Score, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the roadmap, the Telegram bot and the news channel." />
       <section className="relative isolate overflow-hidden bg-kit-lab-night">
         {/* The kit's background treatment: night gradient, 1 px bone grid (drifting), gold glow (pulsing). */}
         <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_40%,#1D2836_0%,#111923_50%,#0B1118_100%)]" />
@@ -138,24 +198,12 @@ export function LinksPage() {
               {g.items.map((it) => (
                 <LinkRow key={it.label} item={it} i={n++} />
               ))}
-              {g.title === 'Products' && (
-                <div className={`${row} text-ink`} aria-label="Holder Map, coming soon">
-                  <span className="grid size-9 flex-none place-items-center rounded-[9px] border border-kit-slate bg-kit-midnight text-kit-text-dim">
-                    <Orbit aria-hidden size={18} />
-                  </span>
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-[16px] font-semibold leading-[1.25] text-ink-2">Holder Map</span>
-                    <span className="text-[13px] leading-[1.4] text-muted">Coming soon</span>
-                  </span>
-                  <span className="flex-none rounded-full border border-gold-line px-2 py-0.5 font-mono text-[11px] tracking-[1px] text-gold">SOON</span>
-                </div>
-              )}
             </nav>
           ))}
 
           <div className="flex flex-col gap-2.5">
             <h2 className="m-0 font-mono text-[11px] font-medium tracking-[1.5px] text-faint uppercase">Moving now · live gap change, 24h</h2>
-            <MoversRow limit={4} />
+            <LiveMovers />
           </div>
 
           <p className="m-0 text-center font-mono text-[11px] leading-[1.6] text-faint">Information only, not financial advice.</p>

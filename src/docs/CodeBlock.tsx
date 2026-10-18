@@ -1,6 +1,7 @@
 import { Check, Copy } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { copyWithToast } from '../components/ui/toast'
+import { track } from '../lib/track'
 import { TINT, tint, type Lang } from './tint'
 
 const LABEL: Record<Lang, string> = { json: 'JSON', js: 'JavaScript', html: 'HTML', bash: 'Shell', text: 'Text' }
@@ -12,6 +13,10 @@ export function CodeBlock({ code, lang, caption, wrap = false }: { code: string;
   const copy = () => {
     copyWithToast(code, lang === 'bash' ? 'Command' : 'Snippet').then((ok) => {
       if (!ok) return
+      // The widget builder on the main site (/widget) uses this block too: its copies are the snippet event.
+      const page = typeof location !== 'undefined' ? location.pathname : ''
+      if (page === '/widget') track('widget-snippet-copy', { lang })
+      else track('code-copy', { lang, page })
       setCopied(true)
       setTimeout(() => setCopied(false), 1600)
     })

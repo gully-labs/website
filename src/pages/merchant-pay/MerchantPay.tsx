@@ -58,7 +58,7 @@ interface StoreLink {
   checkout: StoreCheckout
 }
 
-const seo = (brand: Brand | null) => <Seo title={brand ? `Pay ${storeName(brand)}` : 'Pay'} bare noindex description="Pay with crypto, wallet to wallet, through Gully Pay." />
+const seo = (brand: Brand | null) => <Seo title={brand ? `Pay ${storeName(brand)}` : 'Gully Pay checkout'} bare noindex description="Pay with crypto, wallet to wallet, through Gully Pay." />
 
 /* ------------------------------------------------------------- invoice --- */
 

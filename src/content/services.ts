@@ -44,10 +44,10 @@ export const services: Service[] = [
   {
     n: '04',
     icon: ShieldCheck,
-    name: 'Security & Testing',
-    time: '2–6 weeks',
-    description: 'Review, testing and hardening before and after launch.',
-    items: ['Code review', 'Fuzzing and invariant tests', 'Post-launch monitoring'],
+    name: 'Gully Security',
+    time: 'Quoted',
+    description: 'Scan, review and watch your contracts before and after launch. A scan is not an audit; full audits are not offered yet.',
+    items: ['AI Security Scan (live, AI review only)', 'Security Review by people, quoted on request', 'Gully Score and contract monitors (live)'],
     type: 'Security',
   },
 ]

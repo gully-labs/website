@@ -7,6 +7,10 @@ import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
 import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isLocalHost } from './site-host'
+import { installDelegatedTracking } from './lib/track'
+
+// Gully Analytics events for pages whose own files do not send them (link clicks on /links; src/lib/track.ts).
+installDelegatedTracking()
 
 const mainRoutes = [
   {
@@ -29,6 +33,8 @@ const mainRoutes = [
       { path: '/security', element: <SecurityRoute /> },
       { path: '/security/reports', element: <SecurityReportsRoute /> },
       { path: '/security/reports/:id', element: <SecurityReportRoute /> },
+      // Public status: every check, 24 h of uptime and the incident history (GET /api/status).
+      { path: '/status', lazy: () => import('./pages/Status').then((m) => ({ Component: m.StatusPage })) },
       // The link hub for bios and KOL posts.
       { path: '/links', element: <LinksRoute /> },
       // The Gully Score (src/pages/score): the public index and one page per contract.
