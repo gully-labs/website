@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, FileText, List, Plus, ScanSearch, ShieldCheck, Users } from 'lucide-react'
+import { ArrowUpRight, BookOpen, FileText, Gauge, List, Plus, Radar, ScanSearch, ShieldCheck, Users } from 'lucide-react'
 import { useCallback, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { axisTooltip, barsPreset, C, tipHtml } from '../../../components/charts/chartPresets'
 import { EChart } from '../../../components/charts/EChart'
@@ -8,7 +8,9 @@ import { DOCS_URL, isLocalHost, SITE_URL } from '../../../site-host'
 import { Empty, ErrorLine, Skeleton } from '../parts'
 import { Can } from '../RoleGate'
 import { mono, panel, pillGold, pillSm } from '../styles'
+import { Monitors } from './Monitors'
 import { NewScan } from './NewScan'
+import { usePlans } from '../../../lib/plans'
 import { ScanDetail, StatusChip, TargetMark } from './ScanDetail'
 import { subFromSection, useOverview, useScans, type SecuritySub } from './useSecurity'
 
@@ -22,6 +24,8 @@ const SUBS: { id: SecuritySub; label: string; icon: ReactNode }[] = [
   { id: 'scans', label: 'Scans', icon: <List size={15} aria-hidden /> },
   { id: 'new', label: 'New scan', icon: <Plus size={15} aria-hidden /> },
   { id: 'reports', label: 'Reports', icon: <FileText size={15} aria-hidden /> },
+  // Gully Security monitoring (part 3, Monitors.tsx; its API is /api/developer/monitors*).
+  { id: 'monitors', label: 'Monitors', icon: <Radar size={15} aria-hidden /> },
   { id: 'review', label: 'Request a review', icon: <Users size={15} aria-hidden /> },
 ]
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
@@ -92,6 +96,28 @@ function ScanRows({ scans, open, empty }: { scans: ScanView[]; open: (id: string
   )
 }
 
+/** Contracts each plan may monitor (server/plans.mjs PLANS[].monitors, via GET /api/plans), and the Gully Score. */
+function MonitorLimits() {
+  const [plans] = usePlans()
+  const list = plans.k === 'ok' ? plans.offer.plans.filter((p) => typeof p.monitors === 'number') : []
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[14px] border border-line px-4 py-3 text-[13px] text-muted" data-testid="monitor-limits">
+      <span className="font-mono text-[11px] tracking-[1px] text-faint">CONTRACTS WATCHED BY PLAN</span>
+      {plans.k === 'loading' && <span className="text-faint">reading…</span>}
+      {plans.k === 'error' && <span className="text-error">unreadable right now</span>}
+      {list.map((p) => (
+        <span key={p.id}>
+          <b className="text-ink">{p.monitors}</b> on {p.name}
+        </span>
+      ))}
+      <a href={site('/score')} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex min-h-11 items-center gap-2 text-gold underline-offset-4 hover:underline">
+        <Gauge size={14} aria-hidden /> Gully Score <ArrowUpRight size={13} aria-hidden />
+        <span className="sr-only"> (opens in a new tab)</span>
+      </a>
+    </div>
+  )
+}
+
 function QuotaPill({ ov }: { ov: SecurityOverview }) {
   const q = ov.quota
   return (
@@ -117,8 +143,10 @@ export function SecurityTab({ section }: { section: string | null }) {
     setSub(t)
     setOpenId(null)
     if (t === 'new') setFresh((n) => n + 1)
+    // Free scans left and the price change as scans run: re-read them whenever a sub-tab opens.
+    reloadOv()
     history.replaceState(null, '', `#${t === 'scans' ? 'security' : `security-${t}`}`)
-  }, [])
+  }, [reloadOv])
   const open = useCallback((id: string) => {
     setSub((s) => (s === 'reports' ? 'reports' : 'scans'))
     setOpenId(id)
@@ -237,6 +265,11 @@ export function SecurityTab({ section }: { section: string | null }) {
             </div>
             <ScanRows scans={done} open={open} empty={<Empty icon={<FileText size={22} className="text-gold" aria-hidden />} title="No reports yet">A report appears here when a scan finishes. Owners and admins can publish one at a stable public link.</Empty>} />
           </section>
+        ) : sub === 'monitors' ? (
+          <>
+            <MonitorLimits />
+            <Monitors />
+          </>
         ) : (
           <section className={panel} aria-label="Request a review">
             <h2 className="m-0 text-[15px] font-semibold">Request a Security Review</h2>

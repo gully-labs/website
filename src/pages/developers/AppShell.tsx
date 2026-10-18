@@ -1,6 +1,7 @@
 import { Activity, Bot, BookOpen, Building2, ChartCandlestick, Check, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { AskLauncher } from '../../components/ask/AskLauncher'
+import { scoreNavEntry } from '../score/nav'
 import { Mascot, Wordmark } from '../../components/brand'
 import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
@@ -316,6 +317,11 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
       <li>
         <a href={site('/tracker')} className={footItem(compact)} title={compact ? 'Tracker' : undefined}>
           <ChartCandlestick size={ICON} aria-hidden /> {txt('Tracker')}
+        </a>
+      </li>
+      <li>
+        <a href={site(scoreNavEntry.to ?? '/score')} className={footItem(compact)} title={compact ? scoreNavEntry.label : undefined}>
+          <scoreNavEntry.icon size={ICON} aria-hidden /> {txt(scoreNavEntry.label)}
         </a>
       </li>
       <li>

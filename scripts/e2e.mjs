@@ -836,16 +836,18 @@ await step('admin', async () => {
 
 /* ------------------------------------------------------------- Gully Security --- */
 
-// The scan engine is part 1 of the platform; here the STUB engine (scripts/fixtures) answers, installed through
-// server/security-engine.mjs's test hook. Fresh wallets, so the free quota (1 on Free) is known.
+// The REAL scan engine (server/security) runs; its outbound calls (explorers, GitHub, RPC, Claude) are answered
+// by scripts/fixtures/security-engine-stubs.mjs, and the static-tools worker is absent as on the server today, so
+// reports are "AI review only". Fresh wallets, so the free quota (1 on Free) is known.
 await step('security', async () => {
-  const { setEngineForTest } = await import('../server/security-engine.mjs')
-  const { createStubEngine } = await import('./fixtures/security-stub-engine.mjs')
-  setEngineForTest(createStubEngine({ stepMs: 500 }))
+  const { installEngineStubs } = await import('./fixtures/security-engine-stubs.mjs')
+  const stubs = await installEngineStubs()
+  stubs.setDelay(700)
   const secOwner = privateKeyToAccount(generatePrivateKey())
   const secApi = makeClient(BASE)
   check('security: a fresh wallet signs in', (await secApi.signIn(secOwner)).status === 200)
   let reportId = null
+  let findingCount = 0
 
   // The stepper at 1440: input -> scope & cost -> running -> report; then publish.
   {
@@ -855,7 +857,7 @@ await step('security', async () => {
     await page.goto(BASE + '/developers#security-new')
     await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
     check('security: the sidebar has Security with its icon', (await page.getByRole('navigation', { name: 'App pages' }).getByRole('link', { name: /^Security/ }).locator('svg').count()) > 0)
-    check('security: sub-tabs are a real tablist with icons', (await page.getByRole('tablist', { name: 'Security sections' }).getByRole('tab').count()) === 4 && (await page.getByRole('tab', { name: 'New scan' }).getAttribute('aria-selected')) === 'true')
+    check('security: sub-tabs are a real tablist with icons', (await page.getByRole('tablist', { name: 'Security sections' }).getByRole('tab').count()) === 5 && (await page.getByRole('tab', { name: 'New scan' }).getAttribute('aria-selected')) === 'true')
     check('security: chain choices carry the chain marks', (await page.getByRole('radiogroup', { name: 'Chain' }).locator('img').count()) >= 5)
     await shot(page, 'security-step1-input')
     await page.getByRole('button', { name: /Next: scope and cost/ }).click()
@@ -865,23 +867,26 @@ await step('security', async () => {
     await page.getByRole('button', { name: /Next: scope and cost/ }).click()
     await page.getByTestId('cost').waitFor()
     check('security: step 2 shows the scope, the free quota and "Free"', (await page.getByTestId('price').textContent()) === 'Free' && /on Base/.test((await page.getByTestId('scope-target').textContent()) ?? ''))
+    check('security: step 2 says what the engine can run now (AI review only)', /AI review only — static tools unavailable/.test((await page.getByTestId('engine-now').textContent()) ?? ''))
     const fold = await page.getByTestId('confirm-scan').boundingBox()
     check('security: step 2 fits above the fold at 1440x900', !!fold && fold.y + fold.height <= 900, JSON.stringify(fold))
     await shot(page, 'security-step2-scope')
     await page.getByTestId('confirm-scan').click()
     await page.getByTestId('scan-progress').waitFor()
-    await page.waitForFunction(() => ['fetching', 'analysing', 'triaging'].includes(document.querySelector('[data-testid="scan-progress"]')?.getAttribute('data-status') ?? ''), null, { timeout: 10_000 })
+    await page.waitForFunction(() => ['fetching', 'analysing', 'triaging', 'reporting'].includes(document.querySelector('[data-testid="scan-progress"]')?.getAttribute('data-status') ?? ''), null, { timeout: 10_000 })
     check('security: step 4 shows live progress per step', (await page.locator('[data-testid="scan-progress"] [aria-current="step"]').count()) === 1)
     await shot(page, 'security-step4-running')
     await page.getByTestId('report-body').waitFor({ timeout: 20_000 })
     await page.getByTestId('severity-charts').waitFor()
-    check('security: the report has charts, tools (ran and not run) and findings', (await page.locator('[data-testid="severity-charts"] [data-chart]').count()) === 2 && (await page.getByTestId('tools').getByText('not run').count()) === 1 && (await page.locator('[data-finding]').count()) === 4)
+    check('security: the report has the mode label, charts, tools (ran and not run) and findings', /AI review only/.test((await page.getByTestId('mode-label').first().textContent()) ?? '') && (await page.locator('[data-testid="severity-charts"] [data-chart]').count()) === 2 && (await page.locator('[data-tool-status="not-run"]').count()) >= 1 && (await page.locator('[data-finding]').count()) >= 2)
+    findingCount = await page.locator('[data-finding]').count()
     await page.getByRole('group', { name: 'Filter findings by severity' }).getByRole('button', { name: /^High/ }).click()
     check('security: the severity filter narrows the list', (await page.locator('[data-finding]').count()) === 1)
-    await page.locator('[data-finding="F-1"] > button').click()
-    check('security: a finding expands to its location and draft PoC', (await page.getByTestId('poc').isVisible()) && /src\/Vault\.sol:42/.test((await page.locator('[data-finding="F-1"]').textContent()) ?? ''))
+    await page.locator('[data-finding="GS-001"] > button').click()
+    check('security: a finding expands to its location, "Draft, not executed" PoC, not verified by a human', (await page.getByTestId('poc').isVisible()) && (await page.getByTestId('poc-status').textContent()) === 'Draft, not executed' && /src\/VulnBank\.sol:21/.test((await page.locator('[data-finding="GS-001"]').textContent()) ?? '') && (await page.getByText('Not verified by a human reviewer.').count()) >= 1)
     await page.getByRole('button', { name: 'Copy', exact: true }).click()
-    check('security: the PoC copies', /contract Attack/.test(await page.evaluate(() => navigator.clipboard.readText())))
+    check('security: the PoC copies', /test_reenter/.test(await page.evaluate(() => navigator.clipboard.readText())))
+    check('security: Export PDF opens the engine report in a new tab', ((await page.getByTestId('export-pdf').getAttribute('href')) ?? '').endsWith(`/report.html`) && (await page.getByTestId('export-pdf').getAttribute('target')) === '_blank')
     const head = await page.getByTestId('severity-charts').boundingBox()
     check('security: the report charts are above the fold at 1440x900', !!head && head.y < 900, JSON.stringify(head))
     await shot(page, 'security-step5-report')
@@ -892,8 +897,9 @@ await step('security', async () => {
     // A second scan is beyond the free quota: step 2 prices it and step 3 is Gully Pay.
     await page.getByRole('tab', { name: 'New scan' }).click()
     await page.getByRole('radio', { name: /Smart contract repo/ }).click()
-    await page.getByPlaceholder(/owner\/name or https/).fill('gully-labs/sdk')
+    await page.getByPlaceholder(/owner\/name or https/).fill(stubs.REPO)
     await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    await page.getByTestId('price').filter({ hasText: /^\$/ }).waitFor({ timeout: 10_000 }).catch(() => {})
     check('security: beyond the quota step 2 shows the price', /^\$\d+/.test((await page.getByTestId('price').textContent()) ?? ''))
     await page.getByTestId('confirm-scan').click()
     await page.getByTestId('pay-step').waitFor({ timeout: 10_000 })
@@ -903,6 +909,10 @@ await step('security', async () => {
     await page.getByTestId('scan-list').waitFor()
     check('security: the scans list shows both, one awaiting payment', (await page.locator('[data-scan-row]').count()) === 2 && (await page.locator('[data-scan-row] [data-status="awaiting_payment"]').count()) === 1)
     await shot(page, 'security-scans')
+    await page.getByRole('tab', { name: 'Monitors' }).click()
+    await page.getByTestId('monitor-limits').getByText(/on Business/).waitFor({ timeout: 10_000 })
+    check('security: the Monitors sub-tab (part 3) with the plan limits', /1 on Free/.test((await page.getByTestId('monitor-limits').textContent()) ?? '') && /10 on Pro/.test((await page.getByTestId('monitor-limits').textContent()) ?? ''))
+    await shot(page, 'security-monitors')
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i, /Failed to load resource/])
     await ctx.close()
   }
@@ -919,8 +929,8 @@ await step('security', async () => {
     await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
     await noHorizontalScroll(page, 'security step 1')
     await shot(page, 'security-step1-input')
-    await page.getByRole('radio', { name: /Web2 repo/ }).click()
-    await page.getByPlaceholder(/owner\/name or https/).fill('gully-labs/website')
+    await page.getByRole('radio', { name: /Smart contract repo/ }).click()
+    await page.getByPlaceholder(/owner\/name or https/).fill(stubs.REPO)
     await page.getByRole('button', { name: /Next: scope and cost/ }).click()
     await page.getByTestId('cost').waitFor()
     await noHorizontalScroll(page, 'security step 2')
@@ -944,8 +954,9 @@ await step('security', async () => {
     check(`/security at ${width}: tiers tablist, prices from the config, a live counter of real scans`, (await page.getByRole('tablist', { name: 'Tiers' }).getByRole('tab').count()) === 3 && /^\$\d+ a scan$/.test((await page.locator('[data-tier-price="scan"]').textContent()) ?? '') && (await page.locator('[data-testid="live-scans"] [data-chart]').count()) === 1)
     check(`/security at ${width}: says a scan is not an audit and offers no Audit for sale`, (await page.getByText(/is not an audit/).count()) > 0 && (await page.locator('[data-tier-price="audit"]').textContent()) === 'Not offered yet')
     check(`/security at ${width}: the review form is on the page`, (await page.getByTestId('review-form').count()) === 1)
+    check(`/security at ${width}: monitoring limits per plan from the config`, /1\s*contract on Free/.test((await page.getByTestId('monitoring-pricing').textContent()) ?? ''))
     if (mobile) await noHorizontalScroll(page, '/security')
-    else check('/security: Security is in the Products menu with an icon', (await page.locator('a[href="/security"] svg').count()) > 0)
+    else check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('a[href="/security"] svg').count()) > 0 && (await page.locator('a[href="/score"] svg').count()) > 0)
     await shot(page, 'security-page')
     await page.goto(BASE + '/security/reports')
     await page.getByTestId('report-index').waitFor()
@@ -954,7 +965,7 @@ await step('security', async () => {
     await shot(page, 'security-reports')
     await page.goto(`${BASE}/security/reports/${reportId}`)
     await page.getByTestId('public-report').waitFor()
-    check(`public report at ${width}: kit-branded page, not-an-audit notice, findings, no PoC, noindex`, (await page.getByTestId('not-audit').isVisible()) && (await page.locator('[data-finding]').count()) === 4 && (await page.getByTestId('poc').count()) === 0 && (await page.locator('meta[name="robots"][content="noindex"]').count()) >= 1 && (await page.locator('[data-brand]').count()) > 0)
+    check(`public report at ${width}: kit-branded page, not-an-audit notice, findings, no PoC, noindex`, (await page.getByTestId('not-audit').isVisible()) && (await page.locator('[data-finding]').count()) === findingCount && (await page.getByTestId('poc').count()) === 0 && (await page.locator('meta[name="robots"][content="noindex"]').count()) >= 1 && (await page.locator('[data-brand]').count()) > 0)
     if (mobile) await noHorizontalScroll(page, 'public report')
     await shot(page, 'security-public-report')
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
@@ -974,12 +985,12 @@ await step('security', async () => {
     await page.getByTestId('admin-security').waitFor({ timeout: 15_000 })
     await page.getByTestId('admin-security').scrollIntoViewIfNeeded()
     await page.locator('[data-testid="admin-security"] [data-chart]').waitFor({ timeout: 10_000 }).catch(() => {})
-    check('admin: the Security card has its chart and the queue', (await page.locator('[data-testid="admin-security"] [data-chart]').count()) === 1 && (await page.getByTestId('admin-security').getByRole('heading', { name: 'Queue' }).count()) === 1)
+    check('admin: the Security card has its chart, the queue and the AI-only note', (await page.locator('[data-testid="admin-security"] [data-chart]').count()) === 1 && (await page.getByTestId('admin-security').getByRole('heading', { name: 'Queue' }).count()) === 1 && (await page.getByTestId('worker-note').count()) === 1)
     if (SHOTS) await page.getByTestId('admin-security').screenshot({ path: path.join(SHOTS, 'security-admin-1440.png') })
     await w.verify([/Failed to load resource/])
     await ctx.close()
   }
-  setEngineForTest(null)
+  stubs.setDelay(0)
 })
 
 /* ------------------------------------------------------- admin: bot broadcasts --- */

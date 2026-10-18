@@ -1,8 +1,13 @@
-// End-to-end test of wallet sign-in (SIWE) and self-serve API keys against a running server.
+// End-to-end test of wallet sign-in (SIWE) and self-serve API keys.
 //
-//   npm run build
-//   DATA_DIR=/tmp/gully-test ADMIN_TOKEN=<24+ chars> PORT=8797 node server/server.mjs
-//   ADMIN_TOKEN=<same> node scripts/test-siwe.mjs [http://localhost:8797]
+//   npm run test:siwe                     (no build needed) starts its own server IN THIS PROCESS on port 8800
+//                                         (TEST_PORT overrides) with a fresh DATA_DIR and a random ADMIN_TOKEN
+//   ADMIN_TOKEN=<…> node scripts/test-siwe.mjs http://localhost:8797    against a server you started yourself
+//
+// Why its own server by default: sign-in is limited to 20 attempts per IP per 10 minutes (developer.mjs), and
+// this suite makes many from 127.0.0.1. Run twice in a row against one long-lived server (or after other suites
+// that sign in against it), the limiter rightly answers 429 "Too many sign-in attempts". A fresh in-process
+// server has a fresh limiter, so the production limit stays as it is.
 //
 // Uses a fresh random private key each run (viem, a devDependency), so it never touches a real wallet.
 // Also checks the server's vendored secp256k1/keccak against viem on random signatures.
@@ -13,8 +18,25 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { contractCheckCall, hashPersonalMessage, parseSiwe, recoverAddress } from '../server/siwe.mjs'
 import { hostRequest, hostSignIn, makeClient } from './test-helpers.mjs'
 
-const BASE = process.argv[2] ?? 'http://localhost:8797'
-const ADMIN = process.env.ADMIN_TOKEN
+let BASE = process.argv[2]
+let ADMIN = process.env.ADMIN_TOKEN
+if (!BASE) {
+  const { guardTestRun } = await import('./test-helpers.mjs')
+  const crypto = await import('node:crypto')
+  const fs = await import('node:fs')
+  const os = await import('node:os')
+  const path = await import('node:path')
+  const PORT = Number(process.env.TEST_PORT) || 8800
+  await guardTestRun(PORT)
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-siwe-'))
+  ADMIN = crypto.randomBytes(24).toString('hex')
+  Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off' })
+  for (const k of ['TELEGRAM_BOT_TOKEN', 'ANTHROPIC_API_KEY', 'GULLY_TREASURY_ADDRESS']) delete process.env[k]
+  await import('../server/server.mjs')
+  await new Promise((r) => setTimeout(r, 300))
+  BASE = `http://localhost:${PORT}`
+  process.on('exit', () => fs.rmSync(tmp, { recursive: true, force: true }))
+}
 let passed = 0
 let failed = 0
 

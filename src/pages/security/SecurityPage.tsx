@@ -1,4 +1,4 @@
-import { ArrowUpRight, Bot, CircleDollarSign, FileCheck2, FileCode2, FileText, ListChecks, Rocket, ScanSearch, ShieldAlert, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
+import { ArrowUpRight, Bot, CircleDollarSign, FileCheck2, FileCode2, FileText, Gauge, ListChecks, Radar, Rocket, ScanSearch, ShieldAlert, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
@@ -9,6 +9,8 @@ import type { SecurityOffer, SecurityStats } from '../../components/security/typ
 import { Seo } from '../../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../../components/ui'
 import { usePlans } from '../../lib/plans'
+import type { Plan } from '../developers/api'
+import { isLocalHost, APP_URL } from '../../site-host'
 import { SCAN_APP_URL, usePublic } from './shared'
 
 /* /security: the Gully Security product page. Three tiers, named honestly: the automated AI Security Scan
@@ -28,7 +30,7 @@ const TIERS: { id: TierId; title: string; icon: LucideIcon; who: string; body: s
     who: 'Automated, self-serve',
     body: 'Point it at a verified contract on a chain, a GitHub repository at a commit, an upload, or a web2 codebase. Static analysers and an AI pass look for known vulnerability classes, then the findings are de-duplicated and ranked.',
     gets: ['Findings by severity with file and line', 'A draft proof of concept where one can be written, marked executed or not', 'Every tool that ran, and every tool that did not with the reason', 'A report you can export to PDF and, if you choose, publish'],
-    limits: ['It can miss issues: business logic, economic and cross-contract attacks, off-chain and key-management risks', 'It can report false positives', 'It is not an audit and is no guarantee of safety'],
+    limits: ['It can miss issues: business logic, economic and cross-contract attacks, off-chain and key-management risks', 'It can report false positives', 'Until our static-tools worker runs, scans are an AI review only, and each report says so in its label', 'It is not an audit and is no guarantee of safety'],
   },
   {
     id: 'review',
@@ -147,6 +149,52 @@ function Tiers({ offer }: { offer: SecurityOffer | null }) {
   )
 }
 
+/** Contract monitoring per plan (server/plans.mjs PLANS[].monitors) and the Gully Score: part 3 of Gully Security. */
+function Monitoring({ plans }: { plans: Plan[] | null }) {
+  const list = (plans ?? []).filter((p) => typeof p.monitors === 'number')
+  const app = isLocalHost() ? '/developers#security-monitors' : `${APP_URL}/#security-monitors`
+  return (
+    <section className="px-page pb-16" aria-labelledby="monitoring-title" data-testid="monitoring-pricing">
+      <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center gap-6 rounded-card border border-line bg-surface p-6 max-[860px]:grid-cols-1 max-[600px]:p-4">
+        <div className="flex flex-col gap-2">
+          <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
+            <Radar size={14} className="text-gold" aria-hidden /> MONITORING
+          </span>
+          <h2 id="monitoring-title" className="m-0 font-display text-[28px] leading-none font-extrabold uppercase">
+            Watch your contracts <span className="text-gold">after launch</span>
+          </h2>
+          <p className="m-0 text-[14px] leading-[1.6] text-muted">Privileged changes and large outflows on the contracts you watch, by Telegram or webhook. Each watched contract can show a public Gully Score, worked out from public evidence only.</p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0" aria-label="Contracts watched by plan">
+            {list.length ? (
+              list.map((p) => (
+                <li key={p.id} className="flex flex-col items-start gap-1 rounded-input border border-line px-3 py-2">
+                  <span className="font-display text-[28px] leading-none font-bold text-gold">{p.monitors}</span>
+                  <span className="text-[12px] text-muted">
+                    contract{p.monitors === 1 ? '' : 's'} on {p.name}
+                  </span>
+                </li>
+              ))
+            ) : (
+              <li className="col-span-3 text-[13px] text-faint">{plans ? 'Not listed.' : 'Reading the plans…'}</li>
+            )}
+          </ul>
+          <span className="flex flex-wrap gap-3">
+            <a href={app} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 text-[14px] text-gold underline-offset-4 hover:underline">
+              <Radar size={15} aria-hidden /> Add a monitor <ArrowUpRight size={13} aria-hidden />
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            <Link to="/score" className="inline-flex min-h-11 items-center gap-2 text-[14px] text-muted hover:text-ink">
+              <Gauge size={15} aria-hidden /> Gully Score
+            </Link>
+          </span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /** Scans run on Gully Security per day (30 days), from GET /api/security/stats. Real counts only. */
 function LiveScans() {
   const [s, retry] = usePublic<SecurityStats>('/api/security/stats', 60_000)
@@ -243,6 +291,8 @@ export function SecurityPage() {
       </section>
 
       <Tiers offer={offer} />
+
+      <Monitoring plans={plans.k === 'ok' ? plans.offer.plans : null} />
 
       <section className="border-y border-line bg-bg-alt px-page py-14" aria-labelledby="how-title">
         <span className={eyebrow}>HOW A SCAN WORKS</span>

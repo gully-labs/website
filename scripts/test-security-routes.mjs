@@ -48,6 +48,7 @@ const billing = await import('../server/billing.mjs')
 const invoices = await import('../server/invoices.mjs')
 const store = await import('../server/store.mjs')
 const seo = await import('../server/seo.mjs')
+const { publishedReportFor } = await import('../server/security/reports.mjs')
 const { SECURITY } = await import('../server/plans.mjs')
 await new Promise((r) => setTimeout(r, 300))
 
@@ -220,6 +221,8 @@ try {
     check('public printable HTML: the engine render of the snapshot, no PoC code', ph.status === 200 && /gs-report/.test(phText) && !phText.includes('test_reenter'))
     const list = await pub('/api/security/reports')
     check('public index lists it with severity counts', list.data.reports.length === 1 && list.data.reports[0].id === freeId && list.data.reports[0].counts.high >= 1)
+    const pr = publishedReportFor(8453, stubs.ADDR_VERIFIED)
+    check('Gully Score source: publishedReportFor gives the published report with its severities', pr?.status === 'published' && pr.url.endsWith(`/security/reports/${freeId}`) && pr.severities.high >= 1 && publishedReportFor(1, stubs.ADDR_VERIFIED) === null, JSON.stringify(pr))
     check('head tags: published report is a page, noindex', seo.pageMeta('gullylabs.xyz', `/security/reports/${freeId}`).found === true && seo.pageMeta('gullylabs.xyz', `/security/reports/${freeId}`).noindex === true)
     check('sitemap: a noindex report is left out', !seo.sitemapFor('gullylabs.xyz').includes(freeId) && seo.sitemapFor('gullylabs.xyz').includes('/security<'))
     const admin = await AD.post(`/api/developer/security/scans/${freeId}/publish`, { published: true, indexable: true })
@@ -230,6 +233,7 @@ try {
     check('unknown or malformed report ids are 404', (await pub('/api/security/reports/sec_AAAAAAAAAAAAAAAA')).status === 404 && (await pub('/api/security/reports/sec_short')).status === 404)
     await O.post(`/api/developer/security/scans/${freeId}/publish`, { published: true })
     check('admin can take a report down', (await adminCall(`/api/admin/security/scans/${freeId}/unpublish`, {})).status === 200 && (await pub(`/api/security/reports/${freeId}`)).status === 404)
+    check('Gully Score source: an unpublished report no longer counts', publishedReportFor(8453, stubs.ADDR_VERIFIED) === null)
   }
 
   /* ------------------------------------------------------------ stats --- */

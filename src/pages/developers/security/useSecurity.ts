@@ -5,10 +5,10 @@ import { api } from '../api'
 
 /* Data hooks for the app's Security tab (server/security-routes.mjs). */
 
-export type SecuritySub = 'scans' | 'new' | 'reports' | 'review'
+export type SecuritySub = 'scans' | 'new' | 'reports' | 'monitors' | 'review'
 
-/** The sub-tab a deep link opens (#security-new, #security-reports, #security-review; Dashboard LEGACY). */
-export const subFromSection = (section: string | null): SecuritySub => (section === 'security-new' ? 'new' : section === 'security-reports' ? 'reports' : section === 'security-review' ? 'review' : 'scans')
+/** The sub-tab a deep link opens (#security-new, #security-reports, #security-monitors, #security-review; Dashboard LEGACY). */
+export const subFromSection = (section: string | null): SecuritySub => (section === 'security-new' ? 'new' : section === 'security-reports' ? 'reports' : section === 'security-monitors' ? 'monitors' : section === 'security-review' ? 'review' : 'scans')
 
 export type Load<T> = { k: 'loading' } | { k: 'error'; message: string } | { k: 'ok'; data: T }
 

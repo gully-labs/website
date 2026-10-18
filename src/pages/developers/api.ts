@@ -66,6 +66,8 @@ export interface Plan {
   alerts: number
   historyDays: number
   maxKeys: number
+  /** Contracts Gully Security monitoring watches per workspace on this plan. */
+  monitors?: number
 }
 
 /** One accepted payment asset (server/payments.mjs). */

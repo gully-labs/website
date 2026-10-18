@@ -44,7 +44,7 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: 'activity', label: 'Activity', icon: <History size={ICON} aria-hidden /> },
   { id: 'settings', label: 'Settings', icon: <Settings size={ICON} aria-hidden /> },
 ]
-const LEGACY: Record<string, Tab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings', 'security-new': 'security', 'security-reports': 'security', 'security-review': 'security' }
+const LEGACY: Record<string, Tab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings', 'security-new': 'security', 'security-reports': 'security', 'security-monitors': 'security', 'security-review': 'security' }
 
 type View = { tab: Tab; section: string | null; receipt: string | null; invite: string | null }
 
