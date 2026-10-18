@@ -20,6 +20,8 @@
 //   ai                         Gully AI prompt (force_reply)        aiq:<n> an example question
 //   set                        settings      smu mute all 24h      snt:0|1 usage notices      sul → suly unlink
 //   mute:<id>                  Mute 24h on an alert delivery (kept from the first bot)
+//   bco | bci                  🔕 Stop announcements (on every broadcast) | switch them back on
+//   san:0|1                    Settings: announcements off | on (private chats)
 // A trailing "!" opens the route as a new message instead of editing (used on Gully AI answers, so an
 // answer is never overwritten by the next screen).
 
@@ -140,12 +142,47 @@ export function helpView(linked) {
     '/movers · biggest changes',
     '/launches · newest tokens on DeepCore',
     '/ask · ask Gully AI a question',
+    '/app · open the Gully app inside Telegram',
     ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['🔔 Want alerts? Link your wallet: developer portal, Alerts tab, Connect Telegram.']),
+    '/stop announcements · no more news from Gully Labs (alerts keep coming)',
     '',
     '<i>Information only, not investment advice.</i>',
   ].join('\n')
   return { text, keyboard: MENU_KEYBOARD }
 }
+
+/* ------------------------------------------------------------- app, stop --- */
+
+/** /app in a private chat: the Mini App behind an inline web_app button. */
+export const appView = (url) => ({
+  text: '<b>📱 Gully app</b>\nStocks, gaps, launches and your alerts on one screen, right here in Telegram. Tap below to open it.',
+  keyboard: [[appBtn(url)], [btn('🏠 Menu', 'm')]],
+})
+/** /app in a group: Telegram opens Mini Apps from private chats only, so the button opens one with the bot. */
+export const appGroupView = (url) => ({
+  text: '<b>📱 Gully app</b>\nThe app opens in a private chat with the bot. Tap below, then press 📱 Open app.',
+  keyboard: [[ubtn('📱 Open the bot ↗', url)]],
+})
+
+export const announceOffBtn = btn('🔕 Stop announcements', 'bco')
+export const announceOnBtn = btn('📣 Announcements back on', 'bci')
+
+/** "/stop announcements": done, and how to undo it. */
+export const announceOffView = () => ({
+  text: '<b>🔕 Announcements off</b>\nYou won’t get news from Gully Labs here any more. Alerts you set up still arrive.\nChanged your mind? Switch them back on below or in ⚙️ Settings.',
+  keyboard: [[announceOnBtn], [btn('🏠 Menu', 'm')]],
+})
+
+/** /stop in a private chat with nothing linked: nothing to unlink, and announcements are now off. */
+export const stopUnlinkedView = () => ({
+  text: '<b>🔕 Done</b>\nThis chat isn’t linked to an account, so there’s nothing to stop. 🔕 You won’t get announcements either.\nChanged your mind? Switch them back on below or in ⚙️ Settings.',
+  keyboard: [[announceOnBtn], [btn('🏠 Menu', 'm')]],
+})
+/** /stop in a group with nothing linked. */
+export const stopGroupView = () => ({
+  text: 'This group isn’t linked to an account, so there’s nothing to stop. Gully Labs sends no announcements to groups.',
+  keyboard: [[btn('🏠 Menu', 'm')]],
+})
 
 export const expiredView = () => ({ text: '<b>This menu expired</b>, here’s a fresh one.', keyboard: MENU_KEYBOARD })
 
@@ -522,8 +559,12 @@ export function aiAnswerView(r) {
 
 /* ------------------------------------------------------------ settings --- */
 
-export function settingsView({ link, workspace, notify, alertsCount, isLinker }) {
-  if (!link) return { text: '<b>⚙️ Settings</b>\nThis chat is not linked to a wallet. Link it in the developer portal (Alerts tab, Connect Telegram) to get alerts here.', keyboard: [[ubtn('🔗 Link wallet ↗', PORTAL_ALERTS)], nav('m')] }
+/** The announcements switch for a private chat (`announce` true = on), or no row for groups (null). */
+const announceRow = (announce) => (announce === null || announce === undefined ? [] : [[btn(announce ? '📣 Announcements: on → off' : '📣 Announcements: off → on', `san:${announce ? 0 : 1}`)]])
+
+export function settingsView({ link, workspace, notify, alertsCount, isLinker, announce = null }) {
+  const ann = announce === null || announce === undefined ? [] : [`Announcements: ${announce ? 'on' : 'off'}`]
+  if (!link) return { text: ['<b>⚙️ Settings</b>', 'This chat is not linked to a wallet. Link it in the developer portal (Alerts tab, Connect Telegram) to get alerts here.', ...ann].join('\n'), keyboard: [[ubtn('🔗 Link wallet ↗', PORTAL_ALERTS)], ...announceRow(announce), nav('m')] }
   const lines = [
     '<b>⚙️ Settings</b>',
     `Wallet: <code>${esc(shortAddr(link.address))}</code>`,
@@ -531,12 +572,14 @@ export function settingsView({ link, workspace, notify, alertsCount, isLinker })
     `Chat: ${link.chatType === 'private' ? 'this private chat' : `group “${esc(link.chatTitle)}”${isLinker ? ' (linked by you)' : ''}`}`,
     `Alerts: ${alertsCount === null ? 'not available right now' : alertsCount}`,
     ...(notify ? [`Usage notices: ${notify.telegramUsage ? 'on' : 'off'}`] : []),
+    ...ann,
   ]
   return {
     text: lines.join('\n'),
     keyboard: [
       [btn('🔕 Mute all 24h', 'smu')],
       ...(notify ? [[btn(notify.telegramUsage ? '📣 Usage notices: on → off' : '📣 Usage notices: off → on', `snt:${notify.telegramUsage ? 0 : 1}`)]] : []),
+      ...announceRow(announce),
       [btn('🔓 Unlink', 'sul')],
       nav('m'),
     ],

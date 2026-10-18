@@ -16,6 +16,7 @@
     "test:analytics": "node scripts/test-analytics.mjs",
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:tg-channel": "node scripts/test-tg-channel.mjs",
+    "test:tg-broadcast": "node scripts/test-tg-broadcast.mjs",
     "test:tg-miniapp": "node scripts/test-tg-miniapp.mjs",
     "test:deepcore": "node --test scripts/test-deepcore.mjs",
     "test:deepcore-alerts": "node scripts/test-deepcore-alerts.mjs",
