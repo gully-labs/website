@@ -284,8 +284,11 @@ const eventOf = (r, at) => ({
 
 /** A gap condition in words, with its direction. */
 export const gapWords = (c) => (c.direction === 'above' ? `premium of +${c.pct}% or more (gap ≥ +${c.pct}%)` : c.direction === 'below' ? `discount of ${c.pct}% or more (gap ≤ −${c.pct}%)` : `gap of ${c.pct}% or more either way`)
-const metricWords = (m) => (m === 'top10' ? 'the 10 biggest wallets' : 'the largest connected cluster')
-export const holdersWords = (c) => `${metricWords(c.metric)} of ${c.symbol ?? c.token} on ${HOLDER_CHAINS[c.chain]?.name ?? c.chain}${c.above != null ? ` reaches ${c.above}%` : ''}${c.above != null && c.dropPts != null ? ' or' : ''}${c.dropPts != null ? ` falls ${c.dropPts} points from its high` : ''}`
+const metricWords = (m) => (m === 'top10' ? 'the 10 biggest wallets' : m === 'deployer' ? 'the deployer' : 'the largest connected cluster')
+export const holdersWords = (c) => {
+  const parts = [c.above != null ? `reaches ${c.above}%` : null, c.dropPts != null ? `falls ${c.dropPts} points from its high` : null, c.sellPct != null ? `sells ${c.sellPct}% or more of its holding` : null].filter(Boolean)
+  return `${metricWords(c.metric)} of ${c.symbol ?? c.token} on ${HOLDER_CHAINS[c.chain]?.name ?? c.chain} ${parts.join(' or ')}`
+}
 export const conditionText = (c) => (c.type === 'holders' ? holdersWords(c) : c.type === 'deepcore-launch' ? `new DeepCore launch on ${c.chainId ? (DEEPCORE_CHAINS[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapWords(c) : c.status === 'either' ? 'status premium or discount' : `status ${c.status}`)
 
 const kindOf = (a) => (isLaunchAlert(a) ? 'deepcore-launch' : isHoldersAlert(a) ? 'holders' : 'gap')
@@ -427,6 +430,7 @@ export async function evaluateLaunchAlerts(fresh, at = Date.now()) {
 export function holderMetric(c, map) {
   if (map?.state !== 'ok') return null
   if (c.metric === 'top10') return typeof map.summary?.top10Pct === 'number' ? map.summary.top10Pct : null
+  if (c.metric === 'deployer') return typeof map.forensics?.deployerPct === 'number' ? map.forensics.deployerPct : null
   // No connected cluster among the mapped wallets is a cluster share of zero.
   return map.summary?.largestCluster ? (map.summary.largestCluster.pct ?? null) : 0
 }
@@ -452,7 +456,10 @@ export function stepHolderAlert(alert, map, at = Date.now()) {
     } else delete alert.disarmed.above
   }
   if (c.dropPts != null && (st.high === null || v > st.high)) st.high = v
+  if (c.sellPct != null && (st.high === null || v > st.high)) st.high = v
   if (!reason && c.dropPts != null && st.high - v >= c.dropPts) reason = 'drop'
+  // sellPct: the watched holding fell by that share of itself (e.g. the cluster sold 30% of what it held).
+  if (!reason && c.sellPct != null && st.high > 0 && v <= st.high * (1 - c.sellPct / 100)) reason = 'drop'
   if (!reason) return null
   if (alert.lastFiredAt && at - Date.parse(alert.lastFiredAt) < COOLDOWN_MS) return null
   if (reason === 'above') alert.disarmed.above = new Date(at).toISOString()
@@ -468,7 +475,8 @@ export function stepHolderAlert(alert, map, at = Date.now()) {
     pct: v,
     previousPct: reason === 'drop' ? high : prev,
     reason,
-    line: reason === 'above' ? c.above : c.dropPts,
+    line: reason === 'above' ? c.above : (c.dropPts ?? c.sellPct),
+    soldPct: reason === 'drop' && high > 0 ? Math.round((1 - v / high) * 1000) / 10 : null,
     clusterWallets: map.summary?.largestCluster?.wallets ?? null,
     pageUrl: `${SITE}/holders/${c.chain}/${encodeURIComponent(c.token)}`,
     snapshotAt: map.asOf ?? new Date(at).toISOString(),
@@ -629,15 +637,16 @@ export async function handleAlerts(req, res, url, address) {
       const stock = findStock(hc, tok)
       const okToken = hc === 'solana' ? isSolanaAddress(tok) || !!stock : /^0x[0-9a-fA-F]{40}$/.test(tok) || !!stock
       if (!okToken) return json(res, 400, { error: 'Give the token as an address (or a tracked stock ticker).' }), true
-      const metric = c.metric === 'top10' ? 'top10' : c.metric === undefined || c.metric === null || c.metric === 'cluster' ? 'cluster' : null
-      if (!metric) return json(res, 400, { error: 'metric must be cluster or top10.' }), true
+      const metric = c.metric === 'top10' || c.metric === 'deployer' ? c.metric : c.metric === undefined || c.metric === null || c.metric === 'cluster' ? 'cluster' : null
+      if (!metric) return json(res, 400, { error: 'metric must be cluster, top10 or deployer.' }), true
       const num = (v) => (v === undefined || v === null || v === '' ? null : Number(v))
       const above = num(c.above)
       const dropPts = num(c.dropPts)
-      if (above === null && dropPts === null) return json(res, 400, { error: 'Set above (a share from 1 to 100%) or dropPts (a fall of 1 to 100 points), or both.' }), true
-      if ((above !== null && !(above >= 1 && above <= 100)) || (dropPts !== null && !(dropPts >= 1 && dropPts <= 100))) return json(res, 400, { error: 'above and dropPts must be from 1 to 100.' }), true
+      const sellPct = num(c.sellPct)
+      if (above === null && dropPts === null && sellPct === null) return json(res, 400, { error: 'Set above (a share from 1 to 100%), dropPts (a fall of 0.1 to 100 points) or sellPct (sells 1 to 100% of the holding).' }), true
+      if ((above !== null && !(above >= 1 && above <= 100)) || (dropPts !== null && !(dropPts >= 0.1 && dropPts <= 100)) || (sellPct !== null && !(sellPct >= 1 && sellPct <= 100))) return json(res, 400, { error: 'above and sellPct must be from 1 to 100, dropPts from 0.1 to 100.' }), true
       const symbol = typeof c.symbol === 'string' && /^[\p{L}\p{N} ._$-]{1,24}$/u.test(c.symbol) ? c.symbol : (stock?.ticker ?? null)
-      condition = { type: 'holders', chain: hc, token: stock ? stock.ticker : hc === 'solana' ? tok : tok.toLowerCase(), symbol, metric, above: above === null ? null : Math.round(above * 100) / 100, dropPts: dropPts === null ? null : Math.round(dropPts * 100) / 100 }
+      condition = { type: 'holders', chain: hc, token: stock ? stock.ticker : hc === 'solana' ? tok : tok.toLowerCase(), symbol, metric, above: above === null ? null : Math.round(above * 100) / 100, dropPts: dropPts === null ? null : Math.round(dropPts * 100) / 100, sellPct: sellPct === null ? null : Math.round(sellPct * 100) / 100 }
     } else if (launchKind) {
       const id = c.chainId === undefined || c.chainId === null || c.chainId === '' ? null : Number(c.chainId)
       if (id !== null && !DEEPCORE_CHAINS[id]) return json(res, 400, { error: `DeepCore runs on ${deepcoreAlertChains().map((x) => `${x.name} (${x.chainId})`).join(', ')}; pick one of those, or none for every chain.` }), true

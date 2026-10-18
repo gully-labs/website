@@ -36,6 +36,7 @@
 
 import { clientIp, json } from './http.mjs'
 import { holderMapFeatures } from './plans.mjs'
+import { enrichLaunch, readLaunchFeed, readLive, readWalletDetail, recordScan, resolveHolders, setMapPeek, topScans } from './holders-intel.mjs'
 import { DEEPCORE_CHAINS } from './deepcore.mjs'
 import { FEE_PROXY_REGISTRY } from './fee-proxy-guard.mjs'
 import { readHistory, readTracker } from './tracker.mjs'
@@ -51,6 +52,9 @@ const UA = 'gullylabs-holders/1 (+https://gullylabs.xyz)'
 /** Wallets listed per tier (plans.mjs HOLDER_MAP) and how many the graph draws. */
 export const TIERS = { free: { list: 50, graph: 50 }, pro: { list: 500, graph: 120 } }
 const LINKS_MAX = 240
+const SNIPER_BLOCKS = 5
+const HIDDEN_MAX = 12
+const HIDDEN_MAX_PEERS = 20
 const DC_MAX_LOGS = 15_000
 const DC_PAGE = 1_000
 export const RECENT_MAX_LOGS = 5_000
@@ -60,7 +64,7 @@ const MAX_BUILDS = 3
 const PER_IP_PER_MIN = 12
 const CACHE_MAX = 200
 const FAIL_TTL_MS = 60_000
-const DC_PER_MIN = 30
+const DC_PER_MIN = 90
 const TIMEOUT_MS = 12_000
 export const cacheMs = () => Math.max(300_000, Number(process.env.HOLDERS_CACHE_MS) || 300_000)
 const DC_API = () => String(process.env.DEEPCORE_API ?? 'https://api.deepcore.fun').replace(/\/+$/, '')
@@ -186,7 +190,7 @@ function dcTake() {
   dcWindow.push(now)
   return true
 }
-async function dcGet(p) {
+export async function dcGet(p) {
   if (!dcTake()) return { ok: false, status: 429, body: null, error: 'local DeepCore budget spent' }
   return getJson(DC_API() + p)
 }
@@ -203,7 +207,7 @@ async function readVenue(chainId) {
 }
 
 /** The DeepCore launch for a token, or null (not a launch) / undefined (DeepCore unreadable). */
-async function readLaunch(chainId, token) {
+export async function readLaunch(chainId, token) {
   const r = await dcGet(`/v1/chains/${chainId}/kit-v2/launches/token/${token}`)
   if (r.status === 404) return null
   if (!r.ok || !r.body?.data) return undefined
@@ -335,7 +339,7 @@ async function blockTimes(chainKey, blocks) {
 }
 
 /** Which addresses have contract code (true), are plain wallets (false) or are unknown (missing). */
-async function readCode(chainKey, addrs) {
+export async function readCode(chainKey, addrs) {
   const res = await evmBatch(chainKey, addrs.map((a) => ['eth_getCode', [a, 'latest']]))
   const out = new Map()
   addrs.forEach((a, i) => {
@@ -506,7 +510,7 @@ export function staticLabels({ chainKey, token, venue, launch, trackerPool }) {
  *   funding   { checked, recipients: [address], reason } native-coin funding by the deployer, or null
  *   fair      tracker row for a stock (fair, onchain, gapPct, status) or null; history: [t, gap, onchain, fair][]
  */
-export function buildMap({ chainKey, token, symbol, name, decimals, kind, holders, history, labels, supply, holderCount = null, launch = null, funding = null, fair = null, fairHistory = [], times = new Map(), sources, partial = null, tier = 'pro', balancesFrom = null, now = Date.now() }) {
+export function buildMap({ chainKey, token, symbol, name, decimals, kind, holders, history, labels, supply, holderCount = null, launch = null, funding = null, fair = null, fairHistory = [], times = new Map(), sources, partial = null, tier = 'pro', balancesFrom = null, codeOf = new Map(), now = Date.now() }) {
   const { list: listMax, graph: graphMax } = TIERS[tier] ?? TIERS.free
   const lbl = new Map(labels)
   // 1. Balances: exact from a complete history, else the holder API's list.
@@ -570,6 +574,10 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     // the pattern of one team splitting a launch buy across wallets. A lone first buyer is just the first buyer.
     const firstBlockBuyers = [...firstBuy].filter(([, b]) => b === firstTradeBlock || b === launchBlock).map(([a]) => a)
     const bundledSet = firstBlockBuyers.length >= 2 ? firstBlockBuyers : []
+    // Snipers: wallets whose first buy came in the first SNIPER_BLOCKS blocks of trading.
+    const sniperSet = firstTradeBlock === null ? [] : [...firstBuy].filter(([, b]) => b <= firstTradeBlock + SNIPER_BLOCKS - 1).map(([a]) => a)
+    for (const a of sniperSet) flag(a, 'sniper')
+    const sniperRaw = sniperSet.reduce((s, a) => s + (balances.get(a) > 0n ? balances.get(a) : 0n), 0n)
     const bundledRaw = bundledSet.reduce((s, a) => s + (balances.get(a) > 0n ? balances.get(a) : 0n), 0n)
     for (const a of bundledSet) flag(a, 'bundled')
     // Funding: tokens sent by the deployer to wallets, and (when checked) the deployer's coin transfers.
@@ -601,6 +609,7 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
       deployerPct: deployer ? round2(pctOf(deployerRaw, total)) : null,
       liquidity: { locked, locker: legs.find((g) => g?.lock?.locker)?.lock?.locker ?? null, since: legs.find((g) => g?.lock?.lockedAt)?.lock?.lockedAt?.blockTimestamp ?? null },
       buyers: firstBuy.size,
+      snipers: { wallets: sniperSet.length, pct: round2(pctOf(sniperRaw, total)), blocks: SNIPER_BLOCKS },
     }
     forensics.riskLine =
       firstTradeBlock === null
@@ -619,6 +628,24 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     .sort((a, b) => (b.raw > a.raw ? 1 : b.raw < a.raw ? -1 : 0))
     .map((c, i) => ({ id: `c${i + 1}`, wallets: c.wallets, count: c.wallets.length, pct: round2(pctOf(c.raw, total)), hasDeployer: !!deployer && c.wallets.includes(deployer) }))
   const clusterOf = new Map(clusters.flatMap((c) => c.wallets.map((a) => [a, c.id])))
+
+  // Hidden links: a plain wallet (code checked: no contract) outside the map that received from or sent to
+  // mapped wallets of two different groups. Drawn only when it really joins two groups; hubs with more than
+  // HIDDEN_MAX_PEERS counterparties (likely a service) are left out.
+  const hidden = []
+  const viaLinks = []
+  const groupOf = (a) => clusterOf.get(a) ?? a
+  for (const [x, peers] of hiddenPeers(history?.transfers ?? [], new Set(people), lbl)) {
+    if (codeOf.get(x) !== false) continue
+    const mapped = [...peers.mapped]
+    const groups = [...new Set(mapped.map(groupOf))]
+    if (groups.length < 2) continue
+    const a = mapped.find((m) => groupOf(m) === groups[0])
+    const b = mapped.find((m) => groupOf(m) === groups[1])
+    hidden.push({ via: x, short: short(x), url: addressUrl(chainKey, x), connects: [a, b], transfers: peers.transfers })
+    for (const m of mapped) viaLinks.push(peers.sentTo.has(m) ? { source: x, target: m, transfers: 1, pct: null, kind: 'via' } : { source: m, target: x, transfers: 1, pct: null, kind: 'via' })
+    if (hidden.length >= HIDDEN_MAX) break
+  }
 
   // 5. Fair-price overlay (stocks): what the holdings are worth at the real share price and at the pool's.
   const trustedGap = fair && typeof fair.gapPct === 'number' && ['premium', 'discount', 'drifting', 'in-line'].includes(fair.status)
@@ -683,10 +710,11 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
   // 7. Replay frames (the time scrubber).
   const timeline = tier === 'pro' ? buildTimeline({ history, balances, ids: ids.slice(0, graphMax), wallets: wallets.map((n) => n.id), total, times }) : null
 
-  const links = [...linkMap.values()]
+  const links0 = [...linkMap.values()]
     .sort((a, b) => b.transfers - a.transfers)
     .slice(0, LINKS_MAX)
     .map((l) => ({ source: l.source, target: l.target, transfers: l.transfers, pct: round2(pctOf(l.raw, total)), kind: l.kind }))
+  const links = [...links0, ...viaLinks.slice(0, 60)]
   const kindsPresent = [...new Set(nodes.map((n) => n.label?.kind).filter(Boolean))]
   return {
     state: 'ok',
@@ -706,7 +734,38 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     forensics,
     fair: fairSummary,
     timeline,
+    hidden,
+    health: null,
+    deployerHistory: null,
+    crossToken: null,
+    live: { supported: chainKey !== 'solana' && !!(history?.toBlock ?? null), cursor: history?.toBlock ?? null },
   }
+}
+
+/**
+ * Wallets outside the mapped set that exchanged tokens with mapped (unlabelled) wallets: Map address ->
+ * { mapped: Set, sentTo: Set, transfers }. Only addresses with at most HIDDEN_MAX_PEERS counterparties.
+ */
+export function hiddenPeers(transfers, peopleSet, labels) {
+  const peers = new Map()
+  const all = new Map()
+  const note = (x, other) => {
+    if (!all.has(x)) all.set(x, new Set())
+    all.get(x).add(other)
+  }
+  for (const t of transfers) {
+    note(t.from, t.to)
+    note(t.to, t.from)
+    for (const [x, m, dir] of [[t.to, t.from, 'in'], [t.from, t.to, 'out']]) {
+      if (peopleSet.has(x) || !peopleSet.has(m) || labels.has(x) || x === ZERO) continue
+      const p = peers.get(x) ?? { mapped: new Set(), sentTo: new Set(), transfers: 0 }
+      p.mapped.add(m)
+      if (dir === 'out') p.sentTo.add(m)
+      p.transfers++
+      peers.set(x, p)
+    }
+  }
+  return [...peers].filter(([x, p]) => p.mapped.size >= 2 && (all.get(x)?.size ?? 0) <= HIDDEN_MAX_PEERS)
 }
 
 /** Average price paid against the real share price for wallets that bought from a labelled pool in the window. */
@@ -898,7 +957,16 @@ export async function computeHolderMap(chainKey, tokenIn, tier = 'pro') {
     times = await blockTimes(chainKey, Array.from({ length: n }, (_, i) => tr[Math.floor(((i + 1) * tr.length) / n) - 1].block))
   }
 
-  return buildMap({
+  // Hidden-link candidates must be plain wallets: their code is checked before a link is drawn through them.
+  let codeOf = new Map()
+  if (history?.transfers?.length && chainKey !== 'solana') {
+    const people = new Set(prelim.filter((a) => !INFRA.has(labels.get(a)?.kind)))
+    const cands = hiddenPeers(history.transfers, people, labels).map(([x]) => x).slice(0, 40)
+    if (cands.length) codeOf = await readCode(chainKey, cands)
+  }
+
+  const map = buildMap({
+    codeOf,
     chainKey,
     token,
     symbol,
@@ -920,6 +988,8 @@ export async function computeHolderMap(chainKey, tokenIn, tier = 'pro') {
     tier,
     balancesFrom: launch && history?.complete ? 'history' : 'holders',
   })
+  if (map.state === 'ok' && map.forensics && launch) await enrichLaunch(map, { chainId: c.id, launch, tier })
+  return map
 }
 
 /* ----------------------------------------------------- cache and the route --- */
@@ -963,6 +1033,16 @@ export async function readHolderMap(chainKey, token, { ip = null, tier = 'pro' }
   inflight.set(key, p)
   return p
 }
+/** A cached map without building one (the launch feed), or null. */
+export function peekHolderMap(chainKey, token) {
+  for (const tier of ['free', 'pro']) {
+    const hit = cache.get(`${chainKey}:${chainKey === 'solana' ? token : lower(token)}:${tier}`)
+    if (hit && Date.now() - hit.at < hit.ttl) return hit.body
+  }
+  return null
+}
+setMapPeek(peekHolderMap)
+
 /** Test hook. */
 export function resetHoldersForTest() {
   cache.clear()
@@ -993,6 +1073,28 @@ export function holdersCsv(map) {
  * path is not ours.
  */
 export async function handleHolders(req, res, url, access = null) {
+  const p = url.pathname
+  const features0 = holderMapFeatures(access?.plan ?? 'anonymous')
+  if (p === '/api/holders/launches' || p === '/api/holders/top' || p === '/api/holders/resolve') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }), true
+    if (p === '/api/holders/launches') return json(res, 200, await readLaunchFeed({ limit: 12 }), { 'Cache-Control': 'public, max-age=15' }), true
+    if (p === '/api/holders/top') return json(res, 200, topScans(Math.min(20, Math.max(1, Number(url.searchParams.get('limit')) || 10))), { 'Cache-Control': 'public, max-age=60' }), true
+    const q = String(url.searchParams.get('q') ?? '').slice(0, 64)
+    return json(res, 200, await resolveHolders(q), { 'Cache-Control': 'public, max-age=60' }), true
+  }
+  const sub = p.match(/^\/api\/holders\/([a-z0-9]{2,12})\/([A-Za-z0-9]{1,64})\/(live|wallet\/([A-Za-z0-9]{32,44}))$/)
+  if (sub) {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    const ck = chainKeyOf(sub[1])
+    if (!ck) return json(res, 404, { error: 'Unknown chain.' }), true
+    if (sub[3] === 'live') {
+      const since = Number(url.searchParams.get('since'))
+      const out = await readLive(ck, sub[2], Number.isInteger(since) ? since : null)
+      return json(res, out.state === 'error' ? 502 : 200, { ...out, liveMinutes: features0.liveMinutes ?? null }), true
+    }
+    const out = await readWalletDetail(ck, sub[2], sub[4])
+    return json(res, out.state === 'error' ? 502 : 200, out, { 'Cache-Control': 'public, max-age=60' }), true
+  }
   const m = url.pathname.match(/^\/api\/holders\/([a-z0-9]{2,12})\/([A-Za-z0-9]{1,64}?)(\.csv|\/card\.png)?$/)
   if (!m) return false
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }), true
@@ -1028,7 +1130,8 @@ export async function handleHolders(req, res, url, access = null) {
     return true
   }
   const status = body.status ?? STATUS[body.state] ?? 200
-  const out = { ...body, features: { replay: features.replay, csv: features.csv, alerts: features.alerts, holders: features.holders, gated: features.gated } }
+  if (body.state === 'ok') recordScan(chainKey, body.token.address, body.token.symbol, body.kind, clientIp(req))
+  const out = { ...body, features: { replay: features.replay, csv: features.csv, alerts: features.alerts, holders: features.holders, liveMinutes: features.liveMinutes ?? null, gated: features.gated } }
   delete out.status
   json(res, status, out, { 'Cache-Control': body.state === 'ok' ? (features.gated ? 'private, max-age=60' : 'public, max-age=60') : 'no-store', 'Access-Control-Allow-Origin': '*' })
   return true

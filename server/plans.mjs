@@ -53,13 +53,14 @@ export const ANALYTICS_PAID_IDS = Object.values(ANALYTICS_PLANS)
 //   replay      the time scrubber (history replay)
 //   csv         the holder list as CSV (GET /api/holders/:chain/:token.csv)
 //   alerts      cluster alerts (Telegram and webhook), within the plan's alert count
+//   liveMinutes how long the live view keeps updating on an open map (null: as long as it is open)
 //   whiteLabel  the embedded map without the "Powered by Gully Labs" credit (reserved: not built yet)
 export const HOLDER_MAP = {
   gated: false,
   tiers: {
-    free: { holders: 50, replay: false, csv: false, alerts: false, whiteLabel: false },
-    pro: { holders: 500, replay: true, csv: true, alerts: true, whiteLabel: false },
-    business: { holders: 500, replay: true, csv: true, alerts: true, whiteLabel: true },
+    free: { holders: 50, replay: false, csv: false, alerts: false, liveMinutes: 5, whiteLabel: false },
+    pro: { holders: 500, replay: true, csv: true, alerts: true, liveMinutes: null, whiteLabel: false },
+    business: { holders: 500, replay: true, csv: true, alerts: true, liveMinutes: null, whiteLabel: true },
   },
 }
 export const holderMapGated = () => HOLDER_MAP.gated || process.env.HOLDER_MAP_GATED === '1'

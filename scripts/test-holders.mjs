@@ -427,3 +427,85 @@ test('holder alerts end to end: created through the alerts API, evaluated from t
     srv.close()
   }
 })
+
+/* -------------------------------------------------------------- intel --- */
+
+const I = await import('../server/holders-intel.mjs')
+
+test('Launch Health: each part from the map, weights shown, unknown parts left out of the score', () => {
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: launchHistory(), complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
+  m.deployerHistory = { checked: true, total: 0, serial: false, launches: [] }
+  const h = I.launchHealth(m)
+  const part = Object.fromEntries(h.parts.map((p) => [p.id, p]))
+  assert.equal(part.liquidity.points, 20)
+  assert.equal(part.bundle.points, Math.round(20 * (1 - 23 / 30)), 'bundled hold 23%')
+  assert.equal(part.deployer.points, Math.round(20 * (1 - 5 / 20)), 'deployer 3% + funded wallet 2%')
+  assert.equal(part.top10.points, Math.round(15 * (1 - 11 / 60)), 'top 10 hold 31%')
+  assert.equal(part.snipers.value, '4', 'wallets 1-3 and the deployer bought in blocks 110 to 114')
+  assert.equal(part.snipers.points, Math.round(10 * (1 - 4 / 10)))
+  assert.equal(part.record.points, null, 'a first launch is no record either way')
+  assert.equal(h.counted, 85)
+  const sum = h.parts.filter((p) => p.points !== null).reduce((s, p) => s + p.points, 0)
+  assert.equal(h.score, Math.round((100 * sum) / 85))
+  assert.deepEqual(part.bundle.wallets.sort(), [addr(1), addr(2), addr(3)].sort(), 'tapping a part highlights its wallets')
+  assert.ok(part.deployer.wallets.includes(DEPLOYER) && part.deployer.wallets.includes(addr(7)))
+  // A deployer who pulled liquidity before loses the record points.
+  m.deployerHistory = { checked: true, total: 1, serial: false, launches: [{ outcome: 'liquidity-pulled' }] }
+  assert.equal(I.launchHealth(m).parts.find((p) => p.id === 'record').points, 0)
+})
+
+test('hidden links: a plain wallet joining two groups is drawn as "via"; contracts and hubs are not', () => {
+  const X = addr(0x77)
+  const C = addr(0x78)
+  const holders = [1, 2, 3, 4].map((i) => ({ address: addr(i), raw: BigInt(100 - i) }))
+  const t = [tr(addr(1), X, 5n, 1), tr(X, addr(3), 5n, 2), tr(addr(2), C, 1n, 3), tr(C, addr(4), 1n, 4)]
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'X', decimals: 0, kind: 'stock', holders, history: { transfers: t, complete: false }, labels: new Map(), supply: 1000n, sources: {}, codeOf: new Map([[X, false], [C, true]]) })
+  assert.equal(m.hidden.length, 1)
+  assert.equal(m.hidden[0].via, X)
+  assert.deepEqual(m.hidden[0].connects.sort(), [addr(1), addr(3)].sort())
+  assert.equal(m.links.filter((l) => l.kind === 'via').length, 2)
+  assert.equal(m.clusters.length, 0, 'a hidden link does not merge clusters')
+  // A wallet whose code was not checked is never drawn.
+  const u = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'X', decimals: 0, kind: 'stock', holders, history: { transfers: t, complete: false }, labels: new Map(), supply: 1000n, sources: {} })
+  assert.equal(u.hidden.length, 0)
+})
+
+test('search resolves $tickers across chains and addresses to stocks', async () => {
+  const r = await I.resolveHolders('$nvda')
+  assert.ok(r.matches.some((x) => x.chain === 'robinhood' && x.path === '/holders/robinhood/NVDA'))
+  const a = await I.resolveHolders('0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC')
+  assert.deepEqual(a.matches.map((x) => x.token), ['NVDA'])
+  assert.deepEqual((await I.resolveHolders('not a token!')).matches, [])
+})
+
+test('most scanned today: one count per visitor per token per day', () => {
+  I.resetScansForTest()
+  I.recordScan('robinhood', TOKEN, 'TST', 'deepcore-launch', '198.51.100.1')
+  I.recordScan('robinhood', TOKEN, 'TST', 'deepcore-launch', '198.51.100.1')
+  I.recordScan('robinhood', TOKEN, 'TST', 'deepcore-launch', '198.51.100.2')
+  I.recordScan('bsc', 'AAPL', 'AAPL', 'stock', '198.51.100.1')
+  const t = I.topScans(5)
+  assert.deepEqual(t.items.map((x) => [x.symbol, x.scans]), [['TST', 2], ['AAPL', 1]])
+})
+
+test('live: new transfers since the cursor move the mapped shares', async () => {
+  H.resetHoldersForTest()
+  const m = await H.readHolderMap('robinhood', TOKEN, { tier: 'free' })
+  assert.equal(m.live.supported, true)
+  const live = await I.readLive('robinhood', TOKEN, 150)
+  assert.equal(live.state, 'ok')
+  // The stub answers every transfer again; shares move by the net of those transfers for mapped wallets.
+  assert.ok(live.transfers.length > 0)
+  assert.equal(typeof live.cursor, 'number')
+})
+
+test('Cluster Watch: "sells X% of its holding" fires on a relative fall; deployer metric reads the deployer share', () => {
+  const alert = { id: 'h2', condition: { type: 'holders', chain: 'robinhood', token: TOKEN, metric: 'deployer', above: null, dropPts: null, sellPct: 30 }, disarmed: {}, lastFiredAt: null }
+  const map = (pct) => ({ state: 'ok', token: { address: TOKEN, symbol: 'TST' }, summary: { top10Pct: 50, largestCluster: null }, forensics: { deployerPct: pct } })
+  assert.equal(A.stepHolderAlert(alert, map(10), 3_600_000), null)
+  assert.equal(A.stepHolderAlert(alert, map(8), 7_200_000), null, 'sold 20%: below the line')
+  const e = A.stepHolderAlert(alert, map(6.5), 10_800_000)
+  assert.equal(e.reason, 'drop')
+  assert.equal(e.soldPct, 35)
+  assert.equal(A.holderMetric({ metric: 'deployer' }, { state: 'ok', summary: {}, forensics: null }), null, 'no deployer on a stock')
+})

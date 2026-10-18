@@ -4,7 +4,7 @@
 //
 // Public
 //   GET  /api/ask/status   { configured, model, indexSize, updatedAt }
-//   POST /api/ask          { question, history? } -> { answer, citations: [{ n, title, url, source }], usedTools, model }
+//   POST /api/ask          { question, history?, holders?: { chain, token } }  (holders: asked from a Holder Map) -> { answer, citations: [{ n, title, url, source }], usedTools, model }
 //                          Needs `X-Requested-With: gully`. With `Accept: text/event-stream` the same answer comes
 //                          as server-sent events: `status` ({ stage }), then `answer` (the JSON above) or `error`.
 // Admin (admin.mjs has checked the token)
@@ -38,6 +38,8 @@ import { publicPlans } from './plans.mjs'
 import { readStats } from './stats.mjs'
 import { readDeepcoreMarkets, readDeepcorePool } from './deepcore.mjs'
 import * as tracker from './tracker.mjs'
+import { chainKeyOf, findStock, readHolderMap } from './holders.mjs'
+import { holdersFacts } from './holders-intel.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const LOCAL_INDEX = path.join(here, 'data', 'ask-index.json')
@@ -197,6 +199,16 @@ export const TOOLS = [
     },
   },
   {
+    name: 'get_holders',
+    description: 'The Holder Map of one DeepCore launch or tracked stock token: who holds it in summary (top-10 share, connected clusters, hidden links), the launch checks (Launch Health score with its parts, bundled first-block buyers, snipers, the deployer and the wallets it funded, the liquidity lock, the deployer\'s earlier launches), the fair-price view for stocks, the data sources and when it was read. Computed facts only, no raw holder lists.',
+    input_schema: {
+      type: 'object',
+      properties: { chain: { type: 'string', enum: ['robinhood', 'bsc', 'base', 'hyperevm', 'solana'] }, token: { type: 'string', description: 'The token address, or a tracked stock ticker' } },
+      required: ['chain', 'token'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'get_alert_channels',
     description: 'Which gap-alert delivery channels this server offers right now (webhook, and Telegram with the bot name when it is on).',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
@@ -260,6 +272,13 @@ export async function runTool(name, input = {}) {
       const out = await readDcPool({ token: input?.token, chain: input?.chain })
       return { ...out, framing: DEEPCORE_FRAMING }
     }
+    if (name === 'get_holders') {
+      const chain = chainKeyOf(input?.chain)
+      const token = String(input?.token ?? '').trim()
+      if (!chain || !(/^0x[0-9a-fA-F]{40}$/.test(token) || findStock(chain, token) || (chain === 'solana' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(token)))) return { error: 'Give a chain and a token address (or a tracked stock ticker).' }
+      const map = await readHolderMap(chain, token, { tier: 'free' })
+      return { ...holdersFacts(map), framing: 'Information only, not investment advice. The Launch Health score describes checks on the holder data; it is not a rating of the token.' }
+    }
     if (name === 'get_alert_channels') {
       const { alertChannels } = await import('./telegram.mjs')
       const c = await alertChannels()
@@ -280,6 +299,7 @@ How to answer:
 - Cite every fact from a source with its number in square brackets, like [1] or [2][3], right after the sentence it supports. Cite only numbers that exist. Tool results need no number; say the figure is live.
 - For prices, plans, limits, a stock's gap, the ledger figures or alert channels, call the matching tool rather than trusting a source's wording; sources may be out of date.
 - For current DeepCore launches, a launch's price, market cap, liquidity or pool, call deepcore_launches or deepcore_pool. Say when the figures were read (the tool's freshness times), give the quote token when there is no dollar figure, and say what "trending" means as the tool defines it. Never call a launch safe, promising or a good buy, and never rank launches as opportunities; add that this is information only, not investment advice.
+- For who holds a token, its clusters, a launch's bundled buyers, deployer or Launch Health score, call get_holders. Explain the parts in plain words, say when the map was read (asOf) and where the data comes from, and never call a token safe, a scam or a good buy.
 - Never invent a price, fee, limit, date, contract or wallet address, figure or URL. If a figure is not in a source or a tool result, say you don't have it.
 - If the sources and tools do not cover the question, say plainly "I don't know" in one sentence, then point to the docs (https://docs.gullylabs.xyz) or the contact form (https://gullylabs.xyz/services). Do not guess.
 - Information only. Never give investment, financial, legal or tax advice. Never predict prices or gaps, never say whether to buy, sell or hold anything, never say a gap is an opportunity or will close. If asked, say you can only describe what the tracker shows, and give the facts.
@@ -582,7 +602,7 @@ function readLog(days) {
  * Limits + answer + log for one question from any surface. `who` is { channel, key, perMin, perDay }.
  * Returns { ok: true, ...answer } or { ok: false, status, error, retryAfter? }.
  */
-export async function ask({ question, history, who, onStage }) {
+export async function ask({ question, history, who, onStage, holders = null }) {
   if (!askConfigured()) return { ok: false, status: 503, error: 'Ask is not available yet.', configured: false }
   const q = typeof question === 'string' ? question.replace(/\s+/g, ' ').trim() : ''
   if (!q) return { ok: false, status: 400, error: 'Ask a question.' }
@@ -591,7 +611,11 @@ export async function ask({ question, history, who, onStage }) {
   if (!gate.ok) return gate
   const t0 = Date.now()
   try {
-    const a = await answerQuestion({ question: q, history, onStage })
+    // A question asked from a Holder Map names the map it is about, so the model fetches those facts.
+    const hc = holders && typeof holders === 'object' ? chainKeyOf(holders.chain) : null
+    const ht = hc ? String(holders.token ?? '').slice(0, 64) : ''
+    const asked = hc && /^[A-Za-z0-9]{1,64}$/.test(ht) ? `${q}\n(Asked from the Holder Map of chain ${hc}, token ${ht}: call get_holders with them.)` : q
+    const a = await answerQuestion({ question: asked, history, onStage })
     writeLog({ channel: who.channel, who: hashId(who.key), question: q, answerChars: a.answer.length, answered: a.answered, citations: a.citations.map((c) => c.url), usedTools: a.usedTools, latencyMs: Date.now() - t0, tokens: a.usage, model: a.model })
     return { ok: true, ...a }
   } catch (e) {
@@ -655,7 +679,7 @@ export async function handleAsk(req, res, url) {
   const who = { channel: 'web', key: clientIp(req), perMin: envInt('ASK_IP_PER_MIN', 6), perDay: envInt('ASK_IP_PER_DAY', 60) }
   const stream = String(req.headers.accept ?? '').includes('text/event-stream')
   if (!stream) {
-    const r = await ask({ question: body.value.question, history: body.value.history, who })
+    const r = await ask({ question: body.value.question, history: body.value.history, who, holders: body.value.holders ?? null })
     if (!r.ok) return json(res, r.status, { error: r.error, ...(r.configured === false ? { configured: false } : {}) }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
     return json(res, 200, { answer: r.answer, citations: r.citations, usedTools: r.usedTools, model: r.model }), true
   }
@@ -670,6 +694,7 @@ export async function handleAsk(req, res, url) {
   const r = await ask({
     question: body.value.question,
     history: body.value.history,
+    holders: body.value.holders ?? null,
     who,
     onStage: (stage) => {
       openStream()

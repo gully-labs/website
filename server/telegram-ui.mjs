@@ -495,10 +495,11 @@ export const gapWords = (c) => (c.direction === 'above' ? `▲ ${c.pct}% or more
 const statusWords = (s) => (s === 'either' ? 'well above or below the real share price' : s === 'premium' ? 'well above the real share price' : s === 'discount' ? 'well below the real share price' : String(s ?? ''))
 /** A holder condition in plain words: "the largest connected cluster of wallets of DTC · Robinhood Chain hold 20% or more". */
 export function holderWords(c) {
-  const who = c.metric === 'top10' ? 'the top 10 wallets' : 'the largest connected cluster of wallets'
+  const who = c.metric === 'top10' ? 'the top 10 wallets' : c.metric === 'deployer' ? 'the deployer' : 'the largest connected cluster of wallets'
   const parts = []
   if (typeof c.above === 'number') parts.push(`${who} of ${holderTarget(c)} hold ${c.above}% or more`)
   if (typeof c.dropPts === 'number') parts.push(`${parts.length ? 'or they' : `${who} of ${holderTarget(c)}`} sell ${c.dropPts} points or more of their share`)
+  if (typeof c.sellPct === 'number') parts.push(`${parts.length ? 'or they' : `${who} of ${holderTarget(c)}`} sell ${c.sellPct}% or more of what they hold`)
   return parts.join(', ') || `${who} of ${holderTarget(c)} change`
 }
 export const conditionWords = (c, chains) => (c.type === 'holders' ? holderWords(c) : c.type === 'deepcore-launch' ? `a new token launches on DeepCore (${c.chainId ? (chains?.[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'})` : c.type === 'gap' ? gapWords(c) : statusWords(c.status))
@@ -610,9 +611,9 @@ export function deliveryView(a) {
     const shown = a.events.slice(0, 5)
     const pctText = (n) => (num(n) ? `${+n.toFixed(n >= 10 ? 0 : 1)}%` : 'an unknown share')
     const blocks = shown.map((e) => {
-      const who = e.metric === 'top10' ? 'the top 10 wallets now hold' : 'the largest connected cluster now holds'
+      const who = e.metric === 'top10' ? 'the top 10 wallets now hold' : e.metric === 'deployer' ? 'the deployer now holds' : 'the largest connected cluster now holds'
       const was = num(e.previousPct) ? ` (was ${pctText(e.previousPct)})` : ''
-      const why = e.reason === 'above' && num(a.condition?.above) ? `, above your ${a.condition.above}% line` : e.reason === 'drop' && num(e.previousPct) && num(e.pct) ? `: they sold ${+(e.previousPct - e.pct).toFixed(1)} points of their share` : ''
+      const why = e.reason === 'above' && num(a.condition?.above) ? `, above your ${a.condition.above}% line` : e.reason === 'drop' && num(e.previousPct) && num(e.pct) ? `: they sold ${+(e.previousPct - e.pct).toFixed(1)} points of their share${num(e.soldPct) ? ` (${e.soldPct}% of what they held)` : ''}` : ''
       return `<b>${esc(e.symbol ?? shortAddr(e.token))}</b> on ${esc(e.chainName ?? HOLDER_CHAIN_NAMES[e.chain] ?? e.chain)}: ${who} ${pctText(e.pct)}${was}${why}.`
     })
     const open = shown.slice(0, 2).map((e) => ubtn(`👥 Open ${e.symbol ?? 'map'} ↗`.slice(0, 40), /^https:\/\//.test(String(e.pageUrl ?? '')) ? e.pageUrl : holdersPageUrl(e.chain, e.token)))

@@ -104,9 +104,10 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
   const [kind, setKind] = useState<'gap' | 'premium' | 'discount' | 'either' | 'deepcore' | 'holders'>(holdersPrefill && holdersKind ? 'holders' : 'gap')
   const [hChain, setHChain] = useState(holdersPrefill?.[1] ?? 'robinhood')
   const [hToken, setHToken] = useState(holdersPrefill?.[2] ?? '')
-  const [hMetric, setHMetric] = useState<'cluster' | 'top10'>('cluster')
+  const [hMetric, setHMetric] = useState<'cluster' | 'top10' | 'deployer'>('cluster')
   const [hAbove, setHAbove] = useState('20')
-  const [hDrop, setHDrop] = useState('5')
+  const [hDrop, setHDrop] = useState('')
+  const [hSell, setHSell] = useState('25')
   // DeepCore launch alerts, offered when the server lists that kind (with its chains).
   const launchKind = view.kinds?.find((k) => k.id === 'deepcore-launch')
   const [dcChain, setDcChain] = useState('')
@@ -126,7 +127,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
     e.preventDefault()
     setErr(null)
     const [chain, ticker] = target === 'any' || kind === 'deepcore' || kind === 'holders' ? [undefined, undefined] : target.split(':')
-    const condition = kind === 'holders' ? { type: 'holders', chain: hChain, token: hToken.trim(), metric: hMetric, above: hAbove.trim() ? Number(hAbove) : null, dropPts: hDrop.trim() ? Number(hDrop) : null } : kind === 'deepcore' ? { type: 'deepcore-launch', chainId: dcChain ? Number(dcChain) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct), direction } : { type: 'status', status: kind }
+    const condition = kind === 'holders' ? { type: 'holders', chain: hChain, token: hToken.trim(), metric: hMetric, above: hAbove.trim() && hMetric !== 'deployer' ? Number(hAbove) : null, dropPts: hDrop.trim() ? Number(hDrop) : null, sellPct: hSell.trim() ? Number(hSell) : null } : kind === 'deepcore' ? { type: 'deepcore-launch', chainId: dcChain ? Number(dcChain) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct), direction } : { type: 'status', status: kind }
     setBusy(true)
     const r = await api<{ secret: string | null }>('/api/developer/alerts', { method: 'POST', body: { name: name.trim(), chain, ticker, condition, webhookUrl: webhook.trim() || undefined, telegram: toTelegram || undefined } })
     setBusy(false)
@@ -208,9 +209,10 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
           {kind === 'holders' && (
             <label className={fieldLabel}>
               Watch
-              <select className={select} value={hMetric} onChange={(e) => setHMetric(e.target.value as 'cluster' | 'top10')}>
+              <select className={select} value={hMetric} onChange={(e) => setHMetric(e.target.value as 'cluster' | 'top10' | 'deployer')}>
                 <option value="cluster">Largest cluster</option>
                 <option value="top10">Top 10 wallets</option>
+                <option value="deployer">The deployer (launches)</option>
               </select>
             </label>
           )}
@@ -223,18 +225,24 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
         </div>
         {kind === 'gap' && <DirectionControl value={direction} onChange={setDirection} pct={pct} />}
         {kind === 'holders' && (
-          <div className="grid grid-cols-2 gap-3 max-[480px]:grid-cols-1">
+          <div className="grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
             <label className={fieldLabel}>
               <span>
                 Reaches (% of supply) <span className="text-[12px] text-faint">optional</span>
               </span>
-              <input className={input} type="number" min={1} max={100} step={0.1} value={hAbove} onChange={(e) => setHAbove(e.target.value)} />
+              <input className={input} type="number" min={1} max={100} step={0.1} value={hMetric === 'deployer' ? '' : hAbove} disabled={hMetric === 'deployer'} onChange={(e) => setHAbove(e.target.value)} />
+            </label>
+            <label className={fieldLabel}>
+              <span>
+                Sells (% of its holding) <span className="text-[12px] text-faint">optional</span>
+              </span>
+              <input className={input} type="number" min={1} max={100} step={1} value={hSell} onChange={(e) => setHSell(e.target.value)} />
             </label>
             <label className={fieldLabel}>
               <span>
                 Falls from its high (points) <span className="text-[12px] text-faint">optional</span>
               </span>
-              <input className={input} type="number" min={1} max={100} step={0.1} value={hDrop} onChange={(e) => setHDrop(e.target.value)} />
+              <input className={input} type="number" min={0.1} max={100} step={0.1} value={hDrop} onChange={(e) => setHDrop(e.target.value)} />
             </label>
           </div>
         )}
@@ -242,7 +250,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
           {kind === 'holders'
             ? holdersKind?.available === false
               ? 'Holder alerts come with the Pro plan.'
-              : `The token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Falls from its high" is the cluster selling. Counts as one of your plan's alerts.`
+              : `Cluster Watch: the token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Sells" and "falls from its high" fire when the cluster or the deployer moves tokens out. Counts as one of your plan's alerts.`
             : kind === 'deepcore'
             ? `Once per new launch read from DeepCore's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
             : kind === 'gap' ? <>Only pools deep enough to flag count; the gap is the on-chain price against fair.</> : <>Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
