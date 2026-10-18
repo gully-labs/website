@@ -15,22 +15,27 @@
 
     <link rel="stylesheet" href="{{asset "css/screen.css"}}">
 
-    {{!-- Per-post share image from the main site (theme setting, off by default). Only for posts
-          without their own feature or social image. See ghost/README.md, "Share images". --}}
-    {{#if @custom.site_share_images}}
-        {{#is "post"}}
-            {{#post}}
-                {{#unless feature_image}}{{#unless og_image}}
-                    <meta property="og:image" content="https://gullylabs.xyz/social/blog/{{slug}}.png">
+    {{!-- Per-post share image, rendered by the main site from the post's own banner (server/og.mjs):
+          a still frame of the same seeded art, the title, the primary tag and the wordmark. Only for
+          posts without a feature image (and without their own social image): a feature image is the
+          author's real content and stays the share image. Before {{ghost_head}} because crawlers take
+          the first og:image / twitter:image. See ghost/README.md, "Share images". --}}
+    {{#is "post"}}
+        {{#post}}
+            {{#unless feature_image}}
+                {{#unless og_image}}
+                    <meta property="og:image" content="https://gullylabs.xyz/og/blog/{{slug}}.png">
                     <meta property="og:image:width" content="1200">
                     <meta property="og:image:height" content="630">
-                {{/unless}}{{/unless}}
-                {{#unless feature_image}}{{#unless twitter_image}}
-                    <meta name="twitter:image" content="https://gullylabs.xyz/social/blog/{{slug}}.png">
-                {{/unless}}{{/unless}}
-            {{/post}}
-        {{/is}}
-    {{/if}}
+                    <meta property="og:image:alt" content="{{title}}">
+                {{/unless}}
+                {{#unless twitter_image}}
+                    <meta name="twitter:image" content="https://gullylabs.xyz/og/blog/{{slug}}.png">
+                    <meta name="twitter:image:alt" content="{{title}}">
+                {{/unless}}
+            {{/unless}}
+        {{/post}}
+    {{/is}}
 
     {{ghost_head}}
 </head>

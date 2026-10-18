@@ -148,6 +148,62 @@
         return lines.slice(0, maxLines);
     }
 
+    /**
+     * The share image's title: the whole title, upper-cased, in the largest of a few sizes that fits in
+     * three lines of 84% of the width. Words too long for a line are broken; when even the smallest size
+     * overflows, the third line ends in an ellipsis. Returns { size, lines, maxWidth }.
+     */
+    var SHARE_SIZES = [88, 78, 68, 60, 52];
+    function shareTitle(ctx, title, w) {
+        var raw = String(title || '').replace(/\s+/g, ' ').trim().toUpperCase();
+        ctx.font = '800 ' + SHARE_SIZES[0] + 'px ' + FONT_DISPLAY;
+        /* Words the fonts can't set at all (an emoji on its own, on a server without emoji fonts) go. */
+        var text = raw.split(' ').filter(function (word) {
+            return word && ctx.measureText(word).width > 0;
+        }).join(' ') || 'GULLY LABS';
+        var maxWidth = w * 0.84;
+        var maxLines = 3;
+        var lines = [];
+        var size = SHARE_SIZES[0];
+        for (var i = 0; i < SHARE_SIZES.length; i++) {
+            size = SHARE_SIZES[i];
+            ctx.font = '800 ' + size + 'px ' + FONT_DISPLAY;
+            lines = wrapAll(ctx, text, maxWidth);
+            if (lines.length <= maxLines) return {size: size, lines: lines, maxWidth: maxWidth};
+        }
+        lines = lines.slice(0, maxLines);
+        var last = lines[maxLines - 1];
+        while (last && ctx.measureText(last + '…').width > maxWidth) last = last.replace(/\s*\S$/, '');
+        lines[maxLines - 1] = last.replace(/[\s,.:;!?-]+$/, '') + '…';
+        return {size: size, lines: lines, maxWidth: maxWidth};
+    }
+
+    /** Every line of text wrapped to maxWidth; a word wider than a line is broken between characters. */
+    function wrapAll(ctx, text, maxWidth) {
+        var words = text.split(' ');
+        var lines = [];
+        var cur = '';
+        for (var i = 0; i < words.length; i++) {
+            var word = words[i];
+            var next = cur ? cur + ' ' + word : word;
+            if (ctx.measureText(next).width <= maxWidth) {
+                cur = next;
+                continue;
+            }
+            if (cur) lines.push(cur);
+            cur = '';
+            while (ctx.measureText(word).width > maxWidth) {
+                var cut = word.length - 1;
+                while (cut > 1 && ctx.measureText(word.slice(0, cut)).width > maxWidth) cut--;
+                lines.push(word.slice(0, cut));
+                word = word.slice(cut);
+            }
+            cur = word;
+        }
+        if (cur) lines.push(cur);
+        return lines;
+    }
+
     function alpha(hex, a) {
         var n = parseInt(hex.slice(1), 16);
         return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
@@ -561,24 +617,41 @@
         var pad = Math.max(14, Math.min(28, w * 0.035));
         corners(ctx, w, h, Math.round(pad * 0.5), Math.min(18, pad * 0.7), alpha(C.gold, hasImage ? 0.9 : 0.55));
 
-        /* Kicker: tag (or GULLY LABS) and the banner's code, top left. */
+        /* Kicker: tag (or GULLY LABS) and the banner's code, top left (larger on the share image). */
         var kicker = (sp.tagName || 'Gully Labs').toUpperCase() + '  /  ' + sp.code;
-        ctx.font = '500 ' + (variant === 'card' ? 10 : 11) + 'px ' + FONT_MONO;
+        var kSize = variant === 'share' ? 18 : variant === 'card' ? 10 : 11;
+        ctx.font = '500 ' + kSize + 'px ' + FONT_MONO;
         ctx.textBaseline = 'top';
         var kw = ctx.measureText(kicker).width;
-        ctx.fillStyle = alpha(C.bg, hasImage ? 0.78 : 0.7);
-        ctx.fillRect(pad - 6, pad - 5, kw + 12, 22);
+        ctx.fillStyle = alpha(C.bg, hasImage ? 0.78 : variant === 'share' ? 0.92 : 0.7);
+        ctx.fillRect(pad - 6, pad - 5, kw + 12, variant === 'share' ? 34 : 22);
         ctx.fillStyle = C.gold;
         ctx.fillText(kicker, pad, pad + 1);
 
-        /* Big label, bottom left: the short title (hero, tag, share) or the tag (post, card). */
-        if (!hasImage || variant === 'share') {
+        /* Share image: the whole title, as large as fits in three lines (see shareTitle). */
+        if (variant === 'share') {
+            var fit = shareTitle(ctx, sp.title, w);
+            var sBottom = h - pad - 44;
+            var sLh = fit.size * 0.98;
+            var sTop = sBottom - sLh * fit.lines.length - pad;
+            var sScrim = ctx.createLinearGradient(0, sTop, 0, h);
+            sScrim.addColorStop(0, alpha(C.bg, 0));
+            sScrim.addColorStop(0.4, alpha(C.bg, 0.7));
+            sScrim.addColorStop(1, alpha(C.bg, 0.9));
+            ctx.fillStyle = sScrim;
+            ctx.fillRect(0, sTop, w, h - sTop);
+            ctx.font = '800 ' + fit.size + 'px ' + FONT_DISPLAY;
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = alpha(C.ink, 0.96);
+            for (var si = 0; si < fit.lines.length; si++) ctx.fillText(fit.lines[si], pad, sBottom - sLh * (fit.lines.length - 1 - si));
+        } else if (!hasImage) {
+            /* Big label, bottom left: the short title (hero, tag) or the tag (post, card). */
             var label = variant === 'post' || variant === 'card' ? (sp.tagName || shortTitle(sp.title) || 'GULLY LABS').toUpperCase() : shortTitle(sp.title) || 'GULLY LABS';
-            var size = variant === 'card' ? Math.max(20, Math.min(34, h * 0.17)) : Math.max(26, Math.min(variant === 'share' ? 92 : 72, h * 0.17, w * 0.07));
+            var size = variant === 'card' ? Math.max(20, Math.min(34, h * 0.17)) : Math.max(26, Math.min(72, h * 0.17, w * 0.07));
             ctx.font = '800 ' + size + 'px ' + FONT_DISPLAY;
             var lines = wrap(ctx, label, w * (variant === 'card' ? 0.8 : 0.66), variant === 'card' ? 2 : 3);
             var lh = size * 0.98;
-            var bottom = h - pad - (variant === 'share' ? 40 : 0);
+            var bottom = h - pad;
             var scrim = ctx.createLinearGradient(0, bottom - lh * lines.length - pad, 0, h);
             scrim.addColorStop(0, alpha(C.bg, 0));
             scrim.addColorStop(0.5, alpha(C.bg, 0.6));
@@ -793,6 +866,7 @@
         seedString: seedString,
         spec: spec,
         shortTitle: shortTitle,
+        shareTitle: shareTitle,
         createScene: createScene,
         renderStill: renderStill,
         mount: mount,

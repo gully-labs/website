@@ -90,7 +90,7 @@ const site = {
   ],
   secondary_navigation: [{ label: 'RSS', url: '/rss/', slug: 'rss' }],
 }
-const custom = { animated_banners: true, show_tracker_strip: true, site_share_images: false }
+const custom = { animated_banners: true, show_tracker_strip: true }
 const config = { posts_per_page: 12 }
 
 /* ---------------------------------------------------------------------- helpers --- */
