@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUpRight, ChartNoAxesCombined, Check, CheckCircle2, Code2, CreditCard, Globe, KeyRound, Loader2, Plus, Receipt, RotateCw, Trash2 } from 'lucide-react'
+import { AlertTriangle, ChartNoAxesCombined, Check, CheckCircle2, Code2, CreditCard, Gauge, Globe, KeyRound, Loader2, Plus, Receipt, RotateCw, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { CodeBlock } from '../../docs/CodeBlock'
 import { DOCS_URL } from '../../site-host'
@@ -7,7 +7,7 @@ import { GhostCurves, Meter } from './charts'
 import { AnalyticsTraffic } from './tabcharts'
 import { BLOCK_TEXT, siteMeta, type SiteUsage } from './helpers'
 import { CopyButton, Dialog } from './Dialog'
-import { ErrorLine, Skeleton } from './parts'
+import { EmptyLine, ErrorLine, Skeleton } from './parts'
 import { usePoll } from './poll'
 import { useSubTab } from './subtab'
 import { InfoTip, KpiRow, KpiTile, RefreshChip, Stepper, SubPanel, SubTabs, Unknown } from './ui'
@@ -19,6 +19,7 @@ import { ChainLogo } from '../../components/logos/ChainLogo'
 import { KEY_COLORS } from './styles'
 import { QuotaRing } from './vcharts'
 import { PayFlow } from './PayFlow'
+import { track } from '../../lib/track'
 import { input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 
@@ -362,9 +363,9 @@ function Checkout({ plan, view, account, onPaid, onCancel }: { plan: AnalyticsPl
               {done.amount} {done.symbol} received on {done.chain}. {plan.name} runs until {fmtDate(done.expiresAt)}; your websites record again now.
             </span>
             {done.txUrl && (
-              <a href={done.txUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-gold">
-                {shortAddress(done.txHash)} <ArrowUpRight size={12} aria-hidden />
-              </a>
+              <ExtLink href={done.txUrl} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-gold">
+                {shortAddress(done.txHash)}
+              </ExtLink>
             )}
           </div>
         </div>
@@ -395,7 +396,9 @@ function Checkout({ plan, view, account, onPaid, onCancel }: { plan: AnalyticsPl
         label={`Gully Analytics ${plan.name}, ${view.offer.analytics.periodDays} days`}
         getQuote={(asset) => api<{ intent: Quote }>('/api/developer/analytics/checkout', { method: 'POST', body: { plan: plan.id, asset } }).then((r) => (r.ok ? { ...r, data: { quote: r.data.intent } } : r))}
         verify={(q, txHash) => api('/api/developer/analytics/checkout/verify', { method: 'POST', body: { quoteId: q.id, txHash } })}
+        trackAs={{ kind: 'analytics-plan', plan: plan.id }}
         onPaid={(data) => {
+          track('plan-upgraded', { plan: `analytics-${plan.id}` })
           setDone((data as { payment: Payment }).payment)
           onPaid()
         }}
@@ -446,7 +449,7 @@ function QuotaCard({ account }: { account: AnalyticsAccount }) {
         <span className={mono}>{new Date(account.monthStart).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })} (UTC) · every site shares the plan&apos;s monthly events</span>
       </div>
       {quota === null ? (
-        <p className="m-0 rounded-[10px] border border-dashed border-line-strong px-3 py-4 text-center font-mono text-[12px] text-faint">No running plan, so there is no quota to measure against: {n(account.eventsThisMonth)} events this month.</p>
+        <EmptyLine icon={<Gauge size={14} aria-hidden />}>No running plan, so there is no quota to measure against: {n(account.eventsThisMonth)} events this month.</EmptyLine>
       ) : (
         <div className="flex flex-wrap items-start justify-center gap-3 min-[700px]:justify-start">
           <QuotaRing caption="All sites" quota={quota} size={128} slices={account.sites.length ? account.sites.map((s, i) => ({ name: s.domain, value: s.eventsThisMonth, color: colors(i) })) : [{ name: 'events', value: account.eventsThisMonth, color: KEY_COLORS[0] }]} />
@@ -486,9 +489,9 @@ function Payments({ payments }: { payments: Payment[] }) {
                 {fmtDate(p.periodStart)} – {fmtDate(p.expiresAt)}
               </span>
               {p.txUrl ? (
-                <a href={p.txUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 text-ink-2 hover:text-gold">
-                  {shortAddress(p.txHash)} <ArrowUpRight size={12} aria-hidden />
-                </a>
+                <ExtLink href={p.txUrl} className="inline-flex min-h-11 items-center gap-1 text-ink-2 hover:text-gold">
+                  {shortAddress(p.txHash)}
+                </ExtLink>
               ) : (
                 <span className="text-ink-2">{shortAddress(p.txHash)}</span>
               )}
@@ -627,7 +630,7 @@ export function AnalyticsPanel() {
           <>
             <span className="flex items-center gap-1 font-mono text-[12px] text-muted">
               <KeyRound size={14} className="text-gold" aria-hidden /> <code className="text-ink">{a.username}</code>
-              <CopyButton text={a.username} what="Username" label="Copy" className="!min-h-8 border-none !px-2 text-[11px]" />
+              <CopyButton text={a.username} what="Username" label="Copy" className="!min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] border-none !px-2 text-[11px]" />
             </span>
             <Can cat="analytics" what="reset the Gully Analytics password" hide>
               <button type="button" onClick={() => setConfirmReset(true)} className={rowPill}>

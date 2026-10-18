@@ -10,6 +10,7 @@ import { DATA_DIR } from './http.mjs'
 const FILE = path.join(DATA_DIR, 'developers.json')
 const ENQUIRIES = path.join(DATA_DIR, 'enquiries.json')
 const LAUNCH_LIST = path.join(DATA_DIR, 'launch-list.json')
+const CHAIN_KIT = path.join(DATA_DIR, 'chain-kit.json')
 
 function readFile(file, fallback) {
   try {
@@ -273,4 +274,67 @@ export function addToLaunchList(email, slot) {
     /* kept in memory */
   }
   return true
+}
+
+/* ------------------------------------------- Chain Kit and Gully Chains --- */
+
+// Chain Kit explorer requests and the Gully Chains devnet waitlist, made from the app (developer.mjs):
+// { requests: [{ at, address, workspace, email, chain, status }], waitlist: [{ at, address, workspace, email }] }.
+// One request per workspace (a new one replaces the old) and one waitlist row per wallet.
+let chainKit = readFile(CHAIN_KIT, { requests: [], waitlist: [] })
+chainKit.requests ??= []
+chainKit.waitlist ??= []
+const saveChainKit = () => {
+  try {
+    writeFile(CHAIN_KIT, chainKit)
+  } catch {
+    /* kept in memory */
+  }
+}
+
+/** Every Chain Kit request, oldest first (admin and stats). */
+export const chainKitRequests = () => chainKit.requests
+/** Everyone on the Gully Chains devnet waitlist, oldest first. */
+export const chainsWaitlist = () => chainKit.waitlist
+
+export const chainKitRequestOf = (workspace) => chainKit.requests.findLast((r) => r.workspace === workspace) ?? null
+export const waitlistRowOf = (address) => chainKit.waitlist.find((r) => r.address === address) ?? null
+
+export function addChainKitRequest({ address, workspace, email, chain }) {
+  chainKit.requests = chainKit.requests.filter((r) => r.workspace !== workspace)
+  const row = { at: new Date().toISOString(), address, workspace, email, chain: chain || null, status: 'received' }
+  chainKit.requests.push(row)
+  if (chainKit.requests.length > 5000) chainKit.requests = chainKit.requests.slice(-5000)
+  saveChainKit()
+  return row
+}
+
+/** Joins the waitlist; returns { row, already }. */
+export function joinChainsWaitlist({ address, workspace, email }) {
+  const old = waitlistRowOf(address)
+  if (old) return { row: old, already: true }
+  const row = { at: new Date().toISOString(), address, workspace, email }
+  chainKit.waitlist.push(row)
+  saveChainKit()
+  return { row, already: false }
+}
+
+/** Requests and waitlist sign-ups per UTC day over the last `days` days, oldest first. */
+export function chainKitDaily(days = 30, now = Date.now()) {
+  const out = []
+  const idx = new Map()
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date(now - i * 86_400_000).toISOString().slice(0, 10)
+    idx.set(day, out.length)
+    out.push({ day, requests: 0, waitlist: 0 })
+  }
+  for (const r of chainKit.requests) {
+    const i = idx.get(String(r.at).slice(0, 10))
+    if (i !== undefined) out[i].requests++
+  }
+  for (const r of chainKit.waitlist) {
+    const i = idx.get(String(r.at).slice(0, 10))
+    if (i !== undefined) out[i].waitlist++
+  }
+  return out
 }

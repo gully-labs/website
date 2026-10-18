@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
+import { NewTabNote } from './newTab'
 
 /* Telegram HTML (the sanitized subset the server sends: b, i, u, s, a, code, pre, blockquote, tg-spoiler) as React
    elements for the admin previews (channel posts, bot broadcasts). Never innerHTML. */
@@ -40,7 +41,7 @@ export function renderTg(html: string): ReactNode[] {
         : n.tag === 'pre' ? <pre key={k} className="m-0 my-1 overflow-x-auto rounded-input bg-bg p-2 font-mono text-[13px] whitespace-pre-wrap">{kids}</pre>
         : n.tag === 'blockquote' ? <blockquote key={k} className="m-0 my-1 border-l-2 pl-2" style={{ borderColor: LINK_BLUE }}>{kids}</blockquote>
         : n.tag === 'tg-spoiler' ? <span key={k} className="rounded-[3px] bg-line-strong text-transparent transition-colors hover:text-ink" title="Spoiler">{kids}</span>
-        : n.tag === 'a' ? <a key={k} href={n.href} target="_blank" rel="noopener noreferrer" style={{ color: LINK_BLUE }} className="underline-offset-2 hover:underline">{kids}</a>
+        : n.tag === 'a' ? <a key={k} href={n.href} target="_blank" rel="noopener noreferrer" style={{ color: LINK_BLUE }} className="underline-offset-2 hover:underline">{kids}<NewTabNote /></a>
         : <Fragment key={k}>{kids}</Fragment>
       stack.at(-1)!.kids.push(el)
     } else stack.at(-1)!.kids.push(decode(part))

@@ -125,12 +125,12 @@ function Stepper({ phase, txUrl, explorerUrl }: { phase: Phase; txUrl: string | 
               {s.id === 'sent' && txUrl && (
                 <a href={txUrl} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-[2px] font-mono text-[11px] text-gold underline-offset-4 hover:underline">
                   tx <ArrowUpRight size={10} aria-hidden />
-                </a>
+                <span className="sr-only"> (opens in a new tab)</span></a>
               )}
               {s.id === 'verified' && phase === 'verified' && explorerUrl && (
                 <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-[2px] font-mono text-[11px] text-gold underline-offset-4 hover:underline">
                   explorer <ArrowUpRight size={10} aria-hidden />
-                </a>
+                <span className="sr-only"> (opens in a new tab)</span></a>
               )}
             </span>
             {i < STEPS.length - 1 && (
@@ -345,7 +345,7 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
             <b>Already on {chain.name}:</b> {p.what ?? 'there is code at this address'} ·{' '}
             <a href={p.explorerUrl} target="_blank" rel="noopener noreferrer" className="font-mono text-gold underline-offset-4 hover:underline">
               {short(p.safe)}
-            </a>
+            <span aria-hidden> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
             . Press “Check again” and the chain switches on.
           </span>
         </p>
@@ -374,7 +374,7 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
                   {p.origin.deployTxUrl && (
                     <a href={p.origin.deployTxUrl} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-[2px] font-mono text-[11px] text-gold underline-offset-4 hover:underline">
                       creation tx <ArrowUpRight size={10} aria-hidden />
-                    </a>
+                    <span className="sr-only"> (opens in a new tab)</span></a>
                   )}
                 </dd>
               </>

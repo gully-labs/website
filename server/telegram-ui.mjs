@@ -22,6 +22,11 @@
 //   mute:<id>                  Mute 24h on an alert delivery (kept from the first bot)
 //   bco | bci                  🔕 Stop announcements (on every broadcast) | switch them back on
 //   san:0|1                    Settings: announcements off | on (private chats)
+//   hm                         Holder Map: what it is, where it has data      sec  Gully Security, Score, monitors
+//   more                       More from Gully Labs: plans, Pay, docs, blog, news
+//   mon[:p2]                   my security monitors       mo:<id>       one monitor
+//   mop|mor|mom:<id>           pause, resume, mute 24h a monitor
+//   mmu:<id>                   Mute 24h on a monitor alert delivery (never gated, like mute:<id>)
 // A trailing "!" opens the route as a new message instead of editing (used on Gully AI answers, so an
 // answer is never overwritten by the next screen).
 
@@ -107,11 +112,23 @@ export const holdersPageUrl = (chain, token) => `${SITE}/holders/${encodeURIComp
  * App's holder screen in private chats, or a link to the site's Holder Map in groups. It carries no
  * callback_data, so the 64-byte limit does not apply to it.
  */
-export const holdersBtn = (chain, token) => ({ text: '👥 Holders', holders: { chain: String(chain), token: String(token) } })
-/** Resolves every holdersBtn placeholder in a keyboard for a private chat (web_app) or a group (url). */
-export function resolveHoldersButtons(kb, isPrivate, appUrl) {
+export const holdersBtn = (chain, token, source = 'stock') => ({ text: '👥 Holders', holders: { chain: String(chain), token: String(token), source } })
+/**
+ * Resolves every holdersBtn placeholder in a keyboard for a private chat (web_app) or a group (url).
+ * `available(chain, token)` says whether the Holder Map has data there (holders.mjs holdersButtonVisible): a button for a chain without data
+ * is dropped (and a row left empty by that goes too), so the bot never offers an empty map.
+ */
+export function resolveHoldersButtons(kb, isPrivate, appUrl, available = () => true) {
   if (!Array.isArray(kb) || !kb.some((r) => Array.isArray(r) && r.some((b) => b?.holders))) return kb
-  return kb.map((row) =>
+  const ok = (b) => {
+    try {
+      return !!available(b.holders.chain, b.holders.token)
+    } catch {
+      return false
+    }
+  }
+  const kept = kb.map((row) => (Array.isArray(row) ? row.filter((b) => !b?.holders || ok(b)) : row)).filter((row) => !Array.isArray(row) || row.length > 0)
+  return kept.map((row) =>
     row.map((b) => {
       if (!b?.holders) return b
       const { chain, token } = b.holders
@@ -145,8 +162,16 @@ export const MENU_KEYBOARD = [
   [btn('📈 Stocks', 'stk'), btn('🔥 Top gaps', 'top')],
   [btn('🚀 Movers', 'mv:24h'), btn('🛰 DeepCore launches', 'dc:0')],
   [btn('🔔 My alerts', 'ma'), btn('🤖 Gully AI', 'ai')],
-  [ubtn('💼 App dashboard ↗', PORTAL), btn('⚙️ Settings', 'set')],
+  [btn('👥 Holder Map', 'hm'), btn('🛡 Security', 'sec')],
+  [ubtn('💼 App dashboard ↗', PORTAL), btn('🧭 More', 'more'), btn('⚙️ Settings', 'set')],
 ]
+
+/** Plain words for an error that came back from a module: a short sentence is kept, anything technical is not. */
+export function friendlyError(error, fallback = 'Something went wrong. Try again in a minute.') {
+  const s = String(error ?? '').trim()
+  if (!s || s.length > 200 || !/[.!?]$/.test(s) || /\b(?:error|exception|ECONN\w*|ETIMEDOUT|ENOTFOUND|fetch failed|undefined|null|status \d{3}|HTTP \d{3}|stack|TypeError|SyntaxError)\b|[{}<>]|https?:\/\//i.test(s)) return fallback
+  return s
+}
 
 /** The /start banner caption. `n` is the tracker's live count of stock tokens, or null when unreadable. */
 export function menuCaption(n) {
@@ -167,19 +192,124 @@ export function helpView(linked) {
     '<b>Gully Labs bot</b>',
     'See how far each stock token trades above or below the real share price (the share price comes from Chainlink). Tap the buttons below, or type:',
     '',
+    '/start or /menu · the main menu',
     '/gap NVDA · one stock (add <code>bsc</code>, <code>robinhood</code> or <code>solana</code>)',
     '/top · biggest gaps right now',
     '/movers · biggest changes',
     '/launches · newest tokens on DeepCore',
+    '/holders · 👥 Holder Map: who holds a token, and which wallets belong together',
+    '/security · 🛡 Gully Security: contract scans, Gully Score and monitors',
+    '/score 0x… · the Gully Score of a contract (add <code>base</code>, <code>ethereum</code>…)',
     '/ask · ask Gully AI a question',
     '/app · open the Gully app inside Telegram',
-    ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram.']),
+    ...(linked ? ['/alerts · your alerts', '/monitors · your contract monitors', '/stop · unlink this chat'] : ['🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram.']),
     '/stop announcements · no more news from Gully Labs (alerts keep coming)',
     '',
     '<i>Information only, not investment advice.</i>',
   ].join('\n')
   return { text, keyboard: MENU_KEYBOARD }
 }
+
+/* --------------------------------------- Holder Map, Security, Score, More --- */
+
+export const SECURITY_URL = `${SITE}/security`
+export const SCORE_URL = `${SITE}/score`
+export const HOLDERS_URL = `${SITE}/holders`
+
+/** 👥 Holder Map in plain words, and where it has data (`stockChains`: the stock chains with holder data now). */
+export function holderMapView(stockChains = []) {
+  const names = stockChains.map((k) => HOLDER_CHAIN_NAMES[k] ?? k)
+  return {
+    text: [
+      '<b>👥 Holder Map</b>',
+      'Who holds a token, drawn as a map. Wallets that sent the token to each other are joined into a <b>connected cluster</b>: joined wallets are often one person or team. The <b>deployer</b> is the wallet that created the token.',
+      '',
+      names.length ? `Maps are ready for every new DeepCore launch and for stock tokens on ${esc(names.join(', '))}.` : 'Maps are ready for every new DeepCore launch. Stock tokens follow soon.',
+      'Open a launch below and tap 👥 Holders, or browse every map on the site.',
+    ].join('\n'),
+    keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], [ubtn('👥 Open Holder Map ↗', HOLDERS_URL)], nav('m')],
+  }
+}
+
+/** 🛡 Gully Security: scans, the public Gully Score, and monitors. */
+export const securityView = (linked) => ({
+  text: [
+    '<b>🛡 Gully Security</b>',
+    '🔍 <b>Scan</b>: an AI review of your contract, with a report you can publish.',
+    '🏅 <b>Gully Score</b>: a public 0 to 100 score for a contract: who controls it, its age, its holders and what changed.',
+    '📡 <b>Monitors</b>: a message here when someone changes the owner, upgrades the code, pauses the contract or moves a large share of its funds.',
+    '',
+    'Look up a score: type <code>/score 0x…</code> with the contract address.',
+  ].join('\n'),
+  keyboard: [
+    [ubtn('🛡 Gully Security ↗', SECURITY_URL), ubtn('🏅 Gully Score ↗', SCORE_URL)],
+    [linked ? btn('📡 My monitors', 'mon') : ubtn('📡 Set up monitors ↗', `${PORTAL}/#security`), ubtn('🔍 Scan a contract ↗', `${PORTAL}/#security`)],
+    nav('m'),
+  ],
+})
+
+/** /score with an address: a link to the contract's Gully Score page (the page reads it live). */
+export function scoreLookupView(chain, address) {
+  if (!address) return { text: '<b>🏅 Gully Score</b>\nType the contract address after the command, e.g. <code>/score 0x1234…abcd base</code>. Without a chain, Base is used.', keyboard: [[ubtn('🏅 Every score ↗', SCORE_URL)], nav('sec')] }
+  const url = `${SCORE_URL}/${encodeURIComponent(chain.key)}/${encodeURIComponent(address)}`
+  return {
+    text: [`<b>🏅 Gully Score</b> · <code>${esc(shortAddr(address))}</code> on ${esc(chain.name)}`, 'The score page reads the contract now: who controls it, its age, its holders and recent changes.', INFO].join('\n'),
+    keyboard: [[ubtn('🏅 Open the score ↗', url)], nav('sec')],
+  }
+}
+
+/** 🧭 More from Gully Labs: links to the products that live on the site and in the app. */
+export const moreView = () => ({
+  text: ['<b>🧭 More from Gully Labs</b>', 'Plans and prices, Gully Pay for your store, Gully Analytics, Chain Kit, the docs, the blog and the news channel.'].join('\n'),
+  keyboard: [
+    [ubtn('💳 Plans & prices ↗', `${SITE}/pricing`), ubtn('🧾 Gully Pay ↗', `${PORTAL}/#pay`)],
+    [ubtn('📊 Gully Analytics ↗', `${SITE}/analytics`), ubtn('🧱 Chain Kit ↗', `${SITE}/chain-kit`)],
+    [ubtn('📚 Docs ↗', 'https://docs.gullylabs.xyz'), ubtn('📝 Blog ↗', 'https://blog.gullylabs.xyz')],
+    [ubtn('📣 Gully Labs News ↗', 'https://t.me/GullyLabsNews')],
+    nav('m'),
+  ],
+})
+
+/* ------------------------------------------------------------- monitors --- */
+
+/** A monitor's state for the bot: muted, paused, not in the plan, or watching. */
+export function monitorState(m, now = Date.now()) {
+  if (!m.coveredByPlan) return { emoji: '⚠️', text: 'not in your plan' }
+  if (!m.enabled) return { emoji: '⏸', text: 'paused' }
+  if (m.mutedUntil && Date.parse(m.mutedUntil) > now) return { emoji: '🔕', text: `muted ${forTime(m.mutedUntil, now)}` }
+  return { emoji: '🟢', text: 'watching' }
+}
+const monitorLabel = (m) => `${m.name || shortAddr(m.address)} · ${m.chain}`
+
+export function monitorsView(data, page = 1, now = Date.now()) {
+  const list = data?.monitors ?? []
+  const head = `<b>📡 My monitors</b>${data?.limits ? ` · ${list.length} of ${data.limits.max} on ${esc(data.limits.planName)}` : ''}`
+  if (!list.length) return { text: `${head}\nNo contracts watched yet. Add one in the app dashboard (Security tab, Monitors): we tell you here when its owner, code or funds change.`, keyboard: [[ubtn('📡 Add a monitor ↗', `${PORTAL}/#security`)], nav('sec')] }
+  const pages = Math.max(1, Math.ceil(list.length / ALERTS_PAGE))
+  const p = Math.min(Math.max(1, page), pages)
+  const shown = list.slice((p - 1) * ALERTS_PAGE, p * ALERTS_PAGE)
+  const keys = shown.map((m) => [btn(`${monitorState(m, now).emoji} ${monitorLabel(m)}`.slice(0, 60), `mo:${m.id}`)])
+  const pager = pages > 1 ? [[btn('◀', `mon:p${p === 1 ? pages : p - 1}`), btn(`Page ${p}/${pages}`, 'noop'), btn('▶', `mon:p${p === pages ? 1 : p + 1}`)]] : []
+  return { text: `${head}\n🟢 watching · 🔕 muted · ⏸ paused\nTap a contract to pause or mute it.`, keyboard: [...keys, ...pager, [ubtn('💼 Manage in the app ↗', `${PORTAL}/#security`)], nav('sec')] }
+}
+
+export function monitorCardView(m, now = Date.now()) {
+  const st = monitorState(m, now)
+  const last = (m.events ?? [])[0]
+  const lines = [
+    `${st.emoji} <b>${esc(monitorLabel(m))}</b>`,
+    `Contract: <code>${esc(shortAddr(m.address))}</code>`,
+    `State: ${esc(st.text)}`,
+    `Last checked: ${m.lastCheckedAt ? esc(ago(m.lastCheckedAt, now) ?? 'earlier') : 'not yet'}`,
+    `Last change: ${last ? `${esc(last.text)} · ${esc(ago(last.at, now) ?? 'earlier')}` : 'none seen yet'}`,
+  ]
+  const toggle = m.enabled ? btn('⏸ Pause', `mop:${m.id}`) : btn('▶ Resume', `mor:${m.id}`)
+  const score = /^\//.test(String(m.score ?? '')) ? `${SITE}${m.score}` : SCORE_URL
+  return { text: lines.join('\n'), keyboard: [[toggle, btn('🔕 Mute 24h', `mom:${m.id}`)], [ubtn('🏅 Gully Score ↗', score)], nav('mon')] }
+}
+
+/** The buttons under a monitor alert in the linked chat: open what happened, mute 24h, pause. */
+export const monitorAlertKeyboard = (monitorId, openUrl) => [[...(/^https:\/\//.test(String(openUrl ?? '')) ? [ubtn('🌐 Open ↗', openUrl)] : []), btn('🔕 Mute 24h', `mmu:${monitorId}`.slice(0, 64))], [btn('📡 My monitors', 'mon')]]
 
 /* ------------------------------------------------------------- app, stop --- */
 
@@ -278,7 +408,7 @@ export function cardBack(cc, from) {
 export function chainPickerView(stocks, rowsOk) {
   const count = (k) => stocks.filter((s) => s.chain === k).length
   const text = ['<b>📈 Stocks</b>', 'Pick a chain to see its stock tokens and how far they trade from the real share price.', ...(rowsOk ? [] : ['', '<i>Prices aren’t available right now, so the colours are missing.</i>'])].join('\n')
-  return { text, keyboard: [[btn(`Robinhood Chain · ${count('robinhood')}`, 'stk:rh:p1'), btn(`BNB Chain · ${count('bsc')}`, 'stk:bn:p1')], [btn(`Solana · ${count('solana')}`, 'stk:sl:p1')], nav('m')] }
+  return { text, keyboard: [[btn(`⛓ Robinhood Chain · ${count('robinhood')}`, 'stk:rh:p1'), btn(`⛓ BNB Chain · ${count('bsc')}`, 'stk:bn:p1')], [btn(`⛓ Solana · ${count('solana')}`, 'stk:sl:p1')], nav('m')] }
 }
 
 /** The ticker grid: 3 per row, alphabetical, GRID_PAGE per page, status colour from the live rows. */
@@ -390,7 +520,7 @@ export function alertStep1View(cc, ticker, from) {
   const base = `al:${cc}:${ticker}:${from}`
   return {
     text: [`<b>🔔 Alert for ${esc(ticker)}</b> · ${esc(chainName(CHAIN_OF[cc]))}`, 'Step 1 of 3 · How far from the real share price?'].join('\n'),
-    keyboard: [[btn('±1%', `${base}:1`), btn('±2%', `${base}:2`), btn('±3%', `${base}:3`), btn('✏️ Custom', `alx:${cc}:${ticker}:${from}`)], nav(`c:${cc}:${ticker}:${from}`)],
+    keyboard: [[btn('🎯 ±1%', `${base}:1`), btn('🎯 ±2%', `${base}:2`), btn('🎯 ±3%', `${base}:3`), btn('✏️ Custom', `alx:${cc}:${ticker}:${from}`)], nav(`c:${cc}:${ticker}:${from}`)],
   }
 }
 
@@ -423,8 +553,8 @@ export const CUSTOM_PROMPT_RE = /^✏️ Custom threshold for ([A-Z.]{1,8}) on (
 /** After a create: success, the plan limit (with Upgrade) or the alerts module's error. */
 export function createdView({ ok, status, error, back, what }) {
   if (ok) return { text: [`<b>✅ Alert created</b>`, esc(what), 'Deliveries arrive in this chat. Manage it in 🔔 My alerts.'].join('\n'), keyboard: [[btn('🔔 My alerts', 'ma')], nav(back)] }
-  if (status === 403) return { text: [`<b>Plan limit reached</b>`, esc(error)].join('\n'), keyboard: [[ubtn('⬆ Upgrade ↗', PORTAL_BILLING), btn('🔔 My alerts', 'ma')], nav(back)] }
-  return { text: [`<b>The alert was not created</b>`, esc(error ?? 'Something went wrong. Try again in a minute.')].join('\n'), keyboard: [nav(back)] }
+  if (status === 403) return { text: [`<b>Plan limit reached</b>`, esc(friendlyError(error, 'Your plan has no room for another alert.'))].join('\n'), keyboard: [[ubtn('⬆ Upgrade ↗', PORTAL_BILLING), btn('🔔 My alerts', 'ma')], nav(back)] }
+  return { text: [`<b>The alert was not created</b>`, esc(status >= 500 || !status ? 'Something went wrong on our side. Try again in a minute.' : friendlyError(error))].join('\n'), keyboard: [nav(back)] }
 }
 
 /* ------------------------------------------------------------ top gaps --- */
@@ -448,7 +578,11 @@ export function moversView(m, win) {
   if (!list) return { text: `${head}\nMovers aren’t available right now. Try again in a minute.`, keyboard: [toggles, nav('m')] }
   if (!list.length) return { text: `${head}\nNot enough history yet to compare with ${win} ago. Check back later.`, keyboard: [toggles, nav('m')] }
   const from = win === '1h' ? 'm1' : 'm24'
-  const keys = list.map((e, i) => [btn(`${i + 1}. ${e.ticker} · ${shortChain(e.chain)}  ${signed(e.gapChangePp)} pts → ${signed(e.gapNow)}%`, `c:${CODE_OF[e.chain] ?? 'rh'}:${e.ticker}:${from}`)])
+  // The move is in percentage points of the gap ("moved +1.50, now +2.25%"); a chain the bot has no card for links to the site.
+  const keys = list.map((e, i) => {
+    const label = `${i + 1}. ${e.ticker} · ${shortChain(e.chain)}  moved ${signed(e.gapChangePp)} → now ${signed(e.gapNow)}%`
+    return [CODE_OF[e.chain] ? btn(label, `c:${CODE_OF[e.chain]}:${e.ticker}:${from}`) : ubtn(`${label} ↗`, stockUrl(e.chain, e.ticker))]
+  })
   return { text: `${head}\nThe biggest moves in the gap over ${win}, and where each token is now. Tap one for details.`, keyboard: [...keys, toggles, nav('m')] }
 }
 
@@ -496,13 +630,13 @@ export function launchesView(r, filter, chains, now = Date.now()) {
 /** One launch. `market` is readDeepcorePool's match for it (price, market cap) or null. */
 export function launchCardView(l, filter, { now = Date.now(), market = null } = {}) {
   if (!l) return { text: '<b>🛰 Launch</b>\nThis launch is no longer in DeepCore’s latest list.', keyboard: [[ubtn('🌐 View on DeepCore ↗', DEEPCORE)], nav(`dc:${filter}`)] }
-  return { text: `🛰 ${launchBlock(l, { now, market })}\n\n${INFO}`, keyboard: [[ubtn('🌐 View on DeepCore ↗', l.links.token)], [holdersBtn(l.chainKey, String(l.token).toLowerCase())], [btn('🔔 Alert me on new launches', `dla:${filter}`)], nav(`dc:${filter}`)] }
+  return { text: `🛰 ${launchBlock(l, { now, market })}\n\n${INFO}`, keyboard: [[ubtn('🌐 View on DeepCore ↗', l.links.token)], [holdersBtn(l.chainKey, String(l.token).toLowerCase(), 'deepcore')], [btn('🔔 Alert me on new launches', `dla:${filter}`)], nav(`dc:${filter}`)] }
 }
 
 export function launchAlertStep1View(filter, chains) {
   return {
     text: '<b>🔔 New-launch alert</b>\nStep 1 of 2 · Which chain? Every new token launched on DeepCore there arrives in this chat.',
-    keyboard: [...rows([btn('Any chain', `dla:${filter}:0`), ...Object.entries(chains).map(([id, c]) => btn(c.name, `dla:${filter}:${id}`))], 3), nav(`dc:${filter}`)],
+    keyboard: [...rows([btn('🌐 Any chain', `dla:${filter}:0`), ...Object.entries(chains).map(([id, c]) => btn(`⛓ ${c.name}`, `dla:${filter}:${id}`))], 3), nav(`dc:${filter}`)],
   }
 }
 
@@ -552,7 +686,7 @@ export function myAlertsView(data, page, chains, now = Date.now()) {
   const keys = shown.map((a) => [btn(`${alertState(a, now).emoji} ${alertLabel(a, chains)}`.slice(0, 60), `ac:${a.id}`)])
   const pager = pages > 1 ? [[btn('◀', `ma:p${p === 1 ? pages : p - 1}`), btn(`Page ${p}/${pages}`, 'noop'), btn('▶', `ma:p${p === pages ? 1 : p + 1}`)]] : []
   const over = list.length > lim.max ? `\n<i>Only the oldest ${lim.max} run on your plan.</i>` : ''
-  return { text: `${head}\n🟢 watching · 🟠 fired · 🔕 muted · ⏸ paused${over}\nTap an alert to pause, mute, test or delete it.`, keyboard: [...keys, ...pager, [ubtn('💼 Manage in portal ↗', PORTAL_ALERTS)], nav('m')] }
+  return { text: `${head}\n🟢 watching · 🟠 fired · 🔕 muted · ⏸ paused${over}\nTap an alert to pause, mute, test or delete it.`, keyboard: [...keys, ...pager, [ubtn('💼 Manage in the app ↗', PORTAL_ALERTS)], nav('m')] }
 }
 
 export function alertCardView(a, chains, now = Date.now()) {
@@ -562,9 +696,9 @@ export function alertCardView(a, chains, now = Date.now()) {
     `${st.emoji} <b>${esc(alertLabel(a, chains))}</b>`,
     `When: ${esc(conditionWords(a.condition, chains))}`,
     `State: ${esc(st.text)}`,
-    `Delivery: ${[a.telegram ? 'Telegram' : null, a.webhook ? 'webhook' : null].filter(Boolean).join(' + ') || 'none'}`,
+    `Sent to: ${[a.telegram ? 'Telegram' : null, a.webhook ? 'your own server' : null].filter(Boolean).join(' + ') || 'nowhere yet'}`,
     `Last fired: ${a.lastFiredAt ? esc(ago(a.lastFiredAt, now) ?? 'earlier') : 'never'}`,
-    ...(last ? [`Last delivery: ${last.ok ? '✅' : '❌'} ${last.channel === 'telegram' ? 'Telegram' : esc(last.channel)}${last.test ? ' (test)' : ''} · ${esc(ago(last.at, now) ?? 'earlier')}${last.ok ? '' : ` · ${esc(last.error ?? 'failed')}`}`] : []),
+    ...(last ? [`Last delivery: ${last.ok ? '✅' : '❌'} ${last.channel === 'telegram' ? 'Telegram' : 'your own server'}${last.test ? ' (test)' : ''} · ${esc(ago(last.at, now) ?? 'earlier')}${last.ok ? '' : ' · not delivered'}`] : []),
   ]
   const toggle = a.enabled ? btn('⏸ Pause', `ap:${a.id}`) : btn('▶ Resume', `ar:${a.id}`)
   return { text: lines.join('\n'), keyboard: [[toggle, btn('🔕 Mute 24h', `am:${a.id}`)], [btn('🧪 Test', `at:${a.id}`), btn('🗑 Delete', `ad:${a.id}`)], nav('ma')] }
@@ -609,7 +743,7 @@ function cardChart(ch) {
 
 /** Gully AI's answer: the text with its [n] / [Ln] labels, the live cards as short lines, then sources and the one-tap actions as buttons. */
 export function aiAnswerView(r) {
-  if (!r.ok) return { text: `<b>🤖 Gully AI</b>\n${esc(r.error)}`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
+  if (!r.ok) return { text: `<b>🤖 Gully AI</b>\n${esc(friendlyError(r.error, 'Gully AI could not answer just now. Try again in a minute.'))}`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
   const body = esc(String(r.answer).replace(/\*\*([^*]+)\*\*/g, '$1'))
   const sources = (r.citations ?? []).filter((c) => /^https:\/\//.test(String(c.url))).slice(0, 3)
   const live = (r.live ?? []).filter((l) => /^https:\/\//.test(String(l.url))).slice(0, 3)
@@ -637,7 +771,7 @@ export function settingsView({ link, workspace, notify, alertsCount, isLinker, a
   const lines = [
     '<b>⚙️ Settings</b>',
     `Wallet: <code>${esc(shortAddr(link.address))}</code>`,
-    ...(workspace ? [`Workspace: ${esc(workspace)}`] : []),
+    ...(workspace ? [`Team: ${esc(workspace)}`] : []),
     `Chat: ${link.chatType === 'private' ? 'this private chat' : `group “${esc(link.chatTitle)}”${isLinker ? ' (linked by you)' : ''}`}`,
     `Alerts: ${alertsCount === null ? 'not available right now' : alertsCount}`,
     ...(notify ? [`Usage notices: ${notify.telegramUsage ? 'on' : 'off'}`] : []),
@@ -687,7 +821,13 @@ export function deliveryView(a) {
       return `<b>${esc(e.symbol ?? shortAddr(e.token))}</b> on ${esc(e.chainName ?? HOLDER_CHAIN_NAMES[e.chain] ?? e.chain)}: ${who} ${pctText(e.pct)}${was}${why}.`
     })
     const open = shown.slice(0, 2).map((e) => ubtn(`👥 Open ${e.symbol ?? 'map'} ↗`.slice(0, 40), /^https:\/\//.test(String(e.pageUrl ?? '')) ? e.pageUrl : holdersPageUrl(e.chain, e.token)))
-    return { text: `🫧 ${title}\n${dirLine}\n\n${blocks.join('\n\n')}\n\n${INFO}`, keyboard: [[open[0], mute], ...(open.length > 1 ? [open.slice(1)] : [])] }
+    // What the words mean, once, for readers who have not opened a Holder Map before.
+    const metrics = new Set([...shown.map((e) => e.metric), a.condition?.metric])
+    const notes = [
+      ...(metrics.has('cluster') || metrics.has(undefined) ? ['A connected cluster is a group of wallets that sent this token to each other; it is often one person or team.'] : []),
+      ...(metrics.has('deployer') ? ['The deployer is the wallet that created the token.'] : []),
+    ]
+    return { text: `🫧 ${title}\n${dirLine}\n\n${blocks.join('\n\n')}${notes.length ? `\n\n<i>${esc(notes.join(' '))}</i>` : ''}\n\n${INFO}`, keyboard: [[open[0], mute], ...(open.length > 1 ? [open.slice(1)] : [])] }
   }
   if (a.events.some((e) => e.kind === 'deepcore.launch')) {
     const shown = a.events.slice(0, 5)
@@ -703,11 +843,13 @@ export function deliveryView(a) {
     return [`${st.emoji} <b>${esc(e.ticker)}</b> · ${esc(e.chainName ?? chainName(e.chain))}`, gapSentence(e.ticker, e.gapPct), ...(prices ? [prices] : [])].join('\n')
   })
   const more = a.events.length > shown.length ? `\n…and ${a.events.length - shown.length} more on ${SITE}/tracker` : ''
-  const card = (e) => `c:${CODE_OF[e.chain] ?? 'rh'}:${e.ticker}:x`
+  // The in-chat card exists only for the chains the bot knows; others keep the site link alone.
+  const cardBtn = (e, text) => (CODE_OF[e.chain] ? [btn(text, `c:${CODE_OF[e.chain]}:${e.ticker}:x`)] : [])
+  const cards = shown.slice(0, 3).flatMap((e) => cardBtn(e, `📈 ${e.ticker}`))
   const keyboard =
     shown.length === 1
-      ? [[ubtn('🌐 Open ↗', stockUrl(shown[0].chain, shown[0].ticker)), mute, btn('📈 Card', card(shown[0]))]]
-      : [shown.slice(0, 3).map((e) => ubtn(`🌐 ${e.ticker} ↗`, stockUrl(e.chain, e.ticker))), shown.slice(0, 3).map((e) => btn(`📈 ${e.ticker}`, card(e))), [mute]]
+      ? [[ubtn('🌐 Open ↗', stockUrl(shown[0].chain, shown[0].ticker)), mute, ...cardBtn(shown[0], '📈 Card')]]
+      : [shown.slice(0, 3).map((e) => ubtn(`🌐 ${e.ticker} ↗`, stockUrl(e.chain, e.ticker))), ...(cards.length ? [cards] : []), [mute]]
   return { text: `${title}\n${dirLine}\n\n${blocks.join('\n\n')}${more}\n\n${INFO}`, keyboard }
 }
 

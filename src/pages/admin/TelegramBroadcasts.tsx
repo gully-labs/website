@@ -6,6 +6,7 @@ import { EChart } from '../../components/charts/EChart'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { adminCall } from './payAdmin'
 import { LINK_BLUE, renderTg } from './tgHtml'
+import { NewTabNote } from './newTab'
 
 /* Admin: DMs to everyone who started @GullyLabsBot (server/telegram-broadcast.mjs, /api/admin/broadcasts*).
    Analytics (bot users, growth, opt-outs, blocked, the last broadcast), the owner's one BotFather step, a composer
@@ -142,6 +143,7 @@ function DmBubble({ html, media, buttons }: { html: string; media: Media; button
         {buttons.map((b, i) => (
           <a key={i} href={b.url || undefined} target="_blank" rel="noopener noreferrer" className="flex min-h-10 items-center justify-center gap-1 rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2 hover:bg-line-strong">
             {b.text || 'Button'} <ExternalLink size={12} aria-hidden />
+            <NewTabNote />
           </a>
         ))}
         <span className="flex min-h-10 items-center justify-center rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2">🔕 Stop announcements</span>
@@ -262,6 +264,7 @@ function OwnerStep() {
           Open{' '}
           <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">
             @BotFather ↗
+            <NewTabNote />
           </a>{' '}
           and send <code className="font-mono text-[13px]">/mybots</code>.
         </li>

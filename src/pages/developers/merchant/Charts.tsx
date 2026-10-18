@@ -112,7 +112,7 @@ export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number
           <RefreshChip error={stats.stale ? stats.error : null} onRetry={() => void stats.reload()} />
           <span className="flex gap-1" role="radiogroup" aria-label="Range">
             {RANGES.map((r) => (
-              <button key={r} type="button" role="radio" aria-checked={range === r} className={`${chip(range === r, true)} min-h-9 px-3 max-[600px]:min-h-11`} onClick={() => setRange(r)}>
+              <button key={r} type="button" role="radio" aria-checked={range === r} className={`${chip(range === r, true)} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] px-3 max-[600px]:min-h-11`} onClick={() => setRange(r)}>
                 {r}
               </button>
             ))}

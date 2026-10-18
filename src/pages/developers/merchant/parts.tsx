@@ -9,6 +9,7 @@ import { Dialog } from '../Dialog'
 import { chip, mono, pillDanger, pillLine, pillSm } from '../styles'
 import { InfoTip } from '../ui'
 import { payOrigin } from './api'
+import { ExtLink } from '../ExtLink'
 
 /* Small pieces shared by the Merchant tab's sections. */
 
@@ -103,9 +104,9 @@ export function ShareBox({ path, label }: { path: string; label: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <a href={url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
+        <ExtLink href={url} className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
           {url}
-        </a>
+        </ExtLink>
         <button type="button" className={pillSm} onClick={() => copyWithToast(url, 'Checkout link')}>
           <Copy size={14} aria-hidden /> Copy
         </button>

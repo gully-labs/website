@@ -235,6 +235,12 @@ export interface Payment {
   invoiceId: string | null
 }
 
+/** A payment's USD value, or null when it was not recorded (never 0: an unknown is not a free payment). */
+export const usdOf = (p: { usd?: string | number | null }): number | null => {
+  const v = p.usd === null || p.usd === undefined || p.usd === '' ? NaN : Number(p.usd)
+  return Number.isFinite(v) ? v : null
+}
+
 export interface BillingView {
   plan: Plan & { expiresAt: string | null; source: 'payment' | 'admin' | null; since: string | null }
   payments: Payment[]

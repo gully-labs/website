@@ -40,6 +40,13 @@
 //   /api/admin/channel*                       @GullyLabsNews channel posts and auto posts (telegram-channel.mjs)
 //   /api/admin/security*                      Gully Security: scan queue, failures, review requests (security-routes.mjs)
 //   /api/admin/broadcasts*                    DMs to everyone who started the bot, by segment (telegram-broadcast.mjs)
+//   GET  /api/admin/health                    live health of every background part (Holder Map data sources per chain,
+//                                             security monitors, the DeepCore poller, the bot webhook, the scan engine,
+//                                             Gully AI retrieval), with a per-minute history for sparklines
+//   GET  /api/admin/alerts                    every alert and monitor across accounts, and the alert webhook log
+//   GET  /api/admin/workspaces                workspaces with members or open invites
+//   GET  /api/admin/chain-kit                 Chain Kit explorer requests and the Gully Chains Devnet waitlist
+//   POST /api/admin/telegram/:address/unlink  unlink an account's Telegram chat (telegram.mjs adminUnlinkTelegram)
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
@@ -72,6 +79,15 @@ import { handleChannelAdmin } from './telegram-channel.mjs'
 import { handleBroadcastAdmin } from './telegram-broadcast.mjs'
 import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
+import * as holdersMod from './holders.mjs'
+import * as secMon from './sec-monitor.mjs'
+import * as tgMod from './telegram.mjs'
+import * as storeMod from './store.mjs'
+import { deepcoreHealth, pollMs as deepcorePollMs } from './deepcore.mjs'
+import { status as scanEngineStatus } from './security-engine.mjs'
+import { askStatus } from './ask.mjs'
+import { embedStatus } from './ask-embed.mjs'
+import { teamView } from './workspaces.mjs'
 
 const failures = new Map()
 
@@ -135,6 +151,219 @@ function dirBytes(dir) {
   }
 }
 
+/* ---------------------------------------------------------------- health --- */
+
+// GET /api/admin/health: one read of every background part, plus a per-minute history (in memory, ~3 hours)
+// so each item can draw a sparkline. Only env var NAMES are ever reported, never their values.
+
+const HEALTH_KEEP = 180
+const HEALTH_EVERY_MS = 60_000
+const healthRing = []
+const iso = (t) => (t == null ? null : typeof t === 'number' ? new Date(t).toISOString() : String(t))
+const ageMs = (t, now) => {
+  if (t == null) return null
+  const v = typeof t === 'number' ? t : Date.parse(String(t))
+  return Number.isFinite(v) ? Math.max(0, now - v) : null
+}
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`no answer within ${ms / 1000} s`)), ms).unref?.())])
+const safe = (fn, fallback = null) => {
+  try {
+    return fn()
+  } catch {
+    return fallback
+  }
+}
+
+/** Holder Map data per chain, from holders.mjs holdersSourceHealth(): the source, its env var NAME (operators only,
+    never a value), and whether stock tokens and DeepCore launches can be mapped there now. */
+function holderSources() {
+  const rows = safe(() => holdersMod.holdersSourceHealth(), [])
+  return (Array.isArray(rows) ? rows : []).map((r) => ({
+    chain: r.chain,
+    name: r.name,
+    source: r.source ?? null,
+    env: r.env ?? null,
+    available: !!r.stocks,
+    launches: !!r.launches,
+    reason: r.stocks ? null : r.env ? `not configured: ${r.env}` : 'no stock holder source',
+  }))
+}
+
+/** The security monitors' loop: `monitorHealth()` when sec-monitor has it, else what its stats can tell. */
+function monitorPart(now) {
+  const stats = safe(() => secMon.monitorStats(), null)
+  const base = { monitors: stats?.monitors ?? null, live: stats?.live ?? null, requestsPerMin: stats?.load?.totalPerMin ?? null }
+  if (typeof secMon.monitorHealth === 'function') {
+    const h = safe(() => secMon.monitorHealth(), null)
+    if (h) return { ...base, lastTickAt: iso(h.lastTickAt), lastTickMs: h.lastTickMs ?? null, lagMs: h.lagMs ?? ageMs(h.lastTickAt, now), ticks: h.ticks ?? null, errors: h.errors ?? null, lastError: h.lastError ?? null, lastErrorAt: iso(h.lastErrorAt), detail: 'loop' }
+  }
+  // Fallback: the per-chain cursors' errors (this build does not export the loop's tick time).
+  const chains = Object.values(stats?.chains ?? {})
+  const errs = chains.filter((c) => c?.lastError)
+  const last = errs.map((c) => c.lastErrorAt).filter(Boolean).sort().at(-1) ?? null
+  return { ...base, lastTickAt: null, lastTickMs: null, lagMs: null, ticks: null, errors: errs.length, lastError: errs.find((c) => c.lastErrorAt === last)?.lastError ?? null, lastErrorAt: last, detail: 'chains' }
+}
+
+function deepcorePart(now) {
+  const h = safe(() => deepcoreHealth(), {}) ?? {}
+  return { lastOkAt: iso(h.lastOkAt), lagMs: ageMs(h.lastOkAt, now), pollMs: safe(() => deepcorePollMs(), 90_000), lastError: h.lastError ? String(h.lastError?.message ?? h.lastError).slice(0, 200) : null, baselineAt: iso(h.baselineAt), seen: h.seen ?? null, cached: h.cached ?? null }
+}
+
+function botPart(now) {
+  const st = safe(() => telegramStats(), { enabled: false, links: 0 })
+  if (typeof tgMod.botWebhookHealth === 'function') {
+    const h = safe(() => tgMod.botWebhookHealth(), null)
+    if (h) return { enabled: !!h.enabled, links: st.links, lastUpdateAt: iso(h.lastUpdateAt), sinceUpdateMs: ageMs(h.lastUpdateAt, now), updates: h.updates ?? null, errors: h.errors ?? null, lastError: h.lastError ?? null, lastErrorAt: iso(h.lastErrorAt), detail: 'webhook' }
+  }
+  return { enabled: !!st.enabled, links: st.links, lastUpdateAt: null, sinceUpdateMs: null, updates: null, errors: null, lastError: null, lastErrorAt: null, detail: 'stats' }
+}
+
+async function enginePart() {
+  try {
+    const s = await withTimeout(scanEngineStatus(), 4_000)
+    return { ok: true, ai: !!s?.ai, worker: { reachable: !!s?.worker?.reachable, tools: Array.isArray(s?.worker?.tools) ? s.worker.tools : [], reason: s?.worker?.reason ?? null }, explorerKey: !!s?.explorers?.etherscanKey, queue: { running: s?.queue?.running ?? null, queued: s?.queue?.queued ?? null }, error: null }
+  } catch (e) {
+    return { ok: false, ai: null, worker: null, explorerKey: null, queue: null, error: String(e?.message ?? e).slice(0, 200) }
+  }
+}
+
+function embeddingsPart() {
+  const a = safe(() => askStatus(), null)
+  const e = safe(() => embedStatus(), null)
+  return {
+    configured: a?.configured ?? null,
+    retrieval: a?.retrieval ?? null,
+    indexSize: a?.indexSize ?? null,
+    indexUpdatedAt: a?.updatedAt ?? null,
+    embeddings: e ? { configured: !!e.configured, model: e.model ?? null, ready: e.ready ?? null, total: e.total ?? null, syncing: !!e.syncing, lastSyncAt: iso(e.lastSyncAt), lastError: e.lastError ? String(e.lastError?.message ?? e.lastError).slice(0, 200) : null, needs: e.configured ? null : 'VOYAGE_API_KEY' } : null,
+  }
+}
+
+async function healthNow() {
+  const now = Date.now()
+  const engine = await enginePart()
+  return { at: new Date(now).toISOString(), holders: holderSources(), monitors: monitorPart(now), deepcore: deepcorePart(now), bot: botPart(now), engine, embeddings: embeddingsPart() }
+}
+
+/** One history point per minute: what each sparkline draws (null = not known, never 0). */
+function sample(h) {
+  const prev = healthRing.at(-1)
+  const delta = (cur, last) => (cur == null || last == null || cur < last ? null : cur - last)
+  healthRing.push({
+    at: h.at,
+    holdersAvailable: h.holders.filter((c) => c.available).length,
+    monitorsLagS: h.monitors.lagMs == null ? null : Math.round(h.monitors.lagMs / 1000),
+    monitorsErrors: h.monitors.errors,
+    deepcoreLagS: h.deepcore.lagMs == null ? null : Math.round(h.deepcore.lagMs / 1000),
+    deepcoreCached: h.deepcore.cached,
+    botUpdates: h.bot.updates,
+    botUpdatesPerMin: delta(h.bot.updates, prev?.botUpdates),
+    botErrors: h.bot.errors,
+    scanQueued: h.engine.queue?.queued ?? null,
+    scanRunning: h.engine.queue?.running ?? null,
+    embedReady: h.embeddings.embeddings?.ready ?? null,
+  })
+  if (healthRing.length > HEALTH_KEEP) healthRing.splice(0, healthRing.length - HEALTH_KEEP)
+}
+
+let sampling = null
+function sampleNow() {
+  sampling ??= healthNow()
+    .then((h) => (sample(h), h))
+    .finally(() => (sampling = null))
+  return sampling
+}
+// The background sampler. Off in the tests (TRACKER_LOOP=off) unless ADMIN_HEALTH_LOOP=on; ADMIN_HEALTH_LOOP=off stops it.
+if (process.env.ADMIN_HEALTH_LOOP !== 'off' && (process.env.TRACKER_LOOP !== 'off' || process.env.ADMIN_HEALTH_LOOP === 'on')) {
+  setTimeout(() => sampleNow().catch(() => undefined), 20_000).unref?.()
+  setInterval(() => sampleNow().catch(() => undefined), HEALTH_EVERY_MS).unref?.()
+}
+
+async function healthView() {
+  const last = healthRing.at(-1)
+  const fresh = last && Date.now() - Date.parse(last.at) < 55_000
+  const h = fresh ? await healthNow() : await sampleNow()
+  return { ...h, everySeconds: HEALTH_EVERY_MS / 1000, history: healthRing }
+}
+
+/* ------------------------------------------------ alerts, workspaces, chain kit --- */
+
+const hostOf = (u) => safe(() => new URL(u).host, null)
+const conditionLabel = (x) => {
+  const c = x.condition ?? {}
+  if (c.type === 'gap') return `gap ${c.direction === 'above' ? '≥ +' : c.direction === 'below' ? '≤ −' : '± '}${c.pct}%`
+  if (c.type === 'deepcore-launch') return `DeepCore launch${c.chainId ? ` · chain ${c.chainId}` : ''}`
+  if (c.type === 'holders') return `holders · ${c.symbol ?? c.token ?? ''}`
+  if (c.type === 'status') return `status ${c.status}`
+  return c.type ?? null
+}
+
+/** Every alert and monitor across accounts, and the webhook log (newest first). No secrets, no chat ids, no full URLs. */
+async function alertsAdmin(accounts) {
+  const alerts = []
+  const log = []
+  const monitors = []
+  for (const a of accounts) {
+    try {
+      const v = await alertsOf(a.address)
+      for (const x of v.alerts) {
+        const last = x.deliveries[0] ?? null
+        alerts.push({ owner: a.address, id: x.id, name: x.name, kind: x.kind, chain: x.chain ?? null, ticker: x.ticker ?? null, condition: safe(() => conditionLabel(x), null), enabled: !!x.enabled, mutedUntil: x.mutedUntil ?? null, coveredByPlan: !!x.coveredByPlan, telegram: !!x.telegram, webhookHost: x.webhook ? hostOf(x.webhook.url) : null, createdAt: x.createdAt, lastFiredAt: x.lastFiredAt ?? null, deliveries: x.deliveries.length, lastDelivery: last ? { at: last.at, channel: last.channel, ok: !!last.ok, status: last.status ?? null } : null })
+        for (const d of x.deliveries) if (d.channel === 'webhook') log.push({ at: d.at, owner: a.address, id: x.id, host: x.webhook ? hostOf(x.webhook.url) : null, ok: !!d.ok, status: d.status ?? null, error: d.ok ? null : String(d.error ?? '').slice(0, 160) || null, ms: d.ms ?? null, test: !!d.test, source: 'alert' })
+      }
+    } catch {
+      /* one unreadable account does not hide the rest */
+    }
+    try {
+      const mv = secMon.monitorsOf(a.address)
+      for (const m of mv.monitors) {
+        monitors.push({ workspace: a.address, id: m.id, name: m.name, chain: m.chain, address: m.address, explorer: m.explorer, enabled: !!m.enabled, coveredByPlan: !!m.coveredByPlan, telegram: !!m.telegram, webhookHost: m.webhook ? hostOf(m.webhook.url) : null, lastCheckedAt: m.lastCheckedAt, lastError: m.lastError, events: m.events.length, lastEventAt: m.events[0]?.at ?? null })
+        for (const d of m.deliveries ?? []) if (d.channel === 'webhook') log.push({ at: d.at, owner: a.address, id: m.id, host: m.webhook ? hostOf(m.webhook.url) : null, ok: !!d.ok, status: d.status ?? null, error: d.ok ? null : String(d.error ?? '').slice(0, 160) || null, ms: d.ms ?? null, test: !!d.test, source: 'monitor' })
+      }
+    } catch {
+      /* the monitors store may be unreadable */
+    }
+  }
+  log.sort((x, y) => String(y.at).localeCompare(String(x.at)))
+  alerts.sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)))
+  return { alerts, monitors, webhookLog: log.slice(0, 200), stats: alertStats() }
+}
+
+/** Workspaces that have members besides the owner, open invites or a name of their own. */
+function workspacesAdmin(accounts) {
+  const out = []
+  for (const a of accounts) {
+    const t = safe(() => teamView(a.address, a.address), null)
+    if (!t) continue
+    const members = t.members.length
+    if (members <= 1 && !t.invites.length && t.workspace.name.endsWith("'s workspace")) continue
+    const roles = {}
+    for (const m of t.members) roles[m.role] = (roles[m.role] ?? 0) + 1
+    out.push({ id: a.address, name: t.workspace.name, members, roles, invites: t.invites.length, blocked: !!a.blocked, lastSeenAt: t.members.map((m) => m.lastSeenAt).filter(Boolean).sort().at(-1) ?? null })
+  }
+  return { workspaces: out.sort((x, y) => y.members - x.members), accounts: accounts.length }
+}
+
+/** Chain Kit requests and the Devnet waitlist: store.mjs helpers when present, else the contact form and launch list. */
+function chainKitAdmin() {
+  const requests = typeof storeMod.chainKitRequests === 'function' ? safe(() => storeMod.chainKitRequests(), null) : null
+  const waitlist = typeof storeMod.chainsWaitlist === 'function' ? safe(() => storeMod.chainsWaitlist(), null) : null
+  const fromEnquiries = () =>
+    listEnquiries()
+      .filter((e) => /Topic: Chain Kit/i.test(e.message ?? ''))
+      .map((e) => ({ at: e.receivedAt, email: e.email, chain: /Chain: (.*)/.exec(e.message)?.[1]?.trim() ?? null, workspace: /Workspace: .*\((0x[0-9a-fA-F]{40})\)/.exec(e.message)?.[1] ?? null, address: /Requested by: (0x[0-9a-fA-F]{40})/.exec(e.message)?.[1] ?? null }))
+  const fromLaunch = () => listLaunch().filter((r) => String(r.slot) === '90').map((r) => ({ at: r.addedAt, email: r.email }))
+  const pub = (via) => (r) => ({ at: r.at ?? r.createdAt ?? null, email: r.email ?? null, chain: r.chain ?? null, workspace: r.workspace ?? null, address: r.address ?? null, status: r.status ?? null, via })
+  const byNewest = (x, y) => String(y.at).localeCompare(String(x.at))
+  // Requests made before the app kept them server-side arrived as contact enquiries and "notify me" rows: both are shown.
+  const merge = (stored, legacy, same) => [...stored.map(pub('app')), ...legacy.map(pub('legacy')).filter((l) => !stored.some((s) => same(s, l)))].sort(byNewest)
+  return {
+    stored: Array.isArray(requests) || Array.isArray(waitlist),
+    requests: merge(Array.isArray(requests) ? requests : [], fromEnquiries(), (s, l) => s.email === l.email && (s.chain ?? null) === l.chain),
+    waitlist: merge(Array.isArray(waitlist) ? waitlist : [], fromLaunch(), (s, l) => String(s.email ?? '').toLowerCase() === String(l.email ?? '').toLowerCase()),
+  }
+}
+
 export async function handleAdmin(req, res, url) {
   const p = url.pathname
   if (!p.startsWith('/api/admin/')) return false
@@ -179,6 +408,23 @@ export async function handleAdmin(req, res, url) {
       feeProxy: { ...feeProxyView(), refusals: recentRefusals() },
       process: { uptimeSeconds: Math.round(process.uptime()), rssMb: Math.round(mem.rss / 1e6), heapMb: Math.round(mem.heapUsed / 1e6), node: process.version, dataDirBytes: dirBytes(DATA_DIR) },
     }), true
+  }
+
+  if (p === '/api/admin/health') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, await healthView()), true
+  }
+  if (p === '/api/admin/alerts') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, await alertsAdmin(db.accounts)), true
+  }
+  if (p === '/api/admin/workspaces') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, workspacesAdmin(db.accounts)), true
+  }
+  if (p === '/api/admin/chain-kit') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, chainKitAdmin()), true
   }
 
   if (p === '/api/admin/charts') {
@@ -305,7 +551,14 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/telegram') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
     const s = telegramStats()
-    return json(res, 200, { enabled: s.enabled, links: s.links, chats: await telegramChats(db.accounts) }), true
+    return json(res, 200, { enabled: s.enabled, links: s.links, canUnlink: typeof tgMod.adminUnlinkTelegram === 'function', chats: await telegramChats(db.accounts) }), true
+  }
+  m = p.match(/^\/api\/admin\/telegram\/(0x[0-9a-f]{40})\/unlink$/)
+  if (m) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    if (typeof tgMod.adminUnlinkTelegram !== 'function') return json(res, 501, { error: 'Unlinking from admin is not available on this build.' }), true
+    const ok = await tgMod.adminUnlinkTelegram(m[1])
+    return (ok ? json(res, 200, { address: m[1], unlinked: true }) : json(res, 404, { error: 'That account has no linked chat.' }), true)
   }
 
   // The default merchant webhook: events of invoices that have no endpoint of their own or of their link.

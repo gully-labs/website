@@ -29,7 +29,7 @@ export function PendingInvites() {
     const r = await api<InviteAccepted>('/api/developer/invite/accept', { method: 'POST', body: { inviteId: inv.id } })
     setBusy(null)
     if (!r.ok) return toastError(`Could not join ${inv.workspace.name}`, { detail: r.error, id: `invite:${inv.id}` })
-    toastSuccess(`Joined ${r.data.active.name}`, { detail: `You are ${r.data.active.role} there; the console switched to it.`, id: `invite:${inv.id}` })
+    toastSuccess(`Joined ${r.data.active.name}`, { detail: `You are ${r.data.active.role} there; the app switched to it.`, id: `invite:${inv.id}` })
     await refreshAll()
   }
   const decline = (inv: PendingInvite) => {
@@ -104,7 +104,7 @@ export function InviteLanding({ token, signedIn, connect, connecting, onDone }: 
       if (state && state !== 'open' && s.k === 'ok') setS({ k: 'ok', p: { ...s.p, state, valid: false } })
       return setErr({ text: r.error, code: r.code })
     }
-    toastSuccess(`Joined ${r.data.active.name}`, { detail: `You are ${r.data.active.role} there; the console switched to it.`, id: 'invite-accepted' })
+    toastSuccess(`Joined ${r.data.active.name}`, { detail: `You are ${r.data.active.role} there; the app switched to it.`, id: 'invite-accepted' })
     clearInviteHash()
     onDone()
     await refreshAll()

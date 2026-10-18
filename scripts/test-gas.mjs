@@ -86,7 +86,8 @@ const baseL1 = 5e10 / 1e18 * 3000
 check('Base: the OP Stack L1 data fee is read and added', base.ok && Math.abs(base.l1FeeUsd - baseL1) < 1e-9 && Math.abs(base.payUsd - (106_000 * 0.01e-9 * 3000 + baseL1)) < 1e-9 && /OP Stack/.test(base.l1), JSON.stringify(base))
 const arb = by[42161]
 check('Arbitrum: the L1 part comes from NodeInterface as extra L2 gas', arb.ok && Math.abs(arb.l1FeeUsd - 2_000 * 0.02e-9 * 3000) < 1e-9 && /Arbitrum/.test(arb.l1))
-check('a chain whose node is down answers ok:false with the reason, and no numbers', by[56].ok === false && /gas price unreadable/.test(by[56].error) && by[56].payUsd === undefined, JSON.stringify(by[56]))
+check('a chain whose node is down answers ok:false with the reason, and no numbers', by[56].ok === false && by[56].error === 'unavailable' && by[56].payUsd === undefined, JSON.stringify(by[56]))
+check('the JSON carries no raw RPC error text', !/stub:|node down|-32000/.test(JSON.stringify(by)), JSON.stringify(by[56]))
 check('a stale feed: gas price shown, USD costs null with a note (never a guess)', by[137].ok === true && by[137].gasPriceGwei === 30 && by[137].payUsd === null && by[137].coinUsd === null && /coin price unreadable/.test(by[137].note ?? ''), JSON.stringify(by[137]))
 check('every row names its chain, key and coin symbol', d.chains.every((c) => c.name && c.key && (c.ok === false || c.symbol)))
 

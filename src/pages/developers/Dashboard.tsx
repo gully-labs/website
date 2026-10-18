@@ -149,7 +149,8 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
 
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
   const items: NavItem<AppTab>[] = useMemo(
-    () => grouped(ALL_TABS).map((t) => (t.id === 'keys' ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
+    // Gully Score opens from the Security page (#score); it has no sidebar row of its own, so the sidebar fits 1440x800.
+    () => grouped(ALL_TABS.filter((t) => t.id !== 'score')).map((t) => (t.id === 'keys' ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
     [liveKeys],
   )
   const page = ALL_TABS.find((t) => t.id === tab)?.label ?? 'Overview'
@@ -176,7 +177,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
 
   const wsKey = me?.active.id ?? account.address
   return (
-    <AppShell items={items} current={tab} go={goTab} account={account} pageLabel={page} wallet={wallet} onSignOut={onSignOut}>
+    <AppShell items={items} current={tab === 'score' ? 'security' : tab} go={goTab} account={account} pageLabel={page} wallet={wallet} onSignOut={onSignOut}>
       {view.invite && (
         <div className="mx-auto w-full max-w-[1240px] px-6 pt-5 max-[480px]:px-4">
           <InviteLanding token={view.invite} signedIn onDone={reread} />

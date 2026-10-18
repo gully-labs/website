@@ -6,6 +6,7 @@ import { EChart } from '../../components/charts/EChart'
 import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
 import { adminCall } from './payAdmin'
 import { LINK_BLUE, renderTg } from './tgHtml'
+import { NewTabNote } from './newTab'
 
 /* Admin: posts to the Gully Labs News channel (@GullyLabsNews) through the bot, plus the automatic posts.
    Server: server/telegram-channel.mjs behind /api/admin/channel* (admin token). The preview renders the
@@ -129,6 +130,7 @@ function Bubble({ channel, html, media, buttons, empty = 'Your post appears here
         {buttons.map((b, i) => (
           <a key={i} href={b.url || undefined} target="_blank" rel="noopener noreferrer" className="flex min-h-10 items-center justify-center gap-1 rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2 hover:bg-line-strong">
             {b.text || 'Button'} <ExternalLink size={12} aria-hidden />
+            <NewTabNote />
           </a>
         ))}
       </div>
@@ -520,6 +522,7 @@ function History({ token, view, onEdit, reload }: { token: string; view: View; o
               {p.url && p.status === 'sent' && (
                 <a href={p.url} target="_blank" rel="noopener noreferrer" className={tinyBtn}>
                   View in Telegram ↗
+                  <NewTabNote />
                 </a>
               )}
               {p.status !== 'deleted' && (
@@ -693,6 +696,7 @@ export function TelegramChannel({ token }: { token: string }) {
                 {view.channelUrl ? (
                   <a href={view.channelUrl} target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">
                     {view.channel} ↗
+                    <NewTabNote />
                   </a>
                 ) : (
                   view.channel

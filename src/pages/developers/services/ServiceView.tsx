@@ -13,6 +13,7 @@ const VIEWS = {
   ai: lazy(() => import('./AiView')),
   deepcore: lazy(() => import('./DeepcoreView')),
   holders: lazy(() => import('./HoldersView')),
+  score: lazy(() => import('./ScoreView')),
   widgets: lazy(() => import('./WidgetsView')),
   telegram: lazy(() => import('./TelegramView')),
 } satisfies Record<ServiceTab, unknown>

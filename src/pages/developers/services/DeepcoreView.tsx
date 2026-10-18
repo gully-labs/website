@@ -123,7 +123,7 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
                   <span title={locked ? 'Liquidity lock indexed' : 'No lock indexed'} className={locked ? 'text-green' : 'text-faint'}>
                     {locked ? <Lock size={14} aria-label="locked" /> : <LockOpen size={14} aria-label="no lock indexed" />}
                   </span>
-                  <ExtLink href={l.links.token} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line-strong px-[10px] text-[12px] text-ink-2 hover:border-gold hover:text-ink max-[859px]:min-h-11">
+                  <ExtLink href={l.links.token} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 rounded-full border border-line-strong px-[10px] text-[12px] text-ink-2 hover:border-gold hover:text-ink max-[859px]:min-h-11">
                     View<span className="sr-only"> {l.symbol ?? l.token} on DeepCore</span>
                   </ExtLink>
                 </li>

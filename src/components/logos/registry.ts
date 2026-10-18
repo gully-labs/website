@@ -6,7 +6,7 @@
    inset  the share of the square left empty on each side, so marks of different shapes read the same size */
 
 /** The fixed sizes logos come in. 10 to 14 are only for the corner badge and inline table marks. */
-export type LogoSize = 10 | 12 | 14 | 16 | 20 | 24 | 32 | 40
+export type LogoSize = 10 | 12 | 14 | 16 | 20 | 24 | 32 | 40 | 48 | 64
 
 export type Mark = { src: string; name: string; disc: string | null; inset: number }
 

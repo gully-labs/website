@@ -1,3 +1,4 @@
+import { track } from '../../lib/track'
 import { Activity, AlertTriangle, AppWindow, BookOpen, Check, Clock, Code2, Gauge, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
@@ -146,6 +147,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
     if (!dialog) return
     if (dialog.kind === 'create')
       act('/api/developer/keys', { name }, (d) => {
+        track('key-created')
         toastSuccess('Key created', { detail: `${d.key.name}: copy its secret now, it is shown once.` })
         setDialog({ kind: 'secret', key: d.key, secret: d.secret ?? '', rotated: false })
       })
@@ -180,7 +182,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
               setName('')
               setDialog({ kind: 'create' })
             }}
-            className={`${pillGold} min-h-9`}
+            className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}
           >
             <Plus size={16} aria-hidden /> Create key
           </button>
@@ -604,7 +606,7 @@ function Quickstart({ account }: { account: Account }) {
         </div>
         <div role="radiogroup" aria-label="Language" className="flex gap-[2px] rounded-full border border-line p-[3px]">
           {langs.map((o) => (
-            <button key={o.v} type="button" role="radio" aria-checked={lang === o.v} onClick={() => setLang(o.v)} className={`${chip(lang === o.v, true)} min-h-9 border-0 max-[480px]:min-h-11`}>
+            <button key={o.v} type="button" role="radio" aria-checked={lang === o.v} onClick={() => setLang(o.v)} className={`${chip(lang === o.v, true)} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] border-0 max-[480px]:min-h-11`}>
               {o.l}
             </button>
           ))}
@@ -654,9 +656,9 @@ function WidgetPanel() {
       <p className="m-0 max-w-[680px] text-[14px] leading-[1.6] text-muted">Drop live fair-price data into any page with two lines of HTML. Pick the layout, chain and theme in the builder, then paste the snippet.</p>
       <CodeBlock code={widgetSnippet({ type: 'ticker', chain: 'robinhood', theme: 'dark', limit: 8 })} lang="html" caption="HTML · ticker, Robinhood Chain" />
       <div className="flex flex-wrap gap-2">
-        <a href={WIDGET_URL} className={pillGold}>
+        <ExtLink href={WIDGET_URL} className={pillGold}>
           <AppWindow size={16} aria-hidden /> Open the widget builder
-        </a>
+        </ExtLink>
         <ExtLink href={`${DOCS_URL}/widget`} className={pillSm}>
           <BookOpen size={15} aria-hidden /> Widget guide
         </ExtLink>
@@ -710,7 +712,7 @@ export function KeysTab({ account, reload, creating, onCreateDone, section }: { 
                     setSub('keys')
                     setAskCreate(true)
                   }}
-                  className={`${pillGold} min-h-9`}
+                  className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}
                 >
                   <Plus size={16} aria-hidden /> Create key
                 </button>
@@ -721,7 +723,7 @@ export function KeysTab({ account, reload, creating, onCreateDone, section }: { 
               <code className="min-w-0 flex-[1_1_320px] truncate rounded-[8px] bg-surface-deep px-3 py-2 font-mono text-[12px] text-ink-2">
                 curl -H &quot;Authorization: Bearer {first ? `${first.prefix}…` : 'gl_live_…'}&quot; {API_ORIGIN}/api/tracker
               </code>
-              <button type="button" onClick={() => setSub('quickstart')} className={`${pillSm} min-h-9`}>
+              <button type="button" onClick={() => setSub('quickstart')} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
                 <Code2 size={14} aria-hidden /> Quickstart
               </button>
               <span className="w-full font-mono text-[11px] text-faint">Done as soon as the server sees a request with one of your keys.</span>

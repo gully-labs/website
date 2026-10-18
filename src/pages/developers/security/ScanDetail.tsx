@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowUpRight, Ban, Copy, Globe, Lock, Printer, RefreshCw } from 'lucide-react'
+import { track } from '../../../lib/track'
+import { ArrowLeft, Ban, Copy, Globe, Lock, Printer, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { QuotePay } from '../../../components/pay/QuotePay'
@@ -13,6 +14,7 @@ import { ErrorLine, Skeleton } from '../parts'
 import { Can } from '../RoleGate'
 import { mono, panel, pillLine, pillSm } from '../styles'
 import { useScan } from './useSecurity'
+import { ExtLink } from '../ExtLink'
 
 /* One scan in the app: its live progress while it runs (Server-Sent Events), the Gully Pay step while it
    waits for payment, and the report once done (ReportBody: charts, tools, findings with the draft PoC).
@@ -53,12 +55,14 @@ export function PayStep({ scan, onPaid }: { scan: ScanView; onPaid: () => void }
         <span className="text-[14px] text-ink-2">
           {scan.title}: <b className="text-ink">${p.usd}</b> by Gully Pay. The scan starts by itself once the payment is confirmed on chain.
         </span>
-        <a href={site(p.payUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-gold underline-offset-4 hover:underline">
-          Open the invoice page <ArrowUpRight size={13} aria-hidden />
-          <span className="sr-only"> (opens in a new tab)</span>
-        </a>
+        <ExtLink href={site(p.payUrl)} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-gold underline-offset-4 hover:underline">
+          Open the invoice page
+        </ExtLink>
       </div>
-      <QuotePay assets={plans.offer.assets} label={`AI Security Scan: ${scan.title}`} match="exact" getQuote={quote} verify={verify} onPaid={() => onPaid()} />
+      <QuotePay assets={plans.offer.assets} label={`AI Security Scan: ${scan.title}`} match="exact" getQuote={quote} verify={verify} trackAs={{ kind: 'scan' }} onPaid={() => {
+        track('scan-paid', { tier: 'ai-scan' })
+        onPaid()
+      }} />
     </div>
   )
 }
@@ -113,10 +117,9 @@ export function ScanDetail({ id, canPublish, onBack, backLabel = 'All scans' }: 
           <StatusChip s={scan.status} />
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             {scan.status === 'done' && (
-              <a href={`/api/developer/security/scans/${scan.id}/report.html`} target="_blank" rel="noopener noreferrer" className={pillSm} data-testid="export-pdf" title="The print-ready report: print it or save it as PDF">
-                <Printer size={14} aria-hidden /> Export PDF <ArrowUpRight size={13} aria-hidden />
-                <span className="sr-only"> (opens in a new tab)</span>
-              </a>
+              <ExtLink href={`/api/developer/security/scans/${scan.id}/report.html`} className={pillSm} data-testid="export-pdf" title="The print-ready report: print it or save it as PDF">
+                <Printer size={14} aria-hidden /> Export PDF
+              </ExtLink>
             )}
             {running && (
               <Can cat="security" what="cancel scans">
@@ -156,10 +159,9 @@ export function ScanDetail({ id, canPublish, onBack, backLabel = 'All scans' }: 
             )}
             {publicUrl && (
               <span className="flex w-full flex-wrap items-center gap-2">
-                <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] break-all text-gold underline-offset-4 hover:underline" data-testid="public-link">
-                  {publicUrl} <ArrowUpRight size={13} aria-hidden />
-                  <span className="sr-only"> (opens in a new tab)</span>
-                </a>
+                <ExtLink href={publicUrl} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] break-all text-gold underline-offset-4 hover:underline" data-testid="public-link">
+                  {publicUrl}
+                </ExtLink>
                 <button type="button" onClick={() => void copyWithToast(publicUrl, 'Link')} className={pillSm}>
                   <Copy size={13} aria-hidden /> Copy link
                 </button>

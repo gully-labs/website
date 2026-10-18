@@ -240,6 +240,7 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/deepcore/quote') return void (await handleDeepcoreQuote(req, res, url, geoFor(req, isLocal)))
   // DeepCore's latest launches from the poller's cache (the app dashboard's DeepCore view). Public.
   if (url.pathname === '/api/deepcore/launches') return void (await handleDeepcoreLaunches(req, res, url))
+  if (url.pathname.startsWith('/api/logo/') || url.pathname === '/api/logo') return void (await (await import('./token-logos.mjs')).handleLogo(req, res, url)) // token logos (token-logos.mjs), public, cached
   // Solana (solana-routes.mjs): the RPC proxy, Solana Pay reference lookup and the geo-gated Jupiter quote/swap proxy.
   if (url.pathname.startsWith('/api/solana/')) {
     if (await handleSolana(req, res, url, geoFor(req, isLocal))) return

@@ -11,6 +11,7 @@ import { feedExplorer, isSolanaChain, isSolanaSignature, priceSource } from '../
 import { SolanaReferenceWatch } from '../../components/solana/SolanaReferenceWatch'
 import { accentOf, GULLY_BRAND, storeName, type Brand } from './brand'
 import { MobilePayBar } from './CheckoutFrame'
+import { track } from '../../lib/track'
 
 /* The payment panel of one open invoice (/pay/<id>, /pay/m/<id>; also where a pay link lands), in the
    standalone checkout: 1) network and token, 2) the exact amount with copy buttons and the quote's
@@ -68,7 +69,7 @@ export function CopyChip({ text, label, size = 'sm' }: { text: string; label: st
 function Row({ k, v, copy, copyLabel }: { k: string; v: string; copy?: string; copyLabel?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span className="font-mono text-[10.5px] tracking-[1px] text-faint">{k}</span>
+      <span className="font-mono text-[11px] tracking-[1px] text-faint">{k}</span>
       <div className="flex min-w-0 items-center gap-2 rounded-input border border-line bg-bg py-1 pr-1 pl-3">
         <span className="min-w-0 flex-1 font-mono text-[13px] break-all text-ink">{v}</span>
         {copy !== undefined && <CopyChip text={copy} label={copyLabel ?? 'Copy'} />}
@@ -187,9 +188,9 @@ export function PaidPanel({ invoice, brand = GULLY_BRAND, receiptPath = `/pay/${
           <dt className="text-faint">TX</dt>
           <dd className="m-0 break-all">
             {p.txUrl ? (
-              <a href={p.txUrl} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:text-gold hover:underline">
+              <a href={p.txUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:text-gold hover:underline">
                 {short(p.txHash)} <ArrowUpRight size={12} aria-hidden />
-              </a>
+              <span className="sr-only"> (opens in a new tab)</span></a>
             ) : (
               short(p.txHash)
             )}
@@ -209,19 +210,19 @@ export function PaidPanel({ invoice, brand = GULLY_BRAND, receiptPath = `/pay/${
         </div>
       )}
       <div className="flex flex-wrap gap-3">
-        <Link to={`${receiptPath}?print=1`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 text-[15px] font-semibold transition-colors hover:brightness-110" style={{ background: accent.fill, color: accent.onFill }} data-testid="download-receipt">
+        <Link to={`${receiptPath}?print=1`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 text-[15px] font-semibold transition-colors hover:brightness-110" style={{ background: accent.fill, color: accent.onFill }} data-testid="download-receipt">
           <Download size={16} aria-hidden /> Download receipt
-        </Link>
+        <span aria-hidden> ↗</span><span className="sr-only"> (opens in a new tab)</span></Link>
         <Link to={receiptPath} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
           <FileText size={16} aria-hidden /> View receipt
         </Link>
         {p?.txUrl && (
-          <a href={p.txUrl} target="_blank" rel="noopener" className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+          <a href={p.txUrl} target="_blank" rel="noopener noreferrer" className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
             Explorer <ArrowUpRight size={15} aria-hidden />
-          </a>
+          <span className="sr-only"> (opens in a new tab)</span></a>
         )}
         {brand.website && !brand.gully && (
-          <a href={brand.website} rel="noopener nofollow" className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`} data-testid="return-to-store">
+          <a href={brand.website} rel="noopener noreferrer nofollow" className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`} data-testid="return-to-store">
             Return to {storeName(brand)} <ExternalLink size={14} aria-hidden />
           </a>
         )}
@@ -280,6 +281,8 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
   useEffect(() => onPhase?.(phase), [phase, onPhase])
   const who = payee ?? (brand.gully ? 'the Gully Labs treasury' : storeName(brand))
   const accent = accentOf(brand)
+  // Analytics kind: a merchant store's invoice, or one of ours (plans paid by invoice, scans, admin invoices, pay links).
+  const kind = api.startsWith('/api/pay/m/') ? 'store' : 'invoice'
 
   const fetchQuote = (id: string, refresh = false) => {
     const me = ++quoteRun.current
@@ -288,6 +291,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
       setLoading(false)
       if (r.ok) {
         setQuote(r.data.quote)
+        if (!refresh) track('checkout-started', { kind, chain: r.data.quote.asset.chain, asset: r.data.quote.asset.symbol })
         if (refresh) toastSuccess('New quote ready', { id: 'pay:quote', detail: `${r.data.quote.amount} ${r.data.quote.asset.symbol}, valid for 20 minutes.` })
       } else setQuoteErr(r.error)
     })
@@ -332,6 +336,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
       if (r.ok && r.status === 200 && r.data.invoice) {
         setCheck({ s: 'done', hash: txHash })
         toastSuccess('Payment confirmed', { id: tid, detail: `${q.amount} ${q.asset.symbol} on ${q.asset.chain}.`, duration: 8000 })
+        track('checkout-paid', { kind, chain: q.asset.chain, asset: q.asset.symbol })
         onPaid(r.data.invoice)
         return
       }
@@ -570,9 +575,9 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
                   <Loader2 size={14} className="animate-spin" aria-hidden />
                   {check.s === 'checking' ? `Reading the transaction on ${quote.asset.chain}…` : `${check.message} Checking every few seconds.`}
                   {txLink(check.hash) && (
-                    <a href={txLink(check.hash)!} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:underline">
+                    <a href={txLink(check.hash)!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:underline">
                       View on explorer <ArrowUpRight size={11} aria-hidden />
-                    </a>
+                    <span className="sr-only"> (opens in a new tab)</span></a>
                   )}
                 </span>
               </div>
@@ -588,9 +593,9 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
                 <>
                   {' '}
                   · price from the{' '}
-                  <a href={`${feedExplorer(quote.chainId, asset.explorer)}/address/${quote.price.feed}`} target="_blank" rel="noopener" className="text-dim underline-offset-4 hover:underline">
+                  <a href={`${feedExplorer(quote.chainId, asset.explorer)}/address/${quote.price.feed}`} target="_blank" rel="noopener noreferrer" className="text-dim underline-offset-4 hover:underline">
                     {priceSource(quote.chainId)} {quote.price.description} feed
-                  </a>
+                  <span aria-hidden> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                   , round {quote.price.roundId.length > 12 ? `…${quote.price.roundId.slice(-8)}` : quote.price.roundId}
                 </>
               )}

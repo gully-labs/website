@@ -112,7 +112,7 @@ function Periods({ value, onChange }: { value: Range; onChange: (r: Range) => vo
   return (
     <div role="radiogroup" aria-label="Period" onKeyDown={onKey} className="ml-auto flex gap-[2px] rounded-full border border-line p-[3px]">
       {opts.map((o) => (
-        <button key={o} data-v={o} type="button" role="radio" aria-checked={value === o} tabIndex={value === o ? 0 : -1} onClick={() => onChange(o)} className={`${chip(value === o, true)} min-h-[30px] border-0 px-3 text-[11px] max-[600px]:min-h-11`}>
+        <button key={o} data-v={o} type="button" role="radio" aria-checked={value === o} tabIndex={value === o ? 0 : -1} onClick={() => onChange(o)} className={`${chip(value === o, true)} min-h-[30px] relative after:absolute after:inset-x-0 after:-inset-y-[7px] border-0 px-3 text-[11px] max-[600px]:min-h-11`}>
           {o}
         </button>
       ))}

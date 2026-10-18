@@ -1388,6 +1388,7 @@ export async function handleMerchantPay(req, res, url) {
   const p = url.pathname
   const ip = clientIp(req)
   if (p === '/api/pay/m/config') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }, { Allow: 'GET, HEAD' }), true
     const c = feeConfig()
     return json(res, 200, { feeBps: c.bps, feePct: c.bps / 100, freeUsd: usdNum(c.freeCents), minStatementUsd: usdNum(MIN_STATEMENT_CENTS), pauseAfterDays: PAUSE_AFTER_DAYS, chains: CHAIN_LIST.map((x) => ({ id: x.id, name: x.name })), assets: STORE_ASSET_IDS }, { 'Cache-Control': 'public, max-age=60' }), true
   }

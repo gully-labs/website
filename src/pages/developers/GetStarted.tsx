@@ -1,9 +1,10 @@
-import { AppWindow, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2, KeyRound, MessageCircleQuestion, Send, Terminal } from 'lucide-react'
+import { AppWindow, BellRing, BookOpen, ChartNoAxesCombined, Code2, KeyRound, MessageCircleQuestion, Send, Terminal } from 'lucide-react'
 import { Stepper } from './ui'
 import type { ReactNode } from 'react'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import type { Account, AlertsView, AnalyticsView } from './api'
 import { rise } from './styles'
+import { ExtLink } from './ExtLink'
 
 /* The Overview's "Get started" checklist and "Tools" row. Every tick comes from account data the console
    already reads (the account's keys, /api/developer/alerts, /api/developer/analytics); a step the server
@@ -89,9 +90,9 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
       note: 'no key needed, so we cannot see it from your account',
       state: 'untracked',
       action: (
-        <a href={site('/widget')} target="_blank" rel="noopener noreferrer" className={actionCls}>
-          Builder <ArrowUpRight size={12} aria-hidden />
-        </a>
+        <ExtLink href={site('/widget')} className={actionCls}>
+          Builder
+        </ExtLink>
       ),
     },
   ]
@@ -147,13 +148,11 @@ export function ToolsRow() {
   return (
     <nav aria-label="Tools" className="flex flex-wrap items-center gap-2" style={rise(6)} data-testid="tools-row">
       {tools.map((t) => (
-        <a key={t.title} href={t.href} target="_blank" rel="noopener noreferrer" className="group inline-flex min-h-9 min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 text-[13px] transition-colors hover:border-gold-line max-[600px]:min-h-11">
+        <ExtLink key={t.title} href={t.href} className="group inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 text-[13px] transition-colors hover:border-gold-line max-[600px]:min-h-11">
           <span className="text-gold">{t.icon}</span>
           <span className="font-semibold text-ink">{t.title}</span>
           <span className="truncate text-[12px] text-dim max-[1535px]:hidden">{t.note}</span>
-          <ArrowUpRight size={12} className="shrink-0 text-faint group-hover:text-gold" aria-hidden />
-          <span className="sr-only"> (opens in a new tab)</span>
-        </a>
+        </ExtLink>
       ))}
     </nav>
   )

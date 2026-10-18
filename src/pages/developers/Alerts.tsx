@@ -1,3 +1,4 @@
+import { track } from '../../lib/track'
 import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, History, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { DOCS_URL } from '../../site-host'
@@ -139,6 +140,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
     const r = await api<{ secret: string | null }>('/api/developer/alerts', { method: 'POST', body: { name: name.trim(), chain, ticker, condition, webhookUrl: webhook.trim() || undefined, telegram: toTelegram || undefined } })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
+    track('alert-created', { kind: kind === 'deepcore' ? 'deepcore-launch' : kind === 'holders' ? 'holders' : kind === 'gap' ? 'gap' : 'status', channel: toTelegram && webhook.trim() ? 'telegram+webhook' : toTelegram ? 'telegram' : webhook.trim() ? 'webhook' : 'app' })
     setName('')
     setWebhook('')
     setToTelegram(false)
@@ -147,7 +149,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : 'New gap alert'}>
+    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : kind === 'deepcore' ? 'New DeepCore launch alert' : 'New gap alert'}>
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <label className={fieldLabel}>
           <span>
@@ -257,7 +259,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
           {kind === 'holders'
             ? holdersKind?.available === false
               ? 'Holder alerts come with the Pro plan.'
-              : `Cluster Watch: the token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Sells" and "falls from its high" fire when the cluster or the deployer moves tokens out. Counts as one of your plan's alerts.`
+              : `Holder alert: the token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Sells" and "falls from its high" fire when the cluster or the deployer moves tokens out. Counts as one of your plan's alerts.`
             : kind === 'deepcore'
             ? `Once per new launch read from DeepCore's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
             : kind === 'gap' ? <>Only pools deep enough to flag count; the gap is the on-chain price against fair.</> : <>Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
@@ -336,7 +338,7 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
               </button>
             </>
           )}
-          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-9 items-center gap-1 rounded-full px-2 font-mono text-[11px] text-muted hover:text-ink max-[859px]:min-h-11">
+          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 rounded-full px-2 font-mono text-[11px] text-muted hover:text-ink max-[859px]:min-h-11">
             <ChevronDown size={13} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden /> Log ({a.deliveries.length})
           </button>
         </span>
@@ -384,7 +386,7 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
 }
 
 /* Telegram: not configured / connect (one-time deep link, polled) / connected (chat name, unlink). */
-export function TelegramCard({ info, reload, compact = false }: { info: TelegramInfo; reload: () => Promise<unknown>; compact?: boolean }) {
+export function TelegramCard({ info, reload, compact = false, from = 'alerts' }: { info: TelegramInfo; reload: () => Promise<unknown>; compact?: boolean; /** Analytics: where the connect started. */ from?: string }) {
   const [link, setLink] = useState<TelegramLink | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -415,6 +417,7 @@ export function TelegramCard({ info, reload, compact = false }: { info: Telegram
     const r = await api<TelegramLink>('/api/developer/telegram/connect', { method: 'POST' })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
+    track('telegram-connect', { from })
     setNow(Date.now())
     setLink(r.data)
   }
@@ -469,12 +472,12 @@ export function TelegramCard({ info, reload, compact = false }: { info: Telegram
       </div>
       {link && live && (
         <div className="flex flex-wrap gap-2">
-          <a href={link.link} target="_blank" rel="noopener noreferrer" className={pillGold}>
+          <ExtLink href={link.link} className={pillGold}>
             <ExternalLink size={15} aria-hidden /> Open {info.bot ? `@${info.bot}` : 'the bot'}
-          </a>
-          <a href={link.groupLink} target="_blank" rel="noopener noreferrer" className={pillLine}>
+          </ExtLink>
+          <ExtLink href={link.groupLink} className={pillLine}>
             <Users size={15} aria-hidden /> Add to a group
-          </a>
+          </ExtLink>
         </div>
       )}
       {!compact && chat && <span className="text-[12px] leading-[1.55] text-muted">Tick Telegram on an alert to have it sent here, with Open and Mute 24h buttons. In the chat, /alerts lists your alerts, /gap NVDA and /top read the tracker, and /stop unlinks.</span>}
@@ -635,7 +638,7 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
       {full && (
         <p className="m-0 text-[13px] text-muted">
           Every alert your plan includes is in use.{' '}
-          <button type="button" onClick={goBilling} className="min-h-9 text-gold underline-offset-4 hover:underline">
+          <button type="button" onClick={goBilling} className="min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] text-gold underline-offset-4 hover:underline">
             See plans
           </button>{' '}
           for more, or delete one.

@@ -478,6 +478,12 @@ try {
 
   const cfg = await anon.call('/api/pay/m/config')
   check('public config for the docs: 0.5%, $5,000 free, 7 days', cfg.status === 200 && cfg.data.feePct === 0.5 && cfg.data.freeUsd === 5000 && cfg.data.pauseAfterDays === 7)
+  {
+    const head = await fetch(`${BASE}/api/pay/m/config`, { method: 'HEAD' })
+    check('config: HEAD is allowed', head.status === 200)
+    const results = await Promise.all(['POST', 'PUT', 'DELETE', 'PATCH'].map((method) => fetch(`${BASE}/api/pay/m/config`, { method, headers: { 'X-Requested-With': 'gully' } })))
+    check('config: anything but GET/HEAD is 405 with Allow: GET, HEAD', results.every((r) => r.status === 405 && r.headers.get('allow') === 'GET, HEAD'), results.map((r) => r.status).join())
+  }
 
   /* --------------------------------- fee at payment time (Request fee proxy) --- */
   const mdb = M.merchantsDbForTest()
