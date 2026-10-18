@@ -1,7 +1,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import { EChart } from './EChart'
 import type { ChartEvent } from './chart-utils'
-import { areaPreset, axisTooltip, barsPreset, C, itemTooltip, linePreset, PALETTE, ringPreset, tipHtml } from './chartPresets'
+import { areaPreset, axisTooltip, barsPreset, C, CHART_H, itemTooltip, linePreset, PALETTE, ringPreset, tipHtml } from './chartPresets'
 
 /* Illustrations for the product pages, drawn with the site's chart kit so they move and answer
    hover like the real dashboards would. Every figure here is EXAMPLE data, typed in to show what
@@ -99,7 +99,7 @@ function Funnel() {
   return (
     <EChart
       option={option}
-      height={150}
+      height={CHART_H.sm}
       steps={{ count: FUNNEL.length }}
       label={`Example funnel: ${FUNNEL.map((f) => `${f.step} ${fmt(f.n)}`).join(', ')}. Example data. Arrow keys step through the steps.`}
     />
@@ -121,7 +121,7 @@ function ChainsRing() {
       <div className="relative size-[150px] flex-none">
         <EChart
           option={option}
-          height={150}
+          height={CHART_H.sm}
           skeleton="ring"
           steps={{ count: CHAINS.length }}
           label={`Example: wallet connects by chain, ${CHAINS.map((c) => `${c.name} ${c.n}%`).join(', ')}. Example data.`}
@@ -135,8 +135,8 @@ function ChainsRing() {
       </div>
       <ul className="m-0 flex w-full min-w-0 flex-1 list-none flex-col gap-[5px] p-0" aria-hidden>
         {CHAINS.map((c, i) => (
-          <li key={c.name} className={`flex items-center gap-2 rounded-[4px] px-1 text-[13px] transition-colors ${hover === i ? 'bg-surface-hover' : ''}`}>
-            <i className="size-[9px] flex-none rounded-[2px]" style={{ background: PALETTE[i] }} />
+          <li key={c.name} className={`flex items-center gap-2 rounded-btn px-1 text-[13px] transition-colors ${hover === i ? 'bg-surface-hover' : ''}`}>
+            <i className="size-[9px] flex-none rounded-bar" style={{ background: PALETTE[i] }} />
             <span className="truncate text-ink-2">{c.name}</span>
             <span className="ml-auto font-mono text-[12px] text-muted">{c.n}%</span>
           </li>
@@ -165,7 +165,7 @@ function ConnectsLine() {
     }),
     [],
   )
-  return <EChart option={option} height={200} skeleton="line" steps={{ count: DAYS.length, seriesIndex: 1 }} label={`Example: wallet connects per day this week, ${CONNECTS.week.join(', ')}, against last week. Example data.`} />
+  return <EChart option={option} height={CHART_H.md} skeleton="line" steps={{ count: DAYS.length, seriesIndex: 1 }} label={`Example: wallet connects per day this week, ${CONNECTS.week.join(', ')}, against last week. Example data.`} />
 }
 
 export function AnalyticsExample() {
@@ -234,7 +234,7 @@ export function ChainKitExample() {
       <EChart
         key={view}
         option={option}
-        height={220}
+        height={CHART_H.md}
         skeleton={view === 'tx' ? 'bars' : 'line'}
         steps={{ count: HOURS.length }}
         label={view === 'tx' ? `Example: transactions per hour over a day, from ${fmt(Math.min(...TXS))} to ${fmt(Math.max(...TXS))}. Example data.` : `Example: average block time per hour, ${Math.min(...BLOCK_TIME)} to ${Math.max(...BLOCK_TIME)} seconds. Example data.`}

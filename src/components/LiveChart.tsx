@@ -3,7 +3,7 @@ import { projects } from '../content/projects'
 import { fmtDay, fmtUsd, nameOf, type Point, type Venue } from '../lib/stats'
 import { EChart } from './charts/EChart'
 import type { ChartEvent } from './charts/chart-utils'
-import { areaPreset, axisTooltip, livePoint, tipHtml } from './charts/chartPresets'
+import { areaPreset, axisTooltip, CHART_H, livePoint, tipHtml } from './charts/chartPresets'
 
 /* Charts drawn from live reads only. Lines draw on with a pulsing dot on the newest day, bars grow
    from the baseline; each is interactive (hover crosshair with exact values, keyboard stepping)
@@ -53,7 +53,7 @@ export function DailyLine({ series, label, color = '#e8c060' }: { series: Point[
     [key],
   )
   if (series.length < 2) return <EmptySeries n={series.length} />
-  return <EChart option={option} height={260} skeleton="line" steps={{ count: series.length }} label={`${label}: ${series.map((p) => `${fmtDay(p.t)} ${fmtUsd(p.v)}`).join(', ')}. Arrow keys step through days.`} />
+  return <EChart option={option} height={CHART_H.lg} skeleton="line" steps={{ count: series.length }} label={`${label}: ${series.map((p) => `${fmtDay(p.t)} ${fmtUsd(p.v)}`).join(', ')}. Arrow keys step through days.`} />
 }
 
 /** One bar per venue, from a picked figure; a venue without it says so instead of drawing zero. */
@@ -81,7 +81,7 @@ export function VenueBars({ venues, pick }: { venues: Venue[]; pick: (v: Venue) 
           <div className="relative flex flex-1 items-end border-b border-line-strong">
             {r.value !== null ? (
               <div
-                className="w-full rounded-t-[3px]"
+                className="w-full rounded-t-bar"
                 style={{
                   height: `${Math.max(2, (r.value / max) * 100)}%`,
                   background: accentOf(r.key),

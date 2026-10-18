@@ -130,7 +130,7 @@ export function Pricing() {
             PRICING
           </span>
           <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-            Tracker API and <span className="text-gold">Gully Analytics</span>
+            Tracker API and <span className="text-gold whitespace-nowrap">Gully Analytics</span>
           </h1>
           <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
             Two products, priced separately. The tracker API stays free and open; paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. Gully Analytics starts with a free trial. You pay in ETH, BNB, USDC or USDT from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.
@@ -142,7 +142,7 @@ export function Pricing() {
         <SectionHead id="api-title" eyebrow="TRACKER API" title="More calls, alerts and history" />
         {state.k === 'loading' && <PlanSkeleton />}
         {state.k === 'error' && (
-          <div className="flex flex-wrap items-center gap-4 rounded-card border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-6 py-5 text-[15px] text-error" role="alert">
+          <div className="flex flex-wrap items-center gap-4 rounded-card border border-error-line bg-error/6 px-6 py-5 text-[15px] text-error" role="alert">
             The plans could not be read: {state.message}
             <button type="button" onClick={retry} className={`${btnOutline} min-h-11 px-5 text-[14px]`}>
               Try again

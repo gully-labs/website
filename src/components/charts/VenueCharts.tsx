@@ -4,6 +4,7 @@ import type { StatsState } from '../../hooks/useStats'
 import { fmtDate, fmtUsd, type VenueOk } from '../../lib/stats'
 import { VenueLogo } from '../logos/VenueLogo'
 import { C } from './chartPresets'
+import { segBtn, segGroup } from '../ui'
 import { esc, type ChartEvent } from './chart-utils'
 import { ChartBox } from './ChartSkeleton'
 import { EChart } from './EChart'
@@ -61,9 +62,9 @@ export function VenueBars({ st }: { st: StatsState }) {
   const height = Math.max(1, drawn.length) * ROW + 8
   return (
     <div className="flex flex-col gap-4">
-      <div role="group" aria-label="Figure" className="flex w-fit flex-wrap gap-[2px] rounded-[8px] border border-line p-[2px]">
+      <div role="group" aria-label="Figure" className={`${segGroup} flex-wrap`}>
         {METRICS.map((m) => (
-          <button key={m.id} type="button" aria-pressed={metric === m.id} onClick={() => setMetric(m.id)} className={`min-h-11 rounded-[6px] px-3 font-mono text-[12px] transition-colors ${metric === m.id ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}>
+          <button key={m.id} type="button" aria-pressed={metric === m.id} onClick={() => setMetric(m.id)} className={segBtn(metric === m.id)}>
             {m.label}
           </button>
         ))}
@@ -83,7 +84,7 @@ export function VenueBars({ st }: { st: StatsState }) {
           {drawn.length ? (
             <EChart option={option} height={height} label={`${METRICS.find((m) => m.id === metric)!.label} by venue, live: ${drawn.map((r) => `${r.p.name} ${fmtUsd(r.v)}`).join(', ')}.`} steps={{ count: drawn.length }} />
           ) : (
-            <p className="m-0 animate-[gl-skeleton_2s_ease-in-out_infinite] font-mono text-[12px] text-faint">No venue publishes this figure yet.</p>
+            <p className="m-0 gl-skeleton font-mono text-[12px] text-faint">No venue publishes this figure yet.</p>
           )}
         </div>
       )}
@@ -144,7 +145,7 @@ export function VenueTimeline({ st }: { st: StatsState }) {
           // A value axis starting at the earliest venue: the transparent first bar offsets each venue's start.
           <EChart option={option} height={drawn.length * ROW + 32} label={`How long each venue has been measured: ${drawn.map((r) => `${r.p.name} since ${fmtDate(new Date(r.t).toISOString())}`).join(', ')}.`} steps={{ count: drawn.length, seriesIndex: 1 }} />
         ) : (
-          <p className="m-0 animate-[gl-skeleton_2s_ease-in-out_infinite] font-mono text-[12px] text-faint">Not tracked yet: no venue publishes when its count starts.</p>
+          <p className="m-0 gl-skeleton font-mono text-[12px] text-faint">Not tracked yet: no venue publishes when its count starts.</p>
         )}
       </div>
       {missing.length > 0 && <p className="m-0 font-mono text-[11px] text-faint">Not tracked yet: {missing.map((r) => r.p.name).join(', ')} {missing.length === 1 ? 'does' : 'do'} not publish when its count starts.</p>}

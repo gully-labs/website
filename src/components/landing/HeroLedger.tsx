@@ -3,6 +3,8 @@ import { projects } from '../../content/projects'
 import { fmtDay, fmtTime, fmtUsd, nameOf, type Stats, type VenueOk } from '../../lib/stats'
 import { EChart } from '../charts/EChart'
 import { esc, useReducedMotion, type ChartEvent } from '../charts/chart-utils'
+import { CHART_H } from '../charts/chartPresets'
+import { segBtn, segGroup } from '../ui'
 import { Figure } from './Figure'
 
 /* The hero's ledger card: three combined figures that count up, then the venues' own daily volume as
@@ -163,21 +165,20 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
 
   const T = data?.totals
   let chart: React.ReactNode
-  if (state === 'loading') chart = <div className="h-[230px] animate-pulse rounded-[8px] bg-surface-deep" />
-  else if (state === 'error' || !data) chart = <p className="m-0 flex h-[230px] items-center justify-center font-mono text-[12px] text-error">The venues could not be read. Try again in a minute.</p>
-  else if (D < 2 || !withSeries.length) chart = <p className="m-0 flex h-[230px] items-center justify-center px-4 text-center font-mono text-[12px] text-faint">No venue publishes a daily series yet, so there is nothing to stack.</p>
+  if (state === 'loading') chart = <div className={`h-[${CHART_H.md}px] gl-skeleton rounded-tile bg-surface-deep`} />
+  else if (state === 'error' || !data) chart = <p className="m-0 flex h-[220px] items-center justify-center font-mono text-[12px] text-error">The venues could not be read. Try again in a minute.</p>
+  else if (D < 2 || !withSeries.length) chart = <p className="m-0 flex h-[220px] items-center justify-center px-4 text-center font-mono text-[12px] text-faint">No venue publishes a daily series yet, so there is nothing to stack.</p>
   else
     chart = (
       <EChart
         option={option}
-        height={230}
+        height={CHART_H.md}
         steps={{ count: D }}
         onChart={onChart}
         label={`Daily volume by venue, stacked, last ${D} days. ${days.map((t, i) => `${fmtDay(t)} ${fmtUsd(totals[i])}`).join(', ')}. Arrow keys step through the days.`}
       />
     )
 
-  const seg = (on: boolean) => `min-h-11 min-w-11 rounded-[6px] px-[10px] font-mono text-[11px] transition-colors duration-200 ${on ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`
 
   return (
     <div className="min-w-0 overflow-hidden rounded-card border border-line bg-surface transition-[border-color] duration-300 hover:border-line-strong">
@@ -204,7 +205,7 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
               return (
                 <span key={p.key} title={`${p.name} publishes no daily series, so it has no bars`} className="inline-flex min-h-11 items-center text-[12px]">
                   <span className="inline-flex min-h-[30px] items-center gap-[6px] rounded-full border border-dashed border-line px-[10px] text-muted">
-                    <span aria-hidden className="size-2 rounded-[2px] opacity-60" style={{ background: p.accent }} />
+                    <span aria-hidden className="size-2 rounded-bar opacity-60" style={{ background: p.accent }} />
                     {p.name}
                     <span className="font-mono text-[11px] text-faint">no series</span>
                   </span>
@@ -221,7 +222,7 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
               >
                 {/* The button is 44 px tall for touch; the pill inside is the visible chip. */}
                 <span className={`inline-flex min-h-[30px] items-center gap-[6px] rounded-full border px-[10px] transition-[color,opacity,border-color] duration-200 group-enabled:group-hover:border-line-hover ${on ? 'border-line-strong text-ink' : 'border-line text-faint opacity-70'}`}>
-                  <span aria-hidden className={`size-2 rounded-[2px] transition-transform duration-200 ${on ? 'scale-100' : 'scale-75'}`} style={{ background: p.accent }} />
+                  <span aria-hidden className={`size-2 rounded-bar transition-transform duration-200 ${on ? 'scale-100' : 'scale-75'}`} style={{ background: p.accent }} />
                   {p.name}
                 </span>
               </button>
@@ -234,9 +235,9 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
         <span>Daily volume · last {D || '—'} days · press a venue to hide it</span>
         {/* While loading the switch is held (disabled) so the row does not wrap differently when the data lands. */}
         {(canRange || state === 'loading') && (
-          <div role="group" aria-label="Range" className="flex gap-[2px] rounded-[8px] border border-line p-[2px]">
+          <div role="group" aria-label="Range" className={segGroup}>
             {([7, 30] as Range[]).map((r) => (
-              <button key={r} type="button" aria-pressed={range === r} disabled={state === 'loading'} onClick={() => setRange(r)} className={seg(range === r)}>
+              <button key={r} type="button" aria-pressed={range === r} disabled={state === 'loading'} onClick={() => setRange(r)} className={`${segBtn(range === r)} min-w-11`}>
                 {r}D
               </button>
             ))}

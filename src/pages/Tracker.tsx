@@ -15,6 +15,7 @@ import { StatusBadge, TrackerTable } from '../components/tracker/TrackerTable'
 import { TopMovers } from '../components/tracker/TopMovers'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../components/charts/number-formats'
+import { eyebrow } from '../components/ui'
 import { xPost } from '../lib/share'
 import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, gapPost, stockPath, UP, useTracker, type TrackerRow, fairSourceLabel } from '../lib/tracker'
 
@@ -110,11 +111,11 @@ export function Tracker() {
       <section className="flex flex-col gap-4 px-page pt-10 pb-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-2">
-            <span className="font-mono text-[12px] tracking-[1.5px] text-gold" style={rise(0)}>
+            <span className={eyebrow} style={rise(0)}>
               TRACKER · TOKENISED STOCKS · LIVE
             </span>
             <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-              Is your stock token <span className="text-gold">fairly priced?</span>
+              Is your stock token <span className="text-gold whitespace-nowrap">fairly priced?</span>
             </h1>
             <p className="m-0 max-w-[680px] text-[15px] leading-[1.5] text-muted" style={rise(2)}>
               Every tokenised stock on Robinhood Chain, BNB Chain and Solana: its price in its deepest pool against its fair price from Chainlink (for Solana xStocks without a feed, the issuer's quote).
@@ -155,11 +156,11 @@ export function Tracker() {
         {st.k === 'loading' && (
           // Holds the page's shape while the first read lands, so the footer never rises and drops.
           <div role="status" aria-label="Reading every feed and pool" className="flex min-h-[100svh] flex-col gap-4">
-            <div className="h-[86px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface" />
-            <div className="h-[230px] animate-[gl-skeleton_1.4s_.1s_ease-in-out_infinite] rounded-card bg-surface" />
+            <div className="h-[86px] gl-skeleton rounded-card bg-surface" />
+            <div className="h-[230px] gl-skeleton [animation-delay:.1s] rounded-card bg-surface" />
             <div className="grid grid-cols-3 gap-4 max-[1199px]:grid-cols-2 max-[759px]:grid-cols-1">
-              <div className="h-[420px] animate-[gl-skeleton_1.4s_.2s_ease-in-out_infinite] rounded-card bg-surface" />
-              <div className="col-span-2 h-[420px] animate-[gl-skeleton_1.4s_.3s_ease-in-out_infinite] rounded-card bg-surface max-[1199px]:col-span-1" />
+              <div className="h-[420px] gl-skeleton [animation-delay:.2s] rounded-card bg-surface" />
+              <div className="col-span-2 h-[420px] gl-skeleton [animation-delay:.3s] rounded-card bg-surface max-[1199px]:col-span-1" />
             </div>
           </div>
         )}
@@ -220,7 +221,7 @@ export function Tracker() {
                       </a>
                     </div>
                   </div>
-                  <dl className="m-0 grid grid-cols-4 gap-px overflow-hidden rounded-[10px] border border-line bg-line max-[520px]:grid-cols-2">
+                  <dl className="m-0 grid grid-cols-4 gap-px overflow-hidden rounded-panel border border-line bg-line max-[520px]:grid-cols-2">
                     {[
                       { k: 'ONCHAIN', v: fmtPrice(sel.onchain) },
                       { k: 'FAIR', v: fmtPrice(sel.fair) },
@@ -292,19 +293,19 @@ export function Tracker() {
           <section className="border-t border-line bg-bg-alt px-page py-10">
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-8">
               <div className="flex flex-col gap-2">
-                <span className="font-mono text-[12px] tracking-[1.5px] text-gold">HOW IT WORKS</span>
+                <span className={eyebrow}>HOW IT WORKS</span>
                 <p className="m-0 text-[14px] leading-[1.6] text-muted">
                   <b className="font-medium text-ink-2">Onchain</b> is each token's deepest pool, pools against ETH, BNB or a dollar stablecoin first, priced straight from the pool contract every minute. DexScreener and GeckoTerminal find the pool and report its liquidity and volume. <b className="font-medium text-ink-2">Fair</b> is Chainlink: on Robinhood Chain the feed prices the token; on BNB Chain it prices the share, multiplied by the token's on-chain multiplier. On Solana, an xStock's fair price is the share price from a Chainlink feed on BNB Chain, Robinhood Chain or Ethereum (else the issuer's own quote) times the token's on-chain multiplier, and Orca, Raydium CLMM and Meteora DLMM pools are read straight from their accounts.
                 </p>
               </div>
               <div className="flex flex-col gap-2">
-                <span className="font-mono text-[12px] tracking-[1.5px] text-gold">WHAT THE COLOURS MEAN</span>
+                <span className={eyebrow}>WHAT THE COLOURS MEAN</span>
                 <p className="m-0 text-[14px] leading-[1.6] text-muted">
                   Under {data.rules.inLinePct}% is in line; {data.rules.flagPct}% or more is flagged. A pool under {fmtCompactUsd(data.rules.minLiquidityUsd)} is drawn hollow and never flagged. When a market is closed, feeds hold their last value.
                 </p>
               </div>
               <div className="flex flex-col gap-2">
-                <span className="font-mono text-[12px] tracking-[1.5px] text-gold">READ THIS FIRST</span>
+                <span className={eyebrow}>READ THIS FIRST</span>
                 <p className="m-0 text-[14px] leading-[1.6] text-muted">Information only, not investment advice. Gaps can close or widen before a trade lands, and pools carry fees and slippage. Stock tokens are issued by third parties who can pause, block or change them.</p>
               </div>
             </div>

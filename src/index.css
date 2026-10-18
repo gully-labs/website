@@ -41,6 +41,8 @@
   --color-bar: #3d4a36;
   --color-mascot-bg: #24282c;
   --color-error: #ff8a7a;
+  /* The hairline round an error notice (the error colour at a dark tint). */
+  --color-error-line: #5a2a24;
 
   --font-display: 'Barlow Condensed', 'Barlow Condensed Fallback', sans-serif;
   --font-sans: 'Hanken Grotesk', sans-serif;
@@ -57,8 +59,13 @@
   --text-h4: 22px;
   --text-h4--line-height: 1.1;
 
+  /* The one radius scale (pixel pass, 2026-10-17): bar ends 2, buttons 4, inputs and segmented
+     controls 6, icon tiles 8, inner panels 10, cards 12, modals 14, pills 999. Nothing else. */
+  --radius-bar: 2px;
   --radius-btn: 4px;
   --radius-input: 6px;
+  --radius-tile: 8px;
+  --radius-panel: 10px;
   --radius-card: 12px;
   --radius-modal: 14px;
 
@@ -122,6 +129,9 @@
 @utility px-page {
   padding-inline: clamp(24px, 4.5cqw, 64px);
 }
+
+/* The one loading placeholder: a soft pulse (stilled to a steady tint under reduced motion, below). */
+.gl-skeleton { animation: gl-skeleton 1.4s ease-in-out infinite; }
 
 .gl-row-sweep::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(232,192,96,.07), transparent); transform: translateX(-100%); animation: gl-scan 6s var(--sweep-delay, 0s) ease-in-out infinite; }
 

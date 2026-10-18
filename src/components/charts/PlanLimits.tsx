@@ -73,7 +73,7 @@ export function PlanLimits({ tiers }: { tiers: LimitTier[] }) {
           <span className="font-display text-[20px] leading-none font-bold uppercase">Compare the limits</span>
           <span className="font-mono text-[11px] text-faint">{m.unit} per tier, read from the plans</span>
         </span>
-        <span role="group" aria-label="Limit" className="flex flex-wrap gap-1 rounded-input border border-line bg-bg p-1">
+        <span role="group" aria-label="Limit" className="flex flex-wrap gap-1 rounded-input border border-line bg-surface-deep p-1">
           {METRICS.map((x) => (
             <button
               key={x.id}

@@ -6,7 +6,7 @@ import { scrollToAnchor } from '../../lib/anchors'
 import type { PlansState } from '../../lib/plans'
 import type { Stats } from '../../lib/stats'
 import { ProjectCards } from '../ProjectRows'
-import { h2 } from './links'
+import { eyebrow, h2 } from './links'
 import { PricingSwitch } from './PricingSwitch'
 import { ProductConsole } from './ProductConsole'
 import { OpenStrip, ServicesBlock } from './Sections'
@@ -37,7 +37,7 @@ export default function Below({ data, state, plans }: { data: Stats | null; stat
         <div className="flex flex-col gap-4 px-page py-12 max-[599px]:py-9">
           <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }} className="flex flex-wrap items-end justify-between gap-3">
             <div className="flex flex-col gap-1">
-              <span className="font-mono text-[11px] tracking-[1.5px] text-gold">PROJECTS · OUT OF THE LAB</span>
+              <span className={eyebrow}>PROJECTS · OUT OF THE LAB</span>
               <h2 id="projects-title" className={h2}>
                 Venues we run
               </h2>

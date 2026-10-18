@@ -10,11 +10,11 @@ const BARS = [42, 64, 38, 80, 56, 70, 48, 62]
 export function ChartSkeleton({ variant = 'bars', className = '' }: { variant?: SkeletonVariant; className?: string }) {
   const pulse = (i: number) => ({ animation: `gl-skeleton 1.6s ${(i * 0.08).toFixed(2)}s ease-in-out infinite` })
   return (
-    <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden rounded-[6px] ${className}`}>
+    <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden rounded-input ${className}`}>
       {variant === 'bars' && (
         <div className="flex size-full items-end gap-[5%] px-[4%] pb-3">
           {BARS.map((h, i) => (
-            <span key={i} className="flex-1 rounded-t-[3px] bg-line" style={{ height: `${h}%`, ...pulse(i) }} />
+            <span key={i} className="flex-1 rounded-t-bar bg-line" style={{ height: `${h}%`, ...pulse(i) }} />
           ))}
         </div>
       )}
@@ -36,7 +36,7 @@ export function ChartSkeleton({ variant = 'bars', className = '' }: { variant?: 
 /** "Couldn't load" inside the chart's box, with a retry button when the caller can retry. */
 export function ChartError({ message = "Couldn't load this chart.", onRetry, className = '' }: { message?: string; onRetry?: () => void; className?: string }) {
   return (
-    <div role="alert" className={`absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[6px] border border-dashed border-line-strong bg-surface-deep/60 p-4 text-center ${className}`}>
+    <div role="alert" className={`absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-input border border-dashed border-line-strong bg-surface-deep/60 p-4 text-center ${className}`}>
       <span className="font-mono text-[12px] leading-[1.5] text-faint">{message}</span>
       {onRetry && (
         <button

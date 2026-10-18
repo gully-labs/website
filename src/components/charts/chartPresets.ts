@@ -12,6 +12,9 @@ import { esc } from './chart-utils'
    Updates glide (animationDurationUpdate, cubicOut). Hovering a mark blurs the others. Under
    reduced motion EChart.tsx replaces every timing here with GENTLE_MOTION (chart-utils). */
 
+/** Chart box heights: a sparkline strip, a small card chart, the usual card chart, a feature chart. */
+export const CHART_H = { spark: 44, sm: 150, md: 220, lg: 260 } as const
+
 /** Brand colours (src/index.css) for chart code, which cannot read CSS variables in canvas mode. */
 export const C = {
   gold: '#e8c060',

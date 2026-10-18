@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { eyebrow as eyebrowCls } from '../components/ui'
 import { canonical, DOC_PAGES, useDocHref, type DocSlug } from './nav'
 
 export interface DocSection {
@@ -73,7 +74,7 @@ function PrevNext({ slug }: { slug: DocSlug }) {
   const next = DOC_PAGES[i + 1]
   const prevHref = useDocHref(prev?.slug ?? '')
   const nextHref = useDocHref(next?.slug ?? '')
-  const cls = 'flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-[10px] border border-line px-4 py-3 transition-colors hover:border-gold-line hover:bg-surface'
+  const cls = 'flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-panel border border-line px-4 py-3 transition-colors hover:border-gold-line hover:bg-surface'
   return (
     <nav aria-label="Pages" className="mt-6 flex flex-wrap gap-3 border-t border-line pt-8">
       {prev ? (
@@ -105,7 +106,7 @@ export function DocPage({ slug, eyebrow, title, description, lead, sections, chi
     <div className="grid grid-cols-[minmax(0,1fr)_200px] gap-12 max-[1199px]:grid-cols-1">
       <article className="flex max-w-[780px] min-w-0 flex-col gap-10" style={{ animation: 'gl-rise .45s ease both' }}>
         <header className="flex flex-col gap-4">
-          <span className="font-mono text-[12px] tracking-[1.5px] text-gold">{eyebrow}</span>
+          <span className={eyebrowCls}>{eyebrow}</span>
           <h1 className="m-0 font-display text-[clamp(40px,5cqw,60px)] leading-[.95] font-extrabold uppercase">{title}</h1>
           <p className="m-0 text-[17px] leading-[1.6] text-muted">{lead}</p>
         </header>
@@ -148,7 +149,7 @@ export function P({ children }: { children: ReactNode }) {
 }
 
 export function C({ children }: { children: ReactNode }) {
-  return <code className="rounded-[4px] border border-line bg-surface-deep px-[5px] py-[1px] font-mono text-[.88em] break-words text-ink">{children}</code>
+  return <code className="rounded-btn border border-line bg-surface-deep px-[5px] py-[1px] font-mono text-[.88em] break-words text-ink">{children}</code>
 }
 
 export function List({ children }: { children: ReactNode }) {
@@ -157,7 +158,7 @@ export function List({ children }: { children: ReactNode }) {
 
 export function Callout({ label, children, tone = 'gold' }: { label: string; children: ReactNode; tone?: 'gold' | 'plain' }) {
   return (
-    <div className={`flex flex-col gap-2 rounded-[10px] border px-5 py-4 ${tone === 'gold' ? 'border-gold-line bg-[rgba(232,192,96,.06)]' : 'border-line bg-surface'}`}>
+    <div className={`flex flex-col gap-2 rounded-panel border px-5 py-4 ${tone === 'gold' ? 'border-gold-line bg-[rgba(232,192,96,.06)]' : 'border-line bg-surface'}`}>
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{label}</span>
       <div className="text-[14.5px] leading-[1.65] text-ink-2">{children}</div>
     </div>
@@ -167,7 +168,7 @@ export function Callout({ label, children, tone = 'gold' }: { label: string; chi
 /** A field table that stacks into cards on phones, so nothing scrolls sideways. */
 export function Fields({ rows, head = ['Field', 'Type', 'Meaning'] }: { rows: [string, string, ReactNode][]; head?: [string, string, string] }) {
   return (
-    <div className="overflow-hidden rounded-[10px] border border-line">
+    <div className="overflow-hidden rounded-panel border border-line">
       <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)_minmax(0,2.2fr)] gap-4 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] tracking-[1px] text-faint max-[640px]:hidden">
         {head.map((h) => (
           <span key={h}>{h.toUpperCase()}</span>
@@ -198,7 +199,7 @@ export function DocLink({ to, hash, children }: { to: DocSlug; hash?: string; ch
 
 export function Ext({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <a href={href} target="_blank" rel="noopener" className="text-gold underline decoration-gold-line underline-offset-[3px] transition-colors hover:decoration-gold">
+    <a href={href} target="_blank" rel="noopener noreferrer" className="text-gold underline decoration-gold-line underline-offset-[3px] transition-colors hover:decoration-gold">
       {children}
     </a>
   )

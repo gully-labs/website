@@ -66,7 +66,7 @@ function EntryBody({ e, active }: { e: NavEntry; active?: boolean }) {
     <>
       <span
         aria-hidden
-        className={`grid size-9 flex-none place-items-center rounded-[8px] border transition-colors ${active ? 'border-gold-line bg-[rgba(232,192,96,.08)] text-gold' : 'border-line bg-bg text-faint group-hover:text-gold group-focus-visible:text-gold'}`}
+        className={`grid size-9 flex-none place-items-center rounded-tile border transition-colors ${active ? 'border-gold-line bg-[rgba(232,192,96,.08)] text-gold' : 'border-line bg-bg text-faint group-hover:text-gold group-focus-visible:text-gold'}`}
       >
         <e.icon size={17} strokeWidth={1.75} />
       </span>
@@ -82,7 +82,7 @@ function EntryBody({ e, active }: { e: NavEntry; active?: boolean }) {
   )
 }
 
-const panelItem = 'group flex min-h-11 w-full items-start gap-3 rounded-[8px] p-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover data-[active]:bg-[rgba(232,192,96,.05)]'
+const panelItem = 'group flex min-h-11 w-full items-start gap-3 rounded-tile p-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover data-[active]:bg-[rgba(232,192,96,.05)]'
 
 function MenuGroup({ g, pathname, hash, wide, guard }: { g: NavGroup; pathname: string; hash: string; wide?: boolean; guard: Guard }) {
   const active = groupActive(g, pathname, hash)

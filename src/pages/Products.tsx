@@ -109,7 +109,7 @@ function ProductPage({ p }: { p: Product }) {
             <span className="rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">{p.status.toUpperCase()}</span>
           </span>
           <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-            {p.title[0]} <span className="text-gold">{p.title[1]}</span>
+            {p.title[0]} <span className="text-gold whitespace-nowrap">{p.title[1]}</span>
           </h1>
           <p className="m-0 max-w-[700px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
             {p.lead}

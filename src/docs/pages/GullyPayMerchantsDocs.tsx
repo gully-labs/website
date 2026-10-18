@@ -3,7 +3,7 @@ import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { EChart } from '../../components/charts/EChart'
 import { areaPreset, axisTooltip, C, linePreset, tipHtml } from '../../components/charts/chartPresets'
 import { CodeBlock } from '../CodeBlock'
-import { C as Code, Callout, DocLink, DocPage, Fields, List, P, Section } from '../DocPage'
+import { C as Code, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { apiOrigin } from '../nav'
 
 const sections = [
@@ -71,13 +71,13 @@ export function FeeCurve() {
         const i = ps[0]?.dataIndex ?? 0
         return tipHtml({ title: `${usd(xs[i])} lifetime volume`, rows: [{ name: 'Fees in all', value: usd(fee[i]), color: C.gold }, { name: 'Effective rate', value: `${eff[i]}%`, color: '#5aa9e6' }], note: xs[i] <= cfg.freeUsd ? 'Inside the free allowance.' : undefined })
       }),
-      xAxis: { type: 'category', boundaryGap: false, data: xs.map((v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)), axisLabel: { color: C.faint, fontSize: 10, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
+      xAxis: { type: 'category', boundaryGap: false, data: xs.map((v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)), axisLabel: { color: C.faint, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
       yAxis: [
-        { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
-        { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `${v}%` }, splitLine: { show: false }, max: cfg.feePct },
+        { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
+        { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => `${v}%` }, splitLine: { show: false }, max: cfg.feePct },
       ],
       series: [
-        { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 10, formatter: 'free allowance', position: 'insideEndTop' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
+        { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 11, formatter: 'free allowance', position: 'insideEndTop' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
         { id: 'eff', name: 'Effective rate', ...linePreset({ color: '#5aa9e6', dashed: true }), yAxisIndex: 1, data: eff },
       ],
     }
@@ -172,7 +172,7 @@ export function GullyPayMerchantsDocs() {
           <li>Every Monday at 00:00 UTC, a store that owes $1 or more gets a statement: a normal Gully Labs invoice, payable in crypto through the Gully Pay checkout. Less than $1 rolls into the next week.</li>
           <li>The portal shows the balance, the free allowance left, every statement and a <b>Pay now</b> button. The CSV export lists every payment with its fee.</li>
           <li>
-            The fee terms in full: section 5 of the <a href="https://gullylabs.xyz/legal/merchant-terms#s5" className="text-gold underline-offset-4 hover:underline">merchant terms</a>.
+            The fee terms in full: section 5 of the <Ext href="https://gullylabs.xyz/legal/merchant-terms#s5">merchant terms</Ext>.
           </li>
         </List>
       </Section>
@@ -189,9 +189,9 @@ export function GullyPayMerchantsDocs() {
       <Section id="terms" title="Terms">
         <P>
           Running a store means accepting the{' '}
-          <a href="https://gullylabs.xyz/legal/merchant-terms" className="text-gold underline-offset-4 hover:underline">
+          <Ext href="https://gullylabs.xyz/legal/merchant-terms">
             Gully Pay merchant terms
-          </a>{' '}
+          </Ext>{' '}
           (adapted from Common Paper's Cloud Service Agreement, CC BY 4.0): you tick “I agree” when you add your first receiving wallet.
         </P>
       </Section>

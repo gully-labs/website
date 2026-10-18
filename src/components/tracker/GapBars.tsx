@@ -131,7 +131,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
                   onBlur={() => (setHover(null), point(rid, false))}
                   aria-pressed={sel}
                   aria-label={`${r.ticker} ${fmtGap(r.gapPct)}, onchain ${fmtPrice(r.onchain)}, fair ${fmtPrice(r.fair)}${r.status === 'thin' ? ', thin pool' : ''}`}
-                  className={`flex h-full w-full min-w-0 items-center justify-end gap-[6px] rounded-[4px] bg-transparent p-0 pr-1 font-mono text-[12px] transition-colors ${hover === rid ? 'bg-surface-hover' : ''} ${sel ? 'text-gold' : 'text-ink-2'}`}
+                  className={`flex h-full w-full min-w-0 items-center justify-end gap-[6px] rounded-btn bg-transparent p-0 pr-1 font-mono text-[12px] transition-colors ${hover === rid ? 'bg-surface-hover' : ''} ${sel ? 'text-gold' : 'text-ink-2'}`}
                 >
                   <StockLogo row={r} size={16} chainBadge={false} active={sel} />
                   <span className="truncate">{r.ticker}</span>
@@ -157,19 +157,19 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
         />
       </div>
       {withGap.length > TOP_N && (
-        <button type="button" onClick={() => setAll((v) => !v)} className="mt-1 self-start bg-transparent p-0 font-mono text-[12px] text-gold hover:text-gold-hover">
+        <button type="button" onClick={() => setAll((v) => !v)} className="mt-1 inline-flex min-h-11 items-center self-start bg-transparent p-0 font-mono text-[12px] text-gold hover:text-gold-hover">
           {all ? `Show the ${TOP_N} widest` : `Show all ${withGap.length}`}
         </button>
       )}
       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-faint">
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block size-[10px] rounded-[2px]" style={{ background: UP }} /> above fair price
+          <i className="inline-block size-[10px] rounded-bar" style={{ background: UP }} /> above fair price
         </span>
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block size-[10px] rounded-[2px]" style={{ background: DOWN }} /> below fair price
+          <i className="inline-block size-[10px] rounded-bar" style={{ background: DOWN }} /> below fair price
         </span>
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block size-[10px] rounded-[2px] border border-dashed border-muted" /> thin pool, not trusted
+          <i className="inline-block size-[10px] rounded-bar border border-dashed border-muted" /> thin pool, not trusted
         </span>
         <span className="inline-flex items-center gap-2">
           <i className="inline-block h-[10px] w-4 bg-[rgba(232,192,96,.18)]" /> ±{inLinePct}% in line

@@ -5,7 +5,7 @@ import { askStatus } from '../components/ask/askApi'
 import { useContact } from '../components/ContactContext'
 import { HeroLedger } from '../components/landing/HeroLedger'
 import { Seo } from '../components/Seo'
-import { btnGold, btnOutline } from '../components/ui'
+import { btnGold, btnOutline, eyebrow } from '../components/ui'
 import { projects } from '../content/projects'
 import { useStats } from '../hooks/useStats'
 import { usePlans } from '../lib/plans'
@@ -49,8 +49,8 @@ export function Home() {
       />
 
       <section id="top" className="flex flex-wrap items-center gap-8 px-page pt-12 pb-10 max-[599px]:pt-8">
-        <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-[18px]" style={{ animation: 'gl-rise .6s cubic-bezier(.2,.8,.2,1) both' }}>
-          <span className="flex items-center gap-2 font-mono text-[12px] tracking-[1.5px] text-gold">
+        <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-4" style={{ animation: 'gl-rise .6s cubic-bezier(.2,.8,.2,1) both' }}>
+          <span className={`flex items-center gap-2 ${eyebrow}`}>
             <span aria-hidden className="size-[7px] flex-none rounded-full bg-green" style={{ animation: 'gl-pulse-ring 1.8s infinite' }} />
             <span className="max-[419px]:hidden">
               {venues.toUpperCase()} VENUES · {words[PRODUCTS].toUpperCase()} PRODUCTS · ONE LEDGER
@@ -67,7 +67,7 @@ export function Home() {
           <p className="m-0 max-w-[480px] text-[16px] leading-[1.5] text-muted">
             Gully Labs ships on-chain venues and the tools around them: a stock token tracker with swaps and alerts, analytics that see the wallet, branded block explorers, a free API, and crypto billing. Try each one below.
           </p>
-          <div className="flex flex-wrap gap-[10px] max-[479px]:flex-col">
+          <div className="flex flex-wrap gap-3 max-[479px]:flex-col">
             <Link to="/tracker" className={`${btnGold} inline-flex min-h-11 items-center justify-center gap-2 px-5`}>
               <AppWindow aria-hidden size={16} /> Launch app
             </Link>

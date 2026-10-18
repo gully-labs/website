@@ -4,7 +4,7 @@ import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../charts/number-formats'
-import { axisTooltip, barsPreset, C, itemTooltip, PALETTE, ringPreset, tipHtml } from '../charts/chartPresets'
+import { axisTooltip, barsPreset, C, CHART_H, itemTooltip, PALETTE, ringPreset, tipHtml } from '../charts/chartPresets'
 import { ChainLogo } from './StockLogo'
 import { CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
@@ -57,8 +57,8 @@ export function GapHistogram({ rows }: { rows: TrackerRow[] }) {
   if (!t.length) return <p className="m-0 py-6 font-mono text-[12px] text-faint">No trusted pools to plot yet.</p>
   return (
     <div className="flex flex-col gap-1">
-      <EChart option={option} height={170} steps={{ count: bins.length }} label={`Gap distribution, stocks per band: ${bins.map((b) => `${b.range} ${b.items.length}`).join(', ')}. Arrow keys step through bands.`} />
-      <div className="flex justify-between pl-6 font-mono text-[11px] text-axis" aria-hidden>
+      <EChart option={option} height={CHART_H.sm} steps={{ count: bins.length }} label={`Gap distribution, stocks per band: ${bins.map((b) => `${b.range} ${b.items.length}`).join(', ')}. Arrow keys step through bands.`} />
+      <div className="flex justify-between pl-6 font-mono text-[11px] text-faint" aria-hidden>
         <span>below fair</span>
         <span>gap %</span>
         <span>above fair</span>
@@ -147,7 +147,7 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
     <div className="flex flex-col gap-1">
       <EChart
         option={option}
-        height={210}
+        height={CHART_H.md}
         renderer="canvas"
         replaceMerge={['series', 'dataZoom']}
         steps={{ count: pts.length }}
@@ -191,10 +191,10 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
   const point = (sid: string | null, on: boolean) => sid && chart.current?.dispatchAction({ type: on ? 'highlight' : 'downplay', seriesIndex: 0, name: sid })
   return (
     <div className="flex items-center gap-5 max-[480px]:flex-col">
-      <div className="relative size-[150px] flex-none">
+      <div className={`relative size-[${CHART_H.sm}px] flex-none`}>
         <EChart
           option={option}
-          height={150}
+          height={CHART_H.sm}
           skeleton="ring"
           steps={{ count: slices.length }}
           onChart={(c) => (chart.current = c)}
@@ -217,9 +217,9 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
             key={s.id}
             onMouseEnter={() => (setHover(s.id), point(s.id, true))}
             onMouseLeave={() => (setHover(null), point(s.id, false))}
-            className={`flex items-center gap-2 rounded-[4px] px-1 text-[13px] transition-colors ${hover === s.id ? 'bg-surface-hover' : ''}`}
+            className={`flex items-center gap-2 rounded-btn px-1 text-[13px] transition-colors ${hover === s.id ? 'bg-surface-hover' : ''}`}
           >
-            <i className="size-[9px] flex-none rounded-[2px]" style={{ background: s.color }} />
+            <i className="size-[9px] flex-none rounded-bar" style={{ background: s.color }} />
             <span className="truncate text-ink-2">
               {s.label}
               {s.chain && <ChainLogo chain={s.chain} size={12} named className="ml-1.5 align-[-2px]" />}
@@ -294,7 +294,7 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
         <div className="flex gap-4 font-mono text-[11px] text-faint">
           {stats.map((s, i) => (
             <span key={s.key} className="inline-flex items-center gap-2">
-              <i className="size-[9px] rounded-[2px]" style={{ background: colors[i] }} />
+              <i className="size-[9px] rounded-bar" style={{ background: colors[i] }} />
               {s.name}
             </span>
           ))}

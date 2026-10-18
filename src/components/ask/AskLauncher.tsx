@@ -75,7 +75,7 @@ export function AskLauncher() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="ask-gully-title"
-            className="absolute flex flex-col gap-4 border-line bg-bg p-5 shadow-[0_0_60px_rgba(0,0,0,.5)] max-[699px]:inset-x-0 max-[699px]:bottom-0 max-[699px]:h-[88dvh] max-[699px]:rounded-t-[16px] max-[699px]:border-t min-[700px]:inset-y-0 min-[700px]:right-0 min-[700px]:w-[min(480px,100vw)] min-[700px]:border-l"
+            className="absolute flex flex-col gap-4 border-line bg-bg p-5 shadow-[0_0_60px_rgba(0,0,0,.5)] max-[699px]:inset-x-0 max-[699px]:bottom-0 max-[699px]:h-[88dvh] max-[699px]:rounded-t-modal max-[699px]:border-t min-[700px]:inset-y-0 min-[700px]:right-0 min-[700px]:w-[min(480px,100vw)] min-[700px]:border-l"
             style={{ animation: 'gl-rise .25s ease both' }}
           >
             <div className="flex items-center justify-between gap-3">

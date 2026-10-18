@@ -12,7 +12,7 @@ export function AnalyticsPlanCards({ state, retry, delay = 0 }: { state: PlansSt
   if (state.k === 'loading') return <PlanSkeleton />
   if (state.k === 'error')
     return (
-      <div className="flex flex-wrap items-center gap-4 rounded-card border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-6 py-5 text-[15px] text-error" role="alert">
+      <div className="flex flex-wrap items-center gap-4 rounded-card border border-error-line bg-error/6 px-6 py-5 text-[15px] text-error" role="alert">
         The plans could not be read: {state.message}
         <button type="button" onClick={retry} className={`${btnOutline} min-h-11 px-5 text-[14px]`}>
           Try again
@@ -73,7 +73,7 @@ export function PlanSkeleton() {
   return (
     <div role="status" aria-label="Reading the plans" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-[430px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card border border-line bg-surface" style={{ animationDelay: `${i * 0.12}s` }} />
+        <div key={i} className="h-[430px] gl-skeleton rounded-card border border-line bg-surface" style={{ animationDelay: `${i * 0.12}s` }} />
       ))}
     </div>
   )

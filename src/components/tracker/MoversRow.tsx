@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { CHAIN_SHORT, DOWN, fmtPp, stockPath, UP, useMovers } from '../../lib/tracker'
+import { CHAIN_SHORT, DOWN, fmtGap, fmtPp, stockPath, UP, useMovers } from '../../lib/tracker'
 import { StockLogo } from './StockLogo'
 
 const W = 120
@@ -24,13 +24,13 @@ export function MoversRow({ limit = 5 }: { limit?: number }) {
     return (
       <div aria-hidden className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-2">
         {Array.from({ length: limit }, (_, i) => (
-          <div key={i} className="h-[86px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[10px] bg-surface" style={{ animationDelay: `${i * 0.12}s` }} />
+          <div key={i} className="h-[86px] gl-skeleton rounded-panel bg-surface" style={{ animationDelay: `${i * 0.12}s` }} />
         ))}
       </div>
     )
   if (st.k === 'error') return <p className="m-0 font-mono text-[12px] text-faint">The live movers could not be read just now.</p>
   const list = st.data.byGap.slice(0, limit)
-  if (!list.length) return <p className="m-0 animate-[gl-skeleton_2s_ease-in-out_infinite] font-mono text-[12px] text-faint">{st.data.note ?? 'Not tracked yet: the tracker needs 24h of snapshots.'}</p>
+  if (!list.length) return <p className="m-0 gl-skeleton font-mono text-[12px] text-faint">{st.data.note ?? 'Not tracked yet: the tracker needs 24h of snapshots.'}</p>
   return (
     <ul aria-label="Biggest gap moves, last 24 hours" className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-2 p-0">
       {list.map((m, i) => {
@@ -38,7 +38,7 @@ export function MoversRow({ limit = 5 }: { limit?: number }) {
         const d = sparkPath(m.spark)
         return (
           <li key={`${m.chain}:${m.ticker}`} style={{ animation: `gl-rise .45s ${i * 0.06}s ease both` }}>
-            <Link to={stockPath(m)} className="flex min-h-11 flex-col gap-2 rounded-[10px] border border-line bg-surface p-3 text-ink transition-colors hover:border-gold hover:text-ink">
+            <Link to={stockPath(m)} title={`${m.ticker}: gap ${fmtGap(m.gapThen)} → ${fmtGap(m.gapNow)} over 24h`} className="flex min-h-11 flex-col gap-2 rounded-panel border border-line bg-surface p-3 text-ink transition-colors hover:border-gold hover:text-ink">
               <span className="flex items-center gap-2">
                 <StockLogo row={m} size={22} chainBadge={false} />
                 <b className="font-display text-[16px] leading-none">{m.ticker}</b>

@@ -7,6 +7,7 @@ import { SocialIcon } from '../SocialIcon'
 import { StockLogo } from './StockLogo'
 import { useReducedMotion } from '../charts/chart-utils'
 import { ChartBox } from '../charts/ChartSkeleton'
+import { CHART_H } from '../charts/chartPresets'
 import { xPost } from '../../lib/share'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPct, fmtPp, moversPost, stockPath, UP, useMovers, type Mover, type MoverWindow } from '../../lib/tracker'
 
@@ -92,7 +93,7 @@ function MoverCard({ m, mode, win, max }: { m: Mover; mode: Mode; win: MoverWind
     <Link
       to={stockPath(m)}
       aria-label={`${m.ticker} on ${CHAIN_SHORT[m.chain] ?? m.chain}: ${what} ${mainText} over ${win}, gap now ${fmtGap(m.gapPct)}. Open its page.`}
-      className="group flex h-full w-[212px] flex-col gap-3 rounded-[10px] border border-line bg-surface-deep p-3 text-ink transition-[border-color,transform] duration-200 hover:-translate-y-[2px] hover:border-gold hover:text-ink"
+      className="group flex h-full w-[212px] flex-col gap-3 rounded-panel border border-line bg-surface-deep p-3 text-ink transition-[border-color,transform] duration-200 hover:-translate-y-[2px] hover:border-gold hover:text-ink"
     >
       <span className="flex items-center gap-[10px]">
         <StockLogo row={m} size={30} />
@@ -210,11 +211,11 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
       {st.k === 'loading' && (
         <div aria-hidden className="flex gap-3 overflow-hidden">
           {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="h-[150px] w-[212px] flex-none animate-pulse rounded-[10px] bg-surface-deep" />
+            <div key={i} className="h-[150px] w-[212px] flex-none gl-skeleton rounded-panel bg-surface-deep" />
           ))}
         </div>
       )}
-      {st.k === 'error' && <ChartBox height={150} state="error" message="Couldn't load the movers. It also retries every minute." onRetry={onRetry} />}
+      {st.k === 'error' && <ChartBox height={CHART_H.sm} state="error" message="Couldn't load the movers. It also retries every minute." onRetry={onRetry} />}
       {data && list.length === 0 && (
         <p className="m-0 py-4 font-mono text-[12px] text-faint">
           {data.note ?? (chain !== 'all' ? `No trusted pool on this chain has ${win} of snapshots yet.` : `No trusted pool has ${win} of snapshots yet.`)}

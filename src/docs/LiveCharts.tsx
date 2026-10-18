@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { EChart } from '../components/charts/EChart'
-import { axisTooltip, barsPreset, C, itemTooltip, PALETTE, sparklinePreset, tipHtml } from '../components/charts/chartPresets'
+import { axisTooltip, barsPreset, C, CHART_H, itemTooltip, PALETTE, sparklinePreset, tipHtml } from '../components/charts/chartPresets'
 import { NF } from '../components/charts/number-formats'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { TokenLogo } from '../components/logos/TokenLogo'
@@ -78,7 +78,7 @@ function LatencyTile({ path, label, probes }: { path: string; label: string; pro
   const option = useMemo(() => sparklinePreset({ data, labels: good.map((p) => hhmmss(p.at)), color: state === 'down' ? C.error : C.gold, fmt: (v) => `${v} ms` }), [good, data, state])
   const median = data.length ? [...data].sort((a, b) => a - b)[Math.floor(data.length / 2)] : null
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-[10px] border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 flex-col gap-3 rounded-panel border border-line bg-surface px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <span className="font-mono text-[12px] text-ink">GET {path}</span>
         <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-2">
@@ -96,9 +96,9 @@ function LatencyTile({ path, label, probes }: { path: string; label: string; pro
         <span className="font-mono text-[11px] text-dim">median {median !== null ? `${median} ms` : 'not tracked yet'} · {good.length} of {probes.length} ok</span>
       </div>
       {data.length >= 2 ? (
-        <EChart option={option} height={44} label={`Response time of ${path} from this browser, last ${data.length} checks`} skeleton="line" steps={{ count: data.length }} />
+        <EChart option={option} height={CHART_H.spark} label={`Response time of ${path} from this browser, last ${data.length} checks`} skeleton="line" steps={{ count: data.length }} />
       ) : (
-        <div className="relative h-[44px] overflow-hidden rounded-[6px] bg-surface-deep">
+        <div className={`relative h-[${CHART_H.spark}px] overflow-hidden rounded-input bg-surface-deep">
           <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(232,192,96,.12),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
           <span className="absolute inset-0 grid place-items-center font-mono text-[11px] text-faint">collecting a series…</span>
         </div>
@@ -179,7 +179,7 @@ function WidestGaps({ rows, at, failed }: { rows: Row[] | null; at: string | nul
     [top],
   )
   return (
-    <div className="flex flex-col gap-2 rounded-[10px] border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-panel border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">WIDEST TRUSTED GAPS NOW · LIVE FROM /api/tracker</span>
         <span className="font-mono text-[11px] text-dim">{at ? `built ${hhmmss(Date.parse(at))}` : rows ? 'time not tracked yet' : ''}</span>
@@ -187,7 +187,7 @@ function WidestGaps({ rows, at, failed }: { rows: Row[] | null; at: string | nul
       {rows && !top.length ? (
         <p className="m-0 py-6 font-mono text-[12px] text-muted">No trusted gap right now: every row is thin, unverified or unreadable. Nothing is shown as zero.</p>
       ) : (
-        <EChart option={option} height={260} label="The widest trusted gaps between on-chain and fair price right now, by token" skeleton="bars" error={failed ? 'The tracker could not be read just now.' : undefined} steps={{ count: top.length }} />
+        <EChart option={option} height={CHART_H.lg} label="The widest trusted gaps between on-chain and fair price right now, by token" skeleton="bars" error={failed ? 'The tracker could not be read just now.' : undefined} steps={{ count: top.length }} />
       )}
     </div>
   )
@@ -250,7 +250,7 @@ export function PayCoverage() {
     }
   }, [chains, assets])
   return (
-    <div className="flex flex-col gap-2 rounded-[10px] border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-panel border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">ACCEPTED NOW · LIVE FROM /api/plans</span>
         <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-2">
@@ -319,7 +319,7 @@ export function StatusRing() {
   )
   const failed = !rows && probes.length > 0 && !probes.some((p) => p.ok)
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-[10px] border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 items-center gap-4 rounded-panel border border-line bg-surface px-4 py-3">
       <div className="w-[120px] shrink-0">
         <EChart option={option} height={120} label="Tracker rows by status right now" skeleton="ring" error={failed ? 'unreadable' : undefined} />
       </div>
