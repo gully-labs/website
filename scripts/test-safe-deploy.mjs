@@ -126,6 +126,15 @@ const same = (a, b) => lower(a) === lower(b)
 
 try {
   /* --------------------------------------------------- pure arithmetic --- */
+  // Safe 1.5.0 pins: checksummed addresses and code hashes from safe-global/safe-deployments 1.37.64 (src/assets/v1.5.0, canonical)
+  const P150 = [
+    [S.FACTORIES, '0x14F2982D601c9458F93bd70B218933A6f8165e7b', '0x967dae4cda22b0c9ef7f31b010bdc1ceb0af9904b0c3dc060b5302e4c18a4529', 'SafeProxyFactory'],
+    [S.SINGLETONS, '0xEdd160fEBBD92E350D4D398fb636302fccd67C7e', '0x180193227186ccb85316c94db1f0d156ed932b14712cfaac78901899178572dc', 'SafeL2'],
+    [S.SINGLETONS, '0xFf51A5898e281Db6DfC7855790607438dF2ca44b', '0xdda019cbd7c867a533a2a86e5c53434fdc50b13122b5a5ddb4a8df61b31c20f2', 'Safe'],
+    [S.FALLBACK_HANDLERS, '0x3EfCBb83A4A7AfcB4F68D501E2c2203a38be77f4', '0x3c6a85bcf7b563daa624b884b4e9a1b9fa5371edde7be945d998071a48f28bbc', 'CompatibilityFallbackHandler'],
+  ]
+  check('Safe 1.5.0 factory, SafeL2, Safe and fallback handler are pinned with the official addresses and code hashes', P150.every(([m, addr, h, name]) => m[addr.toLowerCase()]?.version === '1.5.0' && m[addr.toLowerCase()].codeHash === h && m[addr.toLowerCase()].name === name))
+  check('new Safes still default to 1.4.1', S.NEW_SAFE.version === '1.4.1')
   const calls = S.decodeFactoryCalls(F.creation.tx.input)
   check('the creation input decodes to one createProxyWithNonce call', calls.length === 1 && calls[0].kind === 'createProxyWithNonce' && same(calls[0].singleton, SAFE_L2), JSON.stringify(calls.map((c) => c.kind)))
   check('its salt nonce is the original one (0x1a14c8cd37b)', calls[0]?.saltNonce === '0x1a14c8cd37b', calls[0]?.saltNonce)
