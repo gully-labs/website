@@ -1,0 +1,25 @@
+{{!--
+    The post's generated banner (assets/js/banner.js draws it into a canvas). Deterministic: the same
+    seed, title and tag always give the same picture. Decorative (aria-hidden); a feature image, when the
+    post has one, stays fully visible underneath and keeps its alt text.
+
+    Params: variant (hero | post | card | tag), seed, label (short title or name), tag (slug),
+            tagname, img (feature image), alt, eager (true on the above-the-fold banner)
+--}}
+<div class="gl-banner gl-banner--{{variant}}{{#if img}} has-image{{/if}}"
+     data-gl-banner data-variant="{{variant}}" data-seed="{{seed}}" data-title="{{label}}" data-tag="{{tag}}" data-tag-name="{{tagname}}">
+    {{#if img}}
+        <img class="gl-banner-img"
+            srcset="{{img_url img size="s" format="webp"}} 320w,
+                    {{img_url img size="m" format="webp"}} 600w,
+                    {{img_url img size="l" format="webp"}} 960w,
+                    {{img_url img size="xl" format="webp"}} 1200w,
+                    {{img_url img size="xxl" format="webp"}} 2000w"
+            sizes="{{#match variant "card"}}(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 420px{{else}}(max-width: 1440px) 100vw, 1360px{{/match}}"
+            src="{{img_url img size="l"}}"
+            alt="{{alt}}"
+            width="1200" height="675"
+            {{#if eager}}fetchpriority="high"{{else}}loading="lazy" decoding="async"{{/if}}>
+    {{/if}}
+    <span class="gl-banner-fallback" aria-hidden="true"></span>
+</div>

@@ -24,6 +24,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATA_DIR } from './http.mjs'
 import { computeMovers, MOVER_WINDOWS } from './movers.mjs'
+import { buildSolanaChain, SOLANA_TRACKER_CHAIN, solanaTrackerHealth } from './solana-tracker.mjs'
+import { rpc as payRpc } from './payments.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const load = (f) => JSON.parse(fs.readFileSync(path.join(here, 'data', f), 'utf8'))
@@ -532,7 +534,7 @@ function record(rows, at) {
 }
 
 /** Every token the tracker follows, for validating alert targets. */
-export const trackedStocks = () => CHAINS.flatMap((c) => c.table.stocks.map((s) => ({ chain: c.key, ticker: s.ticker, name: s.name })))
+export const trackedStocks = () => [...CHAINS, SOLANA_TRACKER_CHAIN].flatMap((c) => c.table.stocks.map((s) => ({ chain: c.key, ticker: s.ticker, name: s.name })))
 
 /** One followed token by chain key and address (any case), with the chain id, or null. */
 export function stockByToken(chainKey, address) {
@@ -586,7 +588,7 @@ export function recordSnapshotForTest(rows, at = Date.now()) {
 // Logos for API consumers and the widget: the token's own (BSC bStocks) or the company's site icon,
 // as absolute URLs on this site. Read once from the SOURCES files the logo scripts keep in public/.
 const SITE_ORIGIN = 'https://gullylabs.xyz'
-const CHAIN_LOGO = { robinhood: '/chains/robinhood.png', bsc: '/chains/bnb-chain.svg' }
+const CHAIN_LOGO = { robinhood: '/chains/robinhood.png', bsc: '/chains/bnb-chain.svg', solana: '/chains/solana.svg' }
 let logoMaps = null
 function logosFor(chainKey, stock) {
   if (!logoMaps) {
@@ -667,14 +669,20 @@ async function build() {
   const at = Date.now()
   const parts = []
   for (const c of CHAINS) parts.push(await buildChain(c, at))
+  // Solana (solana-tracker.mjs): the same row shape and the same assessRow; a failure there never blanks the EVM chains.
+  // Its fair prices are Chainlink feeds on this tracker's EVM chains (read with the same RPC failover) or on Ethereum.
+  const evmBatch = (chainId, calls) => rpcBatch(CHAINS.find((c) => c.id === chainId), calls)
+  const evmCall = (chainId, to, data) => payRpc(chainId, 'eth_call', [{ to, data }, 'latest'])
+  const sol = await buildSolanaChain(at, { assessRow, sessionOpen, logosFor, evmBatch, evmCall }).catch((e) => (console.error('solana tracker:', e?.message ?? e), null))
+  if (sol) parts.push(sol)
   return {
     generatedAt: new Date(at).toISOString(),
     chains: parts.map((p) => p.chain),
     rules: { minLiquidityUsd: MIN_LIQUIDITY_USD, inLinePct: IN_LINE_PCT, flagPct: FLAG_PCT, implausiblePct: IMPLAUSIBLE_PCT, trustLiquidityUsd: TRUST_LIQUIDITY_USD, unitsRatio: UNITS_RATIO },
     sources: {
-      fair: 'Chainlink feeds, read on chain with latestRoundData(); on BNB Chain multiplied by each bStock’s uiMultiplier()',
+      fair: 'Chainlink feeds, read on chain with latestRoundData(); on BNB Chain multiplied by each bStock’s uiMultiplier(); on Solana, the share price from those Chainlink feeds (or a verified Ethereum one, else the issuer’s xStocks quote) multiplied by each xStock’s on-chain multiplier',
       onchain: 'each token’s deepest pool (pools against a native coin or dollar stable first), priced directly on chain every refresh (v3 slot0, v4 StateView); DexScreener, or GeckoTerminal when it refuses, finds the pool and reports liquidity and volume once an hour',
-      tables: CHAINS.map((c) => `${c.name}: ${c.table.source}`),
+      tables: [...CHAINS, SOLANA_TRACKER_CHAIN].map((c) => `${c.name}: ${c.table.source}`),
     },
     rows: parts.flatMap((p) => p.rows),
   }
@@ -692,7 +700,7 @@ export async function readTracker() {
       if (Date.now() - lastSnapshot >= SNAPSHOT_MS) {
         lastSnapshot = Date.now()
         record(body.rows, lastSnapshot)
-        emitSnapshot(body.rows.map((r) => ({ ...r, sessionOpen: body.chains.find((c) => c.key === r.chain)?.sessionOpen ?? null })), lastSnapshot)
+        emitSnapshot(body.rows.map((r) => ({ ...r, sessionOpen: r.sessionOpen ?? body.chains.find((c) => c.key === r.chain)?.sessionOpen ?? null })), lastSnapshot)
       }
       cache = { at: Date.now(), body }
       return body
@@ -782,7 +790,7 @@ export function trackerHealth() {
       lastPoolRead: lastPools[c.key]?.at ? new Date(lastPools[c.key].at).toISOString() : null,
       backoffUntil: backoff[c.key] && backoff[c.key].until > now ? new Date(backoff[c.key].until).toISOString() : null,
       sessionOpen: sessionOpen(c.session),
-    })),
+    })).concat({ ...solanaTrackerHealth(), sessionOpen: sessionOpen('nyse') }),
     history: { series: Object.keys(history).length, points: Object.values(history).reduce((a, h) => a + h.length, 0), file: DATA_FILE },
     statuses: cache ? cache.body.rows.reduce((m, r) => ((m[r.status] = (m[r.status] ?? 0) + 1), m), {}) : null,
   }

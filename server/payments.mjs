@@ -19,6 +19,7 @@
 //   GULLY_CONFIRMATIONS_<chainId> confirmations for one chain
 
 import { keccak_256 } from './vendor/noble.mjs'
+import { isSolanaAsset, readSolanaPayment, SOLANA_ASSETS, SOLANA_CHAIN, SOLANA_CHAIN_ID, solanaPayOn } from './solana-pay.mjs'
 
 /** A Chainlink answer older than this is stale and no quote is given in that coin. */
 export const FEED_MAX_AGE_SEC = 2 * 3600
@@ -66,8 +67,13 @@ export const CHAINS = {
   },
 }
 
-/** The chains in display order (object keys that are numbers would sort by id). */
+// Solana (solana-pay.mjs): offered only while GULLY_SOLANA_TREASURY is set.
+CHAINS[SOLANA_CHAIN_ID] = SOLANA_CHAIN
+
+/** The EVM chains in display order (object keys that are numbers would sort by id). */
 export const CHAIN_LIST = [8453, 1, 56, 42161].map((id) => CHAINS[id])
+/** Every chain a payment can be made on right now: the EVM chains, plus Solana when its treasury is set. */
+export const publicChains = () => [...CHAIN_LIST, ...(solanaPayOn() ? [SOLANA_CHAIN] : [])]
 
 /** Accepted assets, in the order the picker shows them. `native` coins are priced by their chain's feed. */
 export const ASSETS = [
@@ -81,6 +87,7 @@ export const ASSETS = [
   { id: 'bnb-bnb', chainId: 56, symbol: 'BNB', name: 'BNB', kind: 'native', address: null, decimals: 18 },
   { id: 'arb-usdc', chainId: 42161, symbol: 'USDC', name: 'USD Coin', kind: 'token', address: '0xaf88d065e77c8cc2239327c5edb3a432268e5831', decimals: 6 },
   { id: 'arb-eth', chainId: 42161, symbol: 'ETH', name: 'Ether', kind: 'native', address: null, decimals: 18 },
+  ...SOLANA_ASSETS,
 ]
 export const ASSET_IDS = ASSETS.map((a) => a.id)
 export const assetById = (id) => ASSETS.find((a) => a.id === id) ?? null
@@ -105,7 +112,7 @@ export const addressUrl = (chainId, a) => `${CHAINS[chainId].explorer}/address/$
 
 /** What the browser is told about the assets: no RPC URLs, nothing secret. */
 export function publicAssets() {
-  return ASSETS.map((a) => {
+  return ASSETS.filter((a) => !isSolanaAsset(a) || solanaPayOn()).map((a) => {
     const c = CHAINS[a.chainId]
     return { id: a.id, chainId: a.chainId, chain: c.name, chainKey: c.key, symbol: a.symbol, name: a.name, kind: a.kind, address: a.address, decimals: a.decimals, confirmations: confirmationsFor(a.chainId), explorer: c.explorer, feed: a.kind === 'native' ? { address: c.feed.address, description: c.feed.description } : null }
   })
@@ -158,8 +165,11 @@ export function quoteAmount(asset, usdCents, tag, price) {
   const num = cents * 10n ** BigInt(asset.decimals + price.decimals)
   const den = answer * 100n
   const wei = (num + den - 1n) / den
-  const base = ((wei + NATIVE_STEP - 1n) / NATIVE_STEP) * NATIVE_STEP
-  return { base, amount: base + BigInt(tag) * NATIVE_STEP }
+  // SOL (tagStep 1 lamport): the base is rounded up to 1e4 lamports and the tag fills the last four digits.
+  const step = asset.tagStep ? BigInt(asset.tagStep) : NATIVE_STEP
+  const grid = asset.tagStep ? step * 10_000n : NATIVE_STEP
+  const base = ((wei + grid - 1n) / grid) * grid
+  return { base, amount: base + BigInt(tag) * step }
 }
 
 /* ----------------------------------------------------------------- rpc --- */
@@ -243,7 +253,8 @@ export async function readFeed(chainId) {
   if (!price) {
     let out
     try {
-      out = await rpc(chainId, 'eth_call', [{ to: c.feed.address, data: LATEST_ROUND_DATA }, 'latest'])
+      // A chain without feeds of its own (Solana) names the EVM chain its feed is read on (feed.chainId).
+      out = await rpc(c.feed.chainId ?? chainId, 'eth_call', [{ to: c.feed.address, data: LATEST_ROUND_DATA }, 'latest'])
     } catch (e) {
       return { ok: false, status: 502, error: `The ${c.feed.description} price on ${c.name} could not be read just now (${String(e?.message ?? e)}). Pay in a stablecoin or try again shortly.` }
     }
@@ -285,7 +296,8 @@ async function findElsewhere(chainId, txHash) {
  * The receipt and the transaction are read separately and must agree (hash, block, sender, chain).
  * Amounts are BigInt throughout.
  */
-export async function readPayment(asset, txHash, treasury) {
+export async function readPayment(asset, txHash, treasury, opts = {}) {
+  if (isSolanaAsset(asset)) return readSolanaPayment(asset, txHash, treasury, opts)
   const c = CHAINS[asset.chainId]
   const needed = confirmationsFor(c.id)
   let receipt, tx, head

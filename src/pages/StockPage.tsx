@@ -14,16 +14,16 @@ import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF } from '../components/charts/number-formats'
 import { PoolDepth } from '../components/tracker/PoolDepth'
 import { xPost } from '../lib/share'
-import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow } from '../lib/tracker'
+import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow, fairFeedChain, fairSourceLabel } from '../lib/tracker'
 import { DEVELOPERS_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
-import { feeText } from '../components/swap/swapConfig'
+import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
 
 /* One stock token on one chain: everything the tracker knows about it, read live. Nothing on this page is
    typed in; a value that could not be read says so. */
 
-const EXPLORER: Record<string, string> = { robinhood: 'https://robinhoodchain.blockscout.com/address/', bsc: 'https://bscscan.com/address/' }
+const EXPLORER: Record<string, string> = { robinhood: 'https://robinhoodchain.blockscout.com/address/', bsc: 'https://bscscan.com/address/', ethereum: 'https://etherscan.io/address/', solana: 'https://solscan.io/account/' }
 const card = 'flex flex-col gap-4 rounded-card border border-line bg-surface p-6'
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.06}s ease both` })
 /** 0xd060…9EEC: both ends stay visible, so the checksum tail people verify is never cut off. */
@@ -102,7 +102,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
     <>
       <Seo
         title={`${row.ticker} token price vs fair value`}
-        description={`${row.name} (${row.ticker}) token on ${CHAIN_NAME[row.chain] ?? row.chain}: its price in its deepest pool against the Chainlink fair price, the gap, pool depth and history, read live.`}
+        description={`${row.name} (${row.ticker}) token on ${CHAIN_NAME[row.chain] ?? row.chain}: its price in its deepest pool against its ${fairSourceLabel(row)} fair price, the gap, pool depth and history, read live.`}
       />
 
       <section className="px-page pt-10 pb-8">
@@ -146,7 +146,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           {(
             [
               { k: 'ONCHAIN', v: <Price value={row.onchain} />, n: row.pool ? `${row.ticker}/${row.pool.against}` : 'no pool' },
-              { k: 'FAIR', v: <Price value={row.fair} />, n: `Chainlink · ${ageText(row.feedUpdatedAt, now)}` },
+              { k: 'FAIR', v: <Price value={row.fair} />, n: `${fairSourceLabel(row)} · ${ageText(row.feedUpdatedAt, now)}` },
               { k: 'GAP', v: <AnimatedNumber value={row.gapPct} format={NF.signed2} suffix="%" countUp />, c: tone, n: row.status === 'thin' ? 'thin pool, not trusted' : 'onchain vs fair' },
               moveCell('GAP Δ 1H', move1h, row),
               moveCell('GAP Δ 24H', move24h, row),
@@ -174,7 +174,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             <span className="font-mono text-[11px] leading-[1.5] text-faint">
               {row.pool ? `${row.pool.dex}${row.pool.labels.length ? ` ${row.pool.labels.join('/')}` : ''} · ${row.ticker}/${row.pool.against}` : 'no pool'} · {chain?.fairMethod ?? 'fair from Chainlink'}
               {row.feedPrices === 'underlying-share' && row.multiplier !== null ? ` · share × ${row.multiplier.toFixed(6)}` : ''}
-              {chain ? ` · market ${chain.sessionOpen ? 'open' : 'closed'} (${chain.sessionName})` : ''}
+              {chain ? ` · market ${(row.sessionOpen ?? chain.sessionOpen) ? 'open' : 'closed'} (${row.sessionName ?? chain.sessionName})` : ''}
             </span>
           </div>
           <div className={card} style={rise(5)}>
@@ -191,7 +191,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           <div className={card} style={rise(6)}>
             <h2 className="m-0 font-display text-h4 font-bold uppercase">Contracts</h2>
             <CopyAddress label="TOKEN" address={row.token} chain={row.chain} />
-            <CopyAddress label="CHAINLINK FEED" address={row.feed} chain={row.chain} />
+            <CopyAddress label={row.fairSource === 'backed' ? 'FAIR PRICE SOURCE' : row.chain === 'solana' ? `CHAINLINK FEED · ${fairSourceLabel(row).replace('Chainlink on ', '').toUpperCase()}` : 'CHAINLINK FEED'} address={row.feed} chain={fairFeedChain(row)} />
             {row.pool && <CopyAddress label="POOL" address={row.pool.pair} chain={row.chain} />}
           </div>
           <div className={card} style={rise(7)}>
@@ -220,9 +220,9 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
         <h2 id="how-swaps-work" className="m-0 mb-4 font-display text-h4 font-bold uppercase">How swaps work</h2>
         <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5">
           {[
-            { q: 'Who runs the swap?', a: `The swap card is LI.FI's widget. LI.FI looks for the best route among the exchanges on ${CHAIN_NAME[row.chain] ?? row.chain} that trade ${row.ticker} and builds the transaction; those exchanges carry it out.` },
+            { q: 'Who runs the swap?', a: row.chain === 'solana' ? `The swap card asks Jupiter, Solana's swap aggregator, for the best route among the Solana exchanges that trade ${row.symbol ?? row.ticker} and has it build the transaction; your wallet signs it and those exchanges carry it out.` : `The swap card is LI.FI's widget. LI.FI looks for the best route among the exchanges on ${CHAIN_NAME[row.chain] ?? row.chain} that trade ${row.ticker} and builds the transaction; those exchanges carry it out.` },
             { q: 'Does Gully Labs hold my funds?', a: 'No. Your wallet signs each transaction and tokens move straight between your wallet and the exchange contracts. Gully Labs never has custody and cannot reverse a swap.' },
-            { q: 'What does it cost?', a: `The quote shows the network fee, the exchange fees and the expected slippage before you confirm. ${feeText()}` },
+            { q: 'What does it cost?', a: `The quote shows the network fee, the exchange fees and the expected slippage before you confirm. ${row.chain === 'solana' ? jupiterFeeText() : feeText()}` },
             { q: 'Who can use it?', a: `Not US persons, and not in sanctioned regions; the card stays closed there. ${row.ticker} is issued by a third party whose own terms apply and who can pause or block the token.` },
           ].map((f) => (
             <div key={f.q} className="flex flex-col gap-2 rounded-card border border-line bg-surface p-5">

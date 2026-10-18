@@ -10,7 +10,8 @@
 // funds). With that variable unset, checkout is off and every page says plans cannot be bought yet:
 // there is no fallback address, ever.
 
-import { CHAIN_LIST, confirmationsFor, publicAssets } from './payments.mjs'
+import { confirmationsFor, publicAssets, publicChains } from './payments.mjs'
+import { solanaTreasury } from './solana-pay.mjs'
 import { getAccount } from './store.mjs'
 
 export const PLANS = {
@@ -78,12 +79,12 @@ export function publicPlans() {
   const assets = publicAssets()
   return {
     currency: 'USD',
-    chains: CHAIN_LIST.map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer, confirmations: confirmationsFor(c.id) })),
+    chains: publicChains().map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer, confirmations: confirmationsFor(c.id) })),
     assets,
     periodDays: PERIOD_DAYS,
     anonymous: ANONYMOUS,
     plans: Object.values(PLANS),
     analytics: { plans: Object.values(ANALYTICS_PLANS), trialDays: ANALYTICS_TRIAL_DAYS, graceDays: ANALYTICS_GRACE_DAYS, periodDays: PERIOD_DAYS },
-    checkout: t ? { enabled: true, treasury: t } : { enabled: false, treasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
+    checkout: t ? { enabled: true, treasury: t, solanaTreasury: solanaTreasury() } : { enabled: false, treasury: null, solanaTreasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
   }
 }

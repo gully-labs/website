@@ -45,6 +45,8 @@ const TOKENS: Record<string, Mark> = {
   BNB: { src: '/tokens/bnb.png', name: 'BNB', disc: null, inset: 0 },
   USDC: { src: '/tokens/usdc.svg', name: 'USD Coin', disc: null, inset: 0 },
   USDT: { src: '/tokens/usdt.svg', name: 'Tether USD', disc: null, inset: 0 },
+  // SOL the coin uses Solana's own mark (public/chains/solana.svg, from solana.com's brand assets).
+  SOL: { src: '/chains/solana.svg', name: 'Solana', disc: '#000000', inset: 0.22 },
 }
 
 export function tokenMark(symbol: string | null | undefined): Mark | null {

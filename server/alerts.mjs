@@ -55,7 +55,7 @@ const TIMEOUT_MS = 5_000
 const EVALUABLE = new Set(['in-line', 'drifting', 'premium', 'discount'])
 const STATUSES = ['premium', 'discount', 'either']
 const NAME_RE = /^[\p{L}\p{N} ._\-]{0,60}$/u
-const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
+const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', solana: 'Solana' }
 
 let db
 try {

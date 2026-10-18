@@ -1,0 +1,65 @@
+{
+    "name": "gully",
+    "description": "The Gully Labs blog theme. Built on Ghost's Source theme (MIT, Ghost Foundation).",
+    "demo": "https://blog.gullylabs.xyz",
+    "version": "1.0.0",
+    "engines": {
+        "ghost": ">=6.0.0"
+    },
+    "license": "MIT",
+    "author": {
+        "name": "Gully Labs",
+        "email": "peddlepadteam@gmail.com",
+        "url": "https://gullylabs.xyz"
+    },
+    "keywords": [
+        "ghost-theme"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gully-labs"
+    },
+    "config": {
+        "posts_per_page": 12,
+        "image_sizes": {
+            "xs": {
+                "width": 160
+            },
+            "s": {
+                "width": 320
+            },
+            "m": {
+                "width": 600
+            },
+            "l": {
+                "width": 960
+            },
+            "xl": {
+                "width": 1200
+            },
+            "xxl": {
+                "width": 2000
+            }
+        },
+        "card_assets": true,
+        "custom": {
+            "animated_banners": {
+                "type": "boolean",
+                "default": true,
+                "description": "Animate each post's generated banner (it still renders as a still frame when off)"
+            },
+            "show_tracker_strip": {
+                "type": "boolean",
+                "default": true,
+                "group": "homepage",
+                "description": "Show the 'From the tracker' links to gullylabs.xyz on the home page"
+            },
+            "site_share_images": {
+                "type": "boolean",
+                "default": false,
+                "group": "post",
+                "description": "Use gullylabs.xyz/social/blog/<slug>.png as share image. Only once that URL is live."
+            }
+        }
+    }
+}

@@ -1,0 +1,41 @@
+{{!-- The footer, matching gullylabs.xyz (src/components/Footer.tsx): wordmark, "Start a project", the four
+      columns (Products, Developers, Company, Social) and the legal line. No platform credit, by design. --}}
+<footer class="gl-footer">
+    <div class="gl-footer-main gl-page">
+        <div class="gl-footer-brand">
+            <a class="gl-wordmark gl-wordmark--footer" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">
+                <span class="gl-wordmark-gully">GULLY</span><span class="gl-wordmark-labs">LABS</span><span class="gl-sr"> home (opens in a new tab)</span>
+            </a>
+            <p class="gl-footer-about">A blockchain development company building and releasing Web3 projects. This is our blog: releases and write-ups.</p>
+            <a class="gl-btn gl-btn--gold" href="https://gullylabs.xyz/#services" target="_blank" rel="noopener noreferrer">
+                <span>Start a project</span>{{> "icons/arrow-up-right"}}<span class="gl-sr"> (opens in a new tab)</span>
+            </a>
+        </div>
+        <div class="gl-footer-cols">
+            <nav class="gl-footer-col" aria-labelledby="gl-foot-products">
+                <h2 class="gl-footer-head" id="gl-foot-products">Products</h2>
+                <ul class="gl-footer-list" role="list">
+                    {{> "links/products" style="footer"}}
+                    {{> "nav-entry" style="footer" ext=true href="https://gullylabs.xyz/pricing" icon="tag" label="Pricing"}}
+                </ul>
+            </nav>
+            <nav class="gl-footer-col" aria-labelledby="gl-foot-developers">
+                <h2 class="gl-footer-head" id="gl-foot-developers">Developers</h2>
+                <ul class="gl-footer-list" role="list">{{> "links/developers" style="footer"}}</ul>
+            </nav>
+            <nav class="gl-footer-col" aria-labelledby="gl-foot-company">
+                <h2 class="gl-footer-head" id="gl-foot-company">Company</h2>
+                <ul class="gl-footer-list" role="list">{{> "links/company" style="footer"}}</ul>
+            </nav>
+            <nav class="gl-footer-col" aria-labelledby="gl-foot-social">
+                <h2 class="gl-footer-head" id="gl-foot-social">Social</h2>
+                <ul class="gl-footer-list" role="list">{{> "links/social" style="footer"}}</ul>
+            </nav>
+        </div>
+    </div>
+    <div class="gl-footer-legal gl-page">
+        <span class="gl-footer-copy">© {{date format="YYYY"}} GULLY LABS</span>
+        <nav class="gl-footer-secondary" aria-label="More from the blog" data-gl-ext-scan>{{navigation type="secondary"}}</nav>
+        <p class="gl-footer-disclaimer">Information only, not investment advice. Prices and gaps are read live and can be late or wrong; stock tokens are issued by third parties whose own terms apply, and may not be available where you live.</p>
+    </div>
+</footer>

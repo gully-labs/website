@@ -3,7 +3,7 @@ import { BellRing, CircleHelp, Globe, ChartLine, Loader2 } from 'lucide-react'
 import { NewTabMark } from '../LayoutLinks'
 import { newTab } from '../LayoutNav'
 import type { TrackerRow } from '../../lib/tracker'
-import { feeText, NATIVE_SYMBOL, SWAP_CHAIN_ID } from './swapConfig'
+import { feeText, jupiterFeeText, NATIVE_SYMBOL, SWAP_CHAIN_ID } from './swapConfig'
 import { DeepCoreQuote } from './DeepCoreQuote'
 
 /* The swap card on a stock page. Three gates before the LI.FI widget's chunk is even fetched:
@@ -12,6 +12,8 @@ import { DeepCoreQuote } from './DeepCoreQuote'
    3. the visitor ticks "I understand" under the notice (remembered in this browser only). */
 
 const SwapWidget = lazy(() => import('./SwapWidget'))
+// Solana stock pages swap through Jupiter instead of LI.FI, behind the same three gates.
+const JupiterSwap = lazy(() => import('./JupiterSwap'))
 
 const ACK_KEY = 'gully-swap-ack-v1'
 const readAck = () => {
@@ -82,8 +84,9 @@ export function StockSwap({ row, alerts }: { row: TrackerRow; alerts?: string })
   const geo = useGeo()
   const [ack, setAck] = useState(readAck)
   const chainId = SWAP_CHAIN_ID[row.chain]
+  const solana = row.chain === 'solana'
 
-  if (!chainId) return <Unavailable row={row} alerts={alerts}>Swapping isn't offered for tokens on this chain.</Unavailable>
+  if (!chainId && !solana) return <Unavailable row={row} alerts={alerts}>Swapping isn't offered for tokens on this chain.</Unavailable>
   if (geo.k === 'loading')
     return (
       <div role="status" aria-label="Checking whether swapping is available in your region" className="flex flex-col gap-2">
@@ -108,9 +111,9 @@ export function StockSwap({ row, alerts }: { row: TrackerRow; alerts?: string })
   return (
     <div className="flex flex-col gap-4">
       <ul className="m-0 flex list-none flex-col gap-2 p-0 text-[13px] leading-[1.55] text-muted">
-        <li>Swaps are routed by LI.FI and executed by third-party exchanges. Your wallet signs every transaction; Gully Labs never holds your funds.</li>
+        <li>Swaps are routed by {solana ? 'Jupiter' : 'LI.FI'} and executed by third-party exchanges. Your wallet signs every transaction; Gully Labs never holds your funds.</li>
         <li>{row.ticker} is a token issued by a third party that can pause, block or change it. It tracks {row.name} stock but is not the share itself, and it is not available to US persons.</li>
-        <li>Information only, not investment advice. Prices move, and swaps carry fees and slippage. {feeText()}</li>
+        <li>Information only, not investment advice. Prices move, and swaps carry fees and slippage. {solana ? jupiterFeeText() : feeText()}</li>
       </ul>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-input border border-line-strong px-4 text-[14px] text-ink hover:border-gold">
         <input
@@ -124,7 +127,7 @@ export function StockSwap({ row, alerts }: { row: TrackerRow; alerts?: string })
         />
         I understand
       </label>
-      {ack && <DeepCoreQuote row={row} />}
+      {ack && !solana && <DeepCoreQuote row={row} />}
       {ack && (
         <Suspense
           fallback={
@@ -134,12 +137,16 @@ export function StockSwap({ row, alerts }: { row: TrackerRow; alerts?: string })
           }
         >
           {/* Full card width: the widget's own 24px padding lines up with the card's. */}
-          <div className="-mx-6 -mb-6 overflow-hidden rounded-b-card border-t border-line">
-            <SwapWidget chainId={chainId} token={row.token} />
-          </div>
+          {solana ? (
+            <JupiterSwap row={row} />
+          ) : (
+            <div className="-mx-6 -mb-6 overflow-hidden rounded-b-card border-t border-line">
+              <SwapWidget chainId={chainId} token={row.token} />
+            </div>
+          )}
         </Suspense>
       )}
-      {!ack && <p className="m-0 text-[12px] text-faint">Tick the box to load the swap. Pay with {NATIVE_SYMBOL[row.chain]} or any token LI.FI routes on this chain, or sell {row.ticker} back.</p>}
+      {!ack && <p className="m-0 text-[12px] text-faint">Tick the box to load the swap. {solana ? `Pay with USDC or SOL through Jupiter, or sell ${row.ticker} back.` : `Pay with ${NATIVE_SYMBOL[row.chain]} or any token LI.FI routes on this chain, or sell ${row.ticker} back.`}</p>}
     </div>
   )
 }

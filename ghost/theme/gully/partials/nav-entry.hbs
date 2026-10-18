@@ -1,0 +1,13 @@
+{{!--
+    One link in the header menus, the mobile sheet and the footer.
+    href, icon (partials/icons/<icon>), label, desc, badge, ext (opens in a new tab), style ("menu" | "footer")
+--}}
+<li class="gl-entry gl-entry--{{style}}">
+    <a class="gl-entry-link" href="{{href}}"{{#if ext}} target="_blank" rel="noopener noreferrer"{{/if}}>
+        <span class="gl-entry-icon">{{#> (concat "icons/" icon)}}{{> "icons/file-text"}}{{/undefined}}</span>
+        <span class="gl-entry-text">
+            <span class="gl-entry-label">{{label}}{{#if badge}} <span class="gl-badge">{{badge}}</span>{{/if}}{{#if ext}}{{> "ext-mark"}}{{/if}}</span>
+            {{#match style "menu"}}{{#if desc}}<span class="gl-entry-desc">{{desc}}</span>{{/if}}{{/match}}
+        </span>
+    </a>
+</li>

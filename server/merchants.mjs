@@ -72,6 +72,7 @@ import { accrue, centsOfMicros, feeConfig, MIN_STATEMENT_CENTS, PAUSE_AFTER_DAYS
 import { checkEndpoint, deliveries, endpointView, enqueue, makeEndpoint, newSecret, paidEvent, redeliver, registerWebhookTarget, sendTest } from './pay-webhooks.mjs'
 import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc } from './payments.mjs'
 import { treasury } from './plans.mjs'
+import { isSolanaAsset } from './solana-pay.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { sendAccountTelegram } from './telegram.mjs'
 import { canWrite, workspaceName } from './workspaces.mjs'
@@ -103,6 +104,10 @@ const QUOTE_RETAIN_MS = 7 * 86_400_000
 const LOGO_MAX_BYTES = 256 * 1024
 const EXPIRED_LOOKBACK_MS = 24 * 3_600_000
 const DAY = 86_400_000
+// Stores take the EVM chains for now (their receiving wallets are EVM addresses); Solana stays Gully Labs' own.
+const STORE_ASSET_IDS = ASSET_IDS.filter((id) => !isSolanaAsset(assetById(id)))
+const STORE_CHAIN_IDS = new Set(CHAIN_LIST.map((c) => c.id))
+const storeAssets = () => publicAssets().filter((a) => STORE_CHAIN_IDS.has(a.chainId))
 
 /* ---------------------------------------------------------------- store --- */
 
@@ -254,7 +259,7 @@ function statementView(s, now = Date.now()) {
  * of our chains but has no code here is refused the same way, whatever the merchant declared.
  */
 export async function inspectWallet(chainId, raw, declared) {
-  const c = CHAINS[chainId]
+  const c = STORE_CHAIN_IDS.has(chainId) ? CHAINS[chainId] : null
   if (!c) return bad(`Choose a chain: ${CHAIN_LIST.map((x) => `${x.id} (${x.name})`).join(', ')}.`)
   const a = String(raw ?? '').trim()
   if (!ADDR_RE.test(a)) return bad('That is not an EVM address (0x followed by 40 hex characters).')
@@ -424,7 +429,7 @@ function invoiceState(inv, now = Date.now()) {
 const overdue = (inv, now = Date.now()) => invoiceState(inv, now) === 'open' && !!inv.dueAt && now > Date.parse(inv.dueAt)
 
 /** The assets an invoice can be paid in right now: its own list, on chains where the store has a wallet. */
-const payableAssets = (inv) => publicAssets().filter((a) => inv.assets.includes(a.id) && recipientOn(inv.ws, a.chainId))
+const payableAssets = (inv) => storeAssets().filter((a) => inv.assets.includes(a.id) && recipientOn(inv.ws, a.chainId))
 
 function checkoutState(ws, inv) {
   const owner = getAccount(ws)
@@ -451,7 +456,7 @@ export function publicMerchantInvoice(inv) {
     status,
     overdue: overdue(inv),
     dueAt: inv.dueAt ?? null,
-    assets: status === 'paid' ? publicAssets().filter((a) => inv.assets.includes(a.id)) : assets,
+    assets: status === 'paid' ? storeAssets().filter((a) => inv.assets.includes(a.id)) : assets,
     recipients: Object.fromEntries(assets.map((a) => [a.chainId, checksumAddress(recipientOn(inv.ws, a.chainId))])),
     createdAt: inv.createdAt,
     expiresAt: inv.expiresAt,
@@ -470,9 +475,9 @@ function invoiceAdminView(inv) {
 }
 
 function parseAssets(raw) {
-  const list = raw == null ? ASSET_IDS : Array.isArray(raw) ? [...new Set(raw.map(String))] : null
-  if (!list || !list.length || list.some((x) => !assetById(x))) return null
-  return ASSET_IDS.filter((x) => list.includes(x))
+  const list = raw == null ? STORE_ASSET_IDS : Array.isArray(raw) ? [...new Set(raw.map(String))] : null
+  if (!list || !list.length || list.some((x) => !STORE_ASSET_IDS.includes(x))) return null
+  return STORE_ASSET_IDS.filter((x) => list.includes(x))
 }
 
 /** body: { items: [{ description, quantity, unitUsd }], dueDate: 'YYYY-MM-DD', customer?: { name?, email? }, notes?, number?, title?, assets? } */
@@ -513,7 +518,7 @@ function parseInvoice(ws, body) {
   const title = typeof body?.title === 'string' && body.title.trim() ? body.title.trim() : items.length === 1 ? items[0].description : `Invoice ${number}`
   if (title.length > MAX_TITLE) return bad(`The title can be at most ${MAX_TITLE} characters.`)
   const assets = parseAssets(body?.assets)
-  if (!assets) return bad(`assets must be a non-empty list of: ${ASSET_IDS.join(', ')}.`)
+  if (!assets) return bad(`assets must be a non-empty list of: ${STORE_ASSET_IDS.join(', ')}.`)
   return { ok: true, fields: { number, title, items, usdCents: String(total), customer: name || email ? { name: name || null, email: email || null } : null, notes, dueAt: new Date(due).toISOString(), expiresAt: new Date(due + OVERDUE_GRACE_DAYS * DAY).toISOString(), assets } }
 }
 
@@ -540,7 +545,7 @@ const amountView = (a) => (a.type === 'fixed' ? { type: 'fixed', usd: fmtUsd(a.u
 
 export function publicMerchantLink(l) {
   const state = linkState(l)
-  const assets = publicAssets().filter((a) => l.assets.includes(a.id) && recipientOn(l.ws, a.chainId))
+  const assets = storeAssets().filter((a) => l.assets.includes(a.id) && recipientOn(l.ws, a.chainId))
   const co = checkoutState(l.ws, null)
   return {
     id: l.id,
@@ -592,7 +597,7 @@ function parseLink(body, prev = null) {
   }
   if (!prev || has('assets')) {
     const list = parseAssets(body?.assets)
-    if (!list) return bad(`assets must be a non-empty list of: ${ASSET_IDS.join(', ')}.`)
+    if (!list) return bad(`assets must be a non-empty list of: ${STORE_ASSET_IDS.join(', ')}.`)
     f.assets = list
   }
   if (!prev || has('expiresAt')) {
@@ -916,7 +921,7 @@ function merchantView(ws, role) {
     wallets,
     ready: wallets.some((w) => w.enabled && w.status === 'ok'),
     chains: CHAIN_LIST.map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer })),
-    assets: publicAssets(),
+    assets: storeAssets(),
     links: db.links
       .filter((l) => l.ws === ws)
       .reverse()
@@ -993,7 +998,7 @@ async function setWallets(ws, body, user) {
   if (!accepted && body?.acceptTerms !== true) return { ok: false, status: 400, code: 'terms', error: `Accept the Gully Pay merchant terms (${SITE}${MERCHANT_TERMS_PATH}) to set up your store: send acceptTerms: true.` }
   const declared = String(body?.type ?? '')
   const list = Array.isArray(body?.chains) ? [...new Set(body.chains.map(Number))] : body?.chainId != null ? [Number(body.chainId)] : []
-  if (!list.length || list.some((id) => !CHAINS[id])) return bad(`chains must list one or more of: ${CHAIN_LIST.map((c) => c.id).join(', ')}.`)
+  if (!list.length || list.some((id) => !STORE_CHAIN_IDS.has(id))) return bad(`chains must list one or more of: ${CHAIN_LIST.map((c) => c.id).join(', ')}.`)
   const results = []
   for (const id of list) {
     const r = await inspectWallet(id, body?.address, declared)
@@ -1211,7 +1216,7 @@ export async function handleMerchantPay(req, res, url) {
   const ip = clientIp(req)
   if (p === '/api/pay/m/config') {
     const c = feeConfig()
-    return json(res, 200, { feeBps: c.bps, feePct: c.bps / 100, freeUsd: usdNum(c.freeCents), minStatementUsd: usdNum(MIN_STATEMENT_CENTS), pauseAfterDays: PAUSE_AFTER_DAYS, chains: CHAIN_LIST.map((x) => ({ id: x.id, name: x.name })), assets: ASSET_IDS }, { 'Cache-Control': 'public, max-age=60' }), true
+    return json(res, 200, { feeBps: c.bps, feePct: c.bps / 100, freeUsd: usdNum(c.freeCents), minStatementUsd: usdNum(MIN_STATEMENT_CENTS), pauseAfterDays: PAUSE_AFTER_DAYS, chains: CHAIN_LIST.map((x) => ({ id: x.id, name: x.name })), assets: STORE_ASSET_IDS }, { 'Cache-Control': 'public, max-age=60' }), true
   }
   let m = p.match(/^\/api\/pay\/m\/logo\/([^/]+)$/)
   if (m) return req.method === 'GET' ? serveLogo(res, m[1]) : (json(res, 405, { error: 'GET only' }), true)

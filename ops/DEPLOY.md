@@ -144,7 +144,14 @@ After the migration:
 ## When the origin is down: Cloudflare's error page
 
 Nothing on the box can replace Cloudflare's own 521/522/502 page: when our origin is unreachable, Cloudflare
-answers without us. `ops/maintenance.html` is a self-contained branded page (no external files, reloads
+answers without us.
+
+**Current setup:** see [CLOUDFLARE.md](CLOUDFLARE.md). It covers:
+- the branded pages `public/errors/5xx.html` and `public/errors/1xxx.html`;
+- the owner's click path;
+- the cache rules.
+
+The rest of this section is the background. The older `ops/maintenance.html` is a self-contained branded page (no external files, reloads
 itself every 30 s, 44 px links). In the Cloudflare dashboard, the owner can choose one of these:
 
 1. **Custom Error Pages (Pro plan and up).** Go to *gullylabs.xyz → Error Pages* (older dashboards:

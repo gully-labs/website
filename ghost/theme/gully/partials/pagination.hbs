@@ -1,0 +1,16 @@
+{{!-- Replaces Ghost's default {{pagination}} markup. --}}
+{{#match pages ">" 1}}
+<nav class="gl-pagination gl-page" aria-label="Pages">
+    {{#if prev}}
+        <a class="gl-btn gl-btn--outline" href="{{page_url prev}}" rel="prev">{{> "icons/arrow-left"}}<span>Newer posts</span></a>
+    {{else}}
+        <span class="gl-pagination-spacer"></span>
+    {{/if}}
+    <span class="gl-pagination-count">Page {{page}} of {{pages}}</span>
+    {{#if next}}
+        <a class="gl-btn gl-btn--outline" href="{{page_url next}}" rel="next"><span>Older posts</span>{{> "icons/arrow-right"}}</a>
+    {{else}}
+        <span class="gl-pagination-spacer"></span>
+    {{/if}}
+</nav>
+{{/match}}

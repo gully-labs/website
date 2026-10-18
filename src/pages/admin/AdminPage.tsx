@@ -10,6 +10,7 @@ import { DeliveryLog, EmbedBox, PayLinks, SecretOnce, type Delivery, type Endpoi
 import { AskStudio } from './AskStudio'
 import { TelegramChats } from './TelegramChats'
 import { MerchantsAdmin } from './MerchantsAdmin'
+import { TelegramChannel } from './TelegramChannel'
 import { copyWithToast, flash } from '../../components/ui/toast'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
 
@@ -876,6 +877,7 @@ export function AdminPage() {
             </section>
 
             <TelegramChats token={token} />
+            <TelegramChannel token={token} />
 
             <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
             <AnalyticsAccounts data={data.analytics} act={act} />

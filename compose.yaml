@@ -17,6 +17,8 @@ services:
         VITE_LIFI_INTEGRATOR: ${VITE_LIFI_INTEGRATOR:-}
         VITE_LIFI_FEE: ${VITE_LIFI_FEE:-}
         VITE_WALLETCONNECT_PROJECT_ID: ${VITE_WALLETCONNECT_PROJECT_ID:-}
+        VITE_JUPITER_FEE_BPS: ${VITE_JUPITER_FEE_BPS:-}
+        VITE_JUPITER_FEE_ACCOUNT: ${VITE_JUPITER_FEE_ACCOUNT:-}
     image: gully-web:${GULLY_WEB_TAG:-latest}
     container_name: gully-web
     restart: unless-stopped

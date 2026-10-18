@@ -160,7 +160,7 @@ export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'sy
           </span>
         )}
       </div>
-      <EChart option={option} height={150} skeleton="line" error={!samples.length && error ? `Price unreadable: ${error}` : undefined} label={`${asset.symbol} price in USD from Chainlink on ${asset.chain}${now !== null ? `, now ${fmtUsd(now)}` : ''}${q ? `, ${fmtUsd(q)} at quote time` : ''}. Read every 30 seconds while this page is open.`} />
+      <EChart option={option} height={150} skeleton="line" error={!samples.length && error ? `Price unreadable: ${error}` : undefined} label={`${asset.symbol} price in USD from Chainlink on ${asset.chain === 'Solana' ? 'Arbitrum' : asset.chain}${now !== null ? `, now ${fmtUsd(now)}` : ''}${q ? `, ${fmtUsd(q)} at quote time` : ''}. Read every 30 seconds while this page is open.`} />
       <span className="font-mono text-[11px] leading-[1.5] text-faint">
         Read live every 30 seconds while this page is open{q ? '. Your amount stays fixed at the quoted price until the quote runs out.' : '.'}
       </span>

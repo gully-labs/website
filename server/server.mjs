@@ -9,6 +9,7 @@ import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts } from './alerts.mjs'
 import { handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
+import { startChannel } from './telegram-channel.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
@@ -23,6 +24,7 @@ import { APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
+import { handleSolana } from './solana-routes.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -199,6 +201,11 @@ const server = http.createServer(async (req, res) => {
   }
   // DeepCore router quote for the stock pages' comparison panel (deepcore.mjs): cached and rate limited here.
   if (url.pathname === '/api/deepcore/quote') return void (await handleDeepcoreQuote(req, res, url, geoFor(req, isLocal)))
+  // Solana (solana-routes.mjs): the RPC proxy, Solana Pay reference lookup and the geo-gated Jupiter quote/swap proxy.
+  if (url.pathname.startsWith('/api/solana/')) {
+    if (await handleSolana(req, res, url, geoFor(req, isLocal))) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
   // Gully Ask (ask.mjs): POST /api/ask and GET /api/ask/status.
   if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status') return void (await handleAsk(req, res, url))
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
@@ -370,6 +377,7 @@ function startLoops() {
   startDeepcore()
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
   startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
+  startChannel() // @GullyLabsNews: scheduled posts and auto posts (telegram-channel.mjs)
   // Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.
   startAsk()
 }

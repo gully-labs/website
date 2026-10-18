@@ -16,7 +16,7 @@ import { TopMovers } from '../components/tracker/TopMovers'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../components/charts/number-formats'
 import { xPost } from '../lib/share'
-import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, gapPost, stockPath, UP, useTracker, type TrackerRow } from '../lib/tracker'
+import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, gapPost, stockPath, UP, useTracker, type TrackerRow, fairSourceLabel } from '../lib/tracker'
 
 const SHARE_URL = 'https://gullylabs.xyz/tracker'
 const rise = (i: number) => ({ animation: `gl-rise .5s ${i * 0.05}s ease both` })
@@ -105,7 +105,7 @@ export function Tracker() {
 
   return (
     <>
-      <Seo title="Stock token tracker" description="Live: every tokenised stock on Robinhood Chain and BNB Chain against its fair price, with the gap, pool depth and feed time. Read from Chainlink and the pools themselves." />
+      <Seo title="Stock token tracker" description="Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, with the gap, pool depth and feed time. Read from Chainlink (or, for some Solana xStocks, the issuer) and the pools themselves." />
 
       <section className="flex flex-col gap-4 px-page pt-10 pb-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -117,7 +117,7 @@ export function Tracker() {
               Is your stock token <span className="text-gold">fairly priced?</span>
             </h1>
             <p className="m-0 max-w-[680px] text-[15px] leading-[1.5] text-muted" style={rise(2)}>
-              Every tokenised stock on Robinhood Chain and BNB Chain: its price in its deepest pool against its fair price from Chainlink.
+              Every tokenised stock on Robinhood Chain, BNB Chain and Solana: its price in its deepest pool against its fair price from Chainlink (for Solana xStocks without a feed, the issuer's quote).
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2" style={rise(3)}>
@@ -237,7 +237,7 @@ export function Tracker() {
                   </dl>
                   <GapHistory chain={sel.chain} ticker={sel.ticker} inLinePct={data.rules.inLinePct} />
                   <span className="font-mono text-[11px] leading-[1.5] text-faint">
-                    {sel.pool ? `${sel.pool.dex}${sel.pool.labels.length ? ` ${sel.pool.labels.join('/')}` : ''} · ${sel.ticker}/${sel.pool.against}` : 'no pool'} · fair from Chainlink, updated {ageText(sel.feedUpdatedAt, now)}
+                    {sel.pool ? `${sel.pool.dex}${sel.pool.labels.length ? ` ${sel.pool.labels.join('/')}` : ''} · ${sel.ticker}/${sel.pool.against}` : 'no pool'} · fair from {fairSourceLabel(sel)}, updated {ageText(sel.feedUpdatedAt, now)}
                     {sel.feedPrices === 'underlying-share' && sel.multiplier !== null ? ` · share × ${sel.multiplier.toFixed(6)}` : ''}
                   </span>
                 </>
@@ -261,7 +261,7 @@ export function Tracker() {
             <Card i={5} title="Where the liquidity is" sub="deepest stock pools, all venues">
               <LiquidityRing rows={rows} />
             </Card>
-            <Card i={6} title="Chain against chain" sub="Robinhood Chain and BNB Chain">
+            <Card i={6} title="Chain against chain" sub={chains.map((c) => c.name).join(', ').replace(/, ([^,]*)$/, ' and $1')}>
               <ChainCompare rows={data.rows} chains={chains} />
             </Card>
           </section>
@@ -294,7 +294,7 @@ export function Tracker() {
               <div className="flex flex-col gap-2">
                 <span className="font-mono text-[12px] tracking-[1.5px] text-gold">HOW IT WORKS</span>
                 <p className="m-0 text-[14px] leading-[1.6] text-muted">
-                  <b className="font-medium text-ink-2">Onchain</b> is each token's deepest pool, pools against ETH, BNB or a dollar stablecoin first, priced straight from the pool contract every minute. DexScreener and GeckoTerminal find the pool and report its liquidity and volume. <b className="font-medium text-ink-2">Fair</b> is Chainlink: on Robinhood Chain the feed prices the token; on BNB Chain it prices the share, multiplied by the token's on-chain multiplier.
+                  <b className="font-medium text-ink-2">Onchain</b> is each token's deepest pool, pools against ETH, BNB or a dollar stablecoin first, priced straight from the pool contract every minute. DexScreener and GeckoTerminal find the pool and report its liquidity and volume. <b className="font-medium text-ink-2">Fair</b> is Chainlink: on Robinhood Chain the feed prices the token; on BNB Chain it prices the share, multiplied by the token's on-chain multiplier. On Solana, an xStock's fair price is the share price from a Chainlink feed on BNB Chain, Robinhood Chain or Ethereum (else the issuer's own quote) times the token's on-chain multiplier, and Orca, Raydium CLMM and Meteora DLMM pools are read straight from their accounts.
                 </p>
               </div>
               <div className="flex flex-col gap-2">

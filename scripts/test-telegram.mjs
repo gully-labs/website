@@ -279,7 +279,7 @@ try {
   const an1 = calls.filter((c) => c.method === 'sendAnimation' && c.body.chat_id === '800').at(-1)
   check('/start sends an animation (sendAnimation), uploaded as a GIF the first time', !!an1 && an1.body.multipart === true && an1.body.animation?.file === true && an1.body.animation.type === 'image/gif' && an1.body.animation.size > 10_000 && an1.body.animation.size < 1_048_576, JSON.stringify(an1?.body.animation))
   const cap1 = an1?.body.caption ?? ''
-  check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · stock tokens vs their fair price, live.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain and BNB Chain`) && cap1.includes('🔔 gap alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
+  check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · stock tokens vs their fair price, live.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain, BNB Chain and Solana`) && cap1.includes('🔔 gap alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
   check('the banner carries the main menu: 8 buttons in 4 rows', menuKb.length === 4 && flat(menuKb).length === 8 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 Developer portal ↗', '⚙️ Settings']))
   check('the menu: Developer portal is a url button, the others are routes', button(menuKb, /Developer portal/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
@@ -309,7 +309,7 @@ try {
   /* ------------------------------------------------- read-only commands --- */
   await say(privateChat(333), '/gap NVDA')
   const both = view(333)
-  check('/gap NVDA (two chains) offers both cards', /NVDA<\/b> trades on 2 chains/.test(both.text) && data(both.kb).includes('c:rh:NVDA:x') && data(both.kb).includes('c:bn:NVDA:x'), both.text)
+  check('/gap NVDA (three chains, Solana included) offers every card', /NVDA<\/b> trades on 3 chains/.test(both.text) && data(both.kb).includes('c:rh:NVDA:x') && data(both.kb).includes('c:bn:NVDA:x') && data(both.kb).includes('c:sl:NVDA:x'), both.text)
   await say(privateChat(333), '/gap NVDA robinhood')
   const card = view(333)
   check('/gap NVDA robinhood answers with the stock card', /🔴 <b>NVDA<\/b> · Robinhood Chain/.test(card.text), card.text)
