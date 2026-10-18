@@ -96,6 +96,36 @@ export const btn = (text, data) => ({ text, callback_data: data })
 export const ubtn = (text, url) => ({ text, url })
 /** The "📱 Open app" button: opens the Mini App inside Telegram (web_app buttons work in private chats only). */
 export const appBtn = (url) => ({ text: '📱 Open app', web_app: { url } })
+/** Holder Map chain keys (server/holders.mjs) to names, for holder alerts. */
+export const HOLDER_CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }
+/** The site's Holder Map page for a token. */
+export const holdersPageUrl = (chain, token) => `${SITE}/holders/${encodeURIComponent(chain)}/${encodeURIComponent(token)}`
+/**
+ * "👥 Holders": a placeholder that telegram.mjs (keyboardFor) turns into a web_app button opening the Mini
+ * App's holder screen in private chats, or a link to the site's Holder Map in groups. It carries no
+ * callback_data, so the 64-byte limit does not apply to it.
+ */
+export const holdersBtn = (chain, token) => ({ text: '👥 Holders', holders: { chain: String(chain), token: String(token) } })
+/** Resolves every holdersBtn placeholder in a keyboard for a private chat (web_app) or a group (url). */
+export function resolveHoldersButtons(kb, isPrivate, appUrl) {
+  if (!Array.isArray(kb) || !kb.some((r) => Array.isArray(r) && r.some((b) => b?.holders))) return kb
+  return kb.map((row) =>
+    row.map((b) => {
+      if (!b?.holders) return b
+      const { chain, token } = b.holders
+      if (!isPrivate) return ubtn(b.text, holdersPageUrl(chain, token))
+      let url
+      try {
+        const u = new URL(appUrl)
+        u.searchParams.set('holders', `${chain}:${token}`)
+        url = u.toString()
+      } catch {
+        url = `${SITE}/tg?holders=${encodeURIComponent(`${chain}:${token}`)}`
+      }
+      return { text: b.text, web_app: { url } }
+    }),
+  )
+}
 /** The [⬅ Back] [🏠 Menu] row every screen ends with. */
 export const nav = (back) => [btn('⬅ Back', back), btn('🏠 Menu', 'm')]
 const rows = (list, per) => {
@@ -286,7 +316,7 @@ export function cardView({ cc, ticker, from, row, name, spark, now = Date.now() 
   lines.push(`<i>${a ? `Updated ${esc(a)} · ` : ''}Information only, not advice.</i>`)
   return {
     text: lines.join('\n'),
-    keyboard: [[btn('🔔 Alert me', `al:${cc}:${ticker}:${from}`), btn('🔄 Refresh', `c:${cc}:${ticker}:${from}`)], [ubtn('🌐 Open page ↗', stockUrl(chain, ticker)), ...nav(cardBack(cc, from))]],
+    keyboard: [[btn('🔔 Alert me', `al:${cc}:${ticker}:${from}`), btn('🔄 Refresh', `c:${cc}:${ticker}:${from}`)], [holdersBtn(chain, ticker)], [ubtn('🌐 Open page ↗', stockUrl(chain, ticker)), ...nav(cardBack(cc, from))]],
   }
 }
 
@@ -429,7 +459,7 @@ export function launchesView(r, filter, chains, now = Date.now()) {
 /** One launch. `market` is readDeepcorePool's match for it (price, market cap) or null. */
 export function launchCardView(l, filter, { now = Date.now(), market = null } = {}) {
   if (!l) return { text: '<b>🛰 Launch</b>\nThis launch is no longer in DeepCore’s latest list.', keyboard: [[ubtn('🌐 View on DeepCore ↗', DEEPCORE)], nav(`dc:${filter}`)] }
-  return { text: `🛰 ${launchBlock(l, { now, market })}\n\n${INFO}`, keyboard: [[ubtn('🌐 View on DeepCore ↗', l.links.token)], [btn('🔔 Alert me on new launches', `dla:${filter}`)], nav(`dc:${filter}`)] }
+  return { text: `🛰 ${launchBlock(l, { now, market })}\n\n${INFO}`, keyboard: [[ubtn('🌐 View on DeepCore ↗', l.links.token)], [holdersBtn(l.chainKey, String(l.token).toLowerCase())], [btn('🔔 Alert me on new launches', `dla:${filter}`)], nav(`dc:${filter}`)] }
 }
 
 export function launchAlertStep1View(filter, chains) {
@@ -449,18 +479,29 @@ export function launchAlertStep2View(filter, cid, chains) {
 
 /* ------------------------------------------------------------ my alerts --- */
 
-const alertLabel = (a, chains) => a.name || (a.kind === 'deepcore-launch' ? `DeepCore launches${a.condition?.chainId ? ` · ${chains[a.condition.chainId]?.name ?? a.condition.chainId}` : ''}` : a.ticker ? `${a.ticker} · ${chainName(a.chain)}` : 'Any stock')
+const isHolderAlert = (a) => a?.kind === 'holders' || a?.condition?.type === 'holders'
+const holderTarget = (c) => `${c.symbol ?? shortAddr(c.token)} · ${HOLDER_CHAIN_NAMES[c.chain] ?? c.chain}`
+const alertLabel = (a, chains) => a.name || (isHolderAlert(a) ? `🫧 ${a.condition.symbol ?? shortAddr(a.condition.token)} holders · ${HOLDER_CHAIN_NAMES[a.condition.chain] ?? a.condition.chain}` : a.kind === 'deepcore-launch' ? `DeepCore launches${a.condition?.chainId ? ` · ${chains[a.condition.chainId]?.name ?? a.condition.chainId}` : ''}` : a.ticker ? `${a.ticker} · ${chainName(a.chain)}` : 'Any stock')
 export function alertState(a, now = Date.now()) {
   if (!a.coveredByPlan) return { emoji: '⚠️', text: 'not in your plan' }
   if (!a.enabled) return { emoji: '⏸', text: 'paused' }
   if (a.mutedUntil && Date.parse(a.mutedUntil) > now) return { emoji: '🔕', text: `muted ${forTime(a.mutedUntil, now)}` }
+  if (isHolderAlert(a) && !a.armed) return { emoji: '🟠', text: 'fired · watching again once it falls back' }
   if (a.kind !== 'deepcore-launch' && !a.armed) return { emoji: '🟠', text: 'fired · watching again once the gap closes' }
   return { emoji: '🟢', text: 'watching' }
 }
 /** A gap condition in plain words, with its direction arrow (an alert stored before directions existed is 'both'). */
 export const gapWords = (c) => (c.direction === 'above' ? `▲ ${c.pct}% or more above the real share price` : c.direction === 'below' ? `▼ ${c.pct}% or more below the real share price` : `↕ ${c.pct}% or more above or below the real share price`)
 const statusWords = (s) => (s === 'either' ? 'well above or below the real share price' : s === 'premium' ? 'well above the real share price' : s === 'discount' ? 'well below the real share price' : String(s ?? ''))
-export const conditionWords = (c, chains) => (c.type === 'deepcore-launch' ? `a new token launches on DeepCore (${c.chainId ? (chains?.[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'})` : c.type === 'gap' ? gapWords(c) : statusWords(c.status))
+/** A holder condition in plain words: "the largest connected cluster of wallets of DTC · Robinhood Chain hold 20% or more". */
+export function holderWords(c) {
+  const who = c.metric === 'top10' ? 'the top 10 wallets' : 'the largest connected cluster of wallets'
+  const parts = []
+  if (typeof c.above === 'number') parts.push(`${who} of ${holderTarget(c)} hold ${c.above}% or more`)
+  if (typeof c.dropPts === 'number') parts.push(`${parts.length ? 'or they' : `${who} of ${holderTarget(c)}`} sell ${c.dropPts} points or more of their share`)
+  return parts.join(', ') || `${who} of ${holderTarget(c)} change`
+}
+export const conditionWords = (c, chains) => (c.type === 'holders' ? holderWords(c) : c.type === 'deepcore-launch' ? `a new token launches on DeepCore (${c.chainId ? (chains?.[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'})` : c.type === 'gap' ? gapWords(c) : statusWords(c.status))
 
 export function myAlertsView(data, page, chains, now = Date.now()) {
   const list = data.alerts
@@ -561,10 +602,22 @@ export const unlinkConfirmView = (link) => ({
 export function deliveryView(a) {
   const now = a.now ?? Date.now()
   const title = `<b>Gully Labs alert</b>${a.name ? ` “${esc(a.name)}”` : ''}`
-  const cond = a.condition?.type === 'gap' ? gapWords(a.condition) : esc(a.conditionText)
+  const cond = a.condition?.type === 'gap' ? gapWords(a.condition) : a.condition?.type === 'holders' ? esc(holderWords(a.condition)) : esc(a.conditionText)
   const dirLine = `Alert: ${cond}`
   const mute = btn('🔕 Mute 24h', `mute:${a.alertId}`.slice(0, 64))
   if (a.test) return { text: `🧪 ${title}\nTest message (${dirLine}). Deliveries for this alert reach this chat.`, keyboard: null }
+  if (a.events.some((e) => e.kind === 'holders.alert')) {
+    const shown = a.events.slice(0, 5)
+    const pctText = (n) => (num(n) ? `${+n.toFixed(n >= 10 ? 0 : 1)}%` : 'an unknown share')
+    const blocks = shown.map((e) => {
+      const who = e.metric === 'top10' ? 'the top 10 wallets now hold' : 'the largest connected cluster now holds'
+      const was = num(e.previousPct) ? ` (was ${pctText(e.previousPct)})` : ''
+      const why = e.reason === 'above' && num(a.condition?.above) ? `, above your ${a.condition.above}% line` : e.reason === 'drop' && num(e.previousPct) && num(e.pct) ? `: they sold ${+(e.previousPct - e.pct).toFixed(1)} points of their share` : ''
+      return `<b>${esc(e.symbol ?? shortAddr(e.token))}</b> on ${esc(e.chainName ?? HOLDER_CHAIN_NAMES[e.chain] ?? e.chain)}: ${who} ${pctText(e.pct)}${was}${why}.`
+    })
+    const open = shown.slice(0, 2).map((e) => ubtn(`👥 Open ${e.symbol ?? 'map'} ↗`.slice(0, 40), /^https:\/\//.test(String(e.pageUrl ?? '')) ? e.pageUrl : holdersPageUrl(e.chain, e.token)))
+    return { text: `🫧 ${title}\n${dirLine}\n\n${blocks.join('\n\n')}\n\n${INFO}`, keyboard: [[open[0], mute], ...(open.length > 1 ? [open.slice(1)] : [])] }
+  }
   if (a.events.some((e) => e.kind === 'deepcore.launch')) {
     const shown = a.events.slice(0, 5)
     const text = `🛰 ${title}\n${cond}\n\n${shown.map((e) => launchBlock(e, { now })).join('\n\n')}${a.events.length > shown.length ? `\n…and ${a.events.length - shown.length} more on DeepCore` : ''}\n\n${INFO}`

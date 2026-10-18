@@ -9,6 +9,7 @@ import { useStats } from '../hooks/useStats'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { chainMark } from '../components/logos/registry'
 import { fmtTime, fmtUsd, metricsOf, sourceHost } from '../lib/stats'
+import { LaunchHolders } from '../components/holders/LaunchHolders'
 
 const cardTitle = 'm-0 font-display text-[28px] font-bold uppercase'
 
@@ -153,6 +154,18 @@ export function ProjectDetail() {
           </ul>
         </div>
       </div>
+
+      {p.key === 'deepcore' && (
+        <section aria-labelledby="dc-holders" className="flex flex-col gap-4 rounded-card border border-line bg-surface p-7">
+          <div className="flex flex-col gap-1">
+            <h2 id="dc-holders" className={cardTitle}>
+              Latest launches · who holds them
+            </h2>
+            <span className="font-mono text-[12px] text-faint">Holder Maps by Gully Labs: bundled buys, the deployer’s share and connected wallets, for every new DeepCore token.</span>
+          </div>
+          <LaunchHolders />
+        </section>
+      )}
 
       <Link
         to={`/projects/${next.slug}`}

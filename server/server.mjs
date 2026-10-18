@@ -6,10 +6,11 @@ import { handleIndexNowKey } from './indexnow.mjs'
 import { readStats } from './stats.mjs'
 import { onSnapshot, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
-import { evaluateAlerts, evaluateLaunchAlerts } from './alerts.mjs'
-import { handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
+import { evaluateAlerts, evaluateLaunchAlerts, startHolderAlerts } from './alerts.mjs'
+import { handleDeepcoreQuote, onLaunches, readLaunches, startDeepcore } from './deepcore.mjs'
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
+import { handleHolders } from './holders.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
@@ -116,6 +117,8 @@ function securityHeaders(host, pathname = '/') {
   // reads of /api/tracker and the logos are covered by connect-src https: and img-src https:).
   const docs = host.startsWith('docs.') || local
   const miniApp = !strict && !host.startsWith('docs.') && (pathname === '/tg' || pathname.startsWith('/tg/'))
+  // The embeddable Holder Map (widget.js) is the one page any site may frame.
+  const embed = !strict && !host.startsWith('docs.') && pathname.startsWith('/embed/')
   const csp = [
     "default-src 'self'",
     // Cloudflare Web Analytics is enabled on the zone and injects its beacon into every page.
@@ -129,7 +132,7 @@ function securityHeaders(host, pathname = '/') {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    `frame-ancestors ${strict ? "'none'" : miniApp ? "'self' https://web.telegram.org" : "'self'"}`,
+    `frame-ancestors ${strict ? "'none'" : embed ? '*' : miniApp ? "'self' https://web.telegram.org" : "'self'"}`,
     ...(local ? [] : ['upgrade-insecure-requests']),
   ].join('; ')
   return {
@@ -140,7 +143,7 @@ function securityHeaders(host, pathname = '/') {
     // Wallet popups (Coinbase Wallet, WalletConnect) need to talk back to the opener.
     'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
     // X-Frame-Options cannot name another origin; the Mini App relies on frame-ancestors alone.
-    ...(miniApp ? {} : { 'X-Frame-Options': strict ? 'DENY' : 'SAMEORIGIN' }),
+    ...(miniApp || embed ? {} : { 'X-Frame-Options': strict ? 'DENY' : 'SAMEORIGIN' }),
     'Content-Security-Policy': csp,
   }
 }
@@ -223,6 +226,12 @@ async function handleRequest(req, res) {
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
   }
   // DeepCore router quote for the stock pages' comparison panel (deepcore.mjs): cached and rate limited here.
+  // The latest DeepCore launches (the poller's cache, deepcore.mjs), public: the site lists them with their Holder Maps.
+  if (url.pathname === '/api/deepcore/launches') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    const r = await readLaunches({ limit: 20 })
+    return send(res, 200, JSON.stringify({ state: r.state, asOf: r.asOf, launches: r.launches.map((l) => ({ chainId: l.chainId, chainKey: l.chainKey, chainName: l.chainName, token: l.token, symbol: l.symbol, createdAt: l.createdAt, locked: l.legs.some((g) => g.locked === true) ? true : l.legs.length && l.legs.every((g) => g.locked === false) ? false : null, links: l.links })) }), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' })
+  }
   if (url.pathname === '/api/deepcore/quote') return void (await handleDeepcoreQuote(req, res, url, geoFor(req, isLocal)))
   // Solana (solana-routes.mjs): the RPC proxy, Solana Pay reference lookup and the geo-gated Jupiter quote/swap proxy.
   if (url.pathname.startsWith('/api/solana/')) {
@@ -237,7 +246,7 @@ async function handleRequest(req, res) {
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
   let access = null
-  if (url.pathname.startsWith('/api/tracker')) {
+  if (url.pathname.startsWith('/api/tracker') || url.pathname.startsWith('/api/holders/')) {
     if (req.method === 'OPTIONS') return send(res, 204, '', CORS)
     access = apiAccess(req)
     // Keyed requests are recorded (status class, latency) for the holder's dashboard once answered.
@@ -250,6 +259,12 @@ async function handleRequest(req, res) {
       res.setHeader('X-RateLimit-Remaining', String(access.remaining))
     }
     for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v)
+  }
+
+  // Holder Map (holders.mjs): who holds a DeepCore launch or a stock token, with the same key limits as the tracker.
+  if (url.pathname.startsWith('/api/holders/')) {
+    if (await handleHolders(req, res, url, access)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
 
   // "Notify me" on a project still in the lab: saves the email to the launch list (admin dashboard).
@@ -403,6 +418,8 @@ function startLoops() {
   // TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.
   if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
   startDeepcore()
+  // Holder Map alerts: each watched token's map is re-read every ten minutes (alerts.mjs).
+  startHolderAlerts()
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
   startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
   startChannel() // @GullyLabsNews: scheduled posts and auto posts (telegram-channel.mjs)

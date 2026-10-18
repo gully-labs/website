@@ -31,7 +31,8 @@
     "ask:index": "node scripts/build-ask-index.mjs",
     "test:e2e": "node scripts/e2e.mjs",
     "test:siwe": "node scripts/test-siwe.mjs",
-    "seo:indexnow": "node scripts/indexnow-submit.mjs"
+    "seo:indexnow": "node scripts/indexnow-submit.mjs",
+    "test:holders": "node --test scripts/test-holders.mjs"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

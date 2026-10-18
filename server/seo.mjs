@@ -118,6 +118,20 @@ export function pageMeta(host, pathname) {
   if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
   // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
   if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
+  // Holder Maps (holders.mjs): a page per DeepCore launch or tracked stock token; the share image is the map's own card.
+  const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana)\/([A-Za-z0-9]{1,64})$/)
+  if (hm) {
+    const chainName = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }[hm[2]]
+    const what = /^0x/.test(hm[3]) || hm[3].length > 12 ? 'this token' : hm[3].toUpperCase()
+    return {
+      title: `Holder Map: ${what} on ${chainName} · Gully Labs`,
+      description: `Who holds ${what} on ${chainName}: the biggest wallets, the ones that trade with each other, launch checks and a replay of how holdings changed, read live.`,
+      canonical: hm[1] ? null : `${SITE}/holders/${hm[2]}/${hm[3]}`,
+      found: true,
+      noindex: !!hm[1],
+      image: `${SITE}/api/holders/${hm[2]}/${hm[3]}/card.png`,
+    }
+  }
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }

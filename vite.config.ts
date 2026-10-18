@@ -12,6 +12,7 @@ import { alertChannels } from './server/telegram.mjs'
 import { geoFor } from './server/geo.mjs'
 import { handleAsk } from './server/ask.mjs'
 import { handleSolana } from './server/solana-routes.mjs'
+import { handleHolders } from './server/holders.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
 function mockContactApi(): Plugin {
@@ -114,6 +115,10 @@ function serverModules(): Plugin {
           res.setHeader('Content-Type', 'application/json')
           res.setHeader('Cache-Control', 'private, no-store')
           return res.end(JSON.stringify(geoFor(req, true)))
+        }
+        if (url.pathname.startsWith('/api/holders/')) {
+          handleHolders(req, res, url, null).then((done: boolean) => done || next(), next)
+          return
         }
         if (url.pathname.startsWith('/api/solana/')) {
           handleSolana(req, res, url, geoFor(req, true)).then((done: boolean) => done || next(), next)

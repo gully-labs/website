@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
 import { useTracker, type TrackerRow } from '../../lib/tracker'
 import { useTgApi } from './hooks'
-import { AlertsTab, Button, Chips, GapsTab, LaunchesTab, Notice, StockScreen, type Me } from './screens'
+import { AlertsTab, Button, Chips, GapsTab, HoldersScreen, LaunchesTab, Notice, StockScreen, type Me } from './screens'
 import { haptic, isLight, loadTelegram, themeVars, type ThemeParams, type WebApp } from './sdk'
 
 /* The Gully Labs Telegram Mini App (gullylabs.xyz/tg, its own lazy chunk). Opened from @GullyLabsBot's
@@ -12,7 +12,27 @@ import { haptic, isLight, loadTelegram, themeVars, type ThemeParams, type WebApp
    give haptic feedback. Following @GullyLabsNews is required here as in the bot (the join screen). */
 
 type Tab = 'gaps' | 'launches' | 'alerts'
-type Screen = { k: 'home' } | { k: 'stock'; chain: string; ticker: string }
+type Screen = { k: 'home' } | { k: 'stock'; chain: string; ticker: string } | { k: 'holders'; chain: string; token: string }
+
+/**
+ * The holder screen the app was opened on, if any: the bot's "👥 Holders" button opens /tg?holders=<chain>:<token>;
+ * a t.me link can pass start_param h_<chain>_<token>. Anything malformed is ignored.
+ */
+function holdersStart(wa: WebApp): Screen | null {
+  let raw: [string, string] | null = null
+  try {
+    const q = new URLSearchParams(window.location.search).get('holders')
+    const i = q ? q.indexOf(':') : -1
+    if (q && i > 0) raw = [q.slice(0, i), q.slice(i + 1)]
+  } catch {
+    /* no query */
+  }
+  const sp = wa.initDataUnsafe?.start_param
+  const m = !raw && sp ? /^h_([a-z]{2,12})_([A-Za-z0-9]{1,64})$/.exec(sp) : null
+  if (m) raw = [m[1], m[2]]
+  if (!raw || !/^[a-z]{2,12}$/.test(raw[0]) || !/^[A-Za-z0-9]{1,64}$/.test(raw[1])) return null
+  return { k: 'holders', chain: raw[0], token: raw[1] }
+}
 const TABS: { id: Tab; label: string }[] = [
   { id: 'gaps', label: 'Gaps' },
   { id: 'launches', label: 'Launches' },
@@ -121,7 +141,10 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
   const [fresh, setFresh] = useState(0)
   const { load: me } = useTgApi<Me>(initData, `/api/tg/me${fresh ? `?fresh=1&n=${fresh}` : ''}`)
   const tracker = useTracker()
-  const [stack, setStack] = useState<Screen[]>([{ k: 'home' }])
+  const [stack, setStack] = useState<Screen[]>(() => {
+    const start = holdersStart(wa)
+    return start ? [{ k: 'home' }, start] : [{ k: 'home' }]
+  })
   const [tab, setTab] = useState<Tab>('gaps')
   const [alertsVersion, setAlertsVersion] = useState(0)
   const top = stack[stack.length - 1]
@@ -181,6 +204,7 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
 
   const rowOf = (chain: string, ticker: string): TrackerRow | null => (tracker.k === 'ok' ? (tracker.data.rows.find((r) => r.chain === chain && r.ticker === ticker) ?? null) : null)
   const openStock = (chain: string, ticker: string) => setStack((s) => [...s, { k: 'stock', chain, ticker }])
+  const openHolders = (chain: string, token: string) => setStack((s) => [...s, { k: 'holders', chain, token }])
 
   return (
     <>
@@ -192,11 +216,13 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
           </span>
         }
       />
-      {top.k === 'stock' ? (
+      {top.k === 'holders' ? (
+        <HoldersScreen key={`${top.chain}:${top.token}`} wa={wa} initData={initData} me={m} chain={top.chain} token={top.token} onAlertsChanged={() => setAlertsVersion((v) => v + 1)} />
+      ) : top.k === 'stock' ? (
         tracker.k === 'loading' ? (
           <Boot />
         ) : (
-          <StockScreen key={`${top.chain}:${top.ticker}`} wa={wa} initData={initData} row={rowOf(top.chain, top.ticker)} me={m} ink={ink} onAlertsChanged={() => setAlertsVersion((v) => v + 1)} />
+          <StockScreen key={`${top.chain}:${top.ticker}`} wa={wa} initData={initData} row={rowOf(top.chain, top.ticker)} me={m} ink={ink} onAlertsChanged={() => setAlertsVersion((v) => v + 1)} onHolders={() => openHolders(top.chain, top.ticker)} />
         )
       ) : (
         <>
@@ -204,7 +230,7 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
             <Chips value={tab} options={TABS} onChange={setTab} label="Section" />
           </div>
           {tab === 'gaps' && <GapsTab initData={initData} tracker={tracker} ink={ink} onOpen={(r) => openStock(r.chain, r.ticker)} />}
-          {tab === 'launches' && <LaunchesTab wa={wa} initData={initData} ink={ink} />}
+          {tab === 'launches' && <LaunchesTab wa={wa} initData={initData} ink={ink} onHolders={openHolders} />}
           {tab === 'alerts' && <AlertsTab wa={wa} initData={initData} me={m} version={alertsVersion} onOpenStock={openStock} />}
         </>
       )}

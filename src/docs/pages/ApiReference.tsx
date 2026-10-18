@@ -9,6 +9,7 @@ const sections = [
   { id: 'rows', title: 'Rows' },
   { id: 'history', title: 'GET /api/tracker/history' },
   { id: 'movers', title: 'GET /api/tracker/movers' },
+  { id: 'holders', title: 'GET /api/holders' },
   { id: 'caching', title: 'Caching' },
   { id: 'rate-limits', title: 'Rate limits' },
   { id: 'errors', title: 'Errors' },
@@ -204,6 +205,21 @@ export function ApiReference() {
             ['spark', '[unixSeconds, gapPct][]', 'The gap over the window, at most 48 points, for a sparkline.'],
           ]}
         />
+      </Section>
+
+      <Section id="holders" title="GET /api/holders/:chain/:token">
+        <P>
+          The Holder Map: who holds a DeepCore launch or a tracked stock token, which of the biggest wallets sent tokens to each other (clusters), what known addresses they are (pools, locks, burn, exchanges, DeepCore and Gully contracts), and a plain-English summary. <C>:chain</C> is <C>robinhood</C>, <C>bsc</C>, <C>base</C>, <C>hyperevm</C> or <C>solana</C>; <C>:token</C> is the token address, or a stock’s ticker. Other tokens answer 404. Counted by the same rate limits and keys as the tracker; answers are cached for five minutes.
+        </P>
+        <Fields
+          head={['Path', 'Answers']}
+          rows={[
+            ['/api/holders/:chain/:token', <>JSON: <C>state</C> (<C>ok</C>, or <C>unavailable</C> with a <C>reason</C> when a chain’s holder data is not available yet), <C>nodes</C> (rank, address, share, label, cluster, flags), <C>links</C>, <C>clusters</C>, <C>summary</C> (<C>top10Pct</C>, <C>largestCluster</C>, <C>line</C>, <C>plain</C>), <C>forensics</C> for launches (bundled buyers, deployer share and funding, liquidity lock, <C>riskLine</C>), <C>fair</C> for stocks (value at the real share price, premium), <C>timeline</C> (replay frames), <C>sources</C> and <C>asOf</C>.</>],
+            ['/api/holders/:chain/:token.csv', 'The holder list as CSV (when your plan includes it).'],
+            ['/api/holders/:chain/:token/card.png', 'A 1200 × 630 share card of the map. Free.'],
+          ]}
+        />
+        <P>Shares are of the total supply, or of the listed holders when the supply could not be read (<C>holders.sharesOf</C> says which). Nothing is estimated: a figure that could not be read is left out.</P>
       </Section>
 
       <Section id="caching" title="Caching">

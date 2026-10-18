@@ -98,7 +98,15 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
   const [name, setName] = useState('')
   // A stock page's "Set an alert" link (?alert=<chain>:<TICKER>#alerts) opens this with that stock chosen.
   const [target, setTarget] = useState(() => (initialTarget && view.stocks.some((s) => `${s.chain}:${s.ticker}` === initialTarget) ? initialTarget : 'any'))
-  const [kind, setKind] = useState<'gap' | 'premium' | 'discount' | 'either' | 'deepcore'>('gap')
+  // Holder Map alerts, offered when the server lists that kind; the map's "Alert me" pre-fills the token.
+  const holdersKind = view.kinds?.find((k) => k.id === 'holders')
+  const holdersPrefill = initialTarget?.startsWith('holders:') ? initialTarget.split(':') : null
+  const [kind, setKind] = useState<'gap' | 'premium' | 'discount' | 'either' | 'deepcore' | 'holders'>(holdersPrefill && holdersKind ? 'holders' : 'gap')
+  const [hChain, setHChain] = useState(holdersPrefill?.[1] ?? 'robinhood')
+  const [hToken, setHToken] = useState(holdersPrefill?.[2] ?? '')
+  const [hMetric, setHMetric] = useState<'cluster' | 'top10'>('cluster')
+  const [hAbove, setHAbove] = useState('20')
+  const [hDrop, setHDrop] = useState('5')
   // DeepCore launch alerts, offered when the server lists that kind (with its chains).
   const launchKind = view.kinds?.find((k) => k.id === 'deepcore-launch')
   const [dcChain, setDcChain] = useState('')
@@ -117,8 +125,8 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setErr(null)
-    const [chain, ticker] = target === 'any' || kind === 'deepcore' ? [undefined, undefined] : target.split(':')
-    const condition = kind === 'deepcore' ? { type: 'deepcore-launch', chainId: dcChain ? Number(dcChain) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct), direction } : { type: 'status', status: kind }
+    const [chain, ticker] = target === 'any' || kind === 'deepcore' || kind === 'holders' ? [undefined, undefined] : target.split(':')
+    const condition = kind === 'holders' ? { type: 'holders', chain: hChain, token: hToken.trim(), metric: hMetric, above: hAbove.trim() ? Number(hAbove) : null, dropPts: hDrop.trim() ? Number(hDrop) : null } : kind === 'deepcore' ? { type: 'deepcore-launch', chainId: dcChain ? Number(dcChain) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct), direction } : { type: 'status', status: kind }
     setBusy(true)
     const r = await api<{ secret: string | null }>('/api/developer/alerts', { method: 'POST', body: { name: name.trim(), chain, ticker, condition, webhookUrl: webhook.trim() || undefined, telegram: toTelegram || undefined } })
     setBusy(false)
@@ -126,12 +134,12 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
     setName('')
     setWebhook('')
     setToTelegram(false)
-    toastSuccess('Alert created', { detail: name.trim() || (kind === 'deepcore' ? 'DeepCore launch alert' : ticker ? `${ticker} alert` : 'Any-stock alert') })
+    toastSuccess('Alert created', { detail: name.trim() || (kind === 'holders' ? 'Holder alert' : kind === 'deepcore' ? 'DeepCore launch alert' : ticker ? `${ticker} alert` : 'Any-stock alert') })
     onCreated(r.data.secret)
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title="New gap alert">
+    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : 'New gap alert'}>
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <label className={fieldLabel}>
           <span>
@@ -139,7 +147,24 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
           </span>
           <input className={input} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="e.g. NVDA wide gap" />
         </label>
-        {kind === 'deepcore' && launchKind ? (
+        {kind === 'holders' && holdersKind ? (
+          <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-3 max-[480px]:grid-cols-1">
+            <label className={fieldLabel}>
+              Chain
+              <select className={select} value={hChain} onChange={(e) => setHChain(e.target.value)}>
+                {(holdersKind.chains ?? []).map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={fieldLabel}>
+              Token
+              <input className={`${input} font-mono text-[13px]`} value={hToken} onChange={(e) => setHToken(e.target.value)} placeholder="0x… address or a stock ticker" spellCheck={false} required />
+            </label>
+          </div>
+        ) : kind === 'deepcore' && launchKind ? (
           <label className={fieldLabel}>
             Chain
             <select className={select} value={dcChain} onChange={(e) => setDcChain(e.target.value)}>
@@ -177,8 +202,18 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
               <option value="discount">It turns discount</option>
               <option value="either">It turns premium or discount</option>
               {launchKind && <option value="deepcore">A new token launches on DeepCore</option>}
+              {holdersKind && <option value="holders">Holders: a cluster grows or sells</option>}
             </select>
           </label>
+          {kind === 'holders' && (
+            <label className={fieldLabel}>
+              Watch
+              <select className={select} value={hMetric} onChange={(e) => setHMetric(e.target.value as 'cluster' | 'top10')}>
+                <option value="cluster">Largest cluster</option>
+                <option value="top10">Top 10 wallets</option>
+              </select>
+            </label>
+          )}
           {kind === 'gap' && (
             <label className={fieldLabel}>
               Percent
@@ -187,8 +222,28 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
           )}
         </div>
         {kind === 'gap' && <DirectionControl value={direction} onChange={setDirection} pct={pct} />}
+        {kind === 'holders' && (
+          <div className="grid grid-cols-2 gap-3 max-[480px]:grid-cols-1">
+            <label className={fieldLabel}>
+              <span>
+                Reaches (% of supply) <span className="text-[12px] text-faint">optional</span>
+              </span>
+              <input className={input} type="number" min={1} max={100} step={0.1} value={hAbove} onChange={(e) => setHAbove(e.target.value)} />
+            </label>
+            <label className={fieldLabel}>
+              <span>
+                Falls from its high (points) <span className="text-[12px] text-faint">optional</span>
+              </span>
+              <input className={input} type="number" min={1} max={100} step={0.1} value={hDrop} onChange={(e) => setHDrop(e.target.value)} />
+            </label>
+          </div>
+        )}
         <span className="-mt-2 text-[12px] leading-[1.5] text-faint">
-          {kind === 'deepcore'
+          {kind === 'holders'
+            ? holdersKind?.available === false
+              ? 'Holder alerts come with the Pro plan.'
+              : `The token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Falls from its high" is the cluster selling. Counts as one of your plan's alerts.`
+            : kind === 'deepcore'
             ? `Once per new launch read from DeepCore's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
             : kind === 'gap' ? <>Only pools deep enough to flag count; the gap is the on-chain price against fair.</> : <>Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
         </span>

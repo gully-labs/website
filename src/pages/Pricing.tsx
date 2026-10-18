@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowUpRight, BellRing, Boxes, Check, History, Layers, Send, ShieldCheck, Zap } from 'lucide-react'
+import { ArrowUpRight, BellRing, Boxes, Check, History, Layers, Network, Send, ShieldCheck, Zap } from 'lucide-react'
 import { useContact } from '../components/ContactContext'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
@@ -115,6 +115,13 @@ function OnRequest() {
   )
 }
 
+/** One plan's Holder Map line, from GET /api/plans (holderMap). While the map is not gated every plan has all of it. */
+function holderMapLine(hm: NonNullable<Offer['holderMap']>, id: string) {
+  if (!hm.gated) return 'Holder Map: every holder view, the replay, CSV and cluster alerts'
+  const t = hm.tiers[id as 'free' | 'pro' | 'business'] ?? hm.tiers.free
+  return `Holder Map: top ${t.holders} holders${t.replay ? ', the replay' : ''}${t.csv ? ', CSV' : ''}${t.alerts ? ', cluster alerts' : ''}`
+}
+
 export function Pricing() {
   const [state, retry] = usePlans()
   const offer = state.k === 'ok' ? state.offer : null
@@ -179,6 +186,11 @@ export function Pricing() {
                       <li className="flex items-start gap-3">
                         <History size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {p.historyDays} days of gap history per stock
                       </li>
+                      {offer.holderMap && (
+                        <li className="flex items-start gap-3">
+                          <Network size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> {holderMapLine(offer.holderMap, p.id)}
+                        </li>
+                      )}
                       <li className="flex items-start gap-3">
                         <Check size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Usage charts and request log
                       </li>

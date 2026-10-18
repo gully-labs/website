@@ -13,11 +13,11 @@ const n = (v: number) => v.toLocaleString('en-US')
 export type Secret = { title: string; secret: string } | null
 
 export function alertName(a: GapAlert) {
-  return a.name || (a.condition.type === 'deepcore-launch' ? 'DeepCore launch alert' : a.ticker ? `${a.ticker} alert` : 'Any-stock alert')
+  return a.name || (a.condition.type === 'deepcore-launch' ? 'DeepCore launch alert' : a.condition.type === 'holders' ? `${a.condition.symbol ?? 'Token'} holder alert` : a.ticker ? `${a.ticker} alert` : 'Any-stock alert')
 }
 
 export function alertRule(a: GapAlert) {
-  if (a.condition.type === 'deepcore-launch') return conditionText(a.condition)
+  if (a.condition.type === 'deepcore-launch' || a.condition.type === 'holders') return conditionText(a.condition)
   return `${a.ticker ? `${a.ticker} · ${CHAIN_NAMES[a.chain ?? ''] ?? a.chain}` : 'Any stock'} · ${conditionText(a.condition)}`
 }
 

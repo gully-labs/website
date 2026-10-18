@@ -12,6 +12,7 @@ const sections = [
   { id: 'table', title: 'Table' },
   { id: 'theming', title: 'Theming and size' },
   { id: 'behaviour', title: 'Behaviour' },
+  { id: 'holder-map', title: 'Holder Map' },
   { id: 'csp', title: 'Content Security Policy' },
 ]
 
@@ -112,6 +113,20 @@ export function WidgetGuide() {
         <Callout label="KEYS" tone="plain">
           The widget never sends an API key and should not: anything in a page’s HTML is public. Its requests are anonymous and edge-cached. For heavier use, call the <DocLink to="api">API</DocLink> from your server with a <DocLink to="api-keys">key</DocLink>.
         </Callout>
+      </Section>
+
+      <Section id="holder-map" title="Holder Map">
+        <P>
+          Show who holds a DeepCore launch or a tracked stock token: bubbles sized by share, connected wallets, launch checks and a replay. The same script frames the Holder Map from gullylabs.xyz:
+        </P>
+        <CodeBlock lang="html" code={'<div data-gully-widget="holders" data-chain="robinhood" data-token="0x8d901a1b3f3a57f9c36a71382fa183476c41545b"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>'} />
+        <List>
+          <li>
+            <C>data-chain</C>: robinhood, bsc, base, hyperevm or solana. <C>data-token</C>: the token address, or a ticker the tracker follows (NVDA). <C>data-height</C>: 360 to 2000 pixels (default 760).
+          </li>
+          <li>The map reads its own data inside the frame; your page makes no requests for it. Trades and shares open gullylabs.xyz in a new tab.</li>
+          <li>The free embed carries a “Powered by Gully Labs” credit. If your CSP restricts frames, add <C>frame-src https://gullylabs.xyz</C>.</li>
+        </List>
       </Section>
 
       <Section id="csp" title="Content Security Policy">

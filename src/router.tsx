@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, HoldersRoute, EmbedHoldersRoute, ReceiptRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
@@ -18,6 +18,7 @@ const mainRoutes = [
       { path: '/about', element: <AboutRoute /> },
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/tracker/:chain/:ticker', element: <StockRoute /> },
+      { path: '/holders/:chain/:token', element: <HoldersRoute /> },
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
@@ -39,6 +40,8 @@ const mainRoutes = [
   { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
   // The Telegram Mini App (opened from @GullyLabsBot): full screen in Telegram's own chrome, no site header or footer.
   { path: '/tg', element: <TgRoute /> },
+  // The embeddable Holder Map (widget.js data-gully-widget="holders"): framed by other sites, no site chrome.
+  { path: '/embed/holders/:chain/:token', element: <EmbedHoldersRoute /> },
   // Gully Pay's standalone checkout (src/pages/pay/CheckoutFrame): its own layout, no site header, nav or
   // footer. Never linked from the site, never indexed; whoever holds the link pays here.
   {

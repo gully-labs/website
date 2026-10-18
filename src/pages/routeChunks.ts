@@ -5,6 +5,8 @@
 export const chunks = {
   tracker: () => import('./Tracker'),
   stock: () => import('./StockPage'),
+  holders: () => import('./HoldersPage'),
+  embedHolders: () => import('./EmbedHolders'),
   widget: () => import('./widget/WidgetPage'),
   developers: () => import('./developers/DevelopersPage'),
   services: () => import('./Services'),
@@ -28,6 +30,7 @@ type Chunk = keyof typeof chunks
 function chunkFor(path: string): Chunk | null {
   if (path === '/tracker') return 'tracker'
   if (/^\/tracker\/[^/]+\/[^/]+$/.test(path)) return 'stock'
+  if (/^\/holders\/[^/]+\/[^/]+$/.test(path)) return 'holders'
   if (path.startsWith('/projects/')) return 'project'
   if (path === '/analytics' || path === '/chain-kit') return 'products'
   const named: Record<string, Chunk> = { '/widget': 'widget', '/services': 'services', '/about': 'about', '/pricing': 'pricing', '/ask': 'ask', '/developers': 'developers' }

@@ -11,6 +11,7 @@ import { usePortal } from './portal'
 import { Skeleton } from './parts'
 import { input, mono, panel, pillGold, pillSm } from './styles'
 import { KeySpark, LiveMarker, QuotaRing, StackedDays } from './vcharts'
+import { LaunchHolders } from '../../components/holders/LaunchHolders'
 
 /* The Products tab: every Gully product in one hub, each card with its live state for the ACTIVE
    workspace and a live chart where data exists (a pulsing live marker where it does not yet; a
@@ -22,6 +23,7 @@ import { KeySpark, LiveMarker, QuotaRing, StackedDays } from './vcharts'
      Chain Kit        "Request your explorer": the site's enquiry endpoint (POST /api/contact)
      Gully Chains     the Devnet waitlist: the launch list (POST /api/notify, slot 90)
      Gully AI         /api/ask/status, and an inline question (POST /api/ask); recent questions stay in this browser
+     Holder Map       the latest DeepCore launches (/api/deepcore/launches), each linking to its map
      Widget and SDK   links, with the API's live health */
 
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
@@ -109,6 +111,7 @@ export function Products({ account, go }: { account: Account; go: (t: Tab) => vo
       <ChainKitCard />
       <ChainsCard />
       <AiCard />
+      <HolderMapCard />
       <WidgetCard />
     </div>
   )
@@ -367,6 +370,20 @@ function AiCard() {
       ) : (
         <span className="text-[12px] text-faint">Your recent questions appear here (kept in this browser).</span>
       )}
+    </Card>
+  )
+}
+
+function HolderMapCard() {
+  return (
+    <Card icon={<Network size={16} aria-hidden />} title="Holder Map" badge={pill('Live', 'green')}>
+      <p className="m-0 text-[13px] leading-[1.55] text-muted">Who holds a DeepCore launch or a stock token: bundled buys, the deployer, connected wallets and a replay. Cluster alerts arrive in the Alerts tab.</p>
+      <LaunchHolders external={!isLocalHost()} limit={5} />
+      <div className="flex flex-wrap gap-2">
+        <ExtLink href={`${DOCS_URL}/widget`} className={pillSm}>
+          <AppWindow size={14} aria-hidden /> Embed it
+        </ExtLink>
+      </div>
     </Card>
   )
 }

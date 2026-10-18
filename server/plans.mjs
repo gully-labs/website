@@ -42,6 +42,35 @@ export const ANALYTICS_PAID_IDS = Object.values(ANALYTICS_PLANS)
   .filter((p) => p.priceUsdc > 0)
   .map((p) => p.id)
 
+/* --------------------------------------------------------- Holder Map --- */
+
+// OWNER-EDITABLE: Holder Map features per tracker plan (holders.mjs enforces them; pages read them via
+// GET /api/plans, field `holderMap`). `gated` is the pricing switch: false (today) gives every visitor
+// the Pro features; true limits anonymous and Free users to `free`. Either way the safety warnings
+// (bundled buyers, the deployer's share, the liquidity lock) are never gated. HOLDER_MAP_GATED=1 in the
+// environment turns the switch on without a code change.
+//   holders     wallets listed (the map draws at most 120 of them)
+//   replay      the time scrubber (history replay)
+//   csv         the holder list as CSV (GET /api/holders/:chain/:token.csv)
+//   alerts      cluster alerts (Telegram and webhook), within the plan's alert count
+//   whiteLabel  the embedded map without the "Powered by Gully Labs" credit (reserved: not built yet)
+export const HOLDER_MAP = {
+  gated: false,
+  tiers: {
+    free: { holders: 50, replay: false, csv: false, alerts: false, whiteLabel: false },
+    pro: { holders: 500, replay: true, csv: true, alerts: true, whiteLabel: false },
+    business: { holders: 500, replay: true, csv: true, alerts: true, whiteLabel: true },
+  },
+}
+export const holderMapGated = () => HOLDER_MAP.gated || process.env.HOLDER_MAP_GATED === '1'
+/** The Holder Map features for a plan id ('anonymous', 'free', 'pro', 'business'), after the switch. */
+export function holderMapFeatures(planId) {
+  const t = HOLDER_MAP.tiers
+  if (!holderMapGated()) return { ...t.pro, whiteLabel: !!t[planId]?.whiteLabel, tier: 'pro', gated: false }
+  const own = t[planId] ?? t.free
+  return { ...own, tier: own.replay ? 'pro' : 'free', gated: true }
+}
+
 /** No key at all: per IP address. */
 export const ANONYMOUS = { perMin: 60, historyDays: 7 }
 
@@ -85,6 +114,7 @@ export function publicPlans({ treasuryOverride } = {}) {
     periodDays: PERIOD_DAYS,
     anonymous: ANONYMOUS,
     plans: Object.values(PLANS),
+    holderMap: { gated: holderMapGated(), tiers: HOLDER_MAP.tiers },
     analytics: { plans: Object.values(ANALYTICS_PLANS), trialDays: ANALYTICS_TRIAL_DAYS, graceDays: ANALYTICS_GRACE_DAYS, periodDays: PERIOD_DAYS },
     // A treasury that is a fee proxy is never shown (pay-guard.mjs: logged, PaymentGuardError, 500).
     checkout: t ? { enabled: true, treasury: guardRecipient(t, 'plans checkout'), solanaTreasury: solanaTreasury() } : { enabled: false, treasury: null, solanaTreasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
