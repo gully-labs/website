@@ -66,7 +66,7 @@ The trade-off:
 
 | | Arbitrum One | Base |
 |---|---|---|
-| Ecosystem fit | Everything in `ops/pitch/arbitrum.md` (Builders form, ArbiFuel, Security Program, Portal listing) counts an Arbitrum chain settling to Arbitrum. The tracker already covers Robinhood Chain, an Arbitrum chain. | An Arbitrum-stack chain on Base is unusual: no Base program targets it, and Arbitrum's programs may not count it. |
+| Ecosystem fit | Everything in `ops/pitch/arbitrum.md` (Builders form, ArbiFuel, Portal listing) counts an Arbitrum chain settling to Arbitrum. The tracker already covers Robinhood Chain, an Arbitrum chain. | An Arbitrum-stack chain on Base is unusual: no Base program targets it, and Arbitrum's programs may not count it. |
 | Tooling | The forks we index (`arbitrum-orbit-deployment-ui`, `orbit-setup-script`, `orbit-monitoring-tools`, `arbitrum-token-bridge`) assume an Arbitrum parent. | Same contracts, but the bridge UI and monitoring assume Arbitrum parents; expect fixes. |
 | Hyperlane | Mailbox `0x979Ca5202784112f4738403dBec5D0F3B9daabB9`, IGP `0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22` (registry `chains/arbitrum/addresses.yaml`, 2026-10-17). | Mailbox `0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D`, IGP `0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94` (`chains/base/addresses.yaml`). Either works; Warp Routes can anchor to both at once (multi-collateral). |
 | Gully Pay today | Accepts Arbitrum One. | Accepts Base. |
@@ -141,7 +141,7 @@ page, 2026-10-17):
   callbacks; 18 decimals (SDK guides). It must already exist on the parent chain and is "natively bridged" at
   deployment. In **Rollup mode** the batch poster is reimbursed in the fee token, so a **fee token pricer**
   contract supplying the ETH/token exchange rate must be deployed and registered on the parent; the docs' three
-  examples are "unaudited" and "If the fee token pricer returns stale or manipulated prices, the batch poster
+  examples are marked as not for production and "If the fee token pricer returns stale or manipulated prices, the batch poster
   may be under- or over-reimbursed." On AnyTrust the chain owner must also call `SetL1PricePerUnit(0)` and
   `SetL1PricingRewardRate(0)` or "Nitro will apply a parent chain's fee to all transactions".
 
@@ -330,9 +330,8 @@ devnet target, and only when `preflight.sh` passes. S1 needs its own machines.
 3. **S1:** pick and register the chain id; deploy with the chain SDK on Arbitrum Sepolia (Rollup, ETH); nodes on
    their own VPS; Chain Kit; faucet; canonical bridge; Hyperlane core with a 1-of-1 multisig ISM; USDC test Warp
    Route; registry PR (`hyperlane-registry`) and `ethereum-lists/chains` PR; monitoring from
-   `orbit-monitoring-tools`. This is pitch milestone **M3**; the Arbitrum Security Program application goes in
-   with the contract scope ([§13](#13-pitch-milestones)).
-4. **S2:** mainnet on Arbitrum One with the audited scope; 2-of-3 validators; USDC and ETH Warp Routes from
+   `orbit-monitoring-tools`. This is pitch milestone **M3** ([§13](#13-pitch-milestones)).
+4. **S2:** mainnet on Arbitrum One with the reviewed scope; 2-of-3 validators; USDC and ETH Warp Routes from
    Arbitrum One (then Base); Gully Pay native and cross-chain; LI.FI and Relay listing requests with the S1
    artefacts; the Gully venues move over.
 

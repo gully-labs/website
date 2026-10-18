@@ -440,7 +440,7 @@ try {
   check('a cancelled invoice never sends invoice.expired later', !hook.got.some((g) => JSON.parse(g.body).type === 'invoice.expired' && JSON.parse(g.body).data.invoice.id === inv8.id))
 
   /* ---------------------------------- invoice webhook and global default --- */
-  const ci = await admin('/api/admin/invoices', 'POST', { title: 'Audit', usd: '100', assets: ['base-usdc'], webhookUrl: HOOK('/invoice') })
+  const ci = await admin('/api/admin/invoices', 'POST', { title: 'Review', usd: '100', assets: ['base-usdc'], webhookUrl: HOOK('/invoice') })
   check('an invoice may have its own webhook; its secret is shown once', ci.status === 201 && /^whsec_/.test(ci.data.secret) && ci.data.invoice.webhook?.url === HOOK('/invoice') && !JSON.stringify(ci.data.invoice).includes('whsec_'))
   hook.got.length = 0
   check('test event on an invoice webhook', (await admin(`/api/admin/invoices/${ci.data.invoice.id}/webhook/test`, 'POST')).data?.delivery?.state === 'delivered' && merchantVerifies(hook.got[0], ci.data.secret))

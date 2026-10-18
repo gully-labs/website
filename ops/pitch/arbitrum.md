@@ -46,9 +46,8 @@ The programs as of 2026-10-17:
 
 | Program | Status | Fit for us | Verdict |
 |---|---|---|---|
-| **Arbitrum Builders form** ([tally.so/r/0QObE9](https://tally.so/r/0QObE9)) | Open, rolling, no deadline | The Foundation's general intake. One form, with checkboxes for audit, ArbiFuel, marketing or visibility, investment and mentorship or GTM. It routes us to whichever program fits. | **Recommended: submit first** |
+| **Arbitrum Builders form** ([tally.so/r/0QObE9](https://tally.so/r/0QObE9)) | Open, rolling, no deadline | The Foundation's general intake. One form, with checkboxes for ArbiFuel, marketing or visibility, investment and mentorship or GTM. It routes us to whichever program fits. | **Recommended: submit first** |
 | **ArbiFuel** gas sponsorship ([apply](https://airtable.com/appzb4GfqGfrnDXjW/shrulGIIp6l6ezAlt)) | Listed "Active", rolling, no deadline (not confirmed beyond the label) | Up to 1M sponsored transactions in year one, capped at $10K in credits, through Pimlico ERC-20 paymasters. It targets payment apps and stablecoin products, which is exactly Gully Pay on Arbitrum One. It asks for Arbitrum promotion (X, bio, in-app banner). | **Apply alongside** (also ticked on the Builders form) |
-| **Arbitrum Security Program (ASP)** ([apply](https://tally.so/r/3xzEzv?program=aap)) | Open since 2026-09-29, rolling for 12 months (to about end of Sept 2027) | It subsidises part of a first audit. It is eligible for projects launching their own Arbitrum Chain or new features. It fits the Gully Devnet / Gully Chains contracts **once a contract scope exists**. Terms: a Commitment Agreement (possibly exclusivity), public acknowledgement, and probably ≥ 1 year of runway plus a co-pay. | **Apply later**, at milestone M3 (below) |
 | Arbitrum D.A.O. Grant Program (Questbook, Domain Allocators) | **Closed** to new proposals since 2026-03-17. Only milestone reviews for existing grantees. Season 4 not announced. | It would be the best cash fit: the *Dev Tooling on One and Stylus* and *Orbit Chains* domains, up to $25K (one Domain Allocator) or $50K (two). | **Watch.** The ask below is written to drop straight in if Season 4 opens. |
 | Arbitrum Foundation Grant Program | "Applications will open soon", no date | General grants. | Watch |
 | Trailblazer 1.0 / 2.0 (AI agents) | **Closed**: both rounds complete, no 2026 round found | It would have fitted Gully AI and the bot. | n/a |
@@ -60,13 +59,12 @@ The programs as of 2026-10-17:
 
 - marketing / visibility;
 - the ArbiFuel gas subsidy;
-- audit;
 - mentorship / GTM.
 
 File the **ArbiFuel** application the same day.
 
-**Deadlines:** none. The Builders form, ArbiFuel and the ASP are all rolling. The ASP window runs about 12
-months from 2026-09-29. Keep the milestone ask below ready for Questbook Season 4, which is the cash grant
+**Deadlines:** none. The Builders form and ArbiFuel are both rolling.
+Keep the milestone ask below ready for Questbook Season 4, which is the cash grant
 that fits best and has no date yet.
 
 ## Eligibility check
@@ -78,7 +76,6 @@ that fits best and has no date yet.
 | Builders form: deployment status | Live in production (choose the band by the first launch date, which **the owner must confirm**) |
 | ArbiFuel: early stage, simple-UX, payments or stablecoins | Gully Pay: USDC and ETH pay links on Arbitrum One. Payers sign one transfer. |
 | ArbiFuel: promote Arbitrum | We can add "Built on Arbitrum" to the pay pages and the bio, and post on X |
-| ASP: audit-ready contract scope, runway, co-pay | **Not yet.** Gully Pay verifies plain transfers, so it has no contracts to audit. The scope arrives with the L3 contracts at M3 (chain configuration, bridge adapters) and M5 (Hyperlane ISM configuration, Warp Route ownership, Gully Pay settlement contracts). |
 | Questbook (when open): open source, milestones, public reporting | The SDK is MIT. Our forks are public in github.com/gully-labs. We publish a changelog at docs.gullylabs.xyz/changelog. |
 
 ## The ask, with milestones
@@ -88,7 +85,6 @@ that fits best and has no date yet.
 - ArbiFuel: up to $10K in gas credits, for gasless USDC pay links on Arbitrum One;
 - an ecosystem listing on the Arbitrum Portal;
 - a spotlight or co-marketing for the tracker and widget;
-- an introduction to the ASP for M3.
 
 **When a cash program opens (Questbook Season 4 or the Foundation grants): $50,000, in four milestones.** This
 is the two-Domain-Allocator ceiling. Cut it to M1 and M2 ($25,000) for a single-Domain-Allocator grant.
@@ -97,7 +93,7 @@ is the two-Domain-Allocator ceiling. Cut it to M1 and M2 ($25,000) for a single-
 |---|---|---|---|---|
 | M1 | **Arbitrum One in the gap tracker** | Stock tokens on Arbitrum One priced against Chainlink in `/api/tracker`, history and movers, with the SDK, widget and alerts updated and the methodology documented on docs.gullylabs.xyz | 4 | $10,000 |
 | M2 | **Chain Kit for Orbit, open source** | The Arbitrum/Orbit profile of our Blockscout fork (`gully-labs/blockscout`) documented as a one-command setup for any Orbit chain, with a public demo explorer | 6 | $15,000 |
-| M3 | **Gully Devnet: a public Orbit L3 on Arbitrum Sepolia** | A public RPC, a Chain Kit explorer, a rate-limited faucet and the canonical token bridge, plus a runbook from `orbit-setup-script` and `orbit-monitoring-tools`; Rollup mode, ETH gas (`ops/l3/SPEC.md` §0–§8). This is also the ASP entry point. | 8 | $15,000 |
+| M3 | **Gully Devnet: a public Orbit L3 on Arbitrum Sepolia** | A public RPC, a Chain Kit explorer, a rate-limited faucet and the canonical token bridge, plus a runbook from `orbit-setup-script` and `orbit-monitoring-tools`; Rollup mode, ETH gas (`ops/l3/SPEC.md` §0–§8). | 8 | $15,000 |
 | M4 | **Gasless Gully Pay on Arbitrum One** | Pay links settled in USDC through an ERC-20 paymaster (ArbiFuel / Pimlico), with a public dashboard of sponsored payments | 4 | $10,000 |
 
 **Stretch, when the L3 launches (not funded by the $50,000 above; written for a follow-on proposal or the Orbit
@@ -156,7 +152,6 @@ Not public, so the owner exports them if wanted:
   - Grants overview: https://arbitrum.foundation/grants
   - Builders form: https://tally.so/r/0QObE9
   - ArbiFuel: https://blog.arbitrum.foundation/arbifuel-is-live-arbitrum-builders-claim-your-gas-fee-sponsorship/ (form: https://airtable.com/appzb4GfqGfrnDXjW/shrulGIIp6l6ezAlt)
-  - ASP: https://blog.arbitrum.foundation/introducing-the-arbitrum-security-program-apply-to-secure-your-smart-contracts/ (form: https://tally.so/r/3xzEzv?program=aap)
   - D.A.O. Grant Program thread: https://forum.arbitrum.foundation/t/arbitrum-d-a-o-grant-program-season-3-official-thread/28753
   - Questbook: https://arbitrum.questbook.app/
   - Portal listing form: https://docs.google.com/forms/d/e/1FAIpQLSc_v8j7sc4ffE6U-lJJyLMdBoIubf7OIhGtCqvK3cGPGoLr7w/viewform (linked from https://docs.arbitrum.io/arbitrum-essentials/reference/node-providers)
@@ -178,13 +173,13 @@ can answer.
 | Deployment status * | **Owner**: by the date gullylabs.xyz first went live (likely "6–12 months" or "under 6 months") |
 | Chain * | Multichain including Arbitrum |
 | Funding stage * | **Owner** (likely "None") |
-| Support interests * | Audit; ArbiFuel gas subsidy; Marketing or visibility; Mentorship or GTM |
+| Support interests * | ArbiFuel gas subsidy; Marketing or visibility; Mentorship or GTM |
 | Main contact name / email / Telegram * | **Owner** |
 | Number of founders * | **Owner** |
 | Founder X / LinkedIn | **Owner** |
 | Attachments | This pitch as a PDF, and a screenshot of /tracker (Robinhood Chain rows) |
 | Referral | **Owner**, if anyone at an Arbitrum Aligned Entity knows us |
-| Additional comments | The one-paragraph pitch above, plus "ArbiFuel application filed the same day; ASP application planned at Gully Devnet (M3)." |
+| Additional comments | The one-paragraph pitch above, plus "ArbiFuel application filed the same day." |
 
 ## Arbitrum Portal listing: filled in
 
@@ -235,12 +230,10 @@ each to the form's real question and fill in anything extra it asks.
    512 × 512 logo and the banner. Add any fields the form asks that are not listed.
 6. [ ] **Wallet for any grant payout**: a team multisig on Arbitrum One. **Owner** creates and supplies it.
    Never a hot key from the server.
-7. [ ] **KYC / legal entity**: Foundation programs, the ASP agreement and Questbook payouts require them.
+7. [ ] **KYC / legal entity**: Foundation programs and Questbook payouts require them.
    **Owner** prepares the entity name, jurisdiction and signatory.
 8. [ ] **Watch for Questbook Season 4** (forum category *DAO Grant Programs*) and the Foundation Grant Program
    opening. Submit the milestone table above as the proposal (Dev Tooling on One and Stylus, or Orbit Chains
    domain).
-9. [ ] **ASP at M3**: once the Gully Devnet contracts are scoped, apply at https://tally.so/r/3xzEzv?program=aap
-   with the scope, an audit firm quote and a budget. Confirm the runway and co-pay terms first.
-10. [ ] **Telegram link check**: the README badge points at `t.me/GullyLabsNews`, while the site and this pitch
+9. [ ] **Telegram link check**: the README badge points at `t.me/GullyLabsNews`, while the site and this pitch
     use `t.me/GullyLabsNews` (`src/content/site.ts`). Confirm which is right before submitting.

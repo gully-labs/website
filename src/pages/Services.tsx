@@ -19,7 +19,7 @@ export function Services() {
     <>
       <Seo
         title="Services"
-        description="Smart contracts, dApps, chain infrastructure and security audits from the team behind the Gully Labs projects."
+        description="Smart contracts, dApps, chain infrastructure and security testing from the team behind the Gully Labs projects."
       />
 
       <section className="grid grid-cols-[1.1fr_.9fr] items-end gap-[clamp(32px,4cqw,72px)] px-page pt-[72px] pb-16 max-[959px]:grid-cols-1">

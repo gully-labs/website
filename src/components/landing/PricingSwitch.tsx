@@ -65,7 +65,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
     cards = [
       { name: 'Chain Kit', price: 'Quoted', feats: ['Branded Blockscout explorer', 'Your domain, colours and token list', 'Hosted and run by us'] },
       { name: 'Build', price: 'Quoted', feats: ['Smart contracts', 'dApps and frontends', 'Chain infrastructure'] },
-      { name: 'Audit', price: 'Quoted', feats: ['Code review', 'Fuzzing and invariant tests', 'Post-launch monitoring'] },
+      { name: 'Security', price: 'Quoted', feats: ['Code review', 'Fuzzing and invariant tests', 'Post-launch monitoring'] },
     ]
   else if (offer && product === 'api')
     cards = offer.plans.map((p) => ({

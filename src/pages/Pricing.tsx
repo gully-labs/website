@@ -92,7 +92,7 @@ function OnRequest() {
   const { openContact } = useContact()
   const items = [
     { icon: Boxes, name: 'Chain Kit', body: 'A branded Blockscout explorer for your chain, run by us. Priced to your chain’s size and history.', to: '/chain-kit', type: 'Infrastructure' as const },
-    { icon: Layers, name: 'Services', body: 'Smart contracts, dApps, infrastructure and audits. Quoted per project after a first call.', to: '/services', type: 'Other' as const },
+    { icon: Layers, name: 'Services', body: 'Smart contracts, dApps, infrastructure and security testing. Quoted per project after a first call.', to: '/services', type: 'Other' as const },
   ]
   return (
     <section id="on-request" className="scroll-mt-24 border-t border-line px-page pt-16 pb-16" aria-labelledby="on-request-title">
