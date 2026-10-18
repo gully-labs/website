@@ -1,7 +1,7 @@
 // Gully Security product UI server (server/security-routes.mjs): role gates, quotas, payment gating, publish
 // visibility, review requests, rate limits, Server-Sent Events, admin and the public pages' head tags.
 //
-//   npm run test:security        (no build needed)
+//   npm run test:security-routes        (no build needed)
 //
 // The real server runs IN THIS PROCESS on port 8797 (TEST_PORT overrides) with a fresh temporary DATA_DIR and
 // every chain's RPC pointed at a closed port. The scan engine is the STUB in scripts/fixtures (the real one is
