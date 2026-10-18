@@ -72,8 +72,9 @@ const prior = process.env.GULLY_TESTNET_RESUME === '1' && fs.existsSync(RESULTS)
 const out = prior ?? { chainId: 84532, rpc: RPC, explorer: EXPLORER, startedAt: new Date().toISOString(), addresses: { payer: payer.address, merchant: MERCHANT, treasuryEoa: TREASURY, safeOwner: safeOwner.address, erc20FeeProxy: PROXY, ethereumFeeProxy: ETH_PROXY, mockUsdt: MUSDT, usdc: USDC, safeFactory: SAFE_FACTORY, safeSingleton: SAFE_L2_SINGLETON }, deploys: [], cases: [] }
 const saveOut = () => fs.writeFileSync(RESULTS, JSON.stringify(out, (_, v) => (typeof v === 'bigint' ? v.toString() : v), 2) + '\n')
 if (!prior) for (const t of deploy.transactions) {
-  const r = deploy.receipts.find((x) => x.transactionHash === t.hash)
-  out.deploys.push({ contract: t.contractName, address: t.contractAddress, tx: t.hash, gasUsed: Number(BigInt(r.gasUsed)), status: r.status === '0x1' ? 'success' : 'reverted' })
+  // Matched by the created address: the broadcast file's receipts are not in the order of its transactions.
+  const r = deploy.receipts.find((x) => x.contractAddress?.toLowerCase() === t.contractAddress.toLowerCase())
+  out.deploys.push({ contract: t.contractName, address: t.contractAddress, tx: r.transactionHash, gasUsed: Number(BigInt(r.gasUsed)), status: r.status === '0x1' ? 'success' : 'reverted' })
 }
 
 let nonce = await pub.getTransactionCount({ address: payer.address, blockTag: 'pending' })

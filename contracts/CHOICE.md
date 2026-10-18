@@ -108,6 +108,13 @@ stays on plain transfers, with the fee invoiced as today. A fee address that is 
 
 ---
 
+## Evidence: live testnet run
+
+[`TESTNET-RESULTS.md`](TESTNET-RESULTS.md) has the live run on Base Sepolia. Request's own source was rebuilt there
+byte-identical to the Base mainnet proxies and deployed. Every case is a real transaction: fees to an EOA and to a Safe,
+zero fee, no or short allowance, a USDT-style token, the native proxy's Safe revert, and a Safe spending its fees. It
+also includes an end-to-end payment through our server.
+
 ## Evidence: fork tests (`contracts/test/RequestFeeProxy.fork.t.sol`)
 
 These run against live state at the latest block of each chain, through the same public RPCs (override them with

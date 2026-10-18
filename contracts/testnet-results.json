@@ -20,15 +20,15 @@
     {
       "contract": "ERC20FeeProxy",
       "address": "0xae5508e1509cce6a73b38d8b19fedfdbd0080c18",
-      "tx": "0xa184545d4c432caca885daf604dde1a0c871ee2f03c56968c0acedfb89a72a3e",
-      "gasUsed": 581753,
+      "tx": "0xb76ad1fff5845387ecc83e38c59e1a23b79afa20f6adb91f4ebabd3169c6a2c9",
+      "gasUsed": 518794,
       "status": "success"
     },
     {
       "contract": "EthereumFeeProxy",
       "address": "0xd302ce9e3048ad676c6e74be57042aca31e2957e",
-      "tx": "0xb76ad1fff5845387ecc83e38c59e1a23b79afa20f6adb91f4ebabd3169c6a2c9",
-      "gasUsed": 518794,
+      "tx": "0xa184545d4c432caca885daf604dde1a0c871ee2f03c56968c0acedfb89a72a3e",
+      "gasUsed": 581753,
       "status": "success"
     },
     {
@@ -922,5 +922,141 @@
     "eth": "0.048622779934880939",
     "usdc": "15.5425"
   },
-  "finishedAt": "2026-10-18T01:10:24.418Z"
+  "finishedAt": "2026-10-18T01:10:24.418Z",
+  "server": {
+    "ranAt": "2026-10-18T01:13:47.829Z",
+    "port": 8797,
+    "flags": {
+      "GULLY_TESTNET_CHAINS": "84532",
+      "GULLY_FEEPROXY_84532": "0xae5508e1509cce6a73b38d8b19fedfdbd0080c18",
+      "GULLY_PAY_MERCHANT_FEE_BPS": "50",
+      "GULLY_PAY_MERCHANT_FREE_USD": "0"
+    },
+    "txs": [
+      {
+        "label": "approve (server bytes)",
+        "tx": "0x1fc98fb5806310a35a1bcdd807381f21325e8e0430bfd2d1be597b3a4366d2fe",
+        "status": "success",
+        "gasUsed": 55437,
+        "block": 48258864
+      },
+      {
+        "label": "transferFromWithReferenceAndFee (server bytes)",
+        "tx": "0x78413f9b0f4b3976f5cc9bb10d1e58cb05d7c05ca0ae430426434fda8ed56e9e",
+        "status": "success",
+        "gasUsed": 71758,
+        "block": 48258865
+      },
+      {
+        "label": "approve for the spoof",
+        "tx": "0x77ecb5ab061a2d1a2966c58ced266cebfcefeae724b48c2f24cf179920b7cf00",
+        "status": "success",
+        "gasUsed": 55437,
+        "block": 48258868
+      },
+      {
+        "label": "proxy call with feeAddress = payer (spoof)",
+        "tx": "0xf9514199380c523638afdfdb0db22402d828679150397f58c56ddef36dce4884",
+        "status": "success",
+        "gasUsed": 66958,
+        "block": 48258868
+      },
+      {
+        "label": "plain ETH transfer of 0.000105668 to the store",
+        "tx": "0xe8d1b2f751d7e386a6cc47f3b65bde48eca51115c21ec2d087200c6a2691bcb8",
+        "status": "success",
+        "gasUsed": 21000,
+        "block": 48258869
+      }
+    ],
+    "checks": [
+      {
+        "check": "owner signs in (SIWE, throwaway key)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "store wallet on Base Sepolia (testnet flag on): accepted and enabled",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "USDC quote carries a split to our proxy and the treasury (0.5% fee, free allowance 0)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "on chain: the merchant got total - fee, the treasury got the fee",
+        "pass": true,
+        "detail": null,
+        "tx": "0x78413f9b0f4b3976f5cc9bb10d1e58cb05d7c05ca0ae430426434fda8ed56e9e",
+        "deltas": {
+          "payer": "-1.009955",
+          "merchant": "1.004955",
+          "treasury": "0.005"
+        }
+      },
+      {
+        "check": "verify: 200, invoice paid",
+        "pass": true,
+        "detail": null,
+        "tx": "0x78413f9b0f4b3976f5cc9bb10d1e58cb05d7c05ca0ae430426434fda8ed56e9e"
+      },
+      {
+        "check": "ledger: one payment, crediting the full quote, with the fee taken on chain",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "ledger: one fee row, collected on chain in full, nothing left to bill",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "the store invoice reads as paid",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "re-using the hash on the same invoice: refused (409)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "re-using the hash on another invoice: refused (409)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "the fee was recorded once",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "spoofed fee address: not credited (422), invoice stays open",
+        "pass": true,
+        "detail": null,
+        "tx": "0xf9514199380c523638afdfdb0db22402d828679150397f58c56ddef36dce4884"
+      },
+      {
+        "check": "ETH quote: priced by the Base Sepolia ETH / USD feed, no split (fee invoiced)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "ETH: verify 200, paid; fee accrued and left for the weekly statement (not on chain)",
+        "pass": true,
+        "detail": null,
+        "tx": "0xe8d1b2f751d7e386a6cc47f3b65bde48eca51115c21ec2d087200c6a2691bcb8",
+        "deltas": {
+          "merchant": "0.000105668 ETH"
+        }
+      },
+      {
+        "check": "ETH: re-using the hash is refused (409)",
+        "pass": true,
+        "detail": null
+      }
+    ]
+  }
 }
