@@ -57,12 +57,12 @@ import { alertsOf, handleAlerts, muteAlert } from './alerts.mjs'
 import { getAccount, randomToken, sha256 } from './store.mjs'
 import * as tracker from './tracker.mjs'
 import { askConfigured, askForChat, MAX_QUESTION } from './ask.mjs'
-import { DEEPCORE_CHAINS, readLaunches } from './deepcore.mjs'
+import { DEEPCORE_CHAINS, readDeepcorePool, readLaunches } from './deepcore.mjs'
 import { handleProfileRoutes, profileOf } from './profile.mjs'
 import { workspaceName } from './workspaces.mjs'
 import * as ui from './telegram-ui.mjs'
 
-const { chainName, shortAddr, when, btn, ubtn } = ui
+const { chainName, shortAddr, btn, ubtn } = ui
 
 /** HTML-escapes text for Telegram's HTML parse mode. */
 export const esc = ui.esc
@@ -281,10 +281,10 @@ export async function alertChannels() {
 function commandList() {
   return [
     { command: 'menu', description: 'Open the main menu' },
-    { command: 'gap', description: 'One stock card, e.g. /gap NVDA or /gap NVDA bsc' },
-    { command: 'top', description: 'Widest trusted gaps right now' },
+    { command: 'gap', description: 'One stock token, e.g. /gap NVDA or /gap NVDA bsc' },
+    { command: 'top', description: 'Stock tokens furthest from the real share price' },
     { command: 'movers', description: 'Biggest gap moves in 24 hours' },
-    { command: 'launches', description: 'Latest DeepCore token launches' },
+    { command: 'launches', description: 'Newest tokens launched on DeepCore' },
     { command: 'alerts', description: 'Your alerts: pause, mute, test or delete' },
     { command: 'ask', description: 'Ask Gully AI, e.g. /ask how do alerts work?' },
     { command: 'stop', description: 'Unlink this chat from your account' },
@@ -380,6 +380,8 @@ let readRows = async () => {
 let readMoversFn = (window) => tracker.readMovers(window)
 let readHistoryFn = (chain, ticker) => tracker.readHistory(chain, ticker)
 let readLaunchesFn = (o) => readLaunches(o)
+/** Price and market cap of one launch (readDeepcorePool's match), or null: the launch card shows them when DeepCore states them. */
+let readLaunchMarketFn = async (l) => (await readDeepcorePool({ token: l.token, chain: l.chainId }))?.matches?.[0] ?? null
 let askFn = (chatId, q) => askForChat(chatId, q)
 let askReady = () => askConfigured()
 
@@ -393,8 +395,9 @@ export function setMoversReaderForTest(fn) {
 export function setHistoryReaderForTest(fn) {
   readHistoryFn = fn
 }
-export function setLaunchesReaderForTest(fn) {
+export function setLaunchesReaderForTest(fn, marketFn = async () => null) {
   readLaunchesFn = fn
+  readLaunchMarketFn = marketFn
 }
 export function setAskForTest(fn, ready = () => true) {
   askFn = fn ?? ((chatId, q) => askForChat(chatId, q))
@@ -617,7 +620,7 @@ async function gapScreen(args) {
   const chainKey = chainArgOf(rawChain?.toLowerCase().slice(0, 20))
   if (!/^[A-Z.]{1,8}$/.test(ticker)) return { text: 'That is not a ticker. Try <code>/gap NVDA</code>, or browse 📈 Stocks.', keyboard: [[btn('📈 Stocks', 'stk')], ui.nav('m')] }
   const followed = stocks.filter((s) => s.ticker === ticker && (!chainKey || s.chain === chainKey))
-  if (!followed.length) return { text: `${esc(ticker)}${chainKey ? ` on ${esc(chainName(chainKey))}` : ''} is not a stock the tracker follows. Browse the list in 📈 Stocks.`, keyboard: [[btn('📈 Stocks', 'stk')], ui.nav('m')] }
+  if (!followed.length) return { text: `${esc(ticker)}${chainKey ? ` on ${esc(chainName(chainKey))}` : ''} isn’t a stock token we follow yet. Browse the list in 📈 Stocks.`, keyboard: [[btn('📈 Stocks', 'stk')], ui.nav('m')] }
   if (followed.length === 1) return stockCard(ui.CODE_OF[followed[0].chain], ticker, 'x')
   const rows = await rowsOrNull()
   return ui.bothChainsView(
@@ -698,7 +701,7 @@ async function onMessage(msg) {
   else if (cmd === 'launches') {
     const a = args.split(/\s+/).filter(Boolean)[0]?.toLowerCase().slice(0, 20)
     const chainId = a ? (LAUNCH_CHAIN_ALIASES[a] ?? (DEEPCORE_CHAINS[Number(a)] ? Number(a) : undefined)) : 0
-    if (chainId === undefined) view = { text: `DeepCore runs on ${Object.values(DEEPCORE_CHAINS).map((c) => esc(c.key)).join(', ')}. Try <code>/launches</code> or <code>/launches base</code>, or pick a chain below.`, keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], ui.nav('m')] }
+    if (chainId === undefined) view = { text: `DeepCore runs on ${Object.values(DEEPCORE_CHAINS).map((c) => esc(c.name)).join(', ')}. Try <code>/launches</code> or <code>/launches base</code>, or pick a chain below.`, keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], ui.nav('m')] }
     else view = await launchesScreen(chainId)
   } else if (cmd === 'ask') {
     const q = rawArgs.trim().slice(0, MAX_QUESTION + 1)
@@ -820,7 +823,15 @@ async function routeView(route, c) {
       r = { launches: [] }
     }
     const l = (r?.launches ?? []).find((x) => String(x.token).toLowerCase() === `0x${m[2]}`) ?? null
-    return ui.launchCardView(l, Number(m[3]) || 0)
+    let market = null
+    if (l) {
+      try {
+        market = await readLaunchMarketFn(l)
+      } catch {
+        market = null
+      }
+    }
+    return ui.launchCardView(l, Number(m[3]) || 0, { market })
   }
   if ((m = route.match(/^dla:(\d{1,5})(?::(\d{1,5}))?$/))) {
     const [, f, cid] = m
@@ -860,7 +871,7 @@ async function routeView(route, c) {
     }
     if (act === 'am') {
       const r = muteAlert(id, link.address, MUTE_MS)
-      c.answer(r.ok ? `🔕 Muted until ${when(r.mutedUntil)}` : r.error, !r.ok)
+      c.answer(r.ok ? `🔕 Muted ${ui.forTime(r.mutedUntil)}` : r.error, !r.ok)
     } else if (act === 'ap' || act === 'ar') {
       const r = await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/${act === 'ap' ? 'pause' : 'resume'}`)
       c.answer(r.status === 200 ? (act === 'ap' ? '⏸ Paused' : '▶ Resumed') : (r.data?.error ?? 'Not changed'), r.status !== 200)
@@ -902,7 +913,7 @@ async function routeView(route, c) {
           until = r.mutedUntil
         }
       }
-      c.answer(n ? `🔕 ${n} alert${n === 1 ? '' : 's'} muted until ${when(until)}` : 'No alerts to mute.')
+      c.answer(n ? `🔕 ${n} alert${n === 1 ? '' : 's'} muted ${ui.forTime(until)}` : 'No alerts to mute.')
       return settingsScreen(link, fromId)
     }
     const on = route === 'snt:1'
@@ -941,7 +952,7 @@ async function pressed(cq, answer) {
     if (!mayAct(link, fromId)) return answer('Only the person who linked this group can mute its alerts.', true)
     const r = muteAlert(mm[1], link.address, MUTE_MS)
     if (!r.ok) return answer(r.error, true)
-    return answer(`🔕 Muted until ${when(r.mutedUntil)}. Resume it in 🔔 My alerts.`)
+    return answer(`🔕 Muted ${ui.forTime(r.mutedUntil)}. Resume it in 🔔 My alerts.`)
   }
   const gate = allowed(`cb:${chatId}`, 60)
   if (gate !== 'ok') return answer(gate === 'warn' ? 'Too many taps in a minute. Try again shortly.' : '')

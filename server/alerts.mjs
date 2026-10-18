@@ -294,7 +294,7 @@ async function deliver(alert, events, test, at = Date.now()) {
   }
   if (alert.telegram) {
     const t0 = Date.now()
-    const r = await sendAlertTelegram({ owner: alert.owner, alertId: alert.id, name: alert.name || null, conditionText: conditionText(alert.condition), direction: alert.condition?.type === 'gap' ? (alert.condition.direction ?? 'both') : null, chatId: alert.telegram.chatId ?? null, events, test })
+    const r = await sendAlertTelegram({ owner: alert.owner, alertId: alert.id, name: alert.name || null, conditionText: conditionText(alert.condition), condition: alert.condition, direction: alert.condition?.type === 'gap' ? (alert.condition.direction ?? 'both') : null, chatId: alert.telegram.chatId ?? null, events, test })
     results.push({ channel: 'telegram', ...r, ms: Date.now() - t0 })
   }
   const live = db.alerts.find((a) => a.id === alert.id)
