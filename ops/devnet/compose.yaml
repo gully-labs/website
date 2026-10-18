@@ -1,0 +1,52 @@
+# Gully Devnet (light): a single Arbitrum Nitro node in --dev mode, the same node OffchainLabs/nitro-devnode runs.
+# PREPARED, NOT STARTED. Start it only through ./preflight.sh --start, which refuses when the disk has under 15 GB
+# free (the shared box filled up once and that killed other projects' databases). Read README.md first.
+#
+# Its own compose project (gully-devnet), its own network, one container (gully-devnet). Nothing here touches the
+# site's project (`gully`) or any other project's containers, images or volumes.
+name: gully-devnet
+
+services:
+  devnet:
+    # Pinned: nitro-node v3.11.5-7d41882 (2026-10-02), multi-arch index digest from the Docker Hub API.
+    # Compressed size per the registry: amd64 1.41 GB, arm64 1.36 GB. See README.md "Disk and RAM".
+    image: offchainlabs/nitro-node:v3.11.5-7d41882@sha256:339fa56f4034207320f48ea8bd7cbe73a0528717270e8072d940dd263dea9c27
+    container_name: gully-devnet
+    # Opt-in: never comes back by itself after a reboot or a Docker restart.
+    restart: "no"
+    # The flags nitro-devnode's run-dev-node.sh passes (pinned commit ebb523d), with the API kept to read and
+    # send calls. --dev: one sequencer, chain id 412346, a pre-funded dev account, in-memory L1. State is
+    # ephemeral: a restart starts a fresh chain (see README.md to keep it).
+    command:
+      - --dev
+      - --http.addr=0.0.0.0
+      - --http.port=8547
+      - --http.vhosts=*
+      - --http.corsdomain=*
+      - --http.api=net,web3,eth,debug
+      - --ws.addr=0.0.0.0
+      - --ws.port=8548
+      - --ws.api=net,web3,eth
+      - --ws.origins=*
+    ports:
+      # Loopback only. Public access, if ever, goes through gully-web or a Cloudflare tunnel, never a host port.
+      - "127.0.0.1:${GULLY_DEVNET_RPC_PORT:-8547}:8547"
+      - "127.0.0.1:${GULLY_DEVNET_WS_PORT:-8548}:8548"
+    networks:
+      - devnet
+    # Hard caps so a runaway node cannot starve the shared box.
+    mem_limit: 2g
+    memswap_limit: 2g
+    cpus: 2
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # No healthcheck: the image ships no curl or wget. preflight.sh --start waits for eth_chainId instead.
+    stop_grace_period: 30s
+
+networks:
+  devnet:
+    name: gully-devnet
