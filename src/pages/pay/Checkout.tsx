@@ -1,7 +1,8 @@
 import { ArrowUpRight, ChevronDown, Clock, Copy, CreditCard, Download, ExternalLink, FileText, Loader2, QrCode as QrIcon, RefreshCw, ShieldCheck, TriangleAlert } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { AssetMark, AssetPicker } from '../../components/pay/AssetPicker'
+import { AssetPicker } from '../../components/pay/AssetPicker'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { btnOutline } from '../../components/ui'
 import { payApi, type Quote } from './api'
 import { fmtTime, type Invoice } from './invoice'
@@ -149,9 +150,9 @@ export function ConfirmBar({ n, needed, done = false }: { n: number; needed: num
 export function AnimatedCheck({ size = 56 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 56 56" fill="none" aria-hidden className="shrink-0">
-      <circle cx="28" cy="28" r="25" stroke="#2f5a33" strokeWidth="2" pathLength={1} strokeDasharray={1} style={{ animation: 'gl-draw .6s ease both' }} />
-      <circle cx="28" cy="28" r="25" fill="rgba(111,207,106,.10)" style={{ animation: 'gl-fade .4s ease both' }} />
-      <path d="M17 29l7.5 7.5L39.5 21" stroke="#6fcf6a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} style={{ animation: 'gl-draw .5s .35s ease both' }} />
+      <circle cx="28" cy="28" r="25" stroke="#2f6b35" strokeWidth="2" pathLength={1} strokeDasharray={1} style={{ animation: 'gl-draw .6s ease both' }} />
+      <circle cx="28" cy="28" r="25" fill="rgba(116,194,123,.10)" style={{ animation: 'gl-fade .4s ease both' }} />
+      <path d="M17 29l7.5 7.5L39.5 21" stroke="#74c27b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} style={{ animation: 'gl-draw .5s .35s ease both' }} />
     </svg>
   )
 }
@@ -175,6 +176,7 @@ export function PaidPanel({ invoice, brand = GULLY_BRAND, receiptPath = `/pay/${
         <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-input border border-line bg-bg px-4 py-3 font-mono text-[12px]" data-testid="receipt">
           <dt className="text-faint">AMOUNT</dt>
           <dd className="m-0 break-all text-ink">
+            {paidAsset && <TokenLogo symbol={p.symbol} chain={paidAsset.chainKey} address={paidAsset.address} size={16} decorative className="mr-1.5 -mt-0.5 align-middle" />}
             {p.amount} {p.symbol}
             {p.usd ? <span className="text-faint"> · {p.usd} USD</span> : null}
           </dd>
@@ -459,7 +461,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
             <div className="flex flex-col gap-3 rounded-input border border-line bg-bg p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="inline-flex min-w-0 items-center gap-2 text-[14px] text-ink-2">
-                  <AssetMark asset={asset} />
+                  <TokenLogo symbol={quote.asset.symbol} chain={asset.chainKey} address={quote.asset.address} size={20} decorative />
                   {quote.asset.symbol} on {quote.asset.chain}
                 </span>
                 {expired && (
@@ -525,7 +527,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
                     )}
                   </div>
                   <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-3">
-                    <span className="text-[13px] leading-[1.55] text-ink-2">Scan with your wallet ({isSolanaChain(quote.chainId) ? 'Solana Pay' : 'EIP-681'}), or copy the details in by hand.</span>
+                    <span className="text-[13px] leading-[1.55] text-ink-2">Scan this with your wallet app, or copy the details in by hand.</span>
                     <Row k={`${brand.gully ? 'TREASURY' : 'WALLET'} ON ${quote.asset.chain.toUpperCase()}`} v={quote.treasury} copy={quote.treasury} copyLabel="Address" />
                     {quote.asset.kind === 'token' && quote.asset.address ? <Row k={`${quote.asset.symbol} CONTRACT · ${quote.asset.decimals} DECIMALS`} v={quote.asset.address} copy={quote.asset.address} copyLabel="Contract" /> : <Row k="ASSET" v={`${quote.asset.chain}’s own coin (a plain transfer, not a token)`} />}
                   </div>

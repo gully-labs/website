@@ -34,9 +34,9 @@ export const merchantTabUrl = (section?: string) => `${isLocalHost() ? '/develop
 
 /* ------------------------------------------------------------ accent --- */
 
-const BG = [11, 14, 19] // #0b0e13
-const INK = [238, 240, 242] // #eef0f2
-const GOLD = '#e8c060'
+const BG = [13, 20, 28] // #0d141c
+const INK = [244, 242, 236] // #f4f2ec
+const GOLD = '#d9b563'
 
 const lum = ([r, g, b]: number[]) => {
   const f = (c: number) => {
@@ -64,27 +64,27 @@ export interface Accent {
 /** The store's accent where it keeps WCAG contrast against the page; the kit gold where it would not. */
 export function accentOf(b: Brand | null | undefined): Accent {
   const hex = b?.accent && /^#[0-9a-f]{6}$/i.test(b.accent) ? b.accent.toLowerCase() : null
-  const fallback: Accent = { color: GOLD, fill: GOLD, onFill: '#0b0e13', own: false }
+  const fallback: Accent = { color: GOLD, fill: GOLD, onFill: '#0d141c', own: false }
   if (!hex || b?.gully) return fallback
   const c = rgb(hex)
   if (contrast(c, BG) < 3) return fallback
-  const onFill = contrast(c, BG) >= contrast(c, INK) ? '#0b0e13' : '#eef0f2'
+  const onFill = contrast(c, BG) >= contrast(c, INK) ? '#0d141c' : '#f4f2ec'
   const fillOk = Math.max(contrast(c, BG), contrast(c, INK)) >= 4.5
-  return { color: hex, fill: fillOk ? hex : GOLD, onFill: fillOk ? onFill : '#0b0e13', own: true }
+  return { color: hex, fill: fillOk ? hex : GOLD, onFill: fillOk ? onFill : '#0d141c', own: true }
 }
 
 /* ------------------------------------------------------------- pills --- */
 
 export const pills = {
   waiting: { text: 'Awaiting payment', cls: 'border-line-strong text-ink-2' },
-  confirming: { text: 'Confirming', cls: 'border-gold-line bg-[rgba(232,192,96,.12)] text-gold' },
+  confirming: { text: 'Confirming', cls: 'border-gold-line bg-[rgba(217,181,99,.12)] text-gold' },
   paid: { text: 'Paid', cls: 'border-success-line bg-success-bg text-green' },
   expired: { text: 'Expired', cls: 'border-line-strong text-muted' },
   cancelled: { text: 'Cancelled', cls: 'border-line-strong text-muted' },
   closed: { text: 'Unavailable', cls: 'border-line-strong text-muted' },
   paused: { text: 'Paused', cls: 'border-[#5a2a24] text-error' },
   overdue: { text: 'Overdue', cls: 'border-[#5a2a24] text-error' },
-  link: { text: 'Pay link', cls: 'border-gold-line bg-[rgba(232,192,96,.12)] text-gold' },
+  link: { text: 'Pay link', cls: 'border-gold-line bg-[rgba(217,181,99,.12)] text-gold' },
 } as const
 
 /** A pay link as one order line: its title, once, at its price (or its range when the payer chooses). */
