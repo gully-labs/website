@@ -290,7 +290,7 @@ try {
   check('📱 Open app is an inline web_app button to the Mini App (private chat)', menuKb[0]?.[0]?.web_app?.url === 'https://gullylabs.xyz/tg' && menuKb[0][0].callback_data === undefined && menuKb[0][0].url === undefined)
   check('the menu: Developer portal is a url button, the others are routes', button(menuKb, /Developer portal/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
   const storedBanner = JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner
-  check('the banner file_id is stored after the first upload, keyed on the MP4's hash', storedBanner?.fileId === BANNER_FILE_ID && storedBanner.sha === crypto.createHash('sha256').update(BANNER_MP4).digest('hex').slice(0, 16), JSON.stringify(storedBanner))
+  check('the banner file_id is stored after the first upload, keyed on the hash of the MP4', storedBanner?.fileId === BANNER_FILE_ID && storedBanner.sha === crypto.createHash('sha256').update(BANNER_MP4).digest('hex').slice(0, 16), JSON.stringify(storedBanner))
   await say(privateChat(801), '/start')
   const an2 = calls.filter((c) => c.method === 'sendAnimation' && c.body.chat_id === '801').at(-1)
   check('a second /start reuses the file_id (no upload)', an2 && !an2.body.multipart && an2.body.animation === BANNER_FILE_ID)
