@@ -726,7 +726,7 @@ await step('admin', async () => {
 
 /* ------------------------------------------------------------- docs --- */
 
-const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap-l3', 'changelog']
+const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'gully-score', 'roadmap-l3', 'changelog']
 await step('docs', async () => {
   for (const [width, mobile] of [[1440, false], [390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
@@ -758,6 +758,88 @@ await step('docs', async () => {
     }
     await ctx.close()
   }
+})
+
+/* ------------------------------------------------------------- Gully Score --- */
+
+// One listed score is stored through the module's test hook (the server runs in this process, so it is the same
+// module instance): the pages read it like any other, and nothing is computed, so no upstream is asked.
+// SCORE_SHOTS=<dir>: full-page screenshots of /score and the score page at 1440 and 390 land there.
+await step('gully score', async () => {
+  const gs = await import('../server/gully-score.mjs')
+  const SC = '0x' + 'ab'.repeat(20)
+  const now = Date.now()
+  const at = (d) => new Date(now - d * 86_400_000).toISOString()
+  const comp = (id, o) => ({ ...gs.COMPONENTS.find((c) => c.id === id), evidence: [], ...o })
+  gs.putScoreForTest({
+    chainId: 8453,
+    chainKey: 'base',
+    chainName: 'Base',
+    address: SC,
+    name: 'E2E Vault',
+    symbol: null,
+    score: 74,
+    grade: 'Fair',
+    coverage: { weight: 75, components: 6, of: 9 },
+    computedAt: new Date(now).toISOString(),
+    methodVersion: 1,
+    components: [
+      comp('verified', { available: true, score: 100, value: 'Exact match', reason: 'The source code is published on Sourcify and matches the deployed code exactly.', evidence: [{ label: 'Sourcify', url: `https://repo.sourcify.dev/8453/${SC}` }] }),
+      comp('control', { available: true, score: 100, value: 'Safe, 2 of 3', reason: 'Changes need 2 of the 3 signers of the Safe.' }),
+      comp('timelock', { available: true, score: 0, value: 'No delay', reason: 'Changes take effect as soon as they are made.' }),
+      comp('upgradeability', { available: true, score: 30, value: 'Upgradeable', reason: 'Its code can be swapped.' }),
+      comp('changes', { available: true, score: 75, value: '1 in 30 days', reason: '1 privileged change was seen in the last 30 days.' }),
+      comp('liquidity', { available: false, score: null, value: 'Not available', reason: 'Liquidity locks are read for DeepCore launches only.' }),
+      comp('holders', { available: false, score: null, value: 'Not available', reason: 'The Holder Map is not running on this server yet.' }),
+      comp('review', { available: true, score: 70, value: 'Published 2026-10-01', reason: 'Gully Security published a report: 0 critical, 1 high, 2 medium, 0 low, 3 info.', evidence: [{ label: 'Read the report', url: 'https://gullylabs.xyz/security' }] }),
+      comp('age', { available: false, score: null, value: 'Not available', reason: 'The deployment date is not known here.' }),
+    ],
+    history: [{ at: at(9), score: 81 }, { at: at(5), score: 79 }, { at: at(2), score: 74 }, { at: new Date(now).toISOString(), score: 74 }],
+    changes: [{ at: at(9), id: null, label: 'First scored', from: null, to: 81, note: 'Scored 81 from 6 of 9 components.' }, { at: at(2), id: 'changes', label: 'Recent privileged changes', from: 100, to: 75, note: '1 in 30 days: 1 privileged change was seen.' }],
+  })
+  const shots = process.env.SCORE_SHOTS ? path.resolve(process.env.SCORE_SHOTS) : null
+  if (shots) fs.mkdirSync(shots, { recursive: true })
+  const shot = async (page, name) => shots && page.screenshot({ path: path.join(shots, `${name}-${page.viewportSize().width}.png`), fullPage: true })
+  for (const [width, mobile] of [[1440, false], [390, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    const page = await ctx.newPage()
+    let w = watch(page, `/score at ${width}`)
+    await page.goto(BASE + '/score')
+    const row = page.getByRole('link', { name: /E2E Vault/ })
+    await row.waitFor()
+    check(`/score at ${width}: the listed score shows with its number`, (await row.textContent()).includes('74'))
+    await page.locator('[data-chart] svg').first().waitFor({ timeout: 10_000 })
+    check(`/score at ${width}: the band chart draws`, (await page.locator('[data-chart] svg path').count()) > 0)
+    check(`/score at ${width}: the methodology lists every part with its weight`, (await page.getByText('Gully Security review').count()) > 0 && (await page.getByText(/Nothing paid goes in/).count()) > 0)
+    if (!mobile) {
+      await page.getByLabel('Contract address').fill('0x123')
+      await page.getByRole('button', { name: 'Score it' }).click()
+      check('/score: a bad address is explained, not sent', await page.getByText('Paste a contract address').isVisible())
+    }
+    if (mobile) await noHorizontalScroll(page, '/score')
+    await page.waitForTimeout(1200)
+    await shot(page, 'score-index')
+    await w.verify()
+    w = watch(page, `score page at ${width}`)
+    await page.goto(`${BASE}/score/base/${SC}`)
+    await page.getByRole('heading', { level: 1, name: 'E2E Vault' }).waitFor()
+    await page.getByRole('img', { name: /Gully Score 74 out of 100/ }).waitFor({ timeout: 10_000 })
+    check(`score page at ${width}: the ring and the number`, true)
+    check(`score page at ${width}: a missing part says "not available" and is not counted`, (await page.getByText('NOT AVAILABLE · NOT COUNTED').count()) === 3)
+    check(`score page at ${width}: evidence links open in a new tab`, (await page.locator('a[href^="https://repo.sourcify.dev"]').getAttribute('target')) === '_blank')
+    check(`score page at ${width}: the change log`, (await page.getByText('Recent privileged changes').count()) > 0)
+    const badge = page.locator(`img[src="/score/base/${SC}/badge.svg"]`)
+    await badge.scrollIntoViewIfNeeded()
+    check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n === 232))
+    check(`score page at ${width}: methodology says informational, nobody can pay`, (await page.getByText(/not an endorsement and not investment advice/).count()) > 0)
+    if (mobile) await noHorizontalScroll(page, 'score page')
+    await page.waitForTimeout(1200)
+    await shot(page, 'score-page')
+    await w.verify()
+    await ctx.close()
+  }
+  const html = await (await fetch(`${BASE}/score/base/${SC}`)).text()
+  check('score page HTML: its own title for crawlers', /E2E Vault Gully Score on Base · Gully Labs/.test(html))
 })
 
 /* ------------------------------------------------------------- 404s and mobile pages --- */

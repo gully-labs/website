@@ -1,7 +1,7 @@
 // Paid tiers of the tracker API: the ONE place their limits and prices live.
 //
 // OWNER-EDITABLE: the prices (US dollars per PERIOD_DAYS; the field keeps its old name priceUsdc) and
-// the limits below. Nothing else in the code or the
+// the limits below (`monitors`: contracts Gully Security monitoring watches per workspace, sec-monitor.mjs). Nothing else in the code or the
 // pages types a price or a limit; the pricing page, the dashboard, the docs and the enforcement in
 // access.mjs, alerts.mjs and the history endpoint all read this object (the browser via GET /api/plans).
 //
@@ -17,9 +17,9 @@ import { solanaTreasury } from './solana-pay.mjs'
 import { getAccount } from './store.mjs'
 
 export const PLANS = {
-  free: { id: 'free', name: 'Free', priceUsdc: 0, perMin: 600, alerts: 1, historyDays: 7, maxKeys: 5 },
-  pro: { id: 'pro', name: 'Pro', priceUsdc: 49, perMin: 3_000, alerts: 10, historyDays: 90, maxKeys: 5 },
-  business: { id: 'business', name: 'Business', priceUsdc: 199, perMin: 10_000, alerts: 100, historyDays: 365, maxKeys: 5 },
+  free: { id: 'free', name: 'Free', priceUsdc: 0, perMin: 600, alerts: 1, historyDays: 7, maxKeys: 5, monitors: 1 },
+  pro: { id: 'pro', name: 'Pro', priceUsdc: 49, perMin: 3_000, alerts: 10, historyDays: 90, maxKeys: 5, monitors: 10 },
+  business: { id: 'business', name: 'Business', priceUsdc: 199, perMin: 10_000, alerts: 100, historyDays: 365, maxKeys: 5, monitors: 50 },
 }
 
 /* ------------------------------------------------------ Gully Analytics --- */

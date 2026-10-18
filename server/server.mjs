@@ -32,6 +32,8 @@ import { handleAsk, startAsk } from './ask.mjs'
 import { handleSolana } from './solana-routes.mjs'
 import { GUARD_PUBLIC_ERROR, PaymentGuardError } from './pay-guard.mjs'
 import { startFeeProxyMonitor } from './fee-proxy-monitor.mjs'
+import { startSecMonitor } from './sec-monitor.mjs'
+import { handleScore, startScoreRefresh } from './gully-score.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -232,6 +234,11 @@ async function handleRequest(req, res) {
     if (await handleSolana(req, res, url, geoFor(req, isLocal))) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // The Gully Score (gully-score.mjs): the public index, one contract's score, and its embeddable badge.
+  if (url.pathname === '/api/score' || url.pathname.startsWith('/api/score/') || (url.pathname.startsWith('/score/') && url.pathname.endsWith('/badge.svg'))) {
+    if (await handleScore(req, res, url)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
   // Gully Ask (ask.mjs): POST /api/ask and GET /api/ask/status.
   if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status') return void (await handleAsk(req, res, url))
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
@@ -413,6 +420,10 @@ function startLoops() {
   startAsk()
   // Hourly balance check of every fee-proxy contract (fee-proxy-monitor.mjs): non-zero = a third-party mis-send.
   startFeeProxyMonitor()
+  // Gully Security monitoring: watched contracts read every minute, alerts by Telegram and webhook (sec-monitor.mjs).
+  startSecMonitor()
+  // Gully Score: listed scores refreshed every 6 hours, and soon after a monitored change (gully-score.mjs).
+  startScoreRefresh()
 }
 // The treasury deployment gate (treasury-chains.mjs) runs in standby too: a standby answers /api/plans and quotes,
 // so it must know on which chains the Safe treasury exists. Read-only (eth_getCode), hourly, timers unref'd.

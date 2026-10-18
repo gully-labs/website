@@ -47,6 +47,7 @@ import { eventFor, noteTelegramConnect, recordEvent, activityPage, syncTelegram 
 import { handleAlerts } from './alerts.mjs'
 import { handleExport } from './exports.mjs'
 import { handleMerchant } from './merchants.mjs'
+import { handleMonitors } from './sec-monitor.mjs'
 import { handleProfileRoutes } from './profile.mjs'
 import { canWrite, forbidden, handleInvitePreview, handleWorkspaceRoutes, roleIn } from './workspaces.mjs'
 import { handleAnalyticsAccount } from './analytics-accounts.mjs'
@@ -240,7 +241,10 @@ export async function handleDeveloper(req, res, url) {
     p === '/api/developer/activity' ||
     p.startsWith('/api/developer/export/') ||
     p === '/api/developer/merchant' ||
-    p.startsWith('/api/developer/merchant/')
+    p.startsWith('/api/developer/merchant/') ||
+    // Gully Security monitoring (sec-monitor.mjs).
+    p === '/api/developer/monitors' ||
+    p.startsWith('/api/developer/monitors/')
 
   if (accountRoute || v2Route) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -273,6 +277,7 @@ export async function handleDeveloper(req, res, url) {
       }
       if (p.startsWith('/api/developer/export/')) return handleExport(req, res, url, ctx)
       if (p === '/api/developer/merchant' || p.startsWith('/api/developer/merchant/')) return handleMerchant(req, res, url, ctx)
+      if (p === '/api/developer/monitors' || p.startsWith('/api/developer/monitors/')) return handleMonitors(req, res, url, ctx)
       if (p === '/api/developer/me' || p === '/api/developer/profile' || p === '/api/developer/company' || p.startsWith('/api/developer/sessions')) return handleProfileRoutes(req, res, url, ctx)
       return handleWorkspaceRoutes(req, res, url, ctx)
     }

@@ -98,6 +98,7 @@ export function categoryOf(pathname) {
   const p = String(pathname).replace(/^\/api\/developer/, '')
   if (p === '/keys' || p.startsWith('/keys/')) return 'keys'
   if (p === '/alerts' || p.startsWith('/alerts/')) return 'alerts'
+  if (p === '/monitors' || p.startsWith('/monitors/')) return 'alerts' // Gully Security monitoring: same writers as alerts
   if (p === '/telegram' || p.startsWith('/telegram/')) return 'telegram'
   if (p === '/checkout' || p === '/checkout/verify') return 'billing'
   if (p === '/analytics/checkout' || p === '/analytics/checkout/verify') return 'billing'

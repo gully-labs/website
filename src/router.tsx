@@ -23,6 +23,9 @@ const mainRoutes = [
       { path: '/analytics', element: <AnalyticsRoute /> },
       { path: '/chain-kit', element: <ChainKitRoute /> },
       { path: '/ask', element: <AskRoute /> },
+      // The Gully Score (src/pages/score): the public index and one page per contract.
+      { path: '/score', lazy: () => import('./pages/score/ScoreIndex').then((m) => ({ Component: m.ScoreIndex })) },
+      { path: '/score/:chain/:address', lazy: () => import('./pages/score/ScorePage').then((m) => ({ Component: m.ScorePage })) },
       // The Gully Pay merchant terms (the checkout's footer links here).
       { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
       { path: '/gully-pay/merchant-terms', element: <Navigate to="/legal/merchant-terms" replace /> },
