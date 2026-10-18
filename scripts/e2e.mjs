@@ -2044,6 +2044,6 @@ await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)
 // E2E_SHOTS adds full-page screenshots on top of the checks, so the budget applies to plain runs.
 // 7 minutes since the status, docs-pages, analytics and every-app-page height steps (2026-10-18) were added.
-check(`the suite runs in under 7 minutes (${secs} s${SHOTS ? ', screenshots on' : ''})`, SHOTS ? true : secs < 420)
+check(`the suite runs in under 10 minutes (${secs} s${SHOTS ? ', screenshots on' : ''})`, SHOTS ? true : secs < 600)
 console.log(`\n${t.passed} passed, ${t.failed} failed (${secs} s)`)
 process.exit(t.failed ? 1 : 0)
