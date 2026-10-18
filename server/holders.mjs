@@ -41,6 +41,7 @@ import { DEEPCORE_CHAINS } from './deepcore.mjs'
 import { FEE_PROXY_REGISTRY } from './fee-proxy-guard.mjs'
 import { readHistory, readTracker } from './tracker.mjs'
 import { isOnCurve, b58decode, isSolanaAddress, solanaRpc } from './solana.mjs'
+import { archiveKnown, readOwnHistory, LOGS as OWN_LOGS } from './holders-logs.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -96,12 +97,13 @@ const SOURCE_ENV = { blockscout: 'BLOCKSCOUT_API_KEY', moralis: 'MORALIS_API_KEY
 const solanaRpcSet = () => String(process.env.GULLY_RPC_SOLANA ?? '').trim() !== ''
 
 /** The words users see when a chain's holder source is not set up yet: no env names, no jargon. */
-export const comingSoonReason = (chainKey) => `Holder data for ${HOLDER_CHAINS[chainKey]?.name ?? chainKey} is coming soon. DeepCore launches already have live maps.`
+export const comingSoonReason = (chainKey) => `Holder history is not available yet on ${HOLDER_CHAINS[chainKey]?.name ?? chainKey}. DeepCore launches already have live maps.`
 
 /**
  * Whether the Holder Map can draw tokens of `kind` on a chain right now.
- *   kind 'stock' (default): the chain's holder source is configured (Blockscout key, Moralis key or a
- *     private Solana RPC). Without it every stock token on that chain is "coming soon".
+ *   kind 'stock' (default): an archive-capable RPC of ours is answering (our own Transfer-log index,
+ *     holders-logs.mjs), or a fallback is configured (Blockscout key, Moralis key, a private Solana RPC).
+ *     Without any, every stock token on that chain is "coming soon".
  *   kind 'deepcore-launch': DeepCore runs on the chain (its own log index; no key needed).
  * Used to keep "coming soon" pages out of the sitemap (seo.mjs) and to hide the bot's "👥 Holders" button.
  */
@@ -110,10 +112,8 @@ export function holdersAvailable(chain, kind = 'stock') {
   if (!ck) return false
   const c = HOLDER_CHAINS[ck]
   if (kind === 'deepcore-launch') return ck !== 'solana' && !!DEEPCORE_CHAINS[c.id]
-  if (c.holders === 'blockscout') return blockscoutKey() !== ''
-  if (c.holders === 'moralis') return moralisKey() !== ''
   if (c.holders === 'solana-rpc') return solanaRpcSet()
-  return false
+  return archiveKnown(ck) || blockscoutFor(ck) || moralisFor(ck)
 }
 
 /**
@@ -126,9 +126,20 @@ export function holdersButtonVisible(chain, token) {
   return findStock(ck, token) ? holdersAvailable(ck, 'stock') : holdersAvailable(ck, 'deepcore-launch')
 }
 
-/** Per-chain source health for operators (admin): which source each chain uses, whether it is set, and its env var. */
+const blockscoutFor = (ck) => HOLDER_CHAINS[ck]?.holders === 'blockscout' && blockscoutKey() !== ''
+const moralisFor = (ck) => !!HOLDER_CHAINS[ck]?.moralis && moralisKey() !== ''
+
+/**
+ * Per-chain source health for operators (admin): the source stock maps use now, in order of preference
+ * (our own RPC log index on an archive node, then Blockscout, then Moralis), and the fallback's env var.
+ */
 export function holdersSourceHealth() {
-  return Object.entries(HOLDER_CHAINS).map(([key, c]) => ({ chain: key, name: c.name, source: c.holders, env: SOURCE_ENV[c.holders] ?? null, stocks: holdersAvailable(key, 'stock'), launches: holdersAvailable(key, 'deepcore-launch') }))
+  return Object.entries(HOLDER_CHAINS).map(([key, c]) => {
+    const own = key !== 'solana' && archiveKnown(key)
+    const active = key === 'solana' ? (solanaRpcSet() ? 'solana-rpc' : 'none') : own ? 'own-rpc' : blockscoutFor(key) ? 'blockscout' : moralisFor(key) ? 'moralis' : 'none'
+    const label = { 'own-rpc': 'own RPC (archive)', blockscout: 'Blockscout (fallback)', moralis: 'Moralis (fallback)', 'solana-rpc': 'own Solana RPC', none: key === 'solana' ? 'no Solana RPC set' : 'no archive RPC answering' }[active]
+    return { chain: key, name: c.name, source: c.holders, active, label, archive: own, env: key === 'solana' ? SOURCE_ENV['solana-rpc'] : `GULLY_RPC_${c.id}`, fallbackEnv: SOURCE_ENV[c.holders] ?? null, stocks: holdersAvailable(key, 'stock'), launches: holdersAvailable(key, 'deepcore-launch') }
+  })
 }
 
 /* ------------------------------------------------------------------ helpers --- */
@@ -283,6 +294,20 @@ async function rpcPost(url, body) {
   const j = await r.json().catch(() => null)
   if (!j) throw new Error('not JSON')
   return j
+}
+/** The chain's RPC URLs in failover order (GULLY_RPC_<chainId> first; cooling ones last). */
+export const rpcUrlList = (chainKey) => rpcUrls(chainKey)
+/** The URLs the owner configured (GULLY_RPC_<chainId>, comma-separated): the only ones probed for archive use. */
+export const rpcEnvUrls = (chainKey) => {
+  const c = HOLDER_CHAINS[chainKey]
+  return c ? String(process.env[`GULLY_RPC_${c.id}`] ?? '').split(',').map((u) => u.trim()).filter(Boolean) : []
+}
+/** One call on one URL; a JSON-RPC error is thrown with the node's own message. */
+export async function rpcAt(url, method, params) {
+  const j = await rpcPost(url, { jsonrpc: '2.0', id: 1, method, params })
+  if (j.error) throw Object.assign(new Error(String(j.error.message ?? 'RPC error').slice(0, 200)), { rpc: true })
+  if (!('result' in j)) throw new Error('no result')
+  return j.result
 }
 /** One call. A JSON-RPC error (a range or result-size limit, say) is thrown as is without cooling the node. */
 export async function evmRpc(chainKey, method, params) {
@@ -469,7 +494,39 @@ async function readSolanaHolders(mint) {
     const prev = by.get(owner)
     by.set(owner, { address: owner, raw: (prev?.raw ?? 0n) + BigInt(a.amount), contract: (() => { try { return !isOnCurve(b58decode(owner)) } catch { return undefined } })() })
   })
-  return { holders: [...by.values()], count: null, supply: /^\d+$/.test(String(supply?.value?.amount ?? '')) ? BigInt(supply.value.amount) : null, decimals: supply?.value?.decimals ?? null, partial: 'top 20 token accounts' }
+  const supplyRaw = /^\d+$/.test(String(supply?.value?.amount ?? '')) ? BigInt(supply.value.amount) : null
+  const full = await readSolanaAllHolders(mint)
+  if (full) return { holders: full, count: full.length, supply: supplyRaw, decimals: supply?.value?.decimals ?? null, partial: null }
+  return { holders: [...by.values()], count: null, supply: supplyRaw, decimals: supply?.value?.decimals ?? null, partial: 'top 20 token accounts' }
+}
+
+/**
+ * Every token account of a mint (getProgramAccounts filtered by the mint, under its own token program:
+ * SPL Token or Token-2022), merged by owner, biggest first. Null when the RPC does not allow the call
+ * (many public ones refuse it), so the caller keeps the top-20 view.
+ */
+export async function readSolanaAllHolders(mint) {
+  try {
+    const info = await solanaRpc('getAccountInfo', [mint, { encoding: 'jsonParsed' }])
+    const program = info?.value?.owner
+    if (!isSolanaAddress(program)) return null
+    const filters = [{ memcmp: { offset: 0, bytes: mint } }, ...(program === 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' ? [{ dataSize: 165 }] : [])]
+    const accts = await solanaRpc('getProgramAccounts', [program, { encoding: 'jsonParsed', filters }])
+    if (!Array.isArray(accts)) return null
+    const by = new Map()
+    for (const a of accts) {
+      const t = a?.account?.data?.parsed?.info
+      const owner = t?.owner
+      const amount = t?.tokenAmount?.amount
+      if (!isSolanaAddress(owner) || !/^\d+$/.test(String(amount ?? '')) || amount === '0') continue
+      const prev = by.get(owner)
+      by.set(owner, { address: owner, raw: (prev?.raw ?? 0n) + BigInt(amount), contract: (() => { try { return !isOnCurve(b58decode(owner)) } catch { return undefined } })() })
+    }
+    if (!by.size) return null
+    return [...by.values()].sort((a, b) => (b.raw > a.raw ? 1 : b.raw < a.raw ? -1 : 0))
+  } catch {
+    return null
+  }
 }
 
 /** Public name tags from Blockscout's free metadata service: Map address -> { name, exchange }. */
@@ -926,7 +983,7 @@ export function findStock(chainKey, tokenOrTicker) {
 }
 
 /** A response for a token the map cannot draw, in plain words. `comingSoon` = the chain's source is not set up yet. */
-const unavailable = (chainKey, token, kind, reason, extra = {}) => ({ state: 'unavailable', kind, chain: { key: chainKey, id: HOLDER_CHAINS[chainKey].id, name: HOLDER_CHAINS[chainKey].name }, token: { address: token, ...(extra.token ?? {}) }, reason, comingSoon: !!extra.comingSoon, asOf: new Date().toISOString() })
+const unavailable = (chainKey, token, kind, reason, extra = {}) => ({ state: 'unavailable', kind, chain: { key: chainKey, id: HOLDER_CHAINS[chainKey].id, name: HOLDER_CHAINS[chainKey].name }, token: { address: token, ...(extra.token ?? {}) }, reason, comingSoon: !!extra.comingSoon, ...(extra.extra ?? {}), asOf: new Date().toISOString() })
 
 let trackerRowFn = async (chainKey, ticker) => (await readTracker())?.rows?.find((r) => r.chain === chainKey && r.ticker === ticker) ?? null
 let fairHistoryFn = (chainKey, ticker) => readHistory(chainKey, ticker)
@@ -974,11 +1031,28 @@ export async function computeHolderMap(chainKey, tokenIn, tier = 'pro') {
       sources.links = 'Direct transfers between the mapped wallets, since launch'
     } else sources.note = `Not rebuilt from DeepCore’s log index: ${r.error}.`
   }
+  // Stock tokens on EVM chains: our own Transfer-log index first (exact balances from every transfer since
+  // the deploy block), then Blockscout, then Moralis, each only when its key is set.
+  let own = null
+  let ownHistory = false
+  if (!history && chainKey !== 'solana') {
+    own = await readOwnHistory(chainKey, token).catch(() => ({ state: 'error' }))
+    if (own.state === 'ok') {
+      history = { transfers: own.transfers, complete: true, fromBlock: own.fromBlock, toBlock: own.toBlock }
+      ownHistory = true
+      supply = await readSupply(chainKey, token)
+      sources.holders = `Our own index of the chain’s Transfer logs: all ${own.count.toLocaleString('en-US')} transfers since the token was deployed (exact balances)`
+      sources.links = 'Direct transfers between the mapped wallets, since the token was deployed'
+    }
+  }
   if (!history) {
     let h
-    if (c.holders === 'blockscout') h = await readBlockscoutHolders(chainKey, token, want)
-    else if (c.holders === 'moralis') h = await readMoralisHolders(chainKey, token, want)
-    else h = await readSolanaHolders(token)
+    if (chainKey === 'solana') h = await readSolanaHolders(token)
+    else if (blockscoutFor(chainKey)) h = await readBlockscoutHolders(chainKey, token, want)
+    else if (moralisFor(chainKey)) h = await readMoralisHolders(chainKey, token, want)
+    else h = { error: 'no-key' }
+    if (h.error === 'no-key' && own?.state === 'backfilling') return unavailable(chainKey, token, kind, `This token’s full holder history is being read from ${c.name}: ${Math.round(own.progress * 100)}% so far. The map appears once every transfer is in, never with partial balances.`, { token: { symbol }, extra: { progress: own.progress } })
+    if (h.error === 'no-key' && own?.state === 'capped') return unavailable(chainKey, token, kind, `This token has more than ${OWN_LOGS.cap.toLocaleString('en-US')} transfers, too many to rebuild its holders here yet.`, { token: { symbol } })
     if (h.error === 'no-key' || (h.error === 'solana-rpc' && !solanaRpcSet())) return unavailable(chainKey, token, kind, comingSoonReason(chainKey), { comingSoon: true, token: { symbol } })
     if (h.error) {
       console.warn(`holders: ${chainKey} ${token}: ${String(h.detail ?? h.error).slice(0, 120)}`)
@@ -989,9 +1063,9 @@ export async function computeHolderMap(chainKey, tokenIn, tier = 'pro') {
     supply = h.supply ?? null
     if (h.decimals != null) decimals = h.decimals
     partial = h.partial ?? null
-    sources.holders = c.holders === 'blockscout' ? `Blockscout (top ${holders.length} holders)` : c.holders === 'moralis' ? `Moralis (top ${holders.length} holders)` : 'Solana RPC (the 20 largest token accounts, merged by owner)'
+    sources.holders = chainKey === 'solana' ? (partial ? 'Solana RPC (the 20 largest token accounts, merged by owner)' : `Solana RPC (every token account of the mint, ${holders.length.toLocaleString('en-US')} owners)`) : blockscoutFor(chainKey) ? `Blockscout (top ${holders.length} holders)` : `Moralis (top ${holders.length} holders)`
     if (chainKey !== 'solana') {
-      history = chainKey === 'bsc' ? await readMoralisTransfers(chainKey, token) : await readRecentTransfers(chainKey, token)
+      history = !blockscoutFor(chainKey) && moralisFor(chainKey) ? await readMoralisTransfers(chainKey, token) : await readRecentTransfers(chainKey, token)
       if (history) sources.links = `Direct transfers between the mapped wallets in the latest ${history.transfers.length.toLocaleString('en-US')} transfers (blocks ${history.fromBlock.toLocaleString('en-US')}–${history.toBlock.toLocaleString('en-US')})`
       else sources.links = 'Transfers could not be read, so no links are drawn'
       supply ??= await readSupply(chainKey, token)
@@ -1057,7 +1131,7 @@ export async function computeHolderMap(chainKey, tokenIn, tier = 'pro') {
     sources,
     partial,
     tier,
-    balancesFrom: launch && history?.complete ? 'history' : 'holders',
+    balancesFrom: (launch || ownHistory) && history?.complete ? 'history' : 'holders',
   })
   if (map.state === 'ok' && map.forensics && launch) await enrichLaunch(map, { chainId: c.id, launch, tier })
   return map

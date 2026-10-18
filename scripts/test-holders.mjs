@@ -231,7 +231,7 @@ test('without a key a chain degrades to a plain "coming soon", never an env-var 
   const rh = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
   assert.equal(rh.state, 'unavailable')
   assert.equal(rh.comingSoon, true)
-  assert.equal(rh.reason, 'Holder data for Robinhood Chain is coming soon. DeepCore launches already have live maps.')
+  assert.equal(rh.reason, 'Holder history is not available yet on Robinhood Chain. DeepCore launches already have live maps.', 'no archive RPC answers and no fallback key: honest, not partial')
   noEnv(rh)
   const bsc = await H.computeHolderMap('bsc', 'AAPL', 'pro')
   assert.equal(bsc.comingSoon, true)
@@ -248,7 +248,7 @@ test('without a key a chain degrades to a plain "coming soon", never an env-var 
     delete process.env.GULLY_RPC_SOLANA
     const sol2 = await H.computeHolderMap('solana', 'CRCL', 'pro')
     assert.equal(sol2.comingSoon, true)
-    assert.match(sol2.reason, /Holder data for Solana is coming soon/)
+    assert.match(sol2.reason, /Holder history is not available yet on Solana/)
     noEnv(sol2)
   } finally {
     globalThis.fetch = real
@@ -278,7 +278,11 @@ test('holdersAvailable / holdersButtonVisible follow the data keys; launches nev
     process.env.GULLY_RPC_SOLANA = 'https://sol.test'
     assert.equal(H.holdersAvailable('solana'), true)
     const health = H.holdersSourceHealth()
-    assert.equal(health.find((h) => h.chain === 'robinhood').env, 'BLOCKSCOUT_API_KEY')
+    const rh = health.find((h) => h.chain === 'robinhood')
+    assert.equal(rh.fallbackEnv, 'BLOCKSCOUT_API_KEY')
+    assert.equal(rh.env, 'GULLY_RPC_4663')
+    assert.equal(rh.active, 'blockscout', 'no archive RPC answering: the fallback is the active source')
+    assert.equal(rh.label, 'Blockscout (fallback)')
   } finally {
     delete process.env.BLOCKSCOUT_API_KEY
     delete process.env.MORALIS_API_KEY
@@ -633,4 +637,203 @@ test('launch feed preview: the biggest bubbles and the latest flows of a cached 
   assert.ok(p.flows.length > 0 && p.flows.length <= 8)
   assert.ok(p.flows.every((f) => Number.isInteger(f.f) && Number.isInteger(f.t) && typeof f.s === 'string'))
   assert.ok(p.flows.some((f) => f.s === 'buy' && f.f === 0), 'buys flow out of the pool (node 0)')
+})
+
+/* ------------------------------------------- our own Transfer-log index (stocks) --- */
+
+const L = await import('../server/holders-logs.mjs')
+const SIM_HEAD = 100_000
+const SIM_DEPLOY = 40_000
+/** A chain with one token: minted at its deploy block, then a transfer every 50 blocks among seven wallets. */
+function simLogs(token) {
+  const out = [{ ...log(ZERO, addr(1), 1_000_000n * E18, SIM_DEPLOY, '0xmint'), address: token }]
+  for (let b = SIM_DEPLOY + 50, i = 0; b < SIM_HEAD; b += 50, i++) out.push({ ...log(addr(1 + (i % 7)), addr(1 + ((i + 3) % 7)), E18, b, `0xs${i}`), address: token })
+  return out
+}
+/**
+ * Two RPCs: arch.test serves history but refuses ranges over 20,000 blocks or answers over 300 logs;
+ * pub.test refuses anything older than 10,000 blocks ("Archive requests require a personal token").
+ */
+function simRpc(token, ranges) {
+  const logs = simLogs(token)
+  const err = (q, message) => ({ jsonrpc: '2.0', id: q.id, error: { code: -32000, message } })
+  const num = (h) => (h === 'latest' ? SIM_HEAD : Number(BigInt(h)))
+  return (host, q) => {
+    const archiveOk = host === 'arch.test'
+    if (q.method === 'eth_blockNumber') return { jsonrpc: '2.0', id: q.id, result: '0x' + SIM_HEAD.toString(16) }
+    if (q.method === 'eth_getBalance') return !archiveOk && num(q.params[1]) < SIM_HEAD - 10_000 ? err(q, 'Archive requests require a personal token') : { jsonrpc: '2.0', id: q.id, result: '0x0' }
+    if (q.method === 'eth_getCode') return { jsonrpc: '2.0', id: q.id, result: String(q.params[0]).toLowerCase() === token && num(q.params[1] ?? 'latest') >= SIM_DEPLOY ? '0x6080' : '0x' }
+    if (q.method === 'eth_call') return { jsonrpc: '2.0', id: q.id, result: '0x' + (1_000_000n * E18).toString(16) }
+    if (q.method === 'eth_getLogs') {
+      const f = q.params[0]
+      const from = num(f.fromBlock)
+      const to = num(f.toBlock)
+      if (!archiveOk && from < SIM_HEAD - 10_000) return err(q, 'Archive requests require a personal token')
+      if (to - from + 1 > 20_000) return err(q, 'block range is too large')
+      const hit = String(f.address ?? '').toLowerCase() === token ? logs.filter((l) => Number(BigInt(l.blockNumber)) >= from && Number(BigInt(l.blockNumber)) <= to) : []
+      if (hit.length > 300) return err(q, 'query returned more than 300 results')
+      if (String(f.address ?? '').toLowerCase() === token) ranges.push([host, from, to])
+      return { jsonrpc: '2.0', id: q.id, result: hit }
+    }
+    if (q.method === 'eth_getBlockByNumber') return { jsonrpc: '2.0', id: q.id, result: { timestamp: '0x6a000000' } }
+    return { jsonrpc: '2.0', id: q.id, result: null }
+  }
+}
+async function withSim(urls, fn, over = {}) {
+  const token = H.findStock('robinhood', 'NVDA').token.toLowerCase()
+  const ranges = []
+  const sim = simRpc(token, ranges)
+  const prevEnv = process.env.GULLY_RPC_4663
+  process.env.GULLY_RPC_4663 = urls.map((h) => `https://${h}`).join(',')
+  H.setHoldersFetchForTest((url, init = {}) => {
+    const u = new URL(String(url))
+    if (u.host === 'arch.test' || u.host === 'pub.test') {
+      const body = JSON.parse(String(init.body))
+      const out = Array.isArray(body) ? body.map((q) => sim(u.host, q)) : sim(u.host, body)
+      return Promise.resolve(new Response(JSON.stringify(out), { status: 200, headers: { 'content-type': 'application/json' } }))
+    }
+    // The chain's public default RPCs: down in this test.
+    if (!['dc.test', 'bs.test', 'meta.test', 'moralis.test', 'sol.test'].includes(u.host)) return Promise.resolve(new Response('down', { status: 503 }))
+    return stubFetch(url, init)
+  })
+  H.resetHoldersForTest()
+  L.resetLogsForTest({ dir: fs.mkdtempSync(path.join(tmp, 'logs-')), noBackground: true, cap: 200_000, sessionCalls: 40, sessionMs: 15_000, startWindow: 5_000, ...over })
+  try {
+    return await fn({ token, ranges })
+  } finally {
+    process.env.GULLY_RPC_4663 = prevEnv
+    H.setHoldersFetchForTest(stubFetch)
+    L.resetLogsForTest({ dir: null, noBackground: false, cap: 200_000, sessionCalls: 40 })
+    H.resetHoldersForTest()
+  }
+}
+
+test('own log index: only RPCs that serve old ranges count as archive', async () => {
+  await withSim(['pub.test', 'arch.test'], async () => {
+    assert.deepEqual(await L.archiveUrls('robinhood'), ['https://arch.test'])
+    assert.equal(L.archiveKnown('robinhood'), true)
+  })
+  await withSim(['pub.test'], async () => {
+    assert.deepEqual(await L.archiveUrls('robinhood'), [])
+  })
+})
+
+test('own log index: deploy block by binary search, windows shrink on refusals and grow on small answers, cursor resumes', async () => {
+  await withSim(['pub.test', 'arch.test'], async ({ token, ranges }) => {
+    // A short session first: not done, the cursor is saved.
+    assert.equal(await L.backfillStep('robinhood', token, { calls: 4 }), 'backfilling')
+    const s1 = L.storeForTest('robinhood', token)
+    assert.equal(s1.startBlock, SIM_DEPLOY, 'the deploy block, found on the archive node')
+    const cur = s1.cursor
+    assert.ok(cur >= SIM_DEPLOY && cur < SIM_HEAD)
+    assert.ok(ranges.every(([h]) => h === 'arch.test'), 'the backfill reads history from the archive node only')
+    // Forget the working copy: the next session resumes from the file, not from the deploy block.
+    L.dropMemoryForTest()
+    const before = ranges.length
+    assert.equal(await L.backfillStep('robinhood', token, { calls: 200 }), 'ok')
+    assert.equal(ranges[before][1], cur + 1, 'resumed at the saved cursor')
+    // Grew from 5,000 while answers were small; refused ranges (over 20,000 blocks or 300 logs) shrank it.
+    const spans = ranges.map(([, a, b]) => b - a + 1)
+    assert.equal(spans[0], 5_000)
+    assert.ok(spans.some((w) => w > 5_000), 'grew')
+    assert.ok(spans.some((w, i) => i > 0 && w < spans[i - 1]), 'shrank after a refusal')
+    const h = await L.readOwnHistory('robinhood', token)
+    assert.equal(h.state, 'ok')
+    assert.equal(h.count, simLogs(token).length, 'every transfer, exactly once')
+    assert.equal(h.fromBlock, SIM_DEPLOY)
+    assert.equal(h.toBlock, SIM_HEAD)
+  })
+})
+
+test('own log index: the stock map is built from it, exact balances, before any key-based source', async () => {
+  await withSim(['arch.test'], async () => {
+    process.env.BLOCKSCOUT_API_KEY = 'proapi_test'
+    const n = calls.length
+    try {
+      const m = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
+      assert.equal(m.state, 'ok', m.reason)
+      assert.match(m.sources.holders, /Our own index of the chain’s Transfer logs: all 1,200 transfers/)
+      const people = m.nodes.filter((x) => !x.label || x.label.kind !== 'burn')
+      assert.equal(Math.round(people.reduce((s, x) => s + x.pct, 0)), 100)
+      assert.ok(m.links.length > 0, 'links from the full history')
+      assert.ok(!calls.slice(n).some((c) => c.startsWith('bs.test/4663/api/v2/tokens')), 'Blockscout not asked while our index answers')
+    } finally {
+      delete process.env.BLOCKSCOUT_API_KEY
+    }
+  })
+})
+
+test('own log index: still reading says how far, never draws partial balances', async () => {
+  await withSim(
+    ['arch.test'],
+    async () => {
+      const m = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
+      assert.equal(m.state, 'unavailable')
+      assert.equal(m.comingSoon, false)
+      assert.match(m.reason, /being read from Robinhood Chain: \d+% so far\. The map appears once every transfer is in, never with partial balances\./)
+      assert.equal(typeof m.progress, 'number')
+    },
+    { sessionCalls: 2 },
+  )
+})
+
+test('own log index: over the cap it stops with a clear note', async () => {
+  await withSim(
+    ['arch.test'],
+    async ({ token }) => {
+      assert.equal(await L.backfillStep('robinhood', token, { calls: 500 }), 'capped')
+      H.resetHoldersForTest()
+      const m = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
+      assert.equal(m.state, 'unavailable')
+      assert.match(m.reason, /more than 500 transfers, too many to rebuild its holders here yet/)
+    },
+    { cap: 500 },
+  )
+})
+
+test('own log index: no archive RPC and no key is an honest "not available yet"', async () => {
+  await withSim(['pub.test'], async ({ token }) => {
+    assert.equal(await L.backfillStep('robinhood', token), 'no-archive')
+    const m = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
+    assert.equal(m.state, 'unavailable')
+    assert.equal(m.comingSoon, true)
+    assert.equal(m.reason, 'Holder history is not available yet on Robinhood Chain. DeepCore launches already have live maps.')
+    assert.equal(H.holdersAvailable('robinhood'), false)
+    assert.equal(H.holdersSourceHealth().find((x) => x.chain === 'robinhood').label, 'no archive RPC answering')
+  })
+  await withSim(['arch.test'], async () => {
+    await L.archiveUrls('robinhood')
+    assert.equal(H.holdersAvailable('robinhood'), true, 'an archive RPC answering makes stock maps available')
+    assert.equal(H.holdersSourceHealth().find((x) => x.chain === 'robinhood').label, 'own RPC (archive)')
+  })
+})
+
+test('Solana: the full holder list from getProgramAccounts where the RPC allows it, else the top 20', async () => {
+  const MINT = 'So11111111111111111111111111111111111111112'
+  const OWNER_A = '9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin'
+  const OWNER_B = 'HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH'
+  const acct = (owner, amount) => ({ account: { data: { parsed: { info: { owner, tokenAmount: { amount } } } } } })
+  const real = globalThis.fetch
+  let allow = true
+  globalThis.fetch = async (url, init) => {
+    const q = JSON.parse(String(init.body))
+    const res = (result) => new Response(JSON.stringify({ jsonrpc: '2.0', id: q.id, result }), { status: 200 })
+    if (q.method === 'getAccountInfo') return res({ value: { owner: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' } })
+    if (q.method === 'getProgramAccounts') return allow ? res([acct(OWNER_A, '700'), acct(OWNER_B, '200'), acct(OWNER_A, '50'), acct(OWNER_B, '0')]) : new Response(JSON.stringify({ jsonrpc: '2.0', id: q.id, error: { code: -32010, message: 'getProgramAccounts is not available' } }), { status: 200 })
+    return res(null)
+  }
+  try {
+    const all = await H.readSolanaAllHolders(MINT)
+    assert.deepEqual(
+      all.map((h) => [h.address, h.raw]),
+      [
+        [OWNER_A, 750n],
+        [OWNER_B, 200n],
+      ],
+    )
+    allow = false
+    assert.equal(await H.readSolanaAllHolders(MINT), null, 'refused: the caller keeps the top 20')
+  } finally {
+    globalThis.fetch = real
+  }
 })

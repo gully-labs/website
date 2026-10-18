@@ -79,7 +79,7 @@ export function HoldersLanding() {
       />
       <section className="flex flex-col gap-4">
         <span className={eyebrow}>HOLDER MAP · GULLY LABS</span>
-        <h1 className="m-0 font-display text-h1 font-extrabold uppercase">Who really holds it?</h1>
+        <h1 className="heading-1">Who really holds it?</h1>
         <p className="m-0 max-w-[720px] text-[18px] leading-[1.6] text-muted">
           Paste a token address or a ticker. See the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every new DeepCore launch: bundled buys, snipers, the deployer’s share and record.
         </p>
@@ -88,9 +88,9 @@ export function HoldersLanding() {
       </section>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] items-start gap-5">
-        <section aria-labelledby="hl-feed" className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
+        <section aria-labelledby="hl-feed" className="card card-pad flex min-w-0 flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="hl-feed" className="m-0 font-display text-h4 font-bold uppercase text-ink">
+            <h2 id="hl-feed" className="heading-4 text-ink">
               New launches, checked
             </h2>
             <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-dim">
@@ -105,8 +105,8 @@ export function HoldersLanding() {
           <Feed s={feed} now={now} />
         </section>
 
-        <section aria-labelledby="hl-top" className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
-          <h2 id="hl-top" className="m-0 font-display text-h4 font-bold uppercase">
+        <section aria-labelledby="hl-top" className="card card-pad flex min-w-0 flex-col gap-4">
+          <h2 id="hl-top" className="heading-4">
             Most scanned today
           </h2>
           <TopList s={top} />
@@ -123,8 +123,8 @@ export function HoldersLanding() {
           ['Health score', 'For launches: liquidity lock, bundled buys, snipers, the deployer’s share and record, the top 10. Tap a part to see its wallets.'],
           ['Live and replay', 'Watch transfers as they happen, or replay how holdings spread since launch.'],
         ].map(([t, d]) => (
-          <div key={t} className="flex flex-col gap-2 rounded-card border border-line bg-surface p-5">
-            <h3 className="m-0 font-display text-[22px] font-bold uppercase">{t}</h3>
+          <div key={t} className="card card-pad flex flex-col gap-2">
+            <h3 className="heading-4">{t}</h3>
             <p className="m-0 text-[14px] leading-[1.6] text-muted">{d}</p>
           </div>
         ))}

@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { EChart } from '../charts/EChart'
-import { sparklinePreset } from '../charts/chartPresets'
+import { MiniSpark } from '../charts/MiniSpark'
 import { holdersPagePath, useHolderMap } from '../../lib/holders'
 import { MiniMap } from './MiniMap'
 import { ScoreRing } from './parts'
@@ -22,11 +21,10 @@ export function HolderMapMini({ chain, token, external = false }: { chain: strin
   const frames = m?.timeline?.frames ?? []
   const series = frames.map((f) => f.top10Pct ?? 0)
   const labels = frames.map((f) => (f.at ? new Date(f.at).toISOString().slice(0, 16).replace('T', ' ') : `block ${f.block.toLocaleString('en-US')}`))
-  const option = useMemo(() => sparklinePreset({ data: series, color: K.gold, fmt: (v) => fmtPct(v), labels }), [series, labels])
-  if (load.k === 'loading') return <div role="status" aria-label="Reading the Holder Map" className="h-[132px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card border border-line bg-surface" />
+  if (load.k === 'loading') return <div role="status" aria-label="Reading the Holder Map" className="h-[132px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] card" />
   if (!m || !preview)
     return (
-      <p className="m-0 rounded-card border border-line bg-surface p-4 text-[13px] text-muted" data-holder-mini="empty">
+      <p className="card card-pad m-0 text-[13px] text-muted" data-holder-mini="empty">
         {load.k === 'ok' && 'reason' in load.data ? load.data.reason : 'The Holder Map could not be read just now.'}
       </p>
     )
@@ -41,17 +39,13 @@ export function HolderMapMini({ chain, token, external = false }: { chain: strin
     </Link>
   )
   return (
-    <section aria-label={`Holder Map of ${m.token.symbol ?? 'this token'}`} className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4" data-holder-mini>
+    <section aria-label={`Holder Map of ${m.token.symbol ?? 'this token'}`} className="card card-pad flex flex-col gap-3" data-holder-mini>
       <div className="flex flex-wrap items-center gap-3">
         <MiniMap preview={preview} width={168} height={112} label={`Holder Map of ${m.token.symbol ?? 'this token'} in miniature: ${m.summary.line}`} />
         {m.health && <ScoreRing score={m.health.score} level={m.health.level} size={72} />}
         <div className="flex min-w-[160px] flex-1 flex-col gap-1">
           <span className="font-mono text-[11px] tracking-[1px] text-dim">TOP 10 SHARE SINCE LAUNCH</span>
-          {series.length >= 2 ? (
-            <EChart option={option} height={44} label={`Share held by the top 10 wallets: ${series.map((v, i) => `${labels[i]} ${fmtPct(v)}`).join(', ')}`} skeleton="line" />
-          ) : (
-            <span className="font-mono text-[12px] text-muted">Not enough for a series yet.</span>
-          )}
+          <MiniSpark data={series} labels={labels} fmt={(v) => fmtPct(v)} height={44} color={K.gold} label={`Share held by the top 10 wallets of ${m.token.symbol ?? 'this token'} since launch`} />
           <span className="text-[13px] leading-[1.45] text-muted">{m.summary.line}</span>
         </div>
       </div>

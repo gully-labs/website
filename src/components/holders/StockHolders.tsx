@@ -19,11 +19,11 @@ export function StockHolders({ chain, ticker, chainName, tradeHref = '#swap' }: 
   }, [chain])
   return (
     <section className="px-page pb-8" aria-labelledby="who-holds" id="holders" data-stock-holders={live === false ? 'soon' : 'live'}>
-      <h2 id="who-holds" className="m-0 mb-4 font-display text-h4 font-bold uppercase">
+      <h2 id="who-holds" className="heading-4 mb-4">
         Who holds {ticker}?
       </h2>
       {live === false ? (
-        <p className="m-0 rounded-card border border-line bg-surface p-5 text-[14px] leading-[1.6] text-muted">
+        <p className="card card-pad m-0 text-[14px] leading-[1.6] text-muted">
           Holder Maps for stocks on {chainName} are coming soon. DeepCore launches already have live maps:{' '}
           <Link to="/holders" className="text-gold underline-offset-4 hover:underline">
             see them on the Holder Map

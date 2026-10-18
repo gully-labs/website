@@ -49,8 +49,8 @@ export function HoldersPage() {
           ['Launch check', 'For DeepCore launches: wallets that bought together in the first block of trading are marked bundled, and the deployer and the wallets it funded are named. These warnings are always free.'],
           ['Replay', 'Drag the slider or press play to watch holdings concentrate or spread since launch, rebuilt from the token’s own transfers.'],
         ].map(([t, d]) => (
-          <div key={t} className="flex flex-col gap-2 rounded-card border border-line bg-surface p-5">
-            <h3 className="m-0 font-display text-[22px] font-bold uppercase">{t}</h3>
+          <div key={t} className="card card-pad flex flex-col gap-2">
+            <h3 className="heading-4">{t}</h3>
             <p className="m-0 text-[14px] leading-[1.6] text-muted">{d}</p>
           </div>
         ))}

@@ -1,10 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BellRing, Check, ChevronDown, Copy, Download, ExternalLink, Info, Lock, Maximize2, Minus, Pause, Play, Plus, Search, Share2, SkipForward } from 'lucide-react'
 import { Link } from 'react-router'
-import { EChart } from '../charts/EChart'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { useReducedMotion } from '../charts/chart-utils'
-import { alpha, sparklinePreset } from '../charts/chartPresets'
+import { alpha } from '../charts/chartPresets'
+import { ChartEmpty } from '../charts/GhostChart'
+import { MiniSpark } from '../charts/MiniSpark'
+import { Segmented, type SegOption } from '../ui/Segmented'
 import { Mascot } from '../brand'
 import { copyWithToast } from '../ui/toast'
 import { newTab } from '../LayoutNav'
@@ -51,6 +53,14 @@ const flagText = (f: string) => FLAG_TEXT[f] ?? f
 const fmtUsd = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 const fmtUnits = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 4 }))
 const PCT = { maximumFractionDigits: 2 } as const
+const VIEWS: SegOption<'map' | 'list'>[] = [
+  { id: 'map', label: 'Map' },
+  { id: 'list', label: 'List' },
+]
+const SPEEDS: SegOption<'1' | '4'>[] = [
+  { id: '1', label: '1×' },
+  { id: '4', label: '4×' },
+]
 /** Replayed transfers on load: at most this many, so a busy token's intro stays short. */
 const REPLAY_MAX = 12
 const TOAST_MS = 4_600
@@ -142,7 +152,7 @@ const mapHeight = (page: boolean, compact: boolean, wide: boolean) => (compact ?
 
 function MapSkeleton({ compact, page = false }: { compact: boolean; page?: boolean }) {
   return (
-    <div role="status" aria-label="Reading who holds this token" className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5">
+    <div role="status" aria-label="Reading who holds this token" className="card card-pad flex flex-col gap-3">
       <div className="h-[14px] w-[160px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-full bg-surface" />
       <div className="relative grid place-items-center overflow-hidden rounded-[10px] bg-surface-deep" style={{ height: mapHeight(page, compact, typeof window !== 'undefined' && window.innerWidth >= 1000) }}>
         {[64, 40, 28, 22, 16].map((s, i) => (
@@ -165,15 +175,16 @@ function MapSkeleton({ compact, page = false }: { compact: boolean; page?: boole
 
 function MapEmpty({ title, text, action }: { title: string; text: string; action?: { label: string; href: string; external?: boolean } }) {
   return (
-    <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5" data-holder-map="empty">
+    <div className="card card-pad flex flex-col gap-3" data-holder-map="empty">
       <div className="flex items-center gap-3">
         <span className="relative inline-flex size-3 flex-none">
           <span className="absolute inset-0 animate-[gl-live-pulse_2s_ease-out_infinite] rounded-full bg-gold" />
           <span className="relative size-3 rounded-full bg-gold" />
         </span>
-        <h3 className="m-0 font-display text-h4 font-bold uppercase text-ink">{title}</h3>
+        <h3 className="heading-4 text-ink">{title}</h3>
       </div>
       <p className="m-0 max-w-[640px] text-[14px] leading-[1.6] text-muted">{text}</p>
+      <ChartEmpty height={140} label="Bubbles will draw here once holder data can be read" testId="holder-map-ghost" />
       {action &&
         (action.external ? (
           <a href={`https://gullylabs.xyz${action.href}`} {...newTab} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-btn border border-line-strong px-4 font-mono text-[13px] text-ink transition-colors hover:border-gold">
@@ -473,29 +484,21 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       >
         {peopleOnly ? 'People only' : 'Showing contracts and pools'}
       </button>
-      <div role="group" aria-label="View" className="flex gap-1">
-        <button type="button" aria-pressed={shownView === 'map'} onClick={() => setView('map')} className={chip(shownView === 'map')} style={{ background: alpha(K.night, 0.92) }}>
-          Map
-        </button>
-        <button
-          type="button"
-          aria-pressed={shownView === 'list'}
-          onClick={() => {
-            stopIntro()
-            setView('list')
-          }}
-          className={chip(shownView === 'list')}
-          style={{ background: alpha(K.night, 0.92) }}
-        >
-          List
-        </button>
-      </div>
+      <Segmented
+        label="View"
+        value={shownView}
+        options={VIEWS}
+        onChange={(v) => {
+          if (v === 'list') stopIntro()
+          setView(v)
+        }}
+      />
     </div>
   )
   const notes = (
     <>
       {highlight && (
-        <p role="status" className="m-0 flex w-fit flex-wrap items-center gap-2 rounded-btn border border-gold px-3 font-mono text-[12px] text-gold-hover" style={{ background: alpha(K.night, 0.92) }}>
+        <p role="status" className="pointer-events-auto m-0 flex w-fit flex-wrap items-center gap-2 rounded-btn border border-gold px-3 font-mono text-[12px] text-gold-hover" style={{ background: alpha(K.night, 0.92) }}>
           Showing the {highlight.wallets.size} wallet
           {highlight.wallets.size === 1 ? '' : 's'} behind “{m.health?.parts.find((p) => p.id === highlight.id)?.label}”.
           <button type="button" onClick={() => setHighlight(null)} className="min-h-11 px-1 text-muted underline-offset-4 hover:underline">
@@ -504,7 +507,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
         </p>
       )}
       {searchMiss && (
-        <p role="status" className="m-0 w-fit rounded-btn px-2 py-1 font-mono text-[12px] text-error" style={{ background: alpha(K.night, 0.92) }}>
+        <p role="status" className="pointer-events-auto m-0 w-fit rounded-btn px-2 py-1 font-mono text-[12px] text-error" style={{ background: alpha(K.night, 0.92) }}>
           No mapped wallet matches that.
         </p>
       )}
@@ -650,11 +653,11 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
   )
 
   return (
-    <div ref={rootRef} className="flex flex-col gap-3 rounded-card border border-line bg-surface p-3 text-ink min-[600px]:p-5" data-holder-map="ok">
+    <div ref={rootRef} className="card card-pad flex flex-col gap-3 text-ink max-[599px]:p-3" data-holder-map="ok">
       {/* One line: what this is, how fresh, live; the explainer sits behind (i). */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-3">
-          <Title className={`m-0 min-w-0 font-display leading-none font-extrabold uppercase ${page ? 'text-h3 min-[600px]:text-h2' : 'text-h3'}`}>
+          <Title className={`min-w-0 ${page ? 'heading-3 min-[600px]:heading-2' : 'heading-3'}`}>
             Who holds {m.token.symbol ?? 'this token'}
             <span className="text-muted max-[599px]:sr-only"> · {m.chain.name}</span>
           </Title>
@@ -897,13 +900,7 @@ function Replay({
         >
           {playing ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
         </button>
-        <div role="group" aria-label="Replay speed" className="flex gap-1">
-          {([1, 4] as const).map((s) => (
-            <button key={s} type="button" aria-pressed={speed === s} onClick={() => setSpeed(s)} className={chip(speed === s)}>
-              {s}×
-            </button>
-          ))}
-        </div>
+        <Segmented label="Replay speed" value={speed === 4 ? '4' : '1'} options={SPEEDS} onChange={(v) => setSpeed(v === '4' ? 4 : 1)} />
         <span className="min-w-0 flex-1 font-mono text-[12px] text-muted" aria-live="polite">
           {frameAt ? `${when} · top 10 held ${fmtPct(frameAt.top10Pct)}${frameAt.holders !== null ? ` · ${frameAt.holders} holders` : ''}` : `Now · top 10 hold ${fmtPct(m.summary.top10Pct)}`}
         </span>
@@ -961,12 +958,10 @@ function Spark({ n, pct, frames, idx, recent }: { n: HolderNode; pct: number | n
   const pts = useMemo(() => balanceSeries(n, pct, frames, idx, recent), [n, pct, frames, idx, recent])
   const data = pts.map((p) => Math.round(p.v * 10_000) / 10_000)
   const labels = pts.map((p) => (p.block === Infinity ? 'now' : p.at ? new Date(p.at).toISOString().slice(0, 16).replace('T', ' ') : p.block === -Infinity ? 'before' : `block ${p.block.toLocaleString('en-US')}`))
-  const option = useMemo(() => sparklinePreset({ data, color: K.gold, fmt: (v) => fmtPct(v), labels }), [data, labels])
-  if (data.length < 2 || data.every((v) => v === data[0] && data.length < 3)) return <p className="m-0 font-mono text-[11px] text-dim">Share over time: not enough for a series yet.</p>
   return (
     <figure className="m-0 flex flex-col gap-1" data-wallet-spark>
-      <EChart option={option} height={48} label={`Share of supply held by ${n.short} over time: ${data.map((v, i) => `${labels[i]} ${fmtPct(v)}`).join(', ')}`} skeleton="line" />
-      <figcaption className="font-mono text-[11px] text-dim">Share over time · {frames.length >= 2 && idx !== null ? 'since launch' : 'over its latest transfers'}</figcaption>
+      <MiniSpark data={data} labels={labels} fmt={(v) => fmtPct(v)} height={44} label={`Share of supply held by ${n.short} over time`} />
+      <figcaption className="font-mono text-[11px] text-dim">{data.length >= 2 ? `Share over time · ${frames.length >= 2 && idx !== null ? 'since launch' : 'over its latest transfers'}` : 'Share over time: not enough for a series yet.'}</figcaption>
     </figure>
   )
 }
