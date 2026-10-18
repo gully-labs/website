@@ -12,6 +12,7 @@ import { TelegramChats } from './TelegramChats'
 import { MerchantsAdmin } from './MerchantsAdmin'
 import { TelegramChannel } from './TelegramChannel'
 import { TreasurySafe } from './TreasurySafe'
+import { TelegramBroadcasts } from './TelegramBroadcasts'
 import { copyWithToast, flash } from '../../components/ui/toast'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { FeeProxyBanner, FeeProxyCard, type FeeProxyStatus } from './FeeProxyCard'
@@ -949,6 +950,7 @@ export function AdminPage() {
 
             <TelegramChats token={token} />
             <TelegramChannel token={token} />
+            <TelegramBroadcasts token={token} />
 
             <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
             <TreasurySafe token={token} />
