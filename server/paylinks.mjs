@@ -22,6 +22,7 @@ import { adminInvoice, createInvoiceRecord, invoiceStatus, publicInvoice } from 
 import { checkEndpoint, deliveries, endpointView, makeEndpoint, newSecret, sendTest } from './pay-webhooks.mjs'
 import { assetById, ASSET_IDS, fmtUsd, parseUsdCents, publicAssets } from './payments.mjs'
 import { treasury } from './plans.mjs'
+import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { randomToken } from './store.mjs'
 
 export const LINK_ID_RE = /^pl_[A-Za-z0-9_-]{16}$/
@@ -70,9 +71,9 @@ function amountView(a) {
 }
 
 /** What anyone with the link sees: no use counts, no webhook, nothing about other payers. */
-export function publicLink(l) {
+export function publicLink(l, { treasuryOverride } = {}) {
   const state = linkState(l)
-  const t = treasury()
+  const t = treasuryOverride === undefined ? treasury() : treasuryOverride
   return {
     id: l.id,
     title: l.title,
@@ -82,7 +83,7 @@ export function publicLink(l) {
     state,
     stateText: STATE_TEXT[state] ?? null,
     expiresAt: l.expiresAt,
-    checkout: t ? { enabled: true, treasury: t } : { enabled: false, treasury: null, reason: 'This link cannot be paid yet: no treasury wallet is configured.' },
+    checkout: t ? { enabled: true, treasury: guardRecipient(t, `pay link ${l.id} checkout`) } : { enabled: false, treasury: null, reason: 'This link cannot be paid yet: no treasury wallet is configured.' },
   }
 }
 
@@ -90,7 +91,7 @@ function adminLinkView(l) {
   const inv = linkInvoices(l.id)
   const paid = inv.filter((i) => i.paymentId)
   return {
-    ...publicLink(l),
+    ...guardOr(() => publicLink(l), (e) => ({ ...publicLink(l, { treasuryOverride: null }), checkout: refusedCheckout(e) })),
     active: l.active,
     maxUses: l.maxUses,
     paidUses: l.paidUses ?? 0,
@@ -261,6 +262,7 @@ export function invoiceFromLink(l, body) {
   const state = linkState(l)
   if (state !== 'active') return { ok: false, status: 409, error: STATE_TEXT[state] }
   if (!treasury()) return { ok: false, status: 503, error: 'This link cannot be paid yet: no treasury wallet is configured.' }
+  guardRecipient(treasury(), `pay link ${l.id} invoice`) // no invoice is made toward a fee proxy
   let cents
   if (l.amount.type === 'fixed') cents = BigInt(l.amount.usdCents)
   else {

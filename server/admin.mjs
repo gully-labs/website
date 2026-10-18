@@ -52,6 +52,13 @@ import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, 
 import { publicAssets } from './payments.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
 import { planOf, publicPlans } from './plans.mjs'
+import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
+import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
+import { isFeeProxy } from './fee-proxy-guard.mjs'
+
+/** The plan offer for admin views: still loads when the fee-proxy guard refuses the treasury (and says why). */
+const adminOffer = () => guardOr(() => publicPlans(), (e) => ({ ...publicPlans({ treasuryOverride: null }), checkout: refusedCheckout(e) }))
+const PROXY_ACCOUNT = "That address is Request Network's fee proxy contract, not a wallet."
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
 import { umamiConfigured } from './umami.mjs'
@@ -132,6 +139,14 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
   const db = developers()
 
+  // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so
+  // pressing it repeatedly costs nothing on the RPCs; a non-zero balance raises the alert as the hourly pass would.
+  if (p === '/api/admin/fee-proxy/check') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const view = await checkFeeProxies()
+    return json(res, 200, { feeProxy: { ...view, refusals: recentRefusals() } }), true
+  }
+
   if (p === '/api/admin/overview') {
     let venues
     try {
@@ -150,6 +165,8 @@ export async function handleAdmin(req, res, url) {
       developers: { pending: db.requests.filter((r) => r.status === 'pending').length, approved: db.requests.filter((r) => r.status === 'approved').length, liveKeys: db.keys.filter((k) => !k.revokedAt).length, accounts: db.accounts.length, blocked: db.accounts.filter((a) => a.blocked).length },
       enquiries: { total: enquiries.length, open: enquiries.filter((e) => !e.handled).length },
       launchList: listLaunch().length,
+      // Fee-proxy balances (fee-proxy-monitor.mjs) and recent pay-guard refusals: the admin banner and card.
+      feeProxy: { ...feeProxyView(), refusals: recentRefusals() },
       process: { uptimeSeconds: Math.round(process.uptime()), rssMb: Math.round(mem.rss / 1e6), heapMb: Math.round(mem.heapUsed / 1e6), node: process.version, dataDirBytes: dirBytes(DATA_DIR) },
     }), true
   }
@@ -207,12 +224,13 @@ export async function handleAdmin(req, res, url) {
         return { address: a.address, plan: a.plan.id, since: a.plan.since ?? null, expiresAt: a.plan.expiresAt, source: a.plan.source ?? null, active: live.id === a.plan.id && !!live.expiresAt }
       })
       .sort((x, y) => y.expiresAt.localeCompare(x.expiresAt))
-    return json(res, 200, { subscriptions, payments: allPayments(), offer: publicPlans(), alerts: alertStats() }), true
+    return json(res, 200, { subscriptions, payments: allPayments(), offer: adminOffer(), alerts: alertStats() }), true
   }
 
   m = p.match(/^\/api\/admin\/accounts\/(0x[0-9a-f]{40})\/plan$/)
   if (m) {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    if (isFeeProxy(m[1])) return json(res, 400, { error: PROXY_ACCOUNT }), true
     const body = await readJson(req, 1_000)
     const r = adminSetPlan(m[1], String(body?.plan ?? ''), body?.days ?? 30)
     return (r.ok ? json(res, 200, { address: m[1], plan: r.plan }) : json(res, r.status, { error: r.error }), true)
@@ -292,7 +310,7 @@ export async function handleAdmin(req, res, url) {
     return (r.ok ? json(res, 200, { invoice: r.invoice }) : json(res, r.status, { error: r.error }), true)
   }
 
-  if (p === '/api/admin/analytics') return json(res, 200, { configured: umamiConfigured(), accounts: adminAnalyticsAccounts(), offer: publicPlans().analytics }), true
+  if (p === '/api/admin/analytics') return json(res, 200, { configured: umamiConfigured(), accounts: adminAnalyticsAccounts(), offer: adminOffer().analytics }), true
 
   m = p.match(/^\/api\/admin\/analytics\/(0x[0-9a-f]{40})\/(plan|delete)$/)
   if (m) {
@@ -301,6 +319,7 @@ export async function handleAdmin(req, res, url) {
       const r = await adminAnalyticsDelete(m[1])
       return (r.ok ? json(res, 200, { address: m[1], deleted: true }) : json(res, r.status, { error: r.error }), true)
     }
+    if (isFeeProxy(m[1])) return json(res, 400, { error: PROXY_ACCOUNT }), true
     const body = await readJson(req, 1_000)
     const r = adminAnalyticsSetPlan(m[1], String(body?.plan ?? ''), body?.days ?? 30)
     return (r.ok ? json(res, 200, { account: r.account }) : json(res, r.status, { error: r.error }), true)
