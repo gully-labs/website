@@ -582,7 +582,10 @@ await step('app services', async () => {
   check('overview: with no keys the requests chart is a ghosted "Your traffic will draw here"', (await ghost.count()) === 1 && (await ghost.getByText('Your traffic will draw here').count()) === 1 && (await ghost.locator('svg path').count()) >= 2)
   await shot(page, 'app-1440-overview-new')
   for (const [id, label] of SERVICES) {
-    await appNav.getByRole('link', { name: label, exact: true }).click()
+    // Gully Score has no sidebar entry of its own (it sits under Security), so it opens by its hash.
+    const navLink = appNav.getByRole('link', { name: label, exact: true })
+    if (await navLink.count()) await navLink.click()
+    else await page.evaluate((h) => (location.hash = h), id)
     const view = page.locator(`[data-service="${id}"]`)
     await view.getByTestId('service-header').waitFor({ timeout: 15_000 })
     check(`app ${label}: the page renders with its header`, (await view.getByRole('heading', { level: 1 }).textContent())?.trim() === label)
@@ -1971,7 +1974,7 @@ await step('analytics events', async () => {
   {
     const ctx = await newContext({ width: 1440, height: 900 })
     await ctx.addInitScript(fake)
-    const solRow = { ...TRACKER.rows[0], chain: 'solana', ticker: 'TSLAx', symbol: 'TSLAx', token: 'So1ana0'.padEnd(44, '1'), fairSource: 'chainlink:56' }
+    const solRow = { ...TRACKER.rows[0], chain: 'solana', ticker: 'TSLA', symbol: 'TSLAx', token: 'So1ana0'.padEnd(44, '1'), fairSource: 'chainlink:56' }
     await ctx.route(`${BASE}/api/tracker`, (route) => json(route, { ...TRACKER, chains: [...TRACKER.chains, { key: 'solana', id: 'solana', name: 'Solana', sessionOpen: true, sessionName: 'NYSE hours', poolsAsOf: TRACKER.generatedAt, poolsStale: false, poolSource: 'on chain', fairMethod: 'Chainlink feed or issuer quote' }], rows: [...TRACKER.rows, solRow] }))
     await ctx.route(new RegExp(`^${BASE}/api/solana/jupiter/quote`), (route) => json(route, { quote: { id: 'q_e2e', side: 'buy', inSymbol: 'USDC', outSymbol: 'TSLAx', inAmount: '10', outAmount: '0.0231', minOut: '0.0229', priceImpactPct: 0.02, route: [{ label: 'Raydium', percent: 100 }], platformFee: null, feeNote: null, slippageBps: 50, expiresAt: new Date(Date.now() + 60_000).toISOString() } }))
     await ctx.route(`${BASE}/api/security/review-requests`, (route) => json(route, { request: { id: 'rr_e2e' } }))
@@ -2003,7 +2006,7 @@ await step('analytics events', async () => {
     await page.goto(`${BASE}/holders/robinhood/${E2E_LAUNCH_TOKEN}`)
     await page.locator('[data-holder-map="ok"]').waitFor()
     await grab()
-    await page.goto(BASE + '/tracker/solana/TSLAx')
+    await page.goto(BASE + '/tracker/solana/TSLA')
     await page.getByRole('checkbox', { name: 'I understand' }).check()
     await page.getByText(/~0\.0231/).waitFor({ timeout: 15_000 })
     await grab()
@@ -2013,7 +2016,7 @@ await step('analytics events', async () => {
     check('analytics: review-requested on the public /security form, with the tier', JSON.stringify(by('review-requested')) === '[{"tier":"review"}]', JSON.stringify(by('review-requested')))
     check('analytics: score-viewed with the chain only', JSON.stringify(by('score-viewed')) === '[{"chain":"base"}]', JSON.stringify(by('score-viewed')))
     check('analytics: holder-map-opened with chain, kind and surface', JSON.stringify(by('holder-map-opened')) === '[{"chain":"robinhood","kind":"deepcore-launch","from":"holders-page"}]', JSON.stringify(by('holder-map-opened')))
-    check('analytics: swap-quoted once for the Jupiter quote', JSON.stringify(by('swap-quoted')) === '[{"venue":"jupiter","chain":"solana","ticker":"TSLAx"}]', JSON.stringify(by('swap-quoted')))
+    check('analytics: swap-quoted once for the Jupiter quote', JSON.stringify(by('swap-quoted')) === '[{"venue":"jupiter","chain":"solana","ticker":"TSLA"}]', JSON.stringify(by('swap-quoted')))
     check('analytics: no wallet, token address, email or URL in the product events', !/0x[0-9a-fA-F]{20,}|So1ana|@|https?:\/\//i.test(JSON.stringify(pev)), JSON.stringify(pev))
     await w.verify([/ERR_BLOCKED_BY_CLIENT|Failed to load resource/i])
     await ctx.close()
