@@ -43,10 +43,10 @@ export const wagmiConfig = createConfig({
 export const queryClient = new QueryClient()
 
 export const walletTheme: Theme = (() => {
-  const t = darkTheme({ accentColor: '#e8c060', accentColorForeground: '#0b0e13', borderRadius: 'small', overlayBlur: 'small' })
+  const t = darkTheme({ accentColor: '#d9b563', accentColorForeground: '#0d141c', borderRadius: 'small', overlayBlur: 'small' })
   return {
     ...t,
-    colors: { ...t.colors, modalBackground: '#10141a', modalBorder: '#1d232c', profileForeground: '#0d1116', generalBorder: '#2c3540', actionButtonSecondaryBackground: '#131820', menuItemBackground: '#131820', modalText: '#eef0f2', modalTextSecondary: '#a6b0bd', closeButtonBackground: '#131820', closeButton: '#a6b0bd' },
+    colors: { ...t.colors, modalBackground: '#151d28', modalBorder: '#1f2935', profileForeground: '#111923', generalBorder: '#2a3542', actionButtonSecondaryBackground: '#1a2330', menuItemBackground: '#1a2330', modalText: '#f4f2ec', modalTextSecondary: '#aeb5be', closeButtonBackground: '#1a2330', closeButton: '#aeb5be' },
     fonts: { body: "'Hanken Grotesk', sans-serif" },
   }
 })()

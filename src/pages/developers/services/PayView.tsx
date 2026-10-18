@@ -58,7 +58,7 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
           {!v ? (
             <Skeleton h={170} />
           ) : days.length ? (
-            <StackedDays height={170} days={days} kinds={[{ id: 'usd', name: 'USD', color: '#6fcf6a' }]} label={`Payments over time: ${v.payments.length}.`} />
+            <StackedDays height={170} days={days} kinds={[{ id: 'usd', name: 'USD', color: '#74c27b' }]} label={`Payments over time: ${v.payments.length}.`} />
           ) : (
             <LiveMarker text="No payments yet: pay for a plan from Billing and it charts here" height={170} />
           )}

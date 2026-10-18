@@ -1,5 +1,6 @@
 import { Activity, AlertTriangle, AppWindow, BookOpen, Check, Clock, Code2, Gauge, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { CodeBlock } from '../../docs/CodeBlock'
 import { widgetSnippet } from '../../lib/widgetEmbed'
@@ -34,26 +35,44 @@ const fmt = (n: number) => n.toLocaleString('en-US')
 
 function KeyMenu({ k, onRename, onRotate, onRevoke }: { k: ApiKey; onRename: () => void; onRotate: () => void; onRevoke: () => void }) {
   const [open, setOpen] = useState(false)
+  // Placed with fixed coordinates from the button (portalled to <body>: the table scrolls sideways and its rows animate, which
+  // would clip or re-anchor it), and upwards when the row sits near the bottom of the window; it follows the button on scroll.
+  const [pos, setPos] = useState<{ right: number; top?: number; bottom?: number }>({ right: 0 })
   const ref = useRef<HTMLDivElement>(null)
+  const menu = useRef<HTMLDivElement>(null)
+  const place = () => {
+    const r = ref.current?.getBoundingClientRect()
+    if (r) setPos(window.innerHeight - r.bottom < 180 ? { right: window.innerWidth - r.right, bottom: window.innerHeight - r.top + 4 } : { right: window.innerWidth - r.right, top: r.bottom + 4 })
+  }
   useEffect(() => {
     if (!open) return
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && !menu.current?.contains(e.target as Node) && setOpen(false)
     const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    const follow = () => {
+      const r = ref.current?.getBoundingClientRect()
+      if (r) setPos(window.innerHeight - r.bottom < 180 ? { right: window.innerWidth - r.right, bottom: window.innerHeight - r.top + 4 } : { right: window.innerWidth - r.right, top: r.bottom + 4 })
+    }
     document.addEventListener('mousedown', close)
     document.addEventListener('keydown', esc)
+    window.addEventListener('scroll', follow, { passive: true })
     return () => {
       document.removeEventListener('mousedown', close)
       document.removeEventListener('keydown', esc)
+      window.removeEventListener('scroll', follow)
     }
   }, [open])
   const item = 'flex min-h-11 w-full items-center gap-3 rounded-[8px] px-3 text-left text-[14px] text-ink-2 hover:bg-surface-hover hover:text-ink'
   return (
     <div ref={ref} className="relative">
-      <button type="button" aria-label={`Actions for ${k.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex size-11 items-center justify-center rounded-full text-muted hover:bg-surface-hover hover:text-ink">
+      <button type="button" aria-label={`Actions for ${k.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => {
+          place()
+          setOpen((o) => !o)
+        }} className="inline-flex size-11 items-center justify-center rounded-full text-muted hover:bg-surface-hover hover:text-ink">
         <MoreHorizontal size={18} aria-hidden />
       </button>
-      {open && (
-        <div role="menu" className="absolute top-12 right-0 z-20 flex w-[190px] animate-[gl-rise_.18s_ease_both] flex-col rounded-[10px] border border-line-strong bg-surface-deep p-1 shadow-[0_12px_32px_rgba(0,0,0,.5)]">
+      {open &&
+        createPortal(
+        <div ref={menu} role="menu" style={{ position: 'fixed', ...pos }} className={`z-40 flex w-[190px] animate-[gl-rise_.18s_ease_both] flex-col rounded-[10px] border border-line-strong bg-surface-deep p-1 shadow-[0_12px_32px_rgba(0,0,0,.5)]`}>
           <button role="menuitem" type="button" className={item} onClick={() => (setOpen(false), onRename())}>
             <Pencil size={15} aria-hidden /> Rename
           </button>
@@ -63,8 +82,9 @@ function KeyMenu({ k, onRename, onRotate, onRevoke }: { k: ApiKey; onRename: () 
           <button role="menuitem" type="button" className={`${item} !text-error`} onClick={() => (setOpen(false), onRevoke())}>
             <Trash2 size={15} aria-hidden /> Revoke
           </button>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </div>
   )
 }
@@ -352,7 +372,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
       <Dialog open={dialog?.kind === 'secret'} onClose={close} title={dialog?.kind === 'secret' && dialog.rotated ? 'Your new secret' : 'Your new key'} dismissable={false}>
         {dialog?.kind === 'secret' ? (
           <div className="flex flex-col gap-4">
-            <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
+            <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
               <AlertTriangle size={18} className="mt-[2px] shrink-0 text-gold" aria-hidden />
               Copy it now. This is the only time the full key is shown: we store only a hash, so it cannot be shown again. Lost it? Rotate the key.
             </p>
@@ -463,7 +483,7 @@ function Requests({ account }: { account: Account }) {
     p.reload().then(() => setBusy(false))
   }
   const colors = keyColors(account.keys)
-  const colorOfId = (id: string) => colors[id] ?? '#7f8b9c'
+  const colorOfId = (id: string) => colors[id] ?? '#8a94a1'
   return (
     <section id="requests" className={`${panel} scroll-mt-24`} style={rise(1)} aria-labelledby="req-title">
       <div className="flex flex-wrap items-center justify-between gap-3">

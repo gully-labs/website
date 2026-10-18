@@ -154,7 +154,10 @@ const step = async (name, fn) => {
   try {
     await fn()
   } catch (e) {
-    check(`${name} (${String(e?.message ?? e).split('\n')[0].slice(0, 200)})`, false)
+    // The failing line of this file, so a timeout names the step it stopped at.
+    const at = String(e?.stack ?? '').match(/e2e\.mjs:(\d+)/)?.[1]
+    const msg = String(e?.message ?? e)
+    check(`${name} (${msg.split('\n')[0].slice(0, 200)}${at ? ` at e2e.mjs:${at}` : ''})`, false, msg.split('\n').slice(1, 6).join(' | ').slice(0, 400))
   }
 }
 
@@ -401,6 +404,8 @@ await step('portal', async () => {
   await rn.getByRole('button', { name: 'Save' }).click()
   await page.getByText('Key renamed').first().waitFor()
   check('keys: rename', (await page.getByRole('button', { name: 'Actions for e2e key renamed' }).count()) === 1)
+  // The row sits low on the page: let the "Key renamed" toast go so it does not cover the menu.
+  await page.getByText('Key renamed').first().waitFor({ state: 'detached', timeout: 15_000 }).catch(() => {})
   await page.getByRole('button', { name: 'Actions for e2e key renamed' }).click()
   await page.getByRole('menuitem', { name: 'Revoke' }).click()
   await page.getByRole('dialog', { name: 'Revoke key' }).getByRole('button', { name: 'Revoke key' }).click()
@@ -646,6 +651,8 @@ await step('app services', async () => {
   await sNav.getByRole('link', { name: 'Overview', exact: true }).click()
   const gs = sp.getByTestId('get-started')
   await gs.waitFor()
+  check('overview: "Get started" opens folded as a thin progress bar with the next step', (await gs.getAttribute('data-folded')) !== null && /^Next: /.test(((await sp.getByTestId('get-started-next').textContent()) ?? '').trim()) && (await gs.boundingBox()).height <= 64)
+  await sp.getByTestId('get-started-continue').click()
   check('overview: "Get started" is a stepper whose current step shows one action button', (await gs.locator('[data-step]').count()) >= 3 && (await gs.locator('[data-state="current"]').count()) === 1 && (await sp.getByTestId('next-step').locator('button, a').count()) === 1 && !/not tracked or not available/.test((await gs.textContent()) ?? ''))
   await sp.setViewportSize({ width: 1440, height: 840 })
   await shot(sp, 'app-1440x840-sidebar')
@@ -665,6 +672,16 @@ await step('app services', async () => {
       for (const t of tops) counts[t] = (counts[t] ?? 0) + 1
       return Object.values(counts)
     })
+  // The pixel-pass design audit on every app page (signed in): 11 px minimum, token colours only, other hosts in a new tab.
+  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'chain-kit', 'ai', 'deepcore', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
+    await sp.goto(`${BASE}/app#${id}`)
+    await sp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
+    await sp.waitForLoadState('networkidle').catch(() => {})
+    await sp.waitForTimeout(1200)
+    await designAudit(sp, `app #${id}`)
+  }
+  await sp.goto(BASE + '/app')
+  await sNav.waitFor()
   for (const width of [1440, 1280, 1024]) {
     await sp.setViewportSize({ width, height: 840 })
     await sp.waitForTimeout(400)
@@ -863,7 +880,7 @@ await step('merchant safe', async () => {
   const page = await ctx.newPage()
   const w = watch(page, 'merchant safe')
   w.expect(/\/api\/developer\/merchant\/safe\/plan/) // the BNB Chain plan below is a 422 on purpose (no Safe factory there)
-  await page.goto(BASE + '/developers#merchant')
+  await page.goto(BASE + '/developers#merchant/wallets')
   const wallets = page.locator('#m-wallets')
   await wallets.waitFor({ timeout: 15_000 })
   check('safe: the Arbitrum row says not deployed and offers the Deploy button', (await wallets.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).count()) === 1 && (await wallets.getByText('not deployed').count()) >= 2)

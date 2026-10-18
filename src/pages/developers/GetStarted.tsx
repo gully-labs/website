@@ -22,7 +22,6 @@ interface Step {
 
 const actionCls = 'inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] text-gold hover:text-gold-hover hover:underline'
 
-const STATE_TEXT: Record<StepState, string> = { done: 'Done', todo: 'To do', na: 'Not available', untracked: 'Not tracked', loading: 'Checking…' }
 
 export function GetStarted({ account, alerts, analytics, go, createKey, createAlert }: { account: Account; alerts: AlertsView | null; analytics: AnalyticsView | null | 'error'; go: (tab: 'keys' | 'alerts' | 'analytics' | 'billing') => void; createKey: () => void; createAlert: () => void }) {
   const ga = analytics === 'error' ? null : analytics
@@ -97,13 +96,12 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
     },
   ]
   // The stepper shows the steps the account can see; the ones it cannot (the widget needs no key; a
-  // product not switched on here) are listed under it in one line instead of counting as undone.
+  // product not switched on here) are left out instead of counting as undone.
   const tracked = steps.filter((s) => s.state !== 'na' && s.state !== 'untracked')
-  const others = steps.filter((s) => s.state === 'na' || s.state === 'untracked')
-  const loading = steps.some((s) => s.state === 'loading')
   return (
     <div className="flex flex-col gap-1">
       <Stepper
+        startFolded
         title="Get started"
         testId="get-started"
         steps={tracked.map((s) => ({ id: s.id, label: s.title, done: s.state === 'done', icon: STEP_ICON[s.id] }))}
@@ -125,11 +123,6 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
           )
         }}
       </Stepper>
-      {!loading && others.length > 0 && (
-        <span className="px-1 font-mono text-[11px] text-faint">
-          {others.map((s) => `${s.title}: ${STATE_TEXT[s.state].toLowerCase()} (${s.note})`).join(' · ')}
-        </span>
-      )}
     </div>
   )
 }

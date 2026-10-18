@@ -41,7 +41,7 @@ export function PendingInvites() {
   return (
     <section aria-label="Workspace invites" className="flex flex-col gap-2" data-testid="pending-invites">
       {list.map((inv) => (
-        <div key={inv.id} className="flex flex-wrap items-center gap-3 rounded-[14px] border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-3">
+        <div key={inv.id} className="flex flex-wrap items-center gap-3 rounded-[14px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3">
           <MailOpen size={18} className="shrink-0 text-gold" aria-hidden />
           <span className="flex min-w-0 flex-[1_1_260px] flex-col">
             <span className="text-[14px]">

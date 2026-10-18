@@ -31,7 +31,7 @@ const KINDS: { id: Kind | 'all'; label: string; icon: LucideIcon }[] = [
   { id: 'usage', label: 'Usage', icon: Gauge },
   { id: 'account', label: 'Account', icon: UserRound },
 ]
-const KIND_COLOR: Record<Kind, string> = { keys: '#e8c060', alerts: '#6aa6ff', billing: '#6fcf6a', team: '#c58cff', telegram: '#2aa3df', analytics: '#4fd1c5', usage: '#ff8a7a', account: '#8a96a6' }
+const KIND_COLOR: Record<Kind, string> = { keys: '#d9b563', alerts: '#5aa9e6', billing: '#74c27b', team: '#c98bdb', telegram: '#5aa9e6', analytics: '#26ab94', usage: '#ff8a7a', account: '#949daa' }
 
 function kindOf(action: string): Kind {
   const head = action.split('.')[0]

@@ -23,7 +23,7 @@ type Check = { state: 'idle' } | { state: 'checking'; hash: string } | { state: 
 export function Field({ label, value, copy, what }: { label: string; value: string; copy?: string; what?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span className="font-mono text-[10.5px] tracking-[1px] text-faint">{label}</span>
+      <span className="font-mono text-[11px] tracking-[1px] text-faint">{label}</span>
       <div className="flex items-center gap-2 rounded-input border border-line bg-bg py-1 pr-1 pl-3">
         <span className="min-w-0 flex-1 font-mono text-[13px] break-all text-ink">{value}</span>
         {copy !== undefined && <CopyButton text={copy} what={what} />}

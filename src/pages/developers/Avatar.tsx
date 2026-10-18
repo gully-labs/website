@@ -1,16 +1,20 @@
 import { useState } from 'react'
+import { PALETTE } from '../../components/charts/chartPresets'
+
+const BGS = ['#111923', '#1a2330', '#1f2935', '#1d2836']
 
 /* A wallet's picture: its ENS / Basename avatar when the server found one, otherwise a blockie (a
-   symmetric 5×5 pattern and colours derived from the address), drawn as inline SVG so it needs no
+   symmetric 5×5 pattern and brand-palette colours picked by the address), drawn as inline SVG so it needs no
    network and no canvas. */
 
 function blockie(address: string) {
   const hex = address.toLowerCase().replace(/^0x/, '').padEnd(40, '0')
   const byte = (i: number) => parseInt(hex.slice((i * 2) % 40, (i * 2) % 40 + 2), 16)
-  const hue = Math.round((byte(0) / 255) * 360)
-  const fg = `hsl(${hue} 62% 58%)`
-  const bg = `hsl(${(hue + 180) % 360} 28% 18%)`
-  const spot = `hsl(${(hue + 40) % 360} 70% 72%)`
+  // Colours from the brand palette (the chart series and the surface tokens), so a blockie never paints
+  // off-token: the address picks which.
+  const fg = PALETTE[byte(0) % PALETTE.length]
+  const spot = PALETTE[(byte(0) + 1 + (byte(19) % (PALETTE.length - 1))) % PALETTE.length]
+  const bg = BGS[byte(18) % BGS.length]
   const cells: { x: number; y: number; c: string }[] = []
   for (let y = 0; y < 5; y++)
     for (let x = 0; x < 3; x++) {

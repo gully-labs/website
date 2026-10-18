@@ -23,7 +23,7 @@ import { Section } from './parts'
 
 const RANGES = ['30d', '90d', '365d'] as const
 type Range = (typeof RANGES)[number]
-const CHAIN_COLOR: Record<string, string> = { Base: '#5aa9e6', Ethereum: '#c98bdb', 'BNB Chain': '#e8c060', Arbitrum: '#1f9e89', 'OP Mainnet': '#e8655a', Polygon: '#9b6bf2', Avalanche: '#d9534f' }
+const CHAIN_COLOR: Record<string, string> = { Base: '#5aa9e6', Ethereum: '#c98bdb', 'BNB Chain': '#d9b563', Arbitrum: '#26ab94', 'OP Mainnet': '#ff8a7a', Polygon: '#c98bdb', Avalanche: '#ff8a7a' }
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number; children?: React.ReactNode }) {
@@ -49,8 +49,8 @@ export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number
         const rows = ps.filter((p) => p.seriesName !== 'live' && p.value > 0).map((p) => ({ name: p.seriesName, value: usd(p.value), color: p.color }))
         return tipHtml({ title: day(data.dates[i]), rows: rows.length ? rows : [{ name: 'Volume', value: usd(0) }], note: `${data.count[i]} payment${data.count[i] === 1 ? '' : 's'}` })
       }, 'shadow'),
-      xAxis: { type: 'category', data: data.dates.map(day), axisTick: { show: false }, axisLabel: { color: C.faint, fontSize: 10, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
-      yAxis: { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => (v >= 1000 ? `$${Math.round(v / 100) / 10}k` : `$${v}`) }, splitLine: { lineStyle: { color: C.grid } } },
+      xAxis: { type: 'category', data: data.dates.map(day), axisTick: { show: false }, axisLabel: { color: C.faint, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
+      yAxis: { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => (v >= 1000 ? `$${Math.round(v / 100) / 10}k` : `$${v}`) }, splitLine: { lineStyle: { color: C.grid } } },
       series: [
         ...data.byChain.map((s, i) => ({ id: `c-${s.name}`, name: s.name, ...barsPreset({ stagger: 12, focus: 'series' }), stack: 'v', barMaxWidth: 18, color: CHAIN_COLOR[s.name] ?? PALETTE[i % PALETTE.length], data: s.data })),
         { ...livePoint([data.dates.map(day)[lastIdx], total[lastIdx]], C.gold), name: 'live' },
@@ -74,7 +74,7 @@ export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number
       grid: { left: 4, right: 8, top: 6, bottom: 4, containLabel: true },
       tooltip: axisTooltip((ps: { dataIndex: number; value: number }[]) => tipHtml({ title: day(data.dates[ps[0]?.dataIndex ?? 0]), rows: [{ name: 'Payments', value: String(ps[0]?.value ?? 0), color: C.gold }] })),
       xAxis: { type: 'category', data: data.dates.map(day), show: false },
-      yAxis: { type: 'value', minInterval: 1, axisLabel: { color: C.faint, fontSize: 10 }, splitLine: { lineStyle: { color: C.grid } } },
+      yAxis: { type: 'value', minInterval: 1, axisLabel: { color: C.faint, fontSize: 11 }, splitLine: { lineStyle: { color: C.grid } } },
       series: [{ id: 'count', ...barsPreset({ stagger: 10 }), color: alpha(C.gold, 0.85), barMaxWidth: 10, data: data.count }],
     }
   }, [data])
@@ -135,7 +135,7 @@ export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number
         </KpiTile>
       </KpiRow>
       {none ? (
-        <GhostCurves height={140} title="Your payments will draw here">
+        <GhostCurves height={110} title="Your payments will draw here">
           <span className="max-w-[440px] text-[13px] text-muted">Volume per day by chain, payments per day and the asset mix appear within seconds of your first confirmed payment.</span>
         </GhostCurves>
       ) : (

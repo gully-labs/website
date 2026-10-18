@@ -224,8 +224,8 @@ export function Team() {
           <HBars
             label={`Actions per member: ${Object.entries(acts).map(([a, n]) => `${shortAddress(a)} ${n}`).join(', ')}.`}
             rows={view.members
-              .map((m): HBar => ({ name: m.you ? `you (${shortAddress(m.address)})` : shortAddress(m.address), value: acts[m.address] ?? 0, color: m.role === 'owner' ? '#e8c060' : m.role === 'admin' ? '#f4d98c' : '#6aa6ff', note: m.role }))
-              .concat(Object.keys(acts).filter((a) => !view.members.some((m) => m.address === a)).map((a) => ({ name: `${shortAddress(a)} (former)`, value: acts[a], color: '#7f8b9c', note: 'no longer a member' })))
+              .map((m): HBar => ({ name: m.you ? `you (${shortAddress(m.address)})` : shortAddress(m.address), value: acts[m.address] ?? 0, color: m.role === 'owner' ? '#d9b563' : m.role === 'admin' ? '#f2d58a' : '#5aa9e6', note: m.role }))
+              .concat(Object.keys(acts).filter((a) => !view.members.some((m) => m.address === a)).map((a) => ({ name: `${shortAddress(a)} (former)`, value: acts[a], color: '#8a94a1', note: 'no longer a member' })))
               .sort((a, b) => b.value - a.value)}
           />
         )}
@@ -321,7 +321,7 @@ function Limit({ label, used, max }: { label: string; used: number; max: number 
           {used} <span className="text-faint">/ {max}</span>
         </span>
         <span className="block h-[5px] overflow-hidden rounded-[3px] bg-grid" role="meter" aria-label={`${label}: ${used} of ${max}`} aria-valuemin={0} aria-valuemax={max} aria-valuenow={used}>
-          <span className="block h-full rounded-[3px] transition-[width] duration-500" style={{ width: `${pct}%`, background: pct >= 100 ? '#ff8a7a' : '#e8c060' }} />
+          <span className="block h-full rounded-[3px] transition-[width] duration-500" style={{ width: `${pct}%`, background: pct >= 100 ? '#ff8a7a' : '#d9b563' }} />
         </span>
       </dd>
     </div>
@@ -407,8 +407,8 @@ function InviteDialog({ open, onClose, myRole, days, onCreated }: { open: boolea
           <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
             <legend className="mb-2 text-[14px] text-ink-2">Role</legend>
             {roles.map((r) => (
-              <label key={r} className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-[10px] border px-3 py-2 transition-colors ${role === r ? 'border-gold-line bg-[rgba(232,192,96,.06)]' : 'border-line hover:border-line-strong'}`}>
-                <input type="radio" name="invite-role" value={r} checked={role === r} onChange={() => setRole(r)} className="mt-[5px] accent-[#e8c060]" />
+              <label key={r} className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-[10px] border px-3 py-2 transition-colors ${role === r ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line hover:border-line-strong'}`}>
+                <input type="radio" name="invite-role" value={r} checked={role === r} onChange={() => setRole(r)} className="mt-[5px] accent-[#d9b563]" />
                 <span className="flex flex-col">
                   <b className="text-[14px] font-semibold capitalize">{r}</b>
                   <span className="text-[12px] text-dim">{ROLE_TEXT[r]}</span>

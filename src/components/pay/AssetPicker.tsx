@@ -34,7 +34,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false, showFee
               <ChainMark chainKey={g.chainKey} name={g.chain} size={24} />
               {g.chain}
             </span>
-            {showFee && <span className="font-mono text-[10px] tracking-[.5px] text-faint">{g.assets.some((a) => a.feeSplit) ? 'FEE IN THE PAYMENT' : 'FEE INVOICED'}</span>}
+            {showFee && <span className="font-mono text-[11px] tracking-[.5px] text-faint">{g.assets.some((a) => a.feeSplit) ? 'FEE IN THE PAYMENT' : 'FEE INVOICED'}</span>}
           </span>
           <div className="flex flex-1 flex-wrap gap-2">
             {g.assets.map((a) => {
@@ -48,11 +48,11 @@ export function AssetPicker({ assets, value, onChange, disabled = false, showFee
                   aria-label={`${a.symbol} on ${a.chain}`}
                   disabled={disabled}
                   onClick={() => onChange(a.id)}
-                  className={`inline-flex min-h-11 min-w-[84px] items-center justify-center gap-2 rounded-btn border px-3 font-mono text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-gold bg-[rgba(232,192,96,.08)] text-gold' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
+                  className={`inline-flex min-h-11 min-w-[84px] items-center justify-center gap-2 rounded-btn border px-3 font-mono text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-gold bg-[rgba(217,181,99,.08)] text-gold' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
                 >
                   <TokenLogo symbol={a.symbol} size={20} decorative />
                   {a.symbol}
-                  <span className={`text-[10px] tracking-[.5px] ${on ? 'text-gold' : 'text-faint'}`}>{a.kind === 'native' ? 'COIN' : 'STABLE'}</span>
+                  <span className={`text-[11px] tracking-[.5px] ${on ? 'text-gold' : 'text-faint'}`}>{a.kind === 'native' ? 'COIN' : 'STABLE'}</span>
                 </button>
               )
             })}

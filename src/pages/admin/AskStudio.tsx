@@ -88,7 +88,7 @@ function Studio({ token, configured }: { token: string; configured: boolean }) {
           <legend className="mb-2 font-mono text-[11px] tracking-[1px] text-faint">KIND</legend>
           <div className="flex flex-wrap gap-2">
             {KINDS.map((k) => (
-              <label key={k.id} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${kind === k.id ? 'border-gold bg-[rgba(232,192,96,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`}>
+              <label key={k.id} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${kind === k.id ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`}>
                 <input type="radio" name="ask-kind" value={k.id} checked={kind === k.id} onChange={() => setKind(k.id)} className="sr-only" />
                 {k.label}
               </label>
@@ -195,7 +195,7 @@ function Log({ log }: { log: AskLog }) {
   const max = Math.max(1, ...log.perDay.map((d) => d.count))
   const tile = (k: string, v: string, note?: string) => (
     <div className="flex min-w-0 flex-col gap-1 bg-surface px-5 py-4">
-      <span className="font-mono text-[10px] tracking-[1px] text-faint">{k}</span>
+      <span className="font-mono text-[11px] tracking-[1px] text-faint">{k}</span>
       <span className="font-display text-[28px] leading-none font-extrabold">{v}</span>
       {note && <span className="truncate text-[12px] text-muted">{note}</span>}
     </div>

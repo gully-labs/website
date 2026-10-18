@@ -17,9 +17,9 @@ import { useLaunches } from './useDeepcore'
    Everything is read live; what cannot be read says so. */
 
 const dot = (c: string) => <span className="size-2 shrink-0 rounded-full" style={{ background: c }} aria-hidden />
-const GREEN = '#6fcf6a'
+const GREEN = '#74c27b'
 const RED = '#ff8a7a'
-const AMBER = '#e8c060'
+const AMBER = '#d9b563'
 
 function Row({ ok, name, note }: { ok: boolean | null; name: string; note: ReactNode }) {
   return (

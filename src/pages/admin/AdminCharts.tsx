@@ -59,10 +59,10 @@ function Daily({ days, lines, height = 200, fmt = fmtInt, fmtRight, label }: { d
     () => ({
       grid: { left: 4, right: hasRight ? 8 : 4, top: 14, bottom: 4, containLabel: true },
       legend: lines.length > 1 ? { show: false } : undefined,
-      xAxis: { type: 'category', data: days.map(dayLabel), axisTick: { show: false }, axisLine: { lineStyle: { color: C.lineStrong } }, axisLabel: { color: C.axis, fontSize: 10, hideOverlap: true } },
+      xAxis: { type: 'category', data: days.map(dayLabel), axisTick: { show: false }, axisLine: { lineStyle: { color: C.lineStrong } }, axisLabel: { color: C.axis, fontSize: 11, hideOverlap: true } },
       yAxis: [
-        { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.axis, fontSize: 10, formatter: (v: number) => (fmt === fmtUsd ? `$${v}` : String(v)) } },
-        ...(hasRight ? [{ type: 'value', splitLine: { show: false }, axisLabel: { color: C.axis, fontSize: 10, formatter: (v: number) => (fmtRight ? fmtRight(v) : String(v)) } }] : []),
+        { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.axis, fontSize: 11, formatter: (v: number) => (fmt === fmtUsd ? `$${v}` : String(v)) } },
+        ...(hasRight ? [{ type: 'value', splitLine: { show: false }, axisLabel: { color: C.axis, fontSize: 11, formatter: (v: number) => (fmtRight ? fmtRight(v) : String(v)) } }] : []),
       ],
       tooltip: axisTooltip((ps: ChartEvent[]) => {
         const i = ps[0]?.dataIndex ?? -1

@@ -15,7 +15,7 @@ import type { MerchantView } from './api'
    gas or coin price could not be read is listed as unreadable, never drawn as $0. Gully Pay has no public
    all-stores volume figure, so none is shown. */
 
-const money = (v: number) => (v < 0.01 ? `$${v.toFixed(4)}` : v < 1 ? `$${v.toFixed(3)}` : `$${v.toFixed(2)}`)
+const money = (v: number) => (v > 0 && v < 0.0001 ? '<$0.0001' : v < 0.01 ? `$${v.toFixed(4)}` : v < 1 ? `$${v.toFixed(3)}` : `$${v.toFixed(2)}`)
 
 export function NetworkStrip({ view }: { view: MerchantView }) {
   const gas = usePoll<GasView>('/api/pay/gas', 180_000)

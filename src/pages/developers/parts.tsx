@@ -26,10 +26,10 @@ export function Skeleton({ h = 20, w = '100%' }: { h?: number; w?: number | stri
 export function Empty({ icon, title, children, action }: { icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
   return (
     <div className="relative flex flex-col items-center gap-3 overflow-hidden rounded-input border border-dashed border-line-strong px-6 py-10 text-center" data-empty>
-      <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(232,192,96,.45),transparent)]" style={{ animation: 'gl-scan 3.6s linear infinite' }} />
+      <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.45),transparent)]" style={{ animation: 'gl-scan 3.6s linear infinite' }} />
       <span className="relative grid size-14 place-items-center">
         <span aria-hidden className="absolute inset-0 rounded-full border border-gold-line" style={{ animation: 'gl-live-pulse 2.6s ease-out infinite' }} />
-        <span aria-hidden className="absolute inset-[6px] rounded-full bg-[rgba(232,192,96,.07)]" style={{ animation: 'gl-skeleton 2.4s ease-in-out infinite' }} />
+        <span aria-hidden className="absolute inset-[6px] rounded-full bg-[rgba(217,181,99,.07)]" style={{ animation: 'gl-skeleton 2.4s ease-in-out infinite' }} />
         <span className="relative">{icon}</span>
       </span>
       <span className="font-display text-[22px] font-bold uppercase">{title}</span>

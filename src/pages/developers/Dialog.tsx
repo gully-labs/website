@@ -57,7 +57,7 @@ export function Dialog({ open, onClose, title, children, dismissable = true }: {
     <AnimatePresence>
       {open && (
         <motion.div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} data-portal-dialog>
-          <div className="fixed inset-0 bg-[rgba(5,7,10,.72)] backdrop-blur-[3px]" onClick={dismissable ? () => close.current() : undefined} aria-hidden />
+          <div className="fixed inset-0 bg-[rgba(4,6,12,.72)] backdrop-blur-[3px]" onClick={dismissable ? () => close.current() : undefined} aria-hidden />
           <motion.div
             ref={panel}
             role="dialog"

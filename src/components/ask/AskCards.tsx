@@ -131,7 +131,7 @@ export function LiveCard({ card }: { card: AskCard }) {
         <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,110px),1fr))] gap-x-4 gap-y-2">
           {card.stats.map((s) => (
             <div key={s.label} className="flex min-w-0 flex-col">
-              <dt className="truncate font-mono text-[10px] tracking-[1px] text-faint uppercase">{s.label}</dt>
+              <dt className="truncate font-mono text-[11px] tracking-[1px] text-faint uppercase">{s.label}</dt>
               <dd className={`m-0 truncate text-[15px] font-medium ${s.tone ? TONE[s.tone] : 'text-ink'}`} style={{ animation: 'gl-count-flash 1.2s ease both' }}>
                 {s.value}
               </dd>

@@ -167,8 +167,8 @@ function Analytics({ ov }: { ov: Overview }) {
   const option = useMemo(
     () => ({
       grid: { left: 36, right: 12, top: 12, bottom: 24 },
-      xAxis: { type: 'category', data: g.map((p) => p.day.slice(5)), axisTick: { show: false }, axisLine: { lineStyle: { color: C.lineStrong } }, axisLabel: { color: C.axis, fontSize: 10, hideOverlap: true } },
-      yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.axis, fontSize: 10 } },
+      xAxis: { type: 'category', data: g.map((p) => p.day.slice(5)), axisTick: { show: false }, axisLine: { lineStyle: { color: C.lineStrong } }, axisLabel: { color: C.axis, fontSize: 11, hideOverlap: true } },
+      yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.axis, fontSize: 11 } },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const p = g[ps[0]?.dataIndex ?? -1]
         return p ? tipHtml({ title: p.day, rows: [{ name: 'bot users', value: p.total.toLocaleString('en-US'), color: C.gold }, { name: 'new that day', value: `+${p.added}` }] }) : ''
@@ -250,7 +250,7 @@ function Progress({ c }: { c: Counts }) {
 
 function OwnerStep() {
   return (
-    <details className="group rounded-input border border-gold-line bg-[rgba(232,192,96,.05)] px-4 py-3">
+    <details className="group rounded-input border border-gold-line bg-[rgba(217,181,99,.05)] px-4 py-3">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-[14px] text-gold">
         <span className="inline-flex items-center gap-2">
           <Smartphone size={16} aria-hidden /> Owner step: make the Mini App the bot’s main app
@@ -407,7 +407,7 @@ function Composer({ token, ov, reload }: { token: string; ov: Overview; reload: 
                 ['banner', 'Gully animated banner'],
               ] as const
             ).map(([k, label]) => (
-              <label key={k} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${d.mediaMode === k ? 'border-gold bg-[rgba(232,192,96,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`}>
+              <label key={k} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${d.mediaMode === k ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`}>
                 <input type="radio" name="tgb-media" value={k} checked={d.mediaMode === k} onChange={() => set({ mediaMode: k })} className="sr-only" />
                 {label}
               </label>
@@ -485,7 +485,7 @@ function Composer({ token, ov, reload }: { token: string; ov: Overview; reload: 
         </fieldset>
 
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
-          <input type="checkbox" checked={d.urgent} onChange={(e) => set({ urgent: e.target.checked })} className="size-5 accent-[#e8c060]" />
+          <input type="checkbox" checked={d.urgent} onChange={(e) => set({ urgent: e.target.checked })} className="size-5 accent-[#d9b563]" />
           Urgent (skip the one-broadcast-a-day limit)
         </label>
         {blockedByDay && <span className="text-[13px] text-gold">One broadcast a day: the next can go from {when(ov.nextAllowedAt)}, or tick Urgent.</span>}
@@ -529,7 +529,7 @@ function Composer({ token, ov, reload }: { token: string; ov: Overview; reload: 
           </div>
           {!ov.enabled && <span className="text-[13px] text-error">TELEGRAM_BOT_TOKEN is not set: broadcasts are off.</span>}
           {confirm && (
-            <div role="alertdialog" aria-labelledby="tgb-confirm" className="flex flex-col gap-3 rounded-input border border-gold bg-[rgba(232,192,96,.08)] p-4">
+            <div role="alertdialog" aria-labelledby="tgb-confirm" className="flex flex-col gap-3 rounded-input border border-gold bg-[rgba(217,181,99,.08)] p-4">
               <p id="tgb-confirm" className="m-0 text-[15px] text-ink">
                 {confirm.action === 'send' ? 'Send this now to' : `Schedule this for ${when(scheduleIso)} to`} <b className="text-gold">{confirm.count.toLocaleString('en-US')} people</b> ({segLabel(d.segment)})?
               </p>

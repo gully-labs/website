@@ -242,7 +242,7 @@ function PlanPill({ account }: { account: Account }) {
   const soon = left !== null && left <= 7
   return (
     <span className="flex min-h-[30px] items-center gap-2 rounded-full border border-line px-[10px] text-[13px] whitespace-nowrap" title={account.plan.expiresAt ? `Runs until ${new Date(account.plan.expiresAt).toLocaleString()}` : undefined} data-testid="plan-pill">
-      <span className="size-2 rounded-full" style={{ background: !paid ? '#7f8b9c' : soon ? '#ff8a7a' : '#e8c060' }} aria-hidden />
+      <span className="size-2 rounded-full" style={{ background: !paid ? '#8a94a1' : soon ? '#ff8a7a' : '#d9b563' }} aria-hidden />
       {account.plan.name} plan
       {left !== null && <span className={`${soon ? 'text-error' : 'text-muted'} max-[520px]:hidden`}>· {left === 0 ? 'ends today' : `${left} day${left === 1 ? '' : 's'} left`}</span>}
     </span>
@@ -382,7 +382,7 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
         </button>
       </li>
       <li>
-        <a href={SITE_URL} className={footItem(compact)} title={compact ? 'Gully Labs home' : undefined} data-testid="home-link">
+        <a href={SITE_URL} target="_blank" rel="noopener noreferrer" className={footItem(compact)} title={compact ? 'Gully Labs home' : undefined} data-testid="home-link">
           <House size={ICON} aria-hidden /> {txt('gullylabs.xyz')}
         </a>
       </li>
@@ -409,9 +409,9 @@ function HeaderLinks({ health, onStatus }: { health: Health; onStatus: () => voi
         <span className={`absolute right-[7px] bottom-[7px] size-[7px] rounded-full border border-bg ${healthDot[health]}`} aria-hidden />
         {tip(`Status · ${healthText[health]}`)}
       </button>
-      <a href={SITE_URL} className={btn} aria-label="Gully Labs home" data-testid="home-link">
+      <a href={SITE_URL} target="_blank" rel="noopener noreferrer" className={btn} aria-label="Gully Labs home (opens in a new tab)" data-testid="home-link">
         <House size={ICON} aria-hidden />
-        {tip('gullylabs.xyz')}
+        {tip('gullylabs.xyz ↗')}
       </a>
     </div>
   )
@@ -468,7 +468,7 @@ function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void
   }
   return (
     <div className="fixed inset-0 z-50 print:hidden" onKeyDown={onKey}>
-      <div className="absolute inset-0 animate-[gl-fade_.2s_ease_both] bg-[rgba(5,7,10,.72)]" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 animate-[gl-fade_.2s_ease_both] bg-[rgba(4,6,12,.72)]" onClick={onClose} aria-hidden />
       <div
         ref={panel}
         role="dialog"
@@ -501,7 +501,7 @@ function TabBar<T extends string>({ items, current, go, more, sheetOpen }: { ite
   const cell = (on: boolean) => `relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-[11px] font-medium transition-colors ${on ? 'text-gold' : 'text-dim hover:text-ink'}`
   const bar = <span className="absolute top-0 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-gold" style={{ animation: 'gl-fade .25s ease both' }} aria-hidden />
   return (
-    <nav aria-label="App sections" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-[rgba(11,14,19,.94)] pb-[env(safe-area-inset-bottom)] backdrop-blur-md print:hidden" data-testid="tab-bar">
+    <nav aria-label="App sections" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-[rgba(13,20,28,.94)] pb-[env(safe-area-inset-bottom)] backdrop-blur-md print:hidden" data-testid="tab-bar">
       {tabs.map((t) => {
         const on = current === t.id
         return (
@@ -610,14 +610,14 @@ export function AppShell<T extends string>({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-line bg-[rgba(11,14,19,.86)] backdrop-blur-md print:hidden">
+        <header className="sticky top-0 z-30 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-md print:hidden">
           <div className="flex min-h-14 items-center gap-3 px-6 max-[480px]:px-4">
             {narrow && (
               <>
                 <button ref={menuBtn} type="button" onClick={() => setSheet(true)} className="-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] text-ink hover:bg-surface-hover" aria-label="Open menu" aria-haspopup="dialog" aria-expanded={sheet} data-testid="menu-button">
                   <MenuIcon size={20} aria-hidden />
                 </button>
-                <a href={SITE_URL} className="inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] hover:bg-surface-hover" aria-label="Gully Labs home" data-testid="home-link-header">
+                <a href={SITE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] hover:bg-surface-hover" aria-label="Gully Labs home" data-testid="home-link-header">
                   <Mascot size={24} decorative />
                 </a>
               </>

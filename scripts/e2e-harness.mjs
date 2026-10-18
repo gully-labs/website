@@ -204,7 +204,6 @@ function safeRpcAnswer(chainId, q) {
 function rpcAnswer(chainId, q) {
   if (q.method === 'eth_chainId') return hex(chainId)
   if (q.method === 'eth_blockNumber') return hex(SAFE_HEAD)
-  if (q.method === 'eth_gasPrice') return hex(1_500_000_000) // 1.5 gwei: the Merchant tab's gas strip (server/gas.mjs)
   const safe = safeRpcAnswer(chainId, q)
   if (safe !== undefined) return safe
   if (q.method === 'eth_getBlockByNumber') return { number: q.params[0], timestamp: hex(nowSec()) }

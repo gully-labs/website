@@ -358,7 +358,7 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
                 ['banner', 'Gully animated banner'],
               ] as const
             ).map(([k, label]) => (
-              <label key={k} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${d.mediaMode === k ? 'border-gold bg-[rgba(232,192,96,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'} ${sentEdit ? 'pointer-events-none opacity-50' : ''}`}>
+              <label key={k} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${d.mediaMode === k ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'} ${sentEdit ? 'pointer-events-none opacity-50' : ''}`}>
                 <input type="radio" name="tgc-media" value={k} checked={d.mediaMode === k} onChange={() => set({ mediaMode: k })} className="sr-only" disabled={sentEdit} />
                 {label}
               </label>
@@ -394,21 +394,21 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
         </fieldset>
 
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
-          <input type="checkbox" checked={d.pin} onChange={(e) => set({ pin: e.target.checked })} className="size-5 accent-[#e8c060]" />
+          <input type="checkbox" checked={d.pin} onChange={(e) => set({ pin: e.target.checked })} className="size-5 accent-[#d9b563]" />
           <Pin size={15} aria-hidden /> Pin in the channel
         </label>
 
         {!editing && (
           <div className="flex flex-col gap-1">
             <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
-              <input type="checkbox" checked={dm} onChange={(e) => setDm(e.target.checked)} className="size-5 accent-[#e8c060]" />
+              <input type="checkbox" checked={dm} onChange={(e) => setDm(e.target.checked)} className="size-5 accent-[#d9b563]" />
               <MessageCircle size={15} aria-hidden /> Send to channel and DM users
             </label>
             {dm && (
               <div className="flex flex-col gap-1 pl-8">
                 <span className={small}>Everyone who started the bot (announcements on) gets a short “📣 New in the channel →” DM linking to this post. You confirm the exact count before it goes. One broadcast a day.</span>
                 <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[13px] text-ink-2">
-                  <input type="checkbox" checked={dmUrgent} onChange={(e) => setDmUrgent(e.target.checked)} className="size-5 accent-[#e8c060]" /> Urgent (skip the one-a-day limit)
+                  <input type="checkbox" checked={dmUrgent} onChange={(e) => setDmUrgent(e.target.checked)} className="size-5 accent-[#d9b563]" /> Urgent (skip the one-a-day limit)
                 </label>
               </div>
             )}
@@ -597,7 +597,7 @@ function AutoPanel({ token, view, reload }: { token: string; view: View; reload:
           <input type="number" min={0} max={1440} value={gap} onChange={(e) => setGap(e.target.value)} className={field} />
         </label>
         <label className="inline-flex min-h-11 items-center gap-2 text-[13px] text-ink-2">
-          <input type="checkbox" checked={quiet.enabled} onChange={(e) => setQuiet({ ...quiet, enabled: e.target.checked })} className="size-5 accent-[#e8c060]" /> Quiet hours
+          <input type="checkbox" checked={quiet.enabled} onChange={(e) => setQuiet({ ...quiet, enabled: e.target.checked })} className="size-5 accent-[#d9b563]" /> Quiet hours
         </label>
         <input type="time" value={quiet.start} onChange={(e) => setQuiet({ ...quiet, start: e.target.value })} className={field} aria-label="Quiet hours start" />
         <span className="pb-3 text-faint">to</span>
@@ -622,7 +622,7 @@ function AutoPanel({ token, view, reload }: { token: string; view: View; reload:
                   <span className="text-[13px] text-muted">{m.about}</span>
                   {m.id === 'blog' && !a.ghostConfigured && <span className="text-[12px] text-gold">GHOST_CONTENT_KEY is not set: the blog cannot be read.</span>}
                 </div>
-                <button type="button" role="switch" aria-checked={on} aria-label={`${m.label} auto posts`} onClick={() => save({ [m.id]: { enabled: !on } }, `${m.label}: ${on ? 'off' : 'on'}`)} className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${on ? 'border-gold bg-[rgba(232,192,96,.25)]' : 'border-line-strong bg-bg'}`}>
+                <button type="button" role="switch" aria-checked={on} aria-label={`${m.label} auto posts`} onClick={() => save({ [m.id]: { enabled: !on } }, `${m.label}: ${on ? 'off' : 'on'}`)} className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${on ? 'border-gold bg-[rgba(217,181,99,.25)]' : 'border-line-strong bg-bg'}`}>
                   <span className={`inline-block size-5 rounded-full transition-transform ${on ? 'translate-x-[22px] bg-gold' : 'translate-x-[3px] bg-faint'}`} />
                 </button>
               </div>

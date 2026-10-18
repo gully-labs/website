@@ -83,7 +83,7 @@ function inline(text: string, cites: Citation[], key: string, live: LiveCite[] =
       const at = asOfLabel(l?.asOf)
       out.push(
         l ? (
-          <a key={k} href={l.url} {...linkProps(l.url)} title={`${l.label}${at ? `, as of ${at}` : ''}`} data-testid="ask-live-cite" className="mx-[1px] inline-flex items-center justify-center gap-[3px] rounded-[4px] border border-success-line px-[4px] align-[2px] font-mono text-[10px] leading-[16px] text-green no-underline hover:bg-green hover:text-bg">
+          <a key={k} href={l.url} {...linkProps(l.url)} title={`${l.label}${at ? `, as of ${at}` : ''}`} data-testid="ask-live-cite" className="mx-[1px] inline-flex items-center justify-center gap-[3px] rounded-[4px] border border-success-line px-[4px] align-[2px] font-mono text-[11px] leading-[16px] text-green no-underline hover:bg-green hover:text-bg">
             <span aria-hidden className="size-[5px] rounded-full bg-current" />
             {at ?? 'live'}
             <span className="sr-only"> (live: {l.label})</span>
@@ -155,7 +155,7 @@ function Sources({ cites, live }: { cites: Citation[]; live: LiveCite[] }) {
         {live.map((l) => (
           <li key={l.n}>
             <a href={l.url} {...linkProps(l.url)} className="group flex min-h-11 items-center gap-3 rounded-btn border border-line px-3 py-2 text-ink no-underline transition-colors hover:border-success-line hover:bg-surface-hover">
-              <span className="grid h-6 shrink-0 place-items-center rounded-[5px] border border-success-line px-1 font-mono text-[10px] text-green">LIVE</span>
+              <span className="grid h-6 shrink-0 place-items-center rounded-[5px] border border-success-line px-1 font-mono text-[11px] text-green">LIVE</span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-[14px]">{l.label}</span>
                 <span className="truncate font-mono text-[11px] text-faint">

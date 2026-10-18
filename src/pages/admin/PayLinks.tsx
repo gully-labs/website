@@ -69,7 +69,7 @@ const STATE_CLS: Record<string, string> = { active: 'text-green', inactive: 'tex
 export function SecretOnce({ secret, onDone }: { secret: string; onDone: () => void }) {
   const [copied, setCopied] = useState(false)
   return (
-    <div className="flex flex-col gap-2 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] p-3" role="alert">
+    <div className="flex flex-col gap-2 rounded-input border border-gold-line bg-[rgba(217,181,99,.06)] p-3" role="alert">
       <span className="text-[13px] text-ink-2">Webhook signing secret. It is shown this once: store it with the receiving app now.</span>
       <div className="flex flex-wrap items-center gap-2">
         <code className="min-w-0 flex-1 rounded-input border border-line bg-bg px-3 py-2 font-mono text-[13px] break-all text-gold">{secret}</code>

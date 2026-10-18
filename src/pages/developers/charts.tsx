@@ -101,12 +101,12 @@ export function RequestBars({ columns, series, showLimited, animKey, height = 24
     >
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block w-full touch-pan-y" style={{ height }} aria-hidden>
         {[0, 1, 2, 3].map((i) => (
-          <line key={i} x1={0} x2={W} y1={y((top / 3) * i)} y2={y((top / 3) * i)} stroke={i ? '#1a2029' : '#2c3540'} vectorEffect="non-scaling-stroke" />
+          <line key={i} x1={0} x2={W} y1={y((top / 3) * i)} y2={y((top / 3) * i)} stroke={i ? '#1c2531' : '#2a3542'} vectorEffect="non-scaling-stroke" />
         ))}
         {hover !== null && hover < n && (
           <g aria-hidden pointerEvents="none">
-            <rect x={hover * slot} y={0} width={slot} height={H} fill="rgba(166,176,189,.06)" />
-            <line x1={hover * slot + slot / 2} x2={hover * slot + slot / 2} y1={0} y2={H} stroke="#3a4452" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+            <rect x={hover * slot} y={0} width={slot} height={H} fill="rgba(174,181,190,.06)" />
+            <line x1={hover * slot + slot / 2} x2={hover * slot + slot / 2} y1={0} y2={H} stroke="#3a4656" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
           </g>
         )}
         <g key={animKey}>
@@ -151,7 +151,7 @@ export function RequestBars({ columns, series, showLimited, animKey, height = 24
         <div
           id={tipId}
           role="status"
-          className="pointer-events-none absolute top-1 z-10 grid grid-cols-[auto_auto] gap-x-[14px] gap-y-[2px] rounded-[8px] border border-line-strong bg-[rgba(13,17,22,.96)] px-[10px] py-2 font-mono text-[11px] whitespace-nowrap text-ink shadow-[0_8px_24px_rgba(0,0,0,.45)]"
+          className="pointer-events-none absolute top-1 z-10 grid grid-cols-[auto_auto] gap-x-[14px] gap-y-[2px] rounded-[8px] border border-line-strong bg-[rgba(17,25,35,.96)] px-[10px] py-2 font-mono text-[11px] whitespace-nowrap text-ink shadow-[0_8px_24px_rgba(0,0,0,.45)]"
           style={{ left: `${leftPct}%`, transform: `translateX(${hover > n * 0.55 ? 'calc(-100% - 10px)' : '10px'})`, transition: 'left .12s ease-out' }}
         >
           <span className="text-faint">{cur.long}</span>
@@ -161,7 +161,7 @@ export function RequestBars({ columns, series, showLimited, animKey, height = 24
             .map((s) => (
               <Row key={s.id} color={s.color} name={s.name} value={fmt(cur.values[s.id] ?? 0)} />
             ))}
-          <Row color="#a6b0bd" name="all keys" value={fmt(cur.total)} />
+          <Row color="#aeb5be" name="all keys" value={fmt(cur.total)} />
           {showLimited && <Row color={LIMITED_COLOR} name="of which 429" value={fmt(cur.limited ?? 0)} />}
         </div>
       )}
@@ -191,10 +191,10 @@ export function DoubleRing({ outer, inner, size = 132, children, label }: { oute
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg viewBox="0 0 120 120" width={size} height={size} role="img" aria-label={label} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={60} cy={60} r={48} fill="none" stroke="#1a2029" strokeWidth={10} />
-        {outer !== null && outer >= 1 && <circle cx={60} cy={60} r={48} fill="none" stroke="#e8c060" strokeWidth={10} strokeLinecap="round" pathLength={100} strokeDasharray={dash(outer)} style={{ transition: `stroke-dasharray 1.3s ${EASE}` }} />}
-        <circle cx={60} cy={60} r={34} fill="none" stroke="#1a2029" strokeWidth={8} />
-        {inner !== null && inner >= 1 && <circle cx={60} cy={60} r={34} fill="none" stroke="#6aa6ff" strokeWidth={8} strokeLinecap="round" pathLength={100} strokeDasharray={dash(inner)} style={{ transition: `stroke-dasharray 1.3s ${EASE} .15s` }} />}
+        <circle cx={60} cy={60} r={48} fill="none" stroke="#1c2531" strokeWidth={10} />
+        {outer !== null && outer >= 1 && <circle cx={60} cy={60} r={48} fill="none" stroke="#d9b563" strokeWidth={10} strokeLinecap="round" pathLength={100} strokeDasharray={dash(outer)} style={{ transition: `stroke-dasharray 1.3s ${EASE}` }} />}
+        <circle cx={60} cy={60} r={34} fill="none" stroke="#1c2531" strokeWidth={8} />
+        {inner !== null && inner >= 1 && <circle cx={60} cy={60} r={34} fill="none" stroke="#5aa9e6" strokeWidth={8} strokeLinecap="round" pathLength={100} strokeDasharray={dash(inner)} style={{ transition: `stroke-dasharray 1.3s ${EASE} .15s` }} />}
       </svg>
       <span className="absolute inset-0 grid place-items-center text-center">{children}</span>
     </div>
@@ -210,7 +210,7 @@ export function Meter({ value, max, label, tone }: { value: number; max: number;
     return () => cancelAnimationFrame(ref.current)
   }, [])
   const pct = Math.min(100, (value / Math.max(1, max)) * 100)
-  const color = tone ?? (pct >= 100 ? '#ff8a7a' : '#e8c060')
+  const color = tone ?? (pct >= 100 ? '#ff8a7a' : '#d9b563')
   return (
     <span className="block h-2 overflow-hidden rounded-[4px] bg-grid" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={value}>
       <span className="block h-full rounded-[4px]" style={{ width: on ? `${pct}%` : 0, background: color, transition: `width .6s ${EASE}` }} />
@@ -237,7 +237,7 @@ export function GhostSpark({ color, w = 80, h = 28 }: { color: string; w?: numbe
 }
 
 /** A ghosted chart area: two curves drawing in, a scan line, and the label in the middle. */
-export function GhostCurves({ height, title, children, colors = ['#e8c060', '#6aa6ff'] }: { height: number; title: string; children?: ReactNode; colors?: [string, string] }) {
+export function GhostCurves({ height, title, children, colors = ['#d9b563', '#5aa9e6'] }: { height: number; title: string; children?: ReactNode; colors?: [string, string] }) {
   const id = useId().replace(/:/g, '')
   return (
     <div className="relative overflow-hidden rounded-[12px] border border-dashed border-line-strong" style={{ height }} data-testid="ghost-chart">
@@ -252,7 +252,7 @@ export function GhostCurves({ height, title, children, colors = ['#e8c060', '#6a
         <path d={GHOST_A} pathLength={1} fill="none" stroke={colors[0]} strokeOpacity={0.5} strokeWidth={2} vectorEffect="non-scaling-stroke" style={{ strokeDasharray: 1, animation: `gl-draw 1.6s ${EASE} both` }} />
         <path d={GHOST_B} pathLength={1} fill="none" stroke={colors[1]} strokeOpacity={0.4} strokeWidth={1.5} vectorEffect="non-scaling-stroke" style={{ strokeDasharray: 1, animation: `gl-draw 1.6s .25s ${EASE} both` }} />
       </svg>
-      <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(232,192,96,.07),transparent)]" style={{ animation: 'gl-scan 4.5s linear infinite' }} />
+      <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.07),transparent)]" style={{ animation: 'gl-scan 4.5s linear infinite' }} />
       <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
         <span className="rounded-full border border-line-strong bg-surface px-2 py-[2px] font-mono text-[11px] tracking-[1px] text-faint">SHAPE ONLY · NOT YOUR DATA</span>
         <b className="text-[15px] font-semibold text-ink">{title}</b>

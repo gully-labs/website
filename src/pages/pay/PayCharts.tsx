@@ -109,8 +109,8 @@ export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'sy
   const option = useMemo(
     () => ({
       grid: { left: 4, right: 8, top: 18, bottom: 4, containLabel: true },
-      xAxis: { type: 'time', axisLabel: { color: C.axis, fontSize: 10, hideOverlap: true, formatter: (v: number) => hhmmss(v).slice(0, 5) }, axisLine: { lineStyle: { color: C.lineStrong } }, splitLine: { show: false } },
-      yAxis: { type: 'value', scale: true, splitNumber: 3, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.axis, fontSize: 10, formatter: (v: number) => `$${Math.round(v).toLocaleString('en-US')}` } },
+      xAxis: { type: 'time', axisLabel: { color: C.axis, fontSize: 11, hideOverlap: true, formatter: (v: number) => hhmmss(v).slice(0, 5) }, axisLine: { lineStyle: { color: C.lineStrong } }, splitLine: { show: false } },
+      yAxis: { type: 'value', scale: true, splitNumber: 3, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.axis, fontSize: 11, formatter: (v: number) => `$${Math.round(v).toLocaleString('en-US')}` } },
       tooltip: axisTooltip((ps: ChartEvent[]) => {
         const p = ps[0]
         if (!p) return ''
@@ -131,7 +131,7 @@ export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'sy
           showSymbol: true,
           symbolSize: 5,
           data: points,
-          ...(q ? { markLine: { silent: true, symbol: 'none', lineStyle: { color: PALETTE[1], type: [4, 4] }, label: { color: PALETTE[1], fontSize: 10, formatter: 'quote' }, data: [{ yAxis: q }] } } : {}),
+          ...(q ? { markLine: { silent: true, symbol: 'none', lineStyle: { color: PALETTE[1], type: [4, 4] }, label: { color: PALETTE[1], fontSize: 11, formatter: 'quote' }, data: [{ yAxis: q }] } } : {}),
         },
         livePoint(points.length ? points[points.length - 1] : null),
       ],

@@ -22,6 +22,8 @@ import { LineChart } from './LineChart'
    Gully Pay has no public network-wide volume, so it is not shown (never invented). */
 
 const TOP = 8 // server/tracker.mjs GAP_INDEX_TOP
+/** The band's mini chart height: four tiles in one ~140 px row. */
+const MINI = 84
 
 /** GET /api/tracker/gap-index: the server's 24h index of the TOP widest tokens (one call, cached there for a
     minute), re-read every five minutes; a failed re-read keeps the last good series. */
@@ -46,17 +48,25 @@ function useGapIndex(): { points: [number, number][]; top: number; state: 'loadi
   return s
 }
 
-function Tile({ icon, title, sub, figure, children, testId }: { icon: ReactNode; title: string; sub: string; figure: ReactNode; children: ReactNode; testId: string }) {
+/** A mini chart tile (~140 px): one header row (icon, title, live figure; the source as a tooltip), an optional
+    one-line sub, the chart. */
+function Tile({ icon, title, sub, figure, children, testId, onTitle }: { icon: ReactNode; title: string; sub: string; figure: ReactNode; children: ReactNode; testId: string; onTitle?: () => void }) {
+  const name = (
+    <>
+      <span className="text-gold">{icon}</span>
+      <span className="truncate">{title}</span>
+    </>
+  )
   return (
-    <section className="flex min-w-0 flex-col gap-2 rounded-[14px] border border-line bg-surface p-3" aria-label={title} data-testid={testId} style={{ animation: 'gl-fade .4s ease both' }}>
-      <div className="flex items-start justify-between gap-2">
-        <span className="flex min-w-0 flex-col gap-[2px]">
-          <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
-            <span className="text-gold">{icon}</span>
-            {title}
-          </span>
-          <span className="truncate font-mono text-[11px] text-faint">{sub}</span>
-        </span>
+    <section className="flex min-w-0 flex-col gap-1 rounded-[12px] border border-line bg-surface px-3 py-2" aria-label={title} data-testid={testId} title={sub} style={{ animation: 'gl-fade .4s ease both' }}>
+      <div className="flex min-h-7 items-center justify-between gap-2">
+        {onTitle ? (
+          <button type="button" onClick={onTitle} className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-ink hover:text-gold">
+            {name}
+          </button>
+        ) : (
+          <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-ink">{name}</span>
+        )}
         <span className="shrink-0 text-right">{figure}</span>
       </div>
       {children}
@@ -107,24 +117,22 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
           testId="mk-gaps"
           icon={<ChartCandlestick size={15} aria-hidden />}
           title="Widest gaps now"
+          onTitle={onPick}
           sub={`Robinhood, BNB, Solana · every 30 s`}
-          figure={widest[0] ? <AnimatedNumber value={widest[0].gapPct} format={NF.signed2} suffix="%" className="font-display text-[22px] leading-none font-bold text-gold" /> : <span className="font-mono text-[11px] text-faint">{tr.k === 'error' ? 'unreadable' : '…'}</span>}
+          figure={widest[0] ? <AnimatedNumber value={widest[0].gapPct} format={NF.signed2} suffix="%" className="font-display text-[20px] leading-none font-bold text-gold" /> : <span className="font-mono text-[11px] text-faint">{tr.k === 'error' ? 'unreadable' : '…'}</span>}
         >
           {tr.k !== 'ok' ? (
-            <Skeleton h={120} />
+            <Skeleton h={MINI} />
           ) : widest.length ? (
             <HBars
-              rows={widest.slice(0, 4).map((r) => ({ name: `${r.ticker} · ${CHAIN_SHORT[r.chain] ?? r.chain}`, value: +Math.abs(r.gapPct ?? 0).toFixed(2), color: (r.gapPct ?? 0) >= 0 ? '#3fb68b' : '#ff6b4a', note: `${fmtGap(r.gapPct)} vs fair price` }))}
+              rowH={22}
+              minH={MINI}
+              rows={widest.slice(0, 3).map((r) => ({ name: `${r.ticker} · ${CHAIN_SHORT[r.chain] ?? r.chain}`, value: +Math.abs(r.gapPct ?? 0).toFixed(2), color: (r.gapPct ?? 0) >= 0 ? '#26ab94' : '#f2704a', note: `${fmtGap(r.gapPct)} vs fair price` }))}
               unit="%"
-              label={`Widest gaps now: ${widest.slice(0, 4).map((r) => `${r.ticker} ${fmtGap(r.gapPct)}`).join(', ')}.`}
+              label={`Widest gaps now: ${widest.slice(0, 3).map((r) => `${r.ticker} ${fmtGap(r.gapPct)}`).join(', ')}.`}
             />
           ) : (
-            <LiveMarker text="No trusted gap right now" height={120} />
-          )}
-          {widest[0] && (
-            <button type="button" onClick={() => onPick?.()} className="self-start truncate font-mono text-[11px] text-faint hover:text-gold">
-              {`widest: ${widest[0].ticker} on ${CHAIN_SHORT[widest[0].chain] ?? widest[0].chain}, ${fmtGap(widest[0].gapPct)} · open the tracker`}
-            </button>
+            <LiveMarker text="No trusted gap right now" height={MINI} />
           )}
         </Tile>
 
@@ -133,14 +141,14 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
           icon={<Waves size={15} aria-hidden />}
           title="Gap index · 24h"
           sub={`average |gap|, ${index.top} widest stock tokens`}
-          figure={indexNow !== null ? <AnimatedNumber value={indexNow} format={NF.fixed2} suffix="%" className="font-display text-[22px] leading-none font-bold" /> : <span className="font-mono text-[11px] text-faint">{index.state === 'error' ? 'unreadable' : '…'}</span>}
+          figure={indexNow !== null ? <AnimatedNumber value={indexNow} format={NF.fixed2} suffix="%" className="font-display text-[20px] leading-none font-bold" /> : <span className="font-mono text-[11px] text-faint">{index.state === 'error' ? 'unreadable' : '…'}</span>}
         >
           {index.points.length >= 2 ? (
-            <LineChart points={index.points} color={C.gold} fmt={(v) => `${v.toFixed(2)}%`} label={`Average absolute gap of the ${index.top} widest stock tokens over 24 hours, now ${indexNow?.toFixed(2)}%.`} height={120} />
+            <LineChart points={index.points} color={C.gold} fmt={(v) => `${v.toFixed(2)}%`} label={`Average absolute gap of the ${index.top} widest stock tokens over 24 hours, now ${indexNow?.toFixed(2)}%.`} height={MINI} />
           ) : index.state === 'loading' ? (
-            <Skeleton h={120} />
+            <Skeleton h={MINI} />
           ) : (
-            <LiveMarker text="Not enough history for a series yet" height={120} />
+            <LiveMarker text="Not enough history for a series yet" height={MINI} />
           )}
         </Tile>
 
@@ -148,10 +156,9 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
           testId="mk-deepcore"
           icon={<Rocket size={15} aria-hidden />}
           title="DeepCore launches · 24h"
-          sub="per chain, from DeepCore's indexer"
-          figure={d ? <AnimatedNumber value={day.length} className="font-display text-[22px] leading-none font-bold" /> : <span className="font-mono text-[11px] text-faint">{dc.k === 'loading' ? '…' : 'unreadable'}</span>}
+          sub="Launches per chain over 24 hours, from DeepCore's indexer"
+          figure={d ? <AnimatedNumber value={day.length} className="font-display text-[20px] leading-none font-bold" /> : <span className="font-mono text-[11px] text-faint">{dc.k === 'loading' ? '…' : 'unreadable'}</span>}
         >
-          {!d ? dc.k === 'loading' ? <Skeleton h={120} /> : <LiveMarker text="The launch list is unreadable right now" height={120} /> : perChain.length ? <HBars rows={perChain} label={`DeepCore launches in the last 24 hours: ${perChain.map((c) => `${c.name} ${c.value}`).join(', ')}.`} /> : <LiveMarker text="Watching DeepCore for launches" height={120} />}
           {newest && (
             <span key={newest.key} className="flex min-w-0 items-center gap-2 font-mono text-[11px] text-ink-2" style={{ animation: 'gl-fade .5s ease both' }} data-testid="mk-newest">
               <span className="size-[6px] shrink-0 rounded-full" style={{ background: deepcoreColor(newest.chainId) }} aria-hidden />
@@ -160,6 +167,7 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
               </span>
             </span>
           )}
+          {!d ? dc.k === 'loading' ? <Skeleton h={MINI} /> : <LiveMarker text="The launch list is unreadable right now" height={MINI} /> : perChain.length ? <HBars rowH={22} minH={MINI} rows={perChain.slice(0, 3)} label={`DeepCore launches in the last 24 hours: ${perChain.map((c) => `${c.name} ${c.value}`).join(', ')}.`} /> : <LiveMarker text="Watching DeepCore for launches" height={MINI} />}
         </Tile>
 
         <Tile
@@ -167,12 +175,12 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
           icon={<Activity size={15} aria-hidden />}
           title="API status"
           sub="round trip from this browser · every 5 s"
-          figure={down ? <span className="font-mono text-[12px] text-error">unreachable</span> : <AnimatedNumber value={lastMs} suffix=" ms" className="font-display text-[22px] leading-none font-bold text-green" />}
+          figure={down ? <span className="font-mono text-[12px] text-error">unreachable</span> : <AnimatedNumber value={lastMs} suffix=" ms" className="font-display text-[20px] leading-none font-bold text-green" />}
         >
           {okPings.length >= 2 ? (
-            <LineChart points={okPings.map((p) => [p.t, p.ms])} color="#6fcf6a" fmt={(v) => `${Math.round(v)} ms`} label={`API round trip from this browser, last ${okPings.length} checks, now ${lastMs ?? 'unknown'} ms.`} height={120} />
+            <LineChart points={okPings.map((p) => [p.t, p.ms])} color="#74c27b" fmt={(v) => `${Math.round(v)} ms`} label={`API round trip from this browser, last ${okPings.length} checks, now ${lastMs ?? 'unknown'} ms.`} height={MINI} />
           ) : (
-            <LiveMarker text={down ? 'GET /healthz did not answer' : 'Measuring the round trip…'} height={120} />
+            <LiveMarker text={down ? 'GET /healthz did not answer' : 'Measuring the round trip…'} height={MINI} />
           )}
         </Tile>
       </div>

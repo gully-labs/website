@@ -24,7 +24,7 @@ function RowSpark({ m, ticker }: { m: Mover | undefined; ticker: string }) {
   if (!m || m.spark.length < 2) return <span className="font-mono text-[11px] whitespace-nowrap text-faint">not tracked yet</span>
   const vals = m.spark.map((p) => p[1])
   const lo = Math.min(...vals)
-  const c = m.gapChangePp === 0 ? '#a6b0bd' : m.gapChangePp > 0 ? UP : DOWN
+  const c = m.gapChangePp === 0 ? '#aeb5be' : m.gapChangePp > 0 ? UP : DOWN
   const text = `${ticker} gap over 24h: ${fmtGap(m.gapThen)} to ${fmtGap(m.gapNow)} (${fmtPp(m.gapChangePp)})`
   return (
     <span className="flex items-center gap-2" title={text}>
@@ -79,7 +79,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
         page={{ href: sitePage('/tracker') }}
         tiles={[
           { label: 'STOCKS', value: data ? rows.length : null, unknown: pending, note: `${trusted.length} trusted pools` },
-          { label: 'OFF BY 2%+', value: data ? flagged : null, unknown: pending, tone: flagged ? '#e8c060' : undefined, note: 'flagged now' },
+          { label: 'OFF BY 2%+', value: data ? flagged : null, unknown: pending, tone: flagged ? '#d9b563' : undefined, note: 'flagged now' },
           { label: 'TYPICAL GAP', value: median, format: NF.fixed2, suffix: '%', unknown: st.k === 'ok' ? 'not tracked yet' : pending, note: 'median, trusted pools' },
           { label: 'WIDEST', value: byAbs[0]?.gapPct ?? null, format: NF.signed2, suffix: '%', unknown: st.k === 'ok' ? 'none' : pending, tone: (byAbs[0]?.gapPct ?? 0) >= 0 ? UP : DOWN, note: byAbs[0] ? `${byAbs[0].ticker} · ${CHAIN_SHORT[byAbs[0].chain] ?? byAbs[0].chain}` : '—' },
           { label: 'LIQUIDITY', value: liquidity, format: NF.compactUsd, unknown: pending, note: 'all pools' },

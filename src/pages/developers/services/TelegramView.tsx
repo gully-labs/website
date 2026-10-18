@@ -79,7 +79,7 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
           {!view ? (
             <Skeleton h={180} />
           ) : sent || failed ? (
-            <StackedDays height={180} days={days} kinds={[{ id: 'ok', name: 'delivered', color: '#6fcf6a' }, { id: 'failed', name: 'failed', color: '#ff8a7a' }]} label={`Telegram deliveries over 14 days: ${sent} delivered, ${failed} failed.`} />
+            <StackedDays height={180} days={days} kinds={[{ id: 'ok', name: 'delivered', color: '#74c27b' }, { id: 'failed', name: 'failed', color: '#ff8a7a' }]} label={`Telegram deliveries over 14 days: ${sent} delivered, ${failed} failed.`} />
           ) : (
             <LiveMarker text={onTg.length ? 'Watching: deliveries chart here as alerts fire' : 'No alert sends to Telegram yet: tick Telegram on an alert'} height={180} />
           )}

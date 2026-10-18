@@ -65,10 +65,10 @@ export function MerchantsAdmin({ token }: { token: string }) {
         const i = ps[0]?.dataIndex ?? 0
         return tipHtml({ title: day(s.dates[i]), rows: [{ name: 'Store volume', value: usd(s.volume[i]), color: '#5aa9e6' }, { name: 'Fees accrued', value: usd(s.fees[i]), color: C.gold }] })
       }, 'shadow'),
-      xAxis: { type: 'category', data: s.dates.map(day), axisTick: { show: false }, axisLabel: { color: C.faint, fontSize: 10, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
+      xAxis: { type: 'category', data: s.dates.map(day), axisTick: { show: false }, axisLabel: { color: C.faint, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
       yAxis: [
-        { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
-        { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `$${v}` }, splitLine: { show: false } },
+        { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
+        { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => `$${v}` }, splitLine: { show: false } },
       ],
       series: [
         { id: 'vol', name: 'Store volume', ...barsPreset({ stagger: 12 }), color: '#5aa9e6', barMaxWidth: 14, data: s.volume },

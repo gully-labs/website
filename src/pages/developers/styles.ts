@@ -12,7 +12,7 @@ export const rise = (i: number) => ({ animation: `gl-rise .45s ${i * 0.05}s ease
 /** A console panel: the design's 14px card with 16px padding. */
 export const panel = 'flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-4'
 export const panelTitle = 'm-0 text-[15px] leading-tight font-semibold text-ink'
-/** Small grey label above a value (the design's 11–12px #8a96a6). */
+/** Small grey label above a value (the design's 11–12px #949daa). */
 export const label = 'text-[12px] text-dim'
 export const mono = 'font-mono text-[11px] text-faint'
 
@@ -29,7 +29,7 @@ export const chip = (on: boolean, monoFont = false) =>
   `inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-3 text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${monoFont ? 'font-mono text-[12px]' : ''} ${on ? 'border-gold bg-gold text-bg' : 'border-line-strong bg-transparent text-ink-2 hover:border-gold hover:text-ink'}`
 
 /** Series colours for API keys, in account order; 429s are always the error red. */
-export const KEY_COLORS = ['#e8c060', '#6aa6ff', '#6fcf6a', '#c58cff', '#4fd1c5', '#f49b5a', '#a6b0bd']
+export const KEY_COLORS = ['#d9b563', '#5aa9e6', '#74c27b', '#c98bdb', '#26ab94', '#f2704a', '#aeb5be']
 export const LIMITED_COLOR = '#ff8a7a'
-export const BLUE = '#6aa6ff'
+export const BLUE = '#5aa9e6'
 export const keyColor = (i: number) => KEY_COLORS[Math.max(0, i) % KEY_COLORS.length]

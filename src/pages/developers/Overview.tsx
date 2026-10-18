@@ -186,7 +186,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
       {/* ---------------------------------------------------------------- KPIs */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="you-title">
         <h2 className="m-0 text-[15px] font-semibold text-ink">Your workspace</h2>
-        <span className="inline-flex items-center gap-2 rounded-full border border-gold-line bg-[rgba(232,192,96,.06)] px-[10px] py-[2px] font-mono text-[11px] text-gold">YOU</span>
+        <span className="inline-flex items-center gap-2 rounded-full border border-gold-line bg-[rgba(217,181,99,.06)] px-[10px] py-[2px] font-mono text-[11px] text-gold">YOU</span>
         <span className="font-mono text-[11px] text-faint">your keys, alerts and traffic only</span>
         <RefreshChip error={shown ? up.error : null} onRetry={reloadUsage} />
         <RefreshChip error={alerts.refreshErr} onRetry={alerts.load} />
@@ -197,7 +197,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         <Kpi
           i={0}
           label={`Requests · ${range}`}
-          color="#e8c060"
+          color="#d9b563"
           value={usage ? usage.rangeTotals.total : null}
           none={account.keys.length ? `none in ${range}` : 'none yet'}
           spark={usage ? grouped.map((g) => g.total) : undefined}
@@ -226,7 +226,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           unreadable={alerts.err}
           note={alerts.view ? (alerts.view.alerts.length ? (fired ? `${fired.filter((f) => f.telegram).length} via Telegram · from the delivery logs` : 'from the delivery logs') : 'no alerts set up') : '…'}
         />
-        <Kpi i={3} label="Active keys" color="#8a96a6" value={live.length} none="none yet" note={`of ${account.limits.maxKeys} allowed${shown ? ` · ${usedInRange} used in ${range}` : ''}`} />
+        <Kpi i={3} label="Active keys" color="#949daa" value={live.length} none="none yet" note={`of ${account.limits.maxKeys} allowed${shown ? ` · ${usedInRange} used in ${range}` : ''}`} />
       </section>
       </div>
 
@@ -292,7 +292,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
             </div>
           )}
           {!!account.keys.length && !live.length && (
-            <p className="m-0 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] px-3 py-2 text-[13px] text-ink-2">
+            <p className="m-0 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] px-3 py-2 text-[13px] text-ink-2">
               Every key is revoked. Create a new one to keep calling at the keyed limit.
               <Can cat="keys" what="create keys">
                 <button type="button" onClick={createKey} className={pillGoldLine}>

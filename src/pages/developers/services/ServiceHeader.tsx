@@ -57,7 +57,7 @@ export function ServiceHeader({ icon: Icon, title, desc, status, tiles, docs, pa
   return (
     <header className="flex flex-col gap-4" data-testid="service-header">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] text-gold" aria-hidden>
+        <span className="grid size-10 shrink-0 place-items-center rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] text-gold" aria-hidden>
           <Icon size={18} />
         </span>
         <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-[2px]">

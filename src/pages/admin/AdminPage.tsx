@@ -172,7 +172,7 @@ function useAdmin(token: string | null) {
 function Tile({ k, v, note, tone }: { k: string; v: string; note?: string; tone?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 bg-surface px-5 py-4" style={{ animation: 'gl-rise .45s ease both' }}>
-      <span className="font-mono text-[10px] tracking-[1px] text-faint">{k}</span>
+      <span className="font-mono text-[11px] tracking-[1px] text-faint">{k}</span>
       <span className="font-display text-[30px] leading-none font-extrabold" style={{ color: tone }}>
         {v}
       </span>
@@ -785,11 +785,11 @@ export function AdminPage() {
   const o = data?.overview
   const statusRows = o?.tracker.statuses ? Object.entries(o.tracker.statuses).sort((a, b) => b[1] - a[1]) : []
   const statusTotal = statusRows.reduce((a, [, n]) => a + n, 0)
-  const statusColor: Record<string, string> = { 'in-line': '#a6b0bd', premium: '#1f9e89', discount: '#e4572e', drifting: '#e8c060', thin: '#5c6878', 'no-pool': '#3a4452', 'pool-unreadable': '#ff8a7a', 'feed-unreadable': '#ff8a7a' }
+  const statusColor: Record<string, string> = { 'in-line': '#aeb5be', premium: '#26ab94', discount: '#f2704a', drifting: '#d9b563', thin: '#5f6a78', 'no-pool': '#3a4656', 'pool-unreadable': '#ff8a7a', 'feed-unreadable': '#ff8a7a' }
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-[rgba(11,14,19,.9)] px-page py-4 backdrop-blur">
+      <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-[rgba(13,20,28,.9)] px-page py-4 backdrop-blur">
         <div className="flex items-center gap-4">
           <Link to="/" aria-label="Gully Labs home" className="text-ink">
             <Wordmark height={26} />
@@ -816,8 +816,8 @@ export function AdminPage() {
           <>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,170px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
               <Tile k="API REQUESTS TODAY" v={((o.api.days.at(-1)?.anonymous ?? 0) + (o.api.days.at(-1)?.keyed ?? 0)).toLocaleString('en-US')} note={`${o.api.days.at(-1)?.limited ?? 0} rate-limited`} />
-              <Tile k="DEVELOPERS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#e8c060' : undefined} />
-              <Tile k="ENQUIRIES" v={String(o.enquiries.open)} note={`open of ${o.enquiries.total}`} tone={o.enquiries.open ? '#e8c060' : undefined} />
+              <Tile k="DEVELOPERS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#d9b563' : undefined} />
+              <Tile k="ENQUIRIES" v={String(o.enquiries.open)} note={`open of ${o.enquiries.total}`} tone={o.enquiries.open ? '#d9b563' : undefined} />
               <Tile k="LAUNCH LIST" v={String(o.launchList)} note="notify-me sign-ups" />
               <Tile k="TRACKER CACHE" v={o.tracker.cacheAgeSeconds === null ? '—' : `${o.tracker.cacheAgeSeconds}s`} note={`last snapshot ${ago(o.tracker.lastSnapshot)}`} />
               <Tile k="HISTORY" v={o.tracker.history.points.toLocaleString('en-US')} note={`points across ${o.tracker.history.series} series`} />
@@ -839,9 +839,9 @@ export function AdminPage() {
                 <DayBars
                   days={o.api.days}
                   series={[
-                    { key: 'anonymous', label: 'Anonymous', color: '#a6b0bd' },
-                    { key: 'keyed', label: 'With key', color: '#e8c060' },
-                    { key: 'limited', label: 'Rate-limited', color: '#e4572e' },
+                    { key: 'anonymous', label: 'Anonymous', color: '#aeb5be' },
+                    { key: 'keyed', label: 'With key', color: '#d9b563' },
+                    { key: 'limited', label: 'Rate-limited', color: '#f2704a' },
                   ]}
                 />
               </section>
@@ -863,13 +863,13 @@ export function AdminPage() {
                   <div className="flex flex-col gap-2">
                     <div className="flex h-3 overflow-hidden rounded-full bg-line">
                       {statusRows.map(([s, n], i) => (
-                        <div key={s} title={`${s}: ${n}`} style={{ width: `${(n / statusTotal) * 100}%`, background: statusColor[s] ?? '#6c7888', transformOrigin: 'left', animation: `gl-grow-x .7s ${i * 0.08}s cubic-bezier(.2,.8,.2,1) both` }} />
+                        <div key={s} title={`${s}: ${n}`} style={{ width: `${(n / statusTotal) * 100}%`, background: statusColor[s] ?? '#8a94a1', transformOrigin: 'left', animation: `gl-grow-x .7s ${i * 0.08}s cubic-bezier(.2,.8,.2,1) both` }} />
                       ))}
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1">
                       {statusRows.map(([s, n]) => (
                         <span key={s} className="inline-flex items-center gap-2 font-mono text-[11px] text-muted">
-                          <i className="inline-block size-[8px] rounded-[2px]" style={{ background: statusColor[s] ?? '#6c7888' }} />
+                          <i className="inline-block size-[8px] rounded-[2px]" style={{ background: statusColor[s] ?? '#8a94a1' }} />
                           {s} {n}
                         </span>
                       ))}

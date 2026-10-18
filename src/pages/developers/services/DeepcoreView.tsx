@@ -82,7 +82,7 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
           {stats.k === 'loading' ? (
             <Skeleton h={120} />
           ) : daily.length >= 2 ? (
-            <KeySpark values={daily.map((p) => p.v)} labels={daily.map((p) => new Date(p.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))} color="#e8c060" width={420} height={120} label={`DeepCore daily volume over ${daily.length} days`} />
+            <KeySpark values={daily.map((p) => p.v)} labels={daily.map((p) => new Date(p.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))} color="#d9b563" width={420} height={120} label={`DeepCore daily volume over ${daily.length} days`} />
           ) : (
             <LiveMarker text={venue ? 'Not enough for a series yet' : 'DeepCore’s figures are unreadable right now'} height={120} />
           )}
