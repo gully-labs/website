@@ -1,8 +1,8 @@
-import { Activity, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2, History, Home, KeyRound, Menu, MessageCircleQuestion, Package, Puzzle, Store, Tags, Users, Wallet, X, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowUpRight, BellRing, BookOpen, ChartNoAxesCombined, Code2, History, Home, KeyRound, Layers, Menu, MessageCircleQuestion, Package, Puzzle, Store, Tags, Users, Wallet, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useResolvedPath } from 'react-router'
 import { newTab } from '../components/LayoutNav'
-import { Wordmark } from '../components/Wordmark'
+import { Wordmark } from '../components/brand'
 import { AskLauncher } from '../components/ask/AskLauncher'
 import { apiOrigin, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
 
@@ -36,7 +36,7 @@ function ApiPill() {
   )
 }
 
-const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, 'gully-pay-merchants': Store, teams: Users, changelog: History }
+const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, 'gully-pay-merchants': Store, teams: Users, 'roadmap-l3': Layers, changelog: History }
 
 function SideLink({ slug, title, onPick }: { slug: DocSlug; title: string; onPick: () => void }) {
   const href = useDocHref(slug)
@@ -127,7 +127,7 @@ export function DocsLayout() {
               {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
             </button>
             <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline" aria-label="Gully Labs Docs, home">
-              <Wordmark size={22} />
+              <Wordmark height={24} />
               {/* Below 440px the header has no room for the pill beside the menu, Ask and site buttons. */}
               <span className="shrink-0 rounded-full border border-gold-line px-[9px] py-[2px] font-mono text-[11px] tracking-[1px] text-gold max-[439px]:hidden">DOCS</span>
             </NavLink>

@@ -1,5 +1,5 @@
 {{!--
-    The header, matching gullylabs.xyz (src/components/Header.tsx): the GULLY LABS wordmark (to the site,
+    The header, matching gullylabs.xyz (src/components/Header.tsx): the brand kit's wordmark (partials/brand/wordmark.hbs; to the site,
     new tab) and "Blog" (this blog), the Products and Developers menus, Projects and Pricing, and the
     gold "Launch app" button. Below it, a hairline bar with the blog's own sections ({{navigation}}
     from Ghost admin), and search. No sign-in, subscribe or account buttons: the blog has no email opt-in.
@@ -12,7 +12,7 @@
     <div class="gl-bar gl-page">
         <div class="gl-brand">
             <a class="gl-wordmark" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">
-                <span class="gl-wordmark-gully">GULLY</span><span class="gl-wordmark-labs">LABS</span><span class="gl-sr"> home (opens in a new tab)</span>
+                {{> "brand/wordmark"}}<span class="gl-sr">Gully Labs home (opens in a new tab)</span>
             </a>
             <span class="gl-brand-sep" aria-hidden="true">/</span>
             <a class="gl-brand-blog" href="{{@site.url}}">Blog</a>

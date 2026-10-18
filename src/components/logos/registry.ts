@@ -54,7 +54,7 @@ export function tokenMark(symbol: string | null | undefined): Mark | null {
 }
 
 const VENUES: Record<string, Mark> = {
-  gully: { src: '/brand/gully-mark-96.png', name: 'Gully Labs', disc: '#101822', inset: 0 },
+  gully: { src: '/brand/gully-mark-96.png', name: 'Gully Labs', disc: null, inset: 0 }, // the brand kit's icon master, cut down (scripts/brand-from-kit.mjs)
   'cartel-family': { src: '/venues/cartel-family.png', name: 'Cartel Family', disc: '#0f264f', inset: 0 },
   deepcore: { src: '/venues/deepcore.png', name: 'DeepCore', disc: '#04060c', inset: 0.1 },
   peddleswap: { src: '/venues/peddleswap.png', name: 'PeddleSwap', disc: '#10131a', inset: 0 },

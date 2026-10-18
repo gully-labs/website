@@ -1,9 +1,13 @@
 # Gully Devnet (light): a local Arbitrum Nitro dev node
 
 **Status: prepared, not started.** Nothing in this folder has been pulled or run on the box. It is the first,
-smallest step towards the "Gully Devnet" the site already announces (see [Related specs](#related-specs-in-this-repo)):
-one Nitro node in `--dev` mode, the setup OffchainLabs ships as
-[nitro-devnode](https://github.com/OffchainLabs/nitro-devnode).
+smallest step towards the "Gully Devnet" the site already announces: one Nitro node in `--dev` mode, the setup
+OffchainLabs ships as [nitro-devnode](https://github.com/OffchainLabs/nitro-devnode).
+
+**The consolidated plan is [`ops/l3/SPEC.md`](../l3/SPEC.md)** (settlement chain, DA mode, gas token, explorer,
+faucet, Gully Pay, and Hyperlane as the interop layer once the L3 launches). The Hyperlane validator and relayer
+that run against this devnet first are prepared, not started, in [`ops/l3/hyperlane/`](../l3/hyperlane/README.md).
+The developer-facing summary is the docs page [Roadmap: Gully L3](https://docs.gullylabs.xyz/roadmap-l3).
 
 | | |
 |---|---|
@@ -124,13 +128,17 @@ Neither is set up here. They are the next steps, and each needs its own disk che
     `ops/deploy.sh`'s `docker run` and needs the owner's sign-off.
   - The waitlist the site already collects (`/api/notify`, slot 90; see `src/pages/developers/Products.tsx`)
     is the first audience.
-- **Bridge.** Not applicable to `--dev`, whose parent chain is simulated. A bridge belongs to the real Gully
+- **Bridge.** Not applicable to `--dev`, whose parent chain is simulated. A canonical bridge belongs to the real Gully
   Devnet: an Orbit L3 on Arbitrum Sepolia, deployed with the forks below.
+- **Hyperlane (interop).** Does work against `--dev`: a Mailbox is deployed on the devnet with `hyperlane core deploy`,
+  and the prepared validator and relayer in [`ops/l3/hyperlane/`](../l3/hyperlane/README.md) join the `gully-devnet`
+  network to read `http://gully-devnet:8547` and carry messages to and from Arbitrum Sepolia. That is the first
+  Hyperlane exercise in the spec; Hyperlane becomes the L3's interop layer only when the L3 launches.
 
 ## Related specs in this repo
 
-The repo has no standalone devnet or L3 spec document. A grep for "devnet", "L3" and "Orbit" over `src/`,
-`server/`, `ops/` and the README finds only what the site says about it:
+The standalone spec is [`ops/l3/SPEC.md`](../l3/SPEC.md); the Hyperlane agents are in
+[`ops/l3/hyperlane/`](../l3/hyperlane/README.md). What the site itself says about the devnet and the L3:
 
 - [`src/components/landing/ProductConsole.tsx`](../../src/components/landing/ProductConsole.tsx), the Gully Chains
   roadmap:

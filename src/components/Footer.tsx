@@ -4,7 +4,7 @@ import { useContact } from './ContactContext'
 import { EntryLink, NewTabMark } from './LayoutLinks'
 import { newTab } from './LayoutNav'
 import { SocialIcon } from './SocialIcon'
-import { Wordmark } from './Wordmark'
+import { Wordmark } from './brand'
 import { btnGold } from './ui'
 
 /* The footer: the header's groups as columns (Products, Developers, Company, Social), "Start a
@@ -51,7 +51,7 @@ export function Footer() {
     <footer className="flex flex-col gap-10 border-t border-line bg-bg-footer px-page pt-12 pb-20">
       <div className="grid gap-10 min-[1024px]:grid-cols-[minmax(220px,300px)_1fr] min-[1024px]:gap-16">
         <div className="flex flex-col items-start gap-4">
-          <Wordmark size={26} />
+          <Wordmark height={28} />
           <p className="m-0 text-[14px] leading-[1.55] text-dim">A blockchain development company building and releasing Web3 projects.</p>
           <button type="button" onClick={() => openContact()} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
             <Send aria-hidden size={16} strokeWidth={2} />

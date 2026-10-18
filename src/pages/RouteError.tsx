@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useRouteError } from 'react-router'
+import { Wordmark } from '../components/brand'
 import { isChunkError, reloadForNewBuild } from '../lib/staleBuild'
 
 /** Shown instead of React Router's default error screen. A page left open across a deploy reloads
@@ -12,6 +13,9 @@ export function RouteError() {
 
   return (
     <main className="flex min-h-[70vh] flex-col items-start justify-center gap-5 bg-bg px-page py-24 text-ink">
+      <a href="/" aria-label="Gully Labs home" className="mb-4 inline-flex min-h-11 items-center rounded-btn">
+        <Wordmark height={28} decorative />
+      </a>
       <span className="font-mono text-[13px] tracking-[1.5px] text-gold">{reloading ? 'UPDATING' : 'SOMETHING WENT WRONG'}</span>
       <h1 className="m-0 font-display text-[clamp(40px,6cqw,72px)] leading-[.95] font-extrabold uppercase">
         {reloading ? 'Loading the latest version…' : stale ? 'A new version is out' : 'This page could not load'}

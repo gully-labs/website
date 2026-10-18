@@ -1,6 +1,6 @@
 import { ArrowLeft, Printer } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Wordmark } from '../../components/Wordmark'
+import { Wordmark } from '../../components/brand'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { api, type BillingView, type Payment } from './api'
 import { fmtDateTime, usePortal } from './portal'
@@ -75,7 +75,7 @@ export function PortalReceipt({ id, onBack }: { id: string; onBack: () => void }
           <article className="flex flex-col gap-7 rounded-card border border-[#d9dde3] p-8 max-[600px]:p-5 print:rounded-none print:border-0 print:p-0">
             <header className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex flex-col gap-2">
-                <Wordmark size={26} />
+                <Wordmark height={28} theme="light" />
                 <span className="font-mono text-[12px] text-[#5c6878]">gullylabs.xyz · hello@gullylabs.xyz</span>
               </div>
               <div className="flex flex-col items-end gap-1 text-right max-[600px]:items-start max-[600px]:text-left">

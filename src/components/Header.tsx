@@ -7,7 +7,7 @@ import { launchApp, navGroups, navLinks, socialLinks, type NavEntry, type NavGro
 import { EntryLink, NewTabMark } from './LayoutLinks'
 import { entryActive, groupActive, newTab } from './LayoutNav'
 import { SocialIcon } from './SocialIcon'
-import { Wordmark } from './Wordmark'
+import { Wordmark } from './brand'
 import { btnGold } from './ui'
 import { useContact } from './ContactContext'
 import './Layout.css'
@@ -287,7 +287,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
     <div ref={ref} role="dialog" aria-modal="true" aria-label="Site menu" className="gl-sheet fixed inset-0 z-[70] flex flex-col bg-bg font-sans text-ink">
       <div className="flex min-h-16 items-center justify-between gap-4 border-b border-line px-page py-2">
         <Link to="/" onClick={pick} className="inline-flex min-h-11 items-center rounded-btn text-ink" aria-label="Gully Labs home">
-          <Wordmark size={26} />
+          <Wordmark height={28} />
         </Link>
         <button
           type="button"
@@ -392,7 +392,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-line bg-[rgba(11,14,19,.86)] backdrop-blur-[10px]">
       <div className="flex min-h-16 items-center gap-4 px-page py-2 min-[1024px]:gap-6">
         <Link to="/" className="inline-flex min-h-11 flex-none items-center rounded-btn text-ink" aria-label="Gully Labs home">
-          <Wordmark size={26} shimmer />
+          <Wordmark height={28} />
         </Link>
 
         <NavigationMenu.Root aria-label="Main" delayDuration={120} value={menu.value} onValueChange={menu.onValueChange} className="hidden min-[1024px]:block">

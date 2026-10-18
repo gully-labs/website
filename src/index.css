@@ -40,6 +40,18 @@
   --color-success-line: #2f5a33;
   --color-bar: #3d4a36;
   --color-mascot-bg: #24282c;
+  /* The brand kit's palette (public/brand/tokens/tokens.json), for brand surfaces. The logo files carry
+     these values inside them; the site's own tokens above stay the page palette (gully-labs-kit/BRAND.md). */
+  --color-kit-lab-night: #0d141c;
+  --color-kit-midnight: #151d28;
+  --color-kit-slate: #2a3542;
+  --color-kit-bone: #f4f2ec;
+  --color-kit-lab-gold: #d9b563;
+  --color-kit-pale-gold: #f2d58a;
+  --color-kit-frog-green: #2f6b35;
+  --color-kit-moss: #3c553b;
+  --color-kit-text-muted: #aeb5be;
+  --color-kit-text-dim: #7d8794;
   --color-error: #ff8a7a;
   /* The hairline round an error notice (the error colour at a dark tint). */
   --color-error-line: #5a2a24;

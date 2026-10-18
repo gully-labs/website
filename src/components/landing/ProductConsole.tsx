@@ -124,7 +124,7 @@ const CHAIN_REPOS: { repo: string; role: string }[] = [
 const CHAIN_STEPS: { name: string; when: string; d: string }[] = [
   { name: 'Gully Devnet', when: 'NEXT', d: 'A public test L3 on Arbitrum Sepolia, with a Chain Kit explorer, a faucet and a bridge.' },
   { name: 'Client chains', when: 'LATER', d: 'Managed Orbit L3s for clients, settling to Arbitrum One.' },
-  { name: 'Our own L3', when: 'LATER', d: 'A chain for the Gully venues.' },
+  { name: 'Our own L3', when: 'LATER', d: 'A chain for the Gully venues, with Hyperlane as its interop layer once it launches. Spec at docs.gullylabs.xyz/roadmap-l3.' },
 ]
 
 function ChainsPane() {
