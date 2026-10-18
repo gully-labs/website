@@ -568,18 +568,26 @@ try {
   /* ----------------------------------- new chains (2026-10-18) and the fee-split gate --- */
   // A store's gate is its own wallet per chain; the in-payment fee needs Gully Labs' treasury deployed there too.
   const mv0 = (await O.call('/api/developer/merchant')).data
-  check('new chains: the store can receive on seven chains, each with a verified fee proxy', mv0.chains.map((c) => c.id).join() === '8453,1,56,42161,10,137,43114' && mv0.chains.every((c) => c.feeProxy === true), JSON.stringify(mv0.chains.map((c) => c.id)))
-  check('new chains: with an EOA treasury (no code anywhere) the fee rides in the payment on every chain', mv0.chains.every((c) => c.feeSplit === true))
+  check('new chains: the store can receive on seven chains; a split proxy (Base\'s build) everywhere but Polygon and Avalanche', mv0.chains.map((c) => c.id).join() === '8453,1,56,42161,10,137,43114' && mv0.chains.every((c) => c.feeProxy === ![137, 43114].includes(c.id)), JSON.stringify(mv0.chains.map((c) => [c.id, c.feeProxy])))
+  check('new chains: with an EOA treasury (no code anywhere) the fee rides in the payment on every chain with a proxy, invoiced on Polygon and Avalanche', mv0.chains.every((c) => c.feeSplit === ![137, 43114].includes(c.id)))
   const wNew = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: eoa, type: 'eoa', chains: [137, 43114, 10] })
   check('new chains: the EOA is enabled on Polygon, Avalanche and OP Mainnet', wNew.status === 200 && wNew.data.results.every((x) => x.ok && x.wallet.enabled) && wNew.data.results.map((x) => x.wallet.chainKey).sort().join() === 'avalanche,optimism,polygon', wNew.data?.error)
   const cfPoly = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: counterfactual, type: 'contract', chains: [137] })
   check('new chains: an undeployed Safe on Polygon is refused the same way (status 422, not enabled)', cfPoly.status === 422 && /not deployed|Deploy your Safe/.test(cfPoly.data?.error ?? ''), cfPoly.data?.error)
+  // The hourly re-check: nothing deployed yet, nothing switches; once the Safe has code on Polygon it switches on by itself.
+  const none = await M.recheckUndeployedWallets()
+  check('merchant Safe re-check: still no code on Polygon, the wallet stays off', !none.some((x) => x.chainId === 137) && (await O.call('/api/developer/merchant')).data.wallets.find((w) => w.chainId === 137)?.status === 'not-deployed')
+  chains[137].code.set(counterfactual.toLowerCase(), '0x6080604052')
+  const switched = await M.recheckUndeployedWallets()
+  const wPoly = (await O.call('/api/developer/merchant')).data.wallets.find((w) => w.chainId === 137)
+  check('merchant Safe re-check: deployed on Polygon, it switches on by itself (contract, receiving)', switched.some((x) => x.chainId === 137 && x.enabled) && wPoly?.status === 'ok' && wPoly.enabled === true && wPoly.kind === 'contract', JSON.stringify(wPoly))
+  chains[137].code.delete(counterfactual.toLowerCase())
   await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: eoa, type: 'eoa', chains: [137] })
   const invNewRes = await O.post('/api/developer/merchant/invoices', { items: [{ description: 'Polygon order', quantity: 1, unitUsd: '12' }], dueDate: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10) })
   const invNew = invNewRes.data?.invoice
   check('new chains: the store makes an invoice', invNewRes.status === 201 && !!invNew?.id, invNewRes.status + ' ' + (invNewRes.data?.error ?? ''))
   const pubNew = (await anon.call(`/api/pay/m/i/${invNew?.id}`)).data?.invoice
-  check('new chains: a store invoice offers polygon-usdc and avax-usdc with the store wallet as recipient on 137 and 43114', !!pubNew && pubNew.assets.some((a) => a.id === 'polygon-usdc' && a.feeSplit === true) && pubNew.assets.some((a) => a.id === 'avax-usdc') && pubNew.recipients['137']?.toLowerCase() === MW && pubNew.recipients['43114']?.toLowerCase() === MW, JSON.stringify(pubNew?.recipients))
+  check('new chains: a store invoice offers polygon-usdc and avax-usdc with the store wallet as recipient on 137 and 43114', !!pubNew && pubNew.assets.some((a) => a.id === 'polygon-usdc' && a.feeSplit === false) && pubNew.assets.some((a) => a.id === 'op-usdc' && a.feeSplit === true) && pubNew.assets.some((a) => a.id === 'avax-usdc') && pubNew.recipients['137']?.toLowerCase() === MW && pubNew.recipients['43114']?.toLowerCase() === MW, JSON.stringify(pubNew?.recipients))
   // Polygon needs 64 confirmations: pay from a block deep enough.
   const payDeep = async (id, asset) => {
     const q = (await payPost(`/api/pay/m/i/${id}/quote`, { asset })).data?.quote
@@ -593,7 +601,7 @@ try {
   chains[8453].code.set(TREASURY, '0x6080604052')
   const tcheck = await admin('/api/admin/treasury/check', 'POST')
   const mv1 = (await O.call('/api/developer/merchant')).data
-  check('gate: treasury seen as a contract on Base; Polygon and the other new chains lose the in-payment fee, Base keeps it', tcheck.data?.treasury?.kind === 'contract' && mv1.chains.find((c) => c.id === 8453).feeSplit === true && mv1.chains.find((c) => c.id === 137).feeSplit === false && mv1.chains.find((c) => c.id === 43114).feeSplit === false, JSON.stringify(mv1.chains.map((c) => [c.id, c.feeSplit])))
+  check('gate: treasury seen as a contract on Base; OP Mainnet (proxy, no treasury) loses the in-payment fee, Base keeps it', tcheck.data?.treasury?.kind === 'contract' && mv1.chains.find((c) => c.id === 8453).feeSplit === true && mv1.chains.find((c) => c.id === 10).feeSplit === false && mv1.chains.find((c) => c.id === 10).feeProxy === true && mv1.chains.find((c) => c.id === 137).feeSplit === false && mv1.chains.find((c) => c.id === 43114).feeSplit === false, JSON.stringify(mv1.chains.map((c) => [c.id, c.feeSplit])))
   const invNew2 = (await O.post('/api/developer/merchant/invoices', { items: [{ description: 'Polygon order 2', quantity: 1, unitUsd: '7' }], dueDate: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10) })).data?.invoice
   const pubNew2 = (await anon.call(`/api/pay/m/i/${invNew2.id}`)).data?.invoice
   check('gate: the store still offers Polygon (its own wallet is deployed there); the asset says the fee is invoiced', pubNew2.assets.some((a) => a.id === 'polygon-usdc' && a.feeSplit === false) && pubNew2.assets.some((a) => a.id === 'base-usdc' && a.feeSplit === true) && pubNew2.recipients['137']?.toLowerCase() === MW)
@@ -601,7 +609,7 @@ try {
   check('gate: a Polygon payment still settles as a plain transfer to the store (no split) while the treasury is not there', paidPoly2.q?.split === null && paidPoly2.v.status === 200 && paidPoly2.v.data?.invoice?.status === 'paid', `${paidPoly2.v.status} ${paidPoly2.v.data?.error ?? ''}`)
   chains[8453].code.delete(TREASURY)
   await admin('/api/admin/treasury/check', 'POST')
-  check('gate: back to an EOA treasury, the split is available everywhere again', (await O.call('/api/developer/merchant')).data.chains.every((c) => c.feeSplit === true))
+  check('gate: back to an EOA treasury, the split is available again on every chain with a proxy', (await O.call('/api/developer/merchant')).data.chains.every((c) => c.feeSplit === ![137, 43114].includes(c.id)))
   const tv = (await O.call('/api/developer/merchant')).data.terms
   check('terms: acceptance recorded with version and the accepting wallet', tv.current === true && tv.accepted?.acceptedBy === OW && !!tv.accepted.acceptedAt)
   check('terms: activity has merchant.terms_accepted once', (await O.call('/api/developer/activity')).data.events.filter((e) => e.action === 'merchant.terms_accepted').length === 1)

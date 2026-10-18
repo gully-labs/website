@@ -10,8 +10,9 @@
 //   BNB Chain USDT 0x55d3…7955 (USDT, 18), USDC 0x8AC7…580d (USDC, 18)  BNB / USD 0x0567…2aeE (8)
 //   Arbitrum  USDC 0xaf88…5831 (USDC, 6)                 ETH / USD 0x639F…a612 (8)
 // Checked the same way on 2026-10-18 (eth_call through 3 to 6 public RPCs each; see contracts/CHOICE.md):
-//   OP Mainnet USDC 0x0b2C…Ff85 (USDC, 6, Circle native), USDT 0x94b0…8e58 (USDT, 6, the OP standard bridge's,
-//              the only USDT there)                       ETH / USD 0x13e3…08c5 (8)
+//   OP Mainnet USDC 0x0b2C…Ff85 (USDC, 6, Circle native), USDT 0x94b0…8e58 (USDT, 6, "Tether USD", the OP standard
+//              bridge's, about 300M supply; Tether's USDT0 "USD₮0" at 0x01bF…1071 is not offered, as on Polygon)
+//                                                         ETH / USD 0x13e3…08c5 (8)
 //   Polygon    USDC 0x3c49…3359 (USDC, 6, Circle native)  MATIC / USD 0xAB59…2dE0 (8): Chainlink prices POL under
 //              its MATIC / USD feed (POL replaced MATIC 1:1 in 2024). The old USDT at 0xc213…8e8F now reads
 //              symbol "USDT0" (Tether's omnichain token), so it is NOT offered until the owner decides.
@@ -81,9 +82,11 @@ export const CHAINS = {
     rpcs: ['https://arbitrum.drpc.org', 'https://arbitrum-one-rpc.publicnode.com', 'https://arb1.arbitrum.io/rpc', 'https://arbitrum.gateway.tenderly.co', 'https://arbitrum.meowrpc.com', 'https://1rpc.io/arb'],
     feed: { address: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
-  // Added 2026-10-18 (feat/pay-chains). Each RPC below answered eth_chainId and eth_getCode from the dev machine
-  // on that day, except where noted; several public hosts fail there with a TLS interception error that the
-  // production box does not have (contracts/CHOICE.md lists what each host answered).
+  // Added 2026-10-18 (feat/pay-chains). Each RPC below answered eth_chainId, eth_blockNumber, eth_getCode,
+  // eth_gasPrice and the feed's latestRoundData twice from the dev machine that day, except where noted (several
+  // public hosts fail there with a TLS interception error the production box does not have; contracts/CHOICE.md).
+  // Left out after that test: api.zan.top (eth_call refused without an account), blastapi (shut down), onfinality
+  // and tatum (rate limit / paid plan).
   10: {
     id: 10,
     key: 'optimism',
@@ -91,7 +94,7 @@ export const CHAINS = {
     explorer: 'https://optimistic.etherscan.io',
     explorerName: 'Etherscan (OP Mainnet)',
     confirmations: 10,
-    rpcs: ['https://mainnet.optimism.io', 'https://optimism-rpc.publicnode.com', 'https://optimism.drpc.org', 'https://op-pokt.nodies.app', 'https://10.rpc.thirdweb.com', 'https://api.zan.top/opt-mainnet'],
+    rpcs: ['https://mainnet.optimism.io', 'https://optimism-rpc.publicnode.com', 'https://optimism.drpc.org', 'https://op-pokt.nodies.app', 'https://10.rpc.thirdweb.com', 'https://optimism.publicnode.com'],
     feed: { address: '0x13e3ee699d1909e989722e753853ae30b17e08c5', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
   137: {
@@ -102,9 +105,10 @@ export const CHAINS = {
     explorerName: 'Polygonscan',
     // Polygon PoS finalises through Heimdall milestones in about a minute; 64 blocks (about two minutes) is past it.
     confirmations: 64,
-    // publicnode, thirdweb and zan answered from the dev machine; drpc, blastapi and tenderly serve Polygon the
-    // same way they serve our other chains but were only reachable from elsewhere (TLS interception here).
-    rpcs: ['https://polygon-bor.publicnode.com', 'https://137.rpc.thirdweb.com', 'https://api.zan.top/polygon-mainnet', 'https://polygon.drpc.org', 'https://polygon-mainnet.public.blastapi.io', 'https://polygon.gateway.tenderly.co'],
+    // publicnode and thirdweb answered from the dev machine; drpc, polygon-rpc.com (Polygon Labs), 1rpc and
+    // tenderly could not be reached from it (TLS interception there) and sit behind them; the cool-off steps past
+    // any that fails.
+    rpcs: ['https://polygon-bor.publicnode.com', 'https://137.rpc.thirdweb.com', 'https://polygon.drpc.org', 'https://polygon-rpc.com', 'https://1rpc.io/matic', 'https://polygon.gateway.tenderly.co'],
     feed: { address: '0xab594600376ec9fd91f8e885dadf0ce036862de0', decimals: 8, description: 'MATIC / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
   43114: {
@@ -115,7 +119,7 @@ export const CHAINS = {
     explorerName: 'Snowtrace',
     // Avalanche consensus finalises a block in about a second; two blocks is a margin, not a wait.
     confirmations: 2,
-    rpcs: ['https://api.avax.network/ext/bc/C/rpc', 'https://avalanche-c-chain-rpc.publicnode.com', 'https://avalanche.drpc.org', 'https://43114.rpc.thirdweb.com', 'https://avalanche.api.onfinality.io/public/ext/bc/C/rpc', 'https://api.zan.top/avax-mainnet/ext/bc/C/rpc'],
+    rpcs: ['https://api.avax.network/ext/bc/C/rpc', 'https://avalanche-c-chain-rpc.publicnode.com', 'https://avalanche.drpc.org', 'https://43114.rpc.thirdweb.com', 'https://avalanche.publicnode.com', 'https://avalanche-c-chain.publicnode.com'],
     feed: { address: '0x0a77230d17318075983913bc2145db16c7366156', decimals: 8, description: 'AVAX / USD', maxAgeSec: FEED_MAX_AGE_SEC },
   },
 }

@@ -331,6 +331,39 @@ export async function inspectWallet(chainId, raw, declared) {
   return { ok: true, address: sum, kind: 'eoa', status: 'ok', deployed: true }
 }
 
+/**
+ * The merchant side of the deployment gate: every receiving wallet stored as `not-deployed` (a Safe or smart
+ * account whose address has no code on that chain yet) is read again; once its contract exists there it becomes
+ * `ok` and, unless the merchant switched it off, receives from then on. Read-only (eth_getCode), one chain read
+ * per wallet. Runs hourly (GULLY_MERCHANT_WALLET_CHECK_MS, 0 = off) and from tests. Returns what changed.
+ */
+export async function recheckUndeployedWallets() {
+  const switched = []
+  for (const [ws, m] of Object.entries(db.merchants ?? {})) {
+    for (const [chainId, w] of Object.entries(m.wallets ?? {})) {
+      if (w.status !== 'not-deployed') continue
+      const r = await inspectWallet(Number(chainId), w.address, w.declared).catch(() => null)
+      if (!r?.ok) continue // unreadable now: try again next pass
+      w.checkedAt = new Date().toISOString()
+      if (!r.deployed) continue
+      Object.assign(w, { kind: r.kind, status: r.status, enabled: w.autoEnable !== false })
+      delete w.autoEnable
+      switched.push({ ws, chainId: Number(chainId), enabled: w.enabled })
+    }
+  }
+  if (switched.length) save()
+  return switched
+}
+
+const walletCheckMs = Number(process.env.GULLY_MERCHANT_WALLET_CHECK_MS ?? 3_600_000)
+if (walletCheckMs > 0) {
+  setInterval(() => {
+    recheckUndeployedWallets()
+      .then((list) => list.length && console.log(`merchants: ${list.length} contract wallet(s) now deployed, switched on: ${list.map((x) => `${x.ws.slice(0, 8)}… on ${x.chainId}`).join(', ')}`))
+      .catch((e) => console.error('merchant wallet re-check:', e?.message ?? e))
+  }, walletCheckMs).unref?.()
+}
+
 function walletView(chainId, w) {
   const c = CHAINS[chainId]
   return { chainId: Number(chainId), chain: c?.name ?? String(chainId), chainKey: c?.key ?? null, address: w.address, declared: w.declared, kind: w.kind, enabled: !!w.enabled, status: w.status, checkedAt: w.checkedAt, explorerUrl: c ? addressUrl(Number(chainId), w.address) : null }
@@ -1097,6 +1130,8 @@ async function setWallets(ws, body, user) {
     }
     const m = merchantOf(ws)
     m.wallets[id] = { address: r.address, declared, kind: r.kind, enabled: r.deployed && body?.enabled !== false, status: r.status, checkedAt: new Date().toISOString() }
+    // Not deployed yet: the hourly re-check (recheckUndeployedWallets) switches it on once the contract exists there.
+    if (!r.deployed) m.wallets[id].autoEnable = body?.enabled !== false
     results.push({ chainId: id, ok: r.deployed, error: r.deployed ? null : r.error, wallet: walletView(id, m.wallets[id]) })
   }
   const merchant = merchantOf(ws)
@@ -1119,6 +1154,7 @@ async function walletAction(ws, chainId, action, body) {
   }
   if (action === 'set' && body?.enabled === false) {
     w.enabled = false
+    delete w.autoEnable // switched off by hand: the re-check must not switch it back on
     save()
     return { ok: true, wallet: walletView(chainId, w) }
   }
@@ -1127,6 +1163,8 @@ async function walletAction(ws, chainId, action, body) {
   const r = await inspectWallet(Number(chainId), w.address, w.declared)
   if (!r.ok) return r
   Object.assign(w, { kind: r.kind, status: r.status, checkedAt: new Date().toISOString(), enabled: r.deployed })
+  if (r.deployed) delete w.autoEnable
+  else w.autoEnable = true
   save()
   return r.deployed ? { ok: true, wallet: walletView(chainId, w) } : { ok: false, status: 422, error: r.error, wallet: walletView(chainId, w) }
 }

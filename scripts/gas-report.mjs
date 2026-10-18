@@ -14,7 +14,7 @@
 // gasEstimateL1Component, which gives the L1 part as extra L2 gas at the current price. Ethereum, BNB Chain, Polygon
 // and Avalanche have no L1 fee ("n/a"). Nothing is signed or sent.
 
-import { CHAIN_LIST, FEE_PROXIES, readFeed, rpc } from '../server/payments.mjs'
+import { ASSETS, CHAIN_LIST, FEE_PROXIES, readFeed, rpc } from '../server/payments.mjs'
 
 const GAS = { approve: 46_000n, pay: 106_000n, transfer: 65_000n }
 const JSON_OUT = process.argv.includes('--json')
@@ -66,7 +66,8 @@ const fmtGwei = (wei) => {
 
 const rows = []
 for (const c of CHAIN_LIST) {
-  const row = { chainId: c.id, chain: c.name, symbol: c.feed.description.split(' / ')[0] }
+  // The coin's own symbol (POL on Polygon, though Chainlink's feed there is still named MATIC / USD).
+  const row = { chainId: c.id, chain: c.name, symbol: ASSETS.find((a) => a.chainId === c.id && a.kind === 'native')?.symbol ?? c.feed.description.split(' / ')[0] }
   try {
     const gasPrice = BigInt(await rpc(c.id, 'eth_gasPrice', []))
     row.gasPriceWei = gasPrice.toString()
@@ -77,7 +78,7 @@ for (const c of CHAIN_LIST) {
       usd = Number(f.price.answer) / 10 ** f.price.decimals
       row.priceSource = `Chainlink ${f.price.description}`
     } else {
-      usd = await coinbaseUsd(row.symbol === 'MATIC' ? 'POL' : row.symbol)
+      usd = await coinbaseUsd(row.symbol)
       row.priceSource = `Coinbase spot (feed: ${f.error.split('.')[0]})`
     }
     row.coinUsd = usd
@@ -103,9 +104,9 @@ for (const c of CHAIN_LIST) {
 if (JSON_OUT) {
   console.log(JSON.stringify({ at: new Date().toISOString(), gas: Object.fromEntries(Object.entries(GAS).map(([k, v]) => [k, Number(v)])), rows }, null, 2))
 } else {
-  const head = ['Chain', 'Gas price', 'Coin (USD)', 'Approve 46k', 'Fee pay 106k', 'Transfer 65k', 'L1 data fee', 'Price source']
+  const head = ['Chain', 'Split proxy', 'Gas price', 'Coin (USD)', 'Approve 46k', 'Fee pay 106k', 'Transfer 65k', 'L1 data fee', 'Price source']
   const table = rows.map((r) =>
-    r.error ? [r.chain, `error: ${r.error.slice(0, 50)}`, '', '', '', '', '', ''] : [r.chain, r.gasPrice, `${r.symbol} ${r.coinUsd.toLocaleString('en-US', { maximumFractionDigits: r.coinUsd < 10 ? 4 : 2 })}`, fmtUsd(r.approveUsd), fmtUsd(r.payUsd), fmtUsd(r.transferUsd), r.l1FeeUsd == null ? r.l1FeeHow : `${fmtUsd(r.l1FeeUsd)} (${r.l1FeeHow.split(':')[0].split('(')[0].trim()})`, r.priceSource],
+    r.error ? [r.chain, '', `error: ${r.error.slice(0, 50)}`, '', '', '', '', '', ''] : [r.chain, r.feeProxy ? 'yes' : 'no (plain)', r.gasPrice, `${r.symbol} ${r.coinUsd.toLocaleString('en-US', { maximumFractionDigits: r.coinUsd < 10 ? 4 : 2 })}`, fmtUsd(r.approveUsd), fmtUsd(r.payUsd), fmtUsd(r.transferUsd), r.l1FeeUsd == null ? r.l1FeeHow : `${fmtUsd(r.l1FeeUsd)} (${r.l1FeeHow.split(':')[0].split('(')[0].trim()})`, r.priceSource],
   )
   const widths = head.map((h, i) => Math.max(h.length, ...table.map((t) => String(t[i]).length)))
   const line = (cells) => '| ' + cells.map((c, i) => String(c).padEnd(widths[i])).join(' | ') + ' |'

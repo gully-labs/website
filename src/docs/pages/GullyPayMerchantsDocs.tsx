@@ -127,7 +127,7 @@ export function GullyPayMerchantsDocs() {
           <li>A mixed-case address must match its EIP-55 checksum exactly, so a mistyped character cannot slip through. An all-lower-case (or all-upper-case) address carries no checksum: it is accepted and stored in its checksummed form.</li>
           <li>We read the chain: an address with no code is a wallet (EOA); with code, a contract (a Safe or another smart account); an EIP-7702 delegated EOA is shown as such.</li>
           <li>
-            <b>A contract must be deployed on a chain before that chain can be turned on.</b> A Safe's address can exist on a chain before the Safe is deployed there; a payment to it then may be lost. If you say the wallet is a contract, or it is a contract on another of our chains, and it has no code on this one, the chain stays off. Deploy it, then press <b>Check again</b>.
+            <b>A contract must be deployed on a chain before that chain can be turned on.</b> A Safe's address can exist on a chain before the Safe is deployed there; a payment to it then may be lost. If you say the wallet is a contract, or it is a contract on another of our chains, and it has no code on this one, the chain stays off. Deploy it, then press <b>Check again</b>, or leave it: we read every undeployed wallet again each hour, and the chain switches on by itself once the contract is there (unless you turned it off).
           </li>
           <li>Gully Labs' own treasury cannot be a store wallet.</li>
           <li>
@@ -181,7 +181,8 @@ export function GullyPayMerchantsDocs() {
           head={['Chain', 'Stablecoin payment', 'Coin payment']}
           rows={[
             ['Base, Ethereum, BNB Chain, Arbitrum', 'your wallet and the fee are paid in the same transaction (Request Network fee proxy, verified on each chain); the payer pays exactly the quoted amount', 'one transfer to your wallet; the fee is invoiced'],
-            ['OP Mainnet, Polygon, Avalanche', "the proxy is verified there too; the in-payment fee switches on once Gully Labs' treasury is deployed on that chain, and until then the fee is invoiced", 'one transfer to your wallet; the fee is invoiced'],
+            ['OP Mainnet', "the proxy is verified there too (byte-identical to Base's); the in-payment fee switches on once Gully Labs' treasury is deployed on that chain, and until then the fee is invoiced", 'one transfer to your wallet; the fee is invoiced'],
+            ['Polygon, Avalanche', 'one transfer to your wallet; the fee is invoiced (the fee proxy there is a different build from the one we verified, so it is not used)', 'one transfer to your wallet; the fee is invoiced'],
           ]}
         />
         <List>

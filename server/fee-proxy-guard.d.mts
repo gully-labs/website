@@ -1,6 +1,7 @@
 /** Types for fee-proxy-guard.mjs (shared with the browser's wallet path). See that file. */
 export const FEE_PROXY_REGISTRY: Record<number, { erc20: string[]; native: string[] }>
 export const SPLIT_PROXIES: Record<number, string>
+export const TESTNET_SPLIT_CHAINS: number[]
 export const SOLANA_LEDGER_CHAIN_ID: number
 export const ALLOWED_TOKENS: Record<number, Record<string, 'USDC' | 'USDT'>>
 export const STABLE_SYMBOLS: string[]

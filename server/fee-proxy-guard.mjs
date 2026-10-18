@@ -22,7 +22,8 @@ export const FEE_PROXY_REGISTRY = {
   56: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8'] },
   42161: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8'] },
   10: { erc20: ['0x399f5ee127ce7432e4921a61b8cf52b0af52cbfe'], native: ['0xe11bf2fda23bf0a98365e1a4c04a87c9339e8687'] },
-  137: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8', '0xc6e23a20c0a1933acc8e30247b5d1e2215796c1f'] },
+  // Polygon: 0x0Dfb… is Request 0.2.0; 0x2171… is the 0.1.0 ERC20FeeProxy (1298 bytes, still deployed).
+  137: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9', '0x2171a0dc12a9e5b1659fef2bb20e54c84fa7db0c'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8', '0xc6e23a20c0a1933acc8e30247b5d1e2215796c1f'] },
   43114: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8', '0xc6e23a20c0a1933acc8e30247b5d1e2215796c1f'] },
   // Base Sepolia (testnet only): deployed by us from Request's source, byte-identical to Base mainnet's.
   84532: { erc20: ['0xae5508e1509cce6a73b38d8b19fedfdbd0080c18'], native: ['0xd302ce9e3048ad676c6e74be57042aca31e2957e'] },
@@ -34,14 +35,15 @@ export const SPLIT_PROXIES = {
   8453: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814',
   56: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
   42161: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
-  // 2026-10-18 (feat/pay-chains), eth_getCode through 3 to 6 public RPCs each, runtime compared byte for byte with
-  // the proxies above once the CBOR metadata is stripped (contracts/CHOICE.md "Deployments"):
-  //   OP Mainnet  = Base's build (2165 bytes, same full hash 0xfe7593c88edf)
-  //   Polygon     = Ethereum 0x370D's build (1631 bytes; same stripped runtime 0x47eecc776c20b737…, metadata differs)
-  //   Avalanche   = BNB Chain / Arbitrum's build (2120 bytes, same full hash 0x577dab9d22b7)
+  // 2026-10-18 (feat/pay-chains). Owner rule for a new chain: its proxy's runtime (CBOR metadata stripped) must be
+  // byte-identical to Base's 0x1892… (solc 0.8.9, the build fork- and testnet-tested in contracts/TESTNET-RESULTS.md),
+  // read with eth_getCode through 3+ public RPCs. Only exact matches are listed here (contracts/CHOICE.md):
+  //   OP Mainnet  0x399F…cbfE: 2165 bytes, stripped runtime = Base's (5 RPCs agreed)            -> listed
+  //   Polygon     0x0Dfb…0aC9: 1631 bytes, Ethereum 0x370D's solc 0.5.17 build, not Base's       -> NOT listed
+  //   Avalanche   0x0Dfb…0aC9: 2120 bytes, BNB Chain / Arbitrum's build, not Base's               -> NOT listed
+  // Polygon and Avalanche therefore take plain transfers with the merchant fee invoiced. Their proxies stay in
+  // FEE_PROXY_REGISTRY above so nothing is ever sent straight to them.
   10: '0x399f5ee127ce7432e4921a61b8cf52b0af52cbfe',
-  137: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
-  43114: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
 }
 
 /** Solana's ledger chain id (solana-pay.mjs SOLANA_CHAIN_ID). */
@@ -100,15 +102,21 @@ export const isFeeProxy = (a) => typeof a === 'string' && EVM_RE.test(a.trim()) 
 
 /**
  * The ERC20FeeProxy a split on `chainId` must call, lowercase, or null: the mainnet one (SPLIT_PROXIES), else the
- * testnet one we deployed (GULLY_FEEPROXY_<chainId> under Node, the registry's ERC20FeeProxy in the browser).
+ * testnet one we deployed (GULLY_FEEPROXY_<chainId> under Node, the registry's ERC20FeeProxy in the browser, testnets
+ * only).
  * payments.mjs FEE_PROXIES is built the same way, so the server and the wallet path agree.
  */
 export function splitProxyFor(chainId) {
   if (SPLIT_PROXIES[chainId]) return SPLIT_PROXIES[chainId]
   const env = typeof process !== 'undefined' && process?.env ? low(String(process.env[`GULLY_FEEPROXY_${chainId}`] ?? '').trim()) : ''
   if (EVM_RE.test(env)) return env
-  return FEE_PROXY_REGISTRY[chainId]?.erc20?.[0] ?? null
+  // Only a testnet falls back to the registry: a mainnet proxy that is not in SPLIT_PROXIES (Polygon, Avalanche) is
+  // known so it can be refused as a recipient, never so it can be paid through.
+  return TESTNET_SPLIT_CHAINS.includes(Number(chainId)) ? (FEE_PROXY_REGISTRY[chainId]?.erc20?.[0] ?? null) : null
 }
+
+/** Testnet chains whose registry proxy (deployed by us) is the split proxy when no env override is set. */
+export const TESTNET_SPLIT_CHAINS = [84532]
 
 const isZero = (a) => low(a) === ZERO_ADDRESS
 const isEvm = (a) => typeof a === 'string' && EVM_RE.test(a)

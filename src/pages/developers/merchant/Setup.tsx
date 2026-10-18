@@ -122,6 +122,7 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
         </a>
         <span className="text-[12px] text-dim">
           {KIND_TEXT[w.kind]} · checked {new Date(w.checkedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+          {w.status === 'not-deployed' && ` · Deploy your contract on ${w.chain} at this address; we check every hour and it switches on by itself.`}
         </span>
       </div>
       {can && (

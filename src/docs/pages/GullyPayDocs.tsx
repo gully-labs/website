@@ -180,14 +180,14 @@ export function GullyPayDocs() {
             ['Ethereum', 'proxy verified (0x370D…623C) · treasury deployed', 'same as Base'],
             ['BNB Chain', 'proxy verified (0x0Dfb…0aC9) · treasury deployed', 'same as Base'],
             ['Arbitrum', 'proxy verified (0x0Dfb…0aC9) · treasury deployed', 'same as Base'],
-            ['OP Mainnet', 'proxy verified (0x399F…cbfE) · treasury gated: offered once the Safe is deployed there', 'until then: not offered at all; after: same as Base'],
-            ['Polygon', 'proxy verified (0x0Dfb…0aC9) · treasury gated: offered once the Safe is deployed there', 'until then: not offered at all; after: same as Base'],
-            ['Avalanche', 'proxy verified (0x0Dfb…0aC9) · treasury gated: offered once the Safe is deployed there', 'until then: not offered at all; after: same as Base'],
+            ['OP Mainnet', 'proxy verified, byte-identical to Base (0x399F…cbfE) · treasury not deployed yet', 'Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced; once the Safe is deployed, same as Base'],
+            ['Polygon', 'proxy present (0x0Dfb…0aC9) but a different build from Base’s: not used · treasury not deployed yet', 'Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced'],
+            ['Avalanche', 'proxy present (0x0Dfb…0aC9) but a different build from Base’s: not used · treasury not deployed yet', 'Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced'],
             ['Solana', 'no Request deployment · its own treasury (GULLY_SOLANA_TREASURY)', 'one Solana Pay transfer; a merchant fee is invoiced'],
           ]}
         />
         <P>
-          Each proxy was verified with <C>eth_getCode</C> through several public RPCs and compared, metadata stripped, with the Base and Ethereum deployments; the addresses, hashes and what each RPC answered are in <C>contracts/CHOICE.md</C>. <C>GET /api/plans</C> carries <C>feeProxy</C> (verified contract exists) and <C>feeSplit</C> (usable now) per chain.
+          Each new chain's proxy was read with <C>eth_getCode</C> through three or more public RPCs and its runtime, metadata stripped, compared with Base's <C>0x1892…b814</C>; only a byte-identical one is used for a split (OP Mainnet). Polygon's and Avalanche's are other builds of the same source, so those chains stay on plain transfers with the fee invoiced. The addresses, hashes and what each RPC answered are in <C>contracts/CHOICE.md</C>. <C>GET /api/plans</C> carries <C>feeProxy</C> (verified contract exists) and <C>feeSplit</C> (usable now) per chain.
         </P>
       </Section>
 
