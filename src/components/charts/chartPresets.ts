@@ -1,4 +1,5 @@
 import { esc } from './chart-utils'
+import { alpha, C } from './chartTheme'
 
 /* Shared looks for every ECharts chart on the site, so a chart added anywhere (tracker, landing,
    product pages) animates, highlights and explains itself the same way. Each preset returns plain
@@ -15,31 +16,9 @@ import { esc } from './chart-utils'
 /** Chart box heights: a sparkline strip, a small card chart, the usual card chart, a feature chart. */
 export const CHART_H = { spark: 44, sm: 150, md: 220, lg: 260 } as const
 
-/** Brand colours (src/index.css) for chart code, which cannot read CSS variables in canvas mode. */
-export const C = {
-  gold: '#d9b563',
-  goldHover: '#f2d58a',
-  ink: '#f4f2ec',
-  ink2: '#d1d3d5',
-  muted: '#aeb5be',
-  dim: '#949daa',
-  faint: '#8a94a1',
-  axis: '#5f6a78',
-  grid: '#1c2531',
-  line: '#1f2935',
-  lineStrong: '#2a3542',
-  lineHover: '#3a4656',
-  surface: '#151d28',
-  surfaceDeep: '#111923',
-  error: '#ff8a7a',
-  green: '#74c27b',
-} as const
-
-/** Categorical series colours, in order (the theme's palette). */
-export const PALETTE = ['#d9b563', '#5aa9e6', '#26ab94', '#c98bdb', '#f2704a', '#9bc53d', '#f2d58a', '#8a94a1'] as const
-
-/** `#rrggbb` plus an alpha 0–1, as `#rrggbbaa`. */
-export const alpha = (hex: string, a: number) => `${hex.slice(0, 7)}${Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0')}`
+/* Kit colours, the series palette and `alpha` live in chartTheme.ts (pure, so the theme can be
+   checked in Node); they are re-exported here so chart code keeps one import. */
+export { alpha, C, PALETTE } from './chartTheme'
 
 /* ---------- tooltips ---------- */
 
@@ -111,7 +90,7 @@ export function barsPreset({ stagger = 30, radius, horizontal = false, focus = '
     animationDelay: (i: number) => Math.min(i * stagger, 480),
     ...update,
     itemStyle: { borderRadius: radius ?? (horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0]) },
-    emphasis: { focus, itemStyle: { shadowBlur: 10, shadowColor: 'rgba(217,181,99,.30)' } },
+    emphasis: { focus, itemStyle: { shadowBlur: 10, shadowColor: alpha(C.gold, 0.3) } },
     blur: { itemStyle: { opacity: 0.35 }, label: { opacity: 0.45 } },
   }
 }

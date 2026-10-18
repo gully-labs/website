@@ -76,6 +76,14 @@
   --color-tg-btn-hover: #2b3c4f;
   --color-tg-link: #6ab3f3;
   --color-tg-meta: #7f91a4;
+  /* Chart series colours after gold (components/charts/chartTheme.ts PALETTE): blue, teal (up / premium),
+     violet, orange (down / discount), lime. Charts use them in this order; they are the only colours a
+     chart may use besides the page palette above (scripts/test-chart-kit.mjs checks). */
+  --color-chart-blue: #5aa9e6;
+  --color-chart-teal: #26ab94;
+  --color-chart-violet: #c98bdb;
+  --color-chart-orange: #f2704a;
+  --color-chart-lime: #9bc53d;
   --color-error: #ff8a7a;
   /* The hairline round an error notice (the error colour at a dark tint). */
   --color-error-line: #5a2a24;
@@ -94,16 +102,36 @@
   --text-h3--line-height: 1;
   --text-h4: 22px;
   --text-h4--line-height: 1.1;
+  /* The mono eyebrow over a heading (and the small mono section title on dense pages: Status, Score). */
+  --text-eyebrow: 13px;
+  --text-eyebrow--line-height: 1.3;
+  --text-eyebrow--letter-spacing: 1.5px;
 
-  /* The one radius scale (pixel pass, 2026-10-17): bar ends 2, buttons 4, inputs and segmented
-     controls 6, icon tiles 8, inner panels 10, cards 12, modals 14, pills 999. Nothing else. */
+  /* The radius scale (design audit X6, 2026-10-18), from the kit handoff (public/brand/tokens/tokens.json:
+     button 6, card 16): sm 6 (buttons, inputs, segmented controls), md 8 (icon tiles, inner panels),
+     lg 12 (cards), xl 16 (modals, feature cards), plus bar ends 2 and pills (rounded-full). Use
+     rounded-sm/md/lg/xl; no rounded-[Npx]. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-bar: 2px;
+  /* The older names, kept as aliases so existing classes compile and look the same. input, tile and
+     card are on the scale; btn (4), panel (10) and modal (14) are off it and move to sm, md and lg/xl
+     as each page adopts the scale. */
+  --radius-input: var(--radius-sm);
+  --radius-tile: var(--radius-md);
+  --radius-card: var(--radius-lg);
   --radius-btn: 4px;
-  --radius-input: 6px;
-  --radius-tile: 8px;
   --radius-panel: 10px;
-  --radius-card: 12px;
   --radius-modal: 14px;
+
+  /* Icon sizes (design audit X10): 14 inline with text, 16 in controls, 20 in tiles, 24 page-level.
+     Use the icon-sm/md/lg/xl utilities below. */
+  --icon-sm: 14px;
+  --icon-md: 16px;
+  --icon-lg: 20px;
+  --icon-xl: 24px;
 
   --animate-float: gl-float 6s ease-in-out infinite;
   --animate-float-slow: gl-float 7s ease-in-out infinite;
@@ -167,6 +195,84 @@
 /* Page gutter: clamp(24px, 4.5cqw, 64px), measured against the app container. */
 @utility px-page {
   padding-inline: clamp(24px, 4.5cqw, 64px);
+}
+
+/* ---- Kit recipes (design audit X6, X7, X10; src/components/ui/README.md) ---- */
+
+/* The one card: surface fill, hairline border, radius lg. Padding is separate (card-pad), so a card
+   that holds a full-bleed chart or table can skip it. */
+@utility card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+}
+@utility card-pad {
+  padding: 20px;
+}
+
+/* The heading scale as whole recipes (family, weight, case, size). text-h1..h4 alone set only the size. */
+@utility heading-1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: var(--text-h1);
+  line-height: var(--text-h1--line-height);
+}
+@utility heading-2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: var(--text-h2);
+  line-height: var(--text-h2--line-height);
+}
+@utility heading-3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: var(--text-h3);
+  line-height: var(--text-h3--line-height);
+}
+@utility heading-4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--text-h4);
+  line-height: var(--text-h4--line-height);
+}
+/* Gold by default; add a text colour utility (text-faint) for a quiet section label. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-eyebrow);
+  line-height: var(--text-eyebrow--line-height);
+  letter-spacing: var(--text-eyebrow--letter-spacing);
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+/* Icon sizes: lucide icons take className="icon-md" instead of size={16}. */
+@utility icon-sm {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+}
+@utility icon-md {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+}
+@utility icon-lg {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  flex-shrink: 0;
+}
+@utility icon-xl {
+  width: var(--icon-xl);
+  height: var(--icon-xl);
+  flex-shrink: 0;
 }
 
 /* The one loading placeholder: a soft pulse (stilled to a steady tint under reduced motion, below). */

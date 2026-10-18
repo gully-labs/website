@@ -41,7 +41,8 @@
     "test:gully-score": "node scripts/test-gully-score.mjs",
     "seo:indexnow": "node scripts/indexnow-submit.mjs",
     "test:holders": "node --test scripts/test-holders.mjs",
-    "test:token-logos": "node --test scripts/test-token-logos.mjs"
+    "test:token-logos": "node --test scripts/test-token-logos.mjs",
+    "test:chart-kit": "node --test scripts/test-chart-kit.mjs"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

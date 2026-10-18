@@ -3,7 +3,9 @@ import { projects } from '../content/projects'
 import { fmtDay, fmtUsd, nameOf, type Point, type Venue } from '../lib/stats'
 import { EChart } from './charts/EChart'
 import type { ChartEvent } from './charts/chart-utils'
+import { tooFewPoints } from './charts/chartData'
 import { areaPreset, axisTooltip, CHART_H, livePoint, tipHtml } from './charts/chartPresets'
+import { GhostChart } from './charts/GhostChart'
 
 /* Charts drawn from live reads only. Lines draw on with a pulsing dot on the newest day, bars grow
    from the baseline; each is interactive (hover crosshair with exact values, keyboard stepping)
@@ -22,12 +24,9 @@ function Tip({ x, y, children }: { x: number; y: number; children: React.ReactNo
   )
 }
 
-export function EmptySeries({ n }: { n: number }) {
-  return (
-    <p className="m-0 py-6 font-mono text-[12px] leading-[1.5] text-faint">
-      {n} day{n === 1 ? '' : 's'} of data — not enough for a series yet.
-    </p>
-  )
+/** Fewer than two days: the kit's ghosted chart at the real chart's height, never a flat line. */
+export function EmptySeries({ n, height = CHART_H.lg }: { n: number; height?: number }) {
+  return <GhostChart height={height} testId="chart-empty" badge="NOT ENOUGH DATA YET" label={`${n} day${n === 1 ? '' : 's'} of data — not enough for a series yet.`} />
 }
 
 /** Daily totals as an area line, last N days: the line draws on, the area fades up, and a refresh
@@ -52,7 +51,7 @@ export function DailyLine({ series, label, color = '#d9b563' }: { series: Point[
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [key],
   )
-  if (series.length < 2) return <EmptySeries n={series.length} />
+  if (tooFewPoints(series.map((p) => p.v))) return <EmptySeries n={series.filter((p) => Number.isFinite(p.v)).length} />
   return <EChart option={option} height={CHART_H.lg} skeleton="line" steps={{ count: series.length }} label={`${label}: ${series.map((p) => `${fmtDay(p.t)} ${fmtUsd(p.v)}`).join(', ')}. Arrow keys step through days.`} />
 }
 
