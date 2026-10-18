@@ -815,6 +815,61 @@ await step('admin', async () => {
   await ctx.close()
 })
 
+/* ------------------------------------------------------- admin: bot broadcasts --- */
+
+await step('admin: bot broadcasts at 1440 and 390', async () => {
+  // Bot users as telegram-users.mjs stores them (no names), spread over two weeks so the growth line draws.
+  const users = await import('../server/telegram-users.mjs')
+  const bcast = await import('../server/telegram-broadcast.mjs')
+  const seed = {}
+  for (let i = 0; i < 24; i++) seed[String(880000 + i)] = { firstSeen: new Date(Date.now() - (14 - (i % 14)) * 86_400_000).toISOString(), lang: i % 3 ? 'en' : 'de', follows: i % 2 === 0, optedOut: i === 5 ? new Date().toISOString() : null }
+  users.seedBotUsersForTest(seed)
+  const aud = await adminCall('/api/admin/broadcasts/audience', { segment: { kind: 'all' } })
+  check('broadcasts: the audience leaves out opted-out users', aud.status === 200 && aud.data.count === 23, JSON.stringify(aud.data))
+  const sent = await adminCall('/api/admin/broadcasts', { text: '<b>E2E broadcast</b> hello', buttons: [{ text: 'Tracker', url: 'https://gullylabs.xyz/tracker' }], segment: { kind: 'all' }, action: 'send', confirm: aud.data.count })
+  check('broadcasts: the admin API sends with the confirmed count', sent.status === 201, JSON.stringify(sent.data).slice(0, 160))
+  await bcast.tickBroadcasts()
+  for (const [width, mobile] of [[1440, false], [390, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
+    const page = await ctx.newPage()
+    const w = watch(page, `admin broadcasts at ${width}`)
+    await page.goto(BASE + '/admin')
+    const section = page.locator('section', { has: page.getByRole('heading', { name: 'Bot broadcasts' }) })
+    await section.waitFor({ timeout: 15_000 })
+    await section.getByText('E2E broadcast').first().waitFor({ timeout: 10_000 })
+    check(`broadcasts at ${width}: analytics (bot users, opted out, blocked, last broadcast)`, (await section.getByText('BOT USERS · LIVE').count()) === 1 && (await section.getByText('LAST BROADCAST').count()) === 1 && (await section.getByText('OPENED LINK').count()) === 1)
+    check(`broadcasts at ${width}: the growth chart renders`, (await section.locator('[aria-label^="Bot users over time"]').count()) === 1)
+    check(`broadcasts at ${width}: the owner step names BotFather and the Mini App URL`, (await section.getByText(/Owner step: make the Mini App the bot’s main app/).count()) === 1 && (await section.locator('a[href="https://t.me/BotFather"][target="_blank"]').count()) === 1)
+    await section.locator('#tgb-text').fill('<b>Hello from e2e</b> news')
+    await section.getByText('Hello from e2e').first().waitFor()
+    check(`broadcasts at ${width}: the live preview renders the text and the 🔕 Stop announcements button`, (await section.getByLabel('Telegram preview').getByText('🔕 Stop announcements').count()) === 1)
+    check(`broadcasts at ${width}: one a day: Send now waits until Urgent is ticked`, await section.getByRole('button', { name: /Send now/ }).isDisabled())
+    await section.getByLabel(/Urgent/).check()
+    await section.getByRole('button', { name: /Send now/ }).click()
+    const dlg = section.getByRole('alertdialog')
+    await dlg.waitFor()
+    check(`broadcasts at ${width}: the confirm step shows the exact count`, (await dlg.getByText('23 people').count()) === 1 && (await dlg.getByRole('button', { name: 'Yes, send to 23' }).count()) === 1)
+    if (mobile) await noHorizontalScroll(page, '/admin broadcasts')
+    if (SHOTS) {
+      await page.waitForTimeout(800)
+      await section.screenshot({ path: path.join(SHOTS, `admin-broadcasts-${width}.png`) })
+    }
+    await dlg.getByRole('button', { name: 'Cancel' }).click()
+    await section.getByRole('button', { name: 'Recipients' }).first().click()
+    await section.getByText('••••').first().waitFor()
+    check(`broadcasts at ${width}: per-recipient status with masked chat ids`, (await section.locator('td', { hasText: /^••••\d{4}$/ }).count()) >= 20)
+    if (SHOTS && !mobile) {
+      const chan = page.locator('section', { has: page.getByRole('heading', { name: 'Telegram channel' }) })
+      await chan.getByText('Send to channel and DM users').click()
+      await page.waitForTimeout(300)
+      await chan.screenshot({ path: path.join(SHOTS, `admin-channel-dm-${width}.png`) })
+    }
+    await w.verify([/Failed to load resource/])
+    await ctx.close()
+  }
+})
+
 /* ------------------------------------------------------------- docs --- */
 
 const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap', 'roadmap-l3', 'changelog']

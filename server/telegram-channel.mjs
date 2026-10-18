@@ -20,7 +20,11 @@
 //   GET  /api/admin/channel                     posts (newest first), settings, linked chats for the test, limits
 //   POST /api/admin/channel/validate            { text, media, buttons } -> { text (sanitized), length, limit, errors }
 //   POST /api/admin/channel/test                { text, media, buttons, chatId? } -> sends to the admin's linked chat
-//   POST /api/admin/channel/posts               { text, media, buttons, pin, action: draft|post|schedule, scheduledAt? } -> 201 { post }
+//   POST /api/admin/channel/posts               { text, media, buttons, pin, action: draft|post|schedule, scheduledAt?, dm? } -> 201 { post }
+//                                               dm: { confirm: <exact audience count>, urgent? } = "Send to channel and DM users": once the
+//                                               post is out, everyone who started the bot (announcements on) gets a short "New in the
+//                                               channel →" DM linking to it (telegram-broadcast.mjs createTeaser; same confirm and
+//                                               once-a-day rules as a broadcast)
 //   POST /api/admin/channel/posts/:id           update: a draft/scheduled/failed post is rewritten; a sent post is edited live
 //   POST /api/admin/channel/posts/:id/post|retry|delete|unschedule
 //   GET  /api/admin/channel/followers           { count (live), at, series: [{ day, count }] }
@@ -342,9 +346,12 @@ export function validatePost(body) {
 
 const markup = (buttons) => (buttons.length ? { inline_keyboard: buttons.map((b) => [{ text: b.text, url: b.url }]) } : undefined)
 
-/** Sends a post's content to a chat. Returns { ok, messageId, error }. */
-async function sendContent(chatId, p) {
-  const reply_markup = markup(p.buttons)
+/**
+ * Sends a post's content to a chat. `keyboard` (an inline_keyboard) replaces the post's own URL buttons when
+ * given: broadcasts send tracked links and the 🔕 Stop announcements button. Returns { ok, status, messageId, error }.
+ */
+export async function sendContent(chatId, p, keyboard = null) {
+  const reply_markup = keyboard ? { inline_keyboard: keyboard } : markup(p.buttons)
   let r
   if (!p.media) {
     r = await sendToChannel(chatId, 'sendMessage', { text: p.text, parse_mode: 'HTML', ...(reply_markup ? { reply_markup } : {}) })
@@ -373,7 +380,7 @@ async function sendContent(chatId, p) {
       r = await sendToChannel(chatId, method, { [field]: p.media.fileId ?? p.media.url, ...base })
     }
   }
-  return { ok: r.ok, messageId: r.result?.message_id ?? null, error: r.ok ? null : r.error }
+  return { ok: r.ok, status: r.status ?? null, messageId: r.result?.message_id ?? null, error: r.ok ? null : r.error }
 }
 
 /* ---------------------------------------------------------------- posts --- */
@@ -409,6 +416,15 @@ async function publish(p, by = 'admin') {
     }
     Object.assign(p, { status: 'sent', sentAt: iso(), messageId: r.messageId, chat, error: null, pinned: false })
     logTo(p, 'post', true, null, by)
+    if (p.dm && !p.dmBroadcastId) {
+      try {
+        const bc = await import('./telegram-broadcast.mjs')
+        p.dmBroadcastId = bc.createTeaser(p).id
+        logTo(p, 'dm', true, null, by)
+      } catch (e) {
+        logTo(p, 'dm', false, String(e?.message ?? e).slice(0, 160), by)
+      }
+    }
     if (p.pin && r.messageId) {
       const pin = await sendToChannel(chat, 'pinChatMessage', { message_id: r.messageId, disable_notification: true })
       p.pinned = pin.ok
@@ -934,13 +950,24 @@ export async function handleChannelAdmin(req, res, url) {
     const v = validatePost(body)
     if (v.errors.length) return send(400, { error: v.errors.join(' '), errors: v.errors })
     const action = ['draft', 'post', 'schedule'].includes(body.action) ? body.action : 'draft'
+    let dm = null
+    if (body.dm && action !== 'draft') {
+      const at = action === 'schedule' ? parseWhen(body.scheduledAt) : now()
+      const bc = await import('./telegram-broadcast.mjs')
+      const pre = bc.teaserPrecheck({ confirm: body.dm.confirm, urgent: !!body.dm.urgent, at: at ?? now() })
+      if (!pre.ok) return send(pre.status, { error: pre.error, count: pre.count ?? null, confirmRequired: !!pre.confirmRequired, nextAt: pre.nextAt ?? null })
+      dm = { urgent: !!body.dm.urgent, audience: pre.count }
+    }
     if (action === 'schedule') {
       const t = parseWhen(body.scheduledAt)
       if (t === null || t < now() - 60_000) return send(400, { error: 'Pick a time in the future to schedule the post.' })
       if (t > now() + 90 * 86_400_000) return send(400, { error: 'Posts can be scheduled at most 90 days ahead.' })
-      return send(201, { post: publicPost(createPost(v, { status: 'scheduled', scheduledAt: new Date(t).toISOString() })) })
+      const sp = createPost(v, { status: 'scheduled', scheduledAt: new Date(t).toISOString() })
+      if (dm) ((sp.dm = dm), save())
+      return send(201, { post: publicPost(sp) })
     }
     const post = createPost(v)
+    if (dm) ((post.dm = dm), save())
     if (action === 'post') {
       const r = await publish(post)
       if (!r.ok) return send(r.status, { error: r.error, post: publicPost(post) })
