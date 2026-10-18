@@ -111,6 +111,7 @@
 @keyframes gl-marquee { to { transform: translateX(-50%); } }
 @keyframes gl-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(111,207,106,.55); } 70% { box-shadow: 0 0 0 7px rgba(111,207,106,0); } 100% { box-shadow: 0 0 0 0 rgba(111,207,106,0); } }
 @keyframes gl-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes gl-check-pop { 0% { opacity: 0; transform: scale(.2) rotate(-25deg); } 100% { opacity: 1; transform: none; } }
 @keyframes gl-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.25; }
@@ -212,6 +213,7 @@
 
   /* Entrances: fade only, no movement. */
   @keyframes gl-rise { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes gl-check-pop { from { opacity: 0; } to { opacity: 1; } }
   @keyframes gl-grow { from { opacity: 0; } to { opacity: 1; } }
   @keyframes gl-grow-x { from { opacity: 0; } to { opacity: 1; } }
   @keyframes gl-draw { from { opacity: 0; stroke-dashoffset: 0; } to { opacity: 1; stroke-dashoffset: 0; } }

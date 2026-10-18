@@ -54,6 +54,9 @@ function readHash(): View {
   const h = window.location.hash.slice(1)
   const none = { section: null, receipt: null, invite: null }
   if (ALL_TABS.some((t) => t.id === h)) return { tab: h as AppTab, ...none }
+  // #<page>/<sub-tab> (e.g. #merchant/links): the page; the page's own useSubTab reads the rest.
+  const page = h.split('/')[0]
+  if (h.includes('/') && ALL_TABS.some((t) => t.id === page)) return { tab: page as AppTab, ...none }
   if (LEGACY[h]) return { tab: LEGACY[h], ...none, section: h }
   const r = h.match(/^receipt=(\d{1,10}:0x[0-9a-fA-F]{64})$/)
   if (r) return { tab: 'billing', ...none, receipt: r[1] }

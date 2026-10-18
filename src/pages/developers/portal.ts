@@ -37,8 +37,10 @@ export interface Portal {
   me: Me | null
   /** The signed-in wallet (lower-case). */
   user: string
-  /** The role in the active workspace; 'owner' when /me could not be read (the server still checks). */
+  /** The role in the active workspace ('viewer' while /me has not been read; see roleKnown). */
   role: Role
+  /** False while /me is unread or unreadable: every write action is then disabled (the server checks too). */
+  roleKnown: boolean
   reloadMe: () => Promise<void>
   /** Switches the session's workspace and reloads everything. */
   switchTo: (id: string) => Promise<boolean>
@@ -49,7 +51,8 @@ export interface Portal {
 export const PortalContext = createContext<Portal>({
   me: null,
   user: '',
-  role: 'owner',
+  role: 'viewer',
+  roleKnown: false,
   reloadMe: async () => undefined,
   switchTo: async () => false,
   refreshAll: async () => undefined,
@@ -73,7 +76,8 @@ export const restoreFocusSoon = (previous?: HTMLElement | null) => requestAnimat
 
 /** Whether the current role may make writes of `cat`, and the reason shown when it may not. */
 export function useWrite(cat: WriteCategory, what: string): { ok: boolean; why: string | undefined } {
-  const { role } = usePortal()
+  const { role, roleKnown } = usePortal()
+  if (!roleKnown) return { ok: false, why: `Your role in this workspace could not be read right now, so you can't ${what} yet.` }
   const ok = WRITES[role]?.includes(cat) ?? false
   return { ok, why: ok ? undefined : `Your role (${role}) can't ${what}.` }
 }

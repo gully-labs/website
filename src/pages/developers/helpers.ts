@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+import { usePoll } from './poll'
 import { ago, api, conditionText, type AlertsView, type AnalyticsBlock, type AnalyticsSite, type AnalyticsUsage, type ApiKey, type GapAlert, type PayAsset } from './api'
 import { keyColor } from './styles'
 import { toastError, toastSuccess } from '../../components/ui/toast'
@@ -29,26 +30,13 @@ export function alertState(a: GapAlert): { t: string; c: string } {
   return { t: 'watching', c: '#6fcf6a' }
 }
 
-/** GET /api/developer/alerts, refreshed every minute. */
+/** GET /api/developer/alerts, refreshed every minute. A failed refresh keeps the last good view (`refreshErr`
+    says why, retried with backoff); `err` is set only while there is nothing to show, or the first read
+    timed out. */
 export function useAlertsView() {
-  const [view, setView] = useState<AlertsView | null>(null)
-  const [err, setErr] = useState<string | null>(null)
-  const load = useCallback(
-    () =>
-      api<AlertsView>('/api/developer/alerts').then((r) => {
-        if (r.ok) {
-          setView(r.data)
-          setErr(null)
-        } else setErr(r.error)
-      }),
-    [],
-  )
-  useEffect(() => {
-    load()
-    const id = setInterval(load, 60_000)
-    return () => clearInterval(id)
-  }, [load])
-  return { view, err, load }
+  const p = usePoll<AlertsView>('/api/developer/alerts', 60_000)
+  const err = p.data ? null : (p.error ?? (p.timedOut ? 'no answer in time' : null))
+  return { view: p.data, err, refreshErr: p.data ? p.error : null, load: p.reload }
 }
 
 /** POST /api/developer/alerts/:id/:op with the busy flag, errors and the test result line. */

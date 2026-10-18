@@ -190,11 +190,36 @@ export function DevelopersPage() {
   }, [session.state])
 
   const me = session.state === 'in' ? session.me : null
+  // Without /me the role is unknown and every write stays disabled: ask again with backoff (5 s, 10 s … 60 s).
+  const signedIn = session.state === 'in'
+  useEffect(() => {
+    if (!signedIn || me) return
+    let alive = true
+    let wait = 5_000
+    let t = 0
+    const again = () => {
+      t = window.setTimeout(async () => {
+        const r = await api<Me>('/api/developer/me')
+        if (!alive) return
+        if (r.ok) setSession((s) => (s.state === 'in' ? { ...s, me: r.data } : s))
+        else {
+          wait = Math.min(wait * 2, 60_000)
+          again()
+        }
+      }, wait)
+    }
+    again()
+    return () => {
+      alive = false
+      clearTimeout(t)
+    }
+  }, [signedIn, me])
   const portal: Portal = useMemo(
     () => ({
       me,
       user: me?.address ?? (session.state === 'in' ? session.account.address : ''),
-      role: me?.active.role ?? 'owner',
+      role: me?.active.role ?? 'viewer',
+      roleKnown: !!me,
       reloadMe: () =>
         api<Me>('/api/developer/me').then((r) => {
           if (r.ok) setSession((s) => (s.state === 'in' ? { ...s, me: r.data } : s))
