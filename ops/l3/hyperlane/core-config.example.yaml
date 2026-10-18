@@ -1,0 +1,16 @@
+# What `hyperlane core init` writes to ./configs/core-config.yaml (CLI 45.0.1), with the values the Hyperlane
+# "deploy to a new chain" guide shows (read 2026-10-17). Regenerate it with `hyperlane core init` rather than
+# copying: the schema follows the CLI version. trustedRelayerIsm trusts OUR relayer and is for the devnet only;
+# the public chain uses a messageIdMultisigIsm with our validators (../SPEC.md §9.3).
+owner: "0x__deployer_or_team_multisig__"
+defaultIsm:
+  type: trustedRelayerIsm
+  relayer: "0x__relayer_address__"   # the address of HYP_DEFAULTSIGNER_KEY
+defaultHook:
+  type: merkleTreeHook
+requiredHook:
+  owner: "0x__deployer_or_team_multisig__"
+  type: protocolFee
+  beneficiary: "0x__deployer_or_team_multisig__"
+  maxProtocolFee: "100000000000000000"
+  protocolFee: "0"

@@ -11,7 +11,7 @@ function setMeta(attr: 'name' | 'property', key: string, content: string) {
 }
 
 /** Updates the page title and description tags that index.html ships with. */
-export function Seo({ title, description, noindex = false }: { title: string; description: string; noindex?: boolean }) {
+export function Seo({ title, description, noindex = false, bare = false }: { title: string; description: string; noindex?: boolean; bare?: boolean }) {
   // A page that is not one (the 404): keep it out of search results while it is shown.
   useEffect(() => {
     if (!noindex) return
@@ -19,14 +19,15 @@ export function Seo({ title, description, noindex = false }: { title: string; de
     return () => document.head.querySelector('meta[name="robots"]')?.remove()
   }, [noindex])
   useEffect(() => {
-    const full = `${title} · Gully Labs`
+    // `bare`: the title as given (the checkout is "Pay <store>", not a Gully Labs page).
+    const full = bare ? title : `${title} · Gully Labs`
     document.title = full
     setMeta('name', 'description', description)
     setMeta('property', 'og:title', full)
     setMeta('property', 'og:description', description)
     setMeta('name', 'twitter:title', full)
     setMeta('name', 'twitter:description', description)
-  }, [title, description])
+  }, [title, description, bare])
 
   return null
 }

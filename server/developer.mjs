@@ -128,6 +128,12 @@ function currentSession(req) {
   return s ? { id, ...s } : null
 }
 
+/** The wallet signed in on this request, or null. Read-only: public pages (a store's own checkout seen by
+    its owner) use it to add hints, never to change anything. */
+export function sessionAddress(req) {
+  return currentSession(req)?.address ?? null
+}
+
 /** CSRF guard for every state-changing request. */
 function sameSite(req) {
   if (req.headers['x-requested-with'] !== 'gully') return false

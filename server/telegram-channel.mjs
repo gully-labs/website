@@ -47,7 +47,7 @@ import { DATA_DIR, json, readJson } from './http.mjs'
 import { channelBanner, linkedChat, linkedChatById, sendToChannel, telegramEnabled } from './telegram.mjs'
 import { readHistoryDays, readTracker } from './tracker.mjs'
 import { onLaunches, readLaunches } from './deepcore.mjs'
-import { chainName, esc, signed, SITE, trustedNow } from './telegram-ui.mjs'
+import { chainName, esc, gapSentence, lockLine, signed, SITE, trustedNow } from './telegram-ui.mjs'
 import { developers } from './store.mjs'
 
 const FILE = path.join(DATA_DIR, 'channel-posts.json')
@@ -87,14 +87,23 @@ export function setNowForTest(fn) {
 /* ---------------------------------------------------------------- store --- */
 
 const AUTO_TYPES = ['launches', 'dailyGaps', 'weeklyMovers', 'blog', 'releases']
+// Templates are written for readers, not developers: no source names, no raw timestamps, the gap as
+// "above/below the real share price". {pools} on a launch is the lock line ("🔒 Liquidity locked").
 const DEFAULT_TEMPLATES = {
-  launches: '🚀 <b>New on DeepCore: {symbol}</b>\n{chain} · {pools}\n\n<a href="{link}">See it on DeepCore</a>',
-  dailyGaps: '📊 <b>Widest trusted gaps · {date}</b>\n\n{list}\n\nGap = on-chain price against the Chainlink fair price. Information only, not advice.\n<a href="{link}">Live tracker</a>',
-  weeklyMovers: '📈 <b>The week in tokenised stocks · {date}</b>\n\n{list}\n\nOn-chain price change over 7 days. Information only, not advice.\n<a href="{link}">Live tracker</a>',
+  launches: '🚀 <b>New on DeepCore: {symbol}</b>\n{chain}{pools}\n\n<a href="{link}">View on DeepCore</a>',
+  dailyGaps: '📊 <b>Furthest from the real share price · {date}</b>\n\n{list}\n\nHow far each stock token trades from the real share price today. Information only, not advice.\n<a href="{link}">See every stock</a>',
+  weeklyMovers: '📈 <b>The week in stock tokens · {date}</b>\n\n{list}\n\nToken price change over 7 days. Information only, not advice.\n<a href="{link}">See every stock</a>',
   blog: '📝 <b>{title}</b>\n\n{excerpt}\n\n<a href="{link}">Read on the blog</a>',
   releases: '🆕 <b>What’s new · {date}</b>\n\n{summary}\n\n<a href="{link}">Full changelog</a>',
 }
-const DEFAULT_BUTTONS = { launches: 'View on DeepCore', dailyGaps: 'Open the tracker', weeklyMovers: 'Open the tracker', blog: 'Read the post', releases: 'Read the changelog' }
+/** Earlier defaults: a stored template equal to one of these is upgraded to the current default on load (an admin's own edits are kept). */
+const OLD_TEMPLATES = {
+  launches: ['🚀 <b>New on DeepCore: {symbol}</b>\n{chain} · {pools}\n\n<a href="{link}">See it on DeepCore</a>'],
+  dailyGaps: ['📊 <b>Widest trusted gaps · {date}</b>\n\n{list}\n\nGap = on-chain price against the Chainlink fair price. Information only, not advice.\n<a href="{link}">Live tracker</a>'],
+  weeklyMovers: ['📈 <b>The week in tokenised stocks · {date}</b>\n\n{list}\n\nOn-chain price change over 7 days. Information only, not advice.\n<a href="{link}">Live tracker</a>'],
+}
+export const DEFAULT_TEMPLATES_FOR_TEST = DEFAULT_TEMPLATES
+const DEFAULT_BUTTONS = { launches: 'View on DeepCore', dailyGaps: 'See every stock', weeklyMovers: 'See every stock', blog: 'Read the post', releases: 'Read the changelog' }
 const defaultAuto = () => ({
   timezone: 'UTC',
   quietHours: { enabled: false, start: '23:00', end: '07:00' },
@@ -118,7 +127,10 @@ function load() {
   db.settings.testChat ??= null
   const auto = defaultAuto()
   db.settings.auto = { ...auto, ...(db.settings.auto ?? {}) }
-  for (const t of AUTO_TYPES) db.settings.auto[t] = { ...auto[t], ...(db.settings.auto[t] ?? {}) }
+  for (const t of AUTO_TYPES) {
+    db.settings.auto[t] = { ...auto[t], ...(db.settings.auto[t] ?? {}) }
+    if ((OLD_TEMPLATES[t] ?? []).includes(db.settings.auto[t].template)) db.settings.auto[t].template = DEFAULT_TEMPLATES[t]
+  }
   db.settings.auto.quietHours = { ...auto.quietHours, ...(db.settings.auto.quietHours ?? {}) }
   db.state ??= {}
   db.state.seen ??= {}
@@ -534,16 +546,20 @@ function inQuietHours(t = now()) {
   const b = toMin(q.end)
   return a === b ? false : a < b ? m >= a && m < b : m >= a || m < b
 }
-function lastPostAt() {
+/** The newest send time at or before `t`. A sentAt after `t` (the clock moved back) is ignored, else it would block auto posts until the clock caught up. */
+function lastPostAt(t = now()) {
   let last = 0
-  for (const p of db.posts) if (p.sentAt) last = Math.max(last, Date.parse(p.sentAt))
+  for (const p of db.posts) {
+    const s = p.sentAt ? Date.parse(p.sentAt) : NaN
+    if (s <= t) last = Math.max(last, s)
+  }
   return last
 }
 /** Why an auto post may not go out now ('quiet', 'gap'), or null. */
 function autoBlocked(t = now()) {
   if (inQuietHours(t)) return 'quiet'
   const gap = Math.max(0, Number(db.settings.auto.minGapMinutes) || 0) * 60_000
-  if (gap && t - lastPostAt() < gap) return 'gap'
+  if (gap && t - lastPostAt(t) < gap) return 'gap'
   return null
 }
 
@@ -623,15 +639,15 @@ async function readBlog(limit = 10) {
 const fmtDate = (t = now()) => new Intl.DateTimeFormat('en-GB', { timeZone: db.settings.auto.timezone, day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(t))
 
 function launchPost(l) {
-  const pools = (l.legs ?? []).map((g) => [g.kind === 'CL' ? 'CL pool' : g.kind === 'Bin' ? 'Bin pool' : 'pool', g.quote ? `vs ${g.quote}` : null, g.locked === true ? 'liquidity locked' : null].filter(Boolean).join(' ')).join(' · ') || 'pool details on DeepCore'
-  return buildAuto('launches', { symbol: l.symbol ?? 'a new token', chain: l.chainName ?? chainName(l.chainKey), pools, link: l.links?.token ?? 'https://deepcore.fun' }, l.links?.token ?? null)
+  const lock = lockLine(l)
+  return buildAuto('launches', { symbol: l.symbol ?? 'a new token', chain: l.chainName ?? chainName(l.chainKey), pools: lock ? ` · ${lock}` : '', locked: lock ?? '', link: l.links?.token ?? 'https://deepcore.fun' }, l.links?.token ?? null)
 }
 async function dailyGapsPost() {
   const rows = await readRows().catch(() => null)
   if (!rows) return { skip: 'The tracker could not be read.' }
   const top = rows.filter(trustedNow).sort((a, b) => Math.abs(b.gapPct) - Math.abs(a.gapPct)).slice(0, 5)
   if (!top.length) return { skip: 'No stock has a trusted gap right now.' }
-  const list = top.map((r, i) => `${i + 1}. <b>${esc(r.ticker)}</b> · ${esc(chainName(r.chain))} · <b>${esc(signed(r.gapPct))}%</b> ${esc(r.status)}`).join('\n')
+  const list = top.map((r, i) => `${i + 1}. ${gapSentence(r.ticker, r.gapPct).replace(/\.$/, '')} · ${esc(chainName(r.chain))}`).join('\n')
   const link = `${SITE}/tracker`
   return buildAuto('dailyGaps', { list: raw(list), date: fmtDate(), link }, link)
 }
@@ -652,7 +668,7 @@ async function weeklyMoversPost() {
   const list = moves
     .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
     .slice(0, 5)
-    .map((m, i) => `${i + 1}. <b>${esc(m.r.ticker)}</b> · ${esc(chainName(m.r.chain))} · <b>${esc(signed(m.pct))}%</b> · gap now ${esc(signed(m.r.gapPct))}%`)
+    .map((m, i) => `${i + 1}. <b>${esc(m.r.ticker)}</b> · ${esc(chainName(m.r.chain))} · <b>${esc(signed(m.pct))}%</b> this week · now ${Math.abs(m.r.gapPct).toFixed(2)}% ${m.r.gapPct >= 0 ? 'above' : 'below'} the real share price`)
     .join('\n')
   const link = `${SITE}/tracker`
   return buildAuto('weeklyMovers', { list: raw(list), date: fmtDate(), link }, link)
