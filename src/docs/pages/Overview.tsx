@@ -10,6 +10,7 @@ const sections = [
   { id: 'live', title: 'Live status' },
   { id: 'start-here', title: 'Start here' },
   { id: 'quick-start', title: 'Quick start' },
+  { id: 'products', title: 'Products and more' },
   { id: 'sources', title: 'Where the numbers come from' },
 ]
 
@@ -18,6 +19,16 @@ const CARDS: { slug: DocSlug; title: string; note: string }[] = [
   { slug: 'api', title: 'API reference', note: 'Both endpoints, every field, caching, limits and errors.' },
   { slug: 'widget', title: 'Widget guide', note: 'A ticker, a badge or a table on any page, in two lines of HTML.' },
   { slug: 'api-keys', title: 'API keys', note: 'Higher limits for apps that call the API often.' },
+]
+
+const PRODUCTS: { slug: DocSlug; title: string; note: string }[] = [
+  { slug: 'solana', title: 'Solana', note: 'xStocks in the tracker, Holder Map, Solana Pay and Jupiter swaps.' },
+  { slug: 'swaps', title: 'Swaps', note: 'LI.FI on EVM chains, Jupiter on Solana, the region check and fees.' },
+  { slug: 'holder-map', title: 'Holder Map', note: 'Who really holds a token, clusters and the launch health score.' },
+  { slug: 'gully-ai', title: 'Gully AI', note: 'Answers from our docs and live data, with a source on every fact.' },
+  { slug: 'telegram', title: 'Telegram bot', note: '@GullyLabsBot: gaps, launches, alerts with Mute, and the Mini App.' },
+  { slug: 'chain-kit', title: 'Chain Kit', note: 'A branded Blockscout explorer for your EVM chain, run for you.' },
+  { slug: 'status', title: 'Status', note: 'What each live check means, uptime and incidents.' },
 ]
 
 function Card({ slug, title, note, i }: { slug: DocSlug; title: string; note: string; i: number }) {
@@ -43,10 +54,11 @@ export function Overview() {
       slug=""
       eyebrow="GULLY LABS DOCS"
       title="Tokenised stocks, priced two ways"
-      description="Docs for the Gully Labs stock token tracker: how its fair and onchain prices are read, the public API, the embeddable widget and API keys."
+      description="Docs for Gully Labs: the stock token tracker on Robinhood Chain, BNB Chain and Solana, its public API, the widget and API keys, plus Gully Pay, the Holder Map, Gully AI, the Telegram bot, swaps and status."
       lead={
         <>
-          The Gully Labs tracker checks every tokenised stock on Robinhood Chain and BNB Chain against its fair price, live. These docs cover how it works, the public API it is built on, and the widget that puts it on your own page.
+          The Gully Labs tracker checks every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, live. These docs cover how it works, the public API it is built on, the widget that puts it on your own page, and the
+          products built around it.
         </>
       }
       sections={sections}
@@ -57,6 +69,9 @@ export function Overview() {
         </P>
         <P>
           The live page is at <Ext href="https://gullylabs.xyz/tracker">gullylabs.xyz/tracker</Ext>. Everything it shows comes from the same public API these docs describe.
+        </P>
+        <P>
+          It covers three chains: Robinhood Chain (Robinhood’s stock tokens), BNB Chain (Binance bStocks) and Solana (Backed’s xStocks). How Solana differs is on the <DocLink to="solana">Solana</DocLink> page.
         </P>
       </Section>
 
@@ -83,9 +98,17 @@ export function Overview() {
         </P>
       </Section>
 
+      <Section id="products" title="Products and more">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-3">
+          {PRODUCTS.map((c, i) => (
+            <Card key={c.slug} {...c} i={i} />
+          ))}
+        </div>
+      </Section>
+
       <Section id="sources" title="Where the numbers come from">
         <P>
-          Fair prices are Chainlink feeds read on chain with <C>latestRoundData()</C>. Onchain prices are read from each token’s deepest pool on chain; DexScreener and GeckoTerminal only find the pool. Nothing is estimated or typed in: a price that cannot be read is reported as unreadable, never as zero. The <DocLink to="methodology">methodology</DocLink> gives the exact rules.
+          Fair prices are Chainlink feeds read on chain with <C>latestRoundData()</C>; on Solana, where a share has no Chainlink feed, the issuer’s own xStocks quote, and every row names its source. Onchain prices are read from each token’s deepest pool on chain; DexScreener and GeckoTerminal only find the pool. Nothing is estimated or typed in: a price that cannot be read is reported as unreadable, never as zero. The <DocLink to="methodology">methodology</DocLink> gives the exact rules.
         </P>
         <Callout label="NOT ADVICE">The tracker reports what two public sources say. It is not investment advice, and a gap is not a promise that anyone can trade it away.</Callout>
       </Section>

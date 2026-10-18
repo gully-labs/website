@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router'
 import { Search } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { EChart } from '../components/charts/EChart'
-import { barsPreset, itemTooltip, tipHtml } from '../components/charts/chartPresets'
+import { axisTooltip, barsPreset, itemTooltip, tipHtml } from '../components/charts/chartPresets'
+import { ChartSkeleton } from '../components/charts/ChartSkeleton'
 import { ScoreRing } from '../components/holders/parts'
 import { K } from '../components/holders/theme'
 import { eyebrow } from '../components/ui'
@@ -16,6 +17,26 @@ import { ageText } from '../lib/tracker'
    figure is read live; a launch still being checked says so. */
 
 const LEVEL_COLOUR = { good: K.gold, mixed: K.pale, poor: K.warn } as const
+const HOUR = 3_600_000
+const MAX_HOURS = 12
+const STATES: { id: CheckedLaunch['state']; label: string; colour: () => string }[] = [
+  { id: 'checked', label: 'Checked', colour: () => K.gold },
+  { id: 'checking', label: 'Being checked', colour: () => K.pale },
+  { id: 'unavailable', label: 'No holder data yet', colour: () => K.dim },
+]
+
+/** Launches in the feed per hour, by check state, over the hours the feed fully covers (at most 12):
+    from the hour of its oldest launch to now, so an hour with no bar truly had no launch in the feed. */
+function recencyOf(list: CheckedLaunch[], now: number) {
+  const times = list.map((l) => Date.parse(l.createdAt)).filter((t) => Number.isFinite(t))
+  if (!times.length) return null
+  const end = Math.floor(now / HOUR) * HOUR
+  const start = Math.max(Math.floor(Math.min(...times) / HOUR) * HOUR, end - (MAX_HOURS - 1) * HOUR)
+  const hours: number[] = []
+  for (let h = start; h <= end; h += HOUR) hours.push(h)
+  const counts = STATES.map((st) => hours.map((h) => list.filter((l) => l.state === st.id && Date.parse(l.createdAt) >= h && Date.parse(l.createdAt) < h + HOUR).length))
+  return { hours, counts, labels: hours.map((h) => new Date(h).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) }
+}
 
 function useNow(ms = 15_000) {
   const [now, setNow] = useState(() => Date.now())
@@ -146,7 +167,7 @@ function SearchBox() {
         </button>
       </form>
       <div aria-live="polite">
-        {s.k === 'none' && <p className="m-0 text-[14px] text-muted">Nothing matches. The Holder Map covers DeepCore launches and the stock tokens the tracker follows.</p>}
+        {s.k === 'none' && <p className="m-0 text-[14px] text-muted">Nothing matches. The Holder Map covers DeepCore launches and the stock tokens the Stock tracker follows.</p>}
         {s.k === 'error' && <p className="m-0 text-[14px] text-error">The search did not answer just now. Try again.</p>}
         {s.k === 'many' && (
           <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Pick a token" data-resolve-matches>
@@ -209,6 +230,36 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
     }),
     [scored],
   )
+  const recency = useMemo(() => (s.k === 'ok' ? recencyOf(s.data.launches, now) : null), [s, now])
+  const recencyOption = useMemo(
+    () =>
+      recency
+        ? {
+            grid: { left: 4, right: 4, top: 12, bottom: 22 },
+            xAxis: { type: 'category', data: recency.labels, axisLabel: { color: K.muted, fontSize: 11, hideOverlap: true }, axisLine: { show: false }, axisTick: { show: false } },
+            yAxis: { type: 'value', minInterval: 1, show: false },
+            tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
+              const i = ps[0]?.dataIndex ?? -1
+              if (i < 0) return ''
+              return tipHtml({
+                title: `${recency.labels[i]} hour`,
+                rows: STATES.map((st, k) => ({ name: st.label, value: String(recency.counts[k][i]), color: st.colour() })),
+                note: 'New DeepCore launches in the live feed.',
+              })
+            }, 'shadow'),
+            series: STATES.map((st, k) => ({
+              id: st.id,
+              name: st.label,
+              ...barsPreset({ radius: 0, focus: 'series' }),
+              stack: 'launches',
+              barMaxWidth: 28,
+              color: st.colour(),
+              data: recency.counts[k],
+            })),
+          }
+        : {},
+    [recency],
+  )
   if (s.k === 'loading')
     return (
       <div role="status" aria-label="Reading the newest launches" className="flex flex-col gap-2">
@@ -221,8 +272,26 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
   const list = s.data.launches
   return (
     <>
-      {scored.length > 1 && <EChart option={option} height={150} label={`Health scores of the newest checked launches: ${scored.map((l) => `${l.symbol ?? 'token'} ${l.health?.score}`).join(', ')}`} skeleton="bars" />}
-      {!list.length && <p className="m-0 text-[14px] text-kit-text-muted">No launches yet.</p>}
+      {scored.length > 0 ? (
+        <EChart option={option} height={150} label={`Health scores of the newest checked launches: ${scored.map((l) => `${l.symbol ?? 'token'} ${l.health?.score}`).join(', ')}`} skeleton="bars" />
+      ) : recency ? (
+        <figure className="m-0 flex flex-col gap-1">
+          <EChart option={recencyOption} height={150} label={`New launches per hour in the live feed: ${recency.labels.map((h, i) => `${h} ${STATES.reduce((n, _, k) => n + recency.counts[k][i], 0)}`).join(', ')}`} skeleton="bars" />
+          <figcaption className="font-mono text-[11px] text-kit-text-dim">New launches per hour · scores appear as checks finish</figcaption>
+        </figure>
+      ) : (
+        <div role="status" className="relative h-[150px]">
+          <ChartSkeleton variant="bars" />
+          <span className="absolute inset-0 flex items-center justify-center gap-2 font-mono text-[12px] text-kit-text-muted">
+            <span className="relative inline-flex size-2.5" aria-hidden>
+              <span className="absolute inset-0 animate-[gl-live-pulse_2s_ease-out_infinite] rounded-full bg-gold" />
+              <span className="relative size-2.5 rounded-full bg-gold" />
+            </span>
+            Listening for the first launch
+          </span>
+        </div>
+      )}
+      {!list.length && <p className="m-0 text-[14px] text-kit-text-muted">No launches yet. New DeepCore launches appear here within 30 seconds.</p>}
       <ul className="m-0 flex list-none flex-col gap-2 p-0" data-launch-feed>
         {list.slice(0, 12).map((l, i) => (
           <FeedRow key={`${l.chainKey}:${l.token}`} l={l} i={i} now={now} />

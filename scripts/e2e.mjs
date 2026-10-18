@@ -17,7 +17,7 @@ import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { blockedOutbound, bootServer, E2E_LAUNCH_TOKEN, historyFixture, holdersExtraFixtures, holdersFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
-import { auditPage, IN_PLACE_HOSTS, tokenColors } from './e2e-audit.mjs'
+import { auditPage, tokenColors } from './e2e-audit.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
 await guardTestRun(PORT, { watchdogMs: 8 * 60_000 })
@@ -149,7 +149,7 @@ const drawnIn = (page, sel) => page.locator(`${sel} [data-chart].opacity-100 svg
 const TOKENS = tokenColors()
 /** The pixel-pass design audit (scripts/e2e-audit.mjs): text size, token colours, external links. */
 async function designAudit(page, label, root = null) {
-  const a = await page.evaluate(auditPage, { allowed: TOKENS, inPlace: IN_PLACE_HOSTS, root })
+  const a = await page.evaluate(auditPage, { allowed: TOKENS, root })
   check(`${label}: no text under 11 px`, a.small.length === 0, a.small.slice(0, 3).map((s) => `${s.size}px ${s.sel} "${s.text}"`).join(' | '))
   check(`${label}: no off-token colours`, a.offToken.length === 0, a.offToken.slice(0, 4).map((o) => `${o.color} ${o.kind} x${o.count} ${o.sample}`).join(' | '))
   check(`${label}: links to other hosts open in a new tab with noopener`, a.ext.length === 0, a.ext.slice(0, 3).map((e) => `${e.href} ${e.sel}`).join(' | '))
@@ -740,30 +740,44 @@ await step('app services', async () => {
   await mw.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   await m.close()
 
-  // E2E_SHOTS: full-page screenshots of Overview, Merchant, Analytics and Alerts at 1440x900 and 390, with each
-  // page's height in px (page-heights.json), for the owner's "no page way too long" check.
-  if (SHOTS) {
+  // Page heights (the owner's "no page way too long" rule, gap N-22): every app page is measured on every run at
+  // 1440x900 and 390, the main pages and every service (Holder Map and Monitors included). E2E_MAX_PAGE_PX sets the
+  // budget each must fit; with E2E_SHOTS the full-page screenshots and page-heights.json are saved as well.
+  {
     const heights = {}
+    const MAX_PX = Number(process.env.E2E_MAX_PAGE_PX) || null
+    const pages = [...['overview', 'merchant', 'analytics', 'alerts', 'security', 'monitors'].map((id) => [id, `main[data-page="${id}"]`]), ...SERVICES.map(([id]) => [id, `[data-service="${id}"] [data-testid="service-header"]`])]
     for (const [width, height, mobile] of [[1440, 900, false], [390, 844, true]]) {
       const hc = await newContext({ width, height, mobile, cookie: cookieOf(api3) })
       const hp = await hc.newPage()
-      for (const id of ['overview', 'merchant', 'analytics', 'alerts', 'security']) {
+      for (const [id, ready] of pages) {
         await hp.goto(`${BASE}/app#${id}`)
-        await hp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
+        const ok = await hp.locator(ready).first().waitFor({ timeout: 15_000 }).then(() => true, () => false)
+        // An id the app does not route (it falls back to Overview) is not measured as that page.
+        if (!ok) continue
         await hp.waitForLoadState('networkidle').catch(() => {})
-        // Charts draw when scrolled into view: walk down the page first so the full-page shot shows them drawn.
-        for (let y = 0; y < (await hp.evaluate(() => document.documentElement.scrollHeight)); y += 500) {
-          await hp.evaluate((top) => window.scrollTo(0, top), y)
-          await hp.waitForTimeout(250)
-        }
-        await hp.evaluate(() => window.scrollTo(0, 0))
-        await hp.waitForTimeout(1200)
+        if (SHOTS) {
+          // Charts draw when scrolled into view: walk down the page first so the full-page shot shows them drawn.
+          for (let y = 0; y < (await hp.evaluate(() => document.documentElement.scrollHeight)); y += 500) {
+            await hp.evaluate((top) => window.scrollTo(0, top), y)
+            await hp.waitForTimeout(250)
+          }
+          await hp.evaluate(() => window.scrollTo(0, 0))
+          await hp.waitForTimeout(1200)
+        } else await hp.waitForTimeout(400)
         heights[`${id}-${width}`] = await hp.evaluate(() => document.documentElement.scrollHeight)
-        await hp.screenshot({ path: path.join(SHOTS, `page-${id}-${width}.png`), fullPage: true })
+        if (SHOTS) await hp.screenshot({ path: path.join(SHOTS, `page-${id}-${width}.png`), fullPage: true })
       }
       await hc.close()
     }
-    fs.writeFileSync(path.join(SHOTS, 'page-heights.json'), JSON.stringify(heights, null, 2))
+    const measured = Object.keys(heights)
+    check(`page heights: every app page is measured at 1440 and 390 (${measured.length} of ${pages.length * 2})`, ['overview', 'merchant', 'alerts', 'holders', ...SERVICES.map(([id]) => id)].every((id) => heights[`${id}-1440`] > 0 && heights[`${id}-390`] > 0), JSON.stringify(heights))
+    if (MAX_PX) {
+      const over = Object.entries(heights).filter(([, h]) => h > MAX_PX)
+      check(`page heights: every app page fits ${MAX_PX} px`, over.length === 0, over.map(([k, h]) => `${k} ${h}px`).join(' | '))
+    }
+    console.log(`  page heights (px): ${Object.entries(heights).map(([k, h]) => `${k} ${h}`).join(', ')}`)
+    if (SHOTS) fs.writeFileSync(path.join(SHOTS, 'page-heights.json'), JSON.stringify(heights, null, 2))
   }
 })
 
@@ -1581,11 +1595,25 @@ await step('gully score', async () => {
 /* ------------------------------------------------------------- 404s and mobile pages --- */
 
 await step('404s', async () => {
-  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200], ['/links', 200]]) {
+  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200], ['/links', 200], ['/status', 200], ['/docs/status', 200], ['/docs/gully-ai', 200], ['/docs/telegram', 200], ['/docs/chain-kit', 200], ['/docs/swaps', 200], ['/docs/solana', 200]]) {
     const r = await fetch(BASE + p)
     const html = await r.text()
     check(`HTTP ${want} for ${p}`, r.status === want && (want === 404 ? /noindex/.test(html) : !/Not found ·/.test(html)), `${r.status}`)
   }
+  // One JSON 404 for the whole API (P2-19): never the HTML app shell.
+  for (const p of ['/api/nope', '/api/movers', '/api/deepcore']) {
+    const r = await fetch(BASE + p)
+    const body = await r.json().catch(() => null)
+    check(`${p}: 404 as JSON`, r.status === 404 && /application\/json/.test(r.headers.get('content-type') ?? '') && body?.error === 'not found', `${r.status} ${r.headers.get('content-type')}`)
+  }
+  const old = await fetch(BASE + '/gully-pay/merchant-terms', { redirect: 'manual' })
+  check('/gully-pay/merchant-terms: a permanent redirect to /legal/merchant-terms (P2-17)', old.status === 301 && old.headers.get('location') === '/legal/merchant-terms', `${old.status} ${old.headers.get('location')}`)
+  // Server-side head tags: the status page, and /pricing names only the chains /api/plans offers (N-7).
+  const st = await (await fetch(BASE + '/status')).text()
+  check('/status HTML: its own title and share card for crawlers', /<title>Status · Gully Labs<\/title>/.test(st) && /og-status\.png/.test(st))
+  const pr = await (await fetch(BASE + '/pricing')).text()
+  const prDesc = pr.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? ''
+  check(`/pricing meta lists the offered chains (${OFFERED.join(', ')}) and no closed one (N-7)`, OFFERED.length > 0 && OFFERED.every((n) => prDesc.includes(n)) && Object.values(CLOSED).every((n) => !prDesc.includes(n)), prDesc)
 })
 
 await step('holder map', async () => {
@@ -1752,7 +1780,7 @@ await step('holder map', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links', '/status']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/app') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
@@ -1781,18 +1809,153 @@ await step('links hub', async () => {
       noIcon: links.filter((a) => !a.querySelector('svg')).map((a) => a.getAttribute('href')),
       untagged: links.filter((a) => !/^https:\/\/(t\.me|x\.com|github\.com)\//.test(a.href) && !/utm_source=kol&utm_medium=links&utm_campaign=launch/.test(a.href)).map((a) => a.getAttribute('href')),
       pay: /0\.5% after the first \$5,000/.test(document.body.textContent ?? ''),
-      soon: /Holder Map/.test(document.body.textContent ?? ''),
+      // The live products, each a link to its own page (branch A's copy: no longer "coming soon").
+      live: ['/holders', '/security', '/score'].filter((p) => links.some((a) => { try { return new URL(a.href).pathname === p } catch { return false } })),
+      soon: [...document.querySelectorAll('main a, main li, main div')].some((e) => e.children.length < 6 && /Holder Map/.test(e.textContent ?? '') && /coming soon/i.test(e.textContent ?? '')),
     }
   })
   check('/links: the kit lockup is there', r.kit > 0, JSON.stringify(r))
   check('/links: at least 15 links, each a new tab with noopener and an icon', r.n >= 15 && !r.bad.length && !r.noIcon.length, JSON.stringify(r))
   check('/links: every web link carries the KOL UTM tags', !r.untagged.length, JSON.stringify(r.untagged))
   check('/links: the Gully Pay fee is read from the server', r.pay)
-  check('/links: Holder Map is listed as coming soon', r.soon)
+  check('/links: Holder Map, Gully Security and Gully Score are live links, not "coming soon"', r.live.length === 3 && !r.soon, JSON.stringify({ live: r.live, soon: r.soon }))
   check('/links: the title', (await page.title()) === 'Links · Gully Labs', await page.title())
   await noHorizontalScroll(page, '/links')
   await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
+})
+
+/* ------------------------------------------------------------- status, docs, analytics --- */
+
+// The public status (P1-1): GET /api/status from the server's own checks, and the /status page drawn from it.
+await step('status page and API', async () => {
+  const r = await fetch(BASE + '/api/status')
+  const text = await r.text()
+  const s = JSON.parse(text)
+  const ids = (s.components ?? []).map((c) => c.id)
+  check('/api/status: 200 JSON, public cache and CORS', r.status === 200 && /application\/json/.test(r.headers.get('content-type') ?? '') && /max-age=30/.test(r.headers.get('cache-control') ?? '') && r.headers.get('access-control-allow-origin') === '*')
+  check('/api/status: overall, interval and incidents', ['operational', 'degraded', 'major'].includes(s.overall) && s.intervalSeconds === 60 && Array.isArray(s.incidents), JSON.stringify({ overall: s.overall, i: s.intervalSeconds }))
+  check('/api/status: every part of the stack is checked', ['api', 'tracker-robinhood', 'tracker-bsc', 'tracker-solana', 'deepcore', 'telegram', 'ai', 'security', 'monitors', 'holders-deepcore'].every((id) => ids.includes(id)) && ids.some((id) => id.startsWith('pay-')), ids.join())
+  const byId = Object.fromEntries(s.components.map((c) => [c.id, c]))
+  check('/api/status: the API is up and the Telegram webhook reads as registered', byId.api?.state === 'up' && byId.telegram?.state === 'up' && /waiting/.test(byId.telegram?.detail ?? ''), JSON.stringify([byId.api, byId.telegram].map((c) => c && { s: c.state, d: c.detail })))
+  check('/api/status: Gully Pay RPCs answer per offered chain (stub RPCs)', OFFERED.filter((n) => n !== 'Solana').every((n) => s.components.some((c) => c.group === 'payments' && c.name.endsWith(n) && c.state === 'up')), JSON.stringify(s.components.filter((c) => c.group === 'payments').map((c) => `${c.name}:${c.state}`)))
+  check('/api/status: each component has 48 half-hour buckets and an uptime once checked', s.components.every((c) => c.history.length === 48 && c.history.every((b) => b.up === null || (b.up >= 0 && b.up <= 1)) && (['off', 'unknown'].includes(c.state) || c.uptime24h !== null)), JSON.stringify(s.components.map((c) => [c.id, c.history.length, c.uptime24h])))
+  check('/api/status: no secret, RPC URL or env var name in the answer', !text.includes(process.env.TELEGRAM_BOT_TOKEN) && !/e2e\.invalid|GULLY_|_API_KEY|api\.telegram\.org|\/bot\d/.test(text))
+  check('/api/status: a non-GET is refused', (await fetch(BASE + '/api/status', { method: 'POST' })).status === 405)
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, height: width < 600 ? 844 : 900, mobile: width < 600 })
+    await ctx.addInitScript(() => {
+      window.__ev = []
+      window.umami = { track: (name, data) => window.__ev.push([name, data ?? null]) }
+    })
+    const page = await ctx.newPage()
+    const w = watch(page, `/status at ${width}`)
+    await page.goto(BASE + '/status')
+    await page.getByRole('heading', { name: /System status/i }).waitFor()
+    await page.getByText(/All systems operational|Some systems degraded|Major outage/).first().waitFor({ timeout: 15_000 })
+    check(`/status at ${width}: the overall state and every group`, (await page.getByRole('region', { name: 'Tracker freshness' }).count()) === 1 && (await page.getByRole('region', { name: 'Gully Pay RPC' }).count()) === 1 && (await page.getByRole('region', { name: 'Telegram bot' }).count()) === 1)
+    check(`/status at ${width}: the ring and uptime bars draw (live charts)`, await drawnIn(page, 'main'))
+    check(`/status at ${width}: the incident history is shown`, (await page.getByRole('heading', { name: 'Incident history' }).count()) === 1)
+    check(`/status at ${width}: a status-view event is sent to Gully Analytics`, (await page.evaluate(() => window.__ev.filter((e) => e[0] === 'status-view').length)) === 1, JSON.stringify(await page.evaluate(() => window.__ev)))
+    await noHorizontalScroll(page, '/status')
+    await designAudit(page, `/status at ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // The footer links the status page.
+  const ctx = await newContext()
+  const page = await ctx.newPage()
+  await page.goto(BASE + '/')
+  check('footer: links /status and the Telegram bot', (await page.locator('footer a[href="/status"]').count()) === 1 && (await page.locator('footer a[href="https://t.me/GullyLabsBot"]').count()) === 1)
+  await ctx.close()
+})
+
+// The new docs pages (P1-5): each loads under /docs with its title, sidebar icon and a live chart; the sitemap lists them.
+await step('docs pages', async () => {
+  const { sitemapFor } = await import(new URL('../server/seo.mjs', import.meta.url).href)
+  const docsMap = sitemapFor('docs.gullylabs.xyz')
+  const mainMap = sitemapFor('gullylabs.xyz')
+  for (const slug of ['gully-ai', 'telegram', 'chain-kit', 'swaps', 'solana', 'status']) check(`docs sitemap lists /${slug}`, docsMap.includes(`https://docs.gullylabs.xyz/${slug}<`))
+  check('sitemap: /status listed; no stock Holder Map page while no chain reports holder data', mainMap.includes('https://gullylabs.xyz/status<') && !/\/holders\/(robinhood|bsc|solana)\//.test(mainMap))
+  check('sitemap: the admin host has none (P2-18)', sitemapFor('admin.gullylabs.xyz') === null)
+  const ctx = await newContext({ width: 1440, height: 900 })
+  const page = await ctx.newPage()
+  for (const slug of ['gully-ai', 'telegram', 'chain-kit', 'swaps', 'solana', 'status', 'holder-map', 'methodology', 'api']) {
+    const w = watch(page, `/docs/${slug}`)
+    await page.goto(`${BASE}/docs/${slug}`)
+    await page.locator('#docs-main h1').waitFor({ timeout: 15_000 })
+    check(`/docs/${slug}: the sidebar link has an icon and is current`, (await page.locator(`nav[aria-label="Docs"] a[aria-current="page"] svg`).count()) >= 1)
+    // Charts draw when scrolled into view: bring each one in, then at least one must have drawn from live data.
+    for (const el of await page.locator('#docs-main [data-chart]').all()) await el.scrollIntoViewIfNeeded().catch(() => {})
+    check(`/docs/${slug}: a live chart draws`, (await page.locator('#docs-main [data-chart]').count()) > 0 && (await drawnIn(page, '#docs-main')))
+    await designAudit(page, `/docs/${slug}`, '#docs-main')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+  }
+  await page.goto(`${BASE}/docs/api`)
+  await page.locator('#docs-main h1').waitFor()
+  const api = await page.locator('#docs-main').textContent()
+  check('API reference documents /api/status, /api/pay/gas, /api/tracker/gap-index, /api/holders and /api/score', ['/api/status', '/api/pay/gas', '/api/tracker/gap-index', '/api/holders', '/api/score'].every((p) => (api ?? '').includes(p)))
+  await ctx.close()
+})
+
+// The analytics wrapper (P1-14, src/lib/track.ts): events reach umami.track with no address in them, nothing is
+// sent under Do Not Track, and with the script blocked (the e2e default) every tracked click still works.
+await step('analytics events', async () => {
+  const fake = () => {
+    window.__ev = []
+    window.umami = { track: (name, data) => window.__ev.push([name, data ?? null]) }
+  }
+  const ctx = await newContext({ width: 1440, height: 900 })
+  await ctx.addInitScript(fake)
+  const page = await ctx.newPage()
+  const w = watch(page, 'analytics events')
+  // window.__ev starts empty on every full page load: collect it before each one.
+  const ev = []
+  const collect = async () => ev.push(...(await page.evaluate(() => window.__ev)))
+  await page.goto(BASE + '/')
+  await page.getByRole('link', { name: 'Launch app' }).first().click()
+  await page.waitForURL(/\/tracker$/)
+  await collect()
+  await page.goto(BASE + '/pricing')
+  const plan = page.locator('#api a[target="_blank"]').first()
+  await plan.waitFor()
+  await plan.evaluate((a) => a.addEventListener('click', (e) => e.preventDefault()))
+  await plan.click()
+  await collect()
+  await page.goto(BASE + '/links')
+  await page.waitForLoadState('networkidle').catch(() => {})
+  await page.evaluate(() => {
+    document.addEventListener('click', (e) => e.preventDefault())
+    document.querySelector('main a[href^="http"]')?.click()
+  })
+  await collect()
+  const names = ev.map((e) => e[0])
+  check('analytics: Launch app, a pricing plan click and a /links click are sent', names.includes('launch-app') && names.includes('plan-click') && names.includes('link-click'), JSON.stringify(ev))
+  check('analytics: no wallet address, email or full URL in any event', !/0x[0-9a-fA-F]{20,}|@[a-z0-9-]+\.[a-z]|https?:\/\//i.test(JSON.stringify(ev)), JSON.stringify(ev))
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+  await ctx.close()
+  // Do Not Track: nothing is sent.
+  const dnt = await newContext({ width: 1440, height: 900 })
+  await dnt.addInitScript(() => Object.defineProperty(Navigator.prototype, 'doNotTrack', { get: () => '1' }))
+  await dnt.addInitScript(fake)
+  const dp = await dnt.newPage()
+  await dp.goto(BASE + '/status')
+  await dp.getByRole('heading', { name: /System status/i }).waitFor()
+  await dp.getByRole('link', { name: 'Launch app' }).first().click()
+  await dp.waitForURL(/\/tracker$/)
+  check('analytics: Do Not Track sends nothing', (await dp.evaluate(() => window.__ev.length)) === 0, JSON.stringify(await dp.evaluate(() => window.__ev)))
+  await dnt.close()
+  // Blocked script (no window.umami): tracked actions still work and nothing throws.
+  const blocked = await newContext({ width: 1440, height: 900 })
+  const bp = await blocked.newPage()
+  const bw = watch(bp, 'analytics blocked')
+  await bp.goto(BASE + '/status')
+  await bp.getByRole('heading', { name: /System status/i }).waitFor()
+  await bp.getByRole('link', { name: 'Launch app' }).first().click()
+  await bp.waitForURL(/\/tracker$/)
+  check('analytics: with the script blocked, Launch app still navigates', new URL(bp.url()).pathname === '/tracker')
+  await bw.verify([/ERR_BLOCKED_BY_CLIENT/i])
+  await blocked.close()
 })
 
 /* ------------------------------------------------------------- brand kit --- */
@@ -1867,6 +2030,7 @@ check('the server made no unexpected outbound calls', unexpectedOutbound.length 
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)
 // E2E_SHOTS adds full-page screenshots on top of the checks, so the budget applies to plain runs.
-check(`the suite runs in under 5 minutes (${secs} s${SHOTS ? ', screenshots on' : ''})`, SHOTS ? true : secs < 300)
+// 7 minutes since the status, docs-pages, analytics and every-app-page height steps (2026-10-18) were added.
+check(`the suite runs in under 7 minutes (${secs} s${SHOTS ? ', screenshots on' : ''})`, SHOTS ? true : secs < 420)
 console.log(`\n${t.passed} passed, ${t.failed} failed (${secs} s)`)
 process.exit(t.failed ? 1 : 0)

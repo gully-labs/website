@@ -5,6 +5,9 @@ import { APP_URL, isLocalHost } from '../../site-host'
 import type { Movers, Tracker, TrackerRow } from '../../lib/tracker'
 import type { AlertChannels, Offer } from '../../pages/developers/api'
 import { Mascot } from '../brand'
+import { track } from '../../lib/track'
+import { NewTabMark } from '../LayoutLinks'
+import { newTab } from '../LayoutNav'
 
 /* Landing demo: Gully Labs alerts in Telegram and by webhook.
    /gap, /top and /movers read the live tracker (/api/tracker, /api/tracker/movers) and word the answer
@@ -17,6 +20,8 @@ const SITE_HOST = 'gullylabs.xyz'
 const CHAIN_NAMES: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
 const TRUSTED = new Set(['in-line', 'drifting', 'premium', 'discount'])
 const DEV_ALERTS = isLocalHost() ? '/app#alerts' : `${APP_URL}/#alerts`
+// The app is another host in production, so the link opens in a new tab there.
+const DEV_ALERTS_EXT = /^https?:/.test(DEV_ALERTS)
 const EXAMPLE_WALLET = '0x0f83…e965'
 const MIN_TYPING_MS = 650
 
@@ -418,8 +423,16 @@ export default function AlertsDemo(): JSX.Element {
           <li>Link a chat or group with a one-time code; Open and Mute 24h on every alert</li>
           {limitsText && <li>{limitsText}</li>}
           <li>
-            <a href={DEV_ALERTS} className="inline-flex min-h-11 items-center gap-1.5 text-ink-2 underline-offset-4 hover:text-gold hover:underline">
-              Connect it in the app dashboard, Alerts tab <ExternalLink size={12} aria-hidden />
+            <a
+              href={DEV_ALERTS}
+              {...(DEV_ALERTS_EXT ? newTab : {})}
+              onClick={() => {
+                track('cta-click', { cta: 'connect-alerts', page: location.pathname })
+                track('launch-app', { from: 'demo-alerts' })
+              }}
+              className="inline-flex min-h-11 items-center gap-1.5 text-ink-2 underline-offset-4 hover:text-gold hover:underline"
+            >
+              Connect it in the app dashboard, Alerts tab {DEV_ALERTS_EXT ? <NewTabMark size={12} /> : <ExternalLink size={12} aria-hidden />}
             </a>
           </li>
         </ul>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Offer } from '../../pages/developers/api'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
+import { AnalyticsPlansChart } from '../LiveCharts'
 import { apiOrigin } from '../nav'
 
 const sections = [
@@ -144,6 +145,7 @@ export function AnalyticsDocs() {
             {!offer.checkout.enabled && <Callout label="NOT ON SALE YET">{offer.checkout.reason}</Callout>}
           </>
         )}
+        <AnalyticsPlansChart />
         <List>
           <li>An event is any call the tracker makes for one of your websites: page views, custom events and Web3 events. They are counted across your websites per calendar month in UTC.</li>
           <li>At the limit, new events are not recorded until the month turns or you upgrade. The tracker gets an HTTP 402 answer and stops sending for the rest of that page view.</li>

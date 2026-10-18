@@ -2,8 +2,14 @@ import { useEffect, useMemo, useState, type CSSProperties, type JSX, type Keyboa
 import { ArrowRight } from 'lucide-react'
 import { useReducedMotion } from '../charts/chart-utils'
 import { ANALYTICS_SIGNUP, usePlans } from '../../lib/plans'
+import { track } from '../../lib/track'
+import { NewTabMark } from '../LayoutLinks'
+import { newTab } from '../LayoutNav'
 
-/* Landing demo: a Gully Analytics dashboard (Umami with web3). Every figure on it is generated demo
+// The trial opens the app: another host in production (new tab), the local /app route in dev.
+const SIGNUP_EXT = /^https?:/.test(ANALYTICS_SIGNUP)
+
+/* Landing demo: a Gully Analytics dashboard (Umami with web3). Every figure on it is generated example
    data and is labelled so; there is no public stats endpoint. The trial length, plan names and limits
    come from GET /api/plans (field `analytics`), and the script tag is the real one. */
 
@@ -130,7 +136,7 @@ export default function AnalyticsDemo(): JSX.Element {
           <span aria-hidden className="size-2 rounded-[2px] bg-gold" />
           app.yourproject.xyz
         </span>
-        <span className="rounded-full border border-gold-line px-2.5 py-1 font-mono text-[11px] tracking-[1px] text-gold">DEMO DATA</span>
+        <span className="rounded-full border border-gold-line px-2.5 py-1 font-mono text-[11px] tracking-[1px] text-gold">EXAMPLE DATA</span>
         <span className="flex items-center gap-2 text-[12px] text-muted">
           <span aria-hidden className="size-2 rounded-full bg-green transition-[box-shadow] duration-[600ms]" style={{ boxShadow: `0 0 0 ${tick % 2 ? 6 : 0}px rgba(116,194,123,.25)` }} />
           <b className="font-mono font-medium text-ink">{live}</b> visitors right now
@@ -293,7 +299,7 @@ export default function AnalyticsDemo(): JSX.Element {
       </div>
 
       {/* Footer: the real product facts */}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 border-t border-line px-4 font-mono text-[10.5px] text-faint">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 border-t border-line px-4 font-mono text-[11px] text-faint">
         <span>
           Cookie-free · built on Umami · one tag with <code className="text-ink-2">data-web3=&quot;true&quot;</code>
         </span>
@@ -311,8 +317,16 @@ export default function AnalyticsDemo(): JSX.Element {
           ) : (
             <span>Reading plans…</span>
           )}
-          <a href={ANALYTICS_SIGNUP} className="inline-flex min-h-11 items-center gap-1 text-gold hover:text-gold-hover">
-            Start free trial <ArrowRight size={12} aria-hidden />
+          <a
+            href={ANALYTICS_SIGNUP}
+            {...(SIGNUP_EXT ? newTab : {})}
+            onClick={() => {
+              track('cta-click', { cta: 'analytics-trial', page: location.pathname })
+              track('launch-app', { from: 'demo-analytics' })
+            }}
+            className="inline-flex min-h-11 items-center gap-1 text-gold hover:text-gold-hover"
+          >
+            Start free trial {SIGNUP_EXT ? <NewTabMark size={12} className="flex-none" /> : <ArrowRight size={12} aria-hidden />}
           </a>
         </span>
       </div>

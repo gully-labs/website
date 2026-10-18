@@ -10,6 +10,7 @@ import { SocialIcon } from './SocialIcon'
 import { Wordmark } from './brand'
 import { btnGold } from './ui'
 import { useContact } from './ContactContext'
+import { track } from '../lib/track'
 import './Layout.css'
 
 /* The site header: logo, three grouped menus (Products, App & API, Company) with three plain links (Projects, Pricing, Gully AI)
@@ -132,7 +133,7 @@ function LaunchApp({ compact }: { compact?: boolean }) {
       <NavigationMenu.List className="m-0 flex list-none items-stretch p-0">
         <NavigationMenu.Item>
           <NavigationMenu.Link asChild>
-            <Link to={launchApp.to} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-4 text-[14px] whitespace-nowrap ${compact ? '' : 'rounded-r-none'}`}>
+            <Link to={launchApp.to} onClick={() => track('launch-app', { item: 'Tracker', from: compact ? 'header-compact' : 'header' })} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-4 text-[14px] whitespace-nowrap ${compact ? '' : 'rounded-r-none'}`}>
               <AppWindow aria-hidden size={16} strokeWidth={2} />
               Launch app
             </Link>
@@ -153,7 +154,7 @@ function LaunchApp({ compact }: { compact?: boolean }) {
                 const on = !!e.to && entryActive({ ...e, match: [e.to] }, pathname, hash)
                 return (
                   <NavigationMenu.Link key={e.label} asChild active={on}>
-                    <EntryLink e={e} className={panelItem}>
+                    <EntryLink e={e} className={panelItem} onClick={() => track('launch-app', { item: e.label, from: 'header-menu' })}>
                       <EntryBody e={e} active={on} />
                     </EntryLink>
                   </NavigationMenu.Link>
@@ -320,6 +321,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
           type="button"
           onClick={() => {
             pick()
+            track('cta-click', { cta: 'start-project', from: 'mobile-menu' })
             openContact()
           }}
           className={`${btnGold} mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 px-4 text-[15px]`}
@@ -338,6 +340,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
                 key={e.label}
                 e={e}
                 onPick={pick}
+                onClick={() => track('launch-app', { item: e.label, from: 'mobile-menu' })}
                 className={
                   i === 0
                     ? `${btnGold} inline-flex min-h-12 items-center justify-center gap-2 px-4 text-[15px]`

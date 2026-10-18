@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { newTab } from '../LayoutNav'
+import { NewTabMark } from '../LayoutLinks'
 import { SocialIcon } from '../SocialIcon'
 import { StockLogo } from './StockLogo'
 import { useReducedMotion } from '../charts/chart-utils'
@@ -203,6 +204,7 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
             >
               <SocialIcon name="X" size={12} />
               Share top movers
+              <NewTabMark size={12} className="flex-none" />
             </a>
           )}
         </div>

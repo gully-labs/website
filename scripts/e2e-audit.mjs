@@ -3,8 +3,8 @@
 //   - no text under 11 px (the site's minimum; chart axis labels included),
 //   - no colour painted that is not a token (src/index.css @theme, the chart palette, the project
 //     accents, the chain and token brand marks, the wordmark gradient),
-//   - every link to another host opens in a new tab with rel="noopener" (the app host is ours and
-//     opens in place, like "Launch app" does).
+//   - every link to another host opens in a new tab with rel="noopener", app.gullylabs.xyz included (owner rule,
+//     2026-10-18: the old in-place exception for the app host is gone).
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,15 +24,12 @@ export function tokenColors() {
   return [...out]
 }
 
-/** Hosts that are this site's own app: links to them open in place. */
-export const IN_PLACE_HOSTS = ['app.gullylabs.xyz', 'developers.gullylabs.xyz']
-
 /**
  * Runs in the browser (page.evaluate). Returns the findings; each list is empty when the page passes.
- * `allowed` is tokenColors(); `inPlace` is IN_PLACE_HOSTS; `root` (optional) is a selector that limits the audit to
+ * `allowed` is tokenColors(); `root` (optional) is a selector that limits the audit to
  * one part of the page, e.g. one app page inside a shell another suite audits.
  */
-export function auditPage({ allowed, inPlace, root = null }) {
+export function auditPage({ allowed, root = null }) {
   const small = []
   const offToken = new Map()
   const ext = []
@@ -92,7 +89,7 @@ export function auditPage({ allowed, inPlace, root = null }) {
     // Links to other hosts.
     if (el.tagName === 'A' && /^https?:/.test(el.href)) {
       const host = new URL(el.href).host
-      if (host !== location.host && !inPlace.includes(host)) {
+      if (host !== location.host) {
         const rel = (el.getAttribute('rel') || '').split(/\s+/)
         if (el.target !== '_blank' || !rel.includes('noopener')) ext.push({ href: el.href.slice(0, 90), sel: sel(el) })
       }

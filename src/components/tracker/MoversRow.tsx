@@ -1,22 +1,25 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { CHAIN_SHORT, DOWN, fmtGap, fmtPp, stockPath, UP, useMovers } from '../../lib/tracker'
+import { CHAIN_SHORT, DOWN, fmtGap, fmtPp, stockPath, UP, useMovers, type Mover } from '../../lib/tracker'
+import { EChart } from '../charts/EChart'
+import { C, sparklinePreset } from '../charts/chartPresets'
 import { StockLogo } from './StockLogo'
 
-const W = 120
-const H = 26
+const H = 32
+const hhmm = (t: number) => new Date(t * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-/** The window's gap as a sparkline path, scaled to its own range. */
-function sparkPath(pts: [number, number][]): string {
-  if (pts.length < 2) return ''
-  const t0 = pts[0][0]
-  const t1 = pts[pts.length - 1][0]
-  const vs = pts.map((p) => p[1])
-  const lo = Math.min(...vs)
-  const span = Math.max(...vs) - lo || 1
-  return pts.map((p, j) => `${j ? 'L' : 'M'}${(((p[0] - t0) / (t1 - t0 || 1)) * W).toFixed(1)},${(H - 2 - ((p[1] - lo) / span) * (H - 4)).toFixed(1)}`).join('')
+/** The window's gap as a live sparkline (the shared chart kit): it draws in when scrolled into view,
+    animates to the new points on each re-read, and hovering shows the gap at that reading. */
+function MoverSpark({ m, color }: { m: Mover; color: string }) {
+  const option = useMemo(
+    () => sparklinePreset({ data: m.spark.map((p) => p[1]), labels: m.spark.map((p) => hhmm(p[0])), color, area: true, fmt: (v) => fmtGap(v) }),
+    [m.spark, color],
+  )
+  if (m.spark.length < 2) return <span aria-hidden className="block gl-skeleton rounded-[4px] bg-surface-deep" style={{ height: H }} />
+  return <EChart option={option} height={H} label={`${m.ticker} gap over the last 24 hours, ${fmtGap(m.gapThen)} to ${fmtGap(m.gapNow)}`} skeleton="line" />
 }
 
-/** A compact live row of the biggest 24h gap moves, each with its sparkline drawing in
+/** A compact live row of the biggest 24h gap moves, each with its live sparkline (shared EChart kit)
     (/api/tracker/movers). Pulses while loading; says so when there is not enough history yet. */
 export function MoversRow({ limit = 5 }: { limit?: number }) {
   const st = useMovers('24h', { limit })
@@ -30,12 +33,11 @@ export function MoversRow({ limit = 5 }: { limit?: number }) {
     )
   if (st.k === 'error') return <p className="m-0 font-mono text-[12px] text-faint">The live movers could not be read just now.</p>
   const list = st.data.byGap.slice(0, limit)
-  if (!list.length) return <p className="m-0 gl-skeleton font-mono text-[12px] text-faint">{st.data.note ?? 'Not tracked yet: the tracker needs 24h of snapshots.'}</p>
+  if (!list.length) return <p className="m-0 gl-skeleton font-mono text-[12px] text-faint">{st.data.note ?? 'Not tracked yet: the Stock tracker needs 24h of snapshots.'}</p>
   return (
     <ul aria-label="Biggest gap moves, last 24 hours" className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-2 p-0">
       {list.map((m, i) => {
-        const c = m.gapChangePp === 0 ? '#aeb5be' : m.gapChangePp > 0 ? UP : DOWN
-        const d = sparkPath(m.spark)
+        const c = m.gapChangePp === 0 ? C.muted : m.gapChangePp > 0 ? UP : DOWN
         return (
           <li key={`${m.chain}:${m.ticker}`} style={{ animation: `gl-rise .45s ${i * 0.06}s ease both` }}>
             <Link to={stockPath(m)} title={`${m.ticker}: gap ${fmtGap(m.gapThen)} → ${fmtGap(m.gapNow)} over 24h`} className="flex min-h-11 flex-col gap-2 rounded-panel border border-line bg-surface p-3 text-ink transition-colors hover:border-gold hover:text-ink">
@@ -47,9 +49,7 @@ export function MoversRow({ limit = 5 }: { limit?: number }) {
                   {fmtPp(m.gapChangePp)}
                 </span>
               </span>
-              <svg aria-hidden width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block overflow-visible">
-                {d && <path d={d} fill="none" stroke={c} strokeWidth={1.5} vectorEffect="non-scaling-stroke" pathLength={1} style={{ strokeDasharray: 1, animation: `gl-draw .9s ${0.2 + i * 0.06}s ease-out both` }} />}
-              </svg>
+              <MoverSpark m={m} color={c} />
             </Link>
           </li>
         )

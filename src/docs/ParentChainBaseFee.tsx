@@ -1,6 +1,11 @@
 // Live chart for the "Roadmap: Gully L3" docs page: base fee per gas over the last 128 blocks on the chains the
 // L3 could settle to, read from their public RPCs in this browser (owner rule: live data on every surface). A
 // chain that cannot be read says so; nothing is estimated or typed in. ECharts loads on demand inside EChart.
+//
+// Why this still reads third-party RPCs from the browser (checked 2026-10-18): our own GET /api/pay/gas gives one
+// current gas price per mainnet payment chain (eth_gasPrice, cached 3 min), not a 128-block base-fee series, and
+// it does not cover Arbitrum Sepolia, the devnet's parent. No endpoint of ours serves eth_feeHistory, so the
+// figure this chart needs only exists on the chains' own public RPCs.
 
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'

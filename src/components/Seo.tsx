@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { SITE_URL } from '../content/site'
 
 function setMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`)
@@ -28,6 +29,25 @@ export function Seo({ title, description, noindex = false, bare = false }: { tit
     setMeta('name', 'twitter:title', full)
     setMeta('name', 'twitter:description', description)
   }, [title, description, bare])
+  // The canonical address and og:url follow the page (the server writes them for the first load; a client-side
+  // navigation must not leave the previous page's). Pages that are not indexed (the 404, checkouts) have none.
+  useEffect(() => {
+    if (typeof location === 'undefined') return
+    let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
+    if (noindex || bare) {
+      link?.remove()
+      document.head.querySelector('meta[property="og:url"]')?.remove()
+      return
+    }
+    const url = `${SITE_URL}${location.pathname.replace(/\/+$/, '') || '/'}`
+    if (!link) {
+      link = document.createElement('link')
+      link.rel = 'canonical'
+      document.head.appendChild(link)
+    }
+    link.href = url
+    setMeta('property', 'og:url', url)
+  }, [noindex, bare, title])
 
   return null
 }

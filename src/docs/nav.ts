@@ -17,12 +17,45 @@ export const DOC_PAGES = [
   { slug: 'gully-pay-merchants', title: 'Gully Pay for merchants', group: 'Products' },
   { slug: 'gully-security', title: 'Gully Security', group: 'Products' },
   { slug: 'gully-score', title: 'Gully Score', group: 'Products' },
+  { slug: 'gully-ai', title: 'Gully AI', group: 'Products' },
+  { slug: 'telegram', title: 'Telegram bot', group: 'Products' },
+  { slug: 'swaps', title: 'Swaps', group: 'Products' },
+  { slug: 'solana', title: 'Solana', group: 'Products' },
+  { slug: 'chain-kit', title: 'Chain Kit', group: 'Products' },
+  { slug: 'status', title: 'Status', group: 'More' },
   { slug: 'roadmap', title: 'Roadmap', group: 'More' },
   { slug: 'roadmap-l3', title: 'Roadmap: Gully L3', group: 'More' },
   { slug: 'changelog', title: 'Changelog', group: 'More' },
 ] as const
 
 export type DocSlug = (typeof DOC_PAGES)[number]['slug']
+
+/** Extra words the sidebar search matches besides each page's title (lower case). */
+export const DOC_KEYWORDS: Partial<Record<DocSlug, string[]>> = {
+  '': ['home', 'start', 'tracker', 'quick start', 'chains'],
+  methodology: ['fair price', 'chainlink', 'gap', 'premium', 'discount', 'pool', 'status'],
+  api: ['endpoint', 'json', 'rest', 'tracker', 'history', 'holders', 'curl', 'errors'],
+  widget: ['embed', 'ticker', 'badge', 'table', 'html', 'script'],
+  'api-keys': ['key', 'token', 'bearer', 'rate limit', 'auth'],
+  'plans-alerts': ['pricing', 'price', 'plan', 'alert', 'webhook', 'telegram', 'checkout'],
+  sdk: ['typescript', 'javascript', 'npm', 'client', 'library'],
+  teams: ['workspace', 'members', 'roles', 'invite'],
+  'holder-map': ['holders', 'clusters', 'bubbles', 'whales', 'deepcore', 'health score'],
+  analytics: ['umami', 'web3', 'wallets', 'funnel', 'events'],
+  'gully-pay': ['payments', 'checkout', 'usdc', 'usdt', 'eth', 'bnb', 'crypto', 'invoice'],
+  'gully-pay-merchants': ['store', 'merchant', 'pay link', 'webhook', 'fees', 'invoice'],
+  'gully-security': ['scan', 'audit', 'contract', 'monitor', 'vulnerability'],
+  'gully-score': ['score', 'rating', 'token score'],
+  'gully-ai': ['ask', 'assistant', 'chat', 'ai', 'claude', 'citations', 'search', 'cmd k'],
+  telegram: ['bot', 'gullylabsbot', 'mini app', 'alerts', 'mute', 'news channel', 'commands', 'groups'],
+  swaps: ['swap', 'trade', 'buy', 'sell', 'li.fi', 'lifi', 'jupiter', 'geo', 'fees'],
+  solana: ['sol', 'xstocks', 'spl', 'solana pay', 'jupiter', 'backed'],
+  'chain-kit': ['explorer', 'blockscout', 'rollup', 'block explorer', 'chain'],
+  status: ['uptime', 'incidents', 'health', 'outage', 'down', 'monitoring'],
+  roadmap: ['plans', 'upcoming', 'future'],
+  'roadmap-l3': ['l3', 'gully chain', 'rollup', 'devnet'],
+  changelog: ['changes', 'release', 'updates', 'new'],
+}
 
 export const SITE = 'https://gullylabs.xyz'
 

@@ -1,5 +1,6 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
+import { LaunchHealthChart } from '../LiveCharts'
 
 const sections = [
   { id: 'what', title: 'What it shows' },
@@ -72,6 +73,8 @@ export function HolderMapDocs() {
           Every DeepCore launch gets a score from 0 to 100, made of parts you can read one by one: whether the launch liquidity is locked, bundled buying in the first block of trading, snipers in the first blocks, the deployer’s share now, how much
           the top 10 wallets hold, and the deployer’s record of earlier launches. Each part shows its weight, the points it earned, the figure behind it and a plain reason. Tap a part on the map to light up the wallets behind it.
         </P>
+        <P>Live: the newest DeepCore launches and their score right now, from <C>GET /api/holders/launches</C>. A launch whose map is still being built says so instead of showing a score.</P>
+        <LaunchHealthChart />
         <Callout label="ALWAYS FREE">The score, its parts, the bundled and deployer warnings and the liquidity check are never behind a plan.</Callout>
         <List>
           <li>A part that could not be read is left out of the score and marked “not known”; it is never counted as good or bad. The card says how many parts were counted.</li>
