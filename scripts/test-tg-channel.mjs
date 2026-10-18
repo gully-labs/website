@@ -318,6 +318,7 @@ try {
   await ch.tickChannel()
   let lp1 = await autoPosts('launches')
   check('launches: on, the new launch is posted once with a DeepCore button', lp1.length === 1 && /T3/.test(lp1[0].text) && /Base/.test(lp1[0].text) && lp1[0].buttons[0].url.startsWith('https://deepcore.fun/tokens/') && lp1[0].status === 'sent', JSON.stringify(lp1[0]?.text))
+  check('launches: the post says "Liquidity locked" in plain words, no pool kind or quote', lp1.length === 1 && lp1[0].text.includes('Base · 🔒 Liquidity locked') && !/CL|WETH|pool/.test(lp1[0].text) && lp1[0].buttons[0].text === 'View on DeepCore', lp1[0]?.text)
   await dc.pollLaunchesNow()
   await ch.tickChannel()
   check('launches: no duplicate on the next poll', (await autoPosts('launches')).length === 1)
@@ -394,6 +395,7 @@ try {
   await ch.tickChannel()
   const dg = await autoPosts('dailyGaps')
   check('daily gaps: posted at 14:00 with the top 5 trusted gaps and the tracker link', dg.length === 1 && /AMD/.test(dg[0].text) && /NVDA/.test(dg[0].text) && !/AMZN/.test(dg[0].text) && !/GOOGL/.test(dg[0].text) && (dg[0].text.match(/^\d\. /gm) ?? []).length === 5 && dg[0].buttons[0].url === 'https://gullylabs.xyz/tracker', dg[0]?.text)
+  check('daily gaps: each line is a plain sentence ("NVDA token is 3.10% above the real share price")', dg.length === 1 && dg[0].text.includes('1. AMD token is <b>4.40% above</b> the real share price · Robinhood Chain') && dg[0].text.includes('TSLA token is <b>2.50% below</b> the real share price') && !/premium|discount|Chainlink|on-chain/i.test(dg[0].text), dg[0]?.text)
   clock = at('15:00', 19)
   await ch.tickChannel()
   check('daily gaps: once a day', (await autoPosts('dailyGaps')).length === 1)
@@ -418,6 +420,7 @@ try {
   await ch.tickChannel()
   const wm = await autoPosts('weeklyMovers')
   check('weekly movers: posted Friday with the 7-day changes', wm.length === 1 && /NVDA/.test(wm[0].text) && /\+10\.00%/.test(wm[0].text) && /TSLA/.test(wm[0].text), wm[0]?.text)
+  check('weekly movers: the gap now is a plain phrase, and the price change is the token’s', wm.length === 1 && /\+10\.00%<\/b> this week · now 3\.10% above the real share price/.test(wm[0].text) && /Token price change over 7 days/.test(wm[0].text) && !/on-chain|gap now/i.test(wm[0].text), wm[0]?.text)
   clock = at('22:00', 23)
   await ch.tickChannel()
   check('weekly movers: once a week', (await autoPosts('weeklyMovers')).length === 1)
@@ -465,6 +468,12 @@ try {
   delete process.env.ANTHROPIC_API_KEY
 
   /* ---------------------------------------------------------------- sweeps --- */
+  // Automatic posts are read by everyone in the channel: no source names, technical terms or raw timestamps.
+  const JARGON = /api\.|\bAPI\b|\bRPC\b|\bfeeds?\b|\bUTC\b|endpoint|indexer|\bpool\b|not reported|unreadable|on[- ]chain|fair price|Chainlink|\d{4}-\d{2}-\d{2} \d{2}:\d{2}/i
+  const autoTexts = (await A('/api/admin/channel')).data.posts.filter((p) => /^auto:/.test(p.createdBy)).flatMap((p) => [p.text, ...(p.buttons ?? []).map((b) => b.text)])
+  check(`plain words: no automatic post or button says "api.", "API", "RPC", "feed", "UTC", "pool", "on-chain" or a raw time (${autoTexts.length} texts)`, autoTexts.length >= 8 && !autoTexts.some((x) => JARGON.test(x)), autoTexts.filter((x) => JARGON.test(x)).slice(0, 3).join(' | '))
+  const defaults = Object.values(ch.DEFAULT_TEMPLATES_FOR_TEST)
+  check('plain words: every default template is free of them too', defaults.length === 5 && !defaults.some((x) => JARGON.test(x)), defaults.filter((x) => JARGON.test(x)).join(' | '))
   check('every channel call went to the configured channel or the linked test chat', calls.filter((c) => c.body.chat_id !== undefined).every((c) => [CHANNEL, '4242'].includes(String(c.body.chat_id))))
   check('every keyboard sent has https URL buttons only', calls.filter((c) => c.body.reply_markup?.inline_keyboard && c.body.chat_id === CHANNEL).every((c) => c.body.reply_markup.inline_keyboard.flat().every((b) => /^https:\/\//.test(b.url))))
   const store = JSON.parse(fs.readFileSync(path.join(tmp, 'channel-posts.json'), 'utf8'))

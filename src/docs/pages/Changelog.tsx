@@ -46,6 +46,9 @@ export function Changelog() {
             The <Ext href="https://gullylabs.xyz/">landing page</Ext> describes DeepCore as it is today (launchpad, hosted Launchpads and DEXes, router) and shows its hosted sites, launches in the last 24 hours and dollars in locks, read from <Ext href="https://api.deepcore.fun/v1/overview">api.deepcore.fun</Ext>.
           </li>
           <li>A preview of Gully Chains, managed Arbitrum Orbit L3s, starting with Gully Devnet. In development; nothing is live yet.</li>
+          <li>
+            <DocLink to="roadmap-l3">Roadmap: Gully L3</DocLink>: the consolidated spec (settlement, data availability, gas token, Chain Kit, Gully Pay, Hyperlane as the interop layer at launch), with its status: spec written, devnet prepared, nothing running.
+          </li>
           <li>The tracker reads DeepCore pools through DeepCore's own pool manager, never as Uniswap v4 pools.</li>
         </List>
       </Section>

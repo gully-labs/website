@@ -176,12 +176,10 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 }
 .gl-bar { display: flex; align-items: center; gap: 24px; min-height: var(--gl-header-h); padding-block: 8px; }
 .gl-brand { display: flex; align-items: center; gap: 10px; flex: none; }
-.gl-wordmark {
-    display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
-    font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 800; font-size: 26px;
-    letter-spacing: 1px; line-height: 1; color: var(--gl-ink); border-radius: var(--gl-radius-btn);
-}
-.gl-wordmark-labs { color: var(--gl-gold); }
+/* The brand kit's wordmark (partials/brand/wordmark.hbs: the kit's outlined paths, inline). 26 px tall as
+   on gullylabs.xyz's header; the width follows the kit's 848:176 ratio. */
+.gl-wordmark { display: inline-flex; align-items: center; min-height: 44px; border-radius: var(--gl-radius-btn); }
+.gl-wordmark-svg { display: block; height: 26px; width: auto; }
 .gl-brand-sep { color: var(--gl-line-hover); font-family: var(--gl-font-mono); font-size: 18px; }
 .gl-brand-blog {
     display: inline-flex; align-items: center; min-height: 44px; padding-inline: 2px;
@@ -279,7 +277,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
     .gl-nav-trigger, .gl-nav-link { padding: 0 8px; }
 }
 @media (max-width: 380px) {
-    .gl-wordmark { font-size: 22px; }
+    .gl-wordmark-svg { height: 22px; }
     .gl-brand { gap: 6px; }
 }
 

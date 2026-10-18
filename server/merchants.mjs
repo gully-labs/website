@@ -86,7 +86,7 @@ import { isFeeProxy } from './fee-proxy-guard.mjs'
 import { isSolanaAsset } from './solana-pay.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { sendAccountTelegram } from './telegram.mjs'
-import { canWrite, workspaceName } from './workspaces.mjs'
+import { canWrite, roleIn, workspaceName } from './workspaces.mjs'
 
 const FILE = path.join(DATA_DIR, 'merchants.json')
 const LOGO_DIR = path.join(DATA_DIR, 'merchant-logos')
@@ -408,10 +408,40 @@ export async function fetchLogo(raw) {
 
 const logoPath = (logo) => (logo ? `/api/pay/m/logo/${logo.sha}` : null)
 
-/** What a payer sees of the store. */
+/** What a payer sees of the store. `named` is false until the merchant sets a store name: the checkout
+    then says "Store" with the owner's short address instead of "<0x…>'s workspace". */
 function brandOf(ws) {
   const p = peek(ws)?.profile ?? {}
-  return { name: p.name || workspaceName(ws), logoUrl: logoPath(p.logo), accent: p.accent ?? null, supportEmail: p.supportEmail ?? null, website: p.website ?? null }
+  return { name: p.name || workspaceName(ws), named: !!p.name, ownerShort: `${ws.slice(0, 6)}…${ws.slice(-4)}`, logoUrl: logoPath(p.logo), accent: p.accent ?? null, supportEmail: p.supportEmail ?? null, website: p.website ?? null }
+}
+
+/** The address signed in to the portal on this request, or null (developer.mjs reads the cookie). */
+async function viewerAddress(req) {
+  if (!req.headers.cookie) return null
+  const { sessionAddress } = await import('./developer.mjs')
+  return sessionAddress(req)
+}
+
+/**
+ * For a store member looking at their own checkout: the role and what to fix in the portal's Merchant
+ * tab (section ids there), so a payer's dead end reads as a to-do for the owner. null for anyone else.
+ */
+async function viewerOf(req, ws, { inv = null, link = null } = {}) {
+  const user = await viewerAddress(req)
+  const role = user ? roleIn(user, ws) : null
+  if (!role) return null
+  const fixes = []
+  const p = peek(ws)?.profile ?? {}
+  const pause = pauseOf(ws)
+  if (pause.paused) fixes.push({ id: 'fees', text: `Pay the overdue fee statement (${fmtUsd(pause.usdCents)} USD): checkout resumes at once.` })
+  const wanted = (inv?.assets ?? link?.assets ?? STORE_ASSET_IDS).map(assetById).filter(Boolean)
+  const chainsMissing = [...new Set(wanted.filter((a) => !recipientOn(ws, a.chainId)).map((a) => CHAINS[a.chainId]?.name ?? String(a.chainId)))]
+  if (chainsMissing.length && chainsMissing.length === new Set(wanted.map((a) => a.chainId)).size) fixes.push({ id: 'wallets', text: `Add a receiving wallet on ${chainsMissing.join(', ')}.` })
+  else if (chainsMissing.length) fixes.push({ id: 'wallets', text: `No receiving wallet yet on ${chainsMissing.join(', ')}; payers there cannot pay.` })
+  if (link && !link.active) fixes.push({ id: 'links', text: 'Switch this payment link back on.' })
+  if (!p.name) fixes.push({ id: 'profile', text: 'Finish your store profile: a name, a logo and a support email make this checkout yours.' })
+  else if (!p.logo || !p.supportEmail) fixes.push({ id: 'profile', text: `Finish your store profile: add ${[!p.logo && 'a logo', !p.supportEmail && 'a support email'].filter(Boolean).join(' and ')}.` })
+  return { role, fixes }
 }
 
 /* --------------------------------------------------------------- quotes --- */
@@ -1297,7 +1327,7 @@ export async function handleMerchantPay(req, res, url) {
         l.views = (l.views ?? 0) + 1
         saveSoon()
       }
-      return json(res, 200, { link: publicMerchantLink(l) }, { 'X-Robots-Tag': 'noindex' }), true
+      return json(res, 200, { link: publicMerchantLink(l), viewer: await viewerOf(req, l.ws, { link: l }) }, { 'X-Robots-Tag': 'noindex' }), true
     }
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
     if (req.headers['x-requested-with'] !== 'gully') return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -1343,7 +1373,7 @@ export async function handleMerchantPay(req, res, url) {
       inv.firstViewedAt ??= new Date().toISOString()
       saveSoon()
     }
-    return json(res, 200, { invoice: publicMerchantInvoice(inv) }, { 'X-Robots-Tag': 'noindex' }), true
+    return json(res, 200, { invoice: publicMerchantInvoice(inv), viewer: await viewerOf(req, inv.ws, { inv }) }, { 'X-Robots-Tag': 'noindex' }), true
   }
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
   if (req.headers['x-requested-with'] !== 'gully') return json(res, 403, { error: 'Cross-site request refused.' }), true

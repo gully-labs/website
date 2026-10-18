@@ -1,0 +1,204 @@
+import { Lockup, Mascot } from '../../components/brand'
+import { ExternalLink, ShieldCheck, Store } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Outlet } from 'react-router'
+import { accentOf, storeName, type Brand } from './brand'
+
+/* The standalone checkout (every /pay page): no site header, nav or footer. A slim top bar with the
+   store's logo and name (or the Gully Labs kit lockup on our own invoices) and a non-custodial badge; the
+   order summary on the left and the payment panel on the right at desktop width, one column on a phone
+   with a sticky Pay bar; "Powered by Gully Pay" with the kit mark at the foot.
+
+   Branding: the store's uploaded logo, else a neutral store glyph (never a letter tile). A store that has
+   not set a name is "Store" with its owner's short address. The accent is only used where it keeps
+   WCAG contrast against the page (accentOf); otherwise the kit gold.
+
+   Brand assets come from public/brand/kit (the kit's transparent PNGs at the size shown, 1x and 2x) and
+   public/brand/gully-mark-96.png. TODO(feat/brand-kit): switch to src/components/brand once it lands. */
+
+/* -------------------------------------------------------------- marks --- */
+
+/** The store's logo, or the neutral store glyph. */
+export function StoreMark({ brand, size = 40 }: { brand: Brand; size?: number }) {
+  const radius = Math.round(size * 0.25)
+  if (brand.logoUrl)
+    return <img src={brand.logoUrl} alt={`${storeName(brand)} logo`} width={size} height={size} className="shrink-0 border border-line bg-surface object-contain" style={{ width: size, height: size, borderRadius: radius }} />
+  return (
+    <span aria-hidden className="grid shrink-0 place-items-center border border-line-strong bg-surface-deep text-muted" style={{ width: size, height: size, borderRadius: radius }} data-testid="store-glyph">
+      <Store size={Math.round(size * 0.5)} strokeWidth={1.75} />
+    </span>
+  )
+}
+
+/** The kit's horizontal lockup (mascot + wordmark), on dark or on light, from public/brand/kit. */
+export function GullyLockup({ height = 34, light = false, className = '' }: { height?: number; light?: boolean; className?: string }) {
+  return <Lockup height={height} theme={light ? 'light' : 'dark'} className={className} />
+}
+
+/** The kit mark (the mascot bust on its disc), as in the site's logo registry. */
+export function GullyMark({ size = 20, className = '' }: { size?: number; className?: string }) {
+  return <Mascot size={size} className={className} decorative />
+}
+
+/* --------------------------------------------------------------- root --- */
+
+/** The route layout of every /pay page: the page colours and a skip link, nothing of the site around it. */
+export function CheckoutRoot() {
+  return (
+    <div className="min-h-[100svh] bg-bg font-sans text-ink [container-type:inline-size]">
+      <a href="#main" className="sr-only z-60 rounded-btn bg-gold px-4 py-2 text-bg focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
+        Skip to content
+      </a>
+      <Outlet />
+    </div>
+  )
+}
+
+/** What a /pay page shows while its code or data loads: the frame's outline, pulsing. */
+export function CheckoutSkeleton() {
+  const bar = 'animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface'
+  return (
+    <div role="status" aria-label="Loading the checkout" className="flex min-h-[100svh] flex-col">
+      <div className="flex h-16 items-center justify-between border-b border-line px-4 sm:px-6">
+        <span className={`${bar} h-9 w-[160px]`} />
+        <span className={`${bar} h-7 w-[140px] rounded-full`} />
+      </div>
+      <div className="mx-auto grid w-full max-w-[1120px] flex-1 grid-cols-1 gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:gap-12 lg:py-12">
+        <div className="flex flex-col gap-4">
+          <span className={`${bar} h-[14px] w-[120px] rounded-full`} />
+          <span className={`${bar} h-[28px] w-[min(420px,100%)]`} />
+          <span className={`${bar} h-[120px] w-full`} />
+        </div>
+        <span className={`${bar} h-[420px] w-full`} />
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------- frame --- */
+
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).host
+  } catch {
+    return url
+  }
+}
+
+function TopBar({ brand }: { brand: Brand }) {
+  return (
+    <header className="border-b border-line bg-bg">
+      <div className="mx-auto flex min-h-16 w-full max-w-[1120px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        {brand.gully ? (
+          <a href="https://gullylabs.xyz" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center rounded-btn" aria-label="Gully Labs (opens in a new tab)">
+            <GullyLockup height={34} />
+          </a>
+        ) : (
+          <div className="flex min-w-0 items-center gap-3">
+            <StoreMark brand={brand} size={40} />
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="flex min-w-0 items-center gap-2">
+                <b className="truncate text-[16px] font-semibold text-ink" data-testid="store-name">
+                  {storeName(brand)}
+                </b>
+                {!brand.named && (
+                  <span className="shrink-0 rounded-full border border-line-strong px-2 py-[1px] font-mono text-[11px] text-dim" title="The wallet that runs this store" data-testid="store-owner">
+                    {brand.ownerShort}
+                  </span>
+                )}
+              </span>
+              {brand.website && (
+                <a href={brand.website} target="_blank" rel="noopener nofollow" className="inline-flex min-w-0 items-center gap-1 truncate font-mono text-[12px] text-dim underline-offset-4 hover:text-ink hover:underline">
+                  {hostOf(brand.website)} <ExternalLink size={11} aria-hidden />
+                </a>
+              )}
+            </span>
+          </div>
+        )}
+        <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-success-line bg-success-bg px-3 py-[6px] text-[12px] font-medium text-green" title="Your transfer goes straight to the recipient's wallet; nobody holds it in between.">
+          <ShieldCheck size={14} aria-hidden /> Non-custodial
+        </span>
+      </div>
+    </header>
+  )
+}
+
+function Foot({ brand }: { brand: Brand }) {
+  return (
+    <footer className="mt-auto border-t border-line">
+      <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-5 text-[12px] text-faint sm:px-6">
+        <a href="https://gullylabs.xyz" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-2 font-mono tracking-[1px] text-faint hover:text-ink" aria-label="Powered by Gully Pay (opens in a new tab)">
+          POWERED BY <GullyMark size={20} /> <span className="text-gold">GULLY PAY</span>
+        </a>
+        <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-5">
+          <a href="/legal/merchant-terms" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
+            Merchant terms <ExternalLink size={11} aria-hidden />
+          </a>
+          {/* TODO: point at a dedicated privacy page once one exists; the merchant terms are the only legal page today. */}
+          <a href="/legal/merchant-terms" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
+            Privacy <ExternalLink size={11} aria-hidden />
+          </a>
+          {!brand.gully && brand.supportEmail && (
+            <a href={`mailto:${brand.supportEmail}`} className="inline-flex min-h-11 items-center underline-offset-4 hover:text-ink hover:underline">
+              Contact {storeName(brand)}
+            </a>
+          )}
+        </nav>
+      </div>
+    </footer>
+  )
+}
+
+/**
+ * The checkout page around its two columns. `summary` is the order (left), `children` the payment panel
+ * (right). `bar` is true when the panel shows a sticky bottom bar on phones (MobilePayBar), so the page
+ * leaves room for it.
+ */
+export function CheckoutFrame({ brand, summary, children, bar = false, single = false }: { brand: Brand; summary?: ReactNode; children: ReactNode; bar?: boolean; single?: boolean }) {
+  const accent = accentOf(brand)
+  return (
+    <div className="flex min-h-[100svh] flex-col" style={{ borderTop: `3px solid ${accent.color}` }}>
+      <TopBar brand={brand} />
+      <main id="main" tabIndex={-1} className={`mx-auto grid w-full max-w-[1120px] items-start gap-8 px-4 py-8 outline-none sm:px-6 lg:gap-12 lg:py-12 ${single ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)]'} ${bar ? 'pb-28 lg:pb-12' : ''}`} aria-live="polite">
+        {summary}
+        {children}
+      </main>
+      <Foot brand={brand} />
+    </div>
+  )
+}
+
+/** The payment panel: a card with a header (title and status pill) and its body. */
+export function PayPanel({ title, sub, pill, children, label = 'Payment' }: { title: string; sub?: string; pill?: { text: string; cls: string }; children: ReactNode; label?: string }) {
+  return (
+    <section className="flex min-w-0 flex-col overflow-hidden rounded-card border border-line bg-surface lg:sticky lg:top-6" aria-label={label} style={{ animation: 'gl-rise .5s .07s ease both' }}>
+      <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-3 max-[600px]:px-4">
+        <span className="flex min-w-0 flex-col leading-[1.25]">
+          <b className="truncate text-[15px] font-semibold text-ink">{title}</b>
+          {sub && <span className="truncate font-mono text-[11px] text-faint">{sub}</span>}
+        </span>
+        {pill && (
+          <span className={`shrink-0 rounded-full border px-3 py-[3px] text-[12px] font-semibold transition-colors duration-300 ${pill.cls}`} data-testid="status-pill">
+            {pill.text}
+          </span>
+        )}
+      </header>
+      <div className="flex flex-col gap-5 p-5 max-[600px]:p-4">{children}</div>
+    </section>
+  )
+}
+
+/** The sticky bottom bar on phones: the total and one action. Hidden from lg up, where the panel is beside the order. */
+export function MobilePayBar({ total, children }: { total: string; children: ReactNode }) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-[rgba(11,14,19,.94)] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur lg:hidden" role="region" aria-label="Pay">
+      <div className="mx-auto flex max-w-[640px] items-center justify-between gap-3">
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span className="font-mono text-[10.5px] tracking-[1px] text-faint">TOTAL</span>
+          <b className="truncate text-[17px] font-semibold text-ink">{total}</b>
+        </span>
+        {children}
+      </div>
+    </div>
+  )
+}

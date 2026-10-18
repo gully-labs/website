@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react'
+import { CheckoutSkeleton } from './pay/CheckoutFrame'
 import { chunks } from './routeChunks'
 
 // Each of these is its own chunk; the landing never loads them.
@@ -40,6 +41,8 @@ export function RouteSkeleton() {
 }
 
 const page = (node: ReactNode) => <Suspense fallback={<RouteSkeleton />}>{node}</Suspense>
+// The standalone checkout has its own outline (no site chrome around it).
+const checkout = (node: ReactNode) => <Suspense fallback={<CheckoutSkeleton />}>{node}</Suspense>
 
 export const WidgetRoute = () => page(<Widget />)
 export const DevelopersRoute = () => page(<Developers />)
@@ -47,9 +50,9 @@ export const AnalyticsRoute = () => page(<Analytics />)
 export const ChainKitRoute = () => page(<ChainKit />)
 export const StockRoute = () => page(<Stock />)
 export const PricingRoute = () => page(<Pricing />)
-export const PayRoute = () => page(<Pay />)
-export const PayLinkRoute = () => page(<PayLink />)
-export const ReceiptRoute = () => page(<Receipt />)
+export const PayRoute = () => checkout(<Pay />)
+export const PayLinkRoute = () => checkout(<PayLink />)
+export const ReceiptRoute = () => checkout(<Receipt />)
 export const AdminRoute = () => page(<Admin />)
 export const ServicesRoute = () => page(<Services />)
 export const AboutRoute = () => page(<About />)

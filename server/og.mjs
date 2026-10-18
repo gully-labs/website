@@ -2,7 +2,7 @@
 //
 // The picture is the post's own generated banner (ghost/theme/gully/assets/js/banner.js, variant
 // "share"), frozen at the same still frame reduced-motion visitors see on the blog, with the post's
-// title, its primary tag and the GULLY LABS wordmark in the brand fonts.
+// title, its primary tag and the brand kit's wordmark (its outlined paths, through kitWordmark below).
 //
 // How it renders, with no native code: banner.js draws into any CanvasRenderingContext2D. SvgContext
 // below is a small one that records those calls as SVG (the drawing code uses paths, rects, arcs,
@@ -26,12 +26,13 @@ import zlib from 'node:zlib'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { DATA_DIR } from './http.mjs'
+import { KIT } from './brand.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const W = 1200
 const H = 630
 /** Bump to re-render every cached image (layout or renderer changes). banner.js changes re-key on their own. */
-const RENDER_VERSION = '1'
+const RENDER_VERSION = '2'
 const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,189}[a-z0-9])?$/
 const POST_TTL = 5 * 60_000
 const MISS_TTL = 60_000
@@ -347,6 +348,22 @@ export class SvgContext {
   }
   fillRect(x, y, w, h) {
     this.out.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" ${this.paintAttrs(this.st.fillStyle, 'fill')}/>`)
+  }
+  /** The brand kit's wordmark (server/brand.mjs) at (x, y), scaled by s: banner.js's drawWordmark calls this instead of Path2D. */
+  kitWordmark(x, y, s, theme = 'dark') {
+    const w = KIT.wordmark
+    const id = `kw${this.ids++}`
+    const stops = (list) => list.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('')
+    const lg = w.labsGradient
+    const bg = w.barGradient
+    this.defs.push(
+      `<linearGradient id="${id}-labs" gradientUnits="userSpaceOnUse" x1="${lg.x1}" y1="${lg.y1}" x2="${lg.x2}" y2="${lg.y2}">${stops(lg[theme])}</linearGradient>`,
+      `<linearGradient id="${id}-bar" gradientUnits="userSpaceOnUse" x1="${bg.x1}" y1="${bg.y1}" x2="${bg.x2}" y2="${bg.y2}">${stops(bg[theme])}</linearGradient>`,
+    )
+    this.out.push(
+      `<g transform="translate(${r2(x)} ${r2(y)}) scale(${Math.round(s * 100000) / 100000})"><path fill="${w.fill[theme]}" d="${w.gully}"/><path fill="url(#${id}-labs)" d="${w.labs}"/>` +
+        `<rect x="${w.bar.x}" y="${w.bar.y}" width="${w.bar.width}" height="${w.bar.height}" fill="url(#${id}-bar)"/></g>`,
+    )
   }
   strokeRect(x, y, w, h) {
     this.out.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" ${this.strokeAttrs()}/>`)
