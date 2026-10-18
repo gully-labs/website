@@ -220,6 +220,11 @@ try {
   const flipped = eoa.slice(0, 2) + [...eoa.slice(2)].map((ch, i) => (i === [...eoa.slice(2)].findIndex((x) => /[a-fA-F]/.test(x)) ? (ch === ch.toUpperCase() ? ch.toLowerCase() : ch.toUpperCase()) : ch)).join('')
   await wbad('a wrong EIP-55 checksum', { address: flipped, type: 'eoa', chains: [8453] })
   await wbad("Gully Labs' own treasury", { address: getAddress(TREASURY), type: 'eoa', chains: [8453] })
+  const proxyRefusal = await wbad("Request's fee proxy contract (Base)", { address: getAddress('0x1892196e80c4c17ea5100da765ab48c1fe2fb814'), type: 'contract', chains: [8453] })
+  check('wallet refused: the fee proxy refusal says why (no owner, funds lost) before any chain is read', /fee proxy contract/.test(proxyRefusal.data?.error ?? '') && /lost for good/.test(proxyRefusal.data?.error ?? ''))
+  await wbad("a fee proxy of another chain, declared an EOA", { address: getAddress('0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'), type: 'eoa', chains: [8453] })
+  await wbad('the native EthereumFeeProxy', { address: getAddress('0xd9c3889eb8da6ce449bffe3cd194d08a436e96f2'), type: 'contract', chains: [8453] })
+  await wbad('a fee proxy in lower case', { address: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814', type: 'contract', chains: [8453] })
   await wbad('an unknown chain', { address: eoa, type: 'eoa', chains: [10] })
   await wbad('no type', { address: eoa, chains: [8453] })
 
@@ -305,6 +310,33 @@ try {
   check('an unknown store invoice is 404', (await anon.call('/api/pay/m/i/mi_' + 'a'.repeat(22))).status === 404)
   check('a quote POST without X-Requested-With is refused', (await anon.call(`/api/pay/m/i/${inv1.id}/quote`, { method: 'POST', body: { asset: 'base-usdc' } })).status === 403)
   check('a quote in an asset on a chain without a wallet is refused', (await payPost(`/api/pay/m/i/${inv1.id}/quote`, { asset: 'arb-usdc' })).status >= 400)
+
+  /* ----------------------------------- fee-proxy guard on the store's emission paths --- */
+  // A wallet the form refuses could still reach the data some other way: force the stored Base wallet to the proxy
+  // and every path that would show or quote it must answer 500 with the guard's public message and no address.
+  {
+    const { GUARD_PUBLIC_ERROR } = await import('../server/pay-guard.mjs')
+    const gdb = M.merchantsDbForTest()
+    const PRX = '0x1892196e80c4c17ea5100da765ab48c1fe2fb814'
+    const saved = gdb.merchants[OW].wallets[8453].address
+    gdb.merchants[OW].wallets[8453].address = getAddress(PRX)
+    const refused = (r) => r.status === 500 && r.data?.error === GUARD_PUBLIC_ERROR && !JSON.stringify(r.data).toLowerCase().includes(PRX.slice(2, 14))
+    const pubG = await anon.call(`/api/pay/m/i/${inv1.id}`)
+    check('guard: the public store invoice refuses to show a fee proxy as recipient (500, no address)', refused(pubG), `${pubG.status} ${JSON.stringify(pubG.data)?.slice(0, 160)}`)
+    const quoteG = await payPost(`/api/pay/m/i/${inv1.id}/quote`, { asset: 'base-usdc' })
+    check('guard: a store quote toward a fee proxy is never made (500, no address)', refused(quoteG) && !gdb.quotes.some((q) => q.treasury.toLowerCase() === PRX), `${quoteG.status} ${JSON.stringify(quoteG.data)?.slice(0, 160)}`)
+    const quoteEthG = await payPost(`/api/pay/m/i/${inv1.id}/quote`, { asset: 'base-eth' })
+    check('guard: a coin quote toward a fee proxy is refused too', refused(quoteEthG))
+    const bnbQ = await payPost(`/api/pay/m/i/${inv1.id}/quote`, { asset: 'bnb-usdc' })
+    check("guard: a quote on the store's other chain (a fine wallet) still works and never names the proxy", bnbQ.status === 200 && bnbQ.data.quote.treasury === MW && !JSON.stringify(bnbQ.data).toLowerCase().includes(PRX.slice(2, 14)), `${bnbQ.status} ${bnbQ.data?.error ?? ''}`)
+    const linkG = await anon.call(`/api/pay/m/l/${link.id}`)
+    check('guard: the public pay link (which names no address) still loads without the proxy anywhere in it', linkG.status === 200 && !JSON.stringify(linkG.data).toLowerCase().includes(PRX.slice(2, 14)))
+    const own = await O.call('/api/developer/merchant')
+    const ownInv = own.data?.invoices?.find((i) => i.id === inv1.id)
+    check("guard: the store's own view still loads, the invoice's checkout shown as refused (naming the wallet, for the owner) with no recipients", own.status === 200 && ownInv && ownInv.checkout.enabled === false && /fee-proxy guard/.test(ownInv.checkout.reason) && ownInv.checkout.treasury === null && Object.keys(ownInv.recipients).length === 0, JSON.stringify(ownInv?.checkout))
+    gdb.merchants[OW].wallets[8453].address = saved
+    check('guard: with the wallet restored the same paths answer again', (await anon.call(`/api/pay/m/i/${inv1.id}`)).status === 200)
+  }
 
   /* ---------------------------------------------------- paying the store --- */
   const q1 = (await payPost(`/api/pay/m/i/${inv1.id}/quote`, { asset: 'base-usdc' })).data?.quote
