@@ -9,6 +9,7 @@ import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts } from './alerts.mjs'
 import { handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
+import { handleMiniApp } from './telegram-miniapp.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
@@ -101,17 +102,21 @@ const notifyHits = new Map()
 /* Security headers. The CSP keeps scripts to this origin (no inline scripts exist in the build); styles allow
    inline because React style props need it; connections allow any https/wss origin because the developer
    portal's wallets and payment checks talk to public RPCs and WalletConnect relays chosen at runtime.
-   The admin host and the app (and its old developers host) may not be framed at all; the main site only by itself. */
-function securityHeaders(host) {
+   The admin host and the app (and its old developers host) may not be framed at all; the main site only by itself.
+   The Telegram Mini App (/tg on the main host) also loads Telegram's WebApp SDK from telegram.org and may be
+   framed by Telegram Web (web.telegram.org), which shows Mini Apps in an iframe. */
+const TG_SDK_URL = 'https://telegram.org/js/telegram-web-app.js'
+function securityHeaders(host, pathname = '/') {
   const local = /^(localhost|127.0.0.1|[::1])$/.test(host)
   const strict = host.startsWith('admin.') || isAppHost(host) || isLegacyDevelopersHost(host)
   // The docs host runs the widget's live examples, which load https://gullylabs.xyz/widget.js (its
   // reads of /api/tracker and the logos are covered by connect-src https: and img-src https:).
   const docs = host.startsWith('docs.') || local
+  const miniApp = !strict && !host.startsWith('docs.') && (pathname === '/tg' || pathname.startsWith('/tg/'))
   const csp = [
     "default-src 'self'",
     // Cloudflare Web Analytics is enabled on the zone and injects its beacon into every page.
-    `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz' : ''}`,
+    `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz' : ''}${miniApp ? ` ${TG_SDK_URL}` : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
@@ -121,7 +126,7 @@ function securityHeaders(host) {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    `frame-ancestors ${strict ? "'none'" : "'self'"}`,
+    `frame-ancestors ${strict ? "'none'" : miniApp ? "'self' https://web.telegram.org" : "'self'"}`,
     ...(local ? [] : ['upgrade-insecure-requests']),
   ].join('; ')
   return {
@@ -131,7 +136,8 @@ function securityHeaders(host) {
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
     // Wallet popups (Coinbase Wallet, WalletConnect) need to talk back to the opener.
     'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-    'X-Frame-Options': strict ? 'DENY' : 'SAMEORIGIN',
+    // X-Frame-Options cannot name another origin; the Mini App relies on frame-ancestors alone.
+    ...(miniApp ? {} : { 'X-Frame-Options': strict ? 'DENY' : 'SAMEORIGIN' }),
     'Content-Security-Policy': csp,
   }
 }
@@ -150,7 +156,7 @@ const server = http.createServer(async (req, res) => {
   // Gully Analytics (Umami fork) in its own container; every path on its host goes there.
   if (host.startsWith('analytics.')) return handleAnalytics(req, res)
   // Security headers for everything this server answers itself (the blog and analytics set their own).
-  for (const [k, v] of Object.entries(securityHeaders(host))) res.setHeader(k, v)
+  for (const [k, v] of Object.entries(securityHeaders(host, url.pathname))) res.setHeader(k, v)
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
   }
@@ -192,6 +198,8 @@ const server = http.createServer(async (req, res) => {
     if (await handleDeveloper(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // The Telegram Mini App's API (telegram-miniapp.mjs): initData-authenticated, 404 without a bot token.
+  if (url.pathname.startsWith('/api/tg/')) return void (await handleMiniApp(req, res, url))
   // Telegram's webhook (telegram.mjs): 404 unless the bot is configured and the secret path matches.
   if (url.pathname.startsWith('/api/telegram/')) return void (await handleTelegramWebhook(req, res, url))
   // Which alert delivery channels this server offers (the pricing page and the docs read it). Public.

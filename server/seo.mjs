@@ -110,6 +110,8 @@ export function pageMeta(host, pathname) {
   // Gully Pay invoices and receipts: real pages for whoever holds the link, never indexed.
   if (/^\/pay\/inv_[\w-]{22}(\/receipt)?$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Labs' : 'Invoice · Gully Labs', description: 'Pay a Gully Labs invoice in ETH, BNB, USDC or USDT, straight to the Gully Labs treasury.', canonical: null, found: true, noindex: true }
   if (/^\/pay\/l\/pl_[\w-]{16}$/.test(p)) return { title: 'Pay · Gully Labs', description: 'Pay with crypto in ETH, BNB, USDC or USDT, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
+  // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
+  if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }

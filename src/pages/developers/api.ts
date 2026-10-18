@@ -210,7 +210,20 @@ export interface BillingView {
 
 /* -------------------------------------------------------------------- alerts --- */
 
-export type AlertCondition = { type: 'gap'; pct: number } | { type: 'status'; status: 'premium' | 'discount' | 'either' } | { type: 'deepcore-launch'; chainId: number | null }
+/** A gap threshold's side: 'above' a premium of +X% or more, 'below' a discount of X% or more, 'both' either way. */
+export type GapDirection = 'above' | 'below' | 'both'
+/** `direction` is absent only on a reply from an older server, and then means 'both'. */
+export type AlertCondition = { type: 'gap'; pct: number; direction?: GapDirection } | { type: 'status'; status: 'premium' | 'discount' | 'either' } | { type: 'deepcore-launch'; chainId: number | null }
+
+/** The direction control's options, in order. */
+export const GAP_DIRECTIONS: { id: GapDirection; label: string; hint: string }[] = [
+  { id: 'above', label: '▲ Premium', hint: 'on chain at least X% above fair' },
+  { id: 'below', label: '▼ Discount', hint: 'on chain at least X% below fair' },
+  { id: 'both', label: '↕ Both', hint: 'either way' },
+]
+
+/** A gap threshold in words, with its direction. */
+export const gapText = (pct: number, direction: GapDirection = 'both') => (direction === 'above' ? `▲ Premium ≥ +${pct}%` : direction === 'below' ? `▼ Discount ≤ −${pct}%` : `↕ Gap ≥ ${pct}% either way`)
 
 /** An alert kind the server offers (GET /api/developer/alerts `kinds`). */
 export interface AlertKind {
@@ -281,7 +294,7 @@ export interface AlertsView {
 }
 
 const DEEPCORE_CHAIN_NAMES: Record<number, string> = { 56: 'BNB Chain', 999: 'HyperEVM', 4663: 'Robinhood Chain', 8453: 'Base' }
-export const conditionText = (c: AlertCondition) => (c.type === 'deepcore-launch' ? `New DeepCore launch on ${c.chainId ? (DEEPCORE_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? `Gap ≥ ${c.pct}% either way` : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
+export const conditionText = (c: AlertCondition) => (c.type === 'deepcore-launch' ? `New DeepCore launch on ${c.chainId ? (DEEPCORE_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapText(c.pct, c.direction) : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
 
 export const fmtUsd0 = (n: number) => n.toLocaleString('en-US')
 

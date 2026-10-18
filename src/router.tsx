@@ -2,7 +2,7 @@ import { createBrowserRouter } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { RouteError } from './pages/RouteError'
 import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isLocalHost } from './site-host'
@@ -37,6 +37,8 @@ const mainRoutes = [
   // and, under its old name, /developers; anywhere else both leave for the app (the server 301s first).
   { path: '/app', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
   { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
+  // The Telegram Mini App (opened from @GullyLabsBot): full screen in Telegram's own chrome, no site header or footer.
+  { path: '/tg', element: <TgRoute /> },
   // A paid invoice's receipt prints on its own, without the site's header and footer.
   { path: '/pay/:id/receipt', element: <ReceiptRoute /> },
   // Development only: the docs site under /docs on the main host. In production it lives on its own host.
