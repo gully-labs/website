@@ -6,7 +6,7 @@ import { comingSoon, projects, type Project } from '../content/projects'
 import { fmtTime, fmtUsd, sourceHost, type Point, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
 import { BlinkDot } from './ui'
-import { segBtn, segGroup } from './ui/seg'
+import { segBtnFrame, segGroup, segText } from './ui/seg'
 import { ChainLogo } from './logos/ChainLogo'
 import { VenueLogo } from './logos/VenueLogo'
 import { chainMark } from './logos/registry'
@@ -146,7 +146,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
                 type="button"
                 aria-pressed={on}
                 onClick={() => setSort(c.key)}
-                className={`${segBtn(false)} relative min-w-[72px] tracking-[1px] duration-200 ${on ? 'text-bg hover:text-bg' : ''}`}
+                className={`${segBtnFrame} ${segText(on)} relative min-w-[72px] tracking-[1px] duration-200`}
               >
                 {on && <motion.span layoutId="project-sort" aria-hidden className="absolute inset-0 rounded-btn bg-gold" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                 <span className="relative">{c.label} ↓</span>

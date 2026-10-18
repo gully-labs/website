@@ -124,7 +124,7 @@ export function Section({ id, title, children }: { id: string; title: string; ch
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4">
       <h2 id={id} className={`group m-0 scroll-mt-[88px] leading-none ${title.startsWith('GET ') ? 'font-mono text-[24px] font-medium' : 'font-display text-[30px] font-bold uppercase'}`}>
-        <a href={`#${id}`} className="-my-[7px] inline-block py-[7px] text-ink no-underline">
+        <a href={`#${id}`} className="-my-[10px] inline-block py-[10px] text-ink no-underline">
           {title}
           <span aria-hidden className="ml-2 text-gold opacity-0 transition-opacity group-hover:opacity-100">
             #
