@@ -9,7 +9,7 @@
 //   stk                        chain picker               stk:rh:p2     ticker grid, page 2
 //   srch:rh                    search prompt (force_reply)
 //   c:rh:NVDA:g2               stock card (from: g<page> grid, t top, m24/m1 movers, s search, x elsewhere)
-//   al:rh:NVDA:g2[:2[:e]]      alert stepper: threshold → direction (e either, p premium, d discount) → summary
+//   al:rh:NVDA:g2[:2[:e]]      alert stepper: threshold → direction (p ▲ premium ≥ +X%, d ▼ discount ≤ −X%, e ↕ both) → summary
 //   alx:rh:NVDA:g2             custom threshold prompt (force_reply)
 //   alk:rh:NVDA:g2:2:e         create the alert
 //   top                        top gaps                   mv:24h|mv:1h  movers
@@ -68,6 +68,8 @@ export function ago(iso, now = Date.now()) {
 
 export const btn = (text, data) => ({ text, callback_data: data })
 export const ubtn = (text, url) => ({ text, url })
+/** The "📱 Open app" button: opens the Mini App inside Telegram (web_app buttons work in private chats only). */
+export const appBtn = (url) => ({ text: '📱 Open app', web_app: { url } })
 /** The [⬅ Back] [🏠 Menu] row every screen ends with. */
 export const nav = (back) => [btn('⬅ Back', back), btn('🏠 Menu', 'm')]
 const rows = (list, per) => {
@@ -272,14 +274,18 @@ export const linkNeededView = (back, what = 'Alerts') => ({
   keyboard: [[ubtn('🔗 Link wallet ↗', PORTAL_ALERTS)], nav(back)],
 })
 
-export const DIRS = { e: 'Either way', p: 'Premium', d: 'Discount' }
+/** The direction step's buttons: route code -> label and alerts.mjs direction. */
+export const DIRS = { p: { label: '▲ Premium', direction: 'above' }, d: { label: '▼ Discount', direction: 'below' }, e: { label: '↕ Both', direction: 'both' } }
+/** An alert direction's arrow, for alert cards and deliveries. */
+export const DIR_ICON = { above: '▲', below: '▼', both: '↕' }
 const pctText = (p) => String(Number(p))
 
-/** The condition the stepper's choice becomes (alerts.mjs supports |gap| ≥ X%, or a status flag). */
-export function conditionFor(pct, dir, flagPct) {
-  if (dir === 'p') return { condition: { type: 'status', status: 'premium' }, text: `the tracker flags a premium (gap of +${flagPct}% or more)` }
-  if (dir === 'd') return { condition: { type: 'status', status: 'discount' }, text: `the tracker flags a discount (gap of −${flagPct}% or more)` }
-  return { condition: { type: 'gap', pct: Number(pct) }, text: `the gap reaches ±${pctText(pct)}% either way` }
+/** The condition the stepper's choice becomes: a gap threshold of X%, one-sided or both ways (alerts.mjs). */
+export function conditionFor(pct, dir) {
+  const p = pctText(pct)
+  if (dir === 'p') return { condition: { type: 'gap', pct: Number(pct), direction: 'above' }, text: `the premium reaches +${p}% or more (gap ≥ +${p}%)` }
+  if (dir === 'd') return { condition: { type: 'gap', pct: Number(pct), direction: 'below' }, text: `the discount reaches ${p}% or more (gap ≤ −${p}%)` }
+  return { condition: { type: 'gap', pct: Number(pct), direction: 'both' }, text: `the gap reaches ±${p}% either way` }
 }
 
 export function alertStep1View(cc, ticker, from) {
@@ -290,20 +296,23 @@ export function alertStep1View(cc, ticker, from) {
   }
 }
 
-export function alertStep2View(cc, ticker, from, pct, flagPct) {
+export function alertStep2View(cc, ticker, from, pct) {
   const base = `al:${cc}:${ticker}:${from}:${pctText(pct)}`
+  const p = esc(pctText(pct))
   return {
     text: [
-      `<b>🔔 Alert for ${esc(ticker)}</b> · ±${esc(pctText(pct))}%`,
+      `<b>🔔 Alert for ${esc(ticker)}</b> · ${p}%`,
       'Step 2 of 3 · Which direction?',
-      `<i>Premium and Discount follow the tracker’s own flag (±${flagPct}%); a one-sided custom threshold is not available yet.</i>`,
+      `▲ Premium: on chain at least ${p}% above fair (gap ≥ +${p}%)`,
+      `▼ Discount: at least ${p}% below fair (gap ≤ −${p}%)`,
+      `↕ Both: either way (|gap| ≥ ${p}%)`,
     ].join('\n'),
-    keyboard: [[btn('Either way', `${base}:e`), btn('Premium', `${base}:p`), btn('Discount', `${base}:d`)], nav(`al:${cc}:${ticker}:${from}`)],
+    keyboard: [[btn(DIRS.p.label, `${base}:p`), btn(DIRS.d.label, `${base}:d`), btn(DIRS.e.label, `${base}:e`)], nav(`al:${cc}:${ticker}:${from}`)],
   }
 }
 
-export function alertStep3View(cc, ticker, from, pct, dir, flagPct) {
-  const c = conditionFor(pct, dir, flagPct)
+export function alertStep3View(cc, ticker, from, pct, dir) {
+  const c = conditionFor(pct, dir)
   return {
     text: [`<b>🔔 Alert for ${esc(ticker)}</b> · ${esc(chainName(CHAIN_OF[cc]))}`, 'Step 3 of 3 · Check and create', '', `Fires when ${esc(c.text)}.`, 'Delivered to this chat, at most once every 30 minutes, with a Mute 24h button.'].join('\n'),
     keyboard: [[btn('✅ Create', `alk:${cc}:${ticker}:${from}:${pctText(pct)}:${dir}`), btn('⬅ Back', `al:${cc}:${ticker}:${from}:${pctText(pct)}`)], [btn('🏠 Menu', 'm')]],
@@ -405,7 +414,9 @@ export function alertState(a, now = Date.now()) {
   if (a.kind !== 'deepcore-launch' && !a.armed) return { emoji: '🟠', text: 'fired, waits to re-arm' }
   return { emoji: '🟢', text: 'watching' }
 }
-export const conditionWords = (c, chains) => (c.type === 'deepcore-launch' ? `new DeepCore launch on ${c.chainId ? (chains[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? `gap of ${c.pct}% or more either way` : c.status === 'either' ? 'status premium or discount' : `status ${c.status}`)
+/** A gap condition in words with its direction (an alert stored before directions existed is 'both'). */
+export const gapWords = (c) => (c.direction === 'above' ? `▲ premium of +${c.pct}% or more (gap ≥ +${c.pct}%)` : c.direction === 'below' ? `▼ discount of ${c.pct}% or more (gap ≤ −${c.pct}%)` : `↕ gap of ${c.pct}% or more either way`)
+export const conditionWords = (c, chains) => (c.type === 'deepcore-launch' ? `new DeepCore launch on ${c.chainId ? (chains[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapWords(c) : c.status === 'either' ? 'status premium or discount' : `status ${c.status}`)
 
 export function myAlertsView(data, page, chains, now = Date.now()) {
   const list = data.alerts
@@ -499,12 +510,14 @@ export const unlinkConfirmView = (link) => ({
  * One alert delivery as a compact card: status emoji, ticker, chain, gap, prices and liquidity, with
  * [🌐 Open ↗] [🔕 Mute 24h] [📈 Card] (Card opens the stock card in place). Launch alerts list the
  * launches with Open on DeepCore buttons. A test is plain text.
- * @param {{ alertId: string, name: string | null, conditionText: string, events: object[], test: boolean }} a
+ * Gap alerts state their direction (▲ Premium, ▼ Discount, ↕ Both ways) in front of the condition.
+ * @param {{ alertId: string, name: string | null, conditionText: string, direction?: string | null, events: object[], test: boolean }} a
  */
 export function deliveryView(a) {
   const title = `<b>Gully Labs alert</b>${a.name ? ` “${esc(a.name)}”` : ''}`
+  const dirLine = a.direction && DIR_ICON[a.direction] ? `${DIR_ICON[a.direction]} ${a.direction === 'above' ? 'Premium' : a.direction === 'below' ? 'Discount' : 'Both ways'}: ${esc(a.conditionText)}` : esc(a.conditionText)
   const mute = btn('🔕 Mute 24h', `mute:${a.alertId}`.slice(0, 64))
-  if (a.test) return { text: `🧪 ${title}\nTest message (${esc(a.conditionText)}). Deliveries for this alert reach this chat.`, keyboard: null }
+  if (a.test) return { text: `🧪 ${title}\nTest message (${dirLine}). Deliveries for this alert reach this chat.`, keyboard: null }
   if (a.events.some((e) => e.kind === 'deepcore.launch')) {
     const shown = a.events.slice(0, 5)
     const text = `🛰 ${title}\n${esc(a.conditionText)}\n\n${shown.map(launchBlock).join('\n\n')}${a.events.length > shown.length ? `\n…and ${a.events.length - shown.length} more on deepcore.fun` : ''}`
@@ -525,7 +538,7 @@ export function deliveryView(a) {
     shown.length === 1
       ? [[ubtn('🌐 Open ↗', stockUrl(shown[0].chain, shown[0].ticker)), mute, btn('📈 Card', card(shown[0]))]]
       : [shown.slice(0, 3).map((e) => ubtn(`🌐 ${e.ticker} ↗`, stockUrl(e.chain, e.ticker))), shown.slice(0, 3).map((e) => btn(`📈 ${e.ticker}`, card(e))), [mute]]
-  return { text: `${title}\n${esc(a.conditionText)}\n\n${blocks.join('\n\n')}${more}`, keyboard }
+  return { text: `${title}\n${dirLine}\n\n${blocks.join('\n\n')}${more}`, keyboard }
 }
 
 /* --------------------------------------------------------------- state --- */

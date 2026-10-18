@@ -204,6 +204,26 @@ try {
   check('a Pro key reads 30 days, archive included', h30.status === 200 && h30.data.points.length === 3 && h30.data.points[0][1] === 1.11, JSON.stringify(h30.data?.points?.map((p) => p[1])))
   check('long history is not publicly cacheable', /private/.test(h30.headers.get('cache-control') ?? ''))
   check('a Pro key cannot read 120 days', (await anon.call('/api/tracker/history?chain=robinhood&ticker=AAPL&days=120', { auth: key, useCookie: false })).status === 403)
+
+  /* ------------------------------------------------- one-sided thresholds --- */
+  const listedDirs = (await dev.call('/api/developer/alerts')).data.alerts
+  check('an alert made without a direction reads as both', listedDirs.find((a) => a.id === alertId)?.condition.direction === 'both', JSON.stringify(listedDirs.find((a) => a.id === alertId)?.condition))
+  const badDir = await dev.post('/api/developer/alerts', { condition: { type: 'gap', pct: 2, direction: 'up' }, webhookUrl: HOOK_URL })
+  check('an unknown direction is refused (400)', badDir.status === 400 && /direction/.test(badDir.data?.error ?? ''), badDir.data?.error)
+  const above = await dev.post('/api/developer/alerts', { name: 'NVDA premium', chain: 'robinhood', ticker: 'NVDA', condition: { type: 'gap', pct: 2, direction: 'above' }, webhookUrl: HOOK_URL })
+  const below = await dev.post('/api/developer/alerts', { name: 'NVDA discount', chain: 'robinhood', ticker: 'NVDA', condition: { type: 'gap', pct: 2, direction: 'below' }, webhookUrl: HOOK_URL })
+  check('above and below alerts are created with their direction', above.status === 201 && below.status === 201 && above.data.alert.condition.direction === 'above' && below.data.alert.condition.direction === 'below')
+  const hooksOf = (id) => hooks.filter((x) => x.body.alert?.id === id && x.body.type === 'alert.triggered')
+  const t0 = now + 20 * COOLDOWN_MS
+  await evaluateAlerts([nvda({ gapPct: 0.3, status: 'in-line' })], t0)
+  await evaluateAlerts([nvda({ gapPct: 2.5, status: 'premium' })], t0 + 60_000)
+  check('above: a +2.5% premium fires the premium alert only', hooksOf(above.data.alert.id).length === 1 && hooksOf(below.data.alert.id).length === 0)
+  check('the webhook payload carries the direction', hooksOf(above.data.alert.id)[0]?.body.alert.condition.direction === 'above')
+  await evaluateAlerts([nvda({ gapPct: -1.9, status: 'discount' })], t0 + 2 * 60_000)
+  check('below: −1.9% is short of a 2% discount', hooksOf(below.data.alert.id).length === 0)
+  await evaluateAlerts([nvda({ gapPct: -2.0, status: 'discount' })], t0 + 3 * 60_000)
+  check('below: exactly −2% fires the discount alert, not the premium one again', hooksOf(below.data.alert.id).length === 1 && hooksOf(above.data.alert.id).length === 1)
+  for (const a of [above, below]) await dev.post(`/api/developer/alerts/${a.data.alert.id}/delete`)
   let made = 1
   for (let i = 0; i < 12; i++) if ((await dev.post('/api/developer/alerts', { condition: { type: 'gap', pct: 5 + i }, webhookUrl: HOOK_URL })).status === 201) made++
   check('Pro allows ten alerts', made === 10, `${made} alerts`)
