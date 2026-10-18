@@ -183,9 +183,10 @@ function holderSources() {
     name: r.name,
     source: r.source ?? null,
     env: r.env ?? null,
+    fallbackEnv: r.fallbackEnv ?? null,
     available: !!r.stocks,
     launches: !!r.launches,
-    reason: r.stocks ? null : r.env ? `not configured: ${r.env}` : 'no stock holder source',
+    reason: r.stocks ? null : r.env ? `not configured: ${r.env}${r.fallbackEnv ? ` (archive RPC) or ${r.fallbackEnv}` : ''}` : 'no stock holder source',
   }))
 }
 

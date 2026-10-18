@@ -356,7 +356,7 @@ try {
     // Admin Health: Holder Map sources from holders.mjs holdersSourceHealth(): env var names only, never values.
     const h = await adminCall('/api/admin/health')
     const hm = h.data?.holders ?? []
-    check('admin health: Holder Map sources per chain (source, env name, stocks, launches)', h.status === 200 && hm.length >= 5 && hm.every((c) => typeof c.available === 'boolean' && typeof c.launches === 'boolean' && 'env' in c && 'source' in c) && hm.find((c) => c.chain === 'robinhood')?.reason === 'not configured: BLOCKSCOUT_API_KEY', JSON.stringify(hm).slice(0, 300))
+    check('admin health: Holder Map sources per chain (source, env name, stocks, launches)', h.status === 200 && hm.length >= 5 && hm.every((c) => typeof c.available === 'boolean' && typeof c.launches === 'boolean' && 'env' in c && 'source' in c) && hm.find((c) => c.chain === 'robinhood')?.reason === 'not configured: GULLY_RPC_4663 (archive RPC) or BLOCKSCOUT_API_KEY', JSON.stringify(hm).slice(0, 300))
     check('admin health: DeepCore launches map on Base without a key', hm.find((c) => c.chain === 'base')?.launches === true)
 
     // (c) The 180-day prune runs daily from the engine's start (startLoops), not only at boot.
