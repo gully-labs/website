@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { pillCls } from './ui'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { EChart } from '../../components/charts/EChart'
@@ -162,7 +163,7 @@ export function MerchantsAdmin({ token }: { token: string }) {
                   <td className="py-2 pr-3 font-mono text-ink-2">{usd(m.feesOpenUsd)}</td>
                   <td className={`py-2 pr-3 font-mono ${m.feesOverdueUsd > 0 ? 'text-error' : 'text-muted'}`}>{usd(m.feesOverdueUsd)}</td>
                   <td className="py-2">
-                    <span className={`inline-flex rounded-full border px-2 font-mono text-[11px] ${m.paused ? 'border-[#5a2a24] text-error' : 'border-success-line text-green'}`}>{m.paused ? 'paused' : 'live'}</span>
+                    <span className={pillCls(m.paused ? 'border-[#5a2a24] text-error' : 'border-success-line text-green')}>{m.paused ? 'paused' : 'live'}</span>
                   </td>
                 </tr>
               ))}

@@ -1,3 +1,4 @@
+import { chip } from './ui'
 import { Check, Copy, LoaderCircle, RotateCcw, Wand2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { copyWithToast } from '../../components/ui/toast'
@@ -89,7 +90,7 @@ function Studio({ token, configured }: { token: string; configured: boolean }) {
           <legend className="mb-2 font-mono text-[11px] tracking-[1px] text-faint">KIND</legend>
           <div className="flex flex-wrap gap-2">
             {KINDS.map((k) => (
-              <label key={k.id} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${kind === k.id ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`}>
+              <label key={k.id} className={chip(kind === k.id)}>
                 <input type="radio" name="ask-kind" value={k.id} checked={kind === k.id} onChange={() => setKind(k.id)} className="sr-only" />
                 {k.label}
               </label>

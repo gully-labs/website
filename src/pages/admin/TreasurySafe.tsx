@@ -1,3 +1,4 @@
+import { pillCls } from './ui'
 import { ArrowUpRight, Loader2, RefreshCw, ShieldAlert, ShieldCheck, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { ChainLogo } from '../../components/logos/ChainLogo'
@@ -37,7 +38,7 @@ interface View {
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6 max-[600px]:p-4'
 const h2 = 'm-0 font-display text-[22px] font-bold uppercase'
 const small = 'font-mono text-[12px] text-faint'
-const pill = (cls: string) => `inline-flex min-h-[26px] items-center gap-1 rounded-full border px-[10px] font-mono text-[11px] ${cls}`
+const pill = pillCls
 
 function kindOf(r: Row) {
   if (r.kind === 'safe' && r.safe) return { text: `Safe ${r.safe.version} · ${r.safe.threshold}/${r.safe.owners.length}`, cls: 'border-success-line text-green', icon: <ShieldCheck size={11} aria-hidden /> }

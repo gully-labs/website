@@ -2,11 +2,13 @@ import { Ban, Bold, CalendarClock, ChevronDown, Eye, ExternalLink, Italic, Link2
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { areaPreset, axisTooltip, C, tipHtml } from '../../components/charts/chartPresets'
+import { GhostChart } from '../../components/charts/GhostChart'
 import { EChart } from '../../components/charts/EChart'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { adminCall } from './payAdmin'
 import { LINK_BLUE, renderTg } from './tgHtml'
 import { NewTabNote } from './newTab'
+import { chip, pillCls } from './ui'
 
 /* Admin: DMs to everyone who started @GullyLabsBot (server/telegram-broadcast.mjs, /api/admin/broadcasts*).
    Analytics (bot users, growth, opt-outs, blocked, the last broadcast), the owner's one BotFather step, a composer
@@ -97,7 +99,7 @@ const small = 'font-mono text-[12px] text-faint'
 const field = 'min-h-11 min-w-0 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
 const ghostBtn = 'inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:opacity-40'
 const goldBtn = 'inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-5 text-[15px] font-semibold text-bg transition-colors hover:bg-gold-hover disabled:opacity-40'
-const tinyBtn = 'inline-flex min-h-9 items-center gap-1 rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink disabled:opacity-40'
+const tinyBtn = 'inline-flex min-h-11 items-center gap-1 rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink disabled:opacity-40'
 
 const SEGMENTS: { id: SegKind; label: string }[] = [
   { id: 'all', label: 'Everyone' },
@@ -193,13 +195,7 @@ function Analytics({ ov }: { ov: Overview }) {
           {g.length >= 2 ? (
             <EChart option={option} height={170} label={`Bot users over time: ${g.length} days, ${ov.stats.users} now.`} skeleton="line" steps={{ count: g.length }} />
           ) : (
-            <div className="flex h-[170px] items-center gap-2 text-[13px] text-faint">
-              <span className="relative inline-flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-gold opacity-60" />
-                <span className="relative inline-flex size-2 rounded-full bg-gold" />
-              </span>
-              The growth line draws here once people have started the bot on two different days.
-            </div>
+            <GhostChart height={170} label="The growth line draws here once people have started the bot on two different days" framed={false} />
           )}
         </div>
         <div className="flex min-w-0 flex-col gap-2 rounded-input border border-line bg-bg-alt p-4">
@@ -410,7 +406,7 @@ function Composer({ token, ov, reload }: { token: string; ov: Overview; reload: 
                 ['banner', 'Gully animated banner'],
               ] as const
             ).map(([k, label]) => (
-              <label key={k} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${d.mediaMode === k ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`}>
+              <label key={k} className={chip(d.mediaMode === k)}>
                 <input type="radio" name="tgb-media" value={k} checked={d.mediaMode === k} onChange={() => set({ mediaMode: k })} className="sr-only" />
                 {label}
               </label>
@@ -636,9 +632,9 @@ function History({ token, ov, reload }: { token: string; ov: Overview; reload: (
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] tracking-[.5px] uppercase ${STATUS_STYLE[b.status]}`}>{b.status}</span>
-                {b.kind === 'teaser' && <span className="rounded-full border border-line-strong px-2 py-[1px] font-mono text-[11px] text-muted">channel teaser</span>}
-                {b.urgent && <span className="rounded-full border border-error px-2 py-[1px] font-mono text-[11px] text-error">urgent</span>}
+                <span className={pillCls(`tracking-[.5px] uppercase ${STATUS_STYLE[b.status]}`)}>{b.status}</span>
+                {b.kind === 'teaser' && <span className={pillCls('border-line-strong text-muted')}>channel teaser</span>}
+                {b.urgent && <span className={pillCls('border-error text-error')}>urgent</span>}
                 <span className={small}>{b.status === 'scheduled' ? `for ${when(b.scheduledAt)}` : b.startedAt ? `sent ${when(b.startedAt)}` : `created ${when(b.createdAt)}`} · {segLabel(b.segment)}</span>
               </div>
               <p className="m-0 line-clamp-2 text-[14px] break-words text-ink-2">{plainOf(b.text) || '(media only)'}</p>

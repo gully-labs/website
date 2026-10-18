@@ -2,11 +2,13 @@ import { Bold, CalendarClock, Code, Eye, ExternalLink, Italic, Link2, LoaderCirc
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { C, sparklinePreset } from '../../components/charts/chartPresets'
+import { GhostChart } from '../../components/charts/GhostChart'
 import { EChart } from '../../components/charts/EChart'
 import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
 import { adminCall } from './payAdmin'
 import { LINK_BLUE, renderTg } from './tgHtml'
 import { NewTabNote } from './newTab'
+import { chip, pillCls } from './ui'
 
 /* Admin: posts to the Gully Labs News channel (@GullyLabsNews) through the bot, plus the automatic posts.
    Server: server/telegram-channel.mjs behind /api/admin/channel* (admin token). The preview renders the
@@ -88,7 +90,7 @@ const small = 'font-mono text-[12px] text-faint'
 const field = 'min-h-11 min-w-0 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
 const ghostBtn = 'inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:opacity-40'
 const goldBtn = 'inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-5 text-[15px] font-semibold text-bg transition-colors hover:bg-gold-hover disabled:opacity-40'
-const tinyBtn = 'inline-flex min-h-9 items-center gap-1 rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink'
+const tinyBtn = 'inline-flex min-h-11 items-center gap-1 rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink'
 
 const STATUS_STYLE: Record<Status, string> = {
   draft: 'border-line-strong text-muted',
@@ -163,13 +165,7 @@ function FollowersCard({ token, channel }: { token: string; channel: string }) {
         {series.length >= 2 ? (
           <EChart option={option} height={56} label={`Daily follower counts of ${channel}: ${series.length} days, latest ${series.at(-1)?.count}.`} skeleton="line" steps={{ count: series.length }} />
         ) : (
-          <div className="flex h-full items-center gap-2 text-[12px] text-faint">
-            <span className="relative inline-flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-gold opacity-60" />
-              <span className="relative inline-flex size-2 rounded-full bg-gold" />
-            </span>
-            Sampled once a day: the trend draws here from day two.
-          </div>
+          <GhostChart height={56} label="Draws from day two" badge={false} framed={false} />
         )}
       </div>
     </div>
@@ -360,7 +356,7 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
                 ['banner', 'Gully animated banner'],
               ] as const
             ).map(([k, label]) => (
-              <label key={k} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors ${d.mediaMode === k ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'} ${sentEdit ? 'pointer-events-none opacity-50' : ''}`}>
+              <label key={k} className={`${chip(d.mediaMode === k)} ${sentEdit ? 'pointer-events-none opacity-50' : ''}`}>
                 <input type="radio" name="tgc-media" value={k} checked={d.mediaMode === k} onChange={() => set({ mediaMode: k })} className="sr-only" disabled={sentEdit} />
                 {label}
               </label>
@@ -509,8 +505,8 @@ function History({ token, view, onEdit, reload }: { token: string; view: View; o
           <li key={p.id} className="flex flex-wrap items-start justify-between gap-3 rounded-input border border-line px-4 py-3">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] tracking-[.5px] uppercase ${STATUS_STYLE[p.status]}`}>{p.status}</span>
-                {p.createdBy.startsWith('auto:') && <span className="rounded-full border border-line-strong px-2 py-[1px] font-mono text-[11px] text-muted">auto · {p.createdBy.slice(5)}</span>}
+                <span className={pillCls(`tracking-[.5px] uppercase ${STATUS_STYLE[p.status]}`)}>{p.status}</span>
+                {p.createdBy.startsWith('auto:') && <span className={pillCls('border-line-strong text-muted')}>auto · {p.createdBy.slice(5)}</span>}
                 {p.pinned && p.status === 'sent' && <Pin size={13} className="text-gold" aria-label="pinned" />}
                 {p.media && <span className={small}>{p.media.banner ? 'banner' : p.media.kind}</span>}
                 <span className={small}>{p.status === 'scheduled' && p.scheduledAt ? `for ${when(p.scheduledAt)} (${utc(p.scheduledAt)})` : p.sentAt ? `sent ${when(p.sentAt)}` : `created ${when(p.createdAt)}`}</span>
@@ -625,7 +621,7 @@ function AutoPanel({ token, view, reload }: { token: string; view: View; reload:
                   <span className="text-[13px] text-muted">{m.about}</span>
                   {m.id === 'blog' && !a.ghostConfigured && <span className="text-[12px] text-gold">GHOST_CONTENT_KEY is not set: the blog cannot be read.</span>}
                 </div>
-                <button type="button" role="switch" aria-checked={on} aria-label={`${m.label} auto posts`} onClick={() => save({ [m.id]: { enabled: !on } }, `${m.label}: ${on ? 'off' : 'on'}`)} className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors ${on ? 'border-gold bg-[rgba(217,181,99,.25)]' : 'border-line-strong bg-bg'}`}>
+                <button type="button" role="switch" aria-checked={on} aria-label={`${m.label} auto posts`} onClick={() => save({ [m.id]: { enabled: !on } }, `${m.label}: ${on ? 'off' : 'on'}`)} className={`relative inline-flex h-7 w-12 shrink-0 before:absolute before:-inset-2 before:content-[''] items-center rounded-full border transition-colors ${on ? 'border-gold bg-[rgba(217,181,99,.25)]' : 'border-line-strong bg-bg'}`}>
                   <span className={`inline-block size-5 rounded-full transition-transform ${on ? 'translate-x-[22px] bg-gold' : 'translate-x-[3px] bg-faint'}`} />
                 </button>
               </div>

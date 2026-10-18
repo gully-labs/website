@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { axisTooltip, barsPreset, C, tipHtml } from '../../components/charts/chartPresets'
+import { GhostChart } from '../../components/charts/GhostChart'
 import { EChart } from '../../components/charts/EChart'
 import { STATUS_LABEL, type JobStatus } from '../../components/security/types'
 import { toastError, toastSuccess } from '../../components/ui/toast'
@@ -155,7 +156,11 @@ export function SecurityCard({ token }: { token: string }) {
           </div>
           <div className="flex flex-col gap-2">
             <span className={small}>scans per day, last 30 days · started / finished / failed</span>
-            <EChart option={option} height={150} label={`Scans per day over 30 days: ${data.totals.started} started, ${data.totals.done} finished, ${data.totals.failed} failed.`} steps={{ count: data.days.length }} />
+            {data.days.some((d) => d.started || d.done || d.failed) ? (
+              <EChart option={option} height={150} label={`Scans per day over 30 days: ${data.totals.started} started, ${data.totals.done} finished, ${data.totals.failed} failed.`} steps={{ count: data.days.length }} />
+            ) : (
+              <GhostChart variant="bars" height={150} label="Scans per day draw here once a scan has run" colors={[C.gold, C.green]} />
+            )}
           </div>
           <div className="grid grid-cols-2 gap-5 max-[1099px]:grid-cols-1">
             <div className="flex min-w-0 flex-col gap-2">
@@ -170,7 +175,7 @@ export function SecurityCard({ token }: { token: string }) {
           <div className="flex min-w-0 flex-col gap-2">
             <h3 className="m-0 text-[14px] font-semibold">Review requests</h3>
             {!data.reviews.length ? (
-              <p className="m-0 text-[13px] text-muted">No Security Review or Audit request yet. They come from the form on /security and from the app.</p>
+              <p className="m-0 text-[13px] text-muted">No review or audit request yet. They come from the form on /security and from the app.</p>
             ) : (
               <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="review-inbox">
                 {data.reviews.slice(0, 50).map((r) => (
