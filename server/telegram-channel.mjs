@@ -359,11 +359,11 @@ async function sendContent(chatId, p) {
         if (!b.file) return { chat_id: String(chatId), [field]: b.url, ...base }
         const f = new FormData()
         f.set('chat_id', String(chatId))
-        f.set(field, new Blob([b.file.buf], { type: 'image/gif' }), 'gully-labs.gif')
+        f.set(field, new Blob([b.file.buf], { type: b.file.type }), b.file.upload)
         f.set('caption', p.text)
         f.set('parse_mode', 'HTML')
-        f.set('width', '640')
-        f.set('height', '320')
+        f.set('width', String(b.file.width))
+        f.set('height', String(b.file.height))
         if (reply_markup) f.set('reply_markup', JSON.stringify(reply_markup))
         return f
       })

@@ -13,6 +13,8 @@ import { MerchantsAdmin } from './MerchantsAdmin'
 import { TelegramChannel } from './TelegramChannel'
 import { copyWithToast, flash } from '../../components/ui/toast'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
+import { FeeProxyBanner, FeeProxyCard, type FeeProxyStatus } from './FeeProxyCard'
+import { isFeeProxy } from '../../../server/fee-proxy-guard.mjs'
 
 // The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
 const AdminCharts = lazy(() => import('./AdminCharts'))
@@ -34,6 +36,7 @@ interface Overview {
   developers: { pending: number; approved: number; liveKeys: number; accounts?: number; blocked?: number }
   enquiries: { total: number; open: number }
   launchList: number
+  feeProxy?: FeeProxyStatus
   process: { uptimeSeconds: number; rssMb: number; heapMb: number; node: string; dataDirBytes: number | null }
 }
 interface Req {
@@ -90,6 +93,8 @@ interface Enquiry {
 }
 
 const TOKEN = 'gully-admin-token'
+/** Address fields refuse Request's fee proxy contracts (server/fee-proxy-guard.mjs), as the server does. */
+const proxyNote = (v: string) => (isFeeProxy(v.trim()) ? "That is Request Network's fee proxy contract, not a wallet." : '')
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6'
 const h2 = 'm-0 font-display text-[22px] font-bold uppercase'
 const small = 'font-mono text-[12px] text-faint'
@@ -221,7 +226,7 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
       >
         <label className="flex min-w-[min(100%,360px)] flex-1 flex-col gap-1 text-[12px] text-faint">
           Wallet
-          <input list="admin-wallets" className={field} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" />
+          <input list="admin-wallets" className={field} value={address} onChange={(e) => (setAddress(e.target.value), e.target.setCustomValidity(proxyNote(e.target.value)))} placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" />
           <datalist id="admin-wallets">
             {accounts.map((a) => (
               <option key={a.address} value={a.address} />
@@ -364,7 +369,7 @@ function AnalyticsAccounts({ data, act }: { data: AnalyticsAdmin; act: (path: st
       >
         <label className="flex min-w-[min(100%,360px)] flex-1 flex-col gap-1 text-[12px] text-faint">
           Wallet
-          <input list="admin-analytics-wallets" className={field} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" />
+          <input list="admin-analytics-wallets" className={field} value={address} onChange={(e) => (setAddress(e.target.value), e.target.setCustomValidity(proxyNote(e.target.value)))} placeholder="0x…" required pattern="0x[0-9a-fA-F]{40}" />
           <datalist id="admin-analytics-wallets">
             {data.accounts.map((a) => (
               <option key={a.address} value={a.address} />
@@ -740,6 +745,7 @@ export function AdminPage() {
 
       <main className="flex flex-col gap-5 px-page py-8">
         {err && data && <p className="m-0 rounded-input border border-error/40 px-4 py-3 font-mono text-[12px] text-error">Last refresh failed: {err.message}. Showing the previous read.</p>}
+        <FeeProxyBanner s={o?.feeProxy} />
         {!o ? (
           <p className="m-0 font-mono text-[13px] text-faint">Reading the server…</p>
         ) : (
@@ -757,6 +763,8 @@ export function AdminPage() {
             <Suspense fallback={<ChartBox height={280} state="loading" />}>
               <AdminCharts token={token} />
             </Suspense>
+
+            <FeeProxyCard s={o.feeProxy} act={act} />
 
             <div className="grid grid-cols-[1.4fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>

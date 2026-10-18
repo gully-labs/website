@@ -250,7 +250,7 @@ try {
   check('edit a media post: editMessageCaption', last('editMessageCaption')?.caption === 'New caption')
   const p3 = await A('/api/admin/channel/posts', { text: 'Banner!', media: { kind: 'animation', banner: true }, action: 'post' })
   const an = last('sendAnimation')
-  check('the Gully banner: uploaded (or by URL) the first time', p3.status === 201 && (an?.multipart === true || /banner\.gif$/.test(an?.animation ?? '')))
+  check('the Gully banner: uploaded (or by URL) the first time', p3.status === 201 && (an?.multipart === true || /banner\.mp4$/.test(an?.animation ?? '')) && (an?.multipart !== true || (an.animation?.type === 'video/mp4' && an.animation?.name === 'gully-labs.mp4')))
   await A('/api/admin/channel/posts', { text: 'Banner again', media: { kind: 'animation', banner: true }, action: 'post' })
   check('the Gully banner: the cached file_id is reused next time', last('sendAnimation')?.animation === 'BANNER_FILE_1', JSON.stringify(last('sendAnimation')))
   const d1 = await A(`/api/admin/channel/posts/${id1}/delete`, {})
