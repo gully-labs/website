@@ -178,7 +178,7 @@ export function WalletsSection({ view, onChange }: { view: MerchantView; onChang
       )}
       {view.can.manage && (
         <form onSubmit={submit} className="flex flex-col gap-3 border-t border-line pt-4">
-          <Field label="Wallet address (EIP-55 checksummed, as your wallet shows it)">
+          <Field label="Wallet address">
             <input className={`${input} font-mono text-[13px]`} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="0xAbC…" spellCheck={false} autoComplete="off" required />
           </Field>
           <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Wallet type">

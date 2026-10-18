@@ -164,7 +164,7 @@ const server = http.createServer(async (req, res) => {
   // The Gully Labs App (the developer dashboard) lives on app.gullylabs.xyz (hosts.mjs). Elsewhere /app and
   // /developers move there; on that host any other page belongs to the main site.
   const isApp = isAppHost(host)
-  const isPage = !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/') && !/\.[a-z0-9]+$/i.test(url.pathname)
+  const isPage = url.pathname !== '/healthz' && !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/') && !/\.[a-z0-9]+$/i.test(url.pathname)
   // Its old host, developers.gullylabs.xyz: every page answers 301 to the app with the same path and query
   // (browsers keep the #fragment across a redirect, so #billing and #invite=… still land). /api/* is NOT
   // redirected: a 301 on a POST breaks clients, so the API (and the build's files, for tabs left open) are
