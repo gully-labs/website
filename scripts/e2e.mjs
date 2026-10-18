@@ -368,7 +368,7 @@ await step('privacy page', async () => {
   await page.goto(BASE + '/legal/privacy')
   await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
   const ids = await page.evaluate(() => [...document.querySelectorAll('article section[id^="s"]')].map((x) => x.id))
-  check('privacy: twelve numbered sections, s1 to s12, each linked from the section nav', ids.join() === Array.from({ length: 12 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 12, ids.join())
+  check('privacy: fourteen numbered sections, s1 to s14, each linked from the section nav', ids.join() === Array.from({ length: 14 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 14, ids.join())
   check('privacy: "Draft: review by counsel" is an HTML comment only, never on screen', (await page.content()).includes('<!-- Draft: review by counsel') && !(await page.getByText('review by counsel').count()))
   check('privacy: the retention table and the CC BY attribution are there', (await page.getByRole('table').getByRole('rowheader', { name: 'Gully AI questions and ratings' }).isVisible()) && (await page.getByRole('link', { name: 'Basecamp open-source policies' }).isVisible()))
   const head = await (await fetch(BASE + '/legal/privacy')).text()
@@ -1580,7 +1580,7 @@ await step('gully score', async () => {
     check(`score page at ${width}: the change log`, (await page.getByText('Recent privileged changes').count()) > 0)
     const badge = page.locator(`img[src="/score/base/${SC}/badge.svg"]`)
     await badge.scrollIntoViewIfNeeded()
-    check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n === 232))
+    check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n === 260))
     check(`score page at ${width}: methodology says informational, nobody can pay`, (await page.getByText(/not an endorsement and not investment advice/).count()) > 0)
     if (mobile) await noHorizontalScroll(page, 'score page')
     await page.waitForTimeout(1200)
@@ -1810,6 +1810,7 @@ await step('links hub', async () => {
       untagged: links.filter((a) => !/^https:\/\/(t\.me|x\.com|github\.com)\//.test(a.href) && !/utm_source=kol&utm_medium=links&utm_campaign=launch/.test(a.href)).map((a) => a.getAttribute('href')),
       pay: /0\.5% after the first \$5,000/.test(document.body.textContent ?? ''),
       // The live products, each a link to its own page (branch A's copy: no longer "coming soon").
+      names: ['Holder Map', 'Gully Security', 'Gully Score'].filter((n) => (document.querySelector('main')?.textContent ?? '').includes(n)),
       live: ['/holders', '/security', '/score'].filter((p) => links.some((a) => { try { return new URL(a.href).pathname === p } catch { return false } })),
       soon: [...document.querySelectorAll('main a, main li, main div')].some((e) => e.children.length < 6 && /Holder Map/.test(e.textContent ?? '') && /coming soon/i.test(e.textContent ?? '')),
     }
@@ -1818,7 +1819,7 @@ await step('links hub', async () => {
   check('/links: at least 15 links, each a new tab with noopener and an icon', r.n >= 15 && !r.bad.length && !r.noIcon.length, JSON.stringify(r))
   check('/links: every web link carries the KOL UTM tags', !r.untagged.length, JSON.stringify(r.untagged))
   check('/links: the Gully Pay fee is read from the server', r.pay)
-  check('/links: Holder Map, Gully Security and Gully Score are live links, not "coming soon"', r.live.length === 3 && !r.soon, JSON.stringify({ live: r.live, soon: r.soon }))
+  check('/links: Holder Map, Gully Security and Gully Score are listed', r.names.length === 3 && r.live.length === 3 && !r.soon, JSON.stringify({ names: r.names, live: r.live, soon: r.soon }))
   check('/links: the title', (await page.title()) === 'Links · Gully Labs', await page.title())
   await noHorizontalScroll(page, '/links')
   await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
@@ -1880,14 +1881,25 @@ await step('docs pages', async () => {
   check('sitemap: the admin host has none (P2-18)', sitemapFor('admin.gullylabs.xyz') === null)
   const ctx = await newContext({ width: 1440, height: 900 })
   const page = await ctx.newPage()
+  // The shared tracker fixture has no Solana rows; the Solana page charts three xStocks (one priced by the issuer).
+  const solRows = ['TSLAx', 'NVDAx', 'AAPLx'].map((ticker, i) => ({ ...TRACKER.rows[i], chain: 'solana', ticker, token: `So1ana${i}`.padEnd(44, '1'), gapPct: [0.6, -1.4, 2.2][i], rawGapPct: [0.6, -1.4, 2.2][i], status: ['in-line', 'drifting', 'premium'][i], fairSource: i === 2 ? 'backed' : 'chainlink:56' }))
+  await page.route(`${BASE}/api/tracker`, (route) => json(route, { ...TRACKER, chains: [...TRACKER.chains, { key: 'solana', id: 'solana', name: 'Solana', sessionOpen: true, sessionName: 'NYSE hours', poolsAsOf: TRACKER.generatedAt, poolsStale: false, poolSource: 'on chain', fairMethod: 'Chainlink feed or issuer quote' }], rows: [...TRACKER.rows, ...solRows] }))
   for (const slug of ['gully-ai', 'telegram', 'chain-kit', 'swaps', 'solana', 'status', 'holder-map', 'methodology', 'api']) {
     const w = watch(page, `/docs/${slug}`)
     await page.goto(`${BASE}/docs/${slug}`)
     await page.locator('#docs-main h1').waitFor({ timeout: 15_000 })
     check(`/docs/${slug}: the sidebar link has an icon and is current`, (await page.locator(`nav[aria-label="Docs"] a[aria-current="page"] svg`).count()) >= 1)
     // Charts draw when scrolled into view: bring each one in, then at least one must have drawn from live data.
-    for (const el of await page.locator('#docs-main [data-chart]').all()) await el.scrollIntoViewIfNeeded().catch(() => {})
-    check(`/docs/${slug}: a live chart draws`, (await page.locator('#docs-main [data-chart]').count()) > 0 && (await drawnIn(page, '#docs-main')))
+    await page.waitForLoadState('networkidle').catch(() => {})
+    let drew = false
+    for (const el of await page.locator('#docs-main [data-chart]').all()) {
+      await el.scrollIntoViewIfNeeded().catch(() => {})
+      // Drawn: the kit fades the chart in over its skeleton once ECharts (lazy) has rendered the live data.
+      const h = await el.elementHandle()
+      drew = await page.waitForFunction((e) => e.classList.contains('opacity-100') && !!e.querySelector('svg'), h, { timeout: 15_000 }).then(() => true, () => false)
+      if (drew) break
+    }
+    check(`/docs/${slug}: a live chart draws`, drew, `${await page.locator('#docs-main [data-chart]').count()} charts on the page`)
     await designAudit(page, `/docs/${slug}`, '#docs-main')
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   }

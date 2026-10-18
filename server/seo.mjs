@@ -8,8 +8,8 @@ import { APP_HOST, APP_URL, isAppHost } from './hosts.mjs'
 import { published, publishedJobs } from './security-store.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
-// Guarded: holders.mjs exports holdersAvailable(chainKey) once the Holder Map reports per-chain availability.
-// Until then every stock chain counts as unavailable, so only DeepCore launches (never in the sitemap) are mapped.
+// Guarded: holders.mjs exports holdersAvailable(chain, kind), read at call time (env keys), so stock pages come back
+// on their own once a chain's key is set. Without it every stock chain counts as unavailable (DeepCore launches only).
 import * as holdersModule from './holders.mjs'
 
 const SITE = 'https://gullylabs.xyz'
@@ -37,7 +37,7 @@ const MAIN = {
   '/security': ['Gully Security: AI Security Scan and Security Review · Gully Labs', 'Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price.'],
   '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
-  '/holders': ['Holder Map: who really holds a token · Gully Labs', 'Search any DeepCore launch or tokenised stock and see who holds it: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part.'],
+  '/holders': ['Holder Map: who really holds a token · Gully Labs', 'See who holds any DeepCore launch: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part. Tokenised stocks follow chain by chain.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
   '/legal/privacy': ['Privacy policy · Gully Labs', 'What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, the Telegram bot and Gully Pay, why, who else sees it and how long it is kept.'],
@@ -69,7 +69,7 @@ for (const key of Object.keys(CHAIN_NAMES)) {
 /** Whether the Holder Map has data for a stock chain right now (false until holders.mjs says so). */
 export function holdersAvailableFor(chainKey) {
   try {
-    return typeof holdersModule.holdersAvailable === 'function' ? !!holdersModule.holdersAvailable(chainKey) : false
+    return typeof holdersModule.holdersAvailable === 'function' ? !!holdersModule.holdersAvailable(chainKey, 'stock') : false
   } catch {
     return false
   }
@@ -105,7 +105,7 @@ const DOCS_PAGES = {
   '/gully-security': ['Gully Security · Gully Labs docs', 'Gully Security: the AI Security Scan (inputs, steps, quotas and payment), reading a report, publishing it, and requesting a human Security Review.'],
   '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the app dashboard: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
-  '/roadmap': ['Roadmap · Gully Labs docs', 'What Gully Labs is building, with an honest status for each track: the Gully L3 (planned), and Audits & Security, where the AI Security Scan, Security Review requests, the Gully Score and contract monitoring are live and smart-contract audits are planned.'],
+  '/roadmap': ['Roadmap · Gully Labs docs', 'What Gully Labs is building, with an honest status for each track. Gully Security’s AI Security Scan, Gully Score and monitors are live; Security Reviews are quoted on request; audits are not offered. The Gully L3 is planned.'],
   '/roadmap-l3': ['Roadmap: Gully L3 · Gully Labs docs', 'The plan for the Gully L3: an Arbitrum chain settling to Arbitrum One with Chain Kit, Gully Pay and Hyperlane as its interop layer. Status: spec written, devnet prepared, nothing running.'],
   '/holder-map': ['Holder Map · Gully Labs docs', 'How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules.'],
   '/gully-score': ['Gully Score methodology · Gully Labs docs', 'How the Gully Score is worked out: every component, its weight and source, what happens when data is missing, the badge and widget, and why nobody can pay to change a score.'],

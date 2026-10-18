@@ -223,7 +223,7 @@ function checkMonitors() {
 /** Whether the Holder Map has a data source for a stock chain. Branch-safe: uses holders.holdersAvailable when it exists. */
 export function holderChainAvailable(chainKey) {
   try {
-    if (typeof holders.holdersAvailable === 'function') return !!holders.holdersAvailable(chainKey)
+    if (typeof holders.holdersAvailable === 'function') return !!holders.holdersAvailable(chainKey, 'stock')
     if (chainKey === 'solana') return !!String(process.env.GULLY_RPC_SOLANA ?? '').trim()
     return typeof holders.missingKeyReason === 'function' && holders.HOLDER_CHAINS?.[chainKey] ? holders.missingKeyReason(chainKey) === null : false
   } catch {
