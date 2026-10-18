@@ -54,6 +54,7 @@ export default function HoldersView() {
       />
       {/* Chart and list side by side at desktop widths, so the page stays inside the 900 px budget. */}
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
+      <div className="flex min-w-0 flex-col gap-4">
       <Section title="Launches with a Holder Map" sub="per day, by chain · live from the launch poller, every minute">
         {!d ? (
           dc.k === 'error' ? <EmptyChart height={150} title="Launches unreadable right now: retrying every minute" /> : <Skeleton h={150} />
@@ -63,14 +64,15 @@ export default function HoldersView() {
           <EmptyChart height={150} title="No launch yet: each one charts here as the poller sees it" />
         )}
       </Section>
-      <section className={panel} aria-label="Latest launches with their Holder Maps" data-testid="holders-launches">
-        <LaunchHolders external={!isLocalHost()} limit={8} />
-      </section>
       {newest?.chainKey && (
-        <Section title={`Newest map${newest.symbol ? `: ${newest.symbol}` : ''}`} sub="the animated mini map of the latest launch · live" className="col-span-full">
+        <Section title={`Newest map${newest.symbol ? `: ${newest.symbol}` : ''}`} sub="the animated mini map of the latest launch · live">
           <HolderMapMini chain={newest.chainKey} token={newest.token} external={!isLocalHost()} />
         </Section>
       )}
+      </div>
+      <section className={panel} aria-label="Latest launches with their Holder Maps" data-testid="holders-launches">
+        <LaunchHolders external={!isLocalHost()} limit={8} />
+      </section>
       </div>
     </>
   )

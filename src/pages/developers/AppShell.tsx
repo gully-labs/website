@@ -339,13 +339,13 @@ function NavLinks<T extends string>({ items, current, go, compact, dense }: { it
         const shut = !compact && !!g.name && folded.has(g.name)
         const rows = shut ? g.items.filter((it) => it.id === current) : g.items
         return (
-          <div key={g.name || i} role="group" aria-labelledby={id} data-nav-group={g.name} data-folded={shut || undefined}>
+          <div key={g.name || i} role="group" aria-labelledby={id} data-nav-group={g.name} data-folded={shut || undefined} className={dense ? '[@media(max-height:840px)]:not-first:mt-1 [@media(max-height:840px)]:not-first:border-t [@media(max-height:840px)]:not-first:border-line' : undefined}>
             {compact ? (
               <span id={id} className="mx-auto my-[3px] block h-px w-6 bg-line-strong" aria-label={g.name} role="heading" aria-level={2}>
                 <span className="sr-only">{g.name}</span>
               </span>
             ) : (
-              <h2 id={id} className="m-0">
+              <h2 id={id} className={dense ? 'm-0 [@media(max-height:840px)]:sr-only' : 'm-0'}>
                 <button type="button" onClick={() => toggle(g.name)} aria-expanded={!shut} aria-controls={`${id}-list`} className={`group/h flex w-full items-center gap-1 rounded-[6px] px-[10px] text-left font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase transition-colors hover:text-ink-2 ${dense ? 'min-h-[18px]' : 'min-h-9'}`} data-testid={`navgroup-toggle-${slug}`}>
                   <span className="flex-1">{g.name}</span>
                   <ChevronDown size={12} className={`opacity-60 transition-transform duration-200 group-hover/h:opacity-100 ${shut ? '-rotate-90' : ''}`} aria-hidden />
