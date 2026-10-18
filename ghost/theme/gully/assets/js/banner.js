@@ -495,7 +495,7 @@
             ctx.arc(nx, fy, 3, 0, TAU);
             ctx.fill();
             if (h > 90) {
-                ctx.font = '500 10px ' + FONT_MONO;
+                ctx.font = '500 11px ' + FONT_MONO;
                 ctx.fillStyle = alpha(C.gold, 0.9);
                 ctx.textBaseline = 'middle';
                 ctx.fillText('GAP', nx + 17, (py + fy) / 2);
@@ -662,7 +662,7 @@
 
         /* Kicker: tag (or GULLY LABS) and the banner's code, top left (larger on the share image). */
         var kicker = (sp.tagName || 'Gully Labs').toUpperCase() + '  /  ' + sp.code;
-        var kSize = variant === 'share' ? 18 : variant === 'card' ? 10 : 11;
+        var kSize = variant === 'share' ? 18 : 11;
         ctx.font = '500 ' + kSize + 'px ' + FONT_MONO;
         ctx.textBaseline = 'top';
         var kw = ctx.measureText(kicker).width;

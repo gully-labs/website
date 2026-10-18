@@ -6,6 +6,11 @@
     <title>{{meta_title}}</title>
     <meta name="theme-color" content="#0d141c">
 
+    {{!-- The brand kit icon set, served by the main site (cut from the kit master by scripts/brand-from-kit.mjs, never
+          upscaled). After {{ghost_head}}, so these win over the icon Ghost prints from its own settings. No web app
+          manifest: gullylabs.xyz/manifest.json is for the main site (start_url "/" there) and a cross-origin manifest
+          is fetched with CORS, which that host does not send. --}}
+
     {{!-- Brand fonts, self-hosted in the theme. Declared here (not in the stylesheet) so the preload
           URLs and the @font-face URLs are the same cache-busted {{asset}} URLs: one download each. --}}
     <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/hanken-grotesk-latin-400-normal.woff2"}}" crossorigin>
@@ -39,6 +44,11 @@
 
     <script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="78f29233-9f70-4c45-a440-35d1457d2207" data-domains="blog.gullylabs.xyz" data-web3="true"></script>
     {{ghost_head}}
+    <link rel="icon" href="https://gullylabs.xyz/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://gullylabs.xyz/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://gullylabs.xyz/favicon-16.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="https://gullylabs.xyz/icon-512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://gullylabs.xyz/apple-touch-icon.png">
 </head>
 <body class="{{body_class}}{{#if @custom.animated_banners}} gl-animate{{/if}}">
 
