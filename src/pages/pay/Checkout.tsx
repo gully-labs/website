@@ -11,6 +11,7 @@ import { feedExplorer, isSolanaChain, isSolanaSignature, priceSource } from '../
 import { SolanaReferenceWatch } from '../../components/solana/SolanaReferenceWatch'
 import { accentOf, GULLY_BRAND, storeName, type Brand } from './brand'
 import { MobilePayBar } from './CheckoutFrame'
+import { track } from '../../lib/track'
 
 /* The payment panel of one open invoice (/pay/<id>, /pay/m/<id>; also where a pay link lands), in the
    standalone checkout: 1) network and token, 2) the exact amount with copy buttons and the quote's
@@ -280,6 +281,8 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
   useEffect(() => onPhase?.(phase), [phase, onPhase])
   const who = payee ?? (brand.gully ? 'the Gully Labs treasury' : storeName(brand))
   const accent = accentOf(brand)
+  // Analytics kind: a merchant store's invoice, or one of ours (plans paid by invoice, scans, admin invoices, pay links).
+  const kind = api.startsWith('/api/pay/m/') ? 'store' : 'invoice'
 
   const fetchQuote = (id: string, refresh = false) => {
     const me = ++quoteRun.current
@@ -288,6 +291,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
       setLoading(false)
       if (r.ok) {
         setQuote(r.data.quote)
+        if (!refresh) track('checkout-started', { kind, chain: r.data.quote.asset.chain, asset: r.data.quote.asset.symbol })
         if (refresh) toastSuccess('New quote ready', { id: 'pay:quote', detail: `${r.data.quote.amount} ${r.data.quote.asset.symbol}, valid for 20 minutes.` })
       } else setQuoteErr(r.error)
     })
@@ -332,6 +336,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
       if (r.ok && r.status === 200 && r.data.invoice) {
         setCheck({ s: 'done', hash: txHash })
         toastSuccess('Payment confirmed', { id: tid, detail: `${q.amount} ${q.asset.symbol} on ${q.asset.chain}.`, duration: 8000 })
+        track('checkout-paid', { kind, chain: q.asset.chain, asset: q.asset.symbol })
         onPaid(r.data.invoice)
         return
       }

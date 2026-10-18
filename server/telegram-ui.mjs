@@ -115,14 +115,14 @@ export const holdersPageUrl = (chain, token) => `${SITE}/holders/${encodeURIComp
 export const holdersBtn = (chain, token, source = 'stock') => ({ text: '👥 Holders', holders: { chain: String(chain), token: String(token), source } })
 /**
  * Resolves every holdersBtn placeholder in a keyboard for a private chat (web_app) or a group (url).
- * `available(chain, source)` says whether the Holder Map has data there: a button for a chain without data
+ * `available(chain, token)` says whether the Holder Map has data there (holders.mjs holdersButtonVisible): a button for a chain without data
  * is dropped (and a row left empty by that goes too), so the bot never offers an empty map.
  */
 export function resolveHoldersButtons(kb, isPrivate, appUrl, available = () => true) {
   if (!Array.isArray(kb) || !kb.some((r) => Array.isArray(r) && r.some((b) => b?.holders))) return kb
   const ok = (b) => {
     try {
-      return !!available(b.holders.chain, b.holders.source ?? 'stock')
+      return !!available(b.holders.chain, b.holders.token)
     } catch {
       return false
     }

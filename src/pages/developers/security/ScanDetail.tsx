@@ -1,3 +1,4 @@
+import { track } from '../../../lib/track'
 import { ArrowLeft, Ban, Copy, Globe, Lock, Printer, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
@@ -58,7 +59,10 @@ export function PayStep({ scan, onPaid }: { scan: ScanView; onPaid: () => void }
           Open the invoice page
         </ExtLink>
       </div>
-      <QuotePay assets={plans.offer.assets} label={`AI Security Scan: ${scan.title}`} match="exact" getQuote={quote} verify={verify} onPaid={() => onPaid()} />
+      <QuotePay assets={plans.offer.assets} label={`AI Security Scan: ${scan.title}`} match="exact" getQuote={quote} verify={verify} trackAs={{ kind: 'scan' }} onPaid={() => {
+        track('scan-paid', { tier: 'ai-scan' })
+        onPaid()
+      }} />
     </div>
   )
 }

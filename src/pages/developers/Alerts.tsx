@@ -1,3 +1,4 @@
+import { track } from '../../lib/track'
 import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, History, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { DOCS_URL } from '../../site-host'
@@ -139,6 +140,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
     const r = await api<{ secret: string | null }>('/api/developer/alerts', { method: 'POST', body: { name: name.trim(), chain, ticker, condition, webhookUrl: webhook.trim() || undefined, telegram: toTelegram || undefined } })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
+    track('alert-created', { kind: kind === 'deepcore' ? 'deepcore-launch' : kind === 'holders' ? 'holders' : kind === 'gap' ? 'gap' : 'status', channel: toTelegram && webhook.trim() ? 'telegram+webhook' : toTelegram ? 'telegram' : webhook.trim() ? 'webhook' : 'app' })
     setName('')
     setWebhook('')
     setToTelegram(false)
@@ -384,7 +386,7 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
 }
 
 /* Telegram: not configured / connect (one-time deep link, polled) / connected (chat name, unlink). */
-export function TelegramCard({ info, reload, compact = false }: { info: TelegramInfo; reload: () => Promise<unknown>; compact?: boolean }) {
+export function TelegramCard({ info, reload, compact = false, from = 'alerts' }: { info: TelegramInfo; reload: () => Promise<unknown>; compact?: boolean; /** Analytics: where the connect started. */ from?: string }) {
   const [link, setLink] = useState<TelegramLink | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -415,6 +417,7 @@ export function TelegramCard({ info, reload, compact = false }: { info: Telegram
     const r = await api<TelegramLink>('/api/developer/telegram/connect', { method: 'POST' })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
+    track('telegram-connect', { from })
     setNow(Date.now())
     setLink(r.data)
   }

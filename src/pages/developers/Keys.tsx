@@ -1,3 +1,4 @@
+import { track } from '../../lib/track'
 import { Activity, AlertTriangle, AppWindow, BookOpen, Check, Clock, Code2, Gauge, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
@@ -146,6 +147,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
     if (!dialog) return
     if (dialog.kind === 'create')
       act('/api/developer/keys', { name }, (d) => {
+        track('key-created')
         toastSuccess('Key created', { detail: `${d.key.name}: copy its secret now, it is shown once.` })
         setDialog({ kind: 'secret', key: d.key, secret: d.secret ?? '', rotated: false })
       })

@@ -9,6 +9,7 @@ import { toastError, toastInfo, toastSuccess } from '../ui/toast'
 import { AssetMark, AssetPicker } from './AssetPicker'
 import { feedExplorer, isSolanaChain, isSolanaSignature, priceSource } from '../solana/constants'
 import { SolanaReferenceWatch } from '../solana/SolanaReferenceWatch'
+import { track } from '../../lib/track'
 
 /* Gully Pay checkout, shared by the dashboard's Plan & billing tab and the public /pay/<invoice> page:
    pick a chain and asset, get a 20-minute quote (exact amount, treasury, price source), pay with one
@@ -64,9 +65,11 @@ export interface QuotePayProps {
   initialAsset?: string | null
   /** false: the caller picked the asset already (initialAsset) and shows its own picker. */
   showPicker?: boolean
+  /** Analytics (checkout-started / checkout-paid): what is being bought. Never ids, wallets or hashes. */
+  trackAs?: { kind: string; plan?: string }
 }
 
-export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initialAsset = null, showPicker = true }: QuotePayProps) {
+export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initialAsset = null, showPicker = true, trackAs }: QuotePayProps) {
   const [assetId, setAssetId] = useState<string | null>(initialAsset)
   const [quote, setQuote] = useState<Quote | null>(null)
   const [quoteErr, setQuoteErr] = useState<string | null>(null)
@@ -96,6 +99,7 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
       setLoading(false)
       if (r.ok) {
         setQuote(r.data.quote)
+        if (!refresh && trackAs) track('checkout-started', { ...trackAs, chain: r.data.quote.asset.chain, asset: r.data.quote.asset.symbol })
         if (refresh) toastSuccess('New quote ready', { id: 'pay:quote', detail: `${r.data.quote.amount} ${r.data.quote.asset.symbol}, valid for 20 minutes.` })
       } else setQuoteErr(r.error)
     })
@@ -133,6 +137,7 @@ export function QuotePay({ assets, label, getQuote, verify, onPaid, match, initi
       if (r.ok && r.status !== 202) {
         setCheck({ state: 'done', hash: txHash })
         toastSuccess('Payment confirmed', { id: tid, detail: `${q.amount} ${q.asset.symbol} on ${q.asset.chain}.`, duration: 8000 })
+        if (trackAs) track('checkout-paid', { ...trackAs, chain: q.asset.chain, asset: q.asset.symbol })
         onPaid(r.data, q, txHash)
         return
       }

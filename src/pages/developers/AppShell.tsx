@@ -5,7 +5,7 @@ import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
 import { AskLauncher } from '../../components/ask/AskLauncher'
-import { healthOf, useHealthPings, type Health } from './services/health'
+import { healthOfStatus, useAppStatus, type Health } from './services/health'
 import { StatusDialog } from './services/StatusDialog'
 import { Avatar } from './Avatar'
 import { Menu, menuItem } from './Menu'
@@ -62,8 +62,9 @@ const roleTone = (r: Role) => (r === 'owner' ? 'border-gold text-gold' : r === '
 
 /* ------------------------------------------------------------------ status --- */
 
-/** Whether this server answers (GET /healthz, the app's shared pings, at least every minute). */
-const useHealth = (): Health => healthOf(useHealthPings(60_000))
+/** The API's state from the public status (GET /api/status on gullylabs.xyz, at least every minute); the button
+    opens the Status dialog, which links to the full page at https://gullylabs.xyz/status. */
+const useHealth = (): Health => healthOfStatus(useAppStatus(60_000))
 
 const healthText: Record<Health, string> = { checking: 'checking…', up: 'API online', down: 'API unreachable' }
 const healthDot: Record<Health, string> = { checking: 'bg-faint animate-pulse', up: 'bg-green', down: 'bg-error' }

@@ -18,10 +18,11 @@ interface Health {
   holders: {
     chain: string
     name: string
+    source: string | null
+    env: string | null
     available: boolean
+    launches: boolean
     reason: string | null
-    needs: string | null
-    source: 'helper' | 'env'
   }[]
   monitors: {
     monitors: number | null
@@ -245,13 +246,14 @@ export function HealthCard({ token }: { token: string }) {
                 <span className="flex items-center gap-2 text-ink-2">
                   <Dot tone={c.available ? 'ok' : 'down'} /> {c.name}
                 </span>
-                <span className={`truncate ${c.available ? 'text-faint' : 'text-error'}`} title={c.reason ?? ''}>
-                  {c.available ? 'available' : (c.reason ?? 'unavailable')}
+                <span className={`truncate ${c.available ? 'text-faint' : 'text-error'}`} title={`Source: ${c.source ?? 'none'}${c.env ? ` (${c.env})` : ''}. DeepCore launches: ${c.launches ? 'mapped' : 'not on this chain'}.`}>
+                  {c.available ? 'stocks available' : (c.reason ?? 'unavailable')}
+                  {c.launches ? ' · launches' : ''}
                 </span>
               </li>
             ))}
           </ul>
-          <span className="font-mono text-[11px] text-faint">DeepCore launches map without these keys; stock tokens need them.</span>
+          <span className="font-mono text-[11px] text-faint">"launches": DeepCore launches map there without a key. Stock tokens need the source above.</span>
           <Spark history={h.history} field="holdersAvailable" tone={holdersTone} fmt={(v) => `${v} chains available`} label="Holder Map chains with data, per minute" />
         </Item>
 

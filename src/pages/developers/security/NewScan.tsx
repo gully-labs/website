@@ -1,3 +1,4 @@
+import { track } from '../../../lib/track'
 import { ArrowLeft, ArrowRight, CircleDollarSign, FileCheck2, FileCode2, FileUp, GitBranch, Globe, Info, ListChecks, Play, ScanSearch, ShieldAlert, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
@@ -123,6 +124,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
     const r = await api<{ scan: ScanView }>('/api/developer/security/scans', { method: 'POST', body: { input: target, upload, expect: { priceUsd: price } } })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
+    track('scan-started', kind === 'address' ? { input: kind, chain } : { input: kind })
     const v = r.data.scan
     setScan(v)
     setDup(!!v.duplicate)

@@ -278,6 +278,29 @@ try {
   check('an unknown chain in the path is a 404 page', (await hostRequest(BASE, 'gullylabs.xyz', `/score/mars/${D}`)).status === 404)
   check('the index page has its title', /Gully Score: transparent contract scores/.test((await hostRequest(BASE, 'gullylabs.xyz', '/score')).text))
 
+  /* ------------------------------------- privacy: private monitors stay private --- */
+  // A monitor added with publicScore: false must never feed a public score, the index or the sitemap.
+  st.logs.push({ address: E, topics: [mon.TOPICS.paused], data: '0x' + word(BigInt(EOA)), blockNumber: hex(st.head + 1), logIndex: '0x0', transactionHash: '0x' + 'ab'.repeat(32) })
+  st.head += 10
+  await mon.tickMonitorsNow()
+  check('privacy: monitorFacts ignores a private monitor', mon.monitorFacts(8453, E) === null)
+  const ePub = await anon.call(`/api/score/base/${E}`)
+  check('privacy: a private monitor’s change is not on the public score (recent changes not known)', ePub.status === 200 && part(ePub.data, 'changes').available === false && !JSON.stringify(ePub.data).includes('ab'.repeat(32)), JSON.stringify(part(ePub.data, 'changes')))
+  const refreshed2 = await score.refreshScoresNow({ max: 5 })
+  check('privacy: a private monitor’s change does not queue a public score refresh', !refreshed2.some((x) => x.key === `8453:${E}`), JSON.stringify(refreshed2))
+  const pageE2 = await hostRequest(BASE, 'gullylabs.xyz', `/score/base/${E}`)
+  check('privacy: the private contract’s page stays noindex and out of the sitemap', /content="noindex"/.test(pageE2.text) && !(await hostRequest(BASE, 'gullylabs.xyz', '/sitemap.xml')).text.includes(`/score/base/${E}</loc>`))
+  // Removing the only public monitor: the stored score built from its events is dropped, not served.
+  const dBefore = (await anon.call(`/api/score/base/${D}`)).data
+  check('privacy: (setup) the public monitor fed D’s stored score', part(dBefore, 'changes').available === true)
+  const del = await dev.post(`/api/developer/monitors/${m1.data.monitor.id}/delete`, {})
+  check('privacy: (setup) D’s monitor deleted', del.status === 200, `${del.status} ${JSON.stringify(del.data)}`)
+  const dGone = await anon.call(`/api/score/base/${D}`)
+  check('privacy: once no public monitor watches D, its score is worked out again without monitoring facts', dGone.status === 200 && part(dGone.data, 'changes').available === false && !JSON.stringify(dGone.data).includes('ee'.repeat(32)), JSON.stringify(part(dGone.data, 'changes')))
+  const idx2 = (await anon.call('/api/score')).data.scores.map((r) => r.address)
+  const sm2 = (await hostRequest(BASE, 'gullylabs.xyz', '/sitemap.xml')).text
+  check('privacy: D leaves the index and the sitemap with its monitor', !idx2.includes(D) && !sm2.includes(`/score/base/${D}</loc>`), idx2.join())
+
   /* ---------------------------------------------------------------- the badge --- */
   const badge = await fetch(`${BASE}/score/base/${A}/badge.svg`)
   const svg = await badge.text()

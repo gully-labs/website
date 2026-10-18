@@ -59,6 +59,7 @@
 //
 // Stored in DATA_DIR/telegram.json: { links: [...], codes: [...], banner: { fileId, sha } }.
 
+import { chainKeyOf, findStock, holdersAvailable, holdersButtonVisible } from './holders.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -155,31 +156,32 @@ function apiBase() {
 
 /* ---------------------------------------------------------- Holder Map data --- */
 
-/* Which chains the Holder Map has data for. server/holders.mjs exports holderAvailability() once it can say
-   ({ [chainKey]: { available, reason, needs } }); until then (or when it throws) the default is "maps exist only
-   for DeepCore launches", whose holders DeepCore's own index rebuilds. Read lazily, so a missing export or a
-   failed import never breaks the bot. */
-let holderAvailabilityFn = null
-import('./holders.mjs')
-  .then((m) => {
-    if (typeof m?.holderAvailability === 'function') holderAvailabilityFn = m.holderAvailability
-  })
-  .catch(() => undefined)
+/* Whether a "👥 Holders" button leads to a map with data: server/holders.mjs decides (holdersButtonVisible:
+   a tracked stock follows its chain's holder source, anything else is a DeepCore launch; holdersAvailable for a
+   chain's stock tokens). Never throws: a failing check hides the button. */
+let holderVisibleOverride = null
 
-/** Whether a "👥 Holders" button for this chain and source ('stock' | 'deepcore') leads to a map with data. */
-export function holderChainAvailable(chain, source = 'stock') {
-  if (source === 'deepcore') return true
-  if (!holderAvailabilityFn) return false
+/** Whether a "👥 Holders" button for (chain, token) leads to a map with data. */
+export function holderChainAvailable(chain, token) {
   try {
-    return holderAvailabilityFn()?.[chain]?.available === true
+    if (!holderVisibleOverride) return holdersButtonVisible(chain, token) === true
+    const ck = chainKeyOf(chain)
+    return !!ck && (findStock(ck, token) ? holderVisibleOverride(ck, 'stock') === true : holdersAvailable(ck, 'deepcore-launch'))
   } catch {
     return false
   }
 }
 /** The stock chains whose Holder Map has data now (for the Mini App and the bot's Holder Map screen). */
-export const holderStockChains = () => ['robinhood', 'bsc', 'solana'].filter((k) => holderChainAvailable(k, 'stock'))
-/** Tests only: replace the availability source (null: the "DeepCore launches only" default). */
-export const setHolderAvailabilityForTest = (fn) => (holderAvailabilityFn = fn)
+export const holderStockChains = () =>
+  ['robinhood', 'bsc', 'solana'].filter((k) => {
+    try {
+      return holderVisibleOverride ? holderVisibleOverride(k, 'stock') === true : holdersAvailable(k, 'stock')
+    } catch {
+      return false
+    }
+  })
+/** Tests only: fn(chainKey, 'stock') -> boolean replaces "is this chain's stock source configured" (null: holders.mjs decides). */
+export const setHolderAvailabilityForTest = (fn) => (holderVisibleOverride = fn)
 
 /* ----------------------------------------------------------- webhook health --- */
 

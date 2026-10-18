@@ -119,7 +119,8 @@ export function resetScoresForTest() {
 export const reloadScoresForTest = () => (db = load())
 /** e2e and tests: store a result as if computed (the page reads it like any other). */
 export function putScoreForTest(result) {
-  db.scores[keyOf(result.chainId, result.address)] = result
+  // A seeded score has no monitor behind it: it is marked so publicSafe() does not drop it for that.
+  db.scores[keyOf(result.chainId, result.address)] = { ...result, seededForTest: true }
   save()
 }
 
@@ -490,6 +491,8 @@ export function methodology() {
 export function scoreIndex() {
   const listed = new Set(listedContracts().map((c) => keyOf(c.chainId, c.address)))
   const rows = Object.values(db.scores)
+    .map(publicSafe)
+    .filter(Boolean)
     .filter((r) => listed.has(keyOf(r.chainId, r.address)) || isListed(r.chainId, r.address))
     .map((r) => ({ chainId: r.chainId, chainKey: r.chainKey, chainName: r.chainName, address: r.address, name: r.name, symbol: r.symbol, score: r.score, grade: r.grade, coverage: r.coverage, computedAt: r.computedAt, change: r.history.length > 1 && r.score !== null && r.history[r.history.length - 2].score !== null ? r.score - r.history[r.history.length - 2].score : null }))
   rows.sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.address.localeCompare(b.address))
@@ -503,7 +506,7 @@ export function scorePageMeta(p) {
   const chain = chainOf(m[1])
   if (!chain || chain.key !== m[1]) return { found: false }
   const address = m[2].toLowerCase()
-  const r = db.scores[keyOf(chain.id, address)]
+  const r = publicSafe(db.scores[keyOf(chain.id, address)])
   const label = r?.name ? `${r.name}${r.symbol ? ` (${r.symbol})` : ''}` : short(address)
   return {
     found: true,
@@ -569,9 +572,23 @@ const CORS = { 'Access-Control-Allow-Origin': '*' }
 
 /** The score for a chain/address pair: cached, or computed when stale (rate limited). */
 const scoreFor = (req, chain, address) => scoreForIp(clientIp(req), chain, address)
+/**
+ * A stored score whose "recent changes" came from monitoring that is no longer public (the monitor was removed or
+ * switched to publicScore: false) is dropped, so it is worked out again without those facts and never served.
+ */
+export function publicSafe(r) {
+  if (!r) return null
+  const usedMonitoring = r.components?.some((c) => c.id === 'changes' && c.available)
+  if (usedMonitoring && !r.seededForTest && !monitorFacts(r.chainId, r.address)) {
+    delete db.scores[keyOf(r.chainId, r.address)]
+    return null
+  }
+  return r
+}
+
 async function scoreForIp(ip, chain, address) {
   const k = keyOf(chain.id, address)
-  const have = db.scores[k]
+  const have = publicSafe(db.scores[k])
   if (have && Date.now() - Date.parse(have.computedAt) < TTL_MS) return { result: have }
   const busy = inflight.size >= MAX_INFLIGHT && !inflight.has(k)
   if (busy || !allow(ip)) {
@@ -618,7 +635,7 @@ export async function handleScore(req, res, url) {
   if (!ADDR_RE.test(address) || address === ZERO) return json(res, 400, { error: 'Not a contract address.' }, CORS), true
   if (badge) {
     // The badge never computes: it shows what is stored (a page view computes it first).
-    const r = db.scores[keyOf(chain.id, address)] ?? null
+    const r = publicSafe(db.scores[keyOf(chain.id, address)] ?? null)
     res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...CORS, 'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'" })
     return res.end(req.method === 'HEAD' ? undefined : badgeSvg(r, chain, address)), true
   }
@@ -632,7 +649,8 @@ export async function handleScore(req, res, url) {
 const pending = new Set()
 // A monitored change refreshes that contract's score soon after (the "recent changes" component moves).
 onMonitorEvents((m, recs) => {
-  if (recs.some((r) => r.privileged)) pending.add(keyOf(m.chainId, m.address))
+  // A private monitor (publicScore: false) never moves a public score.
+  if (m.publicScore !== false && recs.some((r) => r.privileged)) pending.add(keyOf(m.chainId, m.address))
 })
 
 let timer = null

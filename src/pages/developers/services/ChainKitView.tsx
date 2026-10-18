@@ -1,10 +1,12 @@
-import { Blocks } from 'lucide-react'
+import { Activity, Blocks, LayoutDashboard } from 'lucide-react'
 import { ChainKitExample } from '../../../components/charts/ProductExamples'
 import { ChainCompare } from '../../../components/tracker/MoreCharts'
 import { ChainLogo } from '../../../components/tracker/StockLogo'
 import { useTracker } from '../../../lib/tracker'
 import { Skeleton } from '../parts'
 import { ChainKitCard } from '../Products'
+import { useSubTab } from '../subtab'
+import { SubPanel, SubTabs, type SubTabItem } from '../ui'
 import { docsPage, sitePage } from './links'
 import { Section, ServiceHeader, type Status } from './ServiceHeader'
 
@@ -12,10 +14,18 @@ import { Section, ServiceHeader, type Status } from './ServiceHeader'
    figures are the chains Gully's own indexer reads right now (GET /api/tracker: chains, tokens indexed,
    feeds answering, pools read), charted chain against chain; the explorer request is the Products
    page's Chain Kit card (one form, one place; server state with a live requests-per-day chart). What an explorer draws is shown with example data,
-   badged as such. */
+   badged as such, on its own sub-tab so the page stays inside the 900 px budget. */
+
+const TABS = ['live', 'example'] as const
+type Sub = (typeof TABS)[number]
+const ITEMS: SubTabItem<Sub>[] = [
+  { id: 'live', label: 'Indexer and request', icon: <Activity size={15} aria-hidden /> },
+  { id: 'example', label: 'Charts on day one', icon: <LayoutDashboard size={15} aria-hidden /> },
+]
 
 export default function ChainKitView() {
   const st = useTracker()
+  const [sub, setSub] = useSubTab<Sub>('chain-kit', TABS, 'live', { hashOnOpen: false })
   const data = st.k === 'ok' ? st.data : null
   const pending = st.k === 'error' ? 'unreadable' : '…'
   const feeds = data ? data.rows.filter((r) => r.fair !== null).length : null
@@ -38,6 +48,10 @@ export default function ChainKitView() {
         ]}
       />
 
+      <SubTabs items={ITEMS} value={sub} onChange={setSub} label="Chain Kit sections" idBase="chain-kit" />
+
+      <SubPanel idBase="chain-kit" value={sub}>
+      {sub === 'live' ? (
       <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
         <Section
           title="What our indexer reads now"
@@ -58,10 +72,12 @@ export default function ChainKitView() {
         </Section>
         <ChainKitCard />
       </div>
-
+      ) : (
       <Section title="Charts on day one" sub="what a Chain Kit explorer draws for your chain">
         <ChainKitExample />
       </Section>
+      )}
+      </SubPanel>
     </>
   )
 }

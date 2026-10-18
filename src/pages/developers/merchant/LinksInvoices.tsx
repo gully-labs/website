@@ -1,3 +1,4 @@
+import { track } from '../../../lib/track'
 import { Ban, FileText, Link2, Loader2, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
@@ -55,6 +56,7 @@ export function NewLink({ view, onDone, bare = false, initialAmount = '' }: { vi
     setBusy(false)
     if (!r.ok) return setErr(r.error)
     toastSuccess('Pay link created', { detail: r.data.link.title })
+    track('merchant-link-created')
     onDone()
   }
 

@@ -34,13 +34,20 @@ export function AdminNav() {
     }
   }, [])
 
-  // Keep the active chip visible in the sideways-scrolling row.
+  // Keep the active chip visible in the sideways-scrolling row. Only the row scrolls (never the page:
+  // scrollIntoView would move the page too and fight whoever is scrolling it).
   useEffect(() => {
-    document.getElementById(`adm-nav-${active}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    const chip = document.getElementById(`adm-nav-${active}`)
+    const row = chip?.closest('ul')
+    if (!chip || !row) return
+    const c = chip.getBoundingClientRect()
+    const r = row.getBoundingClientRect()
+    if (c.left < r.left) row.scrollLeft -= r.left - c.left + 8
+    else if (c.right > r.right) row.scrollLeft += c.right - r.right + 8
   }, [active])
 
   return (
-    <nav aria-label="Admin sections" className="basis-full">
+    <nav aria-label="Admin sections" className="w-full max-w-full min-w-0 basis-full">
       <ul className="m-0 flex list-none gap-2 overflow-x-auto p-0 pb-1 [scrollbar-width:thin]">
         {ADMIN_SECTIONS.map(({ id, label, icon: Icon }) => {
           const on = id === active

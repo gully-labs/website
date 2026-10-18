@@ -50,6 +50,8 @@ export default function HoldersView() {
           { label: 'CHAINS', value: d?.chains.length, unknown: pending, note: d ? d.chains.map((c) => c.name).join(', ') : 'watched' },
         ]}
       />
+      {/* Chart and list side by side at desktop widths, so the page stays inside the 900 px budget. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
       <Section title="Launches with a Holder Map" sub="per day, by chain · live from the launch poller, every minute">
         {!d ? (
           dc.k === 'error' ? <EmptyChart height={150} title="Launches unreadable right now: retrying every minute" /> : <Skeleton h={150} />
@@ -62,6 +64,7 @@ export default function HoldersView() {
       <section className={panel} aria-label="Latest launches with their Holder Maps" data-testid="holders-launches">
         <LaunchHolders external={!isLocalHost()} limit={8} />
       </section>
+      </div>
     </>
   )
 }

@@ -1,3 +1,4 @@
+import { track } from '../../lib/track'
 import { BookOpen, CheckCircle2, CreditCard, Download, FileText, History, LayoutDashboard, Receipt, Store, Users } from 'lucide-react'
 import { usePortal, useWrite } from './portal'
 import { Can } from './RoleGate'
@@ -108,7 +109,9 @@ function PlanCheckout({ plan, view, initialAsset, autoQuote, onPaid, onCancel }:
         autoQuote={autoQuote}
         getQuote={(asset) => api<{ intent: Quote }>('/api/developer/checkout', { method: 'POST', body: { plan: plan.id, asset } }).then((r) => (r.ok ? { ...r, data: { quote: r.data.intent } } : r))}
         verify={(q, txHash) => api('/api/developer/checkout/verify', { method: 'POST', body: { plan: plan.id, quoteId: q.id, txHash } })}
+        trackAs={{ kind: 'plan', plan: plan.id }}
         onPaid={(data) => {
+          track('plan-upgraded', { plan: plan.id })
           setDone((data as { payment: Payment }).payment)
           onPaid()
         }}

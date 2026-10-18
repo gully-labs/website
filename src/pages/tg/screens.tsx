@@ -9,6 +9,7 @@ import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice
 import type { AlertCondition, GapAlert, GapDirection } from '../developers/api'
 import { useNow, useTgApi } from './hooks'
 import { haptic, tgApi, type WebApp } from './sdk'
+import { track } from '../../lib/track'
 import { HolderMap } from '../../components/holders/HolderMap'
 
 /* The Mini App's screens: the gap list across chains, one stock (24h chart and an alert composer driven
@@ -292,6 +293,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
       setBusy(false)
       if (r.ok) {
         haptic.ok()
+        track('alert-created', { kind: 'gap', channel: 'telegram' })
         setResult({ ok: true, text: `Alert created: ${plainCondition(r.data.alert.condition)}. It arrives in your linked chat.` })
         onAlertsChanged()
       } else {
@@ -443,6 +445,7 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
     setAlertBusy(false)
     if (r.ok) {
       haptic.ok()
+      track('alert-created', { kind: 'deepcore-launch', channel: 'telegram' })
       setAlertMsg({ ok: true, text: `Alert created: ${plainCondition(r.data.alert.condition)}. It arrives in your linked chat.` })
       onAlertsChanged?.()
     } else {
@@ -726,6 +729,7 @@ export function HoldersScreen({ wa, initData, me, chain, token, onAlertsChanged 
     setBusy(false)
     if (r.ok) {
       haptic.ok()
+      track('alert-created', { kind: 'holders', channel: 'telegram' })
       setResult({ ok: true, text: `Alert created: ${plainCondition(r.data.alert.condition as AlertCondition | HolderCondition)}. It arrives in your linked chat.` })
       onAlertsChanged()
     } else {

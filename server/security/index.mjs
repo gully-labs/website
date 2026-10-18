@@ -246,20 +246,33 @@ async function runOne(s) {
 }
 
 /**
+ * Removes finished scans older than SECURITY_KEEP_DAYS (180 by default): the record and its folder (inputs,
+ * checkpoints, report). Runs at start and once a day (security-engine.mjs startEngine). Returns the ids removed.
+ */
+export function pruneScans({ now = Date.now() } = {}) {
+  load()
+  const keep = now - config.keepDays() * 86_400_000
+  const gone = []
+  db.scans = db.scans.filter((s) => {
+    if (TERMINAL_STATUSES.includes(s.status) && Date.parse(s.createdAt) < keep) {
+      fs.rmSync(scanDir(s.id), { recursive: true, force: true })
+      gone.push(s.id)
+      return false
+    }
+    return true
+  })
+  if (gone.length) save()
+  return gone
+}
+
+/**
  * Loads the queue, requeues scans interrupted by a restart (they resume from their checkpoints), prunes
  * scans older than SECURITY_KEEP_DAYS and starts the runner. Safe to call more than once.
  */
 export function startSecurity() {
   stopped = false
   load()
-  const keep = Date.now() - config.keepDays() * 86_400_000
-  db.scans = db.scans.filter((s) => {
-    if (TERMINAL_STATUSES.includes(s.status) && Date.parse(s.createdAt) < keep) {
-      fs.rmSync(scanDir(s.id), { recursive: true, force: true })
-      return false
-    }
-    return true
-  })
+  pruneScans()
   for (const s of db.scans) {
     if (TERMINAL_STATUSES.includes(s.status) || s.status === 'queued') continue
     if (s.attempts >= config.maxAttempts()) Object.assign(s, { status: 'failed', message: 'Scan failed', finishedAt: new Date().toISOString(), error: { code: 'too-many-attempts', message: 'the scan was interrupted too many times' } })

@@ -19,6 +19,7 @@ import { ChainLogo } from '../../components/logos/ChainLogo'
 import { KEY_COLORS } from './styles'
 import { QuotaRing } from './vcharts'
 import { PayFlow } from './PayFlow'
+import { track } from '../../lib/track'
 import { input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 
@@ -395,7 +396,9 @@ function Checkout({ plan, view, account, onPaid, onCancel }: { plan: AnalyticsPl
         label={`Gully Analytics ${plan.name}, ${view.offer.analytics.periodDays} days`}
         getQuote={(asset) => api<{ intent: Quote }>('/api/developer/analytics/checkout', { method: 'POST', body: { plan: plan.id, asset } }).then((r) => (r.ok ? { ...r, data: { quote: r.data.intent } } : r))}
         verify={(q, txHash) => api('/api/developer/analytics/checkout/verify', { method: 'POST', body: { quoteId: q.id, txHash } })}
+        trackAs={{ kind: 'analytics-plan', plan: plan.id }}
         onPaid={(data) => {
+          track('plan-upgraded', { plan: `analytics-${plan.id}` })
           setDone((data as { payment: Payment }).payment)
           onPaid()
         }}

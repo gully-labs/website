@@ -10,7 +10,8 @@
 //                  gasEstimateL1Component; none elsewhere
 //   costs          a fee-proxy payment (106k gas) and a plain ERC-20 transfer (65k gas), L1 fee included
 //
-// A chain whose gas price cannot be read answers { ok: false, error }. Nothing is signed or sent.
+// A chain whose gas price cannot be read answers { ok: false, error: 'unavailable' }; the RPC's own error text is
+// logged on the server only, never put in the JSON. Nothing is signed or sent.
 
 import { ASSETS, CHAIN_LIST, FEE_PROXIES, readFeed, rpc } from './payments.mjs'
 
@@ -43,6 +44,10 @@ async function l1Fee(chainId, gasPrice) {
   return null
 }
 
+/** Logs an RPC failure server-side (no RPC URLs: a keyed URL must never reach the log either). */
+const logRpc = (what, c, e) => console.warn(`gas: ${what} on ${c.name} (${c.id}): ${String(e?.message ?? e).replace(/https?:\/\/\S+/g, '[rpc]').slice(0, 200)}`)
+export const UNAVAILABLE = 'unavailable'
+
 const round = (v, digits = 6) => (v == null ? null : Number(v.toPrecision(digits)))
 
 async function readChain(c) {
@@ -51,7 +56,8 @@ async function readChain(c) {
   try {
     gasPrice = BigInt(await rpc(c.id, 'eth_gasPrice', []))
   } catch (e) {
-    return { ...row, ok: false, error: `gas price unreadable: ${String(e?.message ?? e).slice(0, 120)}` }
+    logRpc('gas price unreadable', c, e)
+    return { ...row, ok: false, error: UNAVAILABLE }
   }
   const out = { ...row, ok: true, gasPriceGwei: round(Number(gasPrice) / 1e9), coinUsd: null, priceSource: null, l1FeeUsd: null, l1: null, payUsd: null, transferUsd: null, approveUsd: null, note: null }
   const f = await readFeed(c.id)
@@ -66,7 +72,8 @@ async function readChain(c) {
   try {
     l1 = await l1Fee(c.id, gasPrice)
   } catch (e) {
-    out.l1 = `L1 data fee unreadable (${String(e?.message ?? e).slice(0, 60)})`
+    logRpc('L1 data fee unreadable', c, e)
+    out.l1 = 'L1 data fee unavailable'
     out.note = 'L1 data fee unreadable: costs shown without it'
   }
   if (l1) {
@@ -88,7 +95,7 @@ export async function readGas({ fresh = false } = {}) {
   if (!fresh && cache && Date.now() - cache.at < CACHE_MS) return cache.value
   if (inflight) return inflight
   inflight = (async () => {
-    const chains = await Promise.all(CHAIN_LIST.filter((c) => !c.testnet).map((c) => readChain(c).catch((e) => ({ chainId: c.id, name: c.name, key: c.key, ok: false, error: String(e?.message ?? e).slice(0, 120) }))))
+    const chains = await Promise.all(CHAIN_LIST.filter((c) => !c.testnet).map((c) => readChain(c).catch((e) => (logRpc('read failed', c, e), { chainId: c.id, name: c.name, key: c.key, ok: false, error: UNAVAILABLE }))))
     const value = { at: new Date().toISOString(), cacheSeconds: CACHE_MS / 1000, gas: Object.fromEntries(Object.entries(GAS).map(([k, v]) => [k, Number(v)])), chains }
     cache = { at: Date.now(), value }
     return value

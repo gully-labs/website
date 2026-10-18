@@ -109,7 +109,7 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
 
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start gap-4 max-[1100px]:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-4">
-          {view ? <TelegramCard info={view.telegram} reload={load} /> : <Skeleton h={160} />}
+          {view ? <TelegramCard info={view.telegram} reload={load} from="telegram" /> : <Skeleton h={160} />}
           <AnnouncementsCard />
           <Section title="Channel and bot" sub="the bot asks every user to follow the News channel">
             <div className="flex flex-wrap gap-2">

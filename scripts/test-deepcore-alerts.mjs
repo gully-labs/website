@@ -267,13 +267,22 @@ try {
   mode = 'down'
   const dn = await q({ chain: 'robinhood', token: META_RH, amount: '0.4' })
   check('quote: an upstream failure is unreadable (502), not a zero output', dn.status === 502 && dn.j.code === 'UNREADABLE' && !('quote' in dn.j))
+  check('quote: an unreadable answer carries no raw upstream detail', !('detail' in dn.j))
   mode = 'ok'
+  // Errors are not cached: the same amounts are asked upstream again and now answer 200.
+  const nCalls = dcCalls.length
+  const dn2 = await q({ chain: 'robinhood', token: META_RH, amount: '0.4' })
+  check('quote: a 502 is not cached; the next ask goes upstream and succeeds', dn2.status === 200 && !dn2.j.cached && dcCalls.length === nCalls + 1, JSON.stringify(dn2.j).slice(0, 120))
+  const nr2 = await q({ chain: 'robinhood', token: META_RH, amount: '0.3' })
+  check('quote: a no-route answer is not cached either', nr2.status === 200 && !nr2.j.cached)
   let limited = null
   for (let i = 0; i < 12 && !limited; i++) {
     const r = await q({ chain: 'robinhood', token: META_RH, amount: String(1 + i) })
     if (r.status === 429) limited = r
   }
   check('quote: at most 10 fresh quotes a minute per address', limited?.j.code === 'RATE_LIMITED')
+  const cachedAfterLimit = await q({ chain: 'robinhood', token: META_RH, amount: '0.4' })
+  check('quote: a cache hit does not skip the per-address limit', cachedAfterLimit.status === 429 && cachedAfterLimit.j.code === 'RATE_LIMITED')
 } catch (e) {
   check(`no exception (${e?.stack ?? e})`, false)
 }

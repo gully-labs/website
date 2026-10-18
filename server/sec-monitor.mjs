@@ -757,10 +757,14 @@ async function deliver(m, recs, test, at = Date.now()) {
 
 /* ------------------------------------------------------------ public reads --- */
 
-/** For the Gully Score: what monitoring knows about a contract (any workspace), or null when nobody watches it. */
+/**
+ * For the public Gully Score: what PUBLIC monitoring knows about a contract, or null when no workspace that lets
+ * its monitor feed public scores (publicScore !== false) watches it. A private monitor's events, start date and
+ * name never reach a public score page, the score index or the sitemap.
+ */
 export function monitorFacts(chainId, address) {
   const a = String(address).toLowerCase()
-  const ms = db.monitors.filter((m) => m.chainId === chainId && m.address === a)
+  const ms = db.monitors.filter((m) => m.chainId === chainId && m.address === a && m.publicScore !== false)
   if (!ms.length) return null
   const since = ms.map((m) => m.createdAt).sort()[0]
   const seen = new Map()

@@ -174,20 +174,19 @@ const safe = (fn, fallback = null) => {
   }
 }
 
-/** Holder Map data per chain: holders.mjs `holderAvailability()` when the module has it, else the env keys. */
+/** Holder Map data per chain, from holders.mjs holdersSourceHealth(): the source, its env var NAME (operators only,
+    never a value), and whether stock tokens and DeepCore launches can be mapped there now. */
 function holderSources() {
-  const avail = typeof holdersMod.holderAvailability === 'function' ? safe(() => holdersMod.holderAvailability()) : null
-  return Object.entries(holdersMod.HOLDER_CHAINS).map(([key, c]) => {
-    const a = avail?.[key]
-    if (a && typeof a === 'object') return { chain: key, name: c.name, available: !!a.available, reason: a.available ? null : a.needs ? `not configured: ${a.needs}` : (a.reason ?? 'unavailable'), needs: a.available ? null : (a.needs ?? null), source: 'helper' }
-    if (c.holders === 'solana-rpc') {
-      const on = !!process.env.GULLY_RPC_SOLANA
-      return { chain: key, name: c.name, available: on, reason: on ? null : 'not configured: GULLY_RPC_SOLANA', needs: on ? null : 'GULLY_RPC_SOLANA', source: 'env' }
-    }
-    const miss = safe(() => holdersMod.missingKeyReason(key))
-    const on = !miss || !!process.env[miss.env]
-    return { chain: key, name: c.name, available: on, reason: on ? null : `not configured: ${miss.env}`, needs: on ? null : miss.env, source: 'env' }
-  })
+  const rows = safe(() => holdersMod.holdersSourceHealth(), [])
+  return (Array.isArray(rows) ? rows : []).map((r) => ({
+    chain: r.chain,
+    name: r.name,
+    source: r.source ?? null,
+    env: r.env ?? null,
+    available: !!r.stocks,
+    launches: !!r.launches,
+    reason: r.stocks ? null : r.env ? `not configured: ${r.env}` : 'no stock holder source',
+  }))
 }
 
 /** The security monitors' loop: `monitorHealth()` when sec-monitor has it, else what its stats can tell. */

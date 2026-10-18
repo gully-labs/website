@@ -1,4 +1,4 @@
-import { ArrowRight, CircleDollarSign, CreditCard, Link2, Receipt, Store } from 'lucide-react'
+import { ArrowRight, CircleDollarSign, CreditCard, Link2, Receipt, Store, TrendingUp, Wallet } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { NF } from '../../../components/charts/number-formats'
 import { TokenLogo } from '../../../components/logos/TokenLogo'
@@ -6,6 +6,8 @@ import { ChainConfirmations, PriceChart } from '../../pay/PayCharts'
 import { fmtDate, usdOf, type BillingView } from '../api'
 import { ErrorLine, Skeleton } from '../parts'
 import { chip, pillGold, pillSm } from '../styles'
+import { useSubTab } from '../subtab'
+import { SubPanel, SubTabs, type SubTabItem } from '../ui'
 import { LiveMarker, StackedDays } from '../vcharts'
 import { docsPage, sitePage, type ServiceCtx } from './links'
 import { Section, ServiceHeader, type Status } from './ServiceHeader'
@@ -15,10 +17,15 @@ import { useLoad } from './useLoad'
    every minute), the assets and chains it accepts (the same offer the checkout uses), each native
    coin's live Chainlink price (the pay pages' PriceChart) and the confirmations each chain needs
    (ChainConfirmations). Paying for a plan is the Billing page; pay links, invoices and stores for
-   your own customers are the Merchants page, next to this one in the sidebar. */
+   your own customers are the Merchants page, next to this one in the sidebar. Two sub-tabs (payments,
+   live prices) keep the page inside the 900 px budget. */
+
+const TABS = ['payments', 'prices'] as const
+type Sub = (typeof TABS)[number]
 
 export default function PayView({ ctx }: { ctx: ServiceCtx }) {
   const s = useLoad<BillingView>('/api/developer/billing')
+  const [sub, setSub] = useSubTab<Sub>('pay', TABS, 'payments', { hashOnOpen: false })
   const v = s.k === 'ok' ? s.data : null
   const offer = v?.offer ?? null
   const natives = useMemo(() => (offer ? offer.assets.filter((a) => a.kind === 'native' && a.feed) : []), [offer])
@@ -35,6 +42,11 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
   const chainNames = offer ? offer.chains.map((c) => c.name).filter(Boolean) : []
   const pending = s.k === 'error' ? 'unreadable' : '…'
   const status: Status = !v ? (s.k === 'error' ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }) : offer?.checkout.enabled ? { tone: 'live', text: 'checkout open' } : { tone: 'idle', text: 'checkout closed here' }
+
+  const items: SubTabItem<Sub>[] = [
+    { id: 'payments', label: 'Payments', icon: <Wallet size={15} aria-hidden />, count: v ? v.payments.length : null },
+    { id: 'prices', label: 'Live prices', icon: <TrendingUp size={15} aria-hidden /> },
+  ]
 
   return (
     <>
@@ -58,8 +70,12 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
         ]}
       />
 
+      <SubTabs items={items} value={sub} onChange={setSub} label="Gully Pay sections" idBase="pay" />
+
       {s.k === 'error' && <ErrorLine>Gully Pay could not be read just now: {s.message}</ErrorLine>}
 
+      <SubPanel idBase="pay" value={sub}>
+      {sub === 'payments' ? (
       <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
         <Section title="Payments" sub="every payment this workspace made through Gully Pay, in USD" aside={<button type="button" onClick={() => ctx.go('billing')} className={pillSm}><CreditCard size={14} aria-hidden /> Billing and receipts</button>}>
           {!v ? (
@@ -84,7 +100,7 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
           </button>
         </Section>
       </div>
-
+      ) : (
       <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
         <Section
           title="Live coin prices"
@@ -107,6 +123,8 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
           {!offer ? <Skeleton h={150} /> : offer.assets.length ? <ChainConfirmations assets={offer.assets} /> : <LiveMarker text="No assets accepted on this server" height={120} />}
         </Section>
       </div>
+      )}
+      </SubPanel>
     </>
   )
 }

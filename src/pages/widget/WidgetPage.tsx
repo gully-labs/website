@@ -84,7 +84,10 @@ export function WidgetPage() {
 
 /* The embed builder: every option the script reads, a live preview running the real widget.js against
    this site's API, and the snippet to paste. Also embedded in the app dashboard's Widgets page. */
-export function WidgetBuilder({ className = '', compact = false }: { className?: string; compact?: boolean }) {
+/** `panel` (the app's Widgets page): show only that right-hand card next to "Build it", so the page fits the
+    app's 900 px budget; the choices are kept while the app switches between them. Unset: every card. */
+export type WidgetPanel = 'preview' | 'history' | 'snippet'
+export function WidgetBuilder({ className = '', compact = false, panel }: { className?: string; compact?: boolean; panel?: WidgetPanel }) {
   const st = useTracker()
   const data = st.k === 'ok' ? st.data : null
   const [type, setType] = useState<WidgetType>('ticker')
@@ -178,6 +181,7 @@ export function WidgetBuilder({ className = '', compact = false }: { className?:
         </div>
 
         <div className="flex min-w-0 flex-col gap-5" style={rise(4)}>
+          {(!panel || panel === 'preview') && (
           <div className={card}>
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="m-0 font-display text-h4 font-bold uppercase">Live preview</h2>
@@ -193,7 +197,9 @@ export function WidgetBuilder({ className = '', compact = false }: { className?:
               </div>
             </div>
           </div>
+          )}
 
+          {(!panel || panel === 'history') && (
           <div className={card}>
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="m-0 inline-flex items-center gap-2 font-display text-h4 font-bold uppercase">
@@ -209,7 +215,9 @@ export function WidgetBuilder({ className = '', compact = false }: { className?:
             )}
             <span className="text-[13px] leading-[1.5] text-muted">{type === 'badge' ? 'The stock in your badge, over time.' : 'The deepest pool on the chosen chain, over time. Pick Badge to chart any stock.'}</span>
           </div>
+          )}
 
+          {(!panel || panel === 'snippet') && (
           <div className={card}>
             <div className="flex flex-col gap-1">
               <h2 className="m-0 font-display text-h4 font-bold uppercase">Paste it</h2>
@@ -234,6 +242,7 @@ export function WidgetBuilder({ className = '', compact = false }: { className?:
               Every option in the docs <NewTabMark size={15} />
             </a>
           </div>
+          )}
         </div>
       </section>
     </>
