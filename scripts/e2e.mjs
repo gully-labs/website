@@ -45,6 +45,8 @@ async function newContext({ width = 1440, height = 900, mobile = false, geo = { 
   await ctx.route(/^https?:\/\/(?!localhost[:/]|127\.0\.0\.1[:/])/, (route) => {
     const u = new URL(route.request().url())
     if (u.hostname === 'gullylabs.xyz' && u.pathname === '/widget.js') return route.fulfill({ status: 200, contentType: 'text/javascript', body: WIDGET_JS })
+    // The widget's credit shows the brand kit's mark from our origin (public/brand): served from the build here.
+    if (u.hostname === 'gullylabs.xyz' && /^\/brand\/[\w.-]+\.png$/.test(u.pathname)) return route.fulfill({ status: 200, contentType: 'image/png', body: fs.readFileSync(path.join(ROOT, 'dist', u.pathname.slice(1))) })
     if (u.hostname === 'gullylabs.xyz' && u.pathname === '/api/tracker') return json(route, TRACKER)
     if (u.hostname === 'gullylabs.xyz' && u.pathname === '/api/tracker/history') return json(route, historyFixture(u.searchParams.get('chain'), u.searchParams.get('ticker')))
     if (u.hostname === 'analytics.gullylabs.xyz') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '/* analytics stubbed in e2e */' })
@@ -470,6 +472,39 @@ await step('pages at 390', async () => {
     await w.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   }
   await ctx.close()
+})
+
+/* ------------------------------------------------------------- brand kit --- */
+
+// Every logo is one of src/components/brand (data-brand="kit", from the kit's own files): no CSS-typed
+// "GULLY LABS" wordmark, letter tile or hand-drawn SVG wordmark on any surface, the self-contained error
+// pages and the widget included (owner rule, CLAUDE.md "Brand kit everywhere").
+await step('brand kit everywhere', async () => {
+  const ctx = await newContext({ cookie: cookieOf(api) })
+  await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
+  const page = await ctx.newPage()
+  for (const p of ['/', '/tracker', '/pricing', '/docs', '/developers', '/admin', '/this-page-does-not-exist', '/tg']) {
+    await page.goto(BASE + p)
+    await page.waitForLoadState('networkidle').catch(() => {})
+    await page.waitForSelector('[data-brand]', { timeout: 15_000 }).catch(() => {})
+    const r = await page.evaluate(() => {
+      const marks = [...document.querySelectorAll('[data-brand]')]
+      const typed = [...document.querySelectorAll('span, b, div, a, text')].filter((e) => e.children.length === 0 && /^(GULLY|LABS)$/.test((e.textContent ?? '').trim()))
+      // A single letter in a square or disc standing in for a logo (store or actor tiles).
+      const tiles = [...document.querySelectorAll('span[aria-hidden]')].filter((e) => e.children.length === 0 && /^[A-Z0-9]$/.test((e.textContent ?? '').trim()) && /font-display|font-extrabold|font-bold/.test(e.className))
+      return { marks: marks.length, notKit: marks.filter((m) => m.getAttribute('data-brand') !== 'kit').length, typed: typed.length, tiles: tiles.length }
+    })
+    check(`brand ${p}: the kit logo is there and nothing else passes for one`, r.marks > 0 && r.notKit === 0 && r.typed === 0 && r.tiles === 0, JSON.stringify(r))
+  }
+  await ctx.close()
+  for (const f of ['/errors/5xx.html', '/errors/1xxx.html']) {
+    const html = await (await fetch(BASE + f)).text()
+    check(`${f}: inlines the kit wordmark (outlined paths), no typed SVG text`, html.includes('data-brand="kit"') && !/<text[\s>]/.test(html))
+  }
+  check('widget.js: the credit carries the kit mark', WIDGET_JS.toString().includes('/brand/gully-mark-96.png'))
+  for (const f of ['/favicon.ico', '/favicon-32.png', '/apple-touch-icon.png', '/icon-192.png', '/icon-512.png', '/brand/gullylabs-wordmark-on-dark.svg', '/brand/gullylabs-mascot-bust.png']) {
+    check(`${f} is served`, (await fetch(BASE + f)).status === 200)
+  }
 })
 
 await step('telegram mini app at 390', async () => {

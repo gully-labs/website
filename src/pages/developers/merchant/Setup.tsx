@@ -1,5 +1,6 @@
-import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, Store, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { Mascot } from '../../../components/brand'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
 import { api } from '../api'
@@ -70,11 +71,11 @@ export function ProfileSection({ view, onChange }: { view: MerchantView; onChang
           <span className="text-[12px] text-dim">Checkout preview</span>
           <div className="flex flex-col gap-3 rounded-[12px] border border-line bg-bg p-4" style={{ borderTop: `3px solid ${/^#[0-9a-f]{6}$/i.test(accent) ? accent : '#e8c060'}` }}>
             <span className="flex items-center gap-3">
-              {view.profile.logoUrl ? <img src={view.profile.logoUrl} alt="" className="size-10 rounded-[10px] object-contain" /> : <span aria-hidden className="grid size-10 place-items-center rounded-[10px] font-display text-[20px] font-extrabold text-bg" style={{ background: /^#[0-9a-f]{6}$/i.test(accent) ? accent : '#e8c060' }}>{(name || view.profile.displayName).charAt(0).toUpperCase()}</span>}
+              {view.profile.logoUrl ? <img src={view.profile.logoUrl} alt="" className="size-10 rounded-[10px] object-contain" /> : <span aria-hidden className="grid size-10 place-items-center rounded-[10px] border border-line bg-surface" style={{ color: /^#[0-9a-f]{6}$/i.test(accent) ? accent : '#e8c060' }}><Store size={20} strokeWidth={1.75} /></span>}
               <b className="min-w-0 truncate text-[15px] text-ink">{name || view.profile.displayName}</b>
             </span>
             <span className="text-[12px] text-muted">{view.nonCustodial}</span>
-            <span className="font-mono text-[10.5px] tracking-[1px] text-faint">POWERED BY GULLY PAY</span>
+            <span className="inline-flex items-center gap-2 font-mono text-[10.5px] tracking-[1px] text-faint"><Mascot size={14} decorative /> POWERED BY GULLY PAY</span>
           </div>
         </div>
       </form>

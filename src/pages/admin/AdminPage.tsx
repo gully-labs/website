@@ -2,7 +2,7 @@ import { Fragment, lazy, Suspense, useCallback, useEffect, useState } from 'reac
 import { Link } from 'react-router'
 import { DayBars } from '../../components/charts/DayBars'
 import { byChain } from '../../components/pay/assets'
-import { Wordmark } from '../../components/Wordmark'
+import { Wordmark } from '../../components/brand'
 import type { PayAsset } from '../developers/api'
 import type { Invoice } from '../pay/invoice'
 import { adminCall } from './payAdmin'
@@ -173,7 +173,7 @@ function Login({ onToken, error }: { onToken: (t: string) => void; error: string
           if (t.trim()) onToken(t.trim())
         }}
       >
-        <Wordmark size={26} />
+        <Wordmark height={28} />
         <div className="flex flex-col gap-1">
           <h1 className="m-0 font-display text-[30px] font-extrabold uppercase">Admin</h1>
           <span className="text-[14px] text-muted">Enter the admin token. It stays in this tab only.</span>
@@ -723,7 +723,7 @@ export function AdminPage() {
       <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-[rgba(11,14,19,.9)] px-page py-4 backdrop-blur">
         <div className="flex items-center gap-4">
           <Link to="/" aria-label="Gully Labs home" className="text-ink">
-            <Wordmark size={24} />
+            <Wordmark height={26} />
           </Link>
           <span className="rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] text-gold">ADMIN</span>
         </div>

@@ -191,7 +191,7 @@ each to the form's real question and fill in anything extra it asks.
 | Telegram | https://t.me/GullyLabsNews |
 | GitHub | https://github.com/gully-labs |
 | Discord | none |
-| Logo (square) | **Owner** uploads: `public/brand/gully-mark-96.png` is too small. Export a 512 × 512 PNG of the mark. |
+| Logo (square) | **Owner** uploads `public/brand/gully-mark-512.png` (the brand kit's mark at 512 × 512). |
 | Banner / cover | `https://gullylabs.xyz/social/og-home.png` |
 | Contract addresses | None of our own on Arbitrum One. Gully Pay uses plain transfers to the receiving wallet. **Owner**: add the receiving address only if the form requires one. |
 | Token | None |

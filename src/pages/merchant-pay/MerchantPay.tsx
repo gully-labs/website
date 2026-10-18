@@ -1,8 +1,9 @@
-import { ArrowRight, Ban, CheckCircle2, Clock, ExternalLink, Loader2, Mail, PauseCircle, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Ban, CheckCircle2, Clock, ExternalLink, Loader2, Mail, PauseCircle, ShieldCheck, Store } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { EChart } from '../../components/charts/EChart'
 import { itemTooltip, PALETTE, ringPreset, tipHtml } from '../../components/charts/chartPresets'
+import { Mascot } from '../../components/brand'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { AssetPicker } from '../../components/pay/AssetPicker'
 import { Seo } from '../../components/Seo'
@@ -71,8 +72,9 @@ function StoreHead({ brand }: { brand: Brand }) {
       {brand.logoUrl ? (
         <img src={brand.logoUrl} alt={`${brand.name} logo`} className="size-12 rounded-[12px] border border-line bg-surface object-contain" />
       ) : (
-        <span aria-hidden className="grid size-12 place-items-center rounded-[12px] font-display text-[24px] font-extrabold text-bg" style={{ background: accent }}>
-          {brand.name.charAt(0).toUpperCase()}
+        /* No logo uploaded: a neutral store glyph in the store's accent (never a letter tile). */
+        <span aria-hidden className="grid size-12 place-items-center rounded-[12px] border border-line bg-surface" style={{ color: accent }}>
+          <Store size={24} strokeWidth={1.75} />
         </span>
       )}
       <span className="flex min-w-0 flex-col">
@@ -102,7 +104,7 @@ function StoreFoot({ brand, nonCustodial }: { brand: Brand; nonCustodial: string
           </a>
         )}
         <a href="/" className="ml-auto inline-flex min-h-11 items-center gap-2 font-mono text-[11px] tracking-[1.5px] text-faint hover:text-gold">
-          POWERED BY <span className="text-gold">GULLY PAY</span>
+          <Mascot size={18} decorative /> POWERED BY <span className="text-gold">GULLY PAY</span>
         </a>
       </div>
     </footer>
