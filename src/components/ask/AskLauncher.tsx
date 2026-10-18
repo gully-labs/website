@@ -1,14 +1,15 @@
 import { Sparkles, X } from 'lucide-react'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { askStatus } from './askApi'
 
 // The panel (and its code) loads the first time it is opened.
 const AskPanel = lazy(() => import('./AskPanel').then((m) => ({ default: m.AskPanel })))
 
-/* "Gully AI" for the docs header: a button that opens Ask as a side panel on wide screens and a sheet on
-   phones. Hidden entirely while the server says Ask is not configured. */
-export function AskLauncher() {
+/* "Gully AI" for the docs header and the app's sidebar: a button that opens Ask as a side panel on wide
+   screens and a sheet on phones. In the docs it is hidden while the server says Ask is not configured; the
+   app passes its own trigger look (`trigger`, `className`) and a `fallbackHref` (the /ask page) for then. */
+export function AskLauncher({ trigger, className, title, fallbackHref }: { trigger?: ReactNode; className?: string; title?: string; fallbackHref?: string } = {}) {
   const [on, setOn] = useState(false)
   const [open, setOpen] = useState(false)
   const btn = useRef<HTMLButtonElement>(null)
@@ -51,7 +52,12 @@ export function AskLauncher() {
     }
   }, [open])
 
-  if (!on) return null
+  if (!on)
+    return fallbackHref ? (
+      <a href={fallbackHref} className={className} title={title}>
+        {trigger}
+      </a>
+    ) : null
   return (
     <>
       <button
@@ -60,10 +66,16 @@ export function AskLauncher() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-[rgba(232,192,96,.08)] px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-[rgba(232,192,96,.14)]"
+        title={title}
+        data-testid="ask-launcher"
+        className={className ?? 'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-[rgba(232,192,96,.08)] px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-[rgba(232,192,96,.14)]'}
       >
-        <Sparkles size={16} aria-hidden />
-        <span className="max-[520px]:sr-only">Gully AI</span>
+        {trigger ?? (
+          <>
+            <Sparkles size={16} aria-hidden />
+            <span className="max-[520px]:sr-only">Gully AI</span>
+          </>
+        )}
       </button>
       {/* Portalled to <body>: the docs header's backdrop-filter would otherwise contain a fixed element. */}
       {open &&

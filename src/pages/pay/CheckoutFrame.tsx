@@ -134,8 +134,7 @@ function Foot({ brand }: { brand: Brand }) {
           <a href="/legal/merchant-terms" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
             Merchant terms <ExternalLink size={11} aria-hidden />
           </a>
-          {/* TODO: point at a dedicated privacy page once one exists; the merchant terms are the only legal page today. */}
-          <a href="/legal/merchant-terms" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
+          <a href="/legal/privacy" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
             Privacy <ExternalLink size={11} aria-hidden />
           </a>
           {!brand.gully && brand.supportEmail && (

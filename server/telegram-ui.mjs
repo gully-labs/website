@@ -510,13 +510,40 @@ export function aiIntroView() {
 }
 
 /** Gully AI's answer: text plus up to 3 source buttons. */
+/** "2026-10-17T10:01:00Z" -> "10:01 UTC" (today) or "17 Oct 10:01 UTC". */
+function asOfText(iso) {
+  const t = Date.parse(iso ?? '')
+  if (!Number.isFinite(t)) return null
+  const d = new Date(t)
+  const hm = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`
+  return d.toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) ? hm : `${d.getUTCDate()} ${d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' })} ${hm}`
+}
+/** A Gully AI card's chart as one line of block characters: the chat's mini chart. */
+function cardChart(ch) {
+  const vals = ch?.type === 'spark' ? ch.points : ch?.type === 'bars' ? ch.bars.map((b) => b.value) : null
+  const ok = (vals ?? []).filter((v) => typeof v === 'number' && Number.isFinite(v))
+  if (ok.length < 2) return null
+  const min = Math.min(...ok, ch.type === 'bars' ? 0 : Infinity)
+  const span = Math.max(...ok) - min
+  return vals.map((v) => (typeof v !== 'number' ? ' ' : span < 1e-12 ? BLOCKS[3] : BLOCKS[Math.round(((v - min) / span) * 7)])).join('')
+}
+
+/** Gully AI's answer: the text with its [n] / [Ln] labels, the live cards as short lines, then sources and the one-tap actions as buttons. */
 export function aiAnswerView(r) {
   if (!r.ok) return { text: `<b>🤖 Gully AI</b>\n${esc(r.error)}`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
   const body = esc(String(r.answer).replace(/\*\*([^*]+)\*\*/g, '$1'))
   const sources = (r.citations ?? []).filter((c) => /^https:\/\//.test(String(c.url))).slice(0, 3)
+  const live = (r.live ?? []).filter((l) => /^https:\/\//.test(String(l.url))).slice(0, 3)
+  const cards = (r.cards ?? []).slice(0, 2).map((c) => {
+    const chart = cardChart(c.chart)
+    const at = asOfText(c.asOf)
+    return [`<b>${esc(c.title)}</b>${at ? ` · as of ${esc(at)}` : ''}`, ...(c.stats ?? []).slice(0, 4).map((s) => `${esc(s.label)}: <b>${esc(s.value)}</b>`), ...(chart ? [`<code>${esc(chart)}</code> ${esc(c.chart.label ?? '')}`] : [])].join('\n')
+  })
+  const actions = (r.actions ?? []).filter((a) => /^https:\/\//.test(String(a.url))).slice(0, 3)
+  const refs = [...sources.map((c) => `[${c.n}] ${esc(c.title)}`), ...live.map((l) => `[${esc(l.n)}] ${esc(l.label)}${asOfText(l.asOf) ? `, as of ${esc(asOfText(l.asOf))}` : ''}`)]
   return {
-    text: `<b>🤖 Gully AI</b>\n${body}${sources.length ? `\n\n<b>Sources</b>\n${sources.map((c) => `[${c.n}] ${esc(c.title)}`).join('\n')}` : ''}\n\n<i>Information only, not investment advice.</i>`,
-    keyboard: [...sources.map((c) => [ubtn(`📄 [${c.n}] ${String(c.title).slice(0, 48)} ↗`, c.url)]), [btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]],
+    text: `<b>🤖 Gully AI</b>\n${body}${cards.length ? `\n\n${cards.join('\n\n')}` : ''}${refs.length ? `\n\n<b>Sources</b>\n${refs.join('\n')}` : ''}\n\n<i>Information only, not investment advice.</i>`,
+    keyboard: [...actions.map((a) => [ubtn(`👉 ${String(a.label).slice(0, 56)} ↗`, a.url)]), ...sources.map((c) => [ubtn(`📄 [${c.n}] ${String(c.title).slice(0, 48)} ↗`, c.url)]), [btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]],
   }
 }
 

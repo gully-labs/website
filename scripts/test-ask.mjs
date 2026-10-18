@@ -13,6 +13,8 @@ import fs from 'node:fs'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
+import { execFileSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { makeChecker, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8796
@@ -24,6 +26,46 @@ const ADMIN = crypto.randomBytes(24).toString('hex')
 
 const t = makeChecker()
 const { check } = t
+
+// The index this run uses is built from the working tree (the committed file can lag behind the sources).
+const INDEX = path.join(tmp, 'ask-index.json')
+execFileSync(process.execPath, [fileURLToPath(new URL('./build-ask-index.mjs', import.meta.url)), '--out', INDEX], { stdio: 'pipe' })
+
+/* ------------------------------------------------------ embeddings stub --- */
+// Deterministic "embeddings": a bag of hashed words, where a few words share one concept, so a question
+// with no word in common with a chunk can still be its nearest neighbour.
+const CONCEPT = { tiny: 'quokka', smiling: 'quokka', animal: 'quokka', marsupial: 'quokka', quokka: 'quokka', rottnest: 'quokka' }
+const DIM = 512
+function fakeVec(text) {
+  const v = new Array(DIM).fill(0)
+  for (const w of String(text).toLowerCase().split(/[^a-z0-9]+/).filter((x) => x.length > 2)) {
+    const c = CONCEPT[w] ?? w
+    const h = crypto.createHash('md5').update(c).digest().readUInt32BE(0) % DIM
+    v[h] += CONCEPT[w] ? 5 : 1
+  }
+  return v
+}
+const embedCalls = [] // { inputType, n, auth }
+let embedDown = false
+const embedStub = http.createServer((req, res) => {
+  let raw = ''
+  req.on('data', (c) => (raw += c))
+  req.on('end', () => {
+    const body = raw ? JSON.parse(raw) : {}
+    embedCalls.push({ inputType: body.input_type, n: body.input?.length ?? 0, auth: req.headers.authorization, dim: body.output_dimension, model: body.model })
+    res.writeHead(embedDown ? 500 : 200, { 'content-type': 'application/json' })
+    res.end(embedDown ? '{"detail":"down"}' : JSON.stringify({ object: 'list', data: body.input.map((x, index) => ({ object: 'embedding', embedding: fakeVec(x), index })), model: body.model, usage: { total_tokens: 1 } }))
+  })
+})
+await new Promise((r) => embedStub.listen(0, '127.0.0.1', r))
+
+/* ---------------------------------------------------------- holders stub --- */
+const holdersStub = http.createServer((req, res) => {
+  const m = req.url.match(/^\/api\/holders\/(\w+)\/(0x[0-9a-fA-F]{40})$/)
+  res.writeHead(m ? 200 : 404, { 'content-type': 'application/json' })
+  res.end(JSON.stringify(m ? { chain: m[1], token: m[2], symbol: 'ANT', asOf: '2026-10-17T10:05:00Z', holderCount: 1234, top10Pct: 61.5, holders: [{ address: '0x' + '1'.repeat(40), label: 'Pool', pct: 30.1 }, { address: '0x' + '2'.repeat(40), pct: 12.4 }, { address: '0x' + '3'.repeat(40), pct: 5 }] } : { error: 'not found' }))
+})
+await new Promise((r) => holdersStub.listen(0, '127.0.0.1', r))
 
 /* ------------------------------------------------------- Anthropic stub --- */
 
@@ -96,15 +138,21 @@ Object.assign(process.env, {
   ASK_REMOTE: 'off',
   ANTHROPIC_API_URL: `http://127.0.0.1:${stub.address().port}`,
   DEEPCORE_API: `http://127.0.0.1:${dcStub.address().port}`,
+  ASK_INDEX_FILE: INDEX,
+  ASK_EMBED_URL: `http://127.0.0.1:${embedStub.address().port}`,
   GULLY_RPC_1: 'http://127.0.0.1:9',
   GULLY_RPC_56: 'http://127.0.0.1:9',
   GULLY_RPC_8453: 'http://127.0.0.1:9',
   GULLY_RPC_42161: 'http://127.0.0.1:9',
 })
-for (const k of ['DEEPCORE_LOOP', 'ANTHROPIC_API_KEY', 'TELEGRAM_BOT_TOKEN', 'GHOST_CONTENT_KEY', 'ASK_DAILY_LIMIT', 'ASK_IP_PER_MIN', 'ASK_IP_PER_DAY', 'ASK_MODEL', 'ASK_DRAFT_MODEL', 'GULLY_TREASURY_ADDRESS']) delete process.env[k]
+for (const k of ['VOYAGE_API_KEY', 'ASK_EMBED', 'ASK_SELF_URL', 'DEEPCORE_LOOP', 'ANTHROPIC_API_KEY', 'TELEGRAM_BOT_TOKEN', 'GHOST_CONTENT_KEY', 'ASK_DAILY_LIMIT', 'ASK_IP_PER_MIN', 'ASK_IP_PER_DAY', 'ASK_MODEL', 'ASK_DRAFT_MODEL', 'GULLY_TREASURY_ADDRESS']) delete process.env[k]
 await import('../server/server.mjs')
 const ask = await import('../server/ask.mjs')
-const { makeIndex, markdownSections } = await import('../server/ask-index.mjs')
+const { makeIndex, markdownSections, rrf, rerank, expandQuery } = await import('../server/ask-index.mjs')
+const embed = await import('../server/ask-embed.mjs')
+const store = await import('../server/store.mjs')
+const merchants = await import('../server/merchants.mjs')
+const tgui = await import('../server/telegram-ui.mjs')
 const remote = await import('../server/ask-remote.mjs')
 await new Promise((r) => setTimeout(r, 300))
 
@@ -139,16 +187,28 @@ function sourcesSent(body) {
 
 try {
   /* ------------------------------------------------------------ retrieval --- */
-  const local = JSON.parse(fs.readFileSync(new URL('../server/data/ask-index.json', import.meta.url), 'utf8'))
+  const local = JSON.parse(fs.readFileSync(INDEX, 'utf8'))
   const ix = makeIndex(local.chunks)
   check('the committed index has chunks from docs, site and changelog', ['Docs', 'Site', 'Changelog'].every((s) => local.chunks.some((c) => c.source === s)), `${local.chunks.length} chunks`)
-  check('every chunk has id, source, title, url, text and updatedAt', local.chunks.every((c) => c.id && c.source && c.title && /^https:\/\/(docs\.)?gullylabs\.xyz\//.test(c.url) && c.text.length > 20 && c.updatedAt))
+  check('every chunk has id, source, title, url, text and updatedAt', local.chunks.every((c) => c.id && c.source && c.title && /^https:\/\/((docs\.)?gullylabs\.xyz\/|github\.com\/gully-labs\/website\/blob\/main\/|t\.me\/GullyLabsBot$)/.test(c.url) && c.text.length > 20 && c.updatedAt), local.chunks.filter((c) => !/^https:\/\/((docs\.)?gullylabs\.xyz\/|github\.com\/gully-labs\/website\/blob\/main\/|t\.me\/GullyLabsBot$)/.test(c.url)).map((c) => c.url).slice(0, 3).join(' '))
+  /* ----------------------------------------------------- new sources --- */
+  const has = (pred) => local.chunks.some(pred)
+  check('sources: the privacy policy, by numbered section (#s4 is Gully AI)', has((c) => c.source === 'Legal' && c.url === 'https://gullylabs.xyz/legal/privacy#s4' && c.section === 'Gully AI' && /90 days/.test(c.text)))
+  check('sources: the privacy retention table is indexed as prose', has((c) => c.url === 'https://gullylabs.xyz/legal/privacy#s9' && /Sign-in sessions: 30 days/.test(c.text)))
+  check('sources: the merchant terms, by numbered section', has((c) => c.source === 'Legal' && /\/legal\/merchant-terms#s5$/.test(c.url) && c.section))
+  check('sources: contracts/CHOICE.md and TESTNET-RESULTS.md at their GitHub section anchors', has((c) => c.source === 'Gully Pay contracts' && /contracts\/CHOICE\.md#[a-z0-9-]+$/.test(c.url)) && has((c) => /contracts\/TESTNET-RESULTS\.md#/.test(c.url)))
+  check('sources: no 32-byte hex (keys, hashes) and no full addresses in the contract notes and roadmap', local.chunks.filter((c) => c.source === 'Gully Pay contracts' || c.source === 'Roadmap').every((c) => !/0x[0-9a-fA-F]{64}/.test(c.text) && !/0x[0-9a-fA-F]{40}/.test(c.text) && !/private[ _-]?key\s*[=:]/i.test(c.text)))
+  check('sources: ops/l3/SPEC.md as "Roadmap", and the roadmap docs page', has((c) => c.source === 'Roadmap' && /ops\/l3\/SPEC\.md#/.test(c.url)) && has((c) => c.url.startsWith('https://docs.gullylabs.xyz/roadmap-l3#')))
+  check('sources: the Telegram bot help and commands, and the Mini App', has((c) => c.source === 'Telegram bot' && /\/ask: Ask Gully AI/.test(c.text)) && has((c) => c.source === 'Telegram Mini App' && c.url === 'https://gullylabs.xyz/tg'))
+  check('sources: Gully Pay and merchant docs sections', has((c) => c.url.startsWith('https://docs.gullylabs.xyz/gully-pay-merchants#pause')) && has((c) => c.url.startsWith('https://docs.gullylabs.xyz/gully-pay#')))
+  check('sources: the blog comes from the Ghost Content API at runtime (ask-remote), not the build', !has((c) => c.source === 'Blog'))
   const words = local.chunks.map((c) => c.text.split(' ').length)
   check('chunks stay within about 250 words', Math.max(...words) <= 320, `max ${Math.max(...words)}`)
+  // The bot's own help also matches this question in plain BM25; the docs must stay in the top two.
   const tg = ix.search('how do Telegram alerts work', { k: 3 })
-  check('"how do Telegram alerts work" ranks PlansAlerts first', tg[0]?.chunk.url.startsWith('https://docs.gullylabs.xyz/plans-alerts'), tg.map((r) => r.chunk.url).join(' '))
-  const ck = ix.search('Chain Kit price', { k: 3 })
-  check('"Chain Kit price" finds pricing or Chain Kit in the top three', ck.some((r) => /\/(chain-kit|pricing)(#|$)/.test(r.chunk.url)), ck.map((r) => r.chunk.url).join(' '))
+  check('"how do Telegram alerts work" ranks PlansAlerts in the top two', tg.slice(0, 2).some((r) => r.chunk.url.startsWith('https://docs.gullylabs.xyz/plans-alerts')), tg.map((r) => r.chunk.url).join(' '))
+  const ck = (await ask.retrieve('Chain Kit price', { k: 4 })).results
+  check('"Chain Kit price" finds pricing or Chain Kit in the top four (the L3 roadmap cost table is a fair match too)', ck.some((r) => /\/(chain-kit|pricing)(#|$)/.test(r.chunk.url)), ck.map((r) => r.chunk.url).join(' '))
   check('a query of stopwords finds nothing', ix.search('how do I the and').length === 0)
   const md = markdownSections('<!-- x -->\n<p align="center"><a href="x"><img src="b.svg"></a></p>\n[![CI](https://x/badge.svg)](https://x)\n# Title\n\nSome **bold** text with a [link](https://e.com).\n\n```js\nconst code = 1\n```\n\n| A | B |\n|---|---|\n| one | two |\n')
   check('markdown: badges, images, HTML and code are stripped; links keep their text', md.length === 1 && md[0].heading === 'Title' && md[0].paras.join(' ') === 'Some bold text with a link. A — B one — two', JSON.stringify(md))
@@ -307,7 +367,7 @@ try {
   reply = () => textReply('Keys are free [1].')
   const sse = await fetch(`${BASE}/api/ask`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'gully', accept: 'text/event-stream', 'cf-connecting-ip': freshIp() }, body: JSON.stringify({ question: 'Do I need an API key?' }) })
   const sseText = await sse.text()
-  check('SSE: text/event-stream with status events, then the answer', sse.headers.get('content-type')?.includes('text/event-stream') && /event: status\ndata: \{"stage":"searching"\}/.test(sseText) && /event: answer\ndata: \{"answer":"Keys are free \[1\]\."/.test(sseText), sseText.slice(0, 200))
+  check('SSE: text/event-stream with status events, then the answer', sse.headers.get('content-type')?.includes('text/event-stream') && /event: status\ndata: \{"stage":"searching"\}/.test(sseText) && /event: answer\ndata: \{"id":"a_[\w-]{16}","answer":"Keys are free \[1\]\."/.test(sseText), sseText.slice(0, 200))
 
   /* ------------------------------------------------------------- errors --- */
   reply = () => ({ status: 400, json: { type: 'error', error: { type: 'invalid_request_error', message: `bad ${KEY}` } } })
@@ -391,6 +451,163 @@ try {
   ask.reloadRemoteForTest()
   check('remote: the live index picks up the remote corpus', ask.searchIndex('wombat launches', { k: 1 })[0]?.chunk.source === 'DeepCore docs' && (await call('/api/ask/status')).data.indexSize === local.chunks.length + 1 + n1)
 
+  /* --------------------------------------------------- hybrid retrieval --- */
+  const fused = rrf([
+    { name: 'a', items: ['x', 'y', 'z'].map((id) => ({ chunk: { id, url: `https://e/${id}` } })) },
+    { name: 'b', items: ['y', 'w'].map((id) => ({ chunk: { id, url: `https://e/${id}` } })) },
+  ])
+  check('fusion: a chunk in both lists outranks one at the top of only one (RRF)', fused.map((r) => r.chunk.id).join() === 'y,x,w,z' && fused[0].ranks.a === 2 && fused[0].ranks.b === 1, fused.map((r) => r.chunk.id).join())
+  const rr = rerank('alpha beta', [
+    { chunk: { id: '1', title: 'Other', text: 'gamma alpha' }, score: 0.0164 },
+    { chunk: { id: '2', title: 'Alpha beta guide', text: 'alpha beta' }, score: 0.0161 },
+  ])
+  check('re-rank: near neighbours are reordered by question coverage (title counts)', rr[0].chunk.id === '2' && rr[0].fused === 0.0161)
+  check('expansion: plain words gain the docs\' words', /fee/.test(expandQuery('how much do you charge') ?? '') && /privacy/.test(expandQuery('do you track me') ?? '') && expandQuery('zzz') === null)
+
+  ask.addChunksForTest([{ id: 'quokka000001', source: 'Docs', title: 'Rottnest notes', url: 'https://docs.gullylabs.xyz/rottnest#quokka', section: 'Quokka', text: 'The quokka is a marsupial that lives on Rottnest Island and grins in photographs.', updatedAt: new Date().toISOString() }])
+  const b1 = await ask.retrieve('tiny smiling animal')
+  check('BM25-only (no VOYAGE_API_KEY): mode bm25, no embeddings call, the semantic-only chunk is not found', b1.mode === 'bm25' && embedCalls.length === 0 && !b1.results.some((r) => r.chunk.id === 'quokka000001') && (await call('/api/ask/status')).data.retrieval === 'bm25', JSON.stringify(b1.lists))
+  const tr = await ask.retrieve('do you track me')
+  check('BM25 + expansion: "do you track me" finds the privacy policy', tr.results.some((r) => r.chunk.url.startsWith('https://gullylabs.xyz/legal/privacy')), tr.results.map((r) => r.chunk.url).join(' '))
+  const l3 = await ask.retrieve('what is the L3')
+  check('BM25 + expansion: "what is the L3" finds the roadmap', l3.results.slice(0, 3).some((r) => /roadmap-l3|ops\/l3\/SPEC/.test(r.chunk.url)), l3.results.map((r) => r.chunk.url).join(' '))
+  const charge = await ask.retrieve('how much do you charge')
+  check('BM25 + expansion: "how much do you charge" finds pricing or fees', charge.results.slice(0, 3).some((r) => /pricing|fees|plans/.test(r.chunk.url)), charge.results.map((r) => r.chunk.url).join(' '))
+
+  process.env.VOYAGE_API_KEY = `pa-test-${crypto.randomBytes(12).toString('hex')}`
+  embed.resetEmbeddingsForTest()
+  const st = await ask.syncEmbeddingsNow()
+  const docCalls = embedCalls.filter((c) => c.inputType === 'document')
+  check('embeddings: every chunk is embedded as a document, in batches, 512 dims, voyage-3.5-lite, bearer key', st.ready === st.total && st.total > 150 && docCalls.length >= 2 && docCalls.every((c) => c.n <= 96 && c.dim === 512 && c.model === 'voyage-3.5-lite' && c.auth === `Bearer ${process.env.VOYAGE_API_KEY}`), JSON.stringify(st))
+  const before2 = embedCalls.length
+  await ask.syncEmbeddingsNow()
+  check('embeddings: a second sync embeds nothing (cached by text hash in DATA_DIR)', embedCalls.length === before2 && fs.existsSync(path.join(tmp, 'ask-embeddings.json')))
+  check('embeddings: the cache file holds vectors, never the key', !fs.readFileSync(path.join(tmp, 'ask-embeddings.json'), 'utf8').includes(process.env.VOYAGE_API_KEY))
+  const h1 = await ask.retrieve('tiny smiling animal')
+  check('hybrid: the query is embedded as a query and the semantic-only chunk ranks first', h1.mode === 'hybrid' && h1.results[0]?.chunk.id === 'quokka000001' && embedCalls.at(-1).inputType === 'query' && h1.lists.vector > 0, JSON.stringify({ lists: h1.lists, top: h1.results.map((r) => r.chunk.id) }))
+  const h2 = await ask.retrieve('quokka marsupial Rottnest')
+  check('hybrid: a chunk found by both BM25 and vectors comes first', h2.results[0]?.chunk.id === 'quokka000001' && h2.lists.bm25 > 0 && h2.lists.vector > 0)
+  check('status: retrieval hybrid once vectors exist', (await call('/api/ask/status')).data.retrieval === 'hybrid')
+  embedDown = true
+  embed.resetEmbeddingsForTest()
+  const d1 = await ask.retrieve('tiny smiling animal')
+  const callsAfterFail = embedCalls.length
+  const d2 = await ask.retrieve('another question entirely')
+  check('embeddings down: falls back to BM25 cleanly, then leaves the API alone for a minute', d1.mode === 'bm25' && d2.mode === 'bm25' && embedCalls.length === callsAfterFail && embed.embedStatus().lastError?.includes('500'), JSON.stringify(embed.embedStatus()))
+  embedDown = false
+  delete process.env.VOYAGE_API_KEY
+  embed.resetEmbeddingsForTest()
+
+  /* ------------------------------------------------- tools per workspace --- */
+  const A = '0x' + 'a'.repeat(40)
+  const B = '0x' + 'b'.repeat(40)
+  store.touchAccount(A)
+  store.touchAccount(B)
+  const mdb = merchants.merchantsDbForTest()
+  const now = new Date().toISOString()
+  mdb.merchants[A] = { profile: { name: 'Alpha Store' }, wallets: { 8453: { address: '0x' + '1'.repeat(40), declared: 'eoa', kind: 'eoa', enabled: true, status: 'ok', checkedAt: now } }, terms: { version: merchants.MERCHANT_TERMS_VERSION, acceptedAt: now, acceptedBy: A }, webhook: { url: 'https://hooks.example/alpha', secret: 'whsec_alpha_secret' }, createdAt: now, updatedAt: now }
+  mdb.merchants[B] = { profile: { name: 'Bravo Store' }, wallets: {}, terms: null, createdAt: now, updatedAt: now }
+  const sa = await ask.runTool('get_my_store', {}, { user: A, workspace: A, role: 'owner' })
+  const sb = await ask.runTool('get_my_store', { workspace: A }, { user: B, workspace: B, role: 'owner' })
+  check('get_my_store: the session workspace\'s store (wallets per chain, fees, paused flag)', sa.store?.name === 'Alpha Store' && sa.ready === true && sa.paused === false && sa.wallets[0].chain === 'Base' && typeof sa.fees.accruedUsd === 'number' && sa.fees.ratePct > 0, JSON.stringify(sa).slice(0, 300))
+  check('get_my_store: a workspace argument from the model is ignored; B never sees A', sb.store?.name === 'Bravo Store' && !JSON.stringify(sb).includes('Alpha') && sb.ready === false)
+  check('get_my_store: no webhook secret or URL in the tool result', !JSON.stringify(sa).includes('whsec_') && !JSON.stringify(sa).includes('hooks.example'))
+  const so = await ask.runTool('get_my_store', {}, null)
+  const uo = await ask.runTool('get_my_usage', {}, null)
+  const ao = await ask.runTool('get_my_alerts', {}, null)
+  check('signed out: every "my" tool refuses with sign-in guidance', [so, uo, ao].every((x) => x.error === 'signed-out' && /sign/i.test(x.message) && /^https:\/\/app\./.test(x.signIn)))
+  const ua = await ask.runTool('get_my_usage', {}, { user: A, workspace: A, role: 'owner' })
+  check('get_my_usage: plan, limits, keys and 7 daily totals', ua.plan?.name && typeof ua.plan.requestsPerMinute === 'number' && ua.requests.last7dPerDay.length === 7 && ua.keys.active === 0)
+  const aa = await ask.runTool('get_my_alerts', {}, { user: A, workspace: A, role: 'viewer' })
+  check('get_my_alerts: the plan allowance and the workspace\'s alerts (none here)', aa.limits?.max >= 0 && Array.isArray(aa.alerts) && aa.alerts.length === 0 && aa.yourRole === 'viewer')
+  const pc = await ask.runTool('get_pay_chains', {})
+  const base = pc.chains?.find((c) => c.chain === 'Base')
+  check('get_pay_chains: chains and tokens from the live payment config, no RPCs or treasury', base && base.coins.includes('ETH') && base.stablecoins.includes('USDC') && base.merchantStores === true && base.feeSplitAtPayment === true && pc.chains.some((c) => c.chain === 'BNB Chain') && !/rpc|0x[0-9a-f]{40}/i.test(JSON.stringify(pc)), JSON.stringify(pc).slice(0, 300))
+  const hNo = await ask.runTool('get_holders', { chain: 'base', token: TOK_A })
+  check('get_holders: degrades cleanly while /api/holders is not on this server', hNo.available === false && /not live/.test(hNo.note), JSON.stringify(hNo))
+  check('get_holders: junk input is refused', /token address/.test((await ask.runTool('get_holders', { chain: 'base', token: 'nope' })).error))
+  process.env.ASK_SELF_URL = `http://127.0.0.1:${holdersStub.address().port}`
+  const hYes = await ask.runTool('get_holders', { chain: 'base', token: TOK_A })
+  check('get_holders: reads the Holder Map when it answers', hYes.available === true && hYes.holderCount === 1234 && hYes.top[0].pct === 30.1 && hYes.page.startsWith('https://gullylabs.xyz/holders/base/'), JSON.stringify(hYes).slice(0, 200))
+
+  // Over HTTP: the session cookie scopes the tools; signed out they refuse.
+  const cookieA = `gl_dev=${store.createSession(A)}`
+  let myRound = 0
+  let sentToModel = ''
+  reply = (body) => {
+    myRound++
+    if (myRound % 2 === 1) return { status: 200, json: { content: [{ type: 'tool_use', id: `toolu_my${myRound}`, name: 'get_my_store', input: { workspace: B } }], stop_reason: 'tool_use', usage: {} } }
+    sentToModel = JSON.stringify(body.messages.at(-1))
+    const out = JSON.parse(body.messages.at(-1).content[0].content)
+    return textReply(out.error ? 'You need to sign in to the Gully Labs app to see your store.' : `Your store ${out.store.name} is ${out.paused ? 'paused' : 'open'} [${out.cite}].`)
+  }
+  const myA = await askPost({ question: 'Is my store paused?' }, { headers: { cookie: cookieA } })
+  check('HTTP signed in: get_my_store reads the session\'s workspace, cited [L1] with its read time', myA.status === 200 && myA.data.signedIn === true && /Alpha Store is open \[L1\]/.test(myA.data.answer) && myA.data.live?.[0]?.n === 'L1' && myA.data.live[0].tool === 'get_my_store' && !!myA.data.live[0].asOf && !sentToModel.includes('Bravo'), JSON.stringify(myA.data).slice(0, 400))
+  check('HTTP signed in: the system turn says who is signed in (role), uncached', calls.at(-1).body.system.length === 2 && /signed in/.test(calls.at(-1).body.system[1].text) && !calls.at(-1).body.system[1].cache_control)
+  check('HTTP signed in: a store card (checkout open, fee bars) and an app action', myA.data.cards?.[0]?.kind === 'store' && myA.data.cards[0].stats.some((s) => s.label === 'Checkout' && s.value === 'open') && myA.data.cards[0].chart?.type === 'bars' && myA.data.actions?.some((a) => a.url === 'https://app.gullylabs.xyz/#merchant'), JSON.stringify(myA.data.cards))
+  const myOut = await askPost({ question: 'Is my store paused?' })
+  check('HTTP signed out: the tool refuses, nothing about any store reaches the model or the answer, and a sign-in action is offered', myOut.status === 200 && myOut.data.signedIn === false && /sign in/.test(myOut.data.answer) && !sentToModel.includes('Store') && /signed-out/.test(sentToModel) && (myOut.data.cards ?? []).length === 0 && myOut.data.actions?.some((a) => a.label === 'Sign in to the app'), JSON.stringify(myOut.data).slice(0, 300))
+
+  /* ------------------------------------------- live first: cards, actions --- */
+  ask.setGapHistoryForTest(() => Array.from({ length: 30 }, (_, i) => [Math.floor(Date.now() / 1000) - (30 - i) * 1800, Math.sin(i / 4) * 2, 1, 1]))
+  round = 0
+  reply = (body) => {
+    round++
+    if (round === 1) return { status: 200, json: { content: [{ type: 'tool_use', id: 'toolu_s', name: 'get_stock', input: { ticker: 'NVDA', chain: 'robinhood' } }, { type: 'tool_use', id: 'toolu_h', name: 'get_holders', input: { chain: 'base', token: TOK_A } }], stop_reason: 'tool_use', usage: {} } }
+    return textReply('NVDA trades 3.14% above its fair price [L1]. Alerts are explained in the docs [1]. Not a real live label [L9].')
+  }
+  const lvA = await askPost({ question: 'Where is NVDA now? Alert me at 3% above' })
+  check('live first: a stock card with a 24h gap spark and a holders card with bars', lvA.status === 200 && lvA.data.cards?.[0]?.kind === 'stock' && lvA.data.cards[0].chart?.type === 'spark' && lvA.data.cards[0].chart.points.length >= 2 && lvA.data.cards[0].stats[0].value === '+3.14%' && lvA.data.cards.some((c) => c.kind === 'holders' && c.chart?.type === 'bars'), JSON.stringify(lvA.data.cards).slice(0, 300))
+  check('live first: [L1] maps to the tracker endpoint with as-of; an unknown [L9] is removed', lvA.data.live?.length === 1 && lvA.data.live[0].url === 'https://gullylabs.xyz/api/tracker' && lvA.data.live[0].asOf === '2026-10-17T10:01:00Z' && !lvA.data.answer.includes('[L9]') && lvA.data.answer.includes('[L1]'))
+  const alertAct = lvA.data.actions?.find((a) => a.kind === 'prefill')
+  check('actions: "Set an alert at 3% above" pre-fills the app\'s alert form (nothing created by the link)', alertAct?.label === 'Set an alert at 3% above' && alertAct.url === 'https://app.gullylabs.xyz/?alert=robinhood:NVDA&pct=3&dir=above#alerts' && /Nothing is set until you save/.test(alertAct.note), JSON.stringify(lvA.data.actions))
+  check('actions: "Open the Holder Map" when the Holder Map answered', lvA.data.actions?.some((a) => a.label === 'Open the Holder Map' && a.url.startsWith('https://gullylabs.xyz/holders/base/')))
+  const pl = ask.actionsFrom('Can I create a payment link for $25?', [], {})
+  check('actions: "Create a pay link for $25" pre-fills the store\'s new link form', pl[0]?.kind === 'prefill' && pl[0].label === 'Create a pay link for $25' && pl[0].url === 'https://app.gullylabs.xyz/?paylink=25#merchant')
+  check('the system prompt puts live data first and cites tool results as [Ln]', /Live data first/.test(calls.at(-1).body.system[0].text) && /\[L1\]/.test(calls.at(-1).body.system[0].text) && ['get_pay_chains', 'get_holders', 'search_docs', 'get_my_store', 'get_my_usage', 'get_my_alerts'].every((n) => calls.at(-1).body.tools.some((x) => x.name === n)))
+  check('the "my" tools take no workspace argument', ['get_my_store', 'get_my_usage', 'get_my_alerts'].every((n) => JSON.stringify(calls.at(-1).body.tools.find((x) => x.name === n).input_schema.properties) === '{}'))
+  const tgView = tgui.aiAnswerView({ ok: true, ...lvA.data })
+  check('Telegram: the same answer with card lines, a block-character chart, live sources with time, and action buttons', /NVDA · Robinhood Chain/.test(tgView.text) && /[▁▂▃▄▅▆▇█]{5,}/.test(tgView.text) && /\[L1\] Tracker/.test(tgView.text) && tgView.keyboard.some((row) => row[0].url?.includes('pct=3')), tgView.text.slice(0, 300))
+  delete process.env.ASK_SELF_URL
+
+  // search_docs: the model searches again in its own words; new sources join with the next numbers.
+  round = 0
+  reply = (body) => {
+    round++
+    if (round === 1) return { status: 200, json: { content: [{ type: 'tool_use', id: 'toolu_sd', name: 'search_docs', input: { query: 'quokka Rottnest marsupial' } }], stop_reason: 'tool_use', usage: {} } }
+    const out = JSON.parse(body.messages.at(-1).content[0].content)
+    const n = out.sources.find((x) => x.url.includes('rottnest'))?.n
+    return textReply(`Quokkas live on Rottnest [${n}].`)
+  }
+  const sd = await askPost({ question: 'What about those creatures?' })
+  check('search_docs: a second search adds numbered sources the answer can cite', sd.status === 200 && sd.data.citations.some((c) => c.url === 'https://docs.gullylabs.xyz/rottnest#quokka') && JSON.stringify(sd.data.usedTools) === '["search_docs"]', JSON.stringify(sd.data).slice(0, 300))
+
+  /* ------------------------------------------------------------ feedback --- */
+  reply = () => textReply("I don't know. See the docs.")
+  const fq = await askPost({ question: 'Can I pay with Dogecoin on Mars?' })
+  const fid = fq.data.id
+  check('answers carry an id for rating', /^a_[\w-]{16}$/.test(fid ?? ''), fid)
+  const fb = (body, headers = { 'x-requested-with': 'gully' }) => call('/api/ask/feedback', { method: 'POST', body, headers })
+  check('feedback: needs X-Requested-With (403)', (await fb({ id: fid, rating: 'down' }, {})).status === 403)
+  check('feedback: a bad rating is 400', (await fb({ id: fid, rating: 'meh' })).status === 400)
+  check('feedback: an unknown answer id is 404', (await fb({ id: 'a_' + 'x'.repeat(16), rating: 'up' })).status === 404)
+  check('feedback: thumbs down on a real answer is stored (200)', (await fb({ id: fid, rating: 'down' })).status === 200)
+  reply = () => textReply('Keys are free [1].')
+  const goodA = await askPost({ question: 'Do I need an API key?' })
+  check('feedback: thumbs up stored', (await fb({ id: goodA.data.id, rating: 'up' })).status === 200)
+  const fbLines = fs.readFileSync(path.join(tmp, 'ask-feedback.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
+  check('feedback file: id, rating, the question from the server\'s own record, a salted hash, no IP', fbLines.length === 2 && fbLines[0].question === 'Can I pay with Dogecoin on Mars?' && fbLines[0].rating === 'down' && /^[0-9a-f]{16}$/.test(fbLines[0].who) && !/203\.0\.113\./.test(JSON.stringify(fbLines)))
+  check('admin gaps without the token is 401', (await call('/api/admin/ask/gaps')).status === 401)
+  const gp = await call('/api/admin/ask/gaps?days=30', { auth: ADMIN })
+  const doge = gp.data?.items?.find((x) => x.question === 'Can I pay with Dogecoin on Mars?')
+  check('admin gaps: unanswered and thumbs-down questions, worst first, at most 20, with totals', gp.status === 200 && gp.data.items.length <= 20 && doge?.down === 1 && doge.unanswered === 1 && gp.data.items[0].unanswered + gp.data.items[0].down >= 2 && gp.data.totals.ratedDown === 1 && gp.data.totals.ratedUp === 1 && !gp.data.items.some((x) => x.question === 'Do I need an API key?' && x.unanswered === 0 && x.down === 0), JSON.stringify(gp.data).slice(0, 300))
+  check('admin gaps: the zebrafish question (answered "I don\'t know") is listed', gp.data.items.some((x) => x.question === 'zebrafish quokka?'))
+  check('admin gaps hold no IPs', !/203\.0\.113\.|198\.51\.100\./.test(JSON.stringify(gp.data)))
+  fs.appendFileSync(path.join(tmp, 'ask-feedback.jsonl'), JSON.stringify({ at: '2020-01-01T00:00:00.000Z', id: 'a_old', rating: 'down', question: 'ancient' }) + '\n')
+  ask.pruneLog()
+  check('feedback: lines older than 90 days are pruned', !fs.readFileSync(path.join(tmp, 'ask-feedback.jsonl'), 'utf8').includes('ancient'))
+  reply = null
+
   /* ------------------------------------------------------------ secrets --- */
   check('the API key is not in any stored file', !fs.readdirSync(tmp).some((f) => fs.statSync(path.join(tmp, f)).isFile() && fs.readFileSync(path.join(tmp, f), 'utf8').includes(KEY)))
 } catch (e) {
@@ -399,5 +616,7 @@ try {
 
 console.log(`\n${t.passed} passed, ${t.failed} failed`)
 dcStub.close()
+embedStub.close()
+holdersStub.close()
 fs.rmSync(tmp, { recursive: true, force: true })
 process.exit(t.failed ? 1 : 0)

@@ -407,7 +407,12 @@ let readHistoryFn = (chain, ticker) => tracker.readHistory(chain, ticker)
 let readLaunchesFn = (o) => readLaunches(o)
 /** Price and market cap of one launch (readDeepcorePool's match), or null: the launch card shows them when DeepCore states them. */
 let readLaunchMarketFn = async (l) => (await readDeepcorePool({ token: l.token, chain: l.chainId }))?.matches?.[0] ?? null
-let askFn = (chatId, q) => askForChat(chatId, q)
+/** Gully AI's "my" tools in Telegram: only a private chat linked to a wallet, and only that link's workspace. */
+const askCtxOf = (chatId) => {
+  const l = linkOfChat(chatId)
+  return l && l.chatType === 'private' ? { user: l.address, workspace: l.address, role: 'linked chat' } : null
+}
+let askFn = (chatId, q) => askForChat(chatId, q, askCtxOf(chatId))
 let askReady = () => askConfigured()
 
 /** Test hooks: replace the tracker read (rows with sessionOpen), movers, history, launches and Ask. */
@@ -425,7 +430,7 @@ export function setLaunchesReaderForTest(fn, marketFn = async () => null) {
   readLaunchMarketFn = marketFn
 }
 export function setAskForTest(fn, ready = () => true) {
-  askFn = fn ?? ((chatId, q) => askForChat(chatId, q))
+  askFn = fn ?? ((chatId, q) => askForChat(chatId, q, askCtxOf(chatId)))
   askReady = fn ? ready : () => askConfigured()
 }
 

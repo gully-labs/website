@@ -35,7 +35,7 @@
 //   GET  /api/admin/analytics                Gully Analytics accounts: wallet, plan, sites, events this month
 //   POST /api/admin/analytics/:address/plan   { plan: 'starter'|'growth'|'none', days? }  grant for `days` (30) or stop now
 //   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
-//   POST /api/admin/ask/draft, GET /api/admin/ask/log   Gully Ask content studio and ask log (ask.mjs)
+//   POST /api/admin/ask/draft, GET /api/admin/ask/log, GET /api/admin/ask/gaps   Gully Ask content studio, ask log, unanswered / low-rated questions (ask.mjs)
 //   GET  /api/admin/charts?days=7|30|90       daily series for the dashboard's charts (admin-charts.mjs)
 //   /api/admin/channel*                       @GullyLabsNews channel posts and auto posts (telegram-channel.mjs)
 

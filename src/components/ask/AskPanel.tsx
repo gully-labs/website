@@ -1,14 +1,20 @@
-import { ArrowUpRight, CornerDownLeft, LoaderCircle, RotateCcw, Sparkles } from 'lucide-react'
+import { ArrowUpRight, CornerDownLeft, LoaderCircle, RotateCcw, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { AskFailure, askStatus, postAsk, type AskAnswer, type AskStatus, type Citation, type Turn } from './askApi'
+import { AskFailure, askStatus, postAsk, postFeedback, type AskAnswer, type AskStatus, type Citation, type LiveCite, type Turn } from './askApi'
+import { Actions, LiveCard } from './AskCards'
+import { asOfLabel, hrefProps } from './askFormat'
 import { toastError } from '../ui/toast'
+import { isLocalHost, SITE_URL } from '../../site-host'
 
-/* Gully AI: a question box with answers drawn from the docs and the site, each with numbered sources.
-   Used by the /ask page (variant "page") and the docs' Gully AI side panel / sheet (variant "panel").
+/* Gully AI: a question box with answers drawn from the docs, the site and live tools. Each answer cites its
+   sources ([1] doc sections, [L1] live reads with their time), shows live cards with a mini chart for the
+   figures it read, offers one-tap next steps (deep links and pre-filled forms), and can be rated.
+   Used by the /ask page (variant "page"), the docs' and the app's Gully AI side panel / sheet (variant
+   "panel"). In the app the session cookie goes along, so "is my store paused?" reads your own workspace.
    Lazy-loaded everywhere: neither the landing nor the docs pages pay for it until it is opened. */
 
 const MAX = 500
-const STARTERS = ['How do Telegram gap alerts work?', 'What do the paid API plans include?', 'How is the fair price of a stock token read?', 'What is Chain Kit?', 'Do I need an API key?']
+const STARTERS = ['How much do you charge?', 'What chains can I pay on?', 'Is my store paused?', 'What is the L3?', 'Do you track me?', 'How do Telegram gap alerts work?']
 
 const STAGE: Record<string, string> = {
   searching: 'Searching the docs and the site…',
@@ -21,14 +27,19 @@ const STAGE: Record<string, string> = {
   'tool:get_alert_channels': 'Checking the alert channels…',
   'tool:deepcore_launches': 'Reading DeepCore launches…',
   'tool:deepcore_pool': 'Reading the DeepCore pool…',
+  'tool:get_pay_chains': 'Reading the Gully Pay config…',
+  'tool:get_holders': 'Reading the Holder Map…',
+  'tool:search_docs': 'Searching again…',
+  'tool:get_my_store': 'Reading your store…',
+  'tool:get_my_usage': 'Reading your API usage…',
+  'tool:get_my_alerts': 'Reading your alerts…',
 }
-const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels', deepcore_launches: 'DeepCore launches', deepcore_pool: 'DeepCore pool' }
+const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels', deepcore_launches: 'DeepCore launches', deepcore_pool: 'DeepCore pool', get_pay_chains: 'Gully Pay config', get_holders: 'Holder Map', search_docs: 'a second search', get_my_store: 'your store', get_my_usage: 'your usage', get_my_alerts: 'your alerts' }
 
-type Exchange = { id: number; q: string; a: AskAnswer | null; error: string | null }
+type Exchange = { id: number; q: string; a: AskAnswer | null; error: string | null; rating?: 'up' | 'down' | null }
 
 const isOwnHost = (u: string) => /^https:\/\/([\w-]+\.)?gullylabs\.xyz(\/|$)/.test(u)
-/** Another site's link opens in a new tab; our own hosts open in place. */
-const linkProps = (u: string) => (isOwnHost(u) ? {} : { target: '_blank', rel: 'noopener noreferrer' })
+const linkProps = hrefProps
 
 /** Numbers the sources 1..n in the order the answer first cites them (sources it never cites follow),
     and rewrites the [n] markers to match, so the markers read in order and the list has no gaps. */
@@ -47,10 +58,10 @@ function renumber(a: AskAnswer): AskAnswer {
   }
 }
 
-/** Inline text: **bold**, [n] citation links and gullylabs.xyz URLs. Everything else is plain text. */
-function inline(text: string, cites: Citation[], key: string): ReactNode[] {
+/** Inline text: **bold**, [n] source links, [Ln] live-read links and gullylabs.xyz URLs. Everything else is plain text. */
+function inline(text: string, cites: Citation[], key: string, live: LiveCite[] = []): ReactNode[] {
   const out: ReactNode[] = []
-  const re = /\*\*([^*]+)\*\*|\[(\d{1,2})\]|(https:\/\/[^\s)\]]+[^\s)\].,;:!?])/g
+  const re = /\*\*([^*]+)\*\*|\[(\d{1,2})\]|(https:\/\/[^\s)\]]+[^\s)\].,;:!?])|\[(L\d{1,2})\]/g
   let last = 0
   let m: RegExpExecArray | null
   let i = 0
@@ -58,7 +69,19 @@ function inline(text: string, cites: Citation[], key: string): ReactNode[] {
     if (m.index > last) out.push(text.slice(last, m.index))
     const k = `${key}-${i++}`
     if (m[1]) out.push(<strong key={k} className="font-semibold text-ink">{m[1]}</strong>)
-    else if (m[2]) {
+    else if (m[4]) {
+      const l = live.find((x) => x.n === m![4])
+      const at = asOfLabel(l?.asOf)
+      out.push(
+        l ? (
+          <a key={k} href={l.url} {...linkProps(l.url)} title={`${l.label}${at ? `, as of ${at}` : ''}`} data-testid="ask-live-cite" className="mx-[1px] inline-flex items-center justify-center gap-[3px] rounded-[4px] border border-success-line px-[4px] align-[2px] font-mono text-[10px] leading-[16px] text-green no-underline hover:bg-green hover:text-bg">
+            <span aria-hidden className="size-[5px] rounded-full bg-current" />
+            {at ?? 'live'}
+            <span className="sr-only"> (live: {l.label})</span>
+          </a>
+        ) : null,
+      )
+    } else if (m[2]) {
       const c = cites.find((x) => x.n === Number(m![2]))
       out.push(
         c ? (
@@ -85,7 +108,7 @@ function inline(text: string, cites: Citation[], key: string): ReactNode[] {
 }
 
 /** The answer as paragraphs and bullet lists. */
-function AnswerText({ text, cites }: { text: string; cites: Citation[] }) {
+function AnswerText({ text, cites, live }: { text: string; cites: Citation[]; live: LiveCite[] }) {
   const blocks = text.split(/\n{2,}/).filter((b) => b.trim())
   return (
     <div className="flex flex-col gap-3 text-[15px] leading-[1.65] text-ink-2">
@@ -95,7 +118,7 @@ function AnswerText({ text, cites }: { text: string; cites: Citation[] }) {
           return (
             <ul key={bi} className="m-0 flex list-disc flex-col gap-1 pl-5 marker:text-gold">
               {lines.map((l, li) => (
-                <li key={li}>{inline(l.replace(/^\s*([-*•]|\d+[.)])\s+/, ''), cites, `${bi}-${li}`)}</li>
+                <li key={li}>{inline(l.replace(/^\s*([-*•]|\d+[.)])\s+/, ''), cites, `${bi}-${li}`, live)}</li>
               ))}
             </ul>
           )
@@ -104,7 +127,7 @@ function AnswerText({ text, cites }: { text: string; cites: Citation[] }) {
             {lines.map((l, li) => (
               <Fragment key={li}>
                 {li > 0 && <br />}
-                {inline(l, cites, `${bi}-${li}`)}
+                {inline(l, cites, `${bi}-${li}`, live)}
               </Fragment>
             ))}
           </p>
@@ -114,12 +137,27 @@ function AnswerText({ text, cites }: { text: string; cites: Citation[] }) {
   )
 }
 
-function Sources({ cites }: { cites: Citation[] }) {
-  if (!cites.length) return null
+function Sources({ cites, live }: { cites: Citation[]; live: LiveCite[] }) {
+  if (!cites.length && !live.length) return null
   return (
     <div className="flex flex-col gap-2">
       <span className="font-mono text-[11px] tracking-[1px] text-faint">SOURCES</span>
       <ol className="m-0 flex list-none flex-col gap-1 p-0">
+        {live.map((l) => (
+          <li key={l.n}>
+            <a href={l.url} {...linkProps(l.url)} className="group flex min-h-11 items-center gap-3 rounded-btn border border-line px-3 py-2 text-ink no-underline transition-colors hover:border-success-line hover:bg-surface-hover">
+              <span className="grid h-6 shrink-0 place-items-center rounded-[5px] border border-success-line px-1 font-mono text-[10px] text-green">LIVE</span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[14px]">{l.label}</span>
+                <span className="truncate font-mono text-[11px] text-faint">
+                  {asOfLabel(l.asOf) ? `as of ${asOfLabel(l.asOf)} · ` : ''}
+                  {l.url.replace(/^https:\/\//, '')}
+                </span>
+              </span>
+              <ArrowUpRight size={14} aria-hidden className="shrink-0 text-faint group-hover:text-green" />
+            </a>
+          </li>
+        ))}
         {cites.map((c) => (
           <li key={c.n}>
             <a href={c.url} {...linkProps(c.url)} className="group flex min-h-11 items-center gap-3 rounded-btn border border-line px-3 py-2 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover">
@@ -163,6 +201,16 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
   useEffect(() => {
     if (autoFocus && status && status !== 'loading' && status.configured) inputRef.current?.focus()
   }, [autoFocus, status])
+
+  const rate = async (id: number, answerId: string | undefined, rating: 'up' | 'down') => {
+    if (!answerId) return
+    setLog((l) => l.map((e) => (e.id === id ? { ...e, rating } : e)))
+    const ok = await postFeedback(answerId, rating)
+    if (!ok) {
+      setLog((l) => l.map((e) => (e.id === id ? { ...e, rating: null } : e)))
+      toastError('The rating could not be saved', { id: 'ask:rate' })
+    }
+  }
 
   const submit = async (question: string) => {
     const text = question.replace(/\s+/g, ' ').trim()
@@ -253,9 +301,31 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
               <p className="m-0 self-end rounded-[12px] rounded-br-[4px] border border-line-strong bg-surface-hover px-4 py-2 text-[15px] text-ink">{e.q}</p>
               {e.a ? (
                 <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
-                  <AnswerText text={e.a.answer} cites={e.a.citations} />
-                  {e.a.usedTools.length > 0 && <span className="font-mono text-[11px] text-faint">Live data: {[...new Set(e.a.usedTools.map((t) => TOOL_LABEL[t] ?? t))].join(', ')}</span>}
-                  <Sources cites={e.a.citations} />
+                  <AnswerText text={e.a.answer} cites={e.a.citations} live={e.a.live ?? []} />
+                  {(e.a.cards ?? []).map((c) => (
+                    <LiveCard key={`${c.tool}-${c.cite}`} card={c} />
+                  ))}
+                  {e.a.usedTools.length > 0 && <span className="font-mono text-[11px] text-faint">Read for this answer: {[...new Set(e.a.usedTools.map((t) => TOOL_LABEL[t] ?? t))].join(', ')}</span>}
+                  <Actions actions={e.a.actions ?? []} />
+                  <Sources cites={e.a.citations} live={e.a.live ?? []} />
+                  {e.a.id && (
+                    <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3" role="group" aria-label="Rate this answer">
+                      <span className="font-mono text-[11px] text-faint">{e.rating ? 'Thanks: this helps us decide which docs to write.' : 'Was this useful?'}</span>
+                      {(['up', 'down'] as const).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          aria-pressed={e.rating === r}
+                          aria-label={r === 'up' ? 'Useful' : 'Not useful'}
+                          data-testid={`ask-rate-${r}`}
+                          onClick={() => rate(e.id, e.a?.id, r)}
+                          className={`grid size-11 place-items-center rounded-btn border transition-colors ${e.rating === r ? 'border-gold bg-[rgba(232,192,96,.12)] text-gold' : 'border-line text-faint hover:border-line-hover hover:text-ink'}`}
+                        >
+                          {r === 'up' ? <ThumbsUp size={16} aria-hidden /> : <ThumbsDown size={16} aria-hidden />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : e.error ? (
                 <div className="flex flex-wrap items-center gap-3 rounded-card border border-error/40 px-5 py-4">
@@ -311,7 +381,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
         </div>
         <div id={`${ids}-hint`} className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-faint">
           <span className="inline-flex items-center gap-1">
-            <Sparkles size={12} aria-hidden className="text-gold" /> Answers from the Gully Labs docs and site, with sources. Not investment advice.
+            <Sparkles size={12} aria-hidden className="text-gold" /> Answers from the Gully Labs docs, site and live data, with sources. Information only, not advice. Questions are kept 90 days (<a href={isLocalHost() ? '/legal/privacy#s4' : `${SITE_URL}/legal/privacy#s4`} className="underline underline-offset-2 hover:text-gold">privacy</a>).
           </span>
           <span className={tooLong ? 'text-error' : undefined}>
             {q.length}/{MAX}
