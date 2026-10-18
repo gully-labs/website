@@ -81,7 +81,7 @@ function makeStub(chainId) {
     })
   })
 }
-const stubs = Object.fromEntries([8453, 1, 56, 42161].map((id) => [id, makeStub(id)]))
+const stubs = Object.fromEntries([8453, 1, 56, 42161, 10, 137, 43114].map((id) => [id, makeStub(id)]))
 for (const s of Object.values(stubs)) await new Promise((r) => s.listen(0, '127.0.0.1', r))
 const server = stubs[8453]
 for (const [id, s] of Object.entries(stubs)) process.env[`GULLY_RPC_${id}`] = `http://127.0.0.1:${s.address().port}`
@@ -91,14 +91,18 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-feeproxy-'))
 process.env.DATA_DIR = tmp // the monitor's state file
 
 const P = await import('../server/payments.mjs')
+const G = await import('../server/fee-proxy-guard.mjs')
 const base = P.assetById('base-usdc')
 const baseEth = P.assetById('base-eth')
 
 /* ----------------------------------------------------------- constants --- */
 
 check('event topic matches the ABI (viem)', P.FEE_PROXY_TOPIC === toEventSelector(FEE_EVENT), P.FEE_PROXY_TOPIC)
-check('a proxy on every Gully Pay chain', P.CHAIN_LIST.every((c) => /^0x[0-9a-f]{40}$/.test(P.FEE_PROXIES[c.id] ?? '')))
+check('a proxy on every Gully Pay chain whose proxy is Base\'s build (Polygon and Avalanche: none, plain transfers)', P.CHAIN_LIST.every((c) => ([137, 43114].includes(c.id) ? P.FEE_PROXIES[c.id] === undefined : /^0x[0-9a-f]{40}$/.test(P.FEE_PROXIES[c.id] ?? ''))))
 check('proxy addresses are the verified ones', P.FEE_PROXIES[8453] === PROXY && P.FEE_PROXIES[1] === '0x370de27fdb7d1ff1e1baa7d11c5820a324cf623c' && P.FEE_PROXIES[56] === '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9' && P.FEE_PROXIES[42161] === '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9')
+check('new chains (2026-10-18): only OP Mainnet\'s proxy is byte-identical to Base\'s and splits; Polygon\'s and Avalanche\'s are in the registry only (contracts/CHOICE.md)', P.FEE_PROXIES[10] === '0x399f5ee127ce7432e4921a61b8cf52b0af52cbfe' && !P.FEE_PROXIES[137] && !P.FEE_PROXIES[43114] && !G.SPLIT_PROXIES[137] && !G.SPLIT_PROXIES[43114] && G.FEE_PROXY_REGISTRY[137].erc20.includes('0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9') && G.FEE_PROXY_REGISTRY[137].erc20.includes('0x2171a0dc12a9e5b1659fef2bb20e54c84fa7db0c') && G.FEE_PROXY_REGISTRY[43114].erc20.includes('0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'))
+check('registry: a mainnet proxy outside SPLIT_PROXIES is never a split target (splitProxyFor null on Polygon and Avalanche)', G.splitProxyFor(137) === null && G.splitProxyFor(43114) === null && G.splitProxyFor(10) === '0x399f5ee127ce7432e4921a61b8cf52b0af52cbfe')
+check('new chains: every chain in the list has a proxy, assets and a Chainlink feed', [10, 137, 43114].every((id) => P.CHAIN_LIST.some((c) => c.id === id) && P.ASSETS.some((a) => a.chainId === id && a.kind === 'token') && P.ASSETS.some((a) => a.chainId === id && a.kind === 'native') && P.CHAINS[id].rpcs.length === 6 && /\/ USD$/.test(P.CHAINS[id].feed.description)))
 const r1 = P.paymentReference('q_abc')
 check('payment reference is 8 bytes and stable', /^0x[0-9a-f]{16}$/.test(r1) && r1 === P.paymentReference('q_abc') && r1 !== P.paymentReference('q_abd'), r1)
 check('fee rounds down', P.feeOf(199n, 50) === 0n && P.feeOf(200n, 50) === 1n && P.feeOf(100_000_000n, 50) === 500_000n)
@@ -146,10 +150,10 @@ check('no split when fee >= total', P.quoteSplit({ ...q, feeRaw: q.amountRaw }) 
 /* --------------------------------------------- fee-proxy guard: the rules --- */
 // server/fee-proxy-guard.mjs is pure and shared with the browser. Every rule, each broken one way at a time.
 
-const G = await import('../server/fee-proxy-guard.mjs')
+// (G is imported next to P above.)
 const ZERO = '0x' + '0'.repeat(40)
 const ALL = G.allFeeProxies()
-check('registry: every Gully Pay chain has its split proxy, and it is in the registry', P.CHAIN_LIST.every((c) => G.SPLIT_PROXIES[c.id] && G.FEE_PROXY_REGISTRY[c.id]?.erc20.includes(G.SPLIT_PROXIES[c.id])))
+check('registry: every Gully Pay chain is in the registry, and each split proxy is in it', P.CHAIN_LIST.every((c) => G.FEE_PROXY_REGISTRY[c.id]?.erc20.length && (!G.SPLIT_PROXIES[c.id] || G.FEE_PROXY_REGISTRY[c.id].erc20.includes(G.SPLIT_PROXIES[c.id]))))
 check('registry: payments.FEE_PROXIES is the guard list', Object.entries(P.FEE_PROXIES).every(([id, a]) => G.splitProxyFor(Number(id)) === a))
 check('registry: the mainnet proxies of CHOICE.md (both kinds) and the Base Sepolia ones are known', ['0x370de27fdb7d1ff1e1baa7d11c5820a324cf623c', '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9', '0x1892196e80c4c17ea5100da765ab48c1fe2fb814', '0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8', '0xd9c3889eb8da6ce449bffe3cd194d08a436e96f2', '0x399f5ee127ce7432e4921a61b8cf52b0af52cbfe', '0xe11bf2fda23bf0a98365e1a4c04a87c9339e8687', '0xae5508e1509cce6a73b38d8b19fedfdbd0080c18', '0xd302ce9e3048ad676c6e74be57042aca31e2957e'].every((a) => ALL.has(a)), [...ALL].join())
 check('isFeeProxy: every known proxy, in any case, with spaces; never a wallet, zero or garbage', [...ALL].every((a) => G.isFeeProxy(a) && G.isFeeProxy(a.toUpperCase().replace('0X', '0x')) && G.isFeeProxy(` ${a} `)) && !G.isFeeProxy(MERCHANT) && !G.isFeeProxy(ZERO) && !G.isFeeProxy('proxy') && !G.isFeeProxy(null))
@@ -160,7 +164,7 @@ check('splitProxyFor: Base Sepolia falls back to the registry proxy we deployed;
 
 // (a) recipients
 check('rule a: a wallet passes', G.recipientViolations(MERCHANT, { chainId: 8453 }).length === 0 && G.recipientViolations(TREASURY).length === 0)
-check('rule a: every known proxy is refused as a recipient, on every chain (not only its own)', [...ALL].every((a) => [8453, 1, 56, 42161, 10].every((id) => G.recipientViolations(a, { chainId: id }).some((v) => /fee proxy/.test(v)))))
+check('rule a: every known proxy is refused as a recipient, on every chain (not only its own)', [...ALL].every((a) => [8453, 1, 56, 42161, 10, 137, 43114].every((id) => G.recipientViolations(a, { chainId: id }).some((v) => /fee proxy/.test(v)))))
 check('rule a: the zero address, a non-address, nothing', G.recipientViolations(ZERO).some((v) => /zero/.test(v)) && G.recipientViolations('0x1234').some((v) => /not an EVM/.test(v)) && G.recipientViolations('').length === 1 && G.recipientViolations(null).length === 1)
 check('rule a: a Solana (base58) recipient is not an EVM proxy', G.recipientViolations('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', { chainId: G.SOLANA_LEDGER_CHAIN_ID }).length === 0)
 
@@ -312,6 +316,30 @@ const two = addTx({
 r = await P.readPayment(base, two, MERCHANT)
 check('two proxy payments in one tx: each credit made whole once', r.ok && r.credits.length === 2 && r.credits.every((c) => c.value === amount + fee && c.fee === fee))
 
+/* ------------------------------------- the treasury gate on the fee split --- */
+// The fee leg goes to the Safe treasury: on a chain where it has no code the split is dropped (fee invoiced).
+const T = await import('../server/treasury-chains.mjs')
+T.resetTreasuryStateForTest()
+check('gate: nothing known yet, every chain open (closed only on evidence)', T.treasuryKind() === 'unknown' && T.treasuryDeployedOn(8453) && T.treasuryDeployedOn(137) && P.feeSplitOn(10) && !P.feeSplitOn(137))
+T.recordTreasuryCode(8453, '0x6080604052')
+T.recordTreasuryCode(137, '0x')
+T.recordTreasuryCode(10, '0x')
+T.recordTreasuryCode(43114, null, 'stub: node down')
+check('gate: code on Base makes it a contract treasury; Polygon (no code) and Avalanche (unread) are closed', T.treasuryKind() === 'contract' && T.treasuryDeployedOn(8453) && !T.treasuryDeployedOn(137) && !T.treasuryDeployedOn(43114))
+check('gate: feeSplitOn follows it (OP Mainnet has the proxy but no treasury: off)', P.feeSplitOn(8453) && !P.feeSplitOn(10) && !P.feeSplitOn(137) && !P.feeSplitOn(43114))
+check('gate: withFeeSplit leaves an OP Mainnet quote as a plain transfer while the treasury is missing there', P.withFeeSplit(quote({ assetId: 'op-usdc' }), { bps: 50, feeTo: TREASURY }).feeRaw === undefined && P.withFeeSplit(quote(), { bps: 50, feeTo: TREASURY }).feeRaw === '500000')
+const stPoly = T.treasuryChainState({ id: 137, name: 'Polygon', key: 'polygon' })
+check('gate: the admin message says to deploy the Safe via app.safe.global and that it switches on by itself', stPoly.status === 'missing' && !stPoly.offered && /Treasury not deployed on Polygon/.test(stPoly.message) && /app\.safe\.global/.test(stPoly.message) && /switches on by itself/.test(stPoly.message), stPoly.message)
+T.recordTreasuryCode(10, '0x6080604052')
+T.recordTreasuryCode(137, '0x6080604052')
+check('gate: once the Safe is deployed on OP Mainnet the split is on there', T.treasuryDeployedOn(10) && P.feeSplitOn(10) && P.withFeeSplit(quote({ assetId: 'op-usdc' }), { bps: 50, feeTo: TREASURY }).feeRaw === '500000')
+check('gate: Polygon with the Safe deployed is offered but never split (no Base-identical proxy): plain transfer, fee invoiced', T.treasuryDeployedOn(137) && P.chainOffered(137) && !P.feeSplitOn(137) && P.withFeeSplit(quote({ assetId: 'polygon-usdc' }), { bps: 50, feeTo: TREASURY }).feeRaw === undefined)
+check('gate: an EIP-7702 delegated wallet counts as deployed; an EOA treasury (no code anywhere) is open everywhere', (T.recordTreasuryCode(43114, '0xef0100' + 'ab'.repeat(20)), T.treasuryDeployedOn(43114)) && (T.resetTreasuryStateForTest(), T.recordTreasuryCode(8453, '0x'), T.treasuryKind() === 'eoa' && T.treasuryDeployedOn(137)))
+process.env.GULLY_TREASURY_KIND = 'contract'
+check('gate: GULLY_TREASURY_KIND=contract pins a counterfactual Safe: no code anywhere means closed everywhere', T.treasuryKind() === 'contract' && !T.treasuryDeployedOn(8453) && !T.treasuryDeployedOn(137))
+delete process.env.GULLY_TREASURY_KIND
+T.resetTreasuryStateForTest()
+
 /* ------------------------------------------------- the balance monitor --- */
 // Every proxy on every Gully Pay chain, USDC/USDT and coin, against the stubs' balances (all zero to start).
 
@@ -320,7 +348,7 @@ const sent = []
 let reply = { ok: true, status: 200, error: null }
 Mon.setFeeProxyNotifierForTest(async (text) => (sent.push(text), reply))
 const expectedReads = Mon.targets().reduce((n, c) => n + c.proxies.length * c.assets.length, 0)
-check('monitor: watches every chain, both proxy kinds, coin and stablecoins (about 25 reads an hour)', Mon.targets().length === P.CHAIN_LIST.length && Mon.targets().every((c) => c.proxies.length >= 2 && c.assets.length >= 2) && expectedReads >= 20 && expectedReads <= 30, String(expectedReads))
+check('monitor: watches every chain, both proxy kinds, coin and stablecoins (about 45 reads an hour)', Mon.targets().length === P.CHAIN_LIST.length && Mon.targets().every((c) => c.proxies.length >= 2 && c.assets.length >= 2) && expectedReads >= 40 && expectedReads <= 50, String(expectedReads))
 balanceReads.n = 0
 let v = await Mon.checkFeeProxies()
 check('monitor: a pass reads each balance once; all zero, no alert, no Telegram', balanceReads.n === expectedReads && v.alerts.length === 0 && sent.length === 0 && v.chains.every((c) => c.checkedAt && !c.error && c.proxies.every((p) => p.balances.every((b) => b.raw === '0'))), `${balanceReads.n} reads, ${v.alerts.length} alerts`)

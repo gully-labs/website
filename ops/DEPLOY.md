@@ -2,7 +2,7 @@
 
 `ops/deploy.sh` replaces `docker compose up -d --build web`. That command built the image and then recreated
 `gully-web` in place. While the old container was stopped and the new one was starting, nothing listened on
-port 2053, so Cloudflare showed visitors its **521** page (the audit saw this three times in 10 minutes).
+port 2053, so Cloudflare showed visitors its **521** page (monitoring saw this three times in 10 minutes).
 
 ## How it works
 

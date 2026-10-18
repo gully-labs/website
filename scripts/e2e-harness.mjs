@@ -124,7 +124,7 @@ export const blockedOutbound = []
 export const anthropicCalls = []
 export const telegramCalls = []
 
-const FEEDS = { 8453: 2_400_00000000n, 1: 2_500_00000000n, 56: 700_00000000n, 42161: 2_450_00000000n }
+const FEEDS = { 8453: 2_400_00000000n, 1: 2_500_00000000n, 56: 700_00000000n, 42161: 2_450_00000000n, 10: 2_400_00000000n, 137: 9_000000n, 43114: 10_00000000n }
 
 function rpcAnswer(chainId, q) {
   if (q.method === 'eth_chainId') return hex(chainId)

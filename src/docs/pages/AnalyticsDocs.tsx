@@ -149,7 +149,7 @@ export function AnalyticsDocs() {
           <li>At the limit, new events are not recorded until the month turns or you upgrade. The tracker gets an HTTP 402 answer and stops sending for the rest of that page view.</li>
           <li>Websites beyond what your plan includes (after a downgrade, say) do not record until you remove some or upgrade; the oldest ones keep recording.</li>
           <li>
-            Paying works like the tracker API plans (see <Ext href="https://docs.gullylabs.xyz/plans-alerts#paying">Paying</Ext>): ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the treasury, checked on chain. A payment buys {a?.periodDays ?? 30} days; paying again for the same plan adds them to the end. Nothing renews by itself.
+            Paying works like the tracker API plans (see <Ext href="https://docs.gullylabs.xyz/plans-alerts#paying">Paying</Ext>): USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche (where the treasury is deployed), straight to the treasury, checked on chain. A payment buys {a?.periodDays ?? 30} days; paying again for the same plan adds them to the end. Nothing renews by itself.
           </li>
           <li>When a trial or plan ends, recording stops. Your dashboard stays readable for {a?.graceDays ?? 30} days; after that the account and its data may be deleted.</li>
         </List>

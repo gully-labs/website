@@ -122,6 +122,7 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
         </a>
         <span className="text-[12px] text-dim">
           {KIND_TEXT[w.kind]} · checked {new Date(w.checkedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+          {w.status === 'not-deployed' && ` · Deploy your contract on ${w.chain} at this address; we check every hour and it switches on by itself.`}
         </span>
       </div>
       {can && (
@@ -209,13 +210,17 @@ export function WalletsSection({ view, onChange }: { view: MerchantView; onChang
             {view.chains.map((c) => {
               const on = chains.includes(c.id)
               return (
-                <button key={c.id} type="button" aria-pressed={on} className={chip(on)} onClick={() => setChains(on ? chains.filter((x) => x !== c.id) : [...chains, c.id])}>
+                <button key={c.id} type="button" aria-pressed={on} className={chip(on)} title={c.feeSplit ? `${c.name}: the Gully Pay fee is collected inside each stablecoin payment (one transaction).` : `${c.name}: the Gully Pay fee is invoiced on your weekly statement.`} onClick={() => setChains(on ? chains.filter((x) => x !== c.id) : [...chains, c.id])}>
                   <ChainLogo chain={c.key} size={16} decorative /> {c.name}
                 </button>
               )
             })}
           </div>
           <p className="m-0 text-[12px] leading-[1.55] text-faint">We read each chain: a contract must be deployed on that chain before it can take payments there (a payment to an undeployed Safe address can be lost). The same address on every chain is fine.</p>
+          <p className="m-0 text-[12px] leading-[1.55] text-faint">
+            {view.chains.some((c) => c.feeSplit) ? `On ${view.chains.filter((c) => c.feeSplit).map((c) => c.name).join(', ')} the Gully Pay fee on a stablecoin payment is collected in the same transaction (Request Network's fee proxy; the payer still pays exactly the quoted amount). ` : ''}
+            {view.chains.some((c) => !c.feeSplit) ? `On ${view.chains.filter((c) => !c.feeSplit).map((c) => c.name).join(', ')} and for coin payments, the fee is invoiced on your weekly statement.` : ''}
+          </p>
           {needTerms ? (
             <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-3 py-3 text-[14px] leading-[1.55] text-ink-2">
               <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-[3px] size-4 shrink-0 accent-[#e8c060]" required />

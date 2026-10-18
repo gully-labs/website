@@ -1,4 +1,4 @@
-// Regenerates server/vendor/noble.mjs: the audited @noble/curves (secp256k1) and @noble/hashes (keccak_256)
+// Regenerates server/vendor/noble.mjs: the @noble/curves (secp256k1) and @noble/hashes (keccak_256)
 // bundled into one dependency-free ES module, so the production server (which installs no node_modules)
 // can verify Sign-In with Ethereum signatures. Both libraries are MIT, by Paul Miller (paulmillr.com).
 // Also the ERC-6492 validator bytecode from viem (MIT), for smart wallets that are not deployed yet.

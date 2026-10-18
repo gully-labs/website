@@ -80,7 +80,7 @@ const CARDS = [
     file: 'og-widget.png',
     html: page({ eyebrow: 'Embed · free', title: 'The tracker, <em>on your site</em>', body: 'A live ticker, a one-stock badge or a table of the widest gaps. One script tag.', url: 'gullylabs.xyz/widget', right: codeCard('&lt;<span style="color:#d9b563">div</span> data-gully-widget=<br>&nbsp;&nbsp;"<span style="color:#26ab94">ticker</span>"&gt;&lt;/<span style="color:#d9b563">div</span>&gt;<br><br>&lt;<span style="color:#d9b563">script</span> async<br>&nbsp;&nbsp;src="https://gullylabs.xyz/widget.js"&gt;<br>&lt;/<span style="color:#d9b563">script</span>&gt;') }),
   },
-  { file: 'og-services.png', html: page({ eyebrow: 'Services', titleSize: 84, title: 'The same team, <em>on your project</em>', body: 'Smart contracts, dApps, chain infrastructure and security audits.', url: 'gullylabs.xyz/services', right: mascot }) },
+  { file: 'og-services.png', html: page({ eyebrow: 'Services', titleSize: 84, title: 'The same team, <em>on your project</em>', body: 'Smart contracts, dApps, chain infrastructure and security testing.', url: 'gullylabs.xyz/services', right: mascot }) },
   { file: 'og-about.png', html: page({ eyebrow: 'About', titleSize: 84, title: 'We build, launch <em>and run</em> Web3', body: 'A blockchain development company releasing projects under its own name.', url: 'gullylabs.xyz/about', right: mascot }) },
   {
     file: 'og-docs.png',

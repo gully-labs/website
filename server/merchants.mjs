@@ -79,7 +79,7 @@ import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { createInvoiceRecord, invoicePaidHooks, invoiceStatus } from './invoices.mjs'
 import { accrue, centsOfMicros, feeConfig, MIN_STATEMENT_CENTS, PAUSE_AFTER_DAYS, WARN_DAY, weekStart } from './merchant-fees.mjs'
 import { checkEndpoint, deliveries, endpointView, enqueue, makeEndpoint, newSecret, paidEvent, redeliver, registerWebhookTarget, sendTest } from './pay-webhooks.mjs'
-import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc, withFeeSplit } from './payments.mjs'
+import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, FEE_PROXIES, feeSplitOn, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc, withFeeSplit } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { isFeeProxy } from './fee-proxy-guard.mjs'
@@ -116,9 +116,11 @@ const LOGO_MAX_BYTES = 256 * 1024
 const EXPIRED_LOOKBACK_MS = 24 * 3_600_000
 const DAY = 86_400_000
 // Stores take the EVM chains for now (their receiving wallets are EVM addresses); Solana stays Gully Labs' own.
+// A store's gate is its OWN wallet on each chain (inspectWallet), not Gully Labs' treasury: `all: true` lists every
+// chain. Where our treasury is not deployed the fee cannot ride in the payment (payments.feeSplitOn) and is invoiced.
 const STORE_ASSET_IDS = ASSET_IDS.filter((id) => !isSolanaAsset(assetById(id)))
 const STORE_CHAIN_IDS = new Set(CHAIN_LIST.map((c) => c.id))
-const storeAssets = () => publicAssets().filter((a) => STORE_CHAIN_IDS.has(a.chainId))
+const storeAssets = () => publicAssets({ all: true }).filter((a) => STORE_CHAIN_IDS.has(a.chainId))
 
 /* ---------------------------------------------------------------- store --- */
 
@@ -327,6 +329,39 @@ export async function inspectWallet(chainId, raw, declared) {
     return { ok: true, address: sum, kind: 'undeployed', status: 'not-deployed', deployed: false, error: `${where} no contract is deployed at this address on ${c.name}.`.trim() + ` Deploy your Safe or smart account on ${c.name} first, then check again: a payment to an undeployed contract address can be lost.` }
   }
   return { ok: true, address: sum, kind: 'eoa', status: 'ok', deployed: true }
+}
+
+/**
+ * The merchant side of the deployment gate: every receiving wallet stored as `not-deployed` (a Safe or smart
+ * account whose address has no code on that chain yet) is read again; once its contract exists there it becomes
+ * `ok` and, unless the merchant switched it off, receives from then on. Read-only (eth_getCode), one chain read
+ * per wallet. Runs hourly (GULLY_MERCHANT_WALLET_CHECK_MS, 0 = off) and from tests. Returns what changed.
+ */
+export async function recheckUndeployedWallets() {
+  const switched = []
+  for (const [ws, m] of Object.entries(db.merchants ?? {})) {
+    for (const [chainId, w] of Object.entries(m.wallets ?? {})) {
+      if (w.status !== 'not-deployed') continue
+      const r = await inspectWallet(Number(chainId), w.address, w.declared).catch(() => null)
+      if (!r?.ok) continue // unreadable now: try again next pass
+      w.checkedAt = new Date().toISOString()
+      if (!r.deployed) continue
+      Object.assign(w, { kind: r.kind, status: r.status, enabled: w.autoEnable !== false })
+      delete w.autoEnable
+      switched.push({ ws, chainId: Number(chainId), enabled: w.enabled })
+    }
+  }
+  if (switched.length) save()
+  return switched
+}
+
+const walletCheckMs = Number(process.env.GULLY_MERCHANT_WALLET_CHECK_MS ?? 3_600_000)
+if (walletCheckMs > 0) {
+  setInterval(() => {
+    recheckUndeployedWallets()
+      .then((list) => list.length && console.log(`merchants: ${list.length} contract wallet(s) now deployed, switched on: ${list.map((x) => `${x.ws.slice(0, 8)}… on ${x.chainId}`).join(', ')}`))
+      .catch((e) => console.error('merchant wallet re-check:', e?.message ?? e))
+  }, walletCheckMs).unref?.()
 }
 
 function walletView(chainId, w) {
@@ -1004,7 +1039,9 @@ function merchantView(ws, role) {
     profile: { name: m?.profile?.name ?? null, displayName: brandOf(ws).name, logoUrl: logoPath(m?.profile?.logo), logoSource: m?.profile?.logo?.source ?? null, accent: m?.profile?.accent ?? null, supportEmail: m?.profile?.supportEmail ?? null, website: m?.profile?.website ?? null },
     wallets,
     ready: wallets.some((w) => w.enabled && w.status === 'ok'),
-    chains: CHAIN_LIST.map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer })),
+    // feeSplit: the Gully Pay fee is collected inside each token payment there (one transaction, Request's fee
+    // proxy); otherwise it is invoiced on the weekly statement. feeProxy: a verified proxy exists on the chain.
+    chains: CHAIN_LIST.map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer, feeProxy: !!FEE_PROXIES[c.id], feeSplit: feeSplitOn(c.id) })),
     assets: storeAssets(),
     links: db.links
       .filter((l) => l.ws === ws)
@@ -1093,6 +1130,8 @@ async function setWallets(ws, body, user) {
     }
     const m = merchantOf(ws)
     m.wallets[id] = { address: r.address, declared, kind: r.kind, enabled: r.deployed && body?.enabled !== false, status: r.status, checkedAt: new Date().toISOString() }
+    // Not deployed yet: the hourly re-check (recheckUndeployedWallets) switches it on once the contract exists there.
+    if (!r.deployed) m.wallets[id].autoEnable = body?.enabled !== false
     results.push({ chainId: id, ok: r.deployed, error: r.deployed ? null : r.error, wallet: walletView(id, m.wallets[id]) })
   }
   const merchant = merchantOf(ws)
@@ -1115,6 +1154,7 @@ async function walletAction(ws, chainId, action, body) {
   }
   if (action === 'set' && body?.enabled === false) {
     w.enabled = false
+    delete w.autoEnable // switched off by hand: the re-check must not switch it back on
     save()
     return { ok: true, wallet: walletView(chainId, w) }
   }
@@ -1123,6 +1163,8 @@ async function walletAction(ws, chainId, action, body) {
   const r = await inspectWallet(Number(chainId), w.address, w.declared)
   if (!r.ok) return r
   Object.assign(w, { kind: r.kind, status: r.status, checkedAt: new Date().toISOString(), enabled: r.deployed })
+  if (r.deployed) delete w.autoEnable
+  else w.autoEnable = true
   save()
   return r.deployed ? { ok: true, wallet: walletView(chainId, w) } : { ok: false, status: 422, error: r.error, wallet: walletView(chainId, w) }
 }

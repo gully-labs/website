@@ -84,7 +84,7 @@
   --font-sans: 'Hanken Grotesk', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
-  /* One heading scale (design audit P2-19): page title, section title, sub-section, card title.
+  /* One heading scale (design review P2-19): page title, section title, sub-section, card title.
      Use the h1 to h4 strings in components/ui.tsx rather than ad-hoc sizes. */
   --text-h1: clamp(44px, 5.6cqw, 84px);
   --text-h1--line-height: 0.9;
