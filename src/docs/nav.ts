@@ -11,6 +11,7 @@ export const DOC_PAGES = [
   { slug: 'plans-alerts', title: 'Plans & alerts', group: 'Build' },
   { slug: 'sdk', title: 'SDK', group: 'Build' },
   { slug: 'teams', title: 'Teams & workspaces', group: 'Build' },
+  { slug: 'holder-map', title: 'Holder Map', group: 'Products' },
   { slug: 'analytics', title: 'Gully Analytics', group: 'Products' },
   { slug: 'gully-pay', title: 'Gully Pay', group: 'Products' },
   { slug: 'gully-pay-merchants', title: 'Gully Pay for merchants', group: 'Products' },

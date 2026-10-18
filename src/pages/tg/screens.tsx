@@ -8,6 +8,7 @@ import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice
 import type { AlertCondition, GapAlert, GapDirection } from '../developers/api'
 import { useNow, useTgApi } from './hooks'
 import { haptic, tgApi, type WebApp } from './sdk'
+import { HolderMap } from '../../components/holders/HolderMap'
 
 /* The Mini App's screens: the gap list across chains, one stock (24h chart and an alert composer driven
    by Telegram's MainButton), DeepCore launches and the linked account's alerts. Colours come from the
@@ -35,8 +36,21 @@ const TG_DIRECTIONS: { id: GapDirection; label: string }[] = [
   { id: 'both', label: '↕ Both' },
 ]
 const LAUNCH_CHAIN_NAMES: Record<number, string> = { 56: 'BNB Chain', 999: 'HyperEVM', 4663: 'Robinhood Chain', 8453: 'Base' }
+/** A Holder Map alert (alerts.mjs condition type 'holders'): the top cluster (or top 10) passing a share, or selling. */
+export type HolderCondition = { type: 'holders'; chain: string; token: string; symbol: string | null; metric: 'cluster' | 'top10' | 'deployer'; above: number | null; dropPts: number | null; sellPct?: number | null }
+const HOLDER_CHAIN_NAMES: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }
+const shortToken = (t: string) => (t.length > 14 ? `${t.slice(0, 6)}…${t.slice(-4)}` : t)
+const holderTarget = (c: HolderCondition) => `${c.symbol ?? shortToken(c.token)} on ${HOLDER_CHAIN_NAMES[c.chain] ?? c.chain}`
 /** An alert's condition in plain words, as the bot says it. */
-const plainCondition = (c: AlertCondition, chains: Record<string, string> = {}) => {
+const plainCondition = (cond: AlertCondition | HolderCondition, chains: Record<string, string> = {}) => {
+  if (cond.type === 'holders') {
+    const who = cond.metric === 'top10' ? 'The top 10 wallets' : cond.metric === 'deployer' ? 'The deployer' : 'The largest connected cluster of wallets'
+    if (typeof cond.above === 'number') return `${who} of ${holderTarget(cond)} hold ${cond.above}% or more`
+    if (typeof cond.dropPts === 'number') return `${who} of ${holderTarget(cond)} sell ${cond.dropPts} points or more of their share`
+    if (typeof cond.sellPct === 'number') return `${who} of ${holderTarget(cond)} sell ${cond.sellPct}% or more of what they hold`
+    return `${who} of ${holderTarget(cond)} change`
+  }
+  const c = cond
   if (c.type === 'deepcore-launch') return `A new token launches on DeepCore (${c.chainId ? (chains[c.chainId] ?? LAUNCH_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'})`
   if (c.type === 'gap') return c.direction === 'above' ? `▲ ${c.pct}% or more above the real share price` : c.direction === 'below' ? `▼ ${c.pct}% or more below the real share price` : `↕ ${c.pct}% or more above or below the real share price`
   return c.status === 'either' ? 'Well above or below the real share price' : c.status === 'premium' ? 'Well above the real share price' : c.status === 'discount' ? 'Well below the real share price' : String(c.status)
@@ -203,7 +217,7 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
 
 const PCTS = ['1', '2', '3', '5']
 
-export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { wa: WebApp; initData: string; row: TrackerRow | null; me: Me; ink: string; onAlertsChanged: () => void }) {
+export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHolders }: { wa: WebApp; initData: string; row: TrackerRow | null; me: Me; ink: string; onAlertsChanged: () => void; onHolders?: () => void }) {
   const history = useHistory(row?.chain ?? null, row?.ticker ?? null)
   const now = useNow()
   const [pct, setPct] = useState('2')
@@ -315,6 +329,12 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { w
         </button>
       </div>
 
+      {onHolders && (
+        <Button tone="line" onClick={onHolders}>
+          👥 Who holds {row.ticker}?
+        </Button>
+      )}
+
       <Section title="Alert me">
         <div className={`${card} flex flex-col gap-3 p-4`}>
           <span className="text-[13px] text-muted">Threshold</span>
@@ -358,7 +378,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { w
 
 /* ---------- DeepCore launches ---------- */
 
-type Launch = { key: string; chainId: number; chainName: string; token: string; symbol: string | null; createdAt: string; legs: { kind: string | null; quote: string | null; locked: boolean | null }[]; links: { token: string } }
+type Launch = { key: string; chainId: number; chainKey: string; chainName: string; token: string; symbol: string | null; createdAt: string; legs: { kind: string | null; quote: string | null; locked: boolean | null }[]; links: { token: string } }
 type Launches = { state: 'ok' | 'stale' | 'unreadable'; launches: Launch[]; asOf: string | null; error: string | null; chainNames: Record<string, string> }
 const LAUNCH_CHAINS = [
   { id: '0', label: 'All' },
@@ -370,7 +390,7 @@ const LAUNCH_CHAINS = [
 const CHAIN_COLORS: Record<number, string> = { 56: '#e8c060', 999: '#1f9e89', 4663: '#5aa9e6', 8453: '#c98bdb' }
 const CHAIN_LABEL: Record<number, string> = { 56: 'BNB', 999: 'HyperEVM', 4663: 'Robinhood', 8453: 'Base' }
 
-export function LaunchesTab({ wa, initData, ink }: { wa: WebApp; initData: string; ink: string }) {
+export function LaunchesTab({ wa, initData, ink, onHolders }: { wa: WebApp; initData: string; ink: string; onHolders?: (chain: string, token: string) => void }) {
   const [chain, setChain] = useState('0')
   const { load } = useTgApi<Launches>(initData, `/api/tg/launches${chain === '0' ? '' : `?chain=${chain}`}`, 90_000)
   const now = useNow()
@@ -412,14 +432,15 @@ export function LaunchesTab({ wa, initData, ink }: { wa: WebApp; initData: strin
               {load.data.launches.map((l) => {
                 const leg = l.legs[0]
                 return (
-                  <li key={l.key}>
+                  <li key={l.key} className={`${card} flex items-stretch`}>
                     <button
                       type="button"
                       onClick={() => {
                         haptic.tap()
                         wa.openLink(l.links.token)
                       }}
-                      className={`${card} flex w-full items-center gap-3 px-3 py-[10px] text-left active:opacity-80`}
+                      aria-label={`${l.symbol ?? 'New token'} on ${l.chainName}: open on DeepCore`}
+                      className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-[14px] px-3 py-[10px] text-left active:opacity-80"
                     >
                       <span className="flex size-[34px] flex-none items-center justify-center rounded-full font-display text-[13px] font-bold text-[#0b0e13]" style={{ background: CHAIN_COLORS[l.chainId] ?? '#7f8b9c' }} aria-hidden>
                         {(l.symbol ?? '?').slice(0, 3)}
@@ -433,6 +454,22 @@ export function LaunchesTab({ wa, initData, ink }: { wa: WebApp; initData: strin
                       </span>
                       <span className="flex-none text-[12px] text-faint">{ageText(l.createdAt, now)}</span>
                     </button>
+                    {onHolders && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          haptic.tap()
+                          onHolders(l.chainKey, l.token.toLowerCase())
+                        }}
+                        aria-label={`Who holds ${l.symbol ?? 'this token'}?`}
+                        className="flex min-h-11 min-w-11 flex-none flex-col items-center justify-center gap-[2px] border-l border-line px-3 text-[11px] text-muted active:opacity-70"
+                      >
+                        <span aria-hidden className="text-[18px] leading-none">
+                          👥
+                        </span>
+                        Holders
+                      </button>
+                    )}
                   </li>
                 )
               })}
@@ -452,7 +489,7 @@ function alertStateText(a: GapAlert) {
   if (!a.coveredByPlan) return { t: 'Not in your plan', c: '#ff8a7a' }
   if (!a.enabled) return { t: 'Paused', c: '#7f8b9c' }
   if (a.mutedUntil) return { t: 'Muted', c: '#7f8b9c' }
-  if (a.waitingToReArm.length) return { t: 'Fired · watching again once the gap closes', c: '#e8c060' }
+  if (a.waitingToReArm.length) return { t: (a.condition as AlertCondition | HolderCondition).type === 'holders' ? 'Fired · watching again once it falls back' : 'Fired · watching again once the gap closes', c: '#e8c060' }
   return { t: 'Watching', c: '#6fcf6a' }
 }
 
@@ -506,7 +543,8 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = 
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {load.data.alerts.map((a) => {
               const st = alertStateText(a)
-              const label = a.name || (a.condition.type === 'deepcore-launch' ? 'DeepCore launches' : a.ticker ? `${a.ticker} · ${CHAIN_SHORT[a.chain ?? ''] ?? a.chain}` : 'Any stock')
+              const hc = (a.condition as AlertCondition | HolderCondition).type === 'holders' ? (a.condition as unknown as HolderCondition) : null
+              const label = a.name || (hc ? `🫧 ${hc.symbol ?? shortToken(hc.token)} holders · ${HOLDER_CHAIN_NAMES[hc.chain] ?? hc.chain}` : a.condition.type === 'deepcore-launch' ? 'DeepCore launches' : a.ticker ? `${a.ticker} · ${CHAIN_SHORT[a.chain ?? ''] ?? a.chain}` : 'Any stock')
               return (
                 <li key={a.id} className={`${card} flex flex-col gap-2 p-3`}>
                   <div className="flex items-start justify-between gap-2">
@@ -545,6 +583,62 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = 
       <Button tone="line" onClick={() => wa.openLink(me.portal)}>
         Manage in the developer portal ↗
       </Button>
+    </div>
+  )
+}
+
+/* ---------- who holds this? (Holder Map) ---------- */
+
+const HOLDER_LINES = ['10', '20', '30']
+
+/**
+ * One token's Holder Map, compact for the Mini App: who holds it, how the biggest wallets are connected,
+ * and (with a linked wallet) an alert when the largest connected cluster passes a share.
+ */
+export function HoldersScreen({ wa, initData, me, chain, token, onAlertsChanged }: { wa: WebApp; initData: string; me: Me; chain: string; token: string; onAlertsChanged: () => void }) {
+  const [line, setLine] = useState('20')
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const name = HOLDER_CHAIN_NAMES[chain] ?? chain
+  const create = async () => {
+    if (!me.linked) return wa.openLink(me.portal)
+    if (busy) return
+    setBusy(true)
+    const r = await tgApi<{ alert: GapAlert }>(initData, '/api/tg/alerts', { method: 'POST', body: { kind: 'holders', chain, token, metric: 'cluster', above: Number(line) } })
+    setBusy(false)
+    if (r.ok) {
+      haptic.ok()
+      setResult({ ok: true, text: `Alert created: ${plainCondition(r.data.alert.condition as AlertCondition | HolderCondition)}. It arrives in your linked chat.` })
+      onAlertsChanged()
+    } else {
+      haptic.fail()
+      setResult({ ok: false, text: r.error })
+    }
+  }
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h1 className="m-0 font-display text-[30px] leading-none font-bold">👥 Who holds this?</h1>
+        <p className="m-0 text-[13px] leading-[1.5] text-muted">
+          The biggest wallets on {name}, sized by how much they hold. Wallets that sent tokens to each other are joined, and joined wallets are often one person or team.
+        </p>
+      </div>
+      <HolderMap chain={chain} token={token} compact />
+      <Section title="Alert me">
+        <div className={`${card} flex flex-col gap-3 p-4`}>
+          <span className="text-[13px] text-muted">When the largest connected cluster holds at least</span>
+          <Chips value={line} options={HOLDER_LINES.map((p) => ({ id: p, label: `${p}%` }))} onChange={setLine} label="Cluster share" />
+          {!me.linked && <p className="m-0 text-[12px] leading-[1.5] text-faint">Link this Telegram account to a wallet once: developer portal, Alerts tab, Connect Telegram.</p>}
+          <Button onClick={create} disabled={busy}>
+            {me.linked ? `🔔 Alert me at ${line}%` : 'Link wallet in the portal'}
+          </Button>
+          {result && (
+            <p role="status" className="m-0 text-[13px]" style={{ color: result.ok ? UP : undefined }}>
+              <span className={result.ok ? '' : 'text-error'}>{result.text}</span>
+            </p>
+          )}
+        </div>
+      </Section>
     </div>
   )
 }

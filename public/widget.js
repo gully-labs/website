@@ -1,5 +1,7 @@
 /*! Gully Labs tracker widget v2 \u00b7 https://docs.gullylabs.xyz/widget
  * <div data-gully-widget="ticker|badge|table" data-chain="all|robinhood|bsc" data-ticker="NVDA"
+ * Holder Map: <div data-gully-widget="holders" data-chain="robinhood|bsc|base|hyperevm|solana"
+ *      data-token="0x… or a tracked ticker" data-height="640"></div> frames gullylabs.xyz/embed/holders.
  *      data-theme="dark|light" data-limit="5"></div>
  * <script src="https://gullylabs.xyz/widget.js" async></script>
  * Every figure is read from the live tracker API; nothing is typed in. One request per API base per
@@ -463,10 +465,34 @@
     }
   }
 
+  /* The Holder Map embed: a responsive iframe of gullylabs.xyz/embed/holders/<chain>/<token> (it reads its
+     own data; nothing is fetched by this script). Chain and token are checked before they go in the URL. */
+  function mountHolders(el) {
+    var chain = (el.getAttribute('data-chain') || '').toLowerCase()
+    var token = el.getAttribute('data-token') || el.getAttribute('data-ticker') || ''
+    if (!/^(robinhood|bsc|base|hyperevm|solana)$/.test(chain) || !/^[A-Za-z0-9]{1,64}$/.test(token)) {
+      el.textContent = 'Holder Map: set data-chain and data-token.'
+      return
+    }
+    var h = parseInt(el.getAttribute('data-height') || '', 10)
+    var f = document.createElement('iframe')
+    f.src = apiBase(el) + '/embed/holders/' + chain + '/' + token
+    f.title = 'Holder Map by Gully Labs'
+    f.loading = 'lazy'
+    f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
+    f.style.cssText = 'display:block;width:100%;max-width:100%;border:0;border-radius:12px;background:#0d141c;height:' + (h >= 360 && h <= 2000 ? h : 760) + 'px'
+    el.appendChild(f)
+  }
+
   function mount(el) {
-    if (el.__gully || !el.attachShadow) return
-    el.__gully = true
+    if (el.__gully) return
     var type = (el.getAttribute('data-gully-widget') || '').toLowerCase()
+    if (type === 'holders') {
+      el.__gully = true
+      return mountHolders(el)
+    }
+    if (!el.attachShadow) return
+    el.__gully = true
     var limit = parseInt(el.getAttribute('data-limit') || '', 10)
     var root = el.shadowRoot || el.attachShadow({ mode: 'open' })
     var w = {

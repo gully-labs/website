@@ -463,7 +463,7 @@ export function titleLayout(title) {
 }
 
 let resvg = null
-async function loadResvg() {
+export async function loadResvg() {
   if (resvg) return resvg
   const require = createRequire(import.meta.url)
   const pkgDir = firstFile(path.join(HERE, 'node_modules', '@resvg', 'resvg-wasm'), path.join(HERE, '..', 'node_modules', '@resvg', 'resvg-wasm'))

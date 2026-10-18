@@ -18,6 +18,7 @@ import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapP
 import { DEVELOPERS_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
+import { HolderMap } from '../components/holders/HolderMap'
 import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
 
 /* One stock token on one chain: everything the tracker knows about it, read live. Nothing on this page is
@@ -214,6 +215,13 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="px-page pb-8" aria-labelledby="who-holds" id="holders">
+        <h2 id="who-holds" className="m-0 mb-4 font-display text-h4 font-bold uppercase">
+          Who holds {row.ticker}?
+        </h2>
+        <HolderMap chain={row.chain} token={row.ticker} tradeHref="#swap" />
       </section>
 
       <section className="px-page pb-8" aria-labelledby="how-swaps-work">

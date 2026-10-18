@@ -10,7 +10,7 @@
 //
 // Public
 //   GET  /api/ask/status   { configured, model, indexSize, updatedAt, retrieval: 'hybrid' | 'bm25' }
-//   POST /api/ask          { question, history? } -> { id, answer, citations: [{ n, title, url, source }],
+//   POST /api/ask          { question, history?, holders?: { chain, token } } -> { id, answer, citations: [{ n, title, url, source }],
 //                          live: [{ n: 'L1', tool, label, url, asOf }], cards, actions, usedTools, model, signedIn }
 //                          Needs `X-Requested-With: gully`. With `Accept: text/event-stream` the same answer comes
 //                          as server-sent events: `status` ({ stage }), then `answer` (the JSON above) or `error`.
@@ -33,7 +33,6 @@
 //   ASK_LOG_SALT        optional: the salt for hashing IPs in the log (default: a random one kept in DATA_DIR)
 //   ASK_REMOTE=off      do not refresh the remote corpus (tests)
 //   VOYAGE_API_KEY      optional: semantic search (ask-embed.mjs); without it retrieval is BM25 + expansion
-//   ASK_SELF_URL        optional: where get_holders reads /api/holders (default http://127.0.0.1:$PORT)
 //
 // Safety: the system prompt is fixed; retrieved text and tool output are untrusted data, sent inside blocks
 // tagged with a random per-request nonce the text cannot know, and the model is told to ignore any instruction
@@ -56,6 +55,8 @@ import { planOf, publicPlans } from './plans.mjs'
 import { readStats } from './stats.mjs'
 import { readDeepcoreMarkets, readDeepcorePool } from './deepcore.mjs'
 import * as tracker from './tracker.mjs'
+import { chainKeyOf, findStock, readHolderMap } from './holders.mjs'
+import { holdersFacts } from './holders-intel.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 // ASK_INDEX_FILE (tests): another built index, e.g. npm run ask:index -- --out <file>.
@@ -254,6 +255,16 @@ export const TOOLS = [
     },
   },
   {
+    name: 'get_holders',
+    description: 'The Holder Map of one DeepCore launch or tracked stock token: who holds it in summary (top-10 share, connected clusters, hidden links), the launch checks (Launch Health score with its parts, bundled first-block buyers, snipers, the deployer and the wallets it funded, the liquidity lock, the deployer\'s earlier launches), the fair-price view for stocks, the data sources and when it was read. Computed facts only, no raw holder lists.',
+    input_schema: {
+      type: 'object',
+      properties: { chain: { type: 'string', enum: ['robinhood', 'bsc', 'base', 'hyperevm', 'solana'] }, token: { type: 'string', description: 'The token address, or a tracked stock ticker' } },
+      required: ['chain', 'token'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'get_alert_channels',
     description: 'Which gap-alert delivery channels this server offers right now (webhook, and Telegram with the bot name when it is on).',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
@@ -262,16 +273,6 @@ export const TOOLS = [
     name: 'get_pay_chains',
     description: 'What Gully Pay accepts right now, from the live payment config: each chain with its coins and stablecoins, the confirmations a payment needs there, whether merchant stores can take payments on it, and whether stablecoin payments split the fee at payment time. Use it for any question about which chains, coins or tokens can be used to pay or to get paid.',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
-  },
-  {
-    name: 'get_holders',
-    description: "The holder distribution of one token from the Gully Holder Map: the top holders' shares, holder count and concentration, with when it was read. Give the chain key (e.g. base, bsc, robinhood, solana) and the token address. Says plainly when the Holder Map is not available.",
-    input_schema: {
-      type: 'object',
-      properties: { chain: { type: 'string', description: 'Chain key, e.g. base, bsc, robinhood, hyperevm, solana' }, token: { type: 'string', description: 'The token address' } },
-      required: ['chain', 'token'],
-      additionalProperties: false,
-    },
   },
   {
     name: 'search_docs',
@@ -299,10 +300,6 @@ export const TOOLS = [
 export const MY_TOOLS = new Set(['get_my_store', 'get_my_usage', 'get_my_alerts'])
 const SIGNED_OUT = { error: 'signed-out', message: 'This needs you signed in to the Gully Labs app with your wallet. Gully AI only reads your own workspace, and only while you are signed in.', signIn: APP_URL }
 
-const selfBase = () => {
-  const raw = String(process.env.ASK_SELF_URL ?? '').trim()
-  return /^https?:\/\//.test(raw) ? raw.replace(/\/+$/, '') : `http://127.0.0.1:${Number(process.env.PORT ?? 8080)}`
-}
 const host = (u) => {
   try {
     return new URL(u).host
@@ -334,41 +331,33 @@ function payChains() {
   }
 }
 
-/** get_holders: GET /api/holders/:chain/:token on this server (the Holder Map). Degrades when it is not there. */
+/**
+ * get_holders: the Holder Map (holders.mjs) read in-process from its five-minute cache, as computed facts
+ * (holdersFacts: summary, clusters, Launch Health and its parts, launch checks, deployer record, fair price)
+ * plus the fields the answer cards use (holderCount, top10Pct, top). Never a raw holder list beyond the top 10.
+ */
 async function holders(input) {
-  const chain = String(input?.chain ?? '').toLowerCase().trim()
-  const token = String(input?.token ?? '').trim()
-  if (!/^[a-z0-9-]{2,20}$/.test(chain)) return { error: 'Give a chain key, e.g. base, bsc, robinhood or solana.' }
-  if (!/^(0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})$/.test(token)) return { error: 'Give the token address (0x… or a Solana mint).' }
-  let r
-  try {
-    r = await fetch(`${selfBase()}/api/holders/${encodeURIComponent(chain)}/${encodeURIComponent(token)}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(12_000), redirect: 'manual' })
-  } catch {
-    return { available: false, note: 'The Holder Map could not be reached just now.' }
-  }
-  // Until the Holder Map ships, /api/holders/* is an unknown path here: anything that is not its JSON means "not live".
-  if (r.status === 404 || r.status === 405 || r.status === 501 || !String(r.headers.get('content-type') ?? '').includes('json')) {
-    const j = await r.json().catch(() => null)
-    // A 404 with a body that names the token is "no data for this token"; anything else means the endpoint is not live yet.
-    if (j && typeof j === 'object' && (j.token || j.chain) && r.status === 404) return { available: true, found: false, note: String(j.error ?? 'The Holder Map has no data for this token.').slice(0, 200) }
-    return { available: false, note: 'The Holder Map is not live on this server yet.' }
-  }
-  if (!r.ok) return { available: false, note: `The Holder Map answered ${r.status}; try again shortly.` }
-  const j = await r.json().catch(() => null)
-  if (!j || typeof j !== 'object') return { available: false, note: 'The Holder Map gave no readable answer.' }
-  const list = Array.isArray(j.holders) ? j.holders : Array.isArray(j.top) ? j.top : []
-  const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' && v.trim() && Number.isFinite(Number(v)) ? Number(v) : null)
+  const chain = chainKeyOf(input?.chain)
+  const token = String(input?.token ?? '').trim().replace(/^\$/, '')
+  if (!chain) return { error: 'Give a chain key: robinhood, bsc, base, hyperevm or solana.' }
+  if (!(/^0x[0-9a-fA-F]{40}$/.test(token) || findStock(chain, token) || (chain === 'solana' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(token)))) return { error: 'Give the token address (or a tracked stock ticker).' }
+  const map = await readHolderMap(chain, token, { tier: 'free' })
+  if (map.state === 'not-found') return { available: true, found: false, chain, token, note: map.reason }
+  if (map.state !== 'ok') return { available: false, chain, token, note: map.reason ?? 'The Holder Map could not be read just now.' }
+  const facts = holdersFacts(map)
   return {
     available: true,
+    found: true,
     chain,
-    token,
-    symbol: typeof j.symbol === 'string' ? j.symbol.slice(0, 20) : null,
-    asOf: j.asOf ?? j.readAt ?? j.generatedAt ?? j.updatedAt ?? null,
-    holderCount: num(j.holderCount ?? j.holders_count ?? j.count),
-    top10Pct: num(j.top10Pct ?? j.top10 ?? j.concentration?.top10Pct),
-    top: list.slice(0, 10).map((h) => ({ address: typeof h?.address === 'string' ? h.address.slice(0, 64) : null, label: typeof h?.label === 'string' ? h.label.slice(0, 40) : null, pct: round(num(h?.pct ?? h?.share ?? h?.percent), 2) })),
-    page: typeof j.page === 'string' && /^https:\/\/([\w-]+\.)?gullylabs\.xyz\//.test(j.page) ? j.page : `${SITE}/holders/${encodeURIComponent(chain)}/${encodeURIComponent(token)}`,
-    framing: 'Information only. A large holder can be an exchange, a pool, a lock or a burn address.',
+    token: map.token.address,
+    symbol: map.token.symbol ?? null,
+    asOf: map.asOf,
+    holderCount: map.holders.count,
+    top10Pct: map.summary.top10Pct,
+    top: map.nodes.slice(0, 10).map((n) => ({ address: n.id, label: n.label?.name ?? null, pct: n.pct })),
+    ...facts,
+    page: `${SITE}/holders/${chain}/${encodeURIComponent(map.token.address)}`,
+    framing: 'Information only, not investment advice. A large holder can be an exchange, a pool, a lock or a burn address; the Launch Health score describes checks on the holder data, it is not a rating of the token.',
   }
 }
 
@@ -502,6 +491,7 @@ How to answer:
 - If the sources do not cover the question, call search_docs once with different words before saying you don't know.
 - Do not write links for actions such as setting an alert or creating a pay link: the interface adds those buttons itself.
 - For current DeepCore launches, a launch's price, market cap, liquidity or pool, call deepcore_launches or deepcore_pool. Say when the figures were read (the tool's freshness times), give the quote token when there is no dollar figure, and say what "trending" means as the tool defines it. Never call a launch safe, promising or a good buy, and never rank launches as opportunities; add that this is information only, not investment advice.
+- For who holds a token, its clusters, a launch's bundled buyers, deployer or Launch Health score, call get_holders. Explain the parts in plain words, say when the map was read (asOf) and where the data comes from, and never call a token safe, a scam or a good buy.
 - The roadmap (the Gully L3, Audits & Security) is planned work. Say so: never say Gully Labs audits anything today or has published audit reports; its current security service is Security & Testing.
 - Never invent a price, fee, limit, date, contract or wallet address, figure or URL. If a figure is not in a source or a tool result, say you don't have it.
 - If the sources and tools do not cover the question, say plainly "I don't know" in one sentence, then point to the docs (https://docs.gullylabs.xyz) or the contact form (https://gullylabs.xyz/services). Do not guess.
@@ -685,7 +675,7 @@ const LIVE_SOURCES = {
   deepcore_pool: () => ({ label: 'DeepCore pool', url: 'https://api.deepcore.fun/v1/launches' }),
   get_alert_channels: () => ({ label: 'Alert channels', url: `${DOCS}/plans-alerts#telegram` }),
   get_pay_chains: () => ({ label: 'Gully Pay config', url: `${SITE}/api/plans` }),
-  get_holders: (r) => ({ label: `Holder Map · ${r.out.symbol ?? 'token'}`, url: `${SITE}/api/holders/${encodeURIComponent(r.out.chain)}/${encodeURIComponent(r.out.token)}` }),
+  get_holders: (r) => ({ label: `Holder Map · ${r.out.symbol ?? 'token'}`, url: r.out.page ?? `${SITE}/holders/${encodeURIComponent(r.out.chain)}/${encodeURIComponent(r.out.token)}` }),
   get_my_store: () => ({ label: 'Your store', url: `${APP_URL}/#merchant` }),
   get_my_usage: () => ({ label: 'Your API usage', url: `${APP_URL}/#keys` }),
   get_my_alerts: () => ({ label: 'Your alerts', url: `${APP_URL}/#alerts` }),
@@ -1039,7 +1029,7 @@ export function recordFeedback({ id, rating, key }) {
  * `ctx` the signed-in session ({ user, workspace, role }) or null.
  * Returns { ok: true, id, ...answer } or { ok: false, status, error, retryAfter? }.
  */
-export async function ask({ question, history, who, onStage, ctx = null }) {
+export async function ask({ question, history, who, onStage, ctx = null, holders = null }) {
   if (!askConfigured()) return { ok: false, status: 503, error: 'Ask is not available yet.', configured: false }
   const q = typeof question === 'string' ? question.replace(/\s+/g, ' ').trim() : ''
   if (!q) return { ok: false, status: 400, error: 'Ask a question.' }
@@ -1049,7 +1039,11 @@ export async function ask({ question, history, who, onStage, ctx = null }) {
   const t0 = Date.now()
   const id = `a_${crypto.randomBytes(12).toString('base64url')}`
   try {
-    const a = await answerQuestion({ question: q, history, onStage, ctx, channel: who.channel })
+    // A question asked from a Holder Map names the map it is about, so the model fetches those facts.
+    const hc = holders && typeof holders === 'object' ? chainKeyOf(holders.chain) : null
+    const ht = hc ? String(holders.token ?? '').slice(0, 64) : ''
+    const asked = hc && /^[A-Za-z0-9]{1,64}$/.test(ht) ? `${q}\n(Asked from the Holder Map of chain ${hc}, token ${ht}: call get_holders with them.)` : q
+    const a = await answerQuestion({ question: asked, history, onStage, ctx, channel: who.channel })
     writeLog({ id, channel: who.channel, who: hashId(who.key), signedIn: !!ctx?.workspace, question: q, answerChars: a.answer.length, answered: a.answered, citations: a.citations.map((c) => c.url), usedTools: a.usedTools, retrieval: a.retrieval, latencyMs: Date.now() - t0, tokens: a.usage, model: a.model })
     rememberAnswer(id, { question: q, who: hashId(who.key), channel: who.channel })
     return { ok: true, id, ...a }
@@ -1133,7 +1127,7 @@ export async function handleAsk(req, res, url) {
   const who = { channel, key: clientIp(req), perMin: envInt('ASK_IP_PER_MIN', 6), perDay: envInt('ASK_IP_PER_DAY', 60) }
   const stream = String(req.headers.accept ?? '').includes('text/event-stream')
   if (!stream) {
-    const r = await ask({ question: body.value.question, history: body.value.history, who, ctx })
+    const r = await ask({ question: body.value.question, history: body.value.history, who, ctx, holders: body.value.holders ?? null })
     if (!r.ok) return json(res, r.status, { error: r.error, ...(r.configured === false ? { configured: false } : {}) }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
     return json(res, 200, { ...publicAnswer(r), signedIn: !!ctx }, { 'Cache-Control': 'no-store' }), true
   }
@@ -1148,6 +1142,7 @@ export async function handleAsk(req, res, url) {
   const r = await ask({
     question: body.value.question,
     history: body.value.history,
+    holders: body.value.holders ?? null,
     who,
     ctx,
     onStage: (stage) => {

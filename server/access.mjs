@@ -141,10 +141,11 @@ function bucketIndex(status) {
  */
 // Endpoint templates counted per key and hour (the dashboard's "top endpoints"). A fixed set, so memory
 // stays bounded: at most ENDPOINTS.length counters per key-hour, pruned with the hour buckets.
-export const ENDPOINTS = ['/api/tracker', '/api/tracker/history', '/api/tracker/movers', '/api/plans', 'other']
+export const ENDPOINTS = ['/api/tracker', '/api/tracker/history', '/api/tracker/movers', '/api/plans', '/api/holders', 'other']
 /** A request path reduced to its route template (one of ENDPOINTS). */
 export function endpointOf(pathname) {
   const p = String(pathname ?? '').split('?')[0].replace(/\/+$/, '') || '/'
+  if (p.startsWith('/api/holders/')) return '/api/holders'
   return p !== 'other' && ENDPOINTS.includes(p) ? p : 'other'
 }
 

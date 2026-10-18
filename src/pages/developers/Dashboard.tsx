@@ -73,10 +73,13 @@ function useView(): [View, (t: Tab, section?: string | null) => void, () => void
   return [state, set, reread]
 }
 
-/** `?alert=<chain>:<TICKER>` with #alerts (the stock pages' "Set an alert" links): that stock, or null. */
+/** `?alert=<chain>:<TICKER>` with #alerts (the stock pages' "Set an alert" links): that stock, or null.
+    `?alert=holders:<chain>:<token>` (the Holder Map's "Alert me") opens a holder alert for that token. */
 function alertFromUrl(): string | null {
   if (window.location.hash !== '#alerts') return null
   const v = new URLSearchParams(window.location.search).get('alert') ?? ''
+  const h = v.match(/^holders:([a-z]{2,12}):([A-Za-z0-9.]{1,64})$/)
+  if (h) return `holders:${h[1]}:${h[2]}`
   const m = v.match(/^([a-z]{2,12}):([A-Za-z.]{1,8})$/)
   return m ? `${m[1]}:${m[2].toUpperCase()}` : null
 }
