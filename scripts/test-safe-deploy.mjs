@@ -9,7 +9,7 @@
 //   42161  a target where Safe 1.4.1 is deployed (factory, SafeL2, fallback handler): deployable
 //   1      a target with NO factory code: refused
 //   56     a target whose factory code is tampered (hash differs): refused
-//   10     an extra Safe chain (OP Mainnet) with Safe 1.4.1; 137 and 43114 without it
+//   10     OP Mainnet (a payment chain since feat/pay-chains) with Safe 1.4.1; 137 and 43114 without it
 // Then the real server runs IN THIS PROCESS on TEST_PORT (default 8798) for the admin and merchant routes.
 
 import crypto from 'node:crypto'
@@ -112,7 +112,7 @@ function makeChain(chainId, { factory = true, tamperFactory = false, safeHere = 
   return c
 }
 
-// 10 (OP Mainnet) stands for the extra Safe chains the admin panel offers ahead of payments; 137 and 43114 have no factory.
+// 10 (OP Mainnet) has Safe 1.4.1, so the treasury can be deployed there; 137 and 43114 have no factory.
 const chains = { 8453: makeChain(8453, { safeHere: true, history: true }), 42161: makeChain(42161), 1: makeChain(1, { factory: false }), 56: makeChain(56, { tamperFactory: true }), 10: makeChain(10), 137: makeChain(137, { factory: false }), 43114: makeChain(43114, { factory: false }) }
 for (const c of Object.values(chains)) await new Promise((r) => c.server.listen(0, '127.0.0.1', r))
 const CHAIN_ENV = Object.fromEntries(Object.values(chains).map((c) => [`GULLY_RPC_${c.chainId}`, `http://127.0.0.1:${c.server.address().port}`]))
@@ -229,14 +229,18 @@ try {
   const admin = (p, method = 'GET', body) => fetch(BASE + p, { method, headers: { authorization: `Bearer ${ADMIN}`, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then(async (r) => ({ status: r.status, data: await r.json().catch(() => null) }))
   const tEoa = await admin('/api/admin/safe/treasury')
   check('admin treasury (an EOA everywhere): every chain kind eoa, nothing to deploy, note says so', tEoa.status === 200 && tEoa.data.set && tEoa.data.chains.every((c) => c.kind === 'eoa' && !c.canDeploy) && /normal wallet/.test(tEoa.data.note ?? ''), JSON.stringify(tEoa.data).slice(0, 200))
-  check('admin treasury lists the payment chains and the extra Safe chains (OP Mainnet, Polygon, Avalanche)', tEoa.data.chains.some((c) => c.chainId === 8453 && c.payments) && [10, 137, 43114].every((id) => tEoa.data.chains.some((c) => c.chainId === id && !c.payments)))
+  // The admin card's contract: one row per payment chain (payments.mjs CHAIN_LIST, OP Mainnet, Polygon and Avalanche
+  // included since feat/pay-chains), each marked a payment chain, with what the treasury is there (deployed or not).
+  const { CHAIN_LIST } = await import('../server/payments.mjs')
+  check('admin treasury lists every payment chain, in order, each marked payments (OP Mainnet, Polygon and Avalanche included)', tEoa.data.chains.map((c) => c.chainId).join() === CHAIN_LIST.map((c) => c.id).join() && [8453, 1, 56, 42161, 10, 137, 43114].every((id) => tEoa.data.chains.some((c) => c.chainId === id)) && tEoa.data.chains.every((c) => c.payments === true), JSON.stringify(tEoa.data.chains.map((c) => [c.chainId, c.payments])))
   process.env.GULLY_TREASURY_ADDRESS = SAFE
   const tSafe = await admin('/api/admin/safe/treasury?fresh=1')
   const row = (id) => tSafe.data.chains.find((c) => c.chainId === id)
   check('admin treasury (the Safe): Base is a Safe 1.4.1 (origin), Arbitrum can be deployed, Ethereum is listed too', tSafe.status === 200 && row(8453).kind === 'safe' && tSafe.data.origin.chainId === 8453 && row(42161).canDeploy && row(1).kind === 'eoa', JSON.stringify(tSafe.data.chains.map((c) => [c.chainId, c.kind, c.canDeploy])))
-  check('admin treasury rows: the extra chains are read too (eoa there, deployable)', [10, 137, 43114].every((id) => row(id).kind === 'eoa' && row(id).canDeploy))
+  check('admin treasury rows: every payment chain carries its status: deployed (kind safe, no Deploy) on Base, not deployed (kind eoa, canDeploy) on the rest', tSafe.data.chains.every((c) => c.payments && (c.chainId === 8453 ? c.kind === 'safe' && !c.canDeploy && c.safe?.version === '1.4.1' : c.kind === 'eoa' && c.canDeploy)), JSON.stringify(tSafe.data.chains.map((c) => [c.chainId, c.kind, c.canDeploy])))
+  check('admin treasury rows: OP Mainnet, Polygon and Avalanche are read too (not deployed there, deployable)', [10, 137, 43114].every((id) => row(id).kind === 'eoa' && row(id).canDeploy))
   const aOp = await admin('/api/admin/safe/plan', 'POST', { chainId: 10 })
-  check('admin plan (-> OP Mainnet, an extra chain): ok, same predicted address, Etherscan (OP) explorer', aOp.status === 200 && same(aOp.data.predicted, SAFE) && /optimistic\.etherscan\.io/.test(aOp.data.explorerUrl) && aOp.data.chain.hexId === '0xa', JSON.stringify(aOp.data).slice(0, 160))
+  check('admin plan (-> OP Mainnet, Safe not deployed there yet): ok, same predicted address, Etherscan (OP) explorer', aOp.status === 200 && same(aOp.data.predicted, SAFE) && /optimistic\.etherscan\.io/.test(aOp.data.explorerUrl) && aOp.data.chain.hexId === '0xa', JSON.stringify(aOp.data).slice(0, 160))
   check('admin plan (-> Polygon, no factory): 422 no-factory', (await admin('/api/admin/safe/plan', 'POST', { chainId: 137 })).data.code === 'no-factory')
   const aPlan = await admin('/api/admin/safe/plan', 'POST', { chainId: 42161, from: EOA })
   check('admin plan (-> Arbitrum): ok, the treasury’s address predicted, calldata and gas returned', aPlan.status === 200 && same(aPlan.data.predicted, SAFE) && same(aPlan.data.tx.to, FACTORY) && aPlan.data.gas.estimate === 236_880, JSON.stringify(aPlan.data).slice(0, 160))
@@ -260,7 +264,8 @@ try {
   check('merchant new-Safe plan: 1-of-1 with the owner’s wallet, recorded under the workspace', mNew.status === 200 && mNew.data.setup.owners.length === 1 && same(mNew.data.setup.owners[0], owner.address) && S.recordOf(mNew.data.predicted)?.scope === owner.address.toLowerCase(), JSON.stringify(mNew.data).slice(0, 160))
   const g2 = await O.call('/api/developer/merchant/safe')
   check('GET /merchant/safe now lists the recorded Safe', g2.data.safes.length === 1 && same(g2.data.safes[0].address, mNew.data.predicted))
-  check('merchant plan: a chain that is not a store chain is a 400', (await O.post('/api/developer/merchant/safe/plan', { chainId: 10, address: SAFE })).status === 400)
+  // 250 (Fantom) is in neither payments.mjs nor the Safe chains: genuinely not a store chain.
+  check('merchant plan: a chain that is not a store chain is a 400', !S.storeChains().some((c) => c.id === 250) && (await O.post('/api/developer/merchant/safe/plan', { chainId: 250, address: SAFE })).status === 400)
   check('merchant status: pending for an unseen hash', (await O.post('/api/developer/merchant/safe/status', { chainId: 42161, hash: '0x' + 'ef'.repeat(32), address: mNew.data.predicted })).data.state === 'pending')
   check('merchant routes need a session', (await fetch(BASE + '/api/developer/merchant/safe')).status === 401)
   const anon = makeClient(BASE)

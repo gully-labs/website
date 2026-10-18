@@ -15,7 +15,7 @@ import path from 'node:path'
 import zlib from 'node:zlib'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { blockedOutbound, bootServer, historyFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
+import { blockedOutbound, bootServer, historyFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
@@ -29,6 +29,12 @@ const TRACKER = trackerFixture()
 await seedTrackerHistory(TRACKER)
 const STATS = statsFixture()
 const WIDGET_JS = fs.readFileSync(path.join(ROOT, 'dist', 'widget.js'))
+// What Gully Pay offers here, read from the server itself (the harness's chain matrix: the treasury Safe is deployed on
+// some payment chains and not yet on others, and the deployment gate closes the latter).
+const PLANS = await (await fetch(`${BASE}/api/plans`)).json()
+const OFFERED = PLANS.chains.map((c) => c.name)
+const CLOSED = { 10: 'OP Mainnet', 137: 'Polygon', 43114: 'Avalanche' }
+const listOr = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}` : (xs[0] ?? ''))
 
 /* ------------------------------------------------------------- browser plumbing --- */
 
@@ -151,7 +157,10 @@ await step('landing', async () => {
   await page.locator('#price-tab-services').click()
   check('pricing: services are quoted', await page.locator('#price-panel').getByText('Quoted').first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
   await page.locator('#price-tab-api').click().catch(() => {})
-  check('pricing: the payment line names the new chains from /api/plans (OP Mainnet, Polygon, Avalanche)', await page.locator('#pricing').getByText(/OP Mainnet, Polygon or Avalanche/).first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
+  check('pricing: /api/plans offers exactly the chains where the treasury Safe is deployed (Base, Ethereum, BNB Chain, Arbitrum)', PLANS.chains.map((c) => c.id).join() === TREASURY_DEPLOYED_CHAINS.join() && !PLANS.assets.some((a) => TREASURY_UNDEPLOYED_CHAINS.includes(a.chainId)), JSON.stringify(PLANS.chains.map((c) => c.id)))
+  const payLine = page.locator('#pricing').getByText(`on ${listOr(OFFERED)}, straight from your wallet`).first()
+  check(`pricing: the payment line names the offered chains from /api/plans (${listOr(OFFERED)})`, await payLine.waitFor({ timeout: 8_000 }).then(() => true, () => false))
+  check('pricing: the payment line names no chain where the treasury is not deployed', (await payLine.count()) === 1 && !new RegExp(Object.values(CLOSED).join('|')).test((await payLine.textContent()) ?? ''))
   // Header menus.
   await page.evaluate(() => window.scrollTo(0, 0))
   for (const [menu, item] of [['Products', /^Stock tracker/], ['Developers', /^API docs/], ['Company', /^Services/]]) {
@@ -451,20 +460,24 @@ await step('pay', async () => {
   await w.verify()
   await ctx.close()
 
-  // The chain picker on a checkout taking every asset: the three new chains, each with its own mark.
+  // The chain picker on a checkout taking every asset: every chain where the treasury Safe is deployed, each with its
+  // own mark, and none of the chains where it is not (OP Mainnet, Polygon, Avalanche in the harness's matrix).
   const invAll = await adminCall('/api/admin/invoices', { title: 'E2E: every chain', usd: '12' })
-  check('pay: an invoice with no asset list takes every chain (18 assets)', invAll.status === 201 && invAll.data.invoice.assets.length === 18, String(invAll.data?.invoice?.assets?.length))
+  const allIds = (invAll.data?.invoice?.assets ?? []).map((a) => a.id)
+  check(`pay: an invoice with no asset list takes every offered asset (${PLANS.assets.length}, as /api/plans lists)`, invAll.status === 201 && PLANS.assets.length > 0 && allIds.length === PLANS.assets.length && PLANS.assets.every((a) => allIds.includes(a.id)), `${allIds.length} vs ${PLANS.assets.length}`)
+  check('pay: that invoice offers no asset on a chain where the treasury is not deployed', invAll.status === 201 && !invAll.data.invoice.assets.some((a) => TREASURY_UNDEPLOYED_CHAINS.includes(a.chainId)), allIds.join())
   const ctx3 = await newContext()
   const p3 = await ctx3.newPage()
   const w3 = watch(p3, 'pay page (every chain)')
   await p3.goto(`${BASE}/pay/${invAll.data.invoice.id}`)
   const picker = p3.getByRole('radiogroup', { name: 'Pay with' })
-  await picker.getByRole('radio', { name: 'USDC on Avalanche' }).waitFor({ timeout: 10_000 })
-  check('pay: the picker lists USDC on OP Mainnet, USDC on Polygon, POL on Polygon and AVAX on Avalanche', (await picker.getByRole('radio', { name: 'USDC on OP Mainnet' }).count()) === 1 && (await picker.getByRole('radio', { name: 'USDC on Polygon' }).count()) === 1 && (await picker.getByRole('radio', { name: 'POL on Polygon' }).count()) === 1 && (await picker.getByRole('radio', { name: 'AVAX on Avalanche' }).count()) === 1)
-  check('pay: the picker shows seven chain groups with their marks (real logo files, no letter tiles)', (await picker.locator('img[src^="/chains/"]').count()) >= 7 && (await picker.locator('img[src="/chains/optimism.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/polygon.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/avalanche.svg"]').count()) >= 1)
-  await picker.getByRole('radio', { name: 'USDC on Avalanche' }).click()
-  await p3.getByRole('img', { name: /^Wallet payment request: .* USDC on Avalanche/ }).waitFor({ timeout: 10_000 })
-  check('pay: a USDC on Avalanche quote shows its QR and says 2 confirmations', (await p3.getByText(/counts after 2 confirmations/).count()) > 0)
+  await picker.getByRole('radio', { name: 'USDT on BNB Chain' }).waitFor({ timeout: 10_000 })
+  check('pay: the picker lists every offered asset (USDC on Base, USDT on Ethereum, BNB on BNB Chain, ETH on Arbitrum…)', (await picker.getByRole('radio').count()) === PLANS.assets.length && (await picker.getByRole('radio', { name: 'USDC on Base' }).count()) === 1 && (await picker.getByRole('radio', { name: 'USDT on Ethereum' }).count()) === 1 && (await picker.getByRole('radio', { name: 'BNB on BNB Chain' }).count()) === 1 && (await picker.getByRole('radio', { name: 'ETH on Arbitrum' }).count()) === 1)
+  check('pay: the picker offers nothing on OP Mainnet, Polygon or Avalanche (treasury not deployed there)', (await picker.getByRole('radio', { name: / on (OP Mainnet|Polygon|Avalanche)$/ }).count()) === 0)
+  check(`pay: the picker shows ${OFFERED.length} chain groups with their marks (real logo files, no letter tiles)`, (await picker.locator('img[src^="/chains/"]').count()) >= OFFERED.length && (await picker.locator('img[src="/chains/arbitrum.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/ethereum.svg"]').count()) >= 1 && (await picker.locator('img[src^="/chains/optimism"], img[src^="/chains/polygon"], img[src^="/chains/avalanche"]').count()) === 0)
+  await picker.getByRole('radio', { name: 'USDT on BNB Chain' }).click()
+  await p3.getByRole('img', { name: /^Wallet payment request: .* USDT on BNB Chain/ }).waitFor({ timeout: 10_000 })
+  check('pay: a USDT on BNB Chain quote shows its QR and says 15 confirmations', (await p3.getByText(/counts after 15 confirmations/).count()) > 0)
   await w3.verify()
   await ctx3.close()
   // The paid state, from the server's own shape with a payment on it (no chain in the suite can confirm one).
@@ -801,15 +814,21 @@ await step('admin', async () => {
   await page.getByRole('heading', { name: 'Invoices' }).waitFor({ timeout: 15_000 })
   for (const h of ['Developer wallets', 'Pay links', 'Gully Analytics', 'Treasury Safe']) check(`admin: the ${h} section renders`, (await page.getByRole('heading', { name: h }).count()) > 0)
   check('admin: the invoice made above is listed', (await page.getByText('E2E: first month').count()) > 0)
-  // Treasury Safe: Base holds the Safe, Arbitrum is deployable, the plan reaches "connect a wallet".
+  // Treasury Safe (the harness's chain matrix): the Safe on Base, Ethereum, BNB Chain and Arbitrum; OP Mainnet,
+  // Polygon and Avalanche are payment chains where it is not deployed yet, so they say "not deployed" and offer
+  // Deploy. The demo deploys on Avalanche and reaches "connect a wallet".
   const base = page.getByTestId('treasury-chain-8453')
   await base.getByText(/Safe 1\.4\.1/).waitFor({ timeout: 15_000 })
-  check('admin treasury: Base shows the Safe (1.4.1, 1/1) and Arbitrum offers Deploy', (await base.getByText(/Safe 1\.4\.1 · 1\/1/).count()) === 1 && (await page.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).count()) === 1)
-  check('admin treasury: the extra chains are listed ahead of payments', (await page.getByTestId('treasury-chain-10').count()) === 1 && (await page.getByTestId('treasury-chain-137').count()) === 1)
-  await page.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).click()
-  const tp = page.getByTestId('treasury-chain-42161').locator('[data-testid="safe-deploy"]')
+  check('admin treasury: Base shows the Safe (1.4.1, 1/1) and Avalanche offers Deploy', (await base.getByText(/Safe 1\.4\.1 · 1\/1/).count()) === 1 && (await page.getByRole('button', { name: 'Deploy Safe on Avalanche' }).count()) === 1)
+  const deployedRowsOk = await Promise.all(TREASURY_DEPLOYED_CHAINS.map(async (id) => (await page.getByTestId(`treasury-chain-${id}`).getByText(/Safe 1\.4\.1 · 1\/1/).count()) === 1))
+  check('admin treasury: every chain where the Safe is deployed (Base, Ethereum, BNB Chain, Arbitrum) shows it, with no Deploy button', deployedRowsOk.every(Boolean) && (await page.getByRole('button', { name: /^Deploy Safe on (Base|Ethereum|BNB Chain|Arbitrum)$/ }).count()) === 0, JSON.stringify(deployedRowsOk))
+  const closedRowsOk = await Promise.all(TREASURY_UNDEPLOYED_CHAINS.map(async (id) => { const r = page.getByTestId(`treasury-chain-${id}`); return (await r.getByText('not deployed', { exact: true }).count()) === 1 && (await r.getByRole('button', { name: `Deploy Safe on ${CLOSED[id]}` }).count()) === 1 }))
+  check('admin treasury: OP Mainnet, Polygon and Avalanche (payment chains, Safe not deployed) say "not deployed" and offer Deploy', closedRowsOk.every(Boolean), JSON.stringify(closedRowsOk))
+  check('admin treasury: every row is a payment chain now (no "ahead of payments" label)', (await page.getByText('ahead of payments').count()) === 0)
+  await page.getByRole('button', { name: 'Deploy Safe on Avalanche' }).click()
+  const tp = page.getByTestId('treasury-chain-43114').locator('[data-testid="safe-deploy"]')
   await tp.getByText('address verified').waitFor({ timeout: 20_000 })
-  check('admin treasury: the plan predicts the treasury address and waits for a wallet', /0\.00023688 ETH/.test(await tp.textContent()) && (await tp.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
+  check('admin treasury: the plan predicts the treasury address, prices the gas in AVAX and waits for a wallet', /0\.00023688 AVAX/.test(await tp.textContent()) && (await tp.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
   // Tracker health and venues read live upstreams this server cannot reach here.
   await w.verify([/Failed to load resource/])
   await ctx.close()
