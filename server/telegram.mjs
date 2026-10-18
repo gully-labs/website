@@ -1081,3 +1081,16 @@ export function expireLinkCodesForTest() {
 
 /** Tests only: the send turns granted to one chat (ms timestamps), oldest first. */
 export const sendGrantsForTest = (chatId) => grants.filter((g) => g.chatId === String(chatId)).map((g) => g.at)
+
+/* ------------------------------------- @GullyLabsNews channel posts (telegram-channel.mjs) --- */
+
+/** One Bot API call aimed at a chat (channel post, edit, delete, pin, member count) through the same per-chat queue, 30/s cap and 429 handling. `make` returns the body (a FormData for an upload); a plain object is used as is, with chat_id added. */
+export const sendToChannel = (chatId, method, make) => queued(chatId, method, typeof make === 'function' ? make : () => ({ chat_id: String(chatId), ...make }))
+/** The animated banner for a channel post: the cached file_id when the GIF is unchanged, else the file to upload (or its public URL), and remember(fileId) to cache Telegram's new file_id. */
+export function channelBanner() {
+  const file = bannerFile()
+  const sha = file?.sha ?? 'url'
+  return { fileId: db.banner?.sha === sha ? db.banner.fileId : null, file, url: BANNER_URL, remember: (fileId) => fileId && db.banner?.fileId !== fileId && ((db.banner = { fileId, sha }), save()) }
+}
+/** The linked chat with this chat id ({ address, chatId, chatType, chatTitle, ... }), or null: a test send only goes to a linked chat. */
+export const linkedChatById = (chatId) => linkOfChat(chatId)
