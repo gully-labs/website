@@ -1,0 +1,1062 @@
+{
+  "chainId": 84532,
+  "rpc": "https://sepolia.base.org",
+  "explorer": "https://sepolia.basescan.org",
+  "startedAt": "2026-10-18T01:07:39.564Z",
+  "addresses": {
+    "payer": "0x18D679735B5D4c5Ead2B0a3F12F12aF4bD110CAD",
+    "merchant": "0xD5c89c91161C26d360881e7EA966b09d2c8392B0",
+    "treasuryEoa": "0x7329e717276d7C05E8C2D6Ed772114b93b34bFA4",
+    "safeOwner": "0x7329e717276d7C05E8C2D6Ed772114b93b34bFA4",
+    "erc20FeeProxy": "0xae5508e1509cce6a73b38d8b19fedfdbd0080c18",
+    "ethereumFeeProxy": "0xd302ce9e3048ad676c6e74be57042aca31e2957e",
+    "mockUsdt": "0xc1560702f640166cb382331b5d3561072f6569be",
+    "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "safeFactory": "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
+    "safeSingleton": "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
+    "safe": "0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84"
+  },
+  "deploys": [
+    {
+      "contract": "ERC20FeeProxy",
+      "address": "0xae5508e1509cce6a73b38d8b19fedfdbd0080c18",
+      "tx": "0xb76ad1fff5845387ecc83e38c59e1a23b79afa20f6adb91f4ebabd3169c6a2c9",
+      "gasUsed": 518794,
+      "status": "success"
+    },
+    {
+      "contract": "EthereumFeeProxy",
+      "address": "0xd302ce9e3048ad676c6e74be57042aca31e2957e",
+      "tx": "0xa184545d4c432caca885daf604dde1a0c871ee2f03c56968c0acedfb89a72a3e",
+      "gasUsed": 581753,
+      "status": "success"
+    },
+    {
+      "contract": "MockUSDT",
+      "address": "0xc1560702f640166cb382331b5d3561072f6569be",
+      "tx": "0xe89056c98a7756782dd62adac2a5dc63c14414f09d1a2916822feb373770ffe2",
+      "gasUsed": 751835,
+      "status": "success"
+    }
+  ],
+  "cases": [
+    {
+      "group": "Safe",
+      "id": "S1",
+      "title": "Deploy a 1-of-1 Safe (v1.4.1 SafeL2) through the official SafeProxyFactory",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x07ab8d5e8933bc608bc63293639c381dc8d46280ea5427194c776833a61a38e3",
+      "block": 48258688,
+      "gasUsed": 236500,
+      "ethCall": null,
+      "setup": [],
+      "unit": null,
+      "before": {},
+      "after": {},
+      "delta": {},
+      "note": "Safe 0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84, owner 0x7329e717276d7C05E8C2D6Ed772114b93b34bFA4, threshold 1"
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E1",
+      "title": "approve, then pay with a fee: merchant gets amount, EOA treasury gets fee, proxy keeps 0",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x599ddad8873b3eb4c1e0851993b7099769218810984b8fa2a8869546f59fd160",
+      "block": 48258692,
+      "gasUsed": 105958,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve(proxy, amount + fee)",
+          "tx": "0xb0fbc3b32d424d5ec17bd0cd167f29dd082ada251aeb979de2a000cdf04c7bfb",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "20",
+        "merchant": "0",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "19",
+        "merchant": "0.995",
+        "treasury": "0.005",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-1",
+        "merchant": "0.995",
+        "treasury": "0.005",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E2",
+      "title": "pay with a fee to the Safe treasury: the Safe receives the fee",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0xf7d3213fc1df76865c327a49d5c124f788ef48f8d780a80713a225b71d0afe15",
+      "block": 48258696,
+      "gasUsed": 88870,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve(proxy, amount + fee)",
+          "tx": "0x70554d3b8dae6a692c51a5bdf50d8a5a533b801bcc8b01d40c837720e07c3e7e",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "19",
+        "merchant": "0.995",
+        "treasury": "0.005",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "18",
+        "merchant": "1.895",
+        "treasury": "0.005",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-1",
+        "merchant": "0.9",
+        "treasury": "0",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E3",
+      "title": "zero fee: the treasury leg is skipped",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x21cf74893ae134edaf1e31c005972597bf639809ce2483891fd4336bf2be33c7",
+      "block": 48258700,
+      "gasUsed": 58724,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve(proxy, amount)",
+          "tx": "0xc09c62aeca3f09f96a503c2116587c3a013ff3a06b75cab68832d5cde8f5a737",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "18",
+        "merchant": "1.895",
+        "treasury": "0.005",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "17.5",
+        "merchant": "2.395",
+        "treasury": "0.005",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E4",
+      "title": "empty payment reference (0x)",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x64b8c533e0bddd1832260891695def384ad85f13f52385d4db208381737ee783",
+      "block": 48258704,
+      "gasUsed": 71513,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve",
+          "tx": "0x4c659d3b5763572afa6c6381f64a53f50b0b5ac41794a5e0b50551d29ae3bf2f",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "17.5",
+        "merchant": "2.395",
+        "treasury": "0.005",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "16.9975",
+        "merchant": "2.895",
+        "treasury": "0.0075",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.5025",
+        "merchant": "0.5",
+        "treasury": "0.0025",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E5",
+      "title": "all-zero payment reference (8 zero bytes)",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0xb7ebb92bc19826e9b9e7514c1b4512772364e01c7a8ae91bcc2c560dc74d8959",
+      "block": 48258708,
+      "gasUsed": 71662,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve",
+          "tx": "0x441736c712d55f9b7ba90aeddff98046efa5c45736341eeeee6068b2b9020bd7",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "16.9975",
+        "merchant": "2.895",
+        "treasury": "0.0075",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "16.495",
+        "merchant": "3.395",
+        "treasury": "0.01",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.5025",
+        "merchant": "0.5",
+        "treasury": "0.0025",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E6",
+      "title": "feeAddress = zero address with a zero fee",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x98243afb897793b668cdd7a12def4571b58bb5d2999b440408b030d5d4a05101",
+      "block": 48258712,
+      "gasUsed": 58484,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve",
+          "tx": "0x56f5daff533ae550e34cf222972fb2c399658d2d9cb54b05c3d0baf1dba60a3d",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "16.495",
+        "merchant": "3.395",
+        "treasury": "0.01",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "15.995",
+        "merchant": "3.895",
+        "treasury": "0.01",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E7",
+      "title": "feeAddress = zero address with a NON-zero fee: the fee leg is skipped, but the event still reports the fee",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x7a6470064c3e75c5ddeab980417e8179485e09d1f99bd9fae5c463c0f6e703cf",
+      "block": 48258716,
+      "gasUsed": 58534,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve(proxy, amount only)",
+          "tx": "0x9a67b05780b757894dcb55df25ff7e24dd3855a260110d9ecd876169f30f6db7",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "15.995",
+        "merchant": "3.895",
+        "treasury": "0.01",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "15.495",
+        "merchant": "4.395",
+        "treasury": "0.01",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": "Why the server never trusts the event alone: creditFeeProxy also needs the fee Transfer log to the treasury."
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E8",
+      "title": "merchant is the payer (to = msg.sender)",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0xd337ea98e45e155210573648016f24c7d0a750783c99c7676a70b86a82e6d51f",
+      "block": 48258720,
+      "gasUsed": 66958,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve",
+          "tx": "0x1d172030cf7483583a90cd6ad827cde9e0fb43f258550f3ba8ada20697156b58",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "15.495",
+        "merchant": "4.395",
+        "treasury": "0.01",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "15.4925",
+        "merchant": "4.395",
+        "treasury": "0.0125",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.0025",
+        "merchant": "0",
+        "treasury": "0.0025",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E9",
+      "title": "no allowance: reverts, nothing moves",
+      "expected": "revert",
+      "actual": "reverted",
+      "pass": true,
+      "problem": null,
+      "tx": "0x02da5033a6b8efb05df6e6e24956c086530a7b0afc747530daff998fe833bb2d",
+      "block": 48258724,
+      "gasUsed": 47373,
+      "ethCall": {
+        "reverted": true,
+        "reason": "execution reverted"
+      },
+      "setup": [
+        {
+          "label": "approve(proxy, 0)",
+          "tx": "0xa5fcdf11bc1bb1be840cde9ad1cf806e0361eb423c57c19f46917e67808b01c1",
+          "status": "success",
+          "gasUsed": 35501
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "15.4925",
+        "merchant": "4.395",
+        "treasury": "0.0125",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "15.4925",
+        "merchant": "4.395",
+        "treasury": "0.0125",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "0",
+        "merchant": "0",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "ERC20FeeProxy (USDC)",
+      "id": "E10",
+      "title": "allowance = amount only (short of amount + fee): reverts, the merchant leg is undone too",
+      "expected": "revert",
+      "actual": "reverted",
+      "pass": true,
+      "problem": null,
+      "tx": "0x0bcfedb9c5d975e9d8693e98097456266acf7e2aba3ac1031e658a6a574f6e18",
+      "block": 48258727,
+      "gasUsed": 66052,
+      "ethCall": {
+        "reverted": true,
+        "reason": "execution reverted"
+      },
+      "setup": [
+        {
+          "label": "approve(proxy, amount)",
+          "tx": "0xece0eaeab14e8ac9b74b54d312da842ec4994f1ae64c23c5affbc5b008fbbde6",
+          "status": "success",
+          "gasUsed": 55437
+        }
+      ],
+      "unit": "USDC",
+      "before": {
+        "payer": "15.4925",
+        "merchant": "4.395",
+        "treasury": "0.0125",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "15.4925",
+        "merchant": "4.395",
+        "treasury": "0.0125",
+        "safe": "0.1",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "0",
+        "merchant": "0",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "MockUSDT (USDT-style, no return value)",
+      "id": "M1",
+      "title": "mint 10 mUSDT to the payer",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0xbe4e5201aa2ae2589151f7f72ddc2c2f0cb9417b89f4a4172624720b689c6844",
+      "block": 48258729,
+      "gasUsed": 68881,
+      "ethCall": null,
+      "setup": [],
+      "unit": "mUSDT",
+      "before": {
+        "payer": "0",
+        "merchant": "0",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "10",
+        "merchant": "0",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "10",
+        "merchant": "0",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "MockUSDT (USDT-style, no return value)",
+      "id": "M2",
+      "title": "transfer (returns nothing) 0.5 to the merchant",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x73d31fb2489989a7e63055650632d8252b7da6ba88c7fa0cf2a6a7f95f39fe2b",
+      "block": 48258731,
+      "gasUsed": 52188,
+      "ethCall": null,
+      "setup": [],
+      "unit": "mUSDT",
+      "before": {
+        "payer": "10",
+        "merchant": "0",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "9.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "MockUSDT (USDT-style, no return value)",
+      "id": "M3",
+      "title": "approve(proxy, 0.3) from a zero allowance",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0xc93e3ac9a787c221c5c2ee555c4bc28c2cb458d432c96a95e4e68924402f5553",
+      "block": 48258733,
+      "gasUsed": 46707,
+      "ethCall": null,
+      "setup": [],
+      "unit": "mUSDT",
+      "before": {
+        "payer": "9.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "9.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "0",
+        "merchant": "0",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "MockUSDT (USDT-style, no return value)",
+      "id": "M4",
+      "title": "approve(proxy, 1.005) while the allowance is non-zero: reverts (USDT rule)",
+      "expected": "revert",
+      "actual": "reverted",
+      "pass": true,
+      "problem": null,
+      "tx": "0xcec333d7b094d10066aa8e94395368d759f151a8e4dd88677ff450438a0b648a",
+      "block": 48258735,
+      "gasUsed": 24843,
+      "ethCall": {
+        "reverted": true,
+        "reason": "execution reverted: reset to 0 first"
+      },
+      "setup": [],
+      "unit": "mUSDT",
+      "before": {
+        "payer": "9.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "9.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "0",
+        "merchant": "0",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "note": "allowance after: 0.3 (unchanged)"
+    },
+    {
+      "group": "MockUSDT (USDT-style, no return value)",
+      "id": "M5",
+      "title": "server's reset-then-approve (approveReset, approve(total)), then pay 1 + 0.005 fee through the proxy",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x47c26d6d997c6a38fb43e176cb3e44ecc51239806fb1fc21ba49fdba6c581e32",
+      "block": 48258756,
+      "gasUsed": 75130,
+      "ethCall": null,
+      "setup": [
+        {
+          "label": "approve(proxy, 0.3): a non-zero allowance left over, as from an abandoned checkout",
+          "tx": "0x6136c69140fc01950265f869b7a06b4b93dbf87a2157dc4f01c11b7b40878650",
+          "status": "success",
+          "gasUsed": 46707
+        },
+        {
+          "label": "server approveReset: approve(proxy, 0)",
+          "tx": "0x20c7080d26d9da9b4dc3c528c0388616c03c26795f53a215dd503a33204dd92d",
+          "status": "success",
+          "gasUsed": 24586
+        },
+        {
+          "label": "server approve: approve(proxy, total)",
+          "tx": "0x768f51c01528186acf98ddc6eec7ebb5d1e42416388b15b349594785db592d45",
+          "status": "success",
+          "gasUsed": 46707
+        }
+      ],
+      "unit": "mUSDT",
+      "before": {
+        "payer": "9.5",
+        "merchant": "0.5",
+        "treasury": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "8.495",
+        "merchant": "1.499975",
+        "treasury": "0.005025",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-1.005",
+        "merchant": "0.999975",
+        "treasury": "0.005025",
+        "proxy": "0"
+      },
+      "note": "allowance after: 0; fee = 0.5% of the total, rounded down"
+    },
+    {
+      "group": "EthereumFeeProxy (native ETH)",
+      "id": "N1",
+      "title": "transferWithReferenceAndFee: EOA merchant + EOA treasury",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0xe3ff79f4ed44e95e71f6787b6f865cf23f5ec21af8fc1d417586f1c4aec74f44",
+      "block": 48258758,
+      "gasUsed": 99381,
+      "ethCall": null,
+      "setup": [],
+      "unit": "ETH",
+      "before": {
+        "payer": "0.048976214315430045",
+        "merchant": "0",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "0.048875618029349496",
+        "merchant": "0.000099",
+        "treasury": "0.000001",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.000100596286080549",
+        "merchant": "0.000099",
+        "treasury": "0.000001",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "EthereumFeeProxy (native ETH)",
+      "id": "N2",
+      "title": "zero fee",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0xed9fd45e47236d9420c3fa63288b19239477938134536b696da3f4605e26cc36",
+      "block": 48258760,
+      "gasUsed": 42633,
+      "ethCall": null,
+      "setup": [],
+      "unit": "ETH",
+      "before": {
+        "payer": "0.048875618029349496",
+        "merchant": "0.000099",
+        "treasury": "0.000001",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "0.048775362231267963",
+        "merchant": "0.000199",
+        "treasury": "0.000001",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.000100255798081533",
+        "merchant": "0.0001",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "EthereumFeeProxy (native ETH)",
+      "id": "N3",
+      "title": "fee to the Safe treasury: reverts (2300-gas transfer() cannot reach a Safe)",
+      "expected": "revert",
+      "actual": "reverted",
+      "pass": true,
+      "problem": null,
+      "tx": "0x742e16bd01c11dfa4f708881a997855f45c3d18d5708dd321e978a2ca4accb7a",
+      "block": 48258762,
+      "gasUsed": 50117,
+      "ethCall": {
+        "reverted": true,
+        "reason": "execution reverted"
+      },
+      "setup": [],
+      "unit": "ETH",
+      "before": {
+        "payer": "0.048775362231267963",
+        "merchant": "0.000199",
+        "treasury": "0.000001",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "0.048775061529183316",
+        "merchant": "0.000199",
+        "treasury": "0.000001",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.000000300702084647",
+        "merchant": "0",
+        "treasury": "0",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": "The CHOICE.md finding, live: coin payments stay plain transfers with the fee invoiced."
+    },
+    {
+      "group": "EthereumFeeProxy (native ETH)",
+      "id": "N4",
+      "title": "merchant is a contract (the Safe), fee to an EOA: works (the merchant leg forwards all gas)",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x57c8b1272143d43b28067fe75ec6a28c2dac7ffe6985a35c6c7fa00920d736b5",
+      "block": 48258764,
+      "gasUsed": 55710,
+      "ethCall": null,
+      "setup": [],
+      "unit": "ETH",
+      "before": {
+        "payer": "0.048775061529183316",
+        "merchant": "0.000199",
+        "treasury": "0.000001",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "0.048674727269098669",
+        "merchant": "0.000199",
+        "treasury": "0.000002",
+        "safe": "0.000099",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.000100334260084647",
+        "merchant": "0",
+        "treasury": "0.000001",
+        "safe": "0.000099",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "EthereumFeeProxy (native ETH)",
+      "id": "N5",
+      "title": "transferExactEthWithReferenceAndFee with overpayment: the rest is refunded to the payer",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x9d657b66d5f7259e76b774b9f561c274057c0448a7cea7be5111fbd9e69ef29e",
+      "block": 48258766,
+      "gasUsed": 56220,
+      "ethCall": null,
+      "setup": [],
+      "unit": "ETH",
+      "before": {
+        "payer": "0.048674727269098669",
+        "merchant": "0.000199",
+        "treasury": "0.000002",
+        "safe": "0.000099",
+        "proxy": "0"
+      },
+      "after": {
+        "payer": "0.048623389949005123",
+        "merchant": "0.000249",
+        "treasury": "0.000003",
+        "safe": "0.000099",
+        "proxy": "0"
+      },
+      "delta": {
+        "payer": "-0.000051337320093546",
+        "merchant": "0.00005",
+        "treasury": "0.000001",
+        "safe": "0",
+        "proxy": "0"
+      },
+      "note": ""
+    },
+    {
+      "group": "Safe",
+      "id": "S2",
+      "title": "execTransaction signed by the owner: the Safe sends 0.05 of its fee USDC back to the test wallet",
+      "expected": "success",
+      "actual": "success",
+      "pass": true,
+      "problem": null,
+      "tx": "0x4f64581ce7e29e46d78a26d2feef94d8dc03ac8a1ca426d18fe4438932adef86",
+      "block": 48258768,
+      "gasUsed": 101669,
+      "ethCall": null,
+      "setup": [],
+      "unit": "USDC",
+      "before": {
+        "payer": "15.4925",
+        "safe": "0.1"
+      },
+      "after": {
+        "payer": "15.5425",
+        "safe": "0.05"
+      },
+      "delta": {
+        "payer": "0.05",
+        "safe": "-0.05"
+      },
+      "note": "Safe nonce 0; signed off-chain by the owner 0x7329e717276d7C05E8C2D6Ed772114b93b34bFA4, relayed by the test wallet"
+    }
+  ],
+  "start": {
+    "eth": "0.04898746670007278",
+    "usdc": "20"
+  },
+  "end": {
+    "eth": "0.048622779934880939",
+    "usdc": "15.5425"
+  },
+  "finishedAt": "2026-10-18T01:10:24.418Z",
+  "server": {
+    "ranAt": "2026-10-18T01:13:47.829Z",
+    "port": 8797,
+    "flags": {
+      "GULLY_TESTNET_CHAINS": "84532",
+      "GULLY_FEEPROXY_84532": "0xae5508e1509cce6a73b38d8b19fedfdbd0080c18",
+      "GULLY_PAY_MERCHANT_FEE_BPS": "50",
+      "GULLY_PAY_MERCHANT_FREE_USD": "0"
+    },
+    "txs": [
+      {
+        "label": "approve (server bytes)",
+        "tx": "0x1fc98fb5806310a35a1bcdd807381f21325e8e0430bfd2d1be597b3a4366d2fe",
+        "status": "success",
+        "gasUsed": 55437,
+        "block": 48258864
+      },
+      {
+        "label": "transferFromWithReferenceAndFee (server bytes)",
+        "tx": "0x78413f9b0f4b3976f5cc9bb10d1e58cb05d7c05ca0ae430426434fda8ed56e9e",
+        "status": "success",
+        "gasUsed": 71758,
+        "block": 48258865
+      },
+      {
+        "label": "approve for the spoof",
+        "tx": "0x77ecb5ab061a2d1a2966c58ced266cebfcefeae724b48c2f24cf179920b7cf00",
+        "status": "success",
+        "gasUsed": 55437,
+        "block": 48258868
+      },
+      {
+        "label": "proxy call with feeAddress = payer (spoof)",
+        "tx": "0xf9514199380c523638afdfdb0db22402d828679150397f58c56ddef36dce4884",
+        "status": "success",
+        "gasUsed": 66958,
+        "block": 48258868
+      },
+      {
+        "label": "plain ETH transfer of 0.000105668 to the store",
+        "tx": "0xe8d1b2f751d7e386a6cc47f3b65bde48eca51115c21ec2d087200c6a2691bcb8",
+        "status": "success",
+        "gasUsed": 21000,
+        "block": 48258869
+      }
+    ],
+    "checks": [
+      {
+        "check": "owner signs in (SIWE, throwaway key)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "store wallet on Base Sepolia (testnet flag on): accepted and enabled",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "USDC quote carries a split to our proxy and the treasury (0.5% fee, free allowance 0)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "on chain: the merchant got total - fee, the treasury got the fee",
+        "pass": true,
+        "detail": null,
+        "tx": "0x78413f9b0f4b3976f5cc9bb10d1e58cb05d7c05ca0ae430426434fda8ed56e9e",
+        "deltas": {
+          "payer": "-1.009955",
+          "merchant": "1.004955",
+          "treasury": "0.005"
+        }
+      },
+      {
+        "check": "verify: 200, invoice paid",
+        "pass": true,
+        "detail": null,
+        "tx": "0x78413f9b0f4b3976f5cc9bb10d1e58cb05d7c05ca0ae430426434fda8ed56e9e"
+      },
+      {
+        "check": "ledger: one payment, crediting the full quote, with the fee taken on chain",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "ledger: one fee row, collected on chain in full, nothing left to bill",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "the store invoice reads as paid",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "re-using the hash on the same invoice: refused (409)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "re-using the hash on another invoice: refused (409)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "the fee was recorded once",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "spoofed fee address: not credited (422), invoice stays open",
+        "pass": true,
+        "detail": null,
+        "tx": "0xf9514199380c523638afdfdb0db22402d828679150397f58c56ddef36dce4884"
+      },
+      {
+        "check": "ETH quote: priced by the Base Sepolia ETH / USD feed, no split (fee invoiced)",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "ETH: verify 200, paid; fee accrued and left for the weekly statement (not on chain)",
+        "pass": true,
+        "detail": null,
+        "tx": "0xe8d1b2f751d7e386a6cc47f3b65bde48eca51115c21ec2d087200c6a2691bcb8",
+        "deltas": {
+          "merchant": "0.000105668 ETH"
+        }
+      },
+      {
+        "check": "ETH: re-using the hash is refused (409)",
+        "pass": true,
+        "detail": null
+      }
+    ]
+  }
+}

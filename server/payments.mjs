@@ -17,6 +17,10 @@
 //   GULLY_BASE_RPC                older name for GULLY_RPC_8453, still honoured
 //   GULLY_MIN_CONFIRMATIONS       older override for Base's confirmations, still honoured
 //   GULLY_CONFIRMATIONS_<chainId> confirmations for one chain
+//   GULLY_TESTNET_CHAINS          TESTNET ONLY, unset in production: comma-separated testnet chain ids to offer as well
+//                                 (only 84532, Base Sepolia, is known). Ignored when NODE_ENV=production.
+//   GULLY_FEEPROXY_<chainId>      the ERC20FeeProxy on such a testnet chain (Request has none there; see
+//                                 contracts/TESTNET-RESULTS.md). Read only for chains in GULLY_TESTNET_CHAINS.
 
 import { isFeeProxy, recipientViolations, SPLIT_PROXIES } from './fee-proxy-guard.mjs'
 import { keccak_256 } from './vendor/noble.mjs'
@@ -71,8 +75,24 @@ export const CHAINS = {
 // Solana (solana-pay.mjs): offered only while GULLY_SOLANA_TREASURY is set.
 CHAINS[SOLANA_CHAIN_ID] = SOLANA_CHAIN
 
-/** The EVM chains in display order (object keys that are numbers would sort by id). */
-export const CHAIN_LIST = [8453, 1, 56, 42161].map((id) => CHAINS[id])
+// TESTNET ONLY, for live tests of the payment paths (scripts/testnet-fee-proxy.mjs, scripts/testnet-server-e2e.mjs).
+// Off unless GULLY_TESTNET_CHAINS names the chain, and never when NODE_ENV=production, so production never offers a
+// testnet. Base Sepolia USDC is Circle's (symbol USDC, 6 decimals) and the feed is Chainlink's ETH / USD there,
+// both checked with eth_call on 2026-10-17.
+const TESTNETS = {
+  84532: {
+    chain: { id: 84532, key: 'base-sepolia', name: 'Base Sepolia', testnet: true, explorer: 'https://sepolia.basescan.org', explorerName: 'Basescan (Sepolia)', confirmations: 2, rpcs: ['https://sepolia.base.org', 'https://base-sepolia-rpc.publicnode.com'], feed: { address: '0x4adc67696ba383f43dd60a9e78f2c97fbbfc7cb1', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC } },
+    assets: [
+      { id: 'base-sepolia-usdc', chainId: 84532, symbol: 'USDC', name: 'USD Coin (testnet)', kind: 'token', address: '0x036cbd53842c5426634e7929541ec2318f3dcf7e', decimals: 6 },
+      { id: 'base-sepolia-eth', chainId: 84532, symbol: 'ETH', name: 'Ether (testnet)', kind: 'native', address: null, decimals: 18 },
+    ],
+  },
+}
+const TESTNET_IDS = process.env.NODE_ENV === 'production' ? [] : [...new Set(String(process.env.GULLY_TESTNET_CHAINS ?? '').split(',').map((s) => Number(s.trim())))].filter((id) => TESTNETS[id])
+for (const id of TESTNET_IDS) CHAINS[id] = TESTNETS[id].chain
+
+/** The EVM chains in display order (object keys that are numbers would sort by id). Testnets only when enabled. */
+export const CHAIN_LIST = [8453, 1, 56, 42161, ...TESTNET_IDS].map((id) => CHAINS[id])
 /** Every chain a payment can be made on right now: the EVM chains, plus Solana when its treasury is set. */
 export const publicChains = () => [...CHAIN_LIST, ...(solanaPayOn() ? [SOLANA_CHAIN] : [])]
 
@@ -89,6 +109,7 @@ export const ASSETS = [
   { id: 'arb-usdc', chainId: 42161, symbol: 'USDC', name: 'USD Coin', kind: 'token', address: '0xaf88d065e77c8cc2239327c5edb3a432268e5831', decimals: 6 },
   { id: 'arb-eth', chainId: 42161, symbol: 'ETH', name: 'Ether', kind: 'native', address: null, decimals: 18 },
   ...SOLANA_ASSETS,
+  ...TESTNET_IDS.flatMap((id) => TESTNETS[id].assets),
 ]
 export const ASSET_IDS = ASSETS.map((a) => a.id)
 export const assetById = (id) => ASSETS.find((a) => a.id === id) ?? null
@@ -398,6 +419,12 @@ export function paymentUri(asset, treasuryAddress, amountRaw) {
 /** ERC20FeeProxy by chain, lowercase. Bytecode checked with eth_getCode; behaviour checked by fork tests. The list
  *  (and every other known proxy, which nothing may ever pay directly) lives in fee-proxy-guard.mjs. */
 export const FEE_PROXIES = { ...SPLIT_PROXIES }
+// A testnet's proxy is the one we deployed there (GULLY_FEEPROXY_<chainId>), only while that testnet is enabled.
+// fee-proxy-guard.mjs reads the same variable (splitProxyFor, isFeeProxy), so the guard knows it too.
+for (const id of TESTNET_IDS) {
+  const a = String(process.env[`GULLY_FEEPROXY_${id}`] ?? '').trim().toLowerCase()
+  if (/^0x[0-9a-f]{40}$/.test(a)) FEE_PROXIES[id] = a
+}
 const hexOf = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 const keccakHex = (s) => '0x' + hexOf(keccak_256(new TextEncoder().encode(s)))
 /** topic0 of TransferWithReferenceAndFee(address,address,uint256,bytes indexed,uint256,address). */
