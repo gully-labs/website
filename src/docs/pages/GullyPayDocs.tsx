@@ -194,6 +194,20 @@ export function GullyPayDocs() {
         </List>
       </Section>
 
+      <Section id="no-stuck-funds" title="Funds can’t get stuck">
+        <P>
+          Stablecoin payments to a store carry Gully Labs’ fee in the same transaction through Request Network’s <C>ERC20FeeProxy</C>, an immutable contract with no owner. It never holds tokens: one call moves the payment from the payer to the recipient and the fee to the treasury, and returns. The only way funds could end up inside it is a transfer sent <b>straight to the proxy’s address</b>, and nobody, Gully Labs included, could get those back. So the server and the checkout make that impossible:
+        </P>
+        <List>
+          <li>Every quote, QR code, wallet link, recipient address and split call passes one validator before it leaves the server. A proxy address (on any chain) is never a recipient; a split calls the proxy only through <C>transferFromWithReferenceAndFee</C> with zero value, an allowed stablecoin, the recipient and the treasury as the two legs and an approval for exactly the amount. Anything else answers 500 with no payment details at all.</li>
+          <li>The <b>Pay with wallet</b> button checks the same rules again in the browser, simulates the proxy call with <C>eth_call</C> before your wallet sees it, and refuses to send on any failure. It never sends coin to the proxy and never falls back to a plain transfer to it.</li>
+          <li>An hourly monitor reads every proxy’s balances on every chain. A non-zero balance (a transfer someone sent to the proxy by hand) alerts the Gully Labs team, who cannot recover it either but can warn the payer.</li>
+        </List>
+        <Callout label="NEVER SEND TO THE PROXY" tone="plain">
+          Pay with the wallet button or send to the address shown on the quote. Never copy the <C>pay.to</C> contract address of a split into a wallet as a recipient: a plain transfer to it is lost for good, and the server names such a transaction as an unrecoverable mis-send instead of a payment.
+        </Callout>
+      </Section>
+
       <Section id="qr" title="Wallet QR codes">
         <P>
           Every quote carries an <C>uri</C>: an EIP-681 payment request for the exact amount, built on the server from base units (never floating point). The QR encodes it.
