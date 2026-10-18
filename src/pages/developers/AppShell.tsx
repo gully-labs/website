@@ -13,9 +13,10 @@ import { declinedInvites, restoreFocus, usePortal } from './portal'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
-   Sidebar, top to bottom: the Gully mark and "Gully Labs App", the workspace switcher, every page in one
+   Sidebar, top to bottom: the Gully mark (home), the workspace switcher and the collapse button in one row,
+   every page in one
    full-height list under folding group headings (Workspace, Services, Developer, Account; 34px rows with
-   16px icons, the fold remembered), and the wallet menu. It fits at 800px tall, so it has no inner
+   16px icons, the fold remembered), and the wallet menu. All 19 pages fit at 800px tall, so it has no inner
    scrollbar. From 1280px it is open (232px); from 860px to 1279px it starts as an icon rail (64px, each row
    with a tooltip); the chevron toggles it at any width and the choice is remembered. Under 860px there is
    no sidebar: a bottom tab bar holds Overview, Tracker, Keys and Alerts, and "More" (or the header's Menu
@@ -329,7 +330,7 @@ function NavLinks<T extends string>({ items, current, go, compact, dense }: { it
   }
   if (groups.length === 1 && !groups[0].name) return <NavList items={items} current={current} go={go} compact={compact} dense={dense} />
   return (
-    <div className={`flex flex-col ${dense ? 'gap-[6px]' : 'gap-3'}`} data-testid="nav-groups">
+    <div className={`flex flex-col ${dense ? 'gap-1' : 'gap-3'}`} data-testid="nav-groups">
       {groups.map((g, i) => {
         const slug = g.name.toLowerCase().replace(/\W+/g, '-') || String(i)
         const id = `navgroup-${slug}`
@@ -343,7 +344,7 @@ function NavLinks<T extends string>({ items, current, go, compact, dense }: { it
               </span>
             ) : (
               <h2 id={id} className="m-0">
-                <button type="button" onClick={() => toggle(g.name)} aria-expanded={!shut} aria-controls={`${id}-list`} className={`group/h flex w-full items-center gap-1 rounded-[6px] px-[10px] text-left font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase transition-colors hover:text-ink-2 ${dense ? 'min-h-5' : 'min-h-9'}`} data-testid={`navgroup-toggle-${slug}`}>
+                <button type="button" onClick={() => toggle(g.name)} aria-expanded={!shut} aria-controls={`${id}-list`} className={`group/h flex w-full items-center gap-1 rounded-[6px] px-[10px] text-left font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase transition-colors hover:text-ink-2 ${dense ? 'min-h-[18px]' : 'min-h-9'}`} data-testid={`navgroup-toggle-${slug}`}>
                   <span className="flex-1">{g.name}</span>
                   <ChevronDown size={12} className={`opacity-60 transition-transform duration-200 group-hover/h:opacity-100 ${shut ? '-rotate-90' : ''}`} aria-hidden />
                 </button>
@@ -590,14 +591,18 @@ export function AppShell<T extends string>({
   return (
     <div className="flex min-h-dvh" data-testid="app-shell" data-sidebar={narrow ? 'sheet' : compact ? 'icons' : 'open'}>
       {!narrow && (
-        <aside aria-label="App" className={`sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-[6px] border-r border-line bg-bg-alt py-2 transition-[width] duration-200 print:hidden ${compact ? 'w-16 px-2' : 'w-[232px] px-3'}`} data-testid="app-sidebar">
-          <div className={`flex items-center gap-1 ${compact ? 'flex-col' : 'justify-between'}`}>
-            <Brand compact={compact} onHome={() => go(first)} />
+        <aside aria-label="App" className={`sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-[6px] border-r border-line bg-bg-alt py-[6px] transition-[width] duration-200 print:hidden ${compact ? 'w-16 px-2' : 'w-[232px] px-3'}`} data-testid="app-sidebar">
+          {/* The Gully mark (home), the workspace switcher and the collapse button share one row, so every page
+              still fits the full-height list as the app grows (19 pages fit at 800 px). */}
+          <div className={`flex items-center gap-1 ${compact ? 'flex-col' : ''}`}>
+            <Brand compact onHome={() => go(first)} />
+            <div className={compact ? 'w-full' : 'min-w-0 flex-1'}>
+              <WorkspaceSwitcher compact={compact} onTeam={wallet.team} />
+            </div>
             <button type="button" onClick={toggle} title={compact ? 'Expand sidebar' : 'Collapse to icons'} className="inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-faint transition-colors hover:bg-surface-hover hover:text-ink" aria-label={compact ? 'Expand sidebar' : 'Collapse sidebar to icons'} aria-expanded={!compact} data-testid="sidebar-toggle">
               {compact ? <ChevronsRight size={ICON} aria-hidden /> : <ChevronsLeft size={ICON} aria-hidden />}
             </button>
           </div>
-          <WorkspaceSwitcher compact={compact} onTeam={wallet.team} />
           {/* One full-height list: it fits at 800px and up, so it scrolls only on short windows (and the icon
               rail never clips its tooltips). */}
           <nav aria-label="App pages" className={`-mx-1 min-h-0 flex-1 px-1 ${compact ? '' : 'overflow-y-auto [scrollbar-width:thin]'}`} data-testid="app-nav">

@@ -29,9 +29,10 @@ export const IN_PLACE_HOSTS = ['app.gullylabs.xyz', 'developers.gullylabs.xyz']
 
 /**
  * Runs in the browser (page.evaluate). Returns the findings; each list is empty when the page passes.
- * `allowed` is tokenColors(); `inPlace` is IN_PLACE_HOSTS.
+ * `allowed` is tokenColors(); `inPlace` is IN_PLACE_HOSTS; `root` (optional) is a selector that limits the audit to
+ * one part of the page, e.g. one app page inside a shell another suite audits.
  */
-export function auditPage({ allowed, inPlace }) {
+export function auditPage({ allowed, inPlace, root = null }) {
   const small = []
   const offToken = new Map()
   const ext = []
@@ -65,7 +66,7 @@ export function auditPage({ allowed, inPlace }) {
     cur.count++
     offToken.set(k, cur)
   }
-  for (const el of document.querySelectorAll('body *')) {
+  for (const el of (root ? document.querySelector(root) : document.body)?.querySelectorAll('*') ?? []) {
     if (!vis(el)) continue
     const cs = getComputedStyle(el)
     // Text under 11 px (the element's own text nodes; .sr-only text is not rendered).

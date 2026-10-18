@@ -6,10 +6,11 @@ import { handleIndexNowKey } from './indexnow.mjs'
 import { readStats } from './stats.mjs'
 import { onSnapshot, readGapIndex, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
-import { evaluateAlerts, evaluateLaunchAlerts } from './alerts.mjs'
+import { evaluateAlerts, evaluateLaunchAlerts, startHolderAlerts } from './alerts.mjs'
 import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
+import { handleHolders } from './holders.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
@@ -26,6 +27,8 @@ import { handleDeveloper } from './developer.mjs'
 import { APP_URL, isAppHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
+import { handleSecurityPublic } from './security-routes.mjs'
+import { startEngine as startSecurityEngine } from './security-engine.mjs'
 import { CHAIN_LIST, rpc } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { startTreasuryWatch } from './treasury-chains.mjs'
@@ -34,6 +37,8 @@ import { handleAsk, startAsk } from './ask.mjs'
 import { handleSolana } from './solana-routes.mjs'
 import { GUARD_PUBLIC_ERROR, PaymentGuardError } from './pay-guard.mjs'
 import { startFeeProxyMonitor } from './fee-proxy-monitor.mjs'
+import { startSecMonitor } from './sec-monitor.mjs'
+import { handleScore, startScoreRefresh } from './gully-score.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -121,6 +126,8 @@ function securityHeaders(host, pathname = '/') {
   // reads of /api/tracker and the logos are covered by connect-src https: and img-src https:).
   const docs = host.startsWith('docs.') || local
   const miniApp = !strict && !host.startsWith('docs.') && (pathname === '/tg' || pathname.startsWith('/tg/'))
+  // The embeddable Holder Map (widget.js) is the one page any site may frame.
+  const embed = !strict && !host.startsWith('docs.') && pathname.startsWith('/embed/')
   const csp = [
     "default-src 'self'",
     // Cloudflare Web Analytics is enabled on the zone and injects its beacon into every page.
@@ -134,7 +141,7 @@ function securityHeaders(host, pathname = '/') {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    `frame-ancestors ${strict ? "'none'" : miniApp ? "'self' https://web.telegram.org" : "'self'"}`,
+    `frame-ancestors ${strict ? "'none'" : embed ? '*' : miniApp ? "'self' https://web.telegram.org" : "'self'"}`,
     ...(local ? [] : ['upgrade-insecure-requests']),
   ].join('; ')
   return {
@@ -145,7 +152,7 @@ function securityHeaders(host, pathname = '/') {
     // Wallet popups (Coinbase Wallet, WalletConnect) need to talk back to the opener.
     'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
     // X-Frame-Options cannot name another origin; the Mini App relies on frame-ancestors alone.
-    ...(miniApp ? {} : { 'X-Frame-Options': strict ? 'DENY' : 'SAMEORIGIN' }),
+    ...(miniApp || embed ? {} : { 'X-Frame-Options': strict ? 'DENY' : 'SAMEORIGIN' }),
     'Content-Security-Policy': csp,
   }
 }
@@ -232,6 +239,11 @@ async function handleRequest(req, res) {
     if (await handleSolana(req, res, url, geoFor(req, isLocal))) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // The Gully Score (gully-score.mjs): the public index, one contract's score, and its embeddable badge.
+  if (url.pathname === '/api/score' || url.pathname.startsWith('/api/score/') || (url.pathname.startsWith('/score/') && url.pathname.endsWith('/badge.svg'))) {
+    if (await handleScore(req, res, url)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
   // Gully Ask (ask.mjs): POST /api/ask, GET /api/ask/status and POST /api/ask/feedback.
   if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status' || url.pathname === '/api/ask/feedback') return void (await handleAsk(req, res, url))
   // Gully Pay gas costs per chain, cached (gas.mjs): the app's Merchant tab reads it. Public.
@@ -241,8 +253,10 @@ async function handleRequest(req, res) {
     if (await handlePay(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // Gully Security (security-routes.mjs): published reports, the scan counter, review requests.
+  if (url.pathname.startsWith('/api/security/')) return void ((await handleSecurityPublic(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
   let access = null
-  if (url.pathname.startsWith('/api/tracker')) {
+  if (url.pathname.startsWith('/api/tracker') || url.pathname.startsWith('/api/holders/')) {
     if (req.method === 'OPTIONS') return send(res, 204, '', CORS)
     access = apiAccess(req)
     // Keyed requests are recorded (status class, latency) for the holder's dashboard once answered.
@@ -255,6 +269,12 @@ async function handleRequest(req, res) {
       res.setHeader('X-RateLimit-Remaining', String(access.remaining))
     }
     for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v)
+  }
+
+  // Holder Map (holders.mjs): who holds a DeepCore launch or a stock token, with the same key limits as the tracker.
+  if (url.pathname.startsWith('/api/holders/')) {
+    if (await handleHolders(req, res, url, access)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
 
   // "Notify me" on a project still in the lab: saves the email to the launch list (admin dashboard).
@@ -415,6 +435,8 @@ function startLoops() {
   // TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.
   if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
   startDeepcore()
+  // Holder Map alerts: each watched token's map is re-read every ten minutes (alerts.mjs).
+  startHolderAlerts()
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
   startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
   startChannel() // @GullyLabsNews: scheduled posts and auto posts (telegram-channel.mjs)
@@ -423,6 +445,12 @@ function startLoops() {
   startAsk()
   // Hourly balance check of every fee-proxy contract (fee-proxy-monitor.mjs): non-zero = a third-party mis-send.
   startFeeProxyMonitor()
+  // Gully Security's scan queue (server/security): requeues interrupted scans and starts the runner.
+  startSecurityEngine()
+  // Gully Security monitoring: watched contracts read every minute, alerts by Telegram and webhook (sec-monitor.mjs).
+  startSecMonitor()
+  // Gully Score: listed scores refreshed every 6 hours, and soon after a monitored change (gully-score.mjs).
+  startScoreRefresh()
 }
 // The treasury deployment gate (treasury-chains.mjs) runs in standby too: a standby answers /api/plans and quotes,
 // so it must know on which chains the Safe treasury exists. Read-only (eth_getCode), hourly, timers unref'd.

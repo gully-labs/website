@@ -12,6 +12,7 @@ const VIEWS = {
   'chain-kit': lazy(() => import('./ChainKitView')),
   ai: lazy(() => import('./AiView')),
   deepcore: lazy(() => import('./DeepcoreView')),
+  holders: lazy(() => import('./HoldersView')),
   widgets: lazy(() => import('./WidgetsView')),
   telegram: lazy(() => import('./TelegramView')),
 } satisfies Record<ServiceTab, unknown>

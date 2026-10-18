@@ -253,7 +253,7 @@ export async function readLaunches({ chainId = null, limit = 5 } = {}) {
 
 /**
  * GET /api/deepcore/launches?chain=<chainId>&limit=<1..50>: the poller's cached launch list for the app
- * dashboard's DeepCore view, { state: 'ok' | 'stale' | 'unreadable', launches, asOf, chains, error }.
+ * dashboard's DeepCore view and the site's launch list (with Holder Maps), { state: 'ok' | 'stale' | 'unreadable', launches, asOf, chains, error }.
  * Reads the same cache as the bot (readLaunches): no extra upstream call while the cache is fresh.
  */
 export async function handleDeepcoreLaunches(req, res, url) {
@@ -264,7 +264,10 @@ export async function handleDeepcoreLaunches(req, res, url) {
   const l = Number(url.searchParams.get('limit') ?? KEEP_LAUNCHES)
   if (!Number.isInteger(l) || l < 1 || l > KEEP_LAUNCHES) return json(res, 400, { error: `limit must be a whole number from 1 to ${KEEP_LAUNCHES}`, code: 'BAD_LIMIT' }), true
   const r = await readLaunches({ chainId, limit: l })
-  return json(res, 200, { ...r, pollSeconds: Math.round(pollMs() / 1000) }, { 'Cache-Control': 'public, max-age=30' }), true
+  // `locked` per launch (true when any leg's liquidity is locked, false when none is, null when unknown) for
+  // the site's launch list with Holder Maps.
+  const launches = r.launches.map((x) => ({ ...x, locked: x.legs.some((g) => g.locked === true) ? true : x.legs.length && x.legs.every((g) => g.locked === false) ? false : null }))
+  return json(res, 200, { ...r, launches, pollSeconds: Math.round(pollMs() / 1000) }, { 'Cache-Control': 'public, max-age=30' }), true
 }
 
 /** For alerts: the chains a launch alert may be limited to. */

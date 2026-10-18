@@ -1,4 +1,4 @@
-import { BellRing, Boxes, ChartNoAxesCombined, CreditCard, History, KeyRound, LayoutDashboard, Settings, Store, Users } from 'lucide-react'
+import { BellRing, Boxes, ChartNoAxesCombined, CreditCard, History, KeyRound, LayoutDashboard, Settings, ShieldCheck, Store, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityTab } from './Activity'
 import { Alerts } from './Alerts'
@@ -15,6 +15,7 @@ import { APP_NAME, APP_TITLE, inviteTokenFromHash, usePortal } from './portal'
 import { Products } from './Products'
 import { grouped, isServiceTab, SERVICE_TABS, type ServiceTab } from './services/nav'
 import { ServiceView } from './services/ServiceView'
+import { SecurityTab } from './security/SecurityTab'
 import { SettingsTab } from './Settings'
 import { Team } from './Team'
 
@@ -22,11 +23,11 @@ import { Team } from './Team'
    workspace switcher, the pages, Docs, Gully AI, Status and the wallet menu; a slim header with the
    breadcrumb) around one page at a time. Pages are deep-linkable by hash (#keys, #alerts, #analytics,
    #billing, #products, #team, #activity, #settings; the pricing page links to #billing). Old hashes
-   (#quickstart, #requests, #widget) open Keys at that section; #profile, #company and #sessions open
+   (#quickstart, #requests, #widget) open Keys at that section; #security-new, #security-reports and #security-review open Security there; #profile, #company and #sessions open
    Settings there. #invite=<token> shows the invite landing above the page; #receipt=<chain>:<tx> a
    printable receipt. A Merchant page, when it exists, goes between Billing and Team. */
 
-export type Tab = 'overview' | 'products' | 'keys' | 'alerts' | 'analytics' | 'billing' | 'merchant' | 'team' | 'activity' | 'settings'
+export type Tab = 'overview' | 'products' | 'keys' | 'alerts' | 'analytics' | 'security' | 'billing' | 'merchant' | 'team' | 'activity' | 'settings'
 
 const ICON = 16
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
@@ -36,13 +37,15 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: 'keys', label: 'Keys', icon: <KeyRound size={ICON} aria-hidden /> },
   { id: 'alerts', label: 'Alerts', icon: <BellRing size={ICON} aria-hidden /> },
   { id: 'analytics', label: 'Analytics', icon: <ChartNoAxesCombined size={ICON} aria-hidden /> },
+  // Gully Security (security/SecurityTab.tsx), in the sidebar's Services group (services/nav.ts).
+  { id: 'security', label: 'Security', icon: <ShieldCheck size={ICON} aria-hidden /> },
   { id: 'billing', label: 'Billing', icon: <CreditCard size={ICON} aria-hidden /> },
   { id: 'merchant', label: 'Merchant', icon: <Store size={ICON} aria-hidden /> },
   { id: 'team', label: 'Team', icon: <Users size={ICON} aria-hidden /> },
   { id: 'activity', label: 'Activity', icon: <History size={ICON} aria-hidden /> },
   { id: 'settings', label: 'Settings', icon: <Settings size={ICON} aria-hidden /> },
 ]
-const LEGACY: Record<string, Tab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings' }
+const LEGACY: Record<string, Tab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings', 'security-new': 'security', 'security-reports': 'security', 'security-monitors': 'security', 'security-review': 'security' }
 
 /** Every page: the tabs above plus the service pages (services/nav.ts), each with its icon. */
 type AppTab = Tab | ServiceTab
@@ -84,10 +87,13 @@ function useView(): [View, (t: AppTab, section?: string | null) => void, () => v
   return [state, set, reread]
 }
 
-/** `?alert=<chain>:<TICKER>` with #alerts (the stock pages' "Set an alert" links): that stock, or null. */
+/** `?alert=<chain>:<TICKER>` with #alerts (the stock pages' "Set an alert" links): that stock, or null.
+    `?alert=holders:<chain>:<token>` (the Holder Map's "Alert me") opens a holder alert for that token. */
 function alertFromUrl(): string | null {
   if (window.location.hash !== '#alerts') return null
   const v = new URLSearchParams(window.location.search).get('alert') ?? ''
+  const h = v.match(/^holders:([a-z]{2,12}):([A-Za-z0-9.]{1,64})$/)
+  if (h) return `holders:${h[1]}:${h[2]}`
   const m = v.match(/^([a-z]{2,12}):([A-Za-z.]{1,8})$/)
   return m ? `${m[1]}:${m[2].toUpperCase()}` : null
 }
@@ -200,6 +206,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         {tab === 'keys' && <KeysTab account={account} reload={reload} creating={newKey} onCreateDone={clearNewKey} section={section} />}
         {tab === 'alerts' && <Alerts goBilling={() => go('billing')} creating={newAlert} onCreateDone={clearNewAlert} prefill={alertFor} prefillGap={alertGap} />}
         {tab === 'analytics' && <AnalyticsPanel />}
+        {tab === 'security' && <SecurityTab section={section} />}
         {tab === 'billing' && <Billing account={account} reload={reload} intent={intent} onIntentDone={clearIntent} />}
         {tab === 'merchant' && <MerchantTab />}
         {tab === 'team' && <Team />}

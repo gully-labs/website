@@ -1,5 +1,7 @@
 /*! Gully Labs tracker widget v2 \u00b7 https://docs.gullylabs.xyz/widget
  * <div data-gully-widget="ticker|badge|table" data-chain="all|robinhood|bsc" data-ticker="NVDA"
+ * Holder Map: <div data-gully-widget="holders" data-chain="robinhood|bsc|base|hyperevm|solana"
+ *      data-token="0x… or a tracked ticker" data-height="640"></div> frames gullylabs.xyz/embed/holders.
  *      data-theme="dark|light" data-limit="5"></div>
  * <script src="https://gullylabs.xyz/widget.js" async></script>
  * Every figure is read from the live tracker API; nothing is typed in. One request per API base per
@@ -463,10 +465,34 @@
     }
   }
 
+  /* The Holder Map embed: a responsive iframe of gullylabs.xyz/embed/holders/<chain>/<token> (it reads its
+     own data; nothing is fetched by this script). Chain and token are checked before they go in the URL. */
+  function mountHolders(el) {
+    var chain = (el.getAttribute('data-chain') || '').toLowerCase()
+    var token = el.getAttribute('data-token') || el.getAttribute('data-ticker') || ''
+    if (!/^(robinhood|bsc|base|hyperevm|solana)$/.test(chain) || !/^[A-Za-z0-9]{1,64}$/.test(token)) {
+      el.textContent = 'Holder Map: set data-chain and data-token.'
+      return
+    }
+    var h = parseInt(el.getAttribute('data-height') || '', 10)
+    var f = document.createElement('iframe')
+    f.src = apiBase(el) + '/embed/holders/' + chain + '/' + token
+    f.title = 'Holder Map by Gully Labs'
+    f.loading = 'lazy'
+    f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
+    f.style.cssText = 'display:block;width:100%;max-width:100%;border:0;border-radius:12px;background:#0d141c;height:' + (h >= 360 && h <= 2000 ? h : 760) + 'px'
+    el.appendChild(f)
+  }
+
   function mount(el) {
-    if (el.__gully || !el.attachShadow) return
-    el.__gully = true
+    if (el.__gully) return
     var type = (el.getAttribute('data-gully-widget') || '').toLowerCase()
+    if (type === 'holders') {
+      el.__gully = true
+      return mountHolders(el)
+    }
+    if (!el.attachShadow) return
+    el.__gully = true
     var limit = parseInt(el.getAttribute('data-limit') || '', 10)
     var root = el.shadowRoot || el.attachShadow({ mode: 'open' })
     var w = {
@@ -513,6 +539,159 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan)
   else scan()
   // Widgets added later (single-page apps) are picked up on the next frame.
+  try {
+    var queued = false
+    new MutationObserver(function () {
+      if (queued) return
+      queued = true
+      requestAnimationFrame(function () {
+        queued = false
+        scan()
+      })
+    }).observe(document.documentElement, { childList: true, subtree: true })
+  } catch (e) {
+    /* ignore */
+  }
+})()
+
+/*! Gully Score widget (additive; the tracker widget above is unchanged) · https://docs.gullylabs.xyz/gully-score#embed
+ * <div data-gully-score data-chain="base" data-address="0x…" data-theme="dark|light"></div>
+ * <script src="https://gullylabs.xyz/widget.js" async></script>
+ * Reads GET /api/score/:chain/:address (one request per contract per 5 minutes, however many widgets show it) and
+ * draws the score ring, the date it was read and a link to the score page with every part and its evidence.
+ * A score that could not be given says so; nothing is ever drawn as 0. Errors stay inside the widget. */
+;(function () {
+  'use strict'
+  if (window.GullyScoreWidget) return
+  var DEFAULT_API = 'https://gullylabs.xyz'
+  var SITE = 'https://gullylabs.xyz'
+  var REFRESH = 300000
+  var feeds = {}
+  var CSS =
+    ':host{all:initial;display:block;--bg:#0d141c;--sf:#151d28;--ln:#2a3542;--ink:#f4f2ec;--mut:#aeb5be;--fnt:#7d8794;--acc:#d9b563}' +
+    ':host([data-theme=light]){--bg:#ffffff;--sf:#f4f6f8;--ln:#dde2e8;--ink:#0d141c;--mut:#3a4452;--fnt:#6c7888;--acc:#8a6a1a}' +
+    '*{box-sizing:border-box}' +
+    '.w{display:flex;align-items:center;gap:14px;max-width:340px;min-width:240px;padding:12px 14px;background:var(--bg);color:var(--ink);border:1px solid var(--ln);border-radius:12px;font:12px/1.4 "IBM Plex Mono",ui-monospace,Menlo,monospace;text-decoration:none;animation:in .45s cubic-bezier(.2,.7,.2,1) both}' +
+    'a.w:hover{border-color:var(--acc)}a.w:focus-visible{outline:2px solid var(--acc);outline-offset:2px}' +
+    '@keyframes in{from{opacity:0;transform:translateY(4px)}}' +
+    '.r{position:relative;width:64px;height:64px;flex:none}.r svg{width:64px;height:64px;transform:rotate(-90deg)}' +
+    '.r .bg{fill:none;stroke:var(--ln);stroke-width:6}.r .fg{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:163.4;stroke-dashoffset:163.4;transition:stroke-dashoffset 1.1s cubic-bezier(.2,.7,.2,1),stroke .4s}' +
+    '.r b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 24px/1 "Barlow Condensed","Arial Narrow",sans-serif}' +
+    '.t{display:flex;flex-direction:column;gap:3px;min-width:0}.h{display:flex;align-items:center;gap:6px;font:700 14px/1 "Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.6px}.h img{width:18px;height:18px;border-radius:4px}' +
+    '.n{color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:13px/1.3 "Hanken Grotesk",system-ui,sans-serif}.d{color:var(--fnt);font-size:10px}' +
+    '.pulse{animation:pl 1.6s ease-in-out infinite}@keyframes pl{50%{opacity:.45}}' +
+    '@media (prefers-reduced-motion:reduce){.w{animation:none}.r .fg{transition:stroke-dashoffset .15s linear}.pulse{animation:none}}'
+  var ENT = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return ENT[c]
+    })
+  }
+  function color(s) {
+    return s === null ? '#7d8794' : s >= 80 ? '#6fcf6a' : s >= 60 ? '#d9b563' : s >= 40 ? '#f49b5a' : '#ff8a7a'
+  }
+  function apiBase(el) {
+    var a = el.getAttribute('data-api') || DEFAULT_API
+    return /^https?:\/\/[^\s"'<>]+$/.test(a) ? a.replace(/\/+$/, '') : DEFAULT_API
+  }
+  function short(a) {
+    return a.slice(0, 6) + '…' + a.slice(-4)
+  }
+  function load(url) {
+    var f = feeds[url]
+    if (f) return f
+    f = feeds[url] = { data: null, error: null, subs: [] }
+    function tick() {
+      fetch(url)
+        .then(function (r) {
+          return r.json().then(function (j) {
+            if (!r.ok) throw new Error((j && j.error) || 'unavailable')
+            return j
+          })
+        })
+        .then(function (d) {
+          f.data = d
+          f.error = null
+        })
+        .catch(function (e) {
+          f.error = String((e && e.message) || 'unavailable')
+        })
+        .then(function () {
+          f.subs.forEach(paint)
+        })
+    }
+    tick()
+    setInterval(tick, REFRESH)
+    return f
+  }
+  function paint(w) {
+    try {
+      var f = feeds[w.url]
+      var d = f && f.data
+      var page = SITE + '/score/' + encodeURIComponent(w.chain) + '/' + encodeURIComponent(w.address)
+      var s = d && typeof d.score === 'number' ? d.score : null
+      var name = (d && d.name) || short(w.address)
+      var line = !d ? (f && f.error ? 'Score unavailable just now' : 'Reading the score…') : s === null ? 'Not enough public data for a score' : d.grade + ' · ' + new Date(d.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+      var label = s === null ? 'Gully Score: ' + line : 'Gully Score ' + s + ' out of 100 for ' + name + ', ' + line
+      if (!w.box.firstChild) {
+        w.box.innerHTML =
+          '<a class="w" target="_blank" rel="noopener noreferrer"><span class="r"><svg viewBox="0 0 64 64" aria-hidden="true"><circle class="bg" cx="32" cy="32" r="26"/><circle class="fg" cx="32" cy="32" r="26"/></svg><b></b></span>' +
+          '<span class="t"><span class="h"><img alt="" src="' + esc(w.base) + '/brand/kit/mark-64.png" width="18" height="18">GULLY SCORE</span><span class="n"></span><span class="d"></span></span></a>'
+      }
+      var a = w.box.querySelector('a')
+      a.href = page
+      a.setAttribute('aria-label', label + ' (opens in a new tab)')
+      var b = w.box.querySelector('b')
+      b.textContent = s === null ? (d ? 'N/A' : '…') : String(s)
+      b.style.color = color(s)
+      b.className = d ? '' : 'pulse'
+      w.box.querySelector('.n').textContent = name
+      w.box.querySelector('.d').textContent = line
+      var fg = w.box.querySelector('.fg')
+      fg.style.stroke = color(s)
+      // Next frame, so the ring sweeps from empty to the score on first paint and glides on refresh.
+      requestAnimationFrame(function () {
+        fg.style.strokeDashoffset = String(163.4 * (1 - (s === null ? 0 : s / 100)))
+      })
+    } catch (e) {
+      /* never into the host page */
+    }
+  }
+  function mount(el) {
+    if (el.__gullyScore || !el.attachShadow) return
+    var chain = (el.getAttribute('data-chain') || '').toLowerCase()
+    var address = (el.getAttribute('data-address') || '').toLowerCase()
+    if (!/^[a-z]{2,12}$/.test(chain) || !/^0x[0-9a-f]{40}$/.test(address)) return
+    el.__gullyScore = true
+    el.setAttribute('data-theme', el.getAttribute('data-theme') === 'light' ? 'light' : 'dark')
+    var root = el.shadowRoot || el.attachShadow({ mode: 'open' })
+    try {
+      var sheet = new CSSStyleSheet()
+      sheet.replaceSync(CSS)
+      root.adoptedStyleSheets = [sheet]
+    } catch (e) {
+      var style = document.createElement('style')
+      style.textContent = CSS
+      root.appendChild(style)
+    }
+    var base = apiBase(el)
+    var w = { chain: chain, address: address, base: base, url: base + '/api/score/' + chain + '/' + address, box: document.createElement('div') }
+    w.box.setAttribute('part', 'score')
+    root.appendChild(w.box)
+    load(w.url).subs.push(w)
+    paint(w)
+  }
+  function scan() {
+    try {
+      var els = document.querySelectorAll('[data-gully-score]')
+      for (var i = 0; i < els.length; i++) mount(els[i])
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  window.GullyScoreWidget = { scan: scan, version: '1' }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan)
+  else scan()
   try {
     var queued = false
     new MutationObserver(function () {

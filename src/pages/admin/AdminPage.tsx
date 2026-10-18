@@ -10,6 +10,7 @@ import { DeliveryLog, EmbedBox, PayLinks, SecretOnce, type Delivery, type Endpoi
 import { AskStudio } from './AskStudio'
 import { TelegramChats } from './TelegramChats'
 import { MerchantsAdmin } from './MerchantsAdmin'
+import { SecurityCard } from './SecurityCard'
 import { TelegramChannel } from './TelegramChannel'
 import { TreasurySafe } from './TreasurySafe'
 import { TelegramBroadcasts } from './TelegramBroadcasts'
@@ -947,6 +948,8 @@ export function AdminPage() {
                 </div>
               )}
             </section>
+
+            <SecurityCard token={token} />
 
             <TelegramChats token={token} />
             <TelegramChannel token={token} />

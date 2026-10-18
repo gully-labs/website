@@ -25,6 +25,7 @@
 //   GET  /api/tg/launches[?chain=<id>] -> DeepCore launches (deepcore.mjs readLaunches)
 //   GET  /api/tg/alerts                -> the linked account's alerts and limits
 //   POST /api/tg/alerts                { chain, ticker, pct, direction } -> 201 { alert }   (Telegram delivery)
+//                                      { kind: 'holders', chain, token, metric?, above?, dropPts? } -> a Holder Map alert
 //   POST /api/tg/alerts/:id/pause|resume|test|delete
 
 import crypto from 'node:crypto'
@@ -187,12 +188,19 @@ export async function handleMiniApp(req, res, url) {
     if (!allow(`w:${user.id}`, 30)) return json(res, 429, { error: 'Too many changes in a minute. Try again shortly.' }), true
     if (p === '/api/tg/alerts') {
       const body = await readJson(req, 2_000)
-      const r = await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', {
-        chain: body?.chain,
-        ticker: body?.ticker,
-        condition: { type: 'gap', pct: body?.pct, direction: body?.direction ?? 'both' },
-        telegram: true,
-      })
+      // A holder alert (Holder Map): the token's top cluster (or top 10) passing a share; alerts.mjs validates it.
+      const r =
+        body?.kind === 'holders'
+          ? await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', {
+              condition: { type: 'holders', chain: body?.chain, token: body?.token, metric: body?.metric ?? 'cluster', above: body?.above ?? null, dropPts: body?.dropPts ?? null },
+              telegram: true,
+            })
+          : await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', {
+              chain: body?.chain,
+              ticker: body?.ticker,
+              condition: { type: 'gap', pct: body?.pct, direction: body?.direction ?? 'both' },
+              telegram: true,
+            })
       return json(res, r.status, r.data ?? { error: 'The alert was not created.' }), true
     }
     const m = p.match(/^\/api\/tg\/alerts\/([\w-]{1,40})\/(pause|resume|test|delete)$/)

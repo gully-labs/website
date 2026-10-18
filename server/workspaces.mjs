@@ -98,11 +98,14 @@ export function categoryOf(pathname) {
   const p = String(pathname).replace(/^\/api\/developer/, '')
   if (p === '/keys' || p.startsWith('/keys/')) return 'keys'
   if (p === '/alerts' || p.startsWith('/alerts/')) return 'alerts'
+  if (p === '/monitors' || p.startsWith('/monitors/')) return 'alerts' // Gully Security monitoring: same writers as alerts
   if (p === '/telegram' || p.startsWith('/telegram/')) return 'telegram'
   if (p === '/checkout' || p === '/checkout/verify') return 'billing'
   if (p === '/analytics/checkout' || p === '/analytics/checkout/verify') return 'billing'
   if (p === '/analytics' || p.startsWith('/analytics/')) return 'analytics'
   if (p === '/company') return 'company'
+  // Gully Security scans (security-routes.mjs; publishing a report is further limited to owner and admin there).
+  if (p === '/security' || p.startsWith('/security/')) return 'security'
   // Gully Pay for merchants: links and webhooks are 'merchant-dev'; wallets, profile, invoices are 'merchant'.
   if (p === '/merchant/links' || p.startsWith('/merchant/links/') || p === '/merchant/webhook' || p.startsWith('/merchant/webhook/')) return 'merchant-dev'
   if (p === '/merchant' || p.startsWith('/merchant/')) return 'merchant'
@@ -116,10 +119,10 @@ export function categoryOf(pathname) {
 /** The write categories each role holds. */
 export const WRITES = {
   viewer: [],
-  developer: ['keys', 'alerts', 'telegram', 'analytics', 'merchant-dev'],
+  developer: ['keys', 'alerts', 'telegram', 'analytics', 'merchant-dev', 'security'],
   billing: ['billing', 'company', 'merchant', 'merchant-dev'],
-  admin: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'merchant', 'merchant-dev'],
-  owner: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'owner', 'merchant', 'merchant-dev'],
+  admin: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'merchant', 'merchant-dev', 'security'],
+  owner: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'owner', 'merchant', 'merchant-dev', 'security'],
 }
 
 /** Whether `role` may make this POST. */

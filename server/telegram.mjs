@@ -332,10 +332,17 @@ export function miniAppUrl() {
 /** The chat menu button: the command list (the Mini App opens from "📱 Open app", /app and the bot profile). */
 export const menuButton = () => ({ type: 'commands' })
 
-/** The main menu keyboard for one chat: private chats get the "📱 Open app" web_app row on top. */
+/**
+ * A view's keyboard for one chat: private chats get the "📱 Open app" web_app row on top of the main menu,
+ * and every "👥 Holders" placeholder (ui.holdersBtn) becomes a web_app button opening the Mini App's
+ * holder screen there, or a link to the site's Holder Map in groups (Telegram refuses web_app buttons in groups).
+ */
 function keyboardFor(chatId, kb) {
-  if (kb !== ui.MENU_KEYBOARD || !(Number(chatId) > 0)) return kb
-  return [[ui.appBtn(miniAppUrl())], ...kb]
+  if (!kb) return kb
+  const priv = Number(chatId) > 0
+  const out = ui.resolveHoldersButtons(kb, priv, miniAppUrl())
+  if (kb !== ui.MENU_KEYBOARD || !priv) return out
+  return [[ui.appBtn(miniAppUrl())], ...out]
 }
 
 let startTimer = null
@@ -418,7 +425,7 @@ export async function sendAlertTelegram(a) {
   const chatId = a.chatId ?? linkedChat(a.owner)?.chatId ?? null
   if (!chatId) return { status: null, ok: false, error: 'No Telegram chat is linked to this account.' }
   const v = ui.deliveryView(a)
-  const r = await sendText(chatId, v.text, v.keyboard ? { reply_markup: markup(v.keyboard) } : {})
+  const r = await sendText(chatId, v.text, v.keyboard ? { reply_markup: markup(keyboardFor(chatId, v.keyboard)) } : {})
   return { status: r.status, ok: r.ok, error: r.error }
 }
 

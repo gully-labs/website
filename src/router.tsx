@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, EmbedHoldersRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
@@ -18,13 +18,22 @@ const mainRoutes = [
       { path: '/about', element: <AboutRoute /> },
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/tracker/:chain/:ticker', element: <StockRoute /> },
+      { path: '/holders', element: <HoldersLandingRoute /> },
+      { path: '/holders/:chain/:token', element: <HoldersRoute /> },
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
       { path: '/chain-kit', element: <ChainKitRoute /> },
       { path: '/ask', element: <AskRoute /> },
+      // Gully Security: the product page, the published reports and one report (noindex unless its owner opts in).
+      { path: '/security', element: <SecurityRoute /> },
+      { path: '/security/reports', element: <SecurityReportsRoute /> },
+      { path: '/security/reports/:id', element: <SecurityReportRoute /> },
       // The link hub for bios and KOL posts.
       { path: '/links', element: <LinksRoute /> },
+      // The Gully Score (src/pages/score): the public index and one page per contract.
+      { path: '/score', lazy: () => import('./pages/score/ScoreIndex').then((m) => ({ Component: m.ScoreIndex })) },
+      { path: '/score/:chain/:address', lazy: () => import('./pages/score/ScorePage').then((m) => ({ Component: m.ScorePage })) },
       // The Gully Pay merchant terms (the checkout's footer links here).
       { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
       { path: '/legal/privacy', lazy: () => import('./pages/legal/Privacy').then((m) => ({ Component: m.PrivacyPage })) },
@@ -42,6 +51,8 @@ const mainRoutes = [
   { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
   // The Telegram Mini App (opened from @GullyLabsBot): full screen in Telegram's own chrome, no site header or footer.
   { path: '/tg', element: <TgRoute /> },
+  // The embeddable Holder Map (widget.js data-gully-widget="holders"): framed by other sites, no site chrome.
+  { path: '/embed/holders/:chain/:token', element: <EmbedHoldersRoute /> },
   // Gully Pay's standalone checkout (src/pages/pay/CheckoutFrame): its own layout, no site header, nav or
   // footer. Never linked from the site, never indexed; whoever holds the link pays here.
   {

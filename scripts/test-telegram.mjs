@@ -338,7 +338,9 @@ try {
   check('/gap NVDA robinhood answers with the stock card', /🔴 <b>NVDA<\/b> · Robinhood Chain/.test(card.text), card.text)
   check('card: the gap as a sentence, token and real share price, liquidity, market open', card.text.includes('NVDA token is <b>3.10% above</b> the real share price.') && card.text.includes('Token $185.58 · Real share $180.00') && card.text.includes('💧 Liquidity $50,000') && card.text.includes('☀️ Market open.'), card.text)
   check('card: "Updated 3 min ago" and the information-only line', /Updated 3 min ago · Information only, not advice\./.test(card.text), card.text)
-  check('card buttons: Alert me, Refresh / Open page (url), Back, Menu', JSON.stringify(card.kb.map((r) => r.map((b) => b.text))) === JSON.stringify([['🔔 Alert me', '🔄 Refresh'], ['🌐 Open page ↗', '⬅ Back', '🏠 Menu']]) && button(card.kb, /Open page/).url === 'https://gullylabs.xyz/tracker/robinhood/NVDA')
+  check('card buttons: Alert me, Refresh / Holders / Open page (url), Back, Menu', JSON.stringify(card.kb.map((r) => r.map((b) => b.text))) === JSON.stringify([['🔔 Alert me', '🔄 Refresh'], ['👥 Holders'], ['🌐 Open page ↗', '⬅ Back', '🏠 Menu']]) && button(card.kb, /Open page/).url === 'https://gullylabs.xyz/tracker/robinhood/NVDA')
+  const hb = button(card.kb, /Holders/)
+  check('card: 👥 Holders in a private chat opens the Mini App’s holder screen (web_app)', hb?.web_app?.url === 'https://gullylabs.xyz/tg?holders=robinhood%3ANVDA' && hb.callback_data === undefined && hb.url === undefined, JSON.stringify(hb))
   check('/gap is sent as HTML with link previews off', sent(333).at(-1).body.parse_mode === 'HTML' && sent(333).at(-1).body.disable_web_page_preview === true)
   await say(privateChat(334), '/gap nvda bsc')
   check('/gap NVDA bsc: thin trading is ⚪ and says "not enough trading" (no "pool", no "thin")', /⚪ <b>NVDA<\/b> · BNB Chain/.test(view(334).text) && /⚪ Not enough trading to compare right now\./.test(view(334).text) && !/pool|thin/i.test(view(334).text), view(334).text)
@@ -383,6 +385,7 @@ try {
   const lc = view(340)
   check('launch card: name (escaped), chain, how long ago, liquidity not locked; no pool details, no address, no raw time', lc.text.includes('&lt;b&gt;X&amp;') && !lc.text.includes('<b><b>X') && /Base · \d+(h|d| min) ago/.test(lc.text) && lc.text.includes('🔓 Liquidity not locked') && !/pool|0x|UTC|Bin|USDC/i.test(lc.text) && /Information only, not advice/.test(lc.text), lc.text)
   check('launch card: View on DeepCore (url), launch alert, Back to the list, Menu', button(lc.kb, /View on DeepCore/)?.url === LAUNCHES[0].links.token && data(lc.kb).includes('dla:0') && data(lc.kb).includes('dc:0') && hasNav(lc.kb))
+  check('launch card: 👥 Holders opens the Mini App on that launch (DeepCore chain key + token)', button(lc.kb, /Holders/)?.web_app?.url === `https://gullylabs.xyz/tg?holders=${encodeURIComponent(`${LAUNCHES[0].chainKey}:${LAUNCHES[0].token.toLowerCase()}`)}`, JSON.stringify(button(lc.kb, /Holders/)))
   tg.setLaunchesReaderForTest(launchesOk(asked), async (l) => (l.token === LAUNCHES[1].token ? { priceUsd: 0.00123, marketCapUsd: 123456.7 } : null))
   await press(privateChat(340), lnData[1])
   const lc2 = view(340)
@@ -452,6 +455,10 @@ try {
   check('a command addressed to another bot is ignored', sent(-100200).length === 0)
   await say({ id: -100200, type: 'supergroup', title: 'Desk' }, `/gap@${BOT} TSLA`, 9)
   check('a command addressed to this bot in a group is answered', /TSLA/.test(lastText(-100200)))
+  await say({ id: -100200, type: 'supergroup', title: 'Desk' }, `/gap@${BOT} TSLA robinhood`, 9)
+  const gkb = sent(-100200).at(-1)?.body.reply_markup?.inline_keyboard ?? []
+  const ghb = flat(gkb).find((b) => b.text === '👥 Holders')
+  check('group: 👥 Holders is a link to the site’s Holder Map (no web_app in groups)', !!ghb && ghb.url === 'https://gullylabs.xyz/holders/robinhood/TSLA' && !ghb.web_app, `${JSON.stringify(gkb).slice(0, 300)} | ${lastText(-100200).slice(0, 160)}`)
 
   /* ---------------------------------------------------- alerts → Telegram --- */
   const created = await dev.post('/api/developer/alerts', { name: 'NVDA wide', chain: 'robinhood', ticker: 'NVDA', condition: { type: 'gap', pct: 2 }, telegram: true })
@@ -493,6 +500,15 @@ try {
   const lkb = flat(lmsg.body.reply_markup?.inline_keyboard)
   check('launch alert: liquidity locked, no address or pool details', lmsg.body.text.includes('🔒 Liquidity locked') && !/0x|pool|lock #/i.test(lmsg.body.text), lmsg.body.text)
   check('launch alert buttons: "View DTC on DeepCore" and "Mute 24h"', lkb.some((b) => b.text === '🌐 View DTC on DeepCore ↗' && b.url === LAUNCHES[1].links.token) && lkb.some((b) => b.callback_data === 'mute:dcalert1'))
+  // Holder Map alerts (alerts.mjs condition type 'holders'): plain words, Open map and Mute 24h.
+  const hcond = { type: 'holders', chain: 'robinhood', token: '0x8d901a1b3f3a57f9c36a71382fa183476c41545b', symbol: 'DTC', metric: 'cluster', above: 20, dropPts: null }
+  const hv = ui.deliveryView({ alertId: 'hold1', name: 'DTC whales', conditionText: 'x', condition: hcond, events: [{ kind: 'holders.alert', chain: 'robinhood', chainName: 'Robinhood Chain', token: hcond.token, symbol: 'DTC', metric: 'cluster', pct: 21.4, previousPct: 18.2, reason: 'above', pageUrl: 'https://gullylabs.xyz/holders/robinhood/0x8d901a1b3f3a57f9c36a71382fa183476c41545b', snapshotAt: new Date().toISOString() }], test: false })
+  check('holder alert: the cluster’s share now and before, against the line, in plain words', hv.text.includes('🫧') && hv.text.includes('<b>DTC</b> on Robinhood Chain: the largest connected cluster now holds 21% (was 18%), above your 20% line.') && /Information only, not advice/.test(hv.text), hv.text)
+  check('holder alert buttons: Open map (url) and Mute 24h', flat(hv.keyboard)[0].url === 'https://gullylabs.xyz/holders/robinhood/0x8d901a1b3f3a57f9c36a71382fa183476c41545b' && flat(hv.keyboard)[1].callback_data === 'mute:hold1', JSON.stringify(hv.keyboard))
+  const hd = ui.deliveryView({ alertId: 'hold2', name: null, conditionText: 'x', condition: { ...hcond, above: null, dropPts: 5, metric: 'top10' }, events: [{ kind: 'holders.alert', chain: 'bsc', token: '0xabc', symbol: null, metric: 'top10', pct: 30, previousPct: 37.5, reason: 'drop', pageUrl: 'javascript:alert(1)' }], test: false })
+  check('holder alert (sold): the drop in points; a non-https page falls back to the site’s map', hd.text.includes('the top 10 wallets now hold 30% (was 38%): they sold 7.5 points of their share.') && flat(hd.keyboard)[0].url === 'https://gullylabs.xyz/holders/bsc/0xabc', hd.text)
+  check('holder alert: the condition reads plainly in My alerts', ui.conditionWords(hcond, {}) === 'the largest connected cluster of wallets of DTC · Robinhood Chain hold 20% or more' && ui.alertState({ coveredByPlan: true, enabled: true, armed: false, condition: hcond, kind: 'holders' }).emoji === '🟠', ui.conditionWords(hcond, {}))
+  check('every callback_data in the card and launch views stays within 64 bytes', [...ui.callbackDataOf(card.kb), ...ui.callbackDataOf(lc.kb), ...ui.callbackDataOf(hv.keyboard)].every((d) => Buffer.byteLength(d) <= 64))
 
   /* -------------------------------------------------------------- Mute --- */
   await press(privateChat(444), `mute:${alertId}`, { msgId: null })

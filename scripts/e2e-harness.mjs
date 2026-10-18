@@ -87,6 +87,169 @@ export function historyFixture(chain, ticker, days = 7) {
   return { chain, ticker, days, points }
 }
 
+/* ------------------------------------------------------------- Holder Map fixture --- */
+
+export const E2E_LAUNCH_TOKEN = '0x8d901a1b3f3a57f9c36a71382fa183476c41545b'
+
+/**
+ * A deterministic /api/holders body in the server's shape (server/holders.mjs buildMap, src/lib/holders.ts):
+ * 30 wallets with a pool, a lock and a burn address, two clusters, bundled buyers and the deployer for a
+ * launch, the fair-price overlay for a stock, and 24 replay frames.
+ */
+export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
+  const addr = (i) => '0x' + (0xa11ce000 + i * 7919).toString(16).padStart(40, '0')
+  const launch = kind === 'deepcore-launch'
+  const raw = Array.from({ length: 30 }, (_, i) => 1000 / (i + 1) ** 1.15)
+  const total = raw.reduce((a, b) => a + b, 0)
+  const labels = { 0: { kind: 'pool', name: 'DeepCore pools (vault)' }, 4: { kind: 'lock', name: 'DeepCore launch lock' }, 9: { kind: 'burn', name: 'Burn (dead address)' }, ...(launch ? { 3: { kind: 'deployer', name: 'Deployer' } } : { 6: { kind: 'exchange', name: 'Binance 8' } }) }
+  const clusterA = [1, 2, 5, 7, 11]
+  const clusterB = [8, 13, 17]
+  const nodes = raw.map((v, i) => {
+    const pct = Math.round((v / total) * 10000) / 100
+    const flags = []
+    if (launch && [2, 5, 12].includes(i)) flags.push('bundled')
+    if (launch && i === 3) flags.push('deployer')
+    if (launch && [7, 11].includes(i)) flags.push('funded-by-deployer')
+    return {
+      id: addr(i),
+      short: `${addr(i).slice(0, 6)}…${addr(i).slice(-4)}`,
+      rank: i + 1,
+      balance: Math.round(v * 1_000_000),
+      pct,
+      label: labels[i] ?? null,
+      contract: [0, 4, 9].includes(i),
+      cluster: clusterA.includes(i) || (launch && i === 3) ? 'c1' : clusterB.includes(i) ? 'c2' : null,
+      flags,
+      url: `https://robinhoodchain.blockscout.com/address/${addr(i)}`,
+      ...(launch ? {} : { valueAtFairUsd: Math.round(v * 1_000_000 * 180), premiumUsd: Math.round(v * 1_000_000 * 180 * 0.026), boughtGapPct: i % 3 === 0 ? 1.2 : null }),
+    }
+  })
+  const pair = (a, b, n, k = 'transfer') => ({ source: addr(a), target: addr(b), transfers: n, pct: 0.4, kind: k })
+  const via = '0x' + 'feed'.repeat(10)
+  const viaLinks = [{ source: addr(14), target: via, transfers: 2, pct: null, kind: 'via' }, { source: via, target: addr(20), transfers: 2, pct: null, kind: 'via' }]
+  const links = [...viaLinks, pair(1, 2, 4), pair(2, 5, 2), pair(5, 7, 1), pair(7, 11, 3), pair(8, 13, 2), pair(13, 17, 1), ...(launch ? [pair(3, 7, 1, 'funding'), pair(3, 11, 1, 'funding'), pair(3, 1, 2)] : [])]
+  const sum = (ids) => Math.round(ids.reduce((s, i) => s + nodes[i].pct, 0) * 100) / 100
+  const c1 = launch ? [...clusterA, 3] : clusterA
+  const clusters = [
+    { id: 'c1', wallets: c1.map(addr), count: c1.length, pct: sum(c1), hasDeployer: launch },
+    { id: 'c2', wallets: clusterB.map(addr), count: clusterB.length, pct: sum(clusterB), hasDeployer: false },
+  ]
+  const people = nodes.filter((n) => !n.label || n.label.kind === 'deployer')
+  const top10 = Math.round(people.slice(0, 10).reduce((s, n) => s + n.pct, 0) * 100) / 100
+  const frames = Array.from({ length: 24 }, (_, f) => ({
+    block: 85_689_748 + f * 1200,
+    at: new Date(at - (24 - f) * 3_600_000).toISOString(),
+    pcts: nodes.map((n, i) => Math.round(n.pct * Math.min(1, (f + 1) / (6 + (i % 5) * 3)) * 100) / 100),
+    top10Pct: Math.round(top10 * Math.min(1, (f + 4) / 20) * 100) / 100,
+    holders: launch ? 3 + f * 2 : null,
+  }))
+  const line = `Top 10 wallets hold ${Math.round(top10)}%; the largest connected cluster holds ${Math.round(clusters[0].pct)}% across ${clusters[0].count} wallets.`
+  return {
+    state: 'ok',
+    kind,
+    chain: { key: 'robinhood', id: 4663, name: 'Robinhood Chain' },
+    token: { address: launch ? E2E_LAUNCH_TOKEN : '0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec', symbol: launch ? 'DTC' : 'NVDA', name: launch ? null : 'NVIDIA', decimals: 18, supply: launch ? 1_000_000_000 : null, url: 'https://robinhoodchain.blockscout.com/address/x' },
+    asOf: new Date(at - 120_000).toISOString(),
+    sources: launch ? { holders: 'DeepCore’s log index: all 812 transfers since launch (exact balances)', links: 'Direct transfers between the mapped wallets, since launch' } : { holders: 'Blockscout (top 50 holders)', links: 'Direct transfers between the mapped wallets in the latest 5,000 transfers' },
+    holders: { count: launch ? 41 : 18_204, shown: 30, graph: 30, sharesOf: launch ? 'total supply' : 'total supply', partial: null },
+    tier: 'pro',
+    locked: [],
+    features: { replay: true, csv: true, alerts: true, holders: 500, gated: false, liveMinutes: null },
+    nodes,
+    links,
+    clusters,
+    legend: [
+      ...(launch ? [{ kind: 'deployer', text: 'Deployer (created the launch)' }] : []),
+      { kind: 'pool', text: 'Trading pool' },
+      { kind: 'lock', text: 'Liquidity or token lock' },
+      { kind: 'burn', text: 'Burned (no one can spend it)' },
+      ...(launch ? [] : [{ kind: 'exchange', text: 'Exchange' }]),
+    ],
+    summary: {
+      top10Pct: top10,
+      largestCluster: { pct: clusters[0].pct, wallets: clusters[0].count },
+      line,
+      plain: [`The 10 biggest wallets (not counting pools, locks, burn and exchanges) own ${Math.round(top10)}% of all ${launch ? 'DTC' : 'NVDA'}.`, `${clusters[0].count} of the biggest wallets have sent tokens to each other: together they hold ${Math.round(clusters[0].pct)}%.`],
+    },
+    forensics: launch
+      ? { snipers: { wallets: 2, pct: 2.5, blocks: 3 }, deployer: addr(3), launchBlock: 85_689_748, firstTradeBlock: 85_689_760, bundled: { wallets: 3, pct: sum([2, 5, 12]), firstBlockBuyers: 3 }, funded: { wallets: 2, pct: sum([7, 11]), coinChecked: false, coinNote: 'Coin transfers from the deployer are not checked yet.' }, deployerPct: nodes[3].pct, liquidity: { locked: true, locker: addr(4), since: new Date(at - 86_400_000).toISOString() }, buyers: 38, riskLine: `3 wallets bought in the first block of trading and hold ${Math.round(sum([2, 5, 12]))}% now.` }
+      : null,
+    fair: launch ? null : { fair: 180, onchain: 184.68, gapPct: 2.6, status: 'premium', top10ValueAtFairUsd: 1_250_000_000, top10PremiumUsd: 32_500_000, buyersAvgGapPct: 1.2, buyers: 4 },
+    timeline: { basis: launch ? 'every transfer since launch' : 'rolled back from today over the latest transfers', frames },
+    hidden: [{ via, short: `${via.slice(0, 6)}…${via.slice(-4)}`, url: `https://robinhoodchain.blockscout.com/address/${via}`, connects: [addr(14), addr(20)], transfers: 2 }],
+    live: { supported: launch, cursor: launch ? 85_700_000 : null },
+    health: launch
+      ? {
+          score: 58,
+          level: 'mixed',
+          verdict: 'Liquidity is locked, but three wallets bundled the first block and still hold 14%.',
+          counted: 5,
+          parts: [
+            { id: 'liquidity', label: 'Liquidity locked', weight: 25, points: 25, value: 'Locked', reason: 'The launch liquidity sits in DeepCore’s launch lock.', wallets: [] },
+            { id: 'bundle', label: 'Bundled buys', weight: 20, points: 6, value: '3 wallets · 14%', reason: 'Three wallets bought in the first block of trading.', wallets: [addr(2), addr(5), addr(12)] },
+            { id: 'snipers', label: 'Snipers', weight: 15, points: 9, value: '2 wallets · 2.5%', reason: 'Two wallets bought in the first 3 blocks.', wallets: [addr(15), addr(16)] },
+            { id: 'deployer', label: 'Deployer’s share', weight: 15, points: 8, value: `${nodes[3].pct}%`, reason: 'The deployer still holds a share.', wallets: [addr(3)] },
+            { id: 'top10', label: 'Top 10 wallets', weight: 15, points: 10, value: `${Math.round(top10)}%`, reason: 'Concentration of the ten biggest wallets.', wallets: people.slice(0, 10).map((n) => n.id) },
+            { id: 'record', label: 'Deployer’s record', weight: 10, points: null, value: 'not known', reason: 'Earlier launches could not be read just now.', wallets: [] },
+          ],
+        }
+      : null,
+    deployerHistory: launch
+      ? {
+          checked: true,
+          reason: null,
+          total: 2,
+          serial: true,
+          launches: [
+            { chainKey: 'robinhood', token: '0x' + 'ab'.repeat(20), symbol: 'OLD1', createdAt: new Date(at - 30 * 86_400_000).toISOString(), outcome: 'liquidity-pulled', note: 'Liquidity was withdrawn 2 days after launch.', path: `/holders/robinhood/0x${'ab'.repeat(20)}` },
+            { chainKey: 'base', token: '0x' + 'cd'.repeat(20), symbol: 'OLD2', createdAt: new Date(at - 12 * 86_400_000).toISOString(), outcome: 'trading', note: 'Still trading.', path: `/holders/base/0x${'cd'.repeat(20)}` },
+          ],
+        }
+      : null,
+    crossToken: launch ? { cluster: 'c1', checkedWallets: 6, line: '4 wallets of the largest cluster also hold OLD1.', tokens: [{ chainKey: 'robinhood', token: '0x' + 'ab'.repeat(20), symbol: 'OLD1', wallets: 4, path: `/holders/robinhood/0x${'ab'.repeat(20)}` }] } : null,
+  }
+}
+
+/** The other Holder Map endpoints (server/holders.mjs), deterministic: resolve, the checked-launch feed, top scanned, live, wallet and Gully AI. */
+export function holdersExtraFixtures(at = Date.now()) {
+  const launch = holdersFixture('deepcore-launch', at)
+  const path = `/holders/robinhood/${E2E_LAUNCH_TOKEN}`
+  const tok = (i) => '0x' + String(i).repeat(40).slice(0, 40)
+  const feedRow = (i, score, level) => ({ chainKey: 'robinhood', chainName: 'Robinhood Chain', token: tok(i), symbol: `NEW${i}`, createdAt: new Date(at - i * 600_000).toISOString(), state: 'checked', health: { score, level, verdict: `Launch ${i}` }, riskLine: `${i} wallets bought in the first block of trading.`, path: `/holders/robinhood/${tok(i)}` })
+  return {
+    resolve: (q) => ({
+      matches:
+        /^dtc$/i.test(q) || q.toLowerCase() === E2E_LAUNCH_TOKEN
+          ? [{ chain: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', kind: 'deepcore-launch', path }]
+          : /^nvda$/i.test(q)
+            ? [
+                { chain: 'robinhood', chainName: 'Robinhood Chain', token: 'NVDA', symbol: 'NVDA', kind: 'stock', path: '/holders/robinhood/NVDA' },
+                { chain: 'bsc', chainName: 'BNB Chain', token: 'NVDA', symbol: 'NVDA', kind: 'stock', path: '/holders/bsc/NVDA' },
+              ]
+            : [],
+    }),
+    launches: {
+      asOf: new Date(at - 20_000).toISOString(),
+      launches: [
+        { chainKey: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', createdAt: new Date(at - 7 * 86_400_000).toISOString(), state: 'checked', health: { score: launch.health.score, level: launch.health.level, verdict: launch.health.verdict }, riskLine: launch.forensics.riskLine, path },
+        feedRow(2, 82, 'good'),
+        feedRow(3, 31, 'poor'),
+        feedRow(4, 64, 'mixed'),
+        { ...feedRow(5, null, null), state: 'checking', health: null, riskLine: null },
+      ],
+    },
+    top: { day: new Date(at).toISOString().slice(0, 10), items: [{ chain: 'robinhood', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', kind: 'deepcore-launch', scans: 214, path }, { chain: 'robinhood', token: 'NVDA', symbol: 'NVDA', kind: 'stock', scans: 120, path: '/holders/robinhood/NVDA' }] },
+    live: { state: 'ok', cursor: 85_700_010, transfers: [{ from: launch.nodes[1].id, to: launch.nodes[2].id, pct: 0.2, block: 85_700_005, at: new Date(at).toISOString() }, { from: '0x' + '99'.repeat(20), to: launch.nodes[6].id, pct: 0.1, block: 85_700_006, at: new Date(at).toISOString() }], pcts: { [launch.nodes[2].id]: launch.nodes[2].pct + 0.2 }, asOf: new Date(at).toISOString() },
+    wallet: { state: 'ok', firstBuy: { at: new Date(at - 6 * 86_400_000).toISOString(), block: 85_689_760, tokens: 12_500_000, paid: { amount: 0.42, symbol: 'WETH' } }, buys: 3, sells: 1, entryPrice: 0.0000000336, priceNow: 0.0000000477, quote: 'WETH', pnlPct: 42, otherLaunches: [{ chainKey: 'robinhood', token: '0x' + 'ab'.repeat(20), symbol: 'OLD1', path: `/holders/robinhood/0x${'ab'.repeat(20)}` }], asOf: new Date(at).toISOString() },
+    ask: { answer: 'Most of DTC sits with a few wallets. Three of them bought together in the first block, which is a warning sign.', citations: [{ n: 1, title: 'Holder Map', url: 'https://docs.gullylabs.xyz/holder-map', source: 'Docs' }] },
+  }
+}
+
+/** /api/deepcore/launches in the server's shape (server.mjs). */
+export function launchesFixture(at = Date.now()) {
+  return { state: 'ok', asOf: new Date(at).toISOString(), launches: [{ chainId: 4663, chainKey: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', createdAt: new Date(at - 7 * 86_400_000).toISOString(), locked: true, links: { token: 'https://deepcore.fun/tokens/x', launch: 'https://deepcore.fun/app/launch/v2/x', swap: 'https://deepcore.fun/app/swap' } }] }
+}
+
 /** /api/stats in the server's shape (server/stats.mjs, src/lib/stats.ts): four venues read, one unreadable. */
 export function statsFixture(at = Date.now()) {
   const day0 = Math.floor(at / 86_400_000) * 86400

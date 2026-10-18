@@ -15,7 +15,7 @@ import path from 'node:path'
 import zlib from 'node:zlib'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { blockedOutbound, bootServer, historyFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
+import { blockedOutbound, bootServer, E2E_LAUNCH_TOKEN, historyFixture, holdersExtraFixtures, holdersFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 import { auditPage, IN_PLACE_HOSTS, tokenColors } from './e2e-audit.mjs'
 
@@ -45,11 +45,13 @@ const QUOTE = { chain: 'robinhood', ticker: 'NVDA', pay: { symbol: 'ETH', amount
 
 // The DeepCore launch list as GET /api/deepcore/launches answers it (the poller is off in e2e).
 const LAUNCHES = (() => {
-  const chains = [[4663, 'Robinhood Chain'], [56, 'BNB Chain'], [8453, 'Base']]
+  // One list for the app's DeepCore page and band and the site's launch list with Holder Maps: the newest
+  // launch is the harness's DTC on Robinhood Chain (its Holder Map fixture), then eleven more.
+  const chains = [[4663, 'Robinhood Chain', 'robinhood'], [56, 'BNB Chain', 'bsc'], [8453, 'Base', 'base']]
   const launches = Array.from({ length: 12 }, (_, i) => {
-    const [chainId, chainName] = chains[i % 3]
-    const token = '0x' + (i + 1).toString(16).padStart(40, 'a')
-    return { key: `${chainId}:${token}`, chainId, chainKey: String(chainId), chainName, token, symbol: `E2E${i}`, createdAt: new Date(Date.now() - i * 5 * 3600_000).toISOString(), txHash: null, creator: null, startsAt: null, totalSupply: null, legs: [{ poolId: null, kind: 'CL', quote: 'WETH', locked: i % 2 === 0, lockId: null, feePct: 1, quoteAddress: null }], links: { token: `https://deepcore.fun/tokens/${token}`, launch: `https://deepcore.fun/app/launch/v2/${token}`, swap: 'https://deepcore.fun/app/swap' } }
+    const [chainId, chainName, chainKey] = chains[i % 3]
+    const token = i === 0 ? E2E_LAUNCH_TOKEN : '0x' + (i + 1).toString(16).padStart(40, 'a')
+    return { key: `${chainId}:${token}`, chainId, chainKey, chainName, token, symbol: i === 0 ? 'DTC' : `E2E${i}`, locked: i % 2 === 0, createdAt: new Date(Date.now() - i * 5 * 3600_000).toISOString(), txHash: null, creator: null, startsAt: null, totalSupply: null, legs: [{ poolId: null, kind: 'CL', quote: 'WETH', locked: i % 2 === 0, lockId: null, feePct: 1, quoteAddress: null }], links: { token: `https://deepcore.fun/tokens/${token}`, launch: `https://deepcore.fun/app/launch/v2/${token}`, swap: 'https://deepcore.fun/app/swap' } }
   })
   return { state: 'ok', launches, asOf: new Date().toISOString(), chains: chains.map(([chainId, name]) => ({ chainId, name, status: 'ok', total: 4 })), error: null, pollSeconds: 90 }
 })()
@@ -107,6 +109,14 @@ async function newContext({ width = 1440, height = 900, mobile = false, geo = { 
   await ctx.route(new RegExp(`^${BASE}/api/deepcore/quote`), (route) => json(route, { quote: QUOTE, cached: false }))
   await ctx.route(new RegExp(`^${BASE}/api/deepcore/launches`), (route) => json(route, LAUNCHES))
   await ctx.route(new RegExp(`^${BASE}/api/pay/price`), (route) => json(route, { asset: 'base-eth', price: (2500 + Math.random()).toFixed(2), updatedAt: new Date().toISOString() }))
+  // Holder Maps (server/holders.mjs reads DeepCore, Blockscout and RPCs): a launch for addresses, a stock for tickers.
+  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (route) => json(route, holdersFixture(/\/0x[0-9a-f]{40}$/i.test(new URL(route.request().url()).pathname) ? 'deepcore-launch' : 'stock')))
+  const HX = holdersExtraFixtures()
+  await ctx.route(new RegExp(`^${BASE}/api/holders/resolve`), (route) => json(route, HX.resolve(new URL(route.request().url()).searchParams.get('q') ?? '')))
+  await ctx.route(`${BASE}/api/holders/launches`, (route) => json(route, HX.launches))
+  await ctx.route(new RegExp(`^${BASE}/api/holders/top`), (route) => json(route, HX.top))
+  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/]+/live`), (route) => json(route, HX.live))
+  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/]+/wallet/`), (route) => json(route, HX.wallet))
   return ctx
 }
 
@@ -138,8 +148,8 @@ function watch(page, label) {
 const drawnIn = (page, sel) => page.locator(`${sel} [data-chart].opacity-100 svg`).first().waitFor({ timeout: 15_000 }).then(() => true, () => false)
 const TOKENS = tokenColors()
 /** The pixel-pass design audit (scripts/e2e-audit.mjs): text size, token colours, external links. */
-async function designAudit(page, label) {
-  const a = await page.evaluate(auditPage, { allowed: TOKENS, inPlace: IN_PLACE_HOSTS })
+async function designAudit(page, label, root = null) {
+  const a = await page.evaluate(auditPage, { allowed: TOKENS, inPlace: IN_PLACE_HOSTS, root })
   check(`${label}: no text under 11 px`, a.small.length === 0, a.small.slice(0, 3).map((s) => `${s.size}px ${s.sel} "${s.text}"`).join(' | '))
   check(`${label}: no off-token colours`, a.offToken.length === 0, a.offToken.slice(0, 4).map((o) => `${o.color} ${o.kind} x${o.count} ${o.sample}`).join(' | '))
   check(`${label}: links to other hosts open in a new tab with noopener`, a.ext.length === 0, a.ext.slice(0, 3).map((e) => `${e.href} ${e.sel}`).join(' | '))
@@ -529,7 +539,7 @@ async function overviewIsLive(page, label) {
   check(`${label}: the gap index figure is non-zero`, /^\d+\.\d{2}%$/.test(idx) && parseFloat(idx) > 0, idx)
   check(`${label}: DeepCore launches per chain draw`, await drawn('mk-deepcore'))
   const dc = await figure('mk-deepcore')
-  check(`${label}: five launches in the last 24 h, the newest named`, dc === '5' && /E2E0 on Robinhood Chain/.test(await band.getByTestId('mk-newest').textContent()), dc)
+  check(`${label}: five launches in the last 24 h, the newest named`, dc === '5' && /DTC on Robinhood Chain/.test(await band.getByTestId('mk-newest').textContent()), dc)
   check(`${label}: the API round-trip sparkline draws from /healthz`, await drawn('mk-status'))
   const ms = await figure('mk-status')
   check(`${label}: the round trip is a live millisecond figure`, /^\d+ ms$/.test(ms), ms)
@@ -541,6 +551,7 @@ const SERVICES = [
   ['chain-kit', 'Chain Kit'],
   ['ai', 'Gully AI'],
   ['deepcore', 'DeepCore launches'],
+  ['holders', 'Holder Map'],
   ['widgets', 'Widgets'],
   ['telegram', 'Telegram'],
 ]
@@ -673,7 +684,7 @@ await step('app services', async () => {
       return Object.values(counts)
     })
   // The pixel-pass design audit on every app page (signed in): 11 px minimum, token colours only, other hosts in a new tab.
-  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'chain-kit', 'ai', 'deepcore', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
+  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'security', 'chain-kit', 'ai', 'deepcore', 'holders', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
     await sp.goto(`${BASE}/app#${id}`)
     await sp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
     await sp.waitForLoadState('networkidle').catch(() => {})
@@ -736,7 +747,7 @@ await step('app services', async () => {
     for (const [width, height, mobile] of [[1440, 900, false], [390, 844, true]]) {
       const hc = await newContext({ width, height, mobile, cookie: cookieOf(api3) })
       const hp = await hc.newPage()
-      for (const id of ['overview', 'merchant', 'analytics', 'alerts']) {
+      for (const id of ['overview', 'merchant', 'analytics', 'alerts', 'security']) {
         await hp.goto(`${BASE}/app#${id}`)
         await hp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
         await hp.waitForLoadState('networkidle').catch(() => {})
@@ -1211,6 +1222,188 @@ await step('admin', async () => {
   await ctx.close()
 })
 
+/* ------------------------------------------------------------- Gully Security --- */
+
+// The REAL scan engine (server/security) runs; its outbound calls (explorers, GitHub, RPC, Claude) are answered
+// by scripts/fixtures/security-engine-stubs.mjs, and the static-tools worker is absent as on the server today, so
+// reports are "AI review only". Fresh wallets, so the free quota (1 on Free) is known.
+await step('security', async () => {
+  const { installEngineStubs } = await import('./fixtures/security-engine-stubs.mjs')
+  const stubs = await installEngineStubs()
+  stubs.setDelay(700)
+  const secOwner = privateKeyToAccount(generatePrivateKey())
+  const secApi = makeClient(BASE)
+  check('security: a fresh wallet signs in', (await secApi.signIn(secOwner)).status === 200)
+  let reportId = null
+  let findingCount = 0
+
+  // The stepper at 1440: input -> scope & cost -> running -> report; then publish.
+  {
+    const ctx = await newContext({ cookie: cookieOf(secApi) })
+    const page = await ctx.newPage()
+    const w = watch(page, 'security stepper 1440')
+    await page.goto(BASE + '/developers#security-new')
+    await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
+    check('security: the sidebar has Security with its icon', (await page.getByRole('navigation', { name: 'App pages' }).getByRole('link', { name: /^Security/ }).locator('svg').count()) > 0)
+    check('security: sub-tabs are a real tablist with icons', (await page.getByRole('tablist', { name: 'Security sections' }).getByRole('tab').count()) === 5 && (await page.getByRole('tab', { name: 'New scan' }).getAttribute('aria-selected')) === 'true')
+    check('security: chain choices carry the chain marks', (await page.getByRole('radiogroup', { name: 'Chain' }).locator('img').count()) >= 5)
+    await shot(page, 'security-step1-input')
+    await designAudit(page, `app security-step1-input at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    check('security: step 1 refuses a missing address', await page.getByText(/Enter the contract address/).isVisible())
+    await page.getByRole('radio', { name: /Base/ }).click()
+    await page.getByPlaceholder('0x…').fill('0x' + '1b'.repeat(20))
+    await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    await page.getByTestId('cost').waitFor()
+    check('security: step 2 shows the scope, the free quota and "Free"', (await page.getByTestId('price').textContent()) === 'Free' && /on Base/.test((await page.getByTestId('scope-target').textContent()) ?? ''))
+    check('security: step 2 says what the engine can run now (AI review only)', /AI review only — static tools unavailable/.test((await page.getByTestId('engine-now').textContent()) ?? ''))
+    const fold = await page.getByTestId('confirm-scan').boundingBox()
+    check('security: step 2 fits above the fold at 1440x900', !!fold && fold.y + fold.height <= 900, JSON.stringify(fold))
+    await shot(page, 'security-step2-scope')
+    await designAudit(page, `app security-step2-scope at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await page.getByTestId('confirm-scan').click()
+    await page.getByTestId('scan-progress').waitFor()
+    await page.waitForFunction(() => ['fetching', 'analysing', 'triaging', 'reporting'].includes(document.querySelector('[data-testid="scan-progress"]')?.getAttribute('data-status') ?? ''), null, { timeout: 10_000 })
+    check('security: step 4 shows live progress per step', (await page.locator('[data-testid="scan-progress"] [aria-current="step"]').count()) === 1)
+    await shot(page, 'security-step4-running')
+    await designAudit(page, `app security-step4-running at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await page.getByTestId('report-body').waitFor({ timeout: 20_000 })
+    await page.getByTestId('severity-charts').waitFor()
+    check('security: the report has the mode label, charts, tools (ran and not run) and findings', /AI review only/.test((await page.getByTestId('mode-label').first().textContent()) ?? '') && (await page.locator('[data-testid="severity-charts"] [data-chart]').count()) === 2 && (await page.locator('[data-tool-status="not-run"]').count()) >= 1 && (await page.locator('[data-finding]').count()) >= 2)
+    findingCount = await page.locator('[data-finding]').count()
+    await page.getByRole('group', { name: 'Filter findings by severity' }).getByRole('button', { name: /^High/ }).click()
+    check('security: the severity filter narrows the list', (await page.locator('[data-finding]').count()) === 1)
+    await page.locator('[data-finding="GS-001"] > button').click()
+    check('security: a finding expands to its location, "Draft, not executed" PoC, not verified by a human', (await page.getByTestId('poc').isVisible()) && (await page.getByTestId('poc-status').textContent()) === 'Draft, not executed' && /src\/VulnBank\.sol:21/.test((await page.locator('[data-finding="GS-001"]').textContent()) ?? '') && (await page.getByText('Not verified by a human reviewer.').count()) >= 1)
+    await page.getByRole('button', { name: 'Copy', exact: true }).click()
+    check('security: the PoC copies', /test_reenter/.test(await page.evaluate(() => navigator.clipboard.readText())))
+    check('security: Export PDF opens the engine report in a new tab', ((await page.getByTestId('export-pdf').getAttribute('href')) ?? '').endsWith(`/report.html`) && (await page.getByTestId('export-pdf').getAttribute('target')) === '_blank')
+    const head = await page.getByTestId('severity-charts').boundingBox()
+    check('security: the report charts are above the fold at 1440x900', !!head && head.y < 900, JSON.stringify(head))
+    await shot(page, 'security-step5-report')
+    await designAudit(page, `app security-step5-report at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    reportId = await page.getByTestId('scan-detail').getAttribute('data-scan')
+    await page.getByRole('switch').click()
+    await page.getByTestId('public-link').waitFor()
+    check('security: publishing gives the stable public link', ((await page.getByTestId('public-link').getAttribute('href')) ?? '').endsWith(`/security/reports/${reportId}`))
+    // A second scan is beyond the free quota: step 2 prices it and step 3 is Gully Pay.
+    await page.getByRole('tab', { name: 'New scan' }).click()
+    await page.getByRole('radio', { name: /Smart contract repo/ }).click()
+    await page.getByPlaceholder(/owner\/name or https/).fill(stubs.REPO)
+    await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    await page.getByTestId('price').filter({ hasText: /^\$/ }).waitFor({ timeout: 10_000 }).catch(() => {})
+    check('security: beyond the quota step 2 shows the price', /^\$\d+/.test((await page.getByTestId('price').textContent()) ?? ''))
+    await page.getByTestId('confirm-scan').click()
+    await page.getByTestId('pay-step').waitFor({ timeout: 10_000 })
+    check('security: step 3 is Gully Pay for the scan invoice', (await page.getByRole('link', { name: /Open the invoice page/ }).getAttribute('target')) === '_blank')
+    await shot(page, 'security-step3-pay')
+    await designAudit(page, `app security-step3-pay at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await page.getByRole('tab', { name: 'Scans' }).click()
+    await page.getByTestId('scan-list').waitFor()
+    check('security: the scans list shows both, one awaiting payment', (await page.locator('[data-scan-row]').count()) === 2 && (await page.locator('[data-scan-row] [data-status="awaiting_payment"]').count()) === 1)
+    await shot(page, 'security-scans')
+    await designAudit(page, `app security-scans at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await page.getByRole('tab', { name: 'Monitors' }).click()
+    await page.getByTestId('monitor-limits').getByText(/on Business/).waitFor({ timeout: 10_000 })
+    check('security: the Monitors sub-tab (part 3) with the plan limits', /1 on Free/.test((await page.getByTestId('monitor-limits').textContent()) ?? '') && /10 on Pro/.test((await page.getByTestId('monitor-limits').textContent()) ?? ''))
+    await shot(page, 'security-monitors')
+    await designAudit(page, `app security-monitors at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i, /Failed to load resource/])
+    await ctx.close()
+  }
+
+  // The stepper and the report viewer at 390.
+  {
+    const mate2 = privateKeyToAccount(generatePrivateKey())
+    const m = makeClient(BASE)
+    await m.signIn(mate2)
+    const ctx = await newContext({ width: 390, height: 844, mobile: true, cookie: cookieOf(m) })
+    const page = await ctx.newPage()
+    const w = watch(page, 'security stepper 390')
+    await page.goto(BASE + '/developers#security-new')
+    await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
+    await noHorizontalScroll(page, 'security step 1')
+    await shot(page, 'security-step1-input')
+    await designAudit(page, `app security-step1-input at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await page.getByRole('radio', { name: /Smart contract repo/ }).click()
+    await page.getByPlaceholder(/owner\/name or https/).fill(stubs.REPO)
+    await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    await page.getByTestId('cost').waitFor()
+    await noHorizontalScroll(page, 'security step 2')
+    await shot(page, 'security-step2-scope')
+    await designAudit(page, `app security-step2-scope at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await page.getByTestId('confirm-scan').click()
+    await page.getByTestId('report-body').waitFor({ timeout: 25_000 })
+    await noHorizontalScroll(page, 'security report')
+    await shot(page, 'security-step5-report')
+    await designAudit(page, `app security-step5-report at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+
+  // Public pages: /security, the index and the published report, at 1440 and 390.
+  for (const [width, mobile] of [[1440, false], [390, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    const page = await ctx.newPage()
+    const w = watch(page, `security public pages at ${width}`)
+    await page.goto(BASE + '/security')
+    await page.getByRole('heading', { level: 1 }).waitFor()
+    await page.locator('[data-testid="live-scans"] [data-chart]').waitFor({ timeout: 10_000 }).catch(() => {})
+    check(`/security at ${width}: tiers tablist, prices from the config, a live counter of real scans`, (await page.getByRole('tablist', { name: 'Tiers' }).getByRole('tab').count()) === 3 && /^\$\d+ a scan$/.test((await page.locator('[data-tier-price="scan"]').textContent()) ?? '') && (await page.locator('[data-testid="live-scans"] [data-chart]').count()) === 1)
+    check(`/security at ${width}: says a scan is not an audit and offers no Audit for sale`, (await page.getByText(/is not an audit/).count()) > 0 && (await page.locator('[data-tier-price="audit"]').textContent()) === 'Not offered yet')
+    check(`/security at ${width}: the review form is on the page`, (await page.getByTestId('review-form').count()) === 1)
+    check(`/security at ${width}: monitoring limits per plan from the config`, /1\s*contract on Free/.test((await page.getByTestId('monitoring-pricing').textContent()) ?? ''))
+    if (mobile) await noHorizontalScroll(page, '/security')
+    else check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('a[href="/security"] svg').count()) > 0 && (await page.locator('a[href="/score"] svg').count()) > 0)
+    await shot(page, 'security-page')
+    await designAudit(page, `security-page at ${page.viewportSize().width}`)
+    await page.goto(BASE + '/security/reports')
+    await page.getByTestId('report-index').waitFor()
+    check(`/security/reports at ${width}: lists the published report`, (await page.locator(`a[href="/security/reports/${reportId}"]`).count()) === 1)
+    if (mobile) await noHorizontalScroll(page, '/security/reports')
+    await shot(page, 'security-reports')
+    await designAudit(page, `security-reports at ${page.viewportSize().width}`)
+    await page.goto(`${BASE}/security/reports/${reportId}`)
+    await page.getByTestId('public-report').waitFor()
+    check(`public report at ${width}: kit-branded page, not-an-audit notice, findings, no PoC, noindex`, (await page.getByTestId('not-audit').isVisible()) && (await page.locator('[data-finding]').count()) === findingCount && (await page.getByTestId('poc').count()) === 0 && (await page.locator('meta[name="robots"][content="noindex"]').count()) >= 1 && (await page.locator('[data-brand]').count()) > 0)
+    if (mobile) await noHorizontalScroll(page, 'public report')
+    await shot(page, 'security-public-report')
+    await designAudit(page, `security-public-report at ${page.viewportSize().width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  {
+    const ctx = await newContext()
+    const page = await ctx.newPage()
+    const w = watch(page, '/score at 1440')
+    await page.goto(BASE + '/score')
+    await page.waitForLoadState('networkidle').catch(() => {})
+    await designAudit(page, '/score at 1440')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  const html = await (await fetch(`${BASE}/security/reports/${reportId}`)).text()
+  check('public report: the server sends its own title and noindex', /Security scan report: 0x1b1b…1b1b/.test(html) && /noindex/.test(html))
+  check('an unpublished or unknown report is a 404 page', (await fetch(`${BASE}/security/reports/sec_AAAAAAAAAAAAAAAA`)).status === 404)
+
+  // Admin: the Security card.
+  {
+    const ctx = await newContext()
+    await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
+    const page = await ctx.newPage()
+    const w = watch(page, 'admin security')
+    await page.goto(BASE + '/admin')
+    await page.getByTestId('admin-security').waitFor({ timeout: 15_000 })
+    await page.getByTestId('admin-security').scrollIntoViewIfNeeded()
+    await page.locator('[data-testid="admin-security"] [data-chart]').waitFor({ timeout: 10_000 }).catch(() => {})
+    check('admin: the Security card has its chart, the queue and the AI-only note', (await page.locator('[data-testid="admin-security"] [data-chart]').count()) === 1 && (await page.getByTestId('admin-security').getByRole('heading', { name: 'Queue' }).count()) === 1 && (await page.getByTestId('worker-note').count()) === 1)
+    if (SHOTS) await page.getByTestId('admin-security').screenshot({ path: path.join(SHOTS, 'security-admin-1440.png') })
+    await w.verify([/Failed to load resource/])
+    await ctx.close()
+  }
+  stubs.setDelay(0)
+})
+
 /* ------------------------------------------------------- admin: bot broadcasts --- */
 
 await step('admin: bot broadcasts at 1440 and 390', async () => {
@@ -1268,7 +1461,7 @@ await step('admin: bot broadcasts at 1440 and 390', async () => {
 
 /* ------------------------------------------------------------- docs --- */
 
-const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap', 'roadmap-l3', 'changelog']
+const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'gully-security', 'gully-score', 'roadmap', 'roadmap-l3', 'changelog']
 await step('docs', async () => {
   for (const [width, mobile] of [[1440, false], [390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
@@ -1303,6 +1496,88 @@ await step('docs', async () => {
   }
 })
 
+/* ------------------------------------------------------------- Gully Score --- */
+
+// One listed score is stored through the module's test hook (the server runs in this process, so it is the same
+// module instance): the pages read it like any other, and nothing is computed, so no upstream is asked.
+// SCORE_SHOTS=<dir>: full-page screenshots of /score and the score page at 1440 and 390 land there.
+await step('gully score', async () => {
+  const gs = await import('../server/gully-score.mjs')
+  const SC = '0x' + 'ab'.repeat(20)
+  const now = Date.now()
+  const at = (d) => new Date(now - d * 86_400_000).toISOString()
+  const comp = (id, o) => ({ ...gs.COMPONENTS.find((c) => c.id === id), evidence: [], ...o })
+  gs.putScoreForTest({
+    chainId: 8453,
+    chainKey: 'base',
+    chainName: 'Base',
+    address: SC,
+    name: 'E2E Vault',
+    symbol: null,
+    score: 74,
+    grade: 'Fair',
+    coverage: { weight: 75, components: 6, of: 9 },
+    computedAt: new Date(now).toISOString(),
+    methodVersion: 1,
+    components: [
+      comp('verified', { available: true, score: 100, value: 'Exact match', reason: 'The source code is published on Sourcify and matches the deployed code exactly.', evidence: [{ label: 'Sourcify', url: `https://repo.sourcify.dev/8453/${SC}` }] }),
+      comp('control', { available: true, score: 100, value: 'Safe, 2 of 3', reason: 'Changes need 2 of the 3 signers of the Safe.' }),
+      comp('timelock', { available: true, score: 0, value: 'No delay', reason: 'Changes take effect as soon as they are made.' }),
+      comp('upgradeability', { available: true, score: 30, value: 'Upgradeable', reason: 'Its code can be swapped.' }),
+      comp('changes', { available: true, score: 75, value: '1 in 30 days', reason: '1 privileged change was seen in the last 30 days.' }),
+      comp('liquidity', { available: false, score: null, value: 'Not available', reason: 'Liquidity locks are read for DeepCore launches only.' }),
+      comp('holders', { available: false, score: null, value: 'Not available', reason: 'The Holder Map is not running on this server yet.' }),
+      comp('review', { available: true, score: 70, value: 'Published 2026-10-01', reason: 'Gully Security published a report: 0 critical, 1 high, 2 medium, 0 low, 3 info.', evidence: [{ label: 'Read the report', url: 'https://gullylabs.xyz/security' }] }),
+      comp('age', { available: false, score: null, value: 'Not available', reason: 'The deployment date is not known here.' }),
+    ],
+    history: [{ at: at(9), score: 81 }, { at: at(5), score: 79 }, { at: at(2), score: 74 }, { at: new Date(now).toISOString(), score: 74 }],
+    changes: [{ at: at(9), id: null, label: 'First scored', from: null, to: 81, note: 'Scored 81 from 6 of 9 components.' }, { at: at(2), id: 'changes', label: 'Recent privileged changes', from: 100, to: 75, note: '1 in 30 days: 1 privileged change was seen.' }],
+  })
+  const shots = process.env.SCORE_SHOTS ? path.resolve(process.env.SCORE_SHOTS) : null
+  if (shots) fs.mkdirSync(shots, { recursive: true })
+  const shot = async (page, name) => shots && page.screenshot({ path: path.join(shots, `${name}-${page.viewportSize().width}.png`), fullPage: true })
+  for (const [width, mobile] of [[1440, false], [390, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    const page = await ctx.newPage()
+    let w = watch(page, `/score at ${width}`)
+    await page.goto(BASE + '/score')
+    const row = page.getByRole('link', { name: /E2E Vault/ })
+    await row.waitFor()
+    check(`/score at ${width}: the listed score shows with its number`, (await row.textContent()).includes('74'))
+    await page.locator('[data-chart] svg').first().waitFor({ timeout: 10_000 })
+    check(`/score at ${width}: the band chart draws`, (await page.locator('[data-chart] svg path').count()) > 0)
+    check(`/score at ${width}: the methodology lists every part with its weight`, (await page.getByText('Gully Security review').count()) > 0 && (await page.getByText(/Nothing paid goes in/).count()) > 0)
+    if (!mobile) {
+      await page.getByLabel('Contract address').fill('0x123')
+      await page.getByRole('button', { name: 'Score it' }).click()
+      check('/score: a bad address is explained, not sent', await page.getByText('Paste a contract address').isVisible())
+    }
+    if (mobile) await noHorizontalScroll(page, '/score')
+    await page.waitForTimeout(1200)
+    await shot(page, 'score-index')
+    await w.verify()
+    w = watch(page, `score page at ${width}`)
+    await page.goto(`${BASE}/score/base/${SC}`)
+    await page.getByRole('heading', { level: 1, name: 'E2E Vault' }).waitFor()
+    await page.getByRole('img', { name: /Gully Score 74 out of 100/ }).waitFor({ timeout: 10_000 })
+    check(`score page at ${width}: the ring and the number`, true)
+    check(`score page at ${width}: a missing part says "not available" and is not counted`, (await page.getByText('NOT AVAILABLE · NOT COUNTED').count()) === 3)
+    check(`score page at ${width}: evidence links open in a new tab`, (await page.locator('a[href^="https://repo.sourcify.dev"]').getAttribute('target')) === '_blank')
+    check(`score page at ${width}: the change log`, (await page.getByText('Recent privileged changes').count()) > 0)
+    const badge = page.locator(`img[src="/score/base/${SC}/badge.svg"]`)
+    await badge.scrollIntoViewIfNeeded()
+    check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n === 232))
+    check(`score page at ${width}: methodology says informational, nobody can pay`, (await page.getByText(/not an endorsement and not investment advice/).count()) > 0)
+    if (mobile) await noHorizontalScroll(page, 'score page')
+    await page.waitForTimeout(1200)
+    await shot(page, 'score-page')
+    await w.verify()
+    await ctx.close()
+  }
+  const html = await (await fetch(`${BASE}/score/base/${SC}`)).text()
+  check('score page HTML: its own title for crawlers', /E2E Vault Gully Score on Base · Gully Labs/.test(html))
+})
+
 /* ------------------------------------------------------------- 404s and mobile pages --- */
 
 await step('404s', async () => {
@@ -1313,10 +1588,171 @@ await step('404s', async () => {
   }
 })
 
+await step('holder map', async () => {
+  const shotTo = async (page, file, el = null) => {
+    if (!SHOTS) return
+    await page.waitForTimeout(1600)
+    if (el) await el.screenshot({ path: path.join(SHOTS, file) })
+    else await page.screenshot({ path: path.join(SHOTS, file), fullPage: true })
+  }
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    await ctx.route(`${BASE}/api/ask`, (route) => json(route, holdersExtraFixtures().ask))
+    const page = await ctx.newPage()
+    const w = watch(page, `holder map ${width}`)
+    await page.goto(BASE + '/holders/robinhood/' + E2E_LAUNCH_TOKEN)
+    const map = page.locator('[data-holder-map="ok"]')
+    await map.waitFor()
+    check(`holder map ${width}: the plain summary shows`, await map.locator('[data-holder-summary]').getByText(/^Top 10 wallets hold \d+%; the largest connected cluster holds/).isVisible())
+    check(`holder map ${width}: the launch check (always free) shows`, await map.locator('[data-risk-line]').getByText(/3 wallets bought in the first block of trading/).isVisible())
+    await map.locator('[data-chart]').scrollIntoViewIfNeeded()
+    await map.locator('[data-chart] canvas').first().waitFor()
+    check(`holder map ${width}: the bubble graph draws (ECharts canvas)`, (await map.locator('[data-chart] canvas').count()) > 0)
+    check(`holder map ${width}: the graph has a text summary for screen readers`, /^Holder Map of DTC on Robinhood Chain/.test((await map.locator('[data-chart]').getAttribute('aria-label')) ?? ''))
+    check(`holder map ${width}: a ranked list exists for screen readers`, (await map.locator('.sr-only table tbody tr').count()) === 30)
+    await shotTo(page, `launch-${width}.png`)
+    // Click the biggest bubble (the layout puts it near the middle) to open its panel.
+    const box = await map.locator('[data-chart]').boundingBox()
+    const panel = map.locator('[data-holder-panel]')
+    let openedByClick = false
+    for (const [dx, dy] of [[0, 0], [-0.12, 0], [0.12, 0], [0, -0.15], [0, 0.15], [-0.2, -0.2], [0.2, 0.2]]) {
+      await page.mouse.click(box.x + box.width * (0.5 + dx), box.y + box.height * (0.5 + dy))
+      openedByClick = await panel.waitFor({ timeout: 800 }).then(
+        () => true,
+        () => false,
+      )
+      if (openedByClick) break
+    }
+    if (width === 1440) check('holder map: clicking a bubble opens its panel', openedByClick)
+    // Search flies to a wallet and opens it.
+    await map.getByLabel('Find a wallet by address').fill('0x00000000')
+    await map.getByRole('button', { name: 'Find', exact: true }).click()
+    await panel.waitFor()
+    check(`holder map ${width}: search finds a wallet and opens its panel`, (await panel.getByText(/WALLET #\d+/).count()) === 1)
+    // The ranked list: a bundled buyer shows its badge and its links.
+    await map.getByRole('button', { name: 'List', exact: true }).click()
+    await map.locator('[data-holder-list] button').nth(2).click()
+    check(`holder map ${width}: a bundled buyer is badged in its panel`, await panel.getByText('Bundled at launch').isVisible())
+    check(`holder map ${width}: the panel lists its links and an explorer link in a new tab`, (await panel.getByText(/^LINKS \(\d+\)$/).count()) === 1 && (await panel.locator('a[target="_blank"]', { hasText: 'Explorer' }).count()) === 1)
+    await map.getByRole('button', { name: 'Map', exact: true }).click()
+    const toggle = map.getByRole('button', { name: /Showing contracts and pools|People only/ })
+    await toggle.click()
+    check(`holder map ${width}: the people-only toggle switches`, (await toggle.getAttribute('aria-pressed')) === 'true')
+    // The replay: a slider, play, 1x and 4x.
+    check(`holder map ${width}: the replay slider exists`, (await map.locator('[data-replay="on"] input[type="range"]').count()) === 1)
+    await map.getByRole('button', { name: '4×' }).click()
+    await map.getByRole('button', { name: 'Play the replay' }).click()
+    await page.waitForTimeout(700)
+    check(`holder map ${width}: play replays history (the frame label leaves "Now")`, !/^Now/.test((await map.locator('[data-replay="on"] [aria-live]').textContent()) ?? ''))
+    check(`holder map ${width}: buy/sell sits under the risk summary`, (await map.locator('[data-holder-trade]').getByText(/Before you trade:.*3 wallets bought/).count()) === 1)
+    // The explainable health score: tapping a part lights its wallets on the map (free, never gated).
+    const health = map.locator('[data-health]')
+    check(`holder map ${width}: the health score card shows the score and its parts`, (await health.getByRole('img', { name: 'Score 58 out of 100' }).count()) === 1 && (await health.locator('[data-health-part]').count()) === 6)
+    await health.locator('[data-health-part="bundle"]').click()
+    check(`holder map ${width}: tapping a score part highlights its wallets`, (await health.locator('[data-health-part="bundle"]').getAttribute('aria-pressed')) === 'true' && (await map.getByText(/Showing the 3 wallets behind “Bundled buys”/).count()) === 1)
+    await map.getByRole('button', { name: 'Show all' }).click()
+    check(`holder map ${width}: the deployer's record shows outcomes and the serial launcher flag`, (await map.locator('[data-deployer-history]').getByText('Liquidity pulled').count()) === 1 && (await map.locator('[data-deployer-history]').getByText('Serial launcher').count()) === 1)
+    check(`holder map ${width}: same wallets elsewhere links to other maps`, (await map.locator('[data-cross-token] a', { hasText: 'OLD1' }).count()) === 1)
+    check(`holder map ${width}: snipers are named under the launch check`, (await map.locator('[data-risk-line]').getByText(/2 wallets bought in the first 3 blocks/).count()) === 1)
+    // Live mode: the stubbed /live answers, the pill shows.
+    await map.locator('[data-live="on"]').waitFor({ timeout: 10_000 })
+    check(`holder map ${width}: live mode shows the LIVE pill`, (await map.locator('[data-live="on"]').getByText(/LIVE/).count()) === 1)
+    // A wallet's panel reads its first buy and P&L (stubbed /wallet).
+    await map.getByLabel('Find a wallet by address').fill(holdersFixture().nodes[1].id)
+    await map.getByRole('button', { name: 'Find', exact: true }).click()
+    await map.locator('[data-wallet-facts]').waitFor()
+    check(`holder map ${width}: the wallet panel shows first buy and P&L vs entry`, (await map.locator('[data-wallet-facts]').getByText('+42.0% in WETH terms').count()) === 1)
+    // Explain this map (Gully AI, stubbed).
+    await map.getByRole('button', { name: 'Explain this map' }).click()
+    await map.locator('[data-ask]').getByText(/Three of them bought together/).waitFor()
+    check(`holder map ${width}: Gully AI explains the map`, true)
+    check(`holder map ${width}: Alert me opens the app's alert dialog for this token`, ((await map.locator('[data-alert-me]').getAttribute('href')) ?? '').includes(`alert=holders%3Arobinhood%3A${E2E_LAUNCH_TOKEN}`))
+    await shotTo(page, `token-${width}.png`)
+    await noHorizontalScroll(page, `/holders ${width}`)
+    await designAudit(page, `holder map ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // The /holders landing: search (one match navigates, several offer a pick, none says so), the checked-launch feed and the top list.
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `holders landing ${width}`)
+    await page.goto(BASE + '/holders')
+    await page.locator('[data-launch-feed] li').first().waitFor()
+    check(`holders landing ${width}: the checked-launch feed lists launches with scores`, (await page.locator('[data-launch-feed] li').count()) === 5 && (await page.locator('[data-launch-feed]').getByRole('img', { name: 'Score 82 out of 100' }).count()) === 1)
+    check(`holders landing ${width}: a launch still being checked says so`, (await page.locator('[data-launch-feed]').getByText('Checking the holders now…').count()) === 1)
+    await page.locator('[data-chart] canvas, [data-chart] svg').first().waitFor()
+    check(`holders landing ${width}: the health score chart draws`, (await page.locator('[data-chart]').count()) >= 1)
+    check(`holders landing ${width}: most scanned today lists maps`, (await page.locator('[data-top-scanned] a').count()) === 2)
+    await shotTo(page, `holders-landing-${width}.png`)
+    const q = page.getByLabel('Token address or ticker')
+    await q.fill('zzz-nothing')
+    await page.getByRole('button', { name: 'Map it' }).click()
+    await page.getByText(/^Nothing matches\./).waitFor()
+    check(`holders landing ${width}: no match says so`, true)
+    await q.fill('$NVDA')
+    await page.getByRole('button', { name: 'Map it' }).click()
+    await page.locator('[data-resolve-matches] a').first().waitFor()
+    check(`holders landing ${width}: several matches offer a pick`, (await page.locator('[data-resolve-matches] a').count()) === 2)
+    await q.fill('DTC')
+    await page.getByRole('button', { name: 'Map it' }).click()
+    await page.waitForURL(new RegExp(`/holders/robinhood/${E2E_LAUNCH_TOKEN}$`))
+    check(`holders landing ${width}: one match opens its map`, true)
+    await page.locator('[data-holder-map="ok"]').waitFor()
+    await noHorizontalScroll(page, `/holders landing ${width}`)
+    await designAudit(page, `holders landing ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // The stock page embeds the map with the fair-price overlay; Buy/Sell goes to the page's own swap.
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `stock holder map ${width}`)
+    await page.goto(BASE + '/tracker/robinhood/NVDA')
+    const sec = page.locator('#holders')
+    await sec.scrollIntoViewIfNeeded()
+    const map = sec.locator('[data-holder-map="ok"]')
+    await map.waitFor()
+    await map.locator('[data-chart] canvas').first().waitFor()
+    check(`stock holder map ${width}: graph, summary and fair-price overlay`, (await map.locator('[data-holder-fair]').getByText('TOP 10 AT REAL PRICE').count()) === 1 && (await map.locator('[data-holder-summary]').getByText(/^Top 10 wallets hold/).count()) === 1)
+    check(`stock holder map ${width}: Buy/Sell points at the page's swap`, (await map.locator('[data-holder-trade] a').getAttribute('href')) === '#swap')
+    await shotTo(page, `stock-${width}.png`, sec)
+    await noHorizontalScroll(page, `stock holder map ${width}`)
+    await designAudit(page, `stock holder map ${width}`)
+    await w.verify([/li\.quest|lifi|LI\.FI|wagmi|walletconnect|coinbase|SwapWidget-|ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // The embed: framed by another site, credit shown.
+  const ctx = await newContext()
+  const page = await ctx.newPage()
+  const w = watch(page, 'holder map embed')
+  const res = await page.goto(BASE + '/embed/holders/robinhood/' + E2E_LAUNCH_TOKEN)
+  check('holder map embed: any site may frame it (frame-ancestors *, no X-Frame-Options)', /frame-ancestors \*/.test(res.headers()['content-security-policy'] ?? '') && !res.headers()['x-frame-options'])
+  await page.locator('[data-holder-map="ok"] [data-chart] canvas').first().waitFor()
+  check('holder map embed: the Powered by Gully Labs credit shows', await page.locator('[data-credit]').getByText('Powered by Gully Labs').isVisible())
+  check('holder map embed: noindex', (await page.locator('meta[name="robots"][content="noindex"]').count()) === 1)
+  await shotTo(page, 'embed-1440.png')
+  await designAudit(page, 'holder map embed')
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+  await ctx.close()
+  // The DeepCore page lists the latest launches with their maps.
+  const ctx2 = await newContext()
+  const p2 = await ctx2.newPage()
+  const w2 = watch(p2, 'deepcore launches')
+  await p2.goto(BASE + '/projects/deepcore')
+  const row = p2.locator('[data-launch-holders] a', { hasText: 'DTC' })
+  await row.waitFor()
+  check('DeepCore page: launches link to their Holder Maps', (await row.getAttribute('href')) === `/holders/robinhood/${E2E_LAUNCH_TOKEN}`)
+  await w2.verify([/ERR_BLOCKED_BY_CLIENT/i])
+  await ctx2.close()
+})
+
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/app') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)

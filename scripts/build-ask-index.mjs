@@ -153,7 +153,7 @@ function findAll(root, pred) {
 
 const NAME_KEYS = ['name', 'title', 'q']
 const BODY_KEYS = ['tagline', 'description', 'body', 'lead', 'a', 'status', 'time', 'licence', 'cta']
-const LIST_KEYS = { items: 'Includes', built: 'Built', chains: 'Chains', features: null, how: 'How it works', seo: null }
+const LIST_KEYS = { items: 'Includes', built: 'Built', chains: 'Chains', features: null, how: 'How it works', seo: null, gets: 'What you get', limits: 'Limits' }
 const keyOf = (p) => (p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) ? p.name.text : null)
 
 /** Readable paragraphs from a data literal: one per object with a name or title, in source order. */
@@ -258,6 +258,7 @@ const SITE_PAGES = [
   { file: 'src/pages/Pricing.tsx', url: '/pricing', title: 'API pricing', consts: { FAQ: { section: 'Questions' } } },
   { file: 'src/pages/Services.tsx', url: '/services', title: 'Services' },
   { file: 'src/pages/About.tsx', url: '/about', title: 'About Gully Labs' },
+  { file: 'src/pages/security/SecurityPage.tsx', url: '/security', title: 'Gully Security', consts: { TIERS: { section: 'Tiers' }, HOW: { section: 'How a scan works' } } },
 ]
 
 /** Splits paragraphs (with HEADING markers) into sections. */

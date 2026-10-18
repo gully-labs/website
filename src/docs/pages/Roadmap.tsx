@@ -71,8 +71,8 @@ export function Roadmap() {
           <Track icon={Layers} title="Gully L3" status="planned" to="roadmap-l3">
             An Arbitrum chain settling to Arbitrum One, with Chain Kit, Gully Pay and Hyperlane. Spec written, devnet prepared, nothing running.
           </Track>
-          <Track icon={ShieldCheck} title="Audits & Security" status="planned" to="roadmap" hash="security">
-            AI security scans, then security reviews, then smart-contract audits and code audits, then Gully Score and monitoring. Nothing here is offered yet.
+          <Track icon={ShieldCheck} title="Audits & Security" status="progress" to="roadmap" hash="security">
+            The AI Security Scan is in the app (AI review only until the static-tools worker runs); Security Review requests are taken and quoted. Audits are planned and not offered.
           </Track>
         </div>
         <P>
@@ -88,9 +88,10 @@ export function Roadmap() {
       </Section>
 
       <Section id="security" title="Audits & Security">
-        <Callout label="PLANNED · NOT OFFERED YET">
-          <strong className="text-ink">Gully Labs does not audit anything today and has published no audit reports.</strong> This track is a plan. Each stage below opens only when the
-          people, the process and the public record behind it exist, and the changelog will say when one does.
+        <Callout label="SCAN LIVE · AUDITS NOT OFFERED">
+          <strong className="text-ink">Gully Labs does not audit anything today and has published no audit reports.</strong> The automated{' '}
+          <Ext href="https://gullylabs.xyz/security">AI Security Scan</Ext> is live; the other stages open only when the people, the process and the public record behind them exist, and
+          the changelog will say when one does.
         </Callout>
         <P>
           Security work on both halves of a Web3 product: the smart contracts, and the code around them. Contract audits cover Solidity on the EVM chains we already work with. Code audits
@@ -104,13 +105,14 @@ export function Roadmap() {
 
       <Section id="stages" title="The stages">
         <H3>
-          <Stage n="01" status="planned">
+          <Stage n="01" status="live">
             AI Security Scan
           </Stage>
         </H3>
         <P>
-          A self-serve scan of a Solidity repository: Slither and Aderyn static analysis, fuzz and invariant test runs, and an AI pass that removes false positives and ranks what is left.
-          Paid with Gully Pay. The result is labelled an automated scan, never a review or an audit.
+          A self-serve scan of a deployed contract, a Solidity repository or an upload: Slither and Aderyn static analysis on the scanner worker, and an AI pass that removes false
+          positives and ranks what is left. Free scans each month by plan, then paid with Gully Pay. The result is labelled an automated scan, never a review or an audit. Until the
+          static-tools worker runs on our server, reports are labelled “AI review only — static tools unavailable”. Start one on <Ext href="https://gullylabs.xyz/security">gullylabs.xyz/security</Ext>.
         </P>
         <H3>
           <Stage n="02" status="planned">

@@ -20,6 +20,8 @@ ENV NODE_ENV=production PORT=8080 DIST_DIR=/app/dist
 COPY --from=build /app/dist ./dist
 COPY server/*.mjs ./
 COPY server/vendor ./vendor
+# Gully Security's scan engine (server/security-*.mjs import it as ./security/index.mjs).
+COPY server/security ./security
 # Blog share images (og.mjs): the post banner's drawing code, the brand fonts it sets type in, and the
 # SVG rasteriser (resvg, WebAssembly, no dependencies of its own). Nothing else from node_modules.
 COPY ghost/theme/gully/assets/js/banner.js ./og/banner.cjs

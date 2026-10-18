@@ -59,13 +59,6 @@ const embedStub = http.createServer((req, res) => {
 })
 await new Promise((r) => embedStub.listen(0, '127.0.0.1', r))
 
-/* ---------------------------------------------------------- holders stub --- */
-const holdersStub = http.createServer((req, res) => {
-  const m = req.url.match(/^\/api\/holders\/(\w+)\/(0x[0-9a-fA-F]{40})$/)
-  res.writeHead(m ? 200 : 404, { 'content-type': 'application/json' })
-  res.end(JSON.stringify(m ? { chain: m[1], token: m[2], symbol: 'ANT', asOf: '2026-10-17T10:05:00Z', holderCount: 1234, top10Pct: 61.5, holders: [{ address: '0x' + '1'.repeat(40), label: 'Pool', pct: 30.1 }, { address: '0x' + '2'.repeat(40), pct: 12.4 }, { address: '0x' + '3'.repeat(40), pct: 5 }] } : { error: 'not found' }))
-})
-await new Promise((r) => holdersStub.listen(0, '127.0.0.1', r))
 
 /* ------------------------------------------------------- Anthropic stub --- */
 
@@ -526,12 +519,15 @@ try {
   const pc = await ask.runTool('get_pay_chains', {})
   const base = pc.chains?.find((c) => c.chain === 'Base')
   check('get_pay_chains: chains and tokens from the live payment config, no RPCs or treasury', base && base.coins.includes('ETH') && base.stablecoins.includes('USDC') && base.merchantStores === true && base.feeSplitAtPayment === true && pc.chains.some((c) => c.chain === 'BNB Chain') && !/rpc|0x[0-9a-f]{40}/i.test(JSON.stringify(pc)), JSON.stringify(pc).slice(0, 300))
+  const H = await import('../server/holders.mjs')
+  H.seedHolderMapForTest('base', TOK_A, { state: 'unavailable', reason: 'Holder data is not available on Base yet: the site needs a Blockscout API key (BLOCKSCOUT_API_KEY).' })
   const hNo = await ask.runTool('get_holders', { chain: 'base', token: TOK_A })
-  check('get_holders: degrades cleanly while /api/holders is not on this server', hNo.available === false && /not live/.test(hNo.note), JSON.stringify(hNo))
+  check('get_holders: degrades cleanly when the Holder Map has no data for the chain', hNo.available === false && /not available on Base/.test(hNo.note), JSON.stringify(hNo))
   check('get_holders: junk input is refused', /token address/.test((await ask.runTool('get_holders', { chain: 'base', token: 'nope' })).error))
-  process.env.ASK_SELF_URL = `http://127.0.0.1:${holdersStub.address().port}`
+  const seeded = H.buildMap({ chainKey: 'base', token: TOK_A.toLowerCase(), symbol: 'ANT', decimals: 0, kind: 'deepcore-launch', holders: [{ address: '0x' + '1'.repeat(40), raw: 301n }, { address: '0x' + '2'.repeat(40), raw: 124n }, { address: '0x' + '3'.repeat(40), raw: 50n }], history: null, labels: new Map([['0x' + '1'.repeat(40), { kind: 'pool', name: 'Pool' }]]), supply: 1000n, holderCount: 1234, sources: { holders: 'stub' } })
+  H.seedHolderMapForTest('base', TOK_A, seeded)
   const hYes = await ask.runTool('get_holders', { chain: 'base', token: TOK_A })
-  check('get_holders: reads the Holder Map when it answers', hYes.available === true && hYes.holderCount === 1234 && hYes.top[0].pct === 30.1 && hYes.page.startsWith('https://gullylabs.xyz/holders/base/'), JSON.stringify(hYes).slice(0, 200))
+  check('get_holders: reads the Holder Map (one tool, one shape: card fields and the computed facts)', hYes.available === true && hYes.holderCount === 1234 && hYes.top[0].pct === 30.1 && hYes.top[0].label === 'Pool' && typeof hYes.summary === 'string' && hYes.page.startsWith('https://gullylabs.xyz/holders/base/'), JSON.stringify(hYes).slice(0, 200))
 
   // Over HTTP: the session cookie scopes the tools; signed out they refuse.
   const cookieA = `gl_dev=${store.createSession(A)}`
@@ -571,7 +567,6 @@ try {
   check('the "my" tools take no workspace argument', ['get_my_store', 'get_my_usage', 'get_my_alerts'].every((n) => JSON.stringify(calls.at(-1).body.tools.find((x) => x.name === n).input_schema.properties) === '{}'))
   const tgView = tgui.aiAnswerView({ ok: true, ...lvA.data })
   check('Telegram: the same answer with card lines, a block-character chart, live sources with time, and action buttons', /NVDA · Robinhood Chain/.test(tgView.text) && /[▁▂▃▄▅▆▇█]{5,}/.test(tgView.text) && /\[L1\] Tracker/.test(tgView.text) && tgView.keyboard.some((row) => row[0].url?.includes('pct=3')), tgView.text.slice(0, 300))
-  delete process.env.ASK_SELF_URL
 
   // search_docs: the model searches again in its own words; new sources join with the next numbers.
   round = 0
@@ -620,6 +615,5 @@ try {
 console.log(`\n${t.passed} passed, ${t.failed} failed`)
 dcStub.close()
 embedStub.close()
-holdersStub.close()
 fs.rmSync(tmp, { recursive: true, force: true })
 process.exit(t.failed ? 1 : 0)

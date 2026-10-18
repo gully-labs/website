@@ -8,12 +8,14 @@ import { shapeMovers } from './server/movers.mjs'
 import { handleAdmin } from './server/admin.mjs'
 import { handleDeveloper } from './server/developer.mjs'
 import { handlePay } from './server/invoices.mjs'
+import { handleSecurityPublic } from './server/security-routes.mjs'
 import { publicPlans } from './server/plans.mjs'
 import { alertChannels } from './server/telegram.mjs'
 import { geoFor } from './server/geo.mjs'
 import { handleAsk } from './server/ask.mjs'
 import { handleDeepcoreLaunches } from './server/deepcore.mjs'
 import { handleSolana } from './server/solana-routes.mjs'
+import { handleHolders } from './server/holders.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
 function mockContactApi(): Plugin {
@@ -128,11 +130,15 @@ function serverModules(): Plugin {
           res.setHeader('Cache-Control', 'private, no-store')
           return res.end(JSON.stringify(geoFor(req, true)))
         }
+        if (url.pathname.startsWith('/api/holders/')) {
+          handleHolders(req, res, url, null).then((done: boolean) => done || next(), next)
+          return
+        }
         if (url.pathname.startsWith('/api/solana/')) {
           handleSolana(req, res, url, geoFor(req, true)).then((done: boolean) => done || next(), next)
           return
         }
-        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : null
+        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : null
         if (!handler) return next()
         handler(req, res, url).then((done) => {
           if (done) return

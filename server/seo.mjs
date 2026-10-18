@@ -5,6 +5,8 @@
 
 import fs from 'node:fs'
 import { APP_HOST, APP_URL, isAppHost } from './hosts.mjs'
+import { published, publishedJobs } from './security-store.mjs'
+import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 
 const SITE = 'https://gullylabs.xyz'
 const DOCS = 'https://docs.gullylabs.xyz'
@@ -26,11 +28,15 @@ const MAIN = {
   '/widget': ['Tracker widget · Gully Labs', 'Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps.'],
   '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security testing from the team behind the Gully Labs projects.'],
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
+  '/security': ['Gully Security: AI Security Scan and Security Review · Gully Labs', 'Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price.'],
+  '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
+  '/holders': ['Holder Map: who really holds a token · Gully Labs', 'Search any DeepCore launch or tokenised stock and see who holds it: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
   '/legal/privacy': ['Privacy policy · Gully Labs', 'What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, the Telegram bot and Gully Pay, why, who else sees it and how long it is kept.'],
   '/links': ['Links · Gully Labs', 'Every Gully Labs link in one place: the site, the app, the stock tracker, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the Telegram bot and the news channel.'],
+  '/score': ['Gully Score: transparent contract scores · Gully Labs', 'The Gully Score rates a contract 0 to 100 from public evidence only: verified code, who controls it, upgrades, delays, recent privileged changes, locks and holders. Nobody can pay to change a score.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
@@ -49,6 +55,8 @@ for (const key of Object.keys(CHAIN_NAMES)) {
       `${s.ticker} token price vs fair value (${CHAIN_NAMES[key]}) · Gully Labs`,
       `${s.name} (${s.ticker}) token on ${CHAIN_NAMES[key]}: its price in its deepest pool against its ${key === 'solana' ? 'Chainlink (or issuer)' : 'Chainlink'} fair price, the gap, pool depth and history, read live.`,
     ]
+  // Its Holder Map (pageMeta answers these paths itself; listed here for the sitemap).
+  for (const s of stocks) MAIN[`/holders/${key}/${s.ticker}`] = [`Holder Map: ${s.ticker} on ${CHAIN_NAMES[key]} · Gully Labs`, `Who holds ${s.ticker} on ${CHAIN_NAMES[key]}.`]
 }
 
 const DOCS_PAGES = {
@@ -61,10 +69,13 @@ const DOCS_PAGES = {
   '/plans-alerts': ['Plans & alerts · Gully Labs docs', 'Paid API plans paid in ETH, BNB, USDC or USDT on four chains, gap alerts by webhook or Telegram, the webhook payload and how to verify its signature.'],
   '/gully-pay': ['Gully Pay · Gully Labs docs', 'Gully Pay: invoices and reusable pay links in ETH, BNB, USDC or USDT, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them.'],
   '/gully-pay-merchants': ['Gully Pay for merchants · Gully Labs docs', 'Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy.'],
+  '/gully-security': ['Gully Security · Gully Labs docs', 'Gully Security: the AI Security Scan (inputs, steps, quotas and payment), reading a report, publishing it, and requesting a human Security Review.'],
   '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the app dashboard: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
   '/roadmap': ['Roadmap · Gully Labs docs', 'What Gully Labs plans to build next, with an honest status for each track: the Gully L3, and Audits & Security (AI security scans, security reviews, smart-contract and code audits, Gully Score and monitoring). All planned; nothing is offered yet.'],
   '/roadmap-l3': ['Roadmap: Gully L3 · Gully Labs docs', 'The plan for the Gully L3: an Arbitrum chain settling to Arbitrum One with Chain Kit, Gully Pay and Hyperlane as its interop layer. Status: spec written, devnet prepared, nothing running.'],
+  '/holder-map': ['Holder Map · Gully Labs docs', 'How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules.'],
+  '/gully-score': ['Gully Score methodology · Gully Labs docs', 'How the Gully Score is worked out: every component, its weight and source, what happens when data is missing, the badge and widget, and why nobody can pay to change a score.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],
 }
 
@@ -121,11 +132,43 @@ export function pageMeta(host, pathname) {
   if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
   // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
   if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
+  // Holder Maps (holders.mjs): a page per DeepCore launch or tracked stock token; the share image is the map's own card.
+  const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana)\/([A-Za-z0-9]{1,64})$/)
+  if (hm) {
+    const chainName = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }[hm[2]]
+    const what = /^0x/.test(hm[3]) || hm[3].length > 12 ? 'this token' : hm[3].toUpperCase()
+    return {
+      title: `Holder Map: ${what} on ${chainName} · Gully Labs`,
+      description: `Who holds ${what} on ${chainName}: the biggest wallets, the ones that trade with each other, launch checks and a replay of how holdings changed, read live.`,
+      canonical: hm[1] ? null : `${SITE}/holders/${hm[2]}/${hm[3]}`,
+      found: true,
+      noindex: !!hm[1],
+      image: `${SITE}/api/holders/${hm[2]}/${hm[3]}/card.png`,
+    }
+  }
+  // A published scan report: a real page while it is published, indexed only when its owner opted in.
+  const sr = p.match(/^\/security\/reports\/(sec_[\w-]{16})$/)
+  if (sr) {
+    const j = published(sr[1])
+    if (!j) return { title: 'Report not found · Gully Labs', description: MAIN['/security/reports'][1], canonical: null, found: false }
+    return { title: `Security scan report: ${reportTitle(j)} · Gully Labs`, description: 'An AI Security Scan report published by its owner: findings by severity, the tools that ran and the limits of an automated scan. Not an audit.', canonical: `${SITE}${p}`, found: true, noindex: !j.indexable, image: `${SITE}/social/og-services.png` }
+  }
+  // Gully Score pages (gully-score.mjs): one per contract; listed ones are indexed, the rest are noindex.
+  const sm = scorePageMeta(p)
+  if (sm) return sm.found ? { title: sm.title, description: sm.description, canonical: sm.canonical, found: true, noindex: sm.noindex, image: `${SITE}/social/og-home.png` } : { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  const og = p === '/' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
+  const og = p === '/' || p === '/holders' || p === '/score' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/security') ? 'services' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
   return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
+}
+
+/** A report's subject in a title: the contract or the repository. */
+function reportTitle(j) {
+  const i = j.input ?? {}
+  if (i.kind === 'address') return `${i.address.slice(0, 6)}…${i.address.slice(-4)} on ${i.chain}`
+  if (i.repo) return i.repo
+  return 'uploaded code'
 }
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -169,11 +212,13 @@ export function sitemapFor(host) {
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
   else if (isAppHost(host)) urls = [[`${APP}/`, '0.6', 'monthly']]
   else
-    urls = Object.keys(MAIN).map((p) => [
+    urls = [...Object.keys(MAIN), ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)].map((p) => [
       SITE + (p === '/' ? '/' : p),
       p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
-      p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p.startsWith('/projects/') ? 'daily' : 'monthly',
+      p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p === '/score' || p.startsWith('/projects/') ? 'daily' : 'monthly',
     ])
+  // Listed Gully Score pages (a watched contract that allows listing, or one with a published report).
+  if (!host.startsWith('docs.') && !isAppHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])
   const rows = urls.map(([u, pr, f]) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</urlset>\n`
 }

@@ -211,6 +211,13 @@ try {
   const del = await call(`/api/tg/alerts/${id}/delete`, { method: 'POST' })
   check('delete from the app', del.status === 200 && (await call('/api/tg/alerts')).data.alerts.length === 0)
 
+  // Holder Map alert from the app's "Who holds this?" screen: the top cluster of a tracked stock passing 20%.
+  const badHold = await call('/api/tg/alerts', { method: 'POST', body: { kind: 'holders', chain: 'robinhood', token: 'NVDA', metric: 'sideways', above: 20 } })
+  check('create: a holder alert with an unknown metric is 400', badHold.status === 400, JSON.stringify(badHold.data))
+  const hold = await call('/api/tg/alerts', { method: 'POST', body: { kind: 'holders', chain: 'robinhood', token: 'NVDA', metric: 'cluster', above: 20 } })
+  check('create: a holder alert (largest cluster ≥ 20%) from the app, delivered to Telegram', hold.status === 201 && hold.data.alert.condition.type === 'holders' && hold.data.alert.condition.chain === 'robinhood' && hold.data.alert.condition.above === 20 && hold.data.alert.telegram?.linked === true, JSON.stringify(hold.data))
+  if (hold.data?.alert?.id) await call(`/api/tg/alerts/${hold.data.alert.id}/delete`, { method: 'POST' })
+
   /* ------------------------------- left the channel: the exits still work (P0) --- */
   left.add(GROUP_USER)
   const gil = initData({ user: { id: GROUP_USER, first_name: 'Gil' } })
