@@ -50,7 +50,6 @@ export const signed = (n, d = 2) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.a
 export const usd = (n) => (num(n) ? `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null)
 export const usd0 = (n) => (num(n) ? `$${Math.round(n).toLocaleString('en-US')}` : null)
 export const shortAddr = (a) => `${String(a).slice(0, 6)}…${String(a).slice(-4)}`
-export const when = (iso) => new Date(iso).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
 const shortChain = (k) => (k === 'robinhood' ? 'RH' : k === 'bsc' ? 'BNB' : k === 'solana' ? 'SOL' : k)
 
 /** "just now", "4m ago", "2h ago", "3d ago". */
@@ -59,10 +58,37 @@ export function ago(iso, now = Date.now()) {
   if (!Number.isFinite(t)) return null
   const s = Math.max(0, Math.round((now - t) / 1000))
   if (s < 60) return 'just now'
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`
   if (s < 86_400) return `${Math.floor(s / 3600)}h ago`
   return `${Math.floor(s / 86_400)}d ago`
 }
+
+/** How long until a time, for mutes: "for 24h", "for 3h", "for 20 min". */
+export function forTime(iso, now = Date.now()) {
+  const t = Date.parse(iso)
+  if (!Number.isFinite(t)) return 'for now'
+  const m = Math.max(1, Math.round((t - now) / 60_000))
+  return m < 60 ? `for ${m} min` : `for ${Math.round(m / 60)}h`
+}
+
+/** A small dollar price: 2 decimals from $1 up, 3 significant digits below ($0.00123). */
+export const usdSmall = (n) => (!num(n) ? null : n >= 1 ? usd(n) : `$${Number(n.toPrecision(3)).toLocaleString('en-US', { maximumSignificantDigits: 3, maximumFractionDigits: 12 })}`)
+
+/** The gap in words: "NVDA token is <b>1.20% above</b> the real share price." */
+export function gapSentence(ticker, gapPct) {
+  const t = esc(ticker)
+  if (!num(gapPct)) return `${t} token: no gap to show right now.`
+  if (Math.abs(gapPct) < 0.005) return `${t} token matches the real share price.`
+  return `${t} token is <b>${Math.abs(gapPct).toFixed(2)}% ${gapPct > 0 ? 'above' : 'below'}</b> the real share price.`
+}
+
+/** "Token $185.58 · Real share $180.00", with only the prices that exist (never "unreadable", never 0). */
+export const priceLine = (onchain, fair) => [usd(onchain) ? `Token ${usd(onchain)}` : null, usd(fair) ? `Real share ${usd(fair)}` : null].filter(Boolean).join(' · ')
+
+export const CLOSED_LINE = '🌙 Market closed: compared with the last closing price.'
+export const OPEN_LINE = '☀️ Market open.'
+export const NOT_ENOUGH = 'Not enough trading to compare right now.'
+export const INFO = '<i>Information only, not advice.</i>'
 
 /* -------------------------------------------------------------- buttons --- */
 
@@ -94,8 +120,8 @@ export const MENU_KEYBOARD = [
 export function menuCaption(n) {
   const count = num(n) && n > 0 ? `${n} stock tokens` : 'Stock tokens'
   return [
-    '<b>Gully Labs</b> · stock tokens vs their fair price, live.',
-    `📈 ${count} on Robinhood Chain, BNB Chain and Solana · 🔔 gap alerts right here · 🤖 Gully AI answers.`,
+    '<b>Gully Labs</b> · see if stock tokens trade above or below the real share price.',
+    `📈 ${count} on Robinhood Chain, BNB Chain and Solana · 🔔 alerts right here · 🤖 Gully AI answers.`,
     '',
     '<i>Information only, not investment advice.</i>',
   ].join('\n')
@@ -107,14 +133,14 @@ export const menuView = (n) => ({ text: `${menuCaption(n)}\n\nPick a screen belo
 export function helpView(linked) {
   const text = [
     '<b>Gully Labs bot</b>',
-    'The gap between a tokenised stock’s on-chain price and its Chainlink fair price, from the Gully Labs tracker. Everything is behind the buttons below; typed commands still work:',
+    'See how far each stock token trades above or below the real share price (the share price comes from Chainlink). Tap the buttons below, or type:',
     '',
     '/gap NVDA · one stock (add <code>bsc</code>, <code>robinhood</code> or <code>solana</code>)',
-    '/top · widest trusted gaps now',
-    '/movers · biggest gap moves',
-    '/launches · latest DeepCore launches',
-    '/ask · a question for Gully AI',
-    ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['Alerts: link your wallet in the developer portal, Alerts tab, Connect Telegram.']),
+    '/top · biggest gaps right now',
+    '/movers · biggest changes',
+    '/launches · newest tokens on DeepCore',
+    '/ask · ask Gully AI a question',
+    ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['🔔 Want alerts? Link your wallet: developer portal, Alerts tab, Connect Telegram.']),
     '',
     '<i>Information only, not investment advice.</i>',
   ].join('\n')
@@ -127,21 +153,21 @@ export const expiredView = () => ({ text: '<b>This menu expired</b>, here’s a 
 
 /** The card's status emoji and, for ⚪, why the gap is not counted. */
 export function statusOf(r) {
-  if (!r) return { emoji: '⚪', label: 'no reading', reason: 'The tracker has no reading for this stock right now.' }
-  if (r.status === 'feed-unreadable') return { emoji: '⚪', label: 'unreadable', reason: 'The fair price (Chainlink feed) could not be read just now.' }
-  if (r.status === 'pool-unreadable') return { emoji: '⚪', label: 'unreadable', reason: 'The pool could not be read just now.' }
-  if (r.status === 'no-pool') return { emoji: '⚪', label: 'no pool', reason: 'No pool was found for this token.' }
-  if (r.status === 'unverified') return { emoji: '⚪', label: 'unverified', reason: `Unverified: ${r.untrustedReason ?? 'the on-chain price could not be confirmed.'}` }
-  if (!num(r.gapPct)) return { emoji: '⚪', label: 'unreadable', reason: 'The gap could not be read just now.' }
-  if (r.status === 'thin') return { emoji: '⚪', label: 'thin', reason: 'The pool is too thin for the tracker to flag this gap.' }
-  if (r.poolStale) return { emoji: '⚪', label: 'stale', reason: 'The pool read is stale; this gap is not current.' }
-  if (r.status === 'in-line') return { emoji: '🟢', label: 'in line', reason: null }
-  if (r.status === 'drifting') return { emoji: '🟡', label: 'drifting', reason: null }
-  if (r.status === 'premium' || r.status === 'discount') return { emoji: '🔴', label: r.status, reason: null }
+  if (!r) return { emoji: '⚪', label: 'no price', reason: 'No price for this stock right now.' }
+  if (r.status === 'feed-unreadable') return { emoji: '⚪', label: 'no price', reason: 'The real share price isn’t available right now.' }
+  if (r.status === 'pool-unreadable') return { emoji: '⚪', label: 'no price', reason: 'The token price isn’t available right now.' }
+  if (r.status === 'no-pool') return { emoji: '⚪', label: 'not trading', reason: 'This token isn’t trading yet.' }
+  if (r.status === 'unverified') return { emoji: '⚪', label: 'not enough trading', reason: NOT_ENOUGH }
+  if (!num(r.gapPct)) return { emoji: '⚪', label: 'no price', reason: 'The gap isn’t available right now.' }
+  if (r.status === 'thin') return { emoji: '⚪', label: 'not enough trading', reason: NOT_ENOUGH }
+  if (r.poolStale) return { emoji: '⚪', label: 'not fresh', reason: 'Prices haven’t updated lately, so this gap may be old.' }
+  if (r.status === 'in-line') return { emoji: '🟢', label: 'close to the real price', reason: null }
+  if (r.status === 'drifting') return { emoji: '🟡', label: 'drifting from the real price', reason: null }
+  if (r.status === 'premium' || r.status === 'discount') return { emoji: '🔴', label: r.status === 'premium' ? 'well above the real price' : 'well below the real price', reason: null }
   return { emoji: '⚪', label: String(r.status ?? 'unknown'), reason: null }
 }
 
-/** Ranked like /top: a trusted status, a readable gap, a fresh read and an open feed session. */
+/** Ranked like /top: a trusted status, a readable gap, a fresh read and an open market session. */
 const TRUSTED = new Set(['in-line', 'drifting', 'premium', 'discount'])
 export const trustedNow = (r) => TRUSTED.has(r.status) && num(r.gapPct) && !r.poolStale && r.sessionOpen !== false
 
@@ -184,7 +210,7 @@ export function cardBack(cc, from) {
 
 export function chainPickerView(stocks, rowsOk) {
   const count = (k) => stocks.filter((s) => s.chain === k).length
-  const text = ['<b>📈 Stocks</b>', 'Pick a chain to see its stock tokens and their gap to the fair price.', ...(rowsOk ? [] : ['', '<i>The tracker could not be read just now; status colours are missing.</i>'])].join('\n')
+  const text = ['<b>📈 Stocks</b>', 'Pick a chain to see its stock tokens and how far they trade from the real share price.', ...(rowsOk ? [] : ['', '<i>Prices aren’t available right now, so the colours are missing.</i>'])].join('\n')
   return { text, keyboard: [[btn(`Robinhood Chain · ${count('robinhood')}`, 'stk:rh:p1'), btn(`BNB Chain · ${count('bsc')}`, 'stk:bn:p1')], [btn(`Solana · ${count('solana')}`, 'stk:sl:p1')], nav('m')] }
 }
 
@@ -199,8 +225,8 @@ export function gridView(cc, page, stocks, rowsList) {
   const keys = shown.map((s) => btn(`${rowsList ? statusOf(byTicker.get(s.ticker)).emoji + ' ' : ''}${s.ticker}`, `c:${cc}:${s.ticker}:g${p}`))
   const text = [
     `<b>📈 ${esc(chainName(chain))}</b> · ${list.length} stock tokens`,
-    rowsList ? '🟢 in line · 🟡 drifting · 🔴 premium or discount · ⚪ thin, stale or unverified' : '<i>The tracker could not be read just now; tap a ticker to try again.</i>',
-    'Tap a ticker for its card.',
+    rowsList ? '🟢 close to the real price · 🟡 drifting · 🔴 well above or below · ⚪ no price, or not enough trading' : '<i>Prices aren’t available right now; tap a ticker to try again.</i>',
+    'Tap a ticker for details.',
   ].join('\n')
   const pager = pages > 1 ? [[btn('◀', `stk:${cc}:p${p === 1 ? pages : p - 1}`), btn(`Page ${p}/${pages}`, 'noop'), btn('▶', `stk:${cc}:p${p === pages ? 1 : p + 1}`)]] : []
   return { text, keyboard: [...rows(keys, 3), ...pager, [btn('🔍 Search', `srch:${cc}`)], nav('stk')] }
@@ -226,24 +252,29 @@ export function searchResultsView(cc, query, hits) {
   return { text: `<b>🔍 ${esc(chain)}</b> · ${hits.length} match${hits.length === 1 ? '' : 'es'} for “${esc(query)}”`, keyboard: [...rows(hits.map((s) => btn(s.ticker, `c:${cc}:${s.ticker}:s`)), 3), [btn('🔍 Search again', `srch:${cc}`)], nav(`stk:${cc}:p1`)] }
 }
 
-/** The stock card. `spark` is sparkline()'s result or null; `now` for "updated Xm ago". */
+/**
+ * The stock card, in plain words: the gap as a sentence ("NVDA token is 3.10% above the real share
+ * price."), the two prices, liquidity when known, the market session, a 24h sparkline and "Updated 3 min
+ * ago". A gap that cannot be trusted shows its reason instead of a figure. `spark` is sparkline()'s result.
+ */
 export function cardView({ cc, ticker, from, row, name, spark, now = Date.now() }) {
   const chain = CHAIN_OF[cc]
   const st = statusOf(row)
   const lines = [`${st.emoji} <b>${esc(ticker)}</b> · ${esc(chainName(chain))}`]
   if (name ?? row?.name) lines.push(`<i>${esc(name ?? row.name)}</i>`)
   lines.push('')
-  if (!row) lines.push(esc(st.reason))
+  if (!row) lines.push(`⚪ ${esc(st.reason)}`)
   else {
-    if (num(row.gapPct) && row.status !== 'unverified') lines.push(`Gap <b>${esc(signed(row.gapPct))}%</b> · ${esc(st.label)}`)
-    else lines.push(`Gap <b>unreadable</b> · ${esc(st.label)}`)
-    lines.push(`On chain ${esc(usd(row.onchain) ?? 'unreadable')} · fair ${esc(usd(row.fair) ?? 'unreadable')}`)
+    const showGap = num(row.gapPct) && row.status !== 'unverified'
+    if (showGap) lines.push(gapSentence(ticker, row.gapPct))
+    else lines.push(`⚪ ${esc(st.reason)}`)
+    const prices = priceLine(row.onchain, row.fair)
+    if (prices) lines.push(prices)
     const liq = usd0(row.pool?.liquidityUsd)
-    lines.push(liq ? `Pool liquidity ${esc(liq)}` : 'Pool liquidity not reported')
-    if (st.reason) lines.push(`⚪ ${esc(st.reason)}`)
-    if (row.sessionOpen === false) lines.push('🌙 The feed session is closed: the gap is against the last session’s price.')
-    else if (row.sessionOpen === true) lines.push(`☀️ Feed session open${row.sessionName ? ` (${esc(row.sessionName)})` : ''}.`)
-    else lines.push('Feed session not reported.')
+    if (liq) lines.push(`💧 Liquidity ${esc(liq)}`)
+    if (showGap && st.reason) lines.push(`⚪ ${esc(st.reason)}`)
+    if (row.sessionOpen === false) lines.push(CLOSED_LINE)
+    else if (row.sessionOpen === true) lines.push(OPEN_LINE)
   }
   lines.push('')
   if (spark) {
@@ -252,7 +283,7 @@ export function cardView({ cc, ticker, from, row, name, spark, now = Date.now() 
   } else lines.push('<i>24h gap: not enough history yet.</i>')
   const at = row?.asOf ?? row?.onchainAt ?? null
   const a = at ? ago(at, now) : null
-  lines.push(`<i>${a ? `Updated ${esc(a)}` : 'Update time not reported'} · information only, not investment advice.</i>`)
+  lines.push(`<i>${a ? `Updated ${esc(a)} · ` : ''}Information only, not advice.</i>`)
   return {
     text: lines.join('\n'),
     keyboard: [[btn('🔔 Alert me', `al:${cc}:${ticker}:${from}`), btn('🔄 Refresh', `c:${cc}:${ticker}:${from}`)], [ubtn('🌐 Open page ↗', stockUrl(chain, ticker)), ...nav(cardBack(cc, from))]],
@@ -275,7 +306,7 @@ export const linkNeededView = (back, what = 'Alerts') => ({
 })
 
 /** The direction step's buttons: route code -> label and alerts.mjs direction. */
-export const DIRS = { p: { label: '▲ Premium', direction: 'above' }, d: { label: '▼ Discount', direction: 'below' }, e: { label: '↕ Both', direction: 'both' } }
+export const DIRS = { p: { label: '▲ Above', direction: 'above' }, d: { label: '▼ Below', direction: 'below' }, e: { label: '↕ Both', direction: 'both' } }
 /** An alert direction's arrow, for alert cards and deliveries. */
 export const DIR_ICON = { above: '▲', below: '▼', both: '↕' }
 const pctText = (p) => String(Number(p))
@@ -283,15 +314,15 @@ const pctText = (p) => String(Number(p))
 /** The condition the stepper's choice becomes: a gap threshold of X%, one-sided or both ways (alerts.mjs). */
 export function conditionFor(pct, dir) {
   const p = pctText(pct)
-  if (dir === 'p') return { condition: { type: 'gap', pct: Number(pct), direction: 'above' }, text: `the premium reaches +${p}% or more (gap ≥ +${p}%)` }
-  if (dir === 'd') return { condition: { type: 'gap', pct: Number(pct), direction: 'below' }, text: `the discount reaches ${p}% or more (gap ≤ −${p}%)` }
-  return { condition: { type: 'gap', pct: Number(pct), direction: 'both' }, text: `the gap reaches ±${p}% either way` }
+  if (dir === 'p') return { condition: { type: 'gap', pct: Number(pct), direction: 'above' }, text: `the token is ${p}% or more above the real share price` }
+  if (dir === 'd') return { condition: { type: 'gap', pct: Number(pct), direction: 'below' }, text: `the token is ${p}% or more below the real share price` }
+  return { condition: { type: 'gap', pct: Number(pct), direction: 'both' }, text: `the token is ${p}% or more above or below the real share price` }
 }
 
 export function alertStep1View(cc, ticker, from) {
   const base = `al:${cc}:${ticker}:${from}`
   return {
-    text: [`<b>🔔 Alert for ${esc(ticker)}</b> · ${esc(chainName(CHAIN_OF[cc]))}`, 'Step 1 of 3 · How wide a gap to the fair price?'].join('\n'),
+    text: [`<b>🔔 Alert for ${esc(ticker)}</b> · ${esc(chainName(CHAIN_OF[cc]))}`, 'Step 1 of 3 · How far from the real share price?'].join('\n'),
     keyboard: [[btn('±1%', `${base}:1`), btn('±2%', `${base}:2`), btn('±3%', `${base}:3`), btn('✏️ Custom', `alx:${cc}:${ticker}:${from}`)], nav(`c:${cc}:${ticker}:${from}`)],
   }
 }
@@ -303,9 +334,9 @@ export function alertStep2View(cc, ticker, from, pct) {
     text: [
       `<b>🔔 Alert for ${esc(ticker)}</b> · ${p}%`,
       'Step 2 of 3 · Which direction?',
-      `▲ Premium: on chain at least ${p}% above fair (gap ≥ +${p}%)`,
-      `▼ Discount: at least ${p}% below fair (gap ≤ −${p}%)`,
-      `↕ Both: either way (|gap| ≥ ${p}%)`,
+      `▲ Above: the token is ${p}% or more above the real share price`,
+      `▼ Below: the token is ${p}% or more below it`,
+      '↕ Both: either way',
     ].join('\n'),
     keyboard: [[btn(DIRS.p.label, `${base}:p`), btn(DIRS.d.label, `${base}:d`), btn(DIRS.e.label, `${base}:e`)], nav(`al:${cc}:${ticker}:${from}`)],
   }
@@ -332,13 +363,13 @@ export function createdView({ ok, status, error, back, what }) {
 /* ------------------------------------------------------------ top gaps --- */
 
 export function topView(rowsList) {
-  if (!rowsList) return { text: '<b>🔥 Top gaps</b>\nThe tracker could not be read just now. Try again in a minute.', keyboard: [[btn('🔄 Refresh', 'top')], nav('m')] }
+  if (!rowsList) return { text: '<b>🔥 Top gaps</b>\nPrices aren’t available right now. Try again in a minute.', keyboard: [[btn('🔄 Refresh', 'top')], nav('m')] }
   const ok = rowsList.filter(trustedNow).sort((a, b) => Math.abs(b.gapPct) - Math.abs(a.gapPct)).slice(0, LIST_MAX)
   const closed = rowsList.filter((r) => r.sessionOpen === false).length
-  const closedText = closed ? `\n<i>${closed === 1 ? '1 stock is' : `${closed} stocks are`} outside the feed session and not ranked.</i>` : ''
-  if (!ok.length) return { text: `<b>🔥 Top gaps</b>\nNo stock has a trusted gap right now (a readable feed and pool, a deep enough pool, a fresh read and an open feed session).${closedText}`, keyboard: [[btn('🔄 Refresh', 'top')], nav('m')] }
+  const closedText = closed ? `\n<i>🌙 Market closed for ${closed === 1 ? '1 stock' : `${closed} stocks`}: not ranked.</i>` : ''
+  if (!ok.length) return { text: `<b>🔥 Top gaps</b>\nNothing to rank right now: not enough trading to compare.${closedText}`, keyboard: [[btn('🔄 Refresh', 'top')], nav('m')] }
   const keys = ok.map((r, i) => [btn(`${i + 1}. ${statusOf(r).emoji} ${r.ticker} · ${shortChain(r.chain)}  ${signed(r.gapPct)}%`, `c:${CODE_OF[r.chain]}:${r.ticker}:t`)])
-  return { text: `<b>🔥 Top gaps now</b>\nThe widest trusted gaps to the fair price. Tap one for its card.${closedText}`, keyboard: [...keys, [btn('🔄 Refresh', 'top')], nav('m')] }
+  return { text: `<b>🔥 Top gaps now</b>\nThe stock tokens furthest from the real share price. Tap one for details.${closedText}`, keyboard: [...keys, [btn('🔄 Refresh', 'top')], nav('m')] }
 }
 
 /* -------------------------------------------------------------- movers --- */
@@ -347,51 +378,63 @@ export function moversView(m, win) {
   const toggles = [btn(win === '24h' ? '• 24h •' : '24h', 'mv:24h'), btn(win === '1h' ? '• 1h •' : '1h', 'mv:1h'), btn('🔄 Refresh', `mv:${win}`)]
   const list = Array.isArray(m?.byGap) ? m.byGap.slice(0, LIST_MAX) : null
   const head = `<b>🚀 Movers · ${win}</b>`
-  if (!list) return { text: `${head}\nMovers could not be read just now. Try again in a minute.`, keyboard: [toggles, nav('m')] }
-  if (!list.length) return { text: `${head}\n${esc(m.note ?? `Not enough snapshots yet to compare with ${win} ago.`)}`, keyboard: [toggles, nav('m')] }
+  if (!list) return { text: `${head}\nMovers aren’t available right now. Try again in a minute.`, keyboard: [toggles, nav('m')] }
+  if (!list.length) return { text: `${head}\nNot enough history yet to compare with ${win} ago. Check back later.`, keyboard: [toggles, nav('m')] }
   const from = win === '1h' ? 'm1' : 'm24'
-  const keys = list.map((e, i) => [btn(`${i + 1}. ${e.ticker} · ${shortChain(e.chain)}  ${signed(e.gapChangePp)} pp → ${signed(e.gapNow)}%`, `c:${CODE_OF[e.chain] ?? 'rh'}:${e.ticker}:${from}`)])
-  return { text: `${head}\nThe biggest changes in the gap over ${win} (percentage points), and the gap now. Tap one for its card.`, keyboard: [...keys, toggles, nav('m')] }
+  const keys = list.map((e, i) => [btn(`${i + 1}. ${e.ticker} · ${shortChain(e.chain)}  ${signed(e.gapChangePp)} pts → ${signed(e.gapNow)}%`, `c:${CODE_OF[e.chain] ?? 'rh'}:${e.ticker}:${from}`)])
+  return { text: `${head}\nThe biggest moves in the gap over ${win}, and where each token is now. Tap one for details.`, keyboard: [...keys, toggles, nav('m')] }
 }
 
 /* ------------------------------------------------------------- DeepCore --- */
 
-/** One DeepCore launch, in the bot's style: token, chain, time, pools and locks as DeepCore states them. */
-export function launchBlock(l) {
-  const head = `<b>${esc(l.symbol ?? shortAddr(l.token))}</b> · ${esc(l.chainName)} · ${esc(when(l.createdAt))}`
-  const legs = (l.pools ?? l.legs ?? []).map((g) => {
-    const lock = g.locked === true ? `liquidity locked${g.lockId ? ` (lock #${esc(g.lockId)})` : ''}` : g.locked === false ? 'no liquidity lock' : 'lock not reported'
-    return `${esc(g.kind ?? 'Pool')} pool vs ${esc(g.quote ?? '?')} · ${lock}`
-  })
-  return [head, legs.length ? legs.join('\n') : 'Pool not reported', `<a href="${esc(l.links.token)}">${esc(`deepcore.fun/tokens/${shortAddr(l.token)}`)}</a> · <a href="${esc(l.links.swap)}">swap on DeepCore</a>`].join('\n')
+/** "🔒 Liquidity locked" when any pool is locked, "🔓 Liquidity not locked" when none is, null when DeepCore does not say. */
+export function lockLine(l) {
+  const legs = l.pools ?? l.legs ?? []
+  if (legs.some((g) => g.locked === true)) return '🔒 Liquidity locked'
+  if (legs.length && legs.every((g) => g.locked === false)) return '🔓 Liquidity not locked'
+  return null
 }
 
-const hhmm = (iso) => new Date(iso).toISOString().slice(5, 16).replace('T', ' ')
+/**
+ * One DeepCore launch in plain words: name, chain, how long ago, price and market cap when `market`
+ * (readDeepcorePool's match) has them, and whether the liquidity is locked. No addresses, no pool ids.
+ */
+export function launchBlock(l, { now = Date.now(), market = null } = {}) {
+  const a = ago(l.createdAt, now)
+  const lines = [`<b>${esc(l.symbol ?? 'New token')}</b> · ${esc(l.chainName)}${a ? ` · ${esc(a)}` : ''}`]
+  const price = usdSmall(market?.priceUsd)
+  const cap = usd0(market?.marketCapUsd)
+  if (price || cap) lines.push([price ? `💵 Price ${esc(price)}` : null, cap ? `Market cap ${esc(cap)}` : null].filter(Boolean).join(' · '))
+  const lock = lockLine(l)
+  if (lock) lines.push(lock)
+  return lines.join('\n')
+}
 
-export function launchesView(r, filter, chains) {
+export function launchesView(r, filter, chains, now = Date.now()) {
   const f = Number(filter) || 0
   const filters = rows([btn(f === 0 ? '• All •' : 'All', 'dc:0'), ...Object.entries(chains).map(([id, c]) => btn(Number(id) === f ? `• ${c.name} •` : c.name, `dc:${id}`))], 3)
   const tail = [[btn('🔔 Alert me on new launches', `dla:${f}`)], [btn('🔄 Refresh', `dc:${f}`), ...nav('m')]]
   const where = f ? ` on ${esc(chains[f]?.name ?? f)}` : ''
   const head = `<b>🛰 DeepCore launches${where}</b>`
-  if (!r || r.state === 'unreadable') return { text: `${head}\nDeepCore’s launches could not be read just now. Try again in a minute.`, keyboard: [...filters, ...tail] }
+  if (!r || r.state === 'unreadable') return { text: `${head}\nDeepCore isn’t answering right now. Try again in a minute.`, keyboard: [...filters, ...tail] }
   const notes = []
-  if (r.state === 'stale') notes.push(`<i>DeepCore could not be read just now; this is the list as of ${esc(when(r.asOf))}.</i>`)
+  if (r.state === 'stale') notes.push(`<i>DeepCore isn’t answering right now; this list is from ${esc(ago(r.asOf, now) ?? 'earlier')}.</i>`)
   const unread = (r.chains ?? []).filter((c) => c.status !== 'ok' && (!f || c.chainId === f)).map((c) => esc(c.name))
-  if (unread.length) notes.push(`<i>DeepCore could not read ${unread.join(', ')}; launches there may be missing.</i>`)
+  if (unread.length) notes.push(`<i>${unread.join(', ')} couldn’t be checked; launches there may be missing.</i>`)
   if (!r.launches.length) return { text: [`${head}`, `No launches on DeepCore${where} yet.`, ...notes].join('\n'), keyboard: [...filters, ...tail] }
-  const keys = r.launches.slice(0, LIST_MAX).map((l) => [btn(`${l.symbol ?? shortAddr(l.token)} · ${l.chainName} · ${hhmm(l.createdAt)}`.slice(0, 60), `dl:${l.chainId}:${String(l.token).slice(2).toLowerCase()}:${f}`)])
-  return { text: [head, 'The newest tokens launched on deepcore.fun. Tap one for its pools and locks.', ...notes, `<i>Read from api.deepcore.fun${r.asOf ? ` at ${esc(when(r.asOf))}` : ''}. Information only.</i>`].join('\n'), keyboard: [...keys, ...filters, ...tail] }
+  const keys = r.launches.slice(0, LIST_MAX).map((l) => [btn(`${l.symbol ?? 'New token'} · ${l.chainName} · ${ago(l.createdAt, now) ?? ''}`.slice(0, 60), `dl:${l.chainId}:${String(l.token).slice(2).toLowerCase()}:${f}`)])
+  return { text: [head, 'The newest tokens launched on DeepCore. Tap one for details.', ...notes, INFO].join('\n'), keyboard: [...keys, ...filters, ...tail] }
 }
 
-export function launchCardView(l, filter) {
-  if (!l) return { text: '<b>🛰 Launch</b>\nThis launch is no longer in DeepCore’s latest list.', keyboard: [[ubtn('🌐 Open DeepCore ↗', DEEPCORE)], nav(`dc:${filter}`)] }
-  return { text: `🛰 ${launchBlock(l)}\n\n<i>Information only, not investment advice.</i>`, keyboard: [[ubtn('🌐 Open on DeepCore ↗', l.links.token)], [btn('🔔 Alert me on new launches', `dla:${filter}`)], nav(`dc:${filter}`)] }
+/** One launch. `market` is readDeepcorePool's match for it (price, market cap) or null. */
+export function launchCardView(l, filter, { now = Date.now(), market = null } = {}) {
+  if (!l) return { text: '<b>🛰 Launch</b>\nThis launch is no longer in DeepCore’s latest list.', keyboard: [[ubtn('🌐 View on DeepCore ↗', DEEPCORE)], nav(`dc:${filter}`)] }
+  return { text: `🛰 ${launchBlock(l, { now, market })}\n\n${INFO}`, keyboard: [[ubtn('🌐 View on DeepCore ↗', l.links.token)], [btn('🔔 Alert me on new launches', `dla:${filter}`)], nav(`dc:${filter}`)] }
 }
 
 export function launchAlertStep1View(filter, chains) {
   return {
-    text: '<b>🔔 New-launch alert</b>\nStep 1 of 2 · Which chain? Every new DeepCore launch there arrives in this chat.',
+    text: '<b>🔔 New-launch alert</b>\nStep 1 of 2 · Which chain? Every new token launched on DeepCore there arrives in this chat.',
     keyboard: [...rows([btn('Any chain', `dla:${filter}:0`), ...Object.entries(chains).map(([id, c]) => btn(c.name, `dla:${filter}:${id}`))], 3), nav(`dc:${filter}`)],
   }
 }
@@ -399,7 +442,7 @@ export function launchAlertStep1View(filter, chains) {
 export function launchAlertStep2View(filter, cid, chains) {
   const where = cid ? chains[cid]?.name ?? `chain ${cid}` : 'any chain'
   return {
-    text: ['<b>🔔 New-launch alert</b>', 'Step 2 of 2 · Check and create', '', `Fires on every new DeepCore launch on ${esc(where)}. Launches within 5 minutes of the last message arrive together.`].join('\n'),
+    text: ['<b>🔔 New-launch alert</b>', 'Step 2 of 2 · Check and create', '', `Fires for every new token launched on DeepCore on ${esc(where)}. Launches within 5 minutes of the last message arrive together.`].join('\n'),
     keyboard: [[btn('✅ Create', `dlk:${cid}`), btn('⬅ Back', `dla:${filter}`)], [btn('🏠 Menu', 'm')]],
   }
 }
@@ -410,13 +453,14 @@ const alertLabel = (a, chains) => a.name || (a.kind === 'deepcore-launch' ? `Dee
 export function alertState(a, now = Date.now()) {
   if (!a.coveredByPlan) return { emoji: '⚠️', text: 'not in your plan' }
   if (!a.enabled) return { emoji: '⏸', text: 'paused' }
-  if (a.mutedUntil && Date.parse(a.mutedUntil) > now) return { emoji: '🔕', text: `muted until ${when(a.mutedUntil)}` }
-  if (a.kind !== 'deepcore-launch' && !a.armed) return { emoji: '🟠', text: 'fired, waits to re-arm' }
+  if (a.mutedUntil && Date.parse(a.mutedUntil) > now) return { emoji: '🔕', text: `muted ${forTime(a.mutedUntil, now)}` }
+  if (a.kind !== 'deepcore-launch' && !a.armed) return { emoji: '🟠', text: 'fired · watching again once the gap closes' }
   return { emoji: '🟢', text: 'watching' }
 }
-/** A gap condition in words with its direction (an alert stored before directions existed is 'both'). */
-export const gapWords = (c) => (c.direction === 'above' ? `▲ premium of +${c.pct}% or more (gap ≥ +${c.pct}%)` : c.direction === 'below' ? `▼ discount of ${c.pct}% or more (gap ≤ −${c.pct}%)` : `↕ gap of ${c.pct}% or more either way`)
-export const conditionWords = (c, chains) => (c.type === 'deepcore-launch' ? `new DeepCore launch on ${c.chainId ? (chains[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapWords(c) : c.status === 'either' ? 'status premium or discount' : `status ${c.status}`)
+/** A gap condition in plain words, with its direction arrow (an alert stored before directions existed is 'both'). */
+export const gapWords = (c) => (c.direction === 'above' ? `▲ ${c.pct}% or more above the real share price` : c.direction === 'below' ? `▼ ${c.pct}% or more below the real share price` : `↕ ${c.pct}% or more above or below the real share price`)
+const statusWords = (s) => (s === 'either' ? 'well above or below the real share price' : s === 'premium' ? 'well above the real share price' : s === 'discount' ? 'well below the real share price' : String(s ?? ''))
+export const conditionWords = (c, chains) => (c.type === 'deepcore-launch' ? `a new token launches on DeepCore (${c.chainId ? (chains?.[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'})` : c.type === 'gap' ? gapWords(c) : statusWords(c.status))
 
 export function myAlertsView(data, page, chains, now = Date.now()) {
   const list = data.alerts
@@ -440,8 +484,8 @@ export function alertCardView(a, chains, now = Date.now()) {
     `When: ${esc(conditionWords(a.condition, chains))}`,
     `State: ${esc(st.text)}`,
     `Delivery: ${[a.telegram ? 'Telegram' : null, a.webhook ? 'webhook' : null].filter(Boolean).join(' + ') || 'none'}`,
-    `Last fired: ${a.lastFiredAt ? esc(when(a.lastFiredAt)) : 'never'}`,
-    ...(last ? [`Last delivery: ${last.ok ? '✅' : '❌'} ${esc(last.channel)}${last.test ? ' (test)' : ''} · ${esc(when(last.at))}${last.ok ? '' : ` · ${esc(last.error ?? 'failed')}`}`] : []),
+    `Last fired: ${a.lastFiredAt ? esc(ago(a.lastFiredAt, now) ?? 'earlier') : 'never'}`,
+    ...(last ? [`Last delivery: ${last.ok ? '✅' : '❌'} ${last.channel === 'telegram' ? 'Telegram' : esc(last.channel)}${last.test ? ' (test)' : ''} · ${esc(ago(last.at, now) ?? 'earlier')}${last.ok ? '' : ` · ${esc(last.error ?? 'failed')}`}`] : []),
   ]
   const toggle = a.enabled ? btn('⏸ Pause', `ap:${a.id}`) : btn('▶ Resume', `ar:${a.id}`)
   return { text: lines.join('\n'), keyboard: [[toggle, btn('🔕 Mute 24h', `am:${a.id}`)], [btn('🧪 Test', `at:${a.id}`), btn('🗑 Delete', `ad:${a.id}`)], nav('ma')] }
@@ -454,7 +498,7 @@ export const deleteConfirmView = (a, chains) => ({
 
 /* ------------------------------------------------------------ Gully AI --- */
 
-export const AI_PROMPT = '🤖 Ask Gully AI: type your question about Gully Labs, the tracker, alerts or plans.'
+export const AI_PROMPT = '🤖 Ask Gully AI: type your question about Gully Labs, stock tokens, alerts or plans.'
 export const AI_PROMPT_RE = /^🤖 Ask Gully AI:/
 export const AI_EXAMPLES = ['How do gap alerts work?', 'What does the gap measure?', 'What do the plans include?']
 
@@ -485,7 +529,7 @@ export function settingsView({ link, workspace, notify, alertsCount, isLinker })
     `Wallet: <code>${esc(shortAddr(link.address))}</code>`,
     ...(workspace ? [`Workspace: ${esc(workspace)}`] : []),
     `Chat: ${link.chatType === 'private' ? 'this private chat' : `group “${esc(link.chatTitle)}”${isLinker ? ' (linked by you)' : ''}`}`,
-    `Alerts: ${alertsCount === null ? 'unreadable' : alertsCount}`,
+    `Alerts: ${alertsCount === null ? 'not available right now' : alertsCount}`,
     ...(notify ? [`Usage notices: ${notify.telegramUsage ? 'on' : 'off'}`] : []),
   ]
   return {
@@ -507,30 +551,32 @@ export const unlinkConfirmView = (link) => ({
 /* ----------------------------------------------------- alert deliveries --- */
 
 /**
- * One alert delivery as a compact card: status emoji, ticker, chain, gap, prices and liquidity, with
- * [🌐 Open ↗] [🔕 Mute 24h] [📈 Card] (Card opens the stock card in place). Launch alerts list the
- * launches with Open on DeepCore buttons. A test is plain text.
- * Gap alerts state their direction (▲ Premium, ▼ Discount, ↕ Both ways) in front of the condition.
- * @param {{ alertId: string, name: string | null, conditionText: string, direction?: string | null, events: object[], test: boolean }} a
+ * One alert delivery in plain words: status emoji, ticker and chain, the gap as a sentence, the two prices
+ * and liquidity when known, with [🌐 Open ↗] [🔕 Mute 24h] [📈 Card] (Card opens the stock card in place).
+ * Launch alerts list the launches with View on DeepCore buttons. A test is plain text.
+ * Gap alerts state their condition from `condition` when given ("▲ 2% or more above the real share
+ * price"), else from `conditionText`.
+ * @param {{ alertId: string, name: string | null, conditionText: string, condition?: object | null, direction?: string | null, events: object[], test: boolean, now?: number }} a
  */
 export function deliveryView(a) {
+  const now = a.now ?? Date.now()
   const title = `<b>Gully Labs alert</b>${a.name ? ` “${esc(a.name)}”` : ''}`
-  const dirLine = a.direction && DIR_ICON[a.direction] ? `${DIR_ICON[a.direction]} ${a.direction === 'above' ? 'Premium' : a.direction === 'below' ? 'Discount' : 'Both ways'}: ${esc(a.conditionText)}` : esc(a.conditionText)
+  const cond = a.condition?.type === 'gap' ? gapWords(a.condition) : esc(a.conditionText)
+  const dirLine = `Alert: ${cond}`
   const mute = btn('🔕 Mute 24h', `mute:${a.alertId}`.slice(0, 64))
   if (a.test) return { text: `🧪 ${title}\nTest message (${dirLine}). Deliveries for this alert reach this chat.`, keyboard: null }
   if (a.events.some((e) => e.kind === 'deepcore.launch')) {
     const shown = a.events.slice(0, 5)
-    const text = `🛰 ${title}\n${esc(a.conditionText)}\n\n${shown.map(launchBlock).join('\n\n')}${a.events.length > shown.length ? `\n…and ${a.events.length - shown.length} more on deepcore.fun` : ''}`
-    const open = shown.slice(0, 3).map((e) => ubtn(`🌐 Open ${e.symbol ?? 'token'} on DeepCore ↗`.slice(0, 48), e.links.token))
+    const text = `🛰 ${title}\n${cond}\n\n${shown.map((e) => launchBlock(e, { now })).join('\n\n')}${a.events.length > shown.length ? `\n…and ${a.events.length - shown.length} more on DeepCore` : ''}\n\n${INFO}`
+    const open = shown.slice(0, 3).map((e) => ubtn(`🌐 View ${e.symbol ?? 'token'} on DeepCore ↗`.slice(0, 48), e.links.token))
     return { text, keyboard: [...(open.length ? [open] : []), [mute]] }
   }
   const shown = a.events.slice(0, 5)
   const blocks = shown.map((e) => {
     const st = statusOf({ status: e.status, gapPct: e.gapPct })
-    const on = usd(e.onchain)
-    const fair = usd(e.fair)
     const liq = usd0(e.poolLiquidityUsd)
-    return [`${st.emoji} <b>${esc(e.ticker)}</b> · ${esc(e.chainName ?? chainName(e.chain))} · gap <b>${esc(signed(e.gapPct))}%</b> (${esc(e.status)})`, `${on && fair ? `On chain ${esc(on)} · fair ${esc(fair)} · ` : ''}${liq ? `pool ${esc(liq)}` : 'pool liquidity not reported'}`].join('\n')
+    const prices = [priceLine(e.onchain, e.fair), liq ? `💧 ${esc(liq)}` : null].filter(Boolean).join(' · ')
+    return [`${st.emoji} <b>${esc(e.ticker)}</b> · ${esc(e.chainName ?? chainName(e.chain))}`, gapSentence(e.ticker, e.gapPct), ...(prices ? [prices] : [])].join('\n')
   })
   const more = a.events.length > shown.length ? `\n…and ${a.events.length - shown.length} more on ${SITE}/tracker` : ''
   const card = (e) => `c:${CODE_OF[e.chain] ?? 'rh'}:${e.ticker}:x`
@@ -538,7 +584,7 @@ export function deliveryView(a) {
     shown.length === 1
       ? [[ubtn('🌐 Open ↗', stockUrl(shown[0].chain, shown[0].ticker)), mute, btn('📈 Card', card(shown[0]))]]
       : [shown.slice(0, 3).map((e) => ubtn(`🌐 ${e.ticker} ↗`, stockUrl(e.chain, e.ticker))), shown.slice(0, 3).map((e) => btn(`📈 ${e.ticker}`, card(e))), [mute]]
-  return { text: `${title}\n${dirLine}\n\n${blocks.join('\n\n')}${more}`, keyboard }
+  return { text: `${title}\n${dirLine}\n\n${blocks.join('\n\n')}${more}\n\n${INFO}`, keyboard }
 }
 
 /* --------------------------------------------------------------- state --- */
