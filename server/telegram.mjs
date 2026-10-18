@@ -9,6 +9,7 @@
 //                            Default: derived from the token (HMAC), so one variable is enough.
 //   TELEGRAM_API             optional, tests only: the Bot API base URL (default https://api.telegram.org).
 //   TELEGRAM_MINIAPP_URL     optional: the Mini App's https URL (default https://gullylabs.xyz/tg).
+//   TELEGRAM_ADMIN_CHAT_ID   optional: the operators' chat for admin alerts (sendAdminTelegram; the fee-proxy monitor).
 //
 // Updates arrive by webhook: POST /api/telegram/<path>, where <path> is the first 32 hex of
 // sha256(token) and the secret header must match. On start (startTelegram) the server calls setWebhook
@@ -25,9 +26,10 @@
 // user who linked a group may unlink it, create alerts there, or pause, mute, test or delete them.
 // One chat per account; a newer link replaces the older one.
 //
-// /start without a code sends the banner (an animated GIF, public/brand/telegram/banner.gif, built by
-// scripts/build-telegram-banner.mjs) with the main menu. Telegram's file_id for it is kept in
-// DATA_DIR/telegram.json after the first upload and reused. Screens: Stocks (chain → ticker grid → card
+// /start without a code sends the banner (an H.264 MP4 animation, public/brand/telegram/banner.mp4, with
+// banner.gif as the fallback, both built from the brand kit by scripts/build-telegram-banner.mjs) with the
+// main menu. Telegram's file_id for it is kept in DATA_DIR/telegram.json after the first upload, keyed on
+// the file's hash, and reused until the file changes. Screens: Stocks (chain → ticker grid → card
 // with a 24h sparkline → alert stepper), Top gaps, Movers (24h/1h), DeepCore launches (chain filter →
 // launch card, new-launch alert), My alerts (pause, resume, mute, test, delete), Gully AI (force_reply)
 // and Settings (mute all, usage notices, unlink). The routes and their callback encoding are listed at
@@ -78,7 +80,7 @@ const MAX_TEXT = 3_800 // Telegram's cap is 4096 characters after entities are p
 const MAX_CAPTION = 1_000 // Telegram's caption cap is 1024
 const MAX_UPDATE_BYTES = 64_000
 const MUTE_MS = 24 * 3_600_000
-const BANNER_URL = `${SITE}/brand/telegram/banner.gif`
+const BANNER_URL = `${SITE}/brand/telegram/banner.mp4`
 
 /* ---------------------------------------------------------------- store --- */
 
@@ -90,7 +92,7 @@ try {
 }
 db.links ??= [] // { address, chatId, chatType, chatTitle, linkedBy, linkedAt }
 db.codes ??= [] // { hash, address, expiresAt, usedAt }
-db.banner ??= null // { fileId, sha } Telegram's file_id of the uploaded banner GIF
+db.banner ??= null // { fileId, sha } Telegram's file_id of the uploaded banner, and the hash of the file it came from
 
 function save() {
   const now = Date.now()
@@ -355,6 +357,29 @@ ${esc(String(text ?? ''))}`)
   return { ok: r.ok, status: r.status ?? null, error: r.error ?? null }
 }
 
+/** The operators' chat for admin alerts (TELEGRAM_ADMIN_CHAT_ID: a numeric chat id, groups negative), or null. */
+export function adminChatId() {
+  const v = String(process.env.TELEGRAM_ADMIN_CHAT_ID ?? '').trim()
+  return /^-?\d{1,20}$/.test(v) ? v : null
+}
+
+/**
+ * Plain-text admin alert to the operators' chat (fee-proxy monitor and similar). Escaped here. Never throws.
+ * @returns {Promise<{ ok: boolean, status: number | null, error: string | null }>}
+ */
+export async function sendAdminTelegram(text) {
+  if (!telegramEnabled()) return { ok: false, status: null, error: 'Telegram is not configured on the server.' }
+  const chatId = adminChatId()
+  if (!chatId) return { ok: false, status: null, error: 'TELEGRAM_ADMIN_CHAT_ID is not set.' }
+  try {
+    const r = await sendText(chatId, `<b>Gully Labs admin alert</b>
+${esc(String(text ?? ''))}`)
+    return { ok: r.ok, status: r.status ?? null, error: r.error ?? null }
+  } catch (e) {
+    return { ok: false, status: null, error: redact(e?.message ?? e) }
+  }
+}
+
 /* ---------------------------------------------------------- alert sends --- */
 
 /**
@@ -432,14 +457,22 @@ const alertsCall = (address, method, p, body) => callRoute(handleAlerts, method,
 /* -------------------------------------------------------------- banner --- */
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
+// The MP4 first: Telegram shows an MP4 as sent, while it re-encodes an uploaded GIF (the old 640×320 one came back at 320×160).
+const BANNER_FILES = [
+  { name: 'banner.mp4', type: 'video/mp4', upload: 'gully-labs.mp4', width: 1280, height: 640, is: (b) => b.subarray(4, 8).toString('latin1') === 'ftyp' },
+  { name: 'banner.gif', type: 'image/gif', upload: 'gully-labs.gif', width: 640, height: 320, is: (b) => b.subarray(0, 3).toString('latin1') === 'GIF' },
+]
+/** The banner to upload: { buf, sha, type, upload, width, height }, or null. `sha` keys the cached file_id, so a rebuilt banner is uploaded again. */
 function bannerFile() {
-  const candidates = [process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand/telegram/banner.gif'), path.join(HERE, '../public/brand/telegram/banner.gif'), path.join(HERE, 'dist/brand/telegram/banner.gif')].filter(Boolean)
-  for (const f of candidates) {
-    try {
-      const buf = fs.readFileSync(f)
-      if (buf.length > 6 && buf.subarray(0, 3).toString() === 'GIF') return { buf, sha: sha256(buf).slice(0, 16) }
-    } catch {
-      /* next */
+  const dirs = [process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand/telegram'), path.join(HERE, '../public/brand/telegram'), path.join(HERE, 'dist/brand/telegram')].filter(Boolean)
+  for (const dir of dirs) {
+    for (const f of BANNER_FILES) {
+      try {
+        const buf = fs.readFileSync(path.join(dir, f.name))
+        if (buf.length > 12 && f.is(buf)) return { buf, sha: sha256(buf).slice(0, 16), type: f.type, upload: f.upload, width: f.width, height: f.height }
+      } catch {
+        /* next */
+      }
     }
   }
   return null
@@ -458,11 +491,11 @@ async function sendBanner(chatId) {
     if (!file) return { chat_id: String(chatId), animation: BANNER_URL, caption, parse_mode: 'HTML', reply_markup }
     const f = new FormData()
     f.set('chat_id', String(chatId))
-    f.set('animation', new Blob([file.buf], { type: 'image/gif' }), 'gully-labs.gif')
+    f.set('animation', new Blob([file.buf], { type: file.type }), file.upload)
     f.set('caption', caption)
     f.set('parse_mode', 'HTML')
-    f.set('width', '640')
-    f.set('height', '320')
+    f.set('width', String(file.width))
+    f.set('height', String(file.height))
     f.set('reply_markup', JSON.stringify(reply_markup))
     return f
   })
@@ -1126,7 +1159,7 @@ export const sendGrantsForTest = (chatId) => grants.filter((g) => g.chatId === S
 
 /** One Bot API call aimed at a chat (channel post, edit, delete, pin, member count) through the same per-chat queue, 30/s cap and 429 handling. `make` returns the body (a FormData for an upload); a plain object is used as is, with chat_id added. */
 export const sendToChannel = (chatId, method, make) => queued(chatId, method, typeof make === 'function' ? make : () => ({ chat_id: String(chatId), ...make }))
-/** The animated banner for a channel post: the cached file_id when the GIF is unchanged, else the file to upload (or its public URL), and remember(fileId) to cache Telegram's new file_id. */
+/** The animated banner for a channel post: the cached file_id when the banner file is unchanged, else the file to upload (or its public URL), and remember(fileId) to cache Telegram's new file_id. */
 export function channelBanner() {
   const file = bannerFile()
   const sha = file?.sha ?? 'url'

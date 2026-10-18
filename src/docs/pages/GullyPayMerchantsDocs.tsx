@@ -124,12 +124,15 @@ export function GullyPayMerchantsDocs() {
 
       <Section id="wallets" title="Receiving wallets">
         <List>
-          <li>The address must carry its EIP-55 checksum (mixed case, as wallets show it). An all-lower-case address is refused, so a mistyped character cannot slip through.</li>
+          <li>A mixed-case address must match its EIP-55 checksum exactly, so a mistyped character cannot slip through. An all-lower-case (or all-upper-case) address carries no checksum: it is accepted and stored in its checksummed form.</li>
           <li>We read the chain: an address with no code is a wallet (EOA); with code, a contract (a Safe or another smart account); an EIP-7702 delegated EOA is shown as such.</li>
           <li>
             <b>A contract must be deployed on a chain before that chain can be turned on.</b> A Safe's address can exist on a chain before the Safe is deployed there; a payment to it then may be lost. If you say the wallet is a contract, or it is a contract on another of our chains, and it has no code on this one, the chain stays off. Deploy it, then press <b>Check again</b>.
           </li>
           <li>Gully Labs' own treasury cannot be a store wallet.</li>
+          <li>
+            <b>Never a fee proxy contract.</b> Request Network's <Code>ERC20FeeProxy</Code> (the contract a split payment passes through) has no owner: anything sent straight to its address is lost for good. The form and the server both refuse it as a store wallet, and you should never give its address to a customer as a place to pay. Your customers pay <i>your</i> wallet; the proxy only passes the payment through inside one transaction.
+          </li>
         </List>
       </Section>
 
@@ -149,6 +152,13 @@ export function GullyPayMerchantsDocs() {
           <li>Your name, logo and accent; the amount; for an invoice, the line items, who it is billed to and the due date; the wallet it pays on each chain.</li>
           <li>The payer picks a chain and an asset and gets a 20-minute quote for an exact amount (stablecoins 1:1 plus a tag in the last digits; ETH and BNB at the Chainlink price on that chain).</li>
           <li>A payment counts only when it sent your wallet exactly the quoted amount in the quoted asset on the quoted chain, inside the quote's time, with the chain's confirmations, and its transaction was never used for anything else, by you, another store or Gully Labs. A transfer to any other address never counts.</li>
+          <li>
+            Stablecoin payments above your free allowance pay your wallet and Gully Labs' fee in one transaction through Request Network's <Code>ERC20FeeProxy</Code>, which never holds funds. Every quote, QR code and split call is checked on the server (and again in the payer's browser, with a simulation) so that nothing ever names the proxy as a recipient; a payment that cannot pass answers with no payment details at all. Details in{' '}
+            <DocLink to="gully-pay" hash="no-stuck-funds">
+              Funds can't get stuck
+            </DocLink>
+            .
+          </li>
         </List>
       </Section>
 
