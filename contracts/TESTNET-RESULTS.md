@@ -126,6 +126,36 @@ Checks (15 of 15 passed):
 
 For ETH rows, the payer's change includes the gas paid. The merchant, treasury and Safe changes are exact.
 
+## Verified source (Sourcify)
+
+Checked and verified on 2026-10-18 through Sourcify's API v2 (`POST /v2/verify/84532/{address}` with standard JSON
+input). Sourcify recompiled each source and compared it with the code on chain, so anyone can repeat the check.
+No transaction was sent. The proxies and MockUSDT were submitted from the Foundry metadata of the build that was
+deployed (`forge script` in the `feat/feeproxy-testnet` worktree). That build reproduces the deployed runtime
+**metadata included**, and each source was checked against the metadata's keccak256 before it was sent. Each
+submission holds only the Solidity files: no keys, no `.env`, no broadcast file.
+
+- ERC20FeeProxy and MockUSDT used the remappings their build had at deploy time (`forge-std/` only).
+- A rebuild from today's `foundry.toml` adds the `@openzeppelin/contracts/` remapping to the metadata. That rebuild
+  still matches with the metadata stripped, but only a partial match would follow from it.
+- The test Safes were submitted with Safe's own verified 1.4.1 source (`SafeProxy`, solc 0.7.6, from the
+  SafeProxyFactory 1.4.1 verification).
+
+| Contract | Chain | Address | Sourcify, before → after | Verified by |
+|---|---|---|---|---|
+| ERC20FeeProxy (Request source @ `8110c4c`, solc 0.8.9, optimizer off) | Base Sepolia (84532) | `0xAe5508E1509cCE6a73B38d8B19fEDFdBd0080c18` | partial → [**full**](https://repo.sourcify.dev/84532/0xAe5508E1509cCE6a73B38d8B19fEDFdBd0080c18) | **us**. The partial matches of the five partial rows here were already there (2026-10-18, 01:02 to 06:40 UTC); who submitted them is not recorded |
+| EthereumFeeProxy (same, with OpenZeppelin 4.9.6 `ReentrancyGuard`) | Base Sepolia (84532) | `0xD302Ce9E3048ad676C6E74bE57042acA31E2957e` | partial → [**full**](https://repo.sourcify.dev/84532/0xD302Ce9E3048ad676C6E74bE57042acA31E2957e) | **us** |
+| MockUSDT (`src/mocks/MockUSDT.sol`, solc 0.8.26, optimizer off, cancun) | Base Sepolia (84532) | `0xc1560702F640166cB382331B5D3561072F6569Be` | not verified → [**full**](https://repo.sourcify.dev/84532/0xc1560702F640166cB382331B5D3561072F6569Be) | **us** |
+| Safe S1, 1-of-1 (SafeProxy 1.4.1) | Base Sepolia (84532) | `0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84` | partial → [**full**](https://repo.sourcify.dev/84532/0x041F9F5Fb5b21b69d8DF639c36fC5E72af98FE84) | **us** (Safe's upstream source) |
+| Safe B3, server-built (SafeProxy 1.4.1) | Base Sepolia (84532) | `0x396879A480516d94e7d0500134842a9db73Ee4aA` | partial → [**full**](https://repo.sourcify.dev/84532/0x396879A480516d94e7d0500134842a9db73Ee4aA) | **us** (Safe's upstream source) |
+| Orphan Safe from the interrupted run (SafeProxy 1.4.1) | Base Sepolia (84532) | `0xdeD1774eFe4B72Ffe68F05044e4d55Fe66BBD21d` | partial → [**full**](https://repo.sourcify.dev/84532/0xdeD1774eFe4B72Ffe68F05044e4d55Fe66BBD21d) | **us** (Safe's upstream source) |
+| SafeProxyFactory / SafeL2 / CompatibilityFallbackHandler 1.4.1 | Base Sepolia (84532) | `0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67` / `0x29fcB43b46531BcA003ddC8FCB67FFE91900C762` / `0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99` | [full](https://repo.sourcify.dev/84532/0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67) / [full](https://repo.sourcify.dev/84532/0x29fcB43b46531BcA003ddC8FCB67FFE91900C762) / [full](https://repo.sourcify.dev/84532/0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99) | upstream |
+
+The mainnet Request proxies the testnet ones reproduce are both full matches upstream: Base
+[`0x1892…b814`](https://repo.sourcify.dev/8453/0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814) and
+[`0xd9C3…96f2`](https://repo.sourcify.dev/8453/0xd9C3889eB8DA6ce449bfFE3cd194d08A436e96f2). Every mainnet contract
+Gully Pay relies on is listed in `CHOICE.md`, "Verified source (Sourcify)".
+
 ## What this shows
 
 - **The fee path works as the server expects.** One call pays the merchant `amount` and the treasury `fee`, from the

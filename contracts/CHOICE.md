@@ -315,6 +315,91 @@ therefore makes that impossible from anything Gully builds, and visible if a thi
    admin still loads and says why; the check-now endpoint and the alert), `npm run test:merchants` (a proxy as
    a store wallet is refused; a store whose stored wallet is a proxy gets no checkout, quote or recipient).
 
+## Verified source (Sourcify)
+
+Checked and verified on 2026-10-18 through Sourcify's API v2 (`GET /v2/contract/{chainId}/{address}`,
+`POST /v2/verify/{chainId}/{address}`). Sourcify recompiles the submitted source and compares it with the code on
+chain. A **full** match (`exact_match`) means the code and its metadata hash match. A **partial** match (`match`)
+means the code matches but the metadata differs, usually because the file paths or comments differ. Verifying
+sends no transaction. Gully Score and the Gully Security scans read Sourcify first (`server/gully-score.mjs`,
+`server/security/fetchers.mjs`).
+
+"Verified by" names who submitted the source. *Upstream* means Request or Safe submitted it, or Sourcify's own
+import did. *Us* means Gully Labs submitted it on 2026-10-18. We submitted a contract only when a source reproduced
+its deployed code:
+
+- **Our own deployments:** the Foundry metadata of the build we deployed. Each submitted file was checked against
+  the metadata's keccak256 and holds only the Solidity source.
+- **Mainnet contracts we did not deploy:** the standard JSON that Sourcify already holds for a byte-identical
+  deployment of the same contract on another chain. We read the runtime with `eth_getCode` first, compared it in
+  full and with the metadata stripped (the method in "Chains added 2026-10-18"), and Sourcify recompiled it on
+  submission.
+
+### Request fee proxies (mainnet)
+
+| Contract | Chain | Address | Sourcify, before → after | Verified by |
+|---|---|---|---|---|
+| ERC20FeeProxy ("0.2.0", used) | Ethereum (1) | `0x370DE27fdb7D1Ff1e1BaA7D11c5820a324Cf623C` | [partial](https://repo.sourcify.dev/1/0x370DE27fdb7D1Ff1e1BaA7D11c5820a324Cf623C) → partial | upstream (2024-08-08). **Not reproducible, left alone**: this is the solc 0.5.17 build, and we have no source that gives the same metadata hash |
+| ERC20FeeProxy | Ethereum (1) | `0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9` | [full](https://repo.sourcify.dev/1/0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9) | upstream |
+| ERC20FeeProxy (used) | Base (8453) | `0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814` | [full](https://repo.sourcify.dev/8453/0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814) | upstream |
+| ERC20FeeProxy (used) | BNB Chain (56) | `0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9` | [full](https://repo.sourcify.dev/56/0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9) | upstream |
+| ERC20FeeProxy (used) | Arbitrum (42161) | `0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9` | partial → [**full**](https://repo.sourcify.dev/42161/0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9) | **us**, with Request's source for Ethereum `0x0Dfb…` (solc 0.8.4, optimizer off). The runtime is byte-identical, metadata included (2120 bytes) |
+| ERC20FeeProxy (used) | OP Mainnet (10) | `0x399F5EE127ce7432E4921a61b8CF52b0af52cbfE` | [full](https://repo.sourcify.dev/10/0x399F5EE127ce7432E4921a61b8CF52b0af52cbfE) | upstream |
+| ERC20FeeProxy (guard registry only) | Polygon (137) | `0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9` | [full](https://repo.sourcify.dev/137/0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9) | upstream |
+| ERC20FeeProxy 0.1.0 (guard registry only) | Polygon (137) | `0x2171a0dc12a9E5b1659feF2BB20E54c84Fa7dB0C` | not verified → not verified | **Not reproducible, left alone**: its 1298-byte runtime matches no verified deployment (Celo's `0x2171…` is a different 1631-byte build) |
+| ERC20FeeProxy (guard registry only) | Avalanche (43114) | `0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9` | not verified → [**full**](https://repo.sourcify.dev/43114/0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9) | **us**, with the same source as Arbitrum's. The runtime is byte-identical to Ethereum's, BNB's and Arbitrum's |
+| EthereumFeeProxy | Ethereum (1) | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | [full](https://repo.sourcify.dev/1/0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8) | upstream |
+| EthereumFeeProxy | Base (8453) | `0xd9C3889eB8DA6ce449bfFE3cd194d08A436e96f2` | [full](https://repo.sourcify.dev/8453/0xd9C3889eB8DA6ce449bfFE3cd194d08A436e96f2) | upstream |
+| EthereumFeeProxy | BNB Chain (56) | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | [full](https://repo.sourcify.dev/56/0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8) | upstream |
+| EthereumFeeProxy | Arbitrum (42161) | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | [full](https://repo.sourcify.dev/42161/0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8) | upstream |
+| EthereumFeeProxy | OP Mainnet (10) | `0xe11BF2fDA23bF0A98365e1A4c04A87C9339e8687` | [full](https://repo.sourcify.dev/10/0xe11BF2fDA23bF0A98365e1A4c04A87C9339e8687) | upstream |
+| EthereumFeeProxy | Polygon (137) | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | [full](https://repo.sourcify.dev/137/0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8) | upstream |
+| EthereumFeeProxy 0.1.0 (guard registry) | Polygon (137) | `0xC6E23a20C0a1933ACC8E30247B5D1e2215796C1F` | [full](https://repo.sourcify.dev/137/0xC6E23a20C0a1933ACC8E30247B5D1e2215796C1F) | upstream |
+| EthereumFeeProxy | Avalanche (43114) | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | [full](https://repo.sourcify.dev/43114/0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8) | upstream |
+| EthereumFeeProxy 0.1.0 (guard registry) | Avalanche (43114) | `0xC6E23a20C0a1933ACC8E30247B5D1e2215796C1F` | not verified → [**partial**](https://repo.sourcify.dev/43114/0xC6E23a20C0a1933ACC8E30247B5D1e2215796C1F) | **us**, with Request's source for Ethereum `0xC6E2…` (solc 0.8.4). The runtime with metadata stripped is identical (1739 bytes) but the metadata hash differs, so Sourcify allows only a partial match |
+
+### The treasury Safe and the Safe contracts it runs on
+
+The treasury (`GULLY_TREASURY_ADDRESS` = `0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6`, the address `/api/plans`
+publishes) is a 123-byte **Safe 1.5.0** `SafeProxy`. Its singleton is SafeL2 1.5.0 `0xEdd1…7C7e`, made by
+SafeProxyFactory 1.5.0 `0x14F2…5e7b`. The proxy, singleton and factory runtimes are byte-identical on every chain.
+Note that `server/safe-deploy.mjs` pins only 1.4.1 and 1.3.0, so new Safes from the button are 1.4.1. The
+treasury's 1.5.0 is not in that list.
+
+| Contract | Chain | Address | Sourcify, before → after | Verified by |
+|---|---|---|---|---|
+| Treasury Safe (SafeProxy 1.5.0) | Ethereum (1) | `0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6` | partial → [**full**](https://repo.sourcify.dev/1/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6) | **us**, with Safe's verified 1.5.0 factory source (Base `0x14F2…`, solc 0.7.6) |
+| Treasury Safe | Base (8453) | same | [partial](https://repo.sourcify.dev/8453/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6) → partial | upstream. Re-submitting the same source gave "no better match", so it was left as it is |
+| Treasury Safe | BNB Chain (56) | same | not verified → [**full**](https://repo.sourcify.dev/56/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6) | **us** (same source) |
+| Treasury Safe | Arbitrum (42161) | same | partial → [**full**](https://repo.sourcify.dev/42161/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6) | **us** (same source) |
+| Treasury Safe | OP Mainnet, Polygon, Avalanche | same | n/a | not deployed there (no code), so there is nothing to verify |
+| SafeL2 1.5.0 (treasury singleton) | Ethereum, Base, Polygon | `0xEdd160fEBBD92E350D4D398fb636302fccd67C7e` | [full](https://repo.sourcify.dev/8453/0xEdd160fEBBD92E350D4D398fb636302fccd67C7e) | upstream |
+| SafeL2 1.5.0 | BNB Chain, Arbitrum, OP Mainnet, Avalanche | same | not verified → **full** ([56](https://repo.sourcify.dev/56/0xEdd160fEBBD92E350D4D398fb636302fccd67C7e), [42161](https://repo.sourcify.dev/42161/0xEdd160fEBBD92E350D4D398fb636302fccd67C7e), [10](https://repo.sourcify.dev/10/0xEdd160fEBBD92E350D4D398fb636302fccd67C7e), [43114](https://repo.sourcify.dev/43114/0xEdd160fEBBD92E350D4D398fb636302fccd67C7e)) | **us**, with Base's verified source. The runtime is byte-identical (22,231 bytes) |
+| SafeProxyFactory 1.5.0 | Ethereum, Base, OP Mainnet, Polygon | `0x14F2982D601c9458F93bd70B218933A6f8165e7b` | [full](https://repo.sourcify.dev/8453/0x14F2982D601c9458F93bd70B218933A6f8165e7b) | upstream |
+| SafeProxyFactory 1.5.0 | BNB Chain | same | partial → [**full**](https://repo.sourcify.dev/56/0x14F2982D601c9458F93bd70B218933A6f8165e7b) | **us**, with Base's verified source (byte-identical, 3321 bytes) |
+| SafeProxyFactory 1.5.0 | Arbitrum, Avalanche | same | not verified → **full** ([42161](https://repo.sourcify.dev/42161/0x14F2982D601c9458F93bd70B218933A6f8165e7b), [43114](https://repo.sourcify.dev/43114/0x14F2982D601c9458F93bd70B218933A6f8165e7b)) | **us** (same) |
+
+### Safe deployments pinned in `server/safe-deploy.mjs`
+
+All 12 pinned addresses were checked on Ethereum, Base, BNB Chain, Arbitrum, OP Mainnet, Polygon, Avalanche and
+Base Sepolia (96 lookups). Every one is verified upstream. A few are partial matches, which still prove the code,
+and they were left as they are:
+
+| Contract | Address | Full on | Partial on |
+|---|---|---|---|
+| SafeProxyFactory 1.4.1 | `0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67` | all 8 | none |
+| SafeL2 1.4.1 / Safe 1.4.1 | `0x29fcB43b46531BcA003ddC8FCB67FFE91900C762` / `0x41675C099F32341bf84BFc5382aF534df5C7461a` | all 8 | none |
+| CompatibilityFallbackHandler 1.4.1 | `0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99` | all 8 | none |
+| GnosisSafeProxyFactory 1.3.0 (canonical / eip155) | `0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2` / `0xC22834581EbC8527d974F8a1c97E1bEA4EF910BC` | all 8 / 7 | none / Arbitrum |
+| GnosisSafeL2 1.3.0 (canonical / eip155) | `0x3E5c63644E683549055b9Be8653de26E0B4CD36E` / `0xfb1bffC9d739B8D520DaF37dF666da4C687191EA` | 7 / all 8 | BNB Chain / none |
+| GnosisSafe 1.3.0 (canonical / eip155) | `0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552` / `0x69f4D1788e39c87893C980c06EdF4b7f686e2938` | 7 / all 8 | BNB Chain / none |
+| CompatibilityFallbackHandler 1.3.0 (canonical / eip155) | `0xf48f2B2d2a534e402487b3ee7C18c33Aec0Fe5e4` / `0x017062a1dE2FE6b99BE3d9d37841FeD19F573804` | 6 / 7 | Base, BNB Chain / BNB Chain |
+
+The Base Sepolia contracts (our testnet proxies, MockUSDT and the test Safes) are in
+`TESTNET-RESULTS.md`, "Verified source".
+
+---
+
 ## Limits and follow-ups
 
 - **Two wallet transactions** (approve, then pay) whenever the allowance falls short. The page approves the exact

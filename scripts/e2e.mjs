@@ -1543,7 +1543,7 @@ await step('gully score', async () => {
     computedAt: new Date(now).toISOString(),
     methodVersion: 1,
     components: [
-      comp('verified', { available: true, score: 100, value: 'Exact match', reason: 'The source code is published on Sourcify and matches the deployed code exactly.', evidence: [{ label: 'Sourcify', url: `https://repo.sourcify.dev/8453/${SC}` }] }),
+      comp('verified', { available: true, score: 100, value: 'Full match (Sourcify)', reason: 'The source code is verified on Sourcify: a full match, so the compiled code and its metadata match the deployed code exactly.', provider: 'sourcify', match: 'full', evidence: [{ label: 'Sourcify: full match', url: `https://repo.sourcify.dev/8453/${SC}` }] }),
       comp('control', { available: true, score: 100, value: 'Safe, 2 of 3', reason: 'Changes need 2 of the 3 signers of the Safe.' }),
       comp('timelock', { available: true, score: 0, value: 'No delay', reason: 'Changes take effect as soon as they are made.' }),
       comp('upgradeability', { available: true, score: 30, value: 'Upgradeable', reason: 'Its code can be swapped.' }),

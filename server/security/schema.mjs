@@ -144,6 +144,8 @@ export const REPORT_JSON_SCHEMA = {
         explorerUrl: nstr(),
         verified: S(['boolean', 'null']),
         sourceProvider: { type: ['string', 'null'], enum: ['etherscan', 'blockscout', 'sourcify', null] },
+        sourceMatch: { type: ['string', 'null'], enum: ['full', 'partial', null] },
+        sourceUrl: nstr(),
         contractName: nstr(),
         compiler: S(['object', 'null']),
         proxy: S(['object', 'null']),

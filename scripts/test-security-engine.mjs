@@ -36,6 +36,15 @@ const RECORDED = JSON.parse(fs.readFileSync(path.join(FIX, 'worker-analyze-vulnb
 const COMMIT = 'a'.repeat(8) + crypto.randomBytes(16).toString('hex')
 const ADDR_VERIFIED = '0x' + '11'.repeat(20)
 const ADDR_UNVERIFIED = '0x' + '22'.repeat(20)
+// Sourcify stub: a full match, a partial match, and a 200 with match: null (v2's "not verified").
+const ADDR_SRC_FULL = '0x' + '33'.repeat(20)
+const ADDR_SRC_PARTIAL = '0x' + '44'.repeat(20)
+const ADDR_SRC_NONE = '0x' + '55'.repeat(20)
+const sourcifyStub = {
+  [ADDR_SRC_FULL]: { match: 'exact_match', creationMatch: 'exact_match', runtimeMatch: 'exact_match', sources: { 'src/VulnBank.sol': { content: 'pragma solidity 0.8.24; contract VulnBank {}' } }, compilation: { name: 'VulnBank', compilerVersion: '0.8.24+commit.e11b9ed9', compilerSettings: { optimizer: { enabled: true, runs: 200 }, evmVersion: 'cancun', remappings: ['a/=lib/a/'] } } },
+  [ADDR_SRC_PARTIAL]: { match: 'match', creationMatch: null, runtimeMatch: 'match', sources: { 'contracts/Token.sol': { content: 'pragma solidity 0.8.20; contract Token {}' } }, compilation: { name: 'Token', compilerVersion: '0.8.20+commit.a1b79de6', compilerSettings: {} } },
+  [ADDR_SRC_NONE]: { match: null, creationMatch: null, runtimeMatch: null },
+}
 
 const hits = { etherscan: 0, blockscout: 0, sourcify: 0, ghApi: 0, codeload: 0, etherscanKeyInUrl: 0 }
 const { writeTar, writeZip } = await import('../server/security/archive.mjs')
@@ -67,7 +76,8 @@ const stub = http.createServer((req, res) => {
   }
   if (u.pathname.startsWith('/sourcify/')) {
     hits.sourcify++
-    return send(404, { error: 'not found' })
+    const a = u.pathname.split('/').pop().toLowerCase()
+    return sourcifyStub[a] ? send(200, { chainId: '8453', address: a, ...sourcifyStub[a] }) : send(404, { error: 'not found' })
   }
   if (u.pathname === '/gh/repos/acme/vault') {
     hits.ghApi++
@@ -96,7 +106,7 @@ process.env.SECURITY_GITHUB_CODELOAD = `${SB}/codeload`
 
 const sec = await import('../server/security/index.mjs')
 const schema = await import('../server/security/schema.mjs')
-const { setRpcForTest } = await import('../server/security/fetchers.mjs')
+const { setRpcForTest, fetchAddress, sourcifyMatch } = await import('../server/security/fetchers.mjs')
 const { setWorkerForTest, parseSlither, numberToolFindings } = await import('../server/security/tools.mjs')
 const { setClaudeForTest, callModel } = await import('../server/security/claude.mjs')
 const { setNpmAuditForTest } = await import('../server/security/web2.mjs')
@@ -330,6 +340,33 @@ let fullReport
   check('HTML: label, disclaimer, scope, tools, print CSS, kit logo, no script', html.includes(schema.MODE_LABELS['static+ai'].replace('+', '+')) && html.includes('point-in-time') && html.includes('src/VulnBank.sol') && html.includes('@media print') && html.includes('/brand/gullylabs-logo-horizontal-on-light.svg') && !/<script/i.test(html))
   check('HTML: never calls the scan an audit (only the disclaimer says it is not one)', (html.match(/\baudit\b/gi) ?? []).length === 1 && /not an audit/.test(html))
   check('events: queued -> progress -> done with counts', events.some((e) => e.id === s.id && e.status === 'queued') && events.some((e) => e.id === s.id && e.status === 'triaging') && events.some((e) => e.id === s.id && e.status === 'done'))
+}
+
+console.log('\n# Sourcify first: full, partial, none')
+{
+  check('sourcifyMatch maps v2 exact_match/match/null to full/partial/null', sourcifyMatch('exact_match') === 'full' && sourcifyMatch('match') === 'partial' && sourcifyMatch(null) === null)
+  const before = hits.etherscan
+  const full = await fetchAddress(8453, ADDR_SRC_FULL)
+  check('full match: source from Sourcify, Etherscan not asked', full.verified && full.provider === 'sourcify' && full.sourceMatch === 'full' && hits.etherscan === before && full.attempts[0].provider === 'sourcify' && full.attempts[0].outcome === 'verified (full match)', JSON.stringify(full.attempts))
+  check('full match: files, compiler, remappings and the sourcify.dev link', full.files.length === 1 && full.files[0].path === 'src/VulnBank.sol' && full.compiler.version === '0.8.24+commit.e11b9ed9' && full.compiler.runs === 200 && full.remappings[0] === 'a/=lib/a/' && full.sourceUrl === `https://repo.sourcify.dev/8453/${ADDR_SRC_FULL}`)
+  const partial = await fetchAddress(8453, ADDR_SRC_PARTIAL)
+  check('partial match: still the source, marked partial, Etherscan not asked', partial.verified && partial.provider === 'sourcify' && partial.sourceMatch === 'partial' && partial.contractName === 'Token' && hits.etherscan === before && partial.attempts[0].outcome === 'verified (partial match)')
+  const none = await fetchAddress(8453, ADDR_SRC_NONE)
+  check('none (200, match null): not verified on Sourcify, falls back to Etherscan V2, then Blockscout', !none.verified && none.sourceMatch === null && none.sourceUrl === null && hits.etherscan === before + 1 && none.attempts.map((a) => `${a.provider}:${a.outcome}`).join() === 'sourcify:not verified,etherscan:not verified,blockscout:not verified', JSON.stringify(none.attempts))
+  const es = await fetchAddress(8453, ADDR_VERIFIED)
+  check('Sourcify 404, Etherscan has it: provider etherscan, no Sourcify match', es.verified && es.provider === 'etherscan' && es.sourceMatch === null && es.attempts[0].provider === 'sourcify' && es.attempts[1].outcome === 'verified')
+  const key = process.env.ETHERSCAN_API_KEY
+  delete process.env.ETHERSCAN_API_KEY
+  try {
+    const n = hits.etherscan
+    const nokey = await fetchAddress(8453, ADDR_SRC_FULL)
+    const miss = await fetchAddress(8453, ADDR_SRC_NONE)
+    check('without ETHERSCAN_API_KEY: Sourcify still answers; Etherscan skipped, never called', nokey.sourceMatch === 'full' && miss.attempts.find((a) => a.provider === 'etherscan')?.outcome === 'skipped: ETHERSCAN_API_KEY not set' && hits.etherscan === n)
+  } finally {
+    process.env.ETHERSCAN_API_KEY = key
+  }
+  const t = { ...fullReport.target, sourceProvider: 'sourcify', sourceMatch: 'partial', sourceUrl: `https://repo.sourcify.dev/8453/${ADDR_VERIFIED}` }
+  check('report target with a Sourcify match validates; a bad match value does not', schema.validateReport({ ...fullReport, target: t }).ok && !schema.validateReport({ ...fullReport, target: { ...t, sourceMatch: 'exact' } }).ok, schema.validateReport({ ...fullReport, target: t }).errors.join('; '))
 }
 
 console.log('\n# report schema validation (negative)')

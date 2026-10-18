@@ -1,5 +1,5 @@
-// Chains a contract-address scan accepts. Etherscan V2 (one key, `chainid=` parameter) covers every one;
-// Blockscout and Sourcify are the keyless fallbacks where they exist. Bytecode is read over the same
+// Chains a contract-address scan accepts. Sourcify (keyless) is read first for verified source; Etherscan V2
+// (one key, `chainid=` parameter, covers every one) and Blockscout are the fallbacks. Bytecode is read over the same
 // public RPCs Gully Pay uses (server/payments.mjs, GULLY_RPC_<chainId> overrides) when that chain is there,
 // else through Etherscan's eth_getCode proxy.
 

@@ -36,7 +36,7 @@ export function buildReport({ id, workspace, createdAt, mode, target, scope, too
 
 /** One line naming the target, for summaries and the report header. */
 export function targetText(t) {
-  if (t.type === 'address') return `${t.contractName ? `${t.contractName} at ` : ''}${t.address} on ${t.chainName ?? `chain ${t.chainId}`}${t.verified ? ` (source verified on ${t.sourceProvider})` : ' (source not verified)'}`
+  if (t.type === 'address') return `${t.contractName ? `${t.contractName} at ` : ''}${t.address} on ${t.chainName ?? `chain ${t.chainId}`}${t.verified ? ` (source verified on ${t.sourceProvider}${t.sourceMatch ? `, ${t.sourceMatch} match` : ''})` : ' (source not verified)'}`
   if (t.repo) return `${t.repo.owner}/${t.repo.name} at commit ${t.repo.commit}`
   if (t.upload) return `uploaded ${t.upload.name} (sha256 ${t.upload.sha256.slice(0, 16)}…)`
   return 'unknown target'
@@ -82,6 +82,7 @@ export function renderReportHtml(r, { logoUrl = '/brand/gullylabs-logo-horizonta
     ['Target', targetText(t)],
     t.type === 'address' && ['Chain', `${t.chainName ?? ''} (${t.chainId})`],
     t.explorerUrl && ['Explorer', t.explorerUrl],
+    t.sourceUrl && ['Sourcify', `${t.sourceUrl}${t.sourceMatch ? ` (${t.sourceMatch} match)` : ''}`],
     t.compiler?.version && ['Compiler', `${t.compiler.version}${t.compiler.optimizer ? `, optimizer ${t.compiler.runs ?? ''} runs` : ''}${t.compiler.evmVersion ? `, EVM ${t.compiler.evmVersion}` : ''}`],
     t.proxy?.isProxy && ['Proxy', `implementation ${t.proxy.implementation}`],
     t.repo && ['Repository', `${t.repo.url} @ ${t.repo.commit}`],

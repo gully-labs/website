@@ -81,7 +81,8 @@ Likelihood × impact:
 ## Pipeline
 
 Queue (persisted in `DATA_DIR/security/scans.json`, concurrency 1, per-workspace limits) → **fetch**
-(Etherscan V2 multichain with `ETHERSCAN_API_KEY`, else Blockscout, else Sourcify; bytecode and the EIP-1967
+(Sourcify first, keeping its full or partial match and a sourcify.dev link in `target.sourceMatch`/`sourceUrl`;
+then Etherscan V2 multichain when `ETHERSCAN_API_KEY` is set; then Blockscout; bytecode and the EIP-1967
 slot over Gully Pay's RPCs; GitHub tarball of the exact commit, size-capped; zip uploads unpacked in memory
 with sanitised paths, links dropped, bomb-capped) → **static tools** on the `gully-scanner` worker →
 **AI triage** (Claude Sonnet in chunks, JSON-schema output; Haiku for the summary) → **report** (JSON +
@@ -106,7 +107,7 @@ last finished stage.
 | Variable | Default | Meaning |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Same key as Gully Ask. Without it: no AI (static-only or refused). |
-| `ETHERSCAN_API_KEY` | — | Etherscan V2 multichain key (one key, all chains). Without it: Blockscout/Sourcify only. |
+| `ETHERSCAN_API_KEY` | — | Etherscan V2 multichain key (one key, all chains), the fallback after Sourcify. Without it: Sourcify, then Blockscout. |
 | `GITHUB_TOKEN` | — | Raises GitHub's API rate limit (public repos only; read-only scope is enough). |
 | `SCANNER_URL`, `SCANNER_TOKEN` | — | The worker (`http://gully-scanner:8090`) and its shared token (24+ chars). |
 | `SECURITY_MODEL` / `SECURITY_SUMMARY_MODEL` | claude-sonnet-5-5 / claude-haiku-5-5 | Models. |

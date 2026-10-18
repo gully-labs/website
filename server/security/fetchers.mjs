@@ -1,5 +1,5 @@
-// Fetching what a scan reads: verified source + metadata for an address (Etherscan V2 multichain, then
-// Blockscout, then Sourcify), bytecode and proxy slots over JSON-RPC, a GitHub tarball at one exact commit,
+// Fetching what a scan reads: verified source + metadata for an address (Sourcify first, with its full or
+// partial match; then Etherscan V2 multichain when ETHERSCAN_API_KEY is set; then Blockscout), bytecode and proxy slots over JSON-RPC, a GitHub tarball at one exact commit,
 // and uploaded archives. Every response is size-capped and time-limited; nothing fetched is executed.
 // API keys go only in the request; error messages never include a URL that carries one.
 
@@ -116,16 +116,25 @@ async function fromBlockscout(chainId, address) {
   }
 }
 
+/** Sourcify's v2 match ("exact_match" | "match") as "full" | "partial" (null when not verified). */
+export const sourcifyMatch = (m) => (m === 'exact_match' ? 'full' : m === 'match' ? 'partial' : null)
+/** The contract's page on sourcify.dev. */
+export const sourcifyContractUrl = (chainId, address) => `https://repo.sourcify.dev/${chainId}/${address}`
+
 async function fromSourcify(chainId, address) {
   const r = await fetchCapped(`${config.sourcifyBase().replace(/\/+$/, '')}/v2/contract/${chainId}/${address}?fields=sources,compilation`, { maxBytes: 20 * 1024 * 1024, what: 'Sourcify' })
   if (r.status === 404) return { verified: false }
   const j = asJson(r.body)
   if (r.status !== 200 || !j) return { error: `Sourcify answered HTTP ${r.status}` }
-  if (!j.sources || !Object.keys(j.sources).length) return { verified: false }
+  // v2 answers 200 with match: null for an address it has not verified.
+  const match = sourcifyMatch(j.match)
+  if (!match || !j.sources || !Object.keys(j.sources).length) return { verified: false }
   const c = j.compilation ?? {}
   return {
     verified: true,
     provider: 'sourcify',
+    match,
+    url: sourcifyContractUrl(chainId, address),
     contractName: c.name || null,
     compiler: { version: c.compilerVersion || null, optimizer: c.compilerSettings?.optimizer?.enabled ?? null, runs: c.compilerSettings?.optimizer?.runs ?? null, evmVersion: c.compilerSettings?.evmVersion ?? null },
     proxyHint: null,
@@ -176,14 +185,15 @@ async function rpc(chainId, method, params) {
 export async function fetchAddress(chainId, address) {
   const attempts = []
   let src = null
-  for (const [name, fn] of [['etherscan', fromEtherscan], ['blockscout', fromBlockscout], ['sourcify', fromSourcify]]) {
+  // Sourcify first (keyless, with its full/partial match); Etherscan V2 is the fallback when its key is set.
+  for (const [name, fn] of [['sourcify', fromSourcify], ['etherscan', fromEtherscan], ['blockscout', fromBlockscout]]) {
     let r
     try {
       r = await fn(chainId, address)
     } catch (e) {
       r = { error: String(e?.message ?? e).slice(0, 120) }
     }
-    attempts.push({ provider: name, outcome: r.skipped ? `skipped: ${r.skipped}` : r.error ? `error: ${r.error}` : r.verified ? 'verified' : 'not verified' })
+    attempts.push({ provider: name, outcome: r.skipped ? `skipped: ${r.skipped}` : r.error ? `error: ${r.error}` : r.verified ? (r.match ? `verified (${r.match} match)` : 'verified') : 'not verified' })
     if (r.verified && r.files?.length) {
       src = r
       break
@@ -211,6 +221,8 @@ export async function fetchAddress(chainId, address) {
   return {
     verified: !!src,
     provider: src?.provider ?? null,
+    sourceMatch: src?.match ?? null,
+    sourceUrl: src?.url ?? null,
     contractName: src?.contractName ?? null,
     compiler: src?.compiler ?? null,
     files: src?.files ?? [],

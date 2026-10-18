@@ -9,6 +9,7 @@ import { apiOrigin } from '../nav'
 const sections = [
   { id: 'what', title: 'What it is' },
   { id: 'components', title: 'Components and weights' },
+  { id: 'verified-source', title: 'Verified source: Sourcify first' },
   { id: 'missing', title: 'Missing data' },
   { id: 'no-pay', title: 'Nobody can pay' },
   { id: 'monitoring', title: 'Monitoring' },
@@ -116,7 +117,7 @@ export function GullyScore() {
           </>
         )}
         <List>
-          <li>Code verified: an exact Sourcify match scores 100, a partial match 85, no published source 0.</li>
+          <li>Code verified: a full Sourcify match scores 100, a partial match 85, no published source 0.</li>
           <li>Who controls it: nobody (ownership given up) or a Safe needing two or more signatures 100, a timelock 80, an unrecognised contract 50, a Safe any one signer can use 40, a single wallet 15.</li>
           <li>Delay on changes: two days or more 100, one day 90, six hours 60, anything shorter 40, none 0.</li>
           <li>Can the code change: fixed code 100, upgradeable 30.</li>
@@ -126,6 +127,12 @@ export function GullyScore() {
           <li>Gully Security review: 100 less 40 per critical, 20 per high, 5 per medium and 1 per low finding (unresolved ones when the report says).</li>
           <li>Age: a year or more 100, six months 85, three months 70, a month 50, a week 30, younger 10.</li>
         </List>
+      </Section>
+
+      <Section id="verified-source" title="Verified source: Sourcify first">
+        <P>
+          <Ext href="https://sourcify.dev">Sourcify</Ext> is the primary source for "Code verified". It recompiles the published source and compares it with the code on chain, and anyone can repeat that check. A <b>full match</b> means the compiled code and its metadata match exactly; a <b>partial match</b> means the code matches but the metadata (comments, file names) differs. The part names which one it is and links to the contract on sourcify.dev. Etherscan is asked only when Sourcify has no match, and only where an Etherscan key is configured. Gully Security scans read source in the same order. Gully Labs verifies the contracts it deploys and relies on there too: the list, with each status, is in <C>contracts/CHOICE.md</C>.
+        </P>
       </Section>
 
       <Section id="missing" title="Missing data">

@@ -129,6 +129,11 @@ const sourcify = {
   [E]: { match: 'exact_match' },
   [F]: { match: 'exact_match', deployment: { blockNumber: '2000', transactionHash: '0x' + 'ff'.repeat(32) } },
 }
+// Etherscan V2 fallback (only with ETHERSCAN_API_KEY): ES is verified on Etherscan only, SF fully on Sourcify.
+const [ES, SF] = [0x61, 0x62].map((n) => addr(n + 0x10000))
+for (const x of [ES, SF]) st.code.set(x, '0x6080')
+sourcify[SF] = { match: 'exact_match', deployment: { blockNumber: '1000', transactionHash: '0x' + '5f'.repeat(32) } }
+const etherscanHits = []
 const holders = { [F]: { state: 'ok', health: { score: 72, verdict: 'mostly spread out' }, summary: { top10Pct: 31, line: 'Top 10 wallets hold 31%.' } } }
 const fetched = []
 score.setHoldersBaseForTest('http://holders.test')
@@ -144,6 +149,12 @@ score.setScoreFetchForTest(async (url) => {
   if (u.hostname === 'holders.test') {
     const a = u.pathname.split('/').pop().toLowerCase()
     return holders[a] ? j(holders[a]) : new Response('<!doctype html><title>Not found</title>', { status: 404, headers: { 'content-type': 'text/html' } })
+  }
+  if (u.hostname === 'api.etherscan.io') {
+    const a = (u.searchParams.get('address') ?? u.searchParams.get('contractaddresses') ?? '').toLowerCase()
+    etherscanHits.push(a)
+    if (u.searchParams.get('action') === 'getcontractcreation') return j({ status: '1', result: a === ES ? [{ txHash: '0x' + 'ee'.repeat(32), timestamp: String(Math.floor((NOW - 10 * DAY) / 1000)) }] : [] })
+    return j({ status: '1', result: [a === ES ? { SourceCode: 'contract EsOnly {}', ContractName: 'EsOnly' } : { SourceCode: '', ContractName: '' }] })
   }
   throw new TypeError(`unexpected fetch ${url}`)
 })
@@ -206,6 +217,21 @@ try {
   check('H: Sourcify unreachable → verified not available (not 0)', !part(h, 'verified').available && /could not be reached/.test(part(h, 'verified').reason))
   check('an address with no code is refused (404), not scored', (await score.computeScore(8453, addr(0x777))).status === 404)
   check('chains without Holder Map coverage say so', !part(await get(8453, D), 'holders').available)
+
+  /* ------------------------------------------- Sourcify first, Etherscan fallback --- */
+  check('Sourcify full match: value, provider and match in the part, linked to the contract on sourcify.dev', part(a, 'verified').value === 'Full match (Sourcify)' && part(a, 'verified').provider === 'sourcify' && part(a, 'verified').match === 'full' && part(a, 'verified').evidence[0].label === 'Sourcify: full match' && part(a, 'verified').evidence[0].url === `https://repo.sourcify.dev/8453/${A}`, JSON.stringify(part(a, 'verified')))
+  check('Sourcify partial match: said as partial, with the link', part(d, 'verified').value === 'Partial match (Sourcify)' && part(d, 'verified').match === 'partial' && part(d, 'verified').evidence[0].label === 'Sourcify: partial match' && part(d, 'verified').evidence[0].url === `https://repo.sourcify.dev/8453/${D}`)
+  check('Sourcify none: not verified, with a Sourcify lookup link', part(g, 'verified').value === 'Not verified' && part(g, 'verified').evidence[0].url === `https://sourcify.dev/#/lookup/${G}`)
+  check('without ETHERSCAN_API_KEY Etherscan is never asked', etherscanHits.length === 0)
+  process.env.ETHERSCAN_API_KEY = 'test-key-not-real'
+  try {
+    const sf = await get(8453, SF)
+    check('with a key: a full Sourcify match (with its deployment) does not ask Etherscan', part(sf, 'verified').match === 'full' && !etherscanHits.includes(SF), etherscanHits.join())
+    const es = await get(8453, ES)
+    check('with a key: Sourcify none falls back to Etherscan V2 (verified, age from its creation record)', etherscanHits.includes(ES) && part(es, 'verified').score === 100 && part(es, 'verified').provider === 'etherscan' && part(es, 'verified').value === 'Verified (Etherscan)' && part(es, 'age').available && /10 days ago/.test(part(es, 'age').reason), JSON.stringify(part(es, 'verified')))
+  } finally {
+    delete process.env.ETHERSCAN_API_KEY
+  }
 
   /* ------------------------------------------------ published reports only --- */
   report = { status: 'draft', publishedAt: null, url: 'https://gullylabs.xyz/security/reports/r1', severities: { critical: 1 } }
