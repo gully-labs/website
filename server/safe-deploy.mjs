@@ -48,6 +48,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { isFeeProxy } from './fee-proxy-guard.mjs'
 import { DATA_DIR, json, readJson } from './http.mjs'
 import { CHAIN_LIST, CHAINS, checksumAddress, FEE_PROXIES, rpc as payRpc } from './payments.mjs'
 import { treasury } from './plans.mjs'
@@ -558,10 +559,10 @@ export const resetForTest = () => {
 /* ----------------------------------------------------------------- plans --- */
 
 const bad = (error, code = 'bad-request', status = 400) => ({ ok: false, status, code, error })
-/** Addresses that are never a deployment target: the fee proxies (payments.mjs) and the zero address. */
+/** Addresses that are never a deployment target: every fee proxy we know (fee-proxy-guard.mjs, payments.mjs) and the zero address. */
 const forbiddenTarget = (a) => {
   const l = lower(a)
-  return l === lower(ZERO) || Object.values(FEE_PROXIES).some((p) => lower(p) === l) || ['0x370de27fdb7d1ff1e1baa7d11c5820a324cf623c', '0x1892196e80c4c17ea5100da765ab48c1fe2fb814', '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9', '0xd9c3889eb8da6ce449bffe3cd194d08a436e96f2'].includes(l)
+  return l === lower(ZERO) || isFeeProxy(l) || Object.values(FEE_PROXIES).some((p) => lower(p) === l)
 }
 
 async function gasFor(chainId, tx, from) {

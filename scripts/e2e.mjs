@@ -13,7 +13,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { blockedOutbound, bootServer, historyFixture, ROOT, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
+import { blockedOutbound, bootServer, historyFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
@@ -397,6 +397,57 @@ await step('pay', async () => {
   await ctx2.close()
 })
 
+/* ------------------------------------------------------- merchant: Safe deployment --- */
+
+// The store's wallet is the fixture's second Safe (the one deployed live on Base Sepolia through the server's
+// calldata; here a Safe on Base with no code on Arbitrum or BNB Chain). The rows for the undeployed chains carry
+// "Deploy Safe on <chain>"; the panel plans through the server (stubbed chains with real Safe 1.4.1 bytes) and
+// stops at "Connect a wallet to deploy": no wallet in Playwright, so nothing is sent.
+await step('merchant safe', async () => {
+  const SAFE = SAFE_FIXTURE.safe2.address
+  const owner2 = privateKeyToAccount(generatePrivateKey())
+  const api3 = makeClient(BASE)
+  check('safe: a store owner signs in', (await api3.signIn(owner2)).status === 200)
+  const w1 = await api3.post('/api/developer/merchant/wallets', { address: SAFE, type: 'contract', chains: [8453, 42161, 56], acceptTerms: true })
+  const res = (id) => w1.data?.results?.find((r) => r.chainId === id)
+  check('safe: the Safe is accepted on Base and refused (not deployed) on Arbitrum and BNB Chain', w1.status === 200 && res(8453)?.ok && res(42161)?.ok === false && res(56)?.ok === false, JSON.stringify(w1.data?.results))
+  const ctx = await newContext({ cookie: cookieOf(api3) })
+  const page = await ctx.newPage()
+  const w = watch(page, 'merchant safe')
+  w.expect(/\/api\/developer\/merchant\/safe\/plan/) // the BNB Chain plan below is a 422 on purpose (no Safe factory there)
+  await page.goto(BASE + '/developers#merchant')
+  const wallets = page.locator('#m-wallets')
+  await wallets.waitFor({ timeout: 15_000 })
+  check('safe: the Arbitrum row says not deployed and offers the Deploy button', (await wallets.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).count()) === 1 && (await wallets.getByText('not deployed').count()) >= 2)
+  await wallets.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).click()
+  const panel = wallets.locator('[data-testid="safe-deploy"]')
+  await panel.waitFor({ timeout: 20_000 })
+  await panel.getByText('address verified').waitFor({ timeout: 20_000 })
+  check('safe: the plan shows the Safe address verified, copied from Base, 1 owner, threshold 1', /Copied from/.test(await panel.textContent()) && /1 owner, threshold 1/.test(await panel.textContent()))
+  check('safe: the gas estimate is shown before anything is sent', /0\.00023688 ETH/.test((await panel.locator('[data-testid="safe-gas"]').textContent()) ?? ''))
+  check('safe: every check passed and is listed (factory, singleton, prediction)', (await panel.getByRole('list', { name: 'Checks' }).locator('li').count()) >= 5 && /code hash matches/.test(await panel.textContent()))
+  check('safe: with no wallet the button says Connect a wallet to deploy', (await panel.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
+  await panel.getByRole('button', { name: 'Close' }).click()
+  await wallets.getByRole('button', { name: 'Deploy Safe on BNB Chain' }).click()
+  const refused = wallets.locator('[data-testid="safe-deploy"]')
+  await refused.getByText('Not offered.').waitFor({ timeout: 20_000 })
+  check('safe: BNB Chain (no Safe factory there) is refused with the failing check named', /not deployed on BNB Chain/.test(await refused.textContent()) && (await refused.getByRole('list', { name: 'Checks' }).locator('li').count()) >= 2)
+  await refused.getByRole('button', { name: 'Close' }).click()
+  // Create a new Safe: the form, then the plan with the predicted address.
+  await wallets.getByTestId('new-safe-open').click()
+  const ns = wallets.getByTestId('new-safe')
+  await ns.locator('textarea').fill(owner2.address)
+  await ns.getByRole('radio', { name: 'Arbitrum' }).click()
+  await ns.getByTestId('new-safe-plan').click()
+  const np = ns.locator('[data-testid="safe-deploy"]')
+  await np.getByText('address verified').waitFor({ timeout: 20_000 })
+  check('safe: a new 1-of-1 Safe is planned with its address known before sending', /New Safe/.test(await np.textContent()) && /SafeL2 1\.4\.1, 1 owner, threshold 1/.test(await np.textContent()) && (await np.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
+  const rec = await api3.call('/api/developer/merchant/safe')
+  check('safe: the new Safe is recorded for the store with its salt nonce', rec.status === 200 && rec.data.safes.length === 1 && /^0x[0-9a-f]+$/.test(rec.data.safes[0].saltNonce), JSON.stringify(rec.data.safes))
+  await w.verify()
+  await ctx.close()
+})
+
 /* ------------------------------------------------------------- admin --- */
 
 await step('admin', async () => {
@@ -406,8 +457,17 @@ await step('admin', async () => {
   const w = watch(page, 'admin')
   await page.goto(BASE + '/admin')
   await page.getByRole('heading', { name: 'Invoices' }).waitFor({ timeout: 15_000 })
-  for (const h of ['Developer wallets', 'Pay links', 'Gully Analytics']) check(`admin: the ${h} section renders`, (await page.getByRole('heading', { name: h }).count()) > 0)
+  for (const h of ['Developer wallets', 'Pay links', 'Gully Analytics', 'Treasury Safe']) check(`admin: the ${h} section renders`, (await page.getByRole('heading', { name: h }).count()) > 0)
   check('admin: the invoice made above is listed', (await page.getByText('E2E: first month').count()) > 0)
+  // Treasury Safe: Base holds the Safe, Arbitrum is deployable, the plan reaches "connect a wallet".
+  const base = page.getByTestId('treasury-chain-8453')
+  await base.getByText(/Safe 1\.4\.1/).waitFor({ timeout: 15_000 })
+  check('admin treasury: Base shows the Safe (1.4.1, 1/1) and Arbitrum offers Deploy', (await base.getByText(/Safe 1\.4\.1 · 1\/1/).count()) === 1 && (await page.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).count()) === 1)
+  check('admin treasury: the extra chains are listed ahead of payments', (await page.getByTestId('treasury-chain-10').count()) === 1 && (await page.getByTestId('treasury-chain-137').count()) === 1)
+  await page.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).click()
+  const tp = page.getByTestId('treasury-chain-42161').locator('[data-testid="safe-deploy"]')
+  await tp.getByText('address verified').waitFor({ timeout: 20_000 })
+  check('admin treasury: the plan predicts the treasury address and waits for a wallet', /0\.00023688 ETH/.test(await tp.textContent()) && (await tp.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
   // Tracker health and venues read live upstreams this server cannot reach here.
   await w.verify([/Failed to load resource/])
   await ctx.close()

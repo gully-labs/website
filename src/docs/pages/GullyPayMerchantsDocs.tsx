@@ -10,6 +10,7 @@ const sections = [
   { id: 'overview', title: 'Overview' },
   { id: 'setup', title: 'Setup' },
   { id: 'wallets', title: 'Receiving wallets' },
+  { id: 'safe', title: 'Using a Safe as your store wallet' },
   { id: 'links-invoices', title: 'Links and invoices' },
   { id: 'checkout', title: 'The checkout' },
   { id: 'webhooks', title: 'Webhooks' },
@@ -134,6 +135,33 @@ export function GullyPayMerchantsDocs() {
             <b>Never a fee proxy contract.</b> Request Network's <Code>ERC20FeeProxy</Code> (the contract a split payment passes through) has no owner: anything sent straight to its address is lost for good. The form and the server both refuse it as a store wallet, and you should never give its address to a customer as a place to pay. Your customers pay <i>your</i> wallet; the proxy only passes the payment through inside one transaction.
           </li>
         </List>
+      </Section>
+
+      <Section id="safe" title="Using a Safe as your store wallet">
+        <P>
+          A <b>Safe</b> (the multisig from safe.global) is a good store wallet: several owners, a threshold, no single key. One thing to know: a Safe exists only on the chains where it was <i>deployed</i>. Its address is the same everywhere, but on a chain where nobody deployed it there is no contract behind it, and a payment sent there is lost. That is why a chain stays off until the Safe has code on it.
+        </P>
+        <List>
+          <li>
+            <b>Deploy Safe on &lt;chain&gt;.</b> A wallet row that reads “not deployed” has this button. We read your Safe on a chain where it exists (owners, threshold, version), recover its creation transaction (the salt and the exact set-up call live only there: from a transaction you created through us, the first block it had code in, or Safe's own service, each verified), check that Safe's official factory, singleton and fallback handler are on the target chain with the expected code, and compute the address the factory call would create. <b>Only if that address is exactly your Safe's</b> do we offer the call; the page recomputes it once more before your wallet is asked.
+          </li>
+          <li>
+            <b>Your wallet signs.</b> Connect any wallet with a little of the chain's coin for gas (about 240,000 gas; the estimate is shown first). It does not have to be a Safe owner. The transaction goes from your wallet to Safe's factory; Gully Labs never holds a key and never sends anything.
+          </li>
+          <li>
+            <b>Sent → Mined → Verified.</b> We read the receipt, then the code and owners at the address, and run the same check as “Check again”: the chain switches on by itself.
+          </li>
+          <li>
+            <b>The copy starts as the original was set up.</b> If you added owners or changed the threshold after creating the Safe, the new chain starts with the original owners and threshold; change them there afterwards in Safe{'{'}Wallet{'}'}. Guards and modules are not copied. A Safe that paid for its own deployment, or whose set-up calls a contract missing on the target chain, is refused rather than deployed broken.
+          </li>
+          <li>
+            <b>No Safe yet? Create one.</b> List the owners (your connected wallet is filled in), pick a threshold and a chain. We plan a Safe 1.4.1 from Safe's official factory with a deterministic salt we keep, so you see the address before anything is sent and can later deploy the same Safe at that address on every other chain with one click. Once verified it becomes your store wallet on that chain.
+          </li>
+          <li>
+            <b>What cannot be reproduced.</b> Only Safe 1.3.0 and 1.4.1 from Safe's official factory. A Safe created with <Code>createProxy</Code> (plain CREATE, old 1.3.0 flows) or by another factory has an address that depends on that factory's own history: create a new Safe for that chain instead. The fee-proxy contracts and Gully Labs' treasury are never a target.
+          </li>
+        </List>
+        <Callout label="NO STUCK FUNDS">Nothing in this flow holds money: the deployment transaction carries no value, the Safe is deployed by Safe's audited factory, and until the chain shows the code and owners the chain stays off and no checkout offers it.</Callout>
       </Section>
 
       <Section id="links-invoices" title="Links and invoices">

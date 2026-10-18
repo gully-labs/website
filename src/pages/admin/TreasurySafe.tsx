@@ -52,20 +52,25 @@ export function TreasurySafe({ token }: { token: string }) {
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState<number | null>(null)
   const load = useCallback(
-    async (fresh = false) => {
-      setBusy(true)
-      const r = await adminCall<View>(token, `/api/admin/safe/treasury${fresh ? '?fresh=1' : ''}`)
-      setBusy(false)
-      if (r.ok) (setData(r.data), setErr(null))
-      else setErr(r.error)
-    },
+    (fresh = false) =>
+      adminCall<View>(token, `/api/admin/safe/treasury${fresh ? '?fresh=1' : ''}`).then((r) => {
+        setBusy(false)
+        if (r.ok) {
+          setData(r.data)
+          setErr(null)
+        } else setErr(r.error)
+      }),
     [token],
   )
   useEffect(() => {
-    void load()
-    const id = setInterval(() => void load(), 60_000)
+    load()
+    const id = setInterval(load, 60_000)
     return () => clearInterval(id)
   }, [load])
+  const reread = () => {
+    setBusy(true)
+    void load(true)
+  }
 
   const plan = (chainId: number) => async (from: string | null): Promise<Fetched<SafePlan>> => {
     const r = await fetch('/api/admin/safe/plan', { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ chainId, from }) }).catch(() => null)
@@ -156,7 +161,7 @@ export function TreasurySafe({ token }: { token: string }) {
         </ul>
       )}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => void load(true)} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-3 text-[13px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:opacity-50">
+        <button type="button" onClick={reread} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-3 text-[13px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:opacity-50">
           {busy ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <RefreshCw size={14} aria-hidden />} Read the chains again
         </button>
         <span className={small}>Only Safe 1.3.0 and 1.4.1 at Safe’s official factory can be reproduced; the copy starts with the Safe’s original owners and threshold. Notes: ops/TREASURY-SAFE.md.</span>

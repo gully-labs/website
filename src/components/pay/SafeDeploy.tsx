@@ -172,7 +172,17 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
   const [msg, setMsg] = useState<string | null>(null)
   const [hash, setHash] = useState<string | null>(null)
   const [st, setSt] = useState<SafeStatus | null>(null)
+  const [tries, setTries] = useState(0)
   const alive = useRef(true)
+  // The callers hand in fresh closures on every render; refs keep the effects from re-running for that.
+  const planRef = useRef(plan)
+  const statusRef = useRef(status)
+  const verifiedRef = useRef(onVerified)
+  const accountRef = useRef(onAccount)
+  planRef.current = plan
+  statusRef.current = status
+  verifiedRef.current = onVerified
+  accountRef.current = onAccount
   useEffect(() => {
     alive.current = true
     return () => {
@@ -180,43 +190,46 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
     }
   }, [])
   useEffect(() => {
-    onAccount?.(address ?? null)
-  }, [address, onAccount])
+    accountRef.current?.(address ?? null)
+  }, [address])
 
-  const load = useCallback(async () => {
-    setPhase('planning')
-    setRefusal(null)
-    setMsg(null)
-    const r = await plan(address ?? null)
-    if (!alive.current) return null
-    if (!r.ok) {
-      const body = (r.body ?? {}) as { checks?: SafeCheck[] }
-      setRefusal({ error: r.error, checks: body.checks ?? [] })
-      setPhase('refused')
-      return null
-    }
-    setP(r.data)
-    setPhase(r.data.alreadyDeployed ? 'already' : 'ready')
-    return r.data
-  }, [plan, address])
+  // The plan: on mount, when the wallet changes (gas estimate), when the form behind planKey changes, on "Read again".
   useEffect(() => {
-    void load()
-    // planKey re-plans on purpose (a new-Safe form changed its owners).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load, planKey])
+    let on = true
+    planRef.current(address ?? null).then((r) => {
+      if (!on || !alive.current) return
+      setMsg(null)
+      if (!r.ok) {
+        const body = (r.body ?? {}) as { checks?: SafeCheck[] }
+        setRefusal({ error: r.error, checks: body.checks ?? [] })
+        setPhase('refused')
+        return
+      }
+      setRefusal(null)
+      setP(r.data)
+      setPhase(r.data.alreadyDeployed ? 'already' : 'ready')
+    })
+    return () => {
+      on = false
+    }
+  }, [address, planKey, tries])
+  const readAgain = () => {
+    setPhase('planning')
+    setTries((t) => t + 1)
+  }
 
   /** Follows the transaction until the Safe is verified (or the tx failed). */
   const follow = useCallback(
     async (h: string, planUsed: SafePlan) => {
       const started = Date.now()
       while (alive.current && Date.now() - started < 15 * 60_000) {
-        const r = await status(h)
+        const r = await statusRef.current(h)
         if (!alive.current) return
         if (r.ok) {
           setSt(r.data)
           if (r.data.state === 'verified') {
             setPhase('verified')
-            await onVerified(r.data, planUsed)
+            await verifiedRef.current(r.data, planUsed)
             return
           }
           if (r.data.state === 'failed') {
@@ -230,7 +243,7 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
       }
       if (alive.current) setMsg('Still waiting for the chain. Keep this open, or press “Check again” on the wallet row once the explorer shows the transaction mined.')
     },
-    [status, onVerified],
+    [],
   )
 
   const deploy = async () => {
@@ -241,7 +254,7 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
       if (!provider) throw new Error('The connected wallet exposes no provider. Reconnect it and try again.')
       // Fresh plan right before sending: the server re-reads the chains and re-checks the prediction.
       setPhase('switching')
-      const fresh = await plan(address)
+      const fresh = await planRef.current(address)
       if (!fresh.ok) throw new Error(fresh.error)
       const f = fresh.data
       if (f.alreadyDeployed) {
@@ -316,7 +329,7 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
             </span>
           </p>
           {refusal.checks.length > 0 && <Checks checks={refusal.checks} />}
-          <button type="button" onClick={() => void load()} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink">
+          <button type="button" onClick={readAgain} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink">
             Read again
           </button>
         </div>
