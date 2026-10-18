@@ -1,5 +1,5 @@
-// Renders the 1200x630 share cards in public/social/ with Chromium, from the brand's own fonts,
-// lockup, mascot, project logos and stock logos. Cards carry NO figures: an image cannot stay
+// Renders the 1200x630 share cards in public/social/ with Chromium, from the brand's own fonts, the
+// brand kit's wordmark and mascot (public/brand, see scripts/brand-from-kit.mjs), project logos and stock logos. Cards carry NO figures: an image cannot stay
 // current, and the site's rule is that no number is typed in. Run after changing a page's copy:
 //   node scripts/gen-og.mjs
 import fs from 'node:fs'
@@ -13,11 +13,11 @@ const font = (pkg, file) => pathToFileURL(path.join(root, 'node_modules/@fontsou
 const out = path.join(root, 'public/social')
 
 const PROJECTS = [
-  { slug: 'cartel-family', name: 'Cartel Family', tagline: 'We trade as one', tag: 'Social trading', logo: '/assets/cartel-family.png', bg: '#12151c', accent: '#b8926a', fit: 'cover' },
-  { slug: 'deepcore', name: 'DeepCore', tagline: 'Launch on one core', tag: 'DeFi infrastructure', logo: '/assets/deepcore.png', bg: '#061729', accent: '#2ee6c5', fit: 'contain' },
-  { slug: 'peddleswap', name: 'PeddleSwap', tagline: 'Swap. Lock. Launch.', tag: 'DEX', logo: '/assets/peddleswap.png', bg: '#15181b', accent: '#b8f03c', fit: 'contain' },
-  { slug: 'peddles', name: 'Peddles', tagline: 'Launch, trade and play', tag: 'Launchpad', logo: '/assets/peddles.png', bg: '#1c1f22', accent: '#27b6ff', fit: 'cover' },
-  { slug: 'peddlequest', name: 'PeddleQuest', tagline: 'Quest on-chain, earn the proof', tag: 'Quest to earn', logo: '/assets/peddlequest.png', bg: '#0a101c', accent: '#ffd60a', fit: 'contain' },
+  { slug: 'cartel-family', name: 'Cartel Family', tagline: 'We trade as one', tag: 'Social trading', logo: '/assets/cartel-family.webp', bg: '#12151c', accent: '#b8926a', fit: 'cover' },
+  { slug: 'deepcore', name: 'DeepCore', tagline: 'Launch on one core', tag: 'DeFi infrastructure', logo: '/assets/deepcore.webp', bg: '#061729', accent: '#2ee6c5', fit: 'contain' },
+  { slug: 'peddleswap', name: 'PeddleSwap', tagline: 'Swap. Lock. Launch.', tag: 'DEX', logo: '/assets/peddleswap.webp', bg: '#15181b', accent: '#b8f03c', fit: 'contain' },
+  { slug: 'peddles', name: 'Peddles', tagline: 'Launch, trade and play', tag: 'Launchpad', logo: '/assets/peddles.webp', bg: '#1c1f22', accent: '#27b6ff', fit: 'cover' },
+  { slug: 'peddlequest', name: 'PeddleQuest', tagline: 'Quest on-chain, earn the proof', tag: 'Quest to earn', logo: '/assets/peddlequest.webp', bg: '#0a101c', accent: '#ffd60a', fit: 'contain' },
 ]
 const STOCK_LOGOS = ['NVDA', 'TSLA', 'AAPL', 'MSFT', 'GOOGL', 'COIN', 'PLTR', 'META'].map((t) => {
   const f = fs.readdirSync(path.join(root, 'public/tokens/logos')).find((x) => x.startsWith(`${t}.`))
@@ -32,8 +32,7 @@ const css = `
 *{box-sizing:border-box;margin:0}
 body{width:1200px;height:630px;background:#0b0e13;color:#eef0f2;font-family:Hanken;overflow:hidden;position:relative}
 .pad{position:absolute;inset:64px 72px}
-.word{font-family:Barlow;font-weight:800;font-size:40px;letter-spacing:.5px}
-.word b{color:#e8c060;font-weight:800}
+.word{display:block;height:40px;width:auto;align-self:flex-start}
 .eye{font-family:Plex;font-weight:500;font-size:20px;letter-spacing:2px;color:#e8c060;text-transform:uppercase}
 h1{font-family:Barlow;font-weight:800;text-transform:uppercase;line-height:.9;letter-spacing:.5px}
 h1 em{font-style:normal;color:#e8c060}
@@ -41,7 +40,8 @@ p{font-size:28px;line-height:1.4;color:#a6b0bd}
 .url{font-family:Plex;font-weight:500;font-size:20px;color:#6c7888;letter-spacing:1px}
 .grid{position:absolute;inset:0;background-image:linear-gradient(#1d232c55 1px,transparent 1px),linear-gradient(90deg,#1d232c55 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at 80% 40%,#000 0%,transparent 70%)}
 `
-const brand = '<div class="word">GULLY <b>LABS</b></div>'
+// The brand kit's wordmark, byte for byte (public/brand/gullylabs-wordmark-on-dark.svg), 40 px tall.
+const brand = `<img class="word" src="${pub('brand/gullylabs-wordmark-on-dark.svg')}" alt="Gully Labs">`
 
 function page({ eyebrow, title, body, url, right = '', accent = '#e8c060', titleSize = 104 }) {
   return `<!doctype html><html><head><meta charset="utf-8"><style>${css} h1 em{color:${accent}} .eye{color:${accent}}</style></head><body>
@@ -59,7 +59,8 @@ function page({ eyebrow, title, body, url, right = '', accent = '#e8c060', title
 </body></html>`
 }
 
-const mascot = `<img src="${pub('assets/mascot-scientist.png')}" style="position:absolute;right:-60px;bottom:0;height:610px;object-fit:contain;-webkit-mask-image:radial-gradient(ellipse 72% 80% at 62% 58%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 72% 80% at 62% 58%,#000 50%,transparent 100%)">`
+// The kit's mascot master render (png/mascot/gullylabs-mascot-00-scientist-1024.png).
+const mascot = `<img src="${pub('brand/gullylabs-mascot-00-scientist-1024.png')}" style="position:absolute;right:-60px;bottom:0;height:610px;object-fit:contain;-webkit-mask-image:radial-gradient(ellipse 72% 80% at 62% 58%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 72% 80% at 62% 58%,#000 50%,transparent 100%)">`
 const stockWall = `<div style="position:absolute;right:64px;top:110px;display:grid;grid-template-columns:repeat(4,104px);gap:22px">${STOCK_LOGOS.map(
   (s, i) =>
     `<div style="width:104px;height:104px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #1d232c,0 12px 40px #0008;transform:translateY(${i % 2 ? 26 : 0}px)"><img src="${s}" style="width:72px;height:72px;object-fit:contain"></div>`,

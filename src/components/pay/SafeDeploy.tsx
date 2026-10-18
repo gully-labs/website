@@ -2,7 +2,7 @@ import '@rainbow-me/rainbowkit/styles.css'
 import { RainbowKitProvider, useConnectModal } from '@rainbow-me/rainbowkit'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { AlertTriangle, ArrowUpRight, Check, Loader2, ShieldCheck, Wallet, X } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { concat, getContractAddress, keccak256, pad, toHex } from 'viem'
 import { useAccount, WagmiProvider } from 'wagmi'
 import { queryClient, wagmiConfig, walletTheme } from '../../pages/developers/walletConfig'
@@ -91,7 +91,7 @@ const friendly = (e: unknown, chain: string): string => {
 }
 
 /** The CREATE2 address from the plan's own inputs, computed here, independently of the server. */
-export function predictLocally(p: SafePlan): string | null {
+function predictLocally(p: SafePlan): string | null {
   if (!p.factory || !p.singleton || !p.initializer || !p.saltNonce || !p.proxyCreationCode) return null
   const salt = keccak256(concat([keccak256(p.initializer as `0x${string}`), pad(toHex(BigInt(p.saltNonce)), { size: 32 })]))
   return getContractAddress({ opcode: 'CREATE2', from: p.factory as `0x${string}`, salt, bytecode: concat([p.proxyCreationCode as `0x${string}`, pad(p.singleton as `0x${string}`, { size: 32 })]) })
@@ -179,10 +179,13 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
   const statusRef = useRef(status)
   const verifiedRef = useRef(onVerified)
   const accountRef = useRef(onAccount)
-  planRef.current = plan
-  statusRef.current = status
-  verifiedRef.current = onVerified
-  accountRef.current = onAccount
+  // Layout effect: the refs are current before any of the effects below run, and never written during render.
+  useLayoutEffect(() => {
+    planRef.current = plan
+    statusRef.current = status
+    verifiedRef.current = onVerified
+    accountRef.current = onAccount
+  })
   useEffect(() => {
     alive.current = true
     return () => {
