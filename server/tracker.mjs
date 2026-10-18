@@ -692,6 +692,28 @@ let cache = null
 let lastSnapshot = 0
 let inflight = null
 
+/* When each chain's prices were last read on chain (the newest row onchainAt), and how many of its tokens the
+   last build priced. This is the tracker's freshness; lastPools[].at is only the hourly pool discovery. A build
+   that prices nothing on a chain keeps that chain's previous time, so its age grows until a read succeeds. */
+const lastPriceRead = {} // chain key -> { at: ms | null, read, total }
+export function notePriceReads(rows) {
+  const by = {}
+  for (const r of rows) {
+    const c = (by[r.chain] ??= { at: null, read: 0, total: 0 })
+    c.total++
+    const t = r.onchainAt ? Date.parse(r.onchainAt) : NaN
+    if (Number.isFinite(t)) {
+      c.read++
+      if (c.at === null || t > c.at) c.at = t
+    }
+  }
+  for (const [key, c] of Object.entries(by)) lastPriceRead[key] = { at: c.at ?? lastPriceRead[key]?.at ?? null, read: c.read, total: c.total }
+}
+/** Tests: forget the price-read times. */
+export const resetPriceReadsForTest = () => {
+  for (const k of Object.keys(lastPriceRead)) delete lastPriceRead[k]
+}
+
 export async function readTracker() {
   if (cache && Date.now() - cache.at < CACHE_MS) return cache.body
   // One build at a time: concurrent requests during a refresh share it instead of each reading upstream.
@@ -702,6 +724,7 @@ export async function readTracker() {
         record(body.rows, lastSnapshot)
         emitSnapshot(body.rows.map((r) => ({ ...r, sessionOpen: r.sessionOpen ?? body.chains.find((c) => c.key === r.chain)?.sessionOpen ?? null })), lastSnapshot)
       }
+      notePriceReads(body.rows)
       cache = { at: Date.now(), body }
       return body
     })
@@ -822,7 +845,9 @@ export function trackerHealth() {
       lastPoolRead: lastPools[c.key]?.at ? new Date(lastPools[c.key].at).toISOString() : null,
       backoffUntil: backoff[c.key] && backoff[c.key].until > now ? new Date(backoff[c.key].until).toISOString() : null,
       sessionOpen: sessionOpen(c.session),
-    })).concat({ ...solanaTrackerHealth(), sessionOpen: sessionOpen('nyse') }),
+    }))
+      .concat({ ...solanaTrackerHealth(), sessionOpen: sessionOpen('nyse') })
+      .map((c) => ({ ...c, lastPriceRead: lastPriceRead[c.key]?.at ? new Date(lastPriceRead[c.key].at).toISOString() : null, pricesRead: lastPriceRead[c.key]?.read ?? null, rows: lastPriceRead[c.key]?.total ?? null })),
     history: { series: Object.keys(history).length, points: Object.values(history).reduce((a, h) => a + h.length, 0), file: DATA_FILE },
     statuses: cache ? cache.body.rows.reduce((m, r) => ((m[r.status] = (m[r.status] ?? 0) + 1), m), {}) : null,
   }

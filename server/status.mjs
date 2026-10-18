@@ -38,8 +38,8 @@ import * as holders from './holders.mjs'
 export const INTERVAL_MS = 60_000
 export const KEEP_MS = 24 * 3600_000
 export const BUCKET_MS = 30 * 60_000
-const FRESH_MS = 15 * 60_000
-const STALE_MS = 60 * 60_000
+const PRICE_FRESH_MS = 10 * 60_000
+const PRICE_STALE_MS = 30 * 60_000
 const CHECK_TIMEOUT_MS = 8_000
 const MAX_INCIDENTS = 50
 const FILE = () => path.join(DATA_DIR, 'status.json')
@@ -99,17 +99,29 @@ function checkApi() {
   return [r('api', 'platform', 'Public API', 'up', `Answering; this server has been up ${up < 5400 ? `${Math.round(up / 60)} min` : `${Math.round(up / 3600)} h`}.`)]
 }
 
-function checkTracker() {
-  const h = trackerHealth()
-  const now = Date.now()
+/* Tracker freshness per chain is when its PRICES were last read on chain (tracker.mjs lastPriceRead, the newest
+   row onchainAt), not lastPoolRead: that is the hourly pool discovery, which is meant to be up to an hour old.
+   Up under 10 min, degraded to 30 min, down past that or with no successful read. Exported for tests. */
+export function trackerComponents(h, now = Date.now()) {
   return h.chains.map((c) => {
     const id = `tracker-${c.key}`
     const name = `Tracker: ${c.name}`
-    if (!c.lastPoolRead) return r(id, 'tracker', name, c.backoffUntil ? 'down' : 'unknown', c.backoffUntil ? 'The pools could not be read; retrying after a back-off.' : 'No pool read yet since this server started.')
-    const age = now - Date.parse(c.lastPoolRead)
-    const state = c.backoffUntil ? 'degraded' : age <= FRESH_MS ? 'up' : age <= STALE_MS ? 'degraded' : 'down'
-    return r(id, 'tracker', name, state, `Pools last read ${agoWords(age)}${c.backoffUntil ? '; the last read failed and is being retried' : ''}. ${c.stocks} stock tokens.`)
+    const pools = c.lastPoolRead ? ` Pools rediscovered ${agoWords(now - Date.parse(c.lastPoolRead))}.` : ''
+    if (!c.lastPriceRead) {
+      // Nothing read yet: before the first build that is unknown; after one that priced nothing, it is down.
+      if (c.pricesRead === null || c.pricesRead === undefined) return r(id, 'tracker', name, 'unknown', 'No price read yet since this server started.')
+      return r(id, 'tracker', name, 'down', `${c.name} prices aren’t being read right now (0 of ${c.rows ?? c.stocks} tokens).`)
+    }
+    const age = now - Date.parse(c.lastPriceRead)
+    const state = age < PRICE_FRESH_MS ? 'up' : age <= PRICE_STALE_MS ? 'degraded' : 'down'
+    if (state === 'down') return r(id, 'tracker', name, 'down', `${c.name} prices aren’t being read right now: the last on-chain read was ${agoWords(age)}.${pools}`)
+    const of = c.pricesRead !== null && c.rows ? ` ${c.pricesRead} of ${c.rows} tokens priced in the last read.` : ` ${c.stocks} stock tokens.`
+    return r(id, 'tracker', name, state, `Prices read on chain ${agoWords(age)}.${of}${pools}`)
   })
+}
+
+function checkTracker() {
+  return trackerComponents(trackerHealth())
 }
 
 function checkDeepcore() {
