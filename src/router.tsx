@@ -8,6 +8,7 @@ import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
 import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isLocalHost } from './site-host'
 import { installDelegatedTracking } from './lib/track'
+import { HolderMapOpened } from './lib/routeEvents'
 
 // Gully Analytics events for pages whose own files do not send them (link clicks on /links; src/lib/track.ts).
 installDelegatedTracking()
@@ -23,7 +24,7 @@ const mainRoutes = [
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/tracker/:chain/:ticker', element: <StockRoute /> },
       { path: '/holders', element: <HoldersLandingRoute /> },
-      { path: '/holders/:chain/:token', element: <HoldersRoute /> },
+      { path: '/holders/:chain/:token', element: <HolderMapOpened from="holders-page"><HoldersRoute /></HolderMapOpened> },
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
@@ -58,7 +59,7 @@ const mainRoutes = [
   // The Telegram Mini App (opened from @GullyLabsBot): full screen in Telegram's own chrome, no site header or footer.
   { path: '/tg', element: <TgRoute /> },
   // The embeddable Holder Map (widget.js data-gully-widget="holders"): framed by other sites, no site chrome.
-  { path: '/embed/holders/:chain/:token', element: <EmbedHoldersRoute /> },
+  { path: '/embed/holders/:chain/:token', element: <HolderMapOpened from="embed"><EmbedHoldersRoute /></HolderMapOpened> },
   // Gully Pay's standalone checkout (src/pages/pay/CheckoutFrame): its own layout, no site header, nav or
   // footer. Never linked from the site, never indexed; whoever holds the link pays here.
   {

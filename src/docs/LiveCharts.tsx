@@ -218,7 +218,7 @@ function WidestGaps({ rows, at, failed }: { rows: Row[] | null; at: string | nul
       {rows && !top.length ? (
         <p className="m-0 py-6 font-mono text-[12px] text-muted">No trusted gap right now: every row is thin, unverified or unreadable. Nothing is shown as zero.</p>
       ) : (
-        <EChart option={option} height={CHART_H.lg} label="The widest trusted gaps between on-chain and fair price right now, by token" skeleton="bars" error={failed ? 'The tracker could not be read just now.' : undefined} steps={{ count: top.length }} />
+        <EChart option={option} height={CHART_H.lg} label="The widest trusted gaps between onchain and fair price right now, by token" skeleton="bars" error={failed ? 'The tracker could not be read just now.' : undefined} steps={{ count: top.length }} />
       )}
     </div>
   )

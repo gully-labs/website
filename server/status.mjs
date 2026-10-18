@@ -11,7 +11,10 @@
 //   - Gully AI (configured, index size, retrieval mode);
 //   - the Gully Security scan engine (AI configured, static-tools worker, queue);
 //   - contract monitors (live count, per-chain read errors in the last 10 min);
-//   - Holder Map sources per chain (whether the chain has a data source configured).
+//   - Holder Map sources per chain (whether the chain has a data source configured);
+//   - the bot's News channel gate (Telegram's getChatMember for the bot itself: it must be a channel admin,
+//     or the gate fails open and lets everyone through);
+//   - the Gully Pay fee-proxy monitor (the treasury is not a fee proxy; no stray funds on the proxies).
 // Nothing here prints a secret: no URL, token, key or env var name reaches the response; RPC and Telegram errors
 // are reduced to plain words. `off` = not configured on this server; `off` and `unknown` are left out of uptime.
 //
@@ -22,7 +25,8 @@ import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { trackerHealth } from './tracker.mjs'
 import { deepcoreHealth, pollMs as deepcorePollMs } from './deepcore.mjs'
-import { telegramToken } from './telegram.mjs'
+import { requiredChannel, telegramToken } from './telegram.mjs'
+import { feeProxyView } from './fee-proxy-monitor.mjs'
 import { CHAIN_LIST, publicChains, rpc } from './payments.mjs'
 import { solanaRpc } from './solana.mjs'
 import { SOLANA_CHAIN_ID } from './solana-pay.mjs'
@@ -153,6 +157,42 @@ async function checkTelegram() {
   }
 }
 
+/* The News channel gate (CLAUDE.md, Telegram): Telegram answers getChatMember for the channel only while the bot
+   is an administrator there; otherwise the gate fails open. The bot's own id is the part of its token before ':'. */
+async function checkNewsGate() {
+  const name = 'Telegram bot: News channel gate'
+  const token = telegramToken()
+  const ch = requiredChannel()
+  if (!token) return [r('telegram-gate', 'telegram', name, 'off', 'The bot is not configured on this server.')]
+  if (!ch) return [r('telegram-gate', 'telegram', name, 'off', 'The channel requirement is switched off.')]
+  const botId = Number(String(token).split(':')[0])
+  if (!botId) return [r('telegram-gate', 'telegram', name, 'unknown', 'The bot id could not be read.')]
+  try {
+    const { out: j, ms } = await timed(async () => {
+      const res = await fetch(`${telegramBase()}/bot${token}/getChatMember`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: ch, user_id: botId }), redirect: 'manual', signal: AbortSignal.timeout(CHECK_TIMEOUT_MS) })
+      return res.json().catch(() => null)
+    })
+    const st = j?.result?.status
+    if (j?.ok && (st === 'administrator' || st === 'creator')) return [r('telegram-gate', 'telegram', name, 'up', 'The bot is an admin of the News channel, so membership is checked.', ms)]
+    return [r('telegram-gate', 'telegram', name, 'degraded', 'The bot is not an admin of the News channel, so the gate lets everyone through.', ms)]
+  } catch {
+    return [r('telegram-gate', 'telegram', name, 'unknown', 'Telegram could not be reached for the gate check.')]
+  }
+}
+
+/* The fee-proxy monitor (server/fee-proxy-monitor.mjs): a treasury set to a fee proxy refuses every checkout, and
+   funds sent straight to a proxy are stuck until recovered. */
+function checkFeeProxy() {
+  const name = 'Gully Pay fee proxies'
+  const v = feeProxyView()
+  if (v.config.length) return [r('pay-feeproxy', 'payments', name, 'down', 'The treasury is set to a fee proxy contract, so checkout is refused until it is changed.')]
+  if (!v.running && !v.checkedAt) return [r('pay-feeproxy', 'payments', name, 'off', 'The fee-proxy monitor is not running on this server.')]
+  if (v.alerts.length) return [r('pay-feeproxy', 'payments', name, 'degraded', `${v.alerts.length} payment${v.alerts.length === 1 ? '' : 's'} sent straight to a fee proxy and waiting for recovery.`)]
+  const failed = v.chains.filter((c) => c.error).length
+  if (failed) return [r('pay-feeproxy', 'payments', name, 'degraded', `${failed} chain${failed === 1 ? '' : 's'} could not be read on the last check.`)]
+  return [r('pay-feeproxy', 'payments', name, v.checkedAt ? 'up' : 'unknown', v.checkedAt ? `No stray funds on ${v.chains.length} chain${v.chains.length === 1 ? '' : 's'}; checked ${agoWords(Date.now() - Date.parse(v.checkedAt))}.` : 'No check yet since this server started.')]
+}
+
 async function checkPayments() {
   // The chains Gully Pay offers now; with checkout closed, the four main payment chains still show their RPC health.
   let chains = publicChains().filter((c) => c.id !== SOLANA_CHAIN_ID && !c.testnet)
@@ -183,11 +223,13 @@ async function checkPayments() {
   return Promise.all([...evm, sol])
 }
 
-function checkAi() {
+export function checkAi() {
   try {
     const s = askStatus()
     if (!s.configured) return [r('ai', 'ai', 'Gully AI', 'off', 'Gully AI is not configured on this server.')]
     if (!s.indexSize) return [r('ai', 'ai', 'Gully AI', 'degraded', 'Configured, but its search index is empty.')]
+    // The model provider's account is failing (billing or key): every question fails until the owner fixes it.
+    if (s.provider === 'unavailable') return [r('ai', 'ai', 'Gully AI', 'degraded', `Answers are unavailable right now${s.since ? ` (since ${s.since.slice(0, 16).replace('T', ' ')} UTC)` : ''}; we're on it. The docs still work.`)]
     return [r('ai', 'ai', 'Gully AI', 'up', `${s.indexSize} indexed passages; ${s.retrieval === 'hybrid' ? 'hybrid (keyword + semantic)' : 'keyword'} search.`)]
   } catch {
     return [r('ai', 'ai', 'Gully AI', 'unknown', 'Its status could not be read.')]
@@ -253,7 +295,7 @@ async function settle(name, fn) {
 export async function runChecks({ now = Date.now(), record = true } = {}) {
   if (running) return running
   running = (async () => {
-    const groups = await Promise.all([settle('api', checkApi), settle('tracker', checkTracker), settle('deepcore', checkDeepcore), settle('telegram', checkTelegram), settle('payments', checkPayments), settle('ai', checkAi), settle('security', checkSecurity), settle('monitors', checkMonitors), settle('holders', checkHolders)])
+    const groups = await Promise.all([settle('api', checkApi), settle('tracker', checkTracker), settle('deepcore', checkDeepcore), settle('telegram', checkTelegram), settle('telegram-gate', checkNewsGate), settle('payments', checkPayments), settle('pay-feeproxy', checkFeeProxy), settle('ai', checkAi), settle('security', checkSecurity), settle('monitors', checkMonitors), settle('holders', checkHolders)])
     const results = groups.flat()
     if (record) recordResults(results, now)
     lastRun = { at: now, results }

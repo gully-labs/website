@@ -376,10 +376,10 @@
       var trs = w.box.querySelectorAll('tbody tr')
       for (var t = 0; t < trs.length; t++) {
         trs[t].addEventListener('click', function () {
-          window.open(this.getAttribute('data-href'), '_blank', 'noopener')
+          window.open(this.getAttribute('data-href'), '_blank', 'noopener,noreferrer')
         })
         trs[t].addEventListener('keydown', function (e) {
-          if (e.key === 'Enter') window.open(this.getAttribute('data-href'), '_blank', 'noopener')
+          if (e.key === 'Enter') window.open(this.getAttribute('data-href'), '_blank', 'noopener,noreferrer')
         })
       }
       var bs = w.box.querySelectorAll('th button')

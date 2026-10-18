@@ -84,7 +84,7 @@ const ANALYTICS: Product = {
   licence: 'Built on Umami, MIT licensed. Our changes are MIT too.',
   live: {
     title: 'Our own dapps, on chain',
-    body: 'The on-chain activity the Web3 tab is built to follow, read live from the venues Gully Labs runs: the daily volume each one publishes, refreshed every minute.',
+    body: 'The onchain activity the Web3 tab is built to follow, read live from the venues Gully Labs runs: the daily volume each one publishes, refreshed every minute.',
     node: <VenueVolumeLive />,
   },
   figure: { title: 'What the Web3 tab draws', body: 'The charts below use made-up example figures to show the views; your dashboard draws your own site.', node: <AnalyticsExample /> },

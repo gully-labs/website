@@ -514,6 +514,7 @@ interface Status {
             ['/api/stats', 'public, max-age=30', 'Each project is read at most once a minute.'],
             ['/api/plans, /api/alerts/channels', 'public, max-age=60', ''],
             ['/api/pay/gas', 'public, max-age=60', 'Read from the chains at most every three minutes.'],
+            ['/api/chain/fee-history', 'public, max-age=20', 'Base fee per gas over the last 128 blocks on Arbitrum One, Base and Arbitrum Sepolia ({ blocks, chains[]: key, name, role, gwei[], newest, error }), for the Gully L3 roadmap chart. Read at most every 20 seconds.'],
             ['/api/geo, /api/ask, /api/pay/:id …', 'private / no-store', 'Per visitor or per payment: never cached.'],
           ]}
         />

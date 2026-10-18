@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Seo } from '../../components/Seo'
 import { eyebrow } from '../../components/ui'
+import { EChart } from '../../components/charts/EChart'
+import { axisTooltip, barsPreset, C, PALETTE, tipHtml } from '../../components/charts/chartPresets'
 
 /* /legal/privacy: the Gully Labs privacy policy, adapted from Basecamp's open-source policies
    (github.com/basecamp/policies, CC BY 4.0; attribution and the list of changes at the foot of the page, as
@@ -61,6 +63,51 @@ const RETENTION: [string, string][] = [
   ['Backups of all of the above', '7 days'],
   ['Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data', 'Not deleted automatically today; ask us and we delete what the law lets us'],
 ]
+
+/* The fixed retention periods above, in days, as the server enforces them (the same figures as the table; rows
+   kept "until deleted" or "the newest N" have no fixed period and are not drawn). Shown as an animated chart so
+   the longest-kept data stands out at a glance. */
+const RETENTION_DAYS: [string, number][] = [
+  ['Telegram link codes', 1],
+  ['Team invites (to accept)', 7],
+  ['Unpaid payment quotes', 7],
+  ['Backups', 7],
+  ['Sign-in sessions', 30],
+  ['Hourly API usage counts', 31],
+  ['Gully AI questions and ratings', 90],
+  ['Workspace activity log', 180],
+  ['Security scan code and output', 180],
+]
+
+function RetentionChart() {
+  const option = useMemo(
+    () => ({
+      grid: { left: 8, right: 52, top: 6, bottom: 6, containLabel: true },
+      tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
+        const [what, days] = RETENTION_DAYS[ps[0]?.dataIndex ?? 0]
+        return tipHtml({ title: what, rows: [{ name: 'Kept for', value: days === 1 ? 'about a day' : `${days} days` }] })
+      }, 'shadow'),
+      xAxis: { type: 'value', min: 0, max: 180, splitNumber: 6 },
+      yAxis: { type: 'category', data: RETENTION_DAYS.map(([w]) => w), axisLabel: { color: C.muted, fontSize: 11 } },
+      series: [
+        {
+          ...barsPreset({ horizontal: true, stagger: 60 }),
+          id: 'days',
+          barMaxWidth: 14,
+          data: RETENTION_DAYS.map(([, d]) => ({ value: d, itemStyle: { color: d >= 180 ? PALETTE[4] : d >= 30 ? PALETTE[0] : PALETTE[2] } })),
+          label: { show: true, position: 'right', color: C.faint, fontSize: 11, formatter: (x: { value: number }) => `${x.value} d` },
+        },
+      ],
+    }),
+    [],
+  )
+  return (
+    <figure className="m-0 flex flex-col gap-2 rounded-card border border-line bg-surface px-4 py-3" data-testid="retention-chart">
+      <figcaption className="font-mono text-[11px] tracking-[1px] text-faint">FIXED RETENTION PERIODS, IN DAYS</figcaption>
+      <EChart option={option} height={RETENTION_DAYS.length * 28 + 20} label={`Days each kind of data is kept: ${RETENTION_DAYS.map(([w, d]) => `${w} ${d} days`).join(', ')}`} steps={{ count: RETENTION_DAYS.length }} skeleton="bars" />
+    </figure>
+  )
+}
 
 export function PrivacyPage() {
   return (
@@ -251,6 +298,7 @@ export function PrivacyPage() {
                 </tbody>
               </table>
             </div>
+            <RetentionChart />
             <P>Sessions last 30 days. Gully AI questions and ratings are kept 90 days. The activity log keeps 180 days, and so does a security scan’s code. Backups are kept 7 days. Accounts, payments and stores are not deleted automatically today.</P>
           </S>
 

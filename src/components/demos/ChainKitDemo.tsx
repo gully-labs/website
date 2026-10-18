@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type JSX } from 'react'
 import { Link } from 'react-router'
-import { ArrowRight, Boxes, Search } from 'lucide-react'
+import { ArrowRight, Box, Boxes, Search } from 'lucide-react'
 import { track } from '../../lib/track'
 import { useReducedMotion } from '../charts/chart-utils'
 
@@ -232,8 +232,8 @@ export default function ChainKitDemo(): JSX.Element {
                 </div>
                 {blocks.map((b, i) => (
                   <div key={b.n} className="flex items-center gap-2.5 border-b px-3 py-2 text-[12px] last:border-b-0" style={{ borderColor: t.line, background: i === 0 && !reduced ? t.flash : 'transparent' }}>
-                    <span aria-hidden className="grid size-7 place-items-center rounded-[6px] font-mono text-[11px]" style={{ background: t.tint, color: ac }}>
-                      Bk
+                    <span aria-hidden className="grid size-7 place-items-center rounded-[6px]" style={{ background: t.tint, color: ac }}>
+                      <Box size={14} />
                     </span>
                     <span className="flex flex-1 flex-col leading-[1.2]">
                       <span className="font-mono" style={{ color: ac }}>

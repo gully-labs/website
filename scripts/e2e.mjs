@@ -1837,7 +1837,7 @@ await step('status page and API', async () => {
   const ids = (s.components ?? []).map((c) => c.id)
   check('/api/status: 200 JSON, public cache and CORS', r.status === 200 && /application\/json/.test(r.headers.get('content-type') ?? '') && /max-age=30/.test(r.headers.get('cache-control') ?? '') && r.headers.get('access-control-allow-origin') === '*')
   check('/api/status: overall, interval and incidents', ['operational', 'degraded', 'major'].includes(s.overall) && s.intervalSeconds === 60 && Array.isArray(s.incidents), JSON.stringify({ overall: s.overall, i: s.intervalSeconds }))
-  check('/api/status: every part of the stack is checked', ['api', 'tracker-robinhood', 'tracker-bsc', 'tracker-solana', 'deepcore', 'telegram', 'ai', 'security', 'monitors', 'holders-deepcore'].every((id) => ids.includes(id)) && ids.some((id) => id.startsWith('pay-')), ids.join())
+  check('/api/status: every part of the stack is checked', ['api', 'tracker-robinhood', 'tracker-bsc', 'tracker-solana', 'deepcore', 'telegram', 'telegram-gate', 'pay-feeproxy', 'ai', 'security', 'monitors', 'holders-deepcore'].every((id) => ids.includes(id)) && ids.some((id) => id.startsWith('pay-')), ids.join())
   const byId = Object.fromEntries(s.components.map((c) => [c.id, c]))
   check('/api/status: the API is up and the Telegram webhook reads as registered', byId.api?.state === 'up' && byId.telegram?.state === 'up' && /waiting/.test(byId.telegram?.detail ?? ''), JSON.stringify([byId.api, byId.telegram].map((c) => c && { s: c.state, d: c.detail })))
   check('/api/status: Gully Pay RPCs answer per offered chain (stub RPCs)', OFFERED.filter((n) => n !== 'Solana').every((n) => s.components.some((c) => c.group === 'payments' && c.name.endsWith(n) && c.state === 'up')), JSON.stringify(s.components.filter((c) => c.group === 'payments').map((c) => `${c.name}:${c.state}`)))
@@ -1880,6 +1880,11 @@ await step('docs pages', async () => {
   for (const slug of ['gully-ai', 'telegram', 'chain-kit', 'swaps', 'solana', 'status']) check(`docs sitemap lists /${slug}`, docsMap.includes(`https://docs.gullylabs.xyz/${slug}<`))
   check('sitemap: /status listed; no stock Holder Map page while no chain reports holder data', mainMap.includes('https://gullylabs.xyz/status<') && !/\/holders\/(robinhood|bsc|solana)\//.test(mainMap))
   check('sitemap: the admin host has none (P2-18)', sitemapFor('admin.gullylabs.xyz') === null)
+  // The public product pages are in the main sitemap, and scripts/indexnow-submit.mjs (same <loc> regex) reads them all.
+  const mainLocs = [...mainMap.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1])
+  const docLocs = [...docsMap.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1])
+  check('sitemap: /status, /security, /security/reports, /score, /holders and /links on the main host, as IndexNow reads it', ['/status', '/security', '/security/reports', '/score', '/holders', '/links'].every((p) => mainLocs.includes(`https://gullylabs.xyz${p}`)) && mainLocs.every((u) => new URL(u).host === 'gullylabs.xyz'), mainLocs.filter((u) => !u.includes('/tracker/')).join(' '))
+  check('sitemap: every docs page on the docs host only', ['gully-ai', 'telegram', 'chain-kit', 'swaps', 'solana', 'status', 'holder-map', 'gully-security', 'gully-score', 'roadmap'].every((slug) => docLocs.includes(`https://docs.gullylabs.xyz/${slug}`)) && docLocs.every((u) => new URL(u).host === 'docs.gullylabs.xyz') && !mainLocs.some((u) => /\/docs\//.test(u)))
   const ctx = await newContext({ width: 1440, height: 900 })
   const page = await ctx.newPage()
   // The shared tracker fixture has no Solana rows; the Solana page charts three xStocks (one priced by the issuer).
@@ -1947,6 +1952,60 @@ await step('analytics events', async () => {
   check('analytics: no wallet address, email or full URL in any event', !/0x[0-9a-fA-F]{20,}|@[a-z0-9-]+\.[a-z]|https?:\/\//i.test(JSON.stringify(ev)), JSON.stringify(ev))
   await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
+
+  // The product events (follow-up branch): Gully AI, the /security review form, a Gully Score page, a Holder Map
+  // and a Jupiter swap quote, each on stubbed answers. Only labels go out: no question, wallet, address or hash.
+  {
+    const ctx = await newContext({ width: 1440, height: 900 })
+    await ctx.addInitScript(fake)
+    const solRow = { ...TRACKER.rows[0], chain: 'solana', ticker: 'TSLAx', symbol: 'TSLAx', token: 'So1ana0'.padEnd(44, '1'), fairSource: 'chainlink:56' }
+    await ctx.route(`${BASE}/api/tracker`, (route) => json(route, { ...TRACKER, chains: [...TRACKER.chains, { key: 'solana', id: 'solana', name: 'Solana', sessionOpen: true, sessionName: 'NYSE hours', poolsAsOf: TRACKER.generatedAt, poolsStale: false, poolSource: 'on chain', fairMethod: 'Chainlink feed or issuer quote' }], rows: [...TRACKER.rows, solRow] }))
+    await ctx.route(new RegExp(`^${BASE}/api/solana/jupiter/quote`), (route) => json(route, { quote: { id: 'q_e2e', side: 'buy', inSymbol: 'USDC', outSymbol: 'TSLAx', inAmount: '10', outAmount: '0.0231', minOut: '0.0229', priceImpactPct: 0.02, route: [{ label: 'Raydium', percent: 100 }], platformFee: null, feeNote: null, slippageBps: 50, expiresAt: new Date(Date.now() + 60_000).toISOString() } }))
+    await ctx.route(`${BASE}/api/security/review-requests`, (route) => json(route, { request: { id: 'rr_e2e' } }))
+    const page = await ctx.newPage()
+    const w = watch(page, 'product events')
+    const pev = []
+    const grab = async () => pev.push(...(await page.evaluate(() => window.__ev)))
+    await page.goto(BASE + '/ask')
+    await page.getByPlaceholder('How do gap alerts work?').fill('How do gap alerts work?')
+    await page.getByRole('button', { name: 'Ask', exact: true }).click()
+    await page.getByTestId('ask-rate-up').waitFor({ timeout: 20_000 })
+    await page.getByTestId('ask-rate-up').click()
+    await page.waitForFunction(() => document.querySelector('[data-testid="ask-rate-up"]')?.getAttribute('aria-pressed') === 'true')
+    await grab()
+    await page.goto(BASE + '/security')
+    const form = page.getByTestId('review-form')
+    await form.waitFor()
+    for (const input of await form.locator('input[required], textarea[required]').all()) {
+      const type = (await input.getAttribute('type')) ?? 'text'
+      const tag = await input.evaluate((e) => e.tagName)
+      await input.fill(type === 'email' ? 'dev@example.com' : tag === 'TEXTAREA' ? 'Two vault contracts, about 600 lines, before mainnet.' : 'E2E project')
+    }
+    await form.locator('button[type="submit"]').click()
+    await page.getByTestId('review-sent').waitFor({ timeout: 10_000 })
+    await grab()
+    await page.goto(`${BASE}/score/base/0x${'ab'.repeat(20)}`)
+    await page.getByRole('heading', { level: 1 }).waitFor()
+    await grab()
+    await page.goto(`${BASE}/holders/robinhood/${E2E_LAUNCH_TOKEN}`)
+    await page.locator('[data-holder-map="ok"]').waitFor()
+    await grab()
+    await page.goto(BASE + '/tracker/solana/TSLAx')
+    await page.getByRole('checkbox', { name: 'I understand' }).check()
+    await page.getByText(/~0\.0231/).waitFor({ timeout: 15_000 })
+    await grab()
+    const by = (n) => pev.filter((e) => e[0] === n).map((e) => e[1])
+    check('analytics: ask-asked carries the surface and the tools, not the question', by('ask-asked').length === 1 && by('ask-asked')[0].surface === 'ask-page' && typeof by('ask-asked')[0].tools === 'string' && !('q' in by('ask-asked')[0]), JSON.stringify(by('ask-asked')))
+    check('analytics: ask-rated carries the rating', JSON.stringify(by('ask-rated')) === '[{"rating":"up"}]', JSON.stringify(by('ask-rated')))
+    check('analytics: review-requested on the public /security form, with the tier', JSON.stringify(by('review-requested')) === '[{"tier":"review"}]', JSON.stringify(by('review-requested')))
+    check('analytics: score-viewed with the chain only', JSON.stringify(by('score-viewed')) === '[{"chain":"base"}]', JSON.stringify(by('score-viewed')))
+    check('analytics: holder-map-opened with chain, kind and surface', JSON.stringify(by('holder-map-opened')) === '[{"chain":"robinhood","kind":"deepcore-launch","from":"holders-page"}]', JSON.stringify(by('holder-map-opened')))
+    check('analytics: swap-quoted once for the Jupiter quote', JSON.stringify(by('swap-quoted')) === '[{"venue":"jupiter","chain":"solana","ticker":"TSLAx"}]', JSON.stringify(by('swap-quoted')))
+    check('analytics: no wallet, token address, email or URL in the product events', !/0x[0-9a-fA-F]{20,}|So1ana|@|https?:\/\//i.test(JSON.stringify(pev)), JSON.stringify(pev))
+    await w.verify([/ERR_BLOCKED_BY_CLIENT|Failed to load resource/i])
+    await ctx.close()
+  }
+
   // Do Not Track: nothing is sent.
   const dnt = await newContext({ width: 1440, height: 900 })
   await dnt.addInitScript(() => Object.defineProperty(Navigator.prototype, 'doNotTrack', { get: () => '1' }))
@@ -2038,7 +2097,7 @@ await step('telegram mini app at 390', async () => {
   await ctx.close()
 })
 
-const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|cartel|peddle|solana|xstocks|jup\.ag/i.test(u))
+const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|cartel|peddle|solana|xstocks|jup\.ag/i.test(u))
 check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)

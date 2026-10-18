@@ -182,10 +182,11 @@ function indexUpdatedAt() {
   return t.at(-1) ?? null
 }
 
-/** GET /api/ask/status, and the admin view. */
+/** GET /api/ask/status, and the admin view. `provider` says whether the model provider's account answers (a
+    billing or key problem makes it 'unavailable' until a call succeeds again); no provider text is ever public. */
 export const askStatus = () => {
   const e = embedStatus()
-  return { configured: askConfigured(), model: askModel(), indexSize: index.size, updatedAt: indexUpdatedAt(), retrieval: e.configured && e.ready > 0 ? 'hybrid' : 'bm25' }
+  return { configured: askConfigured(), model: askModel(), indexSize: index.size, updatedAt: indexUpdatedAt(), retrieval: e.configured && e.ready > 0 ? 'hybrid' : 'bm25', provider: providerHealth.ok ? 'ok' : 'unavailable', since: providerHealth.since }
 }
 
 /* ------------------------------------------------------------------ tools --- */
@@ -238,7 +239,7 @@ export const TOOLS = [
   },
   {
     name: 'get_stock',
-    description: 'The tracker\'s latest reading for one tokenised stock: its on-chain price, Chainlink fair price, the gap in percent, status, pool liquidity and whether the feed session is open. Without a chain, every chain that lists the ticker is returned.',
+    description: 'The tracker\'s latest reading for one tokenised stock: its onchain price, Chainlink fair price, the gap in percent, status, pool liquidity and whether the feed session is open. Without a chain, every chain that lists the ticker is returned.',
     input_schema: {
       type: 'object',
       properties: { ticker: { type: 'string', description: 'The stock ticker, e.g. NVDA' }, chain: { type: 'string', enum: ['robinhood', 'bsc', 'solana'], description: 'Optional: robinhood (Robinhood Chain), bsc (BNB Chain) or solana (Solana)' } },
@@ -317,6 +318,16 @@ export const TOOLS = [
   {
     name: 'get_pay_chains',
     description: 'What Gully Pay accepts right now, from the live payment config: each chain with its coins and stablecoins, the confirmations a payment needs there, whether merchant stores can take payments on it, and whether stablecoin payments split the fee at payment time. Use it for any question about which chains, coins or tokens can be used to pay or to get paid.',
+    input_schema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'get_status',
+    description: 'The live status of every part of Gully Labs right now, from the public status checks (run every minute): the overall state, and each part (API, tracker per chain, DeepCore poller, Telegram bot and its News gate, Gully Pay RPCs and fee proxies, Gully AI, the security engine, monitors, Holder Map sources) with its state, a short detail and its 24-hour uptime, plus open incidents. Use it for "is X down", "is the tracker up to date" or any outage question.',
+    input_schema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'get_pay_gas',
+    description: 'What a Gully Pay payment costs in network gas right now, per chain: the gas price, and the cost in US dollars of a token payment, a plain transfer and an approval (dollar figures are null where the chain\'s price feed cannot be read). Use it for questions about gas, network fees or what paying costs on each chain.',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
@@ -534,6 +545,30 @@ export async function runTool(name, input = {}, ctx = null) {
     if (name === 'get_security_offer') return await securityOffer()
     if (name === 'get_gully_score') return await gullyScore(input, ctx?.workspace ?? null)
     if (name === 'get_published_reports') return await publishedReports(input)
+    if (name === 'get_status') {
+      const st = await import('./status.mjs')
+      let b = st.statusBody()
+      if (!b.components.length) {
+        await st.runChecks({ record: false })
+        b = st.statusBody()
+      }
+      return {
+        asOf: b.components[0]?.checkedAt ?? b.generatedAt,
+        overall: b.overall,
+        components: b.components.map((c) => ({ name: c.name, state: c.state, detail: String(c.detail ?? '').slice(0, 160), uptime24h: c.uptime24h })),
+        openIncidents: b.incidents.filter((i) => !i.endedAt).map((i) => ({ name: i.name, state: i.state, since: i.startedAt })),
+        page: `${SITE}/status`,
+      }
+    }
+    if (name === 'get_pay_gas') {
+      const { readGas } = await import('./gas.mjs')
+      const g = await readGas()
+      return {
+        asOf: g.at,
+        chains: g.chains.map((c) => (c.ok ? { chain: c.name, gasPriceGwei: c.gasPriceGwei, paymentUsd: c.payUsd, transferUsd: c.transferUsd, approveUsd: c.approveUsd, note: c.note ?? null } : { chain: c.name, error: 'could not be read just now' })),
+        docs: `${DOCS}/gully-pay`,
+      }
+    }
     if (name === 'get_plans') {
       const p = publicPlans()
       return {
@@ -677,11 +712,35 @@ function sanitiseHistory(history) {
 /* ------------------------------------------------------------- Claude API --- */
 
 class AskError extends Error {
-  constructor(message, status = 502) {
+  constructor(message, status = 502, code = null) {
     super(message)
     this.status = status
+    this.code = code
   }
 }
+
+/* The model provider's account (not one question) is failing: no credit, billing, a disabled or invalid key.
+   Every question fails the same way until the owner fixes it, so users get one calm line, not a retry loop.
+   The provider's own message goes to the server log only (cut to 200 characters, the key scrubbed). */
+export const PROVIDER_UNAVAILABLE = "Gully AI is unavailable right now. We're on it — try again later."
+const providerHealth = { ok: true, lastError: null, since: null }
+const PROVIDER_ACCOUNT = /credit balance|billing|plan.*(upgrade|purchase)|disabled|deactivated|suspended|invalid (x-)?api[- ]?key|api[- ]?key.*(invalid|disabled|revoked)|authentication|permission/i
+const isProviderAccountError = (status, message) => status === 401 || ((status === 400 || status === 403) && PROVIDER_ACCOUNT.test(message))
+function scrub(text, key) {
+  let s = String(text ?? '')
+  if (key) s = s.split(key).join('[key]')
+  return s.replace(/sk-ant-[A-Za-z0-9_-]+/g, '[key]').replace(/\s+/g, ' ').slice(0, 200)
+}
+function markProvider(ok, message = null) {
+  if (ok === providerHealth.ok && (ok || providerHealth.lastError === message)) return
+  if (ok !== providerHealth.ok) providerHealth.since = new Date().toISOString()
+  providerHealth.ok = ok
+  providerHealth.lastError = ok ? null : message
+}
+/** The provider's state for the admin view and tests (lastError is the scrubbed provider message; never public). */
+export const askProviderHealth = () => ({ ...providerHealth })
+/** Tests: back to healthy. */
+export const resetAskProviderForTest = () => Object.assign(providerHealth, { ok: true, lastError: null, since: null })
 
 async function callClaude(body) {
   const key = apiKey()
@@ -702,9 +761,18 @@ async function callClaude(body) {
       continue
     }
     const j = await r.json().catch(() => null)
-    if (r.ok && j && Array.isArray(j.content)) return j
+    if (r.ok && j && Array.isArray(j.content)) {
+      markProvider(true)
+      return j
+    }
     const type = j?.error?.type ?? `HTTP ${r.status}`
-    console.error(`ask: Claude API ${r.status} ${String(type).slice(0, 60)}`)
+    const message = scrub(j?.error?.message, key)
+    if (isProviderAccountError(r.status, message)) {
+      console.error(`ask: Claude API ${r.status} ${String(type).slice(0, 60)}: provider account problem: ${message || '(no message)'}`)
+      markProvider(false, message || String(type).slice(0, 60))
+      throw new AskError(PROVIDER_UNAVAILABLE, 503, 'provider-unavailable')
+    }
+    console.error(`ask: Claude API ${r.status} ${String(type).slice(0, 60)}${message ? `: ${message}` : ''}`)
     last = new AskError(r.status === 429 || r.status === 529 ? 'Ask is busy just now. Try again in a minute.' : 'The answer could not be written just now. Try again.', r.status === 429 || r.status === 529 ? 503 : 502)
     if (!(r.status === 429 || r.status >= 500)) break
     await new Promise((res) => setTimeout(res, 800))
@@ -802,6 +870,8 @@ const LIVE_SOURCES = {
   get_security_offer: () => ({ label: 'Gully Security offer', url: `${SITE}/security` }),
   get_gully_score: (r) => ({ label: `Gully Score · ${r.out.symbol ?? r.out.name ?? 'contract'}`, url: r.out.page ?? `${SITE}/score` }),
   get_published_reports: () => ({ label: 'Published scan reports', url: `${SITE}/api/security/reports` }),
+  get_status: () => ({ label: 'Status', url: `${SITE}/status` }),
+  get_pay_gas: () => ({ label: 'Gully Pay gas', url: `${SITE}/api/pay/gas` }),
   get_my_store: () => ({ label: 'Your store', url: `${APP_URL}/#merchant` }),
   get_my_usage: () => ({ label: 'Your API usage', url: `${APP_URL}/#keys` }),
   get_my_alerts: () => ({ label: 'Your alerts', url: `${APP_URL}/#alerts` }),
@@ -898,6 +968,15 @@ function cardOf(r) {
       return { ...base, kind: 'score', title: `${o.name ?? o.symbol ?? `${String(o.address).slice(0, 6)}…${String(o.address).slice(-4)}`} · ${o.chain}`, subtitle: 'Gully Score', stats: [{ label: 'Score', value: o.score === null ? 'not enough data' : `${o.score} / 100`, tone: o.score === null ? 'warn' : o.score >= 60 ? 'ok' : 'down' }, { label: 'Grade', value: o.grade ?? 'none' }, { label: 'Coverage', value: `${o.coverage.components} of ${o.coverage.of} parts` }], chart: o.components.filter((c) => c.available).length >= 2 ? { type: 'bars', bars: o.components.filter((c) => c.available).map((c) => ({ label: c.label, value: c.points })), unit: '', label: 'Points per part' } : null, link: { label: 'Score page', url: o.page }, note: o.framing }
     case 'get_published_reports':
       return { ...base, kind: 'reports', title: 'Published scan reports', stats: [{ label: 'Published', value: intS(o.total) }, ...o.reports.slice(0, 3).map((x) => ({ label: x.title.replace(/^AI Security Scan: /, ''), value: x.mode ?? 'report' }))], chart: null, link: { label: 'All reports', url: o.page } }
+    case 'get_status': {
+      const bad = (o.components ?? []).filter((c) => c.state === 'down' || c.state === 'degraded')
+      const up = (o.components ?? []).filter((c) => typeof c.uptime24h === 'number')
+      return { ...base, kind: 'status', title: 'Gully Labs status', subtitle: o.overall === 'operational' ? 'All systems operational' : o.overall === 'major' ? 'Major outage' : 'Some systems degraded', stats: [{ label: 'Overall', value: o.overall, tone: o.overall === 'operational' ? 'ok' : o.overall === 'major' ? 'down' : 'warn' }, { label: 'Parts checked', value: intS(o.components?.length) }, ...bad.slice(0, 3).map((c) => ({ label: c.name, value: c.state, tone: c.state === 'down' ? 'down' : 'warn' }))], chart: up.length >= 2 ? { type: 'bars', bars: up.slice(0, 8).map((c) => ({ label: c.name.replace(/^(Tracker|Gully Pay RPC): /, ''), value: Math.round(c.uptime24h * 1000) / 10 })), unit: '%', label: 'Uptime, last 24 hours' } : null, link: { label: 'Status page', url: o.page } }
+    }
+    case 'get_pay_gas': {
+      const ok = (o.chains ?? []).filter((c) => typeof c.paymentUsd === 'number')
+      return { ...base, kind: 'gas', title: 'Gully Pay gas now', stats: ok.slice(0, 4).map((c) => ({ label: c.chain, value: usd(c.paymentUsd, 3) })), chart: ok.length >= 2 ? { type: 'bars', bars: ok.map((c) => ({ label: c.chain, value: c.paymentUsd })), unit: '$', label: 'Token payment, gas in US dollars' } : null, link: { label: 'Gully Pay docs', url: o.docs } }
+    }
     case 'get_pay_chains':
       return { ...base, kind: 'chains', title: 'Gully Pay accepts', stats: o.chains.map((c) => ({ label: c.chain, value: [...c.coins, ...c.stablecoins].join(' · ') || 'none' })), chart: null, link: { label: 'Gully Pay docs', url: o.docs } }
     case 'get_my_store': {
@@ -1187,7 +1266,7 @@ export async function ask({ question, history, who, onStage, ctx = null, holders
     return { ok: true, id, ...a }
   } catch (e) {
     writeLog({ id, channel: who.channel, who: hashId(who.key), question: q, answerChars: 0, answered: false, citations: [], usedTools: [], latencyMs: Date.now() - t0, tokens: null, model: askModel(), error: String(e?.message ?? e).slice(0, 120) })
-    return { ok: false, status: e instanceof AskError ? e.status : 502, error: e instanceof AskError ? e.message : 'The answer could not be written just now. Try again.' }
+    return { ok: false, status: e instanceof AskError ? e.status : 502, error: e instanceof AskError ? e.message : 'The answer could not be written just now. Try again.', ...(e instanceof AskError && e.code ? { code: e.code } : {}) }
   }
 }
 
@@ -1266,7 +1345,7 @@ export async function handleAsk(req, res, url) {
   const stream = String(req.headers.accept ?? '').includes('text/event-stream')
   if (!stream) {
     const r = await ask({ question: body.value.question, history: body.value.history, who, ctx, holders: body.value.holders ?? null })
-    if (!r.ok) return json(res, r.status, { error: r.error, ...(r.configured === false ? { configured: false } : {}) }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
+    if (!r.ok) return json(res, r.status, { error: r.error, ...(r.code ? { code: r.code } : {}), ...(r.configured === false ? { configured: false } : {}) }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
     return json(res, 200, { ...publicAnswer(r), signedIn: !!ctx }, { 'Cache-Control': 'no-store' }), true
   }
   // Server-sent events: validation and limits answer with plain JSON statuses before the stream opens.
@@ -1289,11 +1368,11 @@ export async function handleAsk(req, res, url) {
     },
   })
   if (!open) {
-    if (!r.ok) return json(res, r.status, { error: r.error }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
+    if (!r.ok) return json(res, r.status, { error: r.error, ...(r.code ? { code: r.code } : {}) }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
     openStream()
   }
   if (r.ok) send('answer', { ...publicAnswer(r), signedIn: !!ctx })
-  else send('error', { error: r.error, status: r.status })
+  else send('error', { error: r.error, status: r.status, ...(r.code ? { code: r.code } : {}) })
   res.end()
   return true
 }
@@ -1452,7 +1531,7 @@ export async function handleAskAdmin(req, res, url) {
     if (body.tooLarge) return json(res, 413, { error: 'Too large.' }), true
     if (body.bad) return json(res, 400, { error: 'Send JSON.' }), true
     const r = await draft(body.value)
-    if (!r.ok) return json(res, r.status, { error: r.error, ...(r.configured === false ? { configured: false } : {}) }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
+    if (!r.ok) return json(res, r.status, { error: r.error, ...(r.code ? { code: r.code } : {}), ...(r.configured === false ? { configured: false } : {}) }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
     return json(res, 200, { markdown: r.markdown, sources: r.sources, usedTools: r.usedTools, model: r.model, warnings: r.warnings, kinds: DRAFT_KIND_NAMES }), true
   }
   if (p === '/api/admin/ask/log') {

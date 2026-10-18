@@ -110,7 +110,7 @@ function Overall({ data }: { data: StatusBody }) {
 
 /** Mean RPC latency per payment chain over the day, one line per chain. */
 function PayLatency({ data }: { data: StatusBody }) {
-  const pay = useMemo(() => data.components.filter((c) => c.group === 'payments'), [data])
+  const pay = useMemo(() => data.components.filter((c) => c.group === 'payments' && c.id !== 'pay-feeproxy'), [data])
   const labels = useMemo(() => pay[0]?.history.map((b) => b.t) ?? [], [pay])
   const any = pay.some((c) => c.history.some((b) => b.ms !== null))
   const option = useMemo(

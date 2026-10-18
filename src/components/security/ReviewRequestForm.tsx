@@ -1,6 +1,7 @@
 import { CheckCircle2, Send, ShieldCheck, Users } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import type { ScanChain } from './types'
+import { track } from '../../lib/track'
 
 /* "Request a review": asks Gully Labs for a quote for a human Security Review. A full Audit is not offered
    yet, so it is not offered as a choice here until server/plans.mjs SECURITY.audit.available is true. Posts to
@@ -39,7 +40,11 @@ export function ReviewRequestForm({ source = 'site', chains, auditAvailable = fa
       const r = await fetch('/api/security/review-requests', { method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'gully' }, body: JSON.stringify({ ...body, tier, source }) })
       const d = await r.json().catch(() => null)
       if (!r.ok) setErr(d?.error ?? `The server answered ${r.status}.`)
-      else setDone(d?.request?.id ?? 'sent')
+      else {
+        setDone(d?.request?.id ?? 'sent')
+        // The public /security form only (the app's Security tab sends source="app"); the tier, never the contact.
+        if (source === 'site') track('review-requested', { tier })
+      }
     } catch {
       setErr('The server could not be reached. Check your connection and try again.')
     } finally {

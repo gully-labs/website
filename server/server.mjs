@@ -27,6 +27,7 @@ import { handleDeveloper } from './developer.mjs'
 import { APP_URL, isAppHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
+import { handleFeeHistory } from './fee-history.mjs'
 import { handleSecurityPublic } from './security-routes.mjs'
 import { startEngine as startSecurityEngine } from './security-engine.mjs'
 import { CHAIN_LIST, rpc } from './payments.mjs'
@@ -264,6 +265,8 @@ async function handleRequest(req, res) {
     if (await handlePay(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // Base fee history of the Gully L3's candidate parent chains (fee-history.mjs), for the docs chart. Public.
+  if (url.pathname === '/api/chain/fee-history') return void (await handleFeeHistory(req, res))
   // Public status (status.mjs): every check, 24 h of uptime per component and the incident history.
   if (url.pathname === '/api/status') return void (await handleStatus(req, res))
   // Gully Security (security-routes.mjs): published reports, the scan counter, review requests.

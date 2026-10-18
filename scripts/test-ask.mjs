@@ -627,6 +627,47 @@ try {
   check('feedback: lines older than 90 days are pruned', !fs.readFileSync(path.join(tmp, 'ask-feedback.jsonl'), 'utf8').includes('ancient'))
   reply = null
 
+  check('the status and gas tools are offered (get_status, get_pay_gas)', ['get_status', 'get_pay_gas'].every((n) => ask.TOOLS.some((x) => x.name === n)))
+
+  /* ------------------------------------- provider account down (billing, key) --- */
+  // Anthropic answers 400 invalid_request_error "Your credit balance is too low…" for every question: one calm
+  // 503 provider-unavailable state, a status flag, no retry against the provider, and a log line without the key.
+  {
+    const logged = []
+    const origError = console.error
+    console.error = (...a) => logged.push(a.map(String).join(' '))
+    try {
+      reply = () => ({ status: 400, json: { type: 'error', error: { type: 'invalid_request_error', message: `Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits. (key ${KEY})` } } })
+      const before = calls.length
+      const down = await askPost({ question: 'How do gap alerts work?' })
+      check('provider down: 503 with code provider-unavailable and the plain copy', down.status === 503 && down.data?.code === 'provider-unavailable' && down.data?.error === ask.PROVIDER_UNAVAILABLE, JSON.stringify(down.data))
+      check('provider down: no provider internals reach the user', !/credit|billing|anthropic|invalid_request/i.test(down.text))
+      check('provider down: the provider is called once, not retried', calls.length - before === 1, `${calls.length - before} calls`)
+      const st = await call('/api/ask/status')
+      check('provider down: /api/ask/status says provider unavailable with a since, and no message text', st.data?.provider === 'unavailable' && typeof st.data?.since === 'string' && !/credit|billing/i.test(st.text), st.text)
+      const { checkAi } = await import('../server/status.mjs')
+      const aiPart = checkAi()[0]
+      check('provider down: /status shows Gully AI degraded, without provider text', aiPart.state === 'degraded' && /unavailable right now/.test(aiPart.detail) && !/credit|billing|anthropic/i.test(aiPart.detail), JSON.stringify(aiPart))
+      const line = logged.find((l) => /provider account problem/.test(l)) ?? ''
+      check('provider down: the server log says why (the provider message, at most 200 characters) without the key', /credit balance is too low/.test(line) && !line.includes(KEY) && line.length < 320, line)
+      const sse = await fetch(`${BASE}/api/ask`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'gully', accept: 'text/event-stream', 'cf-connecting-ip': freshIp() }, body: JSON.stringify({ question: 'Do I need an API key?' }) })
+      const sseText = await sse.text()
+      check('provider down: the stream ends with the same coded error', /provider-unavailable/.test(sseText) && !/credit/i.test(sseText), sseText.slice(0, 200))
+      const st401 = (reply = () => ({ status: 401, json: { type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } } }), await askPost({ question: 'What does Pro cost?' }))
+      check('provider down: a 401 is the same state', st401.status === 503 && st401.data?.code === 'provider-unavailable')
+      reply = () => ({ status: 400, json: { type: 'error', error: { type: 'invalid_request_error', message: 'messages: text content blocks must be non-empty' } } })
+      const plain400 = await askPost({ question: 'What does Pro cost?' })
+      check('an ordinary 400 is not mistaken for a provider outage', plain400.status === 502 && !plain400.data?.code, JSON.stringify(plain400.data))
+      reply = null
+      const back = await askPost({ question: 'How do Telegram alerts work?' })
+      const st2 = await call('/api/ask/status')
+      check('provider back: the next good answer clears the flag', back.status === 200 && st2.data?.provider === 'ok', st2.text)
+    } finally {
+      console.error = origError
+      reply = null
+    }
+  }
+
   /* ------------------------------------------------------------ secrets --- */
   check('the API key is not in any stored file', !fs.readdirSync(tmp).some((f) => fs.statSync(path.join(tmp, f)).isFile() && fs.readFileSync(path.join(tmp, f), 'utf8').includes(KEY)))
 } catch (e) {

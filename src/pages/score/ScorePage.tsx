@@ -1,4 +1,5 @@
 import { ArrowLeft, BadgeCheck, CalendarClock, Code2, Copy, GitBranch, History, KeyRound, ListChecks, Lock, Scale, ShieldCheck, Timer, Users, type LucideIcon } from 'lucide-react'
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
 import { NewTabMark } from '../../components/LayoutLinks'
 import { newTab } from '../../components/LayoutNav'
@@ -6,6 +7,7 @@ import { Seo } from '../../components/Seo'
 import { copyWithToast } from '../../components/ui/toast'
 import { eyebrow, h1 } from '../../components/ui'
 import { DOCS_URL } from '../../site-host'
+import { track } from '../../lib/track'
 import { bandColor, fmtDate, shortAddr, useJson, type ScoreComponent, type ScoreResult } from './api'
 import { ComponentBars, ScoreHistory, ScoreRing } from './charts'
 
@@ -71,6 +73,10 @@ export function ScorePage() {
   const addr = address.toLowerCase()
   const valid = /^[a-z]+$/.test(chain) && /^0x[0-9a-f]{40}$/.test(addr)
   const [s, retry] = useJson<ScoreResult>(valid ? `/api/score/${chain}/${addr}` : null, 60_000)
+  // Once per contract opened (the chain only: the address is never sent).
+  useEffect(() => {
+    if (valid) track('score-viewed', { chain })
+  }, [valid, chain, addr])
   const r = s.state === 'ok' ? s.data : null
   const title = r ? `${r.name ?? shortAddr(r.address)}${r.symbol ? ` (${r.symbol})` : ''}` : shortAddr(addr || '0x0000000000')
   const page = `${SITE}/score/${chain}/${addr}`

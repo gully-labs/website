@@ -239,7 +239,7 @@ export function MerchantTermsPage() {
               <a href={CC_URL} target="_blank" rel="noopener noreferrer license" className="text-dim underline underline-offset-4 hover:text-gold">
                 CC BY 4.0
               </a>
-              . Changes made: shortened and reorganised; adapted to a non-custodial crypto payment service (custody, on-chain finality, refunds, prohibited businesses, fee statements and checkout pauses, webhooks added); subscription, support, confidentiality, machine-learning and government-use clauses removed. Common Paper does not endorse these terms. These merchant terms are also available under CC BY 4.0.
+              . Changes made: shortened and reorganised; adapted to a non-custodial crypto payment service (custody, onchain finality, refunds, prohibited businesses, fee statements and checkout pauses, webhooks added); subscription, support, confidentiality, machine-learning and government-use clauses removed. Common Paper does not endorse these terms. These merchant terms are also available under CC BY 4.0.
             </p>
             <p className="m-0">
               Questions: <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a> ·{' '}

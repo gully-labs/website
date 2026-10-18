@@ -45,7 +45,7 @@ const telegramAnswer = (tg: AlertChannels['telegram'] | null) =>
   tg === null
     ? 'Alerts can also go to a Telegram chat when the server has its bot configured; the Alerts tab of the app dashboard shows whether it is. Webhooks always work.'
     : tg.enabled
-      ? `Yes. In the Alerts tab of the app dashboard, press Connect Telegram: it opens ${tg.bot ? `@${tg.bot}` : 'the bot'} with a one-time code that links the chat (or a group) to your wallet, with no chat id to copy. Then tick Telegram on any alert. Messages carry the gap, on-chain and fair prices, a link to the stock and a Mute 24h button.`
+      ? `Yes. In the Alerts tab of the app dashboard, press Connect Telegram: it opens ${tg.bot ? `@${tg.bot}` : 'the bot'} with a one-time code that links the chat (or a group) to your wallet, with no chat id to copy. Then tick Telegram on any alert. Messages carry the gap, onchain and fair prices, a link to the stock and a Mute 24h button.`
       : 'Not yet. Telegram delivery works only once the bot is configured on the server, and it is not configured yet; the dashboard will offer it when it is. Webhooks work today.'
 
 /* Only the chains GET /api/plans offers now (the treasury deployment gate closes the rest), never a typed list. */

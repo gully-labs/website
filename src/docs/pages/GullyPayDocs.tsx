@@ -16,7 +16,7 @@ const sections = [
   { id: 'retries', title: 'Delivery and retries' },
 ]
 
-const BUTTON = `<a href="https://gullylabs.xyz/pay/l/pl_XXXXXXXXXXXXXXXX" target="_blank" rel="noopener"
+const BUTTON = `<a href="https://gullylabs.xyz/pay/l/pl_XXXXXXXXXXXXXXXX" target="_blank" rel="noopener noreferrer"
    data-gully-pay="popup" style="display:inline-flex;align-items:center;min-height:44px;padding:0 20px;
    border-radius:10px;background:#d9b563;color:#0d141c;font:600 15px/1 system-ui,sans-serif;text-decoration:none">
   Pay with crypto

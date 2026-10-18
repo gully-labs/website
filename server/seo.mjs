@@ -59,7 +59,7 @@ for (const key of Object.keys(CHAIN_NAMES)) {
   }
   for (const s of stocks)
     MAIN[`/tracker/${key}/${s.ticker}`] = [
-      `${s.ticker} token price vs fair value (${CHAIN_NAMES[key]}) · Gully Labs`,
+      `${s.ticker} token price vs fair price (${CHAIN_NAMES[key]}) · Gully Labs`,
       `${s.name} (${s.ticker}) token on ${CHAIN_NAMES[key]}: its price in its deepest pool against its ${key === 'solana' ? 'Chainlink (or issuer)' : 'Chainlink'} fair price, the gap, pool depth and history, read live.`,
     ]
   // Its Holder Map (pageMeta answers these paths itself; listed for the sitemap only while that chain has holder data).
@@ -99,7 +99,7 @@ const DOCS_PAGES = {
   '/widget': ['Widget guide · Gully Labs docs', 'Embed the live tracker with one script tag: ticker, badge and table, with every option.'],
   '/api-keys': ['API keys · Gully Labs docs', 'How to get a free Gully Labs API key instantly by signing in with a wallet, and use it for a higher rate limit.'],
   '/analytics': ['Gully Analytics · Gully Labs docs', 'Gully Analytics: sign up with a wallet, install the tracker, Web3 events, address privacy modes, plans and what happens at the quota or when a plan lapses.'],
-  '/plans-alerts': ['Plans & alerts · Gully Labs docs', 'Paid API plans paid in ETH, BNB, USDC or USDT on four chains, gap alerts by webhook or Telegram, the webhook payload and how to verify its signature.'],
+  '/plans-alerts': ['Plans & alerts · Gully Labs docs', 'Paid API plans paid in USDC, USDT or the chain’s own coin on the chains where the treasury is deployed, gap alerts by webhook or Telegram, the webhook payload and how to verify its signature.'],
   '/gully-pay': ['Gully Pay · Gully Labs docs', 'Gully Pay: invoices and reusable pay links in ETH, BNB, USDC or USDT, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them.'],
   '/gully-pay-merchants': ['Gully Pay for merchants · Gully Labs docs', 'Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy.'],
   '/gully-security': ['Gully Security · Gully Labs docs', 'Gully Security: the AI Security Scan (inputs, steps, quotas and payment), reading a report, publishing it, and requesting a human Security Review.'],

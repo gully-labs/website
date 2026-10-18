@@ -55,7 +55,11 @@ async function post(body) {
     const j = await r.json().catch(() => null)
     if (r.ok && j && Array.isArray(j.content)) return j
     const type = String(j?.error?.type ?? `HTTP ${r.status}`).slice(0, 60)
-    console.error(`security: Claude API ${r.status} ${type}`)
+    // The provider's own words go to the server log only: cut to 200 characters, the key scrubbed.
+    const message = String(j?.error?.message ?? '').split(key).join('[key]').replace(/sk-ant-[A-Za-z0-9_-]+/g, '[key]').replace(/\s+/g, ' ').slice(0, 200)
+    console.error(`security: Claude API ${r.status} ${type}${message ? `: ${message}` : ''}`)
+    // The provider refuses our account (no credit, billing, a disabled or invalid key): no retry helps.
+    if (r.status === 401 || ((r.status === 400 || r.status === 403) && /credit balance|billing|disabled|deactivated|suspended|invalid (x-)?api[- ]?key|authentication|permission/i.test(message))) throw new AiError('the AI service is unavailable right now', 'ai-unavailable')
     last = new AiError(`the AI service answered ${r.status} (${type})`, r.status === 429 || r.status === 529 ? 'ai-busy' : 'ai-error')
     if (!(r.status === 429 || r.status >= 500)) break
     await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)))

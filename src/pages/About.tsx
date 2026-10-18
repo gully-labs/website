@@ -128,7 +128,7 @@ export function About() {
             <span className="font-mono text-[13px] text-gold">02</span>
           </span>
           <span className="font-display text-[40px] leading-none font-extrabold uppercase">Partner work</span>
-          <span className="text-[16px] leading-[1.55] text-muted">Smart contracts, dApps, infrastructure and security testing for teams building on-chain.</span>
+          <span className="text-[16px] leading-[1.55] text-muted">Smart contracts, dApps, infrastructure and security testing for teams building onchain.</span>
           <span className="mt-2 inline-flex min-h-11 items-center text-[15px] text-gold">See the services →</span>
           <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
         </Link>

@@ -262,6 +262,8 @@ const SITE_PAGES = [
   { file: 'src/pages/HoldersLanding.tsx', url: '/holders', title: 'Holder Map' },
   { file: 'src/pages/score/ScoreIndex.tsx', url: '/score', title: 'Gully Score' },
   { file: 'src/pages/Status.tsx', url: '/status', title: 'Status' },
+  { file: 'src/pages/Tracker.tsx', url: '/tracker', title: 'Stock token tracker' },
+  { file: 'src/pages/widget/WidgetPage.tsx', url: '/widget', title: 'Tracker widget' },
   { file: 'src/components/landing/ProductConsole.tsx', jsx: false, consts: { SECURITY_STEPS: { url: '/#security', title: 'Gully Security on the home page', section: 'What is live, on request and not offered' } } },
 ]
 

@@ -1,4 +1,5 @@
-import { C, DocLink, DocPage, Ext, List, Section } from '../DocPage'
+import { StatusBoard } from '../../components/status/StatusBoard'
+import { C, DocLink, DocPage, Ext, List, P, Section } from '../DocPage'
 
 const sections = [
   { id: '2026-10-18', title: '18 October 2026' },
@@ -16,6 +17,8 @@ export function Changelog() {
       lead="What changed, newest first."
       sections={sections}
     >
+      <P>What is running now, live from the status checks (every part below, checked every minute):</P>
+      <StatusBoard compact />
       <Section id="2026-10-18" title="18 October 2026">
         <List>
           <li>

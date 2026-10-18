@@ -9,6 +9,7 @@ import { b58encode, fromBase64, toBase64 } from '../solana/tx'
 import { signAndSend } from '../solana/walletStandard'
 import { btnGold } from '../ui'
 import { jupiterFeeText } from './swapConfig'
+import { track } from '../../lib/track'
 
 /* The swap card on a Solana stock page: Jupiter (the Solana swap aggregator) in place of LI.FI. Buy the
    xStock with SOL or USDC, or sell it back. The quote and the unsigned transaction come from this site's
@@ -49,6 +50,7 @@ export default function JupiterSwap({ row }: { row: TrackerRow }) {
   const [tx, setTx] = useState<Tx>({ k: 'idle' })
   const w = useSolanaWallet()
   const reqId = useRef(0)
+  const quoted = useRef(false)
 
   // Debounced quote on every change; the answer of a superseded request is dropped.
   useEffect(() => {
@@ -62,12 +64,17 @@ export default function JupiterSwap({ row }: { row: TrackerRow }) {
         const j = (await r.json().catch(() => null)) as { quote?: Quote; error?: string } | null
         if (me !== reqId.current) return
         setQs(r.ok && j?.quote ? { k: 'ok', q: j.quote } : { k: 'error', message: j?.error ?? `The quote could not be read (${r.status}).` })
+        // The first quote this card shows (not each re-quote as the amount is typed).
+        if (r.ok && j?.quote && !quoted.current) {
+          quoted.current = true
+          track('swap-quoted', { venue: 'jupiter', chain: row.chain, ticker: row.ticker })
+        }
       } catch {
         if (me === reqId.current) setQs({ k: 'error', message: 'The quote could not be read just now.' })
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [row.ticker, side, coin, amount])
+  }, [row.ticker, row.chain, side, coin, amount])
 
   const amountOk = /^\d+(\.\d+)?$/.test(amount.trim()) && Number(amount) > 0
   const q = amountOk && qs.k === 'ok' ? qs.q : null
@@ -83,6 +90,7 @@ export default function JupiterSwap({ row }: { row: TrackerRow }) {
       setTx({ k: 'busy', message: 'Confirm in your wallet…' })
       const out = await signAndSend(w.conn.wallet, w.conn.account, fromBase64(j.swapTransaction), (signed) => sendRaw(toBase64(signed)))
       const sig = typeof out === 'string' ? out : b58encode(out)
+      track('swap-submitted', { venue: 'jupiter', chain: row.chain, ticker: row.ticker })
       setTx({ k: 'sent', sig, status: 'sent' })
       for (let i = 0; i < 40; i++) {
         await new Promise((ok) => setTimeout(ok, 2_000))
@@ -193,7 +201,7 @@ export default function JupiterSwap({ row }: { row: TrackerRow }) {
         </button>
       )}
       {(tx.k === 'sent' || tx.k === 'done' || (tx.k === 'error' && tx.sig)) && 'sig' in tx && tx.sig && (
-        <a href={`${SOLSCAN}/tx/${tx.sig}`} target="_blank" rel="noopener" className={`inline-flex items-center gap-2 text-[13px] ${tx.k === 'done' ? 'text-green' : 'text-muted'} hover:text-gold`}>
+        <a href={`${SOLSCAN}/tx/${tx.sig}`} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 text-[13px] ${tx.k === 'done' ? 'text-green' : 'text-muted'} hover:text-gold`}>
           {tx.k === 'done' ? <CheckCircle2 size={14} aria-hidden /> : <ArrowUpRight size={14} aria-hidden />}
           {tx.k === 'done' ? 'Swap confirmed · view on Solscan' : 'View the transaction on Solscan'}
         </a>

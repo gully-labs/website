@@ -138,7 +138,7 @@ export function Roadmap() {
           cover what usually goes wrong next to the contracts: dApp frontends, backends and APIs, key management, wallet-connect and signing flows, infrastructure and CI.
         </P>
         <P>
-          It follows what the established security firms offer (audits, public reports, a public project score and on-chain monitoring), and the rules below are written against what
+          It follows what the established security firms offer (audits, public reports, a public project score and onchain monitoring), and the rules below are written against what
           their critics point out: scores whose weights are not published, badges that read as endorsements, and reports that do not say which code they covered.
         </P>
       </Section>

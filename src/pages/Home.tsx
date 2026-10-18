@@ -45,7 +45,7 @@ export function Home() {
     <>
       <Seo
         title="Web3 projects and blockchain development"
-        description="Gully Labs ships on-chain venues and the tools around them: a stock token tracker with swaps and alerts, wallet-aware analytics, branded block explorers, a free API and crypto billing. Every venue's figures are read live."
+        description="Gully Labs ships onchain venues and the tools around them: a stock token tracker with swaps and alerts, wallet-aware analytics, branded block explorers, a free API and crypto billing. Every venue's figures are read live."
       />
 
       <section id="top" className="flex flex-wrap items-center gap-8 px-page pt-12 pb-10 max-[599px]:pt-8">
@@ -65,7 +65,7 @@ export function Home() {
             <span className="text-gold">Measured</span> live.
           </h1>
           <p className="m-0 max-w-[480px] text-[16px] leading-[1.5] text-muted">
-            Gully Labs ships on-chain venues and the tools around them: a stock token tracker with swaps and alerts, analytics that see the wallet, branded block explorers, a free API, and crypto billing. Try each one below.
+            Gully Labs ships onchain venues and the tools around them: a stock token tracker with swaps and alerts, analytics that see the wallet, branded block explorers, a free API, and crypto billing. Try each one below.
           </p>
           <div className="flex flex-wrap gap-3 max-[479px]:flex-col">
             <Link to="/tracker" className={`${btnGold} inline-flex min-h-11 items-center justify-center gap-2 px-5`}>

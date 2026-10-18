@@ -142,7 +142,7 @@ export function StockSwap({ row, alerts }: { row: TrackerRow; alerts?: string })
             <JupiterSwap row={row} />
           ) : (
             <div className="-mx-6 -mb-6 overflow-hidden rounded-b-card border-t border-line">
-              <SwapWidget chainId={chainId} token={row.token} />
+              <SwapWidget chainId={chainId} token={row.token} chain={row.chain} ticker={row.ticker} />
             </div>
           )}
         </Suspense>

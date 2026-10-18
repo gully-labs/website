@@ -1,4 +1,4 @@
-import { ArrowUpRight, CornerDownLeft, LoaderCircle, RotateCcw, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { ArrowUpRight, Clock, CornerDownLeft, LoaderCircle, RotateCcw, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { AskFailure, askStatus, postAsk, postFeedback, type AskAnswer, type AskStatus, type Citation, type LiveCite, type Turn } from './askApi'
 import { Actions, LiveCard } from './AskCards'
@@ -6,6 +6,7 @@ import { asOfLabel } from './askFormat'
 import { newTab } from '../LayoutNav'
 import { toastError } from '../ui/toast'
 import { isLocalHost, SITE_URL } from '../../site-host'
+import { track } from '../../lib/track'
 
 /* Gully AI: a question box with answers drawn from the docs, the site and live tools. Each answer cites its
    sources ([1] doc sections, [L1] live reads with their time), shows live cards with a mini chart for the
@@ -34,10 +35,28 @@ const STAGE: Record<string, string> = {
   'tool:get_my_store': 'Reading your store…',
   'tool:get_my_usage': 'Reading your API usage…',
   'tool:get_my_alerts': 'Reading your alerts…',
+  'tool:get_status': 'Checking the live status…',
+  'tool:get_pay_gas': 'Reading gas costs…',
+  'tool:get_security_offer': 'Reading the Gully Security offer…',
+  'tool:get_gully_score': 'Reading the Gully Score…',
+  'tool:get_published_reports': 'Reading published reports…',
 }
-const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels', deepcore_launches: 'DeepCore launches', deepcore_pool: 'DeepCore pool', get_pay_chains: 'Gully Pay config', get_holders: 'Holder Map', search_docs: 'a second search', get_my_store: 'your store', get_my_usage: 'your usage', get_my_alerts: 'your alerts' }
+const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels', deepcore_launches: 'DeepCore launches', deepcore_pool: 'DeepCore pool', get_pay_chains: 'Gully Pay config', get_holders: 'Holder Map', search_docs: 'a second search', get_my_store: 'your store', get_my_usage: 'your usage', get_my_alerts: 'your alerts', get_status: 'status', get_pay_gas: 'gas costs', get_security_offer: 'Gully Security', get_gully_score: 'Gully Score', get_published_reports: 'published reports' }
 
-type Exchange = { id: number; q: string; a: AskAnswer | null; error: string | null; rating?: 'up' | 'down' | null }
+/** Where Gully AI was used, for the ask-asked event: the app, the docs side panel, the /ask page, the home console. */
+function askSurface(variant: 'page' | 'panel'): string {
+  const host = window.location.host
+  const path = window.location.pathname.replace(/\/+$/, '') || '/'
+  if (/^app\./.test(host) || path.startsWith('/developers')) return 'app'
+  if (variant === 'panel') return /^docs\./.test(host) || path.startsWith('/docs') ? 'docs-panel' : 'panel'
+  if (path === '/ask') return 'ask-page'
+  if (path === '/') return 'home'
+  return 'page'
+}
+
+type Exchange = { id: number; q: string; a: AskAnswer | null; error: string | null; rating?: 'up' | 'down' | null; down?: boolean }
+
+const PROVIDER_DOWN = "Gully AI is unavailable right now. We're on it — try again later."
 
 /** The host this page is on: a link to it opens in place; any other host (the docs, the app, GitHub) opens in a new tab. */
 const isOwnHost = (u: string) => {
@@ -201,6 +220,8 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
   const abortRef = useRef<AbortController | null>(null)
   const ids = useId()
   const nextId = useRef(1)
+  // Gully AI as a whole is down (the provider refuses our account): a calm notice, no red card, no retry button.
+  const [providerDown, setProviderDown] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -217,6 +238,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
   const rate = async (id: number, answerId: string | undefined, rating: 'up' | 'down') => {
     if (!answerId) return
     setLog((l) => l.map((e) => (e.id === id ? { ...e, rating } : e)))
+    track('ask-rated', { rating })
     const ok = await postFeedback(answerId, rating)
     if (!ok) {
       setLog((l) => l.map((e) => (e.id === id ? { ...e, rating: null } : e)))
@@ -243,9 +265,17 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
     try {
       const a = await postAsk(text, history, setStage, abortRef.current.signal)
       const shown = renumber(a)
+      setProviderDown(false)
+      // The surface and which live tools answered; never the question or the answer.
+      track('ask-asked', { surface: askSurface(variant), tools: [...new Set(a.usedTools ?? [])].sort().join(',').slice(0, 80) || 'none' })
       setLog((l) => l.map((e) => (e.id === id ? { ...e, a: shown } : e)))
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return
+      if (e instanceof AskFailure && e.code === 'provider-unavailable') {
+        setProviderDown(true)
+        setLog((l) => l.map((x) => (x.id === id ? { ...x, error: PROVIDER_DOWN, down: true } : x)))
+        return
+      }
       const msg = e instanceof AskFailure ? e.message : 'Something went wrong. Try again.'
       setLog((l) => l.map((x) => (x.id === id ? { ...x, error: msg } : x)))
       // The error also shows under the question with Try again; the toast is what screen readers hear
@@ -339,6 +369,11 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
                     </div>
                   )}
                 </div>
+              ) : e.down ? (
+                <p className="m-0 flex items-start gap-3 rounded-card border border-line bg-surface px-5 py-4 text-[14px] leading-[1.6] text-muted" data-testid="ask-unavailable">
+                  <Clock size={16} aria-hidden className="mt-[3px] flex-none text-gold" />
+                  {e.error}
+                </p>
               ) : e.error ? (
                 <div className="flex flex-wrap items-center gap-3 rounded-card border border-error/40 px-5 py-4">
                   <p className="m-0 flex-1 text-[14px] text-error">{e.error}</p>
@@ -358,6 +393,14 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
         )}
       </div>
 
+      {(providerDown || (status.provider === 'unavailable' && !log.some((x) => x.a))) && !log.some((x) => x.down) && (
+        <p role="status" className="m-0 flex items-start gap-3 rounded-card border border-line bg-surface px-4 py-3 text-[14px] leading-[1.6] text-muted" data-testid="ask-unavailable">
+          <Clock size={16} aria-hidden className="mt-[3px] flex-none text-gold" />
+          <span>
+            {PROVIDER_DOWN} The <a href="https://docs.gullylabs.xyz" {...newTab} className="text-gold underline decoration-gold-line underline-offset-2">docs<span className="sr-only"> (opens in a new tab)</span></a> have the answers meanwhile.
+          </span>
+        </p>
+      )}
       <form
         className="flex flex-col gap-2"
         onSubmit={(e) => {

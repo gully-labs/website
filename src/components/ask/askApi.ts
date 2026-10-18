@@ -8,6 +8,9 @@ export interface AskStatus {
   updatedAt: string | null
   /** 'hybrid' when semantic search is on, 'bm25' for keyword search with expansion. */
   retrieval?: 'hybrid' | 'bm25'
+  /** 'unavailable' while the AI provider refuses our account (billing or key): answers fail until it is fixed. */
+  provider?: 'ok' | 'unavailable'
+  since?: string | null
 }
 
 /** A live read the answer cites as [L1], [L2]…: the endpoint (or app page) and when it was read. */
@@ -84,9 +87,12 @@ export function askStatus(): Promise<AskStatus | null> {
 
 export class AskFailure extends Error {
   status: number
-  constructor(message: string, status: number) {
+  /** 'provider-unavailable' when Gully AI as a whole is down (not this question): no retry helps. */
+  code: string | null
+  constructor(message: string, status: number, code: string | null = null) {
     super(message)
     this.status = status
+    this.code = code
   }
 }
 
@@ -102,7 +108,7 @@ export async function postAsk(question: string, history: Turn[], onStage: (stage
   const type = r.headers.get('content-type') ?? ''
   if (!type.includes('text/event-stream')) {
     const d = await r.json().catch(() => null)
-    if (!r.ok) throw new AskFailure(d?.error ?? `Something went wrong (${r.status}).`, r.status)
+    if (!r.ok) throw new AskFailure(d?.error ?? `Something went wrong (${r.status}).`, r.status, typeof d?.code === 'string' ? d.code : null)
     return d as AskAnswer
   }
   const reader = r.body?.getReader()
@@ -128,7 +134,10 @@ export async function postAsk(question: string, history: Turn[], onStage: (stage
       }
       if (event === 'status') onStage(String((d as { stage?: string }).stage ?? ''))
       else if (event === 'answer') return d as AskAnswer
-      else if (event === 'error') throw new AskFailure(String((d as { error?: string }).error ?? 'The answer could not be written.'), Number((d as { status?: number }).status ?? 502))
+      else if (event === 'error') {
+        const e = d as { error?: string; status?: number; code?: string }
+        throw new AskFailure(String(e.error ?? 'The answer could not be written.'), Number(e.status ?? 502), typeof e.code === 'string' ? e.code : null)
+      }
     }
   }
   throw new AskFailure('The answer was cut off. Try again.', 0)

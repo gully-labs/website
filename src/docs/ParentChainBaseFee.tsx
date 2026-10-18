@@ -1,31 +1,26 @@
 // Live chart for the "Roadmap: Gully L3" docs page: base fee per gas over the last 128 blocks on the chains the
-// L3 could settle to, read from their public RPCs in this browser (owner rule: live data on every surface). A
-// chain that cannot be read says so; nothing is estimated or typed in. ECharts loads on demand inside EChart.
-//
-// Why this still reads third-party RPCs from the browser (checked 2026-10-18): our own GET /api/pay/gas gives one
-// current gas price per mainnet payment chain (eth_gasPrice, cached 3 min), not a 128-block base-fee series, and
-// it does not cover Arbitrum Sepolia, the devnet's parent. No endpoint of ours serves eth_feeHistory, so the
-// figure this chart needs only exists on the chains' own public RPCs.
+// L3 could settle to, read through our own GET /api/chain/fee-history (server/fee-history.mjs: eth_feeHistory on
+// each chain, cached 20 s), so the browser never calls a third-party RPC. A chain that cannot be read says so;
+// nothing is estimated or typed in. ECharts loads on demand inside EChart.
 
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { EChart } from '../components/charts/EChart'
 import { axisTooltip, C, linePreset, PALETTE, tipHtml } from '../components/charts/chartPresets'
+import { apiOrigin } from './nav'
 
 interface Parent {
   key: string
   name: string
-  /** A public JSON-RPC endpoint that answers browsers (CORS preflight checked 2026-10-17). */
-  rpc: string
   color: string
   role: string
 }
 
-/** The settlement candidates the spec weighs, plus the public devnet's parent. */
+/** The settlement candidates the spec weighs, plus the public devnet's parent (the server reads the same three). */
 const PARENTS: Parent[] = [
-  { key: 'arbitrum', name: 'Arbitrum One', rpc: 'https://arb1.arbitrum.io/rpc', color: PALETTE[0], role: 'settlement candidate (recommended)' },
-  { key: 'base', name: 'Base', rpc: 'https://mainnet.base.org', color: PALETTE[1], role: 'settlement candidate' },
-  { key: 'arbitrumsepolia', name: 'Arbitrum Sepolia', rpc: 'https://sepolia-rollup.arbitrum.io/rpc', color: PALETTE[2], role: 'parent of the public devnet (S1)' },
+  { key: 'arbitrum', name: 'Arbitrum One', color: PALETTE[0], role: 'settlement candidate (recommended)' },
+  { key: 'base', name: 'Base', color: PALETTE[1], role: 'settlement candidate' },
+  { key: 'arbitrumsepolia', name: 'Arbitrum Sepolia', color: PALETTE[2], role: 'parent of the public devnet (S1)' },
 ]
 
 const BLOCKS = 128
@@ -40,24 +35,18 @@ interface FeeRead {
   error: string | null
 }
 
-/** `eth_feeHistory` for the last `BLOCKS` blocks: real base fees from the chain. */
-async function readFeeHistory(rpc: string): Promise<FeeRead> {
+/** One read of GET /api/chain/fee-history: every chain's series, or each chain's own error. */
+async function readFeeHistory(): Promise<Record<string, FeeRead>> {
+  const fail = (error: string): Record<string, FeeRead> => Object.fromEntries(PARENTS.map((p) => [p.key, { gwei: [], newest: null, at: Date.now(), error }]))
   try {
-    const r = await fetch(rpc, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_feeHistory', params: [`0x${BLOCKS.toString(16)}`, 'latest', []] }),
-      signal: AbortSignal.timeout(8_000),
-    })
-    const j = (await r.json()) as { result?: { oldestBlock?: string; baseFeePerGas?: string[] }; error?: { message?: string } }
-    const fees = j.result?.baseFeePerGas
-    if (!r.ok || !Array.isArray(fees) || !fees.length) return { gwei: [], newest: null, at: Date.now(), error: j.error?.message ?? `HTTP ${r.status}` }
-    // feeHistory returns one extra entry, the next block's base fee. Keep the mined blocks only.
-    const mined = fees.slice(0, Math.max(1, fees.length - 1))
-    const oldest = j.result?.oldestBlock ? parseInt(j.result.oldestBlock, 16) : null
-    return { gwei: mined.map((h) => parseInt(h, 16) / 1e9), newest: oldest !== null && Number.isFinite(oldest) ? oldest + mined.length - 1 : null, at: Date.now(), error: null }
+    const r = await fetch(`${apiOrigin()}/api/chain/fee-history`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(12_000) })
+    const j = (await r.json().catch(() => null)) as { chains?: { key: string; gwei: number[]; newest: number | null; error: string | null }[] } | null
+    if (!r.ok || !j || !Array.isArray(j.chains)) return fail(`HTTP ${r.status}`)
+    const out = fail('not in the answer')
+    for (const c of j.chains) if (out[c.key]) out[c.key] = { gwei: Array.isArray(c.gwei) ? c.gwei.filter((v) => Number.isFinite(v)) : [], newest: c.newest ?? null, at: Date.now(), error: c.error ?? null }
+    return out
   } catch (e) {
-    return { gwei: [], newest: null, at: Date.now(), error: e instanceof Error && e.name === 'TimeoutError' ? 'timed out' : 'unreachable' }
+    return fail(e instanceof Error && e.name === 'TimeoutError' ? 'timed out' : 'unreachable')
   }
 }
 
@@ -79,9 +68,9 @@ export function ParentChainBaseFee() {
         timer = setTimeout(tick, EVERY_MS)
         return
       }
-      const results = await Promise.all(PARENTS.map(async (p) => [p.key, await readFeeHistory(p.rpc)] as const))
+      const results = await readFeeHistory()
       if (!alive) return
-      setReads(Object.fromEntries(results))
+      setReads(results)
       timer = setTimeout(tick, EVERY_MS)
     }
     tick()
@@ -170,13 +159,13 @@ export function ParentChainBaseFee() {
       <EChart
         option={option}
         height={240}
-        label={`Base fee per gas over the last ${BLOCKS} blocks on Arbitrum One, Base and Arbitrum Sepolia, read live from their public RPCs`}
+        label={`Base fee per gas over the last ${BLOCKS} blocks on Arbitrum One, Base and Arbitrum Sepolia, read live through the Gully Labs API`}
         skeleton="line"
-        error={allFailed ? 'None of the public RPCs could be read from this browser just now.' : undefined}
+        error={allFailed ? 'None of the chains could be read just now.' : undefined}
         steps={n ? { count: n } : undefined}
       />
       <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">
-        Read with <code className="text-ink-2">eth_feeHistory</code> from arb1.arbitrum.io, mainnet.base.org and sepolia-rollup.arbitrum.io. The base fee is one input to what posting an L3 batch costs; the parent’s own L1 data component is the other, and no public RPC reports it, so it is not shown.
+        Read by our server with <code className="text-ink-2">eth_feeHistory</code> from each chain’s public RPC (GET /api/chain/fee-history, cached 20 s). The base fee is one input to what posting an L3 batch costs; the parent’s own L1 data component is the other, and no public RPC reports it, so it is not shown.
       </p>
     </div>
   )

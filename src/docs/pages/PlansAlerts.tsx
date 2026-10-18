@@ -37,7 +37,7 @@ type Delivery = {
     ticker: string
     name: string | null
     status: 'premium' | 'discount' | 'drifting' | 'in-line'
-    gapPct: number                 // on-chain vs fair, percent, 2 decimals
+    gapPct: number                 // onchain vs fair, percent, 2 decimals
     fair: number | null            // USD, from the Chainlink feed
     onchain: number | null         // USD, from the token's deepest pool
     poolLiquidityUsd: number | null
@@ -148,7 +148,7 @@ export function PlansAlerts() {
       slug="plans-alerts"
       eyebrow="BUILD · PLANS & ALERTS"
       title="Plans & alerts"
-      description="Paid plans for the Gully Labs tracker API, paid in USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature."
+      description="Paid plans for the Gully Labs tracker API, paid in USDC, USDT or the chain's own coin on the chains where the Gully Labs treasury is deployed, with no custody; gap alerts by webhook or Telegram; the webhook payload and how to verify its signature."
       lead="The API stays free. Paid plans raise the per-key rate limit, add gap alerts and keep a longer history. You pay in ETH, BNB, USDC or USDT from your own wallet straight to ours."
       sections={sections}
     >
@@ -231,7 +231,7 @@ export function PlansAlerts() {
         <Fields
           head={['Condition', 'Body', 'Fires when']}
           rows={[
-            ['gap', '{ type: "gap", pct, direction }', <>The gap between on-chain and fair price is at least <C>pct</C> percent. <C>direction</C> picks the side: <C>above</C> a premium (gap ≥ +pct), <C>below</C> a discount (gap ≤ −pct), or <C>both</C> (the default, and what alerts made before directions read as).</>],
+            ['gap', '{ type: "gap", pct, direction }', <>The gap between onchain and fair price is at least <C>pct</C> percent. <C>direction</C> picks the side: <C>above</C> a premium (gap ≥ +pct), <C>below</C> a discount (gap ≤ −pct), or <C>both</C> (the default, and what alerts made before directions read as).</>],
             ['status', '{ type: "status", status }', <>The tracker flags the stock <C>premium</C>, <C>discount</C>, or <C>either</C>.</>],
           ]}
         />
@@ -295,7 +295,7 @@ export function PlansAlerts() {
           An alert can message a Telegram chat as well as, or instead of, calling a webhook{channels && channels !== 'error' && channels.telegram.bot ? <> (the bot is <Ext href={`https://t.me/${channels.telegram.bot}`}>@{channels.telegram.bot}</Ext>)</> : null}. In the Alerts tab of the dashboard press <C>Connect Telegram</C>: it opens the bot with a one-time code (ten minutes, single use) that links the chat to your wallet account, so there is no chat id to copy. <C>Add to a group</C> does the same for a group; only the person who linked a group can unlink it. Then tick Telegram on any alert.
         </P>
         <List>
-          <li>Each message names the stock and chain, the gap, the on-chain and fair prices, the status and the pool liquidity, with a link to the stock page.</li>
+          <li>Each message names the stock and chain, the gap, the onchain and fair prices, the status and the pool liquidity, with a link to the stock page.</li>
           <li>
             <C>Open NVDA</C> opens the stock page; <C>Mute 24h</C> pauses that alert, on every channel, for 24 hours. <C>Resume</C> in the dashboard ends a mute early.
           </li>

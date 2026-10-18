@@ -77,7 +77,7 @@ export function RoadmapL3() {
           reaches the L3 through a Base→L3 Warp Route and, later, the aggregators. The public devnet settles to Arbitrum Sepolia.
         </P>
         <P>
-          The parent’s gas price is one input to what posting a batch costs. These are the base fees on the candidates right now, read from their public RPCs in your browser; a
+          The parent’s gas price is one input to what posting a batch costs. These are the base fees on the candidates right now, read from their public RPCs by our server; a
           chain that cannot be read says so.
         </P>
         <ParentChainBaseFee />

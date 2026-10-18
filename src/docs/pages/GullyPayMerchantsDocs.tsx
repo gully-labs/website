@@ -105,7 +105,7 @@ export function GullyPayMerchantsDocs() {
     >
       <Section id="overview" title="Overview">
         <P>
-          Every workspace in the app dashboard can be a store. Open the <b>Merchant</b> tab (<Code>app.gullylabs.xyz/#merchant</Code>), add a receiving wallet and name the store: from then on your pay links and invoices take payments. The checkout, quotes and on-chain checks are the same as{' '}
+          Every workspace in the app dashboard can be a store. Open the <b>Merchant</b> tab (<Code>app.gullylabs.xyz/#merchant</Code>), add a receiving wallet and name the store: from then on your pay links and invoices take payments. The checkout, quotes and onchain checks are the same as{' '}
           <DocLink to="gully-pay">Gully Pay</DocLink> uses for Gully Labs itself; the only difference is where the money goes: your wallet.
         </P>
         <Callout label="NO CUSTODY">The payer sends a plain transfer from their wallet to yours, in their own transaction. We read it back from a public node of that chain. Nothing passes through an account of ours, and we cannot move, hold or refund a payment.</Callout>

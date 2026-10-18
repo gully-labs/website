@@ -105,7 +105,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
   return (
     <>
       <Seo
-        title={`${row.ticker} token price vs fair value`}
+        title={`${row.ticker} token price vs fair price`}
         description={`${row.name} (${row.ticker}) token on ${CHAIN_NAME[row.chain] ?? row.chain}: its price in its deepest pool against its ${fairSourceLabel(row)} fair price, the gap, pool depth and history, read live.`}
       />
 

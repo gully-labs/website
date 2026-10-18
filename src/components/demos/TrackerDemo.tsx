@@ -5,7 +5,7 @@ import { StockLogo } from '../tracker/StockLogo'
 import { StockSwap } from '../swap/StockSwap'
 import { track } from '../../lib/track'
 
-/* The tracker, in miniature: the live list of stock tokens, one stock's on-chain price against its
+/* The tracker, in miniature: the live list of stock tokens, one stock's onchain price against its
    Chainlink fair price over the last hour, day or week (the tracker's own five-minute recordings,
    GET /api/tracker/history), and the stock page's own swap card beside it. Everything is real; a
    price that could not be read is shown as such. The swap is the same component as on the stock
@@ -98,7 +98,7 @@ function Chart({ row, range }: { row: TrackerRow; range: Range }) {
       className="relative flex-1 touch-pan-y px-[6px] pt-2 outline-none"
       tabIndex={0}
       role="img"
-      aria-label={`${row.ticker} on-chain price against its Chainlink fair price, last ${range}: ${N} readings. Latest on chain ${fmtPrice(last[2])}, fair ${fmtPrice(last[3])}, gap ${fmtGap(last[1])}. Arrow keys step through readings.`}
+      aria-label={`${row.ticker} onchain price against its Chainlink fair price, last ${range}: ${N} readings. Latest on chain ${fmtPrice(last[2])}, fair ${fmtPrice(last[3])}, gap ${fmtGap(last[1])}. Arrow keys step through readings.`}
       onPointerMove={(e) => pick(e.clientX, e.currentTarget)}
       onPointerDown={(e) => pick(e.clientX, e.currentTarget)}
       onPointerLeave={() => setHover(null)}
