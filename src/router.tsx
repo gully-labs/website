@@ -4,6 +4,7 @@ import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
 import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
+import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
 import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isLocalHost } from './site-host'
 
@@ -22,13 +23,7 @@ const mainRoutes = [
       { path: '/analytics', element: <AnalyticsRoute /> },
       { path: '/chain-kit', element: <ChainKitRoute /> },
       { path: '/ask', element: <AskRoute /> },
-      // Gully Pay: an invoice anyone with its link can pay (never linked, never indexed).
-      { path: '/pay/:id', element: <PayRoute /> },
-      // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
-      { path: '/pay/l/:id', element: <PayLinkRoute /> },
-      // Gully Pay for merchants: a store's invoice and link checkouts (paid to the store's wallet), and its terms.
-      { path: '/pay/m/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantInvoicePage })) },
-      { path: '/pay/m/l/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantLinkPage })) },
+      // The Gully Pay merchant terms (the checkout's footer links here).
       { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
       { path: '/gully-pay/merchant-terms', element: <Navigate to="/legal/merchant-terms" replace /> },
       // A path no page owns: a branded 404 with ways back (the server answers it with status 404).
@@ -44,8 +39,22 @@ const mainRoutes = [
   { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
   // The Telegram Mini App (opened from @GullyLabsBot): full screen in Telegram's own chrome, no site header or footer.
   { path: '/tg', element: <TgRoute /> },
-  // A paid invoice's receipt prints on its own, without the site's header and footer.
-  { path: '/pay/:id/receipt', element: <ReceiptRoute /> },
+  // Gully Pay's standalone checkout (src/pages/pay/CheckoutFrame): its own layout, no site header, nav or
+  // footer. Never linked from the site, never indexed; whoever holds the link pays here.
+  {
+    element: <CheckoutRoot />,
+    children: [
+      // An invoice anyone with its link can pay, and its printable receipt once paid.
+      { path: '/pay/:id', element: <PayRoute /> },
+      { path: '/pay/:id/receipt', element: <ReceiptRoute /> },
+      // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
+      { path: '/pay/l/:id', element: <PayLinkRoute /> },
+      // Gully Pay for merchants: a store's invoice and link checkouts (paid to the store's wallet) and receipts.
+      { path: '/pay/m/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantInvoicePage })) },
+      { path: '/pay/m/:id/receipt', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantReceiptPage })) },
+      { path: '/pay/m/l/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantLinkPage })) },
+    ],
+  },
   // Development only: the docs site under /docs on the main host. In production it lives on its own host.
   { path: '/docs', children: docsRoutes },
 ]

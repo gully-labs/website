@@ -10,7 +10,9 @@
 // the ones a step expects; at 390 px wide, no horizontal scroll.
 
 import fs from 'node:fs'
+import http from 'node:http'
 import path from 'node:path'
+import zlib from 'node:zlib'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { blockedOutbound, bootServer, historyFixture, ROOT, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
@@ -366,23 +368,71 @@ const adminCall = async (p, body) => {
   return { status: r.status, data: await r.json().catch(() => null) }
 }
 
+// E2E_SHOTS=<dir>: full-page screenshots of every checkout state at 1440 and 390 land there (nothing is written without it).
+const SHOTS = process.env.E2E_SHOTS ? path.resolve(process.env.E2E_SHOTS) : null
+if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true })
+const shot = async (page, name) => {
+  if (!SHOTS) return
+  await page.waitForLoadState('networkidle').catch(() => {})
+  await page.waitForTimeout(600)
+  await page.screenshot({ path: path.join(SHOTS, `${name}-${page.viewportSize().width}.png`), fullPage: true })
+}
+
+/** The standalone checkout frame: no site header, nav or footer; the kit's "Powered by Gully Pay" mark; noindex. */
+async function checkStandalone(page, label) {
+  check(`${label}: no site nav, Launch app or site footer`, (await page.getByRole('link', { name: /Launch app/ }).count()) === 0 && (await page.getByText('© 2026 GULLY LABS').count()) === 0 && (await page.getByRole('navigation', { name: 'Main' }).count()) === 0)
+  check(`${label}: Powered by Gully Pay with the kit mark`, (await page.locator('footer img[src="/brand/gully-mark-96.png"]').count()) === 1 && (await page.getByRole('link', { name: /Powered by Gully Pay/ }).count()) === 1)
+  check(`${label}: non-custodial badge and legal links in a new tab`, (await page.getByText('Non-custodial').count()) >= 1 && (await page.locator('nav[aria-label="Legal"] a[target="_blank"]').count()) >= 2)
+  check(`${label}: noindex`, (await page.locator('meta[name="robots"][content="noindex"]').count()) === 1)
+}
+
+const paidPayment = (asset, to, amount, usd) => ({ id: 'pm_e2e', kind: 'invoice', txHash: '0x' + 'ab'.repeat(32), chainId: asset.chainId, chain: asset.chain, asset: asset.id, symbol: asset.symbol, amount, usd, from: '0x' + '12'.repeat(20), to, blockNumber: 4_999_990, at: new Date().toISOString(), txUrl: `${asset.explorer}/tx/0x${'ab'.repeat(32)}`, price: null, plan: null, periodStart: null, expiresAt: null, invoiceId: null })
+
 await step('pay', async () => {
   const inv = await adminCall('/api/admin/invoices', { title: 'E2E: first month', usd: '25', assets: ['base-usdc', 'base-eth'] })
   check('pay: the admin API creates an invoice', inv.status === 201 && /^inv_/.test(inv.data?.invoice?.id ?? ''))
+  const invId = inv.data.invoice.id
   const ctx = await newContext()
   const page = await ctx.newPage()
   await page.clock.install()
   const w = watch(page, 'pay page')
-  await page.goto(`${BASE}/pay/${inv.data.invoice.id}`)
+  await page.goto(`${BASE}/pay/${invId}`)
+  await page.getByTestId('order-total').waitFor()
+  await checkStandalone(page, 'pay')
+  check('pay: the kit lockup heads our own invoice', (await page.locator('header img[alt="Gully Labs"][src^="/brand/kit/lockup-dark"]').count()) === 1)
+  check('pay: the title is "Pay Gully Labs"', (await page.title()) === 'Pay Gully Labs', await page.title())
+  check('pay: the order summary lists the line and total in normal type', /\b25(\.00)?\b/.test(await page.getByTestId('order-total').textContent()) && (await page.getByTestId('order-items').getByRole('row').count()) >= 2, `${await page.getByTestId('order-total').textContent()} / ${await page.getByTestId('order-items').getByRole('row').count()} rows`)
   await page.getByRole('radiogroup', { name: 'Pay with' }).getByRole('radio', { name: 'USDC on Base' }).click()
   await page.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
   check('pay: a quote shows its wallet QR code', true)
   check('pay: the quote counts down', (await page.getByRole('timer').count()) > 0)
+  check('pay: Pay with wallet is the primary action', (await page.getByTestId('pay-with-wallet').count()) === 1)
+  check('pay: the status track waits for the payment', (await page.getByTestId('status-track').getAttribute('data-step')) === '0')
+  await shot(page, 'gully-invoice-quote')
   await page.clock.fastForward('21:00')
   await page.getByText('quote ran out').first().waitFor({ timeout: 10_000 })
   check('pay: the quote expires after 20 minutes and offers a new one', (await page.getByRole('button', { name: 'New quote' }).count()) > 0)
+  await shot(page, 'gully-invoice-quote-expired')
   await w.verify()
   await ctx.close()
+
+  // The paid state, from the server's own shape with a payment on it (no chain in the suite can confirm one).
+  const real = await (await fetch(`${BASE}/api/pay/${invId}`)).json()
+  const usdc = real.invoice.assets.find((a) => a.id === 'base-usdc')
+  const paid = { ...real.invoice, status: 'paid', paidAt: new Date().toISOString(), payment: paidPayment(usdc, real.invoice.checkout.treasury, '25.000042', '25.00') }
+  for (const width of [1440, 390]) {
+    const c = await newContext(width === 390 ? { width: 390, height: 844, mobile: true } : {})
+    await c.route(`${BASE}/api/pay/${invId}`, (route) => json(route, { invoice: paid }))
+    const p = await c.newPage()
+    const ww = watch(p, `paid invoice at ${width}`)
+    await p.goto(`${BASE}/pay/${invId}`)
+    await p.getByTestId('state-paid').waitFor()
+    check(`pay paid at ${width}: receipt, download and explorer`, (await p.getByTestId('receipt').count()) === 1 && /\/receipt\?print=1$/.test(await p.getByTestId('download-receipt').getAttribute('href')))
+    if (width === 390) await noHorizontalScroll(p, 'paid invoice')
+    await shot(p, 'gully-invoice-paid')
+    await ww.verify()
+    await c.close()
+  }
 
   const link = await adminCall('/api/admin/paylinks', { title: 'E2E pay link', amount: { type: 'fixed', usd: '49' }, assets: ['base-usdc'] })
   check('pay: the admin API creates a pay link', link.status === 201 && /^pl_/.test(link.data?.link?.id ?? ''))
@@ -390,11 +440,252 @@ await step('pay', async () => {
   const p2 = await ctx2.newPage()
   const w2 = watch(p2, 'pay link page')
   await p2.goto(`${BASE}/pay/l/${link.data.link.id}`)
-  await p2.getByRole('button', { name: 'Continue to checkout' }).click()
+  await p2.getByTestId('link-continue').waitFor()
+  await shot(p2, 'gully-link')
+  await p2.getByRole('button', { name: 'Continue to payment' }).click()
   await p2.waitForURL(/\/pay\/inv_/)
   check('pay link: continue makes an invoice and opens its checkout', true)
   await w2.verify()
   await ctx2.close()
+})
+
+/* ------------------------------------------------------------- merchant checkout --- */
+
+// A store's logo for the suite: a 96 px PNG drawn here (a disc in the store's accent), served from loopback.
+function storeLogoPng(size = 96) {
+  const row = size * 4 + 1
+  const raw = Buffer.alloc(row * size)
+  const cx = (size - 1) / 2
+  for (let y = 0; y < size; y++) {
+    raw[y * row] = 0
+    for (let x = 0; x < size; x++) {
+      const d = Math.hypot(x - cx, y - cx)
+      const i = y * row + 1 + x * 4
+      const inside = d <= size / 2 - 1
+      const ring = inside && d >= size / 2 - 12 && d <= size / 2 - 6
+      raw[i] = ring ? 0xf4 : 0x3f
+      raw[i + 1] = ring ? 0xf2 : 0xa7
+      raw[i + 2] = ring ? 0xec : 0xd6
+      raw[i + 3] = inside ? 255 : 0
+    }
+  }
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    return c >>> 0
+  })
+  const crc = (buf) => {
+    let c = 0xffffffff
+    for (const b of buf) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8)
+    return (c ^ 0xffffffff) >>> 0
+  }
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4)
+    len.writeUInt32BE(data.length)
+    const td = Buffer.concat([Buffer.from(type, 'ascii'), data])
+    const c = Buffer.alloc(4)
+    c.writeUInt32BE(crc(td))
+    return Buffer.concat([len, td, c])
+  }
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(size, 0)
+  ihdr.writeUInt32BE(size, 4)
+  ihdr[8] = 8
+  ihdr[9] = 6
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))])
+}
+
+await step('merchant checkout', async () => {
+  const LOGO = storeLogoPng()
+  const logoHost = http.createServer((req, res) => (req.url === '/logo.png' ? (res.writeHead(200, { 'content-type': 'image/png' }), res.end(LOGO)) : (res.writeHead(404), res.end())))
+  await new Promise((r) => logoHost.listen(0, '127.0.0.1', r))
+  try {
+    // The store: the owner's wallet receives on Base; links and an itemised invoice.
+    const wallets = await api.post('/api/developer/merchant/wallets', { acceptTerms: true, address: owner.address, type: 'eoa', chains: [8453] })
+    check('merchant: a receiving wallet on Base is accepted', wallets.status === 200, JSON.stringify(wallets.data).slice(0, 160))
+    const link = await api.post('/api/developer/merchant/links', { title: 'Bag of beans', description: '1 kg, whole bean. Roasted this week.', amount: { type: 'fixed', usd: '10' }, assets: ['base-usdc', 'base-eth'] })
+    check('merchant: a pay link is made', link.status === 201 && /^ml_/.test(link.data?.link?.id ?? ''), JSON.stringify(link.data).slice(0, 160))
+    const linkPath = `/pay/m/l/${link.data.link.id}`
+    const closedLink = await api.post('/api/developer/merchant/links', { title: 'Arbitrum only', amount: { type: 'fixed', usd: '5' }, assets: ['arb-usdc'] })
+    check('merchant: a link on a chain without a wallet is made', closedLink.status === 201)
+    const shortLived = await api.post('/api/developer/merchant/links', { title: 'Flash sale', amount: { type: 'fixed', usd: '5' }, assets: ['base-usdc'], expiresAt: new Date(Date.now() + 1500).toISOString() })
+    check('merchant: a link with a short expiry is made', shortLived.status === 201)
+    const invoice = await api.post('/api/developer/merchant/invoices', { items: [{ description: 'Espresso machine service', quantity: 1, unitUsd: '180' }, { description: 'Descaler, 500 ml', quantity: 2, unitUsd: '12.50' }], dueDate: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10), customer: { name: 'Jane Doe' }, notes: 'Thanks for your order. Collection from the shop once paid.' })
+    check('merchant: an itemised invoice is made', invoice.status === 201 && /^mi_/.test(invoice.data?.invoice?.id ?? ''), JSON.stringify(invoice.data).slice(0, 160))
+    const invPath = `/pay/m/${invoice.data.invoice.id}`
+
+    // 1. The store has no profile yet: "Store" with the owner's address and the neutral glyph, never a letter tile.
+    const anon = await newContext()
+    const page = await anon.newPage()
+    const w = watch(page, 'unnamed store link')
+    await page.goto(BASE + linkPath)
+    await page.getByTestId('link-continue').waitFor()
+    await checkStandalone(page, 'unnamed store')
+    check('unnamed store: says "Store" with the owner address chip and a store glyph', (await page.getByTestId('store-name').textContent()) === 'Store' && (await page.getByTestId('store-owner').count()) === 1 && (await page.getByTestId('store-glyph').count()) === 1)
+    check('unnamed store: no "workspace" anywhere', (await page.getByText(/workspace/i).count()) === 0)
+    check('unnamed store: title "Pay Store"', (await page.title()) === 'Pay Store', await page.title())
+    await shot(page, 'merchant-link-unnamed')
+    await w.verify()
+    await anon.close()
+
+    // The owner's portal prompts for the profile; then the profile is set (name, logo, accent, email, website).
+    const own = await newContext({ cookie: cookieOf(api) })
+    const op = await own.newPage()
+    const ow = watch(op, 'merchant tab prompt')
+    ow.expect(/\/api\/developer\//)
+    await op.goto(BASE + '/developers#merchant')
+    await op.getByTestId('finish-profile').waitFor({ timeout: 15_000 })
+    check('portal: the Merchant tab asks the owner to finish the store profile', true)
+    await ow.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
+    const prof = await api.post('/api/developer/merchant/profile', { name: 'Acme Coffee', logoUrl: `http://127.0.0.1:${logoHost.address().port}/logo.png`, accent: '#3fa7d6', supportEmail: 'help@acme.example', website: 'https://acme.example' })
+    check('merchant: the profile is saved with a logo', prof.status === 200 && !!prof.data?.profile?.logoUrl, JSON.stringify(prof.data?.profile ?? prof.data).slice(0, 160))
+
+    // 2. The open link at 1440 and 390: order summary, store branding, accent, sticky Pay bar on the phone.
+    for (const width of [1440, 390]) {
+      const c = await newContext(width === 390 ? { width: 390, height: 844, mobile: true } : {})
+      const p = await c.newPage()
+      const ww = watch(p, `store link at ${width}`)
+      await p.goto(BASE + linkPath)
+      await p.getByTestId('link-continue').waitFor()
+      check(`store link at ${width}: the store's name, logo, contact and accent`, (await p.getByTestId('store-name').textContent()) === 'Acme Coffee' && (await p.locator('header img[alt="Acme Coffee logo"]').count()) === 1 && (await p.getByTestId('store-contact').textContent()).includes('help@acme.example') && /3fa7d6|63, 167, 214/.test(await p.evaluate(() => document.querySelector('main').parentElement.style.borderTop)))
+      check(`store link at ${width}: title "Pay Acme Coffee"`, (await p.title()) === 'Pay Acme Coffee')
+      check(`store link at ${width}: the order summary shows the item and total`, /\b10(\.00)?\b/.test(await p.getByTestId('order-total').textContent()) && (await p.getByTestId('order-items').getByText('Bag of beans').count()) === 1, `${await p.getByTestId('order-total').textContent()} / ${await p.getByTestId('order-items').getByText('Bag of beans').count()}`)
+      if (width === 390) {
+        await noHorizontalScroll(p, 'store link')
+        check('store link at 390: a sticky Pay bar', await p.getByRole('region', { name: 'Pay', exact: true }).isVisible())
+      }
+      await shot(p, 'merchant-link-open')
+      await ww.verify()
+      await c.close()
+    }
+
+    // 3. Continue → the invoice checkout: network and token, exact amount, Pay with wallet / Scan QR, timer, status.
+    for (const width of [1440, 390]) {
+      const c = await newContext(width === 390 ? { width: 390, height: 844, mobile: true } : {})
+      const p = await c.newPage()
+      await p.clock.install()
+      const ww = watch(p, `store invoice at ${width}`)
+      await p.goto(BASE + linkPath)
+      await p.getByRole('radiogroup', { name: 'Pay with' }).getByRole('radio', { name: 'USDC on Base' }).click()
+      await p.getByTestId('link-continue').click()
+      await p.waitForURL(/\/pay\/m\/mi_/)
+      await p.getByTestId('quote-amount').waitFor({ timeout: 10_000 })
+      check(`store invoice at ${width}: the quote names the amount, the timer runs, Pay with wallet is primary`, (await p.getByRole('timer').count()) > 0 && (await p.getByTestId('pay-with-wallet').count()) === 1)
+      if (width === 390) {
+        check('store invoice at 390: the QR waits behind "Scan QR"', (await p.getByRole('img', { name: /^Wallet payment request:/ }).count()) === 0)
+        await p.getByTestId('scan-qr').click()
+        await noHorizontalScroll(p, 'store invoice')
+      }
+      await p.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
+      check(`store invoice at ${width}: the QR names the store`, /to Acme Coffee$/.test(await p.getByRole('img', { name: /^Wallet payment request:/ }).getAttribute('aria-label')))
+      check(`store invoice at ${width}: status waiting`, (await p.getByTestId('status-track').getAttribute('data-step')) === '0')
+      await shot(p, 'merchant-invoice-quote')
+      if (width === 1440) {
+        await p.clock.fastForward('21:00')
+        await p.getByText('quote ran out').first().waitFor({ timeout: 10_000 })
+        check('store invoice: an expired quote offers a new one', (await p.getByRole('button', { name: 'New quote' }).count()) > 0)
+        await shot(p, 'merchant-invoice-quote-expired')
+      }
+      await ww.verify()
+      await c.close()
+    }
+
+    // 4. The itemised invoice: line items, quantities, prices, subtotal and total; billed to; due date.
+    {
+      const c = await newContext()
+      const p = await c.newPage()
+      const ww = watch(p, 'itemised invoice')
+      await p.goto(BASE + invPath)
+      await p.getByTestId('order-total').waitFor()
+      check('itemised invoice: two lines, quantities and the total', (await p.getByTestId('order-items').locator('tbody tr').count()) === 2 && /\b205(\.00)?\b/.test(await p.getByTestId('order-total').textContent()) && (await p.getByText('Jane Doe').count()) === 1, `${await p.getByTestId('order-items').locator('tbody tr').count()} rows / ${await p.getByTestId('order-total').textContent()} / Jane ${await p.getByText('Jane Doe').count()}`)
+      await shot(p, 'merchant-invoice-items')
+      await ww.verify()
+      await c.close()
+    }
+
+    // 5. Closed: a link whose chain has no receiving wallet. Payers see who to contact; the owner sees what to fix.
+    for (const [label, opts] of [
+      ['payer at 1440', {}],
+      ['payer at 390', { width: 390, height: 844, mobile: true }],
+      ['owner at 1440', { cookie: cookieOf(api) }],
+    ]) {
+      const c = await newContext(opts)
+      const p = await c.newPage()
+      const ww = watch(p, `closed link, ${label}`)
+      await p.goto(`${BASE}/pay/m/l/${closedLink.data.link.id}`)
+      await p.getByTestId('state-unavailable').waitFor()
+      const text = await p.getByTestId('state-unavailable').textContent()
+      check(`closed link, ${label}: "isn't available right now" with the store's email`, /isn't available right now/.test(text) && /help@acme\.example/.test(text))
+      check(`closed link, ${label}: no payment can start`, (await p.getByTestId('link-continue').count()) === 0)
+      if (opts.cookie) check('closed link, owner: sees the fix with a link to the Merchant tab', (await p.getByTestId('owner-fixes').count()) === 1 && /#m-wallets$/.test(await p.getByTestId('owner-fixes').getByRole('link').first().getAttribute('href')))
+      else check(`closed link, ${label}: a payer sees no owner hints`, (await p.getByTestId('owner-fixes').count()) === 0)
+      if (opts.width === 390) await noHorizontalScroll(p, 'closed link')
+      await shot(p, opts.cookie ? 'merchant-link-closed-owner' : 'merchant-link-closed')
+      await ww.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
+      await c.close()
+    }
+
+    // 6. Expired link.
+    await new Promise((r) => setTimeout(r, Math.max(0, 1600 - (Date.now() - Date.parse(shortLived.data.link.createdAt)))))
+    for (const width of [1440, 390]) {
+      const c = await newContext(width === 390 ? { width: 390, height: 844, mobile: true } : {})
+      const p = await c.newPage()
+      const ww = watch(p, `expired link at ${width}`)
+      await p.goto(`${BASE}/pay/m/l/${shortLived.data.link.id}`)
+      await p.getByTestId('state-link-expired').waitFor()
+      check(`expired link at ${width}: says so and offers no payment`, /has expired/.test(await p.getByTestId('state-link-expired').textContent()) && (await p.getByTestId('link-continue').count()) === 0)
+      if (width === 390) await noHorizontalScroll(p, 'expired link')
+      await shot(p, 'merchant-link-expired')
+      await ww.verify()
+      await c.close()
+    }
+
+    // 7. Paused (an unpaid statement) and max uses: the server's own shapes with the state set, as no week passes in the suite.
+    const realLink = await (await fetch(`${BASE}/api/pay/m/l/${link.data.link.id}`)).json()
+    for (const [name, patch, testId] of [
+      ['merchant-link-paused', { checkout: { enabled: false, treasury: null, paused: true, reason: "This store's checkout is paused. Contact the store to pay another way." } }, 'state-paused'],
+      ['merchant-link-used-up', { state: 'used-up', stateText: 'This payment link has been used the maximum number of times.' }, 'state-link-used-up'],
+    ]) {
+      const c = await newContext()
+      await c.route(`${BASE}/api/pay/m/l/${realLink.link.id}`, (route) => json(route, { link: { ...realLink.link, ...patch }, viewer: null }))
+      const p = await c.newPage()
+      const ww = watch(p, name)
+      await p.goto(BASE + linkPath)
+      await p.getByTestId(testId).waitFor()
+      check(`${name}: shown, with the store's contact, and no payment can start`, /help@acme\.example/.test(await p.getByTestId(testId).textContent()) && (await p.getByTestId('link-continue').count()) === 0)
+      await shot(p, name)
+      await ww.verify()
+      await c.close()
+    }
+
+    // 8. Paid: animated check, receipt, Download receipt, Return to store; the printable receipt names the store.
+    const realInv = await (await fetch(`${BASE}/api/pay/m/i/${invoice.data.invoice.id}`)).json()
+    const usdc = realInv.invoice.assets.find((a) => a.id === 'base-usdc')
+    const paidInv = { ...realInv.invoice, status: 'paid', paidAt: new Date().toISOString(), payment: paidPayment(usdc, realInv.invoice.recipients['8453'], '205.000077', '205.00') }
+    for (const width of [1440, 390]) {
+      const c = await newContext(width === 390 ? { width: 390, height: 844, mobile: true } : {})
+      await c.route(`${BASE}/api/pay/m/i/${invoice.data.invoice.id}`, (route) => json(route, { invoice: paidInv, viewer: null }))
+      const p = await c.newPage()
+      const ww = watch(p, `paid store invoice at ${width}`)
+      await p.goto(BASE + invPath)
+      await p.getByTestId('state-paid').waitFor()
+      check(`paid store invoice at ${width}: receipt, download and Return to store`, (await p.getByTestId('receipt').count()) === 1 && /\/pay\/m\/mi_[\w-]+\/receipt\?print=1$/.test(await p.getByTestId('download-receipt').getAttribute('href')) && (await p.getByTestId('return-to-store').getAttribute('href')) === 'https://acme.example/')
+      check(`paid store invoice at ${width}: status Paid`, (await p.getByTestId('status-pill').textContent()) === 'Paid' && (await p.getByRole('region', { name: 'Pay', exact: true }).count()) === 0)
+      if (width === 390) await noHorizontalScroll(p, 'paid store invoice')
+      await shot(p, 'merchant-invoice-paid')
+      if (width === 1440) {
+        await p.getByRole('link', { name: 'View receipt' }).click()
+        await p.waitForURL(/\/receipt$/)
+        await p.getByTestId('receipt-page').waitFor()
+        check('store receipt: names the store, the lines and PAID IN FULL', (await p.getByText('PAID IN FULL').count()) === 1 && (await p.getByTestId('receipt-page').getByText('Acme Coffee').count()) >= 1 && (await p.getByTestId('receipt-page').getByText('Descaler, 500 ml').count()) === 1)
+        await shot(p, 'merchant-receipt')
+      }
+      await ww.verify()
+      await c.close()
+    }
+  } finally {
+    logoHost.close()
+  }
 })
 
 /* ------------------------------------------------------------- admin --- */
