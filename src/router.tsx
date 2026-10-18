@@ -29,6 +29,9 @@ const mainRoutes = [
       { path: '/security/reports/:id', element: <SecurityReportRoute /> },
       // The link hub for bios and KOL posts.
       { path: '/links', element: <LinksRoute /> },
+      // The Gully Score (src/pages/score): the public index and one page per contract.
+      { path: '/score', lazy: () => import('./pages/score/ScoreIndex').then((m) => ({ Component: m.ScoreIndex })) },
+      { path: '/score/:chain/:address', lazy: () => import('./pages/score/ScorePage').then((m) => ({ Component: m.ScorePage })) },
       // The Gully Pay merchant terms (the checkout's footer links here).
       { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
       { path: '/legal/privacy', lazy: () => import('./pages/legal/Privacy').then((m) => ({ Component: m.PrivacyPage })) },

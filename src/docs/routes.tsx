@@ -21,6 +21,7 @@ export const docsRoutes: RouteObject[] = [
       { path: 'gully-pay', lazy: () => import('./pages/GullyPayDocs').then((m) => ({ Component: m.GullyPayDocs })) },
       { path: 'gully-pay-merchants', lazy: () => import('./pages/GullyPayMerchantsDocs').then((m) => ({ Component: m.GullyPayMerchantsDocs })) },
       { path: 'gully-security', lazy: () => import('./pages/GullySecurityDocs').then((m) => ({ Component: m.GullySecurityDocs })) },
+      { path: 'gully-score', lazy: () => import('./pages/GullyScore').then((m) => ({ Component: m.GullyScore })) },
       { path: 'roadmap', lazy: () => import('./pages/Roadmap').then((m) => ({ Component: m.Roadmap })) },
       { path: 'roadmap-l3', lazy: () => import('./pages/RoadmapL3').then((m) => ({ Component: m.RoadmapL3 })) },
       { path: 'changelog', lazy: () => import('./pages/Changelog').then((m) => ({ Component: m.Changelog })) },

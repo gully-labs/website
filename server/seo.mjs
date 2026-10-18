@@ -6,6 +6,7 @@
 import fs from 'node:fs'
 import { APP_HOST, APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
 import { published, publishedJobs } from './security-store.mjs'
+import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 
 const SITE = 'https://gullylabs.xyz'
 const DOCS = 'https://docs.gullylabs.xyz'
@@ -34,6 +35,7 @@ const MAIN = {
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
   '/legal/privacy': ['Privacy policy · Gully Labs', 'What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, the Telegram bot and Gully Pay, why, who else sees it and how long it is kept.'],
   '/links': ['Links · Gully Labs', 'Every Gully Labs link in one place: the site, the app, the stock tracker, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the Telegram bot and the news channel.'],
+  '/score': ['Gully Score: transparent contract scores · Gully Labs', 'The Gully Score rates a contract 0 to 100 from public evidence only: verified code, who controls it, upgrades, delays, recent privileged changes, locks and holders. Nobody can pay to change a score.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
@@ -69,6 +71,7 @@ const DOCS_PAGES = {
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
   '/roadmap': ['Roadmap · Gully Labs docs', 'What Gully Labs plans to build next, with an honest status for each track: the Gully L3, and Audits & Security (AI security scans, security reviews, smart-contract and code audits, Gully Score and monitoring). All planned; nothing is offered yet.'],
   '/roadmap-l3': ['Roadmap: Gully L3 · Gully Labs docs', 'The plan for the Gully L3: an Arbitrum chain settling to Arbitrum One with Chain Kit, Gully Pay and Hyperlane as its interop layer. Status: spec written, devnet prepared, nothing running.'],
+  '/gully-score': ['Gully Score methodology · Gully Labs docs', 'How the Gully Score is worked out: every component, its weight and source, what happens when data is missing, the badge and widget, and why nobody can pay to change a score.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],
 }
 
@@ -132,10 +135,13 @@ export function pageMeta(host, pathname) {
     if (!j) return { title: 'Report not found · Gully Labs', description: MAIN['/security/reports'][1], canonical: null, found: false }
     return { title: `Security scan report: ${reportTitle(j)} · Gully Labs`, description: 'An AI Security Scan report published by its owner: findings by severity, the tools that ran and the limits of an automated scan. Not an audit.', canonical: `${SITE}${p}`, found: true, noindex: !j.indexable, image: `${SITE}/social/og-services.png` }
   }
+  // Gully Score pages (gully-score.mjs): one per contract; listed ones are indexed, the rest are noindex.
+  const sm = scorePageMeta(p)
+  if (sm) return sm.found ? { title: sm.title, description: sm.description, canonical: sm.canonical, found: true, noindex: sm.noindex, image: `${SITE}/social/og-home.png` } : { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  const og = p === '/' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/security') ? 'services' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
+  const og = p === '/' || p === '/score' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/security') ? 'services' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
   return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
 }
 
@@ -194,8 +200,10 @@ export function sitemapFor(host) {
     urls = [...Object.keys(MAIN), ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)].map((p) => [
       SITE + (p === '/' ? '/' : p),
       p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
-      p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p.startsWith('/projects/') ? 'daily' : 'monthly',
+      p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p === '/score' || p.startsWith('/projects/') ? 'daily' : 'monthly',
     ])
+  // Listed Gully Score pages (a watched contract that allows listing, or one with a published report).
+  if (!host.startsWith('docs.') && !isAppHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])
   const rows = urls.map(([u, pr, f]) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</urlset>\n`
 }
