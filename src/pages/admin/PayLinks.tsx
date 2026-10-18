@@ -61,7 +61,7 @@ const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-sur
 const h2 = 'm-0 font-display text-[22px] font-bold uppercase'
 const small = 'font-mono text-[12px] text-faint'
 const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
-export const btn = 'inline-flex min-h-9 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold disabled:opacity-50'
+export const btn = 'inline-flex min-h-11 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold disabled:opacity-50'
 const gold = 'h-10 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-50'
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—')
 const STATE_CLS: Record<string, string> = { active: 'text-green', inactive: 'text-faint', expired: 'text-faint', 'used-up': 'text-gold', open: 'text-gold', paid: 'text-green', cancelled: 'text-faint', pending: 'text-gold', delivered: 'text-green', failed: 'text-error' }

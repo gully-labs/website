@@ -20,7 +20,9 @@ import { FeeProxyBanner, FeeProxyCard, type FeeProxyStatus } from './FeeProxyCar
 import { isFeeProxy } from '../../../server/fee-proxy-guard.mjs'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { toastError } from '../../components/ui/toast'
+import { LogOut, RefreshCw } from 'lucide-react'
 import { AdminNav } from './AdminNav'
+import { pillCls } from './ui'
 import { sectionCls } from './adminSections'
 import { HealthCard } from './HealthCard'
 import { AlertsAdmin, ChainKitAdmin, WorkspacesAdmin } from './OpsAdmin'
@@ -235,7 +237,7 @@ function TreasuryChains({ t, act }: { t: TreasuryGate; act: (path: string, body?
           <span className={small}>checked {t.checkedAt ? new Date(t.checkedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'not yet'} · every {Math.round(t.intervalMs / 60_000)} min</span>
           <button
             type="button"
-            className="inline-flex min-h-9 items-center rounded-btn border border-line-strong px-3 font-mono text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-gold disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-3 font-mono text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-gold disabled:opacity-50"
             disabled={busy}
             onClick={async () => {
               setBusy(true)
@@ -255,7 +257,7 @@ function TreasuryChains({ t, act }: { t: TreasuryGate; act: (path: string, body?
             <span className="flex min-w-0 flex-col gap-[2px]">
               <span className="flex items-center gap-2 text-ink">
                 {c.chain}
-                <span className={`inline-flex items-center rounded-full border px-2 font-mono text-[11px] ${pill(c.status)}`}>{label(c.status)}</span>
+                <span className={pillCls(pill(c.status))}>{label(c.status)}</span>
                 {!c.offered && <span className="font-mono text-[11px] text-error">not offered</span>}
               </span>
               <span className={`text-[12px] leading-[1.5] ${c.status === 'missing' ? 'text-ink-2' : 'text-faint'}`}>{c.message}</span>
@@ -546,7 +548,7 @@ function InvoiceExtras({ token, invoice, reload, onSecret }: { token: string; in
     reload()
     loadLog()
   }
-  const btn = 'inline-flex min-h-9 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold'
+  const btn = 'inline-flex min-h-11 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold'
   return (
     <div className="flex flex-col gap-4 rounded-input border border-line bg-bg p-4">
       <div className="flex flex-col gap-2">
@@ -618,7 +620,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
   }
   const copy = (path: string) =>
     copyWithToast(link(path), 'Link')
-  const btn = 'inline-flex min-h-9 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold'
+  const btn = 'inline-flex min-h-11 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold'
   return (
     <section className={card}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -809,10 +811,12 @@ export function AdminPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span className={small}>{o ? `updated ${ago(o.generatedAt)}` : 'loading…'}</span>
-          <button type="button" onClick={() => reload()} className="rounded-btn border border-line-strong px-3 py-2 font-mono text-[12px] text-ink-2 hover:border-gold">
+          <button type="button" onClick={() => reload()} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-3 font-mono text-[12px] text-ink-2 hover:border-gold">
+            <RefreshCw size={16} aria-hidden />
             Refresh
           </button>
-          <button type="button" onClick={signOut} className="rounded-btn border border-line-strong px-3 py-2 font-mono text-[12px] text-ink-2 hover:border-gold">
+          <button type="button" onClick={signOut} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-3 font-mono text-[12px] text-ink-2 hover:border-gold">
+            <LogOut size={16} aria-hidden />
             Sign out
           </button>
         </div>
@@ -832,7 +836,7 @@ export function AdminPage() {
             <div id="overview" className={sectionCls}>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,170px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
               <Tile k="API REQUESTS TODAY" v={((o.api.days.at(-1)?.anonymous ?? 0) + (o.api.days.at(-1)?.keyed ?? 0)).toLocaleString('en-US')} note={`${o.api.days.at(-1)?.limited ?? 0} rate-limited`} />
-              <Tile k="DEVELOPERS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#d9b563' : undefined} />
+              <Tile k="ACCOUNTS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#d9b563' : undefined} />
               <Tile k="ENQUIRIES" v={String(o.enquiries.open)} note={`open of ${o.enquiries.total}`} tone={o.enquiries.open ? '#d9b563' : undefined} />
               <Tile k="LAUNCH LIST" v={String(o.launchList)} note="notify-me sign-ups" />
               <Tile k="TRACKER CACHE" v={o.tracker.cacheAgeSeconds === null ? '—' : `${o.tracker.cacheAgeSeconds}s`} note={`last snapshot ${ago(o.tracker.lastSnapshot)}`} />

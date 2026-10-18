@@ -65,7 +65,7 @@ export function TelegramChats({ token }: { token: string }) {
       </div>
       {err && <p className="m-0 font-mono text-[12px] text-error">{err}</p>}
       {!data && !err && <span className={small}>Loading…</span>}
-      {data && !data.chats.length && <p className="m-0 text-[14px] text-muted">No chat is linked yet. Developers link one from the Alerts tab of their console (Connect Telegram).</p>}
+      {data && !data.chats.length && <p className="m-0 text-[14px] text-muted">No chat is linked yet. Account owners link one from Alerts in the app (Connect Telegram).</p>}
       {data && data.chats.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] border-collapse text-[13px]">
