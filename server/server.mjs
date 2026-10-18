@@ -17,6 +17,7 @@ import { clientIp, DATA_DIR, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { handleBlog } from './blog.mjs'
+import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
@@ -307,6 +308,11 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === '/api/geo') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(geoFor(req, isLocal)), { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' })
+  }
+  // Blog share images (og:image), one per post, rendered from the post's banner (og.mjs).
+  if (url.pathname.startsWith('/og/blog/')) {
+    if (await handleOg(req, res, url)) return
+    return send(res, 404, '')
   }
   if (url.pathname === '/healthz') return send(res, 200, 'ok')
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, '')

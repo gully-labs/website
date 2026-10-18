@@ -2,7 +2,7 @@
     "name": "gully",
     "description": "The Gully Labs blog theme. Built on Ghost's Source theme (MIT, Ghost Foundation).",
     "demo": "https://blog.gullylabs.xyz",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "engines": {
         "ghost": ">=6.0.0"
     },
@@ -53,12 +53,6 @@
                 "default": true,
                 "group": "homepage",
                 "description": "Show the 'From the tracker' links to gullylabs.xyz on the home page"
-            },
-            "site_share_images": {
-                "type": "boolean",
-                "default": false,
-                "group": "post",
-                "description": "Use gullylabs.xyz/social/blog/<slug>.png as share image. Only once that URL is live."
             }
         }
     }

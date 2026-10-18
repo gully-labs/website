@@ -66,29 +66,40 @@ seed picks within it, along with every shape, speed and colour placement. A kick
 
 ## Share images (og:image)
 
-Social cards can't animate, so each post needs a still image. Plan: the main site's server renders
-`https://gullylabs.xyz/social/blog/<slug>.png` from the same seed. **Not built yet.** The contract:
+Social cards can't animate, so every post gets a still share image: `GET
+https://gullylabs.xyz/og/blog/<slug>.png` on the main site's server (`server/og.mjs`), 1200 x 630 PNG.
 
-- **Size:** 1200 x 630 PNG. Cache it long (it changes only if the slug, title or primary tag change);
-  a `?v=` is not needed because the URL is only referenced while the seed inputs are the same.
-- **Inputs:** the post's `slug`, `title` and primary tag (`slug` and `name`), from Ghost's Content API
-  (`/ghost/api/content/posts/slug/<slug>/?include=tags&key=<content key>`). Unknown slug: 404.
-- **Seed:** `seedString = slug + "\n" + title + "\n" + primaryTagSlug` (missing parts are empty strings).
-  `seed = FNV-1a 32-bit(seedString)` (offset `0x811c9dc5`, prime `0x01000193`, over UTF-16 code units, as
-  in `banner.js`). The PRNG is mulberry32 seeded with `seed`; the motif is chosen from the tag's pool
-  (or all five) with its first draw; shapes use mulberry32 seeded with `seed ^ 0x9e3779b9`.
-- **Frame:** the still frame at `t0 = (seed % 997) / 31` seconds, which is also what reduced-motion
-  visitors see on the blog.
-- **Easiest implementation:** don't re-implement it. `banner.js` is a CommonJS module with no DOM use in
-  its drawing code; on the server, `require('ghost/theme/gully/assets/js/banner.js')` and call
-  `renderStill(ctx, { seed: slug, title, tag: tagSlug, tagName }, 1200, 630, { variant: 'share' })` on any
-  CanvasRenderingContext2D (for example `@napi-rs/canvas`, MIT), after registering Barlow Condensed 800 and
-  IBM Plex Mono 400/500 from `theme/gully/assets/fonts`. The `share` variant adds the GULLY LABS wordmark
-  and `BLOG.GULLYLABS.XYZ`.
-- **Theme side (done, off by default):** theme setting **Site share images** (Design > Theme > Post).
-  When on, posts *without* a feature image and without their own social image get
-  `og:image` / `twitter:image` pointing at that URL. Ghost's own `{{ghost_head}}` tags still follow; most
-  crawlers take the first `og:image`. Turn it on only once the URL serves images.
+- **What it shows:** the post's own banner (`banner.js`, variant `share`) frozen at its still frame
+  `t0 = (seed % 997) / 31` s, the same frame reduced-motion visitors see; the kicker with the primary
+  tag's name and the banner code (`NEWS / GL-1005`); the whole title, upper-cased, in Barlow Condensed 800
+  at the largest of 88/78/68/60/52 px that fits three lines of 84% width (long words break; past that
+  the third line ends in an ellipsis); `BLOG.GULLYLABS.XYZ` in IBM Plex Mono and the GULLY LABS wordmark.
+  Characters the brand fonts don't have (emoji) are left out of the image; the seed still uses the
+  real title, so the art matches the blog's banner.
+- **Seed:** `seedString = slug + "
+" + title + "
+" + primaryTagSlug`, FNV-1a 32-bit, mulberry32, exactly
+  as in `banner.js` (the server `require()`s that same file). Same post, same bytes.
+- **Renderer:** no native code. `og.mjs` has a small CanvasRenderingContext2D stand-in that records
+  `banner.js`'s drawing as SVG and measures text from the fonts' own advance widths (the @fontsource
+  WOFF files, unpacked with zlib); `@resvg/resvg-wasm` (2.6.2, pinned, MPL-2.0, no dependencies of its
+  own) turns the SVG into the PNG. The production image copies only that package, `banner.js` and four
+  font files from the build stage (Dockerfile).
+- **Data:** Ghost's Content API over the project network
+  (`/ghost/api/content/posts/slug/<slug>/?include=tags`, key `GHOST_CONTENT_KEY` in the box's `.env`),
+  cached in memory 5 minutes (unknown slugs 1 minute). Unknown or unpublished slug: 404. No key: 503.
+- **Cache:** PNGs on disk in `DATA_DIR/og-cache/<slug>.<key>.png`, key = hash of the post's
+  `updated_at`, title, tag, `banner.js` and the renderer version; a slug's older images are removed
+  when a new one is written; at most `OG_CACHE_MAX_FILES` (500) files and `OG_CACHE_MAX_BYTES` (64 MB),
+  least recently used first out. Responses: `Cache-Control: public, max-age=86400`, an `ETag`, and
+  `X-OG-Cache: hit|miss`.
+- **Theme side:** `default.hbs` adds `og:image` / `twitter:image` (with size and alt) for posts **without
+  a feature image** and without their own social image, before `{{ghost_head}}` (crawlers take the first).
+  **Decision:** a post's feature image stays its share image. The owner's rule says the animated layer
+  frames a feature image and never replaces real content, and that the generated still is there because
+  cards can't animate; so the generated image is the share image whenever the post has no image of its
+  own. An author can still override per post with Ghost's Facebook / X card image fields.
+- **Test:** `npm run test:og` (stub Ghost, in-process server).
 
 ## Preview without Ghost
 
@@ -154,8 +165,7 @@ Ghost admin (Settings):
    the brand fonts, colours and the "first posts are on the way" intro that were added for Source; the
    theme now covers all of that (fonts self-hosted, empty state built in), and the old injection would
    load fonts twice and fight the theme's styles. Nothing needs injecting.
-8. **Theme settings** (Design > Theme): Animated banners on; From the tracker strip on; Site share
-   images **off** until `gullylabs.xyz/social/blog/<slug>.png` exists.
+8. **Theme settings** (Design > Theme): Animated banners on; From the tracker strip on.
 9. **No "Powered by Ghost" anywhere:** the theme renders none. Two places Ghost itself controls:
    - Newsletter emails: Settings > Newsletters > (newsletter) > Design > turn off "Promote independent
      publishing" (the "Powered by Ghost" badge).
