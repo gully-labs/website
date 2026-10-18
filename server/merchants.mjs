@@ -79,7 +79,7 @@ import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { createInvoiceRecord, invoicePaidHooks, invoiceStatus } from './invoices.mjs'
 import { accrue, centsOfMicros, feeConfig, MIN_STATEMENT_CENTS, PAUSE_AFTER_DAYS, WARN_DAY, weekStart } from './merchant-fees.mjs'
 import { checkEndpoint, deliveries, endpointView, enqueue, makeEndpoint, newSecret, paidEvent, redeliver, registerWebhookTarget, sendTest } from './pay-webhooks.mjs'
-import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc, withFeeSplit } from './payments.mjs'
+import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, FEE_PROXIES, feeSplitOn, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc, withFeeSplit } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { isFeeProxy } from './fee-proxy-guard.mjs'
@@ -116,9 +116,11 @@ const LOGO_MAX_BYTES = 256 * 1024
 const EXPIRED_LOOKBACK_MS = 24 * 3_600_000
 const DAY = 86_400_000
 // Stores take the EVM chains for now (their receiving wallets are EVM addresses); Solana stays Gully Labs' own.
+// A store's gate is its OWN wallet on each chain (inspectWallet), not Gully Labs' treasury: `all: true` lists every
+// chain. Where our treasury is not deployed the fee cannot ride in the payment (payments.feeSplitOn) and is invoiced.
 const STORE_ASSET_IDS = ASSET_IDS.filter((id) => !isSolanaAsset(assetById(id)))
 const STORE_CHAIN_IDS = new Set(CHAIN_LIST.map((c) => c.id))
-const storeAssets = () => publicAssets().filter((a) => STORE_CHAIN_IDS.has(a.chainId))
+const storeAssets = () => publicAssets({ all: true }).filter((a) => STORE_CHAIN_IDS.has(a.chainId))
 
 /* ---------------------------------------------------------------- store --- */
 
@@ -974,7 +976,9 @@ function merchantView(ws, role) {
     profile: { name: m?.profile?.name ?? null, displayName: brandOf(ws).name, logoUrl: logoPath(m?.profile?.logo), logoSource: m?.profile?.logo?.source ?? null, accent: m?.profile?.accent ?? null, supportEmail: m?.profile?.supportEmail ?? null, website: m?.profile?.website ?? null },
     wallets,
     ready: wallets.some((w) => w.enabled && w.status === 'ok'),
-    chains: CHAIN_LIST.map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer })),
+    // feeSplit: the Gully Pay fee is collected inside each token payment there (one transaction, Request's fee
+    // proxy); otherwise it is invoiced on the weekly statement. feeProxy: a verified proxy exists on the chain.
+    chains: CHAIN_LIST.map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer, feeProxy: !!FEE_PROXIES[c.id], feeSplit: feeSplitOn(c.id) })),
     assets: storeAssets(),
     links: db.links
       .filter((l) => l.ws === ws)

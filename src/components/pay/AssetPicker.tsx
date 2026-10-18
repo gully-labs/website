@@ -23,14 +23,18 @@ export function AssetMark({ asset }: { asset: Pick<PayAsset, 'symbol' | 'chainKe
   )
 }
 
-export function AssetPicker({ assets, value, onChange, disabled = false }: { assets: PayAsset[]; value: string | null; onChange: (id: string) => void; disabled?: boolean }) {
+/** `showFee` (merchant checkouts): says per chain whether the store's Gully Pay fee rides inside a stablecoin payment or is invoiced. */
+export function AssetPicker({ assets, value, onChange, disabled = false, showFee = false }: { assets: PayAsset[]; value: string | null; onChange: (id: string) => void; disabled?: boolean; showFee?: boolean }) {
   return (
     <div role="radiogroup" aria-label="Pay with" className="flex flex-col gap-2">
       {byChain(assets).map((g) => (
         <div key={g.chainId} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-input border border-line bg-surface-deep px-3 py-2">
-          <span className="flex w-[132px] shrink-0 items-center gap-2 text-[14px] text-ink-2 max-[600px]:w-full">
-            <ChainMark chainKey={g.chainKey} name={g.chain} size={24} />
-            {g.chain}
+          <span className="flex w-[132px] shrink-0 flex-col items-start gap-[2px] text-[14px] text-ink-2 max-[600px]:w-full">
+            <span className="flex items-center gap-2">
+              <ChainMark chainKey={g.chainKey} name={g.chain} size={24} />
+              {g.chain}
+            </span>
+            {showFee && <span className="font-mono text-[10px] tracking-[.5px] text-faint">{g.assets.some((a) => a.feeSplit) ? 'FEE IN THE PAYMENT' : 'FEE INVOICED'}</span>}
           </span>
           <div className="flex flex-1 flex-wrap gap-2">
             {g.assets.map((a) => {

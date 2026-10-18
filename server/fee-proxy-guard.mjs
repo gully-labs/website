@@ -22,7 +22,8 @@ export const FEE_PROXY_REGISTRY = {
   56: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8'] },
   42161: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8'] },
   10: { erc20: ['0x399f5ee127ce7432e4921a61b8cf52b0af52cbfe'], native: ['0xe11bf2fda23bf0a98365e1a4c04a87c9339e8687'] },
-  137: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8'] },
+  137: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8', '0xc6e23a20c0a1933acc8e30247b5d1e2215796c1f'] },
+  43114: { erc20: ['0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'], native: ['0xfcfbcfc4f5a421089e3df45455f7f4985fe2d6a8', '0xc6e23a20c0a1933acc8e30247b5d1e2215796c1f'] },
   // Base Sepolia (testnet only): deployed by us from Request's source, byte-identical to Base mainnet's.
   84532: { erc20: ['0xae5508e1509cce6a73b38d8b19fedfdbd0080c18'], native: ['0xd302ce9e3048ad676c6e74be57042aca31e2957e'] },
 }
@@ -33,6 +34,14 @@ export const SPLIT_PROXIES = {
   8453: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814',
   56: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
   42161: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
+  // 2026-10-18 (feat/pay-chains), eth_getCode through 3 to 6 public RPCs each, runtime compared byte for byte with
+  // the proxies above once the CBOR metadata is stripped (contracts/CHOICE.md "Deployments"):
+  //   OP Mainnet  = Base's build (2165 bytes, same full hash 0xfe7593c88edf)
+  //   Polygon     = Ethereum 0x370D's build (1631 bytes; same stripped runtime 0x47eecc776c20b737…, metadata differs)
+  //   Avalanche   = BNB Chain / Arbitrum's build (2120 bytes, same full hash 0x577dab9d22b7)
+  10: '0x399f5ee127ce7432e4921a61b8cf52b0af52cbfe',
+  137: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
+  43114: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
 }
 
 /** Solana's ledger chain id (solana-pay.mjs SOLANA_CHAIN_ID). */
@@ -48,6 +57,11 @@ export const ALLOWED_TOKENS = {
   1: { '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'USDC', '0xdac17f958d2ee523a2206206994597c13d831ec7': 'USDT' },
   56: { '0x55d398326f99059ff775485246999027b3197955': 'USDT', '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d': 'USDC' },
   42161: { '0xaf88d065e77c8cc2239327c5edb3a432268e5831': 'USDC' },
+  // Checked on chain 2026-10-18 (symbol, decimals, name; payments.mjs header). Polygon's old USDT now reads "USDT0"
+  // and is deliberately absent; Avalanche's USDT reads "USDt" on chain (Tether's native issuance).
+  10: { '0x0b2c639c533813f4aa9d7837caf62653d097ff85': 'USDC', '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58': 'USDT' },
+  137: { '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359': 'USDC' },
+  43114: { '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e': 'USDC', '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7': 'USDT' },
   // Base Sepolia (testnet only, offered while GULLY_TESTNET_CHAINS names it): Circle's testnet USDC.
   84532: { '0x036cbd53842c5426634e7929541ec2318f3dcf7e': 'USDC' },
   [SOLANA_LEDGER_CHAIN_ID]: { EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 'USDC', Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 'USDT' },

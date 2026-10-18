@@ -204,7 +204,7 @@ interface PayAsset {
   confirmations: number
 }
 interface Offer {
-  chains?: { id: number; name: string; confirmations: number }[]
+  chains?: { id: number; name: string; confirmations: number; feeProxy?: boolean; feeSplit?: boolean }[]
   assets?: PayAsset[]
   checkout?: { enabled: boolean }
 }
@@ -223,7 +223,7 @@ export function PayCoverage() {
       const c = chains[i]
       if (!c) return ''
       const list = assets.filter((a) => a.chainId === c.id)
-      return tipHtml({ title: c.name, rows: [...list.map((a, j) => ({ name: a.symbol, value: a.kind === 'native' ? 'native coin' : 'token', color: PALETTE[j % PALETTE.length] })), { name: 'confirmations', value: String(c.confirmations) }] })
+      return tipHtml({ title: c.name, rows: [...list.map((a, j) => ({ name: a.symbol, value: a.kind === 'native' ? 'native coin' : 'token', color: PALETTE[j % PALETTE.length] })), { name: 'confirmations', value: String(c.confirmations) }, { name: 'merchant fee', value: c.feeSplit ? 'in the payment (fee proxy)' : c.feeProxy ? 'invoiced (proxy verified, treasury not deployed yet)' : 'invoiced' }] })
     }
     return {
       grid: { left: 8, right: 40, top: 28, bottom: 8, containLabel: true },

@@ -15,6 +15,7 @@ import { copyWithToast, flash } from '../../components/ui/toast'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { FeeProxyBanner, FeeProxyCard, type FeeProxyStatus } from './FeeProxyCard'
 import { isFeeProxy } from '../../../server/fee-proxy-guard.mjs'
+import { ChainLogo } from '../../components/logos/ChainLogo'
 
 // The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
 const AdminCharts = lazy(() => import('./AdminCharts'))
@@ -75,6 +76,17 @@ interface Billing {
   payments: { txHash: string; kind: 'plan' | 'invoice' | 'analytics'; address: string | null; plan: string | null; invoiceId: string | null; amount: string; symbol: string; chain: string; usd: string | null; txUrl: string | null; from: string; at: string; expiresAt: string | null }[]
   offer: { plans: { id: string; name: string; priceUsdc: number }[]; checkout: { enabled: boolean; treasury: string | null; reason?: string } }
   alerts: { total: number; enabled: number; owners: number }
+  /** The treasury deployment gate (server/treasury-chains.mjs): which chains the Safe treasury exists on. */
+  treasury?: TreasuryGate
+}
+interface TreasuryGate {
+  treasury: string | null
+  kind: 'contract' | 'eoa' | 'unknown'
+  pinned: string | null
+  checkedAt: string | null
+  intervalMs: number
+  safeApp: string
+  chains: { chainId: number; chain: string; key: string | null; status: 'deployed' | 'eoa' | 'missing' | 'unknown'; offered: boolean; checkedAt: string | null; error: string | null; message: string }[]
 }
 interface AnalyticsAdmin {
   configured: boolean
@@ -196,6 +208,55 @@ function Login({ onToken, error }: { onToken: (t: string) => void; error: string
   )
 }
 
+/** Where the Safe treasury exists (server/treasury-chains.mjs): a chain without it is not offered until the Safe is deployed there. */
+function TreasuryChains({ t, act }: { t: TreasuryGate; act: (path: string, body?: unknown) => Promise<string | null> }) {
+  const [busy, setBusy] = useState(false)
+  const closed = t.chains.filter((c) => !c.offered)
+  const pill = (s: TreasuryGate['chains'][number]['status']) => (s === 'deployed' || s === 'eoa' ? 'border-success-line text-green' : s === 'missing' ? 'border-[#5a2a24] text-error' : 'border-line-strong text-faint')
+  const label = (s: TreasuryGate['chains'][number]['status']) => (s === 'deployed' ? 'deployed' : s === 'eoa' ? 'wallet' : s === 'missing' ? 'not deployed' : 'unread')
+  return (
+    <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-bg px-4 py-3" aria-label="Treasury per chain">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="text-[13px] text-ink-2">
+          Treasury on each chain · {t.kind === 'contract' ? 'a contract (Safe)' : t.kind === 'eoa' ? 'a normal wallet' : 'kind not known yet'}
+          {t.pinned ? ` (pinned: GULLY_TREASURY_KIND=${t.pinned})` : ''} · {closed.length ? `${closed.length} chain${closed.length === 1 ? '' : 's'} not offered` : 'offered on every chain'}
+        </span>
+        <span className="flex items-center gap-3">
+          <span className={small}>checked {t.checkedAt ? new Date(t.checkedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'not yet'} · every {Math.round(t.intervalMs / 60_000)} min</span>
+          <button
+            type="button"
+            className="inline-flex min-h-9 items-center rounded-btn border border-line-strong px-3 font-mono text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-gold disabled:opacity-50"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              const err = await act('/api/admin/treasury/check')
+              setBusy(false)
+              flash(err ? { ok: false, text: err } : { ok: true, text: 'Every chain read again.' })
+            }}
+          >
+            {busy ? 'Reading…' : 'Check now'}
+          </button>
+        </span>
+      </div>
+      <ul className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-2 p-0">
+        {t.chains.map((c) => (
+          <li key={c.chainId} className="flex items-start gap-2 text-[13px]">
+            <ChainLogo chain={c.key ?? c.chain} size={20} decorative />
+            <span className="flex min-w-0 flex-col gap-[2px]">
+              <span className="flex items-center gap-2 text-ink">
+                {c.chain}
+                <span className={`inline-flex items-center rounded-full border px-2 font-mono text-[11px] ${pill(c.status)}`}>{label(c.status)}</span>
+                {!c.offered && <span className="font-mono text-[11px] text-error">not offered</span>}
+              </span>
+              <span className={`text-[12px] leading-[1.5] ${c.status === 'missing' ? 'text-ink-2' : 'text-faint'}`}>{c.message}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /** Paid plans: who has one, every payment, and a manual grant / revoke. */
 function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing; accounts: DevAccount[]; act: (path: string, body?: unknown) => Promise<string | null>; invoices: AdminInvoice[] }) {
   const invoiceNumber = (id: string | null) => invoices.find((i) => i.id === id)?.number ?? id ?? '—'
@@ -217,6 +278,7 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
           checkout {c.enabled ? `open · treasury ${c.treasury}` : 'off: GULLY_TREASURY_ADDRESS is not set'} · {billing.alerts.enabled} live alerts of {billing.alerts.total} ({billing.alerts.owners} wallets)
         </span>
       </div>
+      {billing.treasury && <TreasuryChains t={billing.treasury} act={act} />}
       <form
         className="flex flex-wrap items-end gap-2"
         onSubmit={(e) => {

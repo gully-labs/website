@@ -1,6 +1,7 @@
 import { DocLink, DocPage, Ext, List, Section } from '../DocPage'
 
 const sections = [
+  { id: '2026-10-18', title: '18 October 2026' },
   { id: '2026-10-17', title: '17 October 2026' },
   { id: '2026-10-16', title: '16 October 2026' },
 ]
@@ -15,13 +16,24 @@ export function Changelog() {
       lead="What changed, newest first."
       sections={sections}
     >
+      <Section id="2026-10-18" title="18 October 2026">
+        <List>
+          <li>
+            <DocLink to="gully-pay">Gully Pay</DocLink> on three more chains: OP Mainnet (USDC, USDT, ETH), Polygon (USDC, POL) and Avalanche (USDC, USDT, AVAX). Every token and Chainlink feed was read on chain first, and Request Network's fee proxy on each chain was compared byte for byte with the Base and Ethereum deployments.
+          </li>
+          <li>
+            The treasury is a Safe, so each chain is now <DocLink to="gully-pay" hash="chains">offered only where the Safe is deployed</DocLink>; the server checks hourly and the admin panel says what to do. Merchant stores get the in-payment fee on the same condition; elsewhere the fee is invoiced as before.
+          </li>
+        </List>
+      </Section>
+
       <Section id="2026-10-17" title="17 October 2026">
         <List>
           <li>
             A page for every stock token, such as <Ext href="https://gullylabs.xyz/tracker/robinhood/NVDA">NVDA on Robinhood Chain</Ext>: live price against fair, gap history, the pool, contracts, alerts and an embed snippet.
           </li>
           <li>
-            <DocLink to="plans-alerts">Plans and gap alerts</DocLink>: higher limits, signed webhook alerts and up to a year of history, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, straight to the Gully Labs treasury.
+            <DocLink to="plans-alerts">Plans and gap alerts</DocLink>: higher limits, signed webhook alerts and up to a year of history, paid in USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain or Arbitrum (OP Mainnet, Polygon and Avalanche followed on 18 October), straight to the Gully Labs treasury.
           </li>
           <li>
             <Ext href="https://gullylabs.xyz/analytics">Gully Analytics</Ext>: web analytics that also see wallet connects, chains and transactions.

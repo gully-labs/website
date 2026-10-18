@@ -5,13 +5,14 @@
 // pages types a price or a limit; the pricing page, the dashboard, the docs and the enforcement in
 // access.mjs, alerts.mjs and the history endpoint all read this object (the browser via GET /api/plans).
 //
-// Payment is any asset in payments.mjs (ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or
-// Arbitrum), sent straight to the treasury wallet in GULLY_TREASURY_ADDRESS (we never hold anyone's
-// funds). With that variable unset, checkout is off and every page says plans cannot be bought yet:
-// there is no fallback address, ever.
+// Payment is any asset in payments.mjs (ETH, BNB, POL, AVAX, USDC or USDT on Base, Ethereum, BNB Chain,
+// Arbitrum, OP Mainnet, Polygon or Avalanche, each only while the Safe treasury is deployed there), sent
+// straight to the treasury wallet in GULLY_TREASURY_ADDRESS (we never hold anyone's funds). With that
+// variable unset, checkout is off and every page says plans cannot be bought yet: there is no fallback
+// address, ever.
 
 import { guardRecipient } from './pay-guard.mjs'
-import { confirmationsFor, publicAssets, publicChains } from './payments.mjs'
+import { confirmationsFor, FEE_PROXIES, feeSplitOn, publicAssets, publicChains } from './payments.mjs'
 import { solanaTreasury } from './solana-pay.mjs'
 import { getAccount } from './store.mjs'
 
@@ -80,7 +81,9 @@ export function publicPlans({ treasuryOverride } = {}) {
   const assets = publicAssets()
   return {
     currency: 'USD',
-    chains: publicChains().map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer, confirmations: confirmationsFor(c.id) })),
+    // feeProxy: a verified Request ERC20FeeProxy exists there; feeSplit: it is usable now (treasury deployed too), so a
+    // merchant fee is collected inside the payment; without it the fee is invoiced (contracts/CHOICE.md matrix).
+    chains: publicChains().map((c) => ({ id: c.id, name: c.name, key: c.key, explorer: c.explorer, confirmations: confirmationsFor(c.id), feeProxy: !!FEE_PROXIES[c.id], feeSplit: feeSplitOn(c.id) })),
     assets,
     periodDays: PERIOD_DAYS,
     anonymous: ANONYMOUS,

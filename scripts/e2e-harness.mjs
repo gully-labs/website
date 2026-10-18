@@ -124,13 +124,14 @@ export const blockedOutbound = []
 export const anthropicCalls = []
 export const telegramCalls = []
 
-const FEEDS = { 8453: 2_400_00000000n, 1: 2_500_00000000n, 56: 700_00000000n, 42161: 2_450_00000000n }
+const FEEDS = { 8453: 2_400_00000000n, 1: 2_500_00000000n, 56: 700_00000000n, 42161: 2_450_00000000n, 10: 2_400_00000000n, 137: 9_000000n, 43114: 10_00000000n }
 
 function rpcAnswer(chainId, q) {
   if (q.method === 'eth_chainId') return hex(chainId)
   if (q.method === 'eth_blockNumber') return hex(5_000_000)
   if (q.method === 'eth_getBlockByNumber') return { number: q.params[0], timestamp: hex(nowSec()) }
   if (q.method === 'eth_getTransactionReceipt' || q.method === 'eth_getTransactionByHash') return null
+  if (q.method === 'eth_getCode') return '0x' // the treasury is a plain wallet in e2e: every chain is offered
   if (q.method === 'eth_getBalance') return '0x0' // the fee-proxy monitor's coin reads (fee-proxy-monitor.mjs): nothing stuck
   if (q.method === 'eth_call') {
     const data = String(q.params?.[0]?.data ?? '')

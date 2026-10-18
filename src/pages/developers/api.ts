@@ -82,12 +82,15 @@ export interface PayAsset {
   confirmations: number
   explorer: string
   feed: { address: string; description: string } | null
+  /** A token on a chain with a verified fee proxy and a deployed treasury: a merchant fee rides inside the payment. */
+  feeSplit: boolean
 }
 
 /** GET /api/plans: the tiers, the accepted assets and whether they can be bought. Prices live only on the server. */
 export interface Offer {
   currency: 'USD'
-  chains: { id: number; name: string; key: string; explorer: string; confirmations: number }[]
+  /** feeProxy: a verified Request ERC20FeeProxy exists on the chain; feeSplit: it is usable now (treasury deployed there too). */
+  chains: { id: number; name: string; key: string; explorer: string; confirmations: number; feeProxy: boolean; feeSplit: boolean }[]
   assets: PayAsset[]
   periodDays: number
   anonymous: { perMin: number; historyDays: number }

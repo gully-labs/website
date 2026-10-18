@@ -132,7 +132,8 @@ export interface MerchantView {
   profile: { name: string | null; displayName: string; logoUrl: string | null; logoSource: string | null; accent: string | null; supportEmail: string | null; website: string | null }
   wallets: MerchantWallet[]
   ready: boolean
-  chains: { id: number; name: string; key: string; explorer: string }[]
+  /** feeSplit: on this chain the Gully Pay fee is collected inside each stablecoin payment; otherwise it is invoiced weekly. */
+  chains: { id: number; name: string; key: string; explorer: string; feeProxy: boolean; feeSplit: boolean }[]
   assets: PayAsset[]
   links: MerchantLink[]
   invoices: MerchantInvoice[]

@@ -97,7 +97,7 @@ export function GullyPayMerchantsDocs() {
       eyebrow="PRODUCTS · GULLY PAY"
       title="Gully Pay for merchants"
       description="Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy."
-      lead="Take ETH, BNB, USDC and USDT on Base, Ethereum, BNB Chain and Arbitrum, straight into your own wallet. Non-custodial: payments go directly to your wallet. Gully Labs never holds your funds."
+      lead="Take USDC, USDT and the chains' own coins on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon and Avalanche, straight into your own wallet. Non-custodial: payments go directly to your wallet. Gully Labs never holds your funds."
       sections={sections}
     >
       <Section id="overview" title="Overview">
@@ -150,7 +150,7 @@ export function GullyPayMerchantsDocs() {
       <Section id="checkout" title="The checkout">
         <List>
           <li>Your name, logo and accent; the amount; for an invoice, the line items, who it is billed to and the due date; the wallet it pays on each chain.</li>
-          <li>The payer picks a chain and an asset and gets a 20-minute quote for an exact amount (stablecoins 1:1 plus a tag in the last digits; ETH and BNB at the Chainlink price on that chain).</li>
+          <li>The payer picks a chain and an asset and gets a 20-minute quote for an exact amount (stablecoins 1:1 plus a tag in the last digits; ETH, BNB, POL and AVAX at the Chainlink price on that chain).</li>
           <li>A payment counts only when it sent your wallet exactly the quoted amount in the quoted asset on the quoted chain, inside the quote's time, with the chain's confirmations, and its transaction was never used for anything else, by you, another store or Gully Labs. A transfer to any other address never counts.</li>
           <li>
             Stablecoin payments above your free allowance pay your wallet and Gully Labs' fee in one transaction through Request Network's <Code>ERC20FeeProxy</Code>, which never holds funds. Every quote, QR code and split call is checked on the server (and again in the payer's browser, with a simulation) so that nothing ever names the proxy as a recipient; a payment that cannot pass answers with no payment details at all. Details in{' '}
@@ -176,6 +176,14 @@ export function GullyPayMerchantsDocs() {
       <Section id="fees" title="Fees and statements">
         <P>A transaction fee only: no monthly fee, no set-up fee.</P>
         <FeeCurve />
+        <P>Where the fee is collected depends on the chain (the checkout marks each chain, and your store's setup page lists them):</P>
+        <Fields
+          head={['Chain', 'Stablecoin payment', 'Coin payment']}
+          rows={[
+            ['Base, Ethereum, BNB Chain, Arbitrum', 'your wallet and the fee are paid in the same transaction (Request Network fee proxy, verified on each chain); the payer pays exactly the quoted amount', 'one transfer to your wallet; the fee is invoiced'],
+            ['OP Mainnet, Polygon, Avalanche', "the proxy is verified there too; the in-payment fee switches on once Gully Labs' treasury is deployed on that chain, and until then the fee is invoiced", 'one transfer to your wallet; the fee is invoiced'],
+          ]}
+        />
         <List>
           <li>Each workspace's first lifetime volume up to the free allowance is fee-free. A payment that crosses it pays only on the part above it.</li>
           <li>The fee accrues on each confirmed payment at its quoted USD value, exactly (in millionths of a dollar).</li>

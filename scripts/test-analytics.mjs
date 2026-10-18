@@ -202,6 +202,13 @@ Object.assign(process.env, {
   TRACKER_LOOP: 'off',
   GULLY_TREASURY_ADDRESS: TREASURY,
   GULLY_RPC_8453: `http://127.0.0.1:${rpc.address().port}`,
+  // The other chains are never reached here (a closed port), so nothing upstream is read.
+  GULLY_RPC_1: 'http://127.0.0.1:9',
+  GULLY_RPC_56: 'http://127.0.0.1:9',
+  GULLY_RPC_42161: 'http://127.0.0.1:9',
+  GULLY_RPC_10: 'http://127.0.0.1:9',
+  GULLY_RPC_137: 'http://127.0.0.1:9',
+  GULLY_RPC_43114: 'http://127.0.0.1:9',
   ANALYTICS_UPSTREAM: `http://127.0.0.1:${umamiServer.address().port}`,
   ANALYTICS_ADMIN_PASSWORD: UMAMI_ADMIN_PASSWORD,
   ANALYTICS_APP_SECRET: APP_SECRET,

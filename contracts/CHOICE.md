@@ -4,7 +4,8 @@
 treasury in one transaction, without custody?
 
 **Answer.** Use **Request Network's `ERC20FeeProxy`** for tokens (USDC and USDT) on Base, Ethereum, BNB Chain and
-Arbitrum. Keep **native coin** (ETH, BNB) **and Robinhood Chain** on plain transfers, with the fee invoiced as it is
+Arbitrum, and since 2026-10-18 on OP Mainnet, Polygon and Avalanche too (section "Chains added 2026-10-18" below). Keep
+**native coin** (ETH, BNB, POL, AVAX) **and Robinhood Chain** on plain transfers, with the fee invoiced as it is
 today. Gully Labs deploys nothing, and the custom splitter on this branch has been deleted.
 
 **Caveat the owner must see.** I found **no public audit of `ERC20FeeProxy`** in any primary source. The Hacken
@@ -72,8 +73,9 @@ Code hash = the first 6 bytes of keccak256 of the runtime code. Rows with the sa
 | Base (8453) | **`0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814`** | 2165 / `0xfe7593c88edf` | `0xd9C3889eB8DA6ce449bfFE3cd194d08A436e96f2` | 2355 / `0xe51c20f07694` |
 | BNB Chain (56) | **`0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9`** | 2120 / `0x577dab9d22b7` | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | 2335 / `0xd5f5bb48b43e` |
 | Arbitrum (42161) | **`0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9`** | 2120 / `0x577dab9d22b7` | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | 2335 / `0xd5f5bb48b43e` |
-| Optimism (10) | `0x399F5EE127ce7432E4921a61b8CF52b0af52cbfE` | 2165 / `0xfe7593c88edf` | `0xe11BF2fDA23bF0A98365e1A4c04A87C9339e8687` | 2335 / `0x9f312e885b34` |
-| Polygon (137) | registry: `0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9` | **not verified**: every Polygon RPC tried returned an empty body from this machine | registry: `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | not verified |
+| OP Mainnet (10) | **`0x399F5EE127ce7432E4921a61b8CF52b0af52cbfE`** (used since 2026-10-18) | 2165 / `0xfe7593c88edf` (= Base, byte for byte) | `0xe11BF2fDA23bF0A98365e1A4c04A87C9339e8687` | 2335 / `0x9f312e885b34` |
+| Polygon (137) | **`0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9`** (used since 2026-10-18) | 1631 / `0x7e71cc3d1762`; stripped runtime `0x47eecc776c20b737…` = Ethereum `0x370D…` (same build, other metadata) | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | 2335 / `0xd5f5bb48b43e` |
+| Avalanche (43114) | **`0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9`** (used since 2026-10-18) | 2120 / `0x577dab9d22b7` (= BNB Chain and Arbitrum, byte for byte) | `0xfCFBcfc4f5A421089e3Df45455F7f4985FE2D6a8` | 2335 / `0xd5f5bb48b43e` |
 | Robinhood Chain (4663) | **none**: no code at `0x0Dfb…`, `0x399F…`, `0x370D…` or `0x1892…` | 0 | none at `0xfCFB…`, `0xe11B…` or `0xd9C3…` | 0 |
 
 Coinbase `Transfers`: Ethereum `0x1DAe28D7007703196d6f456e810F67C33b51b25C` (19,336 bytes) and Base
@@ -86,6 +88,89 @@ The source registry is
 
 **Why `0x370D…` on Ethereum.** It is the address Request's own SDK uses there. Both Ethereum deployments pass the
 same fork tests, USDT included.
+
+---
+
+## Chains added 2026-10-18: OP Mainnet, Polygon, Avalanche
+
+Request's deployment artifact was read at commit `8110c4c7b5a70750ba44f808c4eb7224d7df4f98` of
+`RequestNetwork/requestNetwork` (`packages/smart-contracts/src/lib/artifacts/ERC20FeeProxy/index.ts`, version
+`0.2.0`): `optimism` → `0x399F…cbfE`, `matic` → `0x0Dfb…0aC9`, `avalanche` → `0x0Dfb…0aC9`
+(`EthereumFeeProxy/index.ts`: `optimism` → `0xe11B…8687`, `matic` and `avalanche` → `0xfCFB…D6a8`, with the older
+`0xC6E2…6C1F` 0.1.0 build on both). Every address was then read with `eth_getCode` through the public RPCs below and
+the runtime compared, CBOR metadata stripped (the last two bytes give its length, as `script/DeployFeeProxy.s.sol`
+does), with the proxies already in use. **Only byte-identical matches went into `FEE_PROXIES` / `SPLIT_PROXIES`.**
+
+| Chain | `ERC20FeeProxy` | RPCs that answered, all with the same code | Match |
+|---|---|---|---|
+| OP Mainnet (10) | `0x399F5EE127ce7432E4921a61b8CF52b0af52cbfE` | mainnet.optimism.io, optimism-rpc.publicnode.com, op-pokt.nodies.app, api.zan.top/opt-mainnet, optimism.drpc.org, 10.rpc.thirdweb.com, optimism.publicnode.com, optimism-mainnet.gateway.tatum.io (8) | 2165 bytes, full hash `0xfe7593c88edf` **= Base `0x1892…`**; stripped `0xf046d2f7d0f32b2f…` (2112 bytes) = `BASE_ERC20_FEE_PROXY_RUNTIME` in `DeployFeeProxy.s.sol` |
+| Polygon (137) | `0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9` | polygon-bor.publicnode.com, api.zan.top/polygon-mainnet, 137.rpc.thirdweb.com, polygon.rpc.thirdweb.com (4; see the RPC note) | 1631 bytes, full hash `0x7e71cc3d1762`; stripped `0x47eecc776c20b737…` (1579 bytes) **= Ethereum `0x370D…`** (solc 0.5.17 build; only the metadata differs). Celo's `0x2171…` is the same runtime |
+| Avalanche (43114) | `0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9` | api.avax.network, avalanche-c-chain-rpc.publicnode.com, avalanche.api.onfinality.io, api.zan.top/avax-mainnet, avalanche.drpc.org, 43114.rpc.thirdweb.com, avax-mainnet.gateway.tatum.io, avalanche.publicnode.com (8) | 2120 bytes, full hash `0x577dab9d22b7` **= BNB Chain and Arbitrum `0x0Dfb…`**; stripped `0x43da4b52fee9a1f7…` (2067 bytes) |
+
+`EthereumFeeProxy` (not used, listed for the guard's registry): `0xe11B…8687` on OP Mainnet and `0xfCFB…D6a8` on Polygon
+and Avalanche are 2335 bytes with the same stripped runtime `0x3c56e094dd7b0639…` as Ethereum's `0xfCFB…D6a8`.
+
+Other mainnets in the artifact, read the same day for completeness (not Gully Pay chains): Gnosis (100) and Fantom
+(250) carry the BNB build at `0x0Dfb…`; Sonic (146), Mantle (5000), Core (1116) and Ronin (2020, at `0xAe23…B64B`)
+carry the Base build; Celo (42220, `0x2171…dB0C`) the Ethereum `0x370D` build; Boba (288) and zkSync Era (324) are
+different builds (1119 and 4768 bytes) and would need their own review; Moonbeam's RPCs did not answer from here.
+
+**RPC note.** From the development machine several public hosts fail with a TLS interception error
+(`ERR_SSL_WRONG_VERSION_NUMBER`), among them `*.drpc.org` for Polygon only, `1rpc.io`, `*.gateway.tenderly.co`,
+`polygon-rpc.com` and `*.publicnode.com` for some chains; the production box does not have it. Each new chain's six
+default RPCs in `server/payments.mjs` answered `eth_chainId`, `eth_blockNumber` and `eth_getCode` from here, except
+three of Polygon's (`polygon.drpc.org`, `polygon-mainnet.public.blastapi.io`, `polygon.gateway.tenderly.co`), which
+are the same providers that serve our other chains and are kept behind the three that answered. The cool-off fallback
+in `payments.rpc` steps around any host that fails.
+
+### Tokens and feeds, read on chain the same day (`symbol()`, `decimals()`, `name()`; `description()`, `decimals()`, `latestRoundData()`)
+
+| Chain | Token | Address | On chain | Note |
+|---|---|---|---|---|
+| OP Mainnet | USDC | `0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85` | USDC, 6, "USD Coin", 1852-byte proxy, owner `0xb04f…441f` | Circle's native issuance (the bridged `USDC.e` `0x7F5c…1607` is not offered) |
+| OP Mainnet | USDT | `0x94b008aA00579c1307B0EF2c499aD98a8ce58e58` | USDT, 6, "Tether USD" | the OP standard bridge's USDT, the only USDT on OP Mainnet |
+| OP Mainnet | ETH / USD feed | `0x13e3Ee699D1909E989722E753853AE30b17e08c5` | "ETH / USD", 8 decimals, fresh answer | Chainlink |
+| Polygon | USDC | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | USDC, 6, "USD Coin", 1852-byte proxy, owner `0xaee2…2bcc` | Circle's native issuance (`USDC.e` PoS `0x2791…4174` is not offered) |
+| Polygon | USDT | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` | **symbol `USDT0`, name "USDT0"**, 6 | Tether's omnichain USDT0 replaced the PoS USDT at this address; **not offered** (different symbol and product) until the owner decides |
+| Polygon | POL price | `0xAB594600376Ec9fD91F8e885dADF0CE036862dE0` | "MATIC / USD", 8 decimals, fresh answer | Chainlink's data directory lists no separate POL / USD feed on Polygon; POL replaced MATIC 1:1 (Sept 2024), so this feed prices POL |
+| Avalanche | USDC | `0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E` | USDC, 6, "USD Coin", 1852-byte proxy, owner `0x4b7c…508e` | Circle's native issuance (`USDC.e` `0xA7D7…C664` is not offered) |
+| Avalanche | USDT | `0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7` | **symbol `USDt`**, 6, "TetherToken", owner `0xd83d…2aaa` | Tether's native Avalanche issuance (shown as USDT; `USDT.e` `0xc719…5118` is not offered) |
+| Avalanche | AVAX / USD feed | `0x0A77230d17318075983913bC2145DB16C7366156` | "AVAX / USD", 8 decimals, fresh answer | Chainlink |
+
+### The treasury gate (`server/treasury-chains.mjs`)
+
+`GULLY_TREASURY_ADDRESS` is a Safe: the same address on every chain, deployed on some. A payment to the address on a
+chain where nothing is deployed can be lost (nobody can sign there), so the server reads `eth_getCode(treasury)` on
+every chain at start and hourly (sooner while a read fails) and **does not offer** a chain where the treasury has no
+code: not in `GET /api/plans`, not in quotes (409), pay links, checkouts or QR codes, and `withFeeSplit` drops the fee
+leg there (merchant payments stay plain transfers with the fee invoiced). The treasury is taken for a contract as soon
+as any chain shows code at its address (`GULLY_TREASURY_KIND=contract` pins it before the first deployment); an
+address with no code anywhere is an EOA and receives everywhere. The admin panel (Subscriptions card) lists every
+chain's state with "Treasury not deployed on <chain> — deploy the Safe at the same address via app.safe.global, then
+it switches on by itself", and `POST /api/admin/treasury/check` reads again at once. Merchant wallets have had the
+same rule since `merchants.inspectWallet`.
+
+### Per-chain matrix
+
+| Chain | Proxy verified | Treasury | Offered to payers | Merchant fee on stablecoins |
+|---|---|---|---|---|
+| Base, Ethereum, BNB Chain, Arbitrum | yes (above) | deployed (payments have been received there) | yes | in the payment (`withFeeSplit`) |
+| OP Mainnet | yes, = Base's build | **gated**: not offered until the Safe is deployed there | after deployment, automatically | in the payment once deployed; invoiced until then |
+| Polygon | yes, = Ethereum's build | **gated** | after deployment, automatically | same |
+| Avalanche | yes, = BNB/Arbitrum's build | **gated** | after deployment, automatically | same |
+| Solana | no Request deployment | its own `GULLY_SOLANA_TREASURY` | while that is set | invoiced |
+| Robinhood Chain | none | n/a | not a Gully Pay chain | n/a |
+
+What the payer sees never changes with the fee path: the quoted amount is what leaves the wallet; a split adds an
+approval step before the one payment call.
+
+### Gas (`node scripts/gas-report.mjs`, read live)
+
+Gas price, the coin's Chainlink price, and the USD cost of approve (46k), the fee-proxy payment (106k, measured on
+Base Sepolia) and a plain transfer (65k); on Base and OP Mainnet the L1 data fee from the `GasPriceOracle` predeploy,
+on Arbitrum from `NodeInterface.gasEstimateL1Component`. On 2026-10-18 every chain's fee-proxy payment cost under one
+cent: Base $0.0015, Ethereum $0.0099, BNB Chain $0.0038, Arbitrum $0.0052, OP Mainnet $0.0003, Polygon $0.0025,
+Avalanche $0.0052.
 
 ---
 
@@ -221,4 +306,7 @@ therefore makes that impossible from anything Gully builds, and visible if a thi
   with matching `Transfer` logs.
 - **Robinhood Chain** has no Request deployment. It stays on plain transfers with the fee invoiced, unless Request
   deploys there. Its CREATE2 addresses (`0x0Dfb…`, `0x399F…`) would then be the ones to check.
-- Polygon could not be checked from this machine. Polygon is not a Gully chain today.
+- Polygon's proxy was verified on 2026-10-18 through four RPCs (above); Polygon, OP Mainnet and Avalanche are Gully
+  Pay chains since then, each offered only once the Safe treasury is deployed there.
+- Polygon USDT0 (`0xc213…8e8F`) is not offered: its on-chain symbol is `USDT0` and it is Tether's omnichain product,
+  not the plain USDT; adding it needs the owner's decision and its own mark.

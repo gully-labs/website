@@ -438,7 +438,7 @@ function StoreLinkView({ link }: { link: StoreLink }) {
                 )}
                 <div className="flex flex-col gap-3">
                   <span className="font-mono text-[11px] tracking-[1px] text-faint">PAY WITH</span>
-                  <AssetPicker assets={link.assets} value={asset} onChange={setAsset} disabled={busy} />
+                  <AssetPicker assets={link.assets} value={asset} onChange={setAsset} disabled={busy} showFee />
                 </div>
                 {err && (
                   <p className="m-0 text-[14px] text-error" role="alert">
