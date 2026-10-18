@@ -563,3 +563,74 @@ test('Cluster Watch: "sells X% of its holding" fires on a relative fall; deploye
   assert.equal(e.soldPct, 35)
   assert.equal(A.holderMetric({ metric: 'deployer' }, { state: 'ok', summary: {}, forensics: null }), null, 'no deployer on a stock')
 })
+
+/* ------------------------------------------------- recent flows (motion) --- */
+
+test('recentFlows: the latest transfers as buys, sells, transfers, mints and burns, oldest first, never invented', () => {
+  const t = [...launchHistory(), tr(addr(2), VAULT, 5_000n * E18, 120, '0xs1')]
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: t, complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, tier: 'free' })
+  assert.ok(Array.isArray(m.recentFlows), 'free maps carry them too: they are the public transfers the map was built from')
+  assert.equal(m.recentFlows.length, t.length, 'fewer transfers than the cap: all of them')
+  const f = m.recentFlows
+  assert.deepEqual(
+    f.map((x) => x.side),
+    ['mint', 'transfer', 'buy', 'buy', 'buy', 'buy', 'transfer', 'buy', 'transfer', 'transfer', 'burn', 'sell'],
+  )
+  const sell = f.at(-1)
+  assert.equal(sell.from, addr(2))
+  assert.equal(sell.to, VAULT)
+  assert.equal(sell.units, 5000)
+  assert.equal(sell.pct, 0.5)
+  assert.equal(sell.block, 120)
+  assert.equal(sell.tx, '0xs1')
+  assert.equal(sell.at, null, 'no time in the log and none read: null, not a guess')
+  // Capped to the latest RECENT_FLOWS, still oldest first.
+  const many = Array.from({ length: H.RECENT_FLOWS + 10 }, (_, i) => tr(VAULT, addr(1 + (i % 5)), E18, 200 + i, `0xm${i}`))
+  const m2 = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: [...launchHistory(), ...many], complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
+  assert.equal(m2.recentFlows.length, H.RECENT_FLOWS)
+  assert.equal(m2.recentFlows.at(-1).block, 200 + H.RECENT_FLOWS + 9)
+  assert.ok(m2.recentFlows.every((x, i, a) => i === 0 || a[i - 1].block <= x.block))
+  // Block times read for the replay are used when the log has none.
+  const m3 = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: t, complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, times: new Map([[120, 1_760_000_000]]) })
+  assert.equal(m3.recentFlows.at(-1).at, new Date(1_760_000_000_000).toISOString())
+  // No history read: no flows (an empty list, not a made-up one).
+  const m4 = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'X', decimals: 0, kind: 'stock', holders: [{ address: addr(1), raw: 10n }], history: null, labels: new Map(), supply: 10n, sources: {} })
+  assert.deepEqual(m4.recentFlows, [])
+})
+
+test('flowSide: pool out is a buy, pool in is a sell, zero is a mint, burn addresses burn', () => {
+  const L = new Map([[VAULT, { kind: 'pool' }], [ZERO, { kind: 'burn' }]])
+  const of = (a) => L.get(a)
+  assert.equal(H.flowSide(VAULT, addr(1), of), 'buy')
+  assert.equal(H.flowSide(addr(1), VAULT, of), 'sell')
+  assert.equal(H.flowSide(ZERO, addr(1), of), 'mint')
+  assert.equal(H.flowSide(addr(1), ZERO, of), 'burn')
+  assert.equal(H.flowSide(addr(1), '0x000000000000000000000000000000000000dead', of), 'burn')
+  assert.equal(H.flowSide(addr(1), addr(2), of), 'transfer')
+})
+
+test('live: each new transfer says buy or sell, with whole units, and the moved top 10', async () => {
+  H.resetHoldersForTest()
+  await H.readHolderMap('robinhood', TOKEN, { tier: 'free' })
+  const live = await I.readLive('robinhood', TOKEN, 150)
+  assert.equal(live.state, 'ok')
+  for (const t of live.transfers) {
+    assert.ok(['buy', 'sell', 'transfer', 'mint', 'burn'].includes(t.side), t.side)
+    assert.equal(typeof t.units, 'number')
+  }
+  assert.ok(live.transfers.some((t) => t.side === 'buy' && t.from === VAULT), 'the vault paying out is a buy')
+  assert.equal(typeof live.top10Pct, 'number')
+})
+
+test('launch feed preview: the biggest bubbles and the latest flows of a cached map, nothing built for it', () => {
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: launchHistory(), complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
+  const p = I.mapPreview(m)
+  assert.ok(p.nodes.length > 0 && p.nodes.length <= I.PREVIEW_NODES)
+  assert.equal(p.nodes[0].k, 'pool')
+  assert.equal(p.nodes[0].p, 68)
+  assert.ok(p.nodes.some((n) => n.k === 'deployer'))
+  assert.ok(p.nodes.some((n) => n.k === 'burn'))
+  assert.ok(p.flows.length > 0 && p.flows.length <= 8)
+  assert.ok(p.flows.every((f) => Number.isInteger(f.f) && Number.isInteger(f.t) && typeof f.s === 'string'))
+  assert.ok(p.flows.some((f) => f.s === 'buy' && f.f === 0), 'buys flow out of the pool (node 0)')
+})

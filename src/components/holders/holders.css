@@ -1,0 +1,19 @@
+/* Holder Map keyframes (the shared ones live in src/index.css). Under reduced motion they become fades,
+   following the site's gentle policy: no transforms, no loops. */
+@keyframes gl-pill-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.35, 1.9); opacity: 0; }
+}
+@keyframes gl-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes gl-panel-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes gl-pill-ping { from { opacity: 0.9; } to { opacity: 0; } }
+  @keyframes gl-toast-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes gl-panel-in { from { opacity: 0; } to { opacity: 1; } }
+}

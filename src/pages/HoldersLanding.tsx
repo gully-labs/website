@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { CircleDashed, Radar, Search } from 'lucide-react'
 import { Seo } from '../components/Seo'
@@ -7,6 +7,7 @@ import { axisTooltip, barsPreset, itemTooltip, tipHtml } from '../components/cha
 import { ChartSkeleton } from '../components/charts/ChartSkeleton'
 import { ScoreRing } from '../components/holders/parts'
 import { K } from '../components/holders/theme'
+import type { MapPreview } from '../components/holders/MiniMap'
 import { eyebrow } from '../components/ui'
 import { getJson, type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveMatch, type TopScanned } from '../lib/holders'
 import { ageText } from '../lib/tracker'
@@ -17,6 +18,8 @@ import { ageText } from '../lib/tracker'
    figure is read live; a launch still being checked says so. */
 
 const LEVEL_COLOUR = { good: K.gold, mixed: K.pale, poor: K.warn } as const
+/** Each checked launch's map in miniature (its own small chunk, drawn only while on screen). */
+const MiniMap = lazy(() => import('../components/holders/MiniMap'))
 const HOUR = 3_600_000
 const MAX_HOURS = 12
 const STATES: { id: CheckedLaunch['state']; label: string; colour: () => string }[] = [
@@ -76,7 +79,7 @@ export function HoldersLanding() {
       />
       <section className="flex flex-col gap-4">
         <span className={eyebrow}>HOLDER MAP · GULLY LABS</span>
-        <h1 className="m-0 font-display text-[clamp(44px,6cqw,88px)] leading-[.9] font-extrabold uppercase">Who really holds it?</h1>
+        <h1 className="m-0 font-display text-h1 font-extrabold uppercase">Who really holds it?</h1>
         <p className="m-0 max-w-[720px] text-[18px] leading-[1.6] text-muted">
           Paste a token address or a ticker. See the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every new DeepCore launch: bundled buys, snipers, the deployer’s share and record.
         </p>
@@ -85,12 +88,12 @@ export function HoldersLanding() {
       </section>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] items-start gap-5">
-        <section aria-labelledby="hl-feed" className="flex min-w-0 flex-col gap-4 rounded-card border border-line p-6" style={{ background: K.night }}>
+        <section aria-labelledby="hl-feed" className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="hl-feed" className="m-0 font-display text-h4 font-bold uppercase text-kit-bone">
+            <h2 id="hl-feed" className="m-0 font-display text-h4 font-bold uppercase text-ink">
               New launches, checked
             </h2>
-            <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-kit-text-dim">
+            <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-dim">
               <span className="relative inline-flex size-2.5" aria-hidden>
                 <span className="absolute inset-0 animate-[gl-live-pulse_2s_ease-out_infinite] rounded-full bg-gold" />
                 <span className="relative size-2.5 rounded-full bg-gold" />
@@ -102,7 +105,7 @@ export function HoldersLanding() {
           <Feed s={feed} now={now} />
         </section>
 
-        <section aria-labelledby="hl-top" className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6">
+        <section aria-labelledby="hl-top" className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
           <h2 id="hl-top" className="m-0 font-display text-h4 font-bold uppercase">
             Most scanned today
           </h2>
@@ -143,7 +146,7 @@ function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
       {stockChains.map((c) => (
         <li key={c.chain} className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 ${c.stocks ? 'border-gold/40 text-ink' : 'border-line text-muted'}`}>
           {c.stocks ? <Radar aria-hidden size={14} className="text-gold" /> : <CircleDashed aria-hidden size={14} className="animate-[spin_6s_linear_infinite] text-faint motion-reduce:animate-none" />}
-          Stocks on {c.name} · {c.stocks ? 'live' : 'coming soon'}
+          Stock maps on {c.name} · {c.stocks ? 'live' : 'coming soon'}
         </li>
       ))}
     </ul>
@@ -289,11 +292,11 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
     return (
       <div role="status" aria-label="Reading the newest launches" className="flex flex-col gap-2">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-[60px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[10px]" style={{ background: K.midnight }} />
+          <div key={i} className="h-[60px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[10px]" style={{ background: K.night }} />
         ))}
       </div>
     )
-  if (s.k === 'error') return <p className="m-0 text-[14px] text-kit-text-muted">The launch feed could not be read just now; it retries every 30 seconds.</p>
+  if (s.k === 'error') return <p className="m-0 text-[14px] text-muted">The launch feed could not be read just now; it retries every 30 seconds.</p>
   const list = s.data.launches
   return (
     <>
@@ -302,12 +305,12 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
       ) : recency ? (
         <figure className="m-0 flex flex-col gap-1">
           <EChart option={recencyOption} height={150} label={`New launches per hour in the live feed: ${recency.labels.map((h, i) => `${h} ${STATES.reduce((n, _, k) => n + recency.counts[k][i], 0)}`).join(', ')}`} skeleton="bars" />
-          <figcaption className="font-mono text-[11px] text-kit-text-dim">New launches per hour · scores appear as checks finish</figcaption>
+          <figcaption className="font-mono text-[11px] text-dim">New launches per hour · scores appear as checks finish</figcaption>
         </figure>
       ) : (
         <div role="status" className="relative h-[150px]">
           <ChartSkeleton variant="bars" />
-          <span className="absolute inset-0 flex items-center justify-center gap-2 font-mono text-[12px] text-kit-text-muted">
+          <span className="absolute inset-0 flex items-center justify-center gap-2 font-mono text-[12px] text-muted">
             <span className="relative inline-flex size-2.5" aria-hidden>
               <span className="absolute inset-0 animate-[gl-live-pulse_2s_ease-out_infinite] rounded-full bg-gold" />
               <span className="relative size-2.5 rounded-full bg-gold" />
@@ -316,7 +319,7 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
           </span>
         </div>
       )}
-      {!list.length && <p className="m-0 text-[14px] text-kit-text-muted">No launches yet.</p>}
+      {!list.length && <p className="m-0 text-[14px] text-muted">No launches yet.</p>}
       <ul className="m-0 flex list-none flex-col gap-2 p-0" data-launch-feed>
         {list.slice(0, 12).map((l, i) => (
           <FeedRow key={`${l.chainKey}:${l.token}`} l={l} i={i} now={now} />
@@ -326,30 +329,39 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
   )
 }
 
-function FeedRow({ l, i, now }: { l: CheckedLaunch; i: number; now: number }) {
+function FeedRow({ l, i, now }: { l: CheckedLaunch & { preview?: MapPreview | null }; i: number; now: number }) {
   const score = l.health?.score ?? null
+  const preview = l.state === 'checked' && l.preview?.nodes?.length ? l.preview : null
   return (
     <li className="animate-[gl-rise_.5s_ease_both] motion-reduce:animate-[gl-fade_.3s_ease_both]" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}>
-      <Link to={l.path} className="flex min-h-[60px] items-center gap-3 rounded-[10px] border border-line px-3 py-2 transition-colors hover:border-kit-lab-gold" style={{ background: K.midnight }}>
+      <Link to={l.path} className="flex min-h-[60px] items-center gap-2.5 rounded-[10px] border border-line px-2 py-2 transition-colors hover:border-gold min-[420px]:gap-3 min-[420px]:px-3" style={{ background: K.night }}>
+        {preview ? (
+          <Suspense fallback={<span className="h-[56px] w-[76px] flex-none animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[8px]" style={{ background: K.night }} />}>
+            <MiniMap preview={preview} label={`Holder Map of ${l.symbol ?? 'this launch'} in miniature: ${preview.nodes.length} biggest holders and its latest transfers`} />
+          </Suspense>
+        ) : (
+          <span aria-hidden className="h-[56px] w-[76px] flex-none animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[8px] border border-line" style={{ background: K.night }} />
+        )}
         {l.state === 'checked' ? (
           <ScoreRing score={score} level={l.health?.level ?? null} size={44} />
         ) : (
-          <span className="inline-flex size-11 flex-none animate-[gl-skeleton_1.4s_ease-in-out_infinite] items-center justify-center rounded-full border border-line-strong font-mono text-[11px] text-kit-text-dim">
+          <span className="inline-flex size-11 flex-none animate-[gl-skeleton_1.4s_ease-in-out_infinite] items-center justify-center rounded-full border border-line-strong font-mono text-[11px] text-dim">
             {l.state === 'checking' ? '…' : '—'}
           </span>
         )}
         <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
           <span className="flex items-baseline gap-2">
-            <span className="truncate font-semibold text-kit-bone">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
-            <span className="flex-none font-mono text-[11px] text-kit-text-dim">
-              {l.chainName} · {ageText(l.createdAt, now)}
+            <span className="truncate font-semibold text-ink">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
+            <span className="flex-none font-mono text-[11px] text-dim">
+              <span className="max-[419px]:hidden">{l.chainName} · </span>
+              {ageText(l.createdAt, now)}
             </span>
           </span>
-          <span className="truncate text-[12px] text-kit-text-muted">
+          <span className="truncate text-[12px] text-muted">
             {l.state === 'checking' ? 'Checking the holders now…' : l.state === 'unavailable' ? 'Holder data is not available for this one yet.' : (l.riskLine ?? l.health?.verdict ?? '')}
           </span>
         </span>
-        <span className="flex-none font-mono text-[12px] text-kit-lab-gold">Map →</span>
+        <span className="hidden flex-none font-mono text-[12px] text-gold min-[420px]:inline">Map →</span>
       </Link>
     </li>
   )

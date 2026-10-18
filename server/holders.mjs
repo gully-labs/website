@@ -60,6 +60,7 @@ const DC_PAGE = 1_000
 export const RECENT_MAX_LOGS = 5_000
 const RECENT_MAX_CALLS = 8
 export const FRAMES = 24
+export const RECENT_FLOWS = 24
 const MAX_BUILDS = 3
 const PER_IP_PER_MIN = 12
 const CACHE_MAX = 200
@@ -533,6 +534,44 @@ export function staticLabels({ chainKey, token, venue, launch, trackerPool }) {
 /* --------------------------------------------------------------- the map --- */
 
 /**
+ * What a transfer was, from the labels: 'buy' (a pool or router paid a wallet), 'sell' (a wallet paid a pool or router),
+ * 'mint' (from the zero address), 'burn' (to a burn address), else 'transfer'. Pure.
+ */
+export function flowSide(from, to, labelOf) {
+  const k = (a) => labelOf(a)?.kind ?? null
+  const venue = (a) => k(a) === 'pool' || k(a) === 'router'
+  const infra = (a) => INFRA.has(k(a))
+  if (from === ZERO) return 'mint'
+  if (k(to) === 'burn' || to === DEAD) return 'burn'
+  // Seeding a pool from the launch kit, or a pool paying a router, is plumbing: a transfer, not a trade.
+  if (venue(from) && !infra(to)) return 'buy'
+  if (venue(to) && !infra(from)) return 'sell'
+  return 'transfer'
+}
+
+/**
+ * The latest transfers as flows for the map to replay on load: [{ from, to, side, pct, units, block, at, tx }],
+ * oldest first, at most RECENT_FLOWS. Straight from the transfers that were read (never invented); `at` is
+ * null when the log carried no time.
+ */
+export function recentFlowsOf({ transfers, labels, total, decimals, times = new Map(), max = RECENT_FLOWS }) {
+  if (!Array.isArray(transfers) || !transfers.length) return []
+  return transfers.slice(-max).map((t) => {
+    const ts = t.ts ?? times.get(t.block) ?? null
+    return {
+      from: t.from,
+      to: t.to,
+      side: flowSide(t.from, t.to, (a) => labels.get(a)),
+      pct: total > 0n ? pctOf(t.value, total) : null,
+      units: units(t.value, decimals),
+      block: t.block,
+      at: ts ? new Date(ts * 1000).toISOString() : null,
+      tx: t.tx ?? null,
+    }
+  })
+}
+
+/**
  * Builds the map from what was read. Pure (no IO), so the tests drive it directly.
  *   holders   [{ address, raw, contract? }] or null (when `history` is complete, balances come from it)
  *   history   { transfers (oldest first), complete, fromBlock, toBlock } or null
@@ -766,6 +805,7 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     forensics,
     fair: fairSummary,
     timeline,
+    recentFlows: recentFlowsOf({ transfers: history?.transfers ?? [], labels: lbl, total, decimals, times }),
     hidden,
     health: null,
     deployerHistory: null,
