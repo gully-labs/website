@@ -1,13 +1,32 @@
-# Fork tests that check the third-party payment contracts Gully Pay calls (see CHOICE.md).
-# Gully Labs deploys no contract of its own. Run: forge test  (needs internet; reads live chain state)
+# Request Network's ERC20FeeProxy (vendored in src/request, see CHOICE.md and TESTNET-RESULTS.md), fork tests of the
+# deployed proxies, and the Base Sepolia testnet scripts. Gully Labs deploys nothing on mainnet.
+#   forge test                                    fork tests (needs internet; reads live chain state)
+#   forge script script/DeployFeeProxy.s.sol ...  testnet deploy (see the script)
 [profile.default]
-src = "test"
+src = "src"
 out = "out"
 libs = ["lib"]
 test = "test"
-solc_version = "0.8.26"
+script = "script"
 evm_version = "cancun"
 # Every top-level call is its own transaction, so addresses start cold as on mainnet. That matters for the
 # 2300-gas `transfer` test: in one big test transaction the Safe would already be warm and the bug would hide.
 isolate = true
-remappings = ["forge-std/=lib/forge-std/src/"]
+remappings = ["forge-std/=lib/forge-std/src/", "@openzeppelin/contracts/=src/request/openzeppelin/"]
+fs_permissions = [{ access = "read", path = "./out" }]
+
+# The vendored proxies build exactly as Request built its Base deployments (ERC20FeeProxy 0x1892…b814 and
+# EthereumFeeProxy 0xd9C3…96f2): solc 0.8.9, optimizer off. That reproduces both runtimes byte for byte, metadata
+# aside (contracts/TESTNET-RESULTS.md). Everything else uses 0.8.26.
+[[profile.default.additional_compiler_profiles]]
+name = "request"
+evm_version = "london"
+optimizer = false
+
+[[profile.default.compilation_restrictions]]
+paths = "src/request/**"
+version = "=0.8.9"
+evm_version = "london"
+
+[lint]
+ignore = ["src/request/**"]
