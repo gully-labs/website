@@ -150,7 +150,7 @@ export function TelegramDocs() {
         </List>
         <P>
           It follows your Telegram theme. Every request is signed with the data Telegram gives the app, checked on our server and refused when older than 24 hours; nothing is stored as a session. The News channel requirement applies here too, with
-          the same exits left open.
+          the same exits left open. More: <DocLink to="telegram-mini-app">Telegram Mini App</DocLink>.
         </P>
       </Section>
 
