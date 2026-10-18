@@ -18,6 +18,8 @@ export const chunks = {
   pay: () => import('./pay/PayPage'),
   receipt: () => import('./pay/Receipt'),
   payLink: () => import('./pay/LinkPage'),
+  // The Telegram Mini App (/tg): its own chunk, never prefetched from the site.
+  tg: () => import('./tg/TgApp'),
 }
 
 type Chunk = keyof typeof chunks

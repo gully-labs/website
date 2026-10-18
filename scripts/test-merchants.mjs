@@ -13,7 +13,7 @@ import fs from 'node:fs'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
-import { getAddress } from 'viem'
+import { encodeAbiParameters, getAddress, keccak256, toEventSelector } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { makeChecker, makeClient } from './test-helpers.mjs'
 
@@ -39,11 +39,12 @@ const nowSec = () => Math.floor(Date.now() / 1000)
 
 function makeChain(chainId, answer) {
   const c = { chainId, head: 5_000_000, receipts: new Map(), txs: new Map(), blocks: new Map(), code: new Map(), feed: { roundId: 777n, answer, updatedAt: nowSec() - 60 } }
-  c.add = ({ hash = randHash(), from, to, value, token = null, block = c.head - 30, minedAt = nowSec() }) => {
+  // `logs` replaces the single Transfer (a fee-proxy payment); `txTo` is then the contract called.
+  c.add = ({ hash = randHash(), from, to, value, token = null, block = c.head - 30, minedAt = nowSec(), logs: custom = null, txTo = null }) => {
     c.blocks.set(block, minedAt)
-    const logs = token ? [{ address: token, topics: [TRANSFER, pad(from), pad(to)], data: pad(hex(value)) }] : []
+    const logs = custom ?? (token ? [{ address: token, topics: [TRANSFER, pad(from), pad(to)], data: pad(hex(value)) }] : [])
     c.receipts.set(hash, { transactionHash: hash, status: '0x1', blockNumber: hex(block), from, logs })
-    c.txs.set(hash, { hash, from, to: token ?? to, value: token ? '0x0' : hex(value), blockNumber: hex(block), chainId: hex(chainId) })
+    c.txs.set(hash, { hash, from, to: txTo ?? token ?? to, value: token || custom ? '0x0' : hex(value), blockNumber: hex(block), chainId: hex(chainId) })
     return hash
   }
   c.server = http.createServer((req, res) => {
@@ -152,6 +153,21 @@ const usdcRaw = (q) => BigInt(q.amountRaw)
 function sendUsdc(q, to = q.treasury, value = usdcRaw(q)) {
   const c = chains[q.chainId]
   return c.add({ from: acct().address.toLowerCase(), to, value, token: USDC[q.chainId] })
+}
+
+/* Request Network's ERC20FeeProxy (payments.mjs FEE_PROXIES): one transaction pays the store and Gully's fee. */
+const PROXY = { 8453: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814', 56: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9' }
+const FEE_EVENT = toEventSelector('TransferWithReferenceAndFee(address,address,uint256,bytes,uint256,address)')
+const transferLog = (token, from, to, value) => ({ address: token, topics: [TRANSFER, pad(from), pad(to)], data: pad(hex(value)) })
+/**
+ * Pays a split quote through the proxy, as the wallet path does: the store's leg, the fee leg and the proxy's
+ * event. `feeTo`, `fee` and `merchant` can be forged to test what the verifier refuses.
+ */
+function payViaProxy(q, { feeTo = TREASURY, fee = BigInt(q.split.feeRaw), merchant = BigInt(q.amountRaw) - fee } = {}) {
+  const token = USDC[q.chainId]
+  const from = acct().address.toLowerCase()
+  const event = { address: PROXY[q.chainId], topics: [FEE_EVENT, keccak256(q.split.ref)], data: encodeAbiParameters([{ type: 'address' }, { type: 'address' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'address' }], [token, q.treasury, merchant, fee, feeTo]) }
+  return chains[q.chainId].add({ from, txTo: PROXY[q.chainId], logs: [transferLog(token, from, q.treasury, merchant), transferLog(token, from, feeTo, fee), event] })
 }
 
 /** Opens a store invoice, quotes base-usdc and pays it to the store's wallet. */
@@ -293,6 +309,7 @@ try {
   /* ---------------------------------------------------- paying the store --- */
   const q1 = (await payPost(`/api/pay/m/i/${inv1.id}/quote`, { asset: 'base-usdc' })).data?.quote
   check("the quote sends to the store's wallet, not the treasury", q1?.treasury === MW && q1.treasury !== TREASURY && q1.uri.includes(eoa))
+  check('fee split: none while the whole payment is inside the free allowance', q1.split === null, JSON.stringify(q1.split))
   const toTreasury = sendUsdc(q1, TREASURY)
   const vt = await payPost(`/api/pay/m/i/${inv1.id}/verify`, { quoteId: q1.id, txHash: toTreasury })
   check("paying OUR treasury the exact amount does not count for the store (422)", vt.status === 422 && /store's wallet/.test(vt.data?.error ?? ''), vt.data?.error)
@@ -332,6 +349,7 @@ try {
   const lc = await payPost(`/api/pay/m/l/${link.id}/invoice`, { asset: 'base-usdc' })
   check('a link checkout makes a store invoice and hands over to /pay/m/', lc.status === 201 && lc.data.path.startsWith(`/pay/m/${lc.data.invoice.id}`), lc.data?.error)
   const pl = await payInvoice(lc.data.invoice.id)
+  check('fee split: a quote crossing the $5k allowance takes the fee on the part above it only ($100 at 0.5% = 0.50 USDC)', pl.q.split?.feeRaw === '500000' && pl.q.split.feeTo === TREASURY && pl.q.split.proxy === PROXY[8453] && BigInt(pl.q.split.merchantRaw) + 500000n === BigInt(pl.q.amountRaw), JSON.stringify(pl.q.split))
   check('the link checkout is paid', pl.v.status === 200, pl.v.data?.error)
   f = (await O.call('/api/developer/merchant')).data.fees
   check('fees: a payment across the allowance pays only on the part above it ($0.50)', f.accruedUsd === 0.5 && f.freeLeftUsd === 0, JSON.stringify(f))
@@ -431,6 +449,92 @@ try {
 
   const cfg = await anon.call('/api/pay/m/config')
   check('public config for the docs: 0.5%, $5,000 free, 7 days', cfg.status === 200 && cfg.data.feePct === 0.5 && cfg.data.freeUsd === 5000 && cfg.data.pauseAfterDays === 7)
+
+  /* --------------------------------- fee at payment time (Request fee proxy) --- */
+  const mdb = M.merchantsDbForTest()
+  const feeRowOf = (invoiceId) => {
+    const pay = mdb.payments.find((x) => x.invoiceId === invoiceId)
+    return { pay, row: pay ? mdb.fees.find((x) => x.paymentId === pay.id) : null }
+  }
+  const fBefore = (await O.call('/api/developer/merchant')).data.fees
+  check('fee proxy: before, nothing collected on chain; $0.50 not billed yet', fBefore.collectedUsd === 0 && fBefore.collectedPayments === 0 && fBefore.unbilledUsd === 0.5 && fBefore.billedUsd === 2, JSON.stringify(fBefore))
+  const invA = (await O.post('/api/developer/merchant/invoices', { items: [{ description: 'Roaster', unitUsd: '1000' }], dueDate: due })).data.invoice
+  const qA = (await payPost(`/api/pay/m/i/${invA.id}/quote`, { asset: 'base-usdc' })).data?.quote
+  check('fee split: above the allowance, a $1,000 USDC quote carries a 5 USDC fee to the treasury', qA?.split?.feeRaw === '5000000' && qA.split.feeTo === TREASURY && qA.split.pay.to === PROXY[8453] && BigInt(qA.split.merchantRaw) === BigInt(qA.amountRaw) - 5000000n, JSON.stringify(qA?.split))
+  check('fee split: the QR stays a plain transfer of the full amount to the store', qA.uri.includes(eoa) && qA.uri.includes(`uint256=${qA.amountRaw}`))
+  check('fee split: a coin quote has none (fee invoiced as before)', (await payPost(`/api/pay/m/i/${invA.id}/quote`, { asset: 'base-eth' })).data?.quote?.split === null)
+
+  const spoofed = await payPost(`/api/pay/m/i/${invA.id}/verify`, { quoteId: qA.id, txHash: payViaProxy(qA, { feeTo: acct().address.toLowerCase() }) })
+  check('fee proxy: an event whose fee went to another address is ignored (the store got less than the quote: 422)', spoofed.status === 422 && !feeRowOf(invA.id).pay, spoofed.data?.error)
+  const fat = BigInt(qA.split.feeRaw) + 1_000_000n
+  const shorted = await payPost(`/api/pay/m/i/${invA.id}/verify`, { quoteId: qA.id, txHash: payViaProxy(qA, { fee: fat, merchant: BigInt(qA.amountRaw) - fat }) })
+  check('fee proxy: a fee above the quoted one, taken from the store, is refused (422)', shorted.status === 422 && /less to the store/.test(shorted.data?.error ?? '') && !feeRowOf(invA.id).pay, shorted.data?.error)
+
+  const viaProxy = payViaProxy(qA)
+  const vA = await payPost(`/api/pay/m/i/${invA.id}/verify`, { quoteId: qA.id, txHash: viaProxy })
+  const { pay: payA, row: rowA } = feeRowOf(invA.id)
+  check('fee proxy: paid through the proxy, the invoice is paid at the full quoted amount', vA.status === 200 && vA.data.invoice.status === 'paid' && payA?.amountRaw === qA.amountRaw && payA.txHash === viaProxy, vA.data?.error)
+  check('fee proxy: the payment records the fee taken on chain', payA?.feeRaw === '5000000' && payA.collectedMicros === '5000000' && payA.feeMicros === '5000000')
+  check('fee proxy: its fee row is marked collected on chain, nothing left to bill', rowA?.onchain === true && rowA.collectedMicros === rowA.feeMicros && rowA.feeMicros === '5000000')
+  let fA = (await O.call('/api/developer/merchant')).data
+  check('portal: $5 collected on chain, not billed (still $0.50 unbilled)', fA.fees.collectedUsd === 5 && fA.fees.collectedPayments === 1 && fA.fees.unbilledUsd === 0.5 && fA.fees.accruedUsd === 7.5, JSON.stringify(fA.fees))
+  check('portal: the payment shows its fee collected on chain', fA.payments.find((x) => x.txHash === viaProxy)?.feeCollectedUsd === 5)
+
+  // A plain transfer of a split quote (QR, copy and paste) still pays the store in full and is billed.
+  const invB = (await O.post('/api/developer/merchant/invoices', { items: [{ description: 'Kettle', unitUsd: '300' }], dueDate: due })).data.invoice
+  const pB = await payInvoice(invB.id)
+  const { row: rowB } = feeRowOf(invB.id)
+  check('plain transfer of a split quote: paid, fee accrued and left to bill', pB.q.split?.feeRaw === '1500000' && pB.v.status === 200 && rowB?.onchain === false && rowB.collectedMicros === '0' && rowB.feeMicros === '1500000', pB.v.data?.error)
+  const stB = M.issueStatements(Date.now())
+  const stBRow = mdb.statements.find((x) => x.id === stB[0]?.id)
+  check('statement: bills the plain transfer and the rolled-over $0.50 ($2.00), no line for the fee collected on chain', stB.length === 1 && stB[0].usd === '2' && stBRow.feeIds.includes(rowB.id) && !stBRow.feeIds.includes(rowA.id) && rowA.statementId === null, JSON.stringify(stB))
+  check('statement: a fully collected fee is never billed later', M.issueStatements(Date.now()).length === 0 && rowA.statementId === null)
+  fA = (await O.call('/api/developer/merchant')).data.fees
+  check('portal: collected on chain vs billed', fA.collectedUsd === 5 && fA.billedUsd === 4 && fA.unbilledUsd === 0 && fA.accruedUsd === 9, JSON.stringify(fA))
+  const csv2 = await (await fetch(BASE + '/api/developer/merchant/export/payments.csv', { headers: { cookie: O.cookie } })).text()
+  const proxyLine = csv2.split('\r\n').find((l) => l.includes(viaProxy)) ?? ''
+  const plainLine = csv2.split('\r\n').find((l) => l.includes(pB.h)) ?? ''
+  check('CSV: fee collected on chain vs billed columns', csv2.split('\r\n')[0].endsWith(',fee_usd,explorer_url,fee_collected_onchain_usd,fee_billed_usd') && proxyLine.endsWith(',5,0') && plainLine.endsWith(',0,1.50'), `${proxyLine} | ${plainLine}`)
+
+  // A second store: fully free, then crossing $5k between the quote and the payment (partial collection), on
+  // BNB Chain's 18-decimal USDC; and a rate cut between quote and payment (collected above accrued: no refund).
+  const owner2 = acct()
+  const O2 = makeClient(BASE)
+  await O2.signIn(owner2)
+  const eoa2 = acct().address
+  const w2 = await O2.post('/api/developer/merchant/wallets', { acceptTerms: true, address: eoa2, type: 'eoa', chains: [8453, 56] })
+  check('store 2: wallets on Base and BNB Chain', w2.status === 200 && w2.data.results.every((x) => x.ok), w2.data?.error)
+  const newInv2 = async (usd) => (await O2.post('/api/developer/merchant/invoices', { items: [{ description: 'Order', unitUsd: usd }], dueDate: due })).data.invoice
+  const iX = await newInv2('3500')
+  const qX = (await payPost(`/api/pay/m/i/${iX.id}/quote`, { asset: 'bnb-usdc' })).data.quote
+  check('store 2: no split while fully free ($3,500 of $5,000)', qX.split === null)
+  check('store 2: the free payment is paid by plain transfer, no fee', (await payPost(`/api/pay/m/i/${iX.id}/verify`, { quoteId: qX.id, txHash: sendUsdc(qX) })).status === 200 && feeRowOf(iX.id).row?.feeMicros === '0')
+  const iY = await newInv2('2000')
+  const qY = (await payPost(`/api/pay/m/i/${iY.id}/quote`, { asset: 'bnb-usdc' })).data.quote
+  check('store 2: a $2,000 quote crossing $5k splits only the $500 above it (2.50 USDC, 18 decimals)', qY.split?.feeRaw === String(2_500_000n * 10n ** 12n) && BigInt(qY.split.merchantRaw) + BigInt(qY.split.feeRaw) === BigInt(qY.amountRaw), JSON.stringify(qY.split))
+  // Another $500 lands first: Y now has $1,000 above the allowance and accrues $5.00, of which $2.50 was collected.
+  const iZ = await newInv2('500')
+  check('store 2: a $500 payment lands before Y is paid (free)', (await payInvoice(iZ.id, 'bnb-usdc')).v.status === 200)
+  const vY = await payPost(`/api/pay/m/i/${iY.id}/verify`, { quoteId: qY.id, txHash: payViaProxy(qY) })
+  const { row: rowY } = feeRowOf(iY.id)
+  check('store 2: paid through the proxy; collected 2.50 of the 5.00 accrued, 2.50 left to bill', vY.status === 200 && rowY?.onchain && rowY.feeMicros === '5000000' && rowY.collectedMicros === '2500000', vY.data?.error)
+  // Rate cut to 0.25% after the quote: the proxy takes 2.50 against 1.25 accrued; it counts 1.25, nothing refunded.
+  const iW = await newInv2('500')
+  const qW = (await payPost(`/api/pay/m/i/${iW.id}/quote`, { asset: 'base-usdc' })).data.quote
+  process.env.GULLY_PAY_MERCHANT_FEE_BPS = '25'
+  const vW = await payPost(`/api/pay/m/i/${iW.id}/verify`, { quoteId: qW.id, txHash: payViaProxy(qW) })
+  process.env.GULLY_PAY_MERCHANT_FEE_BPS = '50'
+  const { pay: payW, row: rowW } = feeRowOf(iW.id)
+  check('store 2: collected above accrued is capped at accrued (never refunded), the payment keeps what the proxy took', vW.status === 200 && qW.split.feeRaw === '2500000' && payW.feeRaw === '2500000' && rowW.feeMicros === '1250000' && rowW.collectedMicros === '1250000', JSON.stringify(rowW))
+  const ws2 = owner2.address.toLowerCase()
+  const rows2 = mdb.fees.filter((x) => x.ws === ws2)
+  const st2 = M.issueStatements(Date.now())
+  const st2Row = mdb.statements.find((x) => x.id === st2[0]?.id)
+  check('store 2: the statement bills only the uncollected 2.50', st2.length === 1 && st2[0].usd === '2.50' && st2Row.feeIds.join() === rowY.id, JSON.stringify(st2))
+  const sumOf = (k) => rows2.reduce((a, x) => a + BigInt(x[k]), 0n)
+  check('store 2: collected on chain + billed = accrued, exactly in micro-USD (nothing billed twice)', rows2.every((x) => BigInt(x.collectedMicros) <= BigInt(x.feeMicros)) && sumOf('collectedMicros') + BigInt(st2Row.feeMicros) === sumOf('feeMicros') && sumOf('feeMicros') === 6_250_000n && M.issueStatements(Date.now()).length === 0)
+  const f2 = (await O2.call('/api/developer/merchant')).data.fees
+  check('store 2 portal: 6.25 accrued = 3.75 collected on chain + 2.50 billed', f2.accruedUsd === 6.25 && f2.collectedUsd === 3.75 && f2.billedUsd === 2.5 && f2.unbilledUsd === 0 && f2.collectedPayments === 2, JSON.stringify(f2))
 } catch (e) {
   console.error(e)
   check('no exception', false, String(e?.message ?? e))

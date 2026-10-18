@@ -240,7 +240,8 @@ try {
   const cmds = cmdList.map((c) => c.command)
   check('startup: setMyCommands lists menu, gap, top, movers, launches, alerts, ask, stop, help', ['menu', 'gap', 'top', 'movers', 'launches', 'alerts', 'ask', 'stop', 'help'].every((c) => cmds.includes(c)), cmds.join())
   check('startup: command descriptions are plain words (no emoji), 3 to 256 characters', cmdList.every((c) => c.description.length >= 3 && c.description.length <= 256 && !/\p{Extended_Pictographic}/u.test(c.description)))
-  check('startup: the chat menu button is set to the command list', calls.some((c) => c.method === 'setChatMenuButton' && c.body.menu_button?.type === 'commands'))
+  const menuButton = calls.find((c) => c.method === 'setChatMenuButton')?.body.menu_button
+  check('startup: the chat menu button opens the Mini App (web_app, gullylabs.xyz/tg)', menuButton?.type === 'web_app' && menuButton.web_app?.url === 'https://gullylabs.xyz/tg' && menuButton.text === 'Open app', JSON.stringify(menuButton))
   check('startup: getMe read the bot name', calls.some((c) => c.method === 'getMe'))
   check('startup is idempotent (a second run succeeds)', (await tg.startTelegram()).ok)
   const ch1 = await dev.call('/api/alerts/channels')
@@ -281,7 +282,8 @@ try {
   const cap1 = an1?.body.caption ?? ''
   check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · stock tokens vs their fair price, live.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain, BNB Chain and Solana`) && cap1.includes('🔔 gap alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
-  check('the banner carries the main menu: 8 buttons in 4 rows', menuKb.length === 4 && flat(menuKb).length === 8 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 App dashboard ↗', '⚙️ Settings']))
+  check('the banner carries the main menu: 📱 Open app, then 8 buttons in 4 rows', menuKb.length === 5 && flat(menuKb).length === 9 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📱 Open app', '📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 App dashboard ↗', '⚙️ Settings']))
+  check('📱 Open app is an inline web_app button to the Mini App (private chat)', menuKb[0]?.[0]?.web_app?.url === 'https://gullylabs.xyz/tg' && menuKb[0][0].callback_data === undefined && menuKb[0][0].url === undefined)
   check('the menu: App dashboard is a url button, the others are routes', button(menuKb, /App dashboard/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
   check('the banner file_id is stored after the first upload', JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner?.fileId === BANNER_FILE_ID)
   await say(privateChat(801), '/start')
@@ -446,6 +448,7 @@ try {
   await evaluateAlerts([row({})], now)
   const msg = sent(111).at(-1)
   check('a firing alert sends one Telegram message', sent(111).length === n0 + 1)
+  check('the delivery states the alert’s direction (an alert made without one is ↕ both)', msg.body.text.includes('↕ Both ways: gap of 2% or more either way'), msg.body.text)
   check('the delivery is a compact card: status emoji, ticker, chain, gap, status, on chain vs fair, liquidity', msg.body.text.includes('🔴 <b>NVDA</b> · Robinhood Chain · gap <b>+3.10%</b> (premium)') && msg.body.text.includes('On chain $185.58 · fair $180.00 · pool $50,000'), msg.body.text)
   const kb = msg.body.reply_markup?.inline_keyboard ?? []
   check('delivery buttons: [🌐 Open ↗] [🔕 Mute 24h] [📈 Card]', JSON.stringify(flat(kb).map((b) => b.text)) === JSON.stringify(['🌐 Open ↗', '🔕 Mute 24h', '📈 Card']) && flat(kb)[0].url === 'https://gullylabs.xyz/tracker/robinhood/NVDA' && flat(kb)[1].callback_data === `mute:${alertId}` && flat(kb)[2].callback_data === 'c:rh:NVDA:x')
@@ -607,9 +610,13 @@ try {
   check('stepper 1/3: threshold ±1% ±2% ±3% Custom, Back to the card', JSON.stringify(s1.kb[0].map((b) => b.callback_data)) === JSON.stringify(['al:rh:NVDA:g1:1', 'al:rh:NVDA:g1:2', 'al:rh:NVDA:g1:3', 'alx:rh:NVDA:g1']) && button(s1.kb, /Back/).callback_data === 'c:rh:NVDA:g1' && /Step 1 of 3/.test(s1.text))
   await press(ada, 'al:rh:NVDA:g1:2')
   const s2 = view(111)
-  check('stepper 2/3: direction Either way / Premium / Discount, Back to step 1', JSON.stringify(s2.kb[0].map((b) => b.text)) === JSON.stringify(['Either way', 'Premium', 'Discount']) && button(s2.kb, /Back/).callback_data === 'al:rh:NVDA:g1' && s2.id === s1.id)
+  check('stepper 2/3: direction ▲ Premium / ▼ Discount / ↕ Both, Back to step 1', JSON.stringify(s2.kb[0].map((b) => b.text)) === JSON.stringify(['▲ Premium', '▼ Discount', '↕ Both']) && JSON.stringify(s2.kb[0].map((b) => b.callback_data)) === JSON.stringify(['al:rh:NVDA:g1:2:p', 'al:rh:NVDA:g1:2:d', 'al:rh:NVDA:g1:2:e']) && button(s2.kb, /Back/).callback_data === 'al:rh:NVDA:g1' && s2.id === s1.id)
+  check('stepper 2/3: each direction is explained with the chosen threshold', /▲ Premium: on chain at least 2% above fair \(gap ≥ \+2%\)/.test(s2.text) && /▼ Discount: at least 2% below fair \(gap ≤ −2%\)/.test(s2.text) && /↕ Both: either way/.test(s2.text), s2.text)
   await press(ada, 'al:rh:NVDA:g1:2:p')
-  check('stepper 3/3 (Premium): the summary names the tracker’s premium flag', /Fires when the tracker flags a premium \(gap of \+2% or more\)/.test(view(111).text))
+  check('stepper 3/3 (▲ Premium): a one-sided threshold at the chosen percent', /Fires when the premium reaches \+2% or more \(gap ≥ \+2%\)/.test(view(111).text) && data(view(111).kb).includes('alk:rh:NVDA:g1:2:p'), view(111).text)
+  await press(ada, 'al:rh:NVDA:g1:2:d')
+  check('stepper 3/3 (▼ Discount): a one-sided threshold at the chosen percent', /Fires when the discount reaches 2% or more \(gap ≤ −2%\)/.test(view(111).text) && data(view(111).kb).includes('alk:rh:NVDA:g1:2:d'), view(111).text)
+  check('the stepper’s condition: p → above, d → below, e → both, at the chosen percent', JSON.stringify(['p', 'd', 'e'].map((d) => ui.conditionFor(1.5, d).condition)) === JSON.stringify([{ type: 'gap', pct: 1.5, direction: 'above' }, { type: 'gap', pct: 1.5, direction: 'below' }, { type: 'gap', pct: 1.5, direction: 'both' }]))
   await press(ada, 'al:rh:NVDA:g1:2:e')
   const s3 = view(111)
   check('stepper 3/3: summary with ✅ Create and Back', /Fires when the gap reaches ±2% either way/.test(s3.text) && data(s3.kb).includes('alk:rh:NVDA:g1:2:e') && button(s3.kb, /Back/).callback_data === 'al:rh:NVDA:g1:2')
@@ -620,7 +627,7 @@ try {
   const cp = sent(111).at(-1)
   check('✏️ Custom asks for a percentage with force_reply', /^✏️ Custom threshold for NVDA on Robinhood Chain:/.test(cp.body.text) && cp.body.reply_markup?.force_reply === true)
   await say(ada, '1.5%')
-  check('Custom: the typed threshold moves on to the direction step', /±1\.5%/.test(view(111).text) && data(view(111).kb).includes('al:rh:NVDA:g1:1.5:e'))
+  check('Custom: the typed threshold moves on to the direction step (three buttons)', /Alert for NVDA<\/b> · 1\.5%/.test(view(111).text) && /Which direction/.test(view(111).text) && ['al:rh:NVDA:g1:1.5:p', 'al:rh:NVDA:g1:1.5:d', 'al:rh:NVDA:g1:1.5:e'].every((d) => data(view(111).kb).includes(d)), view(111).text)
   await press(ada, 'alx:rh:NVDA:g1')
   await say(ada, 'lots')
   check('Custom: a bad number is refused, with Try again', /not a percentage from 0\.1 to 100/.test(view(111).text) && data(view(111).kb).includes('alx:rh:NVDA:g1'))
@@ -648,7 +655,19 @@ try {
   await press(ada, 'alk:rh:NVDA:g1:2:e')
   const made = (await myAlerts())[0]
   check('✅ Create makes the alert through the alerts module (Telegram on, no webhook)', /Alert created/.test(view(111).text) && made?.chain === 'robinhood' && made.ticker === 'NVDA' && made.condition.type === 'gap' && made.condition.pct === 2 && made.telegram?.linked === true && made.webhook === null, JSON.stringify(made))
+  check('✅ Create with ↕ Both stores direction both', made?.condition.direction === 'both', JSON.stringify(made?.condition))
   await press(ada, `adx:${made.id}`)
+  await press(ada, 'alk:rh:NVDA:g1:1.5:d')
+  const below = (await myAlerts())[0]
+  check('✅ Create with ▼ Discount makes a one-sided alert (direction below)', /Alert created/.test(view(111).text) && /fires when the discount reaches 1\.5% or more/.test(view(111).text) && below?.condition.type === 'gap' && below.condition.pct === 1.5 && below.condition.direction === 'below', JSON.stringify(below?.condition))
+  await press(ada, `ac:${below.id}`)
+  check('the alert card states the direction', /When: ▼ discount of 1\.5% or more \(gap ≤ −1\.5%\)/.test(view(111).text), view(111).text)
+  const nBelow = sent(111).length
+  await evaluateAlerts([row({ gapPct: 3.1, status: 'premium' })], Date.now() + 40 * 60_000)
+  check('a ▼ discount alert does not fire on a premium', sent(111).length === nBelow)
+  await evaluateAlerts([row({ gapPct: -1.8, status: 'discount' })], Date.now() + 41 * 60_000)
+  check('a ▼ discount alert fires on a discount, and its message says ▼ Discount', sent(111).length === nBelow + 1 && sent(111).at(-1).body.text.includes('▼ Discount: discount of 1.5% or more (gap ≤ −1.5%)'), sent(111).at(-1)?.body.text)
+  await press(ada, `adx:${below.id}`)
   // DeepCore launch alert.
   await press(ada, 'dla:0')
   check('launch alert 1/2: chain choice (any or one)', JSON.stringify(data(view(111).kb).slice(0, 5)) === JSON.stringify(['dla:0:0', 'dla:0:56', 'dla:0:999', 'dla:0:4663', 'dla:0:8453']))
@@ -748,7 +767,9 @@ try {
   const longest = allKb.reduce((a, d) => (Buffer.byteLength(d) > Buffer.byteLength(a) ? d : a), '')
   check(`callback_data is at most 64 bytes in every keyboard sent (${allKb.length} buttons; longest ${Buffer.byteLength(longest)} bytes)`, allKb.length > 300 && allKb.every((d) => Buffer.byteLength(d) <= 64), longest)
   check('every button press was answered exactly once', pressedIds.every((id) => answers().filter((a) => a.body.callback_query_id === id).length === 1), `${pressedIds.length} presses`)
-  check('every inline button has a callback or a url, and a short label', calls.filter((c) => c.body?.reply_markup?.inline_keyboard).every((c) => flat(c.body.reply_markup.inline_keyboard).every((b) => (b.callback_data || /^https:\/\//.test(b.url ?? '')) && b.text.length <= 64)))
+  check('every inline button has a callback, a url or a web_app, and a short label', calls.filter((c) => c.body?.reply_markup?.inline_keyboard).every((c) => flat(c.body.reply_markup.inline_keyboard).every((b) => (b.callback_data || /^https:\/\//.test(b.url ?? b.web_app?.url ?? '')) && b.text.length <= 64)))
+  const kbCalls = calls.filter((c) => c.body?.reply_markup?.inline_keyboard)
+  check('web_app buttons only go to private chats (Telegram refuses them in groups)', kbCalls.some((c) => Number(c.body.chat_id) < 0) && !kbCalls.some((c) => Number(c.body.chat_id) < 0 && flat(c.body.reply_markup.inline_keyboard).some((b) => b.web_app)))
 
   /* -------------------------------------------------- News channel gate --- */
   const ng1 = privateChat(9901, 'Gus')

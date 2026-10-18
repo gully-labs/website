@@ -24,7 +24,7 @@ const UMAMI_ADMIN_PASSWORD = 'stub-admin-' + crypto.randomBytes(12).toString('he
 const TREASURY = privateKeyToAccount(generatePrivateKey()).address.toLowerCase()
 const BASE_USDC = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
 const TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-const GULLY_SITE = '2e13e4f4-bdd3-4c97-bd35-48d75f1d583b' // the Gully Labs site (index.html), never self-serve
+const GULLY_SITE = '78f29233-9f70-4c45-a440-35d1457d2207' // the Gully Labs site (index.html), never self-serve
 const DAY = 86_400_000
 
 const t = makeChecker()

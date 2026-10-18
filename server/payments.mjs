@@ -413,11 +413,14 @@ export const feeOf = (amountRaw, bps) => (BigInt(amountRaw) * BigInt(bps)) / 10_
  * Marks a quote to be paid through the fee proxy: of `amountRaw` (what the payer sends in total), `feeRaw` goes
  * to `feeTo` (the treasury) and the rest to the quote's recipient (`quote.treasury`). Leaves native coin, chains
  * without a proxy and zero fees alone (plain transfer, fee invoiced as before). Returns the quote.
+ * `feeRaw`, when given, is the fee in the token's base units as sized by the caller (a store's fee covers only
+ * the part of the payment above its free allowance, merchants.mjs); otherwise it is `bps` of the whole amount.
+ * A fee that is not below the amount is refused.
  */
-export function withFeeSplit(quote, { bps, feeTo }) {
+export function withFeeSplit(quote, { bps, feeTo, feeRaw = null }) {
   const a = assetById(quote.assetId)
-  const fee = feeOf(quote.amountRaw, bps)
-  if (!a || a.kind !== 'token' || !FEE_PROXIES[a.chainId] || fee <= 0n || !okAddr(feeTo) || !okAddr(quote.treasury)) return quote
+  const fee = feeRaw != null ? BigInt(feeRaw) : feeOf(quote.amountRaw, bps)
+  if (!a || a.kind !== 'token' || !FEE_PROXIES[a.chainId] || fee <= 0n || fee >= BigInt(quote.amountRaw) || !okAddr(feeTo) || !okAddr(quote.treasury)) return quote
   if (feeTo.toLowerCase() === quote.treasury.toLowerCase()) return quote
   return Object.assign(quote, { feeRaw: fee.toString(), feeTo: feeTo.toLowerCase(), ref: paymentReference(quote.id) })
 }

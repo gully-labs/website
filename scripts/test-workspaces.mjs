@@ -186,6 +186,10 @@ try {
     check('viewer: cannot create alerts', forbiddenRole(await V.post('/api/developer/alerts', badAlert)))
     check('billing: cannot create alerts', forbiddenRole(await B.post('/api/developer/alerts', badAlert)))
     check('developer: passes the gate for alerts', passedGate(await D.post('/api/developer/alerts', badAlert)))
+    const dirAlert = { name: 'x', chain: 'robinhood', ticker: 'NVDA', condition: { type: 'gap', pct: 2, direction: 'sideways' } }
+    check('viewer: cannot create a one-sided alert either', forbiddenRole(await V.post('/api/developer/alerts', { ...dirAlert, condition: { type: 'gap', pct: 2, direction: 'above' } })))
+    const dirRes = await D.post('/api/developer/alerts', dirAlert)
+    check("developer: the workspace's alerts check the direction (400 for an unknown one)", dirRes.status === 400 && /direction/.test(dirRes.data?.error ?? ''), JSON.stringify(dirRes.data))
 
     check('developer: cannot start a checkout', forbiddenRole(await D.post('/api/developer/checkout', { plan: 'pro' })))
     check('viewer: cannot start a checkout', forbiddenRole(await V.post('/api/developer/checkout', { plan: 'pro' })))

@@ -168,12 +168,72 @@ export function stubServerFetch() {
       const method = u.pathname.split('/').pop()
       telegramCalls.push(method)
       if (method === 'getMe') return jsonResponse({ ok: true, result: { id: 7000000001, is_bot: true, username: 'GullyE2EBot' } })
+      if (method === 'getChatMember') return jsonResponse({ ok: true, result: { status: 'member', user: { id: Number(JSON.parse(String(init.body ?? '{}')).user_id) } } })
       if (method === 'sendMessage') return jsonResponse({ ok: true, result: { message_id: telegramCalls.length, chat: { id: 1 } } })
       return jsonResponse({ ok: true, result: true })
     }
     blockedOutbound.push(url.slice(0, 120))
     throw new TypeError(`fetch failed (e2e: outbound ${u.hostname} is stubbed)`)
   }
+}
+
+/* ------------------------------------------------------------- Telegram Mini App --- */
+
+export const E2E_BOT_TOKEN = '7000000001:' + 'E'.repeat(35)
+
+/** initData signed as Telegram signs it (HMAC-SHA256 with the bot token; see server/telegram-miniapp.mjs). */
+export function signedInitData(user, token = E2E_BOT_TOKEN, authDate = nowSec()) {
+  const fields = { query_id: 'AAE2E', auth_date: String(authDate), user: JSON.stringify(user) }
+  const check = Object.keys(fields).sort().map((k) => `${k}=${fields[k]}`).join('\n')
+  const secret = crypto.createHmac('sha256', 'WebAppData').update(token).digest()
+  return new URLSearchParams({ ...fields, hash: crypto.createHmac('sha256', secret).update(check).digest('hex') }).toString()
+}
+
+/**
+ * A stand-in for https://telegram.org/js/telegram-web-app.js: Telegram.WebApp with the given initData and
+ * theme. It records BackButton/MainButton/haptics calls on window.__tg, and draws the MainButton as a bar
+ * at the bottom (Telegram draws it natively, outside the page) so tests can press it and screenshots show it.
+ */
+export function telegramSdkStub(initData, theme = {}) {
+  return `(() => {
+  const log = (window.__tg = { haptics: [], back: false, main: null })
+  const clicks = { back: new Set(), main: new Set() }
+  let bar = null
+  const draw = (p) => {
+    if (!document.body) return
+    bar ??= Object.assign(document.createElement('button'), { id: 'tg-main-button' })
+    bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;height:56px;border:0;font:600 15px system-ui;z-index:99;background:' + ${JSON.stringify(theme.button_color ?? '#2481cc')} + ';color:' + ${JSON.stringify(theme.button_text_color ?? '#ffffff')}
+    bar.onclick = () => clicks.main.forEach((f) => f())
+    bar.textContent = p.text
+    bar.style.display = p.is_visible ? 'block' : 'none'
+    bar.style.opacity = p.is_active === false ? '0.6' : '1'
+    if (!bar.isConnected) document.body.appendChild(bar)
+    // Telegram's own button sits below the webview; keep the page clear of the stand-in.
+    document.body.style.paddingBottom = p.is_visible ? '56px' : ''
+  }
+  const main = { text: '', is_visible: false, is_active: true }
+  window.Telegram = { WebApp: {
+    initData: ${JSON.stringify(initData)},
+    initDataUnsafe: {},
+    version: '8.0', platform: 'tdesktop', colorScheme: 'dark',
+    themeParams: ${JSON.stringify(theme)},
+    ready() {}, expand() {}, close() {},
+    isVersionAtLeast: () => true,
+    setHeaderColor() {}, setBackgroundColor() {},
+    openLink(u) { log.opened = u }, openTelegramLink(u) { log.opened = u },
+    showConfirm(_m, cb) { cb(true) },
+    onEvent() {}, offEvent() {},
+    BackButton: { isVisible: false, show() { log.back = true }, hide() { log.back = false }, onClick(f) { clicks.back.add(f) }, offClick(f) { clicks.back.delete(f) } },
+    MainButton: {
+      setParams(p) { Object.assign(main, p); log.main = { ...main }; draw(main) },
+      show() { main.is_visible = true; draw(main) }, hide() { main.is_visible = false; log.main = { ...main }; draw(main) },
+      enable() {}, disable() {}, showProgress() {}, hideProgress() {},
+      onClick(f) { clicks.main.add(f) }, offClick(f) { clicks.main.delete(f) },
+    },
+    HapticFeedback: { impactOccurred(s) { log.haptics.push('impact:' + s) }, notificationOccurred(s) { log.haptics.push('notify:' + s) }, selectionChanged() { log.haptics.push('select') } },
+  } }
+  window.__tgBack = () => clicks.back.forEach((f) => f())
+})()`
 }
 
 /* ------------------------------------------------------------- boot --- */
@@ -195,7 +255,7 @@ export async function bootServer({ port }) {
     ASK_REMOTE: 'off',
     GULLY_TREASURY_ADDRESS: treasury,
     ANTHROPIC_API_KEY: 'sk-ant-e2e-' + 'x'.repeat(30),
-    TELEGRAM_BOT_TOKEN: '7000000001:' + 'E'.repeat(35),
+    TELEGRAM_BOT_TOKEN: E2E_BOT_TOKEN,
     DEEPCORE_API: 'https://deepcore-api.e2e.invalid',
     ...Object.fromEntries(Object.keys(FEEDS).map((id) => [`GULLY_RPC_${id}`, `https://rpc-${id}.e2e.invalid`])),
   })

@@ -2,7 +2,7 @@ import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, Link2Off, Pa
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { DOCS_URL } from '../../site-host'
 import { toastSuccess } from '../../components/ui/toast'
-import { ago, api, type AlertsView, type GapAlert, type TelegramInfo, type TelegramLink } from './api'
+import { ago, api, GAP_DIRECTIONS, type AlertsView, type GapAlert, type GapDirection, type TelegramInfo, type TelegramLink } from './api'
 import { alertName, alertRule, alertState, CHAIN_NAMES, useAlertActions, useAlertsView, type Secret } from './helpers'
 import { CopyButton, Dialog } from './Dialog'
 import { useWrite } from './portal'
@@ -18,6 +18,42 @@ import { input, mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from
    the channel chips and the load/act helpers are shared with the Overview. */
 
 const select = `${input} pr-8`
+
+/** The gap threshold's side, as a segmented control (radio group): ▲ Premium, ▼ Discount, ↕ Both. */
+function DirectionControl({ value, onChange, pct }: { value: GapDirection; onChange: (d: GapDirection) => void; pct: string }) {
+  const n = Number(pct) > 0 ? Number(pct) : 'X'
+  return (
+    <div className="flex flex-col gap-2 text-[14px] text-ink-2">
+      <span id="alert-direction">Direction</span>
+      <div role="radiogroup" aria-labelledby="alert-direction" className="grid grid-cols-3 gap-1 rounded-input border border-line bg-bg p-1">
+        {GAP_DIRECTIONS.map((d) => (
+          <button
+            key={d.id}
+            type="button"
+            role="radio"
+            aria-checked={value === d.id}
+            onClick={() => onChange(d.id)}
+            onKeyDown={(e) => {
+              if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+              e.preventDefault()
+              const i = GAP_DIRECTIONS.findIndex((x) => x.id === value)
+              const next = GAP_DIRECTIONS[(i + (e.key === 'ArrowRight' ? 1 : GAP_DIRECTIONS.length - 1)) % GAP_DIRECTIONS.length]
+              onChange(next.id)
+              ;(e.currentTarget.parentElement?.querySelectorAll('button')[GAP_DIRECTIONS.indexOf(next)] as HTMLButtonElement | undefined)?.focus()
+            }}
+            tabIndex={value === d.id ? 0 : -1}
+            className={`min-h-11 rounded-btn px-2 font-mono text-[12px] transition-colors ${value === d.id ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
+          >
+            {d.label}
+          </button>
+        ))}
+      </div>
+      <span className="text-[12px] leading-[1.5] text-faint">
+        {value === 'above' ? `Fires on a premium: on chain at least ${n}% above fair (gap ≥ +${n}%).` : value === 'below' ? `Fires on a discount: on chain at least ${n}% below fair (gap ≤ −${n}%).` : `Fires either way, above or below fair (|gap| ≥ ${n}%).`}
+      </span>
+    </div>
+  )
+}
 const fieldLabel = 'flex flex-col gap-2 text-[14px] text-ink-2'
 const TG_BLUE = '#2aa3df'
 
@@ -67,6 +103,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
   const launchKind = view.kinds?.find((k) => k.id === 'deepcore-launch')
   const [dcChain, setDcChain] = useState('')
   const [pct, setPct] = useState(String(view.limits.flagPct))
+  const [direction, setDirection] = useState<GapDirection>('both')
   const [webhook, setWebhook] = useState('')
   const [toTelegram, setToTelegram] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -81,7 +118,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
     e.preventDefault()
     setErr(null)
     const [chain, ticker] = target === 'any' || kind === 'deepcore' ? [undefined, undefined] : target.split(':')
-    const condition = kind === 'deepcore' ? { type: 'deepcore-launch', chainId: dcChain ? Number(dcChain) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct) } : { type: 'status', status: kind }
+    const condition = kind === 'deepcore' ? { type: 'deepcore-launch', chainId: dcChain ? Number(dcChain) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct), direction } : { type: 'status', status: kind }
     setBusy(true)
     const r = await api<{ secret: string | null }>('/api/developer/alerts', { method: 'POST', body: { name: name.trim(), chain, ticker, condition, webhookUrl: webhook.trim() || undefined, telegram: toTelegram || undefined } })
     setBusy(false)
@@ -149,10 +186,11 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
             </label>
           )}
         </div>
+        {kind === 'gap' && <DirectionControl value={direction} onChange={setDirection} pct={pct} />}
         <span className="-mt-2 text-[12px] leading-[1.5] text-faint">
           {kind === 'deepcore'
             ? `Once per new launch read from DeepCore's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
-            : <>Either way, above or below fair. Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
+            : kind === 'gap' ? <>Only pools deep enough to flag count; the gap is the on-chain price against fair.</> : <>Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
         </span>
         <label className={fieldLabel}>
           Webhook URL

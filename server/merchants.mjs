@@ -15,6 +15,14 @@
 // (activity events, plus Telegram when the owner linked a chat). Paying the statement resumes checkout at
 // once: the pause is derived from the statement invoices' state on every read, never stored.
 //
+// Fee at payment time: a stablecoin quote on a chain with Request Network's ERC20FeeProxy (payments.mjs
+// withFeeSplit) carries a split, so a wallet payment sends the store its share and Gully Labs' fee to
+// GULLY_TREASURY_ADDRESS in one transaction. The fee is sized like accrue(): only the part of the payment above
+// the store's remaining free allowance, so a fully free payment has no split. When the proxy's event is read
+// back (fee to the treasury only), the fee row records what was collected on chain (never more than accrued) and
+// the weekly statement bills only the rest. A plain transfer (QR, copy and paste) or a coin payment is billed
+// in full as before. Collected + billed = accrued, in micro-USD, exactly; nothing is billed twice or refunded.
+//
 // Storage: DATA_DIR/merchants.json (tmp + rename)
 //   merchants:  { [workspace]: { profile: { name, accent, supportEmail, website, logo: { sha, type, bytes, source, fetchedAt } | null },
 //                                wallets: { [chainId]: { address (EIP-55), declared: 'eoa'|'contract', kind: 'eoa'|'eoa-7702'|'contract'|'undeployed',
@@ -27,9 +35,10 @@
 //   quotes:     [{ id: 'q_…', kind: 'merchant', ws, invoiceId, assetId, chainId, symbol, decimals, usdCents, tag, amountRaw, minRaw,
 //                  treasury: <the merchant's wallet on that chain>, price, createdAt, expiresAt, paidAt }]
 //   payments:   [{ id, kind: 'merchant', ws, invoiceId, linkId, txHash, chainId, assetId, symbol, decimals, amountRaw, usdCents, price,
-//                  quoteId, from, to, blockNumber, at, feeMicros }]
-//   fees:       [{ id, ws, paymentId, at, volumeCents, freeCents, feeableCents, bps, feeMicros, statementId }]   (micro-USD, exact)
-//   statements: [{ id: 'st_…', ws, number, periodStart, periodEnd, feeIds, feeMicros, usdCents, volumeCents, payments, invoiceId,
+//                  quoteId, from, to, blockNumber, at, feeMicros, feeRaw?, collectedMicros? }]   (feeRaw: the fee the proxy took, token units)
+//   fees:       [{ id, ws, paymentId, at, volumeCents, freeCents, feeableCents, bps, feeMicros, collectedMicros, onchain, statementId }]
+//                  (micro-USD, exact; a statement bills feeMicros - collectedMicros, the part not collected on chain)
+//   statements: [{ id: 'st_…', ws, number, periodStart, periodEnd, feeIds, feeMicros (billed), collectedMicros (of the same rows, on chain), usdCents, volumeCents, payments, invoiceId,
 //                  issuedAt, dueAt, warned: { issue, day5, day7 }, paidAt }]
 //   lastStatementRun: iso
 //
@@ -70,7 +79,7 @@ import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { createInvoiceRecord, invoicePaidHooks, invoiceStatus } from './invoices.mjs'
 import { accrue, centsOfMicros, feeConfig, MIN_STATEMENT_CENTS, PAUSE_AFTER_DAYS, WARN_DAY, weekStart } from './merchant-fees.mjs'
 import { checkEndpoint, deliveries, endpointView, enqueue, makeEndpoint, newSecret, paidEvent, redeliver, registerWebhookTarget, sendTest } from './pay-webhooks.mjs'
-import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc } from './payments.mjs'
+import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc, withFeeSplit } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { isSolanaAsset } from './solana-pay.mjs'
 import { getAccount, randomToken } from './store.mjs'
@@ -186,6 +195,17 @@ const bad = (error) => ({ ok: false, status: 400, error })
 const centsOk = (c) => c != null && c <= MAX_CENTS
 const usdNum = (cents) => Number(BigInt(cents)) / 100
 const sum = (list, f) => list.reduce((a, x) => a + BigInt(f(x)), 0n)
+/** A workspace's lifetime volume so far (cents): the priorCents of its next payment's fee. */
+const volumeOf = (ws) => sum(db.payments.filter((x) => x.ws === ws), (x) => x.usdCents)
+/** Micro-USD to a stablecoin's base units and back, at 1:1 (store stablecoins have 6 or 18 decimals: exact). */
+const microsToRaw = (m, d) => (d >= 6 ? BigInt(m) * 10n ** BigInt(d - 6) : BigInt(m) / 10n ** BigInt(6 - d))
+const rawToMicros = (r, d) => (d >= 6 ? BigInt(r) / 10n ** BigInt(d - 6) : BigInt(r) * 10n ** BigInt(6 - d))
+/** What a fee row still bills: its accrued fee less what the fee proxy collected on chain (never below 0). */
+const collectedOf = (f) => BigInt(f.collectedMicros ?? '0')
+const billableOf = (f) => {
+  const b = BigInt(f.feeMicros) - collectedOf(f)
+  return b > 0n ? b : 0n
+}
 
 /** Error copy from the shared payment checks, worded for a store's payer instead of Gully Labs' own. */
 const forStore = (msg) =>
@@ -220,6 +240,7 @@ function feesView(ws, now = Date.now()) {
   const lifetime = sum(pays, (p) => p.usdCents)
   const fees = db.fees.filter((f) => f.ws === ws)
   const unbilled = fees.filter((f) => !f.statementId)
+  const issued = db.statements.filter((s) => s.ws === ws)
   const statements = db.statements
     .filter((s) => s.ws === ws)
     .map((s) => statementView(s, now))
@@ -233,7 +254,11 @@ function feesView(ws, now = Date.now()) {
     lifetimeUsd: usdNum(lifetime),
     freeLeftUsd: usdNum(lifetime >= cfg.freeCents ? 0n : cfg.freeCents - lifetime),
     accruedUsd: usdNum(centsOfMicros(sum(fees, (f) => f.feeMicros))),
-    unbilledUsd: usdNum(centsOfMicros(sum(unbilled, (f) => f.feeMicros))),
+    // Accrued = collected on chain (fee proxy, at payment time) + billed (weekly statements) + not billed yet.
+    collectedUsd: usdNum(centsOfMicros(sum(fees, collectedOf))),
+    collectedPayments: fees.filter((f) => f.onchain).length,
+    billedUsd: usdNum(sum(issued, (s) => s.usdCents)),
+    unbilledUsd: usdNum(centsOfMicros(sum(unbilled, billableOf))),
     outstandingUsd: usdNum(sum(outstanding, (s) => s.usdCents)),
     paidUsd: usdNum(sum(statements.filter((s) => s.state === 'paid'), (s) => s.usdCents)),
     minStatementUsd: usdNum(MIN_STATEMENT_CENTS),
@@ -412,6 +437,15 @@ async function createQuote({ ws, invoiceId, asset, usdCents, recipient }) {
   }
   if (!pick) return { ok: false, status: 503, error: 'Too many open quotes in this asset right now. Try another asset or try again in a few minutes.' }
   const q = { id: 'q_' + randomToken(12), kind: 'merchant', ws, invoiceId, assetId: asset.id, chainId: asset.chainId, symbol: asset.symbol, decimals: asset.decimals, usdCents: String(usdCents), tag: pick.tag, amountRaw: String(pick.amount), minRaw: String(pick.amount), treasury: recipient, price, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + QUOTE_TTL_MS).toISOString(), paidAt: null }
+  // A stablecoin on a chain with the fee proxy: Gully Labs' fee is taken in the same transaction (quoteView's
+  // split, which the wallet path uses). Sized exactly like accrue() with the store's volume so far, so it covers
+  // only the part above the remaining free allowance; nothing while the whole payment is still free. withFeeSplit
+  // leaves coins, chains without a proxy, a zero fee and a missing treasury as a plain transfer.
+  if (asset.kind === 'token') {
+    const cfg = feeConfig()
+    const due = accrue({ priorCents: volumeOf(ws), cents: BigInt(usdCents) }, cfg)
+    if (due.feeMicros > 0n) withFeeSplit(q, { bps: cfg.bps, feeTo: treasury(), feeRaw: microsToRaw(due.feeMicros, asset.decimals) })
+  }
   db.quotes.push(q)
   save()
   return { ok: true, quote: q }
@@ -678,11 +712,18 @@ async function quoteFor(inv, assetId) {
 function recordMerchantPayment(inv, quote, match, read, asset, txHash) {
   const now = new Date().toISOString()
   const p = { id: randomToken(9), kind: 'merchant', ws: inv.ws, invoiceId: inv.id, linkId: inv.linkId ?? null, txHash, chainId: asset.chainId, assetId: asset.id, symbol: asset.symbol, decimals: asset.decimals, amountRaw: String(match.value), usdCents: quote.usdCents, price: quote.price ?? null, quoteId: quote.id, from: match.from, to: quote.treasury, blockNumber: read.blockNumber, at: now, feeMicros: '0' }
-  const before = sum(db.payments.filter((x) => x.ws === inv.ws), (x) => x.usdCents)
-  const fee = accrue({ priorCents: before, cents: BigInt(p.usdCents) })
+  const fee = accrue({ priorCents: volumeOf(inv.ws), cents: BigInt(p.usdCents) })
   p.feeMicros = String(fee.feeMicros)
+  // Paid through the fee proxy (match.fee: its fee leg went to our treasury, payments.mjs creditFeeProxy): that
+  // much of this payment's fee is collected already. It counts up to the fee accrued here and no further, so
+  // the statement bills accrued - collected exactly; anything above (the volume or the rate changed since the
+  // quote) is kept as paid on chain, never refunded and never billed again.
+  const onchain = match.fee != null && BigInt(match.fee) > 0n
+  const onchainMicros = onchain ? rawToMicros(match.fee, asset.decimals) : 0n
+  const collected = onchainMicros < fee.feeMicros ? onchainMicros : fee.feeMicros
+  if (onchain) Object.assign(p, { feeRaw: String(match.fee), collectedMicros: String(collected) })
   db.payments.push(p)
-  db.fees.push({ id: randomToken(9), ws: inv.ws, paymentId: p.id, at: now, volumeCents: p.usdCents, freeCents: String(fee.freeCents), feeableCents: String(fee.feeableCents), bps: fee.bps, feeMicros: String(fee.feeMicros), statementId: null })
+  db.fees.push({ id: randomToken(9), ws: inv.ws, paymentId: p.id, at: now, volumeCents: p.usdCents, freeCents: String(fee.freeCents), feeableCents: String(fee.feeableCents), bps: fee.bps, feeMicros: String(fee.feeMicros), collectedMicros: String(collected), onchain, statementId: null })
   quote.paidAt = now
   inv.paymentId = p.id
   inv.paidAt = now
@@ -717,6 +758,8 @@ async function verifyFor(inv, quoteId, txHashIn) {
     run: async ({ match, read }) => {
       if (invoiceState(inv) === 'paid' || inv.cancelledAt) return { ok: false, status: 409, error: 'This invoice is no longer open.' }
       if (hashUsed(asset.chainId, txHash)) return { ok: false, status: 409, error: 'This transaction has already been used for a payment.' }
+      // Through the fee proxy the total matches, but a fee above the quoted one would have come out of the store's share.
+      if (match.fee != null && BigInt(match.fee) > BigInt(quote.feeRaw ?? '0')) return { ok: false, status: 422, error: 'This payment sent more to the Gully Pay fee and less to the store than its quote, so it cannot be matched to it. Contact the store with the transaction hash.' }
       const p = recordMerchantPayment(inv, quote, match, read, asset, txHash)
       try {
         recordEvent(inv.ws, { actor: 'system', action: 'merchant.payment', target: inv.number, detail: { usd: fmtUsd(p.usdCents), chain: CHAINS[p.chainId].name, symbol: p.symbol, invoiceId: inv.id } })
@@ -768,12 +811,14 @@ function warn(st, kind, now = Date.now()) {
  */
 export function issueStatements(cutoff = Date.now()) {
   const byWs = new Map()
-  for (const f of db.fees) if (!f.statementId && Date.parse(f.at) <= cutoff && BigInt(f.feeMicros) > 0n) byWs.set(f.ws, [...(byWs.get(f.ws) ?? []), f])
+  // A fee collected in full on chain (fee proxy) has nothing left to bill and never appears on a statement.
+  for (const f of db.fees) if (!f.statementId && Date.parse(f.at) <= cutoff && billableOf(f) > 0n) byWs.set(f.ws, [...(byWs.get(f.ws) ?? []), f])
   const issued = []
   const now = Date.now()
   for (const [ws, fees] of byWs) {
-    const micros = sum(fees, (f) => f.feeMicros)
+    const micros = sum(fees, billableOf)
     const cents = centsOfMicros(micros)
+    const collected = sum(fees, collectedOf)
     if (cents < MIN_STATEMENT_CENTS) continue
     const volume = sum(fees, (f) => f.volumeCents)
     const day = new Date(cutoff).toISOString().slice(0, 10)
@@ -781,14 +826,14 @@ export function issueStatements(cutoff = Date.now()) {
     const name = brandOf(ws).name.slice(0, 60)
     const inv = createInvoiceRecord({
       title: `Gully Pay fees: ${name}`,
-      note: `Fee statement ${number}, for payments up to ${day}: ${fees.length} payment${fees.length === 1 ? '' : 's'}, ${fmtUsd(volume)} USD of volume, ${feeConfig().bps / 100}% after the free allowance. Due within ${PAUSE_AFTER_DAYS} days; unpaid after that, the store's checkout pauses until it is paid.`,
+      note: `Fee statement ${number}, for payments up to ${day}: ${fees.length} payment${fees.length === 1 ? '' : 's'}, ${fmtUsd(volume)} USD of volume, ${feeConfig().bps / 100}% after the free allowance${collected > 0n ? `, less ${fmtUsd(centsOfMicros(collected))} USD already collected on chain at payment time` : ''}. Due within ${PAUSE_AFTER_DAYS} days; unpaid after that, the store's checkout pauses until it is paid.`,
       usdCents: cents,
       assets: ASSET_IDS,
       ttlMs: 365 * DAY,
     })
     inv.merchantStatement = { ws, number }
     saveLedger()
-    const st = { id: 'st_' + randomToken(9), ws, number, periodStart: fees.map((f) => f.at).sort()[0], periodEnd: new Date(cutoff).toISOString(), feeIds: fees.map((f) => f.id), feeMicros: String(micros), usdCents: String(cents), volumeCents: String(volume), payments: fees.length, invoiceId: inv.id, issuedAt: new Date(now).toISOString(), dueAt: new Date(now + PAUSE_AFTER_DAYS * DAY).toISOString(), warned: {}, paidAt: null }
+    const st = { id: 'st_' + randomToken(9), ws, number, periodStart: fees.map((f) => f.at).sort()[0], periodEnd: new Date(cutoff).toISOString(), feeIds: fees.map((f) => f.id), feeMicros: String(micros), collectedMicros: String(collected), usdCents: String(cents), volumeCents: String(volume), payments: fees.length, invoiceId: inv.id, issuedAt: new Date(now).toISOString(), dueAt: new Date(now + PAUSE_AFTER_DAYS * DAY).toISOString(), warned: {}, paidAt: null }
     for (const f of fees) f.statementId = st.id
     db.statements.push(st)
     warn(st, 'issue', now)
@@ -935,7 +980,7 @@ function merchantView(ws, role) {
       .filter((p) => p.ws === ws)
       .slice(-50)
       .reverse()
-      .map((p) => ({ ...paymentView(p), invoiceNumber: db.invoices.find((i) => i.id === p.invoiceId)?.number ?? null, linkId: p.linkId, feeUsd: usdNum(centsOfMicros(BigInt(p.feeMicros ?? '0'))) })),
+      .map((p) => ({ ...paymentView(p), invoiceNumber: db.invoices.find((i) => i.id === p.invoiceId)?.number ?? null, linkId: p.linkId, feeUsd: usdNum(centsOfMicros(BigInt(p.feeMicros ?? '0'))), feeCollectedUsd: usdNum(centsOfMicros(BigInt(p.collectedMicros ?? '0'))) })),
     webhook: endpointView(m?.webhook ?? null),
     deliveries: deliveries({ target: 'merchant', targetId: ws, limit: 50 }),
     fees: feesView(ws),
@@ -1050,14 +1095,21 @@ function sendCsv(res, filename, body) {
 }
 
 export function paymentsCsv(ws) {
+  // fee_usd is the fee accrued on the payment; of it, fee_collected_onchain_usd was taken at payment time
+  // through the fee proxy and fee_billed_usd goes on (or went on) a weekly statement. Cents per row, rounded half
+  // up; a statement rounds its sum once, so per-row cents can differ from it by a cent.
   const rows = db.payments
     .filter((p) => p.ws === ws)
     .map((p) => {
       const v = paymentView(p)
       const inv = db.invoices.find((i) => i.id === p.invoiceId)
-      return [v.at, inv?.number ?? '', inv?.title ?? '', p.linkId ?? '', v.usd, v.amount, v.symbol, v.chain, v.txHash, v.from, v.to, fmtUsd(centsOfMicros(BigInt(p.feeMicros ?? '0'))), v.txUrl]
+      const f = db.fees.find((x) => x.paymentId === p.id)
+      const accrued = BigInt(p.feeMicros ?? '0')
+      const collected = f ? collectedOf(f) : 0n
+      const billed = f ? billableOf(f) : accrued
+      return [v.at, inv?.number ?? '', inv?.title ?? '', p.linkId ?? '', v.usd, v.amount, v.symbol, v.chain, v.txHash, v.from, v.to, fmtUsd(centsOfMicros(accrued)), v.txUrl, fmtUsd(centsOfMicros(collected)), fmtUsd(centsOfMicros(billed))]
     })
-  return toCsv(['date', 'invoice', 'title', 'link', 'usd', 'amount', 'asset', 'chain', 'tx_hash', 'from', 'to', 'fee_usd', 'explorer_url'], rows)
+  return toCsv(['date', 'invoice', 'title', 'link', 'usd', 'amount', 'asset', 'chain', 'tx_hash', 'from', 'to', 'fee_usd', 'explorer_url', 'fee_collected_onchain_usd', 'fee_billed_usd'], rows)
 }
 
 const reply = (res, r, okBody) => (r.ok ? json(res, r.status && r.status !== 200 ? r.status : 200, okBody) : json(res, r.status ?? 400, { error: r.error, ...(r.wallet ? { wallet: r.wallet } : {}) }), true)
@@ -1318,7 +1370,8 @@ export function adminMerchants(now = Date.now()) {
       volumeUsd: usdNum(sum(pays, (p) => p.usdCents)),
       volume30dUsd: usdNum(sum(pays.filter((p) => Date.parse(p.at) >= since30), (p) => p.usdCents)),
       feesAccruedUsd: usdNum(centsOfMicros(sum(fees, (f) => f.feeMicros))),
-      feesUnbilledUsd: usdNum(centsOfMicros(sum(fees.filter((f) => !f.statementId), (f) => f.feeMicros))),
+      feesCollectedUsd: usdNum(centsOfMicros(sum(fees, collectedOf))),
+      feesUnbilledUsd: usdNum(centsOfMicros(sum(fees.filter((f) => !f.statementId), billableOf))),
       feesPaidUsd: usdNum(sum(pick('paid'), (s) => s.usdCents)),
       feesOpenUsd: usdNum(sum(pick('open'), (s) => s.usdCents)),
       feesOverdueUsd: usdNum(sum(pick('overdue'), (s) => s.usdCents)),

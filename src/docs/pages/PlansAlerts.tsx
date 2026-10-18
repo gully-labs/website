@@ -27,7 +27,7 @@ type Delivery = {
     id: string
     name: string | null
     target: { chain: string; ticker: string } | 'any'
-    condition: { type: 'gap'; pct: number } | { type: 'status'; status: 'premium' | 'discount' | 'either' }
+    condition: { type: 'gap'; pct: number; direction: 'above' | 'below' | 'both' } | { type: 'status'; status: 'premium' | 'discount' | 'either' }
   }
   events: Array<{                  // empty on alert.test
     chain: string                  // 'robinhood' | 'bsc'
@@ -223,7 +223,7 @@ export function PlansAlerts() {
         <Fields
           head={['Condition', 'Body', 'Fires when']}
           rows={[
-            ['gap', '{ type: "gap", pct }', <>The gap between on-chain and fair price is at least <C>pct</C> percent, above or below.</>],
+            ['gap', '{ type: "gap", pct, direction }', <>The gap between on-chain and fair price is at least <C>pct</C> percent. <C>direction</C> picks the side: <C>above</C> a premium (gap ≥ +pct), <C>below</C> a discount (gap ≤ −pct), or <C>both</C> (the default, and what alerts made before directions read as).</>],
             ['status', '{ type: "status", status }', <>The tracker flags the stock <C>premium</C>, <C>discount</C>, or <C>either</C>.</>],
           ]}
         />

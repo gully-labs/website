@@ -28,6 +28,7 @@ const MAIN = {
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
+  '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
@@ -111,10 +112,14 @@ export function pageMeta(host, pathname) {
   // Gully Pay invoices and receipts: real pages for whoever holds the link, never indexed.
   if (/^\/pay\/inv_[\w-]{22}(\/receipt)?$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Labs' : 'Invoice · Gully Labs', description: 'Pay a Gully Labs invoice in ETH, BNB, USDC or USDT, straight to the Gully Labs treasury.', canonical: null, found: true, noindex: true }
   if (/^\/pay\/l\/pl_[\w-]{16}$/.test(p)) return { title: 'Pay · Gully Labs', description: 'Pay with crypto in ETH, BNB, USDC or USDT, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
+  // Gully Pay merchant checkouts (merchants.mjs): real pages for whoever holds the link, never indexed.
+  if (/^\/pay\/m\/(mi_[\w-]{16}|l\/ml_[\w-]{12})$/.test(p)) return { title: 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
+  // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
+  if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  const og = p === '/' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
+  const og = p === '/' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
   return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
 }
 

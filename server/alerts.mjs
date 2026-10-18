@@ -2,7 +2,10 @@
 // crosses a line, by webhook and/or Telegram.
 //
 //   target     one stock (chain + ticker) or any stock
-//   condition  { type: 'gap', pct }                 |gap| >= pct percent
+//   condition  { type: 'gap', pct, direction }      direction 'both': |gap| >= pct (the default, and what
+//                                                  every alert made before directions existed reads as);
+//                                                  'above': a premium of +pct or more (gap >= +pct);
+//                                                  'below': a discount of pct or more (gap <= -pct)
 //              { type: 'status', status }           status is 'premium', 'discount' or 'either'
 //              { type: 'deepcore-launch', chainId }  a new token launches on DeepCore (deepcore.mjs),
 //                                                  on one chain or (chainId null) any; no stock target.
@@ -54,6 +57,8 @@ const KEEP_DELIVERIES = 50
 const TIMEOUT_MS = 5_000
 const EVALUABLE = new Set(['in-line', 'drifting', 'premium', 'discount'])
 const STATUSES = ['premium', 'discount', 'either']
+/** One-sided gap thresholds: 'above' premium >= +X%, 'below' discount <= -X%, 'both' |gap| >= X%. */
+export const DIRECTIONS = ['above', 'below', 'both']
 const NAME_RE = /^[\p{L}\p{N} ._\-]{0,60}$/u
 const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', solana: 'Solana' }
 
@@ -64,6 +69,19 @@ try {
   db = {}
 }
 db.alerts ??= []
+migrateAlerts(db.alerts)
+
+/** Migration on read: a gap alert stored before directions existed fires either way, as it always did. */
+export function migrateAlerts(list) {
+  let n = 0
+  for (const a of list) {
+    if (a?.condition?.type === 'gap' && !DIRECTIONS.includes(a.condition.direction)) {
+      a.condition.direction = 'both'
+      n++
+    }
+  }
+  return n
+}
 
 function save() {
   try {
@@ -216,8 +234,13 @@ export async function postWebhook(urlStr, secret, body, { userAgent = 'GullyLabs
 
 const seriesKey = (r) => `${r.chain}:${r.ticker}`
 
-function holds(c, r) {
-  if (c.type === 'gap') return Math.abs(r.gapPct) >= c.pct
+/** Whether a gap condition (any direction) or a status condition holds for one tracker row. */
+export function holds(c, r) {
+  if (c.type === 'gap') {
+    if (c.direction === 'above') return r.gapPct >= c.pct
+    if (c.direction === 'below') return r.gapPct <= -c.pct
+    return Math.abs(r.gapPct) >= c.pct
+  }
   if (c.status === 'either') return r.status === 'premium' || r.status === 'discount'
   return r.status === c.status
 }
@@ -245,7 +268,9 @@ const eventOf = (r, at) => ({
   snapshotAt: new Date(at).toISOString(),
 })
 
-const conditionText = (c) => (c.type === 'deepcore-launch' ? `new DeepCore launch on ${c.chainId ? (DEEPCORE_CHAINS[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? `gap of ${c.pct}% or more either way` : c.status === 'either' ? 'status premium or discount' : `status ${c.status}`)
+/** A gap condition in words, with its direction. */
+export const gapWords = (c) => (c.direction === 'above' ? `premium of +${c.pct}% or more (gap ≥ +${c.pct}%)` : c.direction === 'below' ? `discount of ${c.pct}% or more (gap ≤ −${c.pct}%)` : `gap of ${c.pct}% or more either way`)
+export const conditionText = (c) => (c.type === 'deepcore-launch' ? `new DeepCore launch on ${c.chainId ? (DEEPCORE_CHAINS[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapWords(c) : c.status === 'either' ? 'status premium or discount' : `status ${c.status}`)
 
 function payloadOf(alert, events, test, at) {
   return {
@@ -269,7 +294,7 @@ async function deliver(alert, events, test, at = Date.now()) {
   }
   if (alert.telegram) {
     const t0 = Date.now()
-    const r = await sendAlertTelegram({ owner: alert.owner, alertId: alert.id, name: alert.name || null, conditionText: conditionText(alert.condition), chatId: alert.telegram.chatId ?? null, events, test })
+    const r = await sendAlertTelegram({ owner: alert.owner, alertId: alert.id, name: alert.name || null, conditionText: conditionText(alert.condition), direction: alert.condition?.type === 'gap' ? (alert.condition.direction ?? 'both') : null, chatId: alert.telegram.chatId ?? null, events, test })
     results.push({ channel: 'telegram', ...r, ms: Date.now() - t0 })
   }
   const live = db.alerts.find((a) => a.id === alert.id)
@@ -438,6 +463,7 @@ const newSecret = () => `whsec_${randomToken(24)}`
  * /api/developer/alerts* for a signed-in wallet (developer.mjs has already checked the session and CSRF).
  *   GET  /api/developer/alerts
  *   POST /api/developer/alerts                    { name?, chain?, ticker?, condition, webhookUrl?, telegram?: true } -> { alert, secret? }
+ *        condition { type: 'gap', pct, direction?: 'above' | 'below' | 'both' }  (direction defaults to 'both')
  *   POST /api/developer/alerts/:id/pause|resume|delete|test|rotate     (resume also ends a Telegram mute)
  *   POST /api/developer/alerts/:id/telegram       { on: boolean }   Telegram delivery on or off
  */
@@ -471,7 +497,9 @@ export async function handleAlerts(req, res, url, address) {
     if (c?.type === 'gap') {
       const pct = Number(c.pct)
       if (!Number.isFinite(pct) || pct < 0.1 || pct > 100) return json(res, 400, { error: 'The gap must be a percentage from 0.1 to 100.' }), true
-      condition = { type: 'gap', pct: Math.round(pct * 100) / 100 }
+      const direction = c.direction === undefined || c.direction === null || c.direction === '' ? 'both' : c.direction
+      if (!DIRECTIONS.includes(direction)) return json(res, 400, { error: 'The direction must be above (a premium of at least X%), below (a discount of at least X%) or both.' }), true
+      condition = { type: 'gap', pct: Math.round(pct * 100) / 100, direction }
     } else if (c?.type === 'status' && STATUSES.includes(c.status)) condition = { type: 'status', status: c.status }
     else if (launchKind) {
       const id = c.chainId === undefined || c.chainId === null || c.chainId === '' ? null : Number(c.chainId)

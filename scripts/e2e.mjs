@@ -13,7 +13,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { blockedOutbound, bootServer, historyFixture, ROOT, seedTrackerHistory, statsFixture, trackerFixture } from './e2e-harness.mjs'
+import { blockedOutbound, bootServer, historyFixture, ROOT, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
@@ -597,7 +597,7 @@ await step('docs', async () => {
 /* ------------------------------------------------------------- 404s and mobile pages --- */
 
 await step('404s', async () => {
-  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200]]) {
+  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200]]) {
     const r = await fetch(BASE + p)
     const html = await r.text()
     check(`HTTP ${want} for ${p}`, r.status === want && (want === 404 ? /noindex/.test(html) : !/Not found ·/.test(html)), `${r.status}`)
@@ -615,6 +615,40 @@ await step('pages at 390', async () => {
     await noHorizontalScroll(page, p)
     await w.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   }
+  await ctx.close()
+})
+
+await step('telegram mini app at 390', async () => {
+  const ctx = await newContext({ width: 390, height: 844, mobile: true })
+  const sdk = telegramSdkStub(signedInitData({ id: 424242, first_name: 'Eve' }), { bg_color: '#17212b', text_color: '#f5f5f5', hint_color: '#708499', button_color: '#5288c1', button_text_color: '#ffffff', secondary_bg_color: '#232e3c', section_bg_color: '#17212b' })
+  let sdkUrl = null
+  await ctx.route(/^https:\/\/telegram\.org\//, (route) => {
+    sdkUrl = route.request().url()
+    return route.fulfill({ status: 200, contentType: 'text/javascript', body: sdk })
+  })
+  const page = await ctx.newPage()
+  const w = watch(page, '/tg at 390')
+  await page.goto(BASE + '/tg')
+  await page.getByRole('radiogroup', { name: 'Section' }).waitFor()
+  check('mini app: loads the SDK from the exact telegram.org URL', sdkUrl === 'https://telegram.org/js/telegram-web-app.js?59', sdkUrl)
+  check('mini app: the theme maps onto the tokens (Telegram bg)', (await page.evaluate(() => getComputedStyle(document.querySelector('main').parentElement).backgroundColor)) === 'rgb(23, 33, 43)')
+  const nvda = page.getByRole('button', { name: /^NVDA on Robinhood Chain/ })
+  await nvda.waitFor()
+  check('mini app: the gap list shows tracker rows', (await page.getByRole('button', { name: / on (Robinhood Chain|BNB Chain): gap / }).count()) > 3)
+  await nvda.click()
+  await page.getByText('Gap to fair').waitFor()
+  check('mini app: a tap opens the stock with a haptic, and shows BackButton', (await page.evaluate(() => window.__tg.haptics.includes('impact:light') && window.__tg.back)) === true)
+  await page.getByRole('radio', { name: '▼ Discount' }).click()
+  const mainBtn = await page.evaluate(() => window.__tg.main)
+  check('mini app: MainButton offers to link a wallet when not linked', mainBtn?.is_visible === true && /Link wallet/.test(mainBtn.text), JSON.stringify(mainBtn))
+  await noHorizontalScroll(page, '/tg stock')
+  await page.evaluate(() => window.__tgBack())
+  await page.getByRole('radiogroup', { name: 'Section' }).waitFor()
+  check('mini app: BackButton returns to the list and hides', (await page.evaluate(() => window.__tg.back)) === false)
+  await page.getByRole('radio', { name: 'My alerts' }).click()
+  check('mini app: alerts ask an unlinked user to link a wallet', await page.getByText('Link your wallet for alerts').isVisible())
+  await noHorizontalScroll(page, '/tg')
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
 })
 

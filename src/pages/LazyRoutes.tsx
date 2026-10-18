@@ -18,6 +18,7 @@ const Stock = lazy(() => chunks.stock().then((m) => ({ default: m.StockPage })))
 const Tracker = lazy(() => chunks.tracker().then((m) => ({ default: m.Tracker })))
 const Ask = lazy(() => chunks.ask().then((m) => ({ default: m.AskPage })))
 const NotFound = lazy(() => chunks.notFound().then((m) => ({ default: m.NotFound })))
+const Tg = lazy(() => chunks.tg().then((m) => ({ default: m.TgApp })))
 
 /** What a page shows while its chunk loads: a pulsing page outline a full screen tall, so the closing
     band and the footer stay below the fold instead of flashing up and jumping down (CLS). */
@@ -56,3 +57,9 @@ export const ProjectDetailRoute = () => page(<ProjectDetail />)
 export const TrackerRoute = () => page(<Tracker />)
 export const AskRoute = () => page(<Ask />)
 export const NotFoundRoute = () => page(<NotFound />)
+// The Telegram Mini App draws its own loading state; a blank screen in Telegram's colours meanwhile.
+export const TgRoute = () => (
+  <Suspense fallback={<div role="status" aria-label="Loading" className="min-h-[100svh]" />}>
+    <Tg />
+  </Suspense>
+)

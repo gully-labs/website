@@ -8,11 +8,16 @@
 //   TELEGRAM_WEBHOOK_SECRET  optional: the secret Telegram sends back in X-Telegram-Bot-Api-Secret-Token.
 //                            Default: derived from the token (HMAC), so one variable is enough.
 //   TELEGRAM_API             optional, tests only: the Bot API base URL (default https://api.telegram.org).
+//   TELEGRAM_MINIAPP_URL     optional: the Mini App's https URL (default https://gullylabs.xyz/tg).
 //
 // Updates arrive by webhook: POST /api/telegram/<path>, where <path> is the first 32 hex of
 // sha256(token) and the secret header must match. On start (startTelegram) the server calls setWebhook
 // for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query), setMyCommands,
-// setChatMenuButton (commands) and getMe; failures are logged (without the token) and retried, never fatal.
+// setChatMenuButton (a web_app button that opens the Mini App, gullylabs.xyz/tg) and getMe; failures are
+// logged (without the token) and retried, never fatal. In private chats the main menu also carries an
+// inline "📱 Open app" web_app button (Telegram allows web_app buttons in private chats only). The Mini
+// App's own API (initData validation, the channel gate, the linked account's alerts) is
+// telegram-miniapp.mjs.
 //
 // Linking (no chat ids to paste): the dashboard asks for a one-time code (10 minutes, single use, only
 // its SHA-256 is stored) and opens https://t.me/<bot>?start=<code>. "/start <code>" links that chat to the
@@ -102,6 +107,16 @@ function save() {
 /** The chat linked to a wallet account, or null. */
 export const linkedChat = (address) => db.links.find((l) => l.address === address) ?? null
 const linkOfChat = (chatId) => db.links.find((l) => l.chatId === String(chatId)) ?? null
+
+/**
+ * The link a Telegram user acts through in the Mini App: their private chat with the bot when it is
+ * linked (a private chat's id is the user's id), else a group they linked themselves. Null when neither.
+ */
+export function linkForTelegramUser(userId) {
+  const id = String(userId ?? '')
+  if (!/^\d{1,20}$/.test(id)) return null
+  return db.links.find((l) => l.chatType === 'private' && l.chatId === id) ?? db.links.find((l) => l.linkedBy === id) ?? null
+}
 
 /* ---------------------------------------------------------------- config --- */
 
@@ -220,6 +235,7 @@ const NOT_MODIFIED = /message is not modified/i
  * @returns {Promise<{ ok: boolean, id: number | null, notModified?: boolean }>}
  */
 async function show(chatId, view, editId = null) {
+  view = { ...view, keyboard: keyboardFor(chatId, view.keyboard) }
   if (editId) {
     const r = await sendToChat(chatId, 'editMessageText', { message_id: editId, text: cap(view.text), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: markup(view.keyboard) })
     if (r.ok) return { ok: true, id: editId }
@@ -276,6 +292,27 @@ function commandList() {
   ]
 }
 
+/** The Mini App's URL: TELEGRAM_MINIAPP_URL when it is a well-formed https URL, else gullylabs.xyz/tg. */
+export function miniAppUrl() {
+  const raw = String(process.env.TELEGRAM_MINIAPP_URL ?? '').trim()
+  try {
+    const u = new URL(raw)
+    if (u.protocol === 'https:' && !u.username && !u.password) return u.toString()
+  } catch {
+    /* default */
+  }
+  return `${SITE}/tg`
+}
+
+/** The chat menu button: opens the Mini App (a web_app button), labelled in plain words. */
+export const menuButton = () => ({ type: 'web_app', text: 'Open app', web_app: { url: miniAppUrl() } })
+
+/** The main menu keyboard for one chat: private chats get the "📱 Open app" web_app row on top. */
+function keyboardFor(chatId, kb) {
+  if (kb !== ui.MENU_KEYBOARD || !(Number(chatId) > 0)) return kb
+  return [[ui.appBtn(miniAppUrl())], ...kb]
+}
+
 let startTimer = null
 
 /** Registers the webhook, the command list and the menu button. Safe to call more than once; never throws. */
@@ -288,7 +325,7 @@ export async function startTelegram({ attempt = 0 } = {}) {
   const url = `${SITE}/api/telegram/${webhookPathFor(token)}`
   const hook = await tg('setWebhook', { url, secret_token: webhookSecretFor(token), allowed_updates: ['message', 'callback_query'], max_connections: 10 })
   const cmds = await tg('setMyCommands', { commands: commandList() })
-  const menuBtn = await tg('setChatMenuButton', { menu_button: { type: 'commands' } })
+  const menuBtn = await tg('setChatMenuButton', { menu_button: menuButton() })
   const name = await botUsername()
   if (!hook.ok) console.error(`telegram: setWebhook failed: ${hook.error}`)
   if (!cmds.ok) console.error(`telegram: setMyCommands failed: ${cmds.error}`)
@@ -412,7 +449,7 @@ function bannerFile() {
 async function sendBanner(chatId) {
   const n = await rowCount()
   const caption = cap(ui.menuCaption(n), MAX_CAPTION)
-  const reply_markup = markup(ui.MENU_KEYBOARD)
+  const reply_markup = markup(keyboardFor(chatId, ui.MENU_KEYBOARD))
   const file = bannerFile()
   const sha = file?.sha ?? 'url'
   const cached = db.banner?.sha === sha ? db.banner.fileId : null
@@ -712,7 +749,7 @@ async function onText(msg) {
     if (!link) view = ui.linkNeededView(`c:${pending.cc}:${pending.ticker}:${pending.from}`)
     else if (!mayAct(link, msg.from?.id)) return
     else if (!Number.isFinite(n) || n < 0.1 || n > 100) view = { text: `“${esc(text.slice(0, 20))}” is not a percentage from 0.1 to 100.`, keyboard: [[btn('✏️ Try again', `alx:${pending.cc}:${pending.ticker}:${pending.from}`)], ui.nav(back)] }
-    else view = ui.alertStep2View(pending.cc, pending.ticker, pending.from, Math.round(n * 100) / 100, tracker.FLAG_PCT)
+    else view = ui.alertStep2View(pending.cc, pending.ticker, pending.from, Math.round(n * 100) / 100)
   }
   if (view) await showNew(chatId, view)
 }
@@ -760,13 +797,13 @@ async function routeView(route, c) {
     if (kind === 'al') {
       c.answer()
       if (pct === undefined) return ui.alertStep1View(cc, ticker, from)
-      if (dir === undefined) return ui.alertStep2View(cc, ticker, from, Number(pct), tracker.FLAG_PCT)
-      return ui.alertStep3View(cc, ticker, from, Number(pct), dir, tracker.FLAG_PCT)
+      if (dir === undefined) return ui.alertStep2View(cc, ticker, from, Number(pct))
+      return ui.alertStep3View(cc, ticker, from, Number(pct), dir)
     }
     if (pct === undefined || dir === undefined) return undefined
     const guard = actGuard('create alerts here')
     if (guard) return c.answer(guard, true), NO_CHANGE
-    const cond = ui.conditionFor(Number(pct), dir, tracker.FLAG_PCT)
+    const cond = ui.conditionFor(Number(pct), dir)
     const r = await alertsCall(link.address, 'POST', '/api/developer/alerts', { chain: ui.CHAIN_OF[cc], ticker, condition: cond.condition, telegram: true })
     c.answer(r.status === 201 ? '✅ Alert created' : 'The alert was not created', r.status !== 201)
     return ui.createdView({ ok: r.status === 201, status: r.status, error: r.data?.error, back: card, what: `${ticker} · ${chainName(ui.CHAIN_OF[cc])}: fires when ${cond.text}.` })
@@ -944,16 +981,16 @@ async function pressed(cq, answer) {
    getChatMember for a channel when the bot is an administrator there, so if the check itself fails the
    bot lets people through rather than locking everyone out. Alert deliveries and their Mute buttons
    are never gated: they are part of a service people may have paid for. */
-const requiredChannel = () => {
+export const requiredChannel = () => {
   const v = String(process.env.TELEGRAM_REQUIRED_CHANNEL ?? '@GullyLabsNews').trim()
   return !v || v.toLowerCase() === 'off' ? null : v.startsWith('@') || /^-?\d+$/.test(v) ? v : `@${v}`
 }
-const channelUrl = (ch) => (ch.startsWith('@') ? `https://t.me/${ch.slice(1)}` : 'https://t.me/GullyLabsNews')
+export const channelUrl = (ch) => (ch.startsWith('@') ? `https://t.me/${ch.slice(1)}` : 'https://t.me/GullyLabsNews')
 const memberCache = new Map() // userId -> { ok, until }
 let gateBroken = 0 // time the check last failed for a reason other than "not a member"
 
-/** true when the user follows the channel, or when membership cannot be checked. */
-async function followsChannel(userId, { fresh = false } = {}) {
+/** true when the user follows the channel, or when membership cannot be checked. Also gates the Mini App. */
+export async function followsChannel(userId, { fresh = false } = {}) {
   const ch = requiredChannel()
   if (!ch || !userId) return true
   const hit = memberCache.get(userId)
@@ -1070,6 +1107,9 @@ export async function handleTelegramAccount(req, res, url, address) {
   }
   return json(res, 404, { error: 'not found' }), true
 }
+
+/** For the Mini App: run one of alerts.mjs's routes for a linked account (same validation and limits as the bot). */
+export const alertsRouteFor = (address, method, p, body) => alertsCall(address, method, p, body)
 
 /** Admin overview counts. */
 export const telegramStats = () => ({ enabled: telegramEnabled(), links: db.links.length })

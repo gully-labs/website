@@ -86,6 +86,8 @@ check('zero fee (free tier) keeps the plain transfer', P.withFeeSplit(quote(), {
 check('fee too small to round above 0 keeps the plain transfer', P.withFeeSplit(quote({ amountRaw: '199' }), { bps: 50, feeTo: TREASURY }).feeRaw === undefined)
 check('no split when the merchant is the treasury', P.withFeeSplit(quote({ treasury: TREASURY }), { bps: 50, feeTo: TREASURY }).feeRaw === undefined)
 check('no split without a valid treasury', P.withFeeSplit(quote(), { bps: 50, feeTo: '0x' + '0'.repeat(40) }).feeRaw === undefined && P.withFeeSplit(quote(), { bps: 50, feeTo: null }).feeRaw === undefined)
+check("an explicit fee (a store's fee above its free allowance) is used as given", P.withFeeSplit(quote(), { bps: 50, feeTo: TREASURY, feeRaw: 123_456n }).feeRaw === '123456')
+check('an explicit fee not below the amount keeps the plain transfer', P.withFeeSplit(quote(), { bps: 50, feeTo: TREASURY, feeRaw: BigInt(quote().amountRaw) }).feeRaw === undefined)
 
 /* ------------------------------------------------------------ quoteSplit --- */
 
