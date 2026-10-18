@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowUpRight, Loader2, Route } from 'lucide-react'
 import type { TrackerRow } from '../../lib/tracker'
 import { NATIVE_SYMBOL } from './swapConfig'
+import { servable } from '../tracker/StockLogo'
 import { TokenLogo } from '../logos/TokenLogo'
 
 /* "DeepCore route": what DeepCore's router would give for the same payment as the LI.FI swap on this card
@@ -107,7 +108,7 @@ export function DeepCoreQuote({ row }: { row: TrackerRow }) {
             <dt className="text-muted">You get</dt>
             <dd className="m-0 font-mono text-ink">
               <span className="inline-flex items-center gap-1.5">
-                <TokenLogo symbol={q.out.symbol} chain={row.chain} address={row.token} size={16} decorative /> ≈ {show(q.out.amount)} {q.out.symbol}
+                <TokenLogo symbol={q.out.symbol} chain={servable(row.chain, row.token) ? row.chain : null} address={servable(row.chain, row.token) ? row.token : null} size={16} decorative /> ≈ {show(q.out.amount)} {q.out.symbol}
               </span>
               {q.out.minimum !== null && q.slippagePct !== null && (
                 <span className="block text-[12px] text-faint">

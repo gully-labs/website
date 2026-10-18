@@ -8,6 +8,7 @@ import { useSolanaWallet } from '../solana/useSolanaWallet'
 import { b58encode, fromBase64, toBase64 } from '../solana/tx'
 import { signAndSend } from '../solana/walletStandard'
 import { btnGold } from '../ui'
+import { servable } from '../tracker/StockLogo'
 import { TokenLogo } from '../logos/TokenLogo'
 import { jupiterFeeText } from './swapConfig'
 import { track } from '../../lib/track'
@@ -127,7 +128,7 @@ export default function JupiterSwap({ row }: { row: TrackerRow }) {
           </div>
         ) : (
           <span className="flex h-11 items-center gap-1.5 px-2 font-mono text-[12px] text-muted">
-            <TokenLogo symbol={sym} chain={row.chain} address={row.token} size={16} decorative /> {sym}
+            <TokenLogo symbol={sym} chain={servable(row.chain, row.token) ? row.chain : null} address={servable(row.chain, row.token) ? row.token : null} size={16} decorative /> {sym}
           </span>
         )}
       </div>

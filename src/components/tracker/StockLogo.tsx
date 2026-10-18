@@ -10,6 +10,9 @@ const SIZES: LogoSize[] = [10, 12, 14, 16, 20, 24, 32, 40, 48, 64]
 /** The nearest size the logo service component offers. */
 const nearest = (px: number): LogoSize => SIZES.reduce((a, b) => (Math.abs(b - px) < Math.abs(a - px) ? b : a))
 
+/** An address the logo service accepts: an EVM address, or a Solana mint (base58). Anything else gets the neutral glyph without a request. */
+export const servable = (chain: string, token: string) => (chain === 'solana' ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(token) : /^0x[0-9a-fA-F]{40}$/.test(token))
+
 /** A chain's official mark, round, at the small sizes the tracker uses (registry: components/logos). */
 export function ChainLogo({ chain, size = 14, named = false, className = '' }: { chain: string; size?: number; named?: boolean; className?: string }) {
   const m = chainMark(chain)
@@ -32,7 +35,7 @@ export function StockLogo({ row, size = 28, active = false, chainBadge = true }:
       {!src || failed ? (
         // No company mark: the logo service answers (xStocks, DexScreener, Jupiter ...) or the kit's neutral token glyph.
         <span className={`flex size-full items-center justify-center rounded-full ${active ? 'ring-1 ring-gold' : ''}`}>
-          <TokenLogo symbol={row.ticker} chain={row.chain} address={row.token} size={nearest(size)} decorative />
+          <TokenLogo symbol={row.ticker} chain={servable(row.chain, row.token) ? row.chain : null} address={servable(row.chain, row.token) ? row.token : null} size={nearest(size)} decorative />
         </span>
       ) : (
         <span className={`flex size-full items-center justify-center overflow-hidden rounded-full bg-[#fff] ring-1 ${active ? 'ring-gold' : 'ring-line-strong'}`}>

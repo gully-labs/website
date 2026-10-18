@@ -114,9 +114,9 @@
   function link(r) {
     return TRACKER + '/' + encodeURIComponent(r.chain) + '/' + encodeURIComponent(r.ticker)
   }
-  function logo(r, size, withChain) {
+  function logo(r, size, withChain, base) {
     // No company logo in the answer: the Gully Labs logo service (xStocks, DexScreener, Jupiter ...) by chain and token.
-    var src = safeUrl(r.logo) || (r.chain && r.token && /^[A-Za-z0-9]{20,66}$/.test(String(r.token)) ? DEFAULT_API + '/api/logo/' + encodeURIComponent(r.chain) + '/' + r.token + '.png?s=' + (size > 32 ? 128 : 64) : null)
+    var src = safeUrl(r.logo) || (r.chain && r.token && (r.chain === 'solana' ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/ : /^0x[0-9a-fA-F]{40}$/).test(String(r.token)) ? (base || DEFAULT_API) + '/api/logo/' + encodeURIComponent(r.chain) + '/' + r.token + '.png?s=' + (size > 32 ? 128 : 64) : null)
     var ch = withChain && safeUrl(r.chainLogo)
     var inner = src
       ? '<span class="c"><img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="' + esc(src) + '" ></span>'
@@ -191,7 +191,7 @@
       .map(function (r) {
         return (
           '<a class="it" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener noreferrer" title="' + esc(r.name + ' \u00b7 ' + (CHAIN[r.chain] || r.chain)) + '">' +
-          logo(r, 20, w.chain === 'all') + '<b>' + esc(r.ticker) + '</b><span class="v" data-v="p">' + esc(price(r.onchain)) + '</span>' + pill(r) + '</a>'
+          logo(r, 20, w.chain === 'all', w.base) + '<b>' + esc(r.ticker) + '</b><span class="v" data-v="p">' + esc(price(r.onchain)) + '</span>' + pill(r) + '</a>'
         )
       })
       .join('')
@@ -262,7 +262,7 @@
     var g = num(r.gapPct) ? pill(r) : '<span class="pl">' + (r.status === 'no-pool' ? 'no pool' : 'unreadable') + '</span>'
     return (
       '<a class="b" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">' +
-      '<div class="hd">' + logo(r, 40, true) + '<div class="tx"><span class="k">' + esc(r.ticker) + '</span><span class="n">' + esc(r.name) + ' \u00b7 ' + esc(CHAIN[r.chain] || r.chain) + '</span></div></div>' +
+      '<div class="hd">' + logo(r, 40, true, w.base) + '<div class="tx"><span class="k">' + esc(r.ticker) + '</span><span class="n">' + esc(r.name) + ' \u00b7 ' + esc(CHAIN[r.chain] || r.chain) + '</span></div></div>' +
       '<div class="row"><span class="p v" data-v="p">' + esc(price(r.onchain)) + '</span>' + g + '</div>' +
       gapBar(r) +
       '<div class="c" title="Fair price from Chainlink"><span>fair <span class="v" data-v="f">' + esc(price(r.fair)) + '</span></span><span>' + esc(note) + '</span></div>' +
@@ -327,7 +327,7 @@
         var bar = '<span class="gb" aria-hidden="true"><i style="left:' + (r.gapPct >= 0 ? 50 : 50 - span) + '%;width:' + Math.max(span, 2) + '%;background:' + col + ';--o:' + (r.gapPct >= 0 ? 'left' : 'right') + '"></i><u></u></span>'
         return (
           '<tr tabindex="0" data-k="' + esc(key(r)) + '" data-href="' + esc(link(r)) + '" style="animation-delay:' + i * 50 + 'ms">' +
-          '<td><span class="nm">' + logo(r, 26, w.chain === 'all') + '<span><b>' + esc(r.ticker) + '</b><small>' + esc(r.name) + '</small></span></span></td>' +
+          '<td><span class="nm">' + logo(r, 26, w.chain === 'all', w.base) + '<span><b>' + esc(r.ticker) + '</b><small>' + esc(r.name) + '</small></span></span></td>' +
           '<td><span class="v" data-v="p">' + esc(price(r.onchain)) + '</span></td><td class="fc"><span class="v" data-v="f">' + esc(price(r.fair)) + '</span></td>' +
           '<td class="gp"><span class="gw">' + bar + pill(r) + '</span></td></tr>'
         )
