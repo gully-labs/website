@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
@@ -26,10 +26,11 @@ const mainRoutes = [
       { path: '/pay/:id', element: <PayRoute /> },
       // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
       { path: '/pay/l/:id', element: <PayLinkRoute /> },
-      // Gully Pay for merchants: a store's invoice and link checkouts (paid to the store's wallet), and the draft terms.
+      // Gully Pay for merchants: a store's invoice and link checkouts (paid to the store's wallet), and its terms.
       { path: '/pay/m/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantInvoicePage })) },
       { path: '/pay/m/l/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantLinkPage })) },
-      { path: '/gully-pay/merchant-terms', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantTermsPage })) },
+      { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
+      { path: '/gully-pay/merchant-terms', element: <Navigate to="/legal/merchant-terms" replace /> },
       // A path no page owns: a branded 404 with ways back (the server answers it with status 404).
       { path: '*', element: <NotFoundRoute /> },
     ],

@@ -80,7 +80,10 @@ export function MerchantTab() {
         <p className="m-0 flex items-start gap-2 text-[14px] leading-[1.55] text-ink-2">
           <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden />
           <span>
-            {view.nonCustodial} Fee: {f.ratePct}% per payment after your first {usd(f.freeUsd)}, no monthly fee.
+            {view.nonCustodial} Fee: {f.ratePct}% per payment after your first {usd(f.freeUsd)}, no monthly fee.{' '}
+            <a href={`${payOrigin()}${view.terms.path}`} target="_blank" rel="noopener" className="text-gold underline underline-offset-4 hover:text-gold-hover">
+              Merchant terms
+            </a>
           </span>
         </p>
         <nav aria-label="Merchant sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
@@ -112,7 +115,7 @@ export function MerchantTab() {
       )}
       {!view.ready && (
         <p className="m-0 rounded-[14px] border border-dashed border-line-strong px-5 py-3 text-[14px] text-muted">
-          Start here: add a receiving wallet and name your store. Links and invoices can be made at any time; payers can pay once a wallet is on.
+          Start here: add a receiving wallet (you accept the merchant terms with it) and name your store. Links and invoices can be made at any time; payers can pay once a wallet is on.
         </p>
       )}
 

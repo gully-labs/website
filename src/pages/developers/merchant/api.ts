@@ -123,6 +123,7 @@ export interface MerchantView {
   role: string
   can: { manage: boolean; links: boolean; webhooks: boolean }
   nonCustodial: string
+  terms: { version: string; path: string; accepted: { version: string; acceptedAt: string; acceptedBy: string } | null; current: boolean }
   profile: { name: string | null; displayName: string; logoUrl: string | null; logoSource: string | null; accent: string | null; supportEmail: string | null; website: string | null }
   wallets: MerchantWallet[]
   ready: boolean

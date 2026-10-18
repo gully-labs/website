@@ -19,7 +19,8 @@
 //   merchants:  { [workspace]: { profile: { name, accent, supportEmail, website, logo: { sha, type, bytes, source, fetchedAt } | null },
 //                                wallets: { [chainId]: { address (EIP-55), declared: 'eoa'|'contract', kind: 'eoa'|'eoa-7702'|'contract'|'undeployed',
 //                                                        enabled, status: 'ok'|'not-deployed', checkedAt } },
-//                                webhook: { url, secret, createdAt, rotatedAt } | null, invoiceSeq, createdAt, updatedAt } }
+//                                webhook: { url, secret, createdAt, rotatedAt } | null, terms: { version, acceptedAt, acceptedBy } | null,
+//                                invoiceSeq, createdAt, updatedAt } }
 //   links:      [{ id: 'ml_…', ws, title, description, amount: fixed|open, assets, active, expiresAt, maxUses, paidUses, lastPaidAt, views, createdAt, updatedAt }]
 //   invoices:   [{ id: 'mi_…', ws, number, title, items: [{ description, quantity, unitCents }], usdCents, customer: { name, email },
 //                  notes, dueAt, expiresAt, assets, linkId, views, firstViewedAt, createdAt, cancelledAt, paidAt, paymentId, expiredEventAt }]
@@ -37,7 +38,8 @@
 //   GET  /api/developer/merchant/stats?range=30d|90d|365d
 //   GET  /api/developer/merchant/export/payments.csv
 //   POST /api/developer/merchant/profile                { name, logoUrl?, accent?, supportEmail?, website? }
-//   POST /api/developer/merchant/wallets                { address, type: 'eoa'|'contract', chains: number[] }  -> per-chain results
+//   POST /api/developer/merchant/wallets                { address, type: 'eoa'|'contract', chains: number[], acceptTerms? }  -> per-chain results
+//                                                       (the first one needs acceptTerms: true; the version and wallet are recorded)
 //   POST /api/developer/merchant/wallets/:chainId       { enabled }  |  …/:chainId/check  |  …/:chainId/remove
 //   POST /api/developer/merchant/links                  { title, description?, amount, assets?, expiresAt?, maxUses? }
 //   POST /api/developer/merchant/links/:id              any create field, or { active }
@@ -79,6 +81,9 @@ const LOGO_DIR = path.join(DATA_DIR, 'merchant-logos')
 const SITE = (process.env.GULLY_SITE_URL ?? 'https://gullylabs.xyz').replace(/\/+$/, '')
 export const NON_CUSTODIAL = 'Non-custodial: payments go directly to your wallet. Gully Labs never holds your funds.'
 export const PAUSED_TEXT = "This store's checkout is paused."
+/** The merchant terms in force (src/pages/legal/MerchantTerms.tsx, /legal/merchant-terms). A store accepts them with its first wallet. */
+export const MERCHANT_TERMS_VERSION = '2026-10-17'
+export const MERCHANT_TERMS_PATH = '/legal/merchant-terms'
 
 const INVOICE_RE = /^mi_[A-Za-z0-9_-]{22}$/
 const LINK_RE = /^ml_[A-Za-z0-9_-]{16}$/
@@ -906,6 +911,7 @@ function merchantView(ws, role) {
     role,
     can: { manage: canWrite(role, '/api/developer/merchant/profile'), links: canWrite(role, '/api/developer/merchant/links'), webhooks: canWrite(role, '/api/developer/merchant/webhook') },
     nonCustodial: NON_CUSTODIAL,
+    terms: { version: MERCHANT_TERMS_VERSION, path: MERCHANT_TERMS_PATH, accepted: m?.terms ?? null, current: m?.terms?.version === MERCHANT_TERMS_VERSION },
     profile: { name: m?.profile?.name ?? null, displayName: brandOf(ws).name, logoUrl: logoPath(m?.profile?.logo), logoSource: m?.profile?.logo?.source ?? null, accent: m?.profile?.accent ?? null, supportEmail: m?.profile?.supportEmail ?? null, website: m?.profile?.website ?? null },
     wallets,
     ready: wallets.some((w) => w.enabled && w.status === 'ok'),
@@ -982,7 +988,9 @@ async function setProfile(ws, body) {
   return { ok: true }
 }
 
-async function setWallets(ws, body) {
+async function setWallets(ws, body, user) {
+  const accepted = peek(ws)?.terms
+  if (!accepted && body?.acceptTerms !== true) return { ok: false, status: 400, code: 'terms', error: `Accept the Gully Pay merchant terms (${SITE}${MERCHANT_TERMS_PATH}) to set up your store: send acceptTerms: true.` }
   const declared = String(body?.type ?? '')
   const list = Array.isArray(body?.chains) ? [...new Set(body.chains.map(Number))] : body?.chainId != null ? [Number(body.chainId)] : []
   if (!list.length || list.some((id) => !CHAINS[id])) return bad(`chains must list one or more of: ${CHAIN_LIST.map((c) => c.id).join(', ')}.`)
@@ -998,10 +1006,13 @@ async function setWallets(ws, body) {
     m.wallets[id] = { address: r.address, declared, kind: r.kind, enabled: r.deployed && body?.enabled !== false, status: r.status, checkedAt: new Date().toISOString() }
     results.push({ chainId: id, ok: r.deployed, error: r.deployed ? null : r.error, wallet: walletView(id, m.wallets[id]) })
   }
-  merchantOf(ws).updatedAt = new Date().toISOString()
+  const merchant = merchantOf(ws)
+  merchant.updatedAt = new Date().toISOString()
+  const acceptedNow = !merchant.terms && body?.acceptTerms === true
+  if (acceptedNow) merchant.terms = { version: MERCHANT_TERMS_VERSION, acceptedAt: merchant.updatedAt, acceptedBy: user }
   save()
   const refused = results.filter((x) => !x.ok)
-  return { ok: true, status: refused.length === results.length ? 422 : 200, results, error: refused.length ? refused.map((x) => `${CHAINS[x.chainId].name}: ${x.error}`).join(' ') : null }
+  return { ok: true, acceptedNow, status: refused.length === results.length ? 422 : 200, results, error: refused.length ? refused.map((x) => `${CHAINS[x.chainId].name}: ${x.error}`).join(' ') : null }
 }
 
 async function walletAction(ws, chainId, action, body) {
@@ -1078,8 +1089,9 @@ export async function handleMerchant(req, res, url, ctx) {
   }
   if (p === '/api/developer/merchant/wallets') {
     if (!allow('merchant-wallet', ws, 60, 3_600_000)) return json(res, 429, { error: 'Too many wallet checks in the last hour.' }), true
-    const r = await setWallets(ws, body ?? {})
-    if (!r.ok) return json(res, r.status, { error: r.error }), true
+    const r = await setWallets(ws, body ?? {}, user)
+    if (!r.ok) return json(res, r.status, { error: r.error, ...(r.code ? { code: r.code } : {}) }), true
+    if (r.acceptedNow) ev('merchant.terms_accepted', MERCHANT_TERMS_VERSION)
     ev('merchant.wallets', String(body?.address ?? '').slice(0, 42), { chains: r.results.map((x) => x.chainId), refused: r.results.filter((x) => !x.ok).map((x) => x.chainId) })
     return json(res, r.status, { results: r.results, error: r.error, merchant: merchantView(ws, role) }), true
   }

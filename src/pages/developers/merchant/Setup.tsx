@@ -4,7 +4,7 @@ import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
 import { api } from '../api'
 import { chip, input, pillGold, pillSm } from '../styles'
-import { KIND_TEXT, type MerchantView, type MerchantWallet } from './api'
+import { KIND_TEXT, payOrigin, type MerchantView, type MerchantWallet } from './api'
 import { Field, Section } from './parts'
 
 /* Store profile (shown on the checkout) and the receiving wallets, one per chain. */
@@ -138,12 +138,14 @@ export function WalletsSection({ view, onChange }: { view: MerchantView; onChang
   const [chains, setChains] = useState<number[]>(() => view.chains.filter((c) => !view.wallets.some((w) => w.chainId === c.id)).map((c) => c.id))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [agree, setAgree] = useState(false)
+  const needTerms = !view.terms.accepted
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
     setErr(null)
-    const r = await api<{ results: { chainId: number; ok: boolean; error: string | null }[]; error: string | null; merchant: MerchantView }>('/api/developer/merchant/wallets', { method: 'POST', body: { address: address.trim(), type, chains } })
+    const r = await api<{ results: { chainId: number; ok: boolean; error: string | null }[]; error: string | null; merchant: MerchantView }>('/api/developer/merchant/wallets', { method: 'POST', body: { address: address.trim(), type, chains, ...(needTerms ? { acceptTerms: agree } : {}) } })
     setBusy(false)
     if (!r.ok && !(r.status === 422)) return setErr(r.error)
     // 422 when no chain could be enabled: the wallets are stored (disabled) and listed; reload shows them.
@@ -200,12 +202,31 @@ export function WalletsSection({ view, onChange }: { view: MerchantView; onChang
             })}
           </div>
           <p className="m-0 text-[12px] leading-[1.55] text-faint">We read each chain: a contract must be deployed on that chain before it can take payments there (a payment to an undeployed Safe address can be lost). The same address on every chain is fine.</p>
+          {needTerms ? (
+            <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-3 py-3 text-[14px] leading-[1.55] text-ink-2">
+              <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-[3px] size-4 shrink-0 accent-[#e8c060]" required />
+              <span>
+                I agree to the{' '}
+                <a href={`${payOrigin()}${view.terms.path}`} target="_blank" rel="noopener" className="text-gold underline underline-offset-4 hover:text-gold-hover">
+                  Gully Pay merchant terms
+                </a>{' '}
+                for this workspace: a fee per payment only, payments go straight to our wallet, and refunds and taxes are ours.
+              </span>
+            </label>
+          ) : (
+            <span className="font-mono text-[11px] text-faint">
+              Merchant terms {view.terms.accepted?.version} accepted {new Date(view.terms.accepted!.acceptedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
+              <a href={`${payOrigin()}${view.terms.path}`} target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-gold">
+                read them
+              </a>
+            </span>
+          )}
           {err && (
             <p className="m-0 text-[13px] text-error" role="alert">
               {err}
             </p>
           )}
-          <button type="submit" className={`${pillGold} self-start`} disabled={busy || !chains.length || !address.trim()}>
+          <button type="submit" className={`${pillGold} self-start`} disabled={busy || !chains.length || !address.trim() || (needTerms && !agree)}>
             {busy && <Loader2 size={15} className="animate-spin" aria-hidden />} Check and add
           </button>
         </form>

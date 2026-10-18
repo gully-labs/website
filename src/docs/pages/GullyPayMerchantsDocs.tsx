@@ -43,7 +43,7 @@ interface Config {
 }
 
 /** Fee owed against lifetime volume, from the live rate and allowance (GET /api/pay/m/config). */
-function FeeCurve() {
+export function FeeCurve() {
   const [cfg, setCfg] = useState<Config | null>(null)
   const [err, setErr] = useState(false)
   const [tries, setTries] = useState(0)
@@ -171,6 +171,9 @@ export function GullyPayMerchantsDocs() {
           <li>The fee accrues on each confirmed payment at its quoted USD value, exactly (in millionths of a dollar).</li>
           <li>Every Monday at 00:00 UTC, a store that owes $1 or more gets a statement: a normal Gully Labs invoice, payable in crypto through the Gully Pay checkout. Less than $1 rolls into the next week.</li>
           <li>The portal shows the balance, the free allowance left, every statement and a <b>Pay now</b> button. The CSV export lists every payment with its fee.</li>
+          <li>
+            The fee terms in full: section 5 of the <a href="https://gullylabs.xyz/legal/merchant-terms#s5" className="text-gold underline-offset-4 hover:underline">merchant terms</a>.
+          </li>
         </List>
       </Section>
 
@@ -185,7 +188,11 @@ export function GullyPayMerchantsDocs() {
 
       <Section id="terms" title="Terms">
         <P>
-          The merchant terms are a <b>draft</b> pending legal review: <a href="https://gullylabs.xyz/gully-pay/merchant-terms" className="text-gold underline-offset-4 hover:underline">gullylabs.xyz/gully-pay/merchant-terms</a>.
+          Running a store means accepting the{' '}
+          <a href="https://gullylabs.xyz/legal/merchant-terms" className="text-gold underline-offset-4 hover:underline">
+            Gully Pay merchant terms
+          </a>{' '}
+          (adapted from Common Paper's Cloud Service Agreement, CC BY 4.0): you tick “I agree” when you add your first receiving wallet.
         </P>
       </Section>
     </DocPage>

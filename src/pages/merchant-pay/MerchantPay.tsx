@@ -1,6 +1,6 @@
 import { ArrowRight, Ban, CheckCircle2, Clock, ExternalLink, Loader2, Mail, PauseCircle, ShieldCheck } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { EChart } from '../../components/charts/EChart'
 import { itemTooltip, PALETTE, ringPreset, tipHtml } from '../../components/charts/chartPresets'
 import { ChainLogo } from '../../components/logos/ChainLogo'
@@ -455,44 +455,5 @@ function StoreLinkView({ link }: { link: StoreLink }) {
       </div>
       <StoreFoot brand={brand} nonCustodial={link.nonCustodial} />
     </div>
-  )
-}
-
-/** The draft merchant terms (owner's legal review pending). */
-export function MerchantTermsPage() {
-  return (
-    <>
-      <Seo title="Gully Pay merchant terms (draft)" description="Draft terms for merchants using Gully Pay. Not in force: pending legal review." />
-      <Shell>
-        <MerchantTerms />
-      </Shell>
-    </>
-  )
-}
-
-export function MerchantTerms() {
-  return (
-    <article className="flex max-w-[760px] flex-col gap-4 text-[15px] leading-[1.7] text-ink-2">
-      <span className="self-start rounded-full border border-[#5a2a24] px-3 py-1 font-mono text-[12px] tracking-[1.5px] text-error">DRAFT · NOT IN FORCE · PENDING LEGAL REVIEW</span>
-      <h1 className="m-0 font-display text-[clamp(32px,6vw,52px)] leading-[.95] font-extrabold uppercase text-ink">Gully Pay merchant terms</h1>
-      <p className="m-0 text-muted">This is a working draft for the owner's legal review. It does not bind anyone until it is reviewed, approved and published without this banner.</p>
-      <h2 className="m-0 mt-2 text-[18px] font-semibold text-ink">1. What Gully Pay does</h2>
-      <p className="m-0">Gully Pay is software that shows your customers a checkout and reads their payment back from a public blockchain. Non-custodial: payments go directly to your wallet. Gully Labs never holds your funds, never has your keys and cannot move, freeze, reverse or refund a payment.</p>
-      <h2 className="m-0 mt-2 text-[18px] font-semibold text-ink">2. Your wallets</h2>
-      <p className="m-0">You choose the receiving address on each chain and are responsible for controlling it. We check the address format and that a contract wallet is deployed on that chain before it can take payments there, but we cannot check that you hold its keys. A payment sent to the address you set is final.</p>
-      <h2 className="m-0 mt-2 text-[18px] font-semibold text-ink">3. Fees</h2>
-      <p className="m-0">A transaction fee on each confirmed payment, at the rate shown in your portal when the payment is confirmed, after a free allowance of lifetime volume. No monthly fee. Fees are billed in a weekly statement payable in crypto through Gully Pay. Rates and the allowance may change with notice; a change applies to payments confirmed after it takes effect.</p>
-      <h2 className="m-0 mt-2 text-[18px] font-semibold text-ink">4. Paying statements and pausing</h2>
-      <p className="m-0">A statement is due within seven days of issue. If it is unpaid after seven days, new checkouts of your store pause until it is paid; payments already sent to your wallet are not affected. We warn you when it is issued, on day five and on day seven.</p>
-      <h2 className="m-0 mt-2 text-[18px] font-semibold text-ink">5. Your customers</h2>
-      <p className="m-0">You are the seller. Orders, delivery, refunds, taxes, receipts and any consumer-law duties are yours. Refunds are made by you from your own wallet.</p>
-      <h2 className="m-0 mt-2 text-[18px] font-semibold text-ink">6. Acceptable use</h2>
-      <p className="m-0">No unlawful goods or services, no sanctioned persons or places, no fraud, no attempt to pass off a payment to another address as yours. We may suspend a store that breaks these terms.</p>
-      <h2 className="m-0 mt-2 text-[18px] font-semibold text-ink">7. No warranty, limits</h2>
-      <p className="m-0">Blockchains, nodes and price feeds can fail or be delayed. To the extent the law allows, Gully Pay is provided as is and our liability is limited to the fees you paid us in the three months before a claim. [To be completed by counsel.]</p>
-      <p className="m-0 text-faint">
-        Questions: hello@gullylabs.xyz · <Link to="/" className="underline-offset-4 hover:underline">gullylabs.xyz</Link>
-      </p>
-    </article>
   )
 }

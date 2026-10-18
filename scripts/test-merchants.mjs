@@ -185,7 +185,7 @@ try {
   /* --------------------------------------------------------------- roles --- */
   check('roles: a viewer reads the store', (await team.viewer.call('/api/developer/merchant')).status === 200)
   check('roles: a viewer cannot change the profile (403)', (await team.viewer.post('/api/developer/merchant/profile', { name: 'X' })).status === 403)
-  check('roles: a developer cannot set wallets (403)', (await team.developer.post('/api/developer/merchant/wallets', { address: owner.address, type: 'eoa', chains: [8453] })).status === 403)
+  check('roles: a developer cannot set wallets (403)', (await team.developer.post('/api/developer/merchant/wallets', { acceptTerms: true, address: owner.address, type: 'eoa', chains: [8453] })).status === 403)
   check('roles: a developer cannot make invoices (403)', (await team.developer.post('/api/developer/merchant/invoices', { items: [{ description: 'x', unitUsd: '1' }], dueDate: '2099-01-01' })).status === 403)
   check('roles: a viewer cannot make links (403)', (await team.viewer.post('/api/developer/merchant/links', { title: 'x', amount: { type: 'fixed', usd: '1' } })).status === 403)
   check('roles: a viewer cannot set the webhook (403)', (await team.viewer.post('/api/developer/merchant/webhook', { url: HOOK() })).status === 403)
@@ -193,8 +193,11 @@ try {
 
   /* ------------------------------------------------------------- wallets --- */
   const eoa = acct().address // EIP-55 from viem
+  const noTerms = await O.post('/api/developer/merchant/wallets', { address: eoa, type: 'eoa', chains: [8453] })
+  check('terms: the first wallet needs the merchant terms accepted (400)', noTerms.status === 400 && noTerms.data?.code === 'terms' && /merchant-terms/.test(noTerms.data.error), noTerms.data?.error)
+  check('terms: the store view names the terms in force, not accepted yet', empty.data.terms.path === '/legal/merchant-terms' && empty.data.terms.accepted === null)
   const wbad = async (name, body, want = 400) => {
-    const r = await O.post('/api/developer/merchant/wallets', body)
+    const r = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, ...body })
     check(`wallet refused: ${name} (${want})`, r.status === want, r.data?.error)
     return r
   }
@@ -208,17 +211,17 @@ try {
   // A Safe deployed on Base only.
   const safe = acct().address
   chains[8453].code.set(safe.toLowerCase(), '0x608060405234801561001057600080fd5b50')
-  const sres = await O.post('/api/developer/merchant/wallets', { address: safe, type: 'contract', chains: [8453, 56] })
+  const sres = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: safe, type: 'contract', chains: [8453, 56] })
   const sBase = sres.data?.results?.find((x) => x.chainId === 8453)
   const sBnb = sres.data?.results?.find((x) => x.chainId === 56)
   check('a deployed Safe on Base is a contract and enabled', sres.status === 200 && sBase?.ok && sBase.wallet.kind === 'contract' && sBase.wallet.enabled, JSON.stringify(sres.data?.results))
   check('the same Safe on BNB Chain is NOT deployed there: refused, stored disabled', sBnb && !sBnb.ok && /no contract is deployed/i.test(sBnb.error) && sBnb.wallet.enabled === false && sBnb.wallet.status === 'not-deployed')
   check('enabling the undeployed chain is refused (422)', (await O.post('/api/developer/merchant/wallets/56', { enabled: true })).status === 422)
   // Declared "eoa", but it is a contract on Base: it is still not deployed on Ethereum, refused.
-  const sEth = await O.post('/api/developer/merchant/wallets', { address: safe, type: 'eoa', chains: [1] })
+  const sEth = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: safe, type: 'eoa', chains: [1] })
   check('a contract elsewhere with no code here is refused even when declared an EOA', sEth.status === 422 && /contract on Base/.test(sEth.data?.error ?? ''), sEth.data?.error)
   const counterfactual = acct().address
-  const cf = await O.post('/api/developer/merchant/wallets', { address: counterfactual, type: 'contract', chains: [42161] })
+  const cf = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: counterfactual, type: 'contract', chains: [42161] })
   check('a declared contract with no code anywhere is refused (422)', cf.status === 422, cf.data?.error)
   // Deploy on BNB Chain, check again: enabled.
   chains[56].code.set(safe.toLowerCase(), '0x6080')
@@ -227,14 +230,17 @@ try {
   // An EIP-7702 delegated EOA counts as an EOA with code.
   const e7702 = acct().address
   chains[1].code.set(e7702.toLowerCase(), '0xef0100' + 'ab'.repeat(20))
-  const r7702 = await O.post('/api/developer/merchant/wallets', { address: e7702, type: 'eoa', chains: [1] })
+  const r7702 = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: e7702, type: 'eoa', chains: [1] })
   check('an EIP-7702 delegated EOA is accepted and shown as such', r7702.status === 200 && r7702.data.results[0].wallet.kind === 'eoa-7702')
   // The store's real wallet: one EOA on Base, Ethereum and BNB Chain (the same address on every chain is allowed).
-  const wr = await O.post('/api/developer/merchant/wallets', { address: eoa, type: 'eoa', chains: [8453, 1, 56] })
+  const wr = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: eoa, type: 'eoa', chains: [8453, 1, 56] })
   check('the same EOA on three chains: all enabled', wr.status === 200 && wr.data.results.every((x) => x.ok && x.wallet.kind === 'eoa' && x.wallet.enabled), wr.data?.error)
   await O.post('/api/developer/merchant/wallets/42161/remove', {})
   const MW = eoa.toLowerCase()
   check('the store is ready', (await O.call('/api/developer/merchant')).data.ready === true)
+  const tv = (await O.call('/api/developer/merchant')).data.terms
+  check('terms: acceptance recorded with version and the accepting wallet', tv.current === true && tv.accepted?.acceptedBy === OW && !!tv.accepted.acceptedAt)
+  check('terms: activity has merchant.terms_accepted once', (await O.call('/api/developer/activity')).data.events.filter((e) => e.action === 'merchant.terms_accepted').length === 1)
 
   /* ------------------------------------------------------------- profile --- */
   check('profile: a non-https logo host that is not loopback is refused', (await O.post('/api/developer/merchant/profile', { logoUrl: 'http://example.com/logo.png' })).status === 400)

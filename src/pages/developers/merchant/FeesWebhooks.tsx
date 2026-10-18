@@ -15,7 +15,18 @@ export function FeesSection({ view }: { view: MerchantView }) {
   const used = f.freeUsd ? Math.min(1, (f.freeUsd - f.freeLeftUsd) / f.freeUsd) : 1
   const due = f.statements.filter((s) => s.state === 'open' || s.state === 'overdue')
   return (
-    <Section id="m-fees" title="Fees and statements" sub={`A ${f.ratePct}% transaction fee, nothing monthly. Your first ${usd(f.freeUsd)} of lifetime volume is free. Statements every Monday (00:00 UTC) once you owe ${usd(f.minStatementUsd)} or more; unpaid ${f.pauseAfterDays} days after issue, checkout pauses until paid.`}>
+    <Section
+      id="m-fees"
+      title="Fees and statements"
+      sub={
+        <>
+          A {f.ratePct}% transaction fee, nothing monthly. Your first {usd(f.freeUsd)} of lifetime volume is free. Statements every Monday (00:00 UTC) once you owe {usd(f.minStatementUsd)} or more; unpaid {f.pauseAfterDays} days after issue, checkout pauses until paid.{' '}
+          <a href={`${payOrigin()}${view.terms.path}#s5`} target="_blank" rel="noopener" className="text-gold underline underline-offset-4 hover:text-gold-hover">
+            Fee terms
+          </a>
+        </>
+      }
+    >
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="flex flex-col gap-1 rounded-[12px] border border-line bg-bg px-4 py-3">
           <span className={label}>Fee balance due</span>
