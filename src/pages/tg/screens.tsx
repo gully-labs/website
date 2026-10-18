@@ -4,8 +4,8 @@ import { EChart } from '../../components/charts/EChart'
 import { alpha, barsPreset, sparklinePreset } from '../../components/charts/chartPresets'
 import { NF } from '../../components/charts/number-formats'
 import { StockLogo } from '../../components/tracker/StockLogo'
-import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, STATUS_LABEL, UP, useHistory, type Load, type Tracker, type TrackerRow } from '../../lib/tracker'
-import { conditionText, GAP_DIRECTIONS, type GapAlert, type GapDirection } from '../developers/api'
+import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, UP, useHistory, type Load, type Tracker, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
+import type { AlertCondition, GapAlert, GapDirection } from '../developers/api'
 import { useNow, useTgApi } from './hooks'
 import { haptic, tgApi, type WebApp } from './sdk'
 
@@ -14,6 +14,33 @@ import { haptic, tgApi, type WebApp } from './sdk'
    theme tokens TgApp maps from Telegram; charts get concrete colours (ECharts cannot read CSS vars). */
 
 const SITE = 'https://gullylabs.xyz'
+/* Plain words for readers who are not traders: the status, the directions and an alert's condition. The
+   site's own labels (lib/tracker, developers/api) stay as they are. */
+const TG_STATUS: Record<TrackerStatus, string> = {
+  premium: 'Well above',
+  discount: 'Well below',
+  drifting: 'Drifting',
+  'in-line': 'Close to the real price',
+  thin: 'Not enough trading',
+  unverified: 'Not enough trading',
+  'no-pool': 'Not trading yet',
+  'pool-unreadable': 'No price right now',
+  'feed-unreadable': 'No price right now',
+}
+const statusLabel = (r: TrackerRow) => (r.sessionOpen === false ? 'Market closed' : TG_STATUS[r.status] ?? r.status)
+const NOT_ENOUGH = 'Not enough trading to compare right now.'
+const TG_DIRECTIONS: { id: GapDirection; label: string }[] = [
+  { id: 'above', label: '▲ Above' },
+  { id: 'below', label: '▼ Below' },
+  { id: 'both', label: '↕ Both' },
+]
+const LAUNCH_CHAIN_NAMES: Record<number, string> = { 56: 'BNB Chain', 999: 'HyperEVM', 4663: 'Robinhood Chain', 8453: 'Base' }
+/** An alert's condition in plain words, as the bot says it. */
+const plainCondition = (c: AlertCondition, chains: Record<string, string> = {}) => {
+  if (c.type === 'deepcore-launch') return `A new token launches on DeepCore (${c.chainId ? (chains[c.chainId] ?? LAUNCH_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'})`
+  if (c.type === 'gap') return c.direction === 'above' ? `▲ ${c.pct}% or more above the real share price` : c.direction === 'below' ? `▼ ${c.pct}% or more below the real share price` : `↕ ${c.pct}% or more above or below the real share price`
+  return c.status === 'either' ? 'Well above or below the real share price' : c.status === 'premium' ? 'Well above the real share price' : c.status === 'discount' ? 'Well below the real share price' : String(c.status)
+}
 export type Me = { user: { id: string; firstName: string; username: string | null }; gate: { required: boolean; follows: boolean; channel: string | null; url: string | null }; linked: { chatType: string; chatTitle: string; account: string; blocked: boolean } | null; portal: string }
 
 const trusted = (r: TrackerRow) => r.gapPct !== null && ['premium', 'discount', 'drifting', 'in-line'].includes(r.status) && !r.poolStale && r.sessionOpen !== false
@@ -124,7 +151,7 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
     <div className="flex flex-col gap-3">
       <Chips value={chain} options={CHAIN_OPTIONS} onChange={setChain} label="Chain" />
       {tracker.k === 'loading' && <ListSkeleton />}
-      {tracker.k === 'error' && <Notice title="The tracker could not be read">Try again in a minute. Nothing here is shown as zero while it cannot be read.</Notice>}
+      {tracker.k === 'error' && <Notice title="Prices aren’t available right now">Try again in a minute.</Notice>}
       {tracker.k === 'ok' && (
         <Section title={`${rows.length} stock tokens · ${flagged} flagged`} right={<span className="text-[12px] text-faint">updated {ageText(tracker.data.generatedAt, now)}</span>}>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -143,7 +170,7 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
                       onOpen(r)
                     }}
                     className={`${card} grid w-full grid-cols-[34px_minmax(0,1fr)_64px_76px] items-center gap-3 px-3 py-[10px] text-left active:opacity-80`}
-                    aria-label={`${r.ticker} on ${CHAIN_NAME[r.chain] ?? r.chain}: gap ${fmtGap(r.gapPct)}, ${STATUS_LABEL[r.status]}`}
+                    aria-label={`${r.ticker} on ${CHAIN_NAME[r.chain] ?? r.chain}: gap ${fmtGap(r.gapPct)}, ${statusLabel(r)}`}
                   >
                     <StockLogo row={r} size={34} />
                     <span className="flex min-w-0 flex-col">
@@ -158,7 +185,7 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
                     </span>
                     <span className="flex flex-col items-end">
                       <AnimatedNumber value={ok || r.status === 'thin' ? r.gapPct : null} format={NF.signed2} suffix="%" className="font-mono text-[14px] font-semibold" style={{ color: ok ? color : undefined }} />
-                      <span className="text-[11px] text-faint">{r.sessionOpen === false ? 'Closed' : STATUS_LABEL[r.status]}</span>
+                      <span className="text-[11px] text-faint">{statusLabel(r)}</span>
                     </span>
                   </button>
                 </li>
@@ -167,7 +194,7 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
           </ul>
         </Section>
       )}
-      <p className="m-0 px-1 pb-2 text-[11px] leading-[1.5] text-faint">Gap = on-chain price against the fair price. Information only, not investment advice.</p>
+      <p className="m-0 px-1 pb-2 text-[11px] leading-[1.5] text-faint">Gap = how far the token trades above or below the real share price. Information only, not advice.</p>
     </div>
   )
 }
@@ -213,7 +240,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { w
       setBusy(false)
       if (r.ok) {
         haptic.ok()
-        setResult({ ok: true, text: `Alert created: ${conditionText(r.data.alert.condition)}. It arrives in your linked chat.` })
+        setResult({ ok: true, text: `Alert created: ${plainCondition(r.data.alert.condition)}. It arrives in your linked chat.` })
         onAlertsChanged()
       } else {
         haptic.fail()
@@ -224,7 +251,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { w
   useEffect(() => {
     const mb = wa.MainButton
     const click = () => create.current()
-    mb.setParams({ text: me.linked ? (valid ? `Create alert · ${GAP_DIRECTIONS.find((d) => d.id === direction)!.label} ${threshold}%` : 'Pick a threshold from 0.1 to 100%') : 'Link wallet in the portal', is_visible: !!row, is_active: !me.linked || valid })
+    mb.setParams({ text: me.linked ? (valid ? `Create alert · ${TG_DIRECTIONS.find((d) => d.id === direction)!.label} ${threshold}%` : 'Pick a threshold from 0.1 to 100%') : 'Link wallet in the portal', is_visible: !!row, is_active: !me.linked || valid })
     mb.onClick(click)
     return () => {
       mb.offClick(click)
@@ -232,10 +259,11 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { w
     }
   }, [wa, me.linked, valid, direction, threshold, row])
 
-  if (!row) return <Notice title="Not on the tracker">This stock token is not one the tracker follows.</Notice>
+  if (!row) return <Notice title="Not followed yet">This stock token isn’t one we follow yet.</Notice>
   const ok = trusted(row)
   const color = gapColor(row) ?? ink
-  const dirHint = direction === 'above' ? `the premium reaches +${valid ? threshold : 'X'}% (on chain at least that far above fair)` : direction === 'below' ? `the discount reaches ${valid ? threshold : 'X'}% (on chain at least that far below fair)` : `the gap reaches ±${valid ? threshold : 'X'}% either way`
+  const pctText = valid ? String(threshold) : 'X'
+  const dirHint = direction === 'above' ? `the token is ${pctText}% or more above the real share price` : direction === 'below' ? `the token is ${pctText}% or more below the real share price` : `the token is ${pctText}% or more above or below the real share price`
 
   return (
     <div className="flex flex-col gap-4">
@@ -252,11 +280,11 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { w
       <div className={`${card} flex flex-col gap-3 p-4`}>
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col">
-            <span className="text-[12px] text-faint">Gap to fair</span>
+            <span className="text-[12px] text-faint">Gap to the real share price</span>
             <AnimatedNumber value={ok || row.status === 'thin' ? row.gapPct : null} format={NF.signed2} suffix="%" countUp className="font-mono text-[34px] leading-none font-semibold" style={{ color: ok ? color : undefined }} />
           </div>
           <span className="rounded-full border px-[10px] py-[3px] text-[12px]" style={{ borderColor: ok ? alpha(color.startsWith('#') ? color : '#7f8b9c', 0.5) : undefined, color: ok ? color : undefined }}>
-            {row.sessionOpen === false ? 'Session closed' : STATUS_LABEL[row.status]}
+            {statusLabel(row)}
           </span>
         </div>
         <div className="h-[132px]">
@@ -264,23 +292,24 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { w
         </div>
         <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
           <div>
-            <dt className="text-faint">On chain</dt>
+            <dt className="text-faint">Token price</dt>
             <dd className="m-0 font-mono">{fmtPrice(row.onchain)}</dd>
           </div>
           <div>
-            <dt className="text-faint">Fair</dt>
+            <dt className="text-faint">Real share price</dt>
             <dd className="m-0 font-mono">{fmtPrice(row.fair)}</dd>
           </div>
           <div>
-            <dt className="text-faint">Pool liquidity</dt>
+            <dt className="text-faint">Liquidity</dt>
             <dd className="m-0 font-mono">{fmtCompactUsd(row.pool?.liquidityUsd)}</dd>
           </div>
           <div>
-            <dt className="text-faint">Feed updated</dt>
+            <dt className="text-faint">Updated</dt>
             <dd className="m-0 font-mono">{ageText(row.feedUpdatedAt, now)}</dd>
           </div>
         </dl>
-        {row.untrustedReason && <p className="m-0 text-[12px] leading-[1.5] text-faint">{row.untrustedReason}</p>}
+        {row.sessionOpen === false && <p className="m-0 text-[12px] leading-[1.5] text-faint">🌙 Market closed: compared with the last closing price.</p>}
+        {!ok && row.sessionOpen !== false && <p className="m-0 text-[12px] leading-[1.5] text-faint">{NOT_ENOUGH}</p>}
         <button type="button" onClick={() => wa.openLink(`${SITE}/tracker/${row.chain}/${row.ticker}`)} className="self-start text-[13px] text-[var(--tg-link,#e8c060)]">
           Open the full page ↗
         </button>
@@ -311,7 +340,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged }: { w
             </label>
           </div>
           <span className="text-[13px] text-muted">Direction</span>
-          <Chips value={direction} options={GAP_DIRECTIONS.map((d) => ({ id: d.id, label: d.label }))} onChange={setDirection} label="Direction" />
+          <Chips value={direction} options={TG_DIRECTIONS} onChange={setDirection} label="Direction" />
           <p className="m-0 text-[13px] leading-[1.5] text-ink-2">
             Fires when {dirHint}. Delivered to {me.linked ? <b>{me.linked.chatTitle}</b> : 'your linked chat'}, at most once every 30 minutes.
           </p>
@@ -367,11 +396,11 @@ export function LaunchesTab({ wa, initData, ink }: { wa: WebApp; initData: strin
     <div className="flex flex-col gap-3">
       <Chips value={chain} options={LAUNCH_CHAINS} onChange={setChain} label="DeepCore chain" />
       {load.k === 'loading' && <ListSkeleton n={5} />}
-      {load.k === 'error' && <Notice title="Launches could not be read">{load.error}</Notice>}
-      {load.k === 'ok' && load.data.state === 'unreadable' && <Notice title="DeepCore could not be read just now">Try again in a minute. This is not the same as no launches.</Notice>}
+      {load.k === 'error' && <Notice title="Launches aren’t available right now">Try again in a minute.</Notice>}
+      {load.k === 'ok' && load.data.state === 'unreadable' && <Notice title="DeepCore isn’t answering right now">Try again in a minute.</Notice>}
       {load.k === 'ok' && load.data.state !== 'unreadable' && (
         <>
-          {load.data.state === 'stale' && <p className="m-0 px-1 text-[12px] text-faint">DeepCore did not answer the last read; this is the list as of {ageText(load.data.asOf, now)}.</p>}
+          {load.data.state === 'stale' && <p className="m-0 px-1 text-[12px] text-faint">DeepCore isn’t answering right now; this list is from {ageText(load.data.asOf, now)}.</p>}
           {barOption && counts!.length > 1 && (
             <div className={`${card} px-2 pt-1`}>
               <EChart option={barOption} height={110} label={`Latest launches per chain: ${counts!.map((c) => `${c.name} ${c.n}`).join(', ')}`} />
@@ -399,8 +428,7 @@ export function LaunchesTab({ wa, initData, ink }: { wa: WebApp; initData: strin
                         <span className="truncate font-semibold">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
                         <span className="truncate text-[12px] text-muted">
                           {l.chainName}
-                          {leg ? ` · ${leg.kind ?? 'pool'}${leg.quote ? ` vs ${leg.quote}` : ''}` : ''}
-                          {leg ? (leg.locked === true ? ' · locked' : leg.locked === false ? ' · no lock' : '') : ''}
+                          {leg ? (leg.locked === true ? ' · 🔒 Liquidity locked' : leg.locked === false ? ' · Liquidity not locked' : '') : ''}
                         </span>
                       </span>
                       <span className="flex-none text-[12px] text-faint">{ageText(l.createdAt, now)}</span>
@@ -424,7 +452,7 @@ function alertStateText(a: GapAlert) {
   if (!a.coveredByPlan) return { t: 'Not in your plan', c: '#ff8a7a' }
   if (!a.enabled) return { t: 'Paused', c: '#7f8b9c' }
   if (a.mutedUntil) return { t: 'Muted', c: '#7f8b9c' }
-  if (a.waitingToReArm.length) return { t: 'Fired · waits to re-arm', c: '#e8c060' }
+  if (a.waitingToReArm.length) return { t: 'Fired · watching again once the gap closes', c: '#e8c060' }
   return { t: 'Watching', c: '#6fcf6a' }
 }
 
@@ -461,7 +489,7 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock }: { wa: WebA
   return (
     <div className="flex flex-col gap-3">
       {load.k === 'loading' && <ListSkeleton n={3} />}
-      {load.k === 'error' && <Notice title="Your alerts could not be read">{load.error}</Notice>}
+      {load.k === 'error' && <Notice title="Your alerts aren’t available right now">Try again in a minute.</Notice>}
       {load.k === 'ok' && (
         <Section title={`${load.data.alerts.length} of ${load.data.limits.max} on ${load.data.limits.planName}`} right={<span className="text-[12px] text-faint">{me.linked.chatTitle}</span>}>
           <div className="h-[6px] overflow-hidden rounded-full bg-surface" aria-hidden>
@@ -486,7 +514,7 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock }: { wa: WebA
                         onOpenStock(a.chain, a.ticker)
                       }} className="min-w-0 text-left">
                       <span className="block truncate font-semibold">{label}</span>
-                      <span className="block text-[13px] text-muted">{conditionText(a.condition)}</span>
+                      <span className="block text-[13px] text-muted">{plainCondition(a.condition)}</span>
                     </button>
                     <span className="flex flex-none items-center gap-1 text-[12px]" style={{ color: st.c }}>
                       <span className="size-[7px] rounded-full" style={{ background: st.c }} aria-hidden />

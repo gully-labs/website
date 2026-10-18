@@ -1,4 +1,4 @@
-import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, ShieldCheck, ShieldPlus, Trash2 } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, ShieldCheck, ShieldPlus, Store, Trash2 } from 'lucide-react'
 import { lazy, Suspense, useRef, useState, type FormEvent } from 'react'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
 import type { Fetched, SafePlan, SafeStatus } from '../../../components/pay/SafeDeploy'
@@ -91,11 +91,21 @@ export function ProfileSection({ view, onChange }: { view: MerchantView; onChang
           <span className="text-[12px] text-dim">Checkout preview</span>
           <div className="flex flex-col gap-3 rounded-[12px] border border-line bg-bg p-4" style={{ borderTop: `3px solid ${/^#[0-9a-f]{6}$/i.test(accent) ? accent : '#e8c060'}` }}>
             <span className="flex items-center gap-3">
-              {view.profile.logoUrl ? <img src={view.profile.logoUrl} alt="" className="size-10 rounded-[10px] object-contain" /> : <span aria-hidden className="grid size-10 place-items-center rounded-[10px] font-display text-[20px] font-extrabold text-bg" style={{ background: /^#[0-9a-f]{6}$/i.test(accent) ? accent : '#e8c060' }}>{(name || view.profile.displayName).charAt(0).toUpperCase()}</span>}
-              <b className="min-w-0 truncate text-[15px] text-ink">{name || view.profile.displayName}</b>
+              {/* The checkout's own marks: the logo, else the neutral store glyph (never a letter tile). */}
+              {view.profile.logoUrl ? (
+                <img src={view.profile.logoUrl} alt="" className="size-10 rounded-[10px] border border-line object-contain" />
+              ) : (
+                <span aria-hidden className="grid size-10 place-items-center rounded-[10px] border border-line-strong bg-surface-deep text-muted">
+                  <Store size={20} strokeWidth={1.75} />
+                </span>
+              )}
+              <b className="min-w-0 truncate text-[15px] text-ink">{name.trim() || 'Store'}</b>
+              {!name.trim() && <span className="shrink-0 rounded-full border border-line-strong px-2 py-[1px] font-mono text-[11px] text-dim">your wallet</span>}
             </span>
             <span className="text-[12px] text-muted">{view.nonCustodial}</span>
-            <span className="font-mono text-[10.5px] tracking-[1px] text-faint">POWERED BY GULLY PAY</span>
+            <span className="inline-flex items-center gap-2 font-mono text-[10.5px] tracking-[1px] text-faint">
+              POWERED BY <img src="/brand/gully-mark-96.png" alt="" aria-hidden width={16} height={16} className="size-4 rounded-full" /> GULLY PAY
+            </span>
           </div>
         </div>
       </form>

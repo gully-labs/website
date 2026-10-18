@@ -1,0 +1,13 @@
+# A collateral → synthetic Warp Route, the shape `hyperlane warp init` writes to ./configs/warp-route-deployment.yaml
+# (CLI 45.0.1; the quickstart's field list, read 2026-10-17: type, address for collateral, optional symbol/name/
+# decimals/mailbox/interchainSecurityModule, which the deployer otherwise reads from the token and the registry).
+# Regenerate with `hyperlane warp init`; this file only shows the plan. Devnet test: a throwaway ERC-20 you mint on
+# Arbitrum Sepolia, locked there, minted on the devnet. Production: native USDC on Arbitrum One → the L3.
+arbitrumsepolia:
+  type: collateral
+  address: "0x__test_erc20_on_arbitrum_sepolia__"
+  owner: "0x__deployer_or_team_multisig__"
+gullydevnet:
+  type: synthetic
+  owner: "0x__deployer_or_team_multisig__"
+  # symbol/name/decimals are read from the collateral token when omitted.

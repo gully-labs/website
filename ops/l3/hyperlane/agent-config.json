@@ -1,0 +1,52 @@
+{
+  "_comment": "Template for CONFIG_FILES. Shape: the Hyperlane agent config (rust/main/config/*.json in hyperlane-monorepo; fields per the agent-config and config-reference docs). gullydevnet is ops/devnet (Nitro --dev, chain id 412346) and every 0xFILL_* must be replaced with the addresses `hyperlane core deploy` writes to ~/.hyperlane/chains/gullydevnet/addresses.yaml, or `hyperlane registry agent-config --chains gullydevnet arbitrumsepolia` regenerates this whole file. arbitrumsepolia is copied from hyperlane-registry chains/arbitrumsepolia/{metadata,addresses}.yaml (2026-10-17). preflight.sh refuses to start while a FILL placeholder remains. No secrets belong in this file.",
+  "chains": {
+    "gullydevnet": {
+      "name": "gullydevnet",
+      "displayName": "Gully Devnet (light)",
+      "chainId": 412346,
+      "domainId": 412346,
+      "protocol": "ethereum",
+      "technicalStack": "arbitrumnitro",
+      "isTestnet": true,
+      "nativeToken": { "name": "Ether", "symbol": "ETH", "decimals": 18 },
+      "rpcUrls": [{ "http": "http://gully-devnet:8547" }],
+      "rpcConsensusType": "fallback",
+      "blocks": { "confirmations": 1, "reorgPeriod": 0, "estimateBlockTime": 0.25 },
+      "index": { "from": 0, "chunk": 1000 },
+      "mailbox": "0xFILL_FROM_core_deploy",
+      "interchainGasPaymaster": "0xFILL_FROM_core_deploy",
+      "validatorAnnounce": "0xFILL_FROM_core_deploy",
+      "merkleTreeHook": "0xFILL_FROM_core_deploy",
+      "interchainSecurityModule": "0xFILL_FROM_core_deploy",
+      "proxyAdmin": "0xFILL_FROM_core_deploy",
+      "testRecipient": "0xFILL_FROM_core_deploy"
+    },
+    "arbitrumsepolia": {
+      "name": "arbitrumsepolia",
+      "displayName": "Arbitrum Sepolia",
+      "chainId": 421614,
+      "domainId": 421614,
+      "protocol": "ethereum",
+      "technicalStack": "arbitrumnitro",
+      "isTestnet": true,
+      "nativeToken": { "name": "Ether", "symbol": "ETH", "decimals": 18 },
+      "rpcUrls": [
+        { "http": "https://sepolia-rollup.arbitrum.io/rpc" },
+        { "http": "https://arbitrum-sepolia.drpc.org" },
+        { "http": "https://arbitrum-sepolia.gateway.tenderly.co" }
+      ],
+      "rpcConsensusType": "fallback",
+      "blocks": { "confirmations": 1, "reorgPeriod": 0, "estimateBlockTime": 0.25 },
+      "index": { "from": 49690504, "chunk": 1000 },
+      "mailbox": "0x598facE78a4302f11E3de0bee1894Da0b2Cb71F8",
+      "interchainGasPaymaster": "0xc756cFc1b7d0d4646589EDf10eD54b201237F5e8",
+      "validatorAnnounce": "0x1b33611fCc073aB0737011d5512EF673Bff74962",
+      "merkleTreeHook": "0xAD34A66Bf6dB18E858F6B686557075568c6E031C",
+      "interchainSecurityModule": "0x966B9614ed4849aD4b2210A403Fc65F4F882B509",
+      "proxyAdmin": "0x666a24F62f7A97BA33c151776Eb3D9441a059eB8",
+      "testRecipient": "0x6c13643B3927C57DB92c790E4E3E7Ee81e13f78C",
+      "blockExplorers": [{ "name": "Arbiscan", "url": "https://sepolia.arbiscan.io", "apiUrl": "https://api-sepolia.arbiscan.io/api", "family": "etherscan" }]
+    }
+  }
+}

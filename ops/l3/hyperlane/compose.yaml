@@ -1,0 +1,110 @@
+# Gully Hyperlane agents: one validator (origin = our chain) and one relayer, the two agents Hyperlane's
+# "deploy with local agents" guide runs. PREPARED, NOT STARTED. Start only through ./preflight.sh --start, which
+# refuses under 15 GB free disk, under 2 GB available RAM, busy ports, or an agent-config.json that still has
+# FILL placeholders. Read README.md first; the spec is ../SPEC.md.
+#
+# Own compose project (gully-hyperlane), own network (gully-hyperlane), own volumes. It also joins the devnet's
+# network (gully-devnet, external) so the agents can read http://gully-devnet:8547. Nothing here touches the
+# site's project (`gully`) or any other project's containers, images or volumes.
+name: gully-hyperlane
+
+x-agent: &agent
+  # Pinned: the tag the Hyperlane docs pull (run-validators, run-relayer, 2026-10-17) with the multi-arch index
+  # digest read from the ghcr.io manifest API the same day. amd64 is 220 MB compressed (6 layers); budget ~0.7 GB
+  # unpacked. The older gcr.io/abacus-labs-dev/hyperlane-agent path stops at agents-v2.0.0 (see README.md).
+  image: ghcr.io/hyperlane-xyz/hyperlane-agent:agents-v2.3.0@sha256:6414aecfdc1b6ea2e364019f672004c113c2a347dd4d1343aa856921d1e0a685
+  platform: linux/amd64
+  # Opt-in: never comes back by itself after a reboot or a Docker restart.
+  restart: "no"
+  env_file:
+    # Keys live here only (chmod 600, never committed; .env.example is the template).
+    - .env
+  environment:
+    # Layered config (agent-config docs): defaults < CONFIG_FILES < HYP_* env < HYP_<AGENT>_* env < arguments.
+    CONFIG_FILES: /config/agent-config.json
+    RUST_BACKTRACE: "1"
+  volumes:
+    - ./agent-config.json:/config/agent-config.json:ro
+  networks:
+    - hyperlane
+    - devnet
+  # Hard caps so a runaway agent cannot starve the shared box.
+  mem_limit: 1g
+  memswap_limit: 1g
+  cpus: 1
+  pids_limit: 256
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+  stop_grace_period: 20s
+
+services:
+  validator:
+    <<: *agent
+    container_name: gully-hyperlane-validator
+    # The flags from the local-agents guide. The signing key comes from HYP_VALIDATOR_KEY in .env (the env form of
+    # --validator.key, per the configuration reference); the announce-transaction signer from
+    # HYP_CHAINS_<ORIGIN>_SIGNER_KEY. localStorage checkpoints are for testing; production uses an S3 syncer.
+    command:
+      - ./validator
+      - --db
+      - /hyperlane_db
+      - --originChainName
+      - ${HYPERLANE_ORIGIN_CHAIN:-gullydevnet}
+      - --checkpointSyncer.type
+      - localStorage
+      - --checkpointSyncer.path
+      - /tmp/validator-signatures
+      - --metrics-port
+      - "9090"
+    volumes:
+      - ./agent-config.json:/config/agent-config.json:ro
+      - validator-db:/hyperlane_db
+      - signatures:/tmp/validator-signatures
+    ports:
+      # Prometheus metrics, loopback only.
+      - "127.0.0.1:${GULLY_HYPERLANE_VALIDATOR_METRICS_PORT:-9090}:9090"
+
+  relayer:
+    <<: *agent
+    container_name: gully-hyperlane-relayer
+    depends_on:
+      - validator
+    # The relayer's signing key is HYP_DEFAULTSIGNER_KEY in .env (env form of --defaultSigner.key); it must hold
+    # gas on every destination chain in HYPERLANE_RELAY_CHAINS. allowLocalCheckpointSyncers reads the validator's
+    # signatures from the shared volume: testing only, false in production.
+    command:
+      - ./relayer
+      - --db
+      - /hyperlane_db
+      - --relayChains
+      - ${HYPERLANE_RELAY_CHAINS:-gullydevnet,arbitrumsepolia}
+      - --allowLocalCheckpointSyncers
+      - "true"
+      - --metrics-port
+      - "9091"
+    volumes:
+      - ./agent-config.json:/config/agent-config.json:ro
+      - relayer-db:/hyperlane_db
+      - signatures:/tmp/validator-signatures:ro
+    ports:
+      - "127.0.0.1:${GULLY_HYPERLANE_RELAYER_METRICS_PORT:-9091}:9091"
+
+volumes:
+  validator-db:
+    name: gully-hyperlane-validator-db
+  relayer-db:
+    name: gully-hyperlane-relayer-db
+  signatures:
+    name: gully-hyperlane-signatures
+
+networks:
+  hyperlane:
+    name: gully-hyperlane
+  devnet:
+    # Created by ops/devnet/compose.yaml. For a public L3 (no local devnet) delete this network and the
+    # `- devnet` entries above, and point the chain's rpcUrls at the L3 node instead.
+    name: gully-devnet
+    external: true

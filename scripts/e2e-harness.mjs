@@ -181,6 +181,8 @@ function rpcAnswer(chainId, q) {
   if (safe !== undefined) return safe
   if (q.method === 'eth_getBlockByNumber') return { number: q.params[0], timestamp: hex(nowSec()) }
   if (q.method === 'eth_getTransactionReceipt' || q.method === 'eth_getTransactionByHash') return null
+  // Every address is a plain wallet (no code): merchant receiving wallets register as EOAs.
+  if (q.method === 'eth_getCode') return '0x'
   if (q.method === 'eth_getBalance') return '0x0' // the fee-proxy monitor's coin reads (fee-proxy-monitor.mjs): nothing stuck
   if (q.method === 'eth_call') {
     const data = String(q.params?.[0]?.data ?? '')

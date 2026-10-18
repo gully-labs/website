@@ -21,7 +21,10 @@ products are:
 - **The @GullyLabsBot Telegram bot.** It also carries DeepCore launch alerts.
 
 Next we are launching **Gully Chains**: managed Orbit L3s, starting with a public **Gully Devnet** on Arbitrum
-Sepolia with a Chain Kit explorer, a faucet and a bridge. The stack for it is already forked and indexed:
+Sepolia with a Chain Kit explorer, a faucet and a bridge, then the **Gully L3** settling to Arbitrum One with
+**Hyperlane** as its interop layer (Warp Routes for USDC and ETH from Arbitrum One, our own validator and relayer).
+The consolidated spec is `ops/l3/SPEC.md`; the public summary is docs.gullylabs.xyz/roadmap-l3. The stack for it
+is already forked and indexed:
 
 - `arbitrum-orbit-deployment-ui`
 - `orbit-setup-script`
@@ -75,7 +78,7 @@ that fits best and has no date yet.
 | Builders form: deployment status | Live in production (choose the band by the first launch date, which **the owner must confirm**) |
 | ArbiFuel: early stage, simple-UX, payments or stablecoins | Gully Pay: USDC and ETH pay links on Arbitrum One. Payers sign one transfer. |
 | ArbiFuel: promote Arbitrum | We can add "Built on Arbitrum" to the pay pages and the bio, and post on X |
-| ASP: audit-ready contract scope, runway, co-pay | **Not yet.** Gully Pay verifies plain transfers, so it has no contracts to audit. The scope arrives with the L3 contracts at M3. |
+| ASP: audit-ready contract scope, runway, co-pay | **Not yet.** Gully Pay verifies plain transfers, so it has no contracts to audit. The scope arrives with the L3 contracts at M3 (chain configuration, bridge adapters) and M5 (Hyperlane ISM configuration, Warp Route ownership, Gully Pay settlement contracts). |
 | Questbook (when open): open source, milestones, public reporting | The SDK is MIT. Our forks are public in github.com/gully-labs. We publish a changelog at docs.gullylabs.xyz/changelog. |
 
 ## The ask, with milestones
@@ -94,8 +97,20 @@ is the two-Domain-Allocator ceiling. Cut it to M1 and M2 ($25,000) for a single-
 |---|---|---|---|---|
 | M1 | **Arbitrum One in the gap tracker** | Stock tokens on Arbitrum One priced against Chainlink in `/api/tracker`, history and movers, with the SDK, widget and alerts updated and the methodology documented on docs.gullylabs.xyz | 4 | $10,000 |
 | M2 | **Chain Kit for Orbit, open source** | The Arbitrum/Orbit profile of our Blockscout fork (`gully-labs/blockscout`) documented as a one-command setup for any Orbit chain, with a public demo explorer | 6 | $15,000 |
-| M3 | **Gully Devnet: a public Orbit L3 on Arbitrum Sepolia** | A public RPC, a Chain Kit explorer, a rate-limited faucet and the token bridge, plus a runbook from `orbit-setup-script` and `orbit-monitoring-tools`. This is also the ASP entry point. | 8 | $15,000 |
+| M3 | **Gully Devnet: a public Orbit L3 on Arbitrum Sepolia** | A public RPC, a Chain Kit explorer, a rate-limited faucet and the canonical token bridge, plus a runbook from `orbit-setup-script` and `orbit-monitoring-tools`; Rollup mode, ETH gas (`ops/l3/SPEC.md` §0–§8). This is also the ASP entry point. | 8 | $15,000 |
 | M4 | **Gasless Gully Pay on Arbitrum One** | Pay links settled in USDC through an ERC-20 paymaster (ArbiFuel / Pimlico), with a public dashboard of sponsored payments | 4 | $10,000 |
+
+**Stretch, when the L3 launches (not funded by the $50,000 above; written for a follow-on proposal or the Orbit
+Chains domain):**
+
+| # | Milestone | Deliverable anyone can check | Weeks | Amount |
+|---|---|---|---|---|
+| M5 | **Gully L3 on Arbitrum One with Hyperlane interop** | The production chain settling to Arbitrum One (Rollup, ETH gas); Hyperlane core on the L3 (Mailbox, multisig ISM with our 2-of-3 validators, IGP) and the agents from `ops/l3/hyperlane/` in production; **Warp Routes for USDC and ETH from Arbitrum One into the L3**, listed in the Hyperlane registry; Gully Pay native on the L3 and settling cross-chain from Arbitrum One through the Warp Route, verified on both chains; LI.FI and Relay listing requests filed with the chain's RPC, explorer and bridge. Spec: `ops/l3/SPEC.md` §9–§10. | 10 | $25,000 |
+
+Why Hyperlane and why only at launch: the interop layer is an owner decision (2026-10-17). It gives the L3 a
+permissionless bridge to Arbitrum One and Base on day one without waiting for an aggregator to list a new chain;
+LI.FI and Relay remain the swap/bridge aggregators for the chains Gully Pay already offers, and are asked to list
+the L3 once M5's artefacts (chain id, RPC, Chain Kit API, Warp Routes, DEX liquidity) exist.
 
 Reporting: a monthly forum update, a changelog entry per milestone, and the metrics endpoints below.
 

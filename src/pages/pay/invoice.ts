@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Checkout, PayAsset, Payment } from './api'
+import type { Viewer } from './brand'
 
-/* A Gully Pay invoice as GET /api/pay/:id answers it (server/invoices.mjs). */
+/* A Gully Pay invoice as GET /api/pay/:id answers it (server/invoices.mjs). Merchant invoices
+   (GET /api/pay/m/i/:id, server/merchants.mjs) extend it with the store, its line items and the viewer. */
 
 export type InvoiceStatus = 'open' | 'paid' | 'expired' | 'cancelled'
 
@@ -24,25 +26,26 @@ export interface Invoice {
   checkout: Checkout
 }
 
-export type InvoiceState = { k: 'loading' } | { k: 'missing' } | { k: 'error'; message: string } | { k: 'ok'; invoice: Invoice }
+export type InvoiceState<T extends Invoice = Invoice> = { k: 'loading' } | { k: 'missing' } | { k: 'error'; message: string } | { k: 'ok'; invoice: T; viewer: Viewer | null }
 
-export function useInvoice(id: string | undefined): [InvoiceState, () => void, (i: Invoice) => void] {
-  const [state, setState] = useState<InvoiceState>({ k: 'loading' })
+/** Reads `${api}/${id}` (default: our own invoices) and keeps the answer; the setter swaps in a paid invoice. */
+export function useInvoice<T extends Invoice = Invoice>(id: string | undefined, api = '/api/pay'): [InvoiceState<T>, () => void, (i: T) => void] {
+  const [state, setState] = useState<InvoiceState<T>>({ k: 'loading' })
   const load = useCallback(() => {
-    const read: Promise<InvoiceState> = !id
+    const read: Promise<InvoiceState<T>> = !id
       ? Promise.resolve({ k: 'missing' })
-      : fetch(`/api/pay/${encodeURIComponent(id)}`).then(async (r): Promise<InvoiceState> => {
+      : fetch(`${api}/${encodeURIComponent(id)}`).then(async (r): Promise<InvoiceState<T>> => {
           if (r.status === 404) return { k: 'missing' }
           const d = await r.json().catch(() => null)
           if (!r.ok || !d?.invoice) return { k: 'error', message: d?.error ?? `The server answered ${r.status}.` }
-          return { k: 'ok', invoice: d.invoice }
+          return { k: 'ok', invoice: d.invoice, viewer: d.viewer ?? null }
         })
-    read.catch((): InvoiceState => ({ k: 'error', message: 'The server could not be reached. Check your connection and try again.' })).then(setState)
-  }, [id])
+    read.catch((): InvoiceState<T> => ({ k: 'error', message: 'The server could not be reached. Check your connection and try again.' })).then(setState)
+  }, [id, api])
   useEffect(() => {
     load()
   }, [load])
-  return [state, load, (invoice) => setState({ k: 'ok', invoice })]
+  return [state, load, (invoice) => setState((s) => ({ k: 'ok', invoice, viewer: s.k === 'ok' ? s.viewer : null }))]
 }
 
 export const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—')

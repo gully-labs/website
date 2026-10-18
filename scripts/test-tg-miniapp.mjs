@@ -197,14 +197,14 @@ try {
   check('below: a −1.5% discount is short of −2%', sends().length === 0)
   await evaluateAlerts([row({ gapPct: -2.4, status: 'discount' })], (at += 60_000))
   check('below: a −2.4% discount fires', sends().length === 1)
-  check('the Telegram message states the direction', /▼ Discount: discount of 2% or more \(gap ≤ −2%\)/.test(sends()[0]?.body.text ?? ''), sends()[0]?.body.text)
+  check('the Telegram message states the condition in plain words', /Alert: ▼ 2% or more below the real share price/.test(sends()[0]?.body.text ?? '') && /NVDA token is <b>2\.40% below<\/b> the real share price\./.test(sends()[0]?.body.text ?? ''), sends()[0]?.body.text)
 
   const paused = await call(`/api/tg/alerts/${id}/pause`, { method: 'POST' })
   check('pause from the app', paused.status === 200 && paused.data.alert.enabled === false)
   const resumed = await call(`/api/tg/alerts/${id}/resume`, { method: 'POST' })
   check('resume from the app', resumed.status === 200 && resumed.data.alert.enabled === true)
   const tested = await call(`/api/tg/alerts/${id}/test`, { method: 'POST' })
-  check('test from the app reaches the linked chat, with the direction', tested.status === 200 && /🧪.*\n?Test message \(▼ Discount:/s.test(sends().at(-1)?.body.text ?? ''), sends().at(-1)?.body.text)
+  check('test from the app reaches the linked chat, with the condition', tested.status === 200 && /🧪.*\n?Test message \(Alert: ▼ 2% or more below the real share price\)/s.test(sends().at(-1)?.body.text ?? ''), sends().at(-1)?.body.text)
   check('another account’s alert is 404 from the app', (await call('/api/tg/alerts/legacyAlert1/delete', { method: 'POST' })).status === 404)
   const del = await call(`/api/tg/alerts/${id}/delete`, { method: 'POST' })
   check('delete from the app', del.status === 200 && (await call('/api/tg/alerts')).data.alerts.length === 0)
@@ -219,6 +219,17 @@ try {
   const home = await fetch(BASE + '/')
   const homeCsp = home.headers.get('content-security-policy') ?? ''
   check('other pages do not allow telegram.org scripts and stay SAMEORIGIN', !/telegram\.org/.test(homeCsp) && home.headers.get('x-frame-options') === 'SAMEORIGIN')
+
+  /* ------------------------------------------------------- plain words --- */
+  // The app's own screens (src/pages/tg) are written for everyone: no source names, feeds, pools, "fair price",
+  // "on chain" or UTC times in any string literal or JSX text. Code (imports, API paths, field names) is not text.
+  const JARGON = /api\.deepcore|\bAPI\b|\bRPC\b|\bUTC\b|Chainlink|\bfeeds?\b|endpoint|indexer|\bpools?\b|fair price|\b[Ff]air\b|[Oo]n[- ]chain|unreadable|could not be read|re-arm/
+  const tgSrc = ['screens.tsx', 'TgApp.tsx'].map((f) => fs.readFileSync(new URL(`../src/pages/tg/${f}`, import.meta.url), 'utf8')).join('\n')
+  const literals = [...tgSrc.matchAll(/'((?:[^'\\\n]|\\.){2,})'|"((?:[^"\\\n]|\\.){2,})"|`((?:[^`\\\n]|\\.){2,})`/g)].map((m) => m[1] ?? m[2] ?? m[3])
+  const jsxText = [...tgSrc.matchAll(/>([^<>{}\n]*[A-Za-z][^<>{}\n]*)</g)].map((m) => m[1].trim()).filter((x) => /\s/.test(x))
+  const spoken = [...literals, ...jsxText].filter((x) => /\s[a-z]/.test(x) && !/^\/|^https?:|^[\w-]+(\s[\w[\]:()./%#-]+)*$/.test(x) || /\s(the|a|an|is|not|your|to)\s/.test(x))
+  const jargonHits = spoken.filter((x) => JARGON.test(x))
+  check(`plain words: the Mini App's texts never say "API", "feed", "pool", "fair price", "on chain" or "UTC" (${spoken.length} texts)`, spoken.length > 20 && jargonHits.length === 0, jargonHits.slice(0, 3).join(' | '))
 
   /* --------------------------------------------------------- no secrets --- */
   check('the token is not in any stored file', !fs.readdirSync(tmp).filter((f) => f.endsWith('.json')).some((f) => fs.readFileSync(path.join(tmp, f), 'utf8').includes(TOKEN.split(':')[1])))
