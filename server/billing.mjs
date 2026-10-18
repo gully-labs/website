@@ -32,6 +32,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { assetById, ASSET_IDS, blockTime, CHAINS, confirmationsFor, DEFAULT_ASSET, fmtUnits, fmtUsd, MAX_TAG, paymentUri, quoteAmount, readFeed, readPayment, txUrl } from './payments.mjs'
+import { quoteSplit } from './payments.mjs'
 import { PAID_PLAN_IDS, PERIOD_MS, planOf, PLANS, treasury } from './plans.mjs'
 import { getAccount, randomToken, saveDevelopers } from './store.mjs'
 import { isSolanaAsset, solanaPayUrl, solanaTreasury } from './solana-pay.mjs'
@@ -123,6 +124,8 @@ export function quoteView(q) {
     uri: isSolanaAsset(a) ? solanaPayUrl({ asset: a, recipient: q.treasury, amountRaw: q.amountRaw, reference: q.reference, message: q.plan && PLANS[q.plan] ? `Gully Labs ${PLANS[q.plan].name}` : 'Gully Pay' }) : paymentUri(a, q.treasury, q.amountRaw),
     /** Solana Pay: the quote's unique reference key, which finds its payment on chain. */
     reference: q.reference ?? null,
+    // One-transaction merchant + fee payment through the fee proxy (payments.mjs withFeeSplit), or null.
+    split: quoteSplit(q),
     confirmations: confirmationsFor(a.chainId),
     // Kept for pages built before multi-chain payments.
     priceUsdc: q.plan && PLANS[q.plan] ? PLANS[q.plan].priceUsdc : null,

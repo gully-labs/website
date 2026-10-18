@@ -176,8 +176,23 @@ export interface Quote {
   price: { feed: string; description: string; roundId: string; answer: string; updatedAt: string } | null
   createdAt: string
   expiresAt: string
+  /** Set when the quote pays a merchant and Gully Labs' fee in one transaction (Request ERC20FeeProxy). */
+  split?: QuoteSplit | null
 }
 export type Intent = Quote
+
+/** Calls the wallet relays for a split quote; the server builds every byte (server/payments.mjs quoteSplit). */
+export interface QuoteSplit {
+  proxy: string
+  spender: string
+  ref: string
+  merchantRaw: string
+  feeRaw: string
+  feeTo: string
+  approve: { to: string; data: string }
+  approveReset: { to: string; data: string }
+  pay: { to: string; data: string }
+}
 
 export interface Payment {
   id: string | null

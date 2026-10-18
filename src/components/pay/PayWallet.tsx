@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { Loader2, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { erc20Abi } from 'viem'
-import { useAccount, useSendTransaction, useSwitchChain, useWriteContract, WagmiProvider } from 'wagmi'
+import { useAccount, usePublicClient, useSendTransaction, useSwitchChain, useWriteContract, WagmiProvider } from 'wagmi'
 import type { Quote } from '../../pages/developers/api'
 import { queryClient, wagmiConfig, walletTheme } from '../../pages/developers/walletConfig'
 import { btnGold } from '../ui'
@@ -12,7 +12,10 @@ import { btnGold } from '../ui'
 /* One-click payment of a Gully Pay quote from whichever wallet is connected: a plain transfer of the
    native coin (sendTransaction) or an ERC-20 transfer(treasury, exact amount) (writeContract), after
    switching the wallet to the quote's chain. Its own lazy chunk (wagmi, viem, RainbowKit), loaded only
-   when the button is shown. The transfer goes straight to the treasury; this page never holds funds. */
+   when the button is shown. The transfer goes straight to the treasury; this page never holds funds.
+   A split quote (quote.split: a merchant payment with Gully Labs' fee) instead approves Request Network's
+   ERC20FeeProxy for the exact amount when the allowance falls short, then calls it with the call data the
+   server built: one transaction pays the merchant and the fee, tagged with the quote's payment reference. */
 
 function friendly(e: unknown, q: Quote): string {
   const m = String((e as { shortMessage?: string; message?: string })?.shortMessage ?? (e as Error)?.message ?? e)
@@ -31,6 +34,29 @@ function PayButton({ quote, onSent, onError, disabled }: { quote: Quote; onSent:
   const [busy, setBusy] = useState<string | null>(null)
   const target = quote.chainId
 
+  const client = usePublicClient({ chainId: target })
+
+  /** Approve (only as far as needed), wait for it, then the proxy call. Resolves to the payment's hash. */
+  const paySplit = async (q: Quote, owner: `0x${string}`): Promise<`0x${string}`> => {
+    const s = q.split!
+    const total = BigInt(q.amountRaw)
+    const token = s.approve.to as `0x${string}`
+    if (!client) throw new Error(`No connection to ${q.asset.chain}. Try again in a moment.`)
+    const allowance = await client.readContract({ address: token, abi: erc20Abi, functionName: 'allowance', args: [owner, s.spender as `0x${string}`] })
+    if (allowance < total) {
+      // USDT on Ethereum refuses to change a non-zero allowance to another non-zero one.
+      if (allowance > 0n) {
+        setBusy('Reset the old allowance in your wallet…')
+        await client.waitForTransactionReceipt({ hash: await sendTransactionAsync({ to: token, data: s.approveReset.data as `0x${string}`, chainId: target }) })
+      }
+      setBusy(`Allow exactly ${q.amount} ${q.asset.symbol} in your wallet (1 of 2)…`)
+      const approved = await client.waitForTransactionReceipt({ hash: await sendTransactionAsync({ to: token, data: s.approve.data as `0x${string}`, chainId: target }) })
+      if (approved.status !== 'success') throw new Error('The approval failed on chain. Nothing was paid.')
+      setBusy('Confirm the payment in your wallet (2 of 2)…')
+    } else setBusy('Confirm in your wallet…')
+    return sendTransactionAsync({ to: s.pay.to as `0x${string}`, data: s.pay.data as `0x${string}`, chainId: target })
+  }
+
   const pay = async () => {
     onError('')
     if (!isConnected) return openConnectModal?.()
@@ -39,6 +65,7 @@ function PayButton({ quote, onSent, onError, disabled }: { quote: Quote; onSent:
         setBusy(`Switch to ${quote.asset.chain} in your wallet…`)
         await switchChainAsync({ chainId: target })
       }
+      if (quote.split && address) return onSent(await paySplit(quote, address))
       setBusy('Confirm in your wallet…')
       const value = BigInt(quote.amountRaw)
       const to = quote.treasury as `0x${string}`

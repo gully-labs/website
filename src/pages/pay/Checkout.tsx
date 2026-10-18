@@ -167,6 +167,14 @@ export function PaidPanel({ invoice }: { invoice: Invoice }) {
   )
 }
 
+/** Base units as a decimal string, BigInt only (no float rounding). */
+function units(raw: string, decimals: number): string {
+  const v = BigInt(raw)
+  const d = 10n ** BigInt(decimals)
+  const frac = (v % d).toString().padStart(decimals, '0').replace(/0+$/, '')
+  return frac ? `${v / d}.${frac}` : `${v / d}`
+}
+
 export interface CheckoutProps {
   invoice: Invoice
   initialAsset: string | null
@@ -426,7 +434,11 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
                   <CreditCard size={16} aria-hidden /> Pay with wallet
                 </button>
               )}
-              <span className="text-[12px] leading-[1.5] text-faint">Sends exactly {quote.amount} {quote.asset.symbol} from the wallet you connect, after switching it to {quote.asset.chain}.</span>
+              <span className="text-[12px] leading-[1.5] text-faint">
+                {quote.split
+                  ? `Sends exactly ${quote.amount} ${quote.asset.symbol} in one transaction through Request Network's fee contract: ${units(quote.split.merchantRaw, quote.asset.decimals)} to the merchant and ${units(quote.split.feeRaw, quote.asset.decimals)} Gully Pay fee. Your wallet first asks to allow exactly that amount if it has not already.`
+                  : `Sends exactly ${quote.amount} ${quote.asset.symbol} from the wallet you connect, after switching it to ${quote.asset.chain}.`}
+              </span>
               {isSolanaChain(quote.chainId) && (
                 <SolanaReferenceWatch
                   quoteId={quote.id}
