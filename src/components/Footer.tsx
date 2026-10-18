@@ -1,4 +1,5 @@
-import { Building2, Code2, LayoutGrid, Send, Share2, type LucideIcon } from 'lucide-react'
+import { Building2, Code2, FileText, LayoutGrid, Lock, Send, Share2, type LucideIcon } from 'lucide-react'
+import { track } from '../lib/track'
 import { Link } from 'react-router'
 import { navGroups, navLinks, socialLinks, type NavEntry } from '../content/site'
 import { useContact } from './ContactContext'
@@ -54,7 +55,7 @@ export function Footer() {
         <div className="flex flex-col items-start gap-4">
           <Wordmark height={28} />
           <p className="m-0 text-[14px] leading-[1.55] text-dim">A blockchain development company building and releasing Web3 projects.</p>
-          <button type="button" onClick={() => openContact()} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+          <button type="button" onClick={() => (track('cta-click', { cta: 'start-project', from: 'footer' }), openContact())} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
             <Send aria-hidden size={16} strokeWidth={2} />
             Start a project
           </button>
@@ -88,10 +89,12 @@ export function Footer() {
         <span className="flex flex-none flex-wrap items-center gap-x-4">
           <span>© 2026 GULLY LABS</span>
           <nav aria-label="Legal" className="flex flex-wrap gap-x-4">
-            <Link to="/legal/privacy" className="inline-flex min-h-11 items-center hover:text-gold">
+            <Link to="/legal/privacy" className="group inline-flex min-h-11 items-center gap-[6px] hover:text-gold">
+              <Lock aria-hidden size={12} strokeWidth={1.75} className="flex-none transition-colors group-hover:text-gold" />
               Privacy
             </Link>
-            <Link to="/legal/merchant-terms" className="inline-flex min-h-11 items-center hover:text-gold">
+            <Link to="/legal/merchant-terms" className="group inline-flex min-h-11 items-center gap-[6px] hover:text-gold">
+              <FileText aria-hidden size={12} strokeWidth={1.75} className="flex-none transition-colors group-hover:text-gold" />
               Merchant terms
             </Link>
           </nav>

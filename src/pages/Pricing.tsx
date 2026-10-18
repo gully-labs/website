@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowUpRight, BellRing, Boxes, Check, History, Layers, Network, Send, ShieldCheck, Zap } from 'lucide-react'
+import { ArrowRight, BellRing, Boxes, Check, Fuel, History, Layers, Network, Send, ShieldCheck, Zap } from 'lucide-react'
 import { useContact } from '../components/ContactContext'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
@@ -13,6 +13,9 @@ import { APP_URL, DOCS_URL, isLocalHost } from '../site-host'
 import type { AlertChannels, Offer } from './developers/api'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { PlanLimits } from '../components/charts/PlanLimits'
+import { EChart } from '../components/charts/EChart'
+import { axisTooltip, barsPreset, C, tipHtml } from '../components/charts/chartPresets'
+import { track } from '../lib/track'
 
 /* The paid tiers of the tracker API and the Gully Analytics plans, in two sections. Every price and limit
    is read from GET /api/plans (server/plans.mjs); nothing numeric is typed into this page. */
@@ -45,7 +48,11 @@ const telegramAnswer = (tg: AlertChannels['telegram'] | null) =>
       ? `Yes. In the Alerts tab of the app dashboard, press Connect Telegram: it opens ${tg.bot ? `@${tg.bot}` : 'the bot'} with a one-time code that links the chat (or a group) to your wallet, with no chat id to copy. Then tick Telegram on any alert. Messages carry the gap, on-chain and fair prices, a link to the stock and a Mute 24h button.`
       : 'Not yet. Telegram delivery works only once the bot is configured on the server, and it is not configured yet; the dashboard will offer it when it is. Webhooks work today.'
 
-const chainList = (o: Offer | null) => (o ? o.chains.map((c) => c.name).join(', ').replace(/, ([^,]*)$/, ' or $1') : 'Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche')
+/* Only the chains GET /api/plans offers now (the treasury deployment gate closes the rest), never a typed list. */
+const chainList = (o: Offer | null) => (o && o.chains.length ? o.chains.map((c) => c.name).join(', ').replace(/, ([^,]*)$/, ' or $1') : 'the chains where the Gully Labs treasury is deployed')
+const chainListToday = (o: Offer | null) => (o && o.chains.length ? `${o.chains.map((c) => c.name).join(', ').replace(/, ([^,]*)$/, ' and $1')} today; more as the treasury is deployed` : 'the chains where the Gully Labs treasury is deployed')
+/** The native coins checkout takes right now (ETH, BNB, …), from the offer's assets. */
+const nativeCoins = (o: Offer | null) => [...new Set((o?.assets ?? []).filter((a) => a.kind === 'native').map((a) => a.symbol))]
 /** Which chains collect a merchant's Gully Pay fee inside the payment (server: feeSplit = verified proxy + deployed treasury). */
 const feeSplitList = (o: Offer | null) => {
   const on = o?.chains.filter((c) => c.feeSplit).map((c) => c.name) ?? []
@@ -63,7 +70,7 @@ const confirmationList = (o: Offer | null) => (o ? o.chains.map((c) => `${c.name
 
 const FAQ = (o: Offer | null, tg: AlertChannels['telegram'] | null): { q: string; a: string }[] => [
   { q: 'How do I pay?', a: `In USDC, USDT or the chain's own coin on ${chainList(o)}. Pick a plan in the app dashboard, then a chain and an asset; it gives a quote with the exact amount and the Gully Labs treasury address, valid for 20 minutes. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash.` },
-  { q: 'What do I pay in?', a: `Prices are in US dollars. ${assetList(o)} Stablecoins are counted one to one with the dollar. The chains' own coins (ETH, BNB, POL, AVAX) are priced by the Chainlink USD feed on the same chain when you ask for the quote, rounded up; if that feed has not updated for two hours, no quote is given in that coin.` },
+  { q: 'What do I pay in?', a: `Prices are in US dollars. ${assetList(o)} Stablecoins are counted one to one with the dollar. The chains' own coins${nativeCoins(o).length ? ` (${nativeCoins(o).join(', ')})` : ''} are priced by the Chainlink USD feed on the same chain when you ask for the quote, rounded up; if that feed has not updated for two hours, no quote is given in that coin.` },
   { q: 'Do you hold my funds?', a: 'No. Your coin or stablecoin goes straight to the Gully Labs treasury wallet in one transfer, the same as paying any address. There is no deposit, balance or card on file, and nothing is ever taken from your wallet without you signing it.' },
   { q: 'How is a payment checked?', a: `The server reads the transaction from a public node of its chain: it must have succeeded, paid the treasury at least the plan’s price in the quoted asset, and have enough blocks on top (${confirmationList(o)}). Each transaction counts once, on any chain. The plan starts the moment it is confirmed.` },
   { q: 'Which chains collect the merchant fee in one transaction?', a: feeSplitList(o) },
@@ -109,17 +116,92 @@ function OnRequest() {
             </span>
             <p className="m-0 text-[15px] leading-[1.55] text-muted">{it.body}</p>
             <div className="mt-auto flex flex-wrap gap-3">
-              <button type="button" onClick={() => openContact(it.type)} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+              <button type="button" onClick={() => (track('cta-click', { cta: 'start-project', page: '/pricing' }), openContact(it.type))} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
                 <Send aria-hidden size={16} /> Start a project
               </button>
-              <Link to={it.to} className="inline-flex min-h-11 items-center gap-1 text-[15px] text-gold hover:text-gold-hover">
-                {it.name} <ArrowUpRight aria-hidden size={15} />
+              <Link to={it.to} onClick={() => track('cta-click', { cta: `pricing-${it.name}`, page: '/pricing' })} className="inline-flex min-h-11 items-center gap-1 text-[15px] text-gold hover:text-gold-hover">
+                {it.name} <ArrowRight aria-hidden size={15} />
               </Link>
             </div>
           </div>
         ))}
       </div>
     </section>
+  )
+}
+
+interface GasRow {
+  chainId: number
+  name: string
+  ok: boolean
+  symbol?: string
+  transferUsd?: number | null
+  payUsd?: number | null
+  gasPriceGwei?: number | null
+  priceSource?: string | null
+  note?: string | null
+  error?: string
+}
+
+/** What paying a plan costs in network gas right now, per offered chain (GET /api/pay/gas, cached 3 min on the server). */
+function GasCost({ offer }: { offer: Offer }) {
+  const [rows, setRows] = useState<GasRow[] | null>(null)
+  const [at, setAt] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    let alive = true
+    const read = () =>
+      fetch('/api/pay/gas', { headers: { accept: 'application/json' } })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then(
+          (d: { at?: string; chains?: GasRow[] }) => {
+            if (!alive) return
+            setRows(Array.isArray(d.chains) ? d.chains : [])
+            setAt(d.at ?? null)
+            setFailed(false)
+          },
+          () => alive && setFailed(true),
+        )
+    read()
+    const id = setInterval(read, 180_000)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [])
+  const offered = useMemo(() => new Set(offer.chains.map((c) => c.id)), [offer])
+  const list = useMemo(() => (rows ?? []).filter((r) => offered.has(r.chainId)), [rows, offered])
+  const known = list.filter((r) => r.ok && typeof r.transferUsd === 'number')
+  const option = useMemo(
+    () => ({
+      grid: { left: 8, right: 72, top: 8, bottom: 8, containLabel: true },
+      xAxis: { type: 'value', axisLabel: { formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
+      yAxis: { type: 'category', data: known.map((r) => r.name), axisTick: { show: false } },
+      tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
+        const r = known[ps[0]?.dataIndex ?? -1]
+        return r ? tipHtml({ title: `${r.name} · now`, rows: [{ name: 'plain transfer (a plan)', value: `$${r.transferUsd}`, color: C.gold }, ...(typeof r.payUsd === 'number' ? [{ name: 'merchant fee-proxy payment', value: `$${r.payUsd}` }] : []), ...(typeof r.gasPriceGwei === 'number' ? [{ name: 'gas price', value: `${r.gasPriceGwei} gwei` }] : []), ...(r.priceSource ? [{ name: 'coin price', value: r.priceSource }] : [])] }) : ''
+      }, 'shadow'),
+      series: [{ id: 'gas', ...barsPreset({ horizontal: true }), color: C.gold, data: known.map((r) => r.transferUsd), label: { show: true, position: 'right', color: C.ink2, fontFamily: 'IBM Plex Mono', fontSize: 11, formatter: (p: { value: number }) => `$${p.value < 0.01 ? p.value.toPrecision(2) : p.value.toFixed(2)}` } }],
+    }),
+    [known],
+  )
+  const unreadable = list.filter((r) => !(r.ok && typeof r.transferUsd === 'number'))
+  return (
+    <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-6 max-[600px]:p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[1px] text-faint">
+          <Fuel aria-hidden size={14} className="text-gold" /> NETWORK GAS TO PAY A PLAN · LIVE
+        </span>
+        <span className="font-mono text-[11px] text-dim">{at ? `read ${new Date(at).toISOString().slice(11, 16)} UTC from each chain` : failed ? 'unreadable' : 'reading…'}</span>
+      </div>
+      <p className="m-0 text-[14px] leading-[1.6] text-muted">Paid by your wallet to the network, not to us: one plain transfer to the treasury, priced with the chain&rsquo;s own gas price and Chainlink coin price right now.</p>
+      {rows && !known.length ? (
+        <p className="m-0 py-4 font-mono text-[12px] text-faint">Gas costs are not tracked yet on the offered chains{unreadable.length ? ' (unreadable right now)' : ''}.</p>
+      ) : (
+        <EChart option={option} height={Math.max(150, known.length * 40 + 30)} label="Network gas cost in US dollars of paying a plan on each offered chain, right now" skeleton="bars" error={failed && !rows ? 'The gas costs could not be read just now.' : undefined} steps={{ count: known.length }} />
+      )}
+      {unreadable.length > 0 && known.length > 0 && <p className="m-0 font-mono text-[11px] text-faint">Unreadable right now: {unreadable.map((r) => r.name).join(', ')}.</p>}
+    </div>
   )
 }
 
@@ -136,7 +218,7 @@ export function Pricing() {
   const tg = useTelegramChannel()
   return (
     <>
-      <Seo title="Pricing" description="Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche, with no custody." />
+      <Seo title="Pricing" description={`Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain's own coin on ${chainListToday(offer)}, with no custody.`} />
 
       <section className="relative overflow-hidden px-page pt-[72px] pb-12">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.14),transparent_62%)]" />
@@ -203,8 +285,8 @@ export function Pricing() {
                         <Check size={17} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Usage charts and request log
                       </li>
                     </ul>
-                    <a href={DASHBOARD} className={`${featured ? btnGold : btnOutline} relative mt-auto inline-flex min-h-12 items-center justify-center gap-2 px-6 text-[16px]`}>
-                      {p.priceUsdc ? (offer.checkout.enabled ? `Get ${p.name}` : 'Open the dashboard') : 'Get a key'} <ArrowUpRight size={16} aria-hidden />
+                    <a href={DASHBOARD} {...newTab} onClick={() => track('plan-click', { plan: p.id, product: 'api', checkout: offer.checkout.enabled })} className={`${featured ? btnGold : btnOutline} relative mt-auto inline-flex min-h-12 items-center justify-center gap-2 px-6 text-[16px]`}>
+                      {p.priceUsdc ? (offer.checkout.enabled ? `Get ${p.name}` : 'Open the dashboard') : 'Get a key'} <NewTabMark size={16} className="flex-none" />
                     </a>
                   </div>
                 )
@@ -217,8 +299,9 @@ export function Pricing() {
               ]}
             />
             <p className="m-0 font-mono text-[12px] leading-[1.7] text-faint">
-              Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history. Prices in US dollars, paid in USDC, USDT or the chain's own coin on {chainList(offer)}. Limits protect our servers; answers served from the edge cache do not count against them.
+              Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history. Prices in US dollars, paid in USDC, USDT or the chain's own coin on {chainListToday(offer)}. Limits protect our servers; answers served from the edge cache do not count against them.
             </p>
+            <GasCost offer={offer} />
           </div>
         )}
       </section>
@@ -235,7 +318,7 @@ export function Pricing() {
           <div className="flex flex-col gap-4">
             <h2 className="m-0 font-display text-h2 font-bold uppercase">Questions</h2>
             <p className="m-0 flex items-start gap-2 text-[14px] leading-[1.6] text-muted">
-              <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Paid in USDC, USDT or the chain's own coin on {offer ? offer.chains.length : 'seven'} chains, checked on chain, no custody.
+              <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Paid in USDC, USDT or the chain's own coin{offer && offer.chains.length ? ` on ${offer.chains.length} chain${offer.chains.length === 1 ? '' : 's'}` : ''}, checked on chain, no custody.
             </p>
             <a href={`${DOCS_URL}/plans-alerts`} {...newTab} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-muted hover:text-gold">
               Plans &amp; alerts docs <NewTabMark size={13} />

@@ -1,5 +1,6 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Fields, H3, List, P, Section } from '../DocPage'
+import { GapLadder } from '../LiveCharts'
 
 const sections = [
   { id: 'two-prices', title: 'Two prices' },
@@ -84,6 +85,8 @@ export function Methodology() {
         <P>
           The thresholds are returned with every response in <C>rules</C> (<C>minLiquidityUsd</C>, <C>inLinePct</C>, <C>flagPct</C>, <C>implausiblePct</C>, <C>trustLiquidityUsd</C>, <C>unitsRatio</C>), so a client never has to hard-code them.
         </P>
+        <P>The rules applied live: every trusted row’s gap right now, with the in-line band and the flag lines drawn from the same response’s <C>rules</C>. Hover a bar for its status.</P>
+        <GapLadder />
         <H3 id="trust">Trust and provenance</H3>
         <P>
           Every row says whether the tracker stands behind its gap. <C>trusted</C> is true only for <C>premium</C>, <C>discount</C>, <C>drifting</C> and <C>in-line</C> rows whose pool read is fresh; otherwise <C>untrustedReason</C> gives the reason in a sentence (a thin pool, an implausible figure, an unreadable source, or a pool read served from the last good one while sources back off). Top movers and gap alerts only ever use trusted rows; the five-minute history skips every row without a gap (an unverified row included) and every stale pool read.

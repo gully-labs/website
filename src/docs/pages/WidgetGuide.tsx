@@ -3,6 +3,7 @@ import { widgetSnippet, type WidgetOptions } from '../../lib/widgetEmbed'
 import { LiveWidget } from '../../pages/widget/LiveWidget'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, H3, List, P, Section } from '../DocPage'
+import { WidestGapsLive } from '../LiveCharts'
 
 const sections = [
   { id: 'quick-start', title: 'Quick start' },
@@ -76,6 +77,8 @@ export function WidgetGuide() {
       </Section>
 
       <Section id="table" title="Table">
+        <P>The table ranks trusted rows by the size of their gap, the same way as this chart, read live from the same API the widget calls:</P>
+        <WidestGapsLive />
         <Example options={{ type: 'table', chain: 'all', theme: 'light', limit: 5 }}>
           <P>
             The widest gaps, largest first, from pools deep enough to trust (thin pools are left out). With <C>data-chain="all"</C> each row names its chain.

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type JSX } from 'react'
 import { useTracker, type TrackerRow } from '../../lib/tracker'
 import { SITE_URL } from '../../site-host'
+import { track } from '../../lib/track'
 
 /* An API playground that calls the real endpoints on this origin, without a key, exactly as a visitor's
    own code would: the status, the latency measured here, the rate-limit headers the server sent and
@@ -189,7 +190,10 @@ export default function ApiDemo(): JSX.Element {
         </div>
         <button
           type="button"
-          onClick={send}
+          onClick={() => {
+            track('cta-click', { cta: 'api-send-request', page: location.pathname })
+            void send()
+          }}
           disabled={cooling || res.k === 'loading' || historyWaiting}
           className="mt-auto min-h-11 rounded-[8px] bg-gold font-semibold text-bg transition-colors hover:bg-gold-hover disabled:cursor-wait disabled:opacity-70"
         >

@@ -1,5 +1,6 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, List, P, Section } from '../DocPage'
+import { GapHistoryChart } from '../LiveCharts'
 
 const sections = [
   { id: 'packages', title: 'Packages' },
@@ -70,6 +71,10 @@ export function Sdk() {
           Rows are the same objects the <DocLink to="api">API reference</DocLink> describes. A price that cannot be read is <C>null</C>, never zero;{' '}
           <C>isTrusted(row)</C> keeps the rows the tracker itself would chart. <C>tracker.rateLimit</C> holds the limit the last response reported.
         </P>
+        <P>
+          What <C>getHistory('robinhood', 'NVDA')</C> returns right now, drawn from the same endpoint (<C>/api/tracker/history</C>):
+        </P>
+        <GapHistoryChart chain="robinhood" ticker="NVDA" />
       </Section>
 
       <Section id="widget" title="Widget">

@@ -1,5 +1,6 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, H3, List, P, Section } from '../DocPage'
+import { WorkspaceLimitsChart } from '../LiveCharts'
 
 const sections = [
   { id: 'workspaces', title: 'Workspaces' },
@@ -121,6 +122,8 @@ export function Teams() {
           </li>
         </List>
         <P>Only successful changes are logged, and never a secret. A workspace keeps its newest 1,000 events and nothing older than 180 days.</P>
+        <P>Where <C>usage.threshold</C> fires on each plan, and how many keys a workspace may hold, read live from <C>GET /api/plans</C>:</P>
+        <WorkspaceLimitsChart />
         <H3>Reading it from code</H3>
         <CodeBlock lang="js" code={ACTIVITY} caption="TypeScript · an activity page" />
         <P>

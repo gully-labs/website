@@ -39,6 +39,7 @@ import { GUARD_PUBLIC_ERROR, PaymentGuardError } from './pay-guard.mjs'
 import { startFeeProxyMonitor } from './fee-proxy-monitor.mjs'
 import { startSecMonitor } from './sec-monitor.mjs'
 import { handleScore, startScoreRefresh } from './gully-score.mjs'
+import { flushStatus, handleStatus, startStatusLoop } from './status.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -202,6 +203,10 @@ async function handleRequest(req, res) {
   if (!isLocal && !host.startsWith('docs.') && (url.pathname === '/docs' || url.pathname.startsWith('/docs/'))) {
     return send(res, 301, '', { Location: 'https://docs.gullylabs.xyz' + (url.pathname.slice(5) || '/'), 'Cache-Control': 'public, max-age=3600' })
   }
+  // The merchant terms' old address (linked from early checkouts) moves to /legal/merchant-terms for good.
+  if (url.pathname === '/gully-pay/merchant-terms' || url.pathname === '/gully-pay/merchant-terms/') {
+    return send(res, 301, '', { Location: '/legal/merchant-terms', 'Cache-Control': 'public, max-age=86400' })
+  }
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {
     const map = sitemapFor(host)
@@ -242,17 +247,25 @@ async function handleRequest(req, res) {
   // The Gully Score (gully-score.mjs): the public index, one contract's score, and its embeddable badge.
   if (url.pathname === '/api/score' || url.pathname.startsWith('/api/score/') || (url.pathname.startsWith('/score/') && url.pathname.endsWith('/badge.svg'))) {
     if (await handleScore(req, res, url)) return
-    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
   }
   // Gully Ask (ask.mjs): POST /api/ask, GET /api/ask/status and POST /api/ask/feedback.
+  // Its status is public and read-only: the docs host reads it cross-origin.
+  if (url.pathname === '/api/ask/status') res.setHeader('Access-Control-Allow-Origin', '*')
   if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status' || url.pathname === '/api/ask/feedback') return void (await handleAsk(req, res, url))
   // Gully Pay gas costs per chain, cached (gas.mjs): the app's Merchant tab reads it. Public.
-  if (url.pathname === '/api/pay/gas') return void (await handleGas(req, res))
+  if (url.pathname === '/api/pay/gas') {
+    // Public and read-only: the docs host reads it cross-origin (writeHead keeps headers set here).
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    return void (await handleGas(req, res))
+  }
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
   if (url.pathname.startsWith('/api/pay/')) {
     if (await handlePay(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // Public status (status.mjs): every check, 24 h of uptime per component and the incident history.
+  if (url.pathname === '/api/status') return void (await handleStatus(req, res))
   // Gully Security (security-routes.mjs): published reports, the scan counter, review requests.
   if (url.pathname.startsWith('/api/security/')) return void ((await handleSecurityPublic(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
   let access = null
@@ -354,8 +367,8 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/stats') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readStats().then(
-      (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json' }),
+      (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30', 'Access-Control-Allow-Origin': '*' }),
+      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }),
     )
   }
   // Whether the stock pages may show the swap here (geo.mjs). Per visitor, so never cached.
@@ -363,6 +376,8 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(geoFor(req, isLocal)), { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' })
   }
+  // Any other /api/ path is not an endpoint: one JSON 404 shape for the whole API (never the HTML app shell).
+  if (url.pathname.startsWith('/api/')) return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
   // Blog share images (og:image), one per post, rendered from the post's banner (og.mjs).
   if (url.pathname.startsWith('/og/blog/')) {
     if (await handleOg(req, res, url)) return
@@ -416,7 +431,7 @@ archiveAssets()
 
 server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
 // Keep the last minute of API usage across a restart or redeploy.
-for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), flushAnalyticsUsage(), process.exit(0)))
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), flushAnalyticsUsage(), flushStatus(), process.exit(0)))
 // Gap alerts are evaluated on every recorded tracker snapshot.
 onSnapshot((rows, at) => evaluateAlerts(rows, at))
 // DeepCore launch alerts run on every DeepCore poll (DEEPCORE_LOOP=off in tests: polled on demand).
@@ -451,6 +466,8 @@ function startLoops() {
   startSecMonitor()
   // Gully Score: listed scores refreshed every 6 hours, and soon after a monitored change (gully-score.mjs).
   startScoreRefresh()
+  // Public status: every part of the stack checked once a minute, 24 h kept (status.mjs; GET /api/status).
+  startStatusLoop()
 }
 // The treasury deployment gate (treasury-chains.mjs) runs in standby too: a standby answers /api/plans and quotes,
 // so it must know on which chains the Safe treasury exists. Read-only (eth_getCode), hourly, timers unref'd.

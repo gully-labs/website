@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AlertChannels, Offer } from '../../pages/developers/api'
+import { ChartBox } from '../../components/charts/ChartSkeleton'
+import { PlanLimits } from '../../components/charts/PlanLimits'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { apiOrigin } from '../nav'
@@ -154,7 +156,7 @@ export function PlansAlerts() {
         <P>
           A plan belongs to your wallet account and applies to every key it holds. The limits below are read live from <C>GET /api/plans</C>, the same source the <Ext href="https://gullylabs.xyz/pricing">pricing page</Ext> and the dashboard use.
         </P>
-        {offer === null && <P>Reading the plans…</P>}
+        {offer === null && <ChartBox height={200} state="loading" variant="bars" />}
         {offer === 'error' && <Callout label="UNAVAILABLE">The plans could not be read just now. They are always on the pricing page and at /api/plans.</Callout>}
         {offer && offer !== 'error' && (
           <>
@@ -165,6 +167,12 @@ export function PlansAlerts() {
             <P>
               Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history.
             </P>
+            <PlanLimits
+              tiers={[
+                { name: 'No key', perMin: offer.anonymous.perMin, historyDays: offer.anonymous.historyDays, alerts: null, maxKeys: null },
+                ...offer.plans.map((p) => ({ name: p.name, perMin: p.perMin, historyDays: p.historyDays, alerts: p.alerts, maxKeys: p.maxKeys })),
+              ]}
+            />
             {!offer.checkout.enabled && <Callout label="NOT ON SALE YET">{offer.checkout.reason}</Callout>}
           </>
         )}

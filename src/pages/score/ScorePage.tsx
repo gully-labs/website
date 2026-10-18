@@ -74,7 +74,7 @@ export function ScorePage() {
   const r = s.state === 'ok' ? s.data : null
   const title = r ? `${r.name ?? shortAddr(r.address)}${r.symbol ? ` (${r.symbol})` : ''}` : shortAddr(addr || '0x0000000000')
   const page = `${SITE}/score/${chain}/${addr}`
-  const badge = `<a href="${page}" target="_blank" rel="noopener noreferrer"><img src="${page}/badge.svg" alt="Gully Score" width="232" height="48"></a>`
+  const badge = `<a href="${page}" target="_blank" rel="noopener noreferrer"><img src="${page}/badge.svg" alt="Gully Score" width="260" height="48"></a>`
   const widget = `<div data-gully-score data-chain="${chain}" data-address="${addr}"></div>\n<script src="${SITE}/widget.js" async></script>`
 
   if (!valid)
@@ -189,7 +189,7 @@ export function ScorePage() {
                 <Code2 aria-hidden size={20} className="text-gold" /> Embed
               </h2>
               <a href={page} {...newTab} className="w-fit" aria-label="The Gully Score badge (opens in a new tab)">
-                <img src={`/score/${r.chainKey}/${r.address}/badge.svg`} alt={r.score === null ? 'Gully Score: not enough data' : `Gully Score ${r.score}`} width={232} height={48} />
+                <img src={`/score/${r.chainKey}/${r.address}/badge.svg`} alt={r.score === null ? 'Gully Score: not enough data' : `Gully Score ${r.score}`} width={260} height={48} />
               </a>
               <Snippet label="BADGE" code={badge} />
               <Snippet label="LIVE WIDGET" code={widget} />

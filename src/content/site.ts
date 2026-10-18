@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, BellRing, Boxes, Building2, ChartNoAxesCombined, CircleDollarSign, Code2, FileJson, FlaskConical, History, Info, KeyRound, LayoutGrid, Layers, Mail, Network, Newspaper, Package, Puzzle, ScanSearch, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowLeftRight, BellRing, BookOpen, Boxes, Building2, ChartNoAxesCombined, CircleDollarSign, Code2, FileJson, FlaskConical, HeartPulse, History, Info, KeyRound, LayoutGrid, Layers, Mail, Network, Newspaper, Package, Puzzle, ScanSearch, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { scoreNavEntry } from '../pages/score/nav'
 
@@ -15,6 +15,8 @@ export const socialLinks = [
   { label: 'X', href: 'https://x.com/Gully_Labs', name: 'X' },
   { label: 'GitHub', href: 'https://github.com/gully-labs', name: 'GitHub' },
   { label: 'Telegram', href: 'https://t.me/GullyLabsNews', name: 'Gully Labs News on Telegram' },
+  // The bot is a product, the channel is the community: listed separately (CLAUDE.md, Telegram rule).
+  { label: 'TelegramBot', href: 'https://t.me/GullyLabsBot', name: '@GullyLabsBot on Telegram' },
 ] as const
 
 export type SocialLabel = (typeof socialLinks)[number]['label']
@@ -31,13 +33,14 @@ export type NavEntry = {
   badge?: string
   /** Paths that light this entry (and its group) up as the current section. */
   match?: string[]
-  /** Another app or site (analytics, GitHub, blog, docs): opens in a new tab, marked with ↗. */
+  /** Another app or site (the app, analytics, GitHub, blog, docs): opens in a new tab, marked with ↗.
+      Owner rule (2026-10-18): every link to another host does, app.gullylabs.xyz included. */
   newTab?: boolean
 } & ({ to: string; href?: never; action?: never } | { href: string; localTo?: string; to?: never; action?: never } | { action: 'contact'; to?: never; href?: never })
 
 export type NavGroup = { id: 'products' | 'developers' | 'company'; label: string; icon: LucideIcon; items: NavEntry[] }
 
-const devPortal: NavEntry = { label: 'App dashboard', desc: 'Every product: keys, alerts, tracker, Pay, AI', href: APP_URL, localTo: '/app', icon: KeyRound, match: ['/app', '/developers'] }
+const devPortal: NavEntry = { label: 'App dashboard', desc: 'Every product: keys, alerts, tracker, Pay, AI', href: APP_URL, localTo: '/app', icon: KeyRound, match: ['/app', '/developers'], newTab: true }
 const analyticsApp: NavEntry = { label: 'Gully Analytics', desc: 'Open the analytics app', href: 'https://analytics.gullylabs.xyz', icon: ChartNoAxesCombined, newTab: true }
 
 export const productsNav: NavGroup = {
@@ -66,10 +69,12 @@ export const developersNav: NavGroup = {
   items: [
     { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources', to: '/ask', icon: Sparkles, match: ['/ask'], badge: 'New' },
     devPortal,
+    { label: 'Docs', desc: 'Guides for every product', href: DOCS_URL, icon: BookOpen, newTab: true },
     { label: 'API docs', desc: 'Free REST API reference', href: `${DOCS_URL}/api`, icon: FileJson, newTab: true },
     { label: 'SDK', desc: 'TypeScript client, MIT', href: 'https://github.com/gully-labs/sdk', icon: Package, newTab: true },
     { label: 'Widget', desc: 'One script tag, live prices', to: '/widget', icon: Puzzle, match: ['/widget'] },
     { label: 'Changelog', desc: 'What shipped, and when', href: `${DOCS_URL}/changelog`, icon: History, newTab: true },
+    { label: 'Status', desc: 'Live status and uptime of every service', to: '/status', icon: HeartPulse, match: ['/status'] },
   ],
 }
 

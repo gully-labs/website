@@ -1,5 +1,6 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, List, P, Section } from '../DocPage'
+import { PlanLimitsLive } from '../LiveCharts'
 
 const sections = [
   { id: 'when', title: 'When you need one' },
@@ -72,6 +73,8 @@ export function ApiKeys() {
           Every successful response carries <C>X-RateLimit-Limit</C> and <C>X-RateLimit-Remaining</C>. Past the limit the API answers <C>429</C> with a <C>Retry-After</C> header in seconds. Today that is 60 requests a minute per IP address without a key and 600 a minute with one; read the headers rather than hard-coding either, because they can change. Details in the <DocLink to="api" hash="rate-limits">API reference</DocLink>.
         </P>
         <P>The data refreshes about every two minutes, so polling more often than once a minute returns the same answer.</P>
+        <P>What a key gets on each plan, read live from <C>GET /api/plans</C>:</P>
+        <PlanLimitsLive />
       </Section>
 
       <Section id="safety" title="Keeping it safe">

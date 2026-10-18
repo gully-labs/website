@@ -2,6 +2,8 @@ import { projects } from '../content/projects'
 import { fmtUsd, type Stats } from '../lib/stats'
 import { Sparkline } from './Sparkline'
 import { BlinkDot } from './ui'
+import { NewTabMark } from './LayoutLinks'
+import { newTab } from './LayoutNav'
 
 /** The hero's live panel: one row per venue with its own lockup, all-time volume, 24h volume
     and the shape of its last two weeks, redrawing on a loop. */
@@ -37,8 +39,7 @@ export function VenueTicker({ data, state }: { data: Stats | null; state: 'loadi
           <a
             key={p.key}
             href={p.url}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...newTab}
             className="gl-row-sweep relative grid grid-cols-[96px_1fr_84px_auto] items-center gap-[14px] border-b border-line px-5 py-3 text-ink transition-colors last:border-b-0 hover:bg-surface-hover hover:text-ink"
             style={{ animation: `gl-rise .5s ${0.25 + i * 0.06}s ease both`, ['--sweep-delay' as string]: `${i * 1.2}s` }}
           >
@@ -46,7 +47,10 @@ export function VenueTicker({ data, state }: { data: Stats | null; state: 'loadi
               <img src={p.logo} alt={p.name} className="block size-full" style={{ objectFit: p.fit, padding: p.fit === 'contain' ? '6px 10px' : 0 }} />
             </span>
             <span className="min-w-0">
-              <span className="block text-[14px]">{p.name}</span>
+              <span className="flex items-center gap-1 text-[14px]">
+                {p.name}
+                <NewTabMark size={12} />
+              </span>
               <span className="mt-[2px] block font-mono text-[11px] text-faint">{p.tag}</span>
             </span>
             <span className="h-7 w-[84px]">

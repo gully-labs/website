@@ -1,27 +1,31 @@
 import { useState } from 'react'
+import { CircleDollarSign, Network, Store, type LucideIcon } from 'lucide-react'
 import { insetPx, type Mark } from './registry'
+
+/** What a missing mark stands for: the neutral glyph shown in its place (never a letter or initials tile). */
+export type LogoGlyph = 'chain' | 'token' | 'venue'
+const GLYPHS: Record<LogoGlyph, LucideIcon> = { chain: Network, token: CircleDollarSign, venue: Store }
 
 /* The square every logo sits in: a fixed width and height (no layout shift), the mark centred with
    whole-pixel padding, lazy loading and async decoding. Only if the file fails to load (or none is
-   known) does a neutral disc with the symbol stand in. Round for chains and tokens, a rounded tile
+   known) does a neutral disc with a kit-coloured glyph stand in (the name stays in the label). Round for chains and tokens, a rounded tile
    for venues. */
-export function Logo({ mark, label, size, shape, alt, title, className = '' }: { mark: Mark | null; label: string; size: number; shape: 'round' | 'tile'; alt: string; title?: string; className?: string }) {
+export function Logo({ mark, glyph, size, shape, alt, title, className = '' }: { mark: Mark | null; glyph: LogoGlyph; size: number; shape: 'round' | 'tile'; alt: string; title?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
   // Tiles take the radius scale (src/index.css): 8 from 32 px, 6 from 20 px, 4 below.
   const radius = shape === 'round' ? '50%' : `${size >= 32 ? 8 : size >= 20 ? 6 : 4}px`
   if (!mark || failed) {
-    // Text only where 11 px fits; a smaller disc is a plain disc (the name is in its label).
-    const text = size >= 20 ? label.slice(0, size >= 24 ? 4 : 2) : ''
+    const Glyph = GLYPHS[glyph]
     return (
       <span
         role={alt ? 'img' : undefined}
         aria-label={alt || undefined}
         aria-hidden={alt ? undefined : true}
         title={title}
-        className={`inline-flex flex-none select-none items-center justify-center overflow-hidden border border-line-strong bg-surface-deep font-mono font-medium leading-none text-muted ${className}`}
-        style={{ width: size, height: size, borderRadius: radius, fontSize: Math.max(11, Math.round(size * (text.length > 2 ? 0.3 : 0.42))) }}
+        className={`inline-flex flex-none select-none items-center justify-center overflow-hidden border border-line-strong bg-surface-deep text-muted ${className}`}
+        style={{ width: size, height: size, borderRadius: radius }}
       >
-        {text}
+        {size >= 12 && <Glyph aria-hidden size={Math.max(8, Math.round(size * 0.56))} strokeWidth={size >= 24 ? 1.75 : 2} />}
       </span>
     )
   }

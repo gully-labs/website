@@ -4,7 +4,7 @@ import { Link, Navigate, useParams } from 'react-router'
 import { NotFound } from './NotFound'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
-import { ArrowLeft, BellRing, Check, Code2, Copy, ExternalLink } from 'lucide-react'
+import { ArrowLeft, BellRing, Check, Code2, Copy } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
 import { GapHistory } from '../components/tracker/GapHistory'
@@ -14,6 +14,7 @@ import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF } from '../components/charts/number-formats'
 import { PoolDepth } from '../components/tracker/PoolDepth'
 import { xPost } from '../lib/share'
+import { track } from '../lib/track'
 import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow, fairFeedChain, fairSourceLabel } from '../lib/tracker'
 import { APP_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
@@ -61,7 +62,7 @@ function CopyAddress({ label, address, chain }: { label: string; address: string
         </button>
         {base && (
           <a href={base + address} {...newTab} aria-label={`${label} on the explorer (opens in a new tab)`} className={iconBtn}>
-            <ExternalLink aria-hidden size={13} />
+            <NewTabMark size={13} className="flex-none" />
           </a>
         )}
       </span>
@@ -96,6 +97,8 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
   const shareUrl = `https://gullylabs.xyz${stockPath(row)}`
   // The portal's Alerts tab, naming this stock (?alert=chain:TICKER) so the new-alert dialog can open prefilled.
   const alerts = `${isLocalHost() ? '/app' : `${APP_URL}/`}?alert=${row.chain}:${row.ticker}#alerts`
+  // The app is another host in production: it opens in a new tab there (the local /app route stays in place).
+  const alertsExt = /^https?:/.test(alerts)
   const embed = `<div data-gully-widget="badge" data-ticker="${row.ticker}" data-chain="${row.chain}"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>`
   const [copiedEmbed, setCopiedEmbed] = useState(false)
 
@@ -109,7 +112,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
       <section className="px-page pt-10 pb-8">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 font-mono text-[12px] text-faint" style={rise(0)}>
           <Link to="/tracker" className="inline-flex min-h-11 items-center gap-1 text-muted hover:text-gold">
-            <ArrowLeft aria-hidden size={13} /> Tracker
+            <ArrowLeft aria-hidden size={13} /> Stock tracker
           </Link>
           <span>/</span>
           <span className="inline-flex items-center gap-1">
@@ -139,6 +142,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             )}
             <a href={xPost(gapPost(row), shareUrl)} {...newTab} aria-label={`Post ${row.ticker}'s gap on X (opens in a new tab)`} className="inline-flex size-11 items-center justify-center rounded-btn border border-gold-line text-gold hover:border-gold hover:text-gold">
               <SocialIcon name="X" size={14} />
+              <NewTabMark size={11} className="flex-none" />
             </a>
           </div>
         </div>
@@ -197,8 +201,17 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           </div>
           <div className={card} style={rise(7)}>
             <h2 className="m-0 font-display text-h4 font-bold uppercase">Follow {row.ticker}</h2>
-            <a href={alerts} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink hover:border-gold hover:text-ink">
+            <a
+              href={alerts}
+              {...(alertsExt ? newTab : {})}
+              onClick={() => {
+                track('cta-click', { cta: 'stock-alert', page: location.pathname })
+                track('launch-app', { from: 'stock-page' })
+              }}
+              className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink hover:border-gold hover:text-ink"
+            >
               <BellRing aria-hidden size={16} className="text-gold" /> Alert me when the gap moves
+              {alertsExt && <NewTabMark />}
             </a>
             <button
               type="button"

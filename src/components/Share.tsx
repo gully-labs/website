@@ -6,6 +6,8 @@ import { gullyPost, projectPost, tgShare, xFollow, xPost } from '../lib/share'
 import type { Stats } from '../lib/stats'
 import { SocialIcon } from './SocialIcon'
 import { copyWithToast } from './ui/toast'
+import { NewTabMark } from './LayoutLinks'
+import { newTab } from './LayoutNav'
 
 /* Sharing controls: the texts and intent links live in lib/share.ts. */
 
@@ -32,18 +34,21 @@ export function ShareBar({ data }: { data: Stats | null }) {
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label="Follow and share">
-      <a href={xFollow(SHARE.handle)} target="_blank" rel="noopener noreferrer" className={`${pill} border-gold-line text-gold hover:bg-gold hover:text-bg`}>
+      <a href={xFollow(SHARE.handle)} {...newTab} className={`${pill} border-gold-line text-gold hover:bg-gold hover:text-bg`}>
         <SocialIcon name="X" size={14} />
         Follow {SHARE.handle}
-      <span className="sr-only"> (opens in a new tab)</span></a>
-      <a href={xPost(text, SITE_URL)} target="_blank" rel="noopener noreferrer" className={pill}>
+        <NewTabMark className="flex-none" />
+      </a>
+      <a href={xPost(text, SITE_URL)} {...newTab} className={pill}>
         <SocialIcon name="X" size={14} />
         Post about Gully
-      <span className="sr-only"> (opens in a new tab)</span></a>
-      <a href={tgShare(text, SITE_URL)} target="_blank" rel="noopener noreferrer" className={pill}>
+        <NewTabMark />
+      </a>
+      <a href={tgShare(text, SITE_URL)} {...newTab} className={pill}>
         <SocialIcon name="Telegram" size={15} />
         Send on Telegram
-      <span className="sr-only"> (opens in a new tab)</span></a>
+        <NewTabMark />
+      </a>
       {canShare ? (
         <button type="button" onClick={() => navigator.share({ title: 'Gully Labs', text, url: SITE_URL }).catch(() => undefined)} className={pill}>
           <Share2 aria-hidden size={14} strokeWidth={1.75} />
@@ -90,10 +95,11 @@ export function ShareStrip({ data }: { data: Stats | null }) {
             {text} <span className="text-gold">{SITE_URL.replace('https://', '')}</span>
           </p>
           <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-            <a href={xPost(text, SITE_URL)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-[18px] py-[10px] text-[14px] font-semibold text-bg transition-colors hover:bg-gold-hover hover:text-bg">
+            <a href={xPost(text, SITE_URL)} {...newTab} className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-[18px] py-[10px] text-[14px] font-semibold text-bg transition-colors hover:bg-gold-hover hover:text-bg">
               <SocialIcon name="X" size={14} />
               Post this
-            <span className="sr-only"> (opens in a new tab)</span></a>
+              <NewTabMark className="flex-none" />
+            </a>
             <button type="button" onClick={() => copy(`${text} ${SITE_URL}`, 'Post text')} className={pill}>
               {copied ? <Check aria-hidden size={14} strokeWidth={2} className="text-green" /> : <Copy aria-hidden size={14} strokeWidth={1.75} />}
               {copied ? 'Copied' : 'Copy text'}
@@ -110,18 +116,20 @@ export function ShareMenu({ project: p, compact = false }: { project: Project; c
   const [copied, copy] = useCopied()
   const text = projectPost(p)
   const btn = compact
-    ? 'inline-flex size-9 items-center justify-center rounded-btn border border-line bg-transparent text-muted transition-colors hover:border-gold hover:text-gold'
+    ? 'inline-flex size-11 items-center justify-center gap-0.5 rounded-btn border border-line bg-transparent text-muted transition-colors hover:border-gold hover:text-gold'
     : pill
   return (
     <div className={`flex items-center gap-2 ${compact ? 'flex-nowrap gap-1' : 'flex-wrap'}`} aria-label={`Share ${p.name}`}>
-      <a href={xPost(text, p.url)} target="_blank" rel="noopener noreferrer" className={btn} title={`Post about ${p.name} on X`} aria-label={`Post about ${p.name} on X (opens in a new tab)`}>
+      <a href={xPost(text, p.url)} {...newTab} className={btn} title={`Post about ${p.name} on X`} aria-label={`Post about ${p.name} on X (opens in a new tab)`}>
         <SocialIcon name="X" size={14} />
         {!compact && 'Post on X'}
+        <NewTabMark size={compact ? 11 : 13} />
       </a>
       {p.telegram && (
-        <a href={tgShare(text, p.url)} target="_blank" rel="noopener noreferrer" className={btn} title={`Send ${p.name} on Telegram`} aria-label={`Send ${p.name} on Telegram (opens in a new tab)`}>
+        <a href={tgShare(text, p.url)} {...newTab} className={btn} title={`Send ${p.name} on Telegram`} aria-label={`Send ${p.name} on Telegram (opens in a new tab)`}>
           <SocialIcon name="Telegram" size={15} />
           {!compact && 'Send on Telegram'}
+          <NewTabMark size={compact ? 11 : 13} />
         </a>
       )}
       <button type="button" onClick={() => copy(p.url)} className={btn} title="Copy link" aria-label={`Copy the ${p.name} link`}>
@@ -136,10 +144,11 @@ export function ShareMenu({ project: p, compact = false }: { project: Project; c
         {!compact && (copied ? 'Copied' : 'Copy link')}
       </button>
       {p.x && !compact && (
-        <a href={xFollow(p.x)} target="_blank" rel="noopener noreferrer" className={pill}>
+        <a href={xFollow(p.x)} {...newTab} className={pill}>
           <UserPlus aria-hidden size={14} strokeWidth={1.75} />
           Follow {p.x}
-        <span className="sr-only"> (opens in a new tab)</span></a>
+          <NewTabMark />
+        </a>
       )}
     </div>
   )

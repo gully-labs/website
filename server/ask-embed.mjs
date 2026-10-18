@@ -144,6 +144,9 @@ export function syncEmbeddings(chunks) {
   pending = chunks
   if (running) return running
   running = (async () => {
+    // Yield first: with every vector cached the loop below never awaits, and the `running = null` at its end
+    // would run before this assignment, leaving `running` stuck on a settled promise (every later sync ignored).
+    await null
     while (pending) {
       const list = pending
       pending = null

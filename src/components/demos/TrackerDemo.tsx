@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { STATUS_LABEL, stockPath, UP, DOWN, CHAIN_SHORT, fmtGap, fmtPrice, gapColor, useHistory, useTracker, type HistoryPoint, type TrackerRow } from '../../lib/tracker'
 import { StockLogo } from '../tracker/StockLogo'
 import { StockSwap } from '../swap/StockSwap'
+import { track } from '../../lib/track'
 
 /* The tracker, in miniature: the live list of stock tokens, one stock's on-chain price against its
    Chainlink fair price over the last hour, day or week (the tracker's own five-minute recordings,
@@ -270,7 +271,7 @@ export default function TrackerDemo(): JSX.Element {
           <span className="font-mono text-[11px] text-faint">LI.FI</span>
         </div>
         <StockSwap key={keyOf(row)} row={row} />
-        <Link to={stockPath(row)} className="mt-auto inline-flex min-h-11 items-center text-[13px] text-gold hover:text-gold-hover">
+        <Link to={stockPath(row)} onClick={() => track('cta-click', { cta: 'open-stock-page', page: location.pathname })} className="mt-auto inline-flex min-h-11 items-center text-[13px] text-gold hover:text-gold-hover">
           Open the {row.ticker} page →
         </Link>
       </div>

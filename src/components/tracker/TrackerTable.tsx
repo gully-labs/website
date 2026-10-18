@@ -186,9 +186,10 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                         href={xPost(gapPost(r), SHARE_URL)}
                         {...newTab}
                         aria-label={`Post ${r.ticker}'s gap on X (opens in a new tab)`}
-                        className="inline-flex size-8 items-center justify-center rounded-btn border border-line text-muted transition-colors hover:border-gold hover:text-gold"
+                        className="inline-flex h-8 items-center justify-center gap-0.5 rounded-btn border border-line px-2 text-muted transition-colors hover:border-gold hover:text-gold"
                       >
                         <SocialIcon name="X" size={13} />
+                        <NewTabMark size={11} className="flex-none" />
                       </a>
                     </span>
                   </td>

@@ -198,7 +198,8 @@ export interface HolderMapUnavailable {
   chain?: { key: string; id: number | string; name: string }
   token?: { address: string; symbol?: string | null }
   reason: string
-  needs?: string | null
+  /** The chain's holder source is not set up yet: the page says "coming soon" and points to live maps. */
+  comingSoon?: boolean
   asOf?: string
 }
 export type HolderMap = HolderMapOk | HolderMapUnavailable
@@ -251,6 +252,12 @@ export interface ResolveMatch {
   symbol: string | null
   kind: 'deepcore-launch' | 'stock'
   path: string
+  /** false: this chain's holder data is coming soon (the page says so). */
+  available?: boolean
+}
+/** GET /api/holders/sources: which chains have maps today. */
+export interface HolderSources {
+  chains: { chain: string; name: string; stocks: boolean; launches: boolean }[]
 }
 /** GET /api/holders/launches */
 export interface CheckedLaunch {

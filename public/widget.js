@@ -168,7 +168,7 @@
     return (
       '<div class="f"><span class="lv"><span class="dot' + (stale || !d ? ' st' : '') + '"></span>' + esc(when) + '</span>' +
       /* The Gully Labs mark from the brand kit (public/brand, cut from the kit's icon master) beside the credit. */
-      '<a href="' + TRACKER + '" target="_blank" rel="noopener"><img src="https://gullylabs.xyz/brand/gully-mark-96.png" alt="" width="16" height="16" loading="lazy" decoding="async">Gully Labs tracker \u2197</a></div>'
+      '<a href="' + TRACKER + '" target="_blank" rel="noopener noreferrer"><img src="https://gullylabs.xyz/brand/gully-mark-96.png" alt="" width="16" height="16" loading="lazy" decoding="async">Gully Labs Stock tracker \u2197</a></div>'
     )
   }
 
@@ -187,7 +187,7 @@
     var items = rows
       .map(function (r) {
         return (
-          '<a class="it" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener" title="' + esc(r.name + ' \u00b7 ' + (CHAIN[r.chain] || r.chain)) + '">' +
+          '<a class="it" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener noreferrer" title="' + esc(r.name + ' \u00b7 ' + (CHAIN[r.chain] || r.chain)) + '">' +
           logo(r, 20, w.chain === 'all') + '<b>' + esc(r.ticker) + '</b><span class="v" data-v="p">' + esc(price(r.onchain)) + '</span>' + pill(r) + '</a>'
         )
       })
@@ -258,7 +258,7 @@
     var note = r.status === 'thin' ? 'thin pool' : c && !c.sessionOpen ? 'market closed' : 'gap, last 24h'
     var g = num(r.gapPct) ? pill(r) : '<span class="pl">' + (r.status === 'no-pool' ? 'no pool' : 'unreadable') + '</span>'
     return (
-      '<a class="b" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">' +
+      '<a class="b" data-k="' + esc(key(r)) + '" href="' + esc(link(r)) + '" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">' +
       '<div class="hd">' + logo(r, 40, true) + '<div class="tx"><span class="k">' + esc(r.ticker) + '</span><span class="n">' + esc(r.name) + ' \u00b7 ' + esc(CHAIN[r.chain] || r.chain) + '</span></div></div>' +
       '<div class="row"><span class="p v" data-v="p">' + esc(price(r.onchain)) + '</span>' + g + '</div>' +
       gapBar(r) +
@@ -578,7 +578,7 @@
     '.r .bg{fill:none;stroke:var(--ln);stroke-width:6}.r .fg{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:163.4;stroke-dashoffset:163.4;transition:stroke-dashoffset 1.1s cubic-bezier(.2,.7,.2,1),stroke .4s}' +
     '.r b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 24px/1 "Barlow Condensed","Arial Narrow",sans-serif}' +
     '.t{display:flex;flex-direction:column;gap:3px;min-width:0}.h{display:flex;align-items:center;gap:6px;font:700 14px/1 "Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.6px}.h img{width:18px;height:18px;border-radius:4px}' +
-    '.n{color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:13px/1.3 "Hanken Grotesk",system-ui,sans-serif}.d{color:var(--fnt);font-size:10px}' +
+    '.n{color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:13px/1.3 "Hanken Grotesk",system-ui,sans-serif}.d{color:var(--fnt);font-size:11px}' +
     '.pulse{animation:pl 1.6s ease-in-out infinite}@keyframes pl{50%{opacity:.45}}' +
     '@media (prefers-reduced-motion:reduce){.w{animation:none}.r .fg{transition:stroke-dashoffset .15s linear}.pulse{animation:none}}'
   var ENT = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
