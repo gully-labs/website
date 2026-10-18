@@ -253,6 +253,7 @@ Object.assign(process.env, {
   TRACKER_SKIP_APIS: '1',
 })
 for (const id of [56, 4663, 1, 42161]) process.env[`GULLY_RPC_${id}`] = url(evm[id])
+for (const id of [8453, 10, 137, 43114]) process.env[`GULLY_RPC_${id}`] ??= 'http://127.0.0.1:9' // never reached: a closed port
 delete process.env.JUPITER_FEE_BPS
 delete process.env.JUPITER_FEE_ACCOUNT
 delete process.env.VITE_JUPITER_FEE_BPS

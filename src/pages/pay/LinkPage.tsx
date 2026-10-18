@@ -51,8 +51,11 @@ export function LinkPage() {
   )
 }
 
-/** The link's payer form: the amount (when open), the asset, and Continue; posts to `api` and goes to the invoice. */
-export function LinkForm({ link, api, brand, children }: { link: Pick<PayLink, 'id' | 'amount' | 'assets'>; api: string; brand: Brand; children?: ReactNode }) {
+/**
+ * The link's payer form: the amount (when open), the asset, and Continue; posts to `api` and goes to the invoice.
+ * `showFee` (merchant stores): the picker says per chain whether the store's fee rides inside the payment or is invoiced.
+ */
+export function LinkForm({ link, api, brand, showFee = false, children }: { link: Pick<PayLink, 'id' | 'amount' | 'assets'>; api: string; brand: Brand; showFee?: boolean; children?: ReactNode }) {
   const navigate = useNavigate()
   const [asset, setAsset] = useState<string | null>(link.assets.length === 1 ? link.assets[0].id : null)
   const [usd, setUsd] = useState('')
@@ -104,7 +107,7 @@ export function LinkForm({ link, api, brand, children }: { link: Pick<PayLink, '
       )}
       <div className="flex flex-col gap-3">
         <span className="text-[14px] font-semibold text-ink">Network and token</span>
-        <AssetPicker assets={link.assets} value={asset} onChange={setAsset} disabled={busy} />
+        <AssetPicker assets={link.assets} value={asset} onChange={setAsset} disabled={busy} showFee={showFee} />
       </div>
       {err && (
         <p className="m-0 text-[14px] text-error" role="alert">

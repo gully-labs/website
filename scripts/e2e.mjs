@@ -150,6 +150,8 @@ await step('landing', async () => {
   check('pricing: Gully Analytics plans show', await page.locator('#price-panel').getByText(/Starter/).first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
   await page.locator('#price-tab-services').click()
   check('pricing: services are quoted', await page.locator('#price-panel').getByText('Quoted').first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
+  await page.locator('#price-tab-api').click().catch(() => {})
+  check('pricing: the payment line names the new chains from /api/plans (OP Mainnet, Polygon, Avalanche)', await page.locator('#pricing').getByText(/OP Mainnet, Polygon or Avalanche/).first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
   // Header menus.
   await page.evaluate(() => window.scrollTo(0, 0))
   for (const [menu, item] of [['Products', /^Stock tracker/], ['Developers', /^API docs/], ['Company', /^Services/]]) {
@@ -418,6 +420,22 @@ await step('pay', async () => {
   await w.verify()
   await ctx.close()
 
+  // The chain picker on a checkout taking every asset: the three new chains, each with its own mark.
+  const invAll = await adminCall('/api/admin/invoices', { title: 'E2E: every chain', usd: '12' })
+  check('pay: an invoice with no asset list takes every chain (18 assets)', invAll.status === 201 && invAll.data.invoice.assets.length === 18, String(invAll.data?.invoice?.assets?.length))
+  const ctx3 = await newContext()
+  const p3 = await ctx3.newPage()
+  const w3 = watch(p3, 'pay page (every chain)')
+  await p3.goto(`${BASE}/pay/${invAll.data.invoice.id}`)
+  const picker = p3.getByRole('radiogroup', { name: 'Pay with' })
+  await picker.getByRole('radio', { name: 'USDC on Avalanche' }).waitFor({ timeout: 10_000 })
+  check('pay: the picker lists USDC on OP Mainnet, USDC on Polygon, POL on Polygon and AVAX on Avalanche', (await picker.getByRole('radio', { name: 'USDC on OP Mainnet' }).count()) === 1 && (await picker.getByRole('radio', { name: 'USDC on Polygon' }).count()) === 1 && (await picker.getByRole('radio', { name: 'POL on Polygon' }).count()) === 1 && (await picker.getByRole('radio', { name: 'AVAX on Avalanche' }).count()) === 1)
+  check('pay: the picker shows seven chain groups with their marks (real logo files, no letter tiles)', (await picker.locator('img[src^="/chains/"]').count()) >= 7 && (await picker.locator('img[src="/chains/optimism.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/polygon.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/avalanche.svg"]').count()) >= 1)
+  await picker.getByRole('radio', { name: 'USDC on Avalanche' }).click()
+  await p3.getByRole('img', { name: /^Wallet payment request: .* USDC on Avalanche/ }).waitFor({ timeout: 10_000 })
+  check('pay: a USDC on Avalanche quote shows its QR and says 2 confirmations', (await p3.getByText(/counts after 2 confirmations/).count()) > 0)
+  await w3.verify()
+  await ctx3.close()
   // The paid state, from the server's own shape with a payment on it (no chain in the suite can confirm one).
   const real = await (await fetch(`${BASE}/api/pay/${invId}`)).json()
   const usdc = real.invoice.assets.find((a) => a.id === 'base-usdc')

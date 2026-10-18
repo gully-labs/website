@@ -49,9 +49,10 @@ import { adminSetPlan, allPayments } from './billing.mjs'
 import { adminCancelInvoice, adminCreateInvoice, adminInvoiceDeliveries, adminListInvoices, adminRotateInvoiceWebhook, adminSetInvoiceWebhook, adminTestInvoiceWebhook } from './invoices.mjs'
 import { adminCreateLink, adminLinkDetail, adminListLinks, adminRotateLinkSecret, adminSetLinkActive, adminTestLinkWebhook, adminUpdateLink } from './paylinks.mjs'
 import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, setDefaultEndpoint, webhookStats } from './pay-webhooks.mjs'
-import { publicAssets } from './payments.mjs'
+import { CHAIN_LIST, publicAssets, rpc } from './payments.mjs'
+import { checkTreasuryChains, treasuryStatus } from './treasury-chains.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
-import { planOf, publicPlans } from './plans.mjs'
+import { planOf, publicPlans, treasury } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
 import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
 import { isFeeProxy } from './fee-proxy-guard.mjs'
@@ -216,6 +217,13 @@ export async function handleAdmin(req, res, url) {
     return json(res, 200, { address: a.address, blocked: a.blocked }), true
   }
 
+  // Treasury deployment gate (treasury-chains.mjs): read eth_getCode(treasury) on every chain now, e.g. right after
+  // deploying the Safe on a new chain, instead of waiting for the hourly pass.
+  if (p === '/api/admin/treasury/check') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    return json(res, 200, { treasury: await checkTreasuryChains({ rpc, chains: CHAIN_LIST, treasury }) }), true
+  }
+
   if (p === '/api/admin/billing') {
     const subscriptions = db.accounts
       .filter((a) => a.plan)
@@ -224,7 +232,7 @@ export async function handleAdmin(req, res, url) {
         return { address: a.address, plan: a.plan.id, since: a.plan.since ?? null, expiresAt: a.plan.expiresAt, source: a.plan.source ?? null, active: live.id === a.plan.id && !!live.expiresAt }
       })
       .sort((x, y) => y.expiresAt.localeCompare(x.expiresAt))
-    return json(res, 200, { subscriptions, payments: allPayments(), offer: adminOffer(), alerts: alertStats() }), true
+    return json(res, 200, { subscriptions, payments: allPayments(), offer: adminOffer(), alerts: alertStats(), treasury: treasuryStatus(CHAIN_LIST, treasury()) }), true
   }
 
   m = p.match(/^\/api\/admin\/accounts\/(0x[0-9a-f]{40})\/plan$/)

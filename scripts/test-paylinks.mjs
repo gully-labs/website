@@ -29,8 +29,10 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-paylinks-'))
 const ADMIN = crypto.randomBytes(24).toString('hex')
 const TREASURY = privateKeyToAccount(generatePrivateKey()).address.toLowerCase()
 const TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-const TOKENS = { baseUsdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', bnbUsdc: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d', bnbUsdt: '0x55d398326f99059ff775485246999027b3197955', ethUsdt: '0xdac17f958d2ee523a2206206994597c13d831ec7' }
-const FEEDS = { 8453: '0x71041dddad3595f9ced3dccfbe3d1f4b0a16bb70', 1: '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', 56: '0x0567f2323251f0aab15c8dfb1967e4e8a7d42aee', 42161: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612' }
+const TOKENS = { baseUsdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', bnbUsdc: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d', bnbUsdt: '0x55d398326f99059ff775485246999027b3197955', ethUsdt: '0xdac17f958d2ee523a2206206994597c13d831ec7', avaxUsdc: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e', opUsdt: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58' }
+const FEEDS = { 8453: '0x71041dddad3595f9ced3dccfbe3d1f4b0a16bb70', 1: '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', 56: '0x0567f2323251f0aab15c8dfb1967e4e8a7d42aee', 42161: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612', 10: '0x13e3ee699d1909e989722e753853ae30b17e08c5', 137: '0xab594600376ec9fd91f8e885dadf0ce036862de0', 43114: '0x0a77230d17318075983913bc2145db16c7366156' }
+/** eth_getCode answers for the treasury per chain ('0x' = none: an EOA treasury to start with). */
+const treasuryCode = {}
 
 const t = makeChecker()
 const { check } = t
@@ -60,6 +62,7 @@ function makeChain(chainId, answer) {
       let result = null
       if (q.method === 'eth_chainId') result = hex(chainId)
       else if (q.method === 'eth_blockNumber') result = hex(c.head)
+      else if (q.method === 'eth_getCode') result = String(q.params[0]).toLowerCase() === TREASURY ? (treasuryCode[chainId] ?? '0x') : '0x'
       else if (q.method === 'eth_getTransactionReceipt') result = c.receipts.get(q.params[0]) ?? null
       else if (q.method === 'eth_getTransactionByHash') result = c.txs.get(q.params[0]) ?? null
       else if (q.method === 'eth_getBlockByNumber') {
@@ -76,9 +79,9 @@ function makeChain(chainId, answer) {
   return c
 }
 
-const chains = { 8453: makeChain(8453, 2_400_00000000n), 1: makeChain(1, 2_500_00000000n), 56: makeChain(56, 700_00000000n), 42161: makeChain(42161, 2_450_00000000n) }
+const chains = { 8453: makeChain(8453, 2_400_00000000n), 1: makeChain(1, 2_500_00000000n), 56: makeChain(56, 700_00000000n), 42161: makeChain(42161, 2_450_00000000n), 10: makeChain(10, 2_400_00000000n), 137: makeChain(137, 9_000000n), 43114: makeChain(43114, 10_00000000n) }
 for (const c of Object.values(chains)) await new Promise((r) => c.server.listen(0, '127.0.0.1', r))
-const [base, eth, bnb] = [chains[8453], chains[1], chains[56]]
+const [base, eth, bnb, avax] = [chains[8453], chains[1], chains[56], chains[43114]]
 
 /* ----------------------------------------------------- merchant receiver --- */
 
@@ -148,6 +151,10 @@ try {
     ['base-eth', 20_416_667_000_004_321n, `ethereum:${T}@8453?value=20416667000004321`],
     ['bnb-bnb', 70_000_000_001_000_000n, `ethereum:${T}@56?value=70000000001000000`],
     ['arb-eth', 1n, `ethereum:${T}@42161?value=1`],
+    ['avax-usdc', 12_000_321n, `ethereum:${getAddress(TOKENS.avaxUsdc)}@43114/transfer?address=${T}&uint256=12000321`],
+    ['op-usdt', 5_000_007n, `ethereum:${getAddress(TOKENS.opUsdt)}@10/transfer?address=${T}&uint256=5000007`],
+    ['polygon-pol', 130_000_000_001_000_000_000n, `ethereum:${T}@137?value=130000000001000000000`],
+    ['avax-avax', 1_230_000_001_000_000_000n, `ethereum:${T}@43114?value=1230000001000000000`],
   ]
   for (const [id, units, want] of cases) check(`EIP-681 URI for ${id} uses exact base units`, paymentUri(assetById(id), TREASURY, units) === want, paymentUri(assetById(id), TREASURY, units))
   check('EIP-681: an amount beyond 2^53 keeps every digit (BigInt, no float)', paymentUri(assetById('bnb-usdt'), TREASURY, '9007199254740993000000001').endsWith('uint256=9007199254740993000000001'))
@@ -185,6 +192,32 @@ try {
   const ssrfDefault2 = await admin('/api/admin/pay-webhooks/default', 'POST', { url: 'https://172.16.0.1/hook' })
   check('SSRF: the default endpoint refuses a private address too', ssrfDefault2.status === 400, ssrfDefault2.data?.error)
   await admin('/api/admin/pay-webhooks/default', 'POST', { url: null })
+
+  /* ------------------------------------ new chains (2026-10-18) and the treasury gate --- */
+  const cN = await admin('/api/admin/paylinks', 'POST', { title: 'Avalanche link', amount: { type: 'fixed', usd: '12' }, assets: ['avax-usdc', 'polygon-pol', 'op-usdt'] })
+  const linkN = cN.data?.link
+  check('a link may take the new chains\u2019 assets (avax-usdc, polygon-pol, op-usdt)', cN.status === 201 && (await anon.call(`/api/pay/l/${linkN.id}`)).data.link.assets.map((a) => a.id).join() === 'op-usdt,polygon-pol,avax-usdc', cN.data?.error)
+  const invN = (await payPost(`/api/pay/l/${linkN.id}/invoice`, { asset: 'avax-usdc' }, '198.51.100.31')).data?.invoice
+  const qN = (await payPost(`/api/pay/${invN.id}/quote`, { asset: 'avax-usdc' }, '198.51.100.31')).data?.quote
+  check('a link invoice quoted in USDC on Avalanche: 2 confirmations, Snowtrace, the treasury as recipient', !!qN && qN.chainId === 43114 && qN.confirmations === 2 && qN.treasury === TREASURY && qN.uri.startsWith(`ethereum:${getAddress(TOKENS.avaxUsdc)}@43114/transfer?address=`), JSON.stringify(qN))
+  let rN = await payPost(`/api/pay/${invN.id}/verify`, { quoteId: qN.id, txHash: avax.add({ from: '0x' + '43'.repeat(20), value: BigInt(qN.amountRaw), token: TOKENS.avaxUsdc }) }, '198.51.100.31')
+  check('USDC on Avalanche pays the link invoice', rN.status === 200 && rN.data.invoice.status === 'paid' && /snowtrace\.io\/tx\//.test(rN.data.invoice.payment.txUrl), rN.data?.error)
+  // The treasury turns out to be a Safe deployed on the four original chains only: the link's new-chain assets vanish
+  // from its public page and no quote is given there, until the Safe is deployed on that chain too.
+  for (const id of [8453, 1, 56, 42161]) treasuryCode[id] = '0x6080604052'
+  await admin('/api/admin/treasury/check', 'POST')
+  const pubN = (await anon.call(`/api/pay/l/${linkN.id}`)).data.link
+  check('gate: a link whose assets are all on closed chains shows no asset (treasury not deployed there)', pubN.assets.length === 0, JSON.stringify(pubN.assets.map((a) => a.id)))
+  const invN2 = (await payPost(`/api/pay/l/${linkN.id}/invoice`, { asset: 'polygon-pol' }, '198.51.100.32')).data?.invoice
+  rN = await payPost(`/api/pay/${invN2.id}/quote`, { asset: 'polygon-pol' }, '198.51.100.32')
+  check('gate: a quote on a closed chain is refused (409) with the chain named', rN.status === 409 && /Polygon.*not deployed/.test(rN.data?.error ?? ''), `${rN.status} ${rN.data?.error ?? ''}`)
+  treasuryCode[137] = '0x6080604052'
+  await admin('/api/admin/treasury/check', 'POST')
+  rN = await payPost(`/api/pay/${invN2.id}/quote`, { asset: 'polygon-pol' }, '198.51.100.32')
+  check('gate: the Safe deployed on Polygon reopens POL quotes there (MATIC / USD feed)', rN.status === 200 && rN.data.quote.price?.description === 'MATIC / USD', `${rN.status} ${rN.data?.error ?? ''}`)
+  for (const id of Object.keys(treasuryCode)) delete treasuryCode[id]
+  await admin('/api/admin/treasury/check', 'POST')
+  check('gate: an EOA treasury again, every asset back on the link page', (await anon.call(`/api/pay/l/${linkN.id}`)).data.link.assets.length === 3)
 
   /* ------------------------------------------------------- fixed link --- */
   const c1 = await admin('/api/admin/paylinks', 'POST', { title: 'Chain Kit setup', description: 'One-off setup of your explorer.', amount: { type: 'fixed', usd: '1500' }, assets: ['base-usdc', 'bnb-usdc', 'base-eth'], webhookUrl: HOOK('/fixed') })
@@ -251,7 +284,7 @@ try {
   /* ------------------------------------------------------- open link --- */
   const c2 = await admin('/api/admin/paylinks', 'POST', { title: 'Tip jar', amount: { type: 'open', min: '5', max: '250.50' } })
   const open = c2.data.link
-  check('admin creates an open link with bounds', c2.status === 201 && open.amount.type === 'open' && open.amount.min === '5' && open.amount.max === '250.50' && open.assets.length === 10 && c2.data.secret === null)
+  check('admin creates an open link with bounds', c2.status === 201 && open.amount.type === 'open' && open.amount.min === '5' && open.amount.max === '250.50' && open.assets.length === 18 && c2.data.secret === null)
   r = await payPost(`/api/pay/l/${open.id}/invoice`, {}, '198.51.100.20')
   check('refused: an open link with no amount', r.status === 400, r.data?.error)
   r = await payPost(`/api/pay/l/${open.id}/invoice`, { usd: '4.99' }, '198.51.100.20')
@@ -279,7 +312,7 @@ try {
   check('admin activates it again', (await admin(`/api/admin/paylinks/${open.id}/activate`, 'POST')).data?.link?.state === 'active')
 
   const edited = await admin(`/api/admin/paylinks/${open.id}`, 'POST', { title: 'Tip jar (edited)', amount: { type: 'open', min: '1', max: '100' } })
-  check('admin edits a link (title and bounds); the rest is kept', edited.status === 200 && edited.data.link.title === 'Tip jar (edited)' && edited.data.link.amount.max === '100' && edited.data.link.assets.length === 10)
+  check('admin edits a link (title and bounds); the rest is kept', edited.status === 200 && edited.data.link.title === 'Tip jar (edited)' && edited.data.link.amount.max === '100' && edited.data.link.assets.length === 18)
   check('an edit with a bad value is refused', (await admin(`/api/admin/paylinks/${open.id}`, 'POST', { maxUses: -1 })).status === 400)
 
   const c3 = await admin('/api/admin/paylinks', 'POST', { title: 'Soon gone', amount: { type: 'fixed', usd: '9' }, expiresAt: new Date(Date.now() + 86_400_000).toISOString() })

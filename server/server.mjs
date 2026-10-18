@@ -24,6 +24,9 @@ import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
+import { CHAIN_LIST, rpc } from './payments.mjs'
+import { treasury } from './plans.mjs'
+import { startTreasuryWatch } from './treasury-chains.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
 import { handleSolana } from './solana-routes.mjs'
@@ -411,6 +414,9 @@ function startLoops() {
   // Hourly balance check of every fee-proxy contract (fee-proxy-monitor.mjs): non-zero = a third-party mis-send.
   startFeeProxyMonitor()
 }
+// The treasury deployment gate (treasury-chains.mjs) runs in standby too: a standby answers /api/plans and quotes,
+// so it must know on which chains the Safe treasury exists. Read-only (eth_getCode), hourly, timers unref'd.
+startTreasuryWatch({ rpc, chains: CHAIN_LIST, treasury })
 const PROMOTED = path.join(DATA_DIR, `.promoted-${(process.env.HOSTNAME ?? 'local').replace(/[^\w-]/g, '')}`)
 if (process.env.GULLY_STANDBY !== '1' || fs.existsSync(PROMOTED)) startLoops()
 else console.log('standby: serving requests; background loops wait for SIGUSR2 (ops/deploy.sh)')
