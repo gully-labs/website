@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
+import { GhostChart } from '../components/charts/GhostChart'
 import { EChart } from '../components/charts/EChart'
 import { areaPreset, axisTooltip, barsPreset, C, CHART_H, linePreset, livePoint, PALETTE, sparklinePreset, tipHtml } from '../components/charts/chartPresets'
 import { NF } from '../components/charts/number-formats'
@@ -81,7 +82,7 @@ function Dot({ tone }: { tone: 'up' | 'warn' | 'down' | 'off' }) {
 
 function Panel({ title, aside, children }: { title: string; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-panel border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">{title}</span>
         {aside && <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-2">{aside}</span>}
@@ -91,17 +92,9 @@ function Panel({ title, aside, children }: { title: string; aside?: React.ReactN
   )
 }
 
-/** The animated empty state: a scanning band and a pulsing live marker, with a plain sentence. */
+/** The empty state: the kit's GhostChart (a ghosted, animated series), with a plain sentence. */
 export function EmptyPulse({ text, h = 120 }: { text: string; h?: number }) {
-  return (
-    <div className="relative overflow-hidden rounded-input bg-surface-deep" style={{ height: h }}>
-      <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.12),transparent)]" style={{ animation: 'gl-scan 2.2s linear infinite' }} />
-      <span className="absolute inset-0 flex items-center justify-center gap-2 px-4 text-center font-mono text-[12px] text-muted">
-        <span className="size-[8px] flex-none rounded-full bg-gold" style={{ animation: 'gl-live-pulse 1.8s ease-in-out infinite' }} />
-        {text}
-      </span>
-    </div>
-  )
+  return <GhostChart label={text} height={h} />
 }
 
 function Stat({ label, children, note }: { label: string; children: React.ReactNode; note?: string }) {
@@ -297,7 +290,7 @@ export function StatusChip({ id, label }: { id: string; label: string }) {
   const { data, failed } = useStatusBody()
   const c = data?.components.find((x) => x.id === id) ?? null
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-panel border border-line bg-surface px-4 py-3 font-mono text-[12px] text-ink-2">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-line bg-surface px-4 py-3 font-mono text-[12px] text-ink-2">
       <span className="text-[11px] tracking-[1px] text-faint">{label}</span>
       {c ? (
         <>

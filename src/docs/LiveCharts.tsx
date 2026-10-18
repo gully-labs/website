@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { PlanLimits } from '../components/charts/PlanLimits'
 import { ChartBox } from '../components/charts/ChartSkeleton'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
+import { GhostChart } from '../components/charts/GhostChart'
 import { EChart } from '../components/charts/EChart'
 import { areaPreset, axisTooltip, barsPreset, C, CHART_H, itemTooltip, livePoint, PALETTE, sparklinePreset, tipHtml } from '../components/charts/chartPresets'
 import { NF } from '../components/charts/number-formats'
@@ -95,7 +96,7 @@ function LatencyTile({ path, label, probes }: { path: string; label: string; pro
   const option = useMemo(() => sparklinePreset({ data, labels: good.map((p) => hhmmss(p.at)), color: state === 'down' ? C.error : C.gold, fmt: (v) => `${v} ms` }), [good, data, state])
   const median = data.length ? [...data].sort((a, b) => a - b)[Math.floor(data.length / 2)] : null
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-panel border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-line bg-surface px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <span className="font-mono text-[12px] text-ink">GET {path}</span>
         <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-2">
@@ -115,7 +116,7 @@ function LatencyTile({ path, label, probes }: { path: string; label: string; pro
       {data.length >= 2 ? (
         <EChart option={option} height={CHART_H.spark} label={`Response time of ${path} from this browser, last ${data.length} checks`} skeleton="line" steps={{ count: data.length }} />
       ) : (
-        <div className="relative h-[44px] overflow-hidden rounded-input bg-surface-deep">
+        <div className="relative h-[44px] overflow-hidden rounded-sm bg-surface-deep">
           <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.12),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
           <span className="absolute inset-0 grid place-items-center font-mono text-[11px] text-faint">collecting a series…</span>
         </div>
@@ -210,7 +211,7 @@ function WidestGaps({ rows, at, failed }: { rows: Row[] | null; at: string | nul
     [top],
   )
   return (
-    <div className="flex flex-col gap-2 rounded-panel border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">WIDEST TRUSTED GAPS NOW · LIVE FROM /api/tracker</span>
         <span className="font-mono text-[11px] text-dim">{at ? `built ${hhmmss(Date.parse(at))}` : rows ? 'time not tracked yet' : ''}</span>
@@ -281,7 +282,7 @@ export function PayCoverage() {
     }
   }, [chains, assets])
   return (
-    <div className="flex flex-col gap-2 rounded-panel border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">ACCEPTED NOW · LIVE FROM /api/plans</span>
         <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-2">
@@ -350,7 +351,7 @@ export function StatusRing() {
   )
   const failed = !rows && probes.length > 0 && !probes.some((p) => p.ok)
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-panel border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 items-center gap-4 rounded-lg border border-line bg-surface px-4 py-3">
       <div className="w-[120px] shrink-0">
         <EChart option={option} height={120} label="Tracker rows by status right now" skeleton="ring" error={failed ? 'unreadable' : undefined} />
       </div>
@@ -386,7 +387,7 @@ function useLive<T>(path: string, everyMs = 60_000, accept: (b: unknown) => bool
 /** The frame every docs chart below sits in: a mono caption, a right-hand note, the chart and a footnote. */
 function Frame({ caption, note, children, foot }: { caption: string; note?: ReactNode; children: ReactNode; foot?: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-panel border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-line bg-surface px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">{caption}</span>
         {note !== undefined && <span className="font-mono text-[11px] text-dim">{note}</span>}
@@ -409,12 +410,7 @@ function LiveDot({ on, children }: { on: boolean; children: ReactNode }) {
 
 /** The animated stand-in while a series is too short to draw (empty states still move). */
 function Scanning({ text, height = 120 }: { text: string; height?: number }) {
-  return (
-    <div className="relative grid place-items-center overflow-hidden rounded-input bg-surface-deep" style={{ height }}>
-      <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.12),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
-      <span className="relative px-4 text-center font-mono text-[12px] text-muted">{text}</span>
-    </div>
-  )
+  return <GhostChart label={text} height={height} />
 }
 
 const readNote = (data: unknown, failed: boolean, live: ReactNode) => (data ? live : failed ? 'unreadable' : <LiveDot on={false}>reading…</LiveDot>)
@@ -805,10 +801,10 @@ export function LaunchHealthChart() {
     () => ({
       grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
       xAxis: { type: 'value', min: 0, max: 100, splitLine: { lineStyle: { color: C.grid } } },
-      yAxis: { type: 'category', inverse: true, data: scored.map((l) => `${l.symbol ?? l.token.slice(0, 8)} · ${l.chainName}`), axisTick: { show: false } },
+      yAxis: { type: 'category', inverse: true, data: scored.map((l) => `${l.symbol ?? l.token.slice(0, 8)} · ${l.chainName ?? 'chain n/a'}`), axisTick: { show: false } },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const l = scored[ps[0]?.dataIndex ?? -1]
-        return l ? tipHtml({ title: `${l.symbol ?? 'launch'} on ${l.chainName}`, rows: [{ name: 'health', value: `${l.health?.score} / 100`, color: LEVEL_COLOR[l.health?.level ?? ''] ?? C.muted }, { name: 'level', value: l.health?.level ?? 'not tracked yet' }, { name: 'launched', value: `${l.createdAt.slice(0, 16).replace('T', ' ')} UTC` }], note: l.riskLine ?? l.health?.verdict }) : ''
+        return l ? tipHtml({ title: `${l.symbol ?? 'launch'} on ${l.chainName ?? 'an unnamed chain'}`, rows: [{ name: 'health', value: `${l.health?.score} / 100`, color: LEVEL_COLOR[l.health?.level ?? ''] ?? C.muted }, { name: 'level', value: l.health?.level ?? 'not tracked yet' }, { name: 'launched', value: `${l.createdAt ? `${l.createdAt.slice(0, 16).replace('T', ' ')} UTC` : 'not tracked yet'}` }], note: l.riskLine ?? l.health?.verdict }) : ''
       }, 'shadow'),
       series: [
         {

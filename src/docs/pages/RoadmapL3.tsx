@@ -41,7 +41,7 @@ export function RoadmapL3() {
           ]}
         />
         <P>
-          The Gully L3 is one track of the <DocLink to="roadmap">Roadmap</DocLink>, next to Audits & Security.
+          The Gully L3 is one track of the <DocLink to="roadmap">Roadmap</DocLink>, next to Gully Security.
         </P>
       </Section>
 

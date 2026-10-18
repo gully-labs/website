@@ -98,6 +98,9 @@ export function SolanaDocs() {
           <li>A signature can be used for one payment only, across every chain.</li>
         </List>
         <Callout label="OFF UNTIL SET">Solana checkout is on only when the owner has set the Solana treasury wallet. Unset, Solana assets are not offered and every page says so. There is never a fallback address.</Callout>
+        <P>
+          The full flow is on the <DocLink to="solana-pay">Solana Pay</DocLink> page.
+        </P>
       </Section>
 
       <Section id="swaps" title="Jupiter swaps">

@@ -128,7 +128,7 @@ export function GullyPayMerchantsDocs() {
       <Section id="wallets" title="Receiving wallets">
         <List>
           <li>A mixed-case address must match its EIP-55 checksum exactly, so a mistyped character cannot slip through. An all-lower-case (or all-upper-case) address carries no checksum: it is accepted and stored in its checksummed form.</li>
-          <li>We read the chain: an address with no code is a wallet (EOA); with code, a contract (a Safe or another smart account); an EIP-7702 delegated EOA is shown as such.</li>
+          <li>We read the chain: an address with no code is a plain wallet (an EOA, an externally owned account: one controlled by a private key); with code, a contract (a Safe or another smart account); an EIP-7702 delegated EOA (a plain wallet that has lent its signing to a contract’s code) is shown as such.</li>
           <li>
             <b>A contract must be deployed on a chain before that chain can be turned on.</b> A Safe's address can exist on a chain before the Safe is deployed there; a payment to it then may be lost. If you say the wallet is a contract, or it is a contract on another of our chains, and it has no code on this one, the chain stays off. Deploy it, then press <b>Check again</b>, or leave it: we read every undeployed wallet again each hour, and the chain switches on by itself once the contract is there (unless you turned it off).
           </li>

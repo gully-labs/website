@@ -81,7 +81,7 @@ export function ApiKeys() {
         <List>
           <li>Keep the key on a server or in an environment variable. Anything shipped to a browser, an app bundle or a public repository is public.</li>
           <li>Do not put a key in the widget snippet: the widget does not read one.</li>
-          <li>If a key is exposed, rotate or revoke it on the developers dashboard; the old secret stops working at once.</li>
+          <li>If a key is exposed, rotate or revoke it in the Gully Labs app; the old secret stops working at once.</li>
         </List>
         <Callout label="TIP" tone="plain">
           To serve many browser users, call the API from your server with your key and cache the answer for a minute. Your users then never touch the limit.
