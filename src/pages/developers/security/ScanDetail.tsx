@@ -4,7 +4,7 @@ import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { QuotePay } from '../../../components/pay/QuotePay'
 import { ReportBody } from '../../../components/security/ReportBody'
 import { ScanProgress } from '../../../components/security/ScanProgress'
-import { fmtWhen, isActive, KIND_LABEL, STATUS_LABEL, type ScanView } from '../../../components/security/types'
+import { chainLogoKey, fmtWhen, isActive, KIND_LABEL, STATUS_LABEL, type ScanView } from '../../../components/security/types'
 import { copyWithToast, toastError, toastSuccess } from '../../../components/ui/toast'
 import { usePlans } from '../../../lib/plans'
 import { SITE_URL, isLocalHost } from '../../../site-host'
@@ -32,7 +32,7 @@ export function StatusChip({ s }: { s: ScanView['status'] }) {
 }
 
 export function TargetMark({ scan, size = 20 }: { scan: Pick<ScanView, 'input'>; size?: 16 | 20 | 24 }) {
-  if (scan.input.kind === 'address' && scan.input.chain) return <ChainLogo chain={scan.input.chain} size={size} />
+  if (scan.input.kind === 'address' && scan.input.chain) return <ChainLogo chain={chainLogoKey(scan.input.chain)} size={size} />
   return null
 }
 
@@ -86,6 +86,11 @@ export function ScanDetail({ id, canPublish, onBack, backLabel = 'All scans' }: 
   }
   const publicUrl = scan.publicUrl ? site(scan.publicUrl) : null
   const running = isActive(scan.status) || scan.status === 'awaiting_payment'
+  const duplicateNote = scan.duplicate ? (
+    <p className="m-0 rounded-input border border-gold-line px-3 py-2 text-[13px] text-ink-2" role="status" data-testid="duplicate">
+      You are already scanning this; here it is. Nothing new was started or charged.
+    </p>
+  ) : null
 
   return (
     <div className="flex flex-col gap-4" data-testid="scan-detail" data-scan={scan.id}>
@@ -108,9 +113,10 @@ export function ScanDetail({ id, canPublish, onBack, backLabel = 'All scans' }: 
           <StatusChip s={scan.status} />
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             {scan.status === 'done' && (
-              <button type="button" onClick={() => window.print()} className={pillSm} data-testid="export-pdf">
-                <Printer size={14} aria-hidden /> Export PDF
-              </button>
+              <a href={`/api/developer/security/scans/${scan.id}/report.html`} target="_blank" rel="noopener noreferrer" className={pillSm} data-testid="export-pdf" title="The print-ready report: print it or save it as PDF">
+                <Printer size={14} aria-hidden /> Export PDF <ArrowUpRight size={13} aria-hidden />
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
             )}
             {running && (
               <Can cat="security" what="cancel scans">
@@ -163,6 +169,7 @@ export function ScanDetail({ id, canPublish, onBack, backLabel = 'All scans' }: 
         )}
       </header>
 
+      {duplicateNote}
       {scan.status === 'awaiting_payment' && (
         <section className={panel} aria-label="Pay for this scan">
           {scan.startError && <ErrorLine>Paid, but the scan could not start yet: {scan.startError}. It is retried automatically.</ErrorLine>}
@@ -171,15 +178,10 @@ export function ScanDetail({ id, canPublish, onBack, backLabel = 'All scans' }: 
       )}
       {scan.status !== 'awaiting_payment' && scan.status !== 'done' && (
         <section className={panel} aria-label="Progress">
-          <ScanProgress status={scan.status} pct={scan.progress?.pct ?? null} startedAt={scan.startedAt} failure={scan.failure} />
+          <ScanProgress status={scan.status} pct={scan.progress?.pct ?? null} message={scan.progress?.message} startedAt={scan.startedAt} failure={scan.failure} />
         </section>
       )}
-      {scan.status === 'done' && (scan.report ? <ReportBody report={scan.report} showPoc /> : <ErrorLine onRetry={reload}>The scan is done but its report could not be read from the engine.</ErrorLine>)}
-      {scan.status === 'done' && (
-        <p className="m-0 hidden text-[11px] text-[#333] print:block">
-          Gully Labs AI Security Scan report {scan.id}, generated {fmtWhen(scan.completedAt)}. Automated scan; not an audit.
-        </p>
-      )}
+      {scan.status === 'done' && (scan.report ? <ReportBody report={scan.report} /> : <ErrorLine onRetry={reload}>The scan is done but its report could not be read from the engine.</ErrorLine>)}
       {!running && scan.status !== 'done' && onBack && (
         <button type="button" onClick={onBack} className={`${pillLine} self-start`}>
           <ArrowLeft size={14} aria-hidden /> {backLabel}

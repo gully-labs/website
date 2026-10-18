@@ -14,6 +14,7 @@
 //                                                 invoice to pay (Gully Pay, invoices.mjs); the scan starts once paid
 //   GET  /api/developer/security/scans/:id        one scan, with its report once done
 //   GET  /api/developer/security/scans/:id/events Server-Sent Events: `scan` (the view) on every change, ends when done
+//   GET  /api/developer/security/scans/:id/report.html  the engine's print-ready HTML report (Export PDF)
 //   POST /api/developer/security/scans/:id/cancel  before payment: cancels the invoice; running: asks the engine
 //   POST /api/developer/security/scans/:id/publish { published, indexable? }  owner or admin only; done scans only.
 //                                                 A snapshot of the report (without draft PoCs) goes public at
@@ -21,6 +22,7 @@
 // Public:
 //   GET  /api/security/reports                    published reports, newest first
 //   GET  /api/security/reports/:id                one published report (404 unless published)
+//   GET  /api/security/reports/:id/report.html    its print-ready HTML (the engine's render of the public snapshot)
 //   GET  /api/security/stats                      real counts of scans run, per day for 30 days (the /security counter)
 //   POST /api/security/review-requests            { tier: 'review'|'audit', name, email, project, scope, … } -> 201
 //                                                 stored, listed in the admin enquiries and Security card, and sent
@@ -32,12 +34,13 @@
 //
 // Quotas: SECURITY.scan.freePerMonth[plan] free scans per UTC month per workspace (a scan that failed does not
 // count), at most SECURITY.scan.maxActive running at once. Payment: one Gully Pay invoice per paid scan.
+// Every engine call goes through security-engine.mjs; the input's shapes through security-contract.mjs.
 
 import fs from 'node:fs'
 import path from 'node:path'
 import { adminCancelInvoice, adminInvoice, createInvoiceRecord, invoicePaidHooks } from './invoices.mjs'
-import { ACTIVE_STATUSES, checkUploadName, normaliseInput, SCAN_CHAINS, scopeLabel, SEVERITIES, TERMINAL_STATUSES } from './security-contract.mjs'
-import { engineInstalled, readScan, startScan, stopScan, watchScan } from './security-engine.mjs'
+import { ACTIVE_STATUSES, checkUploadName, MODE_LABELS, normaliseInput, SCAN_CHAINS, scopeLabel, SEVERITIES, TERMINAL_STATUSES, toEngineInput } from './security-contract.mjs'
+import { checkInput, readReport, readScan, renderReportHtml, startScan, status as engineStatus, stopScan, watchScan } from './security-engine.mjs'
 import { findJob, isJobId, jobs, published, publishedJobs, reviews, save } from './security-store.mjs'
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { ASSET_IDS } from './payments.mjs'
@@ -92,25 +95,40 @@ export function quotaOf(workspace) {
 
 const countsOf = (report) => Object.fromEntries(SEVERITIES.map((s) => [s, (report?.findings ?? []).filter((f) => f.severity === s).length]))
 
-/** Copies what the engine says into the job's mirror (status, completion, counts). Saves when it changed. */
+/** Copies what the engine says into the job's mirror (status, completion, counts, mode). Saves when it changed. */
 function mirror(job, scan) {
   if (!scan) return
   let changed = false
-  if (scan.status && scan.status !== job.status) {
-    job.status = scan.status
-    job.statusAt = new Date().toISOString()
-    changed = true
+  const set = (k, v) => {
+    if (v !== undefined && v !== null && JSON.stringify(job[k]) !== JSON.stringify(v)) {
+      job[k] = v
+      changed = true
+    }
   }
-  if (TERMINAL_STATUSES.includes(scan.status) && !job.completedAt) {
-    job.completedAt = scan.updatedAt ?? new Date().toISOString()
-    changed = true
-  }
-  if (scan.status === 'done' && scan.report && !job.counts) {
-    job.counts = countsOf(scan.report)
-    changed = true
+  if (scan.status && scan.status !== job.status) set('statusAt', new Date().toISOString())
+  set('status', scan.status)
+  if (TERMINAL_STATUSES.includes(scan.status)) set('completedAt', job.completedAt ?? scan.finishedAt ?? scan.updatedAt ?? new Date().toISOString())
+  if (scan.status === 'done') {
+    set('counts', scan.counts)
+    set('mode', scan.mode)
   }
   if (changed) save()
 }
+
+/** The engine's error code as a sentence (failed scans). */
+const FAILURE = {
+  'nothing-to-scan': 'There was nothing to scan: no source files in scope.',
+  'scope-too-large': 'The code in scope is larger than a scan covers. Scan a smaller part, or ask for a Security Review.',
+  'repo-not-found': 'The repository was not found on GitHub.',
+  'repo-private': 'The repository is private. Only public repositories can be scanned.',
+  'commit-not-found': 'That commit or branch was not found in the repository.',
+  'too-large': 'The code is larger than the scanner accepts.',
+  'explorers-unavailable': 'The block explorers could not be reached to read the contract source. Try again later.',
+  'engine-unavailable': 'Scanning was not available (no AI and no static tools). Try again later.',
+  timeout: 'The scan took too long and was stopped.',
+  'too-many-attempts': 'The scan was interrupted too many times.',
+}
+const failureText = (scan) => (scan?.error ? (FAILURE[scan.error.code] ?? `The scan failed: ${scan.error.message}`) : null)
 
 function paymentView(job) {
   if (!job.invoiceId) return null
@@ -130,7 +148,10 @@ function jobView(job, scan, { full = false } = {}) {
     free: !!job.free,
     priceUsd: usd(job.priceCents ?? '0'),
     payment: paymentView(job),
-    progress: scan?.progress ?? null,
+    progress: scan && typeof scan.progress === 'number' ? { pct: Math.round(scan.progress * 100), message: scan.message ?? '' } : null,
+    mode: scan?.mode ?? job.mode ?? null,
+    label: (scan?.mode ?? job.mode) ? MODE_LABELS[scan?.mode ?? job.mode] : null,
+    duplicate: !!job.duplicate,
     createdAt: job.createdAt,
     startedAt: job.startedAt ?? null,
     updatedAt: scan?.updatedAt ?? job.statusAt ?? job.createdAt,
@@ -141,7 +162,7 @@ function jobView(job, scan, { full = false } = {}) {
     indexable: !!job.indexable,
     publicUrl: job.published ? `/security/reports/${job.id}` : null,
     startError: job.state === 'awaiting_payment' && job.startError ? job.startError : null,
-    ...(full ? { report: status === 'done' ? (scan?.report ?? null) : null, failure: status === 'failed' ? (scan?.error ?? scan?.report?.summary ?? null) : null } : {}),
+    ...(full ? { report: status === 'done' ? readReport(job.scanId) : null, failure: status === 'failed' ? failureText(scan) : null } : {}),
   }
 }
 
@@ -166,31 +187,45 @@ function uploadPath(job) {
   return path.join(UPLOADS, `${job.id}.bin`)
 }
 
+/** The engine's refusal (ScanInputError { code, status }) in plain words, with the HTTP status to answer. */
+export function engineRefusal(e) {
+  const status = [400, 413, 429, 503].includes(Number(e?.status)) ? Number(e.status) : 503
+  const msg = String(e?.message ?? e).replace(/\.$/, '')
+  const error = status === 400 ? `The scan engine cannot take this input: ${msg}.` : status === 413 ? `The upload is too large for the scan engine: ${msg}.` : status === 429 ? `Scan limit reached: ${msg}. Try again later.` : `Scanning is not available right now: ${msg}.`
+  return { status, code: e?.code ?? 'engine-error', error }
+}
+
+/** The plan's limits passed to the engine (the running cap; the engine keeps its own daily cap too). */
+const limitsFor = () => ({ maxQueued: SECURITY.scan.maxActive })
+
 /** Starts the engine's scan for a job (free, or paid). Resolves true when it started. */
 async function startJob(job) {
   if (job.scanId || starting.has(job.id)) return !!job.scanId
   starting.add(job.id)
   try {
     let upload = null
-    if (job.input.kind === 'upload') {
-      const bytes = fs.readFileSync(uploadPath(job))
-      upload = { name: job.upload?.name ?? 'upload', size: bytes.length, bytes }
-    }
-    const scan = await startScan({ workspace: job.workspace, input: job.input, upload })
+    if (job.input.kind === 'upload') upload = { name: job.upload?.name ?? 'upload.zip', bytes: fs.readFileSync(uploadPath(job)) }
+    const scan = await startScan({ workspace: job.workspace, input: toEngineInput(job.input, upload), limits: limitsFor() })
     if (!scan?.id) throw new Error('The scan engine returned no scan.')
     job.scanId = scan.id
+    if (scan.duplicate) job.duplicate = true
     job.state = 'started'
     job.startedAt = new Date().toISOString()
     job.status = scan.status ?? 'queued'
     job.statusAt = job.startedAt
     delete job.startError
+    delete job.startErrorCode
+    delete job.startErrorStatus
     save()
     if (upload) fs.rm(uploadPath(job), { force: true }, () => {})
     return true
   } catch (e) {
-    job.startError = String(e?.message ?? e).slice(0, 300)
+    const r = engineRefusal(e)
+    job.startError = r.error
+    job.startErrorCode = r.code
+    job.startErrorStatus = r.status
     save()
-    console.error(`security: scan ${job.id} could not start:`, job.startError)
+    console.error(`security: scan ${job.id} could not start: ${r.code}`)
     return false
   } finally {
     starting.delete(job.id)
@@ -225,13 +260,13 @@ setInterval(async () => {
 /* ---------------------------------------------------------------- create --- */
 
 function readUpload(raw) {
-  if (!raw || typeof raw !== 'object') return { ok: false, error: 'Attach the code to scan: a .zip, .tar.gz or a single source file.' }
+  if (!raw || typeof raw !== 'object') return { ok: false, error: 'Attach the code to scan: a .zip of Solidity files or a single .sol file.' }
   const name = String(raw.name ?? '').trim()
-  if (!checkUploadName(name)) return { ok: false, error: 'The file must be a .zip, .tar, .tar.gz, .tgz, .sol, .vy, .rs or .move with a plain name.' }
+  if (!checkUploadName(name)) return { ok: false, error: 'The file must be a .zip of Solidity files or a single .sol file, with a plain name.' }
   if (typeof raw.data !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(raw.data)) return { ok: false, error: 'The file could not be read. Pick it again.' }
   const bytes = Buffer.from(raw.data, 'base64')
   if (!bytes.length) return { ok: false, error: 'The file is empty.' }
-  if (bytes.length > SECURITY.scan.maxUploadBytes) return { ok: false, error: `The file is larger than ${Math.round(SECURITY.scan.maxUploadBytes / 1_000_000)} MB. Scan the repository instead.` }
+  if (bytes.length > SECURITY.scan.maxUploadBytes) return { ok: false, status: 413, error: `The file is larger than ${Math.round(SECURITY.scan.maxUploadBytes / 1_000_000)} MB. Scan the repository instead.` }
   return { ok: true, name, bytes }
 }
 
@@ -245,10 +280,24 @@ async function createJob(req, res, ctx) {
   let upload = null
   if (n.input.kind === 'upload') {
     upload = readUpload(body.upload)
-    if (!upload.ok) return json(res, 400, { error: upload.error }), true
+    if (!upload.ok) return json(res, upload.status ?? 400, { error: upload.error }), true
+    n.input.filename = upload.name
   }
-  if (!(await engineInstalled())) return json(res, 503, { error: 'Scans cannot run yet: the scan engine is not installed on this server. Nothing was charged.', code: 'engine-missing' }), true
+  // The engine checks the input itself before anything is charged or queued.
+  try {
+    checkInput(toEngineInput(n.input, upload ? { name: upload.name, bytes: upload.bytes } : null))
+  } catch (e) {
+    const r = engineRefusal(e)
+    return json(res, r.status, { error: r.error, code: r.code }), true
+  }
+  // Anything but a contract address needs the AI or the static-tools worker (an unverified address still gets
+  // its bytecode notes).
+  const es = await engineStatus()
+  if (n.input.kind !== 'address' && !es.ai && !es.worker?.reachable) return json(res, 503, { error: 'Scans of code cannot run right now: neither the AI review nor the static-tools worker is available on this server. Nothing was charged.', code: 'engine-unavailable' }), true
   await syncWorkspace(workspace)
+  // The same target already scanning in this workspace: that scan, not a second one.
+  const same = jobs().find((j) => j.workspace === workspace && JSON.stringify(j.input) === JSON.stringify(n.input) && (j.state === 'starting' || j.state === 'awaiting_payment' || (j.state === 'started' && ACTIVE_STATUSES.includes(j.status))))
+  if (same) return json(res, 200, { scan: { ...(await viewOf(same, { full: true })), duplicate: true }, payment: paymentView(same) }), true
   const q = quotaOf(workspace)
   if (q.active >= q.maxActive) return json(res, 429, { error: `${q.active} scan${q.active === 1 ? ' is' : 's are'} already running in this workspace. Wait for one to finish.`, code: 'too-many-active' }), true
   const free = q.left > 0
@@ -276,26 +325,30 @@ async function createJob(req, res, ctx) {
     jobs().splice(jobs().indexOf(job), 1)
     save()
     fs.rm(uploadPath(job), { force: true }, () => {})
-    return json(res, 503, { error: `The scan could not start: ${job.startError}. Nothing was used from your quota.` }), true
+    return json(res, job.startErrorStatus ?? 503, { error: `${job.startError} Nothing was used from your quota.`, code: job.startErrorCode }), true
   }
   return json(res, 201, { scan: await viewOf(job, { full: true }) }), true
 }
 
 /* -------------------------------------------------------- public snapshot --- */
 
-/** What a published report shows: the report without draft PoCs (never published) or the cost. */
-function snapshotOf(job, scan) {
-  const r = scan.report
-  return {
-    scope: r.scope ?? null,
-    tools: (r.tools ?? []).map((t) => ({ name: t.name, version: t.version ?? null, ran: !!t.ran, reason: t.reason ?? null })),
-    findings: (r.findings ?? []).map((f) => ({ id: f.id, severity: f.severity, title: f.title, location: f.location ?? null, description: f.description ?? '', recommendation: f.recommendation ?? '', status: f.status ?? 'open', pocExecuted: !!f.pocExecuted, hasPoc: !!f.poc })),
-    summary: r.summary ?? '',
-    disclaimer: r.disclaimer ?? '',
-  }
+/** What a published report shows: the engine's report without the draft PoC code (its status stays) and
+    without the workspace. Stored on the job when it is published, so the public page never needs the engine. */
+function snapshotOf(report) {
+  const r = structuredClone(report)
+  delete r.workspace
+  r.findings = (r.findings ?? []).map((f) => (f.poc ? { ...f, poc: { ...f.poc, code: '', note: 'Kept private by the owner of the code.' } } : f))
+  return r
 }
 
-const publicView = (job) => ({ id: job.id, title: scopeLabel(job.input, job.upload), input: job.input, upload: job.upload ? { name: job.upload.name } : null, completedAt: job.completedAt ?? null, publishedAt: job.publishedAt, indexable: !!job.indexable, counts: job.counts ?? countsOf(job.snapshot), url: `/security/reports/${job.id}` })
+const publicView = (job) => ({ id: job.id, title: scopeLabel(job.input, job.upload), input: job.input, upload: job.upload ? { name: job.upload.name } : null, completedAt: job.completedAt ?? null, publishedAt: job.publishedAt, indexable: !!job.indexable, counts: job.counts ?? job.snapshot?.summary?.counts ?? null, mode: job.snapshot?.mode ?? job.mode ?? null, label: job.snapshot?.label ?? null, url: `/security/reports/${job.id}` })
+
+/** Sends a report as a standalone, print-ready page (the engine's render; kit tokens; no scripts). */
+function sendHtml(res, html, { noindex = true } = {}) {
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', ...(noindex ? { 'X-Robots-Tag': 'noindex' } : {}) })
+  res.end(html)
+  return true
+}
 
 /* ------------------------------------------------------------ signed in --- */
 
@@ -308,7 +361,8 @@ export async function handleSecurity(req, res, url, ctx) {
   if (p === '' || p === '/') {
     if (post) return json(res, 405, { error: 'GET only' }), true
     await syncWorkspace(workspace)
-    return json(res, 200, { quota: quotaOf(workspace), offer: SECURITY, chains: SCAN_CHAINS, engine: { installed: await engineInstalled() }, checkout: { enabled: !!treasury() }, role: ctx.role, canPublish: ADMIN_ROLES.includes(ctx.role) }), true
+    const es = await engineStatus()
+    return json(res, 200, { quota: quotaOf(workspace), offer: SECURITY, chains: SCAN_CHAINS, engine: { installed: true, ai: !!es.ai, worker: !!es.worker?.reachable, tools: es.worker?.reachable ? Object.keys(es.worker.tools ?? {}).filter((k) => es.worker.tools[k]) : [], queue: es.queue ?? null }, checkout: { enabled: !!treasury() }, role: ctx.role, canPublish: ADMIN_ROLES.includes(ctx.role) }), true
   }
 
   if (p === '/scans') {
@@ -319,7 +373,7 @@ export async function handleSecurity(req, res, url, ctx) {
     return json(res, 200, { scans: out }), true
   }
 
-  const m = p.match(/^\/scans\/([^/]+)(?:\/(events|cancel|publish))?$/)
+  const m = p.match(/^\/scans\/([^/]+)(?:\/(events|cancel|publish|report\.html))?$/)
   if (!m) return json(res, 404, { error: 'not found' }), true
   const job = findJob(m[1])
   if (!job || job.workspace !== workspace) return json(res, 404, { error: 'No such scan in this workspace.' }), true
@@ -327,6 +381,13 @@ export async function handleSecurity(req, res, url, ctx) {
   if (!m[2]) {
     if (post) return json(res, 405, { error: 'GET only' }), true
     return json(res, 200, { scan: await viewOf(job, { full: true }) }), true
+  }
+
+  if (m[2] === 'report.html') {
+    if (post) return json(res, 405, { error: 'GET only' }), true
+    const report = job.scanId ? readReport(job.scanId) : null
+    if (!report) return json(res, 404, { error: 'This scan has no report yet.' }), true
+    return sendHtml(res, renderReportHtml(report, { standalone: true }))
   }
 
   if (m[2] === 'events') {
@@ -355,14 +416,11 @@ export async function handleSecurity(req, res, url, ctx) {
     const scan = job.scanId ? await readScan(job.scanId) : null
     mirror(job, scan)
     if (!scan || !ACTIVE_STATUSES.includes(scan.status)) return json(res, 409, { error: `This scan has ${scan?.status === 'done' ? 'finished' : scan ? `already ${scan.status === 'failed' ? 'failed' : 'stopped'}` : 'no running engine job'}; there is nothing to cancel.` }), true
-    try {
-      const after = await stopScan(job.scanId)
-      job.cancelledAt = new Date().toISOString()
-      mirror(job, after ?? (await readScan(job.scanId)))
-      return json(res, 200, { scan: await viewOf(job, { full: true }) }), true
-    } catch (e) {
-      return json(res, e?.status ?? 502, { error: `The engine could not cancel the scan: ${String(e?.message ?? e).slice(0, 200)}` }), true
-    }
+    const r = stopScan(job.scanId)
+    if (!r.ok) return json(res, 409, { error: 'The engine could not cancel the scan: it has already finished.' }), true
+    job.cancelledAt = new Date().toISOString()
+    mirror(job, r.scan)
+    return json(res, 200, { scan: await viewOf(job, { full: true }) }), true
   }
 
   // publish
@@ -373,9 +431,10 @@ export async function handleSecurity(req, res, url, ctx) {
   if (body.published) {
     const scan = job.scanId ? await readScan(job.scanId) : null
     mirror(job, scan)
-    if (scan?.status !== 'done' || !scan.report) return json(res, 409, { error: 'Only a finished scan with a report can be published.' }), true
-    job.snapshot = snapshotOf(job, scan)
-    job.counts = countsOf(scan.report)
+    const report = scan?.status === 'done' ? readReport(job.scanId) : null
+    if (!report) return json(res, 409, { error: 'Only a finished scan with a report can be published.' }), true
+    job.snapshot = snapshotOf(report)
+    job.counts = report.summary?.counts ?? countsOf(report)
     job.published = true
     job.publishedAt = new Date().toISOString()
     job.publishedBy = ctx.user
@@ -417,7 +476,7 @@ function streamJob(req, res, job) {
     try {
       const v = await viewOf(job, { full: true })
       send(v)
-      if (job.scanId && !unwatch && !closed) unwatch = watchScan(job.scanId, (scan) => (mirror(job, scan), send(jobView(job, scan, { full: true }))))
+      if (job.scanId && !unwatch && !closed) unwatch = watchScan(job.scanId, (scan) => (mirror(job, scan), send(jobView(job, scan, { full: TERMINAL_STATUSES.includes(scan.status) }))))
     } catch (e) {
       console.error('security events:', e?.message ?? e)
     }
@@ -498,11 +557,12 @@ export async function handleSecurityPublic(req, res, url) {
 
   if (p === '/api/security/stats') return json(res, 200, statsOf(30), open), true
 
-  const m = p.match(/^\/api\/security\/reports\/([^/]+)$/)
+  const m = p.match(/^\/api\/security\/reports\/([^/]+?)(\/report\.html)?$/)
   if (m) {
     const job = isJobId(m[1]) ? published(m[1]) : null
     if (!job?.snapshot) return json(res, 404, { error: 'No published report has that address. The owner may have taken it down.' }, { 'X-Robots-Tag': 'noindex' }), true
-    return json(res, 200, { report: { ...publicView(job), ...job.snapshot } }, { 'Cache-Control': 'public, max-age=30', ...(job.indexable ? {} : { 'X-Robots-Tag': 'noindex' }) }), true
+    if (m[2]) return sendHtml(res, renderReportHtml(job.snapshot, { standalone: true }), { noindex: !job.indexable })
+    return json(res, 200, { report: { ...job.snapshot, ...publicView(job) } }, { 'Cache-Control': 'public, max-age=30', ...(job.indexable ? {} : { 'X-Robots-Tag': 'noindex' }) }), true
   }
   return false
 }
@@ -545,7 +605,8 @@ export async function handleSecurityAdmin(req, res, url) {
     const queue = all.filter((j) => j.state === 'awaiting_payment' || j.state === 'starting' || (j.state === 'started' && !TERMINAL_STATUSES.includes(j.status))).map(lite)
     const failures = all.filter((j) => j.status === 'failed' || (j.state === 'awaiting_payment' && j.startError)).slice(0, 25).map(lite)
     const s = statsOf(30)
-    return json(res, 200, { engine: { installed: await engineInstalled() }, offer: SECURITY, totals: { ...s.totals, jobs: all.length, awaitingPayment: all.filter((j) => j.state === 'awaiting_payment').length }, days: s.days, queue, failures, published: publishedJobs().map(publicView), reviews: [...reviews()].reverse(), reviewStatuses: REVIEW_STATUSES }), true
+    const es = await engineStatus()
+    return json(res, 200, { engine: { installed: true, ai: !!es.ai, worker: !!es.worker?.reachable, workerReason: es.worker?.reachable ? null : (es.worker?.reason ?? null), queue: es.queue ?? null }, offer: SECURITY, totals: { ...s.totals, jobs: all.length, awaitingPayment: all.filter((j) => j.state === 'awaiting_payment').length }, days: s.days, queue, failures, published: publishedJobs().map(publicView), reviews: [...reviews()].reverse(), reviewStatuses: REVIEW_STATUSES }), true
   }
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
   let m = p.match(/^\/api\/admin\/security\/reviews\/(rr_[\w-]{12})$/)

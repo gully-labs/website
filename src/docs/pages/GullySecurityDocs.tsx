@@ -21,18 +21,23 @@ const sections = [
 const SCAN_SHAPE = `// GET /api/developer/security/scans/:id   (signed in to the app, your active workspace)
 type Scan = {
   id: string                       // sec_… : stable, used in every URL
-  status: 'awaiting_payment' | 'queued' | 'fetching' | 'analysing' | 'triaging' | 'done' | 'failed' | 'cancelled'
-  input: { kind: 'address' | 'repo' | 'upload' | 'web2', chain?, address?, repo?, commit? }
-  progress: { step: string, pct: number } | null
+  status: 'awaiting_payment' | 'queued' | 'fetching' | 'analysing' | 'triaging' | 'reporting' | 'done' | 'failed' | 'cancelled'
+  input: { kind: 'address' | 'github' | 'upload' | 'web2', chain?, address?, repo?, commit?, ref? }
+  progress: { pct: number, message: string } | null      // the engine's step text
+  mode: 'static+ai' | 'ai-only' | 'static-only' | 'bytecode-only' | 'checklist' | null
+  label: string | null                                   // the mode's fixed label, e.g. "AI review only — static tools unavailable"
+  duplicate: boolean                                     // you were already scanning this target
   free: boolean
   priceUsd: number
   payment: { invoiceId, status, usd, payUrl } | null   // set when the scan is beyond the free quota
   published: boolean
   publicUrl: string | null         // /security/reports/<id> while published
-  report?: {
-    scope, summary, disclaimer,
-    tools: { name, version, ran, reason? }[],
-    findings: { id, severity, title, location, description, recommendation, poc?, pocExecuted, status }[]
+  report?: {                       // the engine's ScanReport (schema 1.x)
+    mode, label, target, scope, summary: { text, counts }, limitations, disclaimer,
+    tools: { name, version, status: 'ran' | 'failed' | 'not-run' | 'skipped', reason }[],
+    findings: { id, severity, likelihood, impact, confidence, title, category, triage, locations,
+                explanation, description, recommendation,
+                poc: { status: 'draft-not-executed' | …, code, note } | null, verifiedByHuman: false }[]
   }
 }`
 
@@ -149,13 +154,13 @@ export function GullySecurityDocs() {
           head={['Input', 'What you give', 'Notes']}
           rows={[
             ['Deployed contract', 'address + chain', 'Ethereum, Base, Arbitrum, OP Mainnet, Polygon, BNB Chain or Avalanche; the verified source is read from the chain.'],
-            ['Smart contract repo', 'owner/name + commit', 'A public GitHub repository; leave the commit empty for the default branch.'],
-            ['Upload', '.zip, .tar.gz, .tgz, .sol, .vy, .rs or .move', offer ? `Up to ${Math.round(offer.scan.maxUploadBytes / 1_000_000)} MB.` : 'Size limit read from the server.'],
-            ['Web2 repo', 'owner/name + commit', 'A web app or API on GitHub.'],
+            ['Smart contract repo', 'owner/name + commit', 'A public GitHub repository; leave the commit empty for the default branch (the report names the exact commit it scanned).'],
+            ['Upload', '.zip of Solidity files, or one .sol', offer ? `Up to ${Math.round(offer.scan.maxUploadBytes / 1_000_000)} MB.` : 'Size limit read from the server.'],
+            ['Web2 repo', 'owner/name + commit', 'A JavaScript or TypeScript backend on GitHub: a checklist scan, not a penetration test.'],
           ]}
         />
         <P>
-          A scan moves through <C>queued</C>, <C>fetching</C>, <C>analysing</C> and <C>triaging</C> to <C>done</C> (or <C>failed</C>, or <C>cancelled</C> if you stop it). The app shows each step live with an estimate of the time left. You can leave the page; the scan keeps running.
+          A scan moves through <C>queued</C>, <C>fetching</C>, <C>analysing</C>, <C>triaging</C> and <C>reporting</C> to <C>done</C> (or <C>failed</C> with the reason, or <C>cancelled</C> if you stop it). The app shows each step live with the engine&apos;s own step text and an estimate of the time left. You can leave the page; the scan keeps running. Asking for a target you are already scanning shows that scan instead of starting another.
         </P>
       </Section>
 
@@ -178,17 +183,21 @@ export function GullySecurityDocs() {
 
       <Section id="report" title="Reading a report">
         <List>
-          <li>Findings by severity (critical, high, medium, low, info) as a donut and bars; click one to filter the list.</li>
+          <li>
+            The report&apos;s mode, shown as its label: <C>static+ai</C> (static tools plus AI triage), <C>ai-only</C> (“AI review only — static tools unavailable”), <C>static-only</C>, <C>bytecode-only</C> (source not verified) or <C>checklist</C> (web2).
+          </li>
+          <li>Findings by severity (critical, high, medium, low, info; severity is likelihood × impact) as a donut and bars; click one to filter the list.</li>
           <li>Each finding expands to its description, code location (file and line, with the snippet when the engine gives one), recommendation and status.</li>
-          <li>A draft proof of concept where the engine could write one, marked executed or not executed. Drafts are visible to your workspace only.</li>
+          <li>A proof of concept where the engine could write one, labelled “Draft, not executed” unless the scanner ran it. Every finding is marked not verified by a human. The PoC code is visible to your workspace only.</li>
           <li>Every tool that ran, and every tool that did not, with the reason.</li>
-          <li>Export PDF opens the browser&apos;s print dialog on a print-styled report.</li>
+          <li>Dismissed tool findings with the reason, the limitations of the scan and the disclaimer, verbatim.</li>
+          <li>Export PDF opens the print-ready report in a new tab: print it or save it as PDF.</li>
         </List>
       </Section>
 
       <Section id="publish" title="Publishing a report">
         <P>
-          The workspace owner or an admin can publish a finished report. It then lives at a stable address, <C>{SITE}/security/reports/sec_…</C>, and in the <Ext href={`${SITE}/security/reports`}>list of published reports</Ext>. Search engines are asked not to index it unless you also tick “Let search engines index it”. Unpublishing takes it down at once. Draft proofs of concept and the scan&apos;s cost are never part of a public report.
+          The workspace owner or an admin can publish a finished report. It then lives at a stable address, <C>{SITE}/security/reports/sec_…</C>, and in the <Ext href={`${SITE}/security/reports`}>list of published reports</Ext>. Search engines are asked not to index it unless you also tick “Let search engines index it”. Unpublishing takes it down at once. The code of a proof of concept is never part of a public report (its status is), and neither is your workspace.
         </P>
       </Section>
 

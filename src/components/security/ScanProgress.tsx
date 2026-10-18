@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { STEPS, type JobStatus } from './types'
 
-/* A running scan's live progress: the engine's steps as a track (done steps ticked, the current one
+/* A running scan's live progress: the engine's steps (queued, fetching, analysing, triaging, reporting) as a track (done steps ticked, the current one
    pulsing, the bar filling to the engine's pct), the step's plain-words text and an estimate of the time
    left. The estimate is ours, from how fast pct has moved since the scan started, and is labelled as one;
    until pct moves there is none. Under reduced motion the pulse stops and the bar changes in 150 ms. */
@@ -21,7 +21,7 @@ function useEta(pct: number | null, startedAt: string | null): number | null {
 
 const etaText = (s: number) => (s < 60 ? `about ${s} s left` : `about ${Math.round(s / 60)} min left`)
 
-export function ScanProgress({ status, pct, startedAt, failure }: { status: JobStatus; pct: number | null; startedAt: string | null; failure?: string | null }) {
+export function ScanProgress({ status, pct, message, startedAt, failure }: { status: JobStatus; pct: number | null; message?: string | null; startedAt: string | null; failure?: string | null }) {
   const idx = STEPS.findIndex((s) => s.id === status)
   const cur = status === 'done' ? STEPS.length - 1 : idx
   const failed = status === 'failed' || status === 'cancelled'
@@ -33,7 +33,7 @@ export function ScanProgress({ status, pct, startedAt, failure }: { status: JobS
         <div className="flex flex-col">
           <span className="font-mono text-[11px] tracking-[1px] text-faint">{failed ? status.toUpperCase() : status === 'done' ? 'FINISHED' : 'RUNNING'}</span>
           <span className="text-[15px] font-semibold text-ink" aria-live="polite">
-            {failed ? (status === 'cancelled' ? 'Scan cancelled' : 'The scan failed') : (STEPS[Math.max(0, cur)]?.text ?? 'Waiting for the engine')}
+            {failed ? (status === 'cancelled' ? 'Scan cancelled' : 'The scan failed') : message || (STEPS[Math.max(0, cur)]?.text ?? 'Waiting for the engine')}
           </span>
         </div>
         <span className="flex flex-col items-end">
@@ -48,7 +48,7 @@ export function ScanProgress({ status, pct, startedAt, failure }: { status: JobS
       <div className="h-[6px] overflow-hidden rounded-full bg-line" role="progressbar" aria-label="Scan progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={shown}>
         <div className={`h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:duration-150 ${failed ? 'bg-error' : 'bg-gold'}`} style={{ width: `${Math.max(2, shown)}%` }} />
       </div>
-      <ol className="m-0 grid list-none grid-cols-5 gap-2 p-0 max-[560px]:grid-cols-1">
+      <ol className="m-0 grid list-none grid-cols-6 gap-2 p-0 max-[900px]:grid-cols-3 max-[480px]:grid-cols-2">
         {STEPS.map((s, i) => {
           const done = !failed && (i < cur || status === 'done')
           const now = !failed && i === cur && status !== 'done'

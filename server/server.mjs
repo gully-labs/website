@@ -25,6 +25,7 @@ import { handleDeveloper } from './developer.mjs'
 import { APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleSecurityPublic } from './security-routes.mjs'
+import { startEngine as startSecurityEngine } from './security-engine.mjs'
 import { CHAIN_LIST, rpc } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { startTreasuryWatch } from './treasury-chains.mjs'
@@ -416,6 +417,8 @@ function startLoops() {
   startAsk()
   // Hourly balance check of every fee-proxy contract (fee-proxy-monitor.mjs): non-zero = a third-party mis-send.
   startFeeProxyMonitor()
+  // Gully Security's scan queue (server/security): requeues interrupted scans and starts the runner.
+  startSecurityEngine()
 }
 // The treasury deployment gate (treasury-chains.mjs) runs in standby too: a standby answers /api/plans and quotes,
 // so it must know on which chains the Safe treasury exists. Read-only (eth_getCode), hourly, timers unref'd.

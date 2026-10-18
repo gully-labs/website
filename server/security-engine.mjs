@@ -1,115 +1,68 @@
-// Gully Security: the ONE place the product UI talks to the scan engine (part 1, feat/sec-engine).
+// Gully Security: the ONE place the product UI talks to the scan engine (server/security/index.mjs, part 1).
+// security-routes.mjs calls only these functions, so an engine API change lands here.
 //
-// INTEGRATION POINT: the engine's module API is createScan / getScan / listScans / cancelScan plus progress
-// events. Until it merges, nothing here is wired to a real engine:
-//   - ENGINE_MODULE is loaded on first use. If the file does not exist, engineInstalled() is false and the
-//     routes answer 503 "the scan engine is not installed yet" for new scans (reads keep working).
-//   - The tests install a stub (scripts/fixtures/security-stub-engine.mjs) with setEngineForTest(); the
-//     stub never ships.
-// When part 1 merges: point ENGINE_MODULE at its entry file if it is not server/security/index.mjs, and
-// adapt the four calls in this file if its argument shapes differ from the ones written below. Nothing
-// else in the UI calls the engine.
-//
-// Assumed engine API (what the calls below pass):
-//   createScan({ workspace, input, upload? })  -> scan        upload: { name, size, bytes: Buffer } for kind 'upload'
-//   getScan(id)                                -> scan | null
-//   listScans({ workspace })                   -> scan[]      (not needed by the UI; jobs are tracked here)
-//   cancelScan(id)                             -> scan
-//   progress: onProgress(listener) -> unsubscribe,  or  events.on('progress', listener)   listener(scan)
-// When the engine offers neither, progress is read by polling getScan (watchScan below).
+//   startScan          createScan({ workspace, input, limits })  (input in the engine's shape, bytes included)
+//   checkInput         the engine's own validateInput, run before a scan is invoiced, so nobody pays for a
+//                      scan the engine would refuse
+//   readScan/Report    getScan / getReport / getReportHtml
+//   stopScan           cancelScan(id) -> { ok, scan }
+//   watchScan          onProgress events (polling as a safety net)
+//   status             engineStatus(): AI configured? static-tools worker reachable? queue
+//   startEngine        startSecurity(), from server.mjs startLoops() (never in standby)
 
-const ENGINE_MODULE = './security/index.mjs'
+import * as engine from './security/index.mjs'
+import { validateInput } from './security/inputs.mjs'
 
-let engine = null
-let loading = null
+export { renderReportHtml } from './security/index.mjs'
 
-async function load() {
-  if (engine) return engine
-  loading ??= import(ENGINE_MODULE).then(
-    (m) => (engine ??= m.default && typeof m.default.createScan === 'function' ? m.default : m),
-    (e) => {
-      if (e?.code !== 'ERR_MODULE_NOT_FOUND') console.error('security engine: failed to load:', e?.message ?? e)
-      loading = null
-      return null
-    },
-  )
-  return loading
+/** The engine's input check. Throws its ScanInputError ({ code, status, message }). */
+export const checkInput = (input) => validateInput(input)
+
+/** Queues a scan. Resolves the engine's ScanRecord (with duplicate: true for an active scan of the same target). */
+export async function startScan({ workspace, input, limits }) {
+  return engine.createScan({ workspace, input, limits })
 }
 
-/** Test hook: install a stub engine (or null to uninstall). */
-export function setEngineForTest(e) {
-  engine = e
-  loading = null
+export const readScan = (id) => (id ? engine.getScan(id) : null)
+export const readReport = (id) => (id ? engine.getReport(id) : null)
+export const readReportHtml = (id) => (id ? engine.getReportHtml(id) : null)
+export const stopScan = (id) => engine.cancelScan(id)
+
+let statusCache = { at: 0, value: null }
+/** engineStatus(), cached for 30 s (it asks the worker for its health). */
+export async function status() {
+  if (statusCache.value && Date.now() - statusCache.at < 30_000) return statusCache.value
+  const value = await engine.engineStatus()
+  statusCache = { at: Date.now(), value }
+  return value
+}
+/** Test hook: forget the cached engine status. */
+export const resetStatusCacheForTest = () => (statusCache = { at: 0, value: null })
+
+export function startEngine() {
+  engine.startSecurity()
 }
 
-/** Whether a scan engine is installed on this server. */
-export async function engineInstalled() {
-  return !!(await load())
-}
-
-/** Starts a scan. Resolves the engine's scan record, or throws. */
-export async function startScan({ workspace, input, upload = null }) {
-  const e = await load()
-  if (!e) throw Object.assign(new Error('The scan engine is not installed on this server yet.'), { status: 503 })
-  return e.createScan({ workspace, input, ...(upload ? { upload } : {}) })
-}
-
-/** The engine's record of a scan, or null when unknown or unreadable. */
-export async function readScan(id) {
-  const e = await load()
-  if (!e || !id) return null
-  try {
-    return (await e.getScan(id)) ?? null
-  } catch (err) {
-    console.error('security engine: getScan failed:', err?.message ?? err)
-    return null
-  }
-}
-
-/** Asks the engine to stop a scan. Resolves the updated record, or throws. */
-export async function stopScan(id) {
-  const e = await load()
-  if (!e) throw Object.assign(new Error('The scan engine is not installed on this server yet.'), { status: 503 })
-  return e.cancelScan(id)
-}
-
-/**
- * Calls `cb(scan)` whenever scan `id` changes, through the engine's progress events when it has them and
- * by polling getScan every `pollMs` otherwise. Returns a function that stops watching.
- */
-export function watchScan(id, cb, { pollMs = 1_000 } = {}) {
+/** Calls cb(scanRecord) whenever scan `id` changes; polls every `pollMs` as a safety net. Returns stop(). */
+export function watchScan(id, cb, { pollMs = 2_000 } = {}) {
   let stopped = false
   let last = ''
-  const emit = (scan) => {
-    if (stopped || !scan || scan.id !== id) return
-    const key = `${scan.status}|${scan.progress?.step ?? ''}|${scan.progress?.pct ?? ''}|${scan.updatedAt ?? ''}`
+  const emit = () => {
+    if (stopped) return
+    const s = engine.getScan(id)
+    if (!s) return
+    const key = `${s.status}|${s.progress}|${s.message}|${s.updatedAt}`
     if (key === last) return
     last = key
-    cb(scan)
+    cb(s)
   }
-  let off = null
-  load().then((e) => {
-    if (stopped || !e) return
-    if (typeof e.onProgress === 'function') off = e.onProgress(emit)
-    else if (e.events && typeof e.events.on === 'function') {
-      e.events.on('progress', emit)
-      off = () => e.events.off?.('progress', emit)
-    }
-  })
-  const poll = async () => {
-    if (stopped) return
-    emit(await readScan(id))
-  }
-  poll()
-  const timer = setInterval(poll, pollMs)
+  const off = engine.onProgress((ev) => ev.id === id && emit())
+  emit()
+  const timer = setInterval(emit, pollMs)
   timer.unref?.()
   return () => {
     stopped = true
     clearInterval(timer)
-    try {
-      off?.()
-    } catch {
-      /* already gone */
-    }
+    off()
   }
 }

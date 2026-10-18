@@ -154,9 +154,9 @@ export function SecurityTab({ section }: { section: string | null }) {
             <h1 className="m-0 text-[20px] font-semibold text-ink">{o.offer.scan.name}</h1>
           </div>
           <QuotaPill ov={o} />
-          <span className={`inline-flex min-h-[30px] items-center gap-2 rounded-full border px-[10px] text-[13px] ${o.engine.installed ? 'border-success-line text-green' : 'border-line-strong text-faint'}`} data-testid="engine-state">
-            <span aria-hidden className={`size-2 rounded-full ${o.engine.installed ? 'animate-[gl-blink_1.6s_ease-in-out_infinite] bg-green motion-reduce:animate-none' : 'bg-faint'}`} />
-            {o.engine.installed ? 'Engine online' : 'Engine not installed yet'}
+          <span className={`inline-flex min-h-[30px] items-center gap-2 rounded-full border px-[10px] text-[13px] ${o.engine.worker ? 'border-success-line text-green' : o.engine.ai ? 'border-gold-line text-gold' : 'border-line-strong text-faint'}`} data-testid="engine-state" title={o.engine.worker ? `Static tools: ${o.engine.tools.join(', ')}` : 'The static-analysis worker is not running on this server yet'}>
+            <span aria-hidden className={`size-2 rounded-full ${o.engine.worker || o.engine.ai ? 'animate-[gl-blink_1.6s_ease-in-out_infinite] motion-reduce:animate-none' : ''} ${o.engine.worker ? 'bg-green' : o.engine.ai ? 'bg-gold' : 'bg-faint'}`} />
+            {o.engine.worker ? 'Static tools + AI review' : o.engine.ai ? 'AI review only' : 'Scanning unavailable'}
           </span>
           <a href={`${DOCS_URL}/gully-security`} target="_blank" rel="noopener noreferrer" className={pillSm}>
             <BookOpen size={14} aria-hidden /> Docs <ArrowUpRight size={13} aria-hidden />

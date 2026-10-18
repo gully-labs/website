@@ -2,9 +2,9 @@ import { ArrowLeft, ArrowUpRight, FileSearch, FileText, Info, Printer, ScanSearc
 import { Link, useParams } from 'react-router'
 import { Lockup } from '../../components/brand'
 import { ChainLogo } from '../../components/logos/ChainLogo'
-import { ReportBody } from '../../components/security/ReportBody'
+import { ModeBadge, ReportBody } from '../../components/security/ReportBody'
 import { SeverityCharts } from '../../components/security/SeverityCharts'
-import { fmtWhen, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, type PublicReport, type PublicReportListItem } from '../../components/security/types'
+import { chainLogoKey, fmtWhen, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, type PublicReport, type PublicReportListItem } from '../../components/security/types'
 import { Seo } from '../../components/Seo'
 import { btnGold, eyebrow } from '../../components/ui'
 import { SCAN_APP_URL, usePublic } from './shared'
@@ -16,12 +16,12 @@ import { SCAN_APP_URL, usePublic } from './shared'
    in (the server sends the head tags; <Seo noindex> keeps the browser in step). Draft PoCs are never part
    of a public report. Every page says what a scan is: automated, and not an audit. */
 
-const NOT_AUDIT = 'This is an automated AI Security Scan report, published by the owner of the code. It is not an audit and not an endorsement: Gully Labs has not audited this code, and an automated scan can miss issues.'
+const NOT_AUDIT = 'This is an automated AI Security Scan report, published by the owner of the code. It is not an audit and not an endorsement: no person at Gully Labs has reviewed this code, its findings are not verified by a human, and an automated scan can miss issues. Draft proofs of concept stay private.'
 
 function Subject({ r }: { r: Pick<PublicReport, 'input' | 'title'> }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      {r.input.kind === 'address' && r.input.chain && <ChainLogo chain={r.input.chain} size={20} />}
+      {r.input.kind === 'address' && r.input.chain && <ChainLogo chain={chainLogoKey(r.input.chain)} size={20} />}
       <span className="truncate font-mono">{r.title}</span>
     </span>
   )
@@ -71,7 +71,8 @@ export function ReportsIndex() {
         {s.k === 'ok' && s.data.reports.length > 0 && (
           <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-3 p-0" data-testid="report-index">
             {s.data.reports.map((r, i) => {
-              const total = SEVERITIES.reduce((a, k) => a + (r.counts[k] ?? 0), 0)
+              const counts = r.counts ?? { critical: 0, high: 0, medium: 0, low: 0, info: 0 }
+              const total = SEVERITIES.reduce((a, k) => a + (counts[k] ?? 0), 0)
               return (
                 <li key={r.id} style={{ animation: `gl-rise .45s ${Math.min(i, 8) * 0.05}s ease both` }}>
                   <Link to={r.url} className="flex h-full flex-col gap-3 rounded-card border border-line bg-surface p-5 transition-colors hover:border-gold">
@@ -81,10 +82,11 @@ export function ReportsIndex() {
                     <span className="text-[15px] text-ink">
                       <Subject r={r} />
                     </span>
-                    <span className="flex h-[8px] overflow-hidden rounded-full bg-line" aria-label={SEVERITIES.map((k) => `${r.counts[k]} ${SEV_LABEL[k].toLowerCase()}`).join(', ')}>
-                      {total ? SEVERITIES.map((k, j) => (r.counts[k] ? <span key={k} style={{ width: `${(r.counts[k] / total) * 100}%`, background: SEV_COLOR[k], transformOrigin: 'left', animation: `gl-grow-x .6s ${j * 0.06}s cubic-bezier(.2,.8,.2,1) both` }} /> : null)) : <span className="w-full bg-[#6fcf6a55]" />}
+                    <span className="flex h-[8px] overflow-hidden rounded-full bg-line" aria-label={SEVERITIES.map((k) => `${counts[k]} ${SEV_LABEL[k].toLowerCase()}`).join(', ')}>
+                      {total ? SEVERITIES.map((k, j) => (counts[k] ? <span key={k} style={{ width: `${(counts[k] / total) * 100}%`, background: SEV_COLOR[k], transformOrigin: 'left', animation: `gl-grow-x .6s ${j * 0.06}s cubic-bezier(.2,.8,.2,1) both` }} /> : null)) : <span className="w-full bg-[#6fcf6a55]" />}
                     </span>
-                    <span className="font-mono text-[11px] text-muted">{total ? SEVERITIES.filter((k) => r.counts[k]).map((k) => `${r.counts[k]} ${SEV_LABEL[k].toLowerCase()}`).join(' · ') : 'no findings reported'}</span>
+                    <span className="font-mono text-[11px] text-muted">{total ? SEVERITIES.filter((k) => counts[k]).map((k) => `${counts[k]} ${SEV_LABEL[k].toLowerCase()}`).join(' · ') : 'no findings reported'}</span>
+                    {r.label && <span className="text-[12px] text-gold">{r.label}</span>}
                   </Link>
                 </li>
               )
@@ -132,13 +134,15 @@ export function PublicReportPage() {
           <Link to="/security/reports" className="inline-flex min-h-11 items-center gap-2 font-mono text-[12px] text-muted hover:text-ink">
             <ArrowLeft size={14} aria-hidden /> Published reports
           </Link>
-          <button type="button" onClick={() => window.print()} className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-4 text-[13px] text-ink-2 hover:border-gold hover:text-ink" data-testid="print">
-            <Printer size={15} aria-hidden /> Print or save as PDF
-          </button>
+          <a href={`/api/security/reports/${r.id}/report.html`} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-4 text-[13px] text-ink-2 hover:border-gold hover:text-ink" data-testid="print">
+            <Printer size={15} aria-hidden /> Printable report (PDF) <ArrowUpRight size={14} aria-hidden />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
         </div>
         <header className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-center gap-6 rounded-card border border-line bg-surface p-6 max-[860px]:grid-cols-1 max-[600px]:p-4 print:border-[#ccc] print:bg-[#fff]">
           <div className="flex min-w-0 flex-col gap-3">
             <span className={`${eyebrow} print:text-[#000]`}>AI SECURITY SCAN REPORT</span>
+            <ModeBadge label={r.label} mode={r.mode} />
             <h1 className="m-0 text-[22px] font-semibold text-ink print:text-[#000]">
               <Subject r={r} />
             </h1>
@@ -153,13 +157,13 @@ export function PublicReportPage() {
               <dd className="m-0 text-ink-2 print:text-[#000]">{r.id}</dd>
             </dl>
           </div>
-          <SeverityCharts counts={r.counts} />
+          <SeverityCharts counts={r.summary?.counts ?? r.counts} />
         </header>
         <p className="m-0 flex items-start gap-2 rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.05)] px-4 py-3 text-[13px] leading-[1.6] text-ink-2 print:border-[#ccc] print:bg-[#fff] print:text-[#000]" data-testid="not-audit">
           <Info size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden />
           {NOT_AUDIT}
         </p>
-        <ReportBody report={r} showPoc={false} />
+        <ReportBody report={r} />
       </article>
     </>
   )

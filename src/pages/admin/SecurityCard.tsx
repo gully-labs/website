@@ -41,7 +41,7 @@ interface Review {
   source: string
 }
 interface View {
-  engine: { installed: boolean }
+  engine: { installed: boolean; ai: boolean; worker: boolean; workerReason: string | null; queue: { running: string | null; queued: number } | null }
   totals: { started: number; done: number; failed: number; published: number; jobs: number; awaitingPayment: number }
   days: { day: string; started: number; done: number; failed: number }[]
   queue: Job[]
@@ -134,8 +134,14 @@ export function SecurityCard({ token }: { token: string }) {
         <h2 id="admin-security" className={h2}>
           Security
         </h2>
-        <span className={small}>{data ? `engine ${data.engine.installed ? 'installed' : 'NOT installed (part 1 not merged)'} · ${data.totals.jobs} scans asked for · ${data.totals.published} published` : 'Gully Security'}</span>
+        <span className={small}>{data ? `AI ${data.engine.ai ? 'on' : 'off (ANTHROPIC_API_KEY)'} · static tools ${data.engine.worker ? 'on' : 'off'} · engine queue ${data.engine.queue?.queued ?? 0}${data.engine.queue?.running ? ' + 1 running' : ''} · ${data.totals.jobs} scans asked for · ${data.totals.published} published` : 'Gully Security'}</span>
       </div>
+      {data && !data.engine.worker && (
+        <p className="m-0 rounded-input border border-gold-line px-3 py-2 text-[13px] text-ink-2" data-testid="worker-note">
+          Scans are <b>AI review only</b> until the static-tools worker (gully-scanner, ops/scanner) runs. It is owner-run and not started (disk). Reports say so in their label and list the static tools as not run.
+          {data.engine.workerReason ? <span className="ml-1 font-mono text-[11px] text-faint">({data.engine.workerReason})</span> : null}
+        </p>
+      )}
       {err && <p className="m-0 font-mono text-[12px] text-error">{err}</p>}
       {!data && !err && <span className={small}>Loading…</span>}
       {data && (

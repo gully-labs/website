@@ -12,8 +12,9 @@ import { fileToBase64, useScan } from './useSecurity'
 
 /* "New scan": a five-step stepper.
      1 Input     what to scan: a deployed contract (address + chain, with the chains' marks), a smart contract
-                 repo on GitHub (+ commit), an upload (.zip/.tar.gz/.sol…), or a web2 repo
-     2 Scope     what will be scanned, what the scan checks and cannot, free scans left, the price
+                 repo on GitHub (+ commit), an upload (.zip of Solidity files or one .sol), or a web2 repo
+     2 Scope     what will be scanned, what the engine can run now (static tools + AI, or AI only), what it
+                 cannot check, free scans left, the price
      3 Pay       Gully Pay, only when the free quota is used up (skipped otherwise)
      4 Running   live progress per engine step, with an estimate of the time left
      5 Report    the report viewer (ScanDetail)
@@ -30,8 +31,8 @@ const STEPS: { n: Step; label: string; icon: ReactNode }[] = [
 
 const KINDS: { id: InputKind; icon: ReactNode; text: string }[] = [
   { id: 'address', icon: <FileCode2 size={18} aria-hidden />, text: 'A verified contract on a chain' },
-  { id: 'repo', icon: <GitBranch size={18} aria-hidden />, text: 'Solidity or Vyper on GitHub' },
-  { id: 'upload', icon: <Upload size={18} aria-hidden />, text: 'A .zip, .tar.gz or source file' },
+  { id: 'github', icon: <GitBranch size={18} aria-hidden />, text: 'Solidity on GitHub, at a commit' },
+  { id: 'upload', icon: <Upload size={18} aria-hidden />, text: 'A .zip of Solidity files or one .sol' },
   { id: 'web2', icon: <Globe size={18} aria-hidden />, text: 'A web app or API on GitHub' },
 ]
 
@@ -71,7 +72,7 @@ function Running({ id, onDone }: { id: string; onDone: () => void }) {
   const v = s.data
   return (
     <div className="flex flex-col gap-4">
-      <ScanProgress status={v.status === 'awaiting_payment' ? 'queued' : v.status} pct={v.progress?.pct ?? null} startedAt={v.startedAt} failure={v.failure} />
+      <ScanProgress status={v.status === 'awaiting_payment' ? 'queued' : v.status} pct={v.progress?.pct ?? null} message={v.progress?.message} startedAt={v.startedAt} failure={v.failure} />
       <p className="m-0 text-[13px] text-faint">You can leave this page: the scan keeps running and appears under Scans. {v.title}</p>
     </div>
   )
@@ -88,6 +89,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [scan, setScan] = useState<ScanView | null>(null)
+  const [dup, setDup] = useState(false)
   const q = ov.quota
   const free = q.left > 0
   const price = free ? 0 : ov.offer.scan.priceUsd
@@ -96,7 +98,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
   const target: ScanInput = kind === 'address' ? { kind, chain, address: address.trim() } : kind === 'upload' ? { kind } : { kind, repo: repo.trim(), commit: commit.trim() || null }
   const check = (): string | null => {
     if (kind === 'address') return ADDRESS_RE.test(address.trim()) ? null : 'Enter the contract address: 0x followed by 40 hex characters.'
-    if (kind === 'upload') return !file ? 'Pick a file to scan.' : file.size > ov.offer.scan.maxUploadBytes ? `The file is larger than ${maxMb} MB. Scan the repository instead.` : null
+    if (kind === 'upload') return !file ? 'Pick a file to scan.' : !/\.(zip|sol)$/i.test(file.name) ? 'Upload a .zip of Solidity files or a single .sol file.' : file.size > ov.offer.scan.maxUploadBytes ? `The file is larger than ${maxMb} MB. Scan the repository instead.` : null
     if (!REPO_RE.test(repo.trim())) return 'Enter a public GitHub repository as owner/name or its URL.'
     if (commit.trim() && !COMMIT_RE.test(commit.trim())) return 'The commit must be a hash (7 to 40 hex characters), or empty for the default branch.'
     return null
@@ -121,13 +123,20 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
     const r = await api<{ scan: ScanView }>('/api/developer/security/scans', { method: 'POST', body: { input: target, upload, expect: { priceUsd: price } } })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
-    setScan(r.data.scan)
-    setStep(r.status === 202 ? 3 : 4)
+    const v = r.data.scan
+    setScan(v)
+    setDup(!!v.duplicate)
+    setStep(v.status === 'awaiting_payment' ? 3 : v.status === 'done' ? 5 : 4)
   }
 
   return (
     <div className="flex flex-col gap-4" data-testid="new-scan">
       <Stepper step={step} free={step >= 2 ? free : null} />
+      {dup && (
+        <p className="m-0 rounded-input border border-gold-line px-3 py-2 text-[13px] text-ink-2" role="status" data-testid="duplicate">
+          You are already scanning this; here it is. Nothing new was started or charged.
+        </p>
+      )}
 
       {step === 1 && (
         <section className={panel} aria-labelledby="ns-input">
@@ -150,7 +159,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
               <div role="radiogroup" aria-label="Chain" className="flex flex-wrap gap-[6px]">
                 {ov.chains.map((c) => (
                   <button key={c.key} type="button" role="radio" aria-checked={chain === c.key} onClick={() => setChain(c.key)} className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 text-[13px] transition-colors ${chain === c.key ? 'border-gold bg-gold text-bg' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}>
-                    <ChainLogo chain={c.key} size={20} decorative />
+                    <ChainLogo chain={c.logo} size={20} decorative />
                     {c.name}
                   </button>
                 ))}
@@ -161,7 +170,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
               </label>
             </div>
           )}
-          {(kind === 'repo' || kind === 'web2') && (
+          {(kind === 'github' || kind === 'web2') && (
             <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-3 max-[600px]:grid-cols-1">
               <label className="flex flex-col gap-1 text-[12px] text-dim">
                 Public GitHub repository
@@ -181,9 +190,9 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
                   {file.name} · {(file.size / 1000).toFixed(0)} kB
                 </span>
               ) : (
-                <span>Choose a .zip, .tar.gz, .tgz, .sol, .vy, .rs or .move file, up to {maxMb} MB</span>
+                <span>Choose a .zip of Solidity files or a single .sol file, up to {maxMb} MB</span>
               )}
-              <input type="file" accept=".zip,.tar,.gz,.tgz,.sol,.vy,.rs,.move" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="sr-only" data-testid="upload-input" />
+              <input type="file" accept=".zip,.sol" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="sr-only" data-testid="upload-input" />
             </label>
           )}
           {err && <ErrorLine>{err}</ErrorLine>}
@@ -207,13 +216,26 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
                 <dd className="m-0 text-ink">{KIND_LABEL[kind]}</dd>
                 <dt className="text-dim">Target</dt>
                 <dd className="m-0 flex min-w-0 items-center gap-2 font-mono text-[12px] break-all text-ink" data-testid="scope-target">
-                  {kind === 'address' && <ChainLogo chain={chain} size={16} decorative />}
+                  {kind === 'address' && <ChainLogo chain={ov.chains.find((c) => c.key === chain)?.logo ?? chain} size={16} decorative />}
                   {describe}
                 </dd>
               </dl>
               <ul className="m-0 flex list-none flex-col gap-[6px] p-0 text-[13px] leading-[1.55] text-ink-2">
-                <li className="flex gap-2">
-                  <ScanSearch size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden /> Static analysers and an AI pass look for known vulnerability classes; findings are ranked and de-duplicated.
+                <li className="flex gap-2" data-testid="engine-now">
+                  <ScanSearch size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden />
+                  {ov.engine.worker ? (
+                    <span>
+                      Static tools ({ov.engine.tools.join(', ') || 'the scanner worker'}) and the AI review run on this code; the AI checks each tool finding and the findings are ranked.
+                    </span>
+                  ) : ov.engine.ai ? (
+                    <span>
+                      <b className="text-gold">AI review only — static tools unavailable.</b> The static-analysis worker is not running on this server yet, so the report lists those tools as not run.
+                    </span>
+                  ) : (
+                    <span>
+                      <b className="text-error">Neither the AI review nor the static tools are available right now.</b> {kind === 'address' ? 'A contract scan can still read its bytecode.' : 'Code scans cannot run until one of them is.'}
+                    </span>
+                  )}
                 </li>
                 <li className="flex gap-2">
                   <ShieldAlert size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden /> It can miss issues (business logic, economics, cross-contract and off-chain risks) and can report false positives. It is not an audit.
@@ -236,14 +258,13 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
               {q.active >= q.maxActive && <span className="text-[12px] text-error">{q.active} scans are already running; wait for one to finish.</span>}
             </div>
           </div>
-          {!ov.engine.installed && <ErrorLine>The scan engine is not installed on this server yet, so scans cannot start. Nothing will be charged.</ErrorLine>}
           {err && <ErrorLine>{err}</ErrorLine>}
           <div className="flex flex-wrap justify-between gap-2">
             <button type="button" onClick={() => (setStep(1), setErr(null))} className={pillLine}>
               <ArrowLeft size={15} aria-hidden /> Back
             </button>
             <Can cat="security" what="start scans">
-              <button type="button" onClick={confirm} disabled={busy || !ov.engine.installed || (!free && !ov.checkout.enabled)} className={pillGold} data-testid="confirm-scan">
+              <button type="button" onClick={confirm} disabled={busy || (kind !== 'address' && !ov.engine.ai && !ov.engine.worker) || (!free && !ov.checkout.enabled)} className={pillGold} data-testid="confirm-scan">
                 <Play size={15} aria-hidden /> {busy ? 'Starting…' : free ? 'Start the free scan' : `Confirm and pay $${price}`}
               </button>
             </Can>

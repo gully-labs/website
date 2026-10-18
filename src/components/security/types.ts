@@ -1,56 +1,102 @@
 /* Gully Security in the browser: the shapes server/security-routes.mjs answers, plus the labels and colours
    every Security surface shares (the app's Security tab, /security, the public report pages, admin).
-   The scan and report shapes follow the engine contract in server/security-contract.mjs; where the engine
-   leaves a field open (scope, location, cost) the UI reads it defensively. */
+   The report is the scan engine's ScanReport (server/security/schema.d.mts, schema 1.x), restated here for
+   the browser build; keep the two in step. */
 
-export type ScanStatus = 'queued' | 'fetching' | 'analysing' | 'triaging' | 'done' | 'failed' | 'cancelled'
+export type ScanStatus = 'queued' | 'fetching' | 'analysing' | 'triaging' | 'reporting' | 'done' | 'failed' | 'cancelled'
 /** awaiting_payment is the UI's own state before a paid scan reaches the engine. */
 export type JobStatus = ScanStatus | 'awaiting_payment' | 'unknown'
-export type InputKind = 'address' | 'repo' | 'upload' | 'web2'
+export type InputKind = 'address' | 'github' | 'upload' | 'web2'
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info'
+export type ScanMode = 'static+ai' | 'ai-only' | 'static-only' | 'bytecode-only' | 'checklist'
 
+/** A job's input as the server stores it (security-contract.mjs). */
 export interface ScanInput {
   kind: InputKind
   chain?: string
   address?: string
   repo?: string
   commit?: string | null
+  ref?: string | null
+  filename?: string
 }
 
-export type FindingLocation = string | { file?: string; line?: number; startLine?: number; endLine?: number; snippet?: string; address?: string; function?: string } | null
+export interface Location {
+  file: string
+  line: number | null
+  endLine: number | null
+}
+
+export interface Poc {
+  framework: 'foundry'
+  /** "draft-not-executed" unless the scanner worker ran it. */
+  status: 'draft-not-executed' | 'executed-passed' | 'executed-failed'
+  /** Empty on a public report (kept private by the owner). */
+  code: string
+  note: string
+}
 
 export interface Finding {
   id: string
-  severity: Severity
   title: string
-  location: FindingLocation
+  severity: Severity
+  likelihood: string
+  impact: string
+  confidence: string
+  category: string
+  triage: 'ai-triaged' | 'ai-found' | 'tool-untriaged' | 'engine-note'
+  sources: { tool: string; detector: string | null }[]
+  locations: Location[]
   description: string
+  explanation: string
   recommendation: string
-  /** Draft proof of concept: only members of the workspace see it; never published. */
-  poc?: string
-  pocExecuted: boolean
-  status: string
-  /** Public reports say whether a draft PoC exists without showing it. */
-  hasPoc?: boolean
+  poc: Poc | null
+  verifiedByHuman: false
+  status: 'open'
 }
 
 export interface Tool {
   name: string
   version: string | null
-  ran: boolean
-  reason?: string | null
-}
-
-export interface Report {
-  scope: unknown
-  tools: Tool[]
-  findings: Finding[]
-  summary: string
-  disclaimer: string
-  cost?: unknown
+  status: 'ran' | 'failed' | 'not-run' | 'skipped'
+  reason: string | null
+  durationMs: number | null
+  findings: number
 }
 
 export type Counts = Record<Severity, number>
+
+export interface Report {
+  id: string
+  title: string
+  mode: ScanMode
+  /** The engine's fixed label for the mode, shown verbatim. */
+  label: string
+  createdAt: string
+  completedAt: string
+  target: {
+    type: InputKind
+    chainId: number | null
+    chainName?: string | null
+    address: string | null
+    explorerUrl?: string | null
+    verified: boolean | null
+    sourceProvider?: string | null
+    contractName?: string | null
+    compiler?: { version: string | null } | null
+    repo: { url: string; owner: string; name: string; ref: string; commit: string } | null
+    upload: { name: string; sha256: string; bytes: number } | null
+  }
+  scope: { files: { path: string; nsloc: number; inScope: boolean; reason: string | null }[]; totalNsloc: number; inScopeFiles: number; excluded: { path: string; reason: string }[] }
+  tools: Tool[]
+  ai: { used: boolean; models: { analysis: string | null; summary: string | null }; chunks: number; chunksReviewed: number; capped: boolean; notReviewed: string[]; promptInjectionFlags: { file: string; line: number; excerpt: string }[] }
+  summary: { text: string; counts: Counts; findings: number; dropped: number }
+  findings: Finding[]
+  dropped: { tool: string; detector: string | null; title: string; location: Location | null; reason: string }[]
+  checklist: { id: string; area: string; item: string; result: 'pass' | 'fail' | 'warn' | 'not-checked'; note: string; locations: Location[] }[] | null
+  limitations: string[]
+  disclaimer: string
+}
 
 export interface ScanView {
   id: string
@@ -61,7 +107,12 @@ export interface ScanView {
   free: boolean
   priceUsd: number
   payment: { invoiceId: string; status: 'open' | 'paid' | 'expired' | 'cancelled' | 'unknown'; usd: number; payUrl: string; expiresAt: string | null } | null
-  progress: { step: string; pct: number } | null
+  /** pct 0–100 and the engine's step text. */
+  progress: { pct: number; message: string } | null
+  mode: ScanMode | null
+  label: string | null
+  /** The same target was already scanning: this is that scan. */
+  duplicate: boolean
   createdAt: string
   startedAt: string | null
   updatedAt: string
@@ -86,6 +137,8 @@ export interface ScanChain {
   key: string
   chainId: number
   name: string
+  /** The site's chain mark key (src/components/logos/registry.ts). */
+  logo: string
 }
 
 export interface Quota {
@@ -103,13 +156,23 @@ export interface SecurityOverview {
   quota: Quota
   offer: SecurityOffer
   chains: ScanChain[]
-  engine: { installed: boolean }
+  /** engineStatus(): the AI review configured, the static-tools worker reachable (and its tools). */
+  engine: { installed: boolean; ai: boolean; worker: boolean; tools: string[]; queue: { running: string | null; queued: number } | null }
   checkout: { enabled: boolean }
   role: string
   canPublish: boolean
 }
 
-export interface PublicReport extends Omit<Report, 'cost'> {
+export interface PublicReport extends Report {
+  url: string
+  input: ScanInput
+  upload: { name: string } | null
+  publishedAt: string
+  indexable: boolean
+  counts: Counts
+}
+
+export interface PublicReportListItem {
   id: string
   title: string
   input: ScanInput
@@ -117,11 +180,11 @@ export interface PublicReport extends Omit<Report, 'cost'> {
   completedAt: string | null
   publishedAt: string
   indexable: boolean
-  counts: Counts
+  counts: Counts | null
+  mode: ScanMode | null
+  label: string | null
   url: string
 }
-
-export type PublicReportListItem = Pick<PublicReport, 'id' | 'title' | 'input' | 'upload' | 'completedAt' | 'publishedAt' | 'indexable' | 'counts' | 'url'>
 
 export interface SecurityStats {
   generatedAt: string
@@ -139,10 +202,11 @@ export const SEV_LABEL: Record<Severity, string> = { critical: 'Critical', high:
 
 /** The engine's pipeline, in order, with what each step does in plain words. */
 export const STEPS: { id: ScanStatus; label: string; text: string }[] = [
-  { id: 'queued', label: 'Queued', text: 'Waiting for a scanner' },
+  { id: 'queued', label: 'Queued', text: 'Waiting for the scanner' },
   { id: 'fetching', label: 'Fetching', text: 'Reading the code or the verified source' },
-  { id: 'analysing', label: 'Analysing', text: 'Static analysers and the AI pass' },
-  { id: 'triaging', label: 'Triaging', text: 'Removing duplicates and ranking findings' },
+  { id: 'analysing', label: 'Analysing', text: 'Static tools and the AI review' },
+  { id: 'triaging', label: 'Triaging', text: 'Checking tool findings, ranking them' },
+  { id: 'reporting', label: 'Reporting', text: 'Writing the report' },
   { id: 'done', label: 'Report', text: 'Findings, tools run and limits' },
 ]
 
@@ -152,34 +216,39 @@ export const STATUS_LABEL: Record<JobStatus, string> = {
   fetching: 'Fetching',
   analysing: 'Analysing',
   triaging: 'Triaging',
+  reporting: 'Reporting',
   done: 'Done',
   failed: 'Failed',
   cancelled: 'Cancelled',
   unknown: 'Unreadable',
 }
 
-export const KIND_LABEL: Record<InputKind, string> = { address: 'Deployed contract', repo: 'Smart contract repo', upload: 'Upload', web2: 'Web2 repo' }
+export const KIND_LABEL: Record<InputKind, string> = { address: 'Deployed contract', github: 'Smart contract repo', upload: 'Upload', web2: 'Web2 repo' }
 
-export const isActive = (s: JobStatus) => s === 'queued' || s === 'fetching' || s === 'analysing' || s === 'triaging'
+/** The engine's draft PoC status in plain words. */
+export const POC_LABEL: Record<Poc['status'], string> = { 'draft-not-executed': 'Draft, not executed', 'executed-passed': 'Executed: the exploit worked', 'executed-failed': 'Executed: the exploit did not work' }
+
+/** The chain's mark for a contract scan (engine chain keys; BNB Chain's mark is "bsc" on this site). */
+export const chainLogoKey = (chain: string) => (chain === 'bnb' ? 'bsc' : chain)
+
+export const isActive = (s: JobStatus) => s === 'queued' || s === 'fetching' || s === 'analysing' || s === 'triaging' || s === 'reporting'
 export const isFinal = (s: JobStatus) => s === 'done' || s === 'failed' || s === 'cancelled'
 
-/** "src/Vault.sol:42" for any location shape. */
-export function locationText(l: FindingLocation): string {
-  if (!l) return '—'
-  if (typeof l === 'string') return l
-  const lines = l.startLine && l.endLine ? `${l.startLine}-${l.endLine}` : (l.line ?? l.startLine)
-  return [l.file ?? l.address ?? '', lines ? `:${lines}` : '', l.function ? ` ${l.function}()` : ''].join('') || '—'
-}
-export const locationSnippet = (l: FindingLocation) => (l && typeof l === 'object' ? (l.snippet ?? null) : null)
+/** "src/Vault.sol:42-44". */
+export const locationText = (l: Location | null | undefined) => (l ? `${l.file}${l.line ? `:${l.line}${l.endLine && l.endLine !== l.line ? `-${l.endLine}` : ''}` : ''}` : '—')
 
-/** The scope the engine reported, as label/value rows (it may be a string or a small object). */
-export function scopeRows(scope: unknown): [string, string][] {
-  if (scope == null) return []
-  if (typeof scope === 'string') return [['Scope', scope]]
-  if (typeof scope !== 'object') return [['Scope', String(scope)]]
-  return Object.entries(scope as Record<string, unknown>)
-    .filter(([, v]) => v != null && v !== '')
-    .map(([k, v]) => [k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase()), Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : String(v)])
+/** The report's target as label/value rows. */
+export function targetRows(t: Report['target']): [string, string][] {
+  const rows: [string, string | null | undefined][] = [
+    ['Contract', t.address ? `${t.contractName ? `${t.contractName} at ` : ''}${t.address}` : null],
+    ['Chain', t.chainName ?? (t.chainId ? `chain ${t.chainId}` : null)],
+    ['Source', t.type === 'address' ? (t.verified ? `verified (${t.sourceProvider ?? 'explorer'})` : 'not verified') : null],
+    ['Compiler', t.compiler?.version ?? null],
+    ['Repository', t.repo ? `${t.repo.owner}/${t.repo.name}` : null],
+    ['Commit', t.repo?.commit ?? null],
+    ['Upload', t.upload ? `${t.upload.name} (sha256 ${t.upload.sha256.slice(0, 16)}…)` : null],
+  ]
+  return rows.filter((r): r is [string, string] => !!r[1])
 }
 
 export const countsOf = (findings: Finding[]): Counts => Object.fromEntries(SEVERITIES.map((s) => [s, findings.filter((f) => f.severity === s).length])) as Counts
