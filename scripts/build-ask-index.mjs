@@ -261,6 +261,7 @@ const SITE_PAGES = [
   { file: 'src/pages/security/SecurityPage.tsx', url: '/security', title: 'Gully Security', consts: { TIERS: { section: 'Tiers' }, HOW: { section: 'How a scan works' } } },
   { file: 'src/pages/HoldersLanding.tsx', url: '/holders', title: 'Holder Map' },
   { file: 'src/pages/score/ScoreIndex.tsx', url: '/score', title: 'Gully Score' },
+  { file: 'src/pages/Status.tsx', url: '/status', title: 'Status' },
   { file: 'src/components/landing/ProductConsole.tsx', jsx: false, consts: { SECURITY_STEPS: { url: '/#security', title: 'Gully Security on the home page', section: 'What is live, on request and not offered' } } },
 ]
 

@@ -740,12 +740,13 @@ await step('app services', async () => {
   await mw.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   await m.close()
 
-  // Page heights (the owner's "no page way too long" rule, gap N-22): every app page is measured on every run at
-  // 1440x900 and 390, the main pages and every service (Holder Map and Monitors included). E2E_MAX_PAGE_PX sets the
-  // budget each must fit; with E2E_SHOTS the full-page screenshots and page-heights.json are saved as well.
+  // Page heights (owner rule, gap N-22): no app page is taller than 900 px at 1440x900. Every app page is measured
+  // on every run, the main pages and every service (Holder Map and Monitors included), at 1440 (asserted against the
+  // budget; E2E_MAX_PAGE_PX overrides 900) and at 390 (measured only: phones have no budget). With E2E_SHOTS the
+  // full-page screenshots and page-heights.json are saved as well.
   {
     const heights = {}
-    const MAX_PX = Number(process.env.E2E_MAX_PAGE_PX) || null
+    const MAX_PX = Number(process.env.E2E_MAX_PAGE_PX) || 900
     const pages = [...['overview', 'merchant', 'analytics', 'alerts', 'security', 'monitors'].map((id) => [id, `main[data-page="${id}"]`]), ...SERVICES.map(([id]) => [id, `[data-service="${id}"] [data-testid="service-header"]`])]
     for (const [width, height, mobile] of [[1440, 900, false], [390, 844, true]]) {
       const hc = await newContext({ width, height, mobile, cookie: cookieOf(api3) })
@@ -765,17 +766,17 @@ await step('app services', async () => {
           await hp.evaluate(() => window.scrollTo(0, 0))
           await hp.waitForTimeout(1200)
         } else await hp.waitForTimeout(400)
-        heights[`${id}-${width}`] = await hp.evaluate(() => document.documentElement.scrollHeight)
+        // The page's full content height: the document, or the app shell's own scroll pane when it scrolls inside
+        // a fixed-height layout (then the document is always exactly the viewport and would hide a long page).
+        heights[`${id}-${width}`] = await hp.evaluate(() => Math.max(document.documentElement.scrollHeight, ...[...document.querySelectorAll('main, main *, [data-page], body > div *')].filter((e) => /auto|scroll/.test(getComputedStyle(e).overflowY) && e.clientHeight > 300 && e.scrollHeight > e.clientHeight).map((e) => e.scrollHeight - e.clientHeight + window.innerHeight)))
         if (SHOTS) await hp.screenshot({ path: path.join(SHOTS, `page-${id}-${width}.png`), fullPage: true })
       }
       await hc.close()
     }
     const measured = Object.keys(heights)
     check(`page heights: every app page is measured at 1440 and 390 (${measured.length} of ${pages.length * 2})`, ['overview', 'merchant', 'alerts', 'holders', ...SERVICES.map(([id]) => id)].every((id) => heights[`${id}-1440`] > 0 && heights[`${id}-390`] > 0), JSON.stringify(heights))
-    if (MAX_PX) {
-      const over = Object.entries(heights).filter(([, h]) => h > MAX_PX)
-      check(`page heights: every app page fits ${MAX_PX} px`, over.length === 0, over.map(([k, h]) => `${k} ${h}px`).join(' | '))
-    }
+    const over = Object.entries(heights).filter(([k, h]) => k.endsWith('-1440') && h > MAX_PX)
+    check(`page heights: every app page fits ${MAX_PX} px at 1440x900`, over.length === 0, over.map(([k, h]) => `${k} ${h}px`).join(' | '))
     console.log(`  page heights (px): ${Object.entries(heights).map(([k, h]) => `${k} ${h}`).join(', ')}`)
     if (SHOTS) fs.writeFileSync(path.join(SHOTS, 'page-heights.json'), JSON.stringify(heights, null, 2))
   }

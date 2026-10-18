@@ -200,9 +200,11 @@ try {
   check('sources: the blog comes from the Ghost Content API at runtime (ask-remote), not the build', !has((c) => c.source === 'Blog'))
   const words = local.chunks.map((c) => c.text.split(' ').length)
   check('chunks stay within about 250 words', Math.max(...words) <= 320, `max ${Math.max(...words)}`)
-  // The bot's own help also matches this question in plain BM25; the docs must stay in the top two.
+  // The bot's own help also matches this question in plain BM25; a docs page about Telegram alerts must stay in the
+  // top two: the Telegram bot page or Plans & alerts' Telegram section (both answer it).
+  const TG_DOCS = /^https:\/\/docs\.gullylabs\.xyz\/(telegram|plans-alerts)(#|$)/
   const tg = ix.search('how do Telegram alerts work', { k: 3 })
-  check('"how do Telegram alerts work" ranks PlansAlerts in the top two', tg.slice(0, 2).some((r) => r.chunk.url.startsWith('https://docs.gullylabs.xyz/plans-alerts')), tg.map((r) => r.chunk.url).join(' '))
+  check('"how do Telegram alerts work" ranks the Telegram or Plans & alerts docs in the top two', tg.slice(0, 2).some((r) => TG_DOCS.test(r.chunk.url)), tg.map((r) => r.chunk.url).join(' '))
   const ck = (await ask.retrieve('Chain Kit price', { k: 4 })).results
   check('"Chain Kit price" finds pricing or Chain Kit in the top four (the L3 roadmap cost table is a fair match too)', ck.some((r) => /\/(chain-kit|pricing)(#|$)/.test(r.chunk.url)), ck.map((r) => r.chunk.url).join(' '))
   check('a query of stopwords finds nothing', ix.search('how do I the and').length === 0)
@@ -238,7 +240,7 @@ try {
   const a1 = await askPost({ question: 'How do Telegram alerts work?' })
   const sent1 = sourcesSent(calls.at(-1).body)
   check('an answer comes back (200) with answer, citations, usedTools, model', a1.status === 200 && typeof a1.data.answer === 'string' && Array.isArray(a1.data.citations) && Array.isArray(a1.data.usedTools) && a1.data.model === 'claude-haiku-5-5', JSON.stringify(a1.data))
-  check('citation [1] maps to the URL of source 1 that was sent', a1.data.citations.length === 1 && a1.data.citations[0].n === 1 && a1.data.citations[0].url === sent1.urls[1] && a1.data.citations[0].url.startsWith('https://docs.gullylabs.xyz/plans-alerts'), JSON.stringify(a1.data.citations))
+  check('citation [1] maps to the URL of source 1 that was sent', a1.data.citations.length === 1 && a1.data.citations[0].n === 1 && a1.data.citations[0].url === sent1.urls[1] && TG_DOCS.test(a1.data.citations[0].url), JSON.stringify(a1.data.citations))
   check('a citation number with no source is removed from the answer', !a1.data.answer.includes('[9]') && a1.data.answer.includes('[1]'))
   const req1 = calls.at(-1)
   check('the request carries x-api-key and anthropic-version 2023-06-01', req1.headers['x-api-key'] === KEY && req1.headers['anthropic-version'] === '2023-06-01' && req1.url === '/v1/messages')
