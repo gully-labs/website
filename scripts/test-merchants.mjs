@@ -217,7 +217,6 @@ try {
     check(`wallet refused: ${name} (${want})`, r.status === want, r.data?.error)
     return r
   }
-  await wbad('all lower case (no checksum)', { address: eoa.toLowerCase(), type: 'eoa', chains: [8453] })
   const flipped = eoa.slice(0, 2) + [...eoa.slice(2)].map((ch, i) => (i === [...eoa.slice(2)].findIndex((x) => /[a-fA-F]/.test(x)) ? (ch === ch.toUpperCase() ? ch.toLowerCase() : ch.toUpperCase()) : ch)).join('')
   await wbad('a wrong EIP-55 checksum', { address: flipped, type: 'eoa', chains: [8453] })
   await wbad("Gully Labs' own treasury", { address: getAddress(TREASURY), type: 'eoa', chains: [8453] })
@@ -227,9 +226,10 @@ try {
   // A Safe deployed on Base only.
   const safe = acct().address
   chains[8453].code.set(safe.toLowerCase(), '0x608060405234801561001057600080fd5b50')
-  const sres = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: safe, type: 'contract', chains: [8453, 56] })
+  const sres = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: safe.toLowerCase(), type: 'contract', chains: [8453, 56] })
   const sBase = sres.data?.results?.find((x) => x.chainId === 8453)
   const sBnb = sres.data?.results?.find((x) => x.chainId === 56)
+  check('an all-lower-case address (no checksum) is accepted and stored in its EIP-55 form', sBase?.wallet?.address === safe, sBase?.wallet?.address)
   check('a deployed Safe on Base is a contract and enabled', sres.status === 200 && sBase?.ok && sBase.wallet.kind === 'contract' && sBase.wallet.enabled, JSON.stringify(sres.data?.results))
   check('the same Safe on BNB Chain is NOT deployed there: refused, stored disabled', sBnb && !sBnb.ok && /no contract is deployed/i.test(sBnb.error) && sBnb.wallet.enabled === false && sBnb.wallet.status === 'not-deployed')
   check('enabling the undeployed chain is refused (422)', (await O.post('/api/developer/merchant/wallets/56', { enabled: true })).status === 422)

@@ -286,17 +286,20 @@ function statementView(s, now = Date.now()) {
 export async function inspectWallet(chainId, raw, declared) {
   const c = STORE_CHAIN_IDS.has(chainId) ? CHAINS[chainId] : null
   if (!c) return bad(`Choose a chain: ${CHAIN_LIST.map((x) => `${x.id} (${x.name})`).join(', ')}.`)
-  const a = String(raw ?? '').trim()
+  let a = String(raw ?? '').trim()
   if (!ADDR_RE.test(a)) return bad('That is not an EVM address (0x followed by 40 hex characters).')
   const body = a.slice(2)
-  if (body === body.toLowerCase() || body === body.toUpperCase()) return bad('Paste the checksummed address (mixed upper and lower case, EIP-55) exactly as your wallet shows it, so a typo cannot slip through.')
+  // All one case carries no checksum (many wallets and explorers copy it that way): accept it and store the
+  // EIP-55 form. Mixed case must match its checksum exactly, which catches a mistyped character.
+  const oneCase = body === body.toLowerCase() || body === body.toUpperCase()
   let sum
   try {
     sum = checksumAddress(a)
   } catch {
     return bad('That is not an EVM address.')
   }
-  if (sum !== a) return bad('The EIP-55 checksum of this address does not match: one character is probably wrong. Copy it again from your wallet.')
+  if (oneCase) a = sum
+  else if (sum !== a) return bad('The EIP-55 checksum of this address does not match: one character is probably wrong. Copy it again from your wallet.')
   const lower = a.toLowerCase()
   if (/^0x0{40}$/.test(lower)) return bad('The zero address cannot receive payments.')
   if (lower === treasury()) return bad("That is Gully Labs' own treasury. Payments to it never count for a store: use a wallet you control.")
