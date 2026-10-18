@@ -1,0 +1,575 @@
+// Gully Security, the product UI's API (part 2 of the audit platform; the scan engine is part 1, the
+// monitoring and Gully Score part 3). Three tiers, named honestly everywhere:
+//   AI Security Scan  self-serve, automated (this file + the engine)       priced in plans.mjs SECURITY.scan
+//   Security Review   people read the code, quoted per project               request form below
+//   Audit             premium, not offered yet                               request form below
+// Nothing here says or implies that Gully Labs has audited anything.
+//
+// Signed-in (the developer gate in developer.mjs: session, workspace, role; every POST needs a role with the
+// 'security' write category: developer, admin or owner, workspaces.mjs):
+//   GET  /api/developer/security                  quota left this month, the offer, chains, engine state, checkout
+//   GET  /api/developer/security/scans            the workspace's scans, newest first
+//   POST /api/developer/security/scans            { input, upload?: { name, data (base64) }, expect: { priceUsd } }
+//                                                 -> 201 { scan } started (free quota) | 202 { scan, payment } an
+//                                                 invoice to pay (Gully Pay, invoices.mjs); the scan starts once paid
+//   GET  /api/developer/security/scans/:id        one scan, with its report once done
+//   GET  /api/developer/security/scans/:id/events Server-Sent Events: `scan` (the view) on every change, ends when done
+//   POST /api/developer/security/scans/:id/cancel  before payment: cancels the invoice; running: asks the engine
+//   POST /api/developer/security/scans/:id/publish { published, indexable? }  owner or admin only; done scans only.
+//                                                 A snapshot of the report (without draft PoCs) goes public at
+//                                                 /security/reports/<id>; noindex unless `indexable`.
+// Public:
+//   GET  /api/security/reports                    published reports, newest first
+//   GET  /api/security/reports/:id                one published report (404 unless published)
+//   GET  /api/security/stats                      real counts of scans run, per day for 30 days (the /security counter)
+//   POST /api/security/review-requests            { tier: 'review'|'audit', name, email, project, scope, … } -> 201
+//                                                 stored, listed in the admin enquiries and Security card, and sent
+//                                                 to TELEGRAM_ADMIN_CHAT_ID when set
+// Admin (admin.mjs, behind ADMIN_TOKEN):
+//   GET  /api/admin/security                      queue, scans per day, failures, review requests
+//   POST /api/admin/security/reviews/:id          { status, note? }
+//   POST /api/admin/security/scans/:id/unpublish  takes a public report down
+//
+// Quotas: SECURITY.scan.freePerMonth[plan] free scans per UTC month per workspace (a scan that failed does not
+// count), at most SECURITY.scan.maxActive running at once. Payment: one Gully Pay invoice per paid scan.
+
+import fs from 'node:fs'
+import path from 'node:path'
+import { adminCancelInvoice, adminInvoice, createInvoiceRecord, invoicePaidHooks } from './invoices.mjs'
+import { ACTIVE_STATUSES, checkUploadName, normaliseInput, SCAN_CHAINS, scopeLabel, SEVERITIES, TERMINAL_STATUSES } from './security-contract.mjs'
+import { engineInstalled, readScan, startScan, stopScan, watchScan } from './security-engine.mjs'
+import { findJob, isJobId, jobs, published, publishedJobs, reviews, save } from './security-store.mjs'
+import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
+import { ASSET_IDS } from './payments.mjs'
+import { planOf, SECURITY, treasury } from './plans.mjs'
+import { addEnquiry, randomToken } from './store.mjs'
+import { sendAdminTelegram } from './telegram.mjs'
+
+const UPLOADS = path.join(DATA_DIR, 'security-uploads')
+const INVOICE_TTL_MS = 7 * 86_400_000
+const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,24}$/
+export const REVIEW_STATUSES = ['new', 'contacted', 'quoted', 'won', 'declined', 'closed']
+const ADMIN_ROLES = ['owner', 'admin']
+
+/* ------------------------------------------------------------ rate limits --- */
+
+const hits = new Map()
+function allow(bucket, who, max, ms) {
+  const k = `${bucket}:${who}`
+  const now = Date.now()
+  const list = (hits.get(k) ?? []).filter((t) => now - t < ms)
+  if (list.length >= max) return hits.set(k, list), false
+  list.push(now)
+  hits.set(k, list)
+  return true
+}
+setInterval(() => {
+  const now = Date.now()
+  for (const [k, list] of hits) if (!list.some((t) => now - t < 86_400_000)) hits.delete(k)
+}, 600_000).unref?.()
+
+/** Test hook: forget every rate-limit hit. */
+export const resetSecurityLimitsForTest = () => hits.clear()
+
+/* ---------------------------------------------------------------- quotas --- */
+
+const monthStart = (now = new Date()) => Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+const nextMonth = (now = new Date()) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString()
+const usd = (cents) => Number(cents) / 100
+
+/** The workspace's free scans this month and what one more costs. */
+export function quotaOf(workspace) {
+  const plan = planOf(workspace)
+  const perMonth = SECURITY.scan.freePerMonth[plan.id] ?? 0
+  const from = monthStart()
+  const used = jobs().filter((j) => j.workspace === workspace && j.free && (j.state === 'starting' || j.state === 'started') && j.status !== 'failed' && Date.parse(j.createdAt) >= from).length
+  const left = Math.max(0, perMonth - used)
+  const active = jobs().filter((j) => j.workspace === workspace && (j.state === 'starting' || (j.state === 'started' && ACTIVE_STATUSES.includes(j.status)))).length
+  return { plan: { id: plan.id, name: plan.name }, freePerMonth: perMonth, used, left, resetsAt: nextMonth(), nextPriceUsd: left > 0 ? 0 : SECURITY.scan.priceUsd, active, maxActive: SECURITY.scan.maxActive }
+}
+
+/* ----------------------------------------------------------------- views --- */
+
+const countsOf = (report) => Object.fromEntries(SEVERITIES.map((s) => [s, (report?.findings ?? []).filter((f) => f.severity === s).length]))
+
+/** Copies what the engine says into the job's mirror (status, completion, counts). Saves when it changed. */
+function mirror(job, scan) {
+  if (!scan) return
+  let changed = false
+  if (scan.status && scan.status !== job.status) {
+    job.status = scan.status
+    job.statusAt = new Date().toISOString()
+    changed = true
+  }
+  if (TERMINAL_STATUSES.includes(scan.status) && !job.completedAt) {
+    job.completedAt = scan.updatedAt ?? new Date().toISOString()
+    changed = true
+  }
+  if (scan.status === 'done' && scan.report && !job.counts) {
+    job.counts = countsOf(scan.report)
+    changed = true
+  }
+  if (changed) save()
+}
+
+function paymentView(job) {
+  if (!job.invoiceId) return null
+  const inv = adminInvoice(job.invoiceId)
+  return { invoiceId: job.invoiceId, status: inv?.status ?? 'unknown', usd: usd(job.priceCents), payUrl: `/pay/${job.invoiceId}`, expiresAt: inv?.expiresAt ?? null }
+}
+
+/** What the app shows for one scan. `scan` is the engine's record (null when not started or unreadable). */
+function jobView(job, scan, { full = false } = {}) {
+  const status = job.state === 'awaiting_payment' ? 'awaiting_payment' : job.state === 'cancelled' && !job.scanId ? 'cancelled' : job.state === 'starting' ? 'queued' : (scan?.status ?? job.status ?? 'unknown')
+  return {
+    id: job.id,
+    status,
+    title: scopeLabel(job.input, job.upload),
+    input: job.input,
+    upload: job.upload ?? null,
+    free: !!job.free,
+    priceUsd: usd(job.priceCents ?? '0'),
+    payment: paymentView(job),
+    progress: scan?.progress ?? null,
+    createdAt: job.createdAt,
+    startedAt: job.startedAt ?? null,
+    updatedAt: scan?.updatedAt ?? job.statusAt ?? job.createdAt,
+    completedAt: job.completedAt ?? null,
+    counts: job.counts ?? null,
+    published: !!job.published,
+    publishedAt: job.publishedAt ?? null,
+    indexable: !!job.indexable,
+    publicUrl: job.published ? `/security/reports/${job.id}` : null,
+    startError: job.state === 'awaiting_payment' && job.startError ? job.startError : null,
+    ...(full ? { report: status === 'done' ? (scan?.report ?? null) : null, failure: status === 'failed' ? (scan?.error ?? scan?.report?.summary ?? null) : null } : {}),
+  }
+}
+
+/** Brings the mirror of the workspace's unfinished scans up to date (quota and the running limit read it). */
+async function syncWorkspace(workspace) {
+  for (const j of jobs()) if (j.workspace === workspace && j.state === 'started' && !TERMINAL_STATUSES.includes(j.status)) mirror(j, await readScan(j.scanId))
+}
+
+/** Reads the engine for a job (and retries starting a paid one), then its view. */
+async function viewOf(job, opts) {
+  await reconcile(job)
+  const scan = job.scanId ? await readScan(job.scanId) : null
+  mirror(job, scan)
+  return jobView(job, scan, opts)
+}
+
+/* ---------------------------------------------------------- starting scans --- */
+
+const starting = new Set()
+
+function uploadPath(job) {
+  return path.join(UPLOADS, `${job.id}.bin`)
+}
+
+/** Starts the engine's scan for a job (free, or paid). Resolves true when it started. */
+async function startJob(job) {
+  if (job.scanId || starting.has(job.id)) return !!job.scanId
+  starting.add(job.id)
+  try {
+    let upload = null
+    if (job.input.kind === 'upload') {
+      const bytes = fs.readFileSync(uploadPath(job))
+      upload = { name: job.upload?.name ?? 'upload', size: bytes.length, bytes }
+    }
+    const scan = await startScan({ workspace: job.workspace, input: job.input, upload })
+    if (!scan?.id) throw new Error('The scan engine returned no scan.')
+    job.scanId = scan.id
+    job.state = 'started'
+    job.startedAt = new Date().toISOString()
+    job.status = scan.status ?? 'queued'
+    job.statusAt = job.startedAt
+    delete job.startError
+    save()
+    if (upload) fs.rm(uploadPath(job), { force: true }, () => {})
+    return true
+  } catch (e) {
+    job.startError = String(e?.message ?? e).slice(0, 300)
+    save()
+    console.error(`security: scan ${job.id} could not start:`, job.startError)
+    return false
+  } finally {
+    starting.delete(job.id)
+  }
+}
+
+/** A paid job whose invoice is paid but whose scan has not started (a restart, an engine hiccup): start it. */
+async function reconcile(job) {
+  if (job.state !== 'awaiting_payment' || !job.invoiceId) return
+  if (adminInvoice(job.invoiceId)?.status === 'paid') await startJob(job)
+}
+
+// The moment a scan's invoice is paid, its scan starts.
+invoicePaidHooks.push((inv) => {
+  const job = jobs().find((j) => j.invoiceId === inv.id)
+  if (job && job.state === 'awaiting_payment') startJob(job)
+})
+
+// Keeps the mirror (the public counter, the admin queue) current for scans still running, and retries
+// paid scans that could not start. Cheap: only jobs that are not finished are read.
+setInterval(async () => {
+  for (const j of jobs()) {
+    try {
+      if (j.state === 'awaiting_payment') await reconcile(j)
+      else if (j.state === 'started' && !TERMINAL_STATUSES.includes(j.status)) mirror(j, await readScan(j.scanId))
+    } catch (e) {
+      console.error('security sync:', e?.message ?? e)
+    }
+  }
+}, 15_000).unref?.()
+
+/* ---------------------------------------------------------------- create --- */
+
+function readUpload(raw) {
+  if (!raw || typeof raw !== 'object') return { ok: false, error: 'Attach the code to scan: a .zip, .tar.gz or a single source file.' }
+  const name = String(raw.name ?? '').trim()
+  if (!checkUploadName(name)) return { ok: false, error: 'The file must be a .zip, .tar, .tar.gz, .tgz, .sol, .vy, .rs or .move with a plain name.' }
+  if (typeof raw.data !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(raw.data)) return { ok: false, error: 'The file could not be read. Pick it again.' }
+  const bytes = Buffer.from(raw.data, 'base64')
+  if (!bytes.length) return { ok: false, error: 'The file is empty.' }
+  if (bytes.length > SECURITY.scan.maxUploadBytes) return { ok: false, error: `The file is larger than ${Math.round(SECURITY.scan.maxUploadBytes / 1_000_000)} MB. Scan the repository instead.` }
+  return { ok: true, name, bytes }
+}
+
+async function createJob(req, res, ctx) {
+  const { workspace, user } = ctx
+  if (!allow('create', workspace, 20, 3_600_000)) return json(res, 429, { error: 'Too many scans asked for in the last hour. Try again later.' }), true
+  const body = await readJson(req, Math.ceil(SECURITY.scan.maxUploadBytes * 1.4) + 4_000)
+  if (!body) return json(res, 400, { error: 'Send the scan as JSON.' }), true
+  const n = normaliseInput(body.input)
+  if (!n.ok) return json(res, 400, { error: n.error }), true
+  let upload = null
+  if (n.input.kind === 'upload') {
+    upload = readUpload(body.upload)
+    if (!upload.ok) return json(res, 400, { error: upload.error }), true
+  }
+  if (!(await engineInstalled())) return json(res, 503, { error: 'Scans cannot run yet: the scan engine is not installed on this server. Nothing was charged.', code: 'engine-missing' }), true
+  await syncWorkspace(workspace)
+  const q = quotaOf(workspace)
+  if (q.active >= q.maxActive) return json(res, 429, { error: `${q.active} scan${q.active === 1 ? ' is' : 's are'} already running in this workspace. Wait for one to finish.`, code: 'too-many-active' }), true
+  const free = q.left > 0
+  const priceUsd = free ? 0 : SECURITY.scan.priceUsd
+  // The price the person confirmed must still be the price: a quota used up meanwhile is not a silent charge.
+  if (body.expect && Number(body.expect.priceUsd) !== priceUsd) return json(res, 409, { error: priceUsd ? `Your free scans for this month are used up meanwhile: this scan costs $${priceUsd}. Confirm again.` : 'This scan is free after all. Confirm again.', code: 'price-changed', quota: q }), true
+  if (!free && !treasury()) return json(res, 402, { error: 'Scans beyond the free quota cannot be bought yet: no treasury wallet is configured. Nothing was charged.', code: 'checkout-off' }), true
+
+  const now = new Date().toISOString()
+  const job = { id: 'sec_' + randomToken(12), workspace, createdBy: user, createdAt: now, input: n.input, upload: upload ? { name: upload.name, size: upload.bytes.length } : null, free, priceCents: String(priceUsd * 100), invoiceId: null, state: free ? 'starting' : 'awaiting_payment', scanId: null, status: null, published: false, indexable: false }
+  if (upload) {
+    fs.mkdirSync(UPLOADS, { recursive: true })
+    fs.writeFileSync(uploadPath(job), upload.bytes)
+  }
+  if (!free) {
+    const inv = createInvoiceRecord({ title: `${SECURITY.scan.name}: ${scopeLabel(job.input, job.upload)}`, note: `Gully Security scan ${job.id}. The scan starts as soon as this invoice is paid.`, usdCents: BigInt(job.priceCents), assets: ASSET_IDS, ttlMs: INVOICE_TTL_MS })
+    job.invoiceId = inv.id
+  }
+  jobs().push(job)
+  save()
+  if (!free) return json(res, 202, { scan: jobView(job, null), payment: paymentView(job) }), true
+  const ok = await startJob(job)
+  if (!ok) {
+    // A free scan that could not start is dropped, so it does not use the quota.
+    jobs().splice(jobs().indexOf(job), 1)
+    save()
+    fs.rm(uploadPath(job), { force: true }, () => {})
+    return json(res, 503, { error: `The scan could not start: ${job.startError}. Nothing was used from your quota.` }), true
+  }
+  return json(res, 201, { scan: await viewOf(job, { full: true }) }), true
+}
+
+/* -------------------------------------------------------- public snapshot --- */
+
+/** What a published report shows: the report without draft PoCs (never published) or the cost. */
+function snapshotOf(job, scan) {
+  const r = scan.report
+  return {
+    scope: r.scope ?? null,
+    tools: (r.tools ?? []).map((t) => ({ name: t.name, version: t.version ?? null, ran: !!t.ran, reason: t.reason ?? null })),
+    findings: (r.findings ?? []).map((f) => ({ id: f.id, severity: f.severity, title: f.title, location: f.location ?? null, description: f.description ?? '', recommendation: f.recommendation ?? '', status: f.status ?? 'open', pocExecuted: !!f.pocExecuted, hasPoc: !!f.poc })),
+    summary: r.summary ?? '',
+    disclaimer: r.disclaimer ?? '',
+  }
+}
+
+const publicView = (job) => ({ id: job.id, title: scopeLabel(job.input, job.upload), input: job.input, upload: job.upload ? { name: job.upload.name } : null, completedAt: job.completedAt ?? null, publishedAt: job.publishedAt, indexable: !!job.indexable, counts: job.counts ?? countsOf(job.snapshot), url: `/security/reports/${job.id}` })
+
+/* ------------------------------------------------------------ signed in --- */
+
+/** /api/developer/security*, called by developer.mjs's gate with ctx = { user, workspace, role, … }. */
+export async function handleSecurity(req, res, url, ctx) {
+  const p = url.pathname.slice('/api/developer/security'.length)
+  const post = req.method === 'POST'
+  const { workspace } = ctx
+
+  if (p === '' || p === '/') {
+    if (post) return json(res, 405, { error: 'GET only' }), true
+    await syncWorkspace(workspace)
+    return json(res, 200, { quota: quotaOf(workspace), offer: SECURITY, chains: SCAN_CHAINS, engine: { installed: await engineInstalled() }, checkout: { enabled: !!treasury() }, role: ctx.role, canPublish: ADMIN_ROLES.includes(ctx.role) }), true
+  }
+
+  if (p === '/scans') {
+    if (post) return createJob(req, res, ctx)
+    const mine = jobs().filter((j) => j.workspace === workspace).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 100)
+    const out = []
+    for (const j of mine) out.push(await viewOf(j))
+    return json(res, 200, { scans: out }), true
+  }
+
+  const m = p.match(/^\/scans\/([^/]+)(?:\/(events|cancel|publish))?$/)
+  if (!m) return json(res, 404, { error: 'not found' }), true
+  const job = findJob(m[1])
+  if (!job || job.workspace !== workspace) return json(res, 404, { error: 'No such scan in this workspace.' }), true
+
+  if (!m[2]) {
+    if (post) return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, { scan: await viewOf(job, { full: true }) }), true
+  }
+
+  if (m[2] === 'events') {
+    if (post) return json(res, 405, { error: 'GET only' }), true
+    if (!allow('sse', workspace, 120, 3_600_000)) return json(res, 429, { error: 'Too many live views opened. Reload the page later.' }), true
+    return streamJob(req, res, job), true
+  }
+
+  if (!post) return json(res, 405, { error: 'POST only' }), true
+
+  if (m[2] === 'cancel') {
+    if (!allow('cancel', workspace, 60, 3_600_000)) return json(res, 429, { error: 'Too many requests. Try again later.' }), true
+    if (job.state === 'awaiting_payment') {
+      if (adminInvoice(job.invoiceId)?.status === 'paid') {
+        await startJob(job)
+        return json(res, 409, { error: 'This scan is paid for already; it is starting. Cancel it once it runs.' }), true
+      }
+      adminCancelInvoice(job.invoiceId)
+      job.state = 'cancelled'
+      job.cancelledAt = new Date().toISOString()
+      job.status = 'cancelled'
+      save()
+      fs.rm(uploadPath(job), { force: true }, () => {})
+      return json(res, 200, { scan: jobView(job, null, { full: true }) }), true
+    }
+    const scan = job.scanId ? await readScan(job.scanId) : null
+    mirror(job, scan)
+    if (!scan || !ACTIVE_STATUSES.includes(scan.status)) return json(res, 409, { error: `This scan has ${scan?.status === 'done' ? 'finished' : scan ? `already ${scan.status === 'failed' ? 'failed' : 'stopped'}` : 'no running engine job'}; there is nothing to cancel.` }), true
+    try {
+      const after = await stopScan(job.scanId)
+      job.cancelledAt = new Date().toISOString()
+      mirror(job, after ?? (await readScan(job.scanId)))
+      return json(res, 200, { scan: await viewOf(job, { full: true }) }), true
+    } catch (e) {
+      return json(res, e?.status ?? 502, { error: `The engine could not cancel the scan: ${String(e?.message ?? e).slice(0, 200)}` }), true
+    }
+  }
+
+  // publish
+  if (!ADMIN_ROLES.includes(ctx.role)) return json(res, 403, { error: `Your role (${ctx.role}) can't publish reports. Ask the workspace owner or an admin.`, code: 'forbidden-role' }), true
+  if (!allow('publish', workspace, 60, 3_600_000)) return json(res, 429, { error: 'Too many changes. Try again later.' }), true
+  const body = await readJson(req, 1_000)
+  if (typeof body?.published !== 'boolean') return json(res, 400, { error: 'Say whether the report is published: { published: true | false }.' }), true
+  if (body.published) {
+    const scan = job.scanId ? await readScan(job.scanId) : null
+    mirror(job, scan)
+    if (scan?.status !== 'done' || !scan.report) return json(res, 409, { error: 'Only a finished scan with a report can be published.' }), true
+    job.snapshot = snapshotOf(job, scan)
+    job.counts = countsOf(scan.report)
+    job.published = true
+    job.publishedAt = new Date().toISOString()
+    job.publishedBy = ctx.user
+    job.indexable = body.indexable === true
+  } else {
+    job.published = false
+    job.indexable = false
+    job.unpublishedAt = new Date().toISOString()
+  }
+  save()
+  return json(res, 200, { scan: await viewOf(job, { full: true }) }), true
+}
+
+/** Server-Sent Events for one scan: the view now, then on every change, until it finishes (or 30 minutes). */
+function streamJob(req, res, job) {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' })
+  let closed = false
+  let last = ''
+  let unwatch = null
+  const send = (view) => {
+    if (closed) return
+    const s = JSON.stringify(view)
+    if (s === last) return
+    last = s
+    res.write(`event: scan\ndata: ${s}\n\n`)
+    if (['done', 'failed', 'cancelled'].includes(view.status)) end()
+  }
+  const end = () => {
+    if (closed) return
+    closed = true
+    clearInterval(tick)
+    clearInterval(beat)
+    clearTimeout(life)
+    unwatch?.()
+    res.end()
+  }
+  const refresh = async () => {
+    if (closed) return
+    try {
+      const v = await viewOf(job, { full: true })
+      send(v)
+      if (job.scanId && !unwatch && !closed) unwatch = watchScan(job.scanId, (scan) => (mirror(job, scan), send(jobView(job, scan, { full: true }))))
+    } catch (e) {
+      console.error('security events:', e?.message ?? e)
+    }
+  }
+  // Before payment (and as a safety net) the job is re-read every 2 s; once started the engine's events drive it.
+  const tick = setInterval(refresh, 2_000)
+  const beat = setInterval(() => !closed && res.write(': keep-alive\n\n'), 15_000)
+  const life = setTimeout(end, 30 * 60_000)
+  req.on('close', end)
+  refresh()
+}
+
+/* ---------------------------------------------------------------- public --- */
+
+function readReview(body) {
+  const s = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
+  const tier = s(body?.tier, 10)
+  if (!['review', 'audit'].includes(tier)) return { ok: false, error: 'Pick what you are asking for: a Security Review or an Audit.' }
+  const name = s(body?.name, 120)
+  const email = s(body?.email, 254).toLowerCase()
+  const project = s(body?.project, 120)
+  const scope = s(body?.scope, 4_000)
+  if (name.length < 2) return { ok: false, error: 'Tell us your name.' }
+  if (!EMAIL_RE.test(email)) return { ok: false, error: 'A valid email is required, so we can send the quote.' }
+  if (project.length < 2) return { ok: false, error: 'Name the project.' }
+  if (scope.length < 20) return { ok: false, error: 'Describe what should be reviewed in a sentence or two (at least 20 characters).' }
+  const repo = s(body?.repo, 200)
+  if (repo && !/^(https?:\/\/\S+|[\w.-]+\/[\w.-]+)$/.test(repo)) return { ok: false, error: 'The repository must be a URL or owner/name.' }
+  const address = s(body?.address, 42)
+  if (address && !/^0x[0-9a-fA-F]{40}$/.test(address)) return { ok: false, error: 'The contract address must be 0x followed by 40 hex characters.' }
+  const chain = s(body?.chain, 40)
+  if (chain && !SCAN_CHAINS.some((c) => c.key === chain)) return { ok: false, error: 'Pick one of the listed chains, or leave the chain empty.' }
+  return { ok: true, review: { tier, name, email, project, scope, repo: repo || null, chain: chain || null, address: address ? address.toLowerCase() : null, company: s(body?.company, 120) || null, timeline: s(body?.timeline, 80) || null, budget: s(body?.budget, 80) || null } }
+}
+
+/** /api/security/*. Returns true when it answered. */
+export async function handleSecurityPublic(req, res, url) {
+  const p = url.pathname
+  const ip = clientIp(req)
+
+  if (p === '/api/security/review-requests') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    if (req.headers['x-requested-with'] !== 'gully') return json(res, 403, { error: 'Cross-site request refused.' }), true
+    if (!allow('review', ip, 5, 3_600_000)) return json(res, 429, { error: 'Too many requests from this address. Try again in an hour, or write to hello@gullylabs.xyz.' }), true
+    const body = await readJson(req, 12_000)
+    // A filled honeypot is a bot: answered like a success, stored nowhere.
+    if (typeof body?.website === 'string' && body.website.trim()) return json(res, 201, { request: { id: 'rr_' + randomToken(9), status: 'new' } }), true
+    const r = readReview(body)
+    if (!r.ok) return json(res, 400, { error: r.error }), true
+    if (!allow('review-email', r.review.email, 3, 86_400_000)) return json(res, 429, { error: 'We already have requests from this email today. We will be in touch.' }), true
+    let wallet = null
+    try {
+      wallet = (await import('./developer.mjs')).sessionAddress(req)
+    } catch {
+      wallet = null
+    }
+    const now = new Date().toISOString()
+    const review = { id: 'rr_' + randomToken(9), ...r.review, status: 'new', note: null, createdAt: now, updatedAt: now, source: String(body?.source ?? '') === 'app' ? 'app' : 'site', wallet }
+    reviews().push(review)
+    if (reviews().length > 5_000) reviews().splice(0, reviews().length - 5_000)
+    save()
+    const label = review.tier === 'audit' ? 'Audit' : 'Security Review'
+    // The existing admin inbox (enquiries) and the operators' Telegram chat both hear about it.
+    addEnquiry({ name: review.name, email: review.email, message: `${label} request for ${review.project}${review.company ? ` (${review.company})` : ''}.\n\n${review.scope}${review.repo ? `\n\nRepository: ${review.repo}` : ''}${review.address ? `\nContract: ${review.address}${review.chain ? ` on ${review.chain}` : ''}` : ''}${review.timeline ? `\nTimeline: ${review.timeline}` : ''}`, types: [label], budget: review.budget ?? '', securityReviewId: review.id })
+    sendAdminTelegram(`New ${label} request: ${review.project} from ${review.name} <${review.email}>. Open the admin Security card.`).then(
+      (t) => t.ok || /not set|not configured/.test(t.error ?? '') || console.error('security review telegram:', t.error),
+      () => {},
+    )
+    return json(res, 201, { request: { id: review.id, tier: review.tier, status: review.status } }), true
+  }
+
+  if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+  if (!allow('read', ip, 600, 3_600_000)) return json(res, 429, { error: 'Too many requests. Try again later.' }), true
+
+  // Public reads: the docs host reads the counter cross-origin, like /api/plans.
+  const open = { 'Cache-Control': 'public, max-age=30', 'Access-Control-Allow-Origin': '*' }
+  if (p === '/api/security/reports') return json(res, 200, { reports: publishedJobs().slice(0, 200).map(publicView) }, open), true
+
+  if (p === '/api/security/stats') return json(res, 200, statsOf(30), open), true
+
+  const m = p.match(/^\/api\/security\/reports\/([^/]+)$/)
+  if (m) {
+    const job = isJobId(m[1]) ? published(m[1]) : null
+    if (!job?.snapshot) return json(res, 404, { error: 'No published report has that address. The owner may have taken it down.' }, { 'X-Robots-Tag': 'noindex' }), true
+    return json(res, 200, { report: { ...publicView(job), ...job.snapshot } }, { 'Cache-Control': 'public, max-age=30', ...(job.indexable ? {} : { 'X-Robots-Tag': 'noindex' }) }), true
+  }
+  return false
+}
+
+/** Real counts from the jobs (never invented): per UTC day for `days` days, and totals. */
+function statsOf(days) {
+  const today = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate())
+  const rows = Array.from({ length: days }, (_, i) => ({ day: new Date(today - (days - 1 - i) * 86_400_000).toISOString().slice(0, 10), started: 0, done: 0, failed: 0 }))
+  const at = (iso) => rows.find((r) => r.day === String(iso ?? '').slice(0, 10))
+  let started = 0
+  let done = 0
+  let failed = 0
+  for (const j of jobs()) {
+    if (j.state !== 'started') continue
+    started++
+    const s = at(j.startedAt)
+    if (s) s.started++
+    if (j.status === 'done') {
+      done++
+      const d = at(j.completedAt)
+      if (d) d.done++
+    } else if (j.status === 'failed') {
+      failed++
+      const d = at(j.completedAt)
+      if (d) d.failed++
+    }
+  }
+  return { generatedAt: new Date().toISOString(), totals: { started, done, failed, published: publishedJobs().length }, days: rows }
+}
+
+/* ----------------------------------------------------------------- admin --- */
+
+/** /api/admin/security*, after admin.mjs has checked the token. */
+export async function handleSecurityAdmin(req, res, url) {
+  const p = url.pathname
+  if (p === '/api/admin/security') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    const all = [...jobs()].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    const lite = (j) => ({ ...jobView(j, null), workspace: j.workspace, createdBy: j.createdBy, status: j.state === 'awaiting_payment' ? 'awaiting_payment' : j.state === 'cancelled' && !j.scanId ? 'cancelled' : j.state === 'starting' ? 'queued' : (j.status ?? 'unknown'), startError: j.startError ?? null })
+    const queue = all.filter((j) => j.state === 'awaiting_payment' || j.state === 'starting' || (j.state === 'started' && !TERMINAL_STATUSES.includes(j.status))).map(lite)
+    const failures = all.filter((j) => j.status === 'failed' || (j.state === 'awaiting_payment' && j.startError)).slice(0, 25).map(lite)
+    const s = statsOf(30)
+    return json(res, 200, { engine: { installed: await engineInstalled() }, offer: SECURITY, totals: { ...s.totals, jobs: all.length, awaitingPayment: all.filter((j) => j.state === 'awaiting_payment').length }, days: s.days, queue, failures, published: publishedJobs().map(publicView), reviews: [...reviews()].reverse(), reviewStatuses: REVIEW_STATUSES }), true
+  }
+  if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+  let m = p.match(/^\/api\/admin\/security\/reviews\/(rr_[\w-]{12})$/)
+  if (m) {
+    const r = reviews().find((x) => x.id === m[1])
+    if (!r) return json(res, 404, { error: 'No such request.' }), true
+    const body = await readJson(req, 4_000)
+    if (body?.status !== undefined && !REVIEW_STATUSES.includes(body.status)) return json(res, 400, { error: `status must be one of: ${REVIEW_STATUSES.join(', ')}.` }), true
+    if (body?.status) r.status = body.status
+    if (typeof body?.note === 'string') r.note = body.note.trim().slice(0, 2_000) || null
+    r.updatedAt = new Date().toISOString()
+    save()
+    return json(res, 200, { review: r }), true
+  }
+  m = p.match(/^\/api\/admin\/security\/scans\/([^/]+)\/unpublish$/)
+  if (m) {
+    const job = findJob(m[1])
+    if (!job) return json(res, 404, { error: 'No such scan.' }), true
+    job.published = false
+    job.indexable = false
+    job.unpublishedAt = new Date().toISOString()
+    job.unpublishedBy = 'admin'
+    save()
+    return json(res, 200, { ok: true }), true
+  }
+  return json(res, 404, { error: 'not found' }), true
+}

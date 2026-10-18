@@ -38,6 +38,7 @@
 //   POST /api/admin/ask/draft, GET /api/admin/ask/log   Gully Ask content studio and ask log (ask.mjs)
 //   GET  /api/admin/charts?days=7|30|90       daily series for the dashboard's charts (admin-charts.mjs)
 //   /api/admin/channel*                       @GullyLabsNews channel posts and auto posts (telegram-channel.mjs)
+//   /api/admin/security*                      Gully Security: scan queue, failures, review requests (security-routes.mjs)
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
@@ -52,6 +53,7 @@ import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, 
 import { CHAIN_LIST, publicAssets, rpc } from './payments.mjs'
 import { checkTreasuryChains, treasuryStatus } from './treasury-chains.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
+import { handleSecurityAdmin } from './security-routes.mjs'
 import { planOf, publicPlans, treasury } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
 import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
@@ -138,6 +140,7 @@ export async function handleAdmin(req, res, url) {
   if (p.startsWith('/api/admin/ask/')) return handleAskAdmin(req, res, url)
   if (p === '/api/admin/merchants' || p.startsWith('/api/admin/merchants/')) return handleMerchantsAdmin(req, res, url)
   if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
+  if (p === '/api/admin/security' || p.startsWith('/api/admin/security/')) return handleSecurityAdmin(req, res, url)
   const db = developers()
 
   // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so

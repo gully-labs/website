@@ -18,6 +18,9 @@ const ChainKit = lazy(() => chunks.products().then((m) => ({ default: m.ChainKit
 const Stock = lazy(() => chunks.stock().then((m) => ({ default: m.StockPage })))
 const Tracker = lazy(() => chunks.tracker().then((m) => ({ default: m.Tracker })))
 const Ask = lazy(() => chunks.ask().then((m) => ({ default: m.AskPage })))
+const Security = lazy(() => chunks.security().then((m) => ({ default: m.SecurityPage })))
+const SecurityReports = lazy(() => chunks.securityReports().then((m) => ({ default: m.ReportsIndex })))
+const SecurityReport = lazy(() => chunks.securityReports().then((m) => ({ default: m.PublicReportPage })))
 const NotFound = lazy(() => chunks.notFound().then((m) => ({ default: m.NotFound })))
 const Tg = lazy(() => chunks.tg().then((m) => ({ default: m.TgApp })))
 
@@ -59,6 +62,9 @@ export const AboutRoute = () => page(<About />)
 export const ProjectDetailRoute = () => page(<ProjectDetail />)
 export const TrackerRoute = () => page(<Tracker />)
 export const AskRoute = () => page(<Ask />)
+export const SecurityRoute = () => page(<Security />)
+export const SecurityReportsRoute = () => page(<SecurityReports />)
+export const SecurityReportRoute = () => page(<SecurityReport />)
 export const NotFoundRoute = () => page(<NotFound />)
 // The Telegram Mini App draws its own loading state; a blank screen in Telegram's colours meanwhile.
 export const TgRoute = () => (

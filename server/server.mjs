@@ -24,6 +24,7 @@ import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
+import { handleSecurityPublic } from './security-routes.mjs'
 import { CHAIN_LIST, rpc } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { startTreasuryWatch } from './treasury-chains.mjs'
@@ -239,6 +240,8 @@ async function handleRequest(req, res) {
     if (await handlePay(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // Gully Security (security-routes.mjs): published reports, the scan counter, review requests.
+  if (url.pathname.startsWith('/api/security/')) return void ((await handleSecurityPublic(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
   let access = null
   if (url.pathname.startsWith('/api/tracker')) {
     if (req.method === 'OPTIONS') return send(res, 204, '', CORS)

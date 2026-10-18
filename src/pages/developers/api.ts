@@ -96,6 +96,8 @@ export interface Offer {
   anonymous: { perMin: number; historyDays: number }
   plans: Plan[]
   analytics: { plans: AnalyticsPlan[]; trialDays: number; graceDays: number; periodDays: number }
+  /** Gully Security tiers (server/plans.mjs SECURITY). */
+  security?: import('../../components/security/types').SecurityOffer
   checkout: { enabled: true; treasury: string } | { enabled: false; treasury: null; reason: string }
 }
 

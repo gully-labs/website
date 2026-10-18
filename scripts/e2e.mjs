@@ -724,9 +724,157 @@ await step('admin', async () => {
   await ctx.close()
 })
 
+/* ------------------------------------------------------------- Gully Security --- */
+
+// The scan engine is part 1 of the platform; here the STUB engine (scripts/fixtures) answers, installed through
+// server/security-engine.mjs's test hook. Fresh wallets, so the free quota (1 on Free) is known.
+await step('security', async () => {
+  const { setEngineForTest } = await import('../server/security-engine.mjs')
+  const { createStubEngine } = await import('./fixtures/security-stub-engine.mjs')
+  setEngineForTest(createStubEngine({ stepMs: 500 }))
+  const secOwner = privateKeyToAccount(generatePrivateKey())
+  const secApi = makeClient(BASE)
+  check('security: a fresh wallet signs in', (await secApi.signIn(secOwner)).status === 200)
+  let reportId = null
+
+  // The stepper at 1440: input -> scope & cost -> running -> report; then publish.
+  {
+    const ctx = await newContext({ cookie: cookieOf(secApi) })
+    const page = await ctx.newPage()
+    const w = watch(page, 'security stepper 1440')
+    await page.goto(BASE + '/developers#security-new')
+    await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
+    check('security: the sidebar has Security with its icon', (await page.getByRole('navigation', { name: 'App pages' }).getByRole('link', { name: /^Security/ }).locator('svg').count()) > 0)
+    check('security: sub-tabs are a real tablist with icons', (await page.getByRole('tablist', { name: 'Security sections' }).getByRole('tab').count()) === 4 && (await page.getByRole('tab', { name: 'New scan' }).getAttribute('aria-selected')) === 'true')
+    check('security: chain choices carry the chain marks', (await page.getByRole('radiogroup', { name: 'Chain' }).locator('img').count()) >= 5)
+    await shot(page, 'security-step1-input')
+    await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    check('security: step 1 refuses a missing address', await page.getByText(/Enter the contract address/).isVisible())
+    await page.getByRole('radio', { name: /Base/ }).click()
+    await page.getByPlaceholder('0x…').fill('0x' + '1b'.repeat(20))
+    await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    await page.getByTestId('cost').waitFor()
+    check('security: step 2 shows the scope, the free quota and "Free"', (await page.getByTestId('price').textContent()) === 'Free' && /on Base/.test((await page.getByTestId('scope-target').textContent()) ?? ''))
+    const fold = await page.getByTestId('confirm-scan').boundingBox()
+    check('security: step 2 fits above the fold at 1440x900', !!fold && fold.y + fold.height <= 900, JSON.stringify(fold))
+    await shot(page, 'security-step2-scope')
+    await page.getByTestId('confirm-scan').click()
+    await page.getByTestId('scan-progress').waitFor()
+    await page.waitForFunction(() => ['fetching', 'analysing', 'triaging'].includes(document.querySelector('[data-testid="scan-progress"]')?.getAttribute('data-status') ?? ''), null, { timeout: 10_000 })
+    check('security: step 4 shows live progress per step', (await page.locator('[data-testid="scan-progress"] [aria-current="step"]').count()) === 1)
+    await shot(page, 'security-step4-running')
+    await page.getByTestId('report-body').waitFor({ timeout: 20_000 })
+    await page.getByTestId('severity-charts').waitFor()
+    check('security: the report has charts, tools (ran and not run) and findings', (await page.locator('[data-testid="severity-charts"] [data-chart]').count()) === 2 && (await page.getByTestId('tools').getByText('not run').count()) === 1 && (await page.locator('[data-finding]').count()) === 4)
+    await page.getByRole('group', { name: 'Filter findings by severity' }).getByRole('button', { name: /^High/ }).click()
+    check('security: the severity filter narrows the list', (await page.locator('[data-finding]').count()) === 1)
+    await page.locator('[data-finding="F-1"] > button').click()
+    check('security: a finding expands to its location and draft PoC', (await page.getByTestId('poc').isVisible()) && /src\/Vault\.sol:42/.test((await page.locator('[data-finding="F-1"]').textContent()) ?? ''))
+    await page.getByRole('button', { name: 'Copy', exact: true }).click()
+    check('security: the PoC copies', /contract Attack/.test(await page.evaluate(() => navigator.clipboard.readText())))
+    const head = await page.getByTestId('severity-charts').boundingBox()
+    check('security: the report charts are above the fold at 1440x900', !!head && head.y < 900, JSON.stringify(head))
+    await shot(page, 'security-step5-report')
+    reportId = await page.getByTestId('scan-detail').getAttribute('data-scan')
+    await page.getByRole('switch').click()
+    await page.getByTestId('public-link').waitFor()
+    check('security: publishing gives the stable public link', ((await page.getByTestId('public-link').getAttribute('href')) ?? '').endsWith(`/security/reports/${reportId}`))
+    // A second scan is beyond the free quota: step 2 prices it and step 3 is Gully Pay.
+    await page.getByRole('tab', { name: 'New scan' }).click()
+    await page.getByRole('radio', { name: /Smart contract repo/ }).click()
+    await page.getByPlaceholder(/owner\/name or https/).fill('gully-labs/sdk')
+    await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    check('security: beyond the quota step 2 shows the price', /^\$\d+/.test((await page.getByTestId('price').textContent()) ?? ''))
+    await page.getByTestId('confirm-scan').click()
+    await page.getByTestId('pay-step').waitFor({ timeout: 10_000 })
+    check('security: step 3 is Gully Pay for the scan invoice', (await page.getByRole('link', { name: /Open the invoice page/ }).getAttribute('target')) === '_blank')
+    await shot(page, 'security-step3-pay')
+    await page.getByRole('tab', { name: 'Scans' }).click()
+    await page.getByTestId('scan-list').waitFor()
+    check('security: the scans list shows both, one awaiting payment', (await page.locator('[data-scan-row]').count()) === 2 && (await page.locator('[data-scan-row] [data-status="awaiting_payment"]').count()) === 1)
+    await shot(page, 'security-scans')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i, /Failed to load resource/])
+    await ctx.close()
+  }
+
+  // The stepper and the report viewer at 390.
+  {
+    const mate2 = privateKeyToAccount(generatePrivateKey())
+    const m = makeClient(BASE)
+    await m.signIn(mate2)
+    const ctx = await newContext({ width: 390, height: 844, mobile: true, cookie: cookieOf(m) })
+    const page = await ctx.newPage()
+    const w = watch(page, 'security stepper 390')
+    await page.goto(BASE + '/developers#security-new')
+    await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
+    await noHorizontalScroll(page, 'security step 1')
+    await shot(page, 'security-step1-input')
+    await page.getByRole('radio', { name: /Web2 repo/ }).click()
+    await page.getByPlaceholder(/owner\/name or https/).fill('gully-labs/website')
+    await page.getByRole('button', { name: /Next: scope and cost/ }).click()
+    await page.getByTestId('cost').waitFor()
+    await noHorizontalScroll(page, 'security step 2')
+    await shot(page, 'security-step2-scope')
+    await page.getByTestId('confirm-scan').click()
+    await page.getByTestId('report-body').waitFor({ timeout: 25_000 })
+    await noHorizontalScroll(page, 'security report')
+    await shot(page, 'security-step5-report')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+
+  // Public pages: /security, the index and the published report, at 1440 and 390.
+  for (const [width, mobile] of [[1440, false], [390, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    const page = await ctx.newPage()
+    const w = watch(page, `security public pages at ${width}`)
+    await page.goto(BASE + '/security')
+    await page.getByRole('heading', { level: 1 }).waitFor()
+    await page.locator('[data-testid="live-scans"] [data-chart]').waitFor({ timeout: 10_000 }).catch(() => {})
+    check(`/security at ${width}: tiers tablist, prices from the config, a live counter of real scans`, (await page.getByRole('tablist', { name: 'Tiers' }).getByRole('tab').count()) === 3 && /^\$\d+ a scan$/.test((await page.locator('[data-tier-price="scan"]').textContent()) ?? '') && (await page.locator('[data-testid="live-scans"] [data-chart]').count()) === 1)
+    check(`/security at ${width}: says a scan is not an audit and offers no Audit for sale`, (await page.getByText(/is not an audit/).count()) > 0 && (await page.locator('[data-tier-price="audit"]').textContent()) === 'Not offered yet')
+    check(`/security at ${width}: the review form is on the page`, (await page.getByTestId('review-form').count()) === 1)
+    if (mobile) await noHorizontalScroll(page, '/security')
+    else check('/security: Security is in the Products menu with an icon', (await page.locator('a[href="/security"] svg').count()) > 0)
+    await shot(page, 'security-page')
+    await page.goto(BASE + '/security/reports')
+    await page.getByTestId('report-index').waitFor()
+    check(`/security/reports at ${width}: lists the published report`, (await page.locator(`a[href="/security/reports/${reportId}"]`).count()) === 1)
+    if (mobile) await noHorizontalScroll(page, '/security/reports')
+    await shot(page, 'security-reports')
+    await page.goto(`${BASE}/security/reports/${reportId}`)
+    await page.getByTestId('public-report').waitFor()
+    check(`public report at ${width}: kit-branded page, not-an-audit notice, findings, no PoC, noindex`, (await page.getByTestId('not-audit').isVisible()) && (await page.locator('[data-finding]').count()) === 4 && (await page.getByTestId('poc').count()) === 0 && (await page.locator('meta[name="robots"][content="noindex"]').count()) >= 1 && (await page.locator('[data-brand]').count()) > 0)
+    if (mobile) await noHorizontalScroll(page, 'public report')
+    await shot(page, 'security-public-report')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  const html = await (await fetch(`${BASE}/security/reports/${reportId}`)).text()
+  check('public report: the server sends its own title and noindex', /Security scan report: 0x1b1b…1b1b/.test(html) && /noindex/.test(html))
+  check('an unpublished or unknown report is a 404 page', (await fetch(`${BASE}/security/reports/sec_AAAAAAAAAAAAAAAA`)).status === 404)
+
+  // Admin: the Security card.
+  {
+    const ctx = await newContext()
+    await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
+    const page = await ctx.newPage()
+    const w = watch(page, 'admin security')
+    await page.goto(BASE + '/admin')
+    await page.getByTestId('admin-security').waitFor({ timeout: 15_000 })
+    await page.getByTestId('admin-security').scrollIntoViewIfNeeded()
+    await page.locator('[data-testid="admin-security"] [data-chart]').waitFor({ timeout: 10_000 }).catch(() => {})
+    check('admin: the Security card has its chart and the queue', (await page.locator('[data-testid="admin-security"] [data-chart]').count()) === 1 && (await page.getByTestId('admin-security').getByRole('heading', { name: 'Queue' }).count()) === 1)
+    if (SHOTS) await page.getByTestId('admin-security').screenshot({ path: path.join(SHOTS, 'security-admin-1440.png') })
+    await w.verify([/Failed to load resource/])
+    await ctx.close()
+  }
+  setEngineForTest(null)
+})
+
 /* ------------------------------------------------------------- docs --- */
 
-const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap-l3', 'changelog']
+const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'gully-security', 'roadmap-l3', 'changelog']
 await step('docs', async () => {
   for (const [width, mobile] of [[1440, false], [390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
@@ -773,7 +921,7 @@ await step('404s', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/developers']) {
+  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/security', '/security/reports', '/services', '/about', '/developers']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/developers') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)

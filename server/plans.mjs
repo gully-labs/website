@@ -43,6 +43,21 @@ export const ANALYTICS_PAID_IDS = Object.values(ANALYTICS_PLANS)
   .filter((p) => p.priceUsdc > 0)
   .map((p) => p.id)
 
+/* ------------------------------------------------------- Gully Security --- */
+
+// OWNER-EDITABLE: Gully Security (server/security-routes.mjs, the app's Security tab and /security read this
+// through GET /api/plans, field `security`; nothing is typed into a page). Three tiers, named honestly:
+//   scan    "AI Security Scan": self-serve and automated. `freePerMonth` scans per UTC calendar month by the
+//           workspace's API plan (PLANS ids); each scan beyond that is invoiced at `priceUsd` (Gully Pay).
+//           THE PRICE AND THE QUOTAS ARE PLACEHOLDERS until the owner sets them.
+//   review  "Security Review": people read the code; quoted per project after a request (no list price).
+//   audit   "Audit": the premium tier, not offered yet (`available: false`); requests are still taken.
+export const SECURITY = {
+  scan: { id: 'scan', name: 'AI Security Scan', priceUsd: 99, freePerMonth: { free: 1, pro: 3, business: 10 }, maxActive: 2, maxUploadBytes: 2_000_000 },
+  review: { id: 'review', name: 'Security Review', quoted: true, available: true },
+  audit: { id: 'audit', name: 'Audit', quoted: true, available: false },
+}
+
 /** No key at all: per IP address. */
 export const ANONYMOUS = { perMin: 60, historyDays: 7 }
 
@@ -89,6 +104,7 @@ export function publicPlans({ treasuryOverride } = {}) {
     anonymous: ANONYMOUS,
     plans: Object.values(PLANS),
     analytics: { plans: Object.values(ANALYTICS_PLANS), trialDays: ANALYTICS_TRIAL_DAYS, graceDays: ANALYTICS_GRACE_DAYS, periodDays: PERIOD_DAYS },
+    security: SECURITY,
     // A treasury that is a fee proxy is never shown (pay-guard.mjs: logged, PaymentGuardError, 500).
     checkout: t ? { enabled: true, treasury: guardRecipient(t, 'plans checkout'), solanaTreasury: solanaTreasury() } : { enabled: false, treasury: null, solanaTreasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
   }

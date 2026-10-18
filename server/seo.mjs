@@ -5,6 +5,7 @@
 
 import fs from 'node:fs'
 import { APP_HOST, APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
+import { published, publishedJobs } from './security-store.mjs'
 
 const SITE = 'https://gullylabs.xyz'
 const DOCS = 'https://docs.gullylabs.xyz'
@@ -26,6 +27,8 @@ const MAIN = {
   '/widget': ['Tracker widget · Gully Labs', 'Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps.'],
   '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security testing from the team behind the Gully Labs projects.'],
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
+  '/security': ['Gully Security: AI Security Scan and Security Review · Gully Labs', 'Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price.'],
+  '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
@@ -59,6 +62,7 @@ const DOCS_PAGES = {
   '/plans-alerts': ['Plans & alerts · Gully Labs docs', 'Paid API plans paid in ETH, BNB, USDC or USDT on four chains, gap alerts by webhook or Telegram, the webhook payload and how to verify its signature.'],
   '/gully-pay': ['Gully Pay · Gully Labs docs', 'Gully Pay: invoices and reusable pay links in ETH, BNB, USDC or USDT, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them.'],
   '/gully-pay-merchants': ['Gully Pay for merchants · Gully Labs docs', 'Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy.'],
+  '/gully-security': ['Gully Security · Gully Labs docs', 'Gully Security: the AI Security Scan (inputs, steps, quotas and payment), reading a report, publishing it, and requesting a human Security Review.'],
   '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the developer portal: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
   '/roadmap-l3': ['Roadmap: Gully L3 · Gully Labs docs', 'The plan for the Gully L3: an Arbitrum chain settling to Arbitrum One with Chain Kit, Gully Pay and Hyperlane as its interop layer. Status: spec written, devnet prepared, nothing running.'],
@@ -118,11 +122,26 @@ export function pageMeta(host, pathname) {
   if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
   // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
   if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
+  // A published scan report: a real page while it is published, indexed only when its owner opted in.
+  const sr = p.match(/^\/security\/reports\/(sec_[\w-]{16})$/)
+  if (sr) {
+    const j = published(sr[1])
+    if (!j) return { title: 'Report not found · Gully Labs', description: MAIN['/security/reports'][1], canonical: null, found: false }
+    return { title: `Security scan report: ${reportTitle(j)} · Gully Labs`, description: 'An AI Security Scan report published by its owner: findings by severity, the tools that ran and the limits of an automated scan. Not an audit.', canonical: `${SITE}${p}`, found: true, noindex: !j.indexable, image: `${SITE}/social/og-services.png` }
+  }
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  const og = p === '/' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
+  const og = p === '/' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/security') ? 'services' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
   return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
+}
+
+/** A report's subject in a title: the contract or the repository. */
+function reportTitle(j) {
+  const i = j.input ?? {}
+  if (i.kind === 'address') return `${i.address.slice(0, 6)}…${i.address.slice(-4)} on ${i.chain}`
+  if (i.repo) return i.repo
+  return 'uploaded code'
 }
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -169,7 +188,7 @@ export function sitemapFor(host) {
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
   else if (isAppHost(host)) urls = [[`${APP}/`, '0.6', 'monthly']]
   else
-    urls = Object.keys(MAIN).map((p) => [
+    urls = [...Object.keys(MAIN), ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)].map((p) => [
       SITE + (p === '/' ? '/' : p),
       p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
       p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p.startsWith('/projects/') ? 'daily' : 'monthly',

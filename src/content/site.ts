@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, BellRing, Boxes, Building2, ChartNoAxesCombined, CircleDollarSign, Code2, FileJson, FlaskConical, History, Info, KeyRound, LayoutGrid, Layers, Mail, Network, Newspaper, Package, Puzzle, Sparkles, Tag, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowLeftRight, BellRing, Boxes, Building2, ChartNoAxesCombined, CircleDollarSign, Code2, FileJson, FlaskConical, History, Info, KeyRound, LayoutGrid, Layers, Mail, Network, Newspaper, Package, Puzzle, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
 import { DEVELOPERS_URL, DOCS_URL } from '../site-host'
 
 export const SITE_URL = 'https://gullylabs.xyz'
@@ -49,6 +49,7 @@ export const productsNav: NavGroup = {
     { label: 'Alerts', desc: 'Gap alerts by Telegram or webhook', to: '/#alerts', icon: BellRing },
     { label: 'Gully Analytics', desc: 'Web analytics that see the wallet', to: '/analytics', icon: ChartNoAxesCombined, match: ['/analytics'] },
     { label: 'Chain Kit', desc: 'Branded block explorers', to: '/chain-kit', icon: Boxes, match: ['/chain-kit'] },
+    { label: 'Security', desc: 'AI Security Scan and code reviews', to: '/security', icon: ShieldCheck, match: ['/security'] },
     { label: 'Gully Chains', desc: 'App chains, launched for you', to: '/#chains', icon: Network, badge: 'Soon' },
     { label: 'Gully Pay', desc: 'Crypto billing and pay links', to: '/#pay', icon: CircleDollarSign },
     { label: 'All products', desc: 'Try each one live on the home page', to: '/#products', icon: LayoutGrid },

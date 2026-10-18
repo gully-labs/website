@@ -27,6 +27,7 @@
 //   POST /api/developer/workspace/switch | name,  GET /api/developer/team,  POST /api/developer/team/…
 //   GET  /api/developer/invite/:token (public preview),  POST /api/developer/invite/accept
 //   GET  /api/developer/activity?cursor=,  GET /api/developer/export/usage.csv | payments.csv
+//   GET|POST /api/developer/security…        Gully Security: scans, reports, publishing (security-routes.mjs)
 //
 // Workspaces: every signed-in route runs in the session's active workspace (the wallet's own by default).
 // The gate checks membership on every request, resolves `address` to the workspace owner and calls the
@@ -47,6 +48,7 @@ import { eventFor, noteTelegramConnect, recordEvent, activityPage, syncTelegram 
 import { handleAlerts } from './alerts.mjs'
 import { handleExport } from './exports.mjs'
 import { handleMerchant } from './merchants.mjs'
+import { handleSecurity } from './security-routes.mjs'
 import { handleProfileRoutes } from './profile.mjs'
 import { canWrite, forbidden, handleInvitePreview, handleWorkspaceRoutes, roleIn } from './workspaces.mjs'
 import { handleAnalyticsAccount } from './analytics-accounts.mjs'
@@ -240,7 +242,9 @@ export async function handleDeveloper(req, res, url) {
     p === '/api/developer/activity' ||
     p.startsWith('/api/developer/export/') ||
     p === '/api/developer/merchant' ||
-    p.startsWith('/api/developer/merchant/')
+    p.startsWith('/api/developer/merchant/') ||
+    p === '/api/developer/security' ||
+    p.startsWith('/api/developer/security/')
 
   if (accountRoute || v2Route) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -273,6 +277,7 @@ export async function handleDeveloper(req, res, url) {
       }
       if (p.startsWith('/api/developer/export/')) return handleExport(req, res, url, ctx)
       if (p === '/api/developer/merchant' || p.startsWith('/api/developer/merchant/')) return handleMerchant(req, res, url, ctx)
+      if (p === '/api/developer/security' || p.startsWith('/api/developer/security/')) return handleSecurity(req, res, url, ctx)
       if (p === '/api/developer/me' || p === '/api/developer/profile' || p === '/api/developer/company' || p.startsWith('/api/developer/sessions')) return handleProfileRoutes(req, res, url, ctx)
       return handleWorkspaceRoutes(req, res, url, ctx)
     }
