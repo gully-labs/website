@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="{{@site.locale}}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{meta_title}}</title>
+    <meta name="theme-color" content="#0b0e13">
+
+    {{!-- Brand fonts, self-hosted in the theme. Declared here (not in the stylesheet) so the preload
+          URLs and the @font-face URLs are the same cache-busted {{asset}} URLs: one download each. --}}
+    <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/hanken-grotesk-latin-400-normal.woff2"}}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/barlow-condensed-latin-800-normal.woff2"}}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/ibm-plex-mono-latin-400-normal.woff2"}}" crossorigin>
+    {{> "fonts"}}
+
+    <link rel="stylesheet" href="{{asset "css/screen.css"}}">
+
+    {{!-- Per-post share image from the main site (theme setting, off by default). Only for posts
+          without their own feature or social image. See ghost/README.md, "Share images". --}}
+    {{#if @custom.site_share_images}}
+        {{#is "post"}}
+            {{#post}}
+                {{#unless feature_image}}{{#unless og_image}}
+                    <meta property="og:image" content="https://gullylabs.xyz/social/blog/{{slug}}.png">
+                    <meta property="og:image:width" content="1200">
+                    <meta property="og:image:height" content="630">
+                {{/unless}}{{/unless}}
+                {{#unless feature_image}}{{#unless twitter_image}}
+                    <meta name="twitter:image" content="https://gullylabs.xyz/social/blog/{{slug}}.png">
+                {{/unless}}{{/unless}}
+            {{/post}}
+        {{/is}}
+    {{/if}}
+
+    {{ghost_head}}
+</head>
+<body class="{{body_class}}{{#if @custom.animated_banners}} gl-animate{{/if}}">
+
+<a class="gl-skip" href="#gl-main">Skip to content</a>
+
+<div class="gl-viewport">
+    {{> "header"}}
+
+    {{{body}}}
+
+    {{> "footer"}}
+</div>
+
+{{> "mobile-sheet"}}
+
+<div class="gl-toast" role="status" aria-live="polite"></div>
+
+<script src="{{asset "js/lib/reframe.min.js"}}" defer></script>
+<script src="{{asset "js/banner.js"}}" defer></script>
+<script src="{{asset "js/gully.js"}}" defer></script>
+
+{{ghost_foot}}
+</body>
+</html>

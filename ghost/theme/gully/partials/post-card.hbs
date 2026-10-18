@@ -1,0 +1,20 @@
+{{!-- A post in the grid: its generated banner (animates on hover, or while in view on touch screens),
+      tag chips, title, excerpt, date and reading time. The title link covers the whole card. --}}
+<article class="gl-card {{post_class}}" data-gl-card>
+    {{> "banner" variant="card" seed=slug label=title tag=primary_tag.slug tagname=primary_tag.name img=feature_image alt=feature_image_alt}}
+    <div class="gl-card-body">
+        {{#if tags}}
+            <ul class="gl-chips gl-card-chips" role="list">
+                {{#foreach tags limit="2" visibility="public"}}
+                    <li><a class="gl-chip" href="{{url}}">{{> "icons/hash"}}{{name}}</a></li>
+                {{/foreach}}
+            </ul>
+        {{/if}}
+        <h3 class="gl-card-title"><a class="gl-card-link" href="{{url}}">{{title}}</a></h3>
+        <p class="gl-card-excerpt">{{excerpt words="26"}}</p>
+        <p class="gl-card-meta">
+            <span class="gl-meta-item">{{> "icons/calendar"}}<time datetime="{{date format="YYYY-MM-DD"}}">{{date format="D MMM YYYY"}}</time></span>
+            {{#if reading_time}}<span class="gl-meta-item">{{> "icons/clock"}}{{reading_time minute="1 min read" minutes="% min read"}}</span>{{/if}}
+        </p>
+    </div>
+</article>

@@ -1,0 +1,9 @@
+{{!-- Related posts fallback: the latest three other posts. Post context. --}}
+{{#get "posts" filter="id:-{{id}}" limit="3" include="tags,authors" as |latest|}}
+    {{#if latest}}
+        <section class="gl-section gl-page gl-related" aria-labelledby="gl-related-title">
+            {{> "section-head" num="→" kicker="Read next" title="Latest posts" id="gl-related-title"}}
+            <div class="gl-grid">{{#foreach latest}}{{> "post-card"}}{{/foreach}}</div>
+        </section>
+    {{/if}}
+{{/get}}

@@ -1,0 +1,74 @@
+{{!--
+    The header, matching gullylabs.xyz (src/components/Header.tsx): the GULLY LABS wordmark (to the site,
+    new tab) and "Blog" (this blog), the Products and Developers menus, Projects and Pricing, and the
+    gold "Launch app" button. Below it, a hairline bar with the blog's own sections ({{navigation}}
+    from Ghost admin), and search. No sign-in, subscribe or account buttons: the blog has no email opt-in.
+
+    Menus are disclosure buttons (aria-expanded + aria-controls, not role="menu"): click, Enter or
+    Space opens; Escape closes and returns focus; arrow keys move between items (assets/js/gully.js).
+    Under 1024 px the Menu button opens the full-height sheet (partials/mobile-sheet.hbs).
+--}}
+<header class="gl-header" id="gl-header">
+    <div class="gl-bar gl-page">
+        <div class="gl-brand">
+            <a class="gl-wordmark" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">
+                <span class="gl-wordmark-gully">GULLY</span><span class="gl-wordmark-labs">LABS</span><span class="gl-sr"> home (opens in a new tab)</span>
+            </a>
+            <span class="gl-brand-sep" aria-hidden="true">/</span>
+            <a class="gl-brand-blog" href="{{@site.url}}">Blog</a>
+        </div>
+
+        <nav class="gl-nav" aria-label="Gully Labs">
+            <ul class="gl-nav-list" data-gl-menubar>
+                <li class="gl-nav-item">
+                    <button type="button" class="gl-nav-trigger" aria-expanded="false" aria-controls="gl-menu-products">
+                        {{> "icons/boxes"}}<span>Products</span>{{> "icons/chevron-down"}}
+                    </button>
+                    <div class="gl-menu gl-menu--wide" id="gl-menu-products" hidden>
+                        <ul class="gl-menu-list">{{> "links/products" style="menu"}}</ul>
+                    </div>
+                </li>
+                <li class="gl-nav-item">
+                    <button type="button" class="gl-nav-trigger" aria-expanded="false" aria-controls="gl-menu-developers">
+                        {{> "icons/code"}}<span>Developers</span>{{> "icons/chevron-down"}}
+                    </button>
+                    <div class="gl-menu" id="gl-menu-developers" hidden>
+                        <ul class="gl-menu-list">{{> "links/developers" style="menu"}}</ul>
+                    </div>
+                </li>
+                <li class="gl-nav-item">
+                    <a class="gl-nav-link" href="https://gullylabs.xyz/#projects" target="_blank" rel="noopener noreferrer">
+                        {{> "icons/flask-conical"}}<span>Projects</span>{{> "ext-mark"}}
+                    </a>
+                </li>
+                <li class="gl-nav-item">
+                    <a class="gl-nav-link" href="https://gullylabs.xyz/pricing" target="_blank" rel="noopener noreferrer">
+                        {{> "icons/tag"}}<span>Pricing</span>{{> "ext-mark"}}
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="gl-actions">
+            <a class="gl-btn gl-btn--gold gl-launch" href="https://gullylabs.xyz/tracker" target="_blank" rel="noopener noreferrer">
+                {{> "icons/activity"}}<span>Launch app</span>{{> "ext-mark"}}
+            </a>
+            <button type="button" class="gl-btn gl-btn--outline gl-menu-button" aria-expanded="false" aria-haspopup="dialog" aria-controls="gl-sheet" data-gl-sheet-open>
+                {{> "icons/menu"}}<span>Menu</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="gl-subbar">
+        <div class="gl-subbar-inner gl-page">
+            <nav class="gl-blognav" aria-label="Blog sections" data-gl-ext-scan>
+                {{navigation}}
+            </nav>
+            <div class="gl-subbar-actions">
+                <button type="button" class="gl-iconbtn" data-ghost-search aria-label="Search the blog">{{> "icons/search"}}<span class="gl-subbar-label">Search</span></button>
+            </div>
+        </div>
+    </div>
+
+    {{#is "post"}}<div class="gl-progress" aria-hidden="true"><span class="gl-progress-bar"></span></div>{{/is}}
+</header>

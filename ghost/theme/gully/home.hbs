@@ -1,0 +1,56 @@
+{{!< default}}
+{{!--
+    Home (first page only; later pages use index.hbs).
+    01 the lead story: the newest featured post, else the newest post
+    02 the latest posts in a hairline grid, with topic chips
+    03 "From the tracker": links to the live products on gullylabs.xyz (theme setting)
+    With no posts yet, a branded "First posts coming soon" state.
+--}}
+<main id="gl-main" class="gl-main gl-home" tabindex="-1">
+{{#if posts}}
+    <header class="gl-masthead gl-page">
+        <p class="gl-kicker"><span>Gully Labs</span><span class="gl-kicker-sep">/</span><span>Blog</span></p>
+        <h1 class="gl-masthead-title">{{@site.title}}</h1>
+        {{#if @site.description}}<p class="gl-masthead-sub">{{@site.description}}</p>{{/if}}
+    </header>
+
+    {{#get "posts" filter="featured:true" limit="1" include="tags,authors" as |featured|}}
+        {{#if featured}}
+            {{#foreach featured}}
+                <section class="gl-section gl-page" aria-label="Lead story">{{> "hero"}}</section>
+                <section class="gl-section gl-page" aria-labelledby="gl-latest-title">
+                    {{> "section-head" num="02" kicker="Latest" title="Recent posts" id="gl-latest-title"}}
+                    {{> "topic-chips"}}
+                    <div class="gl-grid">
+                        {{#get "posts" filter="id:-{{id}}" limit="11" include="tags,authors" as |rest|}}
+                            {{#foreach rest}}{{> "post-card"}}{{/foreach}}
+                        {{/get}}
+                        {{> "all-posts-tile"}}
+                    </div>
+                </section>
+            {{/foreach}}
+        {{else}}
+            {{#foreach ../posts limit="1"}}
+                <section class="gl-section gl-page" aria-label="Lead story">{{> "hero"}}</section>
+            {{/foreach}}
+            <section class="gl-section gl-page" aria-labelledby="gl-latest-title">
+                {{> "section-head" num="02" kicker="Latest" title="Recent posts" id="gl-latest-title"}}
+                {{> "topic-chips"}}
+                <div class="gl-grid">
+                    {{#foreach ../posts from="2" to="12"}}{{> "post-card"}}{{/foreach}}
+                    {{> "all-posts-tile"}}
+                </div>
+            </section>
+        {{/if}}
+    {{/get}}
+
+    {{#if @custom.show_tracker_strip}}
+        {{> "tracker-strip"}}
+    {{/if}}
+{{else}}
+    {{> "empty-state"}}
+    {{#if @custom.show_tracker_strip}}
+        {{> "tracker-strip"}}
+    {{/if}}
+{{/if}}
+</main>

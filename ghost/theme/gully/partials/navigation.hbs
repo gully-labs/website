@@ -1,0 +1,12 @@
+{{!-- Ghost's own navigation (Ghost admin > Settings > Navigation), primary and secondary.
+      Each item gets an icon chosen by its label (partials/nav-icon.hbs). Links to other Gully sites are
+      switched to open in a new tab, with the marker, by assets/js/gully.js (data-gl-ext-scan). --}}
+<ul class="gl-blognav-list" role="list">
+    {{#foreach navigation}}
+        <li class="gl-blognav-item nav-{{slug}}{{#if current}} is-current{{/if}}">
+            <a class="gl-blognav-link" href="{{url absolute="true"}}"{{#if current}} aria-current="page"{{/if}}>
+                <span class="gl-entry-icon">{{> "nav-icon"}}</span><span>{{label}}</span>
+            </a>
+        </li>
+    {{/foreach}}
+</ul>
