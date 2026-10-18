@@ -91,14 +91,28 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
       const next = `${node.clientWidth}x${node.clientHeight}`
       if (next === size) return
       size = next
-      c.resize()
+      // A box collapsed to 0 (a hidden tab, a closing panel) has nothing to draw: resizing ECharts to 0
+      // leaves zero-size canvases that throw on the next paint.
+      if (!node.clientWidth || !node.clientHeight) return
+      try {
+        c.resize()
+      } catch {
+        /* the chart is being torn down */
+      }
     })
     ro.observe(node)
     notify.current?.(c)
     return () => {
       ro.disconnect()
       notify.current?.(null)
-      c.dispose()
+      // ECharts can throw while disposing a chart whose canvas has collapsed to 0×0 (drawImage on a
+      // zero-size layer, e.g. the Holder Map's live-trail layer). The instance is gone either way; a throw
+      // here must never reach React's error boundary and take the whole page down.
+      try {
+        c.dispose()
+      } catch {
+        /* already torn down */
+      }
       chart.current = null
     }
   }, [lib, renderer])
