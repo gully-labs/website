@@ -17,7 +17,7 @@ scripts/
 ## What the theme does
 
 - **Header like the site:** GULLY LABS wordmark (to gullylabs.xyz, new tab) plus "Blog"; Products and
-  Developers menus, Projects, Pricing, a gold Launch app button. Every item has an icon. Links to other
+  App &amp; API menus, Projects, Pricing, a gold Launch app button. Every item has an icon. Links to other
   Gully sites (gullylabs.xyz, app., docs., analytics., github.com, x.com, t.me) open in a new tab
   with a ↗ marker, `rel="noopener noreferrer"` and hidden "(opens in a new tab)" text.
 - **Blog sections bar** under it: Ghost's own navigation (admin > Settings > Navigation), each item with
@@ -25,7 +25,7 @@ scripts/
   products, research, tracker, pay, chains, rss, contact, launches, authors; a page icon otherwise),
   plus search. No Sign in, Subscribe or Account buttons.
 - **Mobile:** a Menu button opens a full-height sheet with the same groups as accordions.
-- **Footer like the site:** Products / Developers / Company / Social columns, Start a project, the
+- **Footer like the site:** Products / App & API / Company / Social columns, Start a project, the
   "Information only, not investment advice" line, Ghost's secondary navigation. No "Powered by Ghost".
 - **Home:** masthead (site title and description), 01 the lead story (newest featured post, else the
   newest post), 02 a hairline grid of recent posts with topic chips, 03 "From the tracker" links to the
