@@ -1,9 +1,12 @@
-import { BellRing, Layers, Link2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, BellRing, Layers, Lock, Megaphone, Moon, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { EChart } from '../../components/charts/EChart'
 import { alpha, barsPreset, C, PALETTE, sparklinePreset } from '../../components/charts/chartPresets'
 import { NF } from '../../components/charts/number-formats'
+import { GhostChart } from '../../components/charts/GhostChart'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { StockLogo } from '../../components/tracker/StockLogo'
 import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, UP, useHistory, type Load, type Tracker, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
 import type { AlertCondition, GapAlert, GapDirection } from '../developers/api'
@@ -38,10 +41,10 @@ function friendlyError(r: { status: number; error: string }, fallback = 'Somethi
   const e = String(r.error ?? '').trim()
   return e && e.length <= 200 && /[.!?]$/.test(e) && !/[{}<>]|\b(?:error|exception|undefined|null|fetch)\b/i.test(e) ? e : fallback
 }
-const TG_DIRECTIONS: { id: GapDirection; label: string }[] = [
-  { id: 'above', label: '▲ Above' },
-  { id: 'below', label: '▼ Below' },
-  { id: 'both', label: '↕ Both' },
+const TG_DIRECTIONS: { id: GapDirection; label: string; sym: string; icon: React.ReactNode }[] = [
+  { id: 'above', label: 'Above', sym: '▲', icon: <ArrowUp size={14} aria-hidden /> },
+  { id: 'below', label: 'Below', sym: '▼', icon: <ArrowDown size={14} aria-hidden /> },
+  { id: 'both', label: 'Both', sym: '↕', icon: <ArrowUpDown size={14} aria-hidden /> },
 ]
 const LAUNCH_CHAIN_NAMES: Record<number, string> = { 56: 'BNB Chain', 999: 'HyperEVM', 4663: 'Robinhood Chain', 8453: 'Base' }
 /** A Holder Map alert (alerts.mjs condition type 'holders'): the top cluster (or top 10) passing a share, or selling. */
@@ -142,10 +145,10 @@ function Section({ title, children, right }: { title: string; children: React.Re
 
 const card = 'rounded-[14px] border border-line bg-surface'
 
-export function Notice({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+export function Notice({ title, children, action }: { title: React.ReactNode; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className={`${card} flex flex-col gap-3 p-4`}>
-      <h2 className="m-0 font-display text-[22px] leading-none font-bold">{title}</h2>
+      <h2 className="m-0 flex items-center gap-2 font-display text-[22px] leading-none font-bold">{title}</h2>
       <div className="text-[14px] leading-[1.5] text-muted">{children}</div>
       {action}
     </div>
@@ -184,9 +187,9 @@ function ListSkeleton({ n = 6 }: { n?: number }) {
 type ChainFilter = 'all' | 'robinhood' | 'bsc' | 'solana'
 const CHAIN_OPTIONS: { id: ChainFilter; label: string; icon: React.ReactNode }[] = [
   { id: 'all', label: 'All chains', icon: <Layers size={14} aria-hidden /> },
-  { id: 'robinhood', label: 'Robinhood', icon: <Link2 size={14} aria-hidden /> },
-  { id: 'bsc', label: 'BNB', icon: <Link2 size={14} aria-hidden /> },
-  { id: 'solana', label: 'Solana', icon: <Link2 size={14} aria-hidden /> },
+  { id: 'robinhood', label: 'Robinhood', icon: <ChainLogo chain="robinhood" size={14} decorative /> },
+  { id: 'bsc', label: 'BNB', icon: <ChainLogo chain="bsc" size={14} decorative /> },
+  { id: 'solana', label: 'Solana', icon: <ChainLogo chain="solana" size={14} decorative /> },
 ]
 
 export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; tracker: Load<Tracker>; onOpen: (r: TrackerRow) => void; ink: string }) {
@@ -305,7 +308,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
   useEffect(() => {
     const mb = wa.MainButton
     const click = () => create.current()
-    mb.setParams({ text: me.linked ? (valid ? `Create alert · ${TG_DIRECTIONS.find((d) => d.id === direction)!.label} ${threshold}%` : 'Pick a threshold from 0.1 to 100%') : 'Link wallet in the app', is_visible: !!row, is_active: !me.linked || valid })
+    mb.setParams({ text: me.linked ? (valid ? `Create alert · ${TG_DIRECTIONS.find((d) => d.id === direction)!.sym} ${TG_DIRECTIONS.find((d) => d.id === direction)!.label} ${threshold}%` : 'Pick a threshold from 0.1 to 100%') : 'Link wallet in the app', is_visible: !!row, is_active: !me.linked || valid })
     mb.onClick(click)
     return () => {
       mb.offClick(click)
@@ -342,7 +345,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
           </span>
         </div>
         <div className="h-[132px]">
-          {history.k === 'loading' ? <div className="h-full animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[8px] bg-bg" /> : series ? <Spark data={series.data} labels={series.labels} color={gapHex(series.data.at(-1), ink)} height={132} pulse fmt={(v) => fmtGap(v)} label={`${row.ticker} gap over the last 24 hours`} /> : <p className="m-0 pt-10 text-center text-[13px] text-faint">Not enough readings for a 24-hour chart yet.</p>}
+          {history.k === 'loading' ? <div className="h-full animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[8px] bg-bg" /> : series ? <Spark data={series.data} labels={series.labels} color={gapHex(series.data.at(-1), ink)} height={132} pulse fmt={(v) => fmtGap(v)} label={`${row.ticker} gap over the last 24 hours`} /> : <GhostChart label="The 24-hour gap will draw here" height={132} badge={false} framed={false} />}
         </div>
         <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
           <div>
@@ -362,7 +365,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
             <dd className="m-0 font-mono">{ageText(row.feedUpdatedAt, now)}</dd>
           </div>
         </dl>
-        {row.sessionOpen === false && <p className="m-0 text-[12px] leading-[1.5] text-faint">🌙 Market closed: compared with the last closing price.</p>}
+        {row.sessionOpen === false && <p className="m-0 text-[12px] leading-[1.5] text-faint"><Moon size={14} aria-hidden className="mr-1 inline align-[-2px]" />Market closed: compared with the last closing price.</p>}
         {!ok && row.sessionOpen !== false && <p className="m-0 text-[12px] leading-[1.5] text-faint">{NOT_ENOUGH}</p>}
         <ExternalLink wa={wa} href={`${SITE}/tracker/${row.chain}/${row.ticker}`} className="inline-flex min-h-11 items-center self-start text-[13px] text-[var(--tg-link,var(--color-gold))]">
           Open the full page
@@ -371,7 +374,9 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
 
       {onHolders && (
         <Button tone="line" onClick={onHolders}>
-          👥 Who holds {row.ticker}?
+          <span className="inline-flex items-center justify-center gap-2">
+            <Users size={16} aria-hidden /> Who holds {row.ticker}?
+          </span>
         </Button>
       )}
 
@@ -389,12 +394,12 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
                   setPct(p)
                   setCustom('')
                 }}
-                className={`min-h-9 rounded-full border px-[14px] font-mono text-[13px] ${!custom && pct === p ? 'border-gold bg-gold text-[var(--tg-btn-text,var(--color-bg))]' : 'border-line text-muted'}`}
+                className={`min-h-11 rounded-full border px-[14px] font-mono text-[13px] ${!custom && pct === p ? 'border-gold bg-gold text-[var(--tg-btn-text,var(--color-bg))]' : 'border-line text-muted'}`}
               >
                 {p}%
               </button>
             ))}
-            <label className="flex min-h-9 items-center gap-1 rounded-full border border-line px-3 text-[13px] text-muted">
+            <label className="flex min-h-11 items-center gap-1 rounded-full border border-line px-3 text-[13px] text-muted">
               <span className="sr-only">Custom threshold in percent</span>
               <input value={custom} onChange={(e) => setCustom(e.target.value.replace(/[^\d.,]/g, '').slice(0, 6))} inputMode="decimal" placeholder="Custom" className="w-[64px] bg-transparent font-mono text-ink outline-none placeholder:text-faint" />%
             </label>
@@ -422,10 +427,10 @@ type Launch = { key: string; chainId: number; chainKey: string; chainName: strin
 type Launches = { state: 'ok' | 'stale' | 'unreadable'; launches: Launch[]; asOf: string | null; error: string | null; chainNames: Record<string, string> }
 const LAUNCH_CHAINS = [
   { id: '0', label: 'All', icon: <Layers size={14} aria-hidden /> },
-  { id: '56', label: 'BNB', icon: <Link2 size={14} aria-hidden /> },
-  { id: '999', label: 'HyperEVM', icon: <Link2 size={14} aria-hidden /> },
-  { id: '4663', label: 'Robinhood', icon: <Link2 size={14} aria-hidden /> },
-  { id: '8453', label: 'Base', icon: <Link2 size={14} aria-hidden /> },
+  { id: '56', label: 'BNB', icon: <ChainLogo chain="bsc" size={14} decorative /> },
+  { id: '999', label: 'HyperEVM', icon: <ChainLogo chain="hyperevm" size={14} decorative /> },
+  { id: '4663', label: 'Robinhood', icon: <ChainLogo chain="robinhood" size={14} decorative /> },
+  { id: '8453', label: 'Base', icon: <ChainLogo chain="base" size={14} decorative /> },
 ]
 // The kit's categorical palette (charts need concrete colours; ECharts cannot read CSS variables).
 const CHAIN_COLORS: Record<number, string> = { 56: PALETTE[0], 999: PALETTE[2], 4663: PALETTE[1], 8453: PALETTE[3] }
@@ -467,7 +472,7 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
         grid: { left: 4, right: 4, top: 18, bottom: 22 },
         xAxis: { type: 'category', data: counts.map((c) => c.name), axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: ink, fontSize: 11, interval: 0, fontFamily: 'Hanken Grotesk, sans-serif' } },
         yAxis: { type: 'value', show: false },
-        tooltip: { show: false },
+        tooltip: { show: true, trigger: 'axis', confine: true },
         series: [{ id: 'launches', ...barsPreset({ radius: [5, 5, 0, 0] }), barMaxWidth: 34, label: { show: true, position: 'top', color: ink, fontSize: 11 }, data: counts.map((c) => ({ value: c.n, itemStyle: { color: CHAIN_COLORS[c.id] ?? C.faint } })) }],
       },
     [counts, ink],
@@ -502,7 +507,7 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
             </div>
           )}
           <Section title={`${load.data.launches.length} latest launches`}>
-            {!load.data.launches.length && <p className="m-0 px-1 text-[13px] text-muted">No launches on this chain yet.</p>}
+            {!load.data.launches.length && <GhostChart label="New launches will draw here" variant="bars" height={110} badge={false} />}
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {load.data.launches.map((l) => {
                 const leg = l.legs[0]
@@ -517,14 +522,19 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
                       aria-label={`${l.symbol ?? 'New token'} on ${l.chainName}: open on DeepCore`}
                       className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-[14px] px-3 py-[10px] text-left active:opacity-80"
                     >
-                      <span className="flex size-[34px] flex-none items-center justify-center rounded-full font-display text-[13px] font-bold text-bg" style={{ background: CHAIN_COLORS[l.chainId] ?? C.faint }} aria-hidden>
-                        {(l.symbol ?? '?').slice(0, 3)}
-                      </span>
+                      <TokenLogo symbol={l.symbol ?? 'Token'} chain={l.chainKey} address={l.token} size={32} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate font-semibold">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
                         <span className="truncate text-[12px] text-muted">
                           {l.chainName}
-                          {leg ? (leg.locked === true ? ' · 🔒 Liquidity locked' : leg.locked === false ? ' · Liquidity not locked' : '') : ''}
+                          {leg?.locked === true && (
+                            <>
+                              {' · '}
+                              <Lock size={11} aria-hidden className="mr-[2px] inline align-[-1px]" />
+                              Liquidity locked
+                            </>
+                          )}
+                          {leg?.locked === false ? ' · Liquidity not locked' : ''}
                         </span>
                       </span>
                       <span className="flex-none text-[12px] text-faint">{ageText(l.createdAt, now)}</span>
@@ -539,9 +549,7 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
                         aria-label={`Who holds ${l.symbol ?? 'this token'}?`}
                         className="flex min-h-11 min-w-11 flex-none flex-col items-center justify-center gap-[2px] border-l border-line px-3 text-[11px] text-muted active:opacity-70"
                       >
-                        <span aria-hidden className="text-[18px] leading-none">
-                          👥
-                        </span>
+                        <Users size={18} aria-hidden />
                         Holders
                       </button>
                     )}
@@ -660,12 +668,16 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = 
               {msg.text}
             </p>
           )}
-          {!load.data.alerts.length && <p className="m-0 px-1 text-[13px] text-muted">No alerts yet. Open a stock and set one with the button at the bottom.</p>}
+          {!load.data.alerts.length && (
+            <GhostChart label="Alerts you set will show here" variant="bars" height={96} badge={false}>
+              <span className="text-[12px] text-muted">Open a stock and set one with the button at the bottom.</span>
+            </GhostChart>
+          )}
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {load.data.alerts.map((a) => {
               const st = alertStateText(a, now)
               const hc = (a.condition as AlertCondition | HolderCondition).type === 'holders' ? (a.condition as unknown as HolderCondition) : null
-              const label = a.name || (hc ? `🫧 ${hc.symbol ?? shortToken(hc.token)} holders · ${HOLDER_CHAIN_NAMES[hc.chain] ?? hc.chain}` : a.condition.type === 'deepcore-launch' ? 'DeepCore launches' : a.ticker ? `${a.ticker} · ${CHAIN_SHORT[a.chain ?? ''] ?? a.chain}` : 'Any stock')
+              const label = a.name || (hc ? `${hc.symbol ?? shortToken(hc.token)} holders · ${HOLDER_CHAIN_NAMES[hc.chain] ?? hc.chain}` : a.condition.type === 'deepcore-launch' ? 'DeepCore launches' : a.ticker ? `${a.ticker} · ${CHAIN_SHORT[a.chain ?? ''] ?? a.chain}` : 'Any stock')
               return (
                 <li key={a.id} className={`${card} flex flex-col gap-2 p-3`}>
                   <div className="flex items-start justify-between gap-2">
@@ -740,7 +752,9 @@ export function HoldersScreen({ wa, initData, me, chain, token, onAlertsChanged 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h1 className="m-0 font-display text-[30px] leading-none font-bold">👥 Who holds this?</h1>
+        <h1 className="m-0 flex items-center gap-2 font-display text-[30px] leading-none font-bold">
+          <Users size={26} aria-hidden /> Who holds this?
+        </h1>
         <p className="m-0 text-[13px] leading-[1.5] text-muted">
           The biggest wallets on {name}, sized by how much they hold. Wallets that sent tokens to each other are joined into a <b>connected cluster</b>, and a cluster is often one person or team. The <b>deployer</b> is the wallet that created the token.
         </p>
@@ -752,7 +766,10 @@ export function HoldersScreen({ wa, initData, me, chain, token, onAlertsChanged 
           <Chips value={line} options={HOLDER_LINES.map((p) => ({ id: p, label: `${p}%` }))} onChange={setLine} label="Cluster share" />
           {!me.linked && <p className="m-0 text-[12px] leading-[1.5] text-faint">Link this Telegram account to a wallet once: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram.</p>}
           <Button onClick={create} disabled={busy}>
-            {me.linked ? `🔔 Alert me at ${line}%` : 'Link wallet in the app'}
+            <span className="inline-flex items-center justify-center gap-2">
+              {me.linked && <BellRing size={16} aria-hidden />}
+              {me.linked ? `Alert me at ${line}%` : 'Link wallet in the app'}
+            </span>
           </Button>
           {result && (
             <p role="status" className="m-0 text-[13px]" style={{ color: result.ok ? UP : undefined }}>
@@ -790,7 +807,9 @@ export function AnnouncementsSwitch({ initData, me }: { initData: string; me: Me
     <div className={`${card} flex flex-col gap-2 p-4`}>
       <div className="flex items-center justify-between gap-3">
         <span className="flex min-w-0 flex-col">
-          <span className="font-semibold">📣 Gully Labs announcements</span>
+          <span className="flex items-center gap-2 font-semibold">
+            <Megaphone size={16} aria-hidden /> Gully Labs announcements
+          </span>
           <span className="text-[13px] text-muted">News in your chat with the bot. Alerts keep arriving either way.</span>
         </span>
         <button

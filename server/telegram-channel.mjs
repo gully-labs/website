@@ -27,6 +27,10 @@
 //                                               once-a-day rules as a broadcast)
 //   POST /api/admin/channel/posts/:id           update: a draft/scheduled/failed post is rewritten; a sent post is edited live
 //   POST /api/admin/channel/posts/:id/post|retry|delete|unschedule
+//   POST /api/admin/channel/welcome             { action?: draft|post, force? } -> 201 { post }  the pinned "Start here" post (banner, links to
+//                                               the bot, the Mini App and the tracker); one per channel: a second call returns 409 with the
+//                                               existing post unless force is true
+//   GET  /api/admin/channel/gate                the News gate funnel: join screen shown -> joined -> first command, and free-action users
 //   GET  /api/admin/channel/followers           { count (live), at, series: [{ day, count }] }
 //   POST /api/admin/channel/auto                partial auto-post settings -> { auto }
 //   POST /api/admin/channel/auto/:type/preview  the next auto post of that type, rendered, never sent
@@ -53,6 +57,7 @@ import { readHistoryDays, readTracker } from './tracker.mjs'
 import { onLaunches, readLaunches } from './deepcore.mjs'
 import { chainName, esc, gapSentence, lockLine, signed, SITE, trustedNow } from './telegram-ui.mjs'
 import { developers } from './store.mjs'
+import { gateFunnel } from './telegram-users.mjs'
 
 const FILE = path.join(DATA_DIR, 'channel-posts.json')
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -896,6 +901,18 @@ function updateAuto(body) {
   return errors
 }
 
+/** The pinned "Start here" post: where to go for the bot, the Mini App and the tracker. */
+const WELCOME_POST = {
+  text: '<b>👋 Start here</b>\nGully Labs News: the widest stock-token gaps, new DeepCore launches as they happen and product drops.\n\n🤖 <b>The bot</b> sets alerts and answers /gap, /top and /launches.\n📱 <b>The Mini App</b> opens from the bot’s Open app button.\n📊 <b>The tracker</b> has every token on the web.',
+  media: { kind: 'animation', banner: true },
+  buttons: [
+    { text: '🤖 Open the bot', url: 'https://t.me/GullyLabsBot' },
+    { text: '📊 Tracker', url: `${SITE}/tracker` },
+    { text: '💼 Dashboard', url: 'https://app.gullylabs.xyz' },
+  ],
+  pin: true,
+}
+
 export async function handleChannelAdmin(req, res, url) {
   const p = url.pathname
   const method = req.method
@@ -931,6 +948,23 @@ export async function handleChannelAdmin(req, res, url) {
   if (p === '/api/admin/channel/followers') {
     const c = await memberCount({ fresh: url.searchParams.get('fresh') === '1' })
     return send(200, { count: c.count, at: c.at ? new Date(c.at).toISOString() : null, error: c.error, series: db.followers.map((f) => ({ day: f.day, count: f.count })) })
+  }
+  if (p === '/api/admin/channel/gate') {
+    if (method !== 'GET') return send(405, { error: 'GET only' })
+    return send(200, { gate: gateFunnel(), freeActions: Math.max(0, Math.min(5, Number(process.env.TELEGRAM_GATE_FREE_ACTIONS ?? 1) || 0)) })
+  }
+  if (p === '/api/admin/channel/welcome') {
+    if (method !== 'POST') return send(405, { error: 'POST only' })
+    const existing = db.posts.find((x) => x.autoKey === 'welcome' && (x.status === 'sent' || x.status === 'draft' || x.status === 'scheduled'))
+    if (existing && !body.force) return send(409, { error: existing.status === 'sent' ? 'The Start here post is already in the channel. Pass force to post another.' : 'A Start here draft exists already. Post it from the list, or pass force to make another.', post: publicPost(existing) })
+    const v = validatePost(WELCOME_POST)
+    if (v.errors.length) return send(500, { error: v.errors.join(' ') })
+    const post = createPost(v, { autoKey: 'welcome' })
+    if (body.action === 'post') {
+      const r = await publish(post)
+      if (!r.ok) return send(r.status, { error: r.error, post: publicPost(post) })
+    }
+    return send(201, { post: publicPost(post) })
   }
   if (p === '/api/admin/channel/auto') {
     if (method === 'GET') return send(200, { auto: settingsView() })
