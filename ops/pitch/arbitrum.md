@@ -227,5 +227,5 @@ each to the form's real question and fill in anything extra it asks.
    domain).
 9. [ ] **ASP at M3**: once the Gully Devnet contracts are scoped, apply at https://tally.so/r/3xzEzv?program=aap
    with the scope, an audit firm quote and a budget. Confirm the runway and co-pay terms first.
-10. [ ] **Telegram link check**: the README badge points at `t.me/peddlesnews`, while the site and this pitch
+10. [ ] **Telegram link check**: the README badge points at `t.me/GullyLabsNews`, while the site and this pitch
     use `t.me/GullyLabsNews` (`src/content/site.ts`). Confirm which is right before submitting.

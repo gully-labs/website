@@ -20,7 +20,7 @@ import type { ServiceTab } from './services/nav'
      Tracker API      /account (keys) + /usage?range=7d (requests sparkline)
      Alerts           /alerts (gap and DeepCore launch alerts, Telegram, firings from the delivery logs)
      Gully Analytics  /analytics (trial or plan, the events ring)
-     Gully Pay        /billing (plan, payments to Gully); merchant checkout is coming (#merchant)
+     Gully Pay        /billing (plan, payments to Gully); merchant stores in the Merchant tab (#merchant)
      Chain Kit        "Request your explorer": the site's enquiry endpoint (POST /api/contact)
      Gully Chains     the Devnet waitlist: the launch list (POST /api/notify, slot 90)
      Gully AI         /api/ask/status, and an inline question (POST /api/ask); recent questions stay in this browser
@@ -213,9 +213,9 @@ function PayCard({ s, go }: { s: Load<BillingView>; go: (t: Tab) => void }) {
 
 function MerchantCard() {
   return (
-    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('coming soon', 'gold')} foot={<a href="#merchant" className={pillSm}>Merchant section <ArrowRight size={14} aria-hidden /></a>}>
+    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('live', 'green')} foot={<a href="#merchant" className={pillSm}>Open your store <ArrowRight size={14} aria-hidden /></a>}>
       <p className="m-0 text-[13px] leading-[1.55] text-muted">Take crypto payments yourself: pay links, invoices and a “Pay with crypto” button with signed webhooks, run from this workspace.</p>
-      <LiveMarker text="Self-serve merchant checkout is on its way" />
+      <LiveMarker text="Non-custodial: payments go straight to your wallet. A fee per payment only, no monthly fee." />
     </Card>
   )
 }

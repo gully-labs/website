@@ -83,7 +83,7 @@ export const companyNav: NavGroup = {
 
 export const navGroups: NavGroup[] = [productsNav, developersNav, companyNav]
 
-/** Plain header links, between the Developers and Company menus. */
+/** Plain header links, between the App & API and Company menus. */
 export const navLinks: NavEntry[] = [
   { label: 'Projects', desc: 'The venues we run', to: '/#projects', icon: FlaskConical, match: ['/projects'] },
   { label: 'Pricing', desc: 'API, alerts and analytics plans', to: '/pricing', icon: Tag, match: ['/pricing'] },

@@ -12,7 +12,7 @@ import { btnGold } from './ui'
 import { useContact } from './ContactContext'
 import './Layout.css'
 
-/* The site header: logo, three grouped menus (Products, Developers, Company) with two plain links
+/* The site header: logo, three grouped menus (Products, App & API, Company) with three plain links (Projects, Pricing, Gully AI)
    between them, and a "Launch app" split button. One line from 1024 px up; below that, a Menu button
    opens a full-height sheet with the same groups as accordions.
 

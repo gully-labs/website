@@ -15,7 +15,7 @@
       return
     }
     if (url.protocol !== 'https:' && url.hostname !== 'localhost') return
-    if (!/^\/pay\/(l\/)?[\w-]+$/.test(url.pathname)) return
+    if (!/^\/pay\/(m\/)?(l\/)?[\w-]+$/.test(url.pathname)) return
     if (a.getAttribute('data-gully-pay') !== 'popup') return
     var w = Math.min(520, screen.availWidth || 520)
     var h = Math.min(860, screen.availHeight || 860)

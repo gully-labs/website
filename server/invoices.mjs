@@ -46,6 +46,9 @@ setInterval(() => {
   for (const [k, list] of hits) if (!list.some((t) => now - t < 3_600_000)) hits.delete(k)
 }, 600_000).unref?.()
 
+/** Called with (invoice, payment) once an invoice is paid (merchants.mjs: fee statements resume checkout). */
+export const invoicePaidHooks = []
+
 const invoices = () => ledger().invoices
 const findInvoice = (id) => (ID_RE.test(String(id)) ? (invoices().find((i) => i.id === id) ?? null) : null)
 
@@ -240,6 +243,13 @@ async function verifyFor(inv, quoteId, txHashIn) {
         link.lastPaidAt = payment.at
       }
       save()
+      for (const h of invoicePaidHooks) {
+        try {
+          h(inv, payment)
+        } catch (e) {
+          console.error('invoice paid hook:', e?.message ?? e)
+        }
+      }
       try {
         emitInvoicePaid(inv, payment, read.confirmations)
       } catch (e) {
@@ -254,6 +264,8 @@ async function verifyFor(inv, quoteId, txHashIn) {
 export async function handlePay(req, res, url) {
   // Pay links live in paylinks.mjs (loaded on first use; it imports this module).
   if (url.pathname.startsWith('/api/pay/l/')) return (await import('./paylinks.mjs')).handlePayLink(req, res, url)
+  // Merchant stores (merchants.mjs): /api/pay/m/* (their invoices, links, logos), paid to the merchant's wallet.
+  if (url.pathname.startsWith('/api/pay/m/')) return (await import('./merchants.mjs')).handleMerchantPay(req, res, url)
   // The live Chainlink price of a native coin, for the pay pages' "price at quote vs now" chart.
   if (url.pathname === '/api/pay/price') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true

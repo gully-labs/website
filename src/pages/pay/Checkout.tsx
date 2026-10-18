@@ -167,15 +167,26 @@ export function PaidPanel({ invoice }: { invoice: Invoice }) {
   )
 }
 
+/** Base units as a decimal string, BigInt only (no float rounding). */
+function units(raw: string, decimals: number): string {
+  const v = BigInt(raw)
+  const d = 10n ** BigInt(decimals)
+  const frac = (v % d).toString().padStart(decimals, '0').replace(/0+$/, '')
+  return frac ? `${v / d}.${frac}` : `${v / d}`
+}
+
 export interface CheckoutProps {
   invoice: Invoice
   initialAsset: string | null
   onPaid: (i: Invoice) => void
   onPhase?: (p: Phase) => void
+  /** Merchant stores (src/pages/merchant-pay): their own API base and the store paid, instead of the Gully Labs treasury. */
+  api?: string
+  payee?: string
 }
 
 /** The live part of an open invoice's checkout. */
-export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutProps) {
+export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/pay/${invoice.id}`, payee }: CheckoutProps) {
   const assets = invoice.assets
   const start = initialAsset && assets.some((a) => a.id === initialAsset) ? initialAsset : assets.length === 1 ? assets[0].id : null
   const [assetId, setAssetId] = useState<string | null>(start)
@@ -203,7 +214,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
 
   const fetchQuote = (id: string, refresh = false) => {
     const me = ++quoteRun.current
-    payApi<{ quote: Quote }>(`/api/pay/${invoice.id}/quote`, { method: 'POST', body: { asset: id } }).then((r) => {
+    payApi<{ quote: Quote }>(`${api}/quote`, { method: 'POST', body: { asset: id } }).then((r) => {
       if (me !== quoteRun.current) return
       setLoading(false)
       if (r.ok) {
@@ -245,7 +256,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
     const me = ++run.current
     setCheck({ s: 'checking', hash: txHash })
     for (let tries = 0; ; tries++) {
-      const r = await payApi<{ invoice?: Invoice; error?: string; confirmations?: number; needed?: number }>(`/api/pay/${invoice.id}/verify`, { method: 'POST', body: { quoteId: q.id, txHash } })
+      const r = await payApi<{ invoice?: Invoice; error?: string; confirmations?: number; needed?: number }>(`${api}/verify`, { method: 'POST', body: { quoteId: q.id, txHash } })
       if (me !== run.current) return
       // One toast per transaction, replaced as it moves on: detected, then confirmed (or not).
       const tid = `pay:tx:${txHash}`
@@ -331,7 +342,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
           <div className="flex flex-wrap items-center gap-6">
             <div className="relative mx-auto shrink-0 sm:mx-0">
               <div className={expired ? 'opacity-15 blur-[2px]' : ''} aria-hidden={expired}>
-                <QrCode value={quote.uri} size={196} label={`Wallet payment request: ${quote.amount} ${quote.asset.symbol} on ${quote.asset.chain} to the Gully Labs treasury`} />
+                <QrCode value={quote.uri} size={196} label={`Wallet payment request: ${quote.amount} ${quote.asset.symbol} on ${quote.asset.chain} to ${payee ?? 'the Gully Labs treasury'}`} />
               </div>
               {expired && (
                 <div className="absolute inset-0 flex items-center justify-center p-3">
@@ -365,7 +376,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
           </p>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Row k={`TREASURY ON ${quote.asset.chain.toUpperCase()}`} v={quote.treasury} />
+            <Row k={`${payee ? 'WALLET' : 'TREASURY'} ON ${quote.asset.chain.toUpperCase()}`} v={quote.treasury} />
             {quote.asset.kind === 'token' && quote.asset.address ? <Row k={`${quote.asset.symbol} CONTRACT · ${quote.asset.decimals} DECIMALS`} v={quote.asset.address} /> : <Row k="ASSET" v={`${quote.asset.chain}’s own coin (a plain transfer, not a token)`} />}
           </div>
           <span className="font-mono text-[11px] leading-[1.6] text-faint">
@@ -426,7 +437,11 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
                   <CreditCard size={16} aria-hidden /> Pay with wallet
                 </button>
               )}
-              <span className="text-[12px] leading-[1.5] text-faint">Sends exactly {quote.amount} {quote.asset.symbol} from the wallet you connect, after switching it to {quote.asset.chain}.</span>
+              <span className="text-[12px] leading-[1.5] text-faint">
+                {quote.split
+                  ? `Sends exactly ${quote.amount} ${quote.asset.symbol} in one transaction through Request Network's fee contract: ${units(quote.split.merchantRaw, quote.asset.decimals)} to the merchant and ${units(quote.split.feeRaw, quote.asset.decimals)} Gully Pay fee. Your wallet first asks to allow exactly that amount if it has not already.`
+                  : `Sends exactly ${quote.amount} ${quote.asset.symbol} from the wallet you connect, after switching it to ${quote.asset.chain}.`}
+              </span>
               {isSolanaChain(quote.chainId) && (
                 <SolanaReferenceWatch
                   quoteId={quote.id}
@@ -480,7 +495,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase }: CheckoutPro
 
       <p className="m-0 flex items-start gap-2 border-t border-line pt-4 text-[13px] leading-[1.6] text-faint">
         <ShieldCheck size={15} className="mt-[2px] shrink-0 text-gold" aria-hidden />
-        Your transfer goes straight to the Gully Labs treasury wallet; nobody holds it in between. The server reads it from a public node of its chain and marks this invoice paid once it has enough confirmations. Each transaction counts once.
+        Your transfer goes straight to {payee ? `${payee}'s wallet` : 'the Gully Labs treasury wallet'}; nobody holds it in between. The server reads it from a public node of its chain and marks this invoice paid once it has enough confirmations. Each transaction counts once.
       </p>
     </div>
   )

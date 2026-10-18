@@ -341,7 +341,7 @@ export async function readPayment(asset, txHash, treasury, opts = {}) {
     if (lower(tx.to) === treasury && isHexQty(tx.value) && BigInt(tx.value) > 0n) return { ok: false, status: 422, error: `This transaction sent the chain's own coin, not ${asset.symbol}. Choose the coin as the asset to pay with it.` }
     return { ok: false, status: 422, error: `This transaction has no ${asset.symbol} transfer to the Gully Labs treasury.` }
   }
-  return { ...base, credits }
+  return { ...base, credits: creditFeeProxy(asset, receipt, treasury, credits) }
 }
 
 /** Unix ms at which a block was mined, or null when the node cannot say. */
@@ -377,4 +377,121 @@ export function paymentUri(asset, treasuryAddress, amountRaw) {
   const to = checksumAddress(treasuryAddress)
   if (asset.kind === 'native') return `ethereum:${to}@${asset.chainId}?value=${units.toString()}`
   return `ethereum:${checksumAddress(asset.address)}@${asset.chainId}/transfer?address=${to}&uint256=${units.toString()}`
+}
+
+/* ------------------------------------- fee split (Request ERC20FeeProxy) --- */
+// One transaction pays a merchant and Gully Labs' fee: Request Network's ERC20FeeProxy (MIT, immutable, no
+// owner, holds nothing) does transferFrom(payer -> merchant, amount) and transferFrom(payer -> feeAddress, fee),
+// then emits TransferWithReferenceAndFee. Why this contract, the addresses and their checks: contracts/CHOICE.md.
+// Tokens only: Request's native-coin proxy sends the fee with a 2300-gas transfer(), which a Safe treasury
+// cannot receive (contracts/test, fork tests), so coin payments stay plain transfers with the fee invoiced.
+
+/** ERC20FeeProxy by chain, lowercase. Bytecode checked with eth_getCode; behaviour checked by fork tests. */
+export const FEE_PROXIES = {
+  1: '0x370de27fdb7d1ff1e1baa7d11c5820a324cf623c', // Request "0.2.0" on Ethereum (the address its SDK uses)
+  8453: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814',
+  56: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
+  42161: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
+}
+const hexOf = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+const keccakHex = (s) => '0x' + hexOf(keccak_256(new TextEncoder().encode(s)))
+/** topic0 of TransferWithReferenceAndFee(address,address,uint256,bytes indexed,uint256,address). */
+export const FEE_PROXY_TOPIC = keccakHex('TransferWithReferenceAndFee(address,address,uint256,bytes,uint256,address)')
+const SEL_PAY = keccakHex('transferFromWithReferenceAndFee(address,address,uint256,bytes,uint256,address)').slice(2, 10)
+const SEL_APPROVE = '095ea7b3'
+const w256 = (n) => BigInt.asUintN(256, BigInt(n)).toString(16).padStart(64, '0')
+const wAddr = (a) => String(a).toLowerCase().replace(/^0x/, '').padStart(64, '0')
+const okAddr = (a) => typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a) && !/^0x0{40}$/.test(a)
+
+/** The 8-byte payment reference for a quote (the proxy indexes keccak256 of it as topic1). */
+export const paymentReference = (quoteId) => '0x' + hexOf(keccak_256(new TextEncoder().encode(`gully-pay:${quoteId}`))).slice(0, 16)
+
+/** floor(amountRaw * bps / 10000), BigInt. */
+export const feeOf = (amountRaw, bps) => (BigInt(amountRaw) * BigInt(bps)) / 10_000n
+
+/**
+ * Marks a quote to be paid through the fee proxy: of `amountRaw` (what the payer sends in total), `feeRaw` goes
+ * to `feeTo` (the treasury) and the rest to the quote's recipient (`quote.treasury`). Leaves native coin, chains
+ * without a proxy and zero fees alone (plain transfer, fee invoiced as before). Returns the quote.
+ */
+export function withFeeSplit(quote, { bps, feeTo }) {
+  const a = assetById(quote.assetId)
+  const fee = feeOf(quote.amountRaw, bps)
+  if (!a || a.kind !== 'token' || !FEE_PROXIES[a.chainId] || fee <= 0n || !okAddr(feeTo) || !okAddr(quote.treasury)) return quote
+  if (feeTo.toLowerCase() === quote.treasury.toLowerCase()) return quote
+  return Object.assign(quote, { feeRaw: fee.toString(), feeTo: feeTo.toLowerCase(), ref: paymentReference(quote.id) })
+}
+
+/**
+ * What the wallet sends for a split quote, built here so the page only relays it:
+ *   approve: token.approve(proxy, amountRaw)   (skipped by the page when the allowance already covers it)
+ *   pay:     proxy.transferFromWithReferenceAndFee(token, recipient, amountRaw - feeRaw, ref, feeRaw, feeTo)
+ * null for a quote without a split.
+ */
+export function quoteSplit(quote) {
+  const a = assetById(quote?.assetId)
+  const proxy = a && FEE_PROXIES[a.chainId]
+  if (!proxy || a.kind !== 'token' || !quote.feeRaw || !quote.feeTo || !quote.ref) return null
+  const total = BigInt(quote.amountRaw)
+  const fee = BigInt(quote.feeRaw)
+  if (fee <= 0n || fee >= total) return null
+  const ref = quote.ref.replace(/^0x/, '')
+  const refWords = ref.padEnd(Math.ceil(ref.length / 64) * 64, '0')
+  const data = '0x' + SEL_PAY + wAddr(a.address) + wAddr(quote.treasury) + w256(total - fee) + w256(6 * 32) + w256(fee) + wAddr(quote.feeTo) + w256(ref.length / 2) + refWords
+  return {
+    proxy,
+    spender: proxy,
+    ref: quote.ref,
+    merchantRaw: (total - fee).toString(),
+    feeRaw: fee.toString(),
+    feeTo: quote.feeTo,
+    approve: { to: a.address, data: '0x' + SEL_APPROVE + wAddr(proxy) + w256(total) },
+    approveReset: { to: a.address, data: '0x' + SEL_APPROVE + wAddr(proxy) + w256(0) },
+    pay: { to: proxy, data },
+  }
+}
+
+/**
+ * Fee-proxy payments in a receipt to `payee` in `asset` whose fee went to `feeTo`, each backed by the two
+ * Transfer logs it caused: [{ from, amount, fee, ref }] (BigInt amounts; ref = keccak256 of the reference).
+ */
+export function feeProxyPayments(asset, receipt, payee, feeTo) {
+  const proxy = FEE_PROXIES[asset.chainId]
+  if (!proxy || asset.kind !== 'token' || !payee || !feeTo || payee === feeTo) return []
+  const logs = receipt?.logs ?? []
+  const transfer = (from, to, value) => logs.some((l) => lower(l.address) === asset.address && Array.isArray(l.topics) && lower(l.topics[0]) === TRANSFER_TOPIC && topicAddress(l.topics[1]) === from && topicAddress(l.topics[2]) === to && isHexQty(l.data) && BigInt(l.data) === value)
+  const out = []
+  for (const l of logs) {
+    if (lower(l.address) !== proxy || !Array.isArray(l.topics) || lower(l.topics[0]) !== FEE_PROXY_TOPIC || typeof l.data !== 'string' || l.data.length !== 2 + 5 * 64) continue
+    const word = (i) => l.data.slice(2 + i * 64, 2 + (i + 1) * 64)
+    const [token, to, feeAddress] = [word(0), word(1), word(4)].map((x) => '0x' + x.slice(24))
+    const amount = BigInt('0x' + word(2))
+    const fee = BigInt('0x' + word(3))
+    if (token !== asset.address || to !== payee || feeAddress !== feeTo || fee === 0n) continue
+    // The payer is whoever the merchant leg came from; the fee leg must come from the same wallet.
+    const leg = logs.find((x) => lower(x.address) === asset.address && Array.isArray(x.topics) && lower(x.topics[0]) === TRANSFER_TOPIC && topicAddress(x.topics[2]) === payee && isHexQty(x.data) && BigInt(x.data) === amount)
+    const from = leg && topicAddress(leg.topics[1])
+    if (!from || !transfer(from, feeAddress, fee)) continue
+    out.push({ from, amount, fee, ref: lower(l.topics[1]) ?? null })
+  }
+  return out
+}
+
+/** The treasury (fee recipient) from the environment, lowercase, or null. Same rule as plans.treasury(). */
+const envTreasury = () => {
+  const t = String(process.env.GULLY_TREASURY_ADDRESS ?? '').trim()
+  return okAddr(t) ? t.toLowerCase() : null
+}
+
+/**
+ * readPayment's credits with fee-proxy payments made whole: the merchant leg's credit becomes amount + fee
+ * (what the payer paid against the quote) and carries { fee, ref }. Plain transfers pass through unchanged.
+ */
+export function creditFeeProxy(asset, receipt, payee, credits, feeTo = envTreasury()) {
+  const out = credits.map((c) => ({ ...c }))
+  for (const p of feeProxyPayments(asset, receipt, payee, feeTo)) {
+    const c = out.find((x) => x.from === p.from && x.value === p.amount && x.fee == null)
+    if (c) Object.assign(c, { value: p.amount + p.fee, fee: p.fee, ref: p.ref })
+  }
+  return out
 }
