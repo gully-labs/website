@@ -472,7 +472,8 @@ await step('pages at 390', async () => {
   await ctx.close()
 })
 
-check('the server made no unexpected outbound calls', blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|cartel|peddle/i.test(u)).length === 0, blockedOutbound.slice(0, 5).join(' | '))
+const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|cartel|peddle|solana|xstocks|jup\.ag/i.test(u))
+check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)
 check(`the suite runs in under 5 minutes (${secs} s)`, secs < 300)
