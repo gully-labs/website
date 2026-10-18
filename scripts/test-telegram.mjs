@@ -143,6 +143,9 @@ Object.assign(process.env, {
   ASK_REMOTE: 'off',
 })
 delete process.env.ANTHROPIC_API_KEY
+// A file_id cached for an older banner file (the GIF): the first /start must upload the current file instead.
+fs.writeFileSync(path.join(tmp, 'telegram.json'), JSON.stringify({ banner: { fileId: 'STALE_GIF_FILE_ID', sha: '0123456789abcdef' } }))
+const BANNER_MP4 = fs.readFileSync(path.join(import.meta.dirname, '../public/brand/telegram/banner.mp4'))
 delete process.env.ASK_DAILY_LIMIT
 delete process.env.TELEGRAM_BOT_TOKEN
 delete process.env.TELEGRAM_WEBHOOK_SECRET
@@ -278,14 +281,16 @@ try {
   /* ------------------------------------------------------- /start banner --- */
   await say(privateChat(800), '/start')
   const an1 = calls.filter((c) => c.method === 'sendAnimation' && c.body.chat_id === '800').at(-1)
-  check('/start sends an animation (sendAnimation), uploaded as a GIF the first time', !!an1 && an1.body.multipart === true && an1.body.animation?.file === true && an1.body.animation.type === 'image/gif' && an1.body.animation.size > 10_000 && an1.body.animation.size < 1_048_576, JSON.stringify(an1?.body.animation))
+  check('/start sends an animation (sendAnimation), uploaded as the 1280×640 MP4 the first time', !!an1 && an1.body.multipart === true && an1.body.animation?.file === true && an1.body.animation.type === 'video/mp4' && an1.body.animation.name === 'gully-labs.mp4' && an1.body.animation.size === BANNER_MP4.length && an1.body.animation.size < 1_048_576 && an1.body.width === '1280' && an1.body.height === '640', JSON.stringify({ ...an1?.body.animation, w: an1?.body.width, h: an1?.body.height }))
+  check('a file_id cached for an older banner file is not reused', an1?.body.animation !== 'STALE_GIF_FILE_ID' && calls.every((c) => c.body.animation !== 'STALE_GIF_FILE_ID'))
   const cap1 = an1?.body.caption ?? ''
   check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · stock tokens vs their fair price, live.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain, BNB Chain and Solana`) && cap1.includes('🔔 gap alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
   check('the banner carries the main menu: 📱 Open app, then 8 buttons in 4 rows', menuKb.length === 5 && flat(menuKb).length === 9 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📱 Open app', '📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 Developer portal ↗', '⚙️ Settings']))
   check('📱 Open app is an inline web_app button to the Mini App (private chat)', menuKb[0]?.[0]?.web_app?.url === 'https://gullylabs.xyz/tg' && menuKb[0][0].callback_data === undefined && menuKb[0][0].url === undefined)
   check('the menu: Developer portal is a url button, the others are routes', button(menuKb, /Developer portal/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
-  check('the banner file_id is stored after the first upload', JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner?.fileId === BANNER_FILE_ID)
+  const storedBanner = JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner
+  check('the banner file_id is stored after the first upload, keyed on the hash of the MP4', storedBanner?.fileId === BANNER_FILE_ID && storedBanner.sha === crypto.createHash('sha256').update(BANNER_MP4).digest('hex').slice(0, 16), JSON.stringify(storedBanner))
   await say(privateChat(801), '/start')
   const an2 = calls.filter((c) => c.method === 'sendAnimation' && c.body.chat_id === '801').at(-1)
   check('a second /start reuses the file_id (no upload)', an2 && !an2.body.multipart && an2.body.animation === BANNER_FILE_ID)

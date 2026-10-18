@@ -166,6 +166,51 @@ cd contracts && forge test        # 27 passed, 0 failed (Base 6, Ethereum 9, BNB
 3. `creditFeeProxy(…, feeTo)` keeps its default, `GULLY_TREASURY_ADDRESS`, the same value `plans.treasury()`
    returns.
 
+## Funds can't get stuck (owner rule, `feat/feeproxy-guards`)
+
+> "no funds can ever get stuck in fee splitter contract"
+
+The proxy never custodies anything: `transferFromWithReferenceAndFee` does `transferFrom(payer → merchant)` and
+`transferFrom(payer → feeAddress)` inside one call and returns, so its token balance is zero before and after every
+payment (the fork tests and the Base Sepolia run assert `proxy +0` on each case). Neither `ERC20FeeProxy` nor
+`EthereumFeeProxy` has an owner, a sweep or a fallback that forwards, so the **only** way funds end up in one is a
+token or coin transfer sent **straight to the proxy's address**, and such a transfer is lost for good. The code
+therefore makes that impossible from anything Gully builds, and visible if a third party does it:
+
+1. **One server-side validator on every emission path** (`server/pay-guard.mjs`, rules in
+   `server/fee-proxy-guard.mjs`, which is pure and shared with the browser). Every quote view (plan, product,
+   invoice, pay link, merchant), every EIP-681 / Solana Pay URI (the QR codes), every treasury or merchant recipient
+   shown on a checkout, and every split's call data passes it before it leaves the server:
+   - (a) no plain-transfer recipient is ever a fee proxy on **any** chain (every known `ERC20FeeProxy` and
+     `EthereumFeeProxy` address above, plus Optimism and Polygon from Request's registry, the Base Sepolia proxies
+     we deployed, and any `GULLY_FEEPROXY_<chainId>`), nor the zero address;
+   - (b) a split reaches the proxy only through `transferFromWithReferenceAndFee` with `value` 0, an allowed token,
+     `to` = the quote's recipient (never a proxy, never zero), `feeAddress` = `GULLY_TREASURY_ADDRESS` (never a
+     proxy, never zero, never `to`), `0 < fee < amount`, `amount + fee` = what the payer pays, the reference of the
+     quote, and `approve(proxy, amount + fee)` exactly (reset `approve(proxy, 0)` for USDT);
+   - (c) the token is USDC or USDT on its chain (no fee-on-transfer token, whose legs would not add up).
+   A violation is logged (`pay-guard: …`), kept for the admin banner, and answers **500** with a message that
+   carries no address: nothing is emitted. `withFeeSplit` also refuses to split when either address is a proxy, and
+   `readPayment` names a transaction that paid a proxy directly as an unrecoverable mis-send (422) instead of
+   "sent to another address".
+2. **The wallet path re-checks** (`src/components/pay/PayWallet.tsx`, importing the same `fee-proxy-guard.mjs`):
+   the quote's asset, recipient and split against the same rules; the proxy call is **simulated with `eth_call`**
+   from the payer's account before the wallet sees it; every transaction the page sends passes `txViolations`
+   (never native value to a proxy, never a call to a proxy other than `transferFromWithReferenceAndFee`, never
+   `transfer`/`transferFrom` whose recipient is a proxy); a split that fails is refused outright and **never**
+   retried as a plain transfer. Every address input (merchant wallets in `merchants.mjs inspectWallet` and the
+   portal form, plan and analytics account fields in the admin) rejects a proxy address.
+3. **A monitor** (`server/fee-proxy-monitor.mjs`, started from `startLoops`, never in standby) reads the USDC/USDT
+   and native balance of every known proxy on every Gully Pay EVM chain once an hour through the usual RPC
+   failover (reads cached 50 min, about 25 calls an hour). A non-zero balance raises an alert: a banner and the
+   "Fee proxy balances" card in the admin panel (`/api/admin/overview` → `feeProxy`, "Check now" →
+   `POST /api/admin/fee-proxy/check`), plus a Telegram message to `TELEGRAM_ADMIN_CHAT_ID` when it is set, saying
+   it is a third-party mis-send that nobody, Gully Labs included, can recover.
+4. **Tests**: `npm run test:feeproxy` (every rule, each violated one way at a time; the monitor against stubbed
+   balances), `npm run test:pay` (every emission path with a proxy as treasury answers 500 with no address; the
+   admin still loads and says why; the check-now endpoint and the alert), `npm run test:merchants` (a proxy as
+   a store wallet is refused; a store whose stored wallet is a proxy gets no checkout, quote or recipient).
+
 ## Limits and follow-ups
 
 - **Two wallet transactions** (approve, then pay) whenever the allowance falls short. The page approves the exact

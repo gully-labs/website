@@ -2,6 +2,7 @@ import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, Store, Tra
 import { useState, type FormEvent } from 'react'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
+import { isFeeProxy } from '../../../../server/fee-proxy-guard.mjs'
 import { api } from '../api'
 import { chip, input, pillGold, pillSm } from '../styles'
 import { KIND_TEXT, payOrigin, type MerchantView, type MerchantWallet } from './api'
@@ -153,8 +154,10 @@ export function WalletsSection({ view, onChange }: { view: MerchantView; onChang
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    setBusy(true)
     setErr(null)
+    // The server refuses it too (merchants.mjs inspectWallet); said here before anything is sent.
+    if (isFeeProxy(address)) return setErr("That is Request Network's fee proxy contract, not a wallet. It has no owner, so anything sent to it is lost for good: use a wallet you control.")
+    setBusy(true)
     const r = await api<{ results: { chainId: number; ok: boolean; error: string | null }[]; error: string | null; merchant: MerchantView }>('/api/developer/merchant/wallets', { method: 'POST', body: { address: address.trim(), type, chains, ...(needTerms ? { acceptTerms: agree } : {}) } })
     setBusy(false)
     if (!r.ok && !(r.status === 422)) return setErr(r.error)

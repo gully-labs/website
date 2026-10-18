@@ -33,6 +33,7 @@ import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { assetById, ASSET_IDS, blockTime, CHAINS, confirmationsFor, DEFAULT_ASSET, fmtUnits, fmtUsd, MAX_TAG, paymentUri, quoteAmount, readFeed, readPayment, txUrl } from './payments.mjs'
 import { quoteSplit } from './payments.mjs'
+import { guardQuoteView, guardRecipient, refuse } from './pay-guard.mjs'
 import { PAID_PLAN_IDS, PERIOD_MS, planOf, PLANS, treasury } from './plans.mjs'
 import { getAccount, randomToken, saveDevelopers } from './store.mjs'
 import { isSolanaAsset, solanaPayUrl, solanaTreasury } from './solana-pay.mjs'
@@ -106,8 +107,20 @@ export const hashUsed = (chainId, hash) => db.payments.some((p) => usedKey(p.cha
 
 const assetBrief = (a) => ({ id: a.id, chainId: a.chainId, chain: CHAINS[a.chainId].name, symbol: a.symbol, kind: a.kind, address: a.address, decimals: a.decimals })
 
+/** A quote as the pages see it. Every view passes pay-guard.mjs (fee-proxy rules) or throws PaymentGuardError (500). */
 export function quoteView(q) {
   const a = assetById(q.assetId)
+  if (!a) refuse(`quote ${q?.id ?? ''}`, ['the quote names an unknown asset'])
+  let uri
+  try {
+    uri = isSolanaAsset(a) ? solanaPayUrl({ asset: a, recipient: q.treasury, amountRaw: q.amountRaw, reference: q.reference, message: q.plan && PLANS[q.plan] ? `Gully Labs ${PLANS[q.plan].name}` : 'Gully Pay' }) : paymentUri(a, q.treasury, q.amountRaw)
+  } catch (e) {
+    refuse(`quote ${q.id}`, [String(e?.message ?? e)])
+  }
+  return guardQuoteView(quoteFields(q, a, uri), 'quote')
+}
+
+function quoteFields(q, a, uri) {
   return {
     id: q.id,
     kind: q.kind,
@@ -123,7 +136,7 @@ export function quoteView(q) {
     token: a.address,
     // EIP-681 wallet link (Solana Pay transfer request on Solana) for the exact amount (the pay page's QR).
     // Built here, the one source of truth.
-    uri: isSolanaAsset(a) ? solanaPayUrl({ asset: a, recipient: q.treasury, amountRaw: q.amountRaw, reference: q.reference, message: q.plan && PLANS[q.plan] ? `Gully Labs ${PLANS[q.plan].name}` : 'Gully Pay' }) : paymentUri(a, q.treasury, q.amountRaw),
+    uri,
     /** Solana Pay: the quote's unique reference key, which finds its payment on chain. */
     reference: q.reference ?? null,
     // One-transaction merchant + fee payment through the fee proxy (payments.mjs withFeeSplit), or null.
@@ -177,6 +190,7 @@ export async function createQuote({ kind, assetId, usdCents, address = null, pla
   if (!asset) return { ok: false, status: 400, error: `Choose an asset: ${ASSET_IDS.join(', ')}.` }
   const t = treasuryFor(asset)
   if (!t) return noSolanaTreasury
+  guardRecipient(t, `new ${kind} quote`, { chainId: asset.chainId }) // never store a quote that pays a fee proxy
   let price = null
   if (asset.kind === 'native') {
     const f = await readFeed(asset.chainId)
