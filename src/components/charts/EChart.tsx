@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EChartsCoreOption, EChartsType } from 'echarts/core'
 import { loadECharts, motionFor, useReducedMotion, type ChartEvent } from './chart-utils'
+import { ghostVariantOf, optionIsEmpty } from './chartData'
 import { ChartError, ChartSkeleton, type SkeletonVariant } from './ChartSkeleton'
+import { ChartEmpty } from './GhostChart'
 
 /* The one wrapper every chart on the site goes through. ECharts loads on demand (its own chunk),
    so the page paints first and the chart's box holds its size with a skeleton meanwhile. The
@@ -12,7 +14,10 @@ import { ChartError, ChartSkeleton, type SkeletonVariant } from './ChartSkeleton
    than off-screen while the page loads. Under prefers-reduced-motion the animation is not switched off
    but made gentle (motionFor: ~150 ms, linear, no stagger), so a change still reads as a change.
    If ECharts itself cannot load, or the caller says its data failed (`error`), the box shows
-   "Couldn't load" with a retry button in place of the chart. */
+   "Couldn't load" with a retry button in place of the chart.
+   Nothing real to draw (every series under 2 real points, or every value null/unknown; chartData.ts
+   has the exact rule) shows the ghosted placeholder (ChartEmpty) with `emptyLabel` instead, so an
+   unknown is never drawn as a flat zero. `empty` forces it on or off. */
 
 export interface EChartProps {
   /** A plain ECharts option (loosely typed here: the charts build them as object literals). */
@@ -35,11 +40,16 @@ export interface EChartProps {
   /** The chart's data could not be read: shows the message (or a default) with `onRetry`. */
   error?: boolean | string
   onRetry?: () => void
+  /** 'auto' (default): ghost the chart when its option has nothing real to draw. true/false force it. */
+  empty?: boolean | 'auto'
+  /** The ghost's label, e.g. "Your payments will draw here". */
+  emptyLabel?: string
   className?: string
   children?: React.ReactNode
 }
 
-export function EChart({ option, height, label, renderer = 'svg', replaceMerge = ['series'], onEvents, steps, onChart, skeleton = 'bars', error, onRetry, className = '', children }: EChartProps) {
+export function EChart({ option, height, label, renderer = 'svg', replaceMerge = ['series'], onEvents, steps, onChart, skeleton = 'bars', error, onRetry, empty = 'auto', emptyLabel, className = '', children }: EChartProps) {
+  const isEmpty = empty === 'auto' ? optionIsEmpty(option) : empty
   const el = useRef<HTMLDivElement>(null)
   const box = useRef<HTMLDivElement>(null)
   const [seen, setSeen] = useState(() => typeof IntersectionObserver === 'undefined')
@@ -80,7 +90,7 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
   useEffect(() => {
     const node = el.current
     if (!lib || !node) return
-    const c = lib.echarts.init(node, 'gully', { renderer })
+    const c = lib.echarts.init(node, lib.THEME_NAME, { renderer })
     chart.current = c
     const names = ['click', 'mouseover', 'mouseout', 'globalout', 'highlight', 'downplay', 'updateAxisPointer']
     for (const n of names) c.on(n, (p: ChartEvent) => events.current?.[n]?.(p))
@@ -106,15 +116,15 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
   // Every new option merges into the live chart: an update animates from the old values.
   useEffect(() => {
     const c = chart.current
-    if (!c || !seen) return
+    if (!c || !seen || isEmpty) return
     c.setOption(motionFor(option as EChartsCoreOption, reduced), { replaceMerge, lazyUpdate: false })
     // replaceMerge is a stable literal per call site
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [option, reduced, lib, renderer, seen])
+  }, [option, reduced, lib, renderer, seen, isEmpty])
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     const c = chart.current
-    if (!c || !steps || !steps.count) return
+    if (!c || !steps || !steps.count || isEmpty) return
     const seriesIndex = steps.seriesIndex ?? 0
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Home' || e.key === 'End') {
       e.preventDefault()
@@ -136,12 +146,12 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
     <div ref={box} className={`relative w-full ${className}`} style={{ height }}>
       <div
         ref={el}
-        className={`absolute inset-0 rounded-input outline-offset-4 transition-opacity duration-300 ${lib && seen && !error ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 rounded-input outline-offset-4 transition-opacity duration-300 ${lib && seen && !error && !isEmpty ? 'opacity-100' : 'opacity-0'}`}
         role="img"
         data-chart=""
         aria-label={label}
-        aria-hidden={error ? true : undefined}
-        tabIndex={steps && !error ? 0 : undefined}
+        aria-hidden={error || isEmpty ? true : undefined}
+        tabIndex={steps && !error && !isEmpty ? 0 : undefined}
         onKeyDown={steps ? onKeyDown : undefined}
         onBlur={() => {
           step.current = -1
@@ -151,7 +161,8 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
           if (steps) c.dispatchAction({ type: 'downplay', seriesIndex: steps.seriesIndex ?? 0 })
         }}
       />
-      {(!lib || !seen) && !broken && <ChartSkeleton variant={skeleton} />}
+      {(!lib || !seen) && !broken && !isEmpty && <ChartSkeleton variant={skeleton} />}
+      {isEmpty && !broken && <ChartEmpty label={emptyLabel} variant={ghostVariantOf(option)} />}
       {broken && (
         <ChartError
           message={typeof error === 'string' ? error : failed ? "Couldn't load the chart." : undefined}
@@ -165,7 +176,7 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
           }
         />
       )}
-      {!broken && children}
+      {!broken && !isEmpty && children}
     </div>
   )
 }
