@@ -14,6 +14,8 @@
 //     index, Peddles' is its all-time legs valued at the prices its own token endpoint reports.
 
 // Under the page's 60 s poll, so every poll lands on a fresh read and the "read HH:MM" stamp moves each time.
+import { divergence, mergeDaily, onchainSnapshot } from './peddles.mjs'
+
 const CACHE_MS = 45_000
 const TIMEOUT_MS = 15_000
 
@@ -274,6 +276,7 @@ async function deepcore() {
     // and vesting), as the index values them. Not added to any total: it overlaps value locked.
     lockedUsd: extras.lockedUsd,
     chains,
+    sourceNote: "DeepCore's own index, daily",
     counts: { launches, pools, chains: items.length, sites: extras.sites, sites24h: extras.sites24h, launches24h: extras.launches24h, locks: extras.locks },
     notes,
     source: { url: sources.join(' + '), readAt: prov.generatedAt ?? new Date().toISOString() },
@@ -321,76 +324,191 @@ async function peddleswap() {
     tvlUsd,
     fees24hUsd: sumKnown(ok.map(({ j }) => num(j.fees24hUsd))),
     feesAllUsd: null,
+    sourceNote: "PeddleSwap's own API, daily",
     counts: { pools: sumKnown(ok.map(({ j }) => num(j.counts?.pools))), activeLocks: sumKnown(ok.map(({ j }) => num(j.counts?.activeLocks))), chains: ok.length },
     notes: ['All-time volume is not published; the last 30 days are.', ...built.notes, ...failed.map((f) => `${f.host.replace('https://', '')} could not be read (${f.error}).`)],
     source: { url: ok.map((o) => `${o.host}/v1/stats/overview`).join(' + '), readAt: new Date().toISOString() },
   }
 }
 
+const chainList = (chains) => chains.map((c) => c.name).join(', ')
+const pct = (x) => `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`
+const fmtUsdPlain = (v) => `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+// The day each chain's fee hook was created (DefiLlama's adapter `start`, the hook's deploy block).
+const PEDDLES_START = { 8453: '2026-09-27', 4663: '2026-09-29', 5042: '2026-10-01', 56: '2026-10-01' }
+
+/** The on-chain picture of Peddles' contracts (server/peddles.mjs), without the per-day arrays. */
+function onchainOf(snap) {
+  const chains = snap.chains.map(({ daily: _daily, ...c }) => c)
+  const live = snap.chains.every((c) => c.started && c.caughtUp)
+  const progress = snap.chains.reduce((a, c) => a + c.progress, 0) / snap.chains.length
+  return { live, progress, chains, readAt: snap.at, label: `on chain · ${chainList(snap.chains)}` }
+}
+
 async function peddles() {
+  // Peddles' own API: value locked as Peddles measures it, 24h volume, users, creator fees in ETH. It is the
+  // fallback for what the chain scan has not covered yet, and no longer required for the venue to be read.
   const base = 'https://api.peddles.xyz/api/v1'
   const url = `${base}/analytics/platform?chainId=4663`
-  const j = await getJson(url)
-  const d = j.data ?? {}
-  const chains = (d.chains ?? [])
-    .filter((c) => !c.testnet)
-    .map((c) => ({ chainId: c.chainId, tvlUsd: num(c.tvlUsd), volume24hUsd: num(c.volume24hUsd), reason: c.usdUnavailableReason ?? null }))
-  const notes = chains.filter((c) => c.tvlUsd === null).map((c) => `chain ${c.chainId}: TVL not measured${c.reason ? ` (${c.reason})` : ''}.`)
-  // Creator fees and all-time volume come from the windows document, per asset in token units.
+  const notes = []
+  const sources = []
+  let api = null
+  try {
+    const j = await getJson(url)
+    const d = j.data ?? {}
+    api = {
+      chains: (d.chains ?? []).filter((c) => !c.testnet).map((c) => ({ chainId: c.chainId, tvlUsd: num(c.tvlUsd), volume24hUsd: num(c.volume24hUsd), reason: c.usdUnavailableReason ?? null })),
+      launches24h: num(d.launches24h),
+      users: num(d.totalUsers),
+    }
+    sources.push(url)
+  } catch (e) {
+    notes.push(`Peddles' own API could not be read (${String(e?.message ?? e)}).`)
+  }
   let feesNative = null
-  let volumeAllUsd = null
-  let volumeAllSince = null
+  let apiSince = null
   try {
     const w = await getJson(`${base}/analytics/windows?chainId=4663`)
     const t = w.data?.creatorFees?.total
     if (t && t.currentRaw !== undefined) feesNative = { symbol: t.symbol, amount: units(t.currentRaw, t.decimals) }
-    volumeAllSince = w.data?.allTime?.volume?.since ?? null
+    apiSince = w.data?.allTime?.volume?.since ?? null
   } catch {
-    /* fees stay unknown */
+    /* creator fees stay unknown */
   }
-  // Peddles publishes all-time volume per asset in token units and no price. DefiLlama's Peddles
-  // adapter (its public dimension-adapters repository) prices the same swaps in dollars, so the
-  // dollar figures for all-time volume and fees come from there, named as such.
-  let fees24hUsd = null
-  let feesAllUsd = null
-  const sources = [url]
+  // DefiLlama: the cross-check, and the history for the days our scan has not covered yet.
+  let dex = null
+  let fees = null
   try {
-    const [dex, fees] = await Promise.all([llama('dexs', 'peddles'), llama('fees', 'peddles')])
-    volumeAllUsd = dex.totalAllTime
-    fees24hUsd = fees.total24h
-    feesAllUsd = fees.totalAllTime
+    ;[dex, fees] = await Promise.all([llama('dexs', 'peddles'), llama('fees', 'peddles')])
     sources.push(dex.url, fees.url)
-    notes.push('All-time volume and fees in dollars are read from DefiLlama (its Peddles adapter), which lags by up to a day.')
   } catch (e) {
-    notes.push(`DefiLlama could not be read for all-time volume and fees (${String(e?.message ?? e)}).`)
+    notes.push(`DefiLlama could not be read (${String(e?.message ?? e)}).`)
   }
-  notes.push('Creator fees are published in ETH only; they are shown beside the dollar figure, not added to it.')
-  const tvlUsd = sumKnown(chains.map((c) => c.tvlUsd))
+  const nowSec = Math.floor(Date.now() / 1000)
+  const snap = onchainSnapshot()
+  const doc = peddlesFrom({ api: api && { ...api, since: apiSince }, feesNative, dex, fees, snap, notes, sources, nowSec })
+  // The daily series: our on-chain days first (a day is ours once every chain's scan has passed it), DefiLlama's for
+  // the days before; value locked is Peddles' own figure, then DefiLlama's. buildSeries names each series' source.
+  const volume = mergeDaily(snap.chains, dex?.points ?? [], nowSec, 'v')
+  const feeDays = mergeDaily(snap.chains, [], nowSec, 'fees')
+  const mixed = (m) => (m.llamaDays ? 'on chain + DefiLlama' : doc.onchain.label)
   const own = { name: 'Peddles API', url }
-  const built = await buildSeries({ volume: { llama: 'peddles' }, fees: { llama: 'peddles' }, tvl: { llama: 'peddles', now: tvlUsd, ownSource: own } })
-  notes.push(...built.notes)
+  const built = await buildSeries({
+    volume: { own: volume.onchainDays ? volume.daily : [], ownSource: { name: mixed(volume), url: null }, llama: 'peddles' },
+    fees: { own: feeDays.onchainDays ? feeDays.daily : [], ownSource: { name: doc.onchain.label, url: null }, llama: 'peddles' },
+    tvl: { llama: 'peddles', now: doc.tvlUsd, ownSource: own },
+  })
+  doc.notes.push(...built.notes)
+  return { ...doc, ...seriesFields(built) }
+}
+
+/** Peddles' venue document from its parts. Pure; exported for the tests. */
+export function peddlesFrom({ api, feesNative, dex, fees, snap, notes = [], sources = [], nowSec }) {
+  const oc = onchainOf(snap)
+  const sum = (f) => snap.chains.reduce((a, c) => a + (c[f] ?? 0), 0)
+  const merged = mergeDaily(snap.chains, dex?.points ?? dex?.daily ?? [], nowSec)
+  if (!oc.live && !dex && !api) throw new Error('neither the chain scan, Peddles nor DefiLlama could be read')
+
+  let volumeAllUsd
+  let volumeAllSince = null
+  let volume24hUsd
+  let feesAllUsd
+  let fees24hUsd
+  let tvlUsd
+  let divergenceNote = null
+  const apiTvl = sumKnown((api?.chains ?? []).map((c) => c.tvlUsd))
+  if (oc.live) {
+    volumeAllUsd = sum('volumeAllUsd')
+    volumeAllSince = new Date(Math.min(...snap.chains.map((c) => Date.parse(`${PEDDLES_START[c.chainId] ?? '2026-09-27'}T00:00:00Z`)))).toISOString()
+    volume24hUsd = sum('volume24hUsd')
+    feesAllUsd = sum('feesAllUsd')
+    fees24hUsd = sum('fees24hUsd')
+    const tvls = snap.chains.map((c) => c.tvlUsd)
+    tvlUsd = tvls.every((x) => x !== null && x !== undefined) ? tvls.reduce((a, b) => a + b, 0) : apiTvl
+    sources.unshift(`on chain: ${chainList(snap.chains)}`)
+    const dv = divergence(volumeAllUsd, dex?.totalAllTime ?? null)
+    const df = divergence(feesAllUsd, fees?.totalAllTime ?? null)
+    if (dv || df) {
+      const parts = []
+      if (dv) parts.push(`volume ${fmtUsdPlain(dv.ours)} against DefiLlama's ${fmtUsdPlain(dv.theirs)} (${pct(dv.pct)})`)
+      if (df) parts.push(`fees ${fmtUsdPlain(df.ours)} against DefiLlama's ${fmtUsdPlain(df.theirs)} (${pct(df.pct)})`)
+      divergenceNote = `Our on-chain all-time differs from DefiLlama's by more than 10%: ${parts.join('; ')}. Ours is shown; DefiLlama lags up to a day and prices with its own feeds.`
+      console.warn(`[stats] peddles: ${divergenceNote}`)
+      notes.push(divergenceNote)
+    }
+    notes.push(`Read from the Peddles contracts on ${chainList(snap.chains)}: every swap on a pool PeddlesFeeHook registered, valued at Chainlink prices.`)
+    const unpriced = sum('unpricedSwaps')
+    if (unpriced) notes.push(`${unpriced} swap${unpriced === 1 ? '' : 's'} in an asset with no price feed (a tokenised stock without a Chainlink feed on that chain) ${unpriced === 1 ? 'is' : 'are'} counted but not valued.`)
+    const latest = sum('latestPriced')
+    if (latest) notes.push(`${latest} backfilled amount${latest === 1 ? ' was' : 's were'} valued at the current price because the node keeps no older state.`)
+  } else {
+    volumeAllUsd = dex?.totalAllTime ?? null
+    volumeAllSince = api?.since ?? null
+    volume24hUsd = sumKnown((api?.chains ?? []).map((c) => c.volume24hUsd))
+    feesAllUsd = fees?.totalAllTime ?? null
+    fees24hUsd = fees?.total24h ?? null
+    tvlUsd = apiTvl
+    notes.push(`Reading the Peddles contracts on chain: ${Math.round(oc.progress * 100)}% of the history scanned. Until it is complete, all-time volume and fees are DefiLlama's (its Peddles adapter, up to a day behind) and value locked is Peddles' own.`)
+  }
+  if (merged.llamaDays && merged.onchainDays) notes.push(`The daily chart is read on chain for ${merged.onchainDays} day${merged.onchainDays === 1 ? '' : 's'}; ${merged.llamaDays} earlier day${merged.llamaDays === 1 ? ' is' : 's are'} DefiLlama's.`)
+  if (feesNative) notes.push('Creator fees are published by Peddles in ETH only; they are shown beside the dollar figure, not added to it.')
   return {
-    ...seriesFields(built),
-    volume24hUsd: sumKnown(chains.map((c) => c.volume24hUsd)),
+    volume24hUsd,
     volumeAllUsd,
     volumeAllSince,
+    volume7dUsd: oc.live ? sum('volume7dUsd') : (dex?.total7d ?? null),
+    volume30dUsd: oc.live ? sum('volume30dUsd') : null,
     tvlUsd,
     fees24hUsd,
     feesAllUsd,
     feesNative,
-    chains,
-    counts: { launches24h: num(d.launches24h), pools: num(d.poolCount), users: num(d.totalUsers), chains: chains.length },
+    daily: merged.daily,
+    chains: api?.chains ?? [],
+    counts: {
+      launches: oc.live ? sum('launches') : null,
+      launches24h: oc.live ? sum('launches24h') : (api?.launches24h ?? null),
+      pools: oc.live ? sum('pools') : null,
+      swaps: oc.live ? sum('swaps') : null,
+      swaps24h: oc.live ? sum('swaps24h') : null,
+      users: api?.users ?? null,
+      chains: snap.chains.length,
+    },
+    onchain: { ...oc, divergence: divergenceNote, llamaAllTimeUsd: dex?.totalAllTime ?? null, llamaFeesAllUsd: fees?.totalAllTime ?? null, onchainDays: merged.onchainDays, llamaDays: merged.llamaDays },
+    sourceNote: oc.live ? oc.label : merged.daily.length ? 'DefiLlama daily, while the on-chain scan catches up' : 'no daily series yet',
     notes,
-    source: { url: sources.join(' + '), readAt: new Date().toISOString() },
+    source: { url: sources.join(' + '), readAt: new Date(nowSec * 1000).toISOString() },
   }
 }
 
 async function peddlequest() {
-  // A quest platform: reward pools are escrowed on chain and there is no trading volume. Its own
-  // API publishes no figures; DefiLlama's PeddleQuest adapters report the escrowed reward pools
-  // as TVL and what the platform charges as fees, on all four chains.
+  // A quest platform: reward pools are escrowed on chain and there is no trading volume. Value locked (the escrowed
+  // reward pools) is DefiLlama's (its PeddleQuest TVL adapter). Quests created, rewards funded and fees are read on
+  // chain from PeddlesQuestEscrow, PeddlesPromotionMarket and PeddlesQuestBadge on all four chains, by the same scan
+  // as Peddles; until that scan is complete, fees are DefiLlama's.
   const [tvl, fees] = await Promise.all([llama('tvl', 'peddlequest'), llama('fees', 'peddlequest')])
-  const built = await buildSeries({ fees: { llama: 'peddlequest' }, tvl: { llama: 'peddlequest' } })
+  const nowSec = Math.floor(Date.now() / 1000)
+  const snap = onchainSnapshot()
+  const oc = onchainOf(snap)
+  const sum = (f) => snap.chains.reduce((a, c) => a + (c[f] ?? 0), 0)
+  const notes = ['Quests, not trading: no volume, so it has no bars in the daily volume chart. Value locked is the reward pools escrowed on chain, read from DefiLlama (its PeddleQuest adapter), which lags by up to a day.']
+  let feesAllUsd = fees.totalAllTime
+  let divergenceNote = null
+  if (oc.live) {
+    feesAllUsd = sum('questFeesUsd')
+    const df = divergence(feesAllUsd, fees.totalAllTime)
+    if (df) {
+      divergenceNote = `Our on-chain all-time fees (${fmtUsdPlain(df.ours)}) differ from DefiLlama's (${fmtUsdPlain(df.theirs)}) by ${pct(df.pct)}. Ours is shown.`
+      console.warn(`[stats] peddlequest: ${divergenceNote}`)
+      notes.push(divergenceNote)
+    }
+    notes.push(`Quests, rewards funded and fees are read on chain from PeddlesQuestEscrow, PeddlesPromotionMarket and PeddlesQuestBadge on ${chainList(snap.chains)}.`)
+  } else notes.push('Fees are read from DefiLlama while the on-chain scan catches up.')
+  const days = mergeDaily(snap.chains, [], nowSec, 'qf')
+  const built = await buildSeries({
+    fees: { own: days.onchainDays ? days.daily : [], ownSource: { name: oc.label, url: null }, llama: 'peddlequest' },
+    tvl: { llama: 'peddlequest' },
+  })
+  notes.push(...built.notes)
   return {
     ...seriesFields(built),
     volume24hUsd: null,
@@ -398,10 +516,13 @@ async function peddlequest() {
     volumeAllSince: null,
     tvlUsd: tvl.tvlUsd,
     fees24hUsd: fees.total24h,
-    feesAllUsd: fees.totalAllTime,
-    counts: {},
-    notes: [...built.notes, 'Quests, not trading: no volume. Value locked is the reward pools escrowed on chain and fees are what the platform charges, both read from DefiLlama (its PeddleQuest adapters), which lags by up to a day.'],
-    source: { url: `${tvl.url} + ${fees.url}`, readAt: tvl.at ?? new Date().toISOString() },
+    feesAllUsd,
+    noVolume: true,
+    counts: { quests: oc.live ? sum('quests') : null, questRewardsUsd: oc.live ? sum('questRewardsUsd') : null },
+    onchain: { ...oc, divergence: divergenceNote, llamaFeesAllUsd: fees.totalAllTime },
+    sourceNote: oc.live ? `value locked from DefiLlama · quests and fees ${oc.label}` : 'value locked and fees from DefiLlama',
+    notes,
+    source: { url: `${oc.live ? `on chain: ${chainList(snap.chains)} + ` : ''}${tvl.url} + ${fees.url}`, readAt: tvl.at ?? new Date().toISOString() },
   }
 }
 

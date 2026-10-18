@@ -60,7 +60,8 @@
     "test:intake-notify": "node scripts/test-intake-notify.mjs",
     "test:contracts": "node scripts/test-contracts.mjs",
     "test:pwa-unit": "node --test scripts/test-pwa-unit.mjs",
-    "test:pwa": "node scripts/test-pwa.mjs"
+    "test:pwa": "node scripts/test-pwa.mjs",
+    "test:peddles": "node --test scripts/test-peddles.mjs"
   },
   "dependencies": {
     "@arbitrum/chain-sdk": "0.28.0",
