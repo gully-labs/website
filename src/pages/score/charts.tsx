@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
-import { C, areaPreset, axisTooltip, barsPreset, itemTooltip, livePoint, ringPreset, tipHtml } from '../../components/charts/chartPresets'
+import { C, PALETTE, areaPreset, axisTooltip, barsPreset, itemTooltip, livePoint, ringPreset, tipHtml } from '../../components/charts/chartPresets'
 import { EChart } from '../../components/charts/EChart'
 import { bandColor, fmtDate, type ScoreComponent, type ScoreRow } from './api'
 
@@ -117,4 +117,38 @@ export function BandBars({ rows }: { rows: ScoreRow[] }) {
       series: [{ ...barsPreset({ stagger: 60 }), id: 'bands', barMaxWidth: 46, data: [...counts.map((v, i) => ({ value: v, itemStyle: { color: bands[i].color } })), { value: unscored, itemStyle: { color: C.lineHover } }], label: { show: true, position: 'top', color: C.muted, fontSize: 11 } }],
   }
   return <EChart option={option} height={200} label={`Listed contracts by band: ${bands.map((b, i) => `${b.name} ${counts[i]}`).join(', ')}, not enough data ${unscored}`} steps={{ count: 5 }} skeleton="bars" />
+}
+
+/**
+ * The methodology's weights as a ring, read live from GET /api/score (methodology.components): what each part
+ * of the Gully Score counts for. Hover or focus a slice for its source. Shown on /score even before anything
+ * is listed, and on the docs Roadmap.
+ */
+export function WeightsRing({ parts, size = 200 }: { parts: { id: string; label: string; weight: number; source: string }[]; size?: number }) {
+  const total = parts.reduce((a, p) => a + p.weight, 0)
+  const option = useMemo(
+    () => ({
+      tooltip: itemTooltip((p: { dataIndex: number }) => {
+        const c = parts[p.dataIndex]
+        return c ? tipHtml({ title: c.label, rows: [{ name: 'Weight', value: `${c.weight} of ${total}` }], note: `Source: ${c.source}` }) : ''
+      }),
+      series: [
+        {
+          ...ringPreset({ radius: ['58%', '90%'] }),
+          id: 'weights',
+          data: parts.map((c, i) => ({ name: c.label, value: c.weight, itemStyle: { color: PALETTE[i % PALETTE.length] } })),
+        },
+      ],
+    }),
+    [parts, total],
+  )
+  if (!parts.length) return null
+  return (
+    <EChart option={option} height={size} label={`Gully Score weights: ${parts.map((c) => `${c.label} ${c.weight}`).join(', ')}`} skeleton="ring" className="max-w-[240px]" steps={{ count: parts.length }}>
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+        <AnimatedNumber value={parts.length} countUp className="font-display text-[40px] leading-none font-extrabold text-gold" />
+        <span className="mt-1 font-mono text-[11px] tracking-[1px] text-faint">PARTS</span>
+      </div>
+    </EChart>
+  )
 }

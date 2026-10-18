@@ -23,7 +23,8 @@ export function HoldersPage() {
   const chainName = CHAIN_NAMES[chain] ?? chain
   const isStock = m?.kind === 'stock'
   const title = `Holder Map: ${symbol ?? 'token'} on ${chainName}`
-  const description = m?.state === 'ok' ? `${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim() : `Who holds ${symbol ?? 'this token'} on ${chainName}: the biggest wallets, the ones that trade with each other, and what that means, read live.`
+  const comingSoon = m?.state === 'unavailable' && !!m.comingSoon
+  const description = m?.state === 'ok' ? `${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim() : comingSoon ? `Holder data for ${chainName} is coming soon. DeepCore launches already have live Holder Maps on Gully Labs.` : `Who holds ${symbol ?? 'this token'} on ${chainName}: the biggest wallets, the ones that trade with each other, and what that means, read live.`
 
   return (
     <div className="flex flex-col gap-6 px-[clamp(12px,2.5cqw,40px)] pt-6 pb-24">

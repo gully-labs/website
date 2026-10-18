@@ -1,7 +1,8 @@
 // Gully AI (Gully Ask): retrieval-augmented answers about Gully Labs, from the docs, the site, the changelog,
 // the legal pages, the roadmap, the Gully Pay contract notes, the Telegram bot and Mini App, the public READMEs
 // and the blog, with live facts read through in-process tools first (a stock's gap, DeepCore launches and pools,
-// holders, plans, payment chains, the ledger) and, for a signed-in user, their own workspace (store, usage, alerts).
+// holders, plans, payment chains, the ledger, the Gully Security offer, a contract's Gully Score, published scan
+// reports) and, for a signed-in user, their own workspace (store, usage, alerts).
 //
 // Retrieval is hybrid (retrieve()): BM25 on the question, BM25 on a synonym-expanded question and, when
 // VOYAGE_API_KEY is set, nearest neighbours by embedding (ask-embed.mjs), fused by reciprocal-rank fusion and
@@ -32,7 +33,9 @@
 //   ASK_IP_PER_MIN / ASK_IP_PER_DAY   per visitor (default 6 / 60); ASK_CHAT_PER_MIN per Telegram chat (default 5)
 //   ASK_LOG_SALT        optional: the salt for hashing IPs in the log (default: a random one kept in DATA_DIR)
 //   ASK_REMOTE=off      do not refresh the remote corpus (tests)
-//   VOYAGE_API_KEY      optional: semantic search (ask-embed.mjs); without it retrieval is BM25 + expansion
+//   VOYAGE_API_KEY      optional: semantic search (ask-embed.mjs); without it retrieval is BM25 + expansion. Read at
+//                       call time: setting it on a running server switches hybrid retrieval on within a minute
+//                       (ask-embed.mjs embeds the index in the background), with no rebuild or restart.
 //
 // Safety: the system prompt is fixed; retrieved text and tool output are untrusted data, sent inside blocks
 // tagged with a random per-request nonce the text cannot know, and the model is told to ignore any instruction
@@ -50,8 +53,8 @@ import { capPerPage, cosine, expandQuery, makeIndex, rerank, rrf } from './ask-i
 import { embedConfigured, embedQuery, embedStatus, syncEmbeddings, vectorFor } from './ask-embed.mjs'
 import { readRemote, remoteChunks, startRemoteLoop } from './ask-remote.mjs'
 import { APP_URL } from './hosts.mjs'
-import { CHAINS as PAY_CHAINS, confirmationsFor, FEE_PROXIES, publicAssets, publicChains } from './payments.mjs'
-import { planOf, publicPlans } from './plans.mjs'
+import { CHAIN_LIST, CHAINS as PAY_CHAINS, confirmationsFor, FEE_PROXIES, publicAssets, publicChains } from './payments.mjs'
+import { planOf, publicPlans, SECURITY } from './plans.mjs'
 import { readStats } from './stats.mjs'
 import { readDeepcoreMarkets, readDeepcorePool } from './deepcore.mjs'
 import * as tracker from './tracker.mjs'
@@ -123,6 +126,24 @@ export const indexSize = () => index.size
 /** Embeds whatever has no vector yet (startAsk, tests). */
 export const syncEmbeddingsNow = () => syncEmbeddings(index.chunks)
 
+/*
+ * Hybrid retrieval switches itself on: whenever a key is configured but some chunks have no vector yet (the
+ * key was just added and the container restarted, a sync failed, the corpus changed), a background sync is
+ * started, at most once a minute. No index rebuild and no image build is needed; BM25 answers meanwhile.
+ */
+const EMBED_RETRY_MS = 60_000
+let embedTriedAt = 0
+export function ensureEmbeddings(now = Date.now()) {
+  if (!embedConfigured()) return false
+  const e = embedStatus()
+  if (e.syncing || now - embedTriedAt < EMBED_RETRY_MS) return false
+  if (e.lastSyncAt && e.ready >= index.size && e.total === index.size) return false
+  embedTriedAt = now
+  syncEmbeddings(index.chunks)
+  return true
+}
+export const resetEnsureEmbeddingsForTest = () => (embedTriedAt = 0)
+
 const CANDIDATES = 30
 const RERANK_TOP = 20
 const MIN_COSINE = 0.2
@@ -134,6 +155,7 @@ const MIN_COSINE = 0.2
  * mode is 'hybrid' when the vector list took part, else 'bm25'.
  */
 export async function retrieve(question, { k = 6, perUrl = 2 } = {}) {
+  ensureEmbeddings()
   const lists = [{ name: 'bm25', items: index.search(question, { k: CANDIDATES, perUrl: Infinity }) }]
   const ex = expandQuery(question)
   if (ex) lists.push({ name: 'expanded', items: index.search(ex, { k: CANDIDATES, perUrl: Infinity }), weight: 0.8 })
@@ -205,6 +227,9 @@ const stockRow = (r) => ({
   page: `${SITE}/tracker/${encodeURIComponent(r.chain)}/${encodeURIComponent(r.ticker)}`,
 })
 
+/** Chains a Gully Score can be read on (the monitor chains: Gully Pay's mainnets). */
+const SCORE_CHAINS = CHAIN_LIST.filter((c) => !c.testnet).map((c) => c.key)
+
 export const TOOLS = [
   {
     name: 'get_plans',
@@ -263,6 +288,26 @@ export const TOOLS = [
       required: ['chain', 'token'],
       additionalProperties: false,
     },
+  },
+  {
+    name: 'get_security_offer',
+    description: 'What Gully Security offers right now, from the live config: the AI Security Scan (live; its price, free scans per plan, and whether it is an AI review only or also runs static analysis tools today), the Gully Score (live), contract monitors (live; how many contracts each plan watches), the human Security Review (quoted on request) and the full Audit (not offered yet). Use it for any question about security scans, audits, reviews, monitoring or what Gully Security can do.',
+    input_schema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'get_gully_score',
+    description: "A deployed contract's public Gully Score (0 to 100) from public evidence: the score and grade, each component with its weight, points and reason (unreadable components are left out, never counted as zero), coverage, when it was worked out, and the page and badge links. Use it when someone asks about a contract's score, safety signals, owner or admin keys, upgradeability or timelock.",
+    input_schema: {
+      type: 'object',
+      properties: { chain: { type: 'string', enum: SCORE_CHAINS, description: 'The chain the contract is on' }, address: { type: 'string', description: 'The contract address, 0x followed by 40 hex characters' } },
+      required: ['chain', 'address'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'get_published_reports',
+    description: 'The Gully Security scan reports their owners have published (newest first): what was scanned, when, the findings per severity and the scan mode (for example "AI review only"), with each report\'s page. Use it for questions about published reports or which projects have a public scan.',
+    input_schema: { type: 'object', properties: { limit: { type: 'integer', minimum: 1, maximum: 10 } }, additionalProperties: false },
   },
   {
     name: 'get_alert_channels',
@@ -361,6 +406,80 @@ async function holders(input) {
   }
 }
 
+/**
+ * get_security_offer: SECURITY and the plans' monitor counts (plans.mjs, the same config /security and the app
+ * read) and whether the static-tools worker answers right now (security-engine.mjs status, cached 30 s). While
+ * it does not, a scan is an AI review only and that is what this says.
+ */
+async function securityOffer() {
+  let engine = null
+  try {
+    const { status } = await import('./security-engine.mjs')
+    engine = await Promise.race([status(), new Promise((r) => setTimeout(() => r(null), 3_000))])
+  } catch {
+    engine = null
+  }
+  const staticTools = !!engine?.worker?.reachable
+  const tools = staticTools ? Object.keys(engine.worker.tools ?? {}).filter((k) => engine.worker.tools[k]) : []
+  const plans = publicPlans().plans.filter((p) => typeof p.monitors === 'number')
+  return {
+    live: ['AI Security Scan', 'Gully Score', 'Contract monitors'],
+    scan: {
+      name: SECURITY.scan.name,
+      status: 'live',
+      priceUsd: SECURITY.scan.priceUsd,
+      freeScansPerMonth: SECURITY.scan.freePerMonth,
+      maxRunningPerWorkspace: SECURITY.scan.maxActive,
+      inputs: ['a verified contract address on a chain', 'a public GitHub repository at a commit', 'an upload (.zip of Solidity files or one .sol)', 'a web2 JavaScript/TypeScript codebase (checklist scan)'],
+      mode: engine === null ? 'unknown right now: say each report states its own mode in its label' : staticTools ? `static analysis (${tools.join(', ') || 'the worker\'s tools'}) plus AI triage` : 'AI review only: the static-tools worker is not running yet, so Slither, Aderyn and fuzzing do NOT run; each report is labelled "AI review only" and lists those tools as not run',
+      staticToolsRunning: engine === null ? null : staticTools,
+      notAnAudit: 'A scan is automated, can miss issues and report false positives, and is not an audit.',
+      start: `${APP_URL}/#security-new`,
+    },
+    score: { name: 'Gully Score', status: 'live', what: 'A 0 to 100 score for any contract from public evidence, every weight and source shown; nobody can pay to change it.', page: `${SITE}/score` },
+    monitors: { status: 'live', what: 'Alerts on privileged changes and large outflows of the contracts a workspace watches, by Telegram or signed webhook.', contractsPerPlan: Object.fromEntries(plans.map((p) => [p.name, p.monitors])), start: `${APP_URL}/#security-monitors` },
+    review: { name: SECURITY.review.name, status: SECURITY.review.available ? 'quoted on request' : 'not offered', what: 'People read the code in scope, check findings by hand and write up what they find.', request: `${SITE}/security#request` },
+    audit: { name: SECURITY.audit.name, status: SECURITY.audit.available ? 'quoted on request' : 'not offered yet', note: 'Gully Labs has not audited any project and has published no audit reports.' },
+    page: `${SITE}/security`,
+    docs: `${DOCS}/gully-security`,
+  }
+}
+
+/** get_gully_score: gully-score.mjs's own cache and limits; the same public view as GET /api/score/:chain/:address. */
+async function gullyScore(input, caller) {
+  const { readScoreFor } = await import('./gully-score.mjs')
+  const r = await readScoreFor(input?.chain, input?.address, caller ?? 'ask')
+  if (r.error) return { error: r.error }
+  return {
+    chain: r.chainName,
+    address: r.address,
+    name: r.name ?? null,
+    symbol: r.symbol ?? null,
+    score: r.score,
+    grade: r.grade,
+    coverage: r.coverage,
+    computedAt: r.computedAt,
+    stale: !!r.stale,
+    components: r.components.map((c) => ({ label: c.label, weight: c.weight, available: c.available, points: c.score, value: c.value, reason: c.reason })),
+    page: r.links.page,
+    badge: r.links.badge,
+    framing: 'Information only, not an endorsement and not investment advice. A component that could not be read is left out, never counted as zero.',
+  }
+}
+
+/** get_published_reports: the published scans (security-store.mjs), the same list as GET /api/security/reports. */
+async function publishedReports(input) {
+  const [{ publishedJobs }, { scopeLabel }] = await Promise.all([import('./security-store.mjs'), import('./security-contract.mjs')])
+  const limit = Math.min(10, Math.max(1, Number.isInteger(input?.limit) ? input.limit : 5))
+  const all = publishedJobs()
+  return {
+    total: all.length,
+    reports: all.slice(0, limit).map((j) => ({ title: `AI Security Scan: ${scopeLabel(j.input, j.upload)}`, publishedAt: j.publishedAt ?? null, mode: j.snapshot?.label ?? j.snapshot?.mode ?? null, findings: j.counts ?? j.snapshot?.summary?.counts ?? null, page: `${SITE}/security/reports/${j.id}` })),
+    note: all.length ? 'Each report is an automated scan, not an audit; its label says whether static tools ran.' : 'No scan report has been published yet.',
+    page: `${SITE}/security/reports`,
+  }
+}
+
 /** The "my" tools: ctx = { user, workspace, role } from the session. Only ever ctx.workspace is read. */
 async function myTool(name, ctx) {
   if (!ctx?.workspace) return SIGNED_OUT
@@ -412,6 +531,9 @@ export async function runTool(name, input = {}, ctx = null) {
     if (MY_TOOLS.has(name)) return await myTool(name, ctx)
     if (name === 'get_pay_chains') return payChains()
     if (name === 'get_holders') return await holders(input)
+    if (name === 'get_security_offer') return await securityOffer()
+    if (name === 'get_gully_score') return await gullyScore(input, ctx?.workspace ?? null)
+    if (name === 'get_published_reports') return await publishedReports(input)
     if (name === 'get_plans') {
       const p = publicPlans()
       return {
@@ -479,20 +601,21 @@ export async function runTool(name, input = {}, ctx = null) {
 
 /* ----------------------------------------------------------------- prompt --- */
 
-const RULES = `You are Gully AI, the assistant on gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app and the Telegram bot. You answer questions about Gully Labs: its projects, the stock token tracker and its API, the widget, API keys, plans and alerts, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the Gully L3 roadmap, its open-source repositories, DeepCore, the bot, privacy, and its services.
+const RULES = `You are Gully AI, the assistant on gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app and the Telegram bot. You answer questions about Gully Labs: its projects, the stock token tracker and its API, the widget, API keys, plans and alerts, Gully Analytics, Gully Pay and merchant stores, the Holder Map, Gully Security (scans, the Gully Score, monitors and reviews), Chain Kit, the Gully L3 roadmap, its open-source repositories, DeepCore, the bot, privacy, and its services.
 
 Voice: short, direct, plain English, like the site's copy. Say what is true now and where it comes from. Never hype, never sell, never advise.
 
 How to answer:
 - Use ONLY the numbered sources in the user turn and the results of your tools. Do not use outside knowledge about Gully Labs, its products, prices or people.
-- Live data first. For a stock token, a DeepCore launch or token, a token's holders, a chain or what can be paid with, prices, plans, limits, the ledger, alert channels, or the user's own store, usage or alerts, call the matching tool BEFORE answering, even when a source seems to cover it; sources may be out of date.
+- Live data first. For a stock token, a DeepCore launch or token, a token's holders, a chain or what can be paid with, prices, plans, limits, the ledger, alert channels, Gully Security (the offer, a contract's Gully Score, published reports), or the user's own store, usage or alerts, call the matching tool BEFORE answering, even when a source seems to cover it; sources may be out of date.
 - Cite every sentence that states a fact. A fact from a source gets its number in square brackets, like [1] or [2][3]. A fact from a tool gets the tool result's "cite" label, like [L1], and the time it was read when the tool gives one ("as of 10:01 UTC"). Cite only labels that exist.
 - The get_my_* tools read only the signed-in user's own workspace. If one answers "signed-out", say in one sentence that they need to sign in to the Gully Labs app (https://app.gullylabs.xyz) and that you can only see their own workspace then. Never guess about anyone's store, usage or alerts.
 - If the sources do not cover the question, call search_docs once with different words before saying you don't know.
 - Do not write links for actions such as setting an alert or creating a pay link: the interface adds those buttons itself.
 - For current DeepCore launches, a launch's price, market cap, liquidity or pool, call deepcore_launches or deepcore_pool. Say when the figures were read (the tool's freshness times), give the quote token when there is no dollar figure, and say what "trending" means as the tool defines it. Never call a launch safe, promising or a good buy, and never rank launches as opportunities; add that this is information only, not investment advice.
 - For who holds a token, its clusters, a launch's bundled buyers, deployer or Launch Health score, call get_holders. Explain the parts in plain words, say when the map was read (asOf) and where the data comes from, and never call a token safe, a scam or a good buy.
-- The roadmap (the Gully L3, Audits & Security) is planned work. Say so: never say Gully Labs audits anything today or has published audit reports; its current security service is Security & Testing.
+- Gully Security, as it is today: the AI Security Scan, the Gully Score and contract monitors are LIVE. Scans are an AI review only until the static-tools worker runs: never say Slither, Aderyn, static analysis or fuzzing ran on a scan unless get_security_offer says static tools are running or the report itself lists them as run. A human Security Review is quoted on request. A full Audit is not offered yet: never say Gully Labs audits anything today or has published audit reports. For any question about scans, reviews, audits, monitoring or prices for them, call get_security_offer; for a contract's score, call get_gully_score; for published scan reports, call get_published_reports.
+- The Gully L3 is planned work (roadmap only). Say so.
 - Never invent a price, fee, limit, date, contract or wallet address, figure or URL. If a figure is not in a source or a tool result, say you don't have it.
 - If the sources and tools do not cover the question, say plainly "I don't know" in one sentence, then point to the docs (https://docs.gullylabs.xyz) or the contact form (https://gullylabs.xyz/services). Do not guess.
 - Information only. Never give investment, financial, legal or tax advice. Never predict prices or gaps, never say whether to buy, sell or hold anything, never say a gap is an opportunity or will close. If asked, say you can only describe what the tracker shows, and give the facts.
@@ -676,11 +799,14 @@ const LIVE_SOURCES = {
   get_alert_channels: () => ({ label: 'Alert channels', url: `${DOCS}/plans-alerts#telegram` }),
   get_pay_chains: () => ({ label: 'Gully Pay config', url: `${SITE}/api/plans` }),
   get_holders: (r) => ({ label: `Holder Map · ${r.out.symbol ?? 'token'}`, url: r.out.page ?? `${SITE}/holders/${encodeURIComponent(r.out.chain)}/${encodeURIComponent(r.out.token)}` }),
+  get_security_offer: () => ({ label: 'Gully Security offer', url: `${SITE}/security` }),
+  get_gully_score: (r) => ({ label: `Gully Score · ${r.out.symbol ?? r.out.name ?? 'contract'}`, url: r.out.page ?? `${SITE}/score` }),
+  get_published_reports: () => ({ label: 'Published scan reports', url: `${SITE}/api/security/reports` }),
   get_my_store: () => ({ label: 'Your store', url: `${APP_URL}/#merchant` }),
   get_my_usage: () => ({ label: 'Your API usage', url: `${APP_URL}/#keys` }),
   get_my_alerts: () => ({ label: 'Your alerts', url: `${APP_URL}/#alerts` }),
 }
-const asOfOf = (r) => r.out?.asOf ?? r.out?.freshness?.marketReadOldest ?? r.out?.freshness?.marketReadAt ?? r.out?.freshness?.launchListAsOf ?? r.at
+const asOfOf = (r) => r.out?.asOf ?? r.out?.computedAt ?? r.out?.freshness?.marketReadOldest ?? r.out?.freshness?.marketReadAt ?? r.out?.freshness?.launchListAsOf ?? r.at
 
 /**
  * Keeps only citation labels that exist ([n] for sources, [Ln] for tool results); returns the cleaned text,
@@ -765,6 +891,13 @@ function cardOf(r) {
     case 'get_holders':
       if (!o.available || o.found === false) return null
       return { ...base, kind: 'holders', title: `${o.symbol ?? 'Token'} holders`, stats: [{ label: 'Holders', value: intS(o.holderCount) }, { label: 'Top 10 hold', value: o.top10Pct != null ? `${o.top10Pct}%` : 'not read' }], chart: o.top?.filter((h) => h.pct != null).length >= 2 ? { type: 'bars', bars: o.top.filter((h) => h.pct != null).slice(0, 8).map((h) => ({ label: h.label ?? `${String(h.address).slice(0, 6)}…`, value: h.pct })), unit: '%', label: 'Share of supply' } : null, link: { label: 'Holder Map', url: o.page }, note: o.framing }
+    case 'get_security_offer':
+      return { ...base, kind: 'security', title: 'Gully Security', subtitle: 'Scan, score and monitors live', stats: [{ label: 'AI Security Scan', value: o.scan.staticToolsRunning ? 'live' : 'live · AI review only', tone: 'ok' }, { label: 'Scan price', value: usd(o.scan.priceUsd, 0) }, { label: 'Gully Score', value: 'live', tone: 'ok' }, { label: 'Monitors', value: 'live', tone: 'ok' }, { label: 'Security Review', value: o.review.status }, { label: 'Audit', value: o.audit.status, tone: 'warn' }], chart: Object.keys(o.scan.freeScansPerMonth ?? {}).length >= 2 ? { type: 'bars', bars: Object.entries(o.scan.freeScansPerMonth).map(([k, v]) => ({ label: k[0].toUpperCase() + k.slice(1), value: v })), unit: '', label: 'Free scans a month, by plan' } : null, link: { label: 'Gully Security', url: o.page } }
+    case 'get_gully_score':
+      if (o.error) return null
+      return { ...base, kind: 'score', title: `${o.name ?? o.symbol ?? `${String(o.address).slice(0, 6)}…${String(o.address).slice(-4)}`} · ${o.chain}`, subtitle: 'Gully Score', stats: [{ label: 'Score', value: o.score === null ? 'not enough data' : `${o.score} / 100`, tone: o.score === null ? 'warn' : o.score >= 60 ? 'ok' : 'down' }, { label: 'Grade', value: o.grade ?? 'none' }, { label: 'Coverage', value: `${o.coverage.components} of ${o.coverage.of} parts` }], chart: o.components.filter((c) => c.available).length >= 2 ? { type: 'bars', bars: o.components.filter((c) => c.available).map((c) => ({ label: c.label, value: c.points })), unit: '', label: 'Points per part' } : null, link: { label: 'Score page', url: o.page }, note: o.framing }
+    case 'get_published_reports':
+      return { ...base, kind: 'reports', title: 'Published scan reports', stats: [{ label: 'Published', value: intS(o.total) }, ...o.reports.slice(0, 3).map((x) => ({ label: x.title.replace(/^AI Security Scan: /, ''), value: x.mode ?? 'report' }))], chart: null, link: { label: 'All reports', url: o.page } }
     case 'get_pay_chains':
       return { ...base, kind: 'chains', title: 'Gully Pay accepts', stats: o.chains.map((c) => ({ label: c.chain, value: [...c.coins, ...c.stablecoins].join(' · ') || 'none' })), chart: null, link: { label: 'Gully Pay docs', url: o.docs } }
     case 'get_my_store': {
@@ -814,6 +947,11 @@ export function actionsFrom(question, runs, { signedIn = false, usedTools = [] }
       add({ kind: 'link', label: `Open ${x.ticker} on the tracker`, url: x.page })
     }
     if (r.name === 'get_holders' && o.available && o.page) add({ kind: 'link', label: 'Open the Holder Map', url: o.page })
+    if (r.name === 'get_security_offer') {
+      add({ kind: 'link', label: 'Start a scan in the app', url: o.scan.start })
+      add({ kind: 'link', label: 'Ask for a Security Review', url: o.review.request })
+    }
+    if (r.name === 'get_gully_score' && o.page) add({ kind: 'link', label: 'Open the score page', url: o.page })
     if (r.name === 'get_plans') add({ kind: 'link', label: 'Choose a plan in the app', url: `${APP_URL}/#billing` })
     if (r.name === 'get_my_alerts') add({ kind: 'link', label: 'Open alerts in the app', url: o.page })
     if (r.name === 'get_my_usage') add({ kind: 'link', label: 'Open keys and usage in the app', url: o.page })
@@ -1339,6 +1477,8 @@ export function startAsk() {
   pruneLog()
   setInterval(pruneLog, 86_400_000).unref?.()
   if (askConfigured() && embedConfigured()) syncEmbeddings(index.chunks)
+  // Retries a failed or partial sync without waiting for a question.
+  setInterval(() => askConfigured() && ensureEmbeddings(), 10 * 60_000).unref?.()
   if (askConfigured() && process.env.ASK_REMOTE !== 'off') startRemoteLoop((doc) => rebuild(doc))
 }
 /** Test hook: reloads the stored remote corpus into the index. */

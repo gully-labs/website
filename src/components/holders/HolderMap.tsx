@@ -92,13 +92,16 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
   if (load.k === 'loading') return <MapSkeleton compact={compact} />
   if (load.k === 'error') return <MapEmpty title="The Holder Map could not be read" text="The map did not answer just now. It retries every few minutes." />
   const m = load.data
-  if (m.state !== 'ok')
+  if (m.state !== 'ok') {
+    const chainName = m.chain?.name ?? 'this chain'
     return (
       <MapEmpty
-        title={m.state === 'not-found' ? 'No Holder Map for this token' : m.state === 'unavailable' ? 'Holder data is not available here yet' : 'The Holder Map is busy'}
-        text={`${m.reason}${m.needs ? ' (It needs a data key on our side; nothing is shown until it is set.)' : ''}`}
+        title={m.state === 'not-found' ? 'No Holder Map for this token' : m.state === 'unavailable' ? (m.comingSoon ? `Holder data for ${chainName} is coming soon` : 'Holder data could not be read just now') : 'The Holder Map is busy'}
+        text={m.comingSoon ? `Maps for tokenised stocks on ${chainName} are on the way. DeepCore launches already have live maps you can open now.` : m.reason}
+        action={m.state === 'busy' ? undefined : { label: 'See tokens with a live map', href: '/holders', external: embed }}
       />
     )
+  }
   return <MapView m={m} compact={compact} embed={embed} tradeHref={tradeHref} onTrade={onTrade} page={page} />
 }
 
@@ -127,7 +130,7 @@ function MapSkeleton({ compact }: { compact: boolean }) {
   )
 }
 
-function MapEmpty({ title, text }: { title: string; text: string }) {
+function MapEmpty({ title, text, action }: { title: string; text: string; action?: { label: string; href: string; external?: boolean } }) {
   return (
     <div className="flex flex-col gap-3 rounded-card border border-line p-5" style={{ background: K.night }} data-holder-map="empty">
       <div className="flex items-center gap-3">
@@ -138,6 +141,17 @@ function MapEmpty({ title, text }: { title: string; text: string }) {
         <h3 className="m-0 font-display text-[22px] font-bold uppercase text-ink">{title}</h3>
       </div>
       <p className="m-0 max-w-[640px] text-[14px] leading-[1.6] text-muted">{text}</p>
+      {action &&
+        (action.external ? (
+          <a href={`https://gullylabs.xyz${action.href}`} {...newTab} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-btn border border-line-strong px-4 font-mono text-[13px] text-ink transition-colors hover:border-gold">
+            {action.label} <ExternalLink aria-hidden size={14} />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        ) : (
+          <Link to={action.href} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-btn border border-line-strong px-4 font-mono text-[13px] text-ink transition-colors hover:border-gold">
+            <Search aria-hidden size={14} /> {action.label} →
+          </Link>
+        ))}
       <BrandFoot />
     </div>
   )
@@ -297,7 +311,7 @@ function MapView({ m, compact, embed, tradeHref, onTrade, page }: { m: HolderMap
           formatter: fmtPct(pctAt(n)),
           color: n.cluster && !isInfra(n) ? K.night : K.bone,
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: Math.min(15, Math.max(10, Math.round(r * fit.scale * 0.32))),
+          fontSize: Math.min(15, Math.max(11, Math.round(r * fit.scale * 0.32))),
         },
       }
     })
