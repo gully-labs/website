@@ -641,7 +641,7 @@ await step('merchant checkout', async () => {
     }
 
     // 7. Paused (an unpaid statement) and max uses: the server's own shapes with the state set, as no week passes in the suite.
-    const realLink = await (await fetch(BASE + linkPath)).json()
+    const realLink = await (await fetch(`${BASE}/api/pay/m/l/${link.data.link.id}`)).json()
     for (const [name, patch, testId] of [
       ['merchant-link-paused', { checkout: { enabled: false, treasury: null, paused: true, reason: "This store's checkout is paused. Contact the store to pay another way." } }, 'state-paused'],
       ['merchant-link-used-up', { state: 'used-up', stateText: 'This payment link has been used the maximum number of times.' }, 'state-link-used-up'],
