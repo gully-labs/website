@@ -189,9 +189,10 @@ export interface QuoteSplit {
   merchantRaw: string
   feeRaw: string
   feeTo: string
-  approve: { to: string; data: string }
-  approveReset: { to: string; data: string }
-  pay: { to: string; data: string }
+  /** value is always '0': nothing is ever sent to the proxy but the one call (server/fee-proxy-guard.mjs). */
+  approve: { to: string; data: string; value?: string }
+  approveReset: { to: string; data: string; value?: string }
+  pay: { to: string; data: string; value?: string }
 }
 
 export interface Payment {

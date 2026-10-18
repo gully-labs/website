@@ -27,6 +27,8 @@ import { handlePay } from './invoices.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
 import { handleSolana } from './solana-routes.mjs'
+import { GUARD_PUBLIC_ERROR, PaymentGuardError } from './pay-guard.mjs'
+import { startFeeProxyMonitor } from './fee-proxy-monitor.mjs'
 import https from 'node:https'
 import net from 'node:net'
 import fs from 'node:fs'
@@ -143,7 +145,19 @@ function securityHeaders(host, pathname = '/') {
   }
 }
 
+/* A handler that throws answers 500 instead of leaving the request hanging. A payment instruction refused by the
+   fee-proxy guard (pay-guard.mjs PaymentGuardError, already logged there) is one such case: nothing is emitted. */
 const server = http.createServer(async (req, res) => {
+  try {
+    await handleRequest(req, res)
+  } catch (e) {
+    if (!(e instanceof PaymentGuardError)) console.error(`request ${req.method} ${String(req.url ?? '').split('?')[0]}:`, e?.stack ?? e)
+    if (!res.headersSent) send(res, 500, JSON.stringify({ error: e instanceof PaymentGuardError ? GUARD_PUBLIC_ERROR : 'Internal error.' }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+    else res.destroy()
+  }
+})
+
+async function handleRequest(req, res) {
   const url = new URL(req.url ?? '/', 'http://localhost')
 
   // Hosts. The admin dashboard and its API live on admin.gullylabs.xyz only: on any other public host
@@ -345,7 +359,7 @@ const server = http.createServer(async (req, res) => {
       res.end(req.method === 'HEAD' ? undefined : renderHead(html, meta))
     })
   })
-})
+}
 
 // Keep every build's hashed files for 30 days in the data volume, so a page left open across a deploy
 // can still load the chunks it was built with. Hashed names never collide between builds.
@@ -394,6 +408,8 @@ function startLoops() {
   startChannel() // @GullyLabsNews: scheduled posts and auto posts (telegram-channel.mjs)
   // Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.
   startAsk()
+  // Hourly balance check of every fee-proxy contract (fee-proxy-monitor.mjs): non-zero = a third-party mis-send.
+  startFeeProxyMonitor()
 }
 const PROMOTED = path.join(DATA_DIR, `.promoted-${(process.env.HOSTNAME ?? 'local').replace(/[^\w-]/g, '')}`)
 if (process.env.GULLY_STANDBY !== '1' || fs.existsSync(PROMOTED)) startLoops()

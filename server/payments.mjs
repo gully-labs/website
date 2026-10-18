@@ -18,6 +18,7 @@
 //   GULLY_MIN_CONFIRMATIONS       older override for Base's confirmations, still honoured
 //   GULLY_CONFIRMATIONS_<chainId> confirmations for one chain
 
+import { isFeeProxy, recipientViolations, SPLIT_PROXIES } from './fee-proxy-guard.mjs'
 import { keccak_256 } from './vendor/noble.mjs'
 import { isSolanaAsset, readSolanaPayment, SOLANA_ASSETS, SOLANA_CHAIN, SOLANA_CHAIN_ID, solanaPayOn } from './solana-pay.mjs'
 
@@ -281,6 +282,9 @@ const lower = (v) => (typeof v === 'string' ? v.toLowerCase() : null)
 const topicAddress = (t) => (typeof t === 'string' && t.length === 66 ? '0x' + t.slice(26).toLowerCase() : null)
 const isHexQty = (v) => typeof v === 'string' && /^0x[0-9a-fA-F]+$/.test(v)
 
+/** A payment sent straight to a fee-proxy contract: it never counts and cannot be recovered (contracts/CHOICE.md). */
+export const PROXY_MIS_SEND = "This transaction sent funds straight to Request Network's fee proxy contract, not to the recipient. That contract has no owner, so nobody (Gully Labs included) can recover them. Never send to the proxy address; pay with the wallet button or to the address shown on the quote."
+
 /** Looks for a hash on the other chains, to explain "wrong chain" instead of "not found". */
 async function findElsewhere(chainId, txHash) {
   const others = CHAIN_LIST.filter((c) => c.id !== chainId)
@@ -325,6 +329,7 @@ export async function readPayment(asset, txHash, treasury, opts = {}) {
   if (asset.kind === 'native') {
     const to = lower(tx.to)
     const value = isHexQty(tx.value) ? BigInt(tx.value) : 0n
+    if (to !== treasury && isFeeProxy(to ?? '')) return { ok: false, status: 422, error: PROXY_MIS_SEND }
     if (to !== treasury) return { ok: false, status: 422, error: to ? `This transaction sent ${asset.symbol} to another address, not to the Gully Labs treasury.` : 'This transaction created a contract; it paid nothing to the treasury.' }
     if (value === 0n) return { ok: false, status: 422, error: `This transaction sent no ${asset.symbol} to the treasury. Paying in ${asset.symbol} is a plain transfer of the coin, not a token.` }
     return { ...base, credits: [{ from: lower(tx.from), value }] }
@@ -335,6 +340,7 @@ export async function readPayment(asset, txHash, treasury, opts = {}) {
     .map((l) => ({ token: lower(l.address), from: topicAddress(l.topics[1]), to: topicAddress(l.topics[2]), value: isHexQty(l.data) ? BigInt(l.data) : 0n }))
   const credits = transfers.filter((x) => x.token === asset.address && x.to === treasury).map(({ from, value }) => ({ from, value }))
   if (!credits.length) {
+    if (transfers.some((x) => x.token === asset.address && isFeeProxy(x.to ?? ''))) return { ok: false, status: 422, error: PROXY_MIS_SEND }
     const short = `${asset.address.slice(0, 6)}…${asset.address.slice(-4)}`
     if (transfers.some((x) => x.to === treasury)) return { ok: false, status: 422, error: `This transaction sent a token other than ${asset.symbol} on ${c.name} to the treasury. Only ${asset.symbol} (${short}) counts.` }
     if (transfers.some((x) => x.token === asset.address)) return { ok: false, status: 422, error: `This transaction sent ${asset.symbol}, but not to the Gully Labs treasury address.` }
@@ -374,6 +380,9 @@ export function checksumAddress(a) {
 export function paymentUri(asset, treasuryAddress, amountRaw) {
   const units = BigInt(amountRaw)
   if (units <= 0n) throw new Error('amount must be positive')
+  // Never a link that sends money to a fee proxy (fee-proxy-guard.mjs rule a); pay-guard.mjs checks the result too.
+  const bad = recipientViolations(treasuryAddress, { chainId: asset.chainId })
+  if (bad.length) throw new Error(`refusing a payment link: ${bad.join('; ')}`)
   const to = checksumAddress(treasuryAddress)
   if (asset.kind === 'native') return `ethereum:${to}@${asset.chainId}?value=${units.toString()}`
   return `ethereum:${checksumAddress(asset.address)}@${asset.chainId}/transfer?address=${to}&uint256=${units.toString()}`
@@ -386,13 +395,9 @@ export function paymentUri(asset, treasuryAddress, amountRaw) {
 // Tokens only: Request's native-coin proxy sends the fee with a 2300-gas transfer(), which a Safe treasury
 // cannot receive (contracts/test, fork tests), so coin payments stay plain transfers with the fee invoiced.
 
-/** ERC20FeeProxy by chain, lowercase. Bytecode checked with eth_getCode; behaviour checked by fork tests. */
-export const FEE_PROXIES = {
-  1: '0x370de27fdb7d1ff1e1baa7d11c5820a324cf623c', // Request "0.2.0" on Ethereum (the address its SDK uses)
-  8453: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814',
-  56: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
-  42161: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9',
-}
+/** ERC20FeeProxy by chain, lowercase. Bytecode checked with eth_getCode; behaviour checked by fork tests. The list
+ *  (and every other known proxy, which nothing may ever pay directly) lives in fee-proxy-guard.mjs. */
+export const FEE_PROXIES = { ...SPLIT_PROXIES }
 const hexOf = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 const keccakHex = (s) => '0x' + hexOf(keccak_256(new TextEncoder().encode(s)))
 /** topic0 of TransferWithReferenceAndFee(address,address,uint256,bytes indexed,uint256,address). */
@@ -421,6 +426,8 @@ export function withFeeSplit(quote, { bps, feeTo, feeRaw = null }) {
   const a = assetById(quote.assetId)
   const fee = feeRaw != null ? BigInt(feeRaw) : feeOf(quote.amountRaw, bps)
   if (!a || a.kind !== 'token' || !FEE_PROXIES[a.chainId] || fee <= 0n || fee >= BigInt(quote.amountRaw) || !okAddr(feeTo) || !okAddr(quote.treasury)) return quote
+  // A proxy as recipient or fee address is never split (and pay-guard.mjs refuses the quote outright).
+  if (isFeeProxy(feeTo) || isFeeProxy(quote.treasury)) return quote
   if (feeTo.toLowerCase() === quote.treasury.toLowerCase()) return quote
   return Object.assign(quote, { feeRaw: fee.toString(), feeTo: feeTo.toLowerCase(), ref: paymentReference(quote.id) })
 }
@@ -448,9 +455,10 @@ export function quoteSplit(quote) {
     merchantRaw: (total - fee).toString(),
     feeRaw: fee.toString(),
     feeTo: quote.feeTo,
-    approve: { to: a.address, data: '0x' + SEL_APPROVE + wAddr(proxy) + w256(total) },
-    approveReset: { to: a.address, data: '0x' + SEL_APPROVE + wAddr(proxy) + w256(0) },
-    pay: { to: proxy, data },
+    // value is always 0: nothing is ever sent to the proxy but this one call (fee-proxy-guard.mjs).
+    approve: { to: a.address, data: '0x' + SEL_APPROVE + wAddr(proxy) + w256(total), value: '0' },
+    approveReset: { to: a.address, data: '0x' + SEL_APPROVE + wAddr(proxy) + w256(0), value: '0' },
+    pay: { to: proxy, data, value: '0' },
   }
 }
 

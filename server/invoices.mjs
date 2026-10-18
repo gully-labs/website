@@ -24,6 +24,7 @@ import { checkEndpoint, deliveries, emitInvoiceCancelled, emitInvoicePaid, endpo
 import { clientIp, json, readJson } from './http.mjs'
 import { assetById, ASSET_IDS, ASSETS, CHAINS, fmtUnits, fmtUsd, parseUsdCents, publicAssets, readFeed } from './payments.mjs'
 import { treasury } from './plans.mjs'
+import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { randomToken } from './store.mjs'
 
 const ID_RE = /^inv_[A-Za-z0-9_-]{22}$/
@@ -64,9 +65,9 @@ function paymentOf(inv) {
 }
 
 /** What anyone with the link sees. No internal notes, nothing about other invoices. */
-export function publicInvoice(inv) {
+export function publicInvoice(inv, { treasuryOverride } = {}) {
   const status = invoiceStatus(inv)
-  const t = treasury()
+  const t = treasuryOverride === undefined ? treasury() : treasuryOverride
   return {
     id: inv.id,
     number: inv.number,
@@ -82,11 +83,11 @@ export function publicInvoice(inv) {
     cancelledAt: inv.cancelledAt ?? null,
     payment: paymentOf(inv),
     linkId: inv.linkId ?? null,
-    checkout: t ? { enabled: true, treasury: t } : { enabled: false, treasury: null, reason: 'This invoice cannot be paid yet: no treasury wallet is configured.' },
+    checkout: t ? { enabled: true, treasury: guardRecipient(t, `invoice ${inv.id} checkout`) } : { enabled: false, treasury: null, reason: 'This invoice cannot be paid yet: no treasury wallet is configured.' },
   }
 }
 
-const adminView = (inv) => ({ ...publicInvoice(inv), path: `/pay/${inv.id}`, webhook: endpointView(inv.webhook) })
+const adminView = (inv) => ({ ...guardOr(() => publicInvoice(inv), (e) => ({ ...publicInvoice(inv, { treasuryOverride: null }), checkout: refusedCheckout(e) })), path: `/pay/${inv.id}`, webhook: endpointView(inv.webhook) })
 
 /**
  * A new open invoice (admin or pay link). `usdCents` is a BigInt already checked by the caller.

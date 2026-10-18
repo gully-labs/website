@@ -284,6 +284,51 @@ try {
   const all = (await admin('/api/admin/billing')).data
   check('admin sees plan and invoice payments together', all.payments.some((p) => p.kind === 'invoice') && all.payments.some((p) => p.kind === 'plan'))
 
+  /* ------------------------------ fee-proxy guard: every emission path --- */
+  // With the treasury set to a fee proxy (a mis-configuration), no path may emit payment details: each answers
+  // 500 with the guard's public message and no address; the admin panel still loads and says why.
+  const { allFeeProxies } = await import('../server/fee-proxy-guard.mjs')
+  const { GUARD_PUBLIC_ERROR } = await import('../server/pay-guard.mjs')
+  const gInv = (await admin('/api/admin/invoices', 'POST', { title: 'Guard test', usd: '25', assets: ['base-usdc', 'base-eth'] })).data.invoice
+  const gLink = (await admin('/api/admin/paylinks', 'POST', { title: 'Guard link', amount: { type: 'fixed', usd: '30' }, assets: ['base-usdc', 'base-eth'] })).data?.link
+  check('guard setup: an invoice and a pay link while the treasury is fine', !!gInv?.id && !!gLink?.id)
+  const PROXY = '0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814'
+  process.env.GULLY_TREASURY_ADDRESS = PROXY
+  const refused = (res) => res.status === 500 && res.data?.error === GUARD_PUBLIC_ERROR && !JSON.stringify(res.data).toLowerCase().includes(PROXY.slice(2, 12).toLowerCase())
+  const paths = [
+    ['GET /api/plans (checkout treasury)', () => anon.call('/api/plans')],
+    ['POST /api/developer/checkout (USDC plan quote, QR)', () => checkout('pro', 'base-usdc')],
+    ['POST /api/developer/checkout (native coin quote, EIP-681)', () => checkout('pro', 'eth-eth')],
+    ['GET /api/developer/billing (offer and open quotes)', () => dev.call('/api/developer/billing')],
+    ['GET /api/pay/:invoice (checkout treasury)', () => anon.call(`/api/pay/${gInv.id}`)],
+    ['POST /api/pay/:invoice/quote (invoice quote)', () => payPost(`/api/pay/${gInv.id}/quote`, { asset: 'base-usdc' })],
+    ['GET /api/pay/l/:link (pay link checkout)', () => anon.call(`/api/pay/l/${gLink.id}`)],
+    ['POST /api/pay/l/:link/invoice (pay link invoice)', () => payPost(`/api/pay/l/${gLink.id}/invoice`, { asset: 'base-eth' })],
+  ]
+  for (const [name, call] of paths) {
+    const res = await call()
+    check(`guard: ${name} refuses a fee-proxy treasury with a 500 and no address`, refused(res), `${res.status} ${JSON.stringify(res.data)?.slice(0, 160)}`)
+  }
+  let everyProxy = true
+  for (const a of allFeeProxies()) {
+    process.env.GULLY_TREASURY_ADDRESS = a
+    const res = await anon.call('/api/plans')
+    const q = await checkout('pro', 'base-usdc')
+    if (!refused(res) || !refused(q)) everyProxy = false
+  }
+  check(`guard: every known proxy address (${allFeeProxies().size}) is refused as the treasury`, everyProxy)
+  process.env.GULLY_TREASURY_ADDRESS = PROXY
+  const ov = await admin('/api/admin/overview')
+  check('guard: the admin overview still loads and raises the misconfiguration', ov.status === 200 && ov.data.feeProxy?.config?.length === 1 && ov.data.feeProxy.refusals.length > 0, JSON.stringify(ov.data?.feeProxy?.config))
+  const ab = await admin('/api/admin/billing')
+  check('guard: admin billing still loads, checkout shown as refused', ab.status === 200 && ab.data.offer.checkout.enabled === false && ab.data.offer.checkout.treasury === null && /fee-proxy guard/.test(ab.data.offer.checkout.reason))
+  const ai = await admin('/api/admin/invoices')
+  check('guard: admin invoices still load, with no checkout address', ai.status === 200 && ai.data.invoices.every((i) => i.checkout.treasury === null))
+  process.env.GULLY_TREASURY_ADDRESS = TREASURY
+  check('guard: with the real treasury back, the same paths answer again', (await anon.call('/api/plans')).status === 200 && (await anon.call(`/api/pay/${gInv.id}`)).status === 200 && (await anon.call(`/api/pay/l/${gLink.id}`)).status === 200)
+  const okQuote = (await payPost(`/api/pay/${gInv.id}/quote`, { asset: 'base-usdc' })).data?.quote
+  check('guard: a normal quote passes (plain transfer, no split, QR names the treasury)', okQuote?.treasury === TREASURY && okQuote.split === null && okQuote.uri.toLowerCase().includes(`address=${TREASURY}`))
+
   let limited = false
   for (let i = 0; i < 35 && !limited; i++) limited = (await payPost(`/api/pay/${inv3.id}/quote`, { asset: 'eth-usdt' })).status === 429
   check('quote requests on the pay page are rate-limited per address', limited)

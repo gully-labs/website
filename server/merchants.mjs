@@ -81,6 +81,8 @@ import { accrue, centsOfMicros, feeConfig, MIN_STATEMENT_CENTS, PAUSE_AFTER_DAYS
 import { checkEndpoint, deliveries, endpointView, enqueue, makeEndpoint, newSecret, paidEvent, redeliver, registerWebhookTarget, sendTest } from './pay-webhooks.mjs'
 import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc, withFeeSplit } from './payments.mjs'
 import { treasury } from './plans.mjs'
+import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
+import { isFeeProxy } from './fee-proxy-guard.mjs'
 import { isSolanaAsset } from './solana-pay.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { sendAccountTelegram } from './telegram.mjs'
@@ -300,6 +302,7 @@ export async function inspectWallet(chainId, raw, declared) {
   const lower = a.toLowerCase()
   if (/^0x0{40}$/.test(lower)) return bad('The zero address cannot receive payments.')
   if (lower === treasury()) return bad("That is Gully Labs' own treasury. Payments to it never count for a store: use a wallet you control.")
+  if (isFeeProxy(lower)) return bad("That is Request Network's fee proxy contract, not a wallet. It has no owner, so anything sent to it is lost for good: use a wallet you control.")
   if (declared !== 'eoa' && declared !== 'contract') return bad('type must be "eoa" (a normal wallet) or "contract" (a Safe or another smart account).')
   let code
   try {
@@ -417,6 +420,7 @@ function pruneQuotes() {
 
 /** A 20-minute quote to the merchant's wallet, with an amount unique among open quotes to that wallet in that asset. */
 async function createQuote({ ws, invoiceId, asset, usdCents, recipient }) {
+  guardRecipient(recipient, `new merchant quote (${ws})`, { chainId: asset.chainId }) // never a quote to a fee proxy
   let price = null
   if (asset.kind === 'native') {
     const f = await readFeed(asset.chainId)
@@ -474,7 +478,7 @@ function checkoutState(ws, inv) {
 }
 
 /** What anyone with the link sees: no customer email, no internal ids beyond the invoice's own. */
-export function publicMerchantInvoice(inv) {
+export function publicMerchantInvoice(inv, { refused = null } = {}) {
   const status = invoiceState(inv)
   const p = findPayment(inv.paymentId)
   const assets = payableAssets(inv)
@@ -491,7 +495,7 @@ export function publicMerchantInvoice(inv) {
     overdue: overdue(inv),
     dueAt: inv.dueAt ?? null,
     assets: status === 'paid' ? storeAssets().filter((a) => inv.assets.includes(a.id)) : assets,
-    recipients: Object.fromEntries(assets.map((a) => [a.chainId, checksumAddress(recipientOn(inv.ws, a.chainId))])),
+    recipients: refused ? {} : Object.fromEntries(assets.map((a) => [a.chainId, checksumAddress(guardRecipient(recipientOn(inv.ws, a.chainId), `merchant invoice ${inv.id} recipient`, { chainId: a.chainId }))])),
     createdAt: inv.createdAt,
     expiresAt: inv.expiresAt,
     paidAt: inv.paidAt ?? null,
@@ -500,12 +504,13 @@ export function publicMerchantInvoice(inv) {
     linkId: inv.linkId ?? null,
     merchant: brandOf(inv.ws),
     nonCustodial: NON_CUSTODIAL,
-    checkout: checkoutState(inv.ws, inv),
+    checkout: refused ? refusedCheckout(refused) : checkoutState(inv.ws, inv),
   }
 }
 
 function invoiceAdminView(inv) {
-  return { ...publicMerchantInvoice(inv), customer: inv.customer ?? null, views: inv.views ?? 0, path: `/pay/m/${inv.id}`, items: inv.items.map((i) => ({ description: i.description, quantity: i.quantity, unitUsd: fmtUsd(i.unitCents), totalUsd: fmtUsd(BigInt(i.unitCents) * BigInt(i.quantity)) })) }
+  // The store's own view still loads when the guard refuses a recipient (it shows why, with no address).
+  return { ...guardOr(() => publicMerchantInvoice(inv), (e) => publicMerchantInvoice(inv, { refused: e })), customer: inv.customer ?? null, views: inv.views ?? 0, path: `/pay/m/${inv.id}`, items: inv.items.map((i) => ({ description: i.description, quantity: i.quantity, unitUsd: fmtUsd(i.unitCents), totalUsd: fmtUsd(BigInt(i.unitCents) * BigInt(i.quantity)) })) }
 }
 
 function parseAssets(raw) {
@@ -702,7 +707,8 @@ async function quoteFor(inv, assetId) {
   if (!asset || !inv.assets.includes(asset.id)) return { ok: false, status: 400, error: 'This invoice cannot be paid in that asset.' }
   const recipient = recipientOn(inv.ws, asset.chainId)
   if (!recipient) return { ok: false, status: 409, error: `This store takes no payments on ${CHAINS[asset.chainId].name} right now.` }
-  const live = db.quotes.find((q) => q.invoiceId === inv.id && q.assetId === asset.id && q.treasury === recipient && !q.paidAt && Date.parse(q.expiresAt) - Date.now() > 5 * 60_000)
+  // A split quote made for an earlier treasury is not reused (pay-guard.mjs would refuse its fee address).
+  const live = db.quotes.find((q) => q.invoiceId === inv.id && q.assetId === asset.id && q.treasury === recipient && (!q.feeTo || q.feeTo === treasury()) && !q.paidAt && Date.parse(q.expiresAt) - Date.now() > 5 * 60_000)
   if (live) return { ok: true, quote: live }
   if (db.quotes.filter((q) => q.invoiceId === inv.id && Date.parse(q.expiresAt) > Date.now()).length >= 30) return { ok: false, status: 429, error: 'Too many open quotes for this invoice. Use one you have, or try again in 20 minutes.' }
   return createQuote({ ws: inv.ws, invoiceId: inv.id, asset, usdCents: BigInt(inv.usdCents), recipient })

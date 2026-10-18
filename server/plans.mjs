@@ -10,6 +10,7 @@
 // funds). With that variable unset, checkout is off and every page says plans cannot be bought yet:
 // there is no fallback address, ever.
 
+import { guardRecipient } from './pay-guard.mjs'
 import { confirmationsFor, publicAssets, publicChains } from './payments.mjs'
 import { solanaTreasury } from './solana-pay.mjs'
 import { getAccount } from './store.mjs'
@@ -74,8 +75,8 @@ export function planOf(address) {
 }
 
 /** What GET /api/plans answers: everything a page needs to show the tiers, no secrets. */
-export function publicPlans() {
-  const t = treasury()
+export function publicPlans({ treasuryOverride } = {}) {
+  const t = treasuryOverride === undefined ? treasury() : treasuryOverride
   const assets = publicAssets()
   return {
     currency: 'USD',
@@ -85,6 +86,7 @@ export function publicPlans() {
     anonymous: ANONYMOUS,
     plans: Object.values(PLANS),
     analytics: { plans: Object.values(ANALYTICS_PLANS), trialDays: ANALYTICS_TRIAL_DAYS, graceDays: ANALYTICS_GRACE_DAYS, periodDays: PERIOD_DAYS },
-    checkout: t ? { enabled: true, treasury: t, solanaTreasury: solanaTreasury() } : { enabled: false, treasury: null, solanaTreasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
+    // A treasury that is a fee proxy is never shown (pay-guard.mjs: logged, PaymentGuardError, 500).
+    checkout: t ? { enabled: true, treasury: guardRecipient(t, 'plans checkout'), solanaTreasury: solanaTreasury() } : { enabled: false, treasury: null, solanaTreasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
   }
 }

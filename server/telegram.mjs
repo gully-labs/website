@@ -9,6 +9,7 @@
 //                            Default: derived from the token (HMAC), so one variable is enough.
 //   TELEGRAM_API             optional, tests only: the Bot API base URL (default https://api.telegram.org).
 //   TELEGRAM_MINIAPP_URL     optional: the Mini App's https URL (default https://gullylabs.xyz/tg).
+//   TELEGRAM_ADMIN_CHAT_ID   optional: the operators' chat for admin alerts (sendAdminTelegram; the fee-proxy monitor).
 //
 // Updates arrive by webhook: POST /api/telegram/<path>, where <path> is the first 32 hex of
 // sha256(token) and the secret header must match. On start (startTelegram) the server calls setWebhook
@@ -353,6 +354,29 @@ export async function sendAccountTelegram(address, text) {
   const r = await sendText(chatId, `<b>Gully Labs</b>
 ${esc(String(text ?? ''))}`)
   return { ok: r.ok, status: r.status ?? null, error: r.error ?? null }
+}
+
+/** The operators' chat for admin alerts (TELEGRAM_ADMIN_CHAT_ID: a numeric chat id, groups negative), or null. */
+export function adminChatId() {
+  const v = String(process.env.TELEGRAM_ADMIN_CHAT_ID ?? '').trim()
+  return /^-?\d{1,20}$/.test(v) ? v : null
+}
+
+/**
+ * Plain-text admin alert to the operators' chat (fee-proxy monitor and similar). Escaped here. Never throws.
+ * @returns {Promise<{ ok: boolean, status: number | null, error: string | null }>}
+ */
+export async function sendAdminTelegram(text) {
+  if (!telegramEnabled()) return { ok: false, status: null, error: 'Telegram is not configured on the server.' }
+  const chatId = adminChatId()
+  if (!chatId) return { ok: false, status: null, error: 'TELEGRAM_ADMIN_CHAT_ID is not set.' }
+  try {
+    const r = await sendText(chatId, `<b>Gully Labs admin alert</b>
+${esc(String(text ?? ''))}`)
+    return { ok: r.ok, status: r.status ?? null, error: r.error ?? null }
+  } catch (e) {
+    return { ok: false, status: null, error: redact(e?.message ?? e) }
+  }
 }
 
 /* ---------------------------------------------------------- alert sends --- */
