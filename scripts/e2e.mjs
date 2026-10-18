@@ -20,7 +20,8 @@ import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 import { auditPage, tokenColors } from './e2e-audit.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
-await guardTestRun(PORT, { watchdogMs: 8 * 60_000 })
+// E2E_WATCHDOG_MS raises the limit when the machine is busy (other builds running); the default stays 8 minutes.
+await guardTestRun(PORT, { watchdogMs: Number(process.env.E2E_WATCHDOG_MS) || 8 * 60_000 })
 const started = Date.now()
 const t = makeChecker()
 const { check } = t
@@ -1377,7 +1378,13 @@ await step('security', async () => {
     check(`/security at ${width}: the review form is on the page`, (await page.getByTestId('review-form').count()) === 1)
     check(`/security at ${width}: monitoring limits per plan from the config`, /1\s*contract on Free/.test((await page.getByTestId('monitoring-pricing').textContent()) ?? ''))
     if (mobile) await noHorizontalScroll(page, '/security')
-    else check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('a[href="/security"] svg').count()) > 0 && (await page.locator('a[href="/score"] svg').count()) > 0)
+    else {
+      // Open the header's Products menu: the footer lists these links as plain text, so it must not count.
+      await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Products' }).click()
+      await page.locator('header a[href="/score"]').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {})
+      check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('header a[href="/security"] svg').count()) > 0 && (await page.locator('header a[href="/score"] svg').count()) > 0)
+      await page.keyboard.press('Escape')
+    }
     await shot(page, 'security-page')
     await designAudit(page, `security-page at ${page.viewportSize().width}`)
     await page.goto(BASE + '/security/reports')
