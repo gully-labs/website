@@ -54,6 +54,7 @@ import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests, u
 import { eventFor, noteTelegramConnect, recordEvent, activityPage, syncTelegram } from './activity.mjs'
 import { handleAlerts } from './alerts.mjs'
 import { handleExport } from './exports.mjs'
+import { handlePartnerRoutes } from './holders-partners.mjs'
 import { handleMerchant } from './merchants.mjs'
 import { handleSecurity } from './security-routes.mjs'
 import { handleMonitors } from './sec-monitor.mjs'
@@ -284,6 +285,9 @@ export async function handleDeveloper(req, res, url) {
     // Gully Security monitoring (sec-monitor.mjs).
     p === '/api/developer/monitors' ||
     p.startsWith('/api/developer/monitors/') ||
+    // Holder Map partner webhooks (holders-partners.mjs).
+    p === '/api/developer/partners' ||
+    p.startsWith('/api/developer/partners/') ||
     // Chain Kit requests and the Gully Chains devnet waitlist (store.mjs).
     p === '/api/developer/chain-kit' ||
     p === '/api/developer/chain-kit/request' ||
@@ -322,6 +326,7 @@ export async function handleDeveloper(req, res, url) {
       if (p === '/api/developer/merchant' || p.startsWith('/api/developer/merchant/')) return handleMerchant(req, res, url, ctx)
       if (p === '/api/developer/security' || p.startsWith('/api/developer/security/')) return handleSecurity(req, res, url, ctx)
       if (p === '/api/developer/monitors' || p.startsWith('/api/developer/monitors/')) return handleMonitors(req, res, url, ctx)
+      if (p === '/api/developer/partners' || p.startsWith('/api/developer/partners/')) return handlePartnerRoutes(req, res, url, ctx)
       if (p === '/api/developer/chain-kit' || p === '/api/developer/chain-kit/request' || p === '/api/developer/chains-waitlist') return chainKitRoutes(req, res, p, post, ctx)
       if (p === '/api/developer/me' || p === '/api/developer/profile' || p === '/api/developer/company' || p.startsWith('/api/developer/sessions')) return handleProfileRoutes(req, res, url, ctx)
       return handleWorkspaceRoutes(req, res, url, ctx)

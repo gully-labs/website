@@ -11,6 +11,7 @@ import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore 
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
+import { handleHolderBadge, handlePartnerLaunch } from './holders-partners.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
@@ -272,6 +273,9 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/status') return void (await handleStatus(req, res))
   // Gully Security (security-routes.mjs): published reports, the scan counter, review requests.
   if (url.pathname.startsWith('/api/security/')) return void ((await handleSecurityPublic(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
+  // Holder Map partners (holders-partners.mjs): launch.created in (own key limits) and the cached-only health badge.
+  if (url.pathname === '/api/partners/launch') return void (await handlePartnerLaunch(req, res))
+  if (url.pathname.startsWith('/api/holders/') && url.pathname.endsWith('/badge.svg') && (await handleHolderBadge(req, res, url))) return
   let access = null
   // /api/plans is metered like the tracker (P2-22): it is in access.mjs ENDPOINTS, so a key's dashboard counts it.
   if (url.pathname.startsWith('/api/tracker') || url.pathname.startsWith('/api/holders/') || url.pathname === '/api/plans') {
