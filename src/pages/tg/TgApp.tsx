@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Mascot, Wordmark } from '../../components/brand'
 import { useTracker, type TrackerRow } from '../../lib/tracker'
 import { useTgApi } from './hooks'
 import { AlertsTab, Button, Chips, GapsTab, LaunchesTab, Notice, StockScreen, type Me } from './screens'
@@ -108,8 +109,8 @@ function Brand({ right }: { right?: React.ReactNode }) {
   return (
     <header className="flex items-center justify-between gap-3">
       <span className="flex items-center gap-2">
-        <img src="/favicon.png" alt="" width={26} height={26} className="rounded-[7px]" />
-        <span className="font-display text-[22px] leading-none font-bold tracking-[0.01em]">Gully Labs</span>
+        <Mascot size={26} decorative />
+        <Wordmark height={22} />
       </span>
       {right}
     </header>

@@ -34,7 +34,7 @@
     '.f .lv{display:inline-flex;align-items:center;gap:6px}.f .dot{width:6px;height:6px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(31,158,137,.6);animation:pulse 2s infinite}.f .dot.st{background:var(--fnt);animation:none}' +
     '@keyframes pulse{70%{box-shadow:0 0 0 6px rgba(31,158,137,0)}100%{box-shadow:0 0 0 0 rgba(31,158,137,0)}}' +
     '.f a{color:var(--acc);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}.f a:hover{text-decoration:underline}' +
-    '.f a img{width:12px;height:12px;border-radius:3px}' +
+    '.f a img{width:16px;height:16px;border-radius:50%}' +
     'a:focus-visible,.vp:focus-visible,tr:focus-visible,th button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}' +
     '.m{padding:14px;color:var(--mut)}.e{color:var(--dn)}' +
     /* logo */
@@ -165,7 +165,8 @@
     var when = t && !isNaN(t) ? (stale ? 'last read ' : 'live \u00b7 ') + t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) + ' UTC' : ''
     return (
       '<div class="f"><span class="lv"><span class="dot' + (stale || !d ? ' st' : '') + '"></span>' + esc(when) + '</span>' +
-      '<a href="' + TRACKER + '" target="_blank" rel="noopener">Gully Labs tracker \u2197</a></div>'
+      /* The Gully Labs mark from the brand kit (public/brand, cut from the kit's icon master) beside the credit. */
+      '<a href="' + TRACKER + '" target="_blank" rel="noopener"><img src="https://gullylabs.xyz/brand/gully-mark-96.png" alt="" width="16" height="16" loading="lazy" decoding="async">Gully Labs tracker \u2197</a></div>'
     )
   }
 

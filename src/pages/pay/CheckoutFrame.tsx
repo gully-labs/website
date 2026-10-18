@@ -1,3 +1,4 @@
+import { Lockup, Mascot } from '../../components/brand'
 import { ExternalLink, ShieldCheck, Store } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Outlet } from 'react-router'
@@ -31,15 +32,12 @@ export function StoreMark({ brand, size = 40 }: { brand: Brand; size?: number })
 
 /** The kit's horizontal lockup (mascot + wordmark), on dark or on light, from public/brand/kit. */
 export function GullyLockup({ height = 34, light = false, className = '' }: { height?: number; light?: boolean; className?: string }) {
-  const v = light ? 'light' : 'dark'
-  // The lockup is 1245 × 439 in the kit: width follows the height shown.
-  const width = Math.round((height * 1245) / 439)
-  return <img src={`/brand/kit/lockup-${v}-320.png`} srcSet={`/brand/kit/lockup-${v}-320.png 1x, /brand/kit/lockup-${v}-640.png 2x`} alt="Gully Labs" width={width} height={height} decoding="async" className={`block select-none ${className}`} style={{ width, height }} draggable={false} />
+  return <Lockup height={height} theme={light ? 'light' : 'dark'} className={className} />
 }
 
 /** The kit mark (the mascot bust on its disc), as in the site's logo registry. */
 export function GullyMark({ size = 20, className = '' }: { size?: number; className?: string }) {
-  return <img src="/brand/gully-mark-96.png" alt="" aria-hidden width={size} height={size} decoding="async" className={`inline-block shrink-0 rounded-full ${className}`} style={{ width: size, height: size }} draggable={false} />
+  return <Mascot size={size} className={className} decorative />
 }
 
 /* --------------------------------------------------------------- root --- */
