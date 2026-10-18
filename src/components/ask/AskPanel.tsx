@@ -19,8 +19,10 @@ const STAGE: Record<string, string> = {
   'tool:get_top_gaps': 'Reading the tracker…',
   'tool:get_ledger': 'Reading the live ledger…',
   'tool:get_alert_channels': 'Checking the alert channels…',
+  'tool:deepcore_launches': 'Reading DeepCore launches…',
+  'tool:deepcore_pool': 'Reading the DeepCore pool…',
 }
-const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels' }
+const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels', deepcore_launches: 'DeepCore launches', deepcore_pool: 'DeepCore pool' }
 
 type Exchange = { id: number; q: string; a: AskAnswer | null; error: string | null }
 

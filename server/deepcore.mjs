@@ -18,8 +18,17 @@
 //    minute (DeepCore allows 20 a minute per IP without a key). Nothing is ever executed through
 //    DeepCore from here: the page links out to deepcore.fun's own swap.
 //
+// 3. Market reads for Gully AI (ask.mjs tools deepcore_launches / deepcore_pool). The launch list is
+//    the poller's cache above (no extra call). Price, liquidity and activity come from DeepCore's own
+//    pool view (GET /v1/chains/:id/pools/:poolId: state and price from CLPoolManager.getSlot0, read by
+//    DeepCore's indexer at a stated block, so no RPC call is made from here), market cap is that price
+//    times the launch's total supply, and dollars only where DeepCore states a Chainlink USD price for
+//    the quote token (GET /v1/chains/:id/tokens/:address) or the quote is a dollar stable. Every read
+//    is cached (POOL_CACHE_MS, USD_CACHE_MS; at most MARKET_CACHE_MAX entries) and runs on its own
+//    per-minute budget (ASK_PER_MIN), so questions can never starve the launch poller or the quotes.
+//
 // Budget: DeepCore's anonymous limit is 60 requests a minute per IP. Data reads here stay under
-// DATA_PER_MIN (30), and a 429's Retry-After is honoured before the next call.
+// DATA_PER_MIN (30) + ASK_PER_MIN (12), and a 429's Retry-After is honoured before the next call.
 //
 // Env: DEEPCORE_API (tests: a local stub), DEEPCORE_POLL_MS, DEEPCORE_LOOP=off (no background poll;
 // also off when TRACKER_LOOP=off, as in the tests, unless DEEPCORE_LOOP=on).
@@ -37,6 +46,10 @@ const TIMEOUT_MS = 12_000
 const DATA_PER_MIN = 30
 const QUOTE_PER_MIN = 15
 const PER_IP_PER_MIN = 10
+const ASK_PER_MIN = 12
+const POOL_CACHE_MS = 60_000
+const USD_CACHE_MS = 300_000
+const MARKET_CACHE_MAX = 300
 const QUOTE_CACHE_MS = 20_000
 const KEEP_SEEN = 5_000
 const KEEP_LAUNCHES = 50
@@ -87,7 +100,7 @@ function save() {
 
 /* ---------------------------------------------------------------- budget --- */
 
-const windows = { data: [], quote: [] }
+const windows = { data: [], quote: [], ask: [] }
 let blockedUntil = 0
 /** Takes one call from a per-minute budget; false when it is spent or DeepCore asked us to wait. */
 function take(kind, max) {
@@ -101,7 +114,7 @@ function take(kind, max) {
 
 /** One GET to DeepCore. Returns { ok, status, body, error }; never throws. */
 async function get(pathAndQuery, kind = 'data') {
-  if (!take(kind, kind === 'quote' ? QUOTE_PER_MIN : DATA_PER_MIN)) return { ok: false, status: 429, body: null, error: 'local budget for DeepCore requests is spent; try again shortly' }
+  if (!take(kind, kind === 'quote' ? QUOTE_PER_MIN : kind === 'ask' ? ASK_PER_MIN : DATA_PER_MIN)) return { ok: false, status: 429, body: null, error: 'local budget for DeepCore requests is spent; try again shortly' }
   try {
     const r = await fetch(API() + pathAndQuery, { headers: { accept: 'application/json', 'user-agent': UA }, redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS) })
     if (r.status === 429) {
@@ -149,6 +162,7 @@ export function normaliseLaunch(it) {
     locked: g?.lock?.status === 'indexed' ? true : g?.lock === null ? false : null,
     lockId: g?.lock?.lockId != null ? String(g.lock.lockId).slice(0, 20) : null,
     feePct: Number.isFinite(Number(g?.launchFee?.feePips)) ? Number(g.launchFee.feePips) / 10_000 : null,
+    quoteAddress: isAddr(g?.quote?.address) ? g.quote.address.toLowerCase() : null,
   }))
   return {
     key: `${chainId}:${token.toLowerCase()}`,
@@ -161,6 +175,8 @@ export function normaliseLaunch(it) {
     txHash: typeof it?.createdAt?.txHash === 'string' ? it.createdAt.txHash : null,
     creator: isAddr(it?.creator) ? it.creator : null,
     startsAt: isIso(it?.schedule?.startTimeIso) ? new Date(it.schedule.startTimeIso).toISOString() : null,
+    // Whole tokens as DeepCore states them (decimal string), for market cap; null when not stated.
+    totalSupply: /^\d+(\.\d+)?$/.test(String(it?.totalSupply?.units ?? '')) ? String(it.totalSupply.units) : null,
     legs,
     links: deepcoreLinks(chainId, token),
   }
@@ -258,8 +274,10 @@ export function resetDeepcoreForTest() {
   db = { seen: [], launches: [], baselineAt: null, lastOkAt: null, lastError: null, chains: [] }
   windows.data = []
   windows.quote = []
+  windows.ask = []
   blockedUntil = 0
   quoteCache.clear()
+  marketCache.clear()
   ipHits.clear()
 }
 
@@ -396,4 +414,186 @@ export async function handleDeepcoreQuote(req, res, url, geo = { allowed: false,
   if (done.status === 429) quoteCache.delete(key)
   else quoteCache.set(key, { at: now, ...done })
   return json(res, done.status, done.body, { 'Cache-Control': done.status === 200 ? 'public, max-age=10' : 'no-store' }), true
+}
+
+/* ---------------------------------------------------------------- market --- */
+
+const DOLLAR_STABLES = new Set(['USDC', 'USDT', 'USDG', 'USD1', 'FDUSD', 'DAI', 'USDC.E', 'USDE'])
+const marketCache = new Map() // key -> { at, value } or { at, promise }
+setInterval(() => {
+  const now = Date.now()
+  for (const [k, v] of marketCache) if (now - v.at > USD_CACHE_MS * 2) marketCache.delete(k)
+}, 60_000).unref?.()
+
+/** One cached GET on the Ask budget. A failed read is kept briefly too, so DeepCore is never hammered. */
+async function cachedAsk(key, ttl, pathAndQuery) {
+  const now = Date.now()
+  const hit = marketCache.get(key)
+  if (hit && now - hit.at < (hit.value && !hit.value.ok ? Math.min(ttl, 20_000) : ttl)) return hit.promise ?? hit.value
+  while (marketCache.size >= MARKET_CACHE_MAX) marketCache.delete(marketCache.keys().next().value)
+  const promise = get(pathAndQuery, 'ask').then((r) => ({ ...r, at: Date.now() }))
+  marketCache.set(key, { at: now, promise })
+  const value = await promise
+  // A spent local budget is not cached: the next question may fall inside the next minute's budget.
+  if (!value.ok && value.status === 429) marketCache.delete(key)
+  else marketCache.set(key, { at: value.at, value })
+  return value
+}
+
+const finite = (v) => {
+  const n = Number(v)
+  return v !== null && v !== undefined && v !== '' && Number.isFinite(n) ? n : null
+}
+/** A number to `d` significant digits (as a number); null for anything else. */
+export const sig = (n, d = 4) => (typeof n === 'number' && Number.isFinite(n) ? Number(n.toPrecision(d)) : null)
+
+/** The quote token's US dollar price: 1 for a dollar stable, else DeepCore's Chainlink-sourced USD, else null. */
+async function quoteUsd(chainId, address, symbol) {
+  if (DOLLAR_STABLES.has(String(symbol ?? '').toUpperCase())) return { usd: 1, source: 'dollar stable' }
+  if (!isAddr(address)) return { usd: null, source: null }
+  const a = address.toLowerCase()
+  const r = await cachedAsk(`usd:${chainId}:${a}`, USD_CACHE_MS, `/v1/chains/${chainId}/tokens/${a}`)
+  const u = r.body?.data?.usd
+  const usd = finite(u?.usdPerToken)
+  return usd && usd > 0 ? { usd, source: String(u.sourceText ?? u.source ?? 'Chainlink').slice(0, 80) } : { usd: null, source: null }
+}
+
+/**
+ * One DeepCore pool view (GET /v1/chains/:id/pools/:poolId, `data`, or an item of the pool list) in
+ * the shape Gully AI reads, seen from the launch token's side: the price of one launch token in the
+ * quote token, active liquidity as DeepCore states it (pool units, not dollars), fees, creator tax,
+ * activity and when DeepCore read the state. Exported for the tests.
+ */
+export function shapePool(d, launchToken) {
+  const lt = String(launchToken ?? '').toLowerCase()
+  const t0 = d?.token0 ?? {}
+  const t1 = d?.token1 ?? {}
+  const launchIs0 = String(t0.address ?? '').toLowerCase() === lt
+  const launchIs1 = String(t1.address ?? '').toLowerCase() === lt
+  const quote = launchIs0 ? t1 : t0
+  const raw = launchIs0 ? d?.price?.token1PerToken0 : launchIs1 ? d?.price?.token0PerToken1 : null
+  const s = d?.state ?? null
+  const fee = finite(d?.launchFee?.feePips) ?? finite(s?.lpFeePips)
+  const tax = d?.launchTax ?? null
+  const bps = (v) => (finite(v) !== null ? finite(v) / 100 : null)
+  return {
+    poolId: typeof d?.poolId === 'string' ? d.poolId.slice(0, 66) : null,
+    kind: /bin/i.test(String(d?.poolType ?? '')) ? 'Bin' : /cl/i.test(String(d?.poolType ?? '')) ? 'CL' : null,
+    quote: { symbol: quote.symbol ? String(quote.symbol).slice(0, 16) : null, address: isAddr(quote.address) ? quote.address.toLowerCase() : null },
+    priceInQuote: finite(raw),
+    activeLiquidityRaw: /^\d+$/.test(String(s?.activeLiquidityRaw ?? '')) ? String(s.activeLiquidityRaw).slice(0, 40) : null,
+    feePct: fee !== null ? fee / 10_000 : null,
+    creatorTaxPct: tax ? { buy: bps(tax.buyBps), sell: bps(tax.sellBps) } : null,
+    swaps: finite(d?.activity?.swapCount),
+    lastSwapAt: isIso(d?.activity?.lastSwap?.blockTimestamp) ? new Date(d.activity.lastSwap.blockTimestamp).toISOString() : null,
+    stateReadAt: isIso(s?.readAt) ? new Date(s.readAt).toISOString() : null,
+    stateReadAtBlock: s?.readAtBlock != null ? String(s.readAtBlock).slice(0, 20) : null,
+    stateError: s?.readError ? String(s.readError).slice(0, 120) : s ? null : 'DeepCore has not read this pool’s state yet',
+  }
+}
+
+/** Adds the dollar price of a shaped pool where the quote token's dollar price is known. */
+async function withUsd(chainId, p, at) {
+  const q = await quoteUsd(chainId, p.quote.address, p.quote.symbol)
+  return { ...p, priceUsd: p.priceInQuote !== null && q.usd ? sig(p.priceInQuote * q.usd, 6) : null, quoteUsdSource: q.source, fetchedAt: new Date(at).toISOString() }
+}
+
+/** Reads one pool for one launch token. */
+async function poolMarket(chainId, poolId, token) {
+  const id = String(poolId).toLowerCase()
+  const r = await cachedAsk(`pool:${chainId}:${id}`, POOL_CACHE_MS, `/v1/chains/${chainId}/pools/${id}`)
+  if (!r.ok || !r.body?.data) return { poolId: id, error: r.status === 404 ? 'DeepCore does not index this pool yet' : `could not be read (${r.error ?? 'unexpected answer'})`, fetchedAt: new Date(r.at).toISOString() }
+  return withUsd(chainId, shapePool(r.body.data, token), r.at)
+}
+
+/** A launch with its pools' market figures. Market cap = the first priced leg's price × total supply. */
+async function launchMarket(l) {
+  const legs = await Promise.all(l.legs.filter((g) => g.poolId).slice(0, 4).map((g) => poolMarket(l.chainId, g.poolId, l.token).then((m) => ({ ...m, locked: g.locked }))))
+  const priced = legs.find((g) => typeof g.priceInQuote === 'number')
+  const supply = finite(l.totalSupply)
+  const capQuote = priced && supply ? priced.priceInQuote * supply : null
+  const capUsd = priced?.priceUsd && supply ? priced.priceUsd * supply : null
+  return {
+    chain: l.chainName,
+    chainId: l.chainId,
+    symbol: l.symbol,
+    token: l.token,
+    launchedAt: l.createdAt,
+    tradingStartsAt: l.startsAt,
+    totalSupply: supply,
+    priceUsd: priced?.priceUsd ?? null,
+    price: priced ? { amount: sig(priced.priceInQuote, 6), in: priced.quote.symbol } : null,
+    marketCapUsd: capUsd !== null ? Math.round(capUsd) : null,
+    marketCap: capQuote !== null ? { amount: sig(capQuote, 6), in: priced.quote.symbol } : null,
+    swaps: legs.reduce((a, g) => (typeof g.swaps === 'number' ? (a ?? 0) + g.swaps : a), null),
+    lastSwapAt: legs.map((g) => g.lastSwapAt).filter(Boolean).sort().at(-1) ?? null,
+    pools: legs,
+    page: l.links.token,
+  }
+}
+
+const LIQUIDITY_NOTE = 'Liquidity: DeepCore states each pool’s active liquidity in pool units (activeLiquidityRaw), not dollars, and publishes no dollar liquidity per pool; locked says whether the launch liquidity is locked.'
+const PRICE_NOTE = 'Prices are the pools’ own (before any creator tax), from CLPoolManager.getSlot0 as DeepCore read it. Dollars appear only where the quote is a dollar stable or DeepCore states a Chainlink price for it.'
+const NEWEST_TRENDING = 8
+const chainList = () => Object.values(DEEPCORE_CHAINS).map((c) => c.name).join(', ')
+
+/** A chain name, key or id to a DeepCore chain id; null for "every chain", undefined when not a DeepCore chain. */
+export function deepcoreChainId(x) {
+  if (x === undefined || x === null || x === '' || x === 'all') return null
+  const s = String(x).toLowerCase().trim()
+  for (const [id, c] of Object.entries(DEEPCORE_CHAINS)) if (s === id || s === c.key || s === c.name.toLowerCase() || (s === 'bnb' && c.key === 'bsc') || (s === 'hyperliquid' && c.key === 'hyperevm')) return Number(id)
+  return undefined
+}
+
+/**
+ * Gully AI: the newest, or the most traded recent, DeepCore launches with price, market cap, liquidity
+ * and activity. `sort` is 'newest' or 'trending'; at most 5 launches. Never throws.
+ */
+export async function readDeepcoreMarkets({ chain, limit = 5, sort = 'newest' } = {}) {
+  const chainId = deepcoreChainId(chain)
+  if (chainId === undefined) return { error: `DeepCore runs on ${chainList()}.` }
+  const order = sort === 'trending' ? 'trending' : 'newest'
+  const n = Math.min(5, Math.max(1, Number.isInteger(limit) ? limit : 5))
+  const list = await readLaunches({ chainId, limit: KEEP_LAUNCHES })
+  if (list.state === 'unreadable') return { error: 'DeepCore’s launches could not be read just now.', detail: list.error }
+  const candidates = list.launches.slice(0, order === 'trending' ? NEWEST_TRENDING : n)
+  let rows = await Promise.all(candidates.map(launchMarket))
+  if (order === 'trending') rows = rows.sort((a, b) => (b.swaps ?? -1) - (a.swaps ?? -1) || String(b.lastSwapAt ?? '').localeCompare(String(a.lastSwapAt ?? ''))).slice(0, n)
+  const fetched = rows.flatMap((r) => r.pools.map((p) => p.fetchedAt)).filter(Boolean).sort()
+  return {
+    source: 'api.deepcore.fun',
+    sort: order,
+    ...(order === 'trending' ? { trendingMeans: `the most swaps among the ${NEWEST_TRENDING} newest launches${chainId ? ` on ${DEEPCORE_CHAINS[chainId].name}` : ''}; DeepCore publishes no trending list` } : {}),
+    freshness: { launchListAsOf: list.asOf, launchListState: list.state, marketReadOldest: fetched[0] ?? null, cachedForSeconds: POOL_CACHE_MS / 1000 },
+    unreadableChains: (list.chains ?? []).filter((c) => c.status !== 'ok').map((c) => c.name),
+    launches: rows,
+    notes: [LIQUIDITY_NOTE, PRICE_NOTE],
+    page: `${DEEPCORE_SITE}/tokens`,
+  }
+}
+
+/**
+ * Gully AI: one token's DeepCore pools. `token` is a launch token's address or symbol; a symbol is
+ * looked up in the latest launches. An address that is not a recent launch needs a chain and is read
+ * through DeepCore's pool list for that token. Never throws.
+ */
+export async function readDeepcorePool({ token, chain } = {}) {
+  const chainId = deepcoreChainId(chain)
+  if (chainId === undefined) return { error: `DeepCore runs on ${chainList()}.` }
+  const q = String(token ?? '').trim().replace(/^\$/, '')
+  const byAddr = isAddr(q)
+  if (!byAddr && !/^[A-Za-z0-9._-]{1,24}$/.test(q)) return { error: 'Give a token address (0x…) or a launch symbol.' }
+  const list = await readLaunches({ chainId, limit: KEEP_LAUNCHES })
+  const freshness = { launchListAsOf: list.asOf, launchListState: list.state, cachedForSeconds: POOL_CACHE_MS / 1000 }
+  const hits = list.launches.filter((l) => (byAddr ? l.token.toLowerCase() === q.toLowerCase() : String(l.symbol ?? '').toLowerCase() === q.toLowerCase())).slice(0, 3)
+  if (hits.length) return { source: 'api.deepcore.fun', freshness, matches: await Promise.all(hits.map(launchMarket)), notes: [LIQUIDITY_NOTE, PRICE_NOTE, ...(hits.length > 1 ? ['More than one launch has this symbol; tell them apart by chain and address.'] : [])] }
+  if (!byAddr) return { error: `${q} is not among DeepCore’s ${list.launches.length} latest launches. Ask with the token’s address and chain.`, freshness }
+  if (!chainId) return { error: 'That address is not among DeepCore’s latest launches; say which chain it is on.', freshness }
+  const a = q.toLowerCase()
+  const r = await cachedAsk(`pools:${chainId}:${a}`, POOL_CACHE_MS, `/v1/chains/${chainId}/pools?token=${a}&limit=4`)
+  const items = Array.isArray(r.body?.data?.items) ? r.body.data.items : null
+  if (!r.ok || !items) return { error: `DeepCore’s pools could not be read just now (${r.error ?? 'unexpected answer'}).` }
+  if (!items.length) return { error: `DeepCore indexes no pool for ${a} on ${DEEPCORE_CHAINS[chainId].name}.` }
+  const pools = await Promise.all(items.slice(0, 4).map((d) => withUsd(chainId, shapePool(d, a), r.at)))
+  return { source: 'api.deepcore.fun', freshness: { ...freshness, marketReadAt: new Date(r.at).toISOString() }, chain: DEEPCORE_CHAINS[chainId].name, token: a, pools, notes: [LIQUIDITY_NOTE, PRICE_NOTE, 'Not a recent launch: market cap is not stated here.'], page: deepcoreLinks(chainId, a).token }
 }
