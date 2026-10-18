@@ -1,3 +1,4 @@
+import { TokenLogo } from '../../../components/logos/TokenLogo'
 import { Activity, ChartCandlestick, Rocket, Waves } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
@@ -161,7 +162,7 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
         >
           {newest && (
             <span key={newest.key} className="flex min-w-0 items-center gap-2 font-mono text-[11px] text-ink-2" style={{ animation: 'gl-fade .5s ease both' }} data-testid="mk-newest">
-              <span className="size-[6px] shrink-0 rounded-full" style={{ background: deepcoreColor(newest.chainId) }} aria-hidden />
+              <TokenLogo symbol={newest.symbol ?? 'token'} chain={newest.chainKey} address={newest.token} size={16} decorative />
               <span className="truncate">
                 newest: <b className="font-medium text-ink">{newest.symbol ?? newest.token.slice(0, 8)}</b> on {newest.chainName}, {ago(newest.createdAt)}
               </span>

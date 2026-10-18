@@ -9,8 +9,10 @@ export const rise = (i: number) => ({ animation: `gl-rise .45s ${i * 0.05}s ease
 
 /* ---- The console portal ("B · Console app"): 14px panels, pill buttons, chips. ---- */
 
-/** A console panel: the design's 14px card with 16px padding. */
-export const panel = 'flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-4'
+/** A console panel: the kit's card radius with 16px padding. */
+export const panel = 'flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4'
+/** The one page title of every app page (ServiceHeader): 20 px, never 18/22/24/30. */
+export const pageTitle = 'm-0 text-[20px] leading-tight font-semibold text-ink'
 export const panelTitle = 'm-0 text-[15px] leading-tight font-semibold text-ink'
 /** Small grey label above a value (the design's 11–12px #949daa). */
 export const label = 'text-[12px] text-dim'

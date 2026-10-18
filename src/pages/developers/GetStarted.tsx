@@ -118,7 +118,7 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
               {s.state === 'done' ? (
                 <span className="font-mono text-[11px] text-green">done</span>
               ) : (
-                s.action && <span className="shrink-0 [&>*]:min-h-9 [&>*]:bg-gold [&>*]:px-4 [&>*]:font-semibold [&>*]:text-bg [&>*]:hover:bg-gold-hover [&>*]:hover:text-bg [&>*]:hover:no-underline">{s.action}</span>
+                s.action && <span className="shrink-0 [&>*]:min-h-11 [&>*]:bg-gold [&>*]:px-4 [&>*]:font-semibold [&>*]:text-bg [&>*]:hover:bg-gold-hover [&>*]:hover:text-bg [&>*]:hover:no-underline">{s.action}</span>
               )}
             </div>
           )
@@ -148,7 +148,7 @@ export function ToolsRow() {
   return (
     <nav aria-label="Tools" className="flex flex-wrap items-center gap-2" style={rise(6)} data-testid="tools-row">
       {tools.map((t) => (
-        <ExtLink key={t.title} href={t.href} className="group inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 text-[13px] transition-colors hover:border-gold-line max-[600px]:min-h-11">
+        <ExtLink key={t.title} href={t.href} className="group inline-flex min-h-11 min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 text-[13px] transition-colors hover:border-gold-line max-[600px]:min-h-11">
           <span className="text-gold">{t.icon}</span>
           <span className="font-semibold text-ink">{t.title}</span>
           <span className="truncate text-[12px] text-dim max-[1535px]:hidden">{t.note}</span>

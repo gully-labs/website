@@ -6,6 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { concat, getContractAddress, keccak256, pad, toHex } from 'viem'
 import { useAccount, WagmiProvider } from 'wagmi'
 import { queryClient, wagmiConfig, walletTheme } from '../../pages/developers/walletConfig'
+import { ProgressSteps, type ProgressStep } from '../../pages/developers/ui'
 import { ChainLogo } from '../logos/ChainLogo'
 
 /* One-click Safe deployment, signed by the user's own wallet (server/safe-deploy.mjs builds the plan).
@@ -104,45 +105,22 @@ const STEPS: { id: Phase; label: string }[] = [
 ]
 const ORDER: Phase[] = ['sent', 'mined', 'verified']
 
+/** The deployment progress, drawn by the app's one stepper look (pages/developers/ui.tsx ProgressSteps). */
 function Stepper({ phase, txUrl, explorerUrl }: { phase: Phase; txUrl: string | null; explorerUrl: string | null }) {
   const at = ORDER.indexOf(phase === 'failed' ? 'mined' : phase)
-  return (
-    <ol className="m-0 flex list-none items-stretch gap-0 p-0" aria-label="Deployment progress">
-      {STEPS.map((s, i) => {
-        const done = phase !== 'failed' && i < at
-        const active = phase !== 'failed' ? i === at : i === 1
-        const failed = phase === 'failed' && i === 1
-        return (
-          <li key={s.id} className="flex min-w-0 flex-1 items-center gap-2" aria-current={active ? 'step' : undefined}>
-            <span className="relative flex size-7 shrink-0 items-center justify-center">
-              {active && !failed && <span aria-hidden className="absolute inset-0 rounded-full border border-gold-line animate-[gl-pulse-ring_1.6s_ease-out_infinite]" />}
-              <span className={`grid size-7 place-items-center rounded-full border text-bg transition-colors duration-500 ${done || phase === 'verified' ? 'border-success-line bg-green' : failed ? 'border-[#5a2a24] bg-error' : active ? 'border-gold bg-gold' : 'border-line-strong bg-transparent'}`}>
-                {done || (phase === 'verified' && i === at) ? <Check size={14} aria-hidden style={{ animation: 'gl-rise .35s ease both' }} /> : failed ? <X size={14} aria-hidden /> : active ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <span className="font-mono text-[11px] text-faint">{i + 1}</span>}
-              </span>
-            </span>
-            <span className={`min-w-0 truncate text-[13px] ${done || active ? 'text-ink' : 'text-faint'}`}>
-              {s.label}
-              {s.id === 'sent' && txUrl && (
-                <a href={txUrl} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-[2px] font-mono text-[11px] text-gold underline-offset-4 hover:underline">
-                  tx <ArrowUpRight size={10} aria-hidden />
-                <span className="sr-only"> (opens in a new tab)</span></a>
-              )}
-              {s.id === 'verified' && phase === 'verified' && explorerUrl && (
-                <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-[2px] font-mono text-[11px] text-gold underline-offset-4 hover:underline">
-                  explorer <ArrowUpRight size={10} aria-hidden />
-                <span className="sr-only"> (opens in a new tab)</span></a>
-              )}
-            </span>
-            {i < STEPS.length - 1 && (
-              <span aria-hidden className="mx-1 h-px min-w-3 flex-1 overflow-hidden bg-line">
-                <span className={`block h-full origin-left bg-green transition-transform duration-700 ${done ? 'scale-x-100' : 'scale-x-0'}`} />
-              </span>
-            )}
-          </li>
-        )
-      })}
-    </ol>
+  const link = (href: string, text: string) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-[2px] font-mono text-[11px] text-gold underline-offset-4 hover:underline">
+      {text} <ArrowUpRight size={10} aria-hidden />
+      <span className="sr-only"> (opens in a new tab)</span>
+    </a>
   )
+  const steps: ProgressStep[] = STEPS.map((s, i) => ({
+    id: s.id,
+    label: s.label,
+    state: phase === 'failed' ? (i === 1 ? 'failed' : i < 1 ? 'done' : 'todo') : phase === 'verified' || i < at ? 'done' : i === at ? 'active' : 'todo',
+    after: s.id === 'sent' && txUrl ? link(txUrl, 'tx') : s.id === 'verified' && phase === 'verified' && explorerUrl ? link(explorerUrl, 'explorer') : undefined,
+  }))
+  return <ProgressSteps steps={steps} label="Deployment progress" testId="safe-stepper" />
 }
 
 function Checks({ checks }: { checks: SafeCheck[] }) {

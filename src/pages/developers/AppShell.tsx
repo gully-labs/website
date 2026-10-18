@@ -87,8 +87,8 @@ function WorkspaceSwitcher({ compact, onTeam }: { compact: boolean; onTeam: () =
           <Building2 size={ICON} className="shrink-0 text-gold" aria-hidden />
           {!compact && (
             <>
-              <span className="min-w-0 flex-1 truncate text-left font-medium">{active.name}</span>
-              <span className={`shrink-0 rounded-full border px-[6px] font-mono text-[11px] ${roleTone(role)}`}>{role}</span>
+              <span className="min-w-[7ch] flex-1 truncate text-left font-medium" title={`${active.name} · ${role}`}>{/^0x[0-9a-fA-F]{40}$/.test(active.name) ? shortAddress(active.name) : active.name}</span>
+              <span className="sr-only">{role}</span>
               <ChevronsUpDown size={14} className="shrink-0 text-faint" aria-hidden />
             </>
           )}
@@ -187,7 +187,7 @@ function WalletMenu({ onSignOut, go, compact = false, placement = 'down' }: { on
       width={250}
       align={inSidebar ? 'left' : 'right'}
       placement={placement}
-      buttonClass={`relative flex ${inSidebar ? 'min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]' : 'min-h-11'} items-center gap-2 rounded-full border border-line-strong bg-surface font-mono text-[12px] text-ink transition-colors hover:border-line-hover ${compact ? 'justify-center px-[9px]' : 'px-2 pr-3'} ${inSidebar && !compact ? 'w-full' : ''}`}
+      buttonClass={`relative flex ${inSidebar ? 'min-h-11' : 'min-h-11'} items-center gap-2 rounded-full border border-line-strong bg-surface font-mono text-[12px] text-ink transition-colors hover:border-line-hover ${compact ? 'justify-center px-[9px]' : 'px-2 pr-3'} ${inSidebar && !compact ? 'w-full' : ''}`}
       button={
         <>
           <Avatar address={address} src={me?.profile.avatar} size={24} />
@@ -339,13 +339,13 @@ function NavLinks<T extends string>({ items, current, go, compact, dense }: { it
         const shut = !compact && !!g.name && folded.has(g.name)
         const rows = shut ? g.items.filter((it) => it.id === current) : g.items
         return (
-          <div key={g.name || i} role="group" aria-labelledby={id} data-nav-group={g.name} data-folded={shut || undefined}>
+          <div key={g.name || i} role="group" aria-labelledby={id} data-nav-group={g.name} data-folded={shut || undefined} className={dense ? '[@media(max-height:840px)]:not-first:mt-1 [@media(max-height:840px)]:not-first:border-t [@media(max-height:840px)]:not-first:border-line' : undefined}>
             {compact ? (
               <span id={id} className="mx-auto my-[3px] block h-px w-6 bg-line-strong" aria-label={g.name} role="heading" aria-level={2}>
                 <span className="sr-only">{g.name}</span>
               </span>
             ) : (
-              <h2 id={id} className="m-0">
+              <h2 id={id} className={dense ? 'm-0 [@media(max-height:840px)]:sr-only' : 'm-0'}>
                 <button type="button" onClick={() => toggle(g.name)} aria-expanded={!shut} aria-controls={`${id}-list`} className={`group/h flex w-full items-center gap-1 rounded-[6px] px-[10px] text-left font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase transition-colors hover:text-ink-2 ${dense ? 'min-h-[18px]' : 'min-h-9'}`} data-testid={`navgroup-toggle-${slug}`}>
                   <span className="flex-1">{g.name}</span>
                   <ChevronDown size={12} className={`opacity-60 transition-transform duration-200 group-hover/h:opacity-100 ${shut ? '-rotate-90' : ''}`} aria-hidden />
@@ -421,7 +421,7 @@ function HeaderLinks({ health, onStatus }: { health: Health; onStatus: () => voi
 
 function Brand({ compact, onHome }: { compact: boolean; onHome: () => void }) {
   return (
-    <button type="button" onClick={onHome} className={`flex min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] min-w-0 items-center gap-[10px] text-ink ${compact ? 'justify-center' : ''}`} aria-label="Gully Labs App: overview" data-testid="app-brand">
+    <button type="button" onClick={onHome} className={`flex min-h-11 min-w-0 items-center gap-[10px] text-ink ${compact ? 'justify-center' : ''}`} aria-label="Gully Labs App: overview" data-testid="app-brand">
       <Mascot size={24} decorative />
       {!compact && (
         <span className="flex min-w-0 items-center gap-2">

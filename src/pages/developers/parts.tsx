@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 
 export function ErrorLine({ children, onRetry }: { children: ReactNode; onRetry?: () => void }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-input border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-4 py-3 text-[14px] text-error" role="alert">
+    <div className="flex flex-wrap items-center gap-3 rounded-input border border-error-line bg-[rgba(255,138,122,.06)] px-4 py-3 text-[14px] text-error" role="alert">
       <AlertTriangle size={16} aria-hidden />
       <span className="min-w-0 flex-1">{children}</span>
       {onRetry && (

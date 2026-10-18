@@ -119,12 +119,12 @@ export function Team() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Can cat="team" what="rename the workspace" hide>
-              <button type="button" onClick={() => setRenaming(true)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+              <button type="button" onClick={() => setRenaming(true)} className={`${pillSm} min-h-11`}>
                 <Pencil size={14} aria-hidden /> Rename
               </button>
             </Can>
             <Can cat="team" what="invite members">
-              <button type="button" disabled={full || invitesFull} title={full ? `A workspace can have ${view.limits.maxMembers} members.` : invitesFull ? `${view.limits.maxOpenInvites} invites are open. Revoke one first.` : undefined} onClick={() => setInviting(true)} className={`${pillGold} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px]`}>
+              <button type="button" disabled={full || invitesFull} title={full ? `A workspace can have ${view.limits.maxMembers} members.` : invitesFull ? `${view.limits.maxOpenInvites} invites are open. Revoke one first.` : undefined} onClick={() => setInviting(true)} className={`${pillGold} min-h-11`}>
                 <UserPlus size={16} aria-hidden /> Invite
               </button>
             </Can>
@@ -197,7 +197,7 @@ export function Team() {
         {role !== 'owner' && (
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
             <span className="text-[12px] text-muted">You are a member ({role}). Your own workspace stays yours.</span>
-            <button type="button" onClick={() => setLeaving(true)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] hover:!border-error hover:!text-error`}>
+            <button type="button" onClick={() => setLeaving(true)} className={`${pillSm} min-h-11 hover:!border-error hover:!text-error`}>
               <LogOut size={14} aria-hidden /> Leave workspace
             </button>
           </div>
@@ -257,7 +257,7 @@ export function Team() {
                   </span>
                 </span>
                 {team.ok && (inv.role !== 'admin' || role === 'owner') && (
-                  <button type="button" disabled={busy === `inv:${inv.id}`} onClick={() => revoke(inv)} className={`${pillSm} min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] hover:!border-error hover:!text-error`}>
+                  <button type="button" disabled={busy === `inv:${inv.id}`} onClick={() => revoke(inv)} className={`${pillSm} min-h-11 hover:!border-error hover:!text-error`}>
                     <X size={13} aria-hidden /> Revoke
                   </button>
                 )}

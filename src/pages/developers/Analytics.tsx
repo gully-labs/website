@@ -30,7 +30,7 @@ import { toastError, toastSuccess } from '../../components/ui/toast'
 
 const n = (v: number) => v.toLocaleString('en-US')
 /** A compact secondary action (36px on desktop, 44px touch targets on narrow screens). */
-const rowPill = 'inline-flex min-h-9 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink max-[859px]:min-h-11'
+const rowPill = 'inline-flex min-h-11 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink max-[859px]:min-h-11'
 
 const snippet = (origin: string, id: string) => `<script defer src="${origin}/script.js"\n  data-website-id="${id}"\n  data-web3="true"></script>`
 
@@ -512,10 +512,10 @@ function AnalyticsSetup({ view, account, onStarted, goSites }: { view: Analytics
   const site = account?.sites[0] ?? null
   const recorded = !!account && account.sites.some((s) => s.eventsThisMonth > 0)
   const steps = [
-    { id: 'start', label: view.trialAvailable ? 'Start the trial' : 'Create a login', done: !!account },
-    { id: 'site', label: 'Add a website', done: !!account?.sites.length },
-    { id: 'install', label: 'Install the snippet', done: recorded },
-    { id: 'event', label: 'First event', done: !!account && account.eventsThisMonth > 0 },
+    { id: 'start', label: view.trialAvailable ? 'Start the trial' : 'Create a login', icon: <KeyRound size={13} aria-hidden />, done: !!account },
+    { id: 'site', label: 'Add a website', icon: <Globe size={13} aria-hidden />, done: !!account?.sites.length },
+    { id: 'install', label: 'Install the snippet', icon: <Code2 size={13} aria-hidden />, done: recorded },
+    { id: 'event', label: 'First event', icon: <ChartNoAxesCombined size={13} aria-hidden />, done: !!account && account.eventsThisMonth > 0 },
   ]
   return (
     <Stepper title="Set up Gully Analytics" steps={steps} testId="analytics-stepper">
@@ -630,7 +630,7 @@ export function AnalyticsPanel() {
           <>
             <span className="flex items-center gap-1 font-mono text-[12px] text-muted">
               <KeyRound size={14} className="text-gold" aria-hidden /> <code className="text-ink">{a.username}</code>
-              <CopyButton text={a.username} what="Username" label="Copy" className="!min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] border-none !px-2 text-[11px]" />
+              <CopyButton text={a.username} what="Username" label="Copy" className="min-h-11 border-none !px-2 text-[11px]" />
             </span>
             <Can cat="analytics" what="reset the Gully Analytics password" hide>
               <button type="button" onClick={() => setConfirmReset(true)} className={rowPill}>

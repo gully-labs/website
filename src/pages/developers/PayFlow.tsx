@@ -1,6 +1,7 @@
 import { ArrowLeft, ShieldCheck } from 'lucide-react'
 import { ChainMark } from '../../components/pay/AssetPicker'
 import { TokenLogo } from '../../components/logos/TokenLogo'
+import { tokenMark } from '../../components/logos/registry'
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { QuotePay } from '../../components/pay/QuotePay'
 import type { Offer, PayAsset, Quote, Result } from './api'
@@ -40,7 +41,7 @@ export function ChainAssetChips({ assets, value, onChange, disabled }: { assets:
       <RadioRow label="Asset">
         {onChain.map((a) => (
           <Radio key={a.id} on={a.id === value} disabled={disabled} onPick={() => onChange(a.id)} mono>
-            <TokenLogo symbol={a.symbol} size={20} decorative />
+            <TokenLogo symbol={a.symbol} chain={tokenMark(a.symbol) ? null : a.chainKey} address={tokenMark(a.symbol) ? null : a.address} size={20} decorative />
             {a.symbol}
           </Radio>
         ))}

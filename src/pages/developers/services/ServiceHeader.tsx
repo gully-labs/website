@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../../../components/charts/number-formats'
 import { ExtLink } from '../ExtLink'
-import { pillSm } from '../styles'
+import { pageTitle, pillSm } from '../styles'
 
 /* The compact header every service page opens with: icon, name, one line on what it is, a live status
    pill, "Docs ↗" and "Public page ↗" (new tabs), and a band of live KPI tiles. A tile whose figure could
@@ -55,35 +55,52 @@ export function KpiTile({ t, i }: { t: Tile; i: number }) {
   )
 }
 
-export function ServiceHeader({ icon: Icon, title, desc, status, tiles, docs, page, actions }: { icon: LucideIcon; title: string; desc: string; status: Status; tiles: Tile[]; docs: string; page: { href: string; label?: string }; actions?: ReactNode }) {
+/** The one page header of every app page (G48/X8): icon (or a `logo`), a 20 px title, one line, a status pill,
+    Docs / Public page links and an optional band of live KPI tiles. Everything but icon, title and desc is
+    optional, so Merchant, Keys, Alerts, Billing and Security use the same header; `eyebrow` is a small caps line
+    above the title, `accent` a coloured top edge (a store's brand colour), `children` extra chips after the
+    status pill. */
+export function ServiceHeader({ icon: Icon, logo, title, eyebrow, desc, status, tiles, docs, page, actions, accent, children }: { icon: LucideIcon; logo?: ReactNode; title: string; eyebrow?: string; desc?: ReactNode; status?: Status; tiles?: Tile[]; docs?: string; page?: { href: string; label?: string }; actions?: ReactNode; accent?: string | null; children?: ReactNode }) {
   return (
-    <header className="flex flex-col gap-4" data-testid="service-header">
+    <header className="flex flex-col gap-4" data-testid="service-header" style={accent ? { borderTop: `3px solid ${accent}` } : undefined}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] text-gold" aria-hidden>
-          <Icon size={18} />
-        </span>
-        <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-[2px]">
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="m-0 text-[20px] leading-tight font-semibold text-ink">{title}</h1>
-            <StatusPill s={status} />
+        {logo ?? (
+          <span className="grid size-10 shrink-0 place-items-center rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] text-gold" aria-hidden>
+            <Icon size={18} />
           </span>
-          <p className="m-0 text-[13px] leading-[1.45] text-muted">{desc}</p>
+        )}
+        <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-[2px]">
+          {eyebrow && <span className="font-mono text-[11px] tracking-[1px] text-faint">{eyebrow}</span>}
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className={pageTitle}>{title}</h1>
+            {status && <StatusPill s={status} />}
+            {children}
+          </span>
+          {desc && <p className="m-0 text-[13px] leading-[1.45] text-muted">{desc}</p>}
         </div>
-        <nav aria-label={`${title} links`} className="flex flex-wrap items-center gap-2 max-[600px]:w-full">
-          {actions}
-          <ExtLink href={docs} className={pillSm}>
-            <BookOpen size={14} aria-hidden /> Docs
-          </ExtLink>
-          <ExtLink href={page.href} className={pillSm}>
-            <Globe size={14} aria-hidden /> {page.label ?? 'Public page'}
-          </ExtLink>
-        </nav>
+        {(docs || page || actions) && (
+          <nav aria-label={`${title} links`} className="flex flex-wrap items-center gap-2 max-[600px]:w-full">
+            {actions}
+            {docs && (
+              <ExtLink href={docs} className={pillSm}>
+                <BookOpen size={14} aria-hidden /> Docs
+              </ExtLink>
+            )}
+            {page && (
+              <ExtLink href={page.href} className={pillSm}>
+                <Globe size={14} aria-hidden /> {page.label ?? 'Public page'}
+              </ExtLink>
+            )}
+          </nav>
+        )}
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] overflow-hidden rounded-[14px] border border-line bg-surface" aria-label={`${title}, live figures`} role="group">
-        {tiles.map((t, i) => (
-          <KpiTile key={t.label} t={t} i={i} />
-        ))}
-      </div>
+      {tiles && tiles.length > 0 && (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] overflow-hidden rounded-card border border-line bg-surface" aria-label={`${title}, live figures`} role="group">
+          {tiles.map((t, i) => (
+            <KpiTile key={t.label} t={t} i={i} />
+          ))}
+        </div>
+      )}
     </header>
   )
 }
@@ -91,7 +108,7 @@ export function ServiceHeader({ icon: Icon, title, desc, status, tiles, docs, pa
 /** A titled panel for a service page's body. */
 export function Section({ title, sub, children, className = '', aside }: { title: string; sub?: string; children: ReactNode; className?: string; aside?: ReactNode }) {
   return (
-    <section className={`flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-4 ${className}`} aria-label={title}>
+    <section className={`flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4 ${className}`} aria-label={title}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <span className="flex min-w-0 flex-col gap-[2px]">
           <h2 className="m-0 text-[15px] leading-tight font-semibold text-ink">{title}</h2>

@@ -97,7 +97,7 @@ export function PortalReceipt({ id, onBack }: { id: string; onBack: () => void }
                 <span className="inline-flex items-center gap-2 text-[13px] text-[#3a4656]">
                   <ChainLogo chain={s.p.chain} size={16} decorative /> paid on {s.p.chain}
                 </span>
-                <span className="text-[14px] text-[#3a4656]">Developer API plans</span>
+                <span className="text-[14px] text-[#3a4656]">Tracker API plans</span>
               </div>
             </div>
             <div className="flex flex-wrap items-end justify-between gap-4 border-y border-[#0d141c] py-5">

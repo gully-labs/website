@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 /* GET /api/deepcore/launches (server/deepcore.mjs): the launch poller's cache, the same list the launch
    alerts and the Telegram bot read. Shared by the DeepCore page and the Overview's market band. */
 
-export type Launch = { key: string; chainId: number; chainName: string; token: string; symbol: string | null; createdAt: string; legs: { quote: string | null; locked: boolean | null }[]; links: { token: string; swap: string } }
+export type Launch = { key: string; chainId: number; chainKey?: string; chainName: string; token: string; symbol: string | null; createdAt: string; legs: { quote: string | null; locked: boolean | null }[]; links: { token: string; swap: string } }
 export type Launches = { state: 'ok' | 'stale' | 'unreadable'; launches: Launch[]; asOf: string | null; chains: { chainId: number; name: string; status: 'ok' | 'unreadable'; total: number | null }[]; error: string | null; pollSeconds: number }
 export type LaunchesLoad = { k: 'loading' } | { k: 'error' } | { k: 'ok'; data: Launches }
 

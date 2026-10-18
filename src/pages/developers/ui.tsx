@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Info, RefreshCw } from 'lucide-react'
+import { Check, ChevronDown, Info, Loader2, RefreshCw, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 
 /* Shared building blocks that keep every app page compact (owner, 2026-10-18: "make all app pages more
@@ -109,7 +109,7 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
             Next: <b className="font-medium text-ink">{next.label}</b>
           </span>
         )}
-        <button type="button" onClick={() => setUnfolded(true)} className="inline-flex min-h-9 relative after:absolute after:inset-x-0 after:-inset-y-[4px] items-center gap-1 rounded-full bg-gold px-3 text-[13px] font-semibold text-bg transition-colors hover:bg-gold-hover" aria-expanded={false} data-testid={`${testId}-continue`}>
+        <button type="button" onClick={() => setUnfolded(true)} className="inline-flex min-h-11 items-center gap-1 rounded-full bg-gold px-3 text-[13px] font-semibold text-bg transition-colors hover:bg-gold-hover" aria-expanded={false} data-testid={`${testId}-continue`}>
           Continue <ChevronDown size={13} aria-hidden />
         </button>
       </section>
@@ -127,14 +127,14 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
         <span className="h-[3px] min-w-[40px] flex-1 overflow-hidden rounded-full bg-surface-deep" role="progressbar" aria-label={`${title} progress`} aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done}>
           <span className="block h-full w-full origin-left rounded-full bg-green" style={{ animation: 'gl-grow-x .6s cubic-bezier(.2,.8,.2,1) both' }} />
         </span>
-        <button type="button" onClick={() => setUnfolded(true)} className="inline-flex min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] items-center gap-1 rounded-full px-2 text-[12px] text-muted hover:text-ink" aria-expanded={false}>
+        <button type="button" onClick={() => setUnfolded(true)} className="inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-[12px] text-muted hover:text-ink" aria-expanded={false}>
           Steps <ChevronDown size={13} aria-hidden />
         </button>
       </section>
     )
 
   return (
-    <section aria-labelledby={`${id}-t`} className="flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-3" data-testid={testId} style={{ animation: 'gl-fade .3s ease both' }}>
+    <section aria-labelledby={`${id}-t`} className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-3" data-testid={testId} style={{ animation: 'gl-fade .3s ease both' }}>
       <div className="flex items-center gap-2">
         <h2 id={`${id}-t`} className="m-0 text-[14px] font-semibold text-ink">
           {title}
@@ -143,7 +143,7 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
           {done}/{steps.length}
         </span>
         {(all || startFolded) && (
-          <button type="button" onClick={() => setUnfolded(false)} className="ml-auto inline-flex min-h-8 relative after:absolute after:inset-x-0 after:-inset-y-[6px] items-center gap-1 rounded-full px-2 text-[12px] text-muted hover:text-ink" aria-expanded>
+          <button type="button" onClick={() => setUnfolded(false)} className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-[12px] text-muted hover:text-ink" aria-expanded>
             Fold <ChevronDown size={13} className="rotate-180" aria-hidden />
           </button>
         )}
@@ -153,7 +153,7 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
           const on = s.id === current
           return (
             <li key={s.id} className="flex min-w-0 flex-1 items-start" data-step={s.id} data-state={s.done ? 'done' : on ? 'current' : 'todo'}>
-              <button type="button" onClick={() => setPicked(s.id)} aria-current={on ? 'step' : undefined} className="group flex min-w-0 flex-1 flex-col items-center gap-[6px] rounded-[10px] px-1 py-1 text-center">
+              <button type="button" onClick={() => setPicked(s.id)} aria-current={on ? 'step' : undefined} className="group flex min-h-11 min-w-0 flex-1 flex-col items-center gap-[6px] rounded-[10px] px-1 py-1 text-center">
                 <span className="flex w-full items-center">
                   <span className={`h-[2px] flex-1 rounded-full ${i === 0 ? 'opacity-0' : steps[i - 1].done ? 'bg-gold' : 'bg-line-strong'}`} aria-hidden />
                   <span className={`relative grid size-7 shrink-0 place-items-center rounded-full border font-mono text-[12px] transition-colors ${s.done ? 'border-gold bg-gold text-bg' : on ? 'border-gold text-gold shadow-[0_0_0_4px_rgba(217,181,99,.12)]' : 'border-line-strong text-faint group-hover:border-line-hover'}`}>
@@ -179,6 +179,43 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
   )
 }
 
+/** A read-only progress tracker (a transaction going Sent, Mined, Verified; a scan going queued, running, done):
+    the same circles, connectors and check-pop as the Stepper, but driven by the caller's state instead of the
+    user's clicks. `state` per step: done, active (spinner), failed or todo; `after` is extra content beside the
+    label (a link to the transaction). SafeDeploy and the Security flows use it, so there is one stepper look. */
+export type ProgressStep = { id: string; label: string; state: 'done' | 'active' | 'failed' | 'todo'; after?: ReactNode }
+export function ProgressSteps({ steps, label, testId = 'progress-steps' }: { steps: ProgressStep[]; label: string; testId?: string }) {
+  return (
+    <ol className="m-0 flex list-none items-stretch gap-0 p-0" aria-label={label} data-testid={testId}>
+      {steps.map((s, i) => {
+        const done = s.state === 'done'
+        const active = s.state === 'active'
+        const failed = s.state === 'failed'
+        return (
+          <li key={s.id} className="flex min-w-0 flex-1 items-center gap-2" aria-current={active ? 'step' : undefined} data-step={s.id} data-state={s.state}>
+            <span className="relative flex size-7 shrink-0 items-center justify-center">
+              {active && <span aria-hidden className="absolute inset-0 rounded-full border border-gold-line animate-[gl-pulse-ring_1.6s_ease-out_infinite]" />}
+              <span className={`grid size-7 place-items-center rounded-full border text-bg transition-colors duration-500 ${done ? 'border-success-line bg-green' : failed ? 'border-error-line bg-error' : active ? 'border-gold bg-gold' : 'border-line-strong bg-transparent'}`}>
+                {done ? <Check size={14} aria-hidden style={{ animation: 'gl-check-pop .45s cubic-bezier(.2,1.4,.4,1) both' }} /> : failed ? <X size={14} aria-hidden /> : active ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <span className="font-mono text-[11px] text-faint">{i + 1}</span>}
+              </span>
+            </span>
+            <span className={`min-w-0 truncate text-[13px] ${done || active ? 'text-ink' : failed ? 'text-error' : 'text-faint'}`}>
+              {s.label}
+              <span className="sr-only"> · {done ? 'done' : failed ? 'failed' : active ? 'current step' : 'to do'}</span>
+              {s.after}
+            </span>
+            {i < steps.length - 1 && (
+              <span aria-hidden className="mx-1 h-px min-w-3 flex-1 overflow-hidden bg-line">
+                <span className={`block h-full origin-left bg-green transition-transform duration-700 ${done ? 'scale-x-100' : 'scale-x-0'}`} />
+              </span>
+            )}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 /* ------------------------------------------------------------------- info tip --- */
 
 /** A one-line summary with an (i) button: the long explanation opens in a small popover (click, Escape closes). */
@@ -200,7 +237,7 @@ export function InfoTip({ summary, children, className = '' }: { summary: ReactN
   return (
     <span ref={box} className={`relative flex min-w-0 items-center gap-1 text-[12px] text-dim ${className}`} data-testid="info-tip">
       <span className="min-w-0 truncate">{summary}</span>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={id} aria-label="More about this" className="inline-flex size-7 relative after:absolute after:inset-x-0 after:-inset-y-[8px] shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:text-gold">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={id} aria-label="More about this" className="-my-[10px] -mr-2 inline-flex size-11 shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:text-gold">
         <Info size={ICON} aria-hidden />
       </button>
       {open && (

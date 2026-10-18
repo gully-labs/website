@@ -1,5 +1,6 @@
 import { ScanSearch } from 'lucide-react'
 import { useMemo } from 'react'
+import { HolderMapMini } from '../../../components/holders/HolderMapMini'
 import { LaunchHolders } from '../../../components/holders/LaunchHolders'
 import { isLocalHost } from '../../../site-host'
 import { Skeleton } from '../parts'
@@ -18,6 +19,7 @@ export default function HoldersView() {
   const dc = useLaunches()
   const d = dc.k === 'ok' ? dc.data : null
   const pending = dc.k === 'error' ? 'unreadable' : '…'
+  const newest = d?.launches.length ? [...d.launches].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0] : null
   const now = d?.asOf ? Date.parse(d.asOf) : 0
   const day = d ? d.launches.filter((l) => now - Date.parse(l.createdAt) < 86_400_000) : []
   // Launches with a Holder Map per day (the poller's list spans at most 14 days), stacked by chain.
@@ -52,6 +54,7 @@ export default function HoldersView() {
       />
       {/* Chart and list side by side at desktop widths, so the page stays inside the 900 px budget. */}
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
+      <div className="flex min-w-0 flex-col gap-4">
       <Section title="Launches with a Holder Map" sub="per day, by chain · live from the launch poller, every minute">
         {!d ? (
           dc.k === 'error' ? <EmptyChart height={150} title="Launches unreadable right now: retrying every minute" /> : <Skeleton h={150} />
@@ -61,6 +64,12 @@ export default function HoldersView() {
           <EmptyChart height={150} title="No launch yet: each one charts here as the poller sees it" />
         )}
       </Section>
+      {newest?.chainKey && (
+        <Section title={`Newest map${newest.symbol ? `: ${newest.symbol}` : ''}`} sub="the animated mini map of the latest launch · live">
+          <HolderMapMini chain={newest.chainKey} token={newest.token} external={!isLocalHost()} />
+        </Section>
+      )}
+      </div>
       <section className={panel} aria-label="Latest launches with their Holder Maps" data-testid="holders-launches">
         <LaunchHolders external={!isLocalHost()} limit={8} />
       </section>

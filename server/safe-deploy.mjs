@@ -64,12 +64,15 @@ export const SAFE_DEPLOYMENTS_VERSION = '1.37.64'
 const PINNED = {
   factories: [
     { version: '1.4.1', variant: 'canonical', name: 'SafeProxyFactory', address: '0x4e1dcf7ad4e460cfd30791ccc4f9c8a4f820ec67', codeHash: '0x50c3cdc4074750a7a974204a716c999edd37482f907608d960b2b025ee0b3317' },
+    { version: '1.5.0', variant: 'canonical', name: 'SafeProxyFactory', address: '0x14f2982d601c9458f93bd70b218933a6f8165e7b', codeHash: '0x967dae4cda22b0c9ef7f31b010bdc1ceb0af9904b0c3dc060b5302e4c18a4529' },
     { version: '1.3.0', variant: 'canonical', name: 'GnosisSafeProxyFactory', address: '0xa6b71e26c5e0845f74c812102ca7114b6a896ab2', codeHash: '0x337d7f54be11b6ed55fef7b667ea5488db53db8320a05d1146aa4bd169a39a9b' },
     { version: '1.3.0', variant: 'eip155', name: 'GnosisSafeProxyFactory', address: '0xc22834581ebc8527d974f8a1c97e1bea4ef910bc', codeHash: '0x337d7f54be11b6ed55fef7b667ea5488db53db8320a05d1146aa4bd169a39a9b' },
   ],
   singletons: [
     { version: '1.4.1', variant: 'canonical', name: 'SafeL2', l2: true, address: '0x29fcb43b46531bca003ddc8fcb67ffe91900c762', codeHash: '0xb1f926978a0f44a2c0ec8fe822418ae969bd8c3f18d61e5103100339894f81ff' },
     { version: '1.4.1', variant: 'canonical', name: 'Safe', l2: false, address: '0x41675c099f32341bf84bfc5382af534df5c7461a', codeHash: '0x1fe2df852ba3299d6534ef416eefa406e56ced995bca886ab7a553e6d0c5e1c4' },
+    { version: '1.5.0', variant: 'canonical', name: 'SafeL2', l2: true, address: '0xedd160febbd92e350d4d398fb636302fccd67c7e', codeHash: '0x180193227186ccb85316c94db1f0d156ed932b14712cfaac78901899178572dc' },
+    { version: '1.5.0', variant: 'canonical', name: 'Safe', l2: false, address: '0xff51a5898e281db6dfc7855790607438df2ca44b', codeHash: '0xdda019cbd7c867a533a2a86e5c53434fdc50b13122b5a5ddb4a8df61b31c20f2' },
     { version: '1.3.0', variant: 'canonical', name: 'GnosisSafeL2', l2: true, address: '0x3e5c63644e683549055b9be8653de26e0b4cd36e', codeHash: '0x21842597390c4c6e3c1239e434a682b054bd9548eee5e9b1d6a4482731023c0f' },
     { version: '1.3.0', variant: 'eip155', name: 'GnosisSafeL2', l2: true, address: '0xfb1bffc9d739b8d520daf37df666da4c687191ea', codeHash: '0x21842597390c4c6e3c1239e434a682b054bd9548eee5e9b1d6a4482731023c0f' },
     { version: '1.3.0', variant: 'canonical', name: 'GnosisSafe', l2: false, address: '0xd9db270c1b5e3bd161e8c8503c55ceabee709552', codeHash: '0xbba688fbdb21ad2bb58bc320638b43d94e7d100f6f3ebaab0a4e4de6304b1c2e' },
@@ -77,6 +80,7 @@ const PINNED = {
   ],
   fallbackHandlers: [
     { version: '1.4.1', variant: 'canonical', name: 'CompatibilityFallbackHandler', address: '0xfd0732dc9e303f09fcef3a7388ad10a83459ec99', codeHash: '0x7c6007a5d711cea8dfd5d91f5940ec29c7f200fe511eb1fc1397b367af3c42f9' },
+    { version: '1.5.0', variant: 'canonical', name: 'CompatibilityFallbackHandler', address: '0x3efcbb83a4a7afcb4f68d501e2c2203a38be77f4', codeHash: '0x3c6a85bcf7b563daa624b884b4e9a1b9fa5371edde7be945d998071a48f28bbc' },
     { version: '1.3.0', variant: 'canonical', name: 'CompatibilityFallbackHandler', address: '0xf48f2b2d2a534e402487b3ee7c18c33aec0fe5e4', codeHash: '0x03e69f7ce809e81687c69b19a7d7cca45b6d551ffdec73d9bb87178476de1abf' },
     { version: '1.3.0', variant: 'eip155', name: 'CompatibilityFallbackHandler', address: '0x017062a1de2fe6b99be3d9d37841fed19f573804', codeHash: '0x03e69f7ce809e81687c69b19a7d7cca45b6d551ffdec73d9bb87178476de1abf' },
   ],
@@ -213,7 +217,7 @@ export const TOPICS = {
   proxyCreation: keccakText('ProxyCreation(address,address)'),
   safeSetup: keccakText('SafeSetup(address,address[],uint256,address,address)'),
 }
-/** Safe's storage slots (keccak256 of the names), the same in 1.3.0 and 1.4.1. */
+/** Safe's storage slots (keccak256 of the names), the same in 1.3.0, 1.4.1 and 1.5.0. */
 const SLOT = { singleton: '0x0', fallbackHandler: '0x6c9a6c4a39284e37ed1cf53d337577d14212a4870fb976a4366c693b939918d5', guard: '0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8' }
 
 const padBytes = (hex) => {
@@ -363,7 +367,7 @@ export async function readSafe(chainId, address) {
   const slot0 = await rpc(chainId, 'eth_getStorageAt', [lower(address), SLOT.singleton, 'latest'])
   const singleton = lower(addrOfWord(strip(slot0 ?? '').padStart(64, '0')))
   const known = SINGLETONS[singleton]
-  if (!known) return { ok: false, code: 'not-a-safe', error: `${chainOf(chainId)?.name ?? chainId}: the contract at ${address} is not a Safe proxy of a version we know (its master copy is ${singleton}). Only Safe 1.3.0 and 1.4.1 can be reproduced here.`, singleton }
+  if (!known) return { ok: false, code: 'not-a-safe', error: `${chainOf(chainId)?.name ?? chainId}: the contract at ${address} is not a Safe proxy of a version we know (its master copy is ${singleton}). Only Safe 1.3.0, 1.4.1 and 1.5.0 can be reproduced here.`, singleton }
   const [owners, threshold, version, fh, guard, modules] = await Promise.all([
     call(chainId, address, SEL.getOwners).then(decodeAddressArray),
     call(chainId, address, SEL.getThreshold).then((h) => Number(uintOfWord(strip(h ?? '0')))),
@@ -440,7 +444,7 @@ export async function creationFromTx(chainId, safe, hash) {
   if (receipt.status !== '0x1') return { ok: false, error: 'That transaction failed on chain; it did not create the Safe.' }
   const created = proxyCreationIn(receipt.logs, safe)
   if (!created) return { ok: false, error: `Transaction ${hash.slice(0, 10)}… did not create the Safe ${safe} (no ProxyCreation log names it).` }
-  if (!FACTORIES[lower(created.factory)]) return { ok: false, code: 'unknown-factory', error: `The Safe was created by ${created.factory}, which is not an official Safe factory we know (1.3.0 or 1.4.1), so it cannot be reproduced at the same address here.` }
+  if (!FACTORIES[lower(created.factory)]) return { ok: false, code: 'unknown-factory', error: `The Safe was created by ${created.factory}, which is not an official Safe factory we know (1.3.0, 1.4.1 or 1.5.0), so it cannot be reproduced at the same address here.` }
   if (isPlainCreateProxy(tx.input)) return { ok: false, code: 'not-deterministic', error: 'This Safe was created with createProxy (plain CREATE), whose address depends on the factory’s own transaction count. It cannot be reproduced at the same address on another chain. Create a new Safe for that chain instead.' }
   const pcc = await proxyCreationCode(chainId, created.factory)
   for (const c of decodeFactoryCalls(tx.input)) {
