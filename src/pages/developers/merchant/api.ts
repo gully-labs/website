@@ -93,6 +93,11 @@ export interface Fees {
   lifetimeUsd: number
   freeLeftUsd: number
   accruedUsd: number
+  /** Taken at payment time through Request Network's fee contract (wallet payments in a stablecoin). */
+  collectedUsd: number
+  collectedPayments: number
+  /** On weekly statements (any state). */
+  billedUsd: number
   unbilledUsd: number
   outstandingUsd: number
   paidUsd: number
@@ -131,7 +136,7 @@ export interface MerchantView {
   assets: PayAsset[]
   links: MerchantLink[]
   invoices: MerchantInvoice[]
-  payments: (Payment & { invoiceNumber: string | null; linkId: string | null; feeUsd: number })[]
+  payments: (Payment & { invoiceNumber: string | null; linkId: string | null; feeUsd: number; feeCollectedUsd: number })[]
   webhook: { url: string; createdAt: string | null; rotatedAt: string | null } | null
   deliveries: Delivery[]
   fees: Fees
