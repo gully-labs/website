@@ -1,7 +1,8 @@
-import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, Store, Trash2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, ShieldCheck, ShieldPlus, Store, Trash2 } from 'lucide-react'
+import { lazy, Suspense, useRef, useState, type FormEvent } from 'react'
 import { Mascot } from '../../../components/brand'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
+import type { Fetched, SafePlan, SafeStatus } from '../../../components/pay/SafeDeploy'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
 import { isFeeProxy } from '../../../../server/fee-proxy-guard.mjs'
 import { api } from '../api'
@@ -9,7 +10,26 @@ import { chip, input, pillGold, pillSm } from '../styles'
 import { KIND_TEXT, payOrigin, type MerchantView, type MerchantWallet } from './api'
 import { Field, Section } from './parts'
 
-/* Store profile (shown on the checkout) and the receiving wallets, one per chain. */
+/* Store profile (shown on the checkout) and the receiving wallets, one per chain. A Safe that exists on one
+   chain but not another can be deployed there from the wallet row ("Deploy Safe on <chain>"), and a store
+   without a Safe can create one: server/safe-deploy.mjs plans and verifies, the merchant's wallet signs. */
+
+const SafeDeploy = lazy(() => import('../../../components/pay/SafeDeploy'))
+
+/** The server's Safe plan for this store, as the deploy panel wants it. */
+const safePlan = (body: Record<string, unknown>) => async (from: string | null): Promise<Fetched<SafePlan>> => {
+  const r = await api<SafePlan>('/api/developer/merchant/safe/plan', { method: 'POST', body: { ...body, from } })
+  return r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error, body: r.body }
+}
+const safeStatus = (chainId: number, address: string) => async (hash: string): Promise<Fetched<SafeStatus>> => {
+  const r = await api<SafeStatus>('/api/developer/merchant/safe/status', { method: 'POST', body: { chainId, hash, address } })
+  return r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error }
+}
+const Loading = () => (
+  <p className="m-0 flex items-center gap-2 text-[13px] text-muted" role="status">
+    <Loader2 size={14} className="animate-spin text-gold" aria-hidden /> Loading the wallet tools…
+  </p>
+)
 
 export function ProfileSection({ view, onChange }: { view: MerchantView; onChange: (v: MerchantView) => void }) {
   const p = view.profile
@@ -96,6 +116,7 @@ export function ProfileSection({ view, onChange }: { view: MerchantView; onChang
 
 function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onChange: (v: MerchantView) => void }) {
   const [busy, setBusy] = useState<string | null>(null)
+  const [deploy, setDeploy] = useState(false)
   const act = async (what: 'check' | 'remove' | 'on' | 'off') => {
     setBusy(what)
     const path = what === 'check' || what === 'remove' ? `/api/developer/merchant/wallets/${w.chainId}/${what}` : `/api/developer/merchant/wallets/${w.chainId}`
@@ -128,9 +149,14 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
       {can && (
         <span className="flex flex-wrap gap-2">
           {w.status === 'not-deployed' ? (
-            <button type="button" className={pillSm} disabled={!!busy} onClick={() => act('check')}>
-              {busy === 'check' ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <RefreshCw size={14} aria-hidden />} Check again
-            </button>
+            <>
+              <button type="button" className={`${pillSm} !border-gold-line !text-gold hover:!border-gold`} disabled={!!busy} aria-expanded={deploy} onClick={() => setDeploy((v) => !v)}>
+                <ShieldCheck size={14} aria-hidden /> Deploy Safe on {w.chain}
+              </button>
+              <button type="button" className={pillSm} disabled={!!busy} onClick={() => act('check')}>
+                {busy === 'check' ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <RefreshCw size={14} aria-hidden />} Check again
+              </button>
+            </>
           ) : (
             <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(w.enabled ? 'off' : 'on')} aria-pressed={w.enabled}>
               {busy === 'on' || busy === 'off' ? <Loader2 size={14} className="animate-spin" aria-hidden /> : null} {w.enabled ? 'Turn off' : 'Turn on'}
@@ -141,7 +167,108 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
           </button>
         </span>
       )}
+      {deploy && can && (
+        <div className="basis-full">
+          <Suspense fallback={<Loading />}>
+            <SafeDeploy
+              chain={{ id: w.chainId, name: w.chain, key: w.chainKey }}
+              plan={safePlan({ chainId: w.chainId, address: w.address })}
+              status={safeStatus(w.chainId, w.address)}
+              onVerified={async () => {
+                // The existing inspection runs again (eth_getCode on this chain) and the chain switches on.
+                await act('check')
+                setDeploy(false)
+              }}
+              onClose={() => setDeploy(false)}
+            />
+          </Suspense>
+        </div>
+      )}
     </li>
+  )
+}
+
+/** "Create a new Safe": owners, threshold and chain; the plan predicts the address, the wallet deploys it, then
+    the Safe is added as the store's wallet on that chain. */
+function NewSafe({ view, onChange, agree }: { view: MerchantView; onChange: (v: MerchantView) => void; agree: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [ownersText, setOwnersText] = useState('')
+  const [threshold, setThreshold] = useState(1)
+  const [chainId, setChainId] = useState<number>(view.chains[0]?.id ?? 8453)
+  const [go, setGo] = useState(false)
+  const [done, setDone] = useState<string | null>(null)
+  const predicted = useRef<string | null>(null)
+  const owners = ownersText.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean)
+  const valid = owners.length >= 1 && owners.length <= 10 && owners.every((o) => /^0x[0-9a-fA-F]{40}$/.test(o)) && threshold >= 1 && threshold <= owners.length
+  const chain = view.chains.find((c) => c.id === chainId) ?? view.chains[0]
+  const needTerms = !view.terms.accepted
+  const planKey = `${chainId}:${owners.map((o) => o.toLowerCase()).sort().join(',')}:${threshold}`
+  if (!open)
+    return (
+      <button type="button" className={`${pillSm} self-start`} onClick={() => setOpen(true)} data-testid="new-safe-open">
+        <ShieldPlus size={14} aria-hidden /> No Safe yet? Create one
+      </button>
+    )
+  return (
+    <div className="flex flex-col gap-3 rounded-[12px] border border-line bg-bg p-4" data-testid="new-safe">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex flex-col gap-1">
+          <h3 className="m-0 text-[15px] font-semibold text-ink">Create a new Safe</h3>
+          <span className="text-[12.5px] leading-[1.5] text-dim">A Safe 1.4.1 multisig from Safe’s official factory, owned by the wallets you list. Your wallet pays the gas; the address is known before anything is sent, and the same Safe can be deployed at that address on every other chain later.</span>
+        </div>
+        <button type="button" className={pillSm} onClick={() => (setOpen(false), setGo(false))}>
+          Close
+        </button>
+      </div>
+      <fieldset disabled={go && !done} className="m-0 grid grid-cols-1 gap-3 border-0 p-0 sm:grid-cols-[minmax(0,1fr)_120px]">
+        <Field label="Owners (one address per line; your connected wallet is filled in when you connect)">
+          <textarea className={`${input} h-auto min-h-[88px] py-2 font-mono text-[13px]`} value={ownersText} onChange={(e) => setOwnersText(e.target.value)} placeholder={'0xAbC…\n0xDeF…'} spellCheck={false} />
+        </Field>
+        <Field label="Threshold">
+          <input className={input} type="number" min={1} max={Math.max(1, owners.length)} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} />
+        </Field>
+      </fieldset>
+      <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Chain to deploy on">
+        <span className="text-[12px] text-dim">Chain</span>
+        {view.chains.map((c) => (
+          <button key={c.id} type="button" role="radio" aria-checked={chainId === c.id} className={chip(chainId === c.id)} disabled={go && !done} onClick={() => setChainId(c.id)}>
+            <ChainLogo chain={c.key} size={16} decorative /> {c.name}
+          </button>
+        ))}
+      </div>
+      {needTerms && !agree && <p className="m-0 text-[12.5px] text-faint">Tick the merchant terms above first: the new Safe is added as this store’s wallet.</p>}
+      {!go ? (
+        <button type="button" className={`${pillGold} self-start`} disabled={!valid || (needTerms && !agree)} onClick={() => setGo(true)} data-testid="new-safe-plan">
+          <ShieldPlus size={15} aria-hidden /> Plan and deploy on {chain?.name}
+        </button>
+      ) : (
+        <Suspense fallback={<Loading />}>
+          <SafeDeploy
+            key={chainId}
+            chain={{ id: chainId, name: chain?.name ?? String(chainId), key: chain?.key ?? null }}
+            title={`Create the Safe on ${chain?.name}`}
+            planKey={planKey}
+            plan={async (from) => {
+              const r = await safePlan({ chainId, mode: 'new', owners, threshold })(from)
+              if (r.ok) predicted.current = r.data.safe
+              return r
+            }}
+            status={(hash) => safeStatus(chainId, done ?? predicted.current ?? '')(hash)}
+            onAccount={(a) => {
+              if (a && !ownersText.trim()) setOwnersText(a)
+            }}
+            onVerified={async (_s, plan) => {
+              setDone(plan.safe)
+              const r = await api<{ merchant: MerchantView; error: string | null }>('/api/developer/merchant/wallets', { method: 'POST', body: { address: plan.safe, type: 'contract', chains: [chainId], ...(needTerms ? { acceptTerms: agree } : {}) } })
+              if (!r.ok) return toastError('Safe deployed, but not added as the store wallet', { detail: r.error })
+              onChange(r.data.merchant)
+              toastSuccess(`Safe created on ${chain?.name}`, { detail: `${plan.safe} now receives this store’s payments there.` })
+            }}
+            onClose={() => setGo(false)}
+          />
+        </Suspense>
+      )}
+    </div>
   )
 }
 
@@ -216,7 +343,7 @@ export function WalletsSection({ view, onChange }: { view: MerchantView; onChang
               )
             })}
           </div>
-          <p className="m-0 text-[12px] leading-[1.55] text-faint">We read each chain: a contract must be deployed on that chain before it can take payments there (a payment to an undeployed Safe address can be lost). The same address on every chain is fine.</p>
+          <p className="m-0 text-[12px] leading-[1.55] text-faint">We read each chain: a contract must be deployed on that chain before it can take payments there (a payment to an undeployed Safe address can be lost). The same address on every chain is fine; a Safe missing on one chain gets a “Deploy Safe on that chain” button, signed by your own wallet.</p>
           <p className="m-0 text-[12px] leading-[1.55] text-faint">
             {view.chains.some((c) => c.feeSplit) ? `On ${view.chains.filter((c) => c.feeSplit).map((c) => c.name).join(', ')} the Gully Pay fee on a stablecoin payment is collected in the same transaction (Request Network's fee proxy; the payer still pays exactly the quoted amount). ` : ''}
             {view.chains.some((c) => !c.feeSplit) ? `On ${view.chains.filter((c) => !c.feeSplit).map((c) => c.name).join(', ')} and for coin payments, the fee is invoiced on your weekly statement.` : ''}
@@ -248,6 +375,7 @@ export function WalletsSection({ view, onChange }: { view: MerchantView; onChang
           <button type="submit" className={`${pillGold} self-start`} disabled={busy || !chains.length || !address.trim() || (needTerms && !agree)}>
             {busy && <Loader2 size={15} className="animate-spin" aria-hidden />} Check and add
           </button>
+          <NewSafe view={view} onChange={onChange} agree={agree} />
         </form>
       )}
     </Section>

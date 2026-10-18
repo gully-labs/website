@@ -1,6 +1,7 @@
-import { Building2, Laptop, LogOut, ShieldCheck, UserRound } from 'lucide-react'
+import { Building2, ExternalLink, Laptop, LogOut, ShieldCheck, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { toastError, toastSuccess } from '../../components/ui/toast'
+import { isLocalHost, SITE_URL } from '../../site-host'
 import { ago, api, SESSION_ENDED, type Company, type Profile, type SessionInfo } from './api'
 import { Avatar } from './Avatar'
 import { ErrorLine, Skeleton } from './parts'
@@ -15,7 +16,8 @@ import { input, mono, panel, panelTitle, pillGold, pillSm, rise } from './styles
    - Company (the ACTIVE workspace; owner, admin and billing may change it): name, address, tax ID,
      printed on receipts. POST /company.
    - Sessions (this wallet): device, created, last seen, which one is this browser; sign one out or
-     every other one. GET /sessions, POST /sessions/revoke. */
+     every other one. GET /sessions, POST /sessions/revoke.
+   - Privacy: a link to /legal/privacy and how to ask for an export or deletion. */
 
 const field = 'flex flex-col gap-2 text-[14px] text-ink-2'
 
@@ -30,7 +32,33 @@ export function SettingsTab({ section }: { section: string | null }) {
       <ProfileCard />
       <CompanyCard />
       <SessionsCard />
+      <PrivacyCard />
     </div>
+  )
+}
+
+const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
+
+/** Where the privacy policy is, and how to get your data out or deleted (there is no self-service delete yet). */
+function PrivacyCard() {
+  return (
+    <section id="settings-privacy" className={`${panel} scroll-mt-4`} style={rise(3)} aria-labelledby="privacy-title">
+      <div className="flex flex-wrap items-center gap-3">
+        <ShieldCheck size={18} className="text-gold" aria-hidden />
+        <div className="flex flex-col gap-[2px]">
+          <h2 id="privacy-title" className={panelTitle}>
+            Privacy
+          </h2>
+          <span className={mono}>what we keep and for how long</span>
+        </div>
+      </div>
+      <p className="m-0 text-[14px] leading-[1.6] text-ink-2">
+        The privacy policy lists what the app, Gully AI, Gully Analytics, the Telegram bot and Gully Pay collect, who else sees it and how long it is kept. To see, export or delete your data, email hello@gullylabs.xyz.
+      </p>
+      <a href={site('/legal/privacy')} target="_blank" rel="noopener" className={`${pillSm} self-start`}>
+        Privacy policy <ExternalLink size={12} aria-hidden />
+      </a>
+    </section>
   )
 }
 

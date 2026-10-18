@@ -35,10 +35,11 @@
 //   GET  /api/admin/analytics                Gully Analytics accounts: wallet, plan, sites, events this month
 //   POST /api/admin/analytics/:address/plan   { plan: 'starter'|'growth'|'none', days? }  grant for `days` (30) or stop now
 //   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
-//   POST /api/admin/ask/draft, GET /api/admin/ask/log   Gully Ask content studio and ask log (ask.mjs)
+//   POST /api/admin/ask/draft, GET /api/admin/ask/log, GET /api/admin/ask/gaps   Gully Ask content studio, ask log, unanswered / low-rated questions (ask.mjs)
 //   GET  /api/admin/charts?days=7|30|90       daily series for the dashboard's charts (admin-charts.mjs)
 //   /api/admin/channel*                       @GullyLabsNews channel posts and auto posts (telegram-channel.mjs)
 //   /api/admin/security*                      Gully Security: scan queue, failures, review requests (security-routes.mjs)
+//   /api/admin/broadcasts*                    DMs to everyone who started the bot, by segment (telegram-broadcast.mjs)
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
@@ -54,6 +55,7 @@ import { CHAIN_LIST, publicAssets, rpc } from './payments.mjs'
 import { checkTreasuryChains, treasuryStatus } from './treasury-chains.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
 import { handleSecurityAdmin } from './security-routes.mjs'
+import { handleAdminSafe } from './safe-deploy.mjs'
 import { planOf, publicPlans, treasury } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
 import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
@@ -67,6 +69,7 @@ import { readStats } from './stats.mjs'
 import { umamiConfigured } from './umami.mjs'
 import { linkedChat, telegramStats } from './telegram.mjs'
 import { handleChannelAdmin } from './telegram-channel.mjs'
+import { handleBroadcastAdmin } from './telegram-broadcast.mjs'
 import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
 
@@ -141,6 +144,9 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/merchants' || p.startsWith('/api/admin/merchants/')) return handleMerchantsAdmin(req, res, url)
   if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
   if (p === '/api/admin/security' || p.startsWith('/api/admin/security/')) return handleSecurityAdmin(req, res, url)
+  // The treasury Safe per chain and its one-click deployment (safe-deploy.mjs).
+  if (p.startsWith('/api/admin/safe/')) return handleAdminSafe(req, res, url)
+  if (p === '/api/admin/broadcasts' || p.startsWith('/api/admin/broadcasts/')) return handleBroadcastAdmin(req, res, url)
   const db = developers()
 
   // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so

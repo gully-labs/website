@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
@@ -27,8 +27,11 @@ const mainRoutes = [
       { path: '/security', element: <SecurityRoute /> },
       { path: '/security/reports', element: <SecurityReportsRoute /> },
       { path: '/security/reports/:id', element: <SecurityReportRoute /> },
+      // The link hub for bios and KOL posts.
+      { path: '/links', element: <LinksRoute /> },
       // The Gully Pay merchant terms (the checkout's footer links here).
       { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
+      { path: '/legal/privacy', lazy: () => import('./pages/legal/Privacy').then((m) => ({ Component: m.PrivacyPage })) },
       { path: '/gully-pay/merchant-terms', element: <Navigate to="/legal/merchant-terms" replace /> },
       // A path no page owns: a branded 404 with ways back (the server answers it with status 404).
       { path: '*', element: <NotFoundRoute /> },

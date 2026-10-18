@@ -1,5 +1,6 @@
 import { Activity, Bot, BookOpen, Building2, ChartCandlestick, Check, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import { AskLauncher } from '../../components/ask/AskLauncher'
 import { Mascot, Wordmark } from '../../components/brand'
 import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
@@ -318,9 +319,17 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
         </a>
       </li>
       <li>
-        <a href={site('/ask')} className={footItem(compact)} title={compact ? 'Gully AI' : undefined}>
-          <Bot size={ICON} aria-hidden /> {txt('Gully AI')}
-        </a>
+        {/* Gully AI opens in a panel here, so it answers with this session: your own store, usage and alerts. */}
+        <AskLauncher
+          className={`${footItem(compact)} w-full text-left`}
+          title={compact ? 'Gully AI' : undefined}
+          fallbackHref={site('/ask')}
+          trigger={
+            <>
+              <Bot size={ICON} aria-hidden /> {txt('Gully AI')}
+            </>
+          }
+        />
       </li>
       <li>
         <button type="button" onClick={onStatus} className={`${footItem(compact)} w-full text-left`} title={compact ? `Status: ${healthText[health]}` : undefined} data-testid="status-link" data-health={health}>

@@ -20,6 +20,8 @@
 //   ai                         Gully AI prompt (force_reply)        aiq:<n> an example question
 //   set                        settings      smu mute all 24h      snt:0|1 usage notices      sul → suly unlink
 //   mute:<id>                  Mute 24h on an alert delivery (kept from the first bot)
+//   bco | bci                  🔕 Stop announcements (on every broadcast) | switch them back on
+//   san:0|1                    Settings: announcements off | on (private chats)
 // A trailing "!" opens the route as a new message instead of editing (used on Gully AI answers, so an
 // answer is never overwritten by the next screen).
 
@@ -140,12 +142,47 @@ export function helpView(linked) {
     '/movers · biggest changes',
     '/launches · newest tokens on DeepCore',
     '/ask · ask Gully AI a question',
+    '/app · open the Gully app inside Telegram',
     ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['🔔 Want alerts? Link your wallet: developer portal, Alerts tab, Connect Telegram.']),
+    '/stop announcements · no more news from Gully Labs (alerts keep coming)',
     '',
     '<i>Information only, not investment advice.</i>',
   ].join('\n')
   return { text, keyboard: MENU_KEYBOARD }
 }
+
+/* ------------------------------------------------------------- app, stop --- */
+
+/** /app in a private chat: the Mini App behind an inline web_app button. */
+export const appView = (url) => ({
+  text: '<b>📱 Gully app</b>\nStocks, gaps, launches and your alerts on one screen, right here in Telegram. Tap below to open it.',
+  keyboard: [[appBtn(url)], [btn('🏠 Menu', 'm')]],
+})
+/** /app in a group: Telegram opens Mini Apps from private chats only, so the button opens one with the bot. */
+export const appGroupView = (url) => ({
+  text: '<b>📱 Gully app</b>\nThe app opens in a private chat with the bot. Tap below, then press 📱 Open app.',
+  keyboard: [[ubtn('📱 Open the bot ↗', url)]],
+})
+
+export const announceOffBtn = btn('🔕 Stop announcements', 'bco')
+export const announceOnBtn = btn('📣 Announcements back on', 'bci')
+
+/** "/stop announcements": done, and how to undo it. */
+export const announceOffView = () => ({
+  text: '<b>🔕 Announcements off</b>\nYou won’t get news from Gully Labs here any more. Alerts you set up still arrive.\nChanged your mind? Switch them back on below or in ⚙️ Settings.',
+  keyboard: [[announceOnBtn], [btn('🏠 Menu', 'm')]],
+})
+
+/** /stop in a private chat with nothing linked: nothing to unlink, and announcements are now off. */
+export const stopUnlinkedView = () => ({
+  text: '<b>🔕 Done</b>\nThis chat isn’t linked to an account, so there’s nothing to stop. 🔕 You won’t get announcements either.\nChanged your mind? Switch them back on below or in ⚙️ Settings.',
+  keyboard: [[announceOnBtn], [btn('🏠 Menu', 'm')]],
+})
+/** /stop in a group with nothing linked. */
+export const stopGroupView = () => ({
+  text: 'This group isn’t linked to an account, so there’s nothing to stop. Gully Labs sends no announcements to groups.',
+  keyboard: [[btn('🏠 Menu', 'm')]],
+})
 
 export const expiredView = () => ({ text: '<b>This menu expired</b>, here’s a fresh one.', keyboard: MENU_KEYBOARD })
 
@@ -510,20 +547,51 @@ export function aiIntroView() {
 }
 
 /** Gully AI's answer: text plus up to 3 source buttons. */
+/** "2026-10-17T10:01:00Z" -> "10:01 UTC" (today) or "17 Oct 10:01 UTC". */
+function asOfText(iso) {
+  const t = Date.parse(iso ?? '')
+  if (!Number.isFinite(t)) return null
+  const d = new Date(t)
+  const hm = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`
+  return d.toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) ? hm : `${d.getUTCDate()} ${d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' })} ${hm}`
+}
+/** A Gully AI card's chart as one line of block characters: the chat's mini chart. */
+function cardChart(ch) {
+  const vals = ch?.type === 'spark' ? ch.points : ch?.type === 'bars' ? ch.bars.map((b) => b.value) : null
+  const ok = (vals ?? []).filter((v) => typeof v === 'number' && Number.isFinite(v))
+  if (ok.length < 2) return null
+  const min = Math.min(...ok, ch.type === 'bars' ? 0 : Infinity)
+  const span = Math.max(...ok) - min
+  return vals.map((v) => (typeof v !== 'number' ? ' ' : span < 1e-12 ? BLOCKS[3] : BLOCKS[Math.round(((v - min) / span) * 7)])).join('')
+}
+
+/** Gully AI's answer: the text with its [n] / [Ln] labels, the live cards as short lines, then sources and the one-tap actions as buttons. */
 export function aiAnswerView(r) {
   if (!r.ok) return { text: `<b>🤖 Gully AI</b>\n${esc(r.error)}`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
   const body = esc(String(r.answer).replace(/\*\*([^*]+)\*\*/g, '$1'))
   const sources = (r.citations ?? []).filter((c) => /^https:\/\//.test(String(c.url))).slice(0, 3)
+  const live = (r.live ?? []).filter((l) => /^https:\/\//.test(String(l.url))).slice(0, 3)
+  const cards = (r.cards ?? []).slice(0, 2).map((c) => {
+    const chart = cardChart(c.chart)
+    const at = asOfText(c.asOf)
+    return [`<b>${esc(c.title)}</b>${at ? ` · as of ${esc(at)}` : ''}`, ...(c.stats ?? []).slice(0, 4).map((s) => `${esc(s.label)}: <b>${esc(s.value)}</b>`), ...(chart ? [`<code>${esc(chart)}</code> ${esc(c.chart.label ?? '')}`] : [])].join('\n')
+  })
+  const actions = (r.actions ?? []).filter((a) => /^https:\/\//.test(String(a.url))).slice(0, 3)
+  const refs = [...sources.map((c) => `[${c.n}] ${esc(c.title)}`), ...live.map((l) => `[${esc(l.n)}] ${esc(l.label)}${asOfText(l.asOf) ? `, as of ${esc(asOfText(l.asOf))}` : ''}`)]
   return {
-    text: `<b>🤖 Gully AI</b>\n${body}${sources.length ? `\n\n<b>Sources</b>\n${sources.map((c) => `[${c.n}] ${esc(c.title)}`).join('\n')}` : ''}\n\n<i>Information only, not investment advice.</i>`,
-    keyboard: [...sources.map((c) => [ubtn(`📄 [${c.n}] ${String(c.title).slice(0, 48)} ↗`, c.url)]), [btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]],
+    text: `<b>🤖 Gully AI</b>\n${body}${cards.length ? `\n\n${cards.join('\n\n')}` : ''}${refs.length ? `\n\n<b>Sources</b>\n${refs.join('\n')}` : ''}\n\n<i>Information only, not investment advice.</i>`,
+    keyboard: [...actions.map((a) => [ubtn(`👉 ${String(a.label).slice(0, 56)} ↗`, a.url)]), ...sources.map((c) => [ubtn(`📄 [${c.n}] ${String(c.title).slice(0, 48)} ↗`, c.url)]), [btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]],
   }
 }
 
 /* ------------------------------------------------------------ settings --- */
 
-export function settingsView({ link, workspace, notify, alertsCount, isLinker }) {
-  if (!link) return { text: '<b>⚙️ Settings</b>\nThis chat is not linked to a wallet. Link it in the developer portal (Alerts tab, Connect Telegram) to get alerts here.', keyboard: [[ubtn('🔗 Link wallet ↗', PORTAL_ALERTS)], nav('m')] }
+/** The announcements switch for a private chat (`announce` true = on), or no row for groups (null). */
+const announceRow = (announce) => (announce === null || announce === undefined ? [] : [[btn(announce ? '📣 Announcements: on → off' : '📣 Announcements: off → on', `san:${announce ? 0 : 1}`)]])
+
+export function settingsView({ link, workspace, notify, alertsCount, isLinker, announce = null }) {
+  const ann = announce === null || announce === undefined ? [] : [`Announcements: ${announce ? 'on' : 'off'}`]
+  if (!link) return { text: ['<b>⚙️ Settings</b>', 'This chat is not linked to a wallet. Link it in the developer portal (Alerts tab, Connect Telegram) to get alerts here.', ...ann].join('\n'), keyboard: [[ubtn('🔗 Link wallet ↗', PORTAL_ALERTS)], ...announceRow(announce), nav('m')] }
   const lines = [
     '<b>⚙️ Settings</b>',
     `Wallet: <code>${esc(shortAddr(link.address))}</code>`,
@@ -531,12 +599,14 @@ export function settingsView({ link, workspace, notify, alertsCount, isLinker })
     `Chat: ${link.chatType === 'private' ? 'this private chat' : `group “${esc(link.chatTitle)}”${isLinker ? ' (linked by you)' : ''}`}`,
     `Alerts: ${alertsCount === null ? 'not available right now' : alertsCount}`,
     ...(notify ? [`Usage notices: ${notify.telegramUsage ? 'on' : 'off'}`] : []),
+    ...ann,
   ]
   return {
     text: lines.join('\n'),
     keyboard: [
       [btn('🔕 Mute all 24h', 'smu')],
       ...(notify ? [[btn(notify.telegramUsage ? '📣 Usage notices: on → off' : '📣 Usage notices: off → on', `snt:${notify.telegramUsage ? 0 : 1}`)]] : []),
+      ...announceRow(announce),
       [btn('🔓 Unlink', 'sul')],
       nav('m'),
     ],

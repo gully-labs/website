@@ -32,6 +32,8 @@ const MAIN = {
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
+  '/legal/privacy': ['Privacy policy · Gully Labs', 'What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, the Telegram bot and Gully Pay, why, who else sees it and how long it is kept.'],
+  '/links': ['Links · Gully Labs', 'Every Gully Labs link in one place: the site, the app, the stock tracker, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the Telegram bot and the news channel.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
@@ -65,6 +67,7 @@ const DOCS_PAGES = {
   '/gully-security': ['Gully Security · Gully Labs docs', 'Gully Security: the AI Security Scan (inputs, steps, quotas and payment), reading a report, publishing it, and requesting a human Security Review.'],
   '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the developer portal: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
+  '/roadmap': ['Roadmap · Gully Labs docs', 'What Gully Labs plans to build next, with an honest status for each track: the Gully L3, and Audits & Security (AI security scans, security reviews, smart-contract and code audits, Gully Score and monitoring). All planned; nothing is offered yet.'],
   '/roadmap-l3': ['Roadmap: Gully L3 · Gully Labs docs', 'The plan for the Gully L3: an Arbitrum chain settling to Arbitrum One with Chain Kit, Gully Pay and Hyperlane as its interop layer. Status: spec written, devnet prepared, nothing running.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],
 }

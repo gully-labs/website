@@ -22,6 +22,7 @@ const Security = lazy(() => chunks.security().then((m) => ({ default: m.Security
 const SecurityReports = lazy(() => chunks.securityReports().then((m) => ({ default: m.ReportsIndex })))
 const SecurityReport = lazy(() => chunks.securityReports().then((m) => ({ default: m.PublicReportPage })))
 const NotFound = lazy(() => chunks.notFound().then((m) => ({ default: m.NotFound })))
+const Links = lazy(() => chunks.links().then((m) => ({ default: m.LinksPage })))
 const Tg = lazy(() => chunks.tg().then((m) => ({ default: m.TgApp })))
 
 /** What a page shows while its chunk loads: a pulsing page outline a full screen tall, so the closing
@@ -66,6 +67,7 @@ export const SecurityRoute = () => page(<Security />)
 export const SecurityReportsRoute = () => page(<SecurityReports />)
 export const SecurityReportRoute = () => page(<SecurityReport />)
 export const NotFoundRoute = () => page(<NotFound />)
+export const LinksRoute = () => page(<Links />)
 // The Telegram Mini App draws its own loading state; a blank screen in Telegram's colours meanwhile.
 export const TgRoute = () => (
   <Suspense fallback={<div role="status" aria-label="Loading" className="min-h-[100svh]" />}>

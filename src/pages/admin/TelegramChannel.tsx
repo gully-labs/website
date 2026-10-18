@@ -1,10 +1,11 @@
-import { Bold, CalendarClock, Code, Eye, ExternalLink, Italic, Link2, LoaderCircle, Pencil, Pin, Plus, RotateCcw, Send, Trash2, X } from 'lucide-react'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Bold, CalendarClock, Code, Eye, ExternalLink, Italic, Link2, LoaderCircle, MessageCircle, Pencil, Pin, Plus, RotateCcw, Send, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { C, sparklinePreset } from '../../components/charts/chartPresets'
 import { EChart } from '../../components/charts/EChart'
 import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
 import { adminCall } from './payAdmin'
+import { LINK_BLUE, renderTg } from './tgHtml'
 
 /* Admin: posts to the Gully Labs News channel (@GullyLabsNews) through the bot, plus the automatic posts.
    Server: server/telegram-channel.mjs behind /api/admin/channel* (admin token). The preview renders the
@@ -87,7 +88,6 @@ const field = 'min-h-11 min-w-0 rounded-input border border-line-strong bg-bg px
 const ghostBtn = 'inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:opacity-40'
 const goldBtn = 'inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-5 text-[15px] font-semibold text-bg transition-colors hover:bg-gold-hover disabled:opacity-40'
 const tinyBtn = 'inline-flex min-h-9 items-center gap-1 rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink'
-const LINK_BLUE = '#5aa9e6' // chart palette blue: Telegram-style links in the preview
 
 const STATUS_STYLE: Record<Status, string> = {
   draft: 'border-line-strong text-muted',
@@ -109,55 +109,6 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB'
 const utc = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC'
 const toLocalInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
-
-/* ----------------------------------------------------- Telegram HTML -> React --- */
-
-const decode = (s: string) =>
-  s
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
-    .replace(/&amp;/g, '&')
-
-/** Renders sanitized Telegram HTML (b, i, u, s, a, code, pre, blockquote, tg-spoiler) as React nodes. */
-function renderTg(html: string): ReactNode[] {
-  type Node = { tag: string; href?: string; kids: ReactNode[] }
-  const root: Node = { tag: 'root', kids: [] }
-  const stack: Node[] = [root]
-  let key = 0
-  for (const part of html.split(/(<\/?[a-z-]+(?:\s+href="[^"]*")?>)/)) {
-    if (!part) continue
-    const open = part.match(/^<([a-z-]+)(?:\s+href="([^"]*)")?>$/)
-    const close = part.match(/^<\/([a-z-]+)>$/)
-    if (open) {
-      const n: Node = { tag: open[1], href: open[2] ? decode(open[2]) : undefined, kids: [] }
-      stack.push(n)
-    } else if (close && stack.length > 1) {
-      const n = stack.pop()!
-      const k = key++
-      const kids = n.kids
-      const el =
-        n.tag === 'b' ? <strong key={k}>{kids}</strong>
-        : n.tag === 'i' ? <em key={k}>{kids}</em>
-        : n.tag === 'u' ? <u key={k}>{kids}</u>
-        : n.tag === 's' ? <s key={k}>{kids}</s>
-        : n.tag === 'code' ? <code key={k} className="rounded-[3px] bg-bg px-1 font-mono text-[13px]">{kids}</code>
-        : n.tag === 'pre' ? <pre key={k} className="m-0 my-1 overflow-x-auto rounded-input bg-bg p-2 font-mono text-[13px] whitespace-pre-wrap">{kids}</pre>
-        : n.tag === 'blockquote' ? <blockquote key={k} className="m-0 my-1 border-l-2 pl-2" style={{ borderColor: LINK_BLUE }}>{kids}</blockquote>
-        : n.tag === 'tg-spoiler' ? <span key={k} className="rounded-[3px] bg-line-strong text-transparent transition-colors hover:text-ink" title="Spoiler">{kids}</span>
-        : n.tag === 'a' ? <a key={k} href={n.href} target="_blank" rel="noopener noreferrer" style={{ color: LINK_BLUE }} className="underline-offset-2 hover:underline">{kids}</a>
-        : <Fragment key={k}>{kids}</Fragment>
-      stack.at(-1)!.kids.push(el)
-    } else stack.at(-1)!.kids.push(decode(part))
-  }
-  while (stack.length > 1) {
-    const n = stack.pop()!
-    stack.at(-1)!.kids.push(<Fragment key={key++}>{n.kids}</Fragment>)
-  }
-  return root.kids
-}
 
 /** A Telegram-style dark channel bubble with its media and URL buttons. */
 function Bubble({ channel, html, media, buttons, empty = 'Your post appears here as it will look in the channel.' }: { channel: string; html: string; media: Media; buttons: Btn[]; empty?: string }) {
@@ -244,6 +195,9 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
   const [schedAt, setSchedAt] = useState(() => toLocalInput(new Date(Date.now() + 3_600_000)))
   const [topic, setTopic] = useState('')
   const [testChat, setTestChat] = useState(view.testChat ?? view.linkedChats[0]?.chatId ?? '')
+  // "Send to channel and DM users": after the post, a short "New in the channel →" DM to everyone who started the bot.
+  const [dm, setDm] = useState(false)
+  const [dmUrgent, setDmUrgent] = useState(false)
   const ta = useRef<HTMLTextAreaElement>(null)
   const set = (p: Partial<Draft>) => setD((x) => ({ ...x, ...p }))
   const media = mediaOf(d)
@@ -295,10 +249,22 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
     return true
   }
 
+  /** The DM part of a post: asks for the exact audience and a confirm, or null to stop. undefined = no DM. */
+  const dmFor = async (what: string): Promise<{ confirm: number; urgent: boolean } | null | undefined> => {
+    if (!dm || editing) return undefined
+    const a = await adminCall<{ count: number }>(token, '/api/admin/broadcasts/audience', { segment: { kind: 'all' } })
+    if (!a.ok) return toastError('Could not count the bot users', { detail: a.error }), null
+    if (!a.data.count) return toastError('Nobody to DM yet', { detail: 'No one who started the bot has announcements on. Untick the DM option to post only.' }), null
+    if (!window.confirm(`${what} to ${view.channel} and DM exactly ${a.data.count.toLocaleString('en-US')} bot users a short "New in the channel →" note?`)) return null
+    return { confirm: a.data.count, urgent: dmUrgent }
+  }
+
   const testSend = () => call('Test send', '/api/admin/channel/test', { ...payload, chatId: testChat || undefined }, 'Test sent to your Telegram')
   const postNow = async () => {
-    if (!window.confirm(`Post this to ${view.channel} now? Every follower will see it.`)) return
-    const ok = editing && editing.status !== 'sent' ? (await call('Save', `/api/admin/channel/posts/${editing.id}`, payload, 'Saved')) && (await call('Post', `/api/admin/channel/posts/${editing.id}/post`, {}, `Posted to ${view.channel}`)) : await call('Post', '/api/admin/channel/posts', { ...payload, action: 'post' }, `Posted to ${view.channel}`)
+    const withDm = await dmFor('Post this now')
+    if (withDm === null) return
+    if (!withDm && !window.confirm(`Post this to ${view.channel} now? Every follower will see it.`)) return
+    const ok = editing && editing.status !== 'sent' ? (await call('Save', `/api/admin/channel/posts/${editing.id}`, payload, 'Saved')) && (await call('Post', `/api/admin/channel/posts/${editing.id}/post`, {}, `Posted to ${view.channel}`)) : await call('Post', '/api/admin/channel/posts', { ...payload, action: 'post', ...(withDm ? { dm: withDm } : {}) }, withDm ? `Posted to ${view.channel}, DMs going out` : `Posted to ${view.channel}`)
     if (ok) {
       setD(EMPTY)
       onDone()
@@ -306,7 +272,9 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
   }
   const schedule = async () => {
     if (!scheduleIso) return
-    const ok = editing ? await call('Schedule', `/api/admin/channel/posts/${editing.id}`, { ...payload, scheduledAt: scheduleIso }, `Scheduled for ${utc(scheduleIso)}`) : await call('Schedule', '/api/admin/channel/posts', { ...payload, action: 'schedule', scheduledAt: scheduleIso }, `Scheduled for ${utc(scheduleIso)}`)
+    const withDm = await dmFor(`Schedule this for ${utc(scheduleIso)}`)
+    if (withDm === null) return
+    const ok = editing ? await call('Schedule', `/api/admin/channel/posts/${editing.id}`, { ...payload, scheduledAt: scheduleIso }, `Scheduled for ${utc(scheduleIso)}`) : await call('Schedule', '/api/admin/channel/posts', { ...payload, action: 'schedule', scheduledAt: scheduleIso, ...(withDm ? { dm: withDm } : {}) }, `Scheduled for ${utc(scheduleIso)}`)
     if (ok) {
       setD(EMPTY)
       onDone()
@@ -429,6 +397,23 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
           <input type="checkbox" checked={d.pin} onChange={(e) => set({ pin: e.target.checked })} className="size-5 accent-[#e8c060]" />
           <Pin size={15} aria-hidden /> Pin in the channel
         </label>
+
+        {!editing && (
+          <div className="flex flex-col gap-1">
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
+              <input type="checkbox" checked={dm} onChange={(e) => setDm(e.target.checked)} className="size-5 accent-[#e8c060]" />
+              <MessageCircle size={15} aria-hidden /> Send to channel and DM users
+            </label>
+            {dm && (
+              <div className="flex flex-col gap-1 pl-8">
+                <span className={small}>Everyone who started the bot (announcements on) gets a short “📣 New in the channel →” DM linking to this post. You confirm the exact count before it goes. One broadcast a day.</span>
+                <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[13px] text-ink-2">
+                  <input type="checkbox" checked={dmUrgent} onChange={(e) => setDmUrgent(e.target.checked)} className="size-5 accent-[#e8c060]" /> Urgent (skip the one-a-day limit)
+                </label>
+              </div>
+            )}
+          </div>
+        )}
 
         {errors.length > 0 && (
           <ul className="m-0 flex list-none flex-col gap-1 rounded-input border border-error/50 px-3 py-2 text-[13px] text-error" role="alert">
