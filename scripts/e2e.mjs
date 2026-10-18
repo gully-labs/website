@@ -1644,7 +1644,7 @@ await step('holder map', async () => {
     check(`holder map ${width}: the launch check (always free) shows`, await map.locator('[data-risk-line]').getByText(/3 wallets bought in the first block of trading/).isVisible())
     await map.locator('[data-chart]').scrollIntoViewIfNeeded()
     await map.locator('[data-chart] canvas').first().waitFor()
-    check(`holder map ${width}: the bubble graph draws (ECharts canvas)`, (await map.locator('[data-chart] canvas').count()) > 0)
+    check(`holder map ${width}: the bubble graph draws (canvas)`, (await map.locator('[data-chart] canvas').count()) > 0)
     check(`holder map ${width}: the graph has a text summary for screen readers`, /^Holder Map of DTC on Robinhood Chain/.test((await map.locator('[data-chart]').getAttribute('aria-label')) ?? ''))
     check(`holder map ${width}: a ranked list exists for screen readers`, (await map.locator('.sr-only table tbody tr').count()) === 30)
     await shotTo(page, `launch-${width}.png`)

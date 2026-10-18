@@ -400,7 +400,12 @@ export function stubServerFetch() {
     const m = u.hostname.match(/^rpc-(\d+)\.e2e\.invalid$/)
     if (m) {
       const body = JSON.parse(String(init.body ?? 'null'))
-      const one = (q) => ({ jsonrpc: '2.0', id: q.id, result: rpcAnswer(Number(m[1]), q) })
+      // Like a public node: history before the recent window needs an archive node. The Holder Map's
+      // archive probe (holders-logs.mjs) reads the dead address at an old block; refusing it keeps stock
+      // Holder Maps "not available yet" here, as in production until an archive RPC answers.
+      const PROBE = '0x000000000000000000000000000000000000dead'
+      const isProbe = (q) => (q.method === 'eth_getLogs' && String(q.params?.[0]?.address ?? '').toLowerCase() === PROBE) || (q.method === 'eth_getBalance' && String(q.params?.[0] ?? '').toLowerCase() === PROBE)
+      const one = (q) => (isProbe(q) ? { jsonrpc: '2.0', id: q.id, error: { code: -32000, message: 'Archive requests require a personal token' } } : { jsonrpc: '2.0', id: q.id, result: rpcAnswer(Number(m[1]), q) })
       return jsonResponse(Array.isArray(body) ? body.map(one) : one(body))
     }
     if (u.hostname === 'api.anthropic.com') {
