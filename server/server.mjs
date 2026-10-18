@@ -165,7 +165,7 @@ const server = http.createServer(async (req, res) => {
   // retired /developers path answer 301 to https://app.gullylabs.xyz/; on that host any other page belongs
   // to the main site.
   const isApp = isAppHost(host)
-  const isPage = !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/') && !/\.[a-z0-9]+$/i.test(url.pathname)
+  const isPage = url.pathname !== '/healthz' && !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/') && !/\.[a-z0-9]+$/i.test(url.pathname)
   if (!isApp && !isLocal && /^\/(app|developers)(\/|$)/.test(url.pathname)) {
     return send(res, 301, '', { Location: `${APP_URL}/`, 'Cache-Control': 'public, max-age=3600' })
   }
