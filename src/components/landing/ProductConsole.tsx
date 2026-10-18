@@ -1,10 +1,11 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, Puzzle, Sparkles, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, Puzzle, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react'
 import { askStatus } from '../ask/askApi'
 import { useContact } from '../ContactContext'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
+import { DOCS_URL } from '../../site-host'
 import { PORTAL, PORTAL_ALERTS } from './links'
 import { h2 } from './links'
 
@@ -24,7 +25,7 @@ const WidgetDemo = lazy(() => import('../demos/WidgetDemo'))
 const PayDemo = lazy(() => import('../demos/PayDemo'))
 const AskPanel = lazy(() => import('../ask/AskPanel').then((mod) => ({ default: () => <mod.AskPanel variant="panel" /> })))
 
-type Cta = { label: string; to?: string; href?: string; contact?: boolean }
+type Cta = { label: string; to?: string; href?: string; contact?: boolean; newTab?: boolean }
 interface Tab {
   id: string
   name: string
@@ -49,6 +50,7 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
     { id: 'analytics', name: 'Gully Analytics', icon: ChartNoAxesCombined, status: 'FREE TRIAL', live: true, pitch: `Page views next to wallet connects, chains and transactions. Cookie-free, built on Umami, sign up with your wallet${trial ? `, ${trial} days free` : ''}.`, cta: { label: 'Start free trial', href: ANALYTICS_SIGNUP }, height: 600, Demo: AnalyticsDemo },
     { id: 'chainkit', name: 'Chain Kit', icon: Boxes, status: 'ON REQUEST', live: false, pitch: 'A Blockscout explorer with your domain, colours, token list and API, run by us. Change the brand below and watch it update.', cta: { label: 'Explore Chain Kit', to: '/chain-kit' }, height: 620, Demo: ChainKitDemo },
     { id: 'chains', name: 'Gully Chains', icon: Layers, status: 'SOON', live: false, pitch: 'Arbitrum Orbit L3 chains, launched and operated by Gully Labs. In development: none of it is live yet.', cta: { label: 'Ask about a chain', contact: true }, height: 360 },
+    { id: 'security', name: 'Security', icon: ShieldCheck, status: 'PLANNED', live: false, pitch: 'Audits & Security is on the roadmap: AI security scans, then security reviews, smart-contract and code audits, and a transparent Gully Score with monitoring. Not offered yet.', cta: { label: 'Read the roadmap', href: `${DOCS_URL}/roadmap#security`, newTab: true }, height: 360 },
     { id: 'api', name: 'API + SDK', icon: Code2, status: 'LIVE', live: true, pitch: `Every tracker row as JSON: ${anon ? `${anon} calls a minute` : 'free calls'} with no key, a free key${free ? ` (${free.perMin.toLocaleString('en-US')} a minute)` : ''} with wallet sign-in, and a typed SDK (MIT).`, cta: { label: 'Get a key', href: PORTAL }, height: 560, Demo: ApiDemo },
     { id: 'widget', name: 'Widget', icon: Puzzle, status: 'LIVE', live: true, pitch: 'One script tag puts a live ticker, a one-stock badge or a table of the widest gaps on any site.', cta: { label: 'Build a widget', to: '/widget' }, height: 520, Demo: WidgetDemo },
     { id: 'pay', name: 'Gully Pay', icon: CircleDollarSign, status: 'LIVE', live: true, pitch: 'Plans paid from your wallet straight to ours in ETH, BNB, USDC or USDT on four chains, checked on chain. No custody.', cta: { label: 'See plans', to: '/#pricing' }, height: 540, Demo: PayDemo },
@@ -56,7 +58,7 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
   ]
 }
 
-const CONSOLE_TABS = ['tracker', 'alerts', 'analytics', 'chainkit', 'chains', 'api', 'widget', 'pay', 'ask']
+const CONSOLE_TABS = ['tracker', 'alerts', 'analytics', 'chainkit', 'chains', 'security', 'api', 'widget', 'pay', 'ask']
 
 const NEAR = '400px 0px'
 const FAR = '1400px 0px'
@@ -101,8 +103,9 @@ function CtaButton({ cta }: { cta: Cta }) {
       </Link>
     )
   return (
-    <a href={cta.href} className={cls}>
+    <a href={cta.href} className={cls} {...(cta.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
       {inner}
+      {cta.newTab && <span className="sr-only"> (opens in a new tab)</span>}
     </a>
   )
 }
@@ -160,6 +163,33 @@ function ChainsPane() {
         ))}
       </ul>
       <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">Forks of open-source Offchain Labs repositories. Gully Labs is not affiliated with Offchain Labs or the Arbitrum Foundation.</p>
+    </div>
+  )
+}
+
+/* Not offered: the Audits & Security track of the roadmap (docs /roadmap). Nothing here claims an audit. */
+const SECURITY_STEPS: { name: string; d: string }[] = [
+  { name: 'AI Security Scan', d: 'Self-serve: Slither, Aderyn, fuzz and invariant runs, AI triage. Paid with Gully Pay.' },
+  { name: 'Security Reviews', d: 'Two reviewers, every fix reviewed, a public report pinned to a commit hash.' },
+  { name: 'Audits', d: 'Smart-contract audits, and code audits of frontends, backends, APIs, keys and CI.' },
+  { name: 'Gully Score + monitoring', d: 'A public score with every weight and source shown, no pay-to-rank, and admin-key alerts.' },
+]
+
+function SecurityPane() {
+  return (
+    <div className="flex flex-col gap-3">
+      <ol className="m-0 grid list-none grid-cols-4 gap-px overflow-hidden rounded-[10px] border border-line bg-line p-0 max-[1099px]:grid-cols-2 max-[599px]:grid-cols-1">
+        {SECURITY_STEPS.map((s, i) => (
+          <li key={s.name} className="flex flex-col gap-1 bg-surface px-4 py-3">
+            <span className="font-mono text-[11px] text-gold">
+              {String(i + 1).padStart(2, '0')} · <span className="text-dim">PLANNED</span>
+            </span>
+            <b className="font-semibold">{s.name}</b>
+            <span className="text-[13px] leading-[1.45] text-muted">{s.d}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">Today we offer Security &amp; Testing: code review, fuzzing and invariant tests, and post-launch monitoring.</p>
     </div>
   )
 }
@@ -250,6 +280,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
   const skeleton = (height: number) => <div aria-hidden className="animate-pulse rounded-card border border-line bg-surface" style={{ height, maxHeight: 'calc(100vh - 120px)' }} />
   let body: ReactNode
   if (cur.id === 'chains') body = <ChainsPane />
+  else if (cur.id === 'security') body = <SecurityPane />
   else if (cur.id === 'ask') body = <AskPane configured={ask} />
   else if (cur.Demo && near)
     body = (

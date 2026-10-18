@@ -1,5 +1,6 @@
 // Builds the local part of the Gully Ask corpus into server/data/ask-index.json:
-//   - the docs pages (src/docs/pages/*.tsx), one document per <Section>, at https://docs.gullylabs.xyz/<path>#<id>;
+//   - the docs pages (src/docs/pages/*.tsx, every route in src/docs/routes.tsx, the Roadmap and Roadmap: Gully L3
+//     among them), one document per <Section>, at https://docs.gullylabs.xyz/<path>#<id>;
 //   - the site's copy: src/content/*.ts and the Products, Pricing, Services and About pages, at https://gullylabs.xyz/...;
 //   - the changelog (a docs page, labelled "Changelog").
 //

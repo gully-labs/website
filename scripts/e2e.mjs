@@ -726,7 +726,7 @@ await step('admin', async () => {
 
 /* ------------------------------------------------------------- docs --- */
 
-const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap-l3', 'changelog']
+const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap', 'roadmap-l3', 'changelog']
 await step('docs', async () => {
   for (const [width, mobile] of [[1440, false], [390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
