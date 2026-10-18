@@ -254,8 +254,39 @@ await step('Gully AI', async () => {
   const log = page.getByRole('log', { name: 'Answers' })
   await log.getByText(/Gap alerts fire when/).waitFor({ timeout: 20_000 })
   check('Gully AI: the (stubbed) answer renders', true)
+  // Thumbs: the rating reaches the server and lands on the admin's "Unanswered / low-rated questions" card.
+  const down = page.getByTestId('ask-rate-down')
+  await down.click()
+  await page.waitForFunction(() => document.querySelector('[data-testid="ask-rate-down"]')?.getAttribute('aria-pressed') === 'true')
+  await page.getByText('Thanks: this helps us decide which docs to write.').waitFor()
+  const gaps = await (await fetch(BASE + '/api/admin/ask/gaps?days=30', { headers: { authorization: `Bearer ${admin}` } })).json()
+  check('Gully AI: thumbs down is stored and shows on the admin gaps card', gaps.items?.some((x) => x.question === 'How do gap alerts work?' && x.down === 1), JSON.stringify(gaps).slice(0, 200))
+  check('Gully AI: the thumbs are real toggle buttons with 44px targets', (await down.boundingBox())?.height >= 44 && (await page.getByTestId('ask-rate-up').getAttribute('aria-pressed')) === 'false')
   // The server's head (crawlers, link previews) says Gully AI; the client-side <Seo> title is in quality-1's AskPage.tsx.
   check('Gully AI: the server-rendered title says Gully AI', (await (await fetch(BASE + '/ask')).text()).includes('<title>Gully AI · Gully Labs</title>'))
+  await w.verify()
+  await ctx.close()
+})
+
+await step('privacy page', async () => {
+  const ctx = await newContext()
+  const page = await ctx.newPage()
+  const w = watch(page, 'privacy page')
+  await page.goto(BASE + '/legal/privacy')
+  await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
+  const ids = await page.evaluate(() => [...document.querySelectorAll('article section[id^="s"]')].map((x) => x.id))
+  check('privacy: twelve numbered sections, s1 to s12, each linked from the section nav', ids.join() === Array.from({ length: 12 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 12, ids.join())
+  check('privacy: "Draft: review by counsel" is an HTML comment only, never on screen', (await page.content()).includes('<!-- Draft: review by counsel') && !(await page.getByText('review by counsel').count()))
+  check('privacy: the retention table and the CC BY attribution are there', (await page.getByRole('table').getByRole('rowheader', { name: 'Gully AI questions and ratings' }).isVisible()) && (await page.getByRole('link', { name: 'Basecamp open-source policies' }).isVisible()))
+  const head = await (await fetch(BASE + '/legal/privacy')).text()
+  check('privacy: the server-rendered title and canonical', head.includes('<title>Privacy policy · Gully Labs</title>') && head.includes('https://gullylabs.xyz/legal/privacy'))
+  check('privacy: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/legal/privacy</loc>'))
+  await page.goto(BASE + '/')
+  const foot = page.getByRole('contentinfo').getByRole('link', { name: 'Privacy', exact: true })
+  check('privacy: linked from the site footer', (await foot.getAttribute('href')) === '/legal/privacy')
+  await foot.click()
+  await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
+  check('privacy: the footer link opens the page in place', page.url().endsWith('/legal/privacy'))
   await w.verify()
   await ctx.close()
 })
@@ -823,7 +854,7 @@ await step('docs', async () => {
 /* ------------------------------------------------------------- 404s and mobile pages --- */
 
 await step('404s', async () => {
-  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200]]) {
+  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200]]) {
     const r = await fetch(BASE + p)
     const html = await r.text()
     check(`HTTP ${want} for ${p}`, r.status === want && (want === 404 ? /noindex/.test(html) : !/Not found ·/.test(html)), `${r.status}`)
@@ -833,7 +864,7 @@ await step('404s', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/developers']) {
+  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/legal/privacy', '/developers']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/developers') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)

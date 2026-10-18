@@ -116,7 +116,7 @@ export function makeIndex(chunks) {
   const avg = docs.reduce((a, d) => a + d.len, 0) / Math.max(1, docs.length)
   const N = docs.length
 
-  /** Top `k` chunks for a query, each with its score; at most `perUrl` from one page. */
+  /** Top `k` chunks for a query, each with its score; at most `perUrl` from one page (Infinity: no cap). */
   function search(query, { k = 6, perUrl = 2, sources = null } = {}) {
     const q = [...new Set(tokenize(query))]
     if (!q.length) return []
@@ -147,7 +147,139 @@ export function makeIndex(chunks) {
     return out
   }
 
-  return { search, size: N, terms: df.size }
+  return { search, size: N, terms: df.size, chunks: docs.map((d) => d.chunk) }
+}
+
+/* --------------------------------------------------------- hybrid search --- */
+//
+// Hybrid retrieval (ask.mjs retrieve()): several ranked candidate lists (BM25 on the question, BM25 on a
+// synonym-expanded question, and nearest neighbours by embedding when ask-embed.mjs has vectors) are fused
+// with reciprocal-rank fusion, then the top ~20 are re-ranked here by how much of the question each chunk
+// covers. Every step is deterministic and dependency-free; with no embeddings it is BM25 + expansion only.
+
+/**
+ * Plain-language words people ask with, mapped to the words the docs use. Only adds terms; the original
+ * question is always searched as typed too.
+ */
+const SYNONYMS = {
+  charge: 'fee fees price pricing cost plan',
+  charges: 'fee fees price pricing cost plan',
+  cost: 'price pricing fee plan',
+  costs: 'price pricing fee plan',
+  expensive: 'price pricing fee',
+  cheap: 'price pricing fee free',
+  pay: 'payment checkout chains assets',
+  paying: 'payment checkout chains assets',
+  money: 'payment fee price',
+  track: 'analytics cookie privacy collect',
+  tracking: 'analytics cookie privacy collect',
+  spy: 'analytics privacy collect',
+  privacy: 'privacy personal data collect retention cookie',
+  data: 'collect retention',
+  delete: 'retention erase deletion',
+  store: 'merchant checkout',
+  shop: 'merchant store checkout',
+  paused: 'pause statement overdue unpaid',
+  pause: 'paused statement overdue unpaid',
+  frozen: 'pause paused statement overdue',
+  l3: 'roadmap rollup orbit chain settlement hyperlane',
+  rollup: 'l3 roadmap orbit',
+  roadmap: 'l3 rollup plan',
+  bot: 'telegram chat command',
+  telegram: 'bot chat alerts',
+  notify: 'alert alerts webhook telegram',
+  notification: 'alert alerts webhook telegram',
+  holders: 'holder map distribution wallets',
+  whales: 'holder holders map',
+  chains: 'chain network base ethereum arbitrum bnb',
+  network: 'chain chains',
+  key: 'api key keys',
+  limit: 'rate limit requests plan',
+  limits: 'rate limit requests plan',
+  usage: 'requests calls rate limit',
+  audit: 'audits security review',
+  safe: 'audit security custody',
+  custody: 'non-custodial wallet funds',
+  refund: 'refunds payment',
+}
+
+/** The question plus the docs' words for the plain words in it, or null when nothing is added. */
+export function expandQuery(q) {
+  const add = []
+  for (const w of fold(q).split(/[^a-z0-9]+/)) if (SYNONYMS[w]) add.push(SYNONYMS[w])
+  return add.length ? `${q} ${add.join(' ')}` : null
+}
+
+export const RRF_K = 60
+
+/**
+ * Reciprocal-rank fusion: each list is [{ chunk, ... }] best first; a chunk scores the sum of
+ * weight / (RRF_K + rank) over the lists it appears in. Returns [{ chunk, score, ranks }] best first,
+ * ties broken by chunk id so the order is stable.
+ */
+export function rrf(lists, { k = RRF_K } = {}) {
+  const m = new Map()
+  for (const { name, items, weight = 1 } of lists) {
+    items.forEach((r, i) => {
+      const e = m.get(r.chunk.id) ?? { chunk: r.chunk, score: 0, ranks: {} }
+      e.score += weight / (k + i + 1)
+      e.ranks[name] = i + 1
+      m.set(r.chunk.id, e)
+    })
+  }
+  return [...m.values()].sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+}
+
+/** A small prior by source: the docs and the legal pages are the reference; UI copy and notes rank a little lower. */
+const SOURCE_PRIOR = { Docs: 0.06, Legal: 0.05, Site: 0.03, Changelog: 0, Roadmap: 0, Blog: 0, GitHub: 0, 'DeepCore docs': 0.02, 'Gully Pay contracts': -0.03, 'Telegram bot': -0.05, 'Telegram Mini App': -0.08 }
+
+/**
+ * Re-ranks fused candidates by question coverage: the share of the question's distinct terms found in the
+ * chunk (title and section included), with a bonus when they appear in its title or section, and a small
+ * prior by source (SOURCE_PRIOR). The fused rank still dominates (coverage only moves a chunk past near
+ * neighbours). Stable for equal scores.
+ */
+export function rerank(query, fused) {
+  const q = [...new Set(tokenize(query))]
+  if (!q.length || !fused.length) return fused
+  const top = fused[0].score || 1
+  return fused
+    .map((r) => {
+      const body = new Set(tokenize(r.chunk.text))
+      const head = new Set(tokenize(`${r.chunk.title ?? ''} ${r.chunk.section ?? ''}`))
+      const covered = q.filter((t) => body.has(t) || head.has(t)).length / q.length
+      const inHead = q.filter((t) => head.has(t)).length / q.length
+      return { ...r, fused: r.score, score: r.score / top + 0.35 * covered + 0.15 * inHead + (SOURCE_PRIOR[r.chunk.source] ?? 0) }
+    })
+    .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+}
+
+/** At most `perUrl` chunks of one page, the first `k`. */
+export function capPerPage(results, { k = 6, perUrl = 2 } = {}) {
+  const seen = new Map()
+  const out = []
+  for (const r of results) {
+    const page = r.chunk.url.split('#')[0]
+    const n = seen.get(page) ?? 0
+    if (n >= perUrl) continue
+    seen.set(page, n + 1)
+    out.push(r)
+    if (out.length >= k) break
+  }
+  return out
+}
+
+/** Cosine similarity of two equal-length numeric vectors (0 when either is empty). */
+export function cosine(a, b) {
+  let dot = 0
+  let na = 0
+  let nb = 0
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i]
+    na += a[i] * a[i]
+    nb += b[i] * b[i]
+  }
+  return na && nb ? dot / Math.sqrt(na * nb) : 0
 }
 
 /* ------------------------------------------------------- markdown → text --- */

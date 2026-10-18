@@ -6,6 +6,46 @@ export interface AskStatus {
   model: string
   indexSize: number
   updatedAt: string | null
+  /** 'hybrid' when semantic search is on, 'bm25' for keyword search with expansion. */
+  retrieval?: 'hybrid' | 'bm25'
+}
+
+/** A live read the answer cites as [L1], [L2]…: the endpoint (or app page) and when it was read. */
+export interface LiveCite {
+  n: string
+  tool: string
+  label: string
+  url: string
+  asOf: string | null
+}
+
+export interface CardStat {
+  label: string
+  value: string
+  tone?: 'up' | 'down' | 'ok' | 'warn'
+}
+
+/** A compact live card built by the server from a tool result (never from the model's words). */
+export interface AskCard {
+  tool: string
+  cite: string
+  kind: string
+  title: string
+  subtitle?: string | null
+  asOf: string | null
+  source: { label: string; url: string } | null
+  stats: CardStat[]
+  chart: { type: 'spark'; points: number[]; unit: string; label: string } | { type: 'bars'; bars: { label: string; value: number | null }[]; unit: string; label: string } | null
+  link?: { label: string; url: string } | null
+  note?: string
+}
+
+/** A one-tap follow-up: a link, or a link to a pre-filled form the user still has to confirm. */
+export interface AskAction {
+  kind: 'link' | 'prefill'
+  label: string
+  url: string
+  note?: string
 }
 
 export interface Citation {
@@ -16,10 +56,15 @@ export interface Citation {
 }
 
 export interface AskAnswer {
+  id?: string
   answer: string
   citations: Citation[]
+  live?: LiveCite[]
+  cards?: AskCard[]
+  actions?: AskAction[]
   usedTools: string[]
   model: string
+  signedIn?: boolean
 }
 
 export interface Turn {
@@ -87,4 +132,14 @@ export async function postAsk(question: string, history: Turn[], onStage: (stage
     }
   }
   throw new AskFailure('The answer was cut off. Try again.', 0)
+}
+
+/** Rates one answer (thumbs up or down). Resolves true when the server stored it. */
+export async function postFeedback(id: string, rating: 'up' | 'down'): Promise<boolean> {
+  const r = await fetch('/api/ask/feedback', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-requested-with': 'gully' },
+    body: JSON.stringify({ id, rating }),
+  }).catch(() => null)
+  return !!r?.ok
 }

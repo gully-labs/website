@@ -1065,6 +1065,43 @@ function merchantView(ws, role) {
   }
 }
 
+/**
+ * Read-only summary of ONE workspace's store for Gully AI (get_my_store): set up or not, paused and why,
+ * receiving wallets per chain, and fees accrued / collected on chain / billed / outstanding. No payer data,
+ * no webhook secret, nothing about any other workspace.
+ */
+export function merchantSummary(ws, now = Date.now()) {
+  const m = peek(ws)
+  const wallets = Object.entries(m?.wallets ?? {}).map(([id, w]) => walletView(id, w))
+  const f = feesView(ws, now)
+  const pause = pauseOf(ws, now)
+  return {
+    store: m ? { name: brandOf(ws).name, termsAccepted: !!m.terms, termsCurrent: m.terms?.version === MERCHANT_TERMS_VERSION } : null,
+    ready: wallets.some((w) => w.enabled && w.status === 'ok'),
+    paused: pause.paused,
+    pausedSince: pause.since ?? null,
+    pausedBecause: pause.paused ? `${pause.statements.length} fee statement(s) unpaid more than ${PAUSE_AFTER_DAYS} days after issue` : null,
+    checkoutOpen: !pause.paused,
+    wallets: wallets.map((w) => ({ chain: w.chain, chainId: w.chainId, address: w.address, enabled: w.enabled, status: w.status, checkedAt: w.checkedAt })),
+    fees: {
+      ratePct: f.ratePct,
+      freeAllowanceUsd: f.freeUsd,
+      freeLeftUsd: f.freeLeftUsd,
+      lifetimeVolumeUsd: f.lifetimeUsd,
+      accruedUsd: f.accruedUsd,
+      collectedOnChainUsd: f.collectedUsd,
+      billedUsd: f.billedUsd,
+      unbilledUsd: f.unbilledUsd,
+      outstandingUsd: f.outstandingUsd,
+      paidUsd: f.paidUsd,
+      nextStatementAt: f.nextStatementAt,
+      openStatements: f.statements.filter((s) => s.state === 'open' || s.state === 'overdue').map((s) => ({ number: s.number, usd: s.usd, dueAt: s.dueAt, state: s.state, payPath: s.payPath })),
+    },
+    links: db.links.filter((l) => l.ws === ws && l.active).length,
+    payments30d: db.payments.filter((p) => p.ws === ws && now - Date.parse(p.at) < 30 * DAY).length,
+  }
+}
+
 async function setProfile(ws, body) {
   const m = merchantOf(ws)
   const has = (k) => body != null && Object.prototype.hasOwnProperty.call(body, k)
