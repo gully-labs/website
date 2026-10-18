@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import type { Account, AlertsView, AnalyticsView } from './api'
 import { ExtLink } from './ExtLink'
-import { mono, panel, panelTitle, pillSm, rise } from './styles'
+import { panel, panelTitle, pillSm, rise } from './styles'
 
 /* The Overview's "Get started" checklist and "Tools" row. Every tick comes from account data the console
    already reads (the account's keys, /api/developer/alerts, /api/developer/analytics); a step the server
@@ -114,28 +114,29 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
   const done = tracked.filter((s) => s.state === 'done').length
   const loading = steps.some((s) => s.state === 'loading')
   const complete = !loading && done === tracked.length
-  // Open while anything is left to do; folded once everything is done (the owner can still open it).
-  const [toggled, setOpen] = useState<boolean | null>(null)
-  const open = toggled ?? !complete
+  const next = steps.find((s) => s.state === 'todo')
+  // Compact by default: the ring, the next step and its one button. "All steps" opens the list.
+  const [open, setOpen] = useState(false)
 
   return (
-    <section aria-labelledby="ov-start" className={panel} style={rise(0)} data-testid="get-started">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 id="ov-start" className={panelTitle}>
-          Get started
-        </h2>
-        <span className={mono}>
-          {done} of {tracked.length} done{steps.length > tracked.length ? ` · ${steps.length - tracked.length} not tracked or not available` : ''}
+    <section aria-labelledby="ov-start" className={`${panel} gap-3`} style={rise(0)} data-testid="get-started">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <ProgressRing done={done} total={tracked.length} />
+        <span className="flex min-w-0 flex-[1_1_200px] flex-col gap-[2px]">
+          <h2 id="ov-start" className={panelTitle}>
+            {complete ? 'All set' : 'Get started'}
+          </h2>
+          <span className="truncate text-[13px] text-muted" data-testid="next-step">
+            {loading && !next ? 'Checking your setup…' : next ? <>Next: <b className="font-semibold text-ink">{next.title}</b> · {next.note}</> : 'Every tracked step is done.'}
+          </span>
         </span>
-        <span className="h-[6px] min-w-[80px] flex-[0_1_160px] overflow-hidden rounded-full bg-surface-deep" role="progressbar" aria-label="Setup progress" aria-valuemin={0} aria-valuemax={tracked.length} aria-valuenow={done}>
-          <span className="block h-full rounded-full bg-gold transition-[width] duration-500" style={{ width: `${tracked.length ? (done / tracked.length) * 100 : 0}%` }} />
-        </span>
-        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="ov-start-list" className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-[13px] text-muted hover:text-ink">
-          {open ? 'Hide' : complete ? 'All set · show' : 'Show'} <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+        {next?.action && <span className="shrink-0 [&>*]:min-h-9 [&>*]:bg-gold [&>*]:px-4 [&>*]:font-semibold [&>*]:text-bg [&>*]:hover:bg-gold-hover [&>*]:hover:text-bg [&>*]:hover:no-underline">{next.action}</span>}
+        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="ov-start-list" className="inline-flex min-h-9 items-center gap-1 rounded-full px-2 text-[13px] text-muted hover:text-ink">
+          {open ? 'Hide steps' : 'All steps'} <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
         </button>
       </div>
       {open && (
-        <ol id="ov-start-list" className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-x-5 gap-y-0 p-0">
+        <ol id="ov-start-list" className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-x-5 gap-y-0 p-0" style={{ animation: 'gl-fade .25s ease both' }}>
           {steps.map((s, i) => (
             <li key={s.id} className="flex min-h-[60px] items-center gap-3 border-t border-line py-2" data-state={s.state}>
               <Mark state={s.state} n={i + 1} />
@@ -155,6 +156,28 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
         </ol>
       )}
     </section>
+  )
+}
+
+/** Setup progress as a ring that draws itself in (and moves on each tick); the count sits inside. */
+function ProgressRing({ done, total }: { done: number; total: number }) {
+  const r = 19
+  const c = 2 * Math.PI * r
+  const [shown, setShown] = useState(0)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(total ? done / total : 0))
+    return () => cancelAnimationFrame(id)
+  }, [done, total])
+  return (
+    <span className="relative grid size-12 shrink-0 place-items-center" role="progressbar" aria-label="Setup progress" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-valuetext={`${done} of ${total} done`} data-testid="setup-ring">
+      <svg viewBox="0 0 48 48" className="absolute inset-0 -rotate-90" aria-hidden>
+        <circle cx="24" cy="24" r={r} fill="none" stroke="var(--color-line-strong)" strokeWidth="5" />
+        <circle cx="24" cy="24" r={r} fill="none" stroke="#e8c060" strokeWidth="5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - shown)} style={{ transition: 'stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)' }} />
+      </svg>
+      <span className="relative font-mono text-[12px] font-medium text-ink">
+        {done}/{total}
+      </span>
+    </span>
   )
 }
 
@@ -205,19 +228,15 @@ export function ToolsRow() {
     },
   ]
   return (
-    <nav aria-label="Tools" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,190px),1fr))] gap-3" style={rise(6)} data-testid="tools-row">
+    <nav aria-label="Tools" className="flex flex-wrap items-center gap-2" style={rise(6)} data-testid="tools-row">
       {tools.map((t) => (
-        <a key={t.title} href={t.href} {...(t.ext ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="group flex min-h-[64px] min-w-0 items-center gap-3 rounded-[14px] border border-line bg-surface px-4 py-3 transition-colors hover:border-gold-line">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-line-strong text-gold group-hover:border-gold-line">{t.icon}</span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="flex items-center gap-1 text-[14px] font-semibold text-ink">
-              {t.title} <ArrowUpRight size={12} className="text-faint group-hover:text-gold" aria-hidden />
-            </span>
-            <span className="truncate text-[12px] text-dim">{t.note}</span>
-          </span>
+        <a key={t.title} href={t.href} {...(t.ext ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="group inline-flex min-h-9 min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 text-[13px] transition-colors hover:border-gold-line max-[600px]:min-h-11">
+          <span className="text-gold">{t.icon}</span>
+          <span className="font-semibold text-ink">{t.title}</span>
+          <span className="truncate text-[12px] text-dim max-[600px]:hidden">{t.note}</span>
+          <ArrowUpRight size={12} className="shrink-0 text-faint group-hover:text-gold" aria-hidden />
           {t.ext && <span className="sr-only"> (opens in a new tab)</span>}
         </a>
-
       ))}
     </nav>
   )

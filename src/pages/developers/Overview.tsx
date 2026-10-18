@@ -175,7 +175,9 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         <span className="inline-flex items-center gap-2 rounded-full border border-gold-line bg-[rgba(232,192,96,.06)] px-[10px] py-[2px] font-mono text-[11px] text-gold">YOU</span>
         <span className="font-mono text-[11px] text-faint">your keys, alerts and traffic only</span>
       </div>
-      <section aria-label="Summary" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3">
+      {/* 1, 2 or 4 cards a row by the content width (never 3 + 1). */}
+      <div className="@container">
+      <section aria-label="Summary" className="grid grid-cols-1 gap-3 @min-[440px]:grid-cols-2 @min-[740px]:grid-cols-4">
         <Kpi
           i={0}
           label={`Requests · ${range}`}
@@ -210,6 +212,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         />
         <Kpi i={3} label="Active keys" color="#8a96a6" value={live.length} none="none yet" note={`of ${account.limits.maxKeys} allowed${shown ? ` · ${usedInRange} used in ${range}` : ''}`} />
       </section>
+      </div>
 
       <div className="flex flex-wrap items-start gap-[14px]">
         {/* ---------------------------------------------------------- requests */}

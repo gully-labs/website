@@ -16,14 +16,33 @@ import { deepcoreColor, useLaunches } from './useDeepcore'
    NETWORK data, labelled as such, never the workspace's own:
      Widest gaps   GET /api/tracker every 30 s, the widest trusted gaps on every chain (animated bars)
      Gap index     the average absolute gap of the 12 widest stock tokens over 24 h, from each one's
-                   GET /api/tracker/history (re-read every minute), a line with hover tooltips
+                   GET /api/tracker/history (each token re-read every 5 minutes), a line with hover tooltips
      DeepCore      GET /api/deepcore/launches: launches in the last 24 h per chain, and the newest
      API status    this browser's own round trip to GET /healthz every 5 s, as a live sparkline
    Gully Pay has no public network-wide volume, so it is not shown (never invented). */
 
-const TOP = 12
+const TOP = 8
 const hhmm = (t: number) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
 const idOf = (r: { chain: string; ticker: string }) => `${r.chain}:${r.ticker}`
+
+/* Each token's history is read at most once per HISTORY_TTL per page (shared by every mount of the band),
+   so the band costs a handful of calls when it opens and none when the widest set reshuffles or the page
+   is revisited: the index is in 30-minute buckets, and the anonymous API limit is per IP. */
+const HISTORY_TTL = 5 * 60_000
+const histories = new Map<string, { at: number; read: Promise<HistoryPoint[] | null> }>()
+function readHistory(id: string): Promise<HistoryPoint[] | null> {
+  const hit = histories.get(id)
+  if (hit && Date.now() - hit.at < HISTORY_TTL) return hit.read
+  const [chain, ticker] = id.split(':')
+  const read = fetch(`/api/tracker/history?chain=${encodeURIComponent(chain)}&ticker=${encodeURIComponent(ticker)}`)
+    .then((r) => (r.ok ? (r.json() as Promise<{ points: HistoryPoint[] }>) : null))
+    .then((d) => d?.points ?? null)
+    .catch(() => null)
+  histories.set(id, { at: Date.now(), read })
+  // A failed read is not kept: the next refresh asks again.
+  void read.then((v) => v === null && histories.get(id)?.read === read && histories.delete(id))
+  return read
+}
 
 /** Average |gap| per 30-minute bucket over the last 24 h, across the given tokens' histories. */
 function useGapIndex(rows: TrackerRow[] | null): { points: [number, number][]; state: 'loading' | 'ok' | 'error' } {
@@ -43,15 +62,7 @@ function useGapIndex(rows: TrackerRow[] | null): { points: [number, number][]; s
     if (!ids) return
     let alive = true
     const read = async () => {
-      const lists = await Promise.all(
-        ids.split(',').map((id) => {
-          const [chain, ticker] = id.split(':')
-          return fetch(`/api/tracker/history?chain=${encodeURIComponent(chain)}&ticker=${encodeURIComponent(ticker)}`)
-            .then((r) => (r.ok ? (r.json() as Promise<{ points: HistoryPoint[] }>) : null))
-            .then((d) => d?.points ?? null)
-            .catch(() => null)
-        }),
-      )
+      const lists = await Promise.all(ids.split(',').map(readHistory))
       if (!alive) return
       const since = Date.now() / 1000 - 86_400
       const buckets = new Map<number, { sum: number; n: number }>()
@@ -68,7 +79,7 @@ function useGapIndex(rows: TrackerRow[] | null): { points: [number, number][]; s
       setS({ ids, points, state: lists.some(Boolean) ? 'ok' : 'error' })
     }
     read()
-    const id = setInterval(read, 60_000)
+    const id = setInterval(read, HISTORY_TTL)
     return () => {
       alive = false
       clearInterval(id)
@@ -154,7 +165,7 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
   const indexNow = index.points.at(-1)?.[1] ?? null
 
   return (
-    <section aria-labelledby="mk-title" className="flex flex-col gap-3" data-testid="market-band">
+    <section aria-labelledby="mk-title" className="@container flex flex-col gap-3" data-testid="market-band">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h2 id="mk-title" className="m-0 text-[15px] font-semibold text-ink">
           Live across Gully
@@ -168,7 +179,8 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
         </span>
         <span className="font-mono text-[11px] text-faint">market data across Gully, not your account</span>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,270px),1fr))] gap-3">
+      {/* 1, 2 or 4 tiles a row by the band's own width (never 3 + 1). */}
+      <div className="grid grid-cols-1 gap-3 @min-[560px]:grid-cols-2 @min-[1060px]:grid-cols-4" data-testid="mk-grid">
         <Tile
           testId="mk-gaps"
           icon={<ChartCandlestick size={15} aria-hidden />}
