@@ -11,9 +11,9 @@ export function EmbedHolders() {
   const { chain = '', token = '' } = useParams()
   const page = `https://gullylabs.xyz${holdersPagePath(chain, token)}`
   return (
-    <main className="min-h-[100svh] bg-kit-lab-night p-2 text-kit-bone">
+    <main className="min-h-[100svh] bg-bg p-2 text-ink">
       <HolderMap chain={chain} token={token} embed compact />
-      <a href={page} target="_blank" rel="noopener noreferrer" className="mt-2 flex min-h-11 items-center justify-center gap-2 font-mono text-[11px] tracking-[1px] text-kit-text-muted hover:text-kit-pale-gold" data-credit>
+      <a href={page} target="_blank" rel="noopener noreferrer" className="mt-2 flex min-h-11 items-center justify-center gap-2 font-mono text-[11px] tracking-[1px] text-muted hover:text-gold-hover" data-credit>
         <Mascot size={18} decorative /> Powered by Gully Labs ↗
       </a>
     </main>

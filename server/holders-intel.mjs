@@ -19,7 +19,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { readLaunches, shapePool } from './deepcore.mjs'
-import { dcGet, decodeTransfer, evmRpc, findStock, HOLDER_CHAINS, readHolderMap, readLaunch, short, TRANSFER_TOPIC } from './holders.mjs'
+import { dcGet, decodeTransfer, evmRpc, findStock, flowSide, HOLDER_CHAINS, readHolderMap, readLaunch, short, TRANSFER_TOPIC } from './holders.mjs'
 import { isSolanaAddress } from './solana.mjs'
 
 const lower = (a) => String(a ?? '').toLowerCase()
@@ -249,6 +249,7 @@ export async function readLive(chainKey, tokenIn, sinceIn) {
   const supply = map.token.supply
   const dec = map.token.decimals
   const byId = new Map(map.nodes.map((n) => [n.id, n]))
+  const labelOf = (a) => byId.get(a)?.label ?? null
   const delta = new Map()
   const transfers = []
   for (const l of logs.slice(-200)) {
@@ -256,14 +257,17 @@ export async function readLive(chainKey, tokenIn, sinceIn) {
     if (!t) continue
     const u = Number(t.value) / 10 ** dec
     const pct = supply ? Math.round((u / supply) * 1_000_000) / 10_000 : null
-    transfers.push({ from: t.from, to: t.to, pct, block: t.block, at: t.ts ? new Date(t.ts * 1000).toISOString() : null })
+    transfers.push({ from: t.from, to: t.to, side: flowSide(t.from, t.to, labelOf), pct, units: Math.round(u * 1e6) / 1e6, block: t.block, at: t.ts ? new Date(t.ts * 1000).toISOString() : null, tx: t.tx ?? null })
     if (pct !== null) {
       if (byId.has(t.from)) delta.set(t.from, (delta.get(t.from) ?? 0) - pct)
       if (byId.has(t.to)) delta.set(t.to, (delta.get(t.to) ?? 0) + pct)
     }
   }
   const pcts = Object.fromEntries([...delta].map(([a, d]) => [a, Math.max(0, Math.round(((byId.get(a).pct ?? 0) + d) * 100) / 100)]))
-  const body = { state: 'ok', since, cursor, transfers, pcts, asOf: new Date().toISOString(), note: 'Shares move from the map’s last full read; the full map is rebuilt every five minutes.' }
+  // The top 10 people (not pools, locks, burn or exchanges) with the moved shares: the side panel's live figure.
+  const people = map.nodes.filter((n) => !LIVE_INFRA.has(n.label?.kind)).map((n) => (n.id in pcts ? pcts[n.id] : n.pct ?? 0))
+  const top10Pct = supply ? Math.round(people.sort((a, b) => b - a).slice(0, 10).reduce((s, v) => s + v, 0) * 100) / 100 : null
+  const body = { state: 'ok', since, cursor, transfers, pcts, top10Pct, asOf: new Date().toISOString(), note: 'Shares move from the map’s last full read; the full map is rebuilt every five minutes.' }
   liveCache.set(key, { at: Date.now(), body })
   if (liveCache.size > 300) liveCache.delete(liveCache.keys().next().value)
   return body
@@ -352,7 +356,7 @@ export async function readLaunchFeed({ limit = 12 } = {}) {
     const base = { chainKey: ck, chainName: l.chainName, token, symbol: l.symbol, createdAt: l.createdAt, path: pagePath(ck, token) }
     const peek = peekMap(ck, token)
     if (peek) {
-      launches.push({ ...base, state: peek.state === 'ok' ? 'checked' : 'unavailable', health: peek.health ? { score: peek.health.score, level: peek.health.level, verdict: peek.health.verdict } : null, riskLine: peek.forensics?.riskLine ?? null })
+      launches.push({ ...base, state: peek.state === 'ok' ? 'checked' : 'unavailable', health: peek.health ? { score: peek.health.score, level: peek.health.level, verdict: peek.health.verdict } : null, riskLine: peek.forensics?.riskLine ?? null, preview: peek.state === 'ok' ? mapPreview(peek) : null })
       continue
     }
     if (started < 2) {
@@ -363,6 +367,23 @@ export async function readLaunchFeed({ limit = 12 } = {}) {
   }
   return { state: r.state, asOf: r.asOf, launches }
 }
+const LIVE_INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
+/**
+ * A tiny picture of a built map for the launch feed's mini maps: the biggest PREVIEW_NODES bubbles
+ * ({ p: share, k: what it is }) and the latest flows between them ({ f, t: index or -1 when off the
+ * preview, s: side }). Read from the cached map; nothing is built for it.
+ */
+export const PREVIEW_NODES = 14
+export function mapPreview(map) {
+  const nodes = (map.nodes ?? []).slice(0, PREVIEW_NODES)
+  const idx = new Map(nodes.map((n, i) => [n.id, i]))
+  const kindOf = (n) => (n.label?.kind === 'deployer' ? 'deployer' : n.label && LIVE_INFRA.has(n.label.kind) ? (['pool', 'lock', 'burn'].includes(n.label.kind) ? n.label.kind : 'infra') : n.cluster ? 'cluster' : 'wallet')
+  return {
+    nodes: nodes.map((n) => ({ p: n.pct ?? 0, k: kindOf(n) })),
+    flows: (map.recentFlows ?? []).slice(-8).map((f) => ({ f: idx.get(f.from) ?? -1, t: idx.get(f.to) ?? -1, s: f.side })),
+  }
+}
+
 let peekMap = () => null
 /** holders.mjs hands over its cache reader (no build, no upstream call). */
 export const setMapPeek = (fn) => (peekMap = fn)

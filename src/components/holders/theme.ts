@@ -1,45 +1,20 @@
-import { C } from '../charts/chartPresets'
+import { alpha, C } from '../charts/chartPresets'
 
-/* Kit colours for chart and SVG code, which cannot read CSS variables: read from the kit palette tokens in
-   src/index.css (--color-kit-*) when the page has them, else the chart kit's own token values (chartPresets C).
-   No colour is typed here. */
-const token = (name: string, fallback: string) => {
-  try {
-    const v = typeof document === 'undefined' ? '' : getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-    return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : fallback
-  } catch {
-    return fallback
-  }
-}
+/* The Holder Map's colours for canvas and SVG code, which cannot read CSS classes: a thin alias of the chart
+   kit's colours (chartPresets C, the site's own tokens). DOM elements use the site's semantic classes
+   (text-ink, text-muted, text-dim, text-gold, bg-surface…); these appear in the DOM only as inline fills. */
 export const K = {
-  get night() {
-    return token('--color-kit-lab-night', C.surfaceDeep)
-  },
-  get midnight() {
-    return token('--color-kit-midnight', C.surface)
-  },
-  get slate() {
-    return token('--color-kit-slate', C.lineStrong)
-  },
-  get bone() {
-    return token('--color-kit-bone', C.ink)
-  },
-  get gold() {
-    return token('--color-kit-lab-gold', C.gold)
-  },
-  get pale() {
-    return token('--color-kit-pale-gold', C.goldHover)
-  },
-  get moss() {
-    return token('--color-kit-moss', C.lineHover)
-  },
-  get muted() {
-    return token('--color-kit-text-muted', C.muted)
-  },
-  get dim() {
-    return token('--color-kit-text-dim', C.faint)
-  },
-  get warn() {
-    return token('--color-error', C.error)
-  },
-}
+  /** Inside the card: the map stage and inner panels (surface-deep). */
+  night: C.surfaceDeep,
+  /** The card itself (surface). */
+  midnight: C.surface,
+  slate: C.lineStrong,
+  bone: C.ink,
+  gold: C.gold,
+  pale: C.goldHover,
+  /** The deployer: the site's green, toned down so it reads as a fill rather than a signal. */
+  moss: alpha(C.green, 0.42),
+  muted: C.muted,
+  dim: C.dim,
+  warn: C.error,
+} as const
