@@ -18,7 +18,7 @@ import { Section } from './parts'
 
 const RANGES = ['30d', '90d', '365d'] as const
 type Range = (typeof RANGES)[number]
-const CHAIN_COLOR: Record<string, string> = { Base: '#5aa9e6', Ethereum: '#c98bdb', 'BNB Chain': '#e8c060', Arbitrum: '#1f9e89' }
+const CHAIN_COLOR: Record<string, string> = { Base: '#5aa9e6', Ethereum: '#c98bdb', 'BNB Chain': '#e8c060', Arbitrum: '#1f9e89', 'OP Mainnet': '#e8655a', Polygon: '#9b6bf2', Avalanche: '#d9534f' }
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 function Kpi({ k, children, sub }: { k: string; children: React.ReactNode; sub?: string }) {

@@ -58,7 +58,7 @@ export function handleBlog(req, res, url) {
   upstream.on('error', () => {
     if (res.headersSent) return res.destroy()
     res.writeHead(502, { 'Content-Type': 'text/html; charset=utf-8', 'Retry-After': '30' })
-    res.end('<!doctype html><title>Gully Labs blog</title><body style="background:#0b0e13;color:#a6b0bd;font:16px system-ui;padding:48px">The blog is starting or unavailable. Try again in a minute. <a style="color:#e8c060" href="https://gullylabs.xyz/">Back to Gully Labs</a></body>')
+    res.end('<!doctype html><title>Gully Labs blog</title><body style="background:#0d141c;color:#aeb5be;font:16px system-ui;padding:48px">The blog is starting or unavailable. Try again in a minute. <a style="color:#d9b563" href="https://gullylabs.xyz/">Back to Gully Labs</a></body>')
   })
   req.pipe(upstream)
 }

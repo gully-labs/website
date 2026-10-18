@@ -10,7 +10,7 @@ import { useStats } from '../hooks/useStats'
 import { fmtTime, fmtUsd, nameOf } from '../lib/stats'
 
 const linkCard =
-  'group relative flex flex-col gap-[14px] overflow-hidden rounded-card border border-line bg-surface p-9 text-left text-ink transition-colors hover:border-gold hover:text-ink'
+  'group relative flex flex-col gap-[14px] overflow-hidden rounded-card border border-line bg-surface p-7 text-left text-ink transition-colors hover:border-gold hover:text-ink'
 
 const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six']
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
@@ -92,12 +92,12 @@ export function About() {
           </h2>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] gap-5">
-          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6">
+          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
             <h3 className="m-0 font-display text-h4 font-bold uppercase">Measured since</h3>
             <span className="-mt-2 font-mono text-[11px] text-faint">from the start of each venue's all-time count to today</span>
             <VenueTimeline st={st} />
           </div>
-          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6">
+          <div className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
             <h3 className="m-0 font-display text-h4 font-bold uppercase">Side by side</h3>
             <span className="-mt-2 font-mono text-[11px] text-faint">each venue's own figure, read live</span>
             <VenueBars st={st} />
@@ -128,7 +128,7 @@ export function About() {
             <span className="font-mono text-[13px] text-gold">02</span>
           </span>
           <span className="font-display text-[40px] leading-none font-extrabold uppercase">Partner work</span>
-          <span className="text-[16px] leading-[1.55] text-muted">Smart contracts, dApps, infrastructure and audits for teams building on-chain.</span>
+          <span className="text-[16px] leading-[1.55] text-muted">Smart contracts, dApps, infrastructure and security testing for teams building on-chain.</span>
           <span className="mt-2 inline-flex min-h-11 items-center text-[15px] text-gold">See the services →</span>
           <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
         </Link>

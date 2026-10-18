@@ -1,6 +1,6 @@
 // Sign-In with Ethereum (EIP-4361) for the developer dashboard, with no npm dependencies at runtime.
 //
-// Signatures are checked with the audited @noble/curves secp256k1 and @noble/hashes keccak_256,
+// Signatures are checked with @noble/curves secp256k1 and @noble/hashes keccak_256,
 // vendored as one ES module in ./vendor/noble.mjs (see scripts/vendor-noble.mjs). When ecrecover does
 // not give the message's address, a smart-contract wallet may still have signed: EIP-1271
 // isValidSignature(bytes32,bytes) (or, for an undeployed wallet, the ERC-6492 validator) is called over

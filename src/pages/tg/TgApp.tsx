@@ -199,6 +199,12 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
           Launches, product updates and market notes from Gully Labs. Join the channel, then tap <b>I&apos;ve joined</b>.
         </Notice>
         {fresh > 0 && <p className="m-0 px-1 text-[13px] text-error">Not joined yet: join the channel, then tap again.</p>}
+        {m.linked && (
+          <div className="flex flex-col gap-2">
+            <p className="m-0 px-1 text-[13px] text-muted">Your alerts keep working. You can pause or delete them here without joining.</p>
+            <AlertsTab wa={wa} initData={initData} me={m} version={alertsVersion} onOpenStock={() => undefined} exitsOnly />
+          </div>
+        )}
       </div>
     )
 

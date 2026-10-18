@@ -1,6 +1,6 @@
 import { Compass, FileCode2, FlaskConical, MonitorSmartphone, Rocket, Server, ShieldCheck, type LucideIcon } from 'lucide-react'
 
-export type ServiceType = 'Smart contracts' | 'dApp / frontend' | 'Infrastructure' | 'Audit' | 'Other'
+export type ServiceType = 'Smart contracts' | 'dApp / frontend' | 'Infrastructure' | 'Security' | 'Other'
 
 export interface Service {
   n: string
@@ -44,21 +44,21 @@ export const services: Service[] = [
   {
     n: '04',
     icon: ShieldCheck,
-    name: 'Security & Audits',
+    name: 'Security & Testing',
     time: '2–6 weeks',
     description: 'Review, testing and hardening before and after launch.',
     items: ['Code review', 'Fuzzing and invariant tests', 'Post-launch monitoring'],
-    type: 'Audit',
+    type: 'Security',
   },
 ]
 
-export const serviceTypes: ServiceType[] = ['Smart contracts', 'dApp / frontend', 'Infrastructure', 'Audit', 'Other']
+export const serviceTypes: ServiceType[] = ['Smart contracts', 'dApp / frontend', 'Infrastructure', 'Security', 'Other']
 
 export const budgets = ['< $50k', '$50–150k', '$150k+', 'Not sure']
 
 export const processSteps = [
   { n: '01', name: 'Discover', icon: Compass, description: 'Scope the product, the chain and the token model.' },
   { n: '02', name: 'Prototype', icon: FlaskConical, description: 'A working testnet build in weeks, not quarters.' },
-  { n: '03', name: 'Build & audit', icon: ShieldCheck, description: 'Production contracts, apps and independent review.' },
+  { n: '03', name: 'Build & test', icon: ShieldCheck, description: 'Production contracts and apps, tested before launch.' },
   { n: '04', name: 'Launch', icon: Rocket, description: 'Mainnet release, monitoring and ongoing support.' },
 ]

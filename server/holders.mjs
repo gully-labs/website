@@ -1043,6 +1043,11 @@ export function peekHolderMap(chainKey, token) {
 }
 setMapPeek(peekHolderMap)
 
+/** Test hook: puts a map in the cache for both tiers, as if it had just been built. */
+export function seedHolderMapForTest(chainKey, token, body) {
+  for (const tier of ['free', 'pro']) cache.set(`${chainKey}:${chainKey === 'solana' ? token : lower(token)}:${tier}`, { at: Date.now(), ttl: cacheMs(), body })
+}
+
 /** Test hook. */
 export function resetHoldersForTest() {
   cache.clear()

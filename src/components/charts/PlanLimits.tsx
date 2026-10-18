@@ -56,8 +56,8 @@ export function PlanLimits({ tiers }: { tiers: LimitTier[] }) {
           showBackground: true,
           backgroundStyle: { color: C.line, borderRadius: 4 },
           label: { show: true, position: 'right', color: C.ink2, fontSize: 12, formatter: (p: ChartEvent) => fmt(p.value) },
-          // One hue stepping up with the tier (design audit P2-26): the bigger the plan, the stronger the gold.
-          data: tiers.map((t, i) => ({ value: val(t), itemStyle: { color: i === 0 ? C.lineHover : `rgba(232,192,96,${(0.35 + (0.65 * i) / Math.max(1, tiers.length - 1)).toFixed(2)})`, borderRadius: 4 } })),
+          // One hue stepping up with the tier (design review P2-26): the bigger the plan, the stronger the gold.
+          data: tiers.map((t, i) => ({ value: val(t), itemStyle: { color: i === 0 ? C.lineHover : `rgba(217,181,99,${(0.35 + (0.65 * i) / Math.max(1, tiers.length - 1)).toFixed(2)})`, borderRadius: 4 } })),
         },
       ],
     }),
@@ -73,7 +73,7 @@ export function PlanLimits({ tiers }: { tiers: LimitTier[] }) {
           <span className="font-display text-[20px] leading-none font-bold uppercase">Compare the limits</span>
           <span className="font-mono text-[11px] text-faint">{m.unit} per tier, read from the plans</span>
         </span>
-        <span role="group" aria-label="Limit" className="flex flex-wrap gap-1 rounded-input border border-line bg-bg p-1">
+        <span role="group" aria-label="Limit" className="flex flex-wrap gap-1 rounded-input border border-line bg-surface-deep p-1">
           {METRICS.map((x) => (
             <button
               key={x.id}

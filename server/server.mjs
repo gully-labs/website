@@ -12,6 +12,7 @@ import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
 import { startChannel } from './telegram-channel.mjs'
+import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
@@ -25,6 +26,9 @@ import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
+import { CHAIN_LIST, rpc } from './payments.mjs'
+import { treasury } from './plans.mjs'
+import { startTreasuryWatch } from './treasury-chains.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
 import { handleSolana } from './solana-routes.mjs'
@@ -220,6 +224,8 @@ async function handleRequest(req, res) {
   if (url.pathname.startsWith('/api/tg/')) return void (await handleMiniApp(req, res, url))
   // Telegram's webhook (telegram.mjs): 404 unless the bot is configured and the secret path matches.
   if (url.pathname.startsWith('/api/telegram/')) return void (await handleTelegramWebhook(req, res, url))
+  // Tracked links in bot broadcasts (telegram-broadcast.mjs): count one open, redirect to the broadcast's own button URL.
+  if (url.pathname.startsWith('/r/')) return void handleBroadcastRedirect(req, res, url)
   // Which alert delivery channels this server offers (the pricing page and the docs read it). Public.
   if (url.pathname === '/api/alerts/channels') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
@@ -238,8 +244,8 @@ async function handleRequest(req, res) {
     if (await handleSolana(req, res, url, geoFor(req, isLocal))) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
-  // Gully Ask (ask.mjs): POST /api/ask and GET /api/ask/status.
-  if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status') return void (await handleAsk(req, res, url))
+  // Gully Ask (ask.mjs): POST /api/ask, GET /api/ask/status and POST /api/ask/feedback.
+  if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status' || url.pathname === '/api/ask/feedback') return void (await handleAsk(req, res, url))
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
   if (url.pathname.startsWith('/api/pay/')) {
     if (await handlePay(req, res, url)) return
@@ -423,11 +429,15 @@ function startLoops() {
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
   startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
   startChannel() // @GullyLabsNews: scheduled posts and auto posts (telegram-channel.mjs)
+  startBroadcasts() // bot DMs: scheduled broadcasts, and resuming one a restart interrupted (telegram-broadcast.mjs)
   // Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.
   startAsk()
   // Hourly balance check of every fee-proxy contract (fee-proxy-monitor.mjs): non-zero = a third-party mis-send.
   startFeeProxyMonitor()
 }
+// The treasury deployment gate (treasury-chains.mjs) runs in standby too: a standby answers /api/plans and quotes,
+// so it must know on which chains the Safe treasury exists. Read-only (eth_getCode), hourly, timers unref'd.
+startTreasuryWatch({ rpc, chains: CHAIN_LIST, treasury })
 const PROMOTED = path.join(DATA_DIR, `.promoted-${(process.env.HOSTNAME ?? 'local').replace(/[^\w-]/g, '')}`)
 if (process.env.GULLY_STANDBY !== '1' || fs.existsSync(PROMOTED)) startLoops()
 else console.log('standby: serving requests; background loops wait for SIGUSR2 (ops/deploy.sh)')

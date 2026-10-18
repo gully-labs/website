@@ -4,6 +4,7 @@ import { useReducedMotion } from '../charts/chart-utils'
 import { DEVELOPERS_URL, isLocalHost } from '../../site-host'
 import type { Movers, Tracker, TrackerRow } from '../../lib/tracker'
 import type { AlertChannels, Offer } from '../../pages/developers/api'
+import { Mascot } from '../brand'
 
 /* Landing demo: Gully Labs alerts in Telegram and by webhook.
    /gap, /top and /movers read the live tracker (/api/tracker, /api/tracker/movers) and word the answer
@@ -43,7 +44,7 @@ type Msg = BotMsg | UserMsg
 type BotDraft = Omit<BotMsg, 'id' | 'who'>
 type LogRow = { id: number; when: string; code: number; what: string; ms: number }
 
-const TONE: Record<Tone, string> = { plain: 'text-ink-2', up: 'text-gold', down: 'text-[#6aa6ff]', muted: 'text-[#7f91a4]' }
+const TONE: Record<Tone, string> = { plain: 'text-ink-2', up: 'text-gold', down: 'text-tg-link', muted: 'text-tg-meta' }
 
 const chainName = (k: string) => CHAIN_NAMES[k] ?? k
 const stockPath = (chain: string, ticker: string) => `/tracker/${encodeURIComponent(chain)}/${encodeURIComponent(ticker)}`
@@ -431,19 +432,17 @@ export default function AlertsDemo(): JSX.Element {
             role="tabpanel"
             id="alerts-demo-panel-telegram"
             aria-labelledby="alerts-demo-tab-telegram"
-            className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[12px] border border-line bg-[#0e1621]"
+            className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-card border border-line bg-tg-bg"
           >
-            <div className="flex items-center gap-2.5 bg-[#17212b] px-3.5 py-2.5">
-              <span aria-hidden className="grid size-[34px] place-items-center rounded-full bg-gold font-display font-extrabold text-bg">
-                G
-              </span>
+            <div className="flex items-center gap-2.5 bg-tg-head px-3.5 py-2.5">
+              <Mascot size={34} decorative />
               <span className="flex flex-col leading-[1.2]">
                 <b className="font-semibold">Gully Labs</b>
-                <span className="text-[11px] text-[#7f91a4]">{typing ? 'typing…' : botName}</span>
+                <span className="text-[11px] text-tg-meta">{typing ? 'typing…' : botName}</span>
               </span>
             </div>
             {toast && (
-              <div role="status" className="absolute top-14 left-1/2 z-10 w-[min(90%,420px)] -translate-x-1/2 rounded-[10px] bg-[rgba(0,0,0,.82)] px-3.5 py-2.5 text-center text-[12px] text-ink">
+              <div role="status" className="absolute top-14 left-1/2 z-10 w-[min(90%,420px)] -translate-x-1/2 rounded-panel bg-[rgba(0,0,0,.82)] px-3.5 py-2.5 text-center text-[12px] text-ink">
                 {toast}
               </div>
             )}
@@ -451,14 +450,14 @@ export default function AlertsDemo(): JSX.Element {
               <div className="mt-auto" />
               {msgs.map((m) =>
                 m.who === 'user' ? (
-                  <div key={m.id} className="max-w-[70%] self-end rounded-[12px_12px_4px_12px] bg-[#2b5278] px-3 py-2 font-mono text-[12px]">
+                  <div key={m.id} className="max-w-[70%] self-end rounded-[12px_12px_4px_12px] bg-tg-out px-3 py-2 font-mono text-[12px]">
                     {m.text}
                   </div>
                 ) : (
                   <BotBubble key={m.id} m={m} muted={!!mutedUntil} act={act} />
                 ),
               )}
-              {typing && <div className="self-start rounded-[12px] bg-[#182533] px-3 py-2 text-[12px] text-[#7f91a4]">Gully Labs is typing…</div>}
+              {typing && <div className="self-start rounded-card bg-tg-in px-3 py-2 text-[12px] text-tg-meta">Gully Labs is typing…</div>}
             </div>
           </div>
         ) : (
@@ -496,12 +495,12 @@ export default function AlertsDemo(): JSX.Element {
 function BotBubble({ m, muted, act }: { m: BotMsg; muted: boolean; act: (a: 'mute' | 'resume') => void }) {
   return (
     <div className="flex max-w-[88%] flex-col gap-1 self-start">
-      <div className="flex flex-col gap-2 rounded-[12px_12px_12px_4px] bg-[#182533] px-3 py-2.5">
+      <div className="flex flex-col gap-2 rounded-[12px_12px_12px_4px] bg-tg-in px-3 py-2.5">
         {m.blocks.map((b, bi) => (
           <div key={bi} className="flex flex-col gap-[3px]">
             {b.map((l, li) =>
               l.href ? (
-                <a key={li} href={l.href} className={`text-[12px] break-words underline-offset-2 hover:underline ${l.tone && l.tone !== 'plain' ? TONE[l.tone] : 'text-[#6ab3f3]'} ${l.mono ? 'font-mono' : ''}`}>
+                <a key={li} href={l.href} className={`text-[12px] break-words underline-offset-2 hover:underline ${l.tone && l.tone !== 'plain' ? TONE[l.tone] : 'text-tg-link'} ${l.mono ? 'font-mono' : ''}`}>
                   {l.t}
                 </a>
               ) : (
@@ -512,13 +511,13 @@ function BotBubble({ m, muted, act }: { m: BotMsg; muted: boolean; act: (a: 'mut
             )}
           </div>
         ))}
-        {m.example && <span className="self-end font-mono text-[9.5px] tracking-[.5px] text-[#7f91a4] uppercase">Example</span>}
+        {m.example && <span className="self-end font-mono text-[11px] tracking-[.5px] text-tg-meta uppercase">Example</span>}
       </div>
       {m.btns?.length ? (
         <div className="flex gap-1">
           {m.btns.map((b) =>
             b.href ? (
-              <a key={b.label} href={b.href} className="grid min-h-11 flex-1 place-items-center rounded-[8px] bg-[#22303f] px-3 text-[12px] text-ink hover:bg-[#2b3c4f]">
+              <a key={b.label} href={b.href} className="grid min-h-11 flex-1 place-items-center rounded-tile bg-tg-btn px-3 text-[12px] text-ink hover:bg-tg-btn-hover">
                 {b.label}
               </a>
             ) : (
@@ -527,7 +526,7 @@ function BotBubble({ m, muted, act }: { m: BotMsg; muted: boolean; act: (a: 'mut
                 type="button"
                 aria-pressed={b.act === 'mute' ? muted : undefined}
                 onClick={() => act(b.act === 'mute' && muted ? 'resume' : (b.act ?? 'mute'))}
-                className="min-h-11 flex-1 rounded-[8px] bg-[#22303f] px-3 text-[12px] text-ink hover:bg-[#2b3c4f]"
+                className="min-h-11 flex-1 rounded-tile bg-tg-btn px-3 text-[12px] text-ink hover:bg-tg-btn-hover"
               >
                 {b.act === 'mute' && muted ? 'Muted · resume' : b.label}
               </button>

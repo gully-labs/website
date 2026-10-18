@@ -80,6 +80,17 @@ function alertFromUrl(): string | null {
   return m ? `${m[1]}:${m[2].toUpperCase()}` : null
 }
 
+/** `&pct=<n>&dir=above|below|both` beside ?alert= (Gully AI's "Set an alert at 2% above"): the gap the
+    New gap alert dialog opens with. The user still saves it themselves. */
+function alertGapFromUrl(): { pct: string; dir: 'above' | 'below' | 'both' } | null {
+  if (window.location.hash !== '#alerts') return null
+  const q = new URLSearchParams(window.location.search)
+  const pct = Number(q.get('pct'))
+  const dir = q.get('dir')
+  if (!Number.isFinite(pct) || pct <= 0 || pct > 50) return null
+  return { pct: String(pct), dir: dir === 'above' || dir === 'below' ? dir : 'both' }
+}
+
 export function Dashboard({ account, reload, onSignOut }: { account: Account; reload: () => Promise<void>; onSignOut: () => void }) {
   const [view, setTab, reread] = useView()
   const { tab, section } = view
@@ -88,11 +99,14 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
   const [newKey, setNewKey] = useState(false)
   // Arriving from a stock page opens the New gap alert dialog with that stock chosen.
   const [alertFor, setAlertFor] = useState(alertFromUrl)
+  const [alertGap] = useState(alertGapFromUrl)
   const [newAlert, setNewAlert] = useState(() => alertFor !== null)
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has('alert')) return
     const q = new URLSearchParams(window.location.search)
     q.delete('alert')
+    q.delete('pct')
+    q.delete('dir')
     history.replaceState(null, '', window.location.pathname + (q.size ? `?${q}` : '') + window.location.hash)
   }, [])
 
@@ -159,7 +173,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         )}
         {tab === 'products' && <Products account={account} go={go} />}
         {tab === 'keys' && <KeysTab account={account} reload={reload} creating={newKey} onCreateDone={clearNewKey} section={section} />}
-        {tab === 'alerts' && <Alerts goBilling={() => go('billing')} creating={newAlert} onCreateDone={clearNewAlert} prefill={alertFor} />}
+        {tab === 'alerts' && <Alerts goBilling={() => go('billing')} creating={newAlert} onCreateDone={clearNewAlert} prefill={alertFor} prefillGap={alertGap} />}
         {tab === 'analytics' && <AnalyticsPanel />}
         {tab === 'billing' && <Billing account={account} reload={reload} intent={intent} onIntentDone={clearIntent} />}
         {tab === 'merchant' && <MerchantTab />}

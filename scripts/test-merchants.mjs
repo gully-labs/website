@@ -23,8 +23,8 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-merchants-'))
 const ADMIN = crypto.randomBytes(24).toString('hex')
 const TREASURY = privateKeyToAccount(generatePrivateKey()).address.toLowerCase()
 const TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-const USDC = { 8453: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', 56: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d', 1: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' }
-const FEEDS = { 8453: '0x71041dddad3595f9ced3dccfbe3d1f4b0a16bb70', 1: '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', 56: '0x0567f2323251f0aab15c8dfb1967e4e8a7d42aee', 42161: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612' }
+const USDC = { 8453: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', 56: '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d', 1: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', 10: '0x0b2c639c533813f4aa9d7837caf62653d097ff85', 137: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', 43114: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e' }
+const FEEDS = { 8453: '0x71041dddad3595f9ced3dccfbe3d1f4b0a16bb70', 1: '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', 56: '0x0567f2323251f0aab15c8dfb1967e4e8a7d42aee', 42161: '0x639fe6ab55c921f74e7fac1ee960c0b6293ba612', 10: '0x13e3ee699d1909e989722e753853ae30b17e08c5', 137: '0xab594600376ec9fd91f8e885dadf0ce036862de0', 43114: '0x0a77230d17318075983913bc2145db16c7366156' }
 
 const t = makeChecker()
 const { check } = t
@@ -72,7 +72,7 @@ function makeChain(chainId, answer) {
   return c
 }
 
-const chains = { 8453: makeChain(8453, 2_400_00000000n), 1: makeChain(1, 2_500_00000000n), 56: makeChain(56, 700_00000000n), 42161: makeChain(42161, 2_450_00000000n) }
+const chains = { 8453: makeChain(8453, 2_400_00000000n), 1: makeChain(1, 2_500_00000000n), 56: makeChain(56, 700_00000000n), 42161: makeChain(42161, 2_450_00000000n), 10: makeChain(10, 2_400_00000000n), 137: makeChain(137, 9_000000n), 43114: makeChain(43114, 10_00000000n) }
 for (const c of Object.values(chains)) await new Promise((r) => c.server.listen(0, '127.0.0.1', r))
 
 /* ------------------------------------------- webhook receiver, logo host --- */
@@ -156,7 +156,7 @@ function sendUsdc(q, to = q.treasury, value = usdcRaw(q)) {
 }
 
 /* Request Network's ERC20FeeProxy (payments.mjs FEE_PROXIES): one transaction pays the store and Gully's fee. */
-const PROXY = { 8453: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814', 56: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9' }
+const PROXY = { 8453: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814', 56: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9', 137: '0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9' }
 const FEE_EVENT = toEventSelector('TransferWithReferenceAndFee(address,address,uint256,bytes,uint256,address)')
 const transferLog = (token, from, to, value) => ({ address: token, topics: [TRANSFER, pad(from), pad(to)], data: pad(hex(value)) })
 /**
@@ -225,7 +225,7 @@ try {
   await wbad("a fee proxy of another chain, declared an EOA", { address: getAddress('0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9'), type: 'eoa', chains: [8453] })
   await wbad('the native EthereumFeeProxy', { address: getAddress('0xd9c3889eb8da6ce449bffe3cd194d08a436e96f2'), type: 'contract', chains: [8453] })
   await wbad('a fee proxy in lower case', { address: '0x1892196e80c4c17ea5100da765ab48c1fe2fb814', type: 'contract', chains: [8453] })
-  await wbad('an unknown chain', { address: eoa, type: 'eoa', chains: [10] })
+  await wbad('an unknown chain', { address: eoa, type: 'eoa', chains: [999] })
   await wbad('no type', { address: eoa, chains: [8453] })
 
   // A Safe deployed on Base only.
@@ -259,9 +259,6 @@ try {
   await O.post('/api/developer/merchant/wallets/42161/remove', {})
   const MW = eoa.toLowerCase()
   check('the store is ready', (await O.call('/api/developer/merchant')).data.ready === true)
-  const tv = (await O.call('/api/developer/merchant')).data.terms
-  check('terms: acceptance recorded with version and the accepting wallet', tv.current === true && tv.accepted?.acceptedBy === OW && !!tv.accepted.acceptedAt)
-  check('terms: activity has merchant.terms_accepted once', (await O.call('/api/developer/activity')).data.events.filter((e) => e.action === 'merchant.terms_accepted').length === 1)
 
   /* ------------------------------------------------------------- profile --- */
   check('profile: a non-https logo host that is not loopback is refused', (await O.post('/api/developer/merchant/profile', { logoUrl: 'http://example.com/logo.png' })).status === 400)
@@ -567,6 +564,55 @@ try {
   check('store 2: collected on chain + billed = accrued, exactly in micro-USD (nothing billed twice)', rows2.every((x) => BigInt(x.collectedMicros) <= BigInt(x.feeMicros)) && sumOf('collectedMicros') + BigInt(st2Row.feeMicros) === sumOf('feeMicros') && sumOf('feeMicros') === 6_250_000n && M.issueStatements(Date.now()).length === 0)
   const f2 = (await O2.call('/api/developer/merchant')).data.fees
   check('store 2 portal: 6.25 accrued = 3.75 collected on chain + 2.50 billed', f2.accruedUsd === 6.25 && f2.collectedUsd === 3.75 && f2.billedUsd === 2.5 && f2.unbilledUsd === 0 && f2.collectedPayments === 2, JSON.stringify(f2))
+
+  /* ----------------------------------- new chains (2026-10-18) and the fee-split gate --- */
+  // A store's gate is its own wallet per chain; the in-payment fee needs Gully Labs' treasury deployed there too.
+  const mv0 = (await O.call('/api/developer/merchant')).data
+  check('new chains: the store can receive on seven chains; a split proxy (Base\'s build) everywhere but Polygon and Avalanche', mv0.chains.map((c) => c.id).join() === '8453,1,56,42161,10,137,43114' && mv0.chains.every((c) => c.feeProxy === ![137, 43114].includes(c.id)), JSON.stringify(mv0.chains.map((c) => [c.id, c.feeProxy])))
+  check('new chains: with an EOA treasury (no code anywhere) the fee rides in the payment on every chain with a proxy, invoiced on Polygon and Avalanche', mv0.chains.every((c) => c.feeSplit === ![137, 43114].includes(c.id)))
+  const wNew = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: eoa, type: 'eoa', chains: [137, 43114, 10] })
+  check('new chains: the EOA is enabled on Polygon, Avalanche and OP Mainnet', wNew.status === 200 && wNew.data.results.every((x) => x.ok && x.wallet.enabled) && wNew.data.results.map((x) => x.wallet.chainKey).sort().join() === 'avalanche,optimism,polygon', wNew.data?.error)
+  const cfPoly = await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: counterfactual, type: 'contract', chains: [137] })
+  check('new chains: an undeployed Safe on Polygon is refused the same way (status 422, not enabled)', cfPoly.status === 422 && /not deployed|Deploy your Safe/.test(cfPoly.data?.error ?? ''), cfPoly.data?.error)
+  // The hourly re-check: nothing deployed yet, nothing switches; once the Safe has code on Polygon it switches on by itself.
+  const none = await M.recheckUndeployedWallets()
+  check('merchant Safe re-check: still no code on Polygon, the wallet stays off', !none.some((x) => x.chainId === 137) && (await O.call('/api/developer/merchant')).data.wallets.find((w) => w.chainId === 137)?.status === 'not-deployed')
+  chains[137].code.set(counterfactual.toLowerCase(), '0x6080604052')
+  const switched = await M.recheckUndeployedWallets()
+  const wPoly = (await O.call('/api/developer/merchant')).data.wallets.find((w) => w.chainId === 137)
+  check('merchant Safe re-check: deployed on Polygon, it switches on by itself (contract, receiving)', switched.some((x) => x.chainId === 137 && x.enabled) && wPoly?.status === 'ok' && wPoly.enabled === true && wPoly.kind === 'contract', JSON.stringify(wPoly))
+  chains[137].code.delete(counterfactual.toLowerCase())
+  await O.post('/api/developer/merchant/wallets', { acceptTerms: true, address: eoa, type: 'eoa', chains: [137] })
+  const invNewRes = await O.post('/api/developer/merchant/invoices', { items: [{ description: 'Polygon order', quantity: 1, unitUsd: '12' }], dueDate: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10) })
+  const invNew = invNewRes.data?.invoice
+  check('new chains: the store makes an invoice', invNewRes.status === 201 && !!invNew?.id, invNewRes.status + ' ' + (invNewRes.data?.error ?? ''))
+  const pubNew = (await anon.call(`/api/pay/m/i/${invNew?.id}`)).data?.invoice
+  check('new chains: a store invoice offers polygon-usdc and avax-usdc with the store wallet as recipient on 137 and 43114', !!pubNew && pubNew.assets.some((a) => a.id === 'polygon-usdc' && a.feeSplit === false) && pubNew.assets.some((a) => a.id === 'op-usdc' && a.feeSplit === true) && pubNew.assets.some((a) => a.id === 'avax-usdc') && pubNew.recipients['137']?.toLowerCase() === MW && pubNew.recipients['43114']?.toLowerCase() === MW, JSON.stringify(pubNew?.recipients))
+  // Polygon needs 64 confirmations: pay from a block deep enough.
+  const payDeep = async (id, asset) => {
+    const q = (await payPost(`/api/pay/m/i/${id}/quote`, { asset })).data?.quote
+    const h = chains[q.chainId].add({ from: acct().address.toLowerCase(), to: q.treasury, value: usdcRaw(q), token: USDC[q.chainId], block: chains[q.chainId].head - 80 })
+    return { q, h, v: await payPost(`/api/pay/m/i/${id}/verify`, { quoteId: q.id, txHash: h }) }
+  }
+  const paidPoly = await payDeep(invNew.id, 'polygon-usdc')
+  check('new chains: USDC on Polygon pays a store invoice to the store wallet, 64 confirmations needed', paidPoly.q?.chainId === 137 && paidPoly.q.confirmations === 64 && paidPoly.v.status === 200 && paidPoly.v.data?.invoice?.status === 'paid', `${paidPoly.v.status} ${paidPoly.v.data?.error ?? ''}`)
+  // The treasury becomes a Safe deployed on Base only: Polygon keeps taking payments (store wallet), but the fee
+  // there is invoiced (no split), and Base keeps the split.
+  chains[8453].code.set(TREASURY, '0x6080604052')
+  const tcheck = await admin('/api/admin/treasury/check', 'POST')
+  const mv1 = (await O.call('/api/developer/merchant')).data
+  check('gate: treasury seen as a contract on Base; OP Mainnet (proxy, no treasury) loses the in-payment fee, Base keeps it', tcheck.data?.treasury?.kind === 'contract' && mv1.chains.find((c) => c.id === 8453).feeSplit === true && mv1.chains.find((c) => c.id === 10).feeSplit === false && mv1.chains.find((c) => c.id === 10).feeProxy === true && mv1.chains.find((c) => c.id === 137).feeSplit === false && mv1.chains.find((c) => c.id === 43114).feeSplit === false, JSON.stringify(mv1.chains.map((c) => [c.id, c.feeSplit])))
+  const invNew2 = (await O.post('/api/developer/merchant/invoices', { items: [{ description: 'Polygon order 2', quantity: 1, unitUsd: '7' }], dueDate: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10) })).data?.invoice
+  const pubNew2 = (await anon.call(`/api/pay/m/i/${invNew2.id}`)).data?.invoice
+  check('gate: the store still offers Polygon (its own wallet is deployed there); the asset says the fee is invoiced', pubNew2.assets.some((a) => a.id === 'polygon-usdc' && a.feeSplit === false) && pubNew2.assets.some((a) => a.id === 'base-usdc' && a.feeSplit === true) && pubNew2.recipients['137']?.toLowerCase() === MW)
+  const paidPoly2 = await payDeep(invNew2.id, 'polygon-usdc')
+  check('gate: a Polygon payment still settles as a plain transfer to the store (no split) while the treasury is not there', paidPoly2.q?.split === null && paidPoly2.v.status === 200 && paidPoly2.v.data?.invoice?.status === 'paid', `${paidPoly2.v.status} ${paidPoly2.v.data?.error ?? ''}`)
+  chains[8453].code.delete(TREASURY)
+  await admin('/api/admin/treasury/check', 'POST')
+  check('gate: back to an EOA treasury, the split is available again on every chain with a proxy', (await O.call('/api/developer/merchant')).data.chains.every((c) => c.feeSplit === ![137, 43114].includes(c.id)))
+  const tv = (await O.call('/api/developer/merchant')).data.terms
+  check('terms: acceptance recorded with version and the accepting wallet', tv.current === true && tv.accepted?.acceptedBy === OW && !!tv.accepted.acceptedAt)
+  check('terms: activity has merchant.terms_accepted once', (await O.call('/api/developer/activity')).data.events.filter((e) => e.action === 'merchant.terms_accepted').length === 1)
 } catch (e) {
   console.error(e)
   check('no exception', false, String(e?.message ?? e))

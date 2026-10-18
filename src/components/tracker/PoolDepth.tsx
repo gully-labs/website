@@ -87,10 +87,10 @@ export function PoolDepth({ pool, ticker }: { pool: TrackerPool | null; ticker: 
       />
       <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-faint">
         <span className="inline-flex items-center gap-2">
-          <i className="size-[9px] rounded-[2px] bg-gold" /> deepest pool · {pool.dex} {ticker}/{pool.against}
+          <i className="size-[9px] rounded-bar bg-gold" /> deepest pool · {pool.dex} {ticker}/{pool.against}
         </span>
         <span className="inline-flex items-center gap-2">
-          <i className="size-[9px] rounded-[2px] bg-line-hover" /> {Math.max(0, pool.pools - 1)} other pool{pool.pools - 1 === 1 ? '' : 's'}
+          <i className="size-[9px] rounded-bar bg-line-hover" /> {Math.max(0, pool.pools - 1)} other pool{pool.pools - 1 === 1 ? '' : 's'}
         </span>
       </div>
     </div>

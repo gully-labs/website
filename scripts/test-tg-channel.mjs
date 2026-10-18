@@ -127,6 +127,9 @@ Object.assign(process.env, {
   GULLY_RPC_56: 'http://127.0.0.1:9',
   GULLY_RPC_8453: 'http://127.0.0.1:9',
   GULLY_RPC_42161: 'http://127.0.0.1:9',
+  GULLY_RPC_10: 'http://127.0.0.1:9',
+  GULLY_RPC_137: 'http://127.0.0.1:9',
+  GULLY_RPC_43114: 'http://127.0.0.1:9',
   TELEGRAM_API: `http://127.0.0.1:${stub.address().port}`,
   TELEGRAM_BOT_TOKEN: TOKEN,
   TELEGRAM_NEWS_CHANNEL: CHANNEL,
@@ -256,6 +259,16 @@ try {
   const d1 = await A(`/api/admin/channel/posts/${id1}/delete`, {})
   check('delete: deleteMessage on the channel, status deleted', d1.status === 200 && last('deleteMessage')?.message_id === p1.data.post.messageId && d1.data.post.status === 'deleted')
   check('history records every action', (await findPost(id1)).history.map((h) => h.action).join() === 'create,post,pin,edit,edit,unpin,delete', (await findPost(id1)).history.map((h) => h.action).join())
+
+  /* ------------------------------------------------- post and DM users (teaser) --- */
+  const dmCount = (await A('/api/admin/broadcasts/audience', { segment: { kind: 'all' } })).data.count
+  const dmBad = await A('/api/admin/channel/posts', { text: 'With a DM', action: 'post', dm: { confirm: dmCount + 1 } })
+  check('post and DM: the DM needs the exact audience count confirmed (409, not posted)', dmBad.status === 409 && dmBad.data.count === dmCount && dmBad.data.confirmRequired === true, JSON.stringify(dmBad.data))
+  const nCh = chCalls('sendMessage').length
+  const dmOk = await A('/api/admin/channel/posts', { text: '<b>With a DM</b> to bot users', action: 'post', dm: { confirm: dmCount, urgent: true } })
+  await (await import('../server/telegram-broadcast.mjs')).tickBroadcasts() // let the teaser DMs finish before the next checks
+  check('post and DM: the teaser DM reached the bot user who started the bot', calls.some((c) => c.method === 'sendMessage' && c.body.chat_id === '4242' && /New in the channel/.test(c.body.text ?? '')))
+  check('post and DM: posted, and a teaser broadcast is attached to the post', dmOk.status === 201 && chCalls('sendMessage').length === nCh + 1 && /^bc_[0-9a-f]{12}$/.test(dmOk.data.post.dmBroadcastId ?? '') && dmOk.data.post.history.some((h) => h.action === 'dm' && h.ok), JSON.stringify(dmOk.data.post).slice(0, 200))
 
   /* ---------------------------------------------------------- failure and retry --- */
   failNext.set('sendMessage', 'Bad Request: chat not found')

@@ -15,8 +15,10 @@
 // alerts.mjs's own route handler, so the app has the dashboard's validation and plan limits.
 //
 // The News channel gate applies here as in the bot: a user who does not follow @GullyLabsNews gets 403
-// with { gate } on every route but /api/tg/me, which says whether they follow (the app shows the join
-// screen). If membership cannot be checked the gate lets people through, as the bot does.
+// with { gate } on feature routes, while /api/tg/me says whether they follow (the app shows the join
+// screen). The exits are never gated: listing one's own alerts (GET /api/tg/alerts) and pausing or deleting
+// one, so someone who left the channel can still stop what they set up. If membership cannot be checked the
+// gate lets people through, as the bot does.
 //
 //   GET  /api/tg/me[?fresh=1]          -> { user, gate, linked, portal }
 //   GET  /api/tg/sparks                -> { sparks: { "<chain>:<TICKER>": number[] } }   24h of gap, ~24 points
@@ -157,7 +159,9 @@ export async function handleMiniApp(req, res, url) {
     const linked = link ? { chatType: link.chatType, chatTitle: link.chatTitle, account: `${link.address.slice(0, 6)}…${link.address.slice(-4)}`, blocked } : null
     return json(res, 200, { user, gate, linked, portal: `${PORTAL}/#alerts` }), true
   }
-  if (!follows) return json(res, 403, { error: `Follow ${ch} to use the app.`, gate }), true
+  // Exits stay open without the channel: see one's alerts, pause or delete one.
+  const exit = (p === '/api/tg/alerts' && req.method === 'GET') || (req.method === 'POST' && /^\/api\/tg\/alerts\/[\w-]{1,40}\/(pause|delete)$/.test(p))
+  if (!follows && !exit) return json(res, 403, { error: `Follow ${ch} to use the app.`, gate }), true
 
   if (p === '/api/tg/sparks') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true

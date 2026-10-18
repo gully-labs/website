@@ -126,6 +126,8 @@ const umamiServer = http.createServer((req, res) => {
         return send(200, { ok: true })
       }
     }
+    m = p.match(/^\/api\/users\/([\w-]+)\/websites$/)
+    if (m && req.method === 'GET') return send(200, { data: [...umami.websites.values()].filter((w) => w.userId === m[1] && !w.deletedAt), count: 0 })
     if (p === '/api/websites' && req.method === 'POST') {
       if (!data?.name || !data?.domain) return bad('Bad request')
       const w = { id: crypto.randomUUID(), name: data.name, domain: data.domain, userId: caller.id, createdBy: caller.id, deletedAt: null }
@@ -202,6 +204,13 @@ Object.assign(process.env, {
   TRACKER_LOOP: 'off',
   GULLY_TREASURY_ADDRESS: TREASURY,
   GULLY_RPC_8453: `http://127.0.0.1:${rpc.address().port}`,
+  // The other chains are never reached here (a closed port), so nothing upstream is read.
+  GULLY_RPC_1: 'http://127.0.0.1:9',
+  GULLY_RPC_56: 'http://127.0.0.1:9',
+  GULLY_RPC_42161: 'http://127.0.0.1:9',
+  GULLY_RPC_10: 'http://127.0.0.1:9',
+  GULLY_RPC_137: 'http://127.0.0.1:9',
+  GULLY_RPC_43114: 'http://127.0.0.1:9',
   ANALYTICS_UPSTREAM: `http://127.0.0.1:${umamiServer.address().port}`,
   ANALYTICS_ADMIN_PASSWORD: UMAMI_ADMIN_PASSWORD,
   ANALYTICS_APP_SECRET: APP_SECRET,
@@ -209,6 +218,7 @@ Object.assign(process.env, {
 delete process.env.ANALYTICS_ADMIN_USERNAME
 delete process.env.GULLY_BASE_RPC
 delete process.env.GULLY_MIN_CONFIRMATIONS
+process.env.ANALYTICS_ADOPT_MS = '0'
 await import('../server/server.mjs')
 const accounts = await import('../server/analytics-accounts.mjs')
 await new Promise((r) => setTimeout(r, 300))
@@ -366,6 +376,15 @@ try {
   check('a website is created with the domain cleaned', r.status === 201 && siteA.domain === 'app.example.com' && siteA.dashboardUrl === `https://analytics.gullylabs.xyz/websites/${siteA.id}`, JSON.stringify(r.data))
   check('the website belongs to the wallet’s Umami user (created by the admin, then transferred)', wA?.userId === userA.id && wA.createdBy === 'admin-id')
   check('the trial includes one website', (await ca.post('/api/developer/analytics/sites', { name: 'Second', domain: 'two.example.com' })).status === 409)
+  // A website the user added in the Gully Analytics dashboard itself shows up in the app too.
+  const dash = { id: crypto.randomUUID(), name: 'Added in the dashboard', domain: 'dash.example.com', userId: userA.id, createdBy: userA.id, deletedAt: null }
+  umami.websites.set(dash.id, dash)
+  r = await ca.call('/api/developer/analytics')
+  check('a website added in the Gully Analytics dashboard is listed in the app', r.data?.account?.sites?.some((s) => s.id === dash.id && s.domain === 'dash.example.com'), JSON.stringify(r.data?.account?.sites?.map((s) => s.domain)))
+  r = await ca.call('/api/developer/analytics')
+  check('it is adopted once, not duplicated', r.data?.account?.sites?.filter((s) => s.id === dash.id).length === 1)
+  r = await ca.post(`/api/developer/analytics/sites/${dash.id}/delete`, {})
+  check('an adopted website can be removed from the app like any other', r.status === 200 && dash.deletedAt !== null, JSON.stringify(r.data))
 
   /* ------------------------------------------------------------ proxy --- */
   r = await proxy('/script.js')

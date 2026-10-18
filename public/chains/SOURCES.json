@@ -54,5 +54,26 @@
     "page": "https://www.circle.com/pressroom#brandkit",
     "terms": "Circle Brand Use Policy (https://6778953.fs1.hubspotusercontent-na1.net/hubfs/6778953/CircleBrandUsePolicy.pdf): Arc is a Circle mark; limited, unaltered, non-endorsing use only.",
     "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "optimism": {
+    "file": "/chains/optimism.svg",
+    "from": "https://cdn.sanity.io/images/y6ka751a/production/0619395edc911805bcea3268156418134c1c5b32-2500x1875.svg (the 'OP Mainnet' download card)",
+    "page": "https://www.optimism.io/brand",
+    "terms": "Optimism brand resources page (OP Mainnet logo): the mark unaltered, with its own colours (#FF0421 tile, #FAFAF9 symbol); no implied endorsement. Our file is the mark cropped out of the 2500x1875 download (viewBox 841 529 817 817), nothing redrawn.",
+    "fetchedAt": "2026-10-18T02:10:00Z"
+  },
+  "polygon": {
+    "file": "/chains/polygon.svg",
+    "from": "https://polygon.technology/favicon.svg (Polygon Labs' own site icon)",
+    "page": "https://polygon.technology/brand-resources (the brand kit itself is a Google Drive folder)",
+    "terms": "Polygon Labs' own served icon, unaltered; nominative use only to name Polygon as a Gully Pay payment network. Polygon brand guidelines: https://polygon.technology/brand-guidelines.",
+    "fetchedAt": "2026-10-18T02:10:00Z"
+  },
+  "avalanche": {
+    "file": "/chains/avalanche.svg",
+    "from": "https://images.ctfassets.net/gcj8jwzm6086/5VHupNKwnDYJvqMENeV7iJ/3e4b8ff10b69bfa31e70080a4b142cd0/avalanche-avax-logo.svg (Ava Labs' asset, served by build.avax.network)",
+    "page": "https://www.avax.network/brand",
+    "terms": "Ava Labs' own published AVAX logo (#E84142 disc), unaltered; Avalanche brand guidelines apply (no implied affiliation). Used only to name Avalanche as a Gully Pay payment network.",
+    "fetchedAt": "2026-10-18T02:10:00Z"
   }
 }

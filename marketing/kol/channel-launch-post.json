@@ -1,0 +1,13 @@
+{
+  "_kit": "Gully Labs KOL kit: the @GullyLabsNews launch post, as a draft for the admin channel composer. NOT posted. Load it as the body of POST /api/admin/channel/posts (admin token) to save it as a draft, then review, test-send and post it from admin.gullylabs.xyz > Telegram channel. The media URL is served from public/brand/kol/ once this branch is deployed; the local master is mediaFile. The composer allows 3 buttons, so Docs is a link in the caption.",
+  "mediaFile": "marketing/kol/announce-1280x720.mp4",
+  "action": "draft",
+  "text": "<b>🧪 Meet the Gully Labs line-up</b>\n\nTools for on-chain markets, built and run by Gully Labs:\n\n📊 <b>Stock tracker</b>: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, every minute\n🔁 <b>Swap</b> any stock token from its page\n🔔 <b>Alerts</b> by Telegram or webhook, plus <b>DeepCore launches</b> as they happen\n🤖 <b>Gully AI</b>: questions about any Gully product, answered from our docs with sources\n📈 <b>Gully Analytics</b>: web analytics that see the wallet\n💳 <b>Gully Pay</b>: non-custodial crypto checkout and pay links. 0.5% per payment after your first $5,000, no monthly fee\n\nComing next: <b>Holder Map</b> (coming soon) and the <b>Gully L3</b> on our roadmap.\n\n📚 <a href=\"https://docs.gullylabs.xyz/?utm_source=kol&amp;utm_medium=telegram&amp;utm_campaign=launch\">Read the docs</a>\n\n<i>Information only, not advice.</i>",
+  "media": { "kind": "animation", "url": "https://gullylabs.xyz/brand/kol/announce-1280x720.mp4" },
+  "buttons": [
+    { "text": "🚀 Open the App", "url": "https://app.gullylabs.xyz/?utm_source=kol&utm_medium=telegram&utm_campaign=launch" },
+    { "text": "📊 Live tracker", "url": "https://gullylabs.xyz/tracker?utm_source=kol&utm_medium=telegram&utm_campaign=launch" },
+    { "text": "🤖 Open the bot", "url": "https://t.me/GullyLabsBot" }
+  ],
+  "pin": true
+}

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ArrowUpRight, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
 import { useContact } from '../ContactContext'
-import { h2, PORTAL_BILLING } from './links'
+import { eyebrow, h2, PORTAL_BILLING } from './links'
 
 /* Pricing on the landing: one switch (Tracker API / Gully Analytics / Chain Kit & services) and that
    product's plans as cards, crossfading on a switch. The API and Analytics prices are read from
@@ -65,7 +65,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
     cards = [
       { name: 'Chain Kit', price: 'Quoted', feats: ['Branded Blockscout explorer', 'Your domain, colours and token list', 'Hosted and run by us'] },
       { name: 'Build', price: 'Quoted', feats: ['Smart contracts', 'dApps and frontends', 'Chain infrastructure'] },
-      { name: 'Audit', price: 'Quoted', feats: ['Code review', 'Fuzzing and invariant tests', 'Post-launch monitoring'] },
+      { name: 'Security', price: 'Quoted', feats: ['Code review', 'Fuzzing and invariant tests', 'Post-launch monitoring'] },
     ]
   else if (offer && product === 'api')
     cards = offer.plans.map((p) => ({
@@ -115,7 +115,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
       <div className="flex flex-col gap-5 px-page py-12 max-[599px]:py-9">
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.45, ease }} className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <span className="font-mono text-[11px] tracking-[1.5px] text-gold">PRICING</span>
+            <span className={eyebrow}>PRICING</span>
             <h2 id="pricing-title" className={h2}>
               Every plan, one switch
             </h2>
@@ -124,7 +124,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
             Plans in detail →
           </Link>
         </motion.div>
-        <div role="tablist" aria-label="Product" onKeyDown={onKey} className="flex w-fit max-w-full gap-[2px] overflow-x-auto rounded-[10px] border border-line p-[3px] [scrollbar-width:none]">
+        <div role="tablist" aria-label="Product" onKeyDown={onKey} className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-input border border-line bg-surface p-1 [scrollbar-width:none]">
           {PRODUCTS.map((p) => {
             const on = p.id === product
             return (
@@ -140,9 +140,9 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
                 aria-controls="price-panel"
                 tabIndex={on ? 0 : -1}
                 onClick={() => setProduct(p.id)}
-                className={`relative min-h-11 flex-none rounded-[7px] bg-transparent px-4 text-[13px] font-semibold whitespace-nowrap transition-colors duration-200 max-[459px]:px-3 max-[459px]:text-[12px] ${on ? 'text-bg' : 'text-muted hover:text-ink'}`}
+                className={`relative min-h-11 flex-none rounded-btn bg-transparent px-4 text-[13px] font-semibold whitespace-nowrap transition-colors duration-200 max-[459px]:px-3 max-[459px]:text-[12px] ${on ? 'text-bg' : 'text-muted hover:text-ink'}`}
               >
-                {on && <motion.span layoutId="price-tab" aria-hidden className="absolute inset-0 rounded-[7px] bg-gold" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
+                {on && <motion.span layoutId="price-tab" aria-hidden className="absolute inset-0 rounded-btn bg-gold" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                 <span className="relative">{p.label}</span>
               </button>
             )

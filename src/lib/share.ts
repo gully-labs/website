@@ -13,7 +13,7 @@ export const tgShare = (text: string, url: string) => `https://t.me/share/url?ur
 /** The post about Gully Labs, with the figures the ledger shows right now. */
 export function gullyPost(data: Stats | null): string {
   const live = data ? data.venues.filter((v) => v.state === 'ok').length : null
-  // No dollar figures: early totals undersell the venues in a post that outlives them (design audit P1-1).
+  // No dollar figures: early totals undersell the venues in a post that outlives them (design review P1-1).
   return `${live ?? 'Five'} live Web3 venues built by ${SHARE.handle}, measured live: launchpads, DEXes, quests and social trading, one ledger. ${SHARE.hashtags.join(' ')}`
 }
 

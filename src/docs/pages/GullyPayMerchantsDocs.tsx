@@ -3,13 +3,14 @@ import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { EChart } from '../../components/charts/EChart'
 import { areaPreset, axisTooltip, C, linePreset, tipHtml } from '../../components/charts/chartPresets'
 import { CodeBlock } from '../CodeBlock'
-import { C as Code, Callout, DocLink, DocPage, Fields, List, P, Section } from '../DocPage'
+import { C as Code, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { apiOrigin } from '../nav'
 
 const sections = [
   { id: 'overview', title: 'Overview' },
   { id: 'setup', title: 'Setup' },
   { id: 'wallets', title: 'Receiving wallets' },
+  { id: 'safe', title: 'Using a Safe as your store wallet' },
   { id: 'links-invoices', title: 'Links and invoices' },
   { id: 'checkout', title: 'The checkout' },
   { id: 'webhooks', title: 'Webhooks' },
@@ -71,13 +72,13 @@ export function FeeCurve() {
         const i = ps[0]?.dataIndex ?? 0
         return tipHtml({ title: `${usd(xs[i])} lifetime volume`, rows: [{ name: 'Fees in all', value: usd(fee[i]), color: C.gold }, { name: 'Effective rate', value: `${eff[i]}%`, color: '#5aa9e6' }], note: xs[i] <= cfg.freeUsd ? 'Inside the free allowance.' : undefined })
       }),
-      xAxis: { type: 'category', boundaryGap: false, data: xs.map((v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)), axisLabel: { color: C.faint, fontSize: 10, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
+      xAxis: { type: 'category', boundaryGap: false, data: xs.map((v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)), axisLabel: { color: C.faint, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
       yAxis: [
-        { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
-        { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `${v}%` }, splitLine: { show: false }, max: cfg.feePct },
+        { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
+        { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => `${v}%` }, splitLine: { show: false }, max: cfg.feePct },
       ],
       series: [
-        { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 10, formatter: 'free allowance', position: 'insideEndTop' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
+        { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 11, formatter: 'free allowance', position: 'insideEndTop' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
         { id: 'eff', name: 'Effective rate', ...linePreset({ color: '#5aa9e6', dashed: true }), yAxisIndex: 1, data: eff },
       ],
     }
@@ -97,7 +98,7 @@ export function GullyPayMerchantsDocs() {
       eyebrow="PRODUCTS · GULLY PAY"
       title="Gully Pay for merchants"
       description="Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy."
-      lead="Take ETH, BNB, USDC and USDT on Base, Ethereum, BNB Chain and Arbitrum, straight into your own wallet. Non-custodial: payments go directly to your wallet. Gully Labs never holds your funds."
+      lead="Take USDC, USDT and the chains' own coins on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon and Avalanche, straight into your own wallet. Non-custodial: payments go directly to your wallet. Gully Labs never holds your funds."
       sections={sections}
     >
       <Section id="overview" title="Overview">
@@ -127,13 +128,40 @@ export function GullyPayMerchantsDocs() {
           <li>A mixed-case address must match its EIP-55 checksum exactly, so a mistyped character cannot slip through. An all-lower-case (or all-upper-case) address carries no checksum: it is accepted and stored in its checksummed form.</li>
           <li>We read the chain: an address with no code is a wallet (EOA); with code, a contract (a Safe or another smart account); an EIP-7702 delegated EOA is shown as such.</li>
           <li>
-            <b>A contract must be deployed on a chain before that chain can be turned on.</b> A Safe's address can exist on a chain before the Safe is deployed there; a payment to it then may be lost. If you say the wallet is a contract, or it is a contract on another of our chains, and it has no code on this one, the chain stays off. Deploy it, then press <b>Check again</b>.
+            <b>A contract must be deployed on a chain before that chain can be turned on.</b> A Safe's address can exist on a chain before the Safe is deployed there; a payment to it then may be lost. If you say the wallet is a contract, or it is a contract on another of our chains, and it has no code on this one, the chain stays off. Deploy it, then press <b>Check again</b>, or leave it: we read every undeployed wallet again each hour, and the chain switches on by itself once the contract is there (unless you turned it off).
           </li>
           <li>Gully Labs' own treasury cannot be a store wallet.</li>
           <li>
             <b>Never a fee proxy contract.</b> Request Network's <Code>ERC20FeeProxy</Code> (the contract a split payment passes through) has no owner: anything sent straight to its address is lost for good. The form and the server both refuse it as a store wallet, and you should never give its address to a customer as a place to pay. Your customers pay <i>your</i> wallet; the proxy only passes the payment through inside one transaction.
           </li>
         </List>
+      </Section>
+
+      <Section id="safe" title="Using a Safe as your store wallet">
+        <P>
+          A <b>Safe</b> (the multisig from safe.global) is a good store wallet: several owners, a threshold, no single key. One thing to know: a Safe exists only on the chains where it was <i>deployed</i>. Its address is the same everywhere, but on a chain where nobody deployed it there is no contract behind it, and a payment sent there is lost. That is why a chain stays off until the Safe has code on it.
+        </P>
+        <List>
+          <li>
+            <b>Deploy Safe on &lt;chain&gt;.</b> A wallet row that reads “not deployed” has this button. We read your Safe on a chain where it exists (owners, threshold, version), recover its creation transaction (the salt and the exact set-up call live only there: from a transaction you created through us, the first block it had code in, or Safe's own service, each verified), check that Safe's official factory, singleton and fallback handler are on the target chain with the expected code, and compute the address the factory call would create. <b>Only if that address is exactly your Safe's</b> do we offer the call; the page recomputes it once more before your wallet is asked.
+          </li>
+          <li>
+            <b>Your wallet signs.</b> Connect any wallet with a little of the chain's coin for gas (about 240,000 gas; the estimate is shown first). It does not have to be a Safe owner. The transaction goes from your wallet to Safe's factory; Gully Labs never holds a key and never sends anything.
+          </li>
+          <li>
+            <b>Sent → Mined → Verified.</b> We read the receipt, then the code and owners at the address, and run the same check as “Check again”: the chain switches on by itself.
+          </li>
+          <li>
+            <b>The copy starts as the original was set up.</b> If you added owners or changed the threshold after creating the Safe, the new chain starts with the original owners and threshold; change them there afterwards in Safe{'{'}Wallet{'}'}. Guards and modules are not copied. A Safe that paid for its own deployment, or whose set-up calls a contract missing on the target chain, is refused rather than deployed broken.
+          </li>
+          <li>
+            <b>No Safe yet? Create one.</b> List the owners (your connected wallet is filled in), pick a threshold and a chain. We plan a Safe 1.4.1 from Safe's official factory with a deterministic salt we keep, so you see the address before anything is sent and can later deploy the same Safe at that address on every other chain with one click. Once verified it becomes your store wallet on that chain.
+          </li>
+          <li>
+            <b>What cannot be reproduced.</b> Only Safe 1.3.0 and 1.4.1 from Safe's official factory. A Safe created with <Code>createProxy</Code> (plain CREATE, old 1.3.0 flows) or by another factory has an address that depends on that factory's own history: create a new Safe for that chain instead. The fee-proxy contracts and Gully Labs' treasury are never a target.
+          </li>
+        </List>
+        <Callout label="NO STUCK FUNDS">Nothing in this flow holds money: the deployment transaction carries no value, the Safe is deployed by Safe's audited factory, and until the chain shows the code and owners the chain stays off and no checkout offers it.</Callout>
       </Section>
 
       <Section id="links-invoices" title="Links and invoices">
@@ -150,7 +178,7 @@ export function GullyPayMerchantsDocs() {
       <Section id="checkout" title="The checkout">
         <List>
           <li>Your name, logo and accent; the amount; for an invoice, the line items, who it is billed to and the due date; the wallet it pays on each chain.</li>
-          <li>The payer picks a chain and an asset and gets a 20-minute quote for an exact amount (stablecoins 1:1 plus a tag in the last digits; ETH and BNB at the Chainlink price on that chain).</li>
+          <li>The payer picks a chain and an asset and gets a 20-minute quote for an exact amount (stablecoins 1:1 plus a tag in the last digits; ETH, BNB, POL and AVAX at the Chainlink price on that chain).</li>
           <li>A payment counts only when it sent your wallet exactly the quoted amount in the quoted asset on the quoted chain, inside the quote's time, with the chain's confirmations, and its transaction was never used for anything else, by you, another store or Gully Labs. A transfer to any other address never counts.</li>
           <li>
             Stablecoin payments above your free allowance pay your wallet and Gully Labs' fee in one transaction through Request Network's <Code>ERC20FeeProxy</Code>, which never holds funds. Every quote, QR code and split call is checked on the server (and again in the payer's browser, with a simulation) so that nothing ever names the proxy as a recipient; a payment that cannot pass answers with no payment details at all. Details in{' '}
@@ -176,13 +204,22 @@ export function GullyPayMerchantsDocs() {
       <Section id="fees" title="Fees and statements">
         <P>A transaction fee only: no monthly fee, no set-up fee.</P>
         <FeeCurve />
+        <P>Where the fee is collected depends on the chain (the checkout marks each chain, and your store's setup page lists them):</P>
+        <Fields
+          head={['Chain', 'Stablecoin payment', 'Coin payment']}
+          rows={[
+            ['Base, Ethereum, BNB Chain, Arbitrum', 'your wallet and the fee are paid in the same transaction (Request Network fee proxy, verified on each chain); the payer pays exactly the quoted amount', 'one transfer to your wallet; the fee is invoiced'],
+            ['OP Mainnet', "the proxy is verified there too (byte-identical to Base's); the in-payment fee switches on once Gully Labs' treasury is deployed on that chain, and until then the fee is invoiced", 'one transfer to your wallet; the fee is invoiced'],
+            ['Polygon, Avalanche', 'one transfer to your wallet; the fee is invoiced (the fee proxy there is a different build from the one we verified, so it is not used)', 'one transfer to your wallet; the fee is invoiced'],
+          ]}
+        />
         <List>
           <li>Each workspace's first lifetime volume up to the free allowance is fee-free. A payment that crosses it pays only on the part above it.</li>
           <li>The fee accrues on each confirmed payment at its quoted USD value, exactly (in millionths of a dollar).</li>
           <li>Every Monday at 00:00 UTC, a store that owes $1 or more gets a statement: a normal Gully Labs invoice, payable in crypto through the Gully Pay checkout. Less than $1 rolls into the next week.</li>
           <li>The portal shows the balance, the free allowance left, every statement and a <b>Pay now</b> button. The CSV export lists every payment with its fee.</li>
           <li>
-            The fee terms in full: section 5 of the <a href="https://gullylabs.xyz/legal/merchant-terms#s5" className="text-gold underline-offset-4 hover:underline">merchant terms</a>.
+            The fee terms in full: section 5 of the <Ext href="https://gullylabs.xyz/legal/merchant-terms#s5">merchant terms</Ext>.
           </li>
         </List>
       </Section>
@@ -199,9 +236,9 @@ export function GullyPayMerchantsDocs() {
       <Section id="terms" title="Terms">
         <P>
           Running a store means accepting the{' '}
-          <a href="https://gullylabs.xyz/legal/merchant-terms" className="text-gold underline-offset-4 hover:underline">
+          <Ext href="https://gullylabs.xyz/legal/merchant-terms">
             Gully Pay merchant terms
-          </a>{' '}
+          </Ext>{' '}
           (adapted from Common Paper's Cloud Service Agreement, CC BY 4.0): you tick “I agree” when you add your first receiving wallet.
         </P>
       </Section>

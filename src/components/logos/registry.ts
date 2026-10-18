@@ -19,6 +19,10 @@ const CHAINS: Record<string, Mark> = {
   solana: { src: '/chains/solana.svg', name: 'Solana', disc: '#000000', inset: 0.22 },
   arc: { src: '/chains/arc.svg', name: 'Arc', disc: null, inset: 0 },
   robinhood: { src: '/chains/robinhood.png', name: 'Robinhood Chain', disc: null, inset: 0 },
+  // Gully Pay chains added 2026-10-18: each file is the chain's own published mark (SOURCES.json), already a tile or disc.
+  optimism: { src: '/chains/optimism.svg', name: 'OP Mainnet', disc: null, inset: 0 },
+  polygon: { src: '/chains/polygon.svg', name: 'Polygon', disc: null, inset: 0 },
+  avalanche: { src: '/chains/avalanche.svg', name: 'Avalanche', disc: null, inset: 0 },
 }
 
 /** Other keys and display names the site and the API use for the same chain. */
@@ -32,6 +36,19 @@ const CHAIN_ALIAS: Record<string, string> = {
   hyperliquid: 'hyperevm',
   'robinhood chain': 'robinhood',
   'arc testnet': 'arc',
+  op: 'optimism',
+  'op mainnet': 'optimism',
+  'optimism mainnet': 'optimism',
+  matic: 'polygon',
+  'polygon pos': 'polygon',
+  avax: 'avalanche',
+  'avalanche c-chain': 'avalanche',
+  'base-sepolia': 'base',
+  'base sepolia': 'base',
+  'op-sepolia': 'optimism',
+  'op sepolia': 'optimism',
+  'arbitrum-sepolia': 'arbitrum',
+  'arbitrum sepolia': 'arbitrum',
 }
 
 export function chainMark(key: string | null | undefined): Mark | null {
@@ -47,6 +64,9 @@ const TOKENS: Record<string, Mark> = {
   USDT: { src: '/tokens/usdt.svg', name: 'Tether USD', disc: null, inset: 0 },
   // SOL the coin uses Solana's own mark (public/chains/solana.svg, from solana.com's brand assets).
   SOL: { src: '/chains/solana.svg', name: 'Solana', disc: '#000000', inset: 0.22 },
+  // POL and AVAX, the chains' own coins, use their chains' marks the same way.
+  POL: { src: '/chains/polygon.svg', name: 'Polygon Ecosystem Token', disc: null, inset: 0 },
+  AVAX: { src: '/chains/avalanche.svg', name: 'Avalanche', disc: null, inset: 0 },
 }
 
 export function tokenMark(symbol: string | null | undefined): Mark | null {

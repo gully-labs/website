@@ -26,6 +26,7 @@ const LINKED_USER = 5001 // private chat linked to WALLET
 const GROUP_USER = 5002 // linked a group, no private chat
 const STRANGER = 5003 // follows the channel, nothing linked
 const OUTSIDER = 5004 // does not follow the channel
+const left = new Set() // more users the stub reports as having left the channel
 const WALLET = '0x' + crypto.randomBytes(20).toString('hex')
 const WALLET2 = '0x' + crypto.randomBytes(20).toString('hex')
 
@@ -48,7 +49,7 @@ const stub = http.createServer((req, res) => {
     const body = raw ? JSON.parse(raw) : {}
     calls.push({ method: m[2], body })
     if (m[2] === 'getMe') return send({ ok: true, result: { id: BOT_ID, is_bot: true, username: 'GullyMiniTestBot' } })
-    if (m[2] === 'getChatMember') return send({ ok: true, result: { status: Number(body.user_id) === OUTSIDER ? 'left' : 'member', user: { id: Number(body.user_id) } } })
+    if (m[2] === 'getChatMember') return send({ ok: true, result: { status: Number(body.user_id) === OUTSIDER || left.has(Number(body.user_id)) ? 'left' : 'member', user: { id: Number(body.user_id) } } })
     if (m[2] === 'sendMessage') return send({ ok: true, result: { message_id: calls.length, chat: { id: Number(body.chat_id) }, text: body.text } })
     return send({ ok: true, result: true })
   })
@@ -160,7 +161,8 @@ try {
   check('gate: a non-follower gets follows: false from /me (the app shows the join screen)', meOut.status === 200 && meOut.data.gate.follows === false)
   const gated = await call('/api/tg/sparks', { data: outsider })
   check('gate: every other route is 403 with the gate', gated.status === 403 && gated.data.gate?.url === 'https://t.me/GullyLabsNews')
-  check('gate: alerts are gated too', (await call('/api/tg/alerts', { data: outsider })).status === 403)
+  check('gate: creating an alert is gated', (await call('/api/tg/alerts', { data: outsider, method: 'POST', body: { chain: 'robinhood', ticker: 'NVDA', pct: 2 } })).status === 403)
+  check('gate: reading one’s alerts is an exit, never gated (an unlinked outsider is told to link, 409)', (await call('/api/tg/alerts', { data: outsider })).status === 409)
   check('gate: membership was read with getChatMember on the channel', calls.some((c) => c.method === 'getChatMember' && c.body.chat_id === '@GullyLabsNews' && c.body.user_id === OUTSIDER))
 
   /* ------------------------------------------------------------ the reads --- */
@@ -215,6 +217,23 @@ try {
   const hold = await call('/api/tg/alerts', { method: 'POST', body: { kind: 'holders', chain: 'robinhood', token: 'NVDA', metric: 'cluster', above: 20 } })
   check('create: a holder alert (largest cluster ≥ 20%) from the app, delivered to Telegram', hold.status === 201 && hold.data.alert.condition.type === 'holders' && hold.data.alert.condition.chain === 'robinhood' && hold.data.alert.condition.above === 20 && hold.data.alert.telegram?.linked === true, JSON.stringify(hold.data))
   if (hold.data?.alert?.id) await call(`/api/tg/alerts/${hold.data.alert.id}/delete`, { method: 'POST' })
+
+  /* ------------------------------- left the channel: the exits still work (P0) --- */
+  left.add(GROUP_USER)
+  const gil = initData({ user: { id: GROUP_USER, first_name: 'Gil' } })
+  const gilMe = await call('/api/tg/me?fresh=1', { data: gil })
+  check('left the channel: /me says follows false', gilMe.data.gate.follows === false)
+  check('left the channel: features are gated (403)', (await call('/api/tg/sparks', { data: gil })).status === 403)
+  const gilList = await call('/api/tg/alerts', { data: gil })
+  check('left the channel: their alerts still list', gilList.status === 200 && gilList.data.alerts.some((a) => a.id === 'legacyAlert1'))
+  const gilPause = await call('/api/tg/alerts/legacyAlert1/pause', { data: gil, method: 'POST' })
+  check('left the channel: pause works', gilPause.status === 200 && gilPause.data.alert.enabled === false, JSON.stringify(gilPause.data))
+  check('left the channel: resume is feature use and stays gated', (await call('/api/tg/alerts/legacyAlert1/resume', { data: gil, method: 'POST' })).status === 403)
+  check('left the channel: test stays gated', (await call('/api/tg/alerts/legacyAlert1/test', { data: gil, method: 'POST' })).status === 403)
+  check('left the channel: a new alert stays gated', (await call('/api/tg/alerts', { data: gil, method: 'POST', body: { chain: 'robinhood', ticker: 'NVDA', pct: 2 } })).status === 403)
+  const gilDel = await call('/api/tg/alerts/legacyAlert1/delete', { data: gil, method: 'POST' })
+  check('left the channel: delete works', gilDel.status === 200 && !(await alertsOf(WALLET2)).alerts.some((a) => a.id === 'legacyAlert1'))
+  check('the join screen keeps a pause/delete list for linked users (exitsOnly)', /exitsOnly/.test(fs.readFileSync(new URL('../src/pages/tg/TgApp.tsx', import.meta.url), 'utf8')))
 
   /* ------------------------------------------------------- /tg page headers --- */
   const page = await fetch(BASE + '/tg')

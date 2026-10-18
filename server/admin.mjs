@@ -35,9 +35,10 @@
 //   GET  /api/admin/analytics                Gully Analytics accounts: wallet, plan, sites, events this month
 //   POST /api/admin/analytics/:address/plan   { plan: 'starter'|'growth'|'none', days? }  grant for `days` (30) or stop now
 //   POST /api/admin/analytics/:address/delete  only once the dashboard's grace period after a lapse is over
-//   POST /api/admin/ask/draft, GET /api/admin/ask/log   Gully Ask content studio and ask log (ask.mjs)
+//   POST /api/admin/ask/draft, GET /api/admin/ask/log, GET /api/admin/ask/gaps   Gully Ask content studio, ask log, unanswered / low-rated questions (ask.mjs)
 //   GET  /api/admin/charts?days=7|30|90       daily series for the dashboard's charts (admin-charts.mjs)
 //   /api/admin/channel*                       @GullyLabsNews channel posts and auto posts (telegram-channel.mjs)
+//   /api/admin/broadcasts*                    DMs to everyone who started the bot, by segment (telegram-broadcast.mjs)
 
 import fs from 'node:fs'
 import { accessStats } from './access.mjs'
@@ -49,9 +50,11 @@ import { adminSetPlan, allPayments } from './billing.mjs'
 import { adminCancelInvoice, adminCreateInvoice, adminInvoiceDeliveries, adminListInvoices, adminRotateInvoiceWebhook, adminSetInvoiceWebhook, adminTestInvoiceWebhook } from './invoices.mjs'
 import { adminCreateLink, adminLinkDetail, adminListLinks, adminRotateLinkSecret, adminSetLinkActive, adminTestLinkWebhook, adminUpdateLink } from './paylinks.mjs'
 import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, setDefaultEndpoint, webhookStats } from './pay-webhooks.mjs'
-import { publicAssets } from './payments.mjs'
+import { CHAIN_LIST, publicAssets, rpc } from './payments.mjs'
+import { checkTreasuryChains, treasuryStatus } from './treasury-chains.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
-import { planOf, publicPlans } from './plans.mjs'
+import { handleAdminSafe } from './safe-deploy.mjs'
+import { planOf, publicPlans, treasury } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
 import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
 import { isFeeProxy } from './fee-proxy-guard.mjs'
@@ -64,6 +67,7 @@ import { readStats } from './stats.mjs'
 import { umamiConfigured } from './umami.mjs'
 import { linkedChat, telegramStats } from './telegram.mjs'
 import { handleChannelAdmin } from './telegram-channel.mjs'
+import { handleBroadcastAdmin } from './telegram-broadcast.mjs'
 import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
 
@@ -137,6 +141,9 @@ export async function handleAdmin(req, res, url) {
   if (p.startsWith('/api/admin/ask/')) return handleAskAdmin(req, res, url)
   if (p === '/api/admin/merchants' || p.startsWith('/api/admin/merchants/')) return handleMerchantsAdmin(req, res, url)
   if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
+  // The treasury Safe per chain and its one-click deployment (safe-deploy.mjs).
+  if (p.startsWith('/api/admin/safe/')) return handleAdminSafe(req, res, url)
+  if (p === '/api/admin/broadcasts' || p.startsWith('/api/admin/broadcasts/')) return handleBroadcastAdmin(req, res, url)
   const db = developers()
 
   // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so
@@ -216,6 +223,13 @@ export async function handleAdmin(req, res, url) {
     return json(res, 200, { address: a.address, blocked: a.blocked }), true
   }
 
+  // Treasury deployment gate (treasury-chains.mjs): read eth_getCode(treasury) on every chain now, e.g. right after
+  // deploying the Safe on a new chain, instead of waiting for the hourly pass.
+  if (p === '/api/admin/treasury/check') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    return json(res, 200, { treasury: await checkTreasuryChains({ rpc, chains: CHAIN_LIST, treasury }) }), true
+  }
+
   if (p === '/api/admin/billing') {
     const subscriptions = db.accounts
       .filter((a) => a.plan)
@@ -224,7 +238,7 @@ export async function handleAdmin(req, res, url) {
         return { address: a.address, plan: a.plan.id, since: a.plan.since ?? null, expiresAt: a.plan.expiresAt, source: a.plan.source ?? null, active: live.id === a.plan.id && !!live.expiresAt }
       })
       .sort((x, y) => y.expiresAt.localeCompare(x.expiresAt))
-    return json(res, 200, { subscriptions, payments: allPayments(), offer: adminOffer(), alerts: alertStats() }), true
+    return json(res, 200, { subscriptions, payments: allPayments(), offer: adminOffer(), alerts: alertStats(), treasury: treasuryStatus(CHAIN_LIST, treasury()) }), true
   }
 
   m = p.match(/^\/api\/admin\/accounts\/(0x[0-9a-f]{40})\/plan$/)

@@ -22,14 +22,16 @@ const PROJECTS = {
 const MAIN = {
   '/': ['Gully Labs · Web3 projects and blockchain development', 'Every project Gully Labs ships reports its own volume, value locked and fees. This page reads each one live and adds them up.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
-  '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, with no custody.'],
+  '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon or Avalanche, with no custody.'],
   '/widget': ['Tracker widget · Gully Labs', 'Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps.'],
-  '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security audits from the team behind the Gully Labs projects.'],
+  '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security testing from the team behind the Gully Labs projects.'],
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
   '/holders': ['Holder Map: who really holds a token · Gully Labs', 'Search any DeepCore launch or tokenised stock and see who holds it: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
+  '/legal/privacy': ['Privacy policy · Gully Labs', 'What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, the Telegram bot and Gully Pay, why, who else sees it and how long it is kept.'],
+  '/links': ['Links · Gully Labs', 'Every Gully Labs link in one place: the site, the app, the stock tracker, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the Telegram bot and the news channel.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
@@ -64,6 +66,7 @@ const DOCS_PAGES = {
   '/gully-pay-merchants': ['Gully Pay for merchants · Gully Labs docs', 'Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy.'],
   '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the developer portal: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
+  '/roadmap': ['Roadmap · Gully Labs docs', 'What Gully Labs plans to build next, with an honest status for each track: the Gully L3, and Audits & Security (AI security scans, security reviews, smart-contract and code audits, Gully Score and monitoring). All planned; nothing is offered yet.'],
   '/roadmap-l3': ['Roadmap: Gully L3 · Gully Labs docs', 'The plan for the Gully L3: an Arbitrum chain settling to Arbitrum One with Chain Kit, Gully Pay and Hyperlane as its interop layer. Status: spec written, devnet prepared, nothing running.'],
   '/holder-map': ['Holder Map · Gully Labs docs', 'How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],

@@ -136,7 +136,7 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
     <div ref={box} className={`relative w-full ${className}`} style={{ height }}>
       <div
         ref={el}
-        className={`absolute inset-0 rounded-[6px] outline-offset-4 transition-opacity duration-300 ${lib && seen && !error ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 rounded-input outline-offset-4 transition-opacity duration-300 ${lib && seen && !error ? 'opacity-100' : 'opacity-0'}`}
         role="img"
         data-chart=""
         aria-label={label}

@@ -7,9 +7,11 @@ import { insetPx, type Mark } from './registry'
    for venues. */
 export function Logo({ mark, label, size, shape, alt, title, className = '' }: { mark: Mark | null; label: string; size: number; shape: 'round' | 'tile'; alt: string; title?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
-  const radius = shape === 'round' ? '50%' : `${Math.max(3, Math.round(size * 0.22))}px`
+  // Tiles take the radius scale (src/index.css): 8 from 32 px, 6 from 20 px, 4 below.
+  const radius = shape === 'round' ? '50%' : `${size >= 32 ? 8 : size >= 20 ? 6 : 4}px`
   if (!mark || failed) {
-    const text = label.slice(0, size >= 24 ? 4 : 2)
+    // Text only where 11 px fits; a smaller disc is a plain disc (the name is in its label).
+    const text = size >= 20 ? label.slice(0, size >= 24 ? 4 : 2) : ''
     return (
       <span
         role={alt ? 'img' : undefined}
@@ -17,7 +19,7 @@ export function Logo({ mark, label, size, shape, alt, title, className = '' }: {
         aria-hidden={alt ? undefined : true}
         title={title}
         className={`inline-flex flex-none select-none items-center justify-center overflow-hidden border border-line-strong bg-surface-deep font-mono font-medium leading-none text-muted ${className}`}
-        style={{ width: size, height: size, borderRadius: radius, fontSize: Math.max(7, Math.round(size * (text.length > 2 ? 0.3 : 0.42))) }}
+        style={{ width: size, height: size, borderRadius: radius, fontSize: Math.max(11, Math.round(size * (text.length > 2 ? 0.3 : 0.42))) }}
       >
         {text}
       </span>

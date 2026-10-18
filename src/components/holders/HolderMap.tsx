@@ -4,7 +4,7 @@ import { BellRing, Check, Copy, Download, ExternalLink, Lock, Pause, Play, Searc
 import { Link } from 'react-router'
 import { EChart } from '../charts/EChart'
 import { useReducedMotion, type ChartEvent } from '../charts/chart-utils'
-import { tipHtml } from '../charts/chartPresets'
+import { alpha, tipHtml } from '../charts/chartPresets'
 import { Mascot } from '../brand'
 import { copyWithToast } from '../ui/toast'
 import { newTab } from '../LayoutNav'
@@ -478,7 +478,7 @@ function MapView({ m, compact, embed, tradeHref, onTrade, page }: { m: HolderMap
           animationEasing: 'cubicOut',
           emphasis: {
             scale: 1.06,
-            itemStyle: { shadowBlur: 16, shadowColor: 'rgba(217,181,99,.45)' },
+            itemStyle: { shadowBlur: 16, shadowColor: alpha(K.gold, 0.45) },
           },
           data: nodeData,
         },
@@ -687,7 +687,7 @@ function MapView({ m, compact, embed, tradeHref, onTrade, page }: { m: HolderMap
             <div ref={introRef} className="relative">
               <EChart option={option} height={height} label={label} renderer="canvas" replaceMerge={['series']} onEvents={onEvents} onChart={onChart} skeleton="line" className="touch-none" />
               {width > 0 && width < 600 && <Minimap placed={placed} graph={graph} colourOf={colourOf} zoom={zoom} fit={fit} onReset={resetZoom} />}
-              <span className="pointer-events-none absolute top-2 left-2 font-mono text-[10px] tracking-[1px] text-kit-text-dim">{width < 600 ? 'PINCH OR DRAG TO ZOOM' : 'SCROLL TO ZOOM · DRAG TO PAN'}</span>
+              <span className="pointer-events-none absolute top-2 left-2 font-mono text-[11px] tracking-[1px] text-kit-text-dim">{width < 600 ? 'PINCH OR DRAG TO ZOOM' : 'SCROLL TO ZOOM · DRAG TO PAN'}</span>
             </div>
           )}
           {shownView === 'list' ? <RankedList m={m} selected={selected} onSelect={setSelected} /> : <RankedList m={m} selected={selected} onSelect={setSelected} srOnly />}
@@ -759,7 +759,7 @@ function Minimap({ placed, graph, colourOf, zoom, fit, onReset }: { placed: Plac
       onClick={onReset}
       aria-label={zoomed ? 'Overview of the map; tap to zoom back out' : 'Overview of the map'}
       className="absolute right-2 bottom-2 rounded-[8px] border border-line-strong p-1"
-      style={{ background: 'rgba(13,20,28,.88)' }}
+      style={{ background: alpha(K.night, 0.88) }}
     >
       <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} aria-hidden>
         {placed.map((p) => (
@@ -887,7 +887,7 @@ function Replay({
             setFrame(v >= last ? null : v)
           }}
           aria-valuetext={frameAt ? when : 'now'}
-          className="min-h-11 min-w-0 flex-1 accent-[#d9b563]"
+          className="min-h-11 min-w-0 flex-1 accent-gold"
         />
         <span className="flex-none">now</span>
       </label>
@@ -1122,7 +1122,7 @@ function RankedList({ m, selected, onSelect, srOnly = false }: { m: HolderMapOk;
               }}
             />
             <span className="min-w-0 flex-1 truncate text-kit-bone">{n.label?.name ?? n.short}</span>
-            {n.flags.includes('bundled') && <span className="flex-none text-[10px] text-error">BUNDLED</span>}
+            {n.flags.includes('bundled') && <span className="flex-none text-[11px] text-error">BUNDLED</span>}
             <span className="w-16 flex-none text-right text-kit-pale-gold">{fmtPct(n.pct)}</span>
           </button>
         </li>
@@ -1156,7 +1156,7 @@ function FairBlock({ m }: { m: HolderMapOk }) {
     <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-px overflow-hidden rounded-[10px] border border-line bg-line" data-holder-fair>
       {cells.map((c) => (
         <div key={c.k} className="flex flex-col gap-1 px-4 py-3" style={{ background: K.midnight }}>
-          <dt className="font-mono text-[10px] tracking-[1px] text-kit-text-dim">{c.k}</dt>
+          <dt className="font-mono text-[11px] tracking-[1px] text-kit-text-dim">{c.k}</dt>
           <dd className="m-0 font-display text-[24px] leading-none font-bold text-kit-bone">{c.v}</dd>
           {c.n && <span className="font-mono text-[11px] text-kit-text-dim">{c.n}</span>}
         </div>

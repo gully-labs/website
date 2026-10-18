@@ -20,7 +20,7 @@ function Example({ options, children }: { options: WidgetOptions; children?: Rea
   return (
     <div className="flex min-w-0 flex-col gap-3">
       {children}
-      <div className={`rounded-[10px] border border-line p-5 max-[600px]:p-3 ${options.theme === 'light' ? 'bg-ink' : 'bg-bg'}`}>
+      <div className={`rounded-panel border border-line p-5 max-[600px]:p-3 ${options.theme === 'light' ? 'bg-ink' : 'bg-bg'}`}>
         <div className={options.type === 'badge' ? 'max-w-[340px]' : undefined}>
           <LiveWidget options={options} />
         </div>

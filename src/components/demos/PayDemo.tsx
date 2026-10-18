@@ -59,7 +59,7 @@ function FakeQr({ seed }: { seed: string }) {
     }
   return (
     <svg aria-hidden viewBox={`-1 -1 ${N + 2} ${N + 2}`} className="size-[116px] flex-none rounded-[8px] bg-[#fff]" shapeRendering="crispEdges">
-      <path d={d} fill="#0b0e13" />
+      <path d={d} fill="#0d141c" />
     </svg>
   )
 }
@@ -154,7 +154,7 @@ function Checkout({ offer }: { offer: Offer }) {
   }
 
   const idx = phase === 'open' ? 0 : phase === 'active' ? 3 : conf > 0 ? 2 : 1
-  const st = { open: { label: 'Awaiting payment', cls: 'bg-grid text-ink-2' }, sent: { label: 'Confirming', cls: 'bg-[rgba(232,192,96,.15)] text-gold' }, active: { label: 'Plan active', cls: 'bg-success-bg text-green' } }[phase]
+  const st = { open: { label: 'Awaiting payment', cls: 'bg-grid text-ink-2' }, sent: { label: 'Confirming', cls: 'bg-[rgba(217,181,99,.15)] text-gold' }, active: { label: 'Plan active', cls: 'bg-success-bg text-green' } }[phase]
   const inv = `demo-${(hash(planKey + asset.id) % 1e8).toString(36)}`
 
   const chip = (on: boolean) => `inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[12px] transition-colors ${on ? 'border-gold bg-gold font-semibold text-bg' : 'border-line-strong text-ink-2 hover:border-line-hover hover:text-ink'}`

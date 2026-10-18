@@ -128,5 +128,21 @@
     "listing": "https://tether.to/en/brand-resources",
     "terms": "Tether's own published logo; Tether brand resources terms apply (unaltered, no implied endorsement).",
     "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "coin/POL": {
+    "ticker": "POL",
+    "file": "/chains/polygon.svg",
+    "from": "the Polygon chain mark (public/chains/SOURCES.json, polygon)",
+    "listing": "https://polygon.technology/brand-resources",
+    "terms": "POL, Polygon's own coin, is shown with Polygon's mark, as SOL is with Solana's.",
+    "fetchedAt": "2026-10-18T02:10:00Z"
+  },
+  "coin/AVAX": {
+    "ticker": "AVAX",
+    "file": "/chains/avalanche.svg",
+    "from": "the Avalanche chain mark (public/chains/SOURCES.json, avalanche)",
+    "listing": "https://www.avax.network/brand",
+    "terms": "AVAX is shown with Ava Labs' own AVAX logo, the same file as the chain mark.",
+    "fetchedAt": "2026-10-18T02:10:00Z"
   }
 }

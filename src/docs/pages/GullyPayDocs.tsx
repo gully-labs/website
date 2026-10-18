@@ -4,6 +4,7 @@ import { PayCoverage } from '../LiveCharts'
 
 const sections = [
   { id: 'overview', title: 'Overview' },
+  { id: 'chains', title: 'Chains, treasury and the fee' },
   { id: 'links', title: 'Pay links' },
   { id: 'checkout', title: 'The checkout' },
   { id: 'qr', title: 'Wallet QR codes' },
@@ -16,7 +17,7 @@ const sections = [
 
 const BUTTON = `<a href="https://gullylabs.xyz/pay/l/pl_XXXXXXXXXXXXXXXX" target="_blank" rel="noopener"
    data-gully-pay="popup" style="display:inline-flex;align-items:center;min-height:44px;padding:0 20px;
-   border-radius:10px;background:#e8c060;color:#0b0e13;font:600 15px/1 system-ui,sans-serif;text-decoration:none">
+   border-radius:10px;background:#d9b563;color:#0d141c;font:600 15px/1 system-ui,sans-serif;text-decoration:none">
   Pay with crypto
 </a>
 <!-- Optional: opens the checkout in a popup instead of a new tab. -->
@@ -133,13 +134,13 @@ export function GullyPayDocs() {
       slug="gully-pay"
       eyebrow="PRODUCTS · GULLY PAY"
       title="Gully Pay"
-      description="Gully Pay: invoices and reusable pay links in ETH, BNB, USDC or USDT on four chains, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them."
+      description="Gully Pay: invoices and reusable pay links in USDC, USDT or the chain's own coin on seven chains, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them."
       lead="Non-custodial crypto billing: every payment is a plain transfer from the payer’s wallet straight to the treasury, read back from the chain. Invoices, reusable pay links, a hosted checkout and signed webhooks."
       sections={sections}
     >
       <Section id="overview" title="Overview">
         <P>
-          An <b>invoice</b> (<C>/pay/inv_…</C>) asks for one US dollar amount. The payer picks a chain and an asset and gets a quote: the exact amount to send, valid for 20 minutes. Stablecoins count one to one with a unique tag in the last digits; ETH and BNB are priced by the Chainlink USD feed on the same chain. A payment is
+          An <b>invoice</b> (<C>/pay/inv_…</C>) asks for one US dollar amount. The payer picks a chain and an asset and gets a quote: the exact amount to send, valid for 20 minutes. Stablecoins count one to one with a unique tag in the last digits; the chains' own coins (ETH, BNB, POL, AVAX) are priced by the Chainlink USD feed on the same chain. A payment is
           checked on chain (success, right chain, right asset, the treasury, the exact amount, enough confirmations, never used before) before the invoice is marked paid. The same rules as{' '}
           <DocLink to="plans-alerts" hash="paying">
             API plans
@@ -153,6 +154,9 @@ export function GullyPayDocs() {
             ['Ethereum (1)', '6', 'USDC, USDT (6 decimals), ETH'],
             ['BNB Chain (56)', '15', 'USDT, USDC (18 decimals), BNB'],
             ['Arbitrum (42161)', '10', 'USDC (6 decimals), ETH'],
+            ['OP Mainnet (10)', '10', 'USDC, USDT (6 decimals), ETH'],
+            ['Polygon (137)', '64', 'USDC (6 decimals), POL'],
+            ['Avalanche (43114)', '2', 'USDC, USDT (6 decimals), AVAX'],
           ]}
         />
         <P>
@@ -160,6 +164,31 @@ export function GullyPayDocs() {
         </P>
         <PayCoverage />
         <Callout label="NO CUSTODY">Nothing is held in between: the transfer goes to the treasury in the payer’s own transaction. If no treasury is configured, every page says checkout is closed and shows no amount or QR.</Callout>
+      </Section>
+
+      <Section id="chains" title="Chains, treasury and the fee">
+        <P>
+          The treasury is a Safe: the same address on every chain, but it only exists on a chain where it has been deployed. The server reads <C>eth_getCode(treasury)</C> on every chain at start and hourly; a chain where the treasury has no code is <b>not offered</b> (no quote, no pay link, no checkout, no QR) until the Safe is deployed there, when it switches on by itself. The live list above is already filtered this way.
+        </P>
+        <P>
+          Merchant payments go to the merchant's own wallet (checked the same way, per chain). The Gully Pay <b>fee</b> on a stablecoin payment is collected inside that payment through Request Network's <C>ERC20FeeProxy</C> only on a chain where that contract is verified byte for byte <i>and</i> the treasury is deployed; everywhere else, and for coin payments, the payer makes one plain transfer and the fee is invoiced to the merchant weekly. The payer never sees a difference in the amount.
+        </P>
+        <Fields
+          head={['Chain', 'Fee proxy · treasury', 'What the payer sees']}
+          rows={[
+            ['Base', 'proxy verified (0x1892…b814) · treasury deployed', 'stablecoins: one approve + one call pays merchant and fee; coins: one transfer'],
+            ['Ethereum', 'proxy verified (0x370D…623C) · treasury deployed', 'same as Base'],
+            ['BNB Chain', 'proxy verified (0x0Dfb…0aC9) · treasury deployed', 'same as Base'],
+            ['Arbitrum', 'proxy verified (0x0Dfb…0aC9) · treasury deployed', 'same as Base'],
+            ['OP Mainnet', 'proxy verified, byte-identical to Base (0x399F…cbfE) · treasury not deployed yet', 'Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced; once the Safe is deployed, same as Base'],
+            ['Polygon', 'proxy present (0x0Dfb…0aC9) but a different build from Base’s: not used · treasury not deployed yet', 'Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced'],
+            ['Avalanche', 'proxy present (0x0Dfb…0aC9) but a different build from Base’s: not used · treasury not deployed yet', 'Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced'],
+            ['Solana', 'no Request deployment · its own treasury (GULLY_SOLANA_TREASURY)', 'one Solana Pay transfer; a merchant fee is invoiced'],
+          ]}
+        />
+        <P>
+          Each new chain's proxy was read with <C>eth_getCode</C> through three or more public RPCs and its runtime, metadata stripped, compared with Base's <C>0x1892…b814</C>; only a byte-identical one is used for a split (OP Mainnet). Polygon's and Avalanche's are other builds of the same source, so those chains stay on plain transfers with the fee invoiced. The addresses, hashes and what each RPC answered are in <C>contracts/CHOICE.md</C>. <C>GET /api/plans</C> carries <C>feeProxy</C> (verified contract exists) and <C>feeSplit</C> (usable now) per chain.
+        </P>
       </Section>
 
       <Section id="links" title="Pay links">

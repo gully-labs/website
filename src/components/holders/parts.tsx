@@ -140,7 +140,7 @@ export function DeployerHistoryCard({ d, now }: { d: DeployerHistory; now: numbe
                   <span className="min-w-0 flex-1 truncate font-semibold text-kit-bone">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
                   <span className="flex-none font-mono text-[11px] text-kit-text-dim">{ageText(l.createdAt, now)}</span>
                   <span
-                    className="flex-none rounded-full border px-2 py-[1px] font-mono text-[10px]"
+                    className="flex-none rounded-full border px-2 py-[1px] font-mono text-[11px]"
                     style={{
                       borderColor: OUTCOME[l.outcome].colour,
                       color: OUTCOME[l.outcome].colour,

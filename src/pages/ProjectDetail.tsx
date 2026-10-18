@@ -52,7 +52,7 @@ export function ProjectDetail() {
 
       <Link
         to="/#projects"
-        className="self-start py-2 font-mono text-[13px] text-muted transition-colors hover:text-ink"
+        className="inline-flex min-h-11 items-center self-start font-mono text-[13px] text-muted transition-colors hover:text-ink"
       >
         ← ALL PROJECTS
       </Link>
@@ -90,7 +90,7 @@ export function ProjectDetail() {
             <a
               href={p.url}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="whitespace-nowrap rounded-btn px-[26px] py-4 font-semibold text-bg transition-[filter] hover:text-bg hover:brightness-110"
               style={{ background: p.accent }}
             >

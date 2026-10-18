@@ -33,7 +33,7 @@ export function DayBars({ days, series, height = 180, unit = 'requests' }: { day
             onMouseLeave={() => setHover(-1)}
             onFocus={() => setHover(i)}
             onBlur={() => setHover(-1)}
-            className={`flex h-full min-w-0 flex-1 flex-col-reverse rounded-t-[2px] outline-offset-1 ${hover === i ? 'bg-surface-hover' : ''}`}
+            className={`flex h-full min-w-0 flex-1 flex-col-reverse rounded-t-bar outline-offset-1 ${hover === i ? 'bg-surface-hover' : ''}`}
           >
             {series.map((s, j) => {
               const v = Number(d[s.key] ?? 0)
@@ -55,7 +55,7 @@ export function DayBars({ days, series, height = 180, unit = 'requests' }: { day
           </div>
         )}
       </div>
-      <div className="flex justify-between font-mono text-[11px] text-axis" aria-hidden>
+      <div className="flex justify-between font-mono text-[11px] text-faint" aria-hidden>
         <span>{days.length ? label(days[0].day) : ''}</span>
         <span>{days.length ? label(days[days.length - 1].day) : ''}</span>
       </div>
@@ -63,7 +63,7 @@ export function DayBars({ days, series, height = 180, unit = 'requests' }: { day
         <div className="flex flex-wrap gap-4 font-mono text-[11px] text-faint">
           {series.map((s) => (
             <span key={s.key} className="inline-flex items-center gap-2">
-              <i className="inline-block size-[9px] rounded-[2px]" style={{ background: s.color }} />
+              <i className="inline-block size-[9px] rounded-bar" style={{ background: s.color }} />
               {s.label}
             </span>
           ))}

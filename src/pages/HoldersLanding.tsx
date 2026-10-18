@@ -176,7 +176,7 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
         data: scored.map((l) => l.symbol ?? l.token.slice(0, 6)),
         axisLabel: {
           color: K.muted,
-          fontSize: 10,
+          fontSize: 11,
           interval: 0,
           rotate: scored.length > 6 ? 30 : 0,
         },
@@ -197,7 +197,7 @@ function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now:
           id: 'scores',
           ...barsPreset({ radius: [4, 4, 0, 0] }),
           barMaxWidth: 28,
-          label: { show: true, position: 'top', color: K.bone, fontSize: 10 },
+          label: { show: true, position: 'top', color: K.bone, fontSize: 11 },
           data: scored.map((l) => ({
             value: l.health?.score,
             itemStyle: {
@@ -240,7 +240,7 @@ function FeedRow({ l, i, now }: { l: CheckedLaunch; i: number; now: number }) {
         {l.state === 'checked' ? (
           <ScoreRing score={score} level={l.health?.level ?? null} size={44} />
         ) : (
-          <span className="inline-flex size-11 flex-none animate-[gl-skeleton_1.4s_ease-in-out_infinite] items-center justify-center rounded-full border border-line-strong font-mono text-[9px] text-kit-text-dim">
+          <span className="inline-flex size-11 flex-none animate-[gl-skeleton_1.4s_ease-in-out_infinite] items-center justify-center rounded-full border border-line-strong font-mono text-[11px] text-kit-text-dim">
             {l.state === 'checking' ? '…' : '—'}
           </span>
         )}
