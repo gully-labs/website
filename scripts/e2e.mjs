@@ -854,7 +854,7 @@ await step('docs', async () => {
 /* ------------------------------------------------------------- 404s and mobile pages --- */
 
 await step('404s', async () => {
-  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200]]) {
+  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200], ['/links', 200]]) {
     const r = await fetch(BASE + p)
     const html = await r.text()
     check(`HTTP ${want} for ${p}`, r.status === want && (want === 404 ? /noindex/.test(html) : !/Not found ·/.test(html)), `${r.status}`)
@@ -864,7 +864,7 @@ await step('404s', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/legal/privacy', '/developers']) {
+  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/legal/privacy', '/developers', '/links']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/developers') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
@@ -872,6 +872,37 @@ await step('pages at 390', async () => {
     await noHorizontalScroll(page, p)
     await w.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   }
+  await ctx.close()
+})
+
+// The link hub (/links): the kit lockup, every link a new tab with noopener, web links tagged for the KOL
+// campaign, the Gully Pay fee read from the server, and the live movers row.
+await step('links hub', async () => {
+  const ctx = await newContext({ width: 390, height: 844, mobile: true })
+  const page = await ctx.newPage()
+  const w = watch(page, '/links')
+  await page.goto(BASE + '/links')
+  await page.waitForLoadState('networkidle').catch(() => {})
+  const r = await page.evaluate(() => {
+    const links = [...document.querySelectorAll('main a[href^="http"]')]
+    return {
+      kit: document.querySelectorAll('main [data-brand="kit"]').length,
+      n: links.length,
+      bad: links.filter((a) => a.getAttribute('target') !== '_blank' || !/noopener/.test(a.getAttribute('rel') ?? '')).map((a) => a.getAttribute('href')),
+      noIcon: links.filter((a) => !a.querySelector('svg')).map((a) => a.getAttribute('href')),
+      untagged: links.filter((a) => !/^https:\/\/(t\.me|x\.com|github\.com)\//.test(a.href) && !/utm_source=kol&utm_medium=links&utm_campaign=launch/.test(a.href)).map((a) => a.getAttribute('href')),
+      pay: /0\.5% after the first \$5,000/.test(document.body.textContent ?? ''),
+      soon: /Holder Map/.test(document.body.textContent ?? ''),
+    }
+  })
+  check('/links: the kit lockup is there', r.kit > 0, JSON.stringify(r))
+  check('/links: at least 15 links, each a new tab with noopener and an icon', r.n >= 15 && !r.bad.length && !r.noIcon.length, JSON.stringify(r))
+  check('/links: every web link carries the KOL UTM tags', !r.untagged.length, JSON.stringify(r.untagged))
+  check('/links: the Gully Pay fee is read from the server', r.pay)
+  check('/links: Holder Map is listed as coming soon', r.soon)
+  check('/links: the title', (await page.title()) === 'Links · Gully Labs', await page.title())
+  await noHorizontalScroll(page, '/links')
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
 })
 
