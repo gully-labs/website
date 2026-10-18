@@ -1,8 +1,10 @@
 import { ArrowLeft, Printer } from 'lucide-react'
-import { lazy, Suspense, useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
-import { storeName, type Brand } from './brand'
-import { GullyLockup, GullyMark } from './CheckoutFrame'
+import { GULLY_BRAND, pills, storeName, type Brand } from './brand'
+import { TokenLogo } from '../../components/logos/TokenLogo'
+import { CheckoutFrame, GullyLockup, GullyMark, PayPanel } from './CheckoutFrame'
+import { Notice } from './PayStates'
 import { fmtDay, fmtTime, useInvoice, type Invoice } from './invoice'
 import type { OrderItem } from './OrderSummary'
 
@@ -17,19 +19,31 @@ import type { OrderItem } from './OrderSummary'
 const ConfirmRing = lazy(() => import('./PayCharts').then((m) => ({ default: m.ConfirmRing })))
 const PriceChart = lazy(() => import('./PayCharts').then((m) => ({ default: m.PriceChart })))
 
-type ReceiptInvoice = Invoice & { merchant?: Brand; items?: OrderItem[]; customer?: { name: string } | null }
+type ReceiptInvoice = Invoice & {
+  merchant?: Brand
+  items?: OrderItem[]
+  customer?: { name: string } | null
+}
 
-function Row({ k, v, mono = false, href }: { k: string; v: string; mono?: boolean; href?: string | null }) {
+function Row({ k, v, mono = false, href, icon }: { k: string; v: string; mono?: boolean; href?: string | null; icon?: ReactNode }) {
   return (
-    <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-4 border-b border-[#d9dde3] py-[10px] last:border-b-0 max-[600px]:grid-cols-1 max-[600px]:gap-1 print:break-inside-avoid">
-      <dt className="font-mono text-[11px] tracking-[1px] text-[#5c6878]">{k}</dt>
-      <dd className={`m-0 break-all text-[#0b0e13] ${mono ? 'font-mono text-[13px]' : 'text-[15px]'}`}>
+    <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-4 border-b border-[#dde2e8] py-[10px] last:border-b-0 max-[600px]:grid-cols-1 max-[600px]:gap-1 print:break-inside-avoid">
+      <dt className="font-mono text-[11px] tracking-[1px] text-[#5f6a78]">{k}</dt>
+      <dd className={`m-0 break-all text-[#0d141c] ${mono ? 'font-mono text-[13px]' : 'text-[15px]'}`}>
         {href ? (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-[#9aa4b2] underline-offset-2 print:no-underline">
+          <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-[#949daa] underline-offset-2 print:no-underline">
             {v}
-          <span aria-hidden className="print:hidden"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+            <span aria-hidden className="print:hidden">
+              {' '}
+              ↗
+            </span>
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
         ) : (
-          v
+          <span className="inline-flex items-center gap-2">
+            {icon}
+            {v}
+          </span>
         )}
       </dd>
     </div>
@@ -61,56 +75,84 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
     }
   }, [p, params])
 
+  // No paid receipt to print (still reading, no such invoice, not paid yet): the kit's dark frame and lockup, not a bare white page.
+  if (!(inv && p)) {
+    const text =
+      state.k === 'loading'
+        ? 'Reading the receipt…'
+        : state.k === 'missing'
+          ? 'No such invoice.'
+          : state.k === 'error'
+            ? `The receipt could not be read: ${state.message}`
+            : inv
+              ? `Invoice ${inv.number} is ${inv.status}; a receipt exists once it is paid.`
+              : ''
+    return (
+      <CheckoutFrame brand={inv?.merchant ?? GULLY_BRAND} single>
+        <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4" data-testid="receipt-state">
+          <PayPanel title="Receipt" pill={state.k === 'loading' ? undefined : pills.closed} label="Receipt">
+            <Notice>{text}</Notice>
+            <Link to={back(id ?? '')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-ink-2 hover:text-ink hover:underline">
+              <ArrowLeft size={14} aria-hidden /> Back to the invoice
+            </Link>
+          </PayPanel>
+        </div>
+      </CheckoutFrame>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-[#fff] px-4 py-10 text-[#0b0e13] print:min-h-0 print:p-0">
+    <div className="min-h-screen bg-[#fff] px-4 py-10 text-[#0d141c] print:min-h-0 print:p-0">
       <div className="mx-auto flex max-w-[760px] flex-col gap-8">
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <Link to={back(id ?? '')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-[#3a4452] hover:underline">
+          <Link to={back(id ?? '')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-[#2a3542] hover:underline">
             <ArrowLeft size={14} aria-hidden /> Back to the invoice
           </Link>
-          {p && (
-            <button type="button" onClick={() => window.print()} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-[#0b0e13] px-4 text-[14px] font-semibold hover:bg-[#0b0e13] hover:text-[#fff]">
+          {
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-[#0d141c] px-4 text-[14px] font-semibold hover:bg-[#0d141c] hover:text-[#fff]"
+            >
               <Printer size={15} aria-hidden /> Print or save as PDF
             </button>
-          )}
+          }
         </div>
 
-        {state.k === 'loading' && <p className="m-0 font-mono text-[13px] text-[#5c6878]">Reading the receipt…</p>}
-        {(state.k === 'missing' || state.k === 'error') && <p className="m-0 text-[16px]">{state.k === 'missing' ? 'No such invoice.' : `The receipt could not be read: ${state.message}`}</p>}
-        {inv && !p && <p className="m-0 text-[16px]">Invoice {inv.number} is {inv.status}; a receipt exists once it is paid.</p>}
-
-        {inv && p && (
-          <article className="flex flex-col gap-7 rounded-card border border-[#d9dde3] p-8 max-[600px]:p-5 print:rounded-none print:border-0 print:p-0" data-testid="receipt-page">
+        {
+          <article className="flex flex-col gap-7 rounded-card border border-[#dde2e8] p-8 max-[600px]:p-5 print:rounded-none print:border-0 print:p-0" data-testid="receipt-page">
             <header className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex flex-col gap-2">
                 {store ? (
                   <span className="flex items-center gap-3">
-                    {store.logoUrl && <img src={store.logoUrl} alt="" width={40} height={40} className="size-10 rounded-[10px] border border-[#d9dde3] object-contain" />}
+                    {store.logoUrl && <img src={store.logoUrl} alt="" width={40} height={40} className="size-10 rounded-[10px] border border-[#dde2e8] object-contain" />}
                     <b className="text-[20px] font-semibold">{who}</b>
                   </span>
                 ) : (
                   <GullyLockup height={34} light />
                 )}
-                <span className="font-mono text-[12px] text-[#5c6878]">{store ? [store.website?.replace(/^https?:\/\//, '').replace(/\/$/, ''), store.supportEmail].filter(Boolean).join(' · ') : 'gullylabs.xyz · hello@gullylabs.xyz'}</span>
+                <span className="font-mono text-[12px] text-[#5f6a78]">
+                  {store ? [store.website?.replace(/^https?:\/\//, '').replace(/\/$/, ''), store.supportEmail].filter(Boolean).join(' · ') : 'gullylabs.xyz · hello@gullylabs.xyz'}
+                </span>
               </div>
               <div className="flex flex-col items-end gap-1 text-right max-[600px]:items-start max-[600px]:text-left">
                 <h1 className="m-0 font-display text-[34px] leading-none font-extrabold uppercase">Receipt</h1>
-                <span className="font-mono text-[12px] text-[#5c6878]">
+                <span className="font-mono text-[12px] text-[#5f6a78]">
                   {inv.number}
                   {p.id ? ` · ${p.id}` : ''}
                 </span>
               </div>
             </header>
 
-            <div className="flex flex-wrap items-end justify-between gap-4 border-y border-[#0b0e13] py-5">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-y border-[#0d141c] py-5">
               <div className="flex min-w-0 flex-col gap-1">
-                <span className="font-mono text-[11px] tracking-[1px] text-[#5c6878]">FOR</span>
+                <span className="font-mono text-[11px] tracking-[1px] text-[#5f6a78]">FOR</span>
                 <span className="text-[20px] font-semibold break-words">{inv.title}</span>
-                {inv.customer?.name && <span className="text-[14px] text-[#3a4452]">Billed to {inv.customer.name}</span>}
-                {inv.note && <span className="text-[14px] whitespace-pre-line text-[#3a4452]">{inv.note}</span>}
+                {inv.customer?.name && <span className="text-[14px] text-[#2a3542]">Billed to {inv.customer.name}</span>}
+                {inv.note && <span className="text-[14px] whitespace-pre-line text-[#2a3542]">{inv.note}</span>}
               </div>
               <div className="flex flex-col items-end gap-1 max-[600px]:items-start">
-                <span className="rounded-full border-2 border-[#1d7a36] px-3 py-[2px] font-mono text-[12px] font-semibold tracking-[1px] text-[#1d7a36]">PAID IN FULL</span>
+                <span className="rounded-full border-2 border-[#2f6b35] px-3 py-[2px] font-mono text-[12px] font-semibold tracking-[1px] text-[#2f6b35]">PAID IN FULL</span>
                 <span className="font-display text-[36px] leading-none font-extrabold">{inv.usd} USD</span>
               </div>
             </div>
@@ -119,7 +161,7 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
               <table className="w-full border-collapse text-[14px]">
                 <caption className="sr-only">Line items</caption>
                 <thead>
-                  <tr className="border-b border-[#d9dde3] text-left font-mono text-[11px] tracking-[1px] text-[#5c6878]">
+                  <tr className="border-b border-[#dde2e8] text-left font-mono text-[11px] tracking-[1px] text-[#5f6a78]">
                     <th scope="col" className="py-2 pr-3 font-normal">
                       ITEM
                     </th>
@@ -136,7 +178,7 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
                 </thead>
                 <tbody>
                   {inv.items.map((i, n) => (
-                    <tr key={n} className="border-b border-[#d9dde3]">
+                    <tr key={n} className="border-b border-[#dde2e8]">
                       <td className="py-2 pr-3">{i.description}</td>
                       <td className="py-2 pr-3 text-right font-mono">{i.quantity}</td>
                       <td className="py-2 pr-3 text-right font-mono">{i.unitUsd}</td>
@@ -156,7 +198,11 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
             )}
 
             <dl className="m-0 flex flex-col">
-              <Row k="PAID" v={`${p.amount} ${p.symbol} on ${p.chain} (chain ${p.chainId})`} />
+              <Row
+                k="PAID"
+                v={`${p.amount} ${p.symbol} on ${p.chain} (chain ${p.chainId})`}
+                icon={paidAsset ? <TokenLogo symbol={p.symbol} chain={paidAsset.chainKey} address={paidAsset.address} size={20} decorative /> : undefined}
+              />
               {p.price && <Row k="PRICE USED" v={`1 ${p.symbol} = ${p.price.answer} USD (Chainlink ${p.price.description}, round ${p.price.roundId}, updated ${fmtTime(p.price.updatedAt)})`} />}
               <Row k="CONFIRMED" v={fmtTime(inv.paidAt)} />
               <Row k="ISSUED" v={fmtDay(inv.createdAt)} />
@@ -167,22 +213,37 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
             </dl>
 
             {paidAsset && (
-              <section aria-label="Live checks" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] items-center gap-5 rounded-card bg-bg p-4 print:hidden" data-testid="receipt-live">
+              <section
+                aria-label="Live checks"
+                className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] items-center gap-5 rounded-card bg-bg p-4 print:hidden"
+                data-testid="receipt-live"
+              >
                 <Suspense fallback={<span className="h-[150px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-input bg-surface" />}>
                   <ConfirmRing n={paidAsset.confirmations} needed={paidAsset.confirmations} state="done" chain={p.chain} />
-                  {paidAsset.kind === 'native' && p.price && <PriceChart asset={paidAsset} quoted={{ answer: p.price.answer, updatedAt: p.price.updatedAt, label: 'paid at' }} />}
+                  {paidAsset.kind === 'native' && p.price && (
+                    <PriceChart
+                      asset={paidAsset}
+                      quoted={{
+                        answer: p.price.answer,
+                        updatedAt: p.price.updatedAt,
+                        label: 'paid at',
+                      }}
+                    />
+                  )}
                 </Suspense>
               </section>
             )}
 
-            <p className="m-0 text-[12px] leading-[1.6] text-[#5c6878]">
-              This receipt records a payment checked on chain by Gully Pay: the transaction succeeded, paid {store ? `${who}'s wallet` : 'the Gully Labs treasury'} exactly the amount quoted for this invoice, and had the chain’s required confirmations. Anyone can check it on the chain’s explorer with the transaction hash above. {store ? `${who} is the seller; questions about the order go to it.` : ''} It is not a tax invoice.
+            <p className="m-0 text-[12px] leading-[1.6] text-[#5f6a78]">
+              This receipt records a payment checked on chain by Gully Pay: the transaction succeeded, paid {store ? `${who}'s wallet` : 'the Gully Labs treasury'} exactly the amount quoted for this
+              invoice, and had the chain’s required confirmations. Anyone can check it on the chain’s explorer with the transaction hash above.{' '}
+              {store ? `${who} is the seller; questions about the order go to it.` : ''} It is not a tax invoice.
             </p>
-            <p className="m-0 inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-[#5c6878]">
+            <p className="m-0 inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-[#5f6a78]">
               {store ? 'VIA' : 'POWERED BY'} <GullyMark size={18} /> GULLY PAY · GULLYLABS.XYZ
             </p>
           </article>
-        )}
+        }
       </div>
     </div>
   )

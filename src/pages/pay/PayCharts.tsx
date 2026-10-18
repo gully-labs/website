@@ -3,6 +3,8 @@ import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { EChart } from '../../components/charts/EChart'
 import type { ChartEvent } from '../../components/charts/chart-utils'
 import { axisTooltip, barsPreset, C, linePreset, livePoint, PALETTE, ringPreset, tipHtml } from '../../components/charts/chartPresets'
+import { GhostChart } from '../../components/charts/GhostChart'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { NF } from '../../components/charts/number-formats'
 import { payApi, type PayAsset } from './api'
 
@@ -22,7 +24,7 @@ export type RingState = 'waiting' | 'checking' | 'pending' | 'done'
 
 export function ConfirmRing({ n, needed, state, chain }: { n: number; needed: number; state: RingState; chain: string }) {
   const have = state === 'done' ? needed : Math.min(n, needed)
-  const color = state === 'done' ? '#6fcf6a' : C.gold
+  const color = state === 'done' ? '#74c27b' : C.gold
   const option = useMemo(
     () => ({
       tooltip: { show: false },
@@ -98,7 +100,7 @@ function usePriceSamples(assetId: string) {
   return state.asset === assetId ? { samples: state.samples, error: state.error } : { samples: [] as Sample[], error: null }
 }
 
-export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'symbol' | 'chain'> & { feed?: PayAsset['feed'] }; quoted?: { answer: string; updatedAt: string; label?: string } | null }) {
+export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'symbol' | 'chain'> & Partial<Pick<PayAsset, 'chainKey' | 'address'>> & { feed?: PayAsset['feed'] }; quoted?: { answer: string; updatedAt: string; label?: string } | null }) {
   const { samples, error } = usePriceSamples(asset.id)
   const q = quoted ? Number(quoted.answer) : null
   const qt = quoted ? Date.parse(quoted.updatedAt) : null
@@ -120,7 +122,7 @@ export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'sy
           title: isQuote ? `Chainlink price the quote used · ${hhmmss(t)} UTC` : `Read at ${hhmmss(t)} UTC`,
           rows: [
             { name: `${asset.symbol} / USD`, value: fmtUsd(v), color: C.gold },
-            ...(q && !isQuote ? [{ name: 'vs quote', value: `${v >= q ? '+' : ''}${(((v - q) / q) * 100).toFixed(3)}%`, valueColor: v >= q ? '#6fcf6a' : C.error }] : []),
+            ...(q && !isQuote ? [{ name: 'vs quote', value: `${v >= q ? '+' : ''}${(((v - q) / q) * 100).toFixed(3)}%`, valueColor: v >= q ? '#74c27b' : C.error }] : []),
           ],
         })
       }),
@@ -144,7 +146,10 @@ export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'sy
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <span className="flex min-w-0 flex-col gap-1">
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">{asset.symbol} PRICE · CHAINLINK ON {asset.chain.toUpperCase()}</span>
+          <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
+            <TokenLogo symbol={asset.symbol} chain={asset.chainKey} address={asset.address} size={16} decorative />
+            {asset.symbol} PRICE · CHAINLINK ON {asset.chain.toUpperCase()}
+          </span>
           <span className="font-display text-[24px] leading-none font-extrabold text-ink">
             <AnimatedNumber value={now} format={NF.usd} fallback={error ? 'unreadable' : '—'} />
           </span>
@@ -160,7 +165,11 @@ export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'sy
           </span>
         )}
       </div>
-      <EChart option={option} height={150} skeleton="line" error={!samples.length && error ? `Price unreadable: ${error}` : undefined} label={`${asset.symbol} price in USD from Chainlink on ${asset.chain === 'Solana' ? 'Arbitrum' : asset.chain}${now !== null ? `, now ${fmtUsd(now)}` : ''}${q ? `, ${fmtUsd(q)} at quote time` : ''}. Read every 30 seconds while this page is open.`} />
+      {points.length < 2 && !error ? (
+        <GhostChart variant="line" height={150} label={`${asset.symbol} price will draw here as it is read`} />
+      ) : (
+        <EChart option={option} height={150} skeleton="line" error={!samples.length && error ? `Price unreadable: ${error}` : undefined} label={`${asset.symbol} price in USD from Chainlink on ${asset.chain === 'Solana' ? 'Arbitrum' : asset.chain}${now !== null ? `, now ${fmtUsd(now)}` : ''}${q ? `, ${fmtUsd(q)} at quote time` : ''}. Read every 30 seconds while this page is open.`} />
+      )}
       <span className="font-mono text-[11px] leading-[1.5] text-faint">
         Read live every 30 seconds while this page is open{q ? '. Your amount stays fixed at the quoted price until the quote runs out.' : '.'}
       </span>

@@ -1,5 +1,6 @@
 import { ArrowUpRight, Ban, Clock, Loader2, Mail, PauseCircle, RefreshCw, TriangleAlert, Wrench } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { GhostChart } from '../../components/charts/GhostChart'
 import { btnOutline } from '../../components/ui'
 import { GULLY_BRAND, merchantTabUrl, pills, storeName, type Brand, type Viewer } from './brand'
 import { CheckoutFrame, PayPanel } from './CheckoutFrame'
@@ -26,7 +27,7 @@ function Contact({ brand }: { brand: Brand }) {
 export function OwnerFixes({ viewer }: { viewer: Viewer | null | undefined }) {
   if (!viewer?.fixes.length) return null
   return (
-    <div className="flex flex-col gap-3 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-4 text-[14px] leading-[1.55] text-ink-2" data-testid="owner-fixes">
+    <div className="flex flex-col gap-3 rounded-input border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-4 text-[14px] leading-[1.55] text-ink-2" data-testid="owner-fixes">
       <span className="inline-flex items-center gap-2 font-semibold text-ink">
         <Wrench size={15} className="text-gold" aria-hidden /> You run this store ({viewer.role}). Payers see the message above; to open the checkout:
       </span>
@@ -34,8 +35,9 @@ export function OwnerFixes({ viewer }: { viewer: Viewer | null | undefined }) {
         {viewer.fixes.map((f, i) => (
           <li key={i}>
             {f.text}{' '}
-            <a href={merchantTabUrl(f.id)} className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
+            <a href={merchantTabUrl(f.id)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
               Open in the Merchant tab <ArrowUpRight size={12} aria-hidden />
+              <span className="sr-only"> (opens in a new tab)</span>
             </a>
           </li>
         ))}
@@ -44,15 +46,21 @@ export function OwnerFixes({ viewer }: { viewer: Viewer | null | undefined }) {
   )
 }
 
-export function Notice({ icon, title, children, tone = 'muted' }: { icon?: ReactNode; title?: string; children: ReactNode; tone?: 'muted' | 'error' }) {
+export function Notice({ icon, title, children, tone = 'muted', ghost }: { icon?: ReactNode; title?: string; children: ReactNode; tone?: 'muted' | 'error'; ghost?: string }) {
   return (
-    <div className={`flex items-start gap-3 rounded-input border px-4 py-4 text-[15px] leading-[1.6] ${tone === 'error' ? 'border-[#5a2a24] bg-[rgba(255,138,122,.06)] text-ink-2' : 'border-line-strong bg-bg text-ink-2'}`} role="status">
-      {icon}
-      <span className="flex min-w-0 flex-col gap-1">
-        {title && <b className="text-ink">{title}</b>}
-        <span>{children}</span>
-      </span>
-    </div>
+    <>
+      <div
+        className={`flex items-start gap-3 rounded-input border px-4 py-4 text-[15px] leading-[1.6] ${tone === 'error' ? 'border-[#5a2a24] bg-[rgba(255,138,122,.06)] text-ink-2' : 'border-line-strong bg-bg text-ink-2'}`}
+        role="status"
+      >
+        {icon}
+        <span className="flex min-w-0 flex-col gap-1">
+          {title && <b className="text-ink">{title}</b>}
+          <span>{children}</span>
+        </span>
+      </div>
+      {ghost && <GhostChart variant="line" height={72} label={ghost} testId="state-ghost" />}
+    </>
   )
 }
 
@@ -60,7 +68,7 @@ export function Notice({ icon, title, children, tone = 'muted' }: { icon?: React
 export function Unavailable({ brand, reason, viewer }: { brand: Brand; reason?: string | null; viewer?: Viewer | null }) {
   return (
     <div className="flex flex-col gap-4" data-testid="state-unavailable">
-      <Notice icon={<Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />} title="This checkout isn't available right now.">
+      <Notice icon={<Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />} title="This checkout isn't available right now." ghost="Payments will draw here once this checkout opens">
         <Contact brand={brand} />
         {reason && <span className="mt-1 block font-mono text-[11px] text-faint">{reason}</span>}
       </Notice>
@@ -73,7 +81,12 @@ export function Unavailable({ brand, reason, viewer }: { brand: Brand; reason?: 
 export function Paused({ brand, viewer }: { brand: Brand; viewer?: Viewer | null }) {
   return (
     <div className="flex flex-col gap-4" data-testid="state-paused">
-      <Notice icon={<PauseCircle size={18} className="mt-[3px] shrink-0 text-error" aria-hidden />} title="This store's checkout is paused." tone="error">
+      <Notice
+        icon={<PauseCircle size={18} className="mt-[3px] shrink-0 text-error" aria-hidden />}
+        title="This store's checkout is paused."
+        tone="error"
+        ghost="Payments will draw here once the checkout is back"
+      >
         Nothing can be paid here right now. <Contact brand={brand} />
       </Notice>
       <OwnerFixes viewer={viewer} />
@@ -83,7 +96,11 @@ export function Paused({ brand, viewer }: { brand: Brand; viewer?: Viewer | null
 
 export function Expired({ when, brand, fromLink }: { when: string; brand: Brand; fromLink: boolean }) {
   return (
-    <Notice icon={<Clock size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />} title={`This invoice expired on ${when} without a payment.`}>
+    <Notice
+      icon={<Clock size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />}
+      title={`This invoice expired on ${when} without a payment.`}
+      ghost="No payment was received before it expired"
+    >
       {fromLink ? 'Open the payment link again to start a new checkout. ' : 'Ask for a new one. '}
       If you paid it in time, send the transaction hash: <Contact brand={brand} />
     </Notice>
@@ -92,7 +109,7 @@ export function Expired({ when, brand, fromLink }: { when: string; brand: Brand;
 
 export function Cancelled({ when, brand }: { when: string; brand: Brand }) {
   return (
-    <Notice icon={<Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />} title={`This invoice was cancelled on ${when} and cannot be paid.`}>
+    <Notice icon={<Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />} title={`This invoice was cancelled on ${when} and cannot be paid.`} ghost="Nothing was paid on this invoice">
       <Contact brand={brand} />
     </Notice>
   )
@@ -100,10 +117,18 @@ export function Cancelled({ when, brand }: { when: string; brand: Brand }) {
 
 /** A pay link that is switched off, expired or used up. */
 export function LinkClosed({ state, text, brand, viewer }: { state: 'inactive' | 'expired' | 'used-up'; text: string | null; brand: Brand; viewer?: Viewer | null }) {
-  const title = { inactive: 'This payment link is switched off.', expired: 'This payment link has expired.', 'used-up': 'This payment link has reached its maximum uses.' }[state]
+  const title = {
+    inactive: 'This payment link is switched off.',
+    expired: 'This payment link has expired.',
+    'used-up': 'This payment link has reached its maximum uses.',
+  }[state]
   return (
     <div className="flex flex-col gap-4" data-testid={`state-link-${state}`}>
-      <Notice icon={state === 'expired' ? <Clock size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden /> : <Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />} title={title}>
+      <Notice
+        icon={state === 'expired' ? <Clock size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden /> : <Ban size={18} className="mt-[3px] shrink-0 text-faint" aria-hidden />}
+        title={title}
+        ghost="No payments can be made on this link"
+      >
         {text ? `${text} ` : ''}
         Ask for a new link. <Contact brand={brand} />
       </Notice>

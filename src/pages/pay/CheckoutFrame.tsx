@@ -190,7 +190,7 @@ export function PayPanel({ title, sub, pill, children, label = 'Payment' }: { ti
 /** The sticky bottom bar on phones: the total and one action. Hidden from lg up, where the panel is beside the order. */
 export function MobilePayBar({ total, children }: { total: string; children: ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-[rgba(11,14,19,.94)] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur lg:hidden" role="region" aria-label="Pay">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-[rgba(13,20,28,.94)] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur lg:hidden" role="region" aria-label="Pay">
       <div className="mx-auto flex max-w-[640px] items-center justify-between gap-3">
         <span className="flex min-w-0 flex-col leading-tight">
           <span className="font-mono text-[11px] tracking-[1px] text-faint">TOTAL</span>
