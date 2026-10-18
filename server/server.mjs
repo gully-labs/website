@@ -11,6 +11,7 @@ import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore 
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { startChannel } from './telegram-channel.mjs'
+import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
@@ -215,6 +216,8 @@ async function handleRequest(req, res) {
   if (url.pathname.startsWith('/api/tg/')) return void (await handleMiniApp(req, res, url))
   // Telegram's webhook (telegram.mjs): 404 unless the bot is configured and the secret path matches.
   if (url.pathname.startsWith('/api/telegram/')) return void (await handleTelegramWebhook(req, res, url))
+  // Tracked links in bot broadcasts (telegram-broadcast.mjs): count one open, redirect to the broadcast's own button URL.
+  if (url.pathname.startsWith('/r/')) return void handleBroadcastRedirect(req, res, url)
   // Which alert delivery channels this server offers (the pricing page and the docs read it). Public.
   if (url.pathname === '/api/alerts/channels') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
@@ -229,8 +232,8 @@ async function handleRequest(req, res) {
     if (await handleSolana(req, res, url, geoFor(req, isLocal))) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
-  // Gully Ask (ask.mjs): POST /api/ask and GET /api/ask/status.
-  if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status') return void (await handleAsk(req, res, url))
+  // Gully Ask (ask.mjs): POST /api/ask, GET /api/ask/status and POST /api/ask/feedback.
+  if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status' || url.pathname === '/api/ask/feedback') return void (await handleAsk(req, res, url))
   // Gully Pay gas costs per chain, cached (gas.mjs): the app's Merchant tab reads it. Public.
   if (url.pathname === '/api/pay/gas') return void (await handleGas(req, res))
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
@@ -415,6 +418,7 @@ function startLoops() {
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
   startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
   startChannel() // @GullyLabsNews: scheduled posts and auto posts (telegram-channel.mjs)
+  startBroadcasts() // bot DMs: scheduled broadcasts, and resuming one a restart interrupted (telegram-broadcast.mjs)
   // Gully Ask: log pruning, and the remote corpus refresh when ANTHROPIC_API_KEY is set.
   startAsk()
   // Hourly balance check of every fee-proxy contract (fee-proxy-monitor.mjs): non-zero = a third-party mis-send.

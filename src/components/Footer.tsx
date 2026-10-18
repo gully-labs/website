@@ -1,4 +1,5 @@
 import { Building2, Code2, LayoutGrid, Send, Share2, type LucideIcon } from 'lucide-react'
+import { Link } from 'react-router'
 import { navGroups, navLinks, socialLinks, type NavEntry } from '../content/site'
 import { useContact } from './ContactContext'
 import { EntryLink, NewTabMark } from './LayoutLinks'
@@ -84,7 +85,17 @@ export function Footer() {
         </div>
       </div>
       <div className="flex flex-col gap-2 border-t border-line pt-6 font-mono text-[12px] leading-[1.6] text-faint min-[1024px]:flex-row min-[1024px]:items-start min-[1024px]:justify-between min-[1024px]:gap-8">
-        <span className="flex-none">© 2026 GULLY LABS</span>
+        <span className="flex flex-none flex-wrap items-center gap-x-4">
+          <span>© 2026 GULLY LABS</span>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-4">
+            <Link to="/legal/privacy" className="inline-flex min-h-11 items-center hover:text-gold">
+              Privacy
+            </Link>
+            <Link to="/legal/merchant-terms" className="inline-flex min-h-11 items-center hover:text-gold">
+              Merchant terms
+            </Link>
+          </nav>
+        </span>
         <p className="m-0 max-w-[760px] min-[1024px]:text-right">
           Information only, not investment advice. Prices and gaps are read live and can be late or wrong; stock tokens are issued by third parties whose own terms apply, and may not be
           available where you live.

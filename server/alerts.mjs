@@ -427,6 +427,9 @@ function view(a, covered) {
   }
 }
 
+/** How many alerts a wallet has (the broadcast "has alerts" audience). */
+export const alertCountOf = (address) => db.alerts.filter((a) => a.owner === address).length
+
 /** Alerts and limits for a wallet's dashboard. */
 export async function alertsOf(address) {
   const plan = planOf(address)

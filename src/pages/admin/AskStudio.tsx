@@ -1,9 +1,11 @@
 import { Check, Copy, LoaderCircle, RotateCcw, Wand2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { copyWithToast } from '../../components/ui/toast'
+import { MiniBars } from '../../components/ask/AskCards'
 
 /* Gully Ask in the admin dashboard: the content studio (drafts from the docs and live data, never
-   posted anywhere) and the ask log (what people ask, and how often Ask had no answer).
+   posted anywhere), the ask log (what people ask, and how often Ask had no answer), and the
+   "Unanswered / low-rated questions" card (GET /api/admin/ask/gaps: the docs to write next).
    Mounted by AdminPage with the admin token; talks to /api/admin/ask/* only. */
 
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6'
@@ -285,6 +287,78 @@ function Log({ log }: { log: AskLog }) {
   )
 }
 
+interface Gaps {
+  days: number
+  items: { question: string; asked: number; unanswered: number; errors: number; down: number; up: number; lastAt: string | null; cited: string[] }[]
+  totals: { questions: number; unanswered: number; ratedUp: number; ratedDown: number }
+}
+
+/** Questions Gully AI could not answer or people rated down, worst first: which docs to write. */
+function GapsCard({ token }: { token: string }) {
+  const [g, setG] = useState<Gaps | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    const load = async () => {
+      const r = await fetch('/api/admin/ask/gaps?days=30', { headers: { authorization: `Bearer ${token}` } }).catch(() => null)
+      const d = r ? await r.json().catch(() => null) : null
+      if (!alive) return
+      if (r?.ok && d) {
+        setG(d as Gaps)
+        setErr(null)
+      } else setErr(d?.error ?? 'Could not be read.')
+    }
+    load()
+    const id = setInterval(load, 60_000)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [token])
+  return (
+    <section className={card} aria-labelledby="ask-gaps-title" data-testid="ask-gaps">
+      <div className="flex flex-col gap-1">
+        <h2 id="ask-gaps-title" className={h2}>
+          Unanswered / low-rated questions
+        </h2>
+        <span className={small}>Last 30 days, top 20: the docs to write next. Live from the ask log and the thumbs.</span>
+      </div>
+      {!g ? (
+        <p className={`m-0 ${small}`}>{err ?? 'Reading…'}</p>
+      ) : (
+        <>
+          <p className={`m-0 ${small}`}>
+            {g.totals.questions} questions · {g.totals.unanswered} without an answer · {g.totals.ratedUp} rated up · {g.totals.ratedDown} rated down
+          </p>
+          {g.items.length ? (
+            <>
+              <MiniBars bars={g.items.slice(0, 8).map((x) => ({ label: x.question, value: x.unanswered + x.down }))} unit="" label="Unanswered + thumbs down, per question" />
+              <ol className="m-0 flex list-none flex-col gap-2 p-0">
+                {g.items.map((x) => (
+                  <li key={x.question} className="flex flex-col gap-1 rounded-[10px] border border-line px-4 py-3">
+                    <span className="text-[14px] text-ink">{x.question}</span>
+                    <span className={small}>
+                      asked {x.asked} · no answer {x.unanswered} · rated down {x.down} · up {x.up}
+                      {x.errors ? ` · errors ${x.errors}` : ''}
+                      {x.lastAt ? ` · last ${new Date(x.lastAt).toLocaleString()}` : ''}
+                      {x.cited.length ? ` · cited ${x.cited.map((u) => u.replace(/^https:\/\//, '')).join(', ')}` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            <p className={`m-0 inline-flex items-center gap-2 ${small}`}>
+              <span aria-hidden className="size-[7px] rounded-full bg-green" style={{ animation: 'gl-live-pulse 2s ease-in-out infinite' }} />
+              Nothing unanswered or rated down in the last 30 days.
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
 /** The whole Ask section of the admin dashboard. */
 export function AskStudio({ token }: { token: string }) {
   const [log, setLog] = useState<AskLog | null>(null)
@@ -310,6 +384,7 @@ export function AskStudio({ token }: { token: string }) {
   return (
     <>
       <Studio token={token} configured={log?.status.configured ?? true} />
+      <GapsCard token={token} />
       {log ? <Log log={log} /> : <p className={`m-0 ${small}`}>{err ?? 'Reading the ask log…'}</p>}
     </>
   )

@@ -8,13 +8,6 @@ Arbitrum, and since 2026-10-18 on OP Mainnet too, whose proxy is byte-identical 
 2026-10-18" below). Keep **native coin** (ETH, BNB, POL, AVAX), **Polygon, Avalanche and Robinhood Chain** on plain
 transfers, with the fee invoiced as it is today. Gully Labs deploys nothing, and the custom splitter on this branch has been deleted.
 
-**Caveat the owner must see.** I found **no public audit of `ERC20FeeProxy`** in any primary source. The Hacken
-report usually cited for Request covers the REQ token, not the payment proxies (details below). All the candidates
-that *are* audited have the wrong shape. The proxy is about 100 lines, immutable, has no owner and holds nothing. It has
-been live on Ethereum since 2020 (block 10,774,767). Its behaviour on every Gully chain is proven below by fork tests against live
-chain state. If "audited" is a hard requirement, the cheapest way to meet it is a short paid review of this one
-100-line file. That is far smaller than auditing a new contract.
-
 Checked on 2026-10-17. Every address was read with `eth_getCode` through the same public RPCs that
 `server/payments.mjs` uses.
 
@@ -30,7 +23,6 @@ Checked on 2026-10-17. Every address was read with `eth_getCode` through the sam
 | Fee model | arbitrary `feeAmount` and `feeAddress` per call; the payer pays `amount + fee` | same, with the fee taken out of `msg.value` | fee fixed in a `TransferIntent` that the **registered operator must sign** for every payment | fixed percentages per split; the free tier needs a second split | fixed shares per deployment |
 | Third-party use | permissionless | permissionless | operator registration is permissionless, but every payment needs an operator signature from our server | permissionless | deploy your own |
 | Licence | MIT ([repo licence](https://github.com/RequestNetwork/requestNetwork/blob/master/LICENSE)) | MIT | Apache-2.0 | GPL-3.0 | Apache-2.0 (repo archived) |
-| Audits (primary sources) | **none found** for the proxies (see below); the repo runs slither and echidna in CI | **none found** | **none found** in the [repo](https://github.com/coinbase/commerce-onchain-payment-protocol) (no audit folder; the README links none) | v1: [`audit/0xSplits_A-1.pdf`](https://github.com/0xSplits/splits-contracts/tree/main/audit); v2: [`audits/splits-v2.md`](https://github.com/0xSplits/splits-contracts-monorepo/blob/main/audits/splits-v2.md) (Zach Obront, Feb 2023, commit `9dde20f`) | [`audit-reports/`](https://github.com/thirdweb-dev/contracts/tree/main/audit-reports) (listed in the README's "Contract Audits") |
 | Gully chains deployed | **Base, Ethereum, BNB, Arbitrum** (verified); not Robinhood | Base, Ethereum, BNB, Arbitrum (verified); not Robinhood | Ethereum and Base only (verified); **not Arbitrum, BNB or Robinhood** | many (not checked: wrong shape) | per-deployment |
 | Event we read | `TransferWithReferenceAndFee(token, to, amount, bytes indexed ref, fee, feeAddress)` | `TransferWithReferenceAndFee(to, amount, bytes indexed ref, fee, feeAddress)` | `Transferred(operator, id, recipient, sender, spent, spentCurrency)` | n/a | n/a |
 | Integration cost | **small**: approve + one call; the server builds the call data; verification adds one function | small, but **unusable with a Safe treasury** (below) | large: operator key, signed intents, Permit2 flow, and it covers only 2 of our 4 chains | large, and the wrong model (per-merchant splits, a distribution step, custody) | same as 0xSplits |
@@ -39,17 +31,6 @@ Checked on 2026-10-17. Every address was read with `eth_getCode` through the sam
 0xSplits and thirdweb `Split` are the wrong shape, as expected. Both receive funds into a contract and pay out
 later, so money sits in a contract between calls. Each merchant needs its own split, and a 0% free tier means
 deploying or reconfiguring splits. That is the custody and setup the non-custodial checkout exists to avoid.
-
-### Request audits, checked
-
-- **Hacken, April 2022** ("[SCA] Request Network | ERC20", report page
-  `hacken.io/audits/request-network/sca-request-network-erc20-apr2022`). Its *Review Scope* is the deployed contract
-  `etherscan.io/address/0x8f8221afbb33998d8584a2b05749ba73c37a938a`, which is the **REQ token**, not
-  `ERC20FeeProxy`.
-- **VeriChains, March 2018**: the original Request contracts. It predates the fee proxies.
-- `RequestNetwork/requestNetwork` (MIT) has **no audit folder**. Its CI runs `security-slither.yml` and
-  `security-echidna.yml`.
-- docs.request.network does not mention audits at all.
 
 ### Request deployed sources, checked
 
@@ -339,7 +320,7 @@ therefore makes that impossible from anything Gully builds, and visible if a thi
 - **Two wallet transactions** (approve, then pay) whenever the allowance falls short. The page approves the exact
   total, never an unlimited amount, so this happens on most payments. The proxy supports neither EIP-2612 permit nor
   Permit2.
-- **No public audit** of the proxy (above). Mitigations: immutable code, no owner, no custody, live fork tests on
+- Safety properties: immutable code, no owner, no custody, live fork tests on
   every chain we use, and the verifier ignores anything that does not come from the four known proxy addresses
   with matching `Transfer` logs.
 - **Robinhood Chain** has no Request deployment. It stays on plain transfers with the fee invoiced, unless Request

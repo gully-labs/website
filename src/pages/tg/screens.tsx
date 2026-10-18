@@ -456,7 +456,9 @@ function alertStateText(a: GapAlert) {
   return { t: 'Watching', c: '#6fcf6a' }
 }
 
-export function AlertsTab({ wa, initData, me, version, onOpenStock }: { wa: WebApp; initData: string; me: Me; version: number; onOpenStock: (chain: string, ticker: string) => void }) {
+/** `exitsOnly`: shown under the News channel join screen, so someone who left the channel can still pause or
+    delete what they set up (the server never gates pause and delete); resume, test and opening a stock wait for the channel. */
+export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = false }: { wa: WebApp; initData: string; me: Me; version: number; onOpenStock: (chain: string, ticker: string) => void; exitsOnly?: boolean }) {
   const { load, reload } = useTgApi<AlertsData>(initData, me.linked ? `/api/tg/alerts?v=${version}` : null, 60_000)
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -508,7 +510,7 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock }: { wa: WebA
               return (
                 <li key={a.id} className={`${card} flex flex-col gap-2 p-3`}>
                   <div className="flex items-start justify-between gap-2">
-                    <button type="button" disabled={!a.ticker || !a.chain} onClick={() => {
+                    <button type="button" disabled={exitsOnly || !a.ticker || !a.chain} onClick={() => {
                         if (!a.chain || !a.ticker) return
                         haptic.tap()
                         onOpenStock(a.chain, a.ticker)
@@ -521,13 +523,15 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock }: { wa: WebA
                       {st.t}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button tone="line" disabled={!!busy} onClick={() => act(a, a.enabled ? 'pause' : 'resume')}>
-                      {a.enabled ? 'Pause' : 'Resume'}
+                  <div className={`grid gap-2 ${exitsOnly ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                    <Button tone="line" disabled={!!busy || (exitsOnly && !a.enabled)} onClick={() => act(a, a.enabled ? 'pause' : 'resume')}>
+                      {a.enabled ? 'Pause' : exitsOnly ? 'Paused' : 'Resume'}
                     </Button>
-                    <Button tone="line" disabled={!!busy || !a.telegram} onClick={() => act(a, 'test')}>
-                      Test
-                    </Button>
+                    {!exitsOnly && (
+                      <Button tone="line" disabled={!!busy || !a.telegram} onClick={() => act(a, 'test')}>
+                        Test
+                      </Button>
+                    )}
                     <Button tone="danger" disabled={!!busy} onClick={() => act(a, 'delete')}>
                       Delete
                     </Button>

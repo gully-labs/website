@@ -126,10 +126,87 @@ export const telegramCalls = []
 
 const FEEDS = { 8453: 2_400_00000000n, 1: 2_500_00000000n, 56: 700_00000000n, 42161: 2_450_00000000n, 10: 2_400_00000000n, 137: 9_000000n, 43114: 10_00000000n }
 
+/* Safe deployment (server/safe-deploy.mjs) and the treasury deployment gate (server/treasury-chains.mjs): real Safe
+   1.4.1 bytes and the real creations of two 1-of-1 Safes on Base Sepolia (scripts/fixtures/safe-v141.json).
+
+   The chain matrix this harness models. It mirrors production on 2026-10-18, where the treasury Safe exists on Base,
+   Ethereum, BNB Chain and Arbitrum, and OP Mainnet, Polygon and Avalanche joined Gully Pay before the Safe was
+   deployed there:
+
+     chain              treasury Safe 0x041F9F5F…   store Safe 0x396879A4…   Safe factory/singletons   Gully Pay offers it
+     Base 8453          deployed (origin: creation   deployed (origin)        yes                       yes
+                        tx and logs live here)
+     Ethereum 1         deployed                     not deployed             yes                       yes
+     BNB Chain 56       deployed                     not deployed             NO (see below)            yes
+     Arbitrum 42161     deployed                     not deployed             yes                       yes
+     OP Mainnet 10      NOT deployed                 not deployed             yes                       no (gated)
+     Polygon 137        NOT deployed                 not deployed             yes                       no (gated)
+     Avalanche 43114    NOT deployed                 not deployed             yes                       no (gated)
+
+   So /api/plans, quotes and checkouts offer Base, Ethereum, BNB Chain and Arbitrum only. The admin's Treasury Safe
+   card shows the Safe on those four and "not deployed" with "Deploy Safe on <chain>" on the other three (the e2e demo
+   deploys on Avalanche). The store Safe (merchant tab) is on Base only, so its demo deploys on Arbitrum and is refused
+   on BNB Chain. On BNB Chain the treasury proxy is present while Safe's factory is withheld: a fixture device so that
+   one chain refuses a NEW deployment (a deployed proxy is read through its own storage and calls, not the factory).
+   Addresses lower-case. Any other address falls through to the generic stub in rpcAnswer (a plain wallet, no code). */
+export const SAFE_FIXTURE = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/fixtures/safe-v141.json'), 'utf8'))
+const SF = SAFE_FIXTURE
+/** Where the treasury Safe has code; the other payment chains are "not yet deployed" and so not offered. */
+export const TREASURY_DEPLOYED_CHAINS = [8453, 1, 56, 42161]
+export const TREASURY_UNDEPLOYED_CHAINS = [10, 137, 43114]
+const ORIGIN_CHAIN = 8453
+const NO_SAFE_FACTORY_CHAINS = [56]
+const SAFES = [
+  { address: SF.safe.address.toLowerCase(), view: SF.safe, creation: SF.creation, block: Number(BigInt(SF.creation.tx.blockNumber)), chains: TREASURY_DEPLOYED_CHAINS },
+  { address: SF.safe2.address.toLowerCase(), view: SF.safe2, creation: SF.safe2.creation, block: Number(BigInt(SF.safe2.creation.tx.blockNumber)), chains: [ORIGIN_CHAIN] },
+]
+const SAFE_ADDR = SAFES[0].address
+const SAFE_HEAD = Math.max(...SAFES.map((s) => s.block)) + 1000
+const SAFE_CODE = { [SF.contracts.factory.address]: SF.contracts.factory.code, [SF.contracts.safeL2.address]: SF.contracts.safeL2.code, [SF.contracts.safe.address]: SF.contracts.safe.code, [SF.contracts.fallback.address]: SF.contracts.fallback.code }
+const padAddr = (a) => '0x' + String(a).toLowerCase().replace(/^0x/, '').padStart(64, '0')
+/** Whether a fixture Safe has code on a chain at a block ('latest' or a number; on the origin, none before its creation block). */
+const safeHasCode = (s, chainId, block = 'latest') => s.chains.includes(chainId) && !(chainId === ORIGIN_CHAIN && block !== 'latest' && Number(BigInt(block)) < s.block)
+/** Safe-related JSON-RPC answers; `undefined` when the call is not about a fixture Safe or Safe's own contracts. */
+function safeRpcAnswer(chainId, q) {
+  const p = q.params ?? []
+  const to = String(p[0]?.to ?? p[0] ?? '').toLowerCase()
+  const safe = SAFES.find((s) => s.address === to)
+  const byTx = (h) => SAFES.find((s) => s.creation.tx.hash === h)
+  if (q.method === 'eth_getCode') {
+    if (safe) return safeHasCode(safe, chainId, p[1] ?? 'latest') ? SF.contracts.proxy.code : '0x'
+    if (SAFE_CODE[to]) return NO_SAFE_FACTORY_CHAINS.includes(chainId) ? '0x' : SAFE_CODE[to]
+    return undefined // anyone else: the generic stub (a plain wallet)
+  }
+  if (q.method === 'eth_getStorageAt') return safe && safeHasCode(safe, chainId) && p[1] === '0x0' ? padAddr(SF.contracts.safeL2.address) : padAddr('0x0')
+  if (q.method === 'eth_estimateGas') return hex(236_880)
+  if (q.method === 'eth_gasPrice') return hex(1_000_000_000)
+  if (q.method === 'eth_getLogs') {
+    const from = Number(BigInt(p[0].fromBlock))
+    const toB = p[0].toBlock === 'latest' ? SAFE_HEAD : Number(BigInt(p[0].toBlock))
+    if (chainId !== ORIGIN_CHAIN) return []
+    return SAFES.filter((s) => from <= s.block && toB >= s.block).flatMap((s) => s.creation.receipt.logs.filter((l) => !p[0].topics || l.topics[0] === p[0].topics[0]))
+  }
+  if (q.method === 'eth_getTransactionByHash') return chainId === ORIGIN_CHAIN ? (byTx(p[0])?.creation.tx ?? null) : null
+  if (q.method === 'eth_getTransactionReceipt') return chainId === ORIGIN_CHAIN ? (byTx(p[0])?.creation.receipt ?? null) : null
+  if (q.method === 'eth_call') {
+    const data = String(p[0]?.data ?? '')
+    if (to === SF.contracts.factory.address && data === '0x53e5d935') return '0x' + word(32) + word((SF.proxyCreationCode.length - 2) / 2) + SF.proxyCreationCode.slice(2).padEnd(Math.ceil((SF.proxyCreationCode.length - 2) / 64) * 64, '0')
+    if (safe && safeHasCode(safe, chainId)) {
+      if (data === '0xa0e67e2b') return safe.view.owners
+      if (data === '0xe75235b8') return safe.view.threshold
+      if (data === '0xffa1ad74') return safe.view.version
+      if (data.startsWith('0xcc2f8452')) return safe.view.modulesPaginated
+    }
+  }
+  return undefined
+}
+
 function rpcAnswer(chainId, q) {
   if (q.method === 'eth_chainId') return hex(chainId)
-  if (q.method === 'eth_blockNumber') return hex(5_000_000)
+  if (q.method === 'eth_blockNumber') return hex(SAFE_HEAD)
   if (q.method === 'eth_gasPrice') return hex(1_500_000_000) // 1.5 gwei: the Merchant tab's gas strip (server/gas.mjs)
+  const safe = safeRpcAnswer(chainId, q)
+  if (safe !== undefined) return safe
   if (q.method === 'eth_getBlockByNumber') return { number: q.params[0], timestamp: hex(nowSec()) }
   if (q.method === 'eth_getTransactionReceipt' || q.method === 'eth_getTransactionByHash') return null
   // Every address is a plain wallet (no code): merchant receiving wallets register as EOAs.
@@ -246,7 +323,9 @@ export async function bootServer({ port }) {
   if (!fs.existsSync(path.join(DIST, 'index.html'))) throw new Error('dist/ is missing: run `npm run build` first (test:e2e serves the built site).')
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-e2e-'))
   const admin = crypto.randomBytes(24).toString('hex')
-  const treasury = '0x' + crypto.randomBytes(20).toString('hex')
+  // The treasury is the fixture Safe: deployed on Base, Ethereum, BNB Chain and Arbitrum, not yet on OP Mainnet,
+  // Polygon or Avalanche (the chain matrix above safeRpcAnswer), so the deployment gate closes those three.
+  const treasury = SAFE_ADDR
   Object.assign(process.env, {
     PORT: String(port),
     DATA_DIR: tmp,
@@ -261,9 +340,10 @@ export async function bootServer({ port }) {
     ANTHROPIC_API_KEY: 'sk-ant-e2e-' + 'x'.repeat(30),
     TELEGRAM_BOT_TOKEN: E2E_BOT_TOKEN,
     DEEPCORE_API: 'https://deepcore-api.e2e.invalid',
+    // Every payment chain (FEEDS has one per chain).
     ...Object.fromEntries(Object.keys(FEEDS).map((id) => [`GULLY_RPC_${id}`, `https://rpc-${id}.e2e.invalid`])),
   })
-  for (const k of ['GULLY_BASE_RPC', 'GULLY_MIN_CONFIRMATIONS', 'ANALYTICS_ADMIN_PASSWORD', 'ANTHROPIC_API_URL', 'TELEGRAM_API']) delete process.env[k]
+  for (const k of ['GULLY_TREASURY_KIND', 'GULLY_TREASURY_CHECK_MS', 'GULLY_TESTNET_CHAINS', 'GULLY_BASE_RPC', 'GULLY_MIN_CONFIRMATIONS', 'ANALYTICS_ADMIN_PASSWORD', 'ANTHROPIC_API_URL', 'TELEGRAM_API']) delete process.env[k]
   stubServerFetch()
   await import(pathToFileURL(path.join(ROOT, 'server/server.mjs')).href)
   await new Promise((r) => setTimeout(r, 300))

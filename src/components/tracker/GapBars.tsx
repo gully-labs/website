@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
@@ -6,7 +6,22 @@ import { axisTooltip, barsPreset, tipHtml } from '../charts/chartPresets'
 import { ChainLogo, StockLogo } from './StockLogo'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPrice, UP, type TrackerRow } from '../../lib/tracker'
 
-const ROW = 24 // px per stock: the label column and the chart's category bands share it exactly
+// px per stock: the label column and the chart's category bands share it exactly. On a phone each
+// row is a 44 px tap target, so fewer rows show before "show all".
+const ROW_WIDE = 24
+const ROW_TOUCH = 44
+const TOUCH = '(max-width: 859px)'
+function useTouchRows() {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = window.matchMedia(TOUCH)
+      m.addEventListener('change', cb)
+      return () => m.removeEventListener('change', cb)
+    },
+    () => window.matchMedia(TOUCH).matches,
+    () => false,
+  )
+}
 const TOP = 22 // px above the first row, for the axis labels
 const BOTTOM = 4
 const SORT_MS = 650 // update animation length
@@ -21,7 +36,9 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
   const [all, setAll] = useState(false)
   const chart = useRef<EChartsType | null>(null)
   const multi = new Set(rows.map((r) => r.chain)).size > 1
-  const TOP_N = 16
+  const touch = useTouchRows()
+  const ROW = touch ? ROW_TOUCH : ROW_WIDE
+  const TOP_N = touch ? 10 : 16
   const withGap = rows.filter((r) => r.gapPct !== null)
 
   // The widest gaps first so the chart stays compact; "show all" lists every stock.
@@ -31,7 +48,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
   // to its new value. (ECharts' realtimeSort was tried: its order drifted from the labels.)
   const byId = [...shown].sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0) || (id(a) < id(b) ? -1 : 1))
   const ranked = byId
-  const key = byId.map((r) => `${id(r)}=${r.gapPct}:${r.status}`).join('|') + `|${selected}|${inLinePct}`
+  const key = byId.map((r) => `${id(r)}=${r.gapPct}:${r.status}`).join('|') + `|${selected}|${inLinePct}|${ROW}`
 
   const option = useMemo(() => {
     if (!byId.length) return null
@@ -49,14 +66,14 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
         max: extent,
         interval: extent / 2,
         axisLabel: { margin: 6, formatter: (v: number) => `${v > 0 ? '+' : ''}${Number.isInteger(v) ? v : v.toFixed(1)}%` },
-        splitLine: { lineStyle: { color: '#1a2029' } },
+        splitLine: { lineStyle: { color: '#1c2531' } },
       },
       yAxis: {
         type: 'category',
         inverse: true,
         data: byId.map(id),
         axisLabel: { show: false },
-        axisLine: { lineStyle: { color: '#2c3540' } },
+        axisLine: { lineStyle: { color: '#2a3542' } },
         animationDuration: 300,
         animationDurationUpdate: SORT_MS,
       },
@@ -89,7 +106,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
               value: g,
               itemStyle: {
                 color: thin ? 'rgba(0,0,0,0)' : c,
-                borderColor: sel ? '#e8c060' : c,
+                borderColor: sel ? '#d9b563' : c,
                 borderWidth: thin || sel ? 1.5 : 0,
                 borderType: thin ? 'dashed' : 'solid',
                 borderRadius: 2,
@@ -97,7 +114,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
               label: { show: true, position: g >= 0 ? 'right' : 'left', distance: 6, color: c, fontSize: 11, formatter: () => fmtGap(r.gapPct) },
             }
           }),
-          markArea: { silent: true, itemStyle: { color: 'rgba(232,192,96,.06)' }, label: { show: false }, data: [[{ xAxis: -inLinePct }, { xAxis: inLinePct }]] },
+          markArea: { silent: true, itemStyle: { color: 'rgba(217,181,99,.06)' }, label: { show: false }, data: [[{ xAxis: -inLinePct }, { xAxis: inLinePct }]] },
         },
       ],
     }
@@ -131,7 +148,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
                   onBlur={() => (setHover(null), point(rid, false))}
                   aria-pressed={sel}
                   aria-label={`${r.ticker} ${fmtGap(r.gapPct)}, onchain ${fmtPrice(r.onchain)}, fair ${fmtPrice(r.fair)}${r.status === 'thin' ? ', thin pool' : ''}`}
-                  className={`flex h-full w-full min-w-0 items-center justify-end gap-[6px] rounded-[4px] bg-transparent p-0 pr-1 font-mono text-[12px] transition-colors ${hover === rid ? 'bg-surface-hover' : ''} ${sel ? 'text-gold' : 'text-ink-2'}`}
+                  className={`flex h-full w-full min-w-0 items-center justify-end gap-[6px] rounded-btn bg-transparent p-0 pr-1 font-mono text-[12px] transition-colors ${hover === rid ? 'bg-surface-hover' : ''} ${sel ? 'text-gold' : 'text-ink-2'}`}
                 >
                   <StockLogo row={r} size={16} chainBadge={false} active={sel} />
                   <span className="truncate">{r.ticker}</span>
@@ -157,22 +174,22 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
         />
       </div>
       {withGap.length > TOP_N && (
-        <button type="button" onClick={() => setAll((v) => !v)} className="mt-1 self-start bg-transparent p-0 font-mono text-[12px] text-gold hover:text-gold-hover">
+        <button type="button" onClick={() => setAll((v) => !v)} className="mt-1 inline-flex min-h-11 items-center self-start bg-transparent p-0 font-mono text-[12px] text-gold hover:text-gold-hover">
           {all ? `Show the ${TOP_N} widest` : `Show all ${withGap.length}`}
         </button>
       )}
       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-faint">
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block size-[10px] rounded-[2px]" style={{ background: UP }} /> above fair price
+          <i className="inline-block size-[10px] rounded-bar" style={{ background: UP }} /> above fair price
         </span>
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block size-[10px] rounded-[2px]" style={{ background: DOWN }} /> below fair price
+          <i className="inline-block size-[10px] rounded-bar" style={{ background: DOWN }} /> below fair price
         </span>
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block size-[10px] rounded-[2px] border border-dashed border-muted" /> thin pool, not trusted
+          <i className="inline-block size-[10px] rounded-bar border border-dashed border-muted" /> thin pool, not trusted
         </span>
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block h-[10px] w-4 bg-[rgba(232,192,96,.18)]" /> ±{inLinePct}% in line
+          <i className="inline-block h-[10px] w-4 bg-[rgba(217,181,99,.18)]" /> ±{inLinePct}% in line
         </span>
       </div>
     </div>

@@ -83,6 +83,7 @@ import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, 
 import { treasury } from './plans.mjs'
 import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { isFeeProxy } from './fee-proxy-guard.mjs'
+import { handleMerchantSafe } from './safe-deploy.mjs'
 import { isSolanaAsset } from './solana-pay.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { sendAccountTelegram } from './telegram.mjs'
@@ -1064,6 +1065,43 @@ function merchantView(ws, role) {
   }
 }
 
+/**
+ * Read-only summary of ONE workspace's store for Gully AI (get_my_store): set up or not, paused and why,
+ * receiving wallets per chain, and fees accrued / collected on chain / billed / outstanding. No payer data,
+ * no webhook secret, nothing about any other workspace.
+ */
+export function merchantSummary(ws, now = Date.now()) {
+  const m = peek(ws)
+  const wallets = Object.entries(m?.wallets ?? {}).map(([id, w]) => walletView(id, w))
+  const f = feesView(ws, now)
+  const pause = pauseOf(ws, now)
+  return {
+    store: m ? { name: brandOf(ws).name, termsAccepted: !!m.terms, termsCurrent: m.terms?.version === MERCHANT_TERMS_VERSION } : null,
+    ready: wallets.some((w) => w.enabled && w.status === 'ok'),
+    paused: pause.paused,
+    pausedSince: pause.since ?? null,
+    pausedBecause: pause.paused ? `${pause.statements.length} fee statement(s) unpaid more than ${PAUSE_AFTER_DAYS} days after issue` : null,
+    checkoutOpen: !pause.paused,
+    wallets: wallets.map((w) => ({ chain: w.chain, chainId: w.chainId, address: w.address, enabled: w.enabled, status: w.status, checkedAt: w.checkedAt })),
+    fees: {
+      ratePct: f.ratePct,
+      freeAllowanceUsd: f.freeUsd,
+      freeLeftUsd: f.freeLeftUsd,
+      lifetimeVolumeUsd: f.lifetimeUsd,
+      accruedUsd: f.accruedUsd,
+      collectedOnChainUsd: f.collectedUsd,
+      billedUsd: f.billedUsd,
+      unbilledUsd: f.unbilledUsd,
+      outstandingUsd: f.outstandingUsd,
+      paidUsd: f.paidUsd,
+      nextStatementAt: f.nextStatementAt,
+      openStatements: f.statements.filter((s) => s.state === 'open' || s.state === 'overdue').map((s) => ({ number: s.number, usd: s.usd, dueAt: s.dueAt, state: s.state, payPath: s.payPath })),
+    },
+    links: db.links.filter((l) => l.ws === ws && l.active).length,
+    payments30d: db.payments.filter((p) => p.ws === ws && now - Date.parse(p.at) < 30 * DAY).length,
+  }
+}
+
 async function setProfile(ws, body) {
   const m = merchantOf(ws)
   const has = (k) => body != null && Object.prototype.hasOwnProperty.call(body, k)
@@ -1075,7 +1113,7 @@ async function setProfile(ws, body) {
   }
   if (has('accent')) {
     const a = body.accent == null || body.accent === '' ? null : String(body.accent).trim()
-    if (a && !HEX_RE.test(a)) return bad('The accent colour must be a hex colour like #e8c060.')
+    if (a && !HEX_RE.test(a)) return bad('The accent colour must be a hex colour like #d9b563.')
     next.accent = a ? a.toLowerCase() : null
   }
   if (has('supportEmail')) {
@@ -1201,6 +1239,8 @@ const reply = (res, r, okBody) => (r.ok ? json(res, r.status && r.status !== 200
  */
 export async function handleMerchant(req, res, url, ctx) {
   const p = url.pathname
+  // One-click Safe deployment (safe-deploy.mjs): plan and follow a Safe deployment the merchant's wallet sends.
+  if (p.startsWith('/api/developer/merchant/safe')) return handleMerchantSafe(req, res, url, ctx)
   const post = req.method === 'POST'
   const { workspace: ws, role, user } = ctx
   const ev = (action, target = null, detail = null) => {

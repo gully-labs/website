@@ -15,8 +15,9 @@ import path from 'node:path'
 import zlib from 'node:zlib'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { blockedOutbound, bootServer, historyFixture, ROOT, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
+import { blockedOutbound, bootServer, historyFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
+import { auditPage, IN_PLACE_HOSTS, tokenColors } from './e2e-audit.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
 await guardTestRun(PORT, { watchdogMs: 8 * 60_000 })
@@ -29,6 +30,12 @@ const TRACKER = trackerFixture()
 await seedTrackerHistory(TRACKER)
 const STATS = statsFixture()
 const WIDGET_JS = fs.readFileSync(path.join(ROOT, 'dist', 'widget.js'))
+// What Gully Pay offers here, read from the server itself (the harness's chain matrix: the treasury Safe is deployed on
+// some payment chains and not yet on others, and the deployment gate closes the latter).
+const PLANS = await (await fetch(`${BASE}/api/plans`)).json()
+const OFFERED = PLANS.chains.map((c) => c.name)
+const CLOSED = { 10: 'OP Mainnet', 137: 'Polygon', 43114: 'Avalanche' }
+const listOr = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}` : (xs[0] ?? ''))
 
 /* ------------------------------------------------------------- browser plumbing --- */
 
@@ -129,6 +136,14 @@ function watch(page, label) {
 
 /** True once an ECharts chart inside `sel` has drawn (the kit fades the chart in over its skeleton). */
 const drawnIn = (page, sel) => page.locator(`${sel} [data-chart].opacity-100 svg`).first().waitFor({ timeout: 15_000 }).then(() => true, () => false)
+const TOKENS = tokenColors()
+/** The pixel-pass design audit (scripts/e2e-audit.mjs): text size, token colours, external links. */
+async function designAudit(page, label) {
+  const a = await page.evaluate(auditPage, { allowed: TOKENS, inPlace: IN_PLACE_HOSTS })
+  check(`${label}: no text under 11 px`, a.small.length === 0, a.small.slice(0, 3).map((s) => `${s.size}px ${s.sel} "${s.text}"`).join(' | '))
+  check(`${label}: no off-token colours`, a.offToken.length === 0, a.offToken.slice(0, 4).map((o) => `${o.color} ${o.kind} x${o.count} ${o.sample}`).join(' | '))
+  check(`${label}: links to other hosts open in a new tab with noopener`, a.ext.length === 0, a.ext.slice(0, 3).map((e) => `${e.href} ${e.sel}`).join(' | '))
+}
 
 async function noHorizontalScroll(page, label) {
   const w = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth])
@@ -195,7 +210,10 @@ await step('landing', async () => {
   await page.locator('#price-tab-services').click()
   check('pricing: services are quoted', await page.locator('#price-panel').getByText('Quoted').first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
   await page.locator('#price-tab-api').click().catch(() => {})
-  check('pricing: the payment line names the new chains from /api/plans (OP Mainnet, Polygon, Avalanche)', await page.locator('#pricing').getByText(/OP Mainnet, Polygon or Avalanche/).first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
+  check('pricing: /api/plans offers exactly the chains where the treasury Safe is deployed (Base, Ethereum, BNB Chain, Arbitrum)', PLANS.chains.map((c) => c.id).join() === TREASURY_DEPLOYED_CHAINS.join() && !PLANS.assets.some((a) => TREASURY_UNDEPLOYED_CHAINS.includes(a.chainId)), JSON.stringify(PLANS.chains.map((c) => c.id)))
+  const payLine = page.locator('#pricing').getByText(`on ${listOr(OFFERED)}, straight from your wallet`).first()
+  check(`pricing: the payment line names the offered chains from /api/plans (${listOr(OFFERED)})`, await payLine.waitFor({ timeout: 8_000 }).then(() => true, () => false))
+  check('pricing: the payment line names no chain where the treasury is not deployed', (await payLine.count()) === 1 && !new RegExp(Object.values(CLOSED).join('|')).test((await payLine.textContent()) ?? ''))
   // Gully AI everywhere: header nav link, floating button, Ctrl+K; the dock keeps Back to top beside it.
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   await page.getByRole('button', { name: 'Back to top' }).waitFor({ state: 'visible' })
@@ -316,8 +334,39 @@ await step('Gully AI', async () => {
   const log = page.getByRole('log', { name: 'Answers' })
   await log.getByText(/Gap alerts fire when/).waitFor({ timeout: 20_000 })
   check('Gully AI: the (stubbed) answer renders', true)
+  // Thumbs: the rating reaches the server and lands on the admin's "Unanswered / low-rated questions" card.
+  const down = page.getByTestId('ask-rate-down')
+  await down.click()
+  await page.waitForFunction(() => document.querySelector('[data-testid="ask-rate-down"]')?.getAttribute('aria-pressed') === 'true')
+  await page.getByText('Thanks: this helps us decide which docs to write.').waitFor()
+  const gaps = await (await fetch(BASE + '/api/admin/ask/gaps?days=30', { headers: { authorization: `Bearer ${admin}` } })).json()
+  check('Gully AI: thumbs down is stored and shows on the admin gaps card', gaps.items?.some((x) => x.question === 'How do gap alerts work?' && x.down === 1), JSON.stringify(gaps).slice(0, 200))
+  check('Gully AI: the thumbs are real toggle buttons with 44px targets', (await down.boundingBox())?.height >= 44 && (await page.getByTestId('ask-rate-up').getAttribute('aria-pressed')) === 'false')
   // The server's head (crawlers, link previews) says Gully AI; the client-side <Seo> title is in quality-1's AskPage.tsx.
   check('Gully AI: the server-rendered title says Gully AI', (await (await fetch(BASE + '/ask')).text()).includes('<title>Gully AI · Gully Labs</title>'))
+  await w.verify()
+  await ctx.close()
+})
+
+await step('privacy page', async () => {
+  const ctx = await newContext()
+  const page = await ctx.newPage()
+  const w = watch(page, 'privacy page')
+  await page.goto(BASE + '/legal/privacy')
+  await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
+  const ids = await page.evaluate(() => [...document.querySelectorAll('article section[id^="s"]')].map((x) => x.id))
+  check('privacy: twelve numbered sections, s1 to s12, each linked from the section nav', ids.join() === Array.from({ length: 12 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 12, ids.join())
+  check('privacy: "Draft: review by counsel" is an HTML comment only, never on screen', (await page.content()).includes('<!-- Draft: review by counsel') && !(await page.getByText('review by counsel').count()))
+  check('privacy: the retention table and the CC BY attribution are there', (await page.getByRole('table').getByRole('rowheader', { name: 'Gully AI questions and ratings' }).isVisible()) && (await page.getByRole('link', { name: 'Basecamp open-source policies' }).isVisible()))
+  const head = await (await fetch(BASE + '/legal/privacy')).text()
+  check('privacy: the server-rendered title and canonical', head.includes('<title>Privacy policy · Gully Labs</title>') && head.includes('https://gullylabs.xyz/legal/privacy'))
+  check('privacy: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/legal/privacy</loc>'))
+  await page.goto(BASE + '/')
+  const foot = page.getByRole('contentinfo').getByRole('link', { name: 'Privacy', exact: true })
+  check('privacy: linked from the site footer', (await foot.getAttribute('href')) === '/legal/privacy')
+  await foot.click()
+  await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
+  check('privacy: the footer link opens the page in place', page.url().endsWith('/legal/privacy'))
   await w.verify()
   await ctx.close()
 })
@@ -743,20 +792,24 @@ await step('pay', async () => {
   await w.verify()
   await ctx.close()
 
-  // The chain picker on a checkout taking every asset: the three new chains, each with its own mark.
+  // The chain picker on a checkout taking every asset: every chain where the treasury Safe is deployed, each with its
+  // own mark, and none of the chains where it is not (OP Mainnet, Polygon, Avalanche in the harness's matrix).
   const invAll = await adminCall('/api/admin/invoices', { title: 'E2E: every chain', usd: '12' })
-  check('pay: an invoice with no asset list takes every chain (18 assets)', invAll.status === 201 && invAll.data.invoice.assets.length === 18, String(invAll.data?.invoice?.assets?.length))
+  const allIds = (invAll.data?.invoice?.assets ?? []).map((a) => a.id)
+  check(`pay: an invoice with no asset list takes every offered asset (${PLANS.assets.length}, as /api/plans lists)`, invAll.status === 201 && PLANS.assets.length > 0 && allIds.length === PLANS.assets.length && PLANS.assets.every((a) => allIds.includes(a.id)), `${allIds.length} vs ${PLANS.assets.length}`)
+  check('pay: that invoice offers no asset on a chain where the treasury is not deployed', invAll.status === 201 && !invAll.data.invoice.assets.some((a) => TREASURY_UNDEPLOYED_CHAINS.includes(a.chainId)), allIds.join())
   const ctx3 = await newContext()
   const p3 = await ctx3.newPage()
   const w3 = watch(p3, 'pay page (every chain)')
   await p3.goto(`${BASE}/pay/${invAll.data.invoice.id}`)
   const picker = p3.getByRole('radiogroup', { name: 'Pay with' })
-  await picker.getByRole('radio', { name: 'USDC on Avalanche' }).waitFor({ timeout: 10_000 })
-  check('pay: the picker lists USDC on OP Mainnet, USDC on Polygon, POL on Polygon and AVAX on Avalanche', (await picker.getByRole('radio', { name: 'USDC on OP Mainnet' }).count()) === 1 && (await picker.getByRole('radio', { name: 'USDC on Polygon' }).count()) === 1 && (await picker.getByRole('radio', { name: 'POL on Polygon' }).count()) === 1 && (await picker.getByRole('radio', { name: 'AVAX on Avalanche' }).count()) === 1)
-  check('pay: the picker shows seven chain groups with their marks (real logo files, no letter tiles)', (await picker.locator('img[src^="/chains/"]').count()) >= 7 && (await picker.locator('img[src="/chains/optimism.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/polygon.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/avalanche.svg"]').count()) >= 1)
-  await picker.getByRole('radio', { name: 'USDC on Avalanche' }).click()
-  await p3.getByRole('img', { name: /^Wallet payment request: .* USDC on Avalanche/ }).waitFor({ timeout: 10_000 })
-  check('pay: a USDC on Avalanche quote shows its QR and says 2 confirmations', (await p3.getByText(/counts after 2 confirmations/).count()) > 0)
+  await picker.getByRole('radio', { name: 'USDT on BNB Chain' }).waitFor({ timeout: 10_000 })
+  check('pay: the picker lists every offered asset (USDC on Base, USDT on Ethereum, BNB on BNB Chain, ETH on Arbitrum…)', (await picker.getByRole('radio').count()) === PLANS.assets.length && (await picker.getByRole('radio', { name: 'USDC on Base' }).count()) === 1 && (await picker.getByRole('radio', { name: 'USDT on Ethereum' }).count()) === 1 && (await picker.getByRole('radio', { name: 'BNB on BNB Chain' }).count()) === 1 && (await picker.getByRole('radio', { name: 'ETH on Arbitrum' }).count()) === 1)
+  check('pay: the picker offers nothing on OP Mainnet, Polygon or Avalanche (treasury not deployed there)', (await picker.getByRole('radio', { name: / on (OP Mainnet|Polygon|Avalanche)$/ }).count()) === 0)
+  check(`pay: the picker shows ${OFFERED.length} chain groups with their marks (real logo files, no letter tiles)`, (await picker.locator('img[src^="/chains/"]').count()) >= OFFERED.length && (await picker.locator('img[src="/chains/arbitrum.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/ethereum.svg"]').count()) >= 1 && (await picker.locator('img[src^="/chains/optimism"], img[src^="/chains/polygon"], img[src^="/chains/avalanche"]').count()) === 0)
+  await picker.getByRole('radio', { name: 'USDT on BNB Chain' }).click()
+  await p3.getByRole('img', { name: /^Wallet payment request: .* USDT on BNB Chain/ }).waitFor({ timeout: 10_000 })
+  check('pay: a USDT on BNB Chain quote shows its QR and says 15 confirmations', (await p3.getByText(/counts after 15 confirmations/).count()) > 0)
   await w3.verify()
   await ctx3.close()
   // The paid state, from the server's own shape with a payment on it (no chain in the suite can confirm one).
@@ -790,6 +843,57 @@ await step('pay', async () => {
   check('pay link: continue makes an invoice and opens its checkout', true)
   await w2.verify()
   await ctx2.close()
+})
+
+/* ------------------------------------------------------- merchant: Safe deployment --- */
+
+// The store's wallet is the fixture's second Safe (the one deployed live on Base Sepolia through the server's
+// calldata; here a Safe on Base with no code on Arbitrum or BNB Chain). The rows for the undeployed chains carry
+// "Deploy Safe on <chain>"; the panel plans through the server (stubbed chains with real Safe 1.4.1 bytes) and
+// stops at "Connect a wallet to deploy": no wallet in Playwright, so nothing is sent.
+await step('merchant safe', async () => {
+  const SAFE = SAFE_FIXTURE.safe2.address
+  const owner2 = privateKeyToAccount(generatePrivateKey())
+  const api3 = makeClient(BASE)
+  check('safe: a store owner signs in', (await api3.signIn(owner2)).status === 200)
+  const w1 = await api3.post('/api/developer/merchant/wallets', { address: SAFE, type: 'contract', chains: [8453, 42161, 56], acceptTerms: true })
+  const res = (id) => w1.data?.results?.find((r) => r.chainId === id)
+  check('safe: the Safe is accepted on Base and refused (not deployed) on Arbitrum and BNB Chain', w1.status === 200 && res(8453)?.ok && res(42161)?.ok === false && res(56)?.ok === false, JSON.stringify(w1.data?.results))
+  const ctx = await newContext({ cookie: cookieOf(api3) })
+  const page = await ctx.newPage()
+  const w = watch(page, 'merchant safe')
+  w.expect(/\/api\/developer\/merchant\/safe\/plan/) // the BNB Chain plan below is a 422 on purpose (no Safe factory there)
+  await page.goto(BASE + '/developers#merchant')
+  const wallets = page.locator('#m-wallets')
+  await wallets.waitFor({ timeout: 15_000 })
+  check('safe: the Arbitrum row says not deployed and offers the Deploy button', (await wallets.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).count()) === 1 && (await wallets.getByText('not deployed').count()) >= 2)
+  await wallets.getByRole('button', { name: 'Deploy Safe on Arbitrum' }).click()
+  const panel = wallets.locator('[data-testid="safe-deploy"]')
+  await panel.waitFor({ timeout: 20_000 })
+  await panel.getByText('address verified').waitFor({ timeout: 20_000 })
+  check('safe: the plan shows the Safe address verified, copied from Base, 1 owner, threshold 1', /Copied from/.test(await panel.textContent()) && /1 owner, threshold 1/.test(await panel.textContent()))
+  check('safe: the gas estimate is shown before anything is sent', /0\.00023688 ETH/.test((await panel.locator('[data-testid="safe-gas"]').textContent()) ?? ''))
+  check('safe: every check passed and is listed (factory, singleton, prediction)', (await panel.getByRole('list', { name: 'Checks' }).locator('li').count()) >= 5 && /code hash matches/.test(await panel.textContent()))
+  check('safe: with no wallet the button says Connect a wallet to deploy', (await panel.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
+  await panel.getByRole('button', { name: 'Close' }).click()
+  await wallets.getByRole('button', { name: 'Deploy Safe on BNB Chain' }).click()
+  const refused = wallets.locator('[data-testid="safe-deploy"]')
+  await refused.getByText('Not offered.').waitFor({ timeout: 20_000 })
+  check('safe: BNB Chain (no Safe factory there) is refused with the failing check named', /not deployed on BNB Chain/.test(await refused.textContent()) && (await refused.getByRole('list', { name: 'Checks' }).locator('li').count()) >= 2)
+  await refused.getByRole('button', { name: 'Close' }).click()
+  // Create a new Safe: the form, then the plan with the predicted address.
+  await wallets.getByTestId('new-safe-open').click()
+  const ns = wallets.getByTestId('new-safe')
+  await ns.locator('textarea').fill(owner2.address)
+  await ns.getByRole('radio', { name: 'Arbitrum' }).click()
+  await ns.getByTestId('new-safe-plan').click()
+  const np = ns.locator('[data-testid="safe-deploy"]')
+  await np.getByText('address verified').waitFor({ timeout: 20_000 })
+  check('safe: a new 1-of-1 Safe is planned with its address known before sending', /New Safe/.test(await np.textContent()) && /SafeL2 1\.4\.1, 1 owner, threshold 1/.test(await np.textContent()) && (await np.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
+  const rec = await api3.call('/api/developer/merchant/safe')
+  check('safe: the new Safe is recorded for the store with its salt nonce', rec.status === 200 && rec.data.safes.length === 1 && /^0x[0-9a-f]+$/.test(rec.data.safes[0].saltNonce), JSON.stringify(rec.data.safes))
+  await w.verify()
+  await ctx.close()
 })
 
 /* ------------------------------------------------------------- merchant checkout --- */
@@ -1068,16 +1172,86 @@ await step('admin', async () => {
   const w = watch(page, 'admin')
   await page.goto(BASE + '/admin')
   await page.getByRole('heading', { name: 'Invoices' }).waitFor({ timeout: 15_000 })
-  for (const h of ['Developer wallets', 'Pay links', 'Gully Analytics']) check(`admin: the ${h} section renders`, (await page.getByRole('heading', { name: h }).count()) > 0)
+  for (const h of ['Developer wallets', 'Pay links', 'Gully Analytics', 'Treasury Safe']) check(`admin: the ${h} section renders`, (await page.getByRole('heading', { name: h }).count()) > 0)
   check('admin: the invoice made above is listed', (await page.getByText('E2E: first month').count()) > 0)
+  // Treasury Safe (the harness's chain matrix): the Safe on Base, Ethereum, BNB Chain and Arbitrum; OP Mainnet,
+  // Polygon and Avalanche are payment chains where it is not deployed yet, so they say "not deployed" and offer
+  // Deploy. The demo deploys on Avalanche and reaches "connect a wallet".
+  const base = page.getByTestId('treasury-chain-8453')
+  await base.getByText(/Safe 1\.4\.1/).waitFor({ timeout: 15_000 })
+  check('admin treasury: Base shows the Safe (1.4.1, 1/1) and Avalanche offers Deploy', (await base.getByText(/Safe 1\.4\.1 · 1\/1/).count()) === 1 && (await page.getByRole('button', { name: 'Deploy Safe on Avalanche' }).count()) === 1)
+  const deployedRowsOk = await Promise.all(TREASURY_DEPLOYED_CHAINS.map(async (id) => (await page.getByTestId(`treasury-chain-${id}`).getByText(/Safe 1\.4\.1 · 1\/1/).count()) === 1))
+  check('admin treasury: every chain where the Safe is deployed (Base, Ethereum, BNB Chain, Arbitrum) shows it, with no Deploy button', deployedRowsOk.every(Boolean) && (await page.getByRole('button', { name: /^Deploy Safe on (Base|Ethereum|BNB Chain|Arbitrum)$/ }).count()) === 0, JSON.stringify(deployedRowsOk))
+  const closedRowsOk = await Promise.all(TREASURY_UNDEPLOYED_CHAINS.map(async (id) => { const r = page.getByTestId(`treasury-chain-${id}`); return (await r.getByText('not deployed', { exact: true }).count()) === 1 && (await r.getByRole('button', { name: `Deploy Safe on ${CLOSED[id]}` }).count()) === 1 }))
+  check('admin treasury: OP Mainnet, Polygon and Avalanche (payment chains, Safe not deployed) say "not deployed" and offer Deploy', closedRowsOk.every(Boolean), JSON.stringify(closedRowsOk))
+  check('admin treasury: every row is a payment chain now (no "ahead of payments" label)', (await page.getByText('ahead of payments').count()) === 0)
+  await page.getByRole('button', { name: 'Deploy Safe on Avalanche' }).click()
+  const tp = page.getByTestId('treasury-chain-43114').locator('[data-testid="safe-deploy"]')
+  await tp.getByText('address verified').waitFor({ timeout: 20_000 })
+  check('admin treasury: the plan predicts the treasury address, prices the gas in AVAX and waits for a wallet', /0\.00023688 AVAX/.test(await tp.textContent()) && (await tp.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
   // Tracker health and venues read live upstreams this server cannot reach here.
   await w.verify([/Failed to load resource/])
   await ctx.close()
 })
 
+/* ------------------------------------------------------- admin: bot broadcasts --- */
+
+await step('admin: bot broadcasts at 1440 and 390', async () => {
+  // Bot users as telegram-users.mjs stores them (no names), spread over two weeks so the growth line draws.
+  const users = await import('../server/telegram-users.mjs')
+  const bcast = await import('../server/telegram-broadcast.mjs')
+  const seed = {}
+  for (let i = 0; i < 24; i++) seed[String(880000 + i)] = { firstSeen: new Date(Date.now() - (14 - (i % 14)) * 86_400_000).toISOString(), lang: i % 3 ? 'en' : 'de', follows: i % 2 === 0, optedOut: i === 5 ? new Date().toISOString() : null }
+  users.seedBotUsersForTest(seed)
+  const aud = await adminCall('/api/admin/broadcasts/audience', { segment: { kind: 'all' } })
+  check('broadcasts: the audience leaves out opted-out users', aud.status === 200 && aud.data.count === 23, JSON.stringify(aud.data))
+  const sent = await adminCall('/api/admin/broadcasts', { text: '<b>E2E broadcast</b> hello', buttons: [{ text: 'Tracker', url: 'https://gullylabs.xyz/tracker' }], segment: { kind: 'all' }, action: 'send', confirm: aud.data.count })
+  check('broadcasts: the admin API sends with the confirmed count', sent.status === 201, JSON.stringify(sent.data).slice(0, 160))
+  await bcast.tickBroadcasts()
+  for (const [width, mobile] of [[1440, false], [390, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
+    const page = await ctx.newPage()
+    const w = watch(page, `admin broadcasts at ${width}`)
+    await page.goto(BASE + '/admin')
+    const section = page.locator('section', { has: page.getByRole('heading', { name: 'Bot broadcasts' }) })
+    await section.waitFor({ timeout: 15_000 })
+    await section.getByText('E2E broadcast').first().waitFor({ timeout: 10_000 })
+    check(`broadcasts at ${width}: analytics (bot users, opted out, blocked, last broadcast)`, (await section.getByText('BOT USERS · LIVE').count()) === 1 && (await section.getByText('LAST BROADCAST').count()) === 1 && (await section.getByText('OPENED LINK').count()) === 1)
+    check(`broadcasts at ${width}: the growth chart renders`, (await section.locator('[aria-label^="Bot users over time"]').count()) === 1)
+    check(`broadcasts at ${width}: the owner step names BotFather and the Mini App URL`, (await section.getByText(/Owner step: make the Mini App the bot’s main app/).count()) === 1 && (await section.locator('a[href="https://t.me/BotFather"][target="_blank"]').count()) === 1)
+    await section.locator('#tgb-text').fill('<b>Hello from e2e</b> news')
+    await section.getByText('Hello from e2e').first().waitFor()
+    check(`broadcasts at ${width}: the live preview renders the text and the 🔕 Stop announcements button`, (await section.getByLabel('Telegram preview').getByText('🔕 Stop announcements').count()) === 1)
+    check(`broadcasts at ${width}: one a day: Send now waits until Urgent is ticked`, await section.getByRole('button', { name: /Send now/ }).isDisabled())
+    await section.getByLabel(/Urgent/).check()
+    await section.getByRole('button', { name: /Send now/ }).click()
+    const dlg = section.getByRole('alertdialog')
+    await dlg.waitFor()
+    check(`broadcasts at ${width}: the confirm step shows the exact count`, (await dlg.getByText('23 people').count()) === 1 && (await dlg.getByRole('button', { name: 'Yes, send to 23' }).count()) === 1)
+    if (mobile) await noHorizontalScroll(page, '/admin broadcasts')
+    if (SHOTS) {
+      await page.waitForTimeout(800)
+      await section.screenshot({ path: path.join(SHOTS, `admin-broadcasts-${width}.png`) })
+    }
+    await dlg.getByRole('button', { name: 'Cancel' }).click()
+    await section.getByRole('button', { name: 'Recipients' }).first().click()
+    await section.getByText('••••').first().waitFor()
+    check(`broadcasts at ${width}: per-recipient status with masked chat ids`, (await section.locator('td', { hasText: /^••••\d{4}$/ }).count()) >= 20)
+    if (SHOTS && !mobile) {
+      const chan = page.locator('section', { has: page.getByRole('heading', { name: 'Telegram channel' }) })
+      await chan.getByText('Send to channel and DM users').click()
+      await page.waitForTimeout(300)
+      await chan.screenshot({ path: path.join(SHOTS, `admin-channel-dm-${width}.png`) })
+    }
+    await w.verify([/Failed to load resource/])
+    await ctx.close()
+  }
+})
+
 /* ------------------------------------------------------------- docs --- */
 
-const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap-l3', 'changelog']
+const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'roadmap', 'roadmap-l3', 'changelog']
 await step('docs', async () => {
   for (const [width, mobile] of [[1440, false], [390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
@@ -1091,6 +1265,7 @@ await step('docs', async () => {
         check('docs /widget: the live examples render (widget.js allowed by the CSP)', true)
       }
       if (mobile) await noHorizontalScroll(page, `docs /${slug}`)
+      else await designAudit(page, `docs /${slug}`)
       // The L3 roadmap reads public parent-chain RPCs in the browser; this harness aborts every off-localhost request.
       await w.verify(slug === 'roadmap-l3' ? [/ERR_BLOCKED_BY_CLIENT/] : [])
     }
@@ -1114,7 +1289,7 @@ await step('docs', async () => {
 /* ------------------------------------------------------------- 404s and mobile pages --- */
 
 await step('404s', async () => {
-  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200]]) {
+  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200], ['/links', 200]]) {
     const r = await fetch(BASE + p)
     const html = await r.text()
     check(`HTTP ${want} for ${p}`, r.status === want && (want === 404 ? /noindex/.test(html) : !/Not found ·/.test(html)), `${r.status}`)
@@ -1124,14 +1299,46 @@ await step('404s', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/app']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/app') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
     await page.waitForLoadState('networkidle').catch(() => {})
     await noHorizontalScroll(page, p)
+    await designAudit(page, `${p} at 390`)
     await w.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   }
+  await ctx.close()
+})
+
+// The link hub (/links): the kit lockup, every link a new tab with noopener, web links tagged for the KOL
+// campaign, the Gully Pay fee read from the server, and the live movers row.
+await step('links hub', async () => {
+  const ctx = await newContext({ width: 390, height: 844, mobile: true })
+  const page = await ctx.newPage()
+  const w = watch(page, '/links')
+  await page.goto(BASE + '/links')
+  await page.waitForLoadState('networkidle').catch(() => {})
+  const r = await page.evaluate(() => {
+    const links = [...document.querySelectorAll('main a[href^="http"]')]
+    return {
+      kit: document.querySelectorAll('main [data-brand="kit"]').length,
+      n: links.length,
+      bad: links.filter((a) => a.getAttribute('target') !== '_blank' || !/noopener/.test(a.getAttribute('rel') ?? '')).map((a) => a.getAttribute('href')),
+      noIcon: links.filter((a) => !a.querySelector('svg')).map((a) => a.getAttribute('href')),
+      untagged: links.filter((a) => !/^https:\/\/(t\.me|x\.com|github\.com)\//.test(a.href) && !/utm_source=kol&utm_medium=links&utm_campaign=launch/.test(a.href)).map((a) => a.getAttribute('href')),
+      pay: /0\.5% after the first \$5,000/.test(document.body.textContent ?? ''),
+      soon: /Holder Map/.test(document.body.textContent ?? ''),
+    }
+  })
+  check('/links: the kit lockup is there', r.kit > 0, JSON.stringify(r))
+  check('/links: at least 15 links, each a new tab with noopener and an icon', r.n >= 15 && !r.bad.length && !r.noIcon.length, JSON.stringify(r))
+  check('/links: every web link carries the KOL UTM tags', !r.untagged.length, JSON.stringify(r.untagged))
+  check('/links: the Gully Pay fee is read from the server', r.pay)
+  check('/links: Holder Map is listed as coming soon', r.soon)
+  check('/links: the title', (await page.title()) === 'Links · Gully Labs', await page.title())
+  await noHorizontalScroll(page, '/links')
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
 })
 

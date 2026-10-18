@@ -19,7 +19,7 @@ export function Services() {
     <>
       <Seo
         title="Services"
-        description="Smart contracts, dApps, chain infrastructure and security audits from the team behind the Gully Labs projects."
+        description="Smart contracts, dApps, chain infrastructure and security testing from the team behind the Gully Labs projects."
       />
 
       <section className="grid grid-cols-[1.1fr_.9fr] items-end gap-[clamp(32px,4cqw,72px)] px-page pt-[72px] pb-16 max-[959px]:grid-cols-1">
@@ -28,7 +28,7 @@ export function Services() {
             SERVICES · THE SAME TEAM, ON YOUR PROJECT
           </span>
           <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-            Build with the team behind <span className="text-gold">the projects</span>
+            Build with the team behind <span className="text-gold whitespace-nowrap">the projects</span>
           </h1>
         </div>
         <div className="flex flex-col gap-5" style={rise(2)}>
@@ -124,7 +124,7 @@ export function Services() {
             <Link
               key={p.slug}
               to={`/projects/${p.slug}`}
-              className="flex flex-col overflow-hidden rounded-[10px] border border-line bg-surface text-left text-ink transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-line-hover hover:text-ink"
+              className="flex flex-col overflow-hidden rounded-card border border-line bg-surface text-left text-ink transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-line-hover hover:text-ink"
               style={rise(i)}
             >
               <div className="flex h-[120px] w-full items-center justify-center" style={{ background: p.bg, padding: p.padSm }}>

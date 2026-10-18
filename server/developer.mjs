@@ -134,6 +134,26 @@ export function sessionAddress(req) {
   return currentSession(req)?.address ?? null
 }
 
+/**
+ * Read-only: the signed-in wallet, its active workspace and its role there, resolved exactly as the portal's
+ * gate does (a removed member falls back to their own workspace), or null when signed out or blocked. Gully AI
+ * uses it to scope its "my" tools; it never writes the session.
+ */
+export function sessionContext(req) {
+  const s = currentSession(req)
+  if (!s) return null
+  const user = s.address
+  const account = getAccount(user)
+  if (!account || account.blocked) return null
+  let workspace = s.activeWorkspace ?? user
+  let role = roleIn(user, workspace)
+  if (!role) {
+    workspace = user
+    role = 'owner'
+  }
+  return { user, workspace, role }
+}
+
 /** CSRF guard for every state-changing request. */
 function sameSite(req) {
   if (req.headers['x-requested-with'] !== 'gully') return false

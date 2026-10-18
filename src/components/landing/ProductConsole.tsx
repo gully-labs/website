@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, Puzzle, Sparkles, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowUpRight, BellRing, Boxes, ChartNoAxesCombined, CircleDollarSign, Code2, GitFork, Layers, Puzzle, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react'
 import { askStatus } from '../ask/askApi'
 import { useContact } from '../ContactContext'
 import { ANALYTICS_SIGNUP, type PlansState } from '../../lib/plans'
+import { DOCS_URL } from '../../site-host'
 import { PORTAL, PORTAL_ALERTS } from './links'
-import { h2 } from './links'
+import { eyebrow, h2 } from './links'
 
 /* One product console in place of a section per product: a rail of tabs on the left (a scrolling chip
    row on a phone) and, on the right, the chosen product's one-line pitch, its call to action and its
@@ -24,7 +25,7 @@ const WidgetDemo = lazy(() => import('../demos/WidgetDemo'))
 const PayDemo = lazy(() => import('../demos/PayDemo'))
 const AskPanel = lazy(() => import('../ask/AskPanel').then((mod) => ({ default: () => <mod.AskPanel variant="panel" /> })))
 
-type Cta = { label: string; to?: string; href?: string; contact?: boolean }
+type Cta = { label: string; to?: string; href?: string; contact?: boolean; newTab?: boolean }
 interface Tab {
   id: string
   name: string
@@ -49,6 +50,7 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
     { id: 'analytics', name: 'Gully Analytics', icon: ChartNoAxesCombined, status: 'FREE TRIAL', live: true, pitch: `Page views next to wallet connects, chains and transactions. Cookie-free, built on Umami, sign up with your wallet${trial ? `, ${trial} days free` : ''}.`, cta: { label: 'Start free trial', href: ANALYTICS_SIGNUP }, height: 600, Demo: AnalyticsDemo },
     { id: 'chainkit', name: 'Chain Kit', icon: Boxes, status: 'ON REQUEST', live: false, pitch: 'A Blockscout explorer with your domain, colours, token list and API, run by us. Change the brand below and watch it update.', cta: { label: 'Explore Chain Kit', to: '/chain-kit' }, height: 620, Demo: ChainKitDemo },
     { id: 'chains', name: 'Gully Chains', icon: Layers, status: 'SOON', live: false, pitch: 'Arbitrum Orbit L3 chains, launched and operated by Gully Labs. In development: none of it is live yet.', cta: { label: 'Ask about a chain', contact: true }, height: 360 },
+    { id: 'security', name: 'Security', icon: ShieldCheck, status: 'PLANNED', live: false, pitch: 'Audits & Security is on the roadmap: AI security scans, then security reviews, smart-contract and code audits, and a transparent Gully Score with monitoring. Not offered yet.', cta: { label: 'Read the roadmap', href: `${DOCS_URL}/roadmap#security`, newTab: true }, height: 360 },
     { id: 'api', name: 'API + SDK', icon: Code2, status: 'LIVE', live: true, pitch: `Every tracker row as JSON: ${anon ? `${anon} calls a minute` : 'free calls'} with no key, a free key${free ? ` (${free.perMin.toLocaleString('en-US')} a minute)` : ''} with wallet sign-in, and a typed SDK (MIT).`, cta: { label: 'Get a key', href: PORTAL }, height: 560, Demo: ApiDemo },
     { id: 'widget', name: 'Widget', icon: Puzzle, status: 'LIVE', live: true, pitch: 'One script tag puts a live ticker, a one-stock badge or a table of the widest gaps on any site.', cta: { label: 'Build a widget', to: '/widget' }, height: 520, Demo: WidgetDemo },
     { id: 'pay', name: 'Gully Pay', icon: CircleDollarSign, status: 'LIVE', live: true, pitch: 'Plans paid from your wallet straight to ours in ETH, BNB, USDC or USDT on four chains, checked on chain. No custody.', cta: { label: 'See plans', to: '/#pricing' }, height: 540, Demo: PayDemo },
@@ -56,7 +58,7 @@ function tabsFor(plans: PlansState, ask: boolean | null): Tab[] {
   ]
 }
 
-const CONSOLE_TABS = ['tracker', 'alerts', 'analytics', 'chainkit', 'chains', 'api', 'widget', 'pay', 'ask']
+const CONSOLE_TABS = ['tracker', 'alerts', 'analytics', 'chainkit', 'chains', 'security', 'api', 'widget', 'pay', 'ask']
 
 const NEAR = '400px 0px'
 const FAR = '1400px 0px'
@@ -101,8 +103,9 @@ function CtaButton({ cta }: { cta: Cta }) {
       </Link>
     )
   return (
-    <a href={cta.href} className={cls}>
+    <a href={cta.href} className={cls} {...(cta.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
       {inner}
+      {cta.newTab && <span className="sr-only"> (opens in a new tab)</span>}
     </a>
   )
 }
@@ -130,7 +133,7 @@ const CHAIN_STEPS: { name: string; when: string; d: string }[] = [
 function ChainsPane() {
   return (
     <div className="flex flex-col gap-3">
-      <ol className="m-0 grid list-none grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-line bg-line p-0 max-[699px]:grid-cols-1">
+      <ol className="m-0 grid list-none grid-cols-3 gap-px overflow-hidden rounded-panel border border-line bg-line p-0 max-[699px]:grid-cols-1">
         {CHAIN_STEPS.map((s, i) => (
           <li key={s.name} className="flex flex-col gap-1 bg-surface px-4 py-3">
             <span className="font-mono text-[11px] text-gold">
@@ -148,7 +151,7 @@ function ChainsPane() {
               href={`https://github.com/gully-labs/${r.repo}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-full min-h-11 flex-col gap-[2px] rounded-[10px] border border-line bg-surface px-3 py-[10px] text-ink transition-[border-color,background-color] duration-200 hover:border-gold-line hover:bg-surface-hover hover:text-ink"
+              className="flex h-full min-h-11 flex-col gap-[2px] rounded-panel border border-line bg-surface px-3 py-[10px] text-ink transition-[border-color,background-color] duration-200 hover:border-gold-line hover:bg-surface-hover hover:text-ink"
             >
               <span className="flex items-center justify-between gap-2 font-mono text-[11px] tracking-[1px] text-gold">
                 {r.role.toUpperCase()}
@@ -164,15 +167,42 @@ function ChainsPane() {
   )
 }
 
+/* Not offered: the Audits & Security track of the roadmap (docs /roadmap). Nothing here claims an audit. */
+const SECURITY_STEPS: { name: string; d: string }[] = [
+  { name: 'AI Security Scan', d: 'Self-serve: Slither, Aderyn, fuzz and invariant runs, AI triage. Paid with Gully Pay.' },
+  { name: 'Security Reviews', d: 'Two reviewers, every fix reviewed, a public report pinned to a commit hash.' },
+  { name: 'Audits', d: 'Smart-contract audits, and code audits of frontends, backends, APIs, keys and CI.' },
+  { name: 'Gully Score + monitoring', d: 'A public score with every weight and source shown, no pay-to-rank, and admin-key alerts.' },
+]
+
+function SecurityPane() {
+  return (
+    <div className="flex flex-col gap-3">
+      <ol className="m-0 grid list-none grid-cols-4 gap-px overflow-hidden rounded-[10px] border border-line bg-line p-0 max-[1099px]:grid-cols-2 max-[599px]:grid-cols-1">
+        {SECURITY_STEPS.map((s, i) => (
+          <li key={s.name} className="flex flex-col gap-1 bg-surface px-4 py-3">
+            <span className="font-mono text-[11px] text-gold">
+              {String(i + 1).padStart(2, '0')} · <span className="text-dim">PLANNED</span>
+            </span>
+            <b className="font-semibold">{s.name}</b>
+            <span className="text-[13px] leading-[1.45] text-muted">{s.d}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="m-0 font-mono text-[11px] leading-[1.5] text-faint">Today we offer Security &amp; Testing: code review, fuzzing and invariant tests, and post-launch monitoring.</p>
+    </div>
+  )
+}
+
 function AskPane({ configured }: { configured: boolean | null }) {
   if (configured)
     return (
-      <Suspense fallback={<div aria-hidden className="h-[420px] animate-pulse rounded-card border border-line bg-surface" />}>
+      <Suspense fallback={<div aria-hidden className="h-[420px] gl-skeleton rounded-card border border-line bg-surface" />}>
         <AskPanel />
       </Suspense>
     )
   return (
-    <div className="flex min-h-[200px] flex-col items-start justify-center gap-3 rounded-card border border-dashed border-line-strong bg-surface p-6">
+    <div className="flex min-h-[200px] flex-col items-start justify-center gap-3 rounded-card border border-dashed border-line-strong bg-surface p-5">
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{configured === null ? 'CHECKING…' : 'COMING ONLINE SOON'}</span>
       <p className="m-0 max-w-[520px] text-[14px] leading-[1.5] text-muted">
         Gully AI answers questions about the tracker, the API, Analytics, Chain Kit and Gully Pay from our own docs, and cites where each answer came from.
@@ -247,9 +277,10 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
     return () => ro.disconnect()
   }, [])
 
-  const skeleton = (height: number) => <div aria-hidden className="animate-pulse rounded-card border border-line bg-surface" style={{ height, maxHeight: 'calc(100vh - 120px)' }} />
+  const skeleton = (height: number) => <div aria-hidden className="gl-skeleton rounded-card border border-line bg-surface" style={{ height, maxHeight: 'calc(100vh - 120px)' }} />
   let body: ReactNode
   if (cur.id === 'chains') body = <ChainsPane />
+  else if (cur.id === 'security') body = <SecurityPane />
   else if (cur.id === 'ask') body = <AskPane configured={ask} />
   else if (cur.Demo && near)
     body = (
@@ -268,7 +299,7 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
       <div className="flex flex-col gap-5 px-page py-12 max-[599px]:py-9">
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }} className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <span className="font-mono text-[11px] tracking-[1.5px] text-gold">PRODUCTS · TRY EACH ONE HERE</span>
+            <span className={eyebrow}>PRODUCTS · TRY EACH ONE HERE</span>
             <h2 id="products-title" className={h2}>
               Everything we ship
             </h2>
@@ -298,10 +329,10 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
                   aria-controls="console-panel"
                   tabIndex={on ? 0 : -1}
                   onClick={() => choose(t.id)}
-                  className={`group relative flex min-h-12 flex-none items-center gap-3 rounded-[10px] border px-3 py-2 text-left transition-[border-color,background-color,color] duration-200 max-[899px]:min-h-11 max-[899px]:rounded-full max-[899px]:py-1 ${on ? 'border-gold-line bg-grid text-ink' : 'border-transparent bg-transparent text-muted hover:bg-surface-hover hover:text-ink max-[899px]:border-line'}`}
+                  className={`group relative flex min-h-12 flex-none items-center gap-3 rounded-panel border px-3 py-2 text-left transition-[border-color,background-color,color] duration-200 max-[899px]:min-h-11 max-[899px]:rounded-full max-[899px]:py-1 ${on ? 'border-gold-line bg-grid text-ink' : 'border-transparent bg-transparent text-muted hover:bg-surface-hover hover:text-ink max-[899px]:border-line'}`}
                 >
                   {on && <motion.span layoutId="console-rail" aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gold max-[899px]:hidden" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
-                  <span className={`grid size-8 flex-none place-items-center rounded-[8px] transition-colors max-[899px]:size-6 max-[899px]:bg-transparent ${on ? 'bg-bg text-gold' : 'bg-surface text-dim group-hover:text-gold'}`}>
+                  <span className={`grid size-8 flex-none place-items-center rounded-tile transition-colors max-[899px]:size-6 max-[899px]:bg-transparent ${on ? 'bg-bg text-gold' : 'bg-surface text-dim group-hover:text-gold'}`}>
                     <t.icon aria-hidden size={16} strokeWidth={2} />
                   </span>
                   <span className="flex min-w-0 flex-1 items-center justify-between gap-2 max-[899px]:flex-none">

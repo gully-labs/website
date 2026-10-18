@@ -1,5 +1,5 @@
 import { Ban, Loader2, Plus, Trash2 } from 'lucide-react'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
 import { api } from '../api'
 import { chip, input, mono, pillGold, pillLine, pillSm } from '../styles'
@@ -16,12 +16,24 @@ const defaultAssets = (v: MerchantView) => {
   return on.length ? on : v.assets.map((a) => a.id)
 }
 
+/** `?paylink=<usd>` with #merchant (Gully AI's "Create a pay link for $25"): the amount the New link form
+    opens with ('' for no amount), read once and taken off the address. The user still saves the link. */
+function paylinkFromUrl(): string | null {
+  if (!/^#merchant(\/|$)/.test(window.location.hash)) return null
+  const q = new URLSearchParams(window.location.search)
+  if (!q.has('paylink')) return null
+  const v = q.get('paylink') ?? ''
+  q.delete('paylink')
+  history.replaceState(null, '', window.location.pathname + (q.size ? `?${q}` : '') + window.location.hash)
+  return /^\d{1,7}(\.\d{1,2})?$/.test(v) ? v : ''
+}
+
 /** Create a pay link (the Links tab and step 3 of the setup stepper). */
-export function NewLink({ view, onDone, bare = false }: { view: MerchantView; onDone: () => void; bare?: boolean }) {
+export function NewLink({ view, onDone, bare = false, initialAmount = '' }: { view: MerchantView; onDone: () => void; bare?: boolean; initialAmount?: string }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [kind, setKind] = useState<'fixed' | 'open'>('fixed')
-  const [amount, setAmount] = useState('')
+  const [amount, setAmount] = useState(initialAmount)
   const [min, setMin] = useState('')
   const [max, setMax] = useState('')
   const [assets, setAssets] = useState<string[]>(() => defaultAssets(view))
@@ -99,7 +111,11 @@ export function NewLink({ view, onDone, bare = false }: { view: MerchantView; on
 }
 
 export function LinksSection({ view, reload }: { view: MerchantView; reload: () => void }) {
-  const [creating, setCreating] = useState(false)
+  const [prefill] = useState(paylinkFromUrl)
+  const [creating, setCreating] = useState(() => prefill !== null && view.can.links)
+  useEffect(() => {
+    if (prefill !== null) document.getElementById('m-links')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [prefill])
   const toggle = async (l: MerchantLink) => {
     const r = await api(`/api/developer/merchant/links/${l.id}`, { method: 'POST', body: { active: !l.active } })
     if (!r.ok) return toastError('Not changed', { detail: r.error })
@@ -122,6 +138,7 @@ export function LinksSection({ view, reload }: { view: MerchantView; reload: () 
       {creating && (
         <NewLink
           view={view}
+          initialAmount={prefill ?? ''}
           onDone={() => {
             setCreating(false)
             reload()

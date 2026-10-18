@@ -19,6 +19,9 @@ export function Changelog() {
       <Section id="2026-10-18" title="18 October 2026">
         <List>
           <li>
+            A general <DocLink to="roadmap">Roadmap</DocLink> page listing each track with its status. New on it, and planned only: <DocLink to="roadmap" hash="security">Audits &amp; Security</DocLink>, in stages from an AI security scan to security reviews, smart-contract and code audits, and a transparent Gully Score with monitoring. Nothing on it is offered yet; today's security service is still Security &amp; Testing.
+          </li>
+          <li>
             <DocLink to="gully-pay">Gully Pay</DocLink> on three more chains: OP Mainnet (USDC, USDT, ETH), Polygon (USDC, POL) and Avalanche (USDC, USDT, AVAX). Every token and Chainlink feed was read on chain first. Request Network's fee proxy was compared byte for byte with Base's: OP Mainnet's matches and will carry the merchant fee inside the payment once the treasury Safe is deployed there; Polygon's and Avalanche's are other builds, so the fee is invoiced there. Each chain opens for Gully Labs' own checkout once the treasury Safe is deployed on it.
           </li>
           <li>

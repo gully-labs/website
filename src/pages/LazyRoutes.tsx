@@ -19,12 +19,13 @@ const Stock = lazy(() => chunks.stock().then((m) => ({ default: m.StockPage })))
 const Tracker = lazy(() => chunks.tracker().then((m) => ({ default: m.Tracker })))
 const Ask = lazy(() => chunks.ask().then((m) => ({ default: m.AskPage })))
 const NotFound = lazy(() => chunks.notFound().then((m) => ({ default: m.NotFound })))
+const Links = lazy(() => chunks.links().then((m) => ({ default: m.LinksPage })))
 const Tg = lazy(() => chunks.tg().then((m) => ({ default: m.TgApp })))
 
 /** What a page shows while its chunk loads: a pulsing page outline a full screen tall, so the closing
     band and the footer stay below the fold instead of flashing up and jumping down (CLS). */
 export function RouteSkeleton() {
-  const bar = 'animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface'
+  const bar = 'gl-skeleton rounded-card bg-surface'
   return (
     <div role="status" aria-label="Loading the page" className="flex min-h-[100svh] flex-col gap-6 px-page pt-[72px] pb-24 max-[600px]:pt-10">
       <div className={`${bar} h-[14px] w-[180px] rounded-full`} />
@@ -60,6 +61,7 @@ export const ProjectDetailRoute = () => page(<ProjectDetail />)
 export const TrackerRoute = () => page(<Tracker />)
 export const AskRoute = () => page(<Ask />)
 export const NotFoundRoute = () => page(<NotFound />)
+export const LinksRoute = () => page(<Links />)
 // The Telegram Mini App draws its own loading state; a blank screen in Telegram's colours meanwhile.
 export const TgRoute = () => (
   <Suspense fallback={<div role="status" aria-label="Loading" className="min-h-[100svh]" />}>

@@ -1,5 +1,5 @@
 import { BookOpen, ChartColumn, CircleDollarSign, Download, FileText, Link2, PauseCircle, Share2, Store, UserRound, Wallet, Webhook } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { DOCS_URL } from '../../../site-host'
 import { usePoll } from '../poll'
 import { ErrorLine, Skeleton } from '../parts'
@@ -40,6 +40,10 @@ export function MerchantTab() {
     setTick((t) => t + 1)
   }, [reread])
   const [sub, setSub] = useSubTab<Sub>('merchant', TABS, 'payments')
+  // Gully AI's "Create a pay link for $25" (?paylink= with #merchant) opens the Links tab with the form.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('paylink')) setSub('links')
+  }, [setSub])
 
   if (!view)
     return poll.error || poll.timedOut ? (

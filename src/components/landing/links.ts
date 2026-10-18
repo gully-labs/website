@@ -7,4 +7,4 @@ export const PORTAL_BILLING = isLocalHost() ? '/app#billing' : `${APP_URL}/#bill
 export const BLOG_URL = 'https://blog.gullylabs.xyz'
 
 /** A landing section's title: the shared H2 step (components/ui.tsx). */
-export { h2 } from '../ui'
+export { eyebrow, h2 } from '../ui'

@@ -220,6 +220,15 @@ const dev = makeClient(BASE)
 const dev2 = makeClient(BASE)
 const myAlerts = async () => (await dev.call('/api/developer/alerts')).data.alerts
 const linkCode = async (client) => (await client.post('/api/developer/telegram/connect')).data.link.split('start=')[1]
+const users = await import('../server/telegram-users.mjs')
+const botUsers = () => {
+  users.flushBotUsers()
+  try {
+    return JSON.parse(fs.readFileSync(path.join(tmp, 'bot-users.json'), 'utf8')).users
+  } catch {
+    return {}
+  }
+}
 
 try {
   /* --------------------------------------------------------- no token --- */
@@ -242,12 +251,16 @@ try {
   const hook = calls.find((c) => c.method === 'setWebhook')
   check('startup: setWebhook to the secret path on gullylabs.xyz', started.ok && hook?.body.url === `https://gullylabs.xyz/api/telegram/${HOOK_PATH}`, hook?.body.url)
   check('startup: the secret token and allowed updates are sent', hook?.body.secret_token === SECRET && JSON.stringify(hook?.body.allowed_updates) === '["message","callback_query"]')
-  const cmdList = calls.find((c) => c.method === 'setMyCommands')?.body.commands ?? []
+  const cmdCalls = calls.filter((c) => c.method === 'setMyCommands')
+  const scoped = (type) => cmdCalls.find((c) => (c.body.scope?.type ?? 'default') === type)?.body.commands ?? []
+  const cmdList = scoped('all_private_chats')
   const cmds = cmdList.map((c) => c.command)
-  check('startup: setMyCommands lists menu, gap, top, movers, launches, alerts, ask, stop, help', ['menu', 'gap', 'top', 'movers', 'launches', 'alerts', 'ask', 'stop', 'help'].every((c) => cmds.includes(c)), cmds.join())
-  check('startup: command descriptions are plain words (no emoji), 3 to 256 characters', cmdList.every((c) => c.description.length >= 3 && c.description.length <= 256 && !/\p{Extended_Pictographic}/u.test(c.description)))
+  check('startup: private chats see start, app, gap, top, movers, launches, alerts, ask, help, stop (in that order, no scan)', JSON.stringify(cmds) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'alerts', 'ask', 'help', 'stop']), cmds.join())
+  check('startup: groups see gap, top, launches, help only', JSON.stringify(scoped('all_group_chats').map((c) => c.command)) === JSON.stringify(['gap', 'top', 'launches', 'help']), scoped('all_group_chats').map((c) => c.command).join())
+  check('startup: the default scope gets the private list', JSON.stringify(scoped('default').map((c) => c.command)) === JSON.stringify(cmds))
+  check('startup: command descriptions are short, plain and start with an emoji (3 to 60 characters)', cmdCalls.flatMap((c) => c.body.commands).every((c) => c.description.length >= 3 && c.description.length <= 60 && /^\p{Extended_Pictographic}/u.test(c.description)), cmdList.map((c) => c.description).join(' | '))
   const menuButton = calls.find((c) => c.method === 'setChatMenuButton')?.body.menu_button
-  check('startup: the chat menu button opens the Mini App (web_app, gullylabs.xyz/tg)', menuButton?.type === 'web_app' && menuButton.web_app?.url === 'https://gullylabs.xyz/tg' && menuButton.text === 'Open app', JSON.stringify(menuButton))
+  check('startup: the chat menu button lists the commands (type commands), so users see them', menuButton?.type === 'commands' && Object.keys(menuButton).length === 1, JSON.stringify(menuButton))
   check('startup: getMe read the bot name', calls.some((c) => c.method === 'getMe'))
   check('startup is idempotent (a second run succeeds)', (await tg.startTelegram()).ok)
   const ch1 = await dev.call('/api/alerts/channels')
@@ -423,12 +436,13 @@ try {
 
   /* -------------------------------------------------- unknown chats --- */
   const apiCalls = () => calls.filter((c) => c.method !== 'getChatMember').length // the News channel gate adds membership checks
+  await say(privateChat(444), '/stop')
+  check('unknown chats: /stop answers plainly (nothing to stop) and turns announcements off', sent(444).length === 1 && /isn’t linked to an account, so there’s nothing to stop/.test(lastText(444)) && /won’t get announcements/.test(lastText(444)) && !!botUsers()['444']?.optedOut, lastText(444))
   const before = apiCalls()
   const nAns = answers().length
-  await say(privateChat(444), '/stop')
   await say(privateChat(444), 'hello')
   await press(privateChat(444), 'mute:abc', { msgId: null })
-  check('unknown chats: /stop and plain text are ignored', sent(444).length === 0)
+  check('unknown chats: plain text is ignored', sent(444).length === 1)
   check('unknown chats: a Mute press is answered without acting', answers().length === nAns + 1 && /not linked/.test(lastAnswer().text) && apiCalls() === before + 1)
   await say(privateChat(444), '/alerts')
   check('unknown chats: /alerts explains linking, with Link wallet', /need a linked account/.test(view(444).text) && !!button(view(444).kb, /Link wallet/)?.url)
@@ -721,7 +735,8 @@ try {
   await press(ada, 'set')
   const st = view(111)
   check('⚙️ Settings: wallet (short), workspace, chat, alerts, usage notices', st.text.includes(`Wallet: <code>${me.slice(0, 6)}…${me.slice(-4)}</code>`) && /Workspace: /.test(st.text) && /Chat: this private chat/.test(st.text) && /Alerts: 1/.test(st.text) && /Usage notices: off/.test(st.text), st.text)
-  check('Settings buttons: Mute all, Usage notices, Unlink, Back, Menu', JSON.stringify(data(st.kb)) === JSON.stringify(['smu', 'snt:1', 'sul', 'm', 'm']))
+  check('Settings buttons: Mute all, Usage notices, Announcements, Unlink, Back, Menu', JSON.stringify(data(st.kb)) === JSON.stringify(['smu', 'snt:1', 'san:0', 'sul', 'm', 'm']), JSON.stringify(data(st.kb)))
+  check('Settings shows announcements on', /Announcements: on/.test(st.text))
   await press(ada, 'snt:1')
   const meNow = await dev.call('/api/developer/me')
   check('usage notices turn on (profile notify)', /Usage notices on/.test(lastAnswer().text) && meNow.data?.profile?.notify?.telegramUsage === true && /Usage notices: on/.test(view(111).text), JSON.stringify(meNow.data?.profile))
@@ -767,7 +782,9 @@ try {
   check('/stop unlinks a private chat', /Unlinked/.test(lastText(111)) && (await dev.call('/api/developer/telegram')).data.linked === null)
   const n2 = sent(111).length
   await say(ada, '/stop')
-  check('after /stop the chat is unknown again (/stop ignored)', sent(111).length === n2)
+  check('/stop again in the now unlinked chat answers "nothing to stop" and turns announcements off', sent(111).length === n2 + 1 && /nothing to stop/.test(lastText(111)) && !!botUsers()['111']?.optedOut)
+  await press(ada, 'san:1', { msgId: null })
+  check('announcements back on from the Settings switch', /Announcements on/.test(lastAnswer().text ?? '') && !botUsers()['111']?.optedOut)
   await say(ada, `/start ${await linkCode(dev)}`)
   const unl = await dev.post('/api/developer/telegram/unlink')
   check('the dashboard can unlink, and the chat is told', unl.status === 200 && (await dev.call('/api/developer/telegram')).data.linked === null)
@@ -823,6 +840,76 @@ try {
   await say(ng3, '/help')
   check('gate: if membership cannot be checked, the bot fails open', !/Follow Gully Labs News/.test(lastText(9903)) && lastText(9903).length > 0)
   memberCheckBroken = false
+
+  /* ---------------------------------------------------- bot users, /app, announcements --- */
+  await postUpdate({ message: { message_id: 1, date: Math.floor(Date.now() / 1000), chat: privateChat(9920, 'Dora'), from: { id: 9920, is_bot: false, first_name: 'Dora', language_code: 'de' }, text: '/start' } })
+  const u9920 = botUsers()['9920']
+  check('bot users: a private /start is recorded with first/last seen and language, no name', !!u9920 && u9920.lang === 'de' && !!u9920.firstSeen && !!u9920.lastSeen && u9920.linked === false && u9920.optedOut === null && !JSON.stringify(u9920).includes('Dora'), JSON.stringify(u9920))
+  check('bot users: a linked private chat is recorded as linked', botUsers()['111']?.linked === false || botUsers()['111']?.linked === true)
+  check('bot users: groups are never recorded', !Object.keys(botUsers()).some((k) => k.startsWith('-')))
+  check('bot users: chats that never sent /start are not recorded (except an explicit opt-out)', !botUsers()['9903'] && !botUsers()['850'])
+  const filled = users.backfillFromLinks([{ chatType: 'private', chatId: '5555', linkedAt: '2026-10-01T00:00:00.000Z' }, { chatType: 'supergroup', chatId: '-1009', linkedAt: '2026-10-01T00:00:00.000Z' }])
+  check('bot users: backfilled from existing private links (first seen = linked at), groups skipped', filled === 1 && botUsers()['5555']?.source === 'link' && botUsers()['5555'].firstSeen === '2026-10-01T00:00:00.000Z' && botUsers()['5555'].linked === true && !botUsers()['-1009'])
+  check('bot users: backfill is idempotent', users.backfillFromLinks([{ chatType: 'private', chatId: '5555', linkedAt: '2026-10-01T00:00:00.000Z' }]) === 0)
+  await say(privateChat(9930), '/app')
+  const appKb = view(9930).kb
+  check('/app in a private chat: an inline web_app button to the Mini App', /Gully app/.test(view(9930).text) && flat(appKb)[0]?.web_app?.url === 'https://gullylabs.xyz/tg')
+  const grp2 = { id: -100555, type: 'group', title: 'Desk' }
+  await say(grp2, '/app', 31)
+  check('/app in a group: a link to a private chat with the bot (no web_app in groups)', flat(view(-100555).kb)[0]?.url === `https://t.me/${BOT}` && !flat(view(-100555).kb).some((b) => b.web_app))
+  await say(grp2, '/stop', 31)
+  check('/stop in an unlinked group answers plainly', /This group isn’t linked to an account, so there’s nothing to stop/.test(lastText(-100555)))
+  await say(privateChat(9920), '/stop announcements')
+  check('/stop announcements: announcements off, said plainly, with a way back', /Announcements off/.test(lastText(9920)) && /Alerts you set up still arrive/.test(lastText(9920)) && data(view(9920).kb).includes('bci') && !!botUsers()['9920'].optedOut)
+  await press(privateChat(9920), 'bci', { msgId: null })
+  check('📣 Announcements back on (bci)', !botUsers()['9920'].optedOut && /Announcements on/.test(lastAnswer().text ?? ''))
+  const bcMsg = { message_id: 4321, chat: privateChat(9920), text: 'News', reply_markup: { inline_keyboard: [[{ text: 'Read', url: 'https://gullylabs.xyz/r/abcdef012345.0.0' }], [{ text: '🔕 Stop announcements', callback_data: 'bco' }]] } }
+  await postUpdate({ callback_query: { id: 'cq-bco', from: { id: 9920, is_bot: false, first_name: 'D' }, message: bcMsg, data: 'bco' } })
+  await new Promise((r) => setTimeout(r, 1_100))
+  const swap = calls.filter((c) => c.method === 'editMessageReplyMarkup' && c.body.chat_id === '9920').at(-1)?.body
+  check('🔕 Stop announcements on a broadcast: opted out, toast says alerts still arrive', !!botUsers()['9920'].optedOut && /Announcements off\. Alerts still arrive/.test(answers().find((a) => a.body.callback_query_id === 'cq-bco')?.body.text ?? ''))
+  check('🔕 the button turns into "📣 Announcements back on", the URL button stays', swap?.message_id === 4321 && swap.reply_markup.inline_keyboard[0][0].url === 'https://gullylabs.xyz/r/abcdef012345.0.0' && swap.reply_markup.inline_keyboard[1][0].callback_data === 'bci', JSON.stringify(swap))
+
+  /* ------------------------------------- the exits are never gated (P0: left the channel) --- */
+  const ex = privateChat(9910, 'Ned')
+  nonMembers.add(9910)
+  await say(ex, `/start ${await linkCode(dev)}`)
+  check('non-member: /start <code> links the account (account management is not gated)', /Linked to/.test(lastText(9910)) && (await dev.call('/api/developer/telegram')).data.linked?.chatType === 'private', lastText(9910))
+  await say(ex, '/top')
+  check('non-member: features stay gated (/top shows the join screen)', /Follow Gully Labs News/.test(lastText(9910)))
+  await say(ex, '/alerts')
+  check('non-member: /alerts lists their alerts', /My alerts/.test(lastText(9910)), lastText(9910))
+  const exA = (await myAlerts())[0]
+  await press(ex, `ac:${exA.id}`)
+  check('non-member: an alert card opens', new RegExp(`ap:${exA.id}|ar:${exA.id}`).test(JSON.stringify(view(9910).kb)))
+  await press(ex, `am:${exA.id}`)
+  check('non-member: the alert card’s Mute 24h works', /Muted/.test(lastAnswer().text ?? '') && !!(await myAlerts()).find((a) => a.id === exA.id).mutedUntil, lastAnswer().text)
+  if ((await myAlerts()).find((a) => a.id === exA.id).enabled) await press(ex, `ap:${exA.id}`)
+  check('non-member: Pause works', (await myAlerts()).find((a) => a.id === exA.id).enabled === false, lastAnswer().text)
+  await press(ex, `ar:${exA.id}`)
+  check('non-member: Resume is feature use and stays gated', /Follow Gully Labs News/.test(lastAnswer().text ?? '') && (await myAlerts()).find((a) => a.id === exA.id).enabled === false)
+  await press(ex, 'smu')
+  check('non-member: Mute all works', /muted/.test(lastAnswer().text ?? ''), lastAnswer().text)
+  await press(ex, 'set')
+  check('non-member: Settings opens', /Settings/.test(view(9910).text))
+  await press(ex, 'bco', { msgId: null })
+  check('non-member: 🔕 Stop announcements works', !!botUsers()['9910']?.optedOut)
+  await press(ex, 'san:1', { msgId: null })
+  check('non-member: the announcements switch works', !botUsers()['9910']?.optedOut)
+  await say(ex, '/stop announcements')
+  check('non-member: /stop announcements works and keeps the link', /Announcements off/.test(lastText(9910)) && !!botUsers()['9910']?.optedOut && !!(await dev.call('/api/developer/telegram')).data.linked)
+  await press(ex, `ad:${exA.id}`)
+  await press(ex, `adx:${exA.id}`)
+  check('non-member: Delete works', !(await myAlerts()).some((a) => a.id === exA.id), lastAnswer().text)
+  await press(ex, 'sul')
+  await press(ex, 'suly')
+  check('non-member: Settings → Unlink works', /Unlinked/.test(view(9910).text) && (await dev.call('/api/developer/telegram')).data.linked === null)
+  await say(ex, `/start ${await linkCode(dev)}`)
+  await say(ex, '/stop')
+  check('non-member: /stop unlinks', /Unlinked/.test(lastText(9910)) && (await dev.call('/api/developer/telegram')).data.linked === null)
+  await say(ex, '/stop')
+  check('non-member: /stop in the unlinked chat still answers', /nothing to stop/.test(lastText(9910)))
+  nonMembers.delete(9910)
 
   /* ------------------------------------------------------------ token off --- */
   delete process.env.TELEGRAM_BOT_TOKEN

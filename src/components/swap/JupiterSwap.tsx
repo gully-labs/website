@@ -164,7 +164,7 @@ export default function JupiterSwap({ row }: { row: TrackerRow }) {
                 {fmtAmt(q.minOut)} {q.outSymbol} · {(q.slippageBps / 100).toFixed(2)}% slippage
               </dd>
               <dt className="text-faint">price impact</dt>
-              <dd className="m-0 text-right" style={{ color: q.priceImpactPct > 1 ? '#e4572e' : undefined }}>
+              <dd className="m-0 text-right" style={{ color: q.priceImpactPct > 1 ? '#f2704a' : undefined }}>
                 {q.priceImpactPct < 0.01 ? '<0.01' : q.priceImpactPct.toFixed(2)}%
               </dd>
               <dt className="text-faint">Gully Labs fee</dt>

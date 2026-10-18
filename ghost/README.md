@@ -40,7 +40,7 @@ scripts/
   does not load Portal either.
 - **Accessibility:** 44 px targets, gold focus rings, skip link, disclosure-button menus (Escape closes
   and returns focus, arrow keys move), focus-trapped mobile sheet, text contrast at or above 4.5:1
-  (small text uses `#8a96a6` or lighter on `#0b0e13`). Reduced motion follows the site's policy: fades
+  (small text uses `#949daa` or lighter on `#0d141c`). Reduced motion follows the site's policy: fades
   and colour changes only.
 - **No third-party scripts or fonts.** Everything is served from the theme's own assets.
 
@@ -147,7 +147,7 @@ Ghost admin (Settings):
    - Title: `Gully Labs Blog`
    - Description: `Building on-chain: stock token gaps, analytics, payments and the tools behind them.`
    The home masthead shows both.
-2. **Accent colour** (Design > Brand): `#E8C060`. The theme's gold is fixed, but Ghost's own cards,
+2. **Accent colour** (Design > Brand): `#D9B563`. The theme's gold is fixed, but Ghost's own cards,
    buttons and Portal use the accent.
 3. **Publication icon** (Design > Brand): the Gully mark, `public/icon-192.png` in this repo (square,
    192 px; `public/brand/gully-mark-96.png` is the 96 px mark if a smaller one is wanted).

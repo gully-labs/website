@@ -347,7 +347,7 @@ try {
   check('a cancelled invoice cannot be paid', r.status === 409, r.data?.error)
   check('cancelling twice is refused', (await admin(`/api/admin/invoices/${inv2.id}/cancel`, 'POST')).status === 409)
 
-  const inv3 = (await admin('/api/admin/invoices', 'POST', { title: 'Services: audit', usd: '250', assets: ['eth-usdt'] })).data.invoice
+  const inv3 = (await admin('/api/admin/invoices', 'POST', { title: 'Services: review', usd: '250', assets: ['eth-usdt'] })).data.invoice
   const iq3 = (await payPost(`/api/pay/${inv3.id}/quote`, { asset: 'eth-usdt' })).data.quote
   expireInvoiceForTest(inv3.id)
   check('an invoice past its expiry is shown as expired', (await anon.call(`/api/pay/${inv3.id}`)).data.invoice.status === 'expired')

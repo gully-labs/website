@@ -24,7 +24,7 @@ import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
    typed in; a value that could not be read says so. */
 
 const EXPLORER: Record<string, string> = { robinhood: 'https://robinhoodchain.blockscout.com/address/', bsc: 'https://bscscan.com/address/', ethereum: 'https://etherscan.io/address/', solana: 'https://solscan.io/account/' }
-const card = 'flex flex-col gap-4 rounded-card border border-line bg-surface p-6'
+const card = 'flex flex-col gap-4 rounded-card border border-line bg-surface p-5'
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.06}s ease both` })
 /** 0xd060…9EEC: both ends stay visible, so the checksum tail people verify is never cut off. */
 const middle = (a: string) => (a.length > 16 ? `${a.slice(0, 8)}…${a.slice(-6)}` : a)
@@ -260,10 +260,10 @@ export function StockPage() {
   if (st.k === 'loading')
     return (
       <section role="status" aria-label="Reading the tracker" className="min-h-[100svh] px-page pt-10 pb-24">
-        <div className="h-[14px] w-[220px] animate-pulse rounded-full bg-surface" />
-        <div className="mt-8 h-[72px] w-[min(420px,100%)] animate-pulse rounded-card bg-surface" />
-        <div className="mt-8 h-[110px] animate-pulse rounded-card bg-surface" />
-        <div className="mt-8 h-[420px] animate-pulse rounded-card bg-surface" />
+        <div className="h-[14px] w-[220px] gl-skeleton rounded-full bg-surface" />
+        <div className="mt-8 h-[72px] w-[min(420px,100%)] gl-skeleton rounded-card bg-surface" />
+        <div className="mt-8 h-[110px] gl-skeleton rounded-card bg-surface" />
+        <div className="mt-8 h-[420px] gl-skeleton rounded-card bg-surface" />
       </section>
     )
   if (st.k === 'error')

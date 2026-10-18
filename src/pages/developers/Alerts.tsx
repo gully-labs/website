@@ -100,7 +100,7 @@ export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram
   )
 }
 
-function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: { open: boolean; onClose: () => void; view: AlertsView; onCreated: (secret: string | null) => void; initialTarget?: string | null }) {
+function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, initialGap = null }: { open: boolean; onClose: () => void; view: AlertsView; onCreated: (secret: string | null) => void; initialTarget?: string | null; initialGap?: { pct: string; dir: GapDirection } | null }) {
   const [name, setName] = useState('')
   // A stock page's "Set an alert" link (?alert=<chain>:<TICKER>#alerts) opens this with that stock chosen.
   const [target, setTarget] = useState(() => (initialTarget && view.stocks.some((s) => `${s.chain}:${s.ticker}` === initialTarget) ? initialTarget : 'any'))
@@ -108,8 +108,9 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null }: 
   // DeepCore launch alerts, offered when the server lists that kind (with its chains).
   const launchKind = view.kinds?.find((k) => k.id === 'deepcore-launch')
   const [dcChain, setDcChain] = useState('')
-  const [pct, setPct] = useState(String(view.limits.flagPct))
-  const [direction, setDirection] = useState<GapDirection>('both')
+  // Gully AI's "Set an alert at 2% above" (&pct=&dir= with ?alert=) opens with that gap filled in.
+  const [pct, setPct] = useState(initialGap?.pct ?? String(view.limits.flagPct))
+  const [direction, setDirection] = useState<GapDirection>(initialGap?.dir ?? 'both')
   const [webhook, setWebhook] = useState('')
   const [toTelegram, setToTelegram] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -522,7 +523,7 @@ function AlertsKpis({ view }: { view: AlertsView }) {
   )
 }
 
-export function Alerts({ goBilling, creating, onCreateDone, prefill = null }: { goBilling: () => void; creating: boolean; onCreateDone: () => void; prefill?: string | null }) {
+export function Alerts({ goBilling, creating, onCreateDone, prefill = null, prefillGap = null }: { goBilling: () => void; creating: boolean; onCreateDone: () => void; prefill?: string | null; prefillGap?: { pct: string; dir: GapDirection } | null }) {
   const { view, err, refreshErr, load } = useAlertsView()
   const { act, busy, secret, setSecret } = useAlertActions(load)
   const [opened, setOpen] = useState(false)
@@ -629,6 +630,7 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null }: { 
       <CreateDialog
         key={prefill ?? 'any'}
         initialTarget={prefill}
+        initialGap={prefillGap}
         open={open}
         onClose={closeCreate}
         view={view}

@@ -17,7 +17,7 @@ export function CodeBlock({ code, lang, caption, wrap = false }: { code: string;
     })
   }
   return (
-    <figure className="m-0 flex min-w-0 flex-col overflow-hidden rounded-[10px] border border-line bg-surface-deep">
+    <figure className="m-0 flex min-w-0 flex-col overflow-hidden rounded-panel border border-line bg-surface-deep">
       <div className="flex items-center justify-between gap-3 border-b border-line pr-1 pl-4">
         <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">{caption ?? LABEL[lang]}</span>
         <button

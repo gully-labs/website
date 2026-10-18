@@ -107,24 +107,24 @@ function Chart({ row, range }: { row: TrackerRow; range: Range }) {
       <svg aria-hidden viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block h-[300px] w-full">
         <defs>
           <linearGradient id="td-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#e8c060" stopOpacity=".26" />
-            <stop offset="1" stopColor="#e8c060" stopOpacity="0" />
+            <stop offset="0" stopColor="#d9b563" stopOpacity=".26" />
+            <stop offset="1" stopColor="#d9b563" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <g stroke="#1a2029">
+        <g stroke="#1c2531">
           <line x1="0" y1="65" x2={W} y2="65" />
           <line x1="0" y1="130" x2={W} y2="130" />
           <line x1="0" y1="195" x2={W} y2="195" />
         </g>
         {breaks.size === 0 && <path d={area} fill="url(#td-area)" style={{ d: `path('${area}')`, ...anim } as React.CSSProperties} />}
-        <path d={path(3)} fill="none" stroke="#8a96a6" strokeWidth={1.5} strokeDasharray="4 4" vectorEffect="non-scaling-stroke" style={{ d: `path('${path(3)}')`, ...anim } as React.CSSProperties} />
-        <path d={line} fill="none" stroke="#e8c060" strokeWidth={2.2} vectorEffect="non-scaling-stroke" style={{ d: `path('${line}')`, ...anim } as React.CSSProperties} />
+        <path d={path(3)} fill="none" stroke="#949daa" strokeWidth={1.5} strokeDasharray="4 4" vectorEffect="non-scaling-stroke" style={{ d: `path('${path(3)}')`, ...anim } as React.CSSProperties} />
+        <path d={line} fill="none" stroke="#d9b563" strokeWidth={2.2} vectorEffect="non-scaling-stroke" style={{ d: `path('${line}')`, ...anim } as React.CSSProperties} />
         {/* A reading with no neighbour on either side (a gap in the recordings) is drawn as a dot. */}
-        {pts.map((p, i) => ((i === 0 || breaks.has(i)) && (i === N - 1 || breaks.has(i + 1)) ? <circle key={p[0]} cx={X(p[0])} cy={Y(p[2])} r="2.5" fill="#e8c060" /> : null))}
+        {pts.map((p, i) => ((i === 0 || breaks.has(i)) && (i === N - 1 || breaks.has(i + 1)) ? <circle key={p[0]} cx={X(p[0])} cy={Y(p[2])} r="2.5" fill="#d9b563" /> : null))}
         {tip && (
           <>
-            <line x1={X(tip[0])} y1="0" x2={X(tip[0])} y2={H} stroke="#3a4452" vectorEffect="non-scaling-stroke" />
-            <circle cx={X(tip[0])} cy={Y(tip[2])} r="4" fill="#e8c060" stroke="#10141a" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+            <line x1={X(tip[0])} y1="0" x2={X(tip[0])} y2={H} stroke="#3a4656" vectorEffect="non-scaling-stroke" />
+            <circle cx={X(tip[0])} cy={Y(tip[2])} r="4" fill="#d9b563" stroke="#151d28" strokeWidth="2" vectorEffect="non-scaling-stroke" />
           </>
         )}
       </svg>
@@ -132,7 +132,7 @@ function Chart({ row, range }: { row: TrackerRow; range: Range }) {
       <span className="pointer-events-none absolute right-3 bottom-1 font-mono text-[11px] text-faint">{fmtPrice(lo)}</span>
       {tip && (
         <div
-          className="pointer-events-none absolute top-3 grid grid-cols-[auto_auto] gap-x-[14px] gap-y-[2px] rounded-[6px] border border-line-strong bg-[rgba(13,17,22,.96)] px-[10px] py-2 font-mono text-[11px]"
+          className="pointer-events-none absolute top-3 grid grid-cols-[auto_auto] gap-x-[14px] gap-y-[2px] rounded-[6px] border border-line-strong bg-[rgba(17,25,35,.96)] px-[10px] py-2 font-mono text-[11px]"
           style={{ left: `${(X(tip[0]) / W) * 100}%`, transform: `translateX(${X(tip[0]) > W * 0.6 ? '-105%' : '10px'})` }}
         >
           <span className="col-span-full text-faint">{when(tip[0], range)}</span>
@@ -228,7 +228,7 @@ export default function TrackerDemo(): JSX.Element {
           <span className="font-mono text-[16px]">{row.onchain === null ? <span className="text-faint">price unreadable</span> : fmtPrice(row.onchain)}</span>
           <span
             className="rounded-[4px] px-2 py-[2px] font-mono text-[12px] transition-colors duration-300"
-            style={{ color: c ?? '#a6b0bd', background: c ? `${c}26` : '#1a2029' }}
+            style={{ color: c ?? '#aeb5be', background: c ? `${c}26` : '#1c2531' }}
           >
             {row.gapPct === null ? STATUS_LABEL[row.status] : `gap ${fmtGap(row.gapPct)} · ${STATUS_LABEL[row.status].toLowerCase()}`}
           </span>

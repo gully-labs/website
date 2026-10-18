@@ -3,13 +3,14 @@ import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { EChart } from '../../components/charts/EChart'
 import { areaPreset, axisTooltip, C, linePreset, tipHtml } from '../../components/charts/chartPresets'
 import { CodeBlock } from '../CodeBlock'
-import { C as Code, Callout, DocLink, DocPage, Fields, List, P, Section } from '../DocPage'
+import { C as Code, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { apiOrigin } from '../nav'
 
 const sections = [
   { id: 'overview', title: 'Overview' },
   { id: 'setup', title: 'Setup' },
   { id: 'wallets', title: 'Receiving wallets' },
+  { id: 'safe', title: 'Using a Safe as your store wallet' },
   { id: 'links-invoices', title: 'Links and invoices' },
   { id: 'checkout', title: 'The checkout' },
   { id: 'webhooks', title: 'Webhooks' },
@@ -71,13 +72,13 @@ export function FeeCurve() {
         const i = ps[0]?.dataIndex ?? 0
         return tipHtml({ title: `${usd(xs[i])} lifetime volume`, rows: [{ name: 'Fees in all', value: usd(fee[i]), color: C.gold }, { name: 'Effective rate', value: `${eff[i]}%`, color: '#5aa9e6' }], note: xs[i] <= cfg.freeUsd ? 'Inside the free allowance.' : undefined })
       }),
-      xAxis: { type: 'category', boundaryGap: false, data: xs.map((v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)), axisLabel: { color: C.faint, fontSize: 10, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
+      xAxis: { type: 'category', boundaryGap: false, data: xs.map((v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)), axisLabel: { color: C.faint, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
       yAxis: [
-        { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
-        { type: 'value', axisLabel: { color: C.faint, fontSize: 10, formatter: (v: number) => `${v}%` }, splitLine: { show: false }, max: cfg.feePct },
+        { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => `$${v}` }, splitLine: { lineStyle: { color: C.grid } } },
+        { type: 'value', axisLabel: { color: C.faint, fontSize: 11, formatter: (v: number) => `${v}%` }, splitLine: { show: false }, max: cfg.feePct },
       ],
       series: [
-        { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 10, formatter: 'free allowance', position: 'insideEndTop' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
+        { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 11, formatter: 'free allowance', position: 'insideEndTop' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
         { id: 'eff', name: 'Effective rate', ...linePreset({ color: '#5aa9e6', dashed: true }), yAxisIndex: 1, data: eff },
       ],
     }
@@ -136,6 +137,33 @@ export function GullyPayMerchantsDocs() {
         </List>
       </Section>
 
+      <Section id="safe" title="Using a Safe as your store wallet">
+        <P>
+          A <b>Safe</b> (the multisig from safe.global) is a good store wallet: several owners, a threshold, no single key. One thing to know: a Safe exists only on the chains where it was <i>deployed</i>. Its address is the same everywhere, but on a chain where nobody deployed it there is no contract behind it, and a payment sent there is lost. That is why a chain stays off until the Safe has code on it.
+        </P>
+        <List>
+          <li>
+            <b>Deploy Safe on &lt;chain&gt;.</b> A wallet row that reads “not deployed” has this button. We read your Safe on a chain where it exists (owners, threshold, version), recover its creation transaction (the salt and the exact set-up call live only there: from a transaction you created through us, the first block it had code in, or Safe's own service, each verified), check that Safe's official factory, singleton and fallback handler are on the target chain with the expected code, and compute the address the factory call would create. <b>Only if that address is exactly your Safe's</b> do we offer the call; the page recomputes it once more before your wallet is asked.
+          </li>
+          <li>
+            <b>Your wallet signs.</b> Connect any wallet with a little of the chain's coin for gas (about 240,000 gas; the estimate is shown first). It does not have to be a Safe owner. The transaction goes from your wallet to Safe's factory; Gully Labs never holds a key and never sends anything.
+          </li>
+          <li>
+            <b>Sent → Mined → Verified.</b> We read the receipt, then the code and owners at the address, and run the same check as “Check again”: the chain switches on by itself.
+          </li>
+          <li>
+            <b>The copy starts as the original was set up.</b> If you added owners or changed the threshold after creating the Safe, the new chain starts with the original owners and threshold; change them there afterwards in Safe{'{'}Wallet{'}'}. Guards and modules are not copied. A Safe that paid for its own deployment, or whose set-up calls a contract missing on the target chain, is refused rather than deployed broken.
+          </li>
+          <li>
+            <b>No Safe yet? Create one.</b> List the owners (your connected wallet is filled in), pick a threshold and a chain. We plan a Safe 1.4.1 from Safe's official factory with a deterministic salt we keep, so you see the address before anything is sent and can later deploy the same Safe at that address on every other chain with one click. Once verified it becomes your store wallet on that chain.
+          </li>
+          <li>
+            <b>What cannot be reproduced.</b> Only Safe 1.3.0 and 1.4.1 from Safe's official factory. A Safe created with <Code>createProxy</Code> (plain CREATE, old 1.3.0 flows) or by another factory has an address that depends on that factory's own history: create a new Safe for that chain instead. The fee-proxy contracts and Gully Labs' treasury are never a target.
+          </li>
+        </List>
+        <Callout label="NO STUCK FUNDS">Nothing in this flow holds money: the deployment transaction carries no value, the Safe is deployed by Safe's audited factory, and until the chain shows the code and owners the chain stays off and no checkout offers it.</Callout>
+      </Section>
+
       <Section id="links-invoices" title="Links and invoices">
         <Fields
           head={['Thing', 'Checkout URL', 'What it holds']}
@@ -191,7 +219,7 @@ export function GullyPayMerchantsDocs() {
           <li>Every Monday at 00:00 UTC, a store that owes $1 or more gets a statement: a normal Gully Labs invoice, payable in crypto through the Gully Pay checkout. Less than $1 rolls into the next week.</li>
           <li>The portal shows the balance, the free allowance left, every statement and a <b>Pay now</b> button. The CSV export lists every payment with its fee.</li>
           <li>
-            The fee terms in full: section 5 of the <a href="https://gullylabs.xyz/legal/merchant-terms#s5" className="text-gold underline-offset-4 hover:underline">merchant terms</a>.
+            The fee terms in full: section 5 of the <Ext href="https://gullylabs.xyz/legal/merchant-terms#s5">merchant terms</Ext>.
           </li>
         </List>
       </Section>
@@ -208,9 +236,9 @@ export function GullyPayMerchantsDocs() {
       <Section id="terms" title="Terms">
         <P>
           Running a store means accepting the{' '}
-          <a href="https://gullylabs.xyz/legal/merchant-terms" className="text-gold underline-offset-4 hover:underline">
+          <Ext href="https://gullylabs.xyz/legal/merchant-terms">
             Gully Pay merchant terms
-          </a>{' '}
+          </Ext>{' '}
           (adapted from Common Paper's Cloud Service Agreement, CC BY 4.0): you tick “I agree” when you add your first receiving wallet.
         </P>
       </Section>

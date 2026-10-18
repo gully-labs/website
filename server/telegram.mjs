@@ -13,12 +13,21 @@
 //
 // Updates arrive by webhook: POST /api/telegram/<path>, where <path> is the first 32 hex of
 // sha256(token) and the secret header must match. On start (startTelegram) the server calls setWebhook
-// for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query), setMyCommands,
-// setChatMenuButton (a web_app button that opens the Mini App, gullylabs.xyz/tg) and getMe; failures are
-// logged (without the token) and retried, never fatal. In private chats the main menu also carries an
-// inline "📱 Open app" web_app button (Telegram allows web_app buttons in private chats only). The Mini
-// App's own API (initData validation, the channel gate, the linked account's alerts) is
-// telegram-miniapp.mjs.
+// for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query), setMyCommands
+// per scope (private chats: start, app, gap, top, movers, launches, alerts, ask, help, stop; groups: gap,
+// top, launches, help; the default scope gets the private list), setChatMenuButton { type: 'commands' } so
+// the Menu button next to the text box lists those commands, and getMe; failures are logged (without the
+// token) and retried, never fatal. The Mini App opens from the "📱 Open app" inline web_app button on the
+// main menu (private chats only: Telegram refuses web_app buttons in groups), from /app, and from the bot
+// profile's "Open app" button once the owner sets it in BotFather (Bot Settings → Configure Mini App; the
+// admin dashboard's Broadcasts card has the steps). The Mini App's own API (initData validation, the
+// channel gate, the linked account's alerts) is telegram-miniapp.mjs.
+//
+// Bot users (telegram-users.mjs, DATA_DIR/bot-users.json): every private /start is recorded (first and
+// last seen, language, linked, News channel membership as last read, blocked, opted out of announcements),
+// and the private chats already linked are backfilled. Admin broadcasts (telegram-broadcast.mjs) go to them
+// only. "🔕 Stop announcements" (callback bco, on every broadcast) and "/stop announcements" opt a user out
+// of broadcasts, never of alerts; Settings switches announcements back on (san:1).
 //
 // Linking (no chat ids to paste): the dashboard asks for a one-time code (10 minutes, single use, only
 // its SHA-256 is stored) and opens https://t.me/<bot>?start=<code>. "/start <code>" links that chat to the
@@ -63,6 +72,7 @@ import { DEEPCORE_CHAINS, readDeepcorePool, readLaunches } from './deepcore.mjs'
 import { handleProfileRoutes, profileOf } from './profile.mjs'
 import { workspaceName } from './workspaces.mjs'
 import * as ui from './telegram-ui.mjs'
+import { backfillFromLinks, botUser, recordStart, setFollows, setLinked, setOptOut, touchUser } from './telegram-users.mjs'
 
 const { chainName, shortAddr, btn, ubtn } = ui
 
@@ -93,6 +103,7 @@ try {
 db.links ??= [] // { address, chatId, chatType, chatTitle, linkedBy, linkedAt }
 db.codes ??= [] // { hash, address, expiresAt, usedAt }
 db.banner ??= null // { fileId, sha } Telegram's file_id of the uploaded banner, and the hash of the file it came from
+backfillFromLinks(db.links) // private chats linked before bot-users.json existed are bot users too
 
 function save() {
   const now = Date.now()
@@ -279,20 +290,32 @@ export async function alertChannels() {
 
 /* -------------------------------------------------------------- startup --- */
 
-// Command descriptions are plain words: Telegram's command menu does not show emoji reliably.
-function commandList() {
-  return [
-    { command: 'menu', description: 'Open the main menu' },
-    { command: 'gap', description: 'One stock token, e.g. /gap NVDA or /gap NVDA bsc' },
-    { command: 'top', description: 'Stock tokens furthest from the real share price' },
-    { command: 'movers', description: 'Biggest gap moves in 24 hours' },
-    { command: 'launches', description: 'Newest tokens launched on DeepCore' },
-    { command: 'alerts', description: 'Your alerts: pause, mute, test or delete' },
-    { command: 'ask', description: 'Ask Gully AI, e.g. /ask how do alerts work?' },
-    { command: 'stop', description: 'Unlink this chat from your account' },
-    { command: 'help', description: 'What this bot does' },
-  ]
+// The commands people see behind the Menu button: short, plain words, one emoji first. /menu still works when
+// typed; it is the same screen as /start's menu, so the list shows /start only.
+const COMMANDS = {
+  start: '🏠 Main menu',
+  app: '📱 Open the Gully app inside Telegram',
+  gap: '📈 One stock token, e.g. /gap NVDA',
+  top: '🔥 Furthest from the real share price',
+  movers: '🚀 Biggest gap moves in 24 hours',
+  launches: '🛰 Newest tokens launched on DeepCore',
+  alerts: '🔔 Your alerts: pause, mute, test or delete',
+  ask: '🤖 Ask Gully AI a question',
+  help: '❓ What this bot does',
+  stop: '🔕 Stop announcements, or unlink this chat',
 }
+const SCOPE_COMMANDS = {
+  private: ['start', 'app', 'gap', 'top', 'movers', 'launches', 'alerts', 'ask', 'help', 'stop'],
+  group: ['gap', 'top', 'launches', 'help'],
+}
+/** The command list for one scope ('private' or 'group'). */
+export const commandList = (scope = 'private') => SCOPE_COMMANDS[scope].map((command) => ({ command, description: COMMANDS[command] }))
+/** Every setMyCommands call startup makes: the default scope and private chats get the full list, groups the short one. */
+export const commandScopes = () => [
+  { commands: commandList('private') },
+  { commands: commandList('private'), scope: { type: 'all_private_chats' } },
+  { commands: commandList('group'), scope: { type: 'all_group_chats' } },
+]
 
 /** The Mini App's URL: TELEGRAM_MINIAPP_URL when it is a well-formed https URL, else gullylabs.xyz/tg. */
 export function miniAppUrl() {
@@ -306,8 +329,8 @@ export function miniAppUrl() {
   return `${SITE}/tg`
 }
 
-/** The chat menu button: opens the Mini App (a web_app button), labelled in plain words. */
-export const menuButton = () => ({ type: 'web_app', text: 'Open app', web_app: { url: miniAppUrl() } })
+/** The chat menu button: the command list (the Mini App opens from "📱 Open app", /app and the bot profile). */
+export const menuButton = () => ({ type: 'commands' })
 
 /** The main menu keyboard for one chat: private chats get the "📱 Open app" web_app row on top. */
 function keyboardFor(chatId, kb) {
@@ -326,14 +349,18 @@ export async function startTelegram({ attempt = 0 } = {}) {
   }
   const url = `${SITE}/api/telegram/${webhookPathFor(token)}`
   const hook = await tg('setWebhook', { url, secret_token: webhookSecretFor(token), allowed_updates: ['message', 'callback_query'], max_connections: 10 })
-  const cmds = await tg('setMyCommands', { commands: commandList() })
+  let cmds = { ok: true, error: null }
+  for (const body of commandScopes()) {
+    const r = await tg('setMyCommands', body)
+    if (!r.ok) cmds = { ok: false, error: `${body.scope?.type ?? 'default'}: ${r.error}` }
+  }
   const menuBtn = await tg('setChatMenuButton', { menu_button: menuButton() })
   const name = await botUsername()
   if (!hook.ok) console.error(`telegram: setWebhook failed: ${hook.error}`)
   if (!cmds.ok) console.error(`telegram: setMyCommands failed: ${cmds.error}`)
   if (!menuBtn.ok) console.error(`telegram: setChatMenuButton failed: ${menuBtn.error}`)
   if (hook.ok) console.log(`telegram: webhook set${name ? ` for @${name}` : ''}`)
-  if ((!hook.ok || !cmds.ok) && attempt < 5) {
+  if ((!hook.ok || !cmds.ok || !menuBtn.ok) && attempt < 5) {
     clearTimeout(startTimer)
     startTimer = setTimeout(() => startTelegram({ attempt: attempt + 1 }), 60_000 * (attempt + 1))
     startTimer.unref?.()
@@ -407,7 +434,12 @@ let readHistoryFn = (chain, ticker) => tracker.readHistory(chain, ticker)
 let readLaunchesFn = (o) => readLaunches(o)
 /** Price and market cap of one launch (readDeepcorePool's match), or null: the launch card shows them when DeepCore states them. */
 let readLaunchMarketFn = async (l) => (await readDeepcorePool({ token: l.token, chain: l.chainId }))?.matches?.[0] ?? null
-let askFn = (chatId, q) => askForChat(chatId, q)
+/** Gully AI's "my" tools in Telegram: only a private chat linked to a wallet, and only that link's workspace. */
+const askCtxOf = (chatId) => {
+  const l = linkOfChat(chatId)
+  return l && l.chatType === 'private' ? { user: l.address, workspace: l.address, role: 'linked chat' } : null
+}
+let askFn = (chatId, q) => askForChat(chatId, q, askCtxOf(chatId))
 let askReady = () => askConfigured()
 
 /** Test hooks: replace the tracker read (rows with sessionOpen), movers, history, launches and Ask. */
@@ -425,7 +457,7 @@ export function setLaunchesReaderForTest(fn, marketFn = async () => null) {
   readLaunchMarketFn = marketFn
 }
 export function setAskForTest(fn, ready = () => true) {
-  askFn = fn ?? ((chatId, q) => askForChat(chatId, q))
+  askFn = fn ?? ((chatId, q) => askForChat(chatId, q, askCtxOf(chatId)))
   askReady = fn ? ready : () => askConfigured()
 }
 
@@ -541,12 +573,14 @@ async function linkWithCode(msg, code) {
   db.links = db.links.filter((l) => l.address !== c.address && l.chatId !== chatId)
   db.links.push({ address: c.address, chatId, chatType: chat.type, chatTitle: chatTitleOf(chat), linkedBy: fromId, linkedAt: new Date(now).toISOString() })
   save()
+  if (chat.type === 'private') setLinked(chatId, true)
   return `✅ Linked to <b>${esc(shortAddr(c.address))}</b>. Alerts with Telegram delivery arrive here.\nOpen 🔔 My alerts below, or press 🔔 Alert me on any stock card${chat.type === 'private' ? '' : ' (only you can create alerts in, or unlink, this group)'}.`
 }
 
 function unlink(link) {
   db.links = db.links.filter((l) => l !== link)
   save()
+  if (link.chatType === 'private') setLinked(link.chatId, false)
 }
 
 /** Whether `fromId` may change the account's alerts and link from this chat. */
@@ -601,8 +635,12 @@ async function myAlertsScreen(link, page = 1) {
 
 const alertById = async (link, id) => (await alertsOf(link.address)).alerts.find((a) => a.id === id) ?? null
 
-async function settingsScreen(link, fromId) {
-  if (!link) return ui.settingsView({ link: null })
+/** Announcements state for a private chat (true on, false off), null for groups. */
+const announceOf = (chatId) => (Number(chatId) > 0 ? !botUser(chatId)?.optedOut : null)
+
+async function settingsScreen(link, fromId, chatId) {
+  const announce = announceOf(chatId)
+  if (!link) return ui.settingsView({ link: null, announce })
   const tryOr = async (fn) => {
     try {
       return await fn()
@@ -613,7 +651,7 @@ async function settingsScreen(link, fromId) {
   const count = await tryOr(async () => (await alertsOf(link.address)).alerts.length)
   const notify = await tryOr(() => profileOf(link.address).notify ?? null)
   const workspace = await tryOr(() => workspaceName(link.address))
-  return ui.settingsView({ link, workspace, notify, alertsCount: count, isLinker: String(fromId) === link.linkedBy })
+  return ui.settingsView({ link, workspace, notify, alertsCount: count, isLinker: String(fromId) === link.linkedBy, announce })
 }
 
 /** Gully AI: the answer screen for one question (Ask's own per-chat and daily limits apply). */
@@ -665,7 +703,7 @@ async function gapScreen(args) {
 /* ---------------------------------------------------------------- updates --- */
 
 // Unlinked chats may use these; everything else from them is ignored.
-const PUBLIC_COMMANDS = new Set(['start', 'help', 'menu', 'gap', 'top', 'movers', 'ask', 'launches', 'alerts'])
+const PUBLIC_COMMANDS = new Set(['start', 'help', 'menu', 'app', 'gap', 'top', 'movers', 'ask', 'launches', 'alerts'])
 const hits = new Map()
 const seenUpdates = new Set()
 
@@ -709,7 +747,9 @@ async function onMessage(msg) {
   const chatId = String(msg.chat.id)
   const args = rawArgs.trim().slice(0, 100)
   const link = linkOfChat(chatId)
-  if (!link && !PUBLIC_COMMANDS.has(cmd)) return
+  const priv = msg.chat.type === 'private'
+  // /stop always answers (it is in the menu): unlink, or announcements off, or "nothing to stop" in a group.
+  if (!link && !PUBLIC_COMMANDS.has(cmd) && cmd !== 'stop') return
   const gate = allowed(`cmd:${chatId}`, 20)
   if (gate === 'drop') return
   if (gate === 'warn') return void (await sendText(chatId, 'Too many commands in a minute. Try again shortly.'))
@@ -727,6 +767,17 @@ async function onMessage(msg) {
       return
     }
   } else if (cmd === 'help') view = ui.helpView(!!link)
+  else if (cmd === 'app') {
+    if (priv) view = ui.appView(miniAppUrl())
+    else {
+      const name = await botUsername()
+      view = ui.appGroupView(name ? `https://t.me/${name}` : miniAppUrl())
+    }
+  } else if (cmd === 'stop' && priv && (/^announce/i.test(args) || !link)) {
+    // "/stop announcements" anywhere private, or /stop in a private chat with no link to undo: announcements off.
+    setOptOut(chatId, true, msg.from)
+    view = /^announce/i.test(args) ? ui.announceOffView() : ui.stopUnlinkedView()
+  } else if (cmd === 'stop' && !link) view = ui.stopGroupView()
   else if (cmd === 'menu') view = ui.menuView(await rowCount())
   else if (cmd === 'gap') view = await gapScreen(args)
   else if (cmd === 'top') view = ui.topView(await rowsOrNull())
@@ -745,7 +796,7 @@ async function onMessage(msg) {
     if (!mayAct(link, msg.from?.id)) view = { text: 'Only the person who linked this group can unlink it.', keyboard: [[btn('🏠 Menu', 'm')]] }
     else {
       unlink(link)
-      view = { text: 'Unlinked. This chat no longer receives alerts. Link again from the app dashboard at any time.', keyboard: [[ubtn('🔗 Link again ↗', ui.PORTAL_ALERTS), btn('🏠 Menu', 'm')]] }
+      view = { text: 'Unlinked. This chat no longer receives alerts. Link again from the app dashboard at any time.', keyboard: [[ubtn('🔗 Link again ↗', ui.PORTAL_ALERTS), btn('🏠 Menu', 'm')], ...(priv && !botUser(chatId)?.optedOut ? [[btn('🔕 Stop announcements too', 'bco')]] : [])] }
     }
   } else return
   if (view) await showNew(chatId, view)
@@ -925,9 +976,15 @@ async function routeView(route, c) {
     await showNew(chatId, await aiAnswer(chatId, ui.AI_EXAMPLES[Number(m[1])]))
     return NO_CHANGE
   }
-  if (route === 'set') return c.answer(), settingsScreen(link, fromId)
+  if (route === 'set') return c.answer(), settingsScreen(link, fromId, chatId)
+  if ((m = route.match(/^san:([01])$/))) {
+    if (!(Number(chatId) > 0)) return undefined
+    setOptOut(chatId, m[1] === '0', c.from)
+    c.answer(m[1] === '0' ? '🔕 Announcements off. Alerts still arrive.' : '📣 Announcements on')
+    return settingsScreen(link, fromId, chatId)
+  }
   if (route === 'smu' || route === 'sul' || route === 'suly' || /^snt:[01]$/.test(route)) {
-    if (!link) return c.answer(), ui.settingsView({ link: null })
+    if (!link) return c.answer(), ui.settingsView({ link: null, announce: announceOf(chatId) })
     const guard = actGuard(route === 'smu' ? 'mute its alerts' : route === 'sul' || route === 'suly' ? 'unlink it' : 'change its settings')
     if (guard) return c.answer(guard, true), NO_CHANGE
     if (route === 'sul') return c.answer(), ui.unlinkConfirmView(link)
@@ -947,12 +1004,12 @@ async function routeView(route, c) {
         }
       }
       c.answer(n ? `🔕 ${n} alert${n === 1 ? '' : 's'} muted ${ui.forTime(until)}` : 'No alerts to mute.')
-      return settingsScreen(link, fromId)
+      return settingsScreen(link, fromId, chatId)
     }
     const on = route === 'snt:1'
     const r = await callRoute(handleProfileRoutes, 'POST', '/api/developer/profile', { notify: { telegramUsage: on } }, { user: link.address, workspace: link.address, role: 'owner', sessionId: null })
     c.answer(r.status === 200 ? `📣 Usage notices ${on ? 'on' : 'off'}` : (r.data?.error ?? 'Not changed'), r.status !== 200)
-    return settingsScreen(link, fromId)
+    return settingsScreen(link, fromId, chatId)
   }
   return undefined
 }
@@ -977,6 +1034,20 @@ async function pressed(cq, answer) {
   const link = chatId ? linkOfChat(chatId) : null
   const fromId = cq?.from?.id !== undefined ? String(cq.from.id) : null
 
+  // 🔕 Stop announcements (on every broadcast) and its undo: opts the user out of broadcasts, never of alerts.
+  if ((data === 'bco' || data === 'bci') && chatId) {
+    if (!(Number(chatId) > 0)) return answer('Announcements only go to private chats.')
+    const off = data === 'bco'
+    setOptOut(chatId, off, cq.from)
+    if (off) for (const fn of optOutListeners) Promise.resolve().then(() => fn(chatId, cq.message?.message_id ?? null)).catch(() => undefined)
+    const kb = cq.message?.reply_markup?.inline_keyboard
+    if (Array.isArray(kb) && cq.message?.message_id) {
+      const swapped = kb.map((row) => (Array.isArray(row) ? row : []).map((b) => (b?.callback_data === 'bco' ? ui.announceOnBtn : b?.callback_data === 'bci' ? ui.announceOffBtn : b)))
+      sendToChat(chatId, 'editMessageReplyMarkup', { message_id: cq.message.message_id, reply_markup: { inline_keyboard: swapped } }).catch(() => undefined)
+    }
+    return answer(off ? '🔕 Announcements off. Alerts still arrive. Switch them back on in ⚙️ Settings.' : '📣 Announcements on again.', off)
+  }
+
   // Mute 24h on an alert delivery.
   const mm = data.match(/^mute:([\w-]{1,40})$/)
   if (mm || !chatId) {
@@ -997,7 +1068,7 @@ async function pressed(cq, answer) {
   const fromBanner = !!(src?.animation || src?.document || (src?.caption !== undefined && src?.text === undefined))
   let view
   try {
-    view = await routeView(route, { chatId, link, fromId, answer, forceNew })
+    view = await routeView(route, { chatId, link, fromId, answer, forceNew, from: cq.from })
   } catch (e) {
     console.error('telegram callback:', redact(e?.message ?? e))
     answer('Something went wrong. Try again in a minute.', true)
@@ -1024,7 +1095,10 @@ async function pressed(cq, answer) {
    TELEGRAM_REQUIRED_CHANNEL (default @GullyLabsNews; "off" disables it). Telegram only answers
    getChatMember for a channel when the bot is an administrator there, so if the check itself fails the
    bot lets people through rather than locking everyone out. Alert deliveries and their Mute buttons
-   are never gated: they are part of a service people may have paid for. */
+   are never gated: they are part of a service people may have paid for. Neither are the exits (EXIT_ROUTES,
+   EXIT_COMMANDS): someone who left the channel can still list their alerts and mute, pause or delete them,
+   mute all, unlink, stop announcements or usage notices, /stop, and link with /start <code>. The Mini App
+   keeps the same exits open (telegram-miniapp.mjs). */
 export const requiredChannel = () => {
   const v = String(process.env.TELEGRAM_REQUIRED_CHANNEL ?? '@GullyLabsNews').trim()
   return !v || v.toLowerCase() === 'off' ? null : v.startsWith('@') || /^-?\d+$/.test(v) ? v : `@${v}`
@@ -1047,6 +1121,7 @@ export async function followsChannel(userId, { fresh = false } = {}) {
   }
   const st = r.result?.status
   const ok = st === 'creator' || st === 'administrator' || st === 'member' || (st === 'restricted' && r.result?.is_member === true)
+  setFollows(userId, ok)
   memberCache.set(userId, { ok, until: Date.now() + (ok ? 30 * 60_000 : 20_000) })
   if (memberCache.size > 5_000) memberCache.delete(memberCache.keys().next().value)
   return ok
@@ -1057,6 +1132,9 @@ const gateView = (ch) => ({
   keyboard: [[ubtn(`📣 Join ${ch.startsWith('@') ? ch : 'the channel'} ↗`, channelUrl(ch))], [btn('✅ I’ve joined', 'jchk')]],
 })
 
+const EXIT_ROUTES = /^(?:mute:[\w-]+|bco|bci|ma(?::p\d{1,2})?|ac:[\w-]+|am:[\w-]+|ap:[\w-]+|ad:[\w-]+|adx:[\w-]+|set|smu|sul|suly|san:[01]|snt:0)!?$/
+const EXIT_COMMANDS = /^\/(?:stop|alerts)(?:@\w+)?(?:\s|$)|^\/start(?:@\w+)?\s+[A-Za-z0-9_-]{16,64}\s*$/i
+
 /** Gate for one update: true when it may proceed. Answers the update itself when it may not. */
 async function gate(u) {
   const ch = requiredChannel()
@@ -1066,7 +1144,11 @@ async function gate(u) {
   const from = cq?.from ?? msg?.from
   if (!from || from.is_bot) return true
   if (msg && msg.chat?.type !== 'private' && !/^\//.test(String(msg.text ?? ''))) return true // group chatter is never ours
-  if (cq && /^mute:/.test(String(cq.data ?? ''))) return true // controls on alert deliveries
+  // The exits are never gated (owner rule: muting is never gated): someone who left the channel can still see
+  // their alerts and mute, pause or delete them, mute all, unlink, switch announcements or usage notices off,
+  // stop, and link or unlink an account. Only feature use (stocks, gaps, new alerts, Gully AI...) waits.
+  if (cq && EXIT_ROUTES.test(String(cq.data ?? ''))) return true
+  if (msg && EXIT_COMMANDS.test(String(msg.text ?? ''))) return true
   const chatId = String((cq?.message?.chat ?? msg?.chat)?.id ?? from.id)
   if (cq && cq.data === 'jchk') {
     const ok = await followsChannel(String(from.id), { fresh: true })
@@ -1086,6 +1168,15 @@ async function onUpdate(u) {
     if (seenUpdates.has(u.update_id)) return
     seenUpdates.add(u.update_id)
     if (seenUpdates.size > 1_000) seenUpdates.delete(seenUpdates.values().next().value)
+  }
+  // Bot users: a private /start records the user (even before the News channel gate); any other private
+  // update from a known user moves their last-seen time.
+  const pm = u?.message
+  const pFrom = pm?.from ?? u?.callback_query?.from
+  const pChat = pm?.chat ?? u?.callback_query?.message?.chat
+  if (pChat?.type === 'private' && pFrom && !pFrom.is_bot) {
+    if (typeof pm?.text === 'string' && /^\/start(?:@\w+)?(?:\s|$)/i.test(pm.text)) recordStart(pChat.id, pFrom, { linked: !!linkOfChat(pChat.id) })
+    else touchUser(pChat.id, pFrom)
   }
   if (!(await gate(u))) return
   if (u?.callback_query) return onCallback(u.callback_query)
@@ -1154,6 +1245,15 @@ export async function handleTelegramAccount(req, res, url, address) {
 
 /** For the Mini App: run one of alerts.mjs's routes for a linked account (same validation and limits as the bot). */
 export const alertsRouteFor = (address, method, p, body) => alertsCall(address, method, p, body)
+
+/* ---------------------------------------------------- broadcasts (telegram-broadcast.mjs) --- */
+
+const optOutListeners = new Set()
+/** Called with (chatId, messageId) when someone taps 🔕 Stop announcements: the broadcast module counts opt-outs per broadcast. */
+export function onAnnouncementOptOut(fn) {
+  optOutListeners.add(fn)
+  return () => optOutListeners.delete(fn)
+}
 
 /** Admin overview counts. */
 export const telegramStats = () => ({ enabled: telegramEnabled(), links: db.links.length })

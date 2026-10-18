@@ -1,11 +1,20 @@
 // Builds the local part of the Gully Ask corpus into server/data/ask-index.json:
-//   - the docs pages (src/docs/pages/*.tsx), one document per <Section>, at https://docs.gullylabs.xyz/<path>#<id>;
+//   - the docs pages (src/docs/pages/*.tsx), one document per <Section>, at https://docs.gullylabs.xyz/<path>#<id>
+//     (Gully Pay, Gully Pay for merchants and the L3 roadmap page included);
 //   - the site's copy: src/content/*.ts and the Products, Pricing, Services and About pages, at https://gullylabs.xyz/...;
-//   - the changelog (a docs page, labelled "Changelog").
+//   - the changelog (a docs page, labelled "Changelog");
+//   - the legal pages (merchant terms, privacy policy), one chunk run per numbered section, at /legal/<page>#s<n>;
+//   - the Gully Pay contract notes (contracts/CHOICE.md, contracts/TESTNET-RESULTS.md) and the L3 spec
+//     (ops/l3/SPEC.md, labelled "Roadmap"), capped in length, hashes and addresses shortened, at their GitHub
+//     section anchors in the public gully-labs/website repo;
+//   - the Telegram bot's help, menu and Gully AI screens (server/telegram-ui.mjs) and its command list;
+//   - the Telegram Mini App's copy (src/pages/tg/*.tsx).
+// The blog is not here: ask-remote.mjs reads it from the Ghost Content API at runtime (GHOST_CONTENT_KEY).
 //
 //   npm run ask:index            rebuild (also runs as `prebuild`, so every build ships a fresh index)
 //   npm run ask:index -- --check exit 1 if the committed file is out of date (no write)
 //   npm run ask:index -- --print print every chunk, to read the extracted prose by eye
+//   npm run ask:index -- --out <file>  write to another file (tests)
 //
 // Text is pulled from the TypeScript syntax tree (the compiler is a dev dependency): JSX text, string
 // literals inside JSX, and prose fields of top-level data objects. Code blocks, class names, URLs,
@@ -16,20 +25,27 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
-import { chunkId, chunkSection, clean } from '../server/ask-index.mjs'
+import { chunkId, chunkSection, clean, githubAnchor, markdownSections } from '../server/ask-index.mjs'
+import { aiIntroView, helpView, menuCaption } from '../server/telegram-ui.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const OUT = path.join(ROOT, 'server', 'data', 'ask-index.json')
+const argv = process.argv.slice(2)
+const outAt = argv.indexOf('--out')
+const OUT = outAt >= 0 && argv[outAt + 1] ? path.resolve(argv[outAt + 1]) : path.join(ROOT, 'server', 'data', 'ask-index.json')
 const DOCS = 'https://docs.gullylabs.xyz'
 const SITE = 'https://gullylabs.xyz'
-const args = new Set(process.argv.slice(2))
+const REPO = 'https://github.com/gully-labs/website/blob/main'
+const BOT = 'https://t.me/GullyLabsBot'
+const args = new Set(argv)
+/** Code or markup leaking into prose: the build refuses a chunk that matches. */
+const CODE_RE = /className=|=>|\bimport\s+[\w{]|\bconst\s+\w+\s*=|<\/?(div|span|p|a|li|ul|ol|code|section|h[1-6]|button|svg|path|img|br|strong|em)\b[^>]*>|\bfunction\s*\(/i
 
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8')
 const parse = (rel) => ts.createSourceFile(rel, read(rel), ts.ScriptTarget.Latest, true, rel.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
 
 /* -------------------------------------------------------------- JSX text --- */
 
-const SKIP_TAGS = new Set(['CodeBlock', 'pre', 'svg', 'script', 'style', 'img', 'Seo'])
+const SKIP_TAGS = new Set(['CodeBlock', 'pre', 'svg', 'script', 'style', 'img', 'Seo', 'caption', 'thead'])
 const BLOCK_TAGS = new Set(['p', 'P', 'li', 'ul', 'ol', 'List', 'div', 'section', 'article', 'header', 'footer', 'Callout', 'h1', 'h2', 'h3', 'h4', 'H3', 'dl', 'dt', 'dd', 'table', 'tr', 'td', 'th', 'blockquote', 'form', 'label', 'details', 'summary', 'nav', 'aside', 'main', 'figure', 'figcaption'])
 const HEADING_TAGS = new Set(['h1', 'h2'])
 const HEADING = '\u0000H:'
@@ -327,6 +343,101 @@ function siteChunks() {
   return chunks
 }
 
+/* ----------------------------------------------------------------- legal --- */
+
+const LEGAL_PAGES = [
+  { file: 'src/pages/legal/MerchantTerms.tsx', url: '/legal/merchant-terms', title: 'Gully Pay merchant terms' },
+  { file: 'src/pages/legal/Privacy.tsx', url: '/legal/privacy', title: 'Privacy policy', table: { name: 'RETENTION', section: 9 } },
+]
+
+/** The legal pages: the header's prose, then each numbered <S n={k} title="…"> at #s<k>. */
+function legalChunks() {
+  const chunks = []
+  for (const pg of LEGAL_PAGES) {
+    const sf = parse(pg.file)
+    const url = SITE + pg.url
+    const header = findAll(sf, (n) => ts.isJsxElement(n) && tagName(n) === 'header')[0]
+    const intro = header ? blocks(header).map((p) => docProse(p.replace(HEADING, ''))).filter((p) => p.split(' ').length >= 8) : []
+    chunks.push(...chunkSection({ source: 'Legal', title: pg.title, url, section: null, paragraphs: intro }))
+    const extra = {}
+    if (pg.table) {
+      const t = topConst(sf, pg.table.name)
+      if (!t || !ts.isArrayLiteralExpression(t)) throw new Error(`${pg.file}: no const ${pg.table.name}`)
+      extra[pg.table.section] = t.elements.filter(ts.isArrayLiteralExpression).map((r) => `${literal(r.elements[0])}: ${literal(r.elements[1])}.`)
+    }
+    for (const s of findAll(sf, (n) => ts.isJsxElement(n) && tagName(n) === 'S')) {
+      const nExpr = attr(s, 'n')?.expr
+      const n = nExpr && ts.isNumericLiteral(nExpr) ? Number(nExpr.text) : null
+      const title = attr(s, 'title')?.str
+      if (!n || !title) throw new Error(`${pg.file}: a section without n or title`)
+      const paragraphs = [...blocks(s).map((p) => docProse(p.replace(HEADING, ''))).filter((p) => p.replace(/[^A-Za-z]/g, '').length > 3), ...(extra[n] ?? [])]
+      chunks.push(...chunkSection({ source: 'Legal', title: pg.title, url: `${url}#s${n}`, section: title, paragraphs }))
+    }
+  }
+  return chunks
+}
+
+/* ------------------------------------------------- markdown in this repo --- */
+
+const REPO_DOCS = [
+  { file: 'contracts/CHOICE.md', source: 'Gully Pay contracts', title: 'Gully Pay fee split: which contract and why', maxWords: 1_400 },
+  { file: 'contracts/TESTNET-RESULTS.md', source: 'Gully Pay contracts', title: 'Gully Pay fee path: testnet results', maxWords: 900 },
+  { file: 'ops/l3/SPEC.md', source: 'Roadmap', title: 'Roadmap: the Gully L3 spec', maxWords: 2_200 },
+]
+const SECRET_LINE = /(private|secret|mnemonic|seed|api)[ _-]?(key|phrase)?\s*[=:]|BEGIN [A-Z ]*PRIVATE KEY|\bsk-[A-Za-z0-9]/i
+
+/** Summarised repo notes: capped in words, no secrets, 32-byte hex (keys, hashes) dropped, addresses shortened. */
+function repoDocChunks() {
+  const chunks = []
+  for (const d of REPO_DOCS) {
+    const md = read(d.file)
+      .split('\n')
+      .filter((l) => !SECRET_LINE.test(l))
+      .join('\n')
+      .replace(/\b0x[0-9a-fA-F]{64}\b/g, '(hash)')
+      .replace(/\b(0x[0-9a-fA-F]{4})[0-9a-fA-F]{32}([0-9a-fA-F]{4})\b/g, '$1…$2')
+    for (const s of markdownSections(md, { maxWords: d.maxWords })) {
+      const paragraphs = s.paras.filter((p) => !CODE_RE.test(p))
+      if (!paragraphs.length) continue
+      chunks.push(...chunkSection({ source: d.source, title: d.title, url: `${REPO}/${d.file}${s.heading ? `#${githubAnchor(s.heading)}` : ''}`, section: s.heading, paragraphs }))
+    }
+  }
+  return chunks
+}
+
+/* -------------------------------------------------------------- Telegram --- */
+
+const stripHtml = (s) => clean(String(s).replace(/<[^>]+>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'))
+
+/** The bot's own words: menu, help (with and without a linked wallet), the Gully AI intro and the command list. */
+function telegramChunks() {
+  // server/telegram.mjs keeps the menu's commands in `const COMMANDS = { name: '<emoji> description', … }` (read as text:
+  // importing the bot module here would start its side effects). The leading emoji is dropped for the index.
+  const block = read('server/telegram.mjs').match(/const COMMANDS = \{([\s\S]*?)\r?\n\}/)?.[1] ?? ''
+  const commands = [...block.matchAll(/^\s+(\w+): '([^']+)',?\r?$/gm)].map((m) => `/${m[1]}: ${m[2].replace(/^[^\p{L}\p{N}/]+/u, '')}.`)
+  if (!commands.length) throw new Error('server/telegram.mjs: no bot commands found')
+  const help = [...new Set([...helpView(false).text.split('\n'), ...helpView(true).text.split('\n')])].map(stripHtml).filter(Boolean)
+  return [
+    ...chunkSection({ source: 'Telegram bot', title: 'Gully Labs Telegram bot (@GullyLabsBot)', url: BOT, section: 'Help', paragraphs: [stripHtml(menuCaption(null)), ...help, 'To use the bot you follow the Gully Labs News channel (https://t.me/GullyLabsNews); alerts you already set up still arrive either way.'] }),
+    ...chunkSection({ source: 'Telegram bot', title: 'Gully Labs Telegram bot (@GullyLabsBot)', url: BOT, section: 'Commands', paragraphs: [`The bot's commands. ${commands.join(' ')}`, ...stripHtml(aiIntroView().text).split(/(?<=\.)\s+(?=[A-Z])/).filter(Boolean)] }),
+  ]
+}
+
+/** The Mini App's copy (Telegram's in-app web view at gullylabs.xyz/tg). */
+function miniAppChunks() {
+  const paras = []
+  for (const f of ['src/pages/tg/TgApp.tsx', 'src/pages/tg/screens.tsx']) {
+    const sf = parse(f)
+    const insideJsx = (n) => {
+      for (let a = n.parent; a; a = a.parent) if (ts.isJsxElement(a) || ts.isJsxFragment(a) || ts.isJsxSelfClosingElement(a)) return true
+      return false
+    }
+    for (const r of findAll(sf, (n) => (ts.isJsxElement(n) || ts.isJsxFragment(n)) && !insideJsx(n))) paras.push(...blocks(r).filter((p) => !p.startsWith(HEADING) && siteProse(p)))
+  }
+  const uniq = [...new Set(paras)].filter((p) => !CODE_RE.test(p))
+  return chunkSection({ source: 'Telegram Mini App', title: 'Gully Labs Mini App in Telegram', url: `${SITE}/tg`, section: null, paragraphs: [`The Gully Labs Mini App opens inside Telegram from @GullyLabsBot's "Open app" button. It shows the stock token gaps, DeepCore launches and your alerts.`, ...uniq] })
+}
+
 /* ------------------------------------------------------------------ main --- */
 
 let previous = null
@@ -338,7 +449,7 @@ try {
 const prevById = new Map((previous?.chunks ?? []).map((c) => [c.id, c]))
 const now = new Date().toISOString()
 const seen = new Map()
-const chunks = [...docsChunks(), ...siteChunks()].map((c0) => {
+const chunks = [...docsChunks(), ...siteChunks(), ...legalChunks(), ...repoDocChunks(), ...telegramChunks(), ...miniAppChunks()].map((c0) => {
   // Two blocks of one page under the same heading (a page's own "Questions" and its FAQ data) share a seed.
   const k = seen.get(c0.id) ?? 0
   seen.set(c0.id, k + 1)
@@ -346,7 +457,6 @@ const chunks = [...docsChunks(), ...siteChunks()].map((c0) => {
   const old = prevById.get(c.id)
   return { ...c, updatedAt: old && old.text === c.text && old.url === c.url && old.title === c.title && old.section === c.section ? old.updatedAt : now }
 })
-const CODE_RE = /className=|=>|\bimport\s+[\w{]|\bconst\s+\w+\s*=|<\/?(div|span|p|a|li|ul|ol|code|section|h[1-6]|button|svg|path|img|br|strong|em)\b[^>]*>|\bfunction\s*\(/i
 const ids = new Set()
 for (const c of chunks) {
   if (ids.has(c.id)) throw new Error(`duplicate chunk id ${c.id} (${c.url})`)

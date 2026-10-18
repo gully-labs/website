@@ -113,14 +113,14 @@ export function brandPage({ title, body, nonce = null, script = '', status = 200
   ].join('; ')
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="referrer" content="no-referrer"><title>${esc(title)}</title>
 <style>
-:root{color-scheme:dark;--bg:#0b0e13;--surface:#13181f;--line:#232a34;--ink:#e9edf2;--muted:#a6b0bd;--gold:#e8c060}
+:root{color-scheme:dark;--bg:#0d141c;--surface:#151d28;--line:#1f2935;--ink:#f4f2ec;--muted:#aeb5be;--gold:#d9b563}
 *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:var(--bg);color:var(--ink);font:16px/1.5 "Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px}
 .card{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px 28px}
 .brand{display:flex;align-items:center;gap:10px;font:500 12px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;min-height:44px}
 .brand svg{display:block;height:22px;width:auto}.eyebrow{font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 6px}
 h1{font:800 34px/1.05 "Barlow Condensed",system-ui,sans-serif;text-transform:uppercase;margin:0 0 10px}p{color:var(--muted);margin:0 0 18px}
 .btn{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:999px;font-weight:600;text-decoration:none;margin-top:12px;padding:0 20px;text-align:center}
-.primary{background:var(--gold);color:#0b0e13}.ghost{border:1px solid var(--line);color:var(--ink)}
+.primary{background:var(--gold);color:#0d141c}.ghost{border:1px solid var(--line);color:var(--ink)}
 .btn:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 .links{margin-top:22px;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:2px}.links a{color:var(--muted);text-decoration:none;min-height:44px;display:flex;align-items:center}.links a b{color:var(--gold);font-weight:600;margin-left:6px}
 .spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--gold);animation:s .8s linear infinite;margin:8px 0 18px}@keyframes s{to{transform:rotate(1turn)}}

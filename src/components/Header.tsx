@@ -66,7 +66,7 @@ function EntryBody({ e, active }: { e: NavEntry; active?: boolean }) {
     <>
       <span
         aria-hidden
-        className={`grid size-9 flex-none place-items-center rounded-[8px] border transition-colors ${active ? 'border-gold-line bg-[rgba(232,192,96,.08)] text-gold' : 'border-line bg-bg text-faint group-hover:text-gold group-focus-visible:text-gold'}`}
+        className={`grid size-9 flex-none place-items-center rounded-tile border transition-colors ${active ? 'border-gold-line bg-[rgba(217,181,99,.08)] text-gold' : 'border-line bg-bg text-faint group-hover:text-gold group-focus-visible:text-gold'}`}
       >
         <e.icon size={17} strokeWidth={1.75} />
       </span>
@@ -82,7 +82,7 @@ function EntryBody({ e, active }: { e: NavEntry; active?: boolean }) {
   )
 }
 
-const panelItem = 'group flex min-h-11 w-full items-start gap-3 rounded-[8px] p-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover data-[active]:bg-[rgba(232,192,96,.05)]'
+const panelItem = 'group flex min-h-11 w-full items-start gap-3 rounded-tile p-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover data-[active]:bg-[rgba(217,181,99,.05)]'
 
 function MenuGroup({ g, pathname, hash, wide, guard }: { g: NavGroup; pathname: string; hash: string; wide?: boolean; guard: Guard }) {
   const active = groupActive(g, pathname, hash)
@@ -144,7 +144,7 @@ function LaunchApp({ compact }: { compact?: boolean }) {
               onClick={menu.guard('apps')}
               data-menu-trigger="apps"
               aria-label="More apps"
-              className={`${btnGold} inline-flex min-h-11 w-11 items-center justify-center rounded-l-none border-l border-[rgba(11,14,19,.25)] data-[state=open]:bg-gold-hover`}
+              className={`${btnGold} inline-flex min-h-11 w-11 items-center justify-center rounded-l-none border-l border-[rgba(13,20,28,.25)] data-[state=open]:bg-gold-hover`}
             >
               <ChevronDown aria-hidden size={16} strokeWidth={2.25} className="gl-chevron" />
             </NavigationMenu.Trigger>
@@ -287,7 +287,8 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
     <div ref={ref} role="dialog" aria-modal="true" aria-label="Site menu" className="gl-sheet fixed inset-0 z-[70] flex flex-col bg-bg font-sans text-ink">
       <div className="flex min-h-16 items-center justify-between gap-4 border-b border-line px-page py-2">
         <Link to="/" onClick={pick} className="inline-flex min-h-11 items-center rounded-btn text-ink" aria-label="Gully Labs home">
-          <Wordmark height={28} />
+          {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}
+          <Wordmark height={28} className="max-[419px]:!h-6 max-[419px]:!w-[115.64px]" />
         </Link>
         <button
           type="button"
@@ -389,10 +390,11 @@ export function Header() {
   const focusMenuButton = useCallback(() => requestAnimationFrame(() => menuButton.current?.focus()), [])
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-[rgba(11,14,19,.86)] backdrop-blur-[10px]">
-      <div className="flex min-h-16 items-center gap-4 px-page py-2 min-[1024px]:gap-6">
+    <header className="sticky top-0 z-50 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-[10px]">
+      <div className="flex min-h-16 items-center gap-3 px-page py-2 min-[1024px]:gap-6">
         <Link to="/" className="inline-flex min-h-11 flex-none items-center rounded-btn text-ink" aria-label="Gully Labs home">
-          <Wordmark height={28} />
+          {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}
+          <Wordmark height={28} className="max-[419px]:!h-6 max-[419px]:!w-[115.64px]" />
         </Link>
 
         <NavigationMenu.Root aria-label="Main" delayDuration={120} value={menu.value} onValueChange={menu.onValueChange} className="hidden min-[1024px]:block">
@@ -410,7 +412,7 @@ export function Header() {
           <div className="hidden min-[1024px]:block">
             <LaunchApp />
           </div>
-          <div className="max-[359px]:hidden min-[1024px]:hidden">
+          <div className="max-[369px]:hidden min-[1024px]:hidden">
             <LaunchApp compact />
           </div>
           <button

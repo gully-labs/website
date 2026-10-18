@@ -1,9 +1,10 @@
-import { Building2, Laptop, LogOut, ShieldCheck, UserRound } from 'lucide-react'
+import { Building2, ExternalLink, Laptop, LogOut, Lock, ShieldCheck, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { usePoll } from './poll'
 import { useSubTab } from './subtab'
 import { InfoTip, RefreshChip, SubPanel, SubTabs } from './ui'
 import { toastError, toastSuccess } from '../../components/ui/toast'
+import { isLocalHost, SITE_URL } from '../../site-host'
 import { ago, api, SESSION_ENDED, type Company, type Profile, type SessionInfo } from './api'
 import { Avatar } from './Avatar'
 import { ErrorLine, Skeleton } from './parts'
@@ -19,13 +20,14 @@ import { input, mono, panel, panelTitle, pillGold, pillSm, rise } from './styles
      printed on receipts. POST /company.
    - Sessions (this wallet): device, created, last seen, which one is this browser; sign one out or
      every other one. GET /sessions, POST /sessions/revoke.
+   - Privacy: a link to /legal/privacy and how to ask for an export or deletion.
    Each is its own sub-tab (#settings/profile, #settings/company, #settings/sessions, remembered); the
    wallet menu's Profile and Sessions links and the old #profile / #sessions hashes open theirs. */
 
 const field = 'flex flex-col gap-1 text-[13px] text-ink-2'
 const box = `${input} h-10 text-[14px]`
 
-const SETTINGS_SUBS = ['profile', 'company', 'sessions'] as const
+const SETTINGS_SUBS = ['profile', 'company', 'sessions', 'privacy'] as const
 type SettingsSub = (typeof SETTINGS_SUBS)[number]
 
 export function SettingsTab({ section }: { section: string | null }) {
@@ -44,14 +46,41 @@ export function SettingsTab({ section }: { section: string | null }) {
           { id: 'profile', label: 'Profile', icon: <UserRound size={15} aria-hidden /> },
           { id: 'company', label: 'Company', icon: <Building2 size={15} aria-hidden /> },
           { id: 'sessions', label: 'Sessions', icon: <ShieldCheck size={15} aria-hidden /> },
+          { id: 'privacy', label: 'Privacy', icon: <Lock size={15} aria-hidden /> },
         ]}
       />
       <SubPanel idBase="settings" value={sub}>
         {sub === 'profile' && <ProfileCard />}
         {sub === 'company' && <CompanyCard />}
         {sub === 'sessions' && <SessionsCard />}
+        {sub === 'privacy' && <PrivacyCard />}
       </SubPanel>
     </div>
+  )
+}
+
+const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
+
+/** Where the privacy policy is, and how to get your data out or deleted (there is no self-service delete yet). */
+function PrivacyCard() {
+  return (
+    <section id="settings-privacy" className={`${panel} scroll-mt-4`} style={rise(3)} aria-labelledby="privacy-title">
+      <div className="flex flex-wrap items-center gap-3">
+        <ShieldCheck size={18} className="text-gold" aria-hidden />
+        <div className="flex flex-col gap-[2px]">
+          <h2 id="privacy-title" className={panelTitle}>
+            Privacy
+          </h2>
+          <span className={mono}>what we keep and for how long</span>
+        </div>
+      </div>
+      <p className="m-0 text-[14px] leading-[1.6] text-ink-2">
+        The privacy policy lists what the app, Gully AI, Gully Analytics, the Telegram bot and Gully Pay collect, who else sees it and how long it is kept. To see, export or delete your data, email hello@gullylabs.xyz.
+      </p>
+      <a href={site('/legal/privacy')} target="_blank" rel="noopener noreferrer" className={`${pillSm} self-start`}>
+        Privacy policy <ExternalLink size={12} aria-hidden />
+      </a>
+    </section>
   )
 }
 

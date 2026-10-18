@@ -12,27 +12,30 @@ import { esc } from './chart-utils'
    Updates glide (animationDurationUpdate, cubicOut). Hovering a mark blurs the others. Under
    reduced motion EChart.tsx replaces every timing here with GENTLE_MOTION (chart-utils). */
 
+/** Chart box heights: a sparkline strip, a small card chart, the usual card chart, a feature chart. */
+export const CHART_H = { spark: 44, sm: 150, md: 220, lg: 260 } as const
+
 /** Brand colours (src/index.css) for chart code, which cannot read CSS variables in canvas mode. */
 export const C = {
-  gold: '#e8c060',
-  goldHover: '#f4d98c',
-  ink: '#eef0f2',
-  ink2: '#cfd5dc',
-  muted: '#a6b0bd',
-  dim: '#8a96a6',
-  faint: '#7f8b9c',
-  axis: '#5c6878',
-  grid: '#1a2029',
-  line: '#1d232c',
-  lineStrong: '#2c3540',
-  lineHover: '#3a4452',
-  surface: '#10141a',
-  surfaceDeep: '#0d1116',
+  gold: '#d9b563',
+  goldHover: '#f2d58a',
+  ink: '#f4f2ec',
+  ink2: '#d1d3d5',
+  muted: '#aeb5be',
+  dim: '#949daa',
+  faint: '#8a94a1',
+  axis: '#5f6a78',
+  grid: '#1c2531',
+  line: '#1f2935',
+  lineStrong: '#2a3542',
+  lineHover: '#3a4656',
+  surface: '#151d28',
+  surfaceDeep: '#111923',
   error: '#ff8a7a',
 } as const
 
 /** Categorical series colours, in order (the theme's palette). */
-export const PALETTE = ['#e8c060', '#5aa9e6', '#1f9e89', '#c98bdb', '#e4572e', '#9bc53d', '#f4d98c', '#7f8b9c'] as const
+export const PALETTE = ['#d9b563', '#5aa9e6', '#26ab94', '#c98bdb', '#f2704a', '#9bc53d', '#f2d58a', '#8a94a1'] as const
 
 /** `#rrggbb` plus an alpha 0–1, as `#rrggbbaa`. */
 export const alpha = (hex: string, a: number) => `${hex.slice(0, 7)}${Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0')}`
@@ -107,7 +110,7 @@ export function barsPreset({ stagger = 30, radius, horizontal = false, focus = '
     animationDelay: (i: number) => Math.min(i * stagger, 480),
     ...update,
     itemStyle: { borderRadius: radius ?? (horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0]) },
-    emphasis: { focus, itemStyle: { shadowBlur: 10, shadowColor: 'rgba(232,192,96,.30)' } },
+    emphasis: { focus, itemStyle: { shadowBlur: 10, shadowColor: 'rgba(217,181,99,.30)' } },
     blur: { itemStyle: { opacity: 0.35 }, label: { opacity: 0.45 } },
   }
 }
