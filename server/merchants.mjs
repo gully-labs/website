@@ -81,6 +81,7 @@ import { accrue, centsOfMicros, feeConfig, MIN_STATEMENT_CENTS, PAUSE_AFTER_DAYS
 import { checkEndpoint, deliveries, endpointView, enqueue, makeEndpoint, newSecret, paidEvent, redeliver, registerWebhookTarget, sendTest } from './pay-webhooks.mjs'
 import { addressUrl, assetById, ASSET_IDS, CHAIN_LIST, CHAINS, checksumAddress, fmtUsd, MAX_TAG, parseUsdCents, publicAssets, quoteAmount, readFeed, rpc, withFeeSplit } from './payments.mjs'
 import { treasury } from './plans.mjs'
+import { handleMerchantSafe } from './safe-deploy.mjs'
 import { isSolanaAsset } from './solana-pay.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { sendAccountTelegram } from './telegram.mjs'
@@ -1123,6 +1124,8 @@ const reply = (res, r, okBody) => (r.ok ? json(res, r.status && r.status !== 200
  */
 export async function handleMerchant(req, res, url, ctx) {
   const p = url.pathname
+  // One-click Safe deployment (safe-deploy.mjs): plan and follow a Safe deployment the merchant's wallet sends.
+  if (p.startsWith('/api/developer/merchant/safe')) return handleMerchantSafe(req, res, url, ctx)
   const post = req.method === 'POST'
   const { workspace: ws, role, user } = ctx
   const ev = (action, target = null, detail = null) => {

@@ -19,6 +19,9 @@ const CHAINS: Record<string, Mark> = {
   solana: { src: '/chains/solana.svg', name: 'Solana', disc: '#000000', inset: 0.22 },
   arc: { src: '/chains/arc.svg', name: 'Arc', disc: null, inset: 0 },
   robinhood: { src: '/chains/robinhood.png', name: 'Robinhood Chain', disc: null, inset: 0 },
+  optimism: { src: '/chains/optimism.png', name: 'OP Mainnet', disc: null, inset: 0 },
+  polygon: { src: '/chains/polygon.png', name: 'Polygon', disc: null, inset: 0 },
+  avalanche: { src: '/chains/avalanche.png', name: 'Avalanche', disc: null, inset: 0 },
 }
 
 /** Other keys and display names the site and the API use for the same chain. */
@@ -32,6 +35,19 @@ const CHAIN_ALIAS: Record<string, string> = {
   hyperliquid: 'hyperevm',
   'robinhood chain': 'robinhood',
   'arc testnet': 'arc',
+  // Safe deployment chains (server/safe-deploy.mjs) and the testnets, which wear their mainnet's mark.
+  'op mainnet': 'optimism',
+  op: 'optimism',
+  matic: 'polygon',
+  'polygon pos': 'polygon',
+  avax: 'avalanche',
+  'avalanche c-chain': 'avalanche',
+  'base-sepolia': 'base',
+  'base sepolia': 'base',
+  'op-sepolia': 'optimism',
+  'op sepolia': 'optimism',
+  'arbitrum-sepolia': 'arbitrum',
+  'arbitrum sepolia': 'arbitrum',
 }
 
 export function chainMark(key: string | null | undefined): Mark | null {

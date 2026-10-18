@@ -51,6 +51,7 @@ import { adminCreateLink, adminLinkDetail, adminListLinks, adminRotateLinkSecret
 import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, setDefaultEndpoint, webhookStats } from './pay-webhooks.mjs'
 import { publicAssets } from './payments.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
+import { handleAdminSafe } from './safe-deploy.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
@@ -130,6 +131,8 @@ export async function handleAdmin(req, res, url) {
   if (p.startsWith('/api/admin/ask/')) return handleAskAdmin(req, res, url)
   if (p === '/api/admin/merchants' || p.startsWith('/api/admin/merchants/')) return handleMerchantsAdmin(req, res, url)
   if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
+  // The treasury Safe per chain and its one-click deployment (safe-deploy.mjs).
+  if (p.startsWith('/api/admin/safe/')) return handleAdminSafe(req, res, url)
   const db = developers()
 
   if (p === '/api/admin/overview') {

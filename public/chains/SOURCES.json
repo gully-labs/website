@@ -54,5 +54,26 @@
     "page": "https://www.circle.com/pressroom#brandkit",
     "terms": "Circle Brand Use Policy (https://6778953.fs1.hubspotusercontent-na1.net/hubfs/6778953/CircleBrandUsePolicy.pdf): Arc is a Circle mark; limited, unaltered, non-endorsing use only.",
     "fetchedAt": "2026-10-17T12:00:00Z"
+  },
+  "optimism": {
+    "file": "/chains/optimism.png",
+    "from": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/info/logo.png",
+    "page": "https://www.optimism.io/brand",
+    "terms": "OP Mainnet's own official mark as published in the Trust Wallet assets registry (repo MIT; the mark stays the chain's). Unaltered, 256 px master shown at 16 to 40 px; nominative use only, to name the chain a Safe can be deployed on (server/safe-deploy.mjs).",
+    "fetchedAt": "2026-10-17T19:20:00Z"
+  },
+  "polygon": {
+    "file": "/chains/polygon.png",
+    "from": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/info/logo.png",
+    "page": "https://polygon.technology/brand-kit",
+    "terms": "Polygon's own official mark as published in the Trust Wallet assets registry (repo MIT; the mark stays the chain's). Unaltered, 256 px master shown at 16 to 40 px; nominative use only, to name the chain a Safe can be deployed on (server/safe-deploy.mjs).",
+    "fetchedAt": "2026-10-17T19:20:00Z"
+  },
+  "avalanche": {
+    "file": "/chains/avalanche.png",
+    "from": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png",
+    "page": "https://www.avax.network/brand",
+    "terms": "Avalanche's own official mark as published in the Trust Wallet assets registry (repo MIT; the mark stays the chain's). Unaltered, 256 px master shown at 16 to 40 px; nominative use only, to name the chain a Safe can be deployed on (server/safe-deploy.mjs).",
+    "fetchedAt": "2026-10-17T19:20:00Z"
   }
 }
