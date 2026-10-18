@@ -1,5 +1,6 @@
 // Gully Ask: retrieval-augmented answers about Gully Labs, from the docs, the site, the changelog and the
-// public READMEs, with live facts (plans, a stock's gap, the ledger) read through in-process tools.
+// public READMEs, with live facts (plans, a stock's gap, the ledger, DeepCore launches and pools) read through
+// in-process tools. The DeepCore tools read deepcore.mjs's launch cache and its cached, budgeted pool reads.
 //
 // Public
 //   GET  /api/ask/status   { configured, model, indexSize, updatedAt }
@@ -35,6 +36,7 @@ import { makeIndex } from './ask-index.mjs'
 import { readRemote, remoteChunks, startRemoteLoop } from './ask-remote.mjs'
 import { publicPlans } from './plans.mjs'
 import { readStats } from './stats.mjs'
+import { readDeepcoreMarkets, readDeepcorePool } from './deepcore.mjs'
 import * as tracker from './tracker.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -118,11 +120,15 @@ let readRows = async () => {
   return { at: body?.generatedAt ?? null, rows: (body?.rows ?? []).map((r) => ({ ...r, sessionOpen: open[r.chain] ?? null })) }
 }
 let readLedger = () => withTimeout(readStats(), 20_000, 'ledger read')
+const readDcMarkets = (o) => withTimeout(readDeepcoreMarkets(o), 25_000, 'DeepCore read')
+const readDcPool = (o) => withTimeout(readDeepcorePool(o), 25_000, 'DeepCore read')
 /** Test hooks: replace the tracker read ({ at, rows }) and the ledger read. */
 export function setAskReadersForTest({ rows, ledger } = {}) {
   if (rows) readRows = rows
   if (ledger) readLedger = ledger
 }
+const DEEPCORE_FRAMING = 'Information only, not investment advice. Anyone can launch a token on DeepCore and nobody has reviewed these launches.'
+const DC_CHAINS = ['base', 'bsc', 'robinhood', 'hyperevm']
 
 const round = (n, d = 2) => (typeof n === 'number' && Number.isFinite(n) ? Number(n.toFixed(d)) : null)
 const stockRow = (r) => ({
@@ -166,6 +172,29 @@ export const TOOLS = [
     name: 'get_ledger',
     description: 'The live cross-venue figures of the Gully Labs projects (Cartel Family, DeepCore, PeddleSwap, Peddles, PeddleQuest): value locked, volume and fees as each publishes them, with the venues that could not be read.',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'deepcore_launches',
+    description: 'Live DeepCore (deepcore.fun) launches: the newest, or the most traded of the recent ones (sort "trending"), each with its price in its quote token and in US dollars where known, market cap, total supply, its pools (kind, fee, active liquidity, whether the launch liquidity is locked), swap count, last swap, and when the figures were read. Use it for any question about current or recent DeepCore launches, their prices or market caps, or what is trading on DeepCore.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        sort: { type: 'string', enum: ['newest', 'trending'], description: 'newest (default) or trending (most swaps among the newest launches)' },
+        chain: { type: 'string', enum: DC_CHAINS, description: 'Optional: one DeepCore chain; every chain when left out' },
+        limit: { type: 'integer', minimum: 1, maximum: 5 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'deepcore_pool',
+    description: "The live state of one token's DeepCore pools: price in the quote token and in US dollars where known, market cap for a recent launch, fee, creator tax, active liquidity, lock, swap count, last swap and the block and time DeepCore read the pool. Give a launch symbol or a token address (with its chain when it is not a recent launch).",
+    input_schema: {
+      type: 'object',
+      properties: { token: { type: 'string', description: 'A launch symbol (e.g. PEPE) or a token address 0x…' }, chain: { type: 'string', enum: DC_CHAINS, description: 'Optional: the DeepCore chain' } },
+      required: ['token'],
+      additionalProperties: false,
+    },
   },
   {
     name: 'get_alert_channels',
@@ -223,6 +252,14 @@ export async function runTool(name, input = {}) {
         page: `${SITE}/#ledger`,
       }
     }
+    if (name === 'deepcore_launches') {
+      const out = await readDcMarkets({ chain: input?.chain, limit: Number.isInteger(input?.limit) ? input.limit : 5, sort: input?.sort === 'trending' ? 'trending' : 'newest' })
+      return { ...out, framing: DEEPCORE_FRAMING }
+    }
+    if (name === 'deepcore_pool') {
+      const out = await readDcPool({ token: input?.token, chain: input?.chain })
+      return { ...out, framing: DEEPCORE_FRAMING }
+    }
     if (name === 'get_alert_channels') {
       const { alertChannels } = await import('./telegram.mjs')
       const c = await alertChannels()
@@ -242,6 +279,7 @@ How to answer:
 - Use ONLY the numbered sources in the user turn and the results of your tools. Do not use outside knowledge about Gully Labs, its products, prices or people.
 - Cite every fact from a source with its number in square brackets, like [1] or [2][3], right after the sentence it supports. Cite only numbers that exist. Tool results need no number; say the figure is live.
 - For prices, plans, limits, a stock's gap, the ledger figures or alert channels, call the matching tool rather than trusting a source's wording; sources may be out of date.
+- For current DeepCore launches, a launch's price, market cap, liquidity or pool, call deepcore_launches or deepcore_pool. Say when the figures were read (the tool's freshness times), give the quote token when there is no dollar figure, and say what "trending" means as the tool defines it. Never call a launch safe, promising or a good buy, and never rank launches as opportunities; add that this is information only, not investment advice.
 - Never invent a price, fee, limit, date, contract or wallet address, figure or URL. If a figure is not in a source or a tool result, say you don't have it.
 - If the sources and tools do not cover the question, say plainly "I don't know" in one sentence, then point to the docs (https://docs.gullylabs.xyz) or the contact form (https://gullylabs.xyz/services). Do not guess.
 - Information only. Never give investment, financial, legal or tax advice. Never predict prices or gaps, never say whether to buy, sell or hold anything, never say a gap is an opportunity or will close. If asked, say you can only describe what the tracker shows, and give the facts.
