@@ -55,7 +55,8 @@
 /* 2. Base --------------------------------------------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: 120px; }
-body {
+/* "html body", not "body": an old Ghost admin code injection sets body colours (old palette); the theme wins. */
+html body {
     margin: 0;
     background: var(--gl-bg);
     color: var(--gl-ink);
@@ -91,7 +92,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 }
 .gl-skip:focus { top: 12px; }
 .gl-icon { width: 16px; height: 16px; flex: none; }
-.gl-ext { margin-left: 4px; font-size: max(11px, .78em); color: var(--gl-dim); font-family: var(--gl-font-mono); }
+.gl-ext { margin-left: 4px; font-size: 13px; line-height: 1; color: var(--gl-dim); font-family: var(--gl-font-mono); }
 
 .gl-kicker {
     display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
@@ -657,6 +658,10 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 @media (max-width: 599px) {
     .gl-archive-head--author { grid-template-columns: 1fr; }
 }
+
+/* The theme draws the one empty state. An old Ghost admin code injection prepends its own "first posts" intro
+   (section.gl-intro): never shown here, and assets/js/gully.js removes it and its stylesheet. */
+.gl-intro { display: none !important; }
 
 .gl-empty, .gl-error-box {
     display: grid; gap: 32px; padding-block: clamp(32px, 6vw, 72px) 0; align-items: center;

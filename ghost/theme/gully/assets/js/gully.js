@@ -6,12 +6,24 @@
  *   4. Reading progress hairline on posts
  *   5. Copy link and code blocks (with a toast)
  *   6. Content helpers: responsive embeds, scrollable tables
+ *   0. (first) Retires the old Ghost admin code-injection intro, so an empty blog shows the theme's one empty state
  */
 (function () {
     'use strict';
 
     var WIDE = window.matchMedia('(min-width: 1024px)');
     var FINE = window.matchMedia('(hover: hover) and (pointer: fine)');
+
+    /* ------------------------------------------- 0. old code-injection intro --- */
+    /* Before this theme, Ghost admin > Code injection (site footer) added a "How we build" intro (section.gl-intro)
+       and a stylesheet that restyles .gl-btn in the old palette. The theme has its own empty state: remove both.
+       The owner should still clear that code injection; this only keeps a stale one from showing. */
+    Array.prototype.forEach.call(document.querySelectorAll('section.gl-intro'), function (el) {
+        el.parentNode.removeChild(el);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('style'), function (st) {
+        if (st.textContent.indexOf('.gl-intro{') !== -1) st.parentNode.removeChild(st);
+    });
 
     /* ---------------------------------------------------------------- 1. menus --- */
     var triggers = Array.prototype.slice.call(document.querySelectorAll('.gl-nav-trigger'));
