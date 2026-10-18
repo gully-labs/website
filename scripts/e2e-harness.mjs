@@ -131,6 +131,7 @@ function rpcAnswer(chainId, q) {
   if (q.method === 'eth_blockNumber') return hex(5_000_000)
   if (q.method === 'eth_getBlockByNumber') return { number: q.params[0], timestamp: hex(nowSec()) }
   if (q.method === 'eth_getTransactionReceipt' || q.method === 'eth_getTransactionByHash') return null
+  if (q.method === 'eth_getBalance') return '0x0' // the fee-proxy monitor's coin reads (fee-proxy-monitor.mjs): nothing stuck
   if (q.method === 'eth_call') {
     const data = String(q.params?.[0]?.data ?? '')
     if (data === '0xfeaf968c') return '0x' + word(777) + word(FEEDS[chainId] ?? 2_400_00000000n) + word(nowSec() - 60) + word(nowSec() - 60) + word(777)
