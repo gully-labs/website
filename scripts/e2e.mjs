@@ -34,6 +34,40 @@ const browser = await chromium.launch({ headless: !process.env.E2E_HEADED })
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) })
 const QUOTE = { chain: 'robinhood', ticker: 'NVDA', pay: { symbol: 'ETH', amount: '0.1' }, out: { symbol: 'NVDA', amount: '1.84', minimum: '1.82' }, priceImpactPct: 0.21, slippagePct: 0.5, fee: { pct: 0.3, amount: '0.0003', symbol: 'ETH', exempt: false }, onDeepcorePool: true, route: { venues: ['DeepCore'], hops: [{ venue: 'DeepCore', from: 'ETH', to: 'NVDA' }] }, alternatives: [], quotedAt: new Date().toISOString(), links: { swap: 'https://deepcore.fun/swap', token: 'https://deepcore.fun/token' } }
 
+// The DeepCore launch list as GET /api/deepcore/launches answers it (the poller is off in e2e).
+const LAUNCHES = (() => {
+  const chains = [[4663, 'Robinhood Chain'], [56, 'BNB Chain'], [8453, 'Base']]
+  const launches = Array.from({ length: 12 }, (_, i) => {
+    const [chainId, chainName] = chains[i % 3]
+    const token = '0x' + (i + 1).toString(16).padStart(40, 'a')
+    return { key: `${chainId}:${token}`, chainId, chainKey: String(chainId), chainName, token, symbol: `E2E${i}`, createdAt: new Date(Date.now() - i * 5 * 3600_000).toISOString(), txHash: null, creator: null, startsAt: null, totalSupply: null, legs: [{ poolId: null, kind: 'CL', quote: 'WETH', locked: i % 2 === 0, lockId: null, feePct: 1, quoteAddress: null }], links: { token: `https://deepcore.fun/tokens/${token}`, launch: `https://deepcore.fun/app/launch/v2/${token}`, swap: 'https://deepcore.fun/app/swap' } }
+  })
+  return { state: 'ok', launches, asOf: new Date().toISOString(), chains: chains.map(([chainId, name]) => ({ chainId, name, status: 'ok', total: 4 })), error: null, pollSeconds: 90 }
+})()
+// E2E_SHOTS=<dir> saves screenshots of the app pages and the Gully AI launcher there.
+const SHOTS = process.env.E2E_SHOTS || null
+if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true })
+const shot = async (page, name) => SHOTS && page.screenshot({ path: path.join(SHOTS, `${name}.png`), fullPage: false })
+
+/** Gully AI's launcher: the floating button opens the panel, Escape closes it, Ctrl+K toggles it. */
+async function launcherWorks(page, label) {
+  const fab = page.getByTestId('ask-fab')
+  await fab.waitFor({ timeout: 10_000 })
+  await fab.click()
+  const dlg = page.getByRole('dialog', { name: 'Gully AI' })
+  await dlg.waitFor()
+  check(`${label}: the Gully AI button opens the panel`, await dlg.isVisible())
+  await dlg.getByPlaceholder('How do gap alerts work?').waitFor({ timeout: 10_000 })
+  await page.keyboard.press('Escape')
+  await dlg.waitFor({ state: 'hidden' })
+  await page.keyboard.press('Control+k')
+  await dlg.waitFor({ timeout: 5_000 })
+  check(`${label}: Ctrl+K opens Gully AI`, await dlg.isVisible())
+  await page.keyboard.press('Control+k')
+  await dlg.waitFor({ state: 'hidden', timeout: 5_000 })
+  check(`${label}: Ctrl+K again closes it`, true)
+}
+
 /** A context with every off-localhost request routed: Gully's own hosts to fixtures, the rest aborted. */
 async function newContext({ width = 1440, height = 900, mobile = false, geo = { country: 'GB', allowed: true, reason: 'ok' }, cookie = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, ...(mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}), permissions: ['clipboard-read', 'clipboard-write'], serviceWorkers: 'block' })
@@ -55,6 +89,8 @@ async function newContext({ width = 1440, height = 900, mobile = false, geo = { 
   await ctx.route(`${BASE}/api/stats`, (route) => json(route, STATS))
   await ctx.route(`${BASE}/api/geo`, (route) => json(route, geo))
   await ctx.route(new RegExp(`^${BASE}/api/deepcore/quote`), (route) => json(route, { quote: QUOTE, cached: false }))
+  await ctx.route(new RegExp(`^${BASE}/api/deepcore/launches`), (route) => json(route, LAUNCHES))
+  await ctx.route(new RegExp(`^${BASE}/api/pay/price`), (route) => json(route, { asset: 'base-eth', price: (2500 + Math.random()).toFixed(2), updatedAt: new Date().toISOString() }))
   return ctx
 }
 
@@ -146,6 +182,19 @@ await step('landing', async () => {
   check('pricing: Gully Analytics plans show', await page.locator('#price-panel').getByText(/Starter/).first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
   await page.locator('#price-tab-services').click()
   check('pricing: services are quoted', await page.locator('#price-panel').getByText('Quoted').first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
+  // Gully AI everywhere: header nav link, floating button, Ctrl+K; the dock keeps Back to top beside it.
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await page.getByRole('button', { name: 'Back to top' }).waitFor({ state: 'visible' })
+  await page.waitForTimeout(300)
+  const boxes = await page.evaluate(() => [document.querySelector('[data-testid="ask-fab"]'), document.querySelector('button[aria-label="Back to top"]')].map((el) => el && [el.getBoundingClientRect().left, el.getBoundingClientRect().right, el.getBoundingClientRect().top, el.getBoundingClientRect().bottom]))
+  check('landing: the Gully AI button and Back to top do not overlap', !!boxes[0] && !!boxes[1] && (boxes[1][1] <= boxes[0][0] || boxes[1][3] <= boxes[0][2]), JSON.stringify(boxes))
+  await launcherWorks(page, 'site')
+  await page.getByTestId('ask-fab').click()
+  await page.getByRole('dialog', { name: 'Gully AI' }).waitFor()
+  await shot(page, 'site-1440-launcher')
+  await page.keyboard.press('Escape')
+  await page.evaluate(() => window.scrollTo(0, 0))
+  check('header: Gully AI is in the main nav, with an icon', await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Gully AI' }).evaluate((a) => a.getAttribute('href') === '/ask' && !!a.querySelector('svg')))
   // Header menus.
   await page.evaluate(() => window.scrollTo(0, 0))
   for (const [menu, item] of [['Products', /^Stock tracker/], ['App & API', /^API docs/], ['Company', /^Services/]]) {
@@ -173,6 +222,11 @@ await step('landing mobile', async () => {
   await sheet.waitFor({ state: 'hidden' })
   check('mobile sheet: Escape closes it', true)
   await noHorizontalScroll(page, 'landing')
+  await page.getByTestId('ask-fab').tap()
+  await page.getByRole('dialog', { name: 'Gully AI' }).waitFor()
+  check('site at 390: the Gully AI button opens the sheet', true)
+  await shot(page, 'site-390-launcher')
+  await page.getByRole('button', { name: 'Close Gully AI' }).tap()
   await w.verify()
   await ctx.close()
 })
@@ -260,7 +314,7 @@ await step('portal', async () => {
   const ctx = await newContext({ cookie: cookieOf(api) })
   const page = await ctx.newPage()
   const w = watch(page, 'portal')
-  await page.goto(BASE + '/developers#keys')
+  await page.goto(BASE + '/app#keys')
   // The app's pages are sidebar links (AppShell); at 1440 px the sidebar is open.
   const appNav = page.getByRole('navigation', { name: 'App pages' })
   await appNav.waitFor()
@@ -357,6 +411,98 @@ await step('portal', async () => {
   check('CSV: usage downloads with its header row', csv.startsWith('time,key,'), csv.slice(0, 40))
   await w.verify()
   await ctx.close()
+})
+
+/* ------------------------------------------------------------- app services --- */
+
+const SERVICES = [
+  ['tracker', 'Tracker'],
+  ['pay', 'Gully Pay'],
+  ['chain-kit', 'Chain Kit'],
+  ['ai', 'Gully AI'],
+  ['deepcore', 'DeepCore launches'],
+  ['widgets', 'Widgets'],
+  ['telegram', 'Telegram'],
+]
+await step('app services', async () => {
+  // A fresh wallet: the portal step above filled the Free plan's one alert, and "Alert" needs room.
+  const api3 = makeClient(BASE)
+  check('a third wallet signs in', (await api3.signIn(privateKeyToAccount(generatePrivateKey()))).status === 200)
+  const ctx = await newContext({ cookie: cookieOf(api3) })
+  const page = await ctx.newPage()
+  const w = watch(page, 'app services 1440')
+  await page.goto(BASE + '/app')
+  const appNav = page.getByRole('navigation', { name: 'App pages' })
+  await appNav.waitFor()
+  const groups = await appNav.locator('[data-nav-group]').evaluateAll((els) => els.map((e) => e.getAttribute('data-nav-group')))
+  check('sidebar: grouped Workspace, Services, Developer, Account', JSON.stringify(groups) === JSON.stringify(['Workspace', 'Services', 'Developer', 'Account']), JSON.stringify(groups))
+  const iconless = await appNav.locator('a').evaluateAll((as) => as.filter((a) => !a.querySelector('svg')).map((a) => a.textContent))
+  check('sidebar: every item has an icon', iconless.length === 0, iconless.join(', '))
+  check('sidebar: Merchant sits under Services', (await appNav.locator('[data-nav-group="Services"]').getByRole('link', { name: /^Merchant/ }).count()) === 1)
+  await shot(page, 'app-1440-overview')
+  for (const [id, label] of SERVICES) {
+    await appNav.getByRole('link', { name: label, exact: true }).click()
+    const view = page.locator(`[data-service="${id}"]`)
+    await view.getByTestId('service-header').waitFor({ timeout: 15_000 })
+    check(`app ${label}: the page renders with its header`, (await view.getByRole('heading', { level: 1 }).textContent())?.trim() === label)
+    check(`app ${label}: the hash deep-links it`, new URL(page.url()).hash === `#${id}`, page.url())
+    const ext = await view.getByTestId('service-header').locator('a').evaluateAll((as) => as.map((a) => [a.textContent, a.target, a.rel]))
+    check(`app ${label}: Docs and Public page open in a new tab`, ext.length >= 2 && ext.every(([, t, r]) => t === '_blank' && /noopener/.test(r)), JSON.stringify(ext))
+    await view.locator('[data-tile]').first().waitFor()
+    if (id === 'tracker') await view.locator('tr[data-row]').first().waitFor({ timeout: 15_000 })
+    if (id === 'deepcore') await view.getByTestId('deepcore-launches').waitFor({ timeout: 15_000 })
+    if (id === 'widgets') await page.waitForFunction(() => [...document.querySelectorAll('[data-gully-widget]')].some((el) => /%/.test(el.shadowRoot?.textContent ?? '')), null, { timeout: 10_000 })
+    if (id === 'ai') check('app Gully AI: the full chat is on the page', (await view.getByPlaceholder('How do gap alerts work?').count()) === 1)
+    await page.waitForTimeout(600)
+    await shot(page, `app-1440-${id}`)
+  }
+  // Tracker: chain filter and "Alert" from a row.
+  await appNav.getByRole('link', { name: 'Tracker', exact: true }).click()
+  const rows = page.locator('[data-service="tracker"] tr[data-row]')
+  await rows.first().waitFor()
+  const all = await rows.count()
+  await page.locator('[data-testid="tracker-chains"] button').nth(2).click()
+  await page.waitForFunction((n) => document.querySelectorAll('[data-service="tracker"] tr[data-row]').length !== n, all)
+  const keys = await rows.evaluateAll((trs) => [...new Set(trs.map((tr) => tr.getAttribute('data-row').split(':')[0]))])
+  check('app Tracker: a chain filter narrows the rows to one chain', keys.length === 1 && (await rows.count()) < all, JSON.stringify(keys))
+  const first = await rows.first().getAttribute('data-row')
+  await rows.first().getByRole('button', { name: /^Add a gap alert/ }).click()
+  const na = page.getByRole('dialog', { name: 'New gap alert' })
+  await na.waitFor()
+  const picked = await na.getByLabel('Stock').inputValue()
+  check('app Tracker: "Alert" opens New gap alert preset to that stock', picked === first, `${picked} vs ${first}`)
+  await page.keyboard.press('Escape')
+  await na.waitFor({ state: 'hidden' })
+  // Gully AI in the app: floating button and Ctrl+K.
+  await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
+  await launcherWorks(page, 'app')
+  // A deep link opens its service page directly.
+  await page.goto(BASE + '/app#deepcore')
+  await page.locator('[data-service="deepcore"]').getByTestId('service-header').waitFor()
+  check('app: #deepcore deep-links to its page', (await page.locator('main[data-page]').getAttribute('data-page')) === 'deepcore')
+  await w.verify()
+  await ctx.close()
+
+  // 390 px: the mobile menu sheet with the same groups, every service without horizontal scroll.
+  const m = await newContext({ width: 390, height: 844, mobile: true, cookie: cookieOf(api3) })
+  const mp = await m.newPage()
+  const mw = watch(mp, 'app services 390')
+  await mp.goto(BASE + '/app')
+  await mp.getByTestId('menu-button').tap()
+  const sheet = mp.getByTestId('app-sheet')
+  await sheet.waitFor()
+  check('app at 390: the menu sheet shows the groups', (await sheet.locator('[data-nav-group]').count()) === 4)
+  await shot(mp, 'app-390-menu')
+  await sheet.getByRole('link', { name: 'Overview', exact: true }).tap()
+  for (const [id] of SERVICES) {
+    await mp.goto(`${BASE}/app#${id}`)
+    await mp.locator(`[data-service="${id}"]`).getByTestId('service-header').waitFor({ timeout: 15_000 })
+    await mp.waitForTimeout(700)
+    await noHorizontalScroll(mp, `app #${id}`)
+    await shot(mp, `app-390-${id}`)
+  }
+  await mw.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
+  await m.close()
 })
 
 /* ------------------------------------------------------------- pay --- */
@@ -461,9 +607,9 @@ await step('404s', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/developers']) {
+  for (const p of ['/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/services', '/about', '/app']) {
     const w = watch(page, `${p} at 390`)
-    if (p === '/developers') w.expect(/\/api\/developer\//)
+    if (p === '/app') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
     await page.waitForLoadState('networkidle').catch(() => {})
     await noHorizontalScroll(page, p)

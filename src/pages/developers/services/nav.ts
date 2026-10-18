@@ -1,4 +1,4 @@
-import { AppWindow, Bot, Boxes, ChartCandlestick, CircleDollarSign, Rocket, Send, type LucideIcon } from 'lucide-react'
+import { AppWindow, Blocks, Bot, ChartCandlestick, CircleDollarSign, Rocket, Send, type LucideIcon } from 'lucide-react'
 
 /* The app's service pages (each a lazy chunk, ServiceView.tsx) and the sidebar's groups.
 
@@ -13,7 +13,7 @@ export type ServiceTab = 'tracker' | 'pay' | 'chain-kit' | 'ai' | 'deepcore' | '
 export const SERVICE_TABS: { id: ServiceTab; label: string; icon: LucideIcon }[] = [
   { id: 'tracker', label: 'Tracker', icon: ChartCandlestick },
   { id: 'pay', label: 'Gully Pay', icon: CircleDollarSign },
-  { id: 'chain-kit', label: 'Chain Kit', icon: Boxes },
+  { id: 'chain-kit', label: 'Chain Kit', icon: Blocks },
   { id: 'ai', label: 'Gully AI', icon: Bot },
   { id: 'deepcore', label: 'DeepCore launches', icon: Rocket },
   { id: 'widgets', label: 'Widgets', icon: AppWindow },

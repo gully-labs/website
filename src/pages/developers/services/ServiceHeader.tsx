@@ -40,7 +40,7 @@ export function StatusPill({ s }: { s: Status }) {
 export function KpiTile({ t, i }: { t: Tile; i: number }) {
   const known = typeof t.value === 'number' && Number.isFinite(t.value)
   return (
-    <div className="group relative flex min-w-0 flex-col gap-1 bg-surface px-4 py-3" style={{ animation: `gl-rise .4s ${i * 0.04}s ease both` }} data-tile={t.label}>
+    <div className="group relative flex min-w-0 flex-col gap-1 bg-surface px-4 py-3 shadow-[1px_0_0_var(--color-line),0_1px_0_var(--color-line)]" style={{ animation: `gl-rise .4s ${i * 0.04}s ease both` }} data-tile={t.label}>
       <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">{t.label}</span>
       {known ? (
         <AnimatedNumber className="font-display text-[26px] leading-none font-bold" style={{ color: t.tone }} value={t.value} format={t.format ?? NF.int} prefix={t.prefix} suffix={t.suffix} countUp />
@@ -60,14 +60,14 @@ export function ServiceHeader({ icon: Icon, title, desc, status, tiles, docs, pa
         <span className="grid size-10 shrink-0 place-items-center rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] text-gold" aria-hidden>
           <Icon size={18} />
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-[2px]">
+        <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-[2px]">
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="m-0 text-[20px] leading-tight font-semibold text-ink">{title}</h1>
             <StatusPill s={status} />
           </span>
           <p className="m-0 text-[13px] leading-[1.45] text-muted">{desc}</p>
         </div>
-        <nav aria-label={`${title} links`} className="flex flex-wrap items-center gap-2">
+        <nav aria-label={`${title} links`} className="flex flex-wrap items-center gap-2 max-[600px]:w-full">
           {actions}
           <ExtLink href={docs} className={pillSm}>
             <BookOpen size={14} aria-hidden /> Docs
@@ -77,7 +77,7 @@ export function ServiceHeader({ icon: Icon, title, desc, status, tiles, docs, pa
           </ExtLink>
         </nav>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] gap-px overflow-hidden rounded-[14px] border border-line bg-line" aria-label={`${title}, live figures`} role="group">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] overflow-hidden rounded-[14px] border border-line bg-surface" aria-label={`${title}, live figures`} role="group">
         {tiles.map((t, i) => (
           <KpiTile key={t.label} t={t} i={i} />
         ))}

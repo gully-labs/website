@@ -57,8 +57,8 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
   const perDay = useMemo(() => {
     if (!d?.launches.length) return []
     const oldest = Math.min(...d.launches.map((l) => Date.parse(l.createdAt)))
-    const n = Math.min(14, Math.max(2, Math.ceil((Date.now() - oldest) / 86_400_000) + 1))
     const today = new Date()
+    const n = Math.min(14, Math.max(2, Math.ceil((today.getTime() - oldest) / 86_400_000) + 1))
     return Array.from({ length: n }, (_, i) => {
       const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (n - 1 - i))
       const values: Record<string, number> = {}
@@ -88,10 +88,10 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
           </button>
         }
         tiles={[
-          { label: 'LAUNCHES 24H', value: venue ? (venue.counts.launches24h ?? null) : null, unknown: venuePend, note: 'every DeepCore chain' },
+          { label: 'LAUNCHES 24H', value: venue ? (venue.counts.launches24h ?? null) : null, unknown: venue ? 'not tracked yet' : venuePend, note: 'every DeepCore chain' },
           { label: 'LATEST LISTED', value: d && d.state !== 'unreadable' ? d.launches.length : null, unknown: pend(s.k), note: d?.asOf ? `read ${ago(d.asOf)}` : 'from the poller' },
-          { label: 'VOLUME 24H', value: venue?.volume24hUsd ?? null, format: NF.compactUsd, unknown: venuePend, note: 'DeepCore’s own API' },
-          { label: 'TVL', value: venue?.tvlUsd ?? null, format: NF.compactUsd, unknown: venuePend, note: venue?.lockedUsd != null ? `locked ${new Intl.NumberFormat('en-US', NF.compactUsd).format(venue.lockedUsd)}` : 'value locked' },
+          { label: 'VOLUME 24H', value: venue?.volume24hUsd ?? null, format: NF.compactUsd, unknown: venue ? 'not tracked yet' : venuePend, note: 'DeepCore’s own API' },
+          { label: 'TVL', value: venue?.tvlUsd ?? null, format: NF.compactUsd, unknown: venue ? 'not tracked yet' : venuePend, note: venue?.lockedUsd != null ? `locked ${new Intl.NumberFormat('en-US', NF.compactUsd).format(venue.lockedUsd)}` : 'value locked' },
         ]}
       />
 

@@ -28,8 +28,9 @@ export default function AiView() {
   const s = useAskStatus()
   const st = s === 'loading' ? null : s
   const tr = useTracker()
+  const [now] = useState(() => Date.now())
   const widest = tr.k === 'ok' ? [...tr.data.rows].filter((r) => r.gapPct !== null && r.status !== 'thin').sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0))[0] : undefined
-  const hours = st?.updatedAt ? Math.max(0, (Date.now() - Date.parse(st.updatedAt)) / 3_600_000) : null
+  const hours = st?.updatedAt ? Math.max(0, (now - Date.parse(st.updatedAt)) / 3_600_000) : null
   const status: Status = s === 'loading' ? { tone: 'checking', text: 'checking…' } : st?.configured ? { tone: 'live', text: 'online' } : st ? { tone: 'idle', text: 'not switched on here' } : { tone: 'down', text: 'unreadable' }
   return (
     <>

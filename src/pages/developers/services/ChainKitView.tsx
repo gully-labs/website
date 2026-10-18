@@ -1,4 +1,4 @@
-import { Boxes } from 'lucide-react'
+import { Blocks } from 'lucide-react'
 import { ChainKitExample } from '../../../components/charts/ProductExamples'
 import { ChainCompare } from '../../../components/tracker/MoreCharts'
 import { ChainLogo } from '../../../components/tracker/StockLogo'
@@ -24,7 +24,7 @@ export default function ChainKitView() {
   return (
     <>
       <ServiceHeader
-        icon={Boxes}
+        icon={Blocks}
         title="Chain Kit"
         desc="A Blockscout block explorer for your EVM chain, in your brand, deployed and operated by Gully Labs."
         status={status}

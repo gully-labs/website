@@ -5,7 +5,7 @@ import { Sparkline } from '../../../components/Sparkline'
 import { GapBars } from '../../../components/tracker/GapBars'
 import { ChainLogo, StockLogo } from '../../../components/tracker/StockLogo'
 import { StatusBadge } from '../../../components/tracker/TrackerTable'
-import { CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPp, fmtPrice, gapColor, stockPath, UP, useMovers, useTracker, type Mover, type TrackerRow } from '../../../lib/tracker'
+import { CHAIN_NAME, CHAIN_SHORT, DOWN, fmtGap, fmtPp, fmtPrice, gapColor, stockPath, UP, useMovers, useTracker, type Mover, type TrackerRow } from '../../../lib/tracker'
 import { ExtLink } from '../ExtLink'
 import { ErrorLine, Skeleton } from '../parts'
 import { chip } from '../styles'
@@ -82,7 +82,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
           { label: 'OFF BY 2%+', value: data ? flagged : null, unknown: pending, tone: flagged ? '#e8c060' : undefined, note: 'flagged now' },
           { label: 'TYPICAL GAP', value: median, format: NF.fixed2, suffix: '%', unknown: st.k === 'ok' ? 'not tracked yet' : pending, note: 'median, trusted pools' },
           { label: 'WIDEST', value: byAbs[0]?.gapPct ?? null, format: NF.signed2, suffix: '%', unknown: st.k === 'ok' ? 'none' : pending, tone: (byAbs[0]?.gapPct ?? 0) >= 0 ? UP : DOWN, note: byAbs[0] ? `${byAbs[0].ticker} · ${CHAIN_SHORT[byAbs[0].chain] ?? byAbs[0].chain}` : '—' },
-          { label: 'LIQUIDITY', value: liquidity, format: NF.compactUsd, unknown: pending, note: liquidity !== null ? `all pools · ${fmtCompactUsd(liquidity)}` : 'all pools' },
+          { label: 'LIQUIDITY', value: liquidity, format: NF.compactUsd, unknown: pending, note: 'all pools' },
         ]}
       />
 
