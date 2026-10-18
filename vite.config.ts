@@ -11,6 +11,7 @@ import { publicPlans } from './server/plans.mjs'
 import { alertChannels } from './server/telegram.mjs'
 import { geoFor } from './server/geo.mjs'
 import { handleAsk } from './server/ask.mjs'
+import { handleDeepcoreLaunches } from './server/deepcore.mjs'
 import { handleSolana } from './server/solana-routes.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
@@ -119,7 +120,7 @@ function serverModules(): Plugin {
           handleSolana(req, res, url, geoFor(req, true)).then((done: boolean) => done || next(), next)
           return
         }
-        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : null
+        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : null
         if (!handler) return next()
         handler(req, res, url).then((done) => {
           if (done) return

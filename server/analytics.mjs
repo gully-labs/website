@@ -10,7 +10,7 @@
 // Websites not created through self-serve, like the Gully Labs site itself, are never blocked.
 //
 // What else the proxy does itself (2026-10-17):
-// - GET /sso?code=…: one-click sign-in from the developer portal (analytics-sso.mjs).
+// - GET /sso?code=…: one-click sign-in from the app dashboard (analytics-sso.mjs).
 // - GET /login (a document navigation): a branded way in that points to the portal (one click, no
 //   password), with Umami's own form one link away at /login?form=password.
 // - Speed. Umami server-renders /login on every hit (1.5 to 3.5 s measured through Cloudflare), so the

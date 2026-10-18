@@ -1,4 +1,4 @@
-// End-to-end test of the developer portal v2 server: workspaces, roles, invites, profile, company,
+// End-to-end test of the app dashboard v2 server: workspaces, roles, invites, profile, company,
 // sessions, activity log, CSV exports, usage extensions and usage-threshold notices.
 //
 //   npm run test:workspaces        (no build needed)

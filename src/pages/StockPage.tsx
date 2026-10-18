@@ -15,7 +15,7 @@ import { NF } from '../components/charts/number-formats'
 import { PoolDepth } from '../components/tracker/PoolDepth'
 import { xPost } from '../lib/share'
 import { ageText, CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPp, gapColor, gapPost, stockPath, UP, useMovers, useTracker, type Load, type Movers, type Tracker, type TrackerRow, fairFeedChain, fairSourceLabel } from '../lib/tracker'
-import { DEVELOPERS_URL, isLocalHost } from '../site-host'
+import { APP_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
 import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
@@ -94,7 +94,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
   const elsewhere = data.rows.filter((r) => r.ticker === row.ticker && r.chain !== row.chain)
   const shareUrl = `https://gullylabs.xyz${stockPath(row)}`
   // The portal's Alerts tab, naming this stock (?alert=chain:TICKER) so the new-alert dialog can open prefilled.
-  const alerts = `${isLocalHost() ? '/developers' : `${DEVELOPERS_URL}/`}?alert=${row.chain}:${row.ticker}#alerts`
+  const alerts = `${isLocalHost() ? '/app' : `${APP_URL}/`}?alert=${row.chain}:${row.ticker}#alerts`
   const embed = `<div data-gully-widget="badge" data-ticker="${row.ticker}" data-chain="${row.chain}"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>`
   const [copiedEmbed, setCopiedEmbed] = useState(false)
 

@@ -10,7 +10,7 @@
   <a href="https://github.com/gully-labs"><img src="https://img.shields.io/badge/GitHub-0B0E13?style=for-the-badge&labelColor=0B0E13&logo=github&logoColor=white" alt="GitHub"></a>
 </p>
 
-<p align="center"><b>The source of gullylabs.xyz: the ledger, the stock token tracker, the docs and the developer portal.</b></p>
+<p align="center"><b>The source of gullylabs.xyz: the ledger, the stock token tracker, the docs and the app dashboard.</b></p>
 
 <p align="center"><sub>Part of <a href="https://gullylabs.xyz">Gully Labs</a>, a blockchain development company that builds, launches and runs its own Web3 projects.</sub></p>
 
@@ -27,14 +27,14 @@ The source of [gullylabs.xyz](https://gullylabs.xyz) and the sites that share it
 | [gullylabs.xyz](https://gullylabs.xyz) | The ledger: volume, value locked and fees across every Gully Labs project, read live from each project's own API |
 | [gullylabs.xyz/tracker](https://gullylabs.xyz/tracker) | The stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price |
 | [docs.gullylabs.xyz](https://docs.gullylabs.xyz) | Methodology, API reference, widget guide, SDK, plans and alerts |
-| [app.gullylabs.xyz](https://app.gullylabs.xyz) | The Gully Labs App (developer portal): sign in with a wallet, API keys, usage, alerts, analytics and payments. developers.gullylabs.xyz answers 301 to it |
+| [app.gullylabs.xyz](https://app.gullylabs.xyz) | The Gully Labs App (app dashboard): sign in with a wallet; API keys, usage, alerts, analytics, payments, and every service (tracker, Gully Pay, Chain Kit, Gully AI, DeepCore launches, widgets, Telegram) |
 | [gullylabs.xyz/widget](https://gullylabs.xyz/widget) | The embeddable widget and its builder |
 
 One React bundle renders the right app for each host. A dependency-free Node server (`server/`) serves it, answers the public API (`/api/tracker`, `/api/stats`, `/api/plans`) and forwards the blog and analytics hosts to their own containers.
 
 ## Stack
 
-React 19 · Vite · TypeScript · Tailwind CSS v4 · React Router · ECharts · wagmi + RainbowKit (developer portal only) · Node (no runtime dependencies) · Docker Compose.
+React 19 · Vite · TypeScript · Tailwind CSS v4 · React Router · ECharts · wagmi + RainbowKit (app dashboard only) · Node (no runtime dependencies) · Docker Compose.
 
 ## Run it locally
 

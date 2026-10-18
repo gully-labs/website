@@ -46,7 +46,7 @@ const mainRoutes = [
 // On the admin host every path is the dashboard; it has its own chrome (no site header or footer).
 const adminRoutes = [{ path: '*', element: <AdminRoute /> }]
 
-// On the app host (and developers.*, its old name) the dashboard is the home page; every other page
+// On the app host the dashboard is the home page; every other page
 // belongs to the main site, so it leaves for it with the same path.
 // The app is full-screen: it draws its own sidebar and header, so no site Layout here.
 const appRoutes = [

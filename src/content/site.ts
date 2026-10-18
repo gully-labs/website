@@ -1,5 +1,5 @@
 import { Activity, ArrowLeftRight, BellRing, Boxes, Building2, ChartNoAxesCombined, CircleDollarSign, Code2, FileJson, FlaskConical, History, Info, KeyRound, LayoutGrid, Layers, Mail, Network, Newspaper, Package, Puzzle, Sparkles, Tag, type LucideIcon } from 'lucide-react'
-import { DEVELOPERS_URL, DOCS_URL } from '../site-host'
+import { APP_URL, DOCS_URL } from '../site-host'
 
 export const SITE_URL = 'https://gullylabs.xyz'
 
@@ -22,7 +22,7 @@ export type SocialLabel = (typeof socialLinks)[number]['label']
 
 /** One entry in the header menus, the mobile sheet and the footer. Exactly one destination:
     `to` (an in-app route or /#section), `href` (another host), or `action: 'contact'` (the contact form).
-    `localTo` replaces `href` on localhost, where the developer portal is served under /developers. */
+    `localTo` replaces `href` on localhost, where the app dashboard is served under /app. */
 export type NavEntry = {
   label: string
   desc: string
@@ -36,7 +36,7 @@ export type NavEntry = {
 
 export type NavGroup = { id: 'products' | 'developers' | 'company'; label: string; icon: LucideIcon; items: NavEntry[] }
 
-const devPortal: NavEntry = { label: 'Developer portal', desc: 'Keys, usage, alerts and billing', href: DEVELOPERS_URL, localTo: '/developers', icon: KeyRound, match: ['/developers'] }
+const devPortal: NavEntry = { label: 'App dashboard', desc: 'Every product: keys, alerts, tracker, Pay, AI', href: APP_URL, localTo: '/app', icon: KeyRound, match: ['/app', '/developers'] }
 const analyticsApp: NavEntry = { label: 'Gully Analytics', desc: 'Open the analytics app', href: 'https://analytics.gullylabs.xyz', icon: ChartNoAxesCombined, newTab: true }
 
 export const productsNav: NavGroup = {
@@ -57,7 +57,7 @@ export const productsNav: NavGroup = {
 
 export const developersNav: NavGroup = {
   id: 'developers',
-  label: 'Developers',
+  label: 'App & API',
   icon: Code2,
   items: [
     { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources', to: '/ask', icon: Sparkles, match: ['/ask'], badge: 'New' },
@@ -87,6 +87,7 @@ export const navGroups: NavGroup[] = [productsNav, developersNav, companyNav]
 export const navLinks: NavEntry[] = [
   { label: 'Projects', desc: 'The venues we run', to: '/#projects', icon: FlaskConical, match: ['/projects'] },
   { label: 'Pricing', desc: 'API, alerts and analytics plans', to: '/pricing', icon: Tag, match: ['/pricing'] },
+  { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources (⌘K)', to: '/ask', icon: Sparkles, match: ['/ask'] },
 ]
 
 /** The "Launch app" split button: the main part opens the tracker, its menu lists the apps. */

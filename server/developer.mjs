@@ -1,4 +1,4 @@
-// /api/developer/* — the developer dashboard's API.
+// /api/developer/* — the app dashboard's API.
 //
 // Wallet accounts (Sign-In with Ethereum, EIP-4361; see siwe.mjs). The account is the wallet address,
 // lower-cased. Keys are issued instantly, up to MAX_KEYS_PER_ACCOUNT live keys per wallet.
@@ -21,7 +21,7 @@
 //   GET|POST /api/developer/analytics…        Gully Analytics self-serve: trial, websites, plan (analytics-accounts.mjs)
 //   GET|POST /api/developer/telegram…         link a Telegram chat to the account (telegram.mjs)
 //
-// Developer portal v2 (workspaces.mjs, profile.mjs, activity.mjs, exports.mjs):
+// App dashboard v2 (workspaces.mjs, profile.mjs, activity.mjs, exports.mjs):
 //   GET  /api/developer/me                    (with a session; a Bearer key still gets the legacy view below)
 //   POST /api/developer/profile | company,  GET /api/developer/sessions,  POST /api/developer/sessions/revoke
 //   POST /api/developer/workspace/switch | name,  GET /api/developer/team,  POST /api/developer/team/…

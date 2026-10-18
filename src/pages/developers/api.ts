@@ -1,4 +1,4 @@
-/* The developer dashboard's client for /api/developer/*. The session is an HttpOnly cookie the browser
+/* The app dashboard's client for /api/developer/*. The session is an HttpOnly cookie the browser
    sends by itself; every POST carries X-Requested-With, which the server requires (CSRF guard). */
 
 /** Fired on window when a signed-in request answers 401. */

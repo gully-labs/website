@@ -9,7 +9,7 @@ import { AnalyticsPlanCards, PlanSkeleton } from '../components/AnalyticsPlans'
 import { usePlans } from '../lib/plans'
 import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
-import { DEVELOPERS_URL, DOCS_URL, isLocalHost } from '../site-host'
+import { APP_URL, DOCS_URL, isLocalHost } from '../site-host'
 import type { AlertChannels, Offer } from './developers/api'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { PlanLimits } from '../components/charts/PlanLimits'
@@ -18,7 +18,7 @@ import { PlanLimits } from '../components/charts/PlanLimits'
    is read from GET /api/plans (server/plans.mjs); nothing numeric is typed into this page. */
 
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` })
-const DASHBOARD = isLocalHost() ? '/developers#billing' : `${DEVELOPERS_URL}/#billing`
+const DASHBOARD = isLocalHost() ? '/app#billing' : `${APP_URL}/#billing`
 
 /** Telegram delivery as the server reports it (GET /api/alerts/channels): null while unknown. */
 function useTelegramChannel(): AlertChannels['telegram'] | null {
@@ -40,9 +40,9 @@ function useTelegramChannel(): AlertChannels['telegram'] | null {
 
 const telegramAnswer = (tg: AlertChannels['telegram'] | null) =>
   tg === null
-    ? 'Alerts can also go to a Telegram chat when the server has its bot configured; the Alerts tab of the developer dashboard shows whether it is. Webhooks always work.'
+    ? 'Alerts can also go to a Telegram chat when the server has its bot configured; the Alerts tab of the app dashboard shows whether it is. Webhooks always work.'
     : tg.enabled
-      ? `Yes. In the Alerts tab of the developer dashboard, press Connect Telegram: it opens ${tg.bot ? `@${tg.bot}` : 'the bot'} with a one-time code that links the chat (or a group) to your wallet, with no chat id to copy. Then tick Telegram on any alert. Messages carry the gap, on-chain and fair prices, a link to the stock and a Mute 24h button.`
+      ? `Yes. In the Alerts tab of the app dashboard, press Connect Telegram: it opens ${tg.bot ? `@${tg.bot}` : 'the bot'} with a one-time code that links the chat (or a group) to your wallet, with no chat id to copy. Then tick Telegram on any alert. Messages carry the gap, on-chain and fair prices, a link to the stock and a Mute 24h button.`
       : 'Not yet. Telegram delivery works only once the bot is configured on the server, and it is not configured yet; the dashboard will offer it when it is. Webhooks work today.'
 
 const chainList = (o: Offer | null) => (o ? o.chains.map((c) => c.name).join(', ').replace(/, ([^,]*)$/, ' or $1') : 'Base, Ethereum, BNB Chain or Arbitrum')
@@ -55,13 +55,13 @@ const assetList = (o: Offer | null) =>
 const confirmationList = (o: Offer | null) => (o ? o.chains.map((c) => `${c.name} ${c.confirmations}`).join(', ') : 'a few, depending on the chain')
 
 const FAQ = (o: Offer | null, tg: AlertChannels['telegram'] | null): { q: string; a: string }[] => [
-  { q: 'How do I pay?', a: `In ETH, BNB, USDC or USDT on ${chainList(o)}. Pick a plan in the developer dashboard, then a chain and an asset; it gives a quote with the exact amount and the Gully Labs treasury address, valid for 20 minutes. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash.` },
+  { q: 'How do I pay?', a: `In ETH, BNB, USDC or USDT on ${chainList(o)}. Pick a plan in the app dashboard, then a chain and an asset; it gives a quote with the exact amount and the Gully Labs treasury address, valid for 20 minutes. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash.` },
   { q: 'What do I pay in?', a: `Prices are in US dollars. ${assetList(o)} Stablecoins are counted one to one with the dollar. ETH and BNB are priced by the Chainlink USD feed on the same chain when you ask for the quote, rounded up; if that feed has not updated for two hours, no quote is given in that coin.` },
   { q: 'Do you hold my funds?', a: 'No. Your coin or stablecoin goes straight to the Gully Labs treasury wallet in one transfer, the same as paying any address. There is no deposit, balance or card on file, and nothing is ever taken from your wallet without you signing it.' },
   { q: 'How is a payment checked?', a: `The server reads the transaction from a public node of its chain: it must have succeeded, paid the treasury at least the plan’s price in the quoted asset, and have enough blocks on top (${confirmationList(o)}). Each transaction counts once, on any chain. The plan starts the moment it is confirmed.` },
   { q: 'How do I cancel?', a: `Just don’t renew. A payment buys ${o?.periodDays ?? 30} days and nothing renews by itself; when the days run out the account returns to Free with its keys still working at the Free limit.` },
   { q: 'Can I extend or switch?', a: 'Paying again for the same plan adds days to the end of the current period. A different plan starts the day you pay for it; the days left on the old one are not carried over.' },
-  { q: 'When does Gully Analytics stop recording?', a: `At the monthly event limit of your plan, until the month turns (UTC) or you upgrade; and when a trial or plan ends without being extended. Your dashboard stays readable for ${o?.analytics?.graceDays ?? 30} days after a plan ends; after that the account may be deleted. Plans are bought in the Analytics tab of the developer dashboard.` },
+  { q: 'When does Gully Analytics stop recording?', a: `At the monthly event limit of your plan, until the month turns (UTC) or you upgrade; and when a trial or plan ends without being extended. Your dashboard stays readable for ${o?.analytics?.graceDays ?? 30} days after a plan ends; after that the account may be deleted. Plans are bought in the Analytics tab of the app dashboard.` },
   { q: 'Can alerts come to Telegram?', a: telegramAnswer(tg) },
   { q: 'What does Free include?', a: 'Keys, usage charts and the request log, as today, with the limits shown above. Calling the API without any key keeps working too, at the anonymous limit.' },
 ]

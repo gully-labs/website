@@ -1,0 +1,100 @@
+import { BellRing, Megaphone, MessageCircle, Send } from 'lucide-react'
+import { useMemo } from 'react'
+import { useAlertsView } from '../helpers'
+import { TelegramCard } from '../Alerts'
+import { ExtLink } from '../ExtLink'
+import { ErrorLine, Skeleton } from '../parts'
+import { pillGold, pillSm } from '../styles'
+import { LiveMarker, StackedDays } from '../vcharts'
+import { docsPage, type ServiceCtx } from './links'
+import { Section, ServiceHeader, type Status } from './ServiceHeader'
+
+/* Telegram, in the app: connect the workspace's chat to the bot (the Alerts page's TelegramCard:
+   one-time link, polled until the bot confirms), which alerts send there, Telegram deliveries per day
+   from the alerts' own delivery logs (GET /api/developer/alerts, every minute), and the Gully Labs News
+   channel, which the bot asks every user to follow. */
+
+const NEWS = 'https://t.me/GullyLabsNews'
+
+export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
+  const { view, err, load } = useAlertsView()
+  const tg = view?.telegram
+  const botName = tg?.bot ?? 'GullyLabsBot'
+  const bot = `https://t.me/${botName}`
+  const onTg = view ? view.alerts.filter((a) => a.telegram) : []
+  const days = useMemo(() => {
+    if (!view) return []
+    const today = new Date()
+    return Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (13 - i))
+      const values = { ok: 0, failed: 0 }
+      for (const a of view.alerts) for (const x of a.deliveries) if (x.channel === 'telegram' && !x.test && new Date(x.at).toDateString() === d.toDateString()) values[x.ok ? 'ok' : 'failed']++
+      return { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), values }
+    })
+  }, [view])
+  const sent = days.reduce((t, d) => t + d.values.ok, 0)
+  const failed = days.reduce((t, d) => t + d.values.failed, 0)
+  const status: Status = !view ? (err ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }) : !tg?.enabled ? { tone: 'idle', text: 'bot not configured here' } : tg.linked ? { tone: 'live', text: `linked · ${tg.linked.chatTitle}` } : { tone: 'idle', text: 'not linked yet' }
+  const pending = err ? 'unreadable' : '…'
+  return (
+    <>
+      <ServiceHeader
+        icon={Send}
+        title="Telegram"
+        desc="Gap and DeepCore launch alerts in a Telegram chat, with Mute and Open buttons; the bot also answers /gap, /top, /launches and Gully AI."
+        status={status}
+        docs={docsPage('plans-alerts')}
+        page={{ href: bot, label: 'Open the bot' }}
+        tiles={[
+          { label: 'ALERTS TO TELEGRAM', value: view ? onTg.length : null, unknown: pending, note: view ? `of ${view.alerts.length} alerts` : 'in this workspace' },
+          { label: 'SENT · 14D', value: view ? sent : null, unknown: pending, note: failed ? `${failed} failed` : 'delivered to the chat' },
+          { label: 'LINKED CHATS', value: view ? (tg?.linked ? 1 : 0) : null, unknown: pending, note: tg?.linked ? tg.linked.chatType : 'one per workspace' },
+        ]}
+      />
+      {err && !view && <ErrorLine onRetry={load}>Telegram could not be read just now: {err}</ErrorLine>}
+
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start gap-4 max-[1100px]:grid-cols-1">
+        <div className="flex min-w-0 flex-col gap-4">
+          {view ? <TelegramCard info={view.telegram} reload={load} /> : <Skeleton h={160} />}
+          <Section title="Channel and bot" sub="the bot asks every user to follow the News channel">
+            <div className="flex flex-wrap gap-2">
+              <ExtLink href={NEWS} className={pillGold}>
+                <Megaphone size={14} aria-hidden /> Gully Labs News
+              </ExtLink>
+              <ExtLink href={bot} className={pillSm}>
+                <MessageCircle size={14} aria-hidden /> @{botName}
+              </ExtLink>
+            </div>
+          </Section>
+        </div>
+        <Section
+          title="Telegram deliveries"
+          sub="per day, last 14 days · from your alerts' delivery logs"
+          aside={
+            <button type="button" onClick={() => ctx.go('alerts')} className={pillSm}>
+              <BellRing size={14} aria-hidden /> Alerts
+            </button>
+          }
+        >
+          {!view ? (
+            <Skeleton h={180} />
+          ) : sent || failed ? (
+            <StackedDays height={180} days={days} kinds={[{ id: 'ok', name: 'delivered', color: '#6fcf6a' }, { id: 'failed', name: 'failed', color: '#ff8a7a' }]} label={`Telegram deliveries over 14 days: ${sent} delivered, ${failed} failed.`} />
+          ) : (
+            <LiveMarker text={onTg.length ? 'Watching: deliveries chart here as alerts fire' : 'No alert sends to Telegram yet: tick Telegram on an alert'} height={180} />
+          )}
+          {view && onTg.length > 0 && (
+            <ul className="m-0 flex list-none flex-col gap-1 p-0">
+              {onTg.slice(0, 6).map((a) => (
+                <li key={a.id} className="flex items-center gap-2 text-[13px] text-ink-2">
+                  <span className={`size-[6px] rounded-full ${a.enabled ? 'bg-green' : 'bg-faint'}`} aria-hidden />
+                  <span className="truncate">{a.name || (a.ticker ? `${a.ticker} gap` : 'DeepCore launches')}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      </div>
+    </>
+  )
+}

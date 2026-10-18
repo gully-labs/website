@@ -47,7 +47,7 @@ export function Teams() {
     >
       <Section id="workspaces" title="Workspaces">
         <P>
-          When a wallet first signs in to the <Ext href="https://app.gullylabs.xyz">developer portal</Ext>, it gets its own workspace and is its <b>owner</b>. Everything in the portal belongs to the workspace: API keys, gap and DeepCore launch alerts, the linked Telegram chat, Gully Analytics, the plan and its payments. Members share all of it; nothing is copied per person.
+          When a wallet first signs in to the <Ext href="https://app.gullylabs.xyz">app dashboard</Ext>, it gets its own workspace and is its <b>owner</b>. Everything in the portal belongs to the workspace: API keys, gap and DeepCore launch alerts, the linked Telegram chat, Gully Analytics, the plan and its payments. Members share all of it; nothing is copied per person.
         </P>
         <List>
           <li>The workspace is named after its owner (<C>0x1234…abcd’s workspace</C>) until an admin or the owner renames it.</li>

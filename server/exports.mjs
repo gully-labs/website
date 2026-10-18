@@ -1,4 +1,4 @@
-// CSV exports for the developer portal v2 (signed-in, read-only, scoped to the active workspace):
+// CSV exports for the app dashboard v2 (signed-in, read-only, scoped to the active workspace):
 //   GET /api/developer/export/usage.csv?range=24h|7d|30d   per bucket and key: time, key, total, ok, client_err, limited, server_err
 //   GET /api/developer/export/payments.csv                 the workspace owner's payments from the billing ledger
 // Every cell is escaped: quoted when it holds a comma, quote or line break, and a text value starting

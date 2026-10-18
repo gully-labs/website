@@ -12,7 +12,7 @@ import { LiveWidget } from './LiveWidget'
 
 const DOCS = 'https://docs.gullylabs.xyz/widget'
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.06}s ease both` })
-const card = 'flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-7 max-[600px]:p-5'
+const cardBase = 'flex min-w-0 flex-col gap-5 rounded-card border border-line bg-surface p-7 max-[600px]:p-5'
 
 const TYPES: { key: WidgetType; name: string; note: string }[] = [
   { key: 'ticker', name: 'Ticker', note: 'A scrolling strip: ticker, price, gap. Pauses on hover.' },
@@ -59,9 +59,32 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
 const select =
   'min-h-11 w-full rounded-input border border-line-strong bg-surface-deep px-3 font-mono text-[13px] text-ink transition-colors hover:border-line-hover focus:border-gold disabled:opacity-60'
 
-/* The embed builder: every option the script reads, a live preview running the real widget.js against
-   this site's API, and the snippet to paste. */
+/* The embed builder page: the hero, then the builder. */
 export function WidgetPage() {
+  return (
+    <>
+      <Seo title="Tracker widget" description="Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps, read from Chainlink and the pools themselves." />
+
+      <section className="flex flex-col gap-5 px-page pt-[64px] pb-10">
+        <span className={eyebrow} style={rise(0)}>
+          WIDGET · EMBED THE TRACKER
+        </span>
+        <h1 className="m-0 max-w-[900px] font-display text-h1 font-extrabold uppercase" style={rise(1)}>
+          Put the live gap <span className="text-gold">on your page</span>
+        </h1>
+        <p className="m-0 max-w-[720px] text-[18px] leading-[1.55] text-muted" style={rise(2)}>
+          One script tag and one element. Every figure is read live from the tracker, refreshed every minute, and drawn inside its own shadow root so it never clashes with your styles.
+        </p>
+      </section>
+
+      <WidgetBuilder className="px-page pb-[96px]" />
+    </>
+  )
+}
+
+/* The embed builder: every option the script reads, a live preview running the real widget.js against
+   this site's API, and the snippet to paste. Also embedded in the app dashboard's Widgets page. */
+export function WidgetBuilder({ className = '', compact = false }: { className?: string; compact?: boolean }) {
   const st = useTracker()
   const data = st.k === 'ok' ? st.data : null
   const [type, setType] = useState<WidgetType>('ticker')
@@ -92,23 +115,10 @@ export function WidgetPage() {
   const chartRow = type === 'badge' ? stocks.find((s) => s.ticker === effTicker) : [...chartPool].sort((a, b) => (b.pool?.liquidityUsd ?? 0) - (a.pool?.liquidityUsd ?? 0))[0]
   const ready = type !== 'badge' || !!effTicker
 
+  const card = compact ? 'flex min-w-0 flex-col gap-4 rounded-[14px] border border-line bg-surface p-4' : cardBase
   return (
     <>
-      <Seo title="Tracker widget" description="Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps, read from Chainlink and the pools themselves." />
-
-      <section className="flex flex-col gap-5 px-page pt-[64px] pb-10">
-        <span className={eyebrow} style={rise(0)}>
-          WIDGET · EMBED THE TRACKER
-        </span>
-        <h1 className="m-0 max-w-[900px] font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-          Put the live gap <span className="text-gold">on your page</span>
-        </h1>
-        <p className="m-0 max-w-[720px] text-[18px] leading-[1.55] text-muted" style={rise(2)}>
-          One script tag and one element. Every figure is read live from the tracker, refreshed every minute, and drawn inside its own shadow root so it never clashes with your styles.
-        </p>
-      </section>
-
-      <section className="grid grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start gap-5 px-page pb-[96px] max-[960px]:grid-cols-1">
+      <section className={`grid grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start gap-5 max-[960px]:grid-cols-1 ${className}`}>
         <div className={card} style={rise(3)}>
           <h2 className="m-0 font-display text-h4 font-bold uppercase">Build it</h2>
 

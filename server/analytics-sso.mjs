@@ -1,4 +1,4 @@
-// One-click sign-in to Gully Analytics from the developer portal ("Open Gully Analytics").
+// One-click sign-in to Gully Analytics from the app dashboard ("Open Gully Analytics").
 //
 //   POST /api/developer/analytics/sso   (portal session + CSRF header; role developer or above, via the
 //        gate in developer.mjs: the 'analytics' write category)  -> 201 { url, expiresAt }
@@ -146,11 +146,11 @@ const BRAND = '<a class="brand" href="https://gullylabs.xyz/">Gully <b>Labs</b> 
 export function ssoPage(req, url) {
   const r = exchangeSso(req, url.searchParams.get('code'))
   if (!r.ok) {
-    const why = r.reason === 'limited' ? 'Too many sign-in attempts from this network. Wait ten minutes, then open Gully Analytics from the developer portal again.' : r.reason === 'browser' ? 'This sign-in link was made for another browser. Open Gully Analytics from the developer portal in this browser.' : 'This sign-in link has expired or was already used. Links work once, for 60 seconds.'
+    const why = r.reason === 'limited' ? 'Too many sign-in attempts from this network. Wait ten minutes, then open Gully Analytics from the app dashboard again.' : r.reason === 'browser' ? 'This sign-in link was made for another browser. Open Gully Analytics from the app dashboard in this browser.' : 'This sign-in link has expired or was already used. Links work once, for 60 seconds.'
     return brandPage({
       title: 'Sign-in link expired · Gully Analytics',
       status: r.reason === 'limited' ? 429 : 410,
-      body: `${BRAND}<p class="eyebrow">One-click sign-in</p><h1>Link expired</h1><p>${esc(why)}</p><a class="btn primary" href="${esc(portalUrl())}">Open the developer portal</a><a class="btn ghost" href="/login?form=password">Sign in with a password</a>`,
+      body: `${BRAND}<p class="eyebrow">One-click sign-in</p><h1>Link expired</h1><p>${esc(why)}</p><a class="btn primary" href="${esc(portalUrl())}">Open the app dashboard</a><a class="btn ghost" href="/login?form=password">Sign in with a password</a>`,
     })
   }
   const nonce = crypto.randomBytes(16).toString('base64')
@@ -170,8 +170,8 @@ export function loginInterstitial(trialDays) {
   const portal = esc(portalUrl())
   return brandPage({
     title: 'Sign in · Gully Analytics',
-    body: `${BRAND}<p class="eyebrow">Gully Analytics</p><h1>Sign in</h1><p>Your dashboard opens straight from the developer portal, signed in with your wallet. No password needed.</p>
-<a class="btn primary" href="${portal}">Sign in from the developer portal</a>
+    body: `${BRAND}<p class="eyebrow">Gully Analytics</p><h1>Sign in</h1><p>Your dashboard opens straight from the app dashboard, signed in with your wallet. No password needed.</p>
+<a class="btn primary" href="${portal}">Sign in from the app dashboard</a>
 <a class="btn ghost" href="/login?form=password">Sign in with username and password</a>
 <nav class="links" aria-label="Account help"><a href="${portal}">Forgot password?<b>Reset it in the portal</b></a><a href="${portal}">No account?<b>Start the ${esc(trialDays)}-day free trial</b></a></nav>`,
   })

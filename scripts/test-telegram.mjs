@@ -281,8 +281,8 @@ try {
   const cap1 = an1?.body.caption ?? ''
   check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · stock tokens vs their fair price, live.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain, BNB Chain and Solana`) && cap1.includes('🔔 gap alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
-  check('the banner carries the main menu: 8 buttons in 4 rows', menuKb.length === 4 && flat(menuKb).length === 8 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 Developer portal ↗', '⚙️ Settings']))
-  check('the menu: Developer portal is a url button, the others are routes', button(menuKb, /Developer portal/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
+  check('the banner carries the main menu: 8 buttons in 4 rows', menuKb.length === 4 && flat(menuKb).length === 8 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '💼 App dashboard ↗', '⚙️ Settings']))
+  check('the menu: App dashboard is a url button, the others are routes', button(menuKb, /App dashboard/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'set']))
   check('the banner file_id is stored after the first upload', JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner?.fileId === BANNER_FILE_ID)
   await say(privateChat(801), '/start')
   const an2 = calls.filter((c) => c.method === 'sendAnimation' && c.body.chat_id === '801').at(-1)
@@ -738,7 +738,7 @@ try {
   const unl = await dev.post('/api/developer/telegram/unlink')
   check('the dashboard can unlink, and the chat is told', unl.status === 200 && (await dev.call('/api/developer/telegram')).data.linked === null)
   await new Promise((r) => setTimeout(r, 1_300))
-  check('the unlinked chat got a notice', /unlinked from the developer dashboard/.test(lastText(111)))
+  check('the unlinked chat got a notice', /unlinked from the app dashboard/.test(lastText(111)))
 
   /* --------------------------------------------------------- quality sweeps --- */
   const spaced = tg.sendGrantsForTest(111)

@@ -459,7 +459,7 @@ async function linkWithCode(msg, code) {
   const now = Date.now()
   const hash = sha256(code)
   const c = db.codes.find((x) => x.hash === hash)
-  if (!c || c.usedAt || Date.parse(c.expiresAt) <= now) return 'That link has expired or was already used. Make a new one in the developer dashboard (Alerts tab, Connect Telegram).'
+  if (!c || c.usedAt || Date.parse(c.expiresAt) <= now) return 'That link has expired or was already used. Make a new one in the app dashboard (Alerts tab, Connect Telegram).'
   const fromId = msg.from?.id !== undefined ? String(msg.from.id) : null
   if (!fromId) return 'This chat could not be linked: Telegram did not say who sent the command.'
   const existing = linkOfChat(chatId)
@@ -647,7 +647,7 @@ async function onMessage(msg) {
     if (code && /^[A-Za-z0-9_-]{16,64}$/.test(code)) {
       const text = await linkWithCode(msg, code)
       if (text) view = { text, keyboard: /^✅/.test(text) ? ui.MENU_KEYBOARD : [[ubtn('🔗 Link wallet ↗', ui.PORTAL_ALERTS)], [btn('🏠 Menu', 'm')]] }
-    } else if (code) view = { text: 'That link is not valid. Make a new one in the developer dashboard (Alerts tab, Connect Telegram).', keyboard: [[ubtn('🔗 Link wallet ↗', ui.PORTAL_ALERTS)], [btn('🏠 Menu', 'm')]] }
+    } else if (code) view = { text: 'That link is not valid. Make a new one in the app dashboard (Alerts tab, Connect Telegram).', keyboard: [[ubtn('🔗 Link wallet ↗', ui.PORTAL_ALERTS)], [btn('🏠 Menu', 'm')]] }
     else {
       const b = await sendBanner(chatId)
       if (b.id) ui.setState(chatId, b.banner ? { bannerId: b.id, viewId: null, pending: null } : { bannerId: null, viewId: b.id, pending: null })
@@ -672,7 +672,7 @@ async function onMessage(msg) {
     if (!mayAct(link, msg.from?.id)) view = { text: 'Only the person who linked this group can unlink it.', keyboard: [[btn('🏠 Menu', 'm')]] }
     else {
       unlink(link)
-      view = { text: 'Unlinked. This chat no longer receives alerts. Link again from the developer dashboard at any time.', keyboard: [[ubtn('🔗 Link again ↗', ui.PORTAL_ALERTS), btn('🏠 Menu', 'm')]] }
+      view = { text: 'Unlinked. This chat no longer receives alerts. Link again from the app dashboard at any time.', keyboard: [[ubtn('🔗 Link again ↗', ui.PORTAL_ALERTS), btn('🏠 Menu', 'm')]] }
     }
   } else return
   if (view) await showNew(chatId, view)
@@ -853,7 +853,7 @@ async function routeView(route, c) {
     if (route === 'suly') {
       unlink(link)
       c.answer('🔓 Unlinked')
-      return { text: '<b>🔓 Unlinked</b>\nThis chat no longer receives alerts. Link again from the developer portal at any time.', keyboard: [[ubtn('🔗 Link again ↗', ui.PORTAL_ALERTS)], [btn('🏠 Menu', 'm')]] }
+      return { text: '<b>🔓 Unlinked</b>\nThis chat no longer receives alerts. Link again from the app dashboard at any time.', keyboard: [[ubtn('🔗 Link again ↗', ui.PORTAL_ALERTS)], [btn('🏠 Menu', 'm')]] }
     }
     if (route === 'smu') {
       let n = 0
@@ -1065,7 +1065,7 @@ export async function handleTelegramAccount(req, res, url, address) {
     const l = linkedChat(address)
     if (!l) return json(res, 200, { ok: true, linked: null }), true
     unlink(l)
-    sendText(l.chatId, 'This chat was unlinked from the developer dashboard. It no longer receives alerts.').catch(() => undefined)
+    sendText(l.chatId, 'This chat was unlinked from the app dashboard. It no longer receives alerts.').catch(() => undefined)
     return json(res, 200, { ok: true, linked: null }), true
   }
   return json(res, 404, { error: 'not found' }), true

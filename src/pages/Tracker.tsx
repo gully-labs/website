@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { ArrowUpRight, BookOpen, KeyRound, Puzzle } from 'lucide-react'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
-import { DEVELOPERS_URL, DOCS_URL } from '../site-host'
+import { APP_URL, DOCS_URL } from '../site-host'
 import { ChainLogo, StockLogo } from '../components/tracker/StockLogo'
 import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
@@ -56,7 +56,7 @@ function Card({ title, sub, children, i, className = '' }: { title: string; sub?
 const BUILD = [
   { title: 'Public API', body: 'Every row on this page as JSON, plus 7 days of gap history. 60 calls a minute with no key.', href: `${DOCS_URL}/api`, icon: BookOpen, ext: true },
   { title: 'Embed widget', body: 'One script tag puts a live gap card for any stock on your site.', href: '/widget', icon: Puzzle, ext: false },
-  { title: 'Developer portal', body: 'Sign in with a wallet and create API keys instantly: 600 calls a minute, with usage in one place.', href: DEVELOPERS_URL, icon: KeyRound, ext: false },
+  { title: 'App dashboard', body: 'Sign in with a wallet and create API keys instantly: 600 calls a minute, with usage in one place.', href: APP_URL, icon: KeyRound, ext: false },
 ]
 
 export function Tracker() {

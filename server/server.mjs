@@ -7,7 +7,7 @@ import { readStats } from './stats.mjs'
 import { onSnapshot, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts } from './alerts.mjs'
-import { handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
+import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
@@ -20,7 +20,7 @@ import { handleBlog } from './blog.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
-import { APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
+import { APP_URL, isAppHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
@@ -99,12 +99,12 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods
 const notifyHits = new Map()
 
 /* Security headers. The CSP keeps scripts to this origin (no inline scripts exist in the build); styles allow
-   inline because React style props need it; connections allow any https/wss origin because the developer
-   portal's wallets and payment checks talk to public RPCs and WalletConnect relays chosen at runtime.
-   The admin host and the app (and its old developers host) may not be framed at all; the main site only by itself. */
+   inline because React style props need it; connections allow any https/wss origin because the app
+   dashboard's wallets and payment checks talk to public RPCs and WalletConnect relays chosen at runtime.
+   The admin host and the app may not be framed at all; the main site only by itself. */
 function securityHeaders(host) {
   const local = /^(localhost|127.0.0.1|[::1])$/.test(host)
-  const strict = host.startsWith('admin.') || isAppHost(host) || isLegacyDevelopersHost(host)
+  const strict = host.startsWith('admin.') || isAppHost(host)
   // The docs host runs the widget's live examples, which load https://gullylabs.xyz/widget.js (its
   // reads of /api/tracker and the logos are covered by connect-src https: and img-src https:).
   const docs = host.startsWith('docs.') || local
@@ -154,18 +154,12 @@ const server = http.createServer(async (req, res) => {
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
   }
-  // The Gully Labs App (the developer dashboard) lives on app.gullylabs.xyz (hosts.mjs). Elsewhere /app and
-  // /developers move there; on that host any other page belongs to the main site.
+  // The Gully Labs App (the app dashboard) lives on app.gullylabs.xyz (hosts.mjs). Elsewhere /app and the
+  // retired /developers path answer 301 to https://app.gullylabs.xyz/; on that host any other page belongs
+  // to the main site.
   const isApp = isAppHost(host)
   const isPage = !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/assets/') && !/\.[a-z0-9]+$/i.test(url.pathname)
-  // Its old host, developers.gullylabs.xyz: every page answers 301 to the app with the same path and query
-  // (browsers keep the #fragment across a redirect, so #billing and #invite=… still land). /api/* is NOT
-  // redirected: a 301 on a POST breaks clients, so the API (and the build's files, for tabs left open) are
-  // still served here during the transition. Deprecated: drop this branch once the old host is retired.
-  if (isLegacyDevelopersHost(host) && isPage) {
-    return send(res, 301, '', { Location: APP_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
-  }
-  if (!isApp && !isLegacyDevelopersHost(host) && !isLocal && /^\/(app|developers)(\/|$)/.test(url.pathname)) {
+  if (!isApp && !isLocal && /^\/(app|developers)(\/|$)/.test(url.pathname)) {
     return send(res, 301, '', { Location: `${APP_URL}/`, 'Cache-Control': 'public, max-age=3600' })
   }
   if (isApp && isPage && url.pathname !== '/') {
@@ -201,6 +195,8 @@ const server = http.createServer(async (req, res) => {
   }
   // DeepCore router quote for the stock pages' comparison panel (deepcore.mjs): cached and rate limited here.
   if (url.pathname === '/api/deepcore/quote') return void (await handleDeepcoreQuote(req, res, url, geoFor(req, isLocal)))
+  // DeepCore's latest launches from the poller's cache (the app dashboard's DeepCore view). Public.
+  if (url.pathname === '/api/deepcore/launches') return void (await handleDeepcoreLaunches(req, res, url))
   // Solana (solana-routes.mjs): the RPC proxy, Solana Pay reference lookup and the geo-gated Jupiter quote/swap proxy.
   if (url.pathname.startsWith('/api/solana/')) {
     if (await handleSolana(req, res, url, geoFor(req, isLocal))) return

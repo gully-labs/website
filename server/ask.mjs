@@ -218,7 +218,7 @@ export async function runTool(name, input = {}) {
         paymentChains: p.chains.map((c) => c.name),
         paymentAssets: [...new Set((p.assets ?? []).map((a) => a.symbol).filter(Boolean))],
         checkoutOpen: !!p.checkout?.enabled,
-        howToPay: 'From the developer portal (https://app.gullylabs.xyz), Billing tab. Payment addresses are only ever shown there.',
+        howToPay: 'From the app dashboard (https://app.gullylabs.xyz), Billing tab. Payment addresses are only ever shown there.',
         page: `${SITE}/pricing`,
       }
     }

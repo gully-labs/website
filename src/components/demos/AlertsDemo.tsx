@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
 import { ExternalLink, Send, Webhook } from 'lucide-react'
 import { useReducedMotion } from '../charts/chart-utils'
-import { DEVELOPERS_URL, isLocalHost } from '../../site-host'
+import { APP_URL, isLocalHost } from '../../site-host'
 import type { Movers, Tracker, TrackerRow } from '../../lib/tracker'
 import type { AlertChannels, Offer } from '../../pages/developers/api'
 
@@ -15,7 +15,7 @@ import type { AlertChannels, Offer } from '../../pages/developers/api'
 const SITE_HOST = 'gullylabs.xyz'
 const CHAIN_NAMES: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain' }
 const TRUSTED = new Set(['in-line', 'drifting', 'premium', 'discount'])
-const DEV_ALERTS = isLocalHost() ? '/developers#alerts' : `${DEVELOPERS_URL}/#alerts`
+const DEV_ALERTS = isLocalHost() ? '/app#alerts' : `${APP_URL}/#alerts`
 const EXAMPLE_WALLET = '0x0f83…e965'
 const MIN_TYPING_MS = 650
 
@@ -418,7 +418,7 @@ export default function AlertsDemo(): JSX.Element {
           {limitsText && <li>{limitsText}</li>}
           <li>
             <a href={DEV_ALERTS} className="inline-flex min-h-11 items-center gap-1.5 text-ink-2 underline-offset-4 hover:text-gold hover:underline">
-              Connect it in the developer portal, Alerts tab <ExternalLink size={12} aria-hidden />
+              Connect it in the app dashboard, Alerts tab <ExternalLink size={12} aria-hidden />
             </a>
           </li>
         </ul>

@@ -22,7 +22,7 @@ export const PLANS = {
 
 /* ------------------------------------------------------ Gully Analytics --- */
 
-// OWNER-EDITABLE: Gully Analytics plans (self-serve sign-up in the developer portal, enforced by the
+// OWNER-EDITABLE: Gully Analytics plans (self-serve sign-up in the app dashboard, enforced by the
 // proxy in analytics.mjs). `sites` is how many websites an account may track; `eventsPerMonth` is how
 // many tracker calls (page views and custom events, counted per UTC calendar month across all of the
 // account's sites) are accepted before the proxy refuses more. THE PRICES ARE PLACEHOLDERS until the

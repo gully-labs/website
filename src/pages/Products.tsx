@@ -57,7 +57,7 @@ const ANALYTICS: Product = {
     { icon: ShieldCheck, title: 'Opt-in, small, open', body: 'Web3 tracking turns on with one attribute; the whole script stays a few kilobytes. The source is public.' },
   ],
   how: [
-    { title: 'Sign in and add your site', body: 'Connect a wallet in the developer portal, start the free trial and add your domain.' },
+    { title: 'Sign in and add your site', body: 'Connect a wallet in the app dashboard, start the free trial and add your domain.' },
     { title: 'Add the script', body: 'One tag on your dapp, with data-web3="true".' },
     { title: 'Use your dapp as usual', body: 'Connects, chain switches and transactions are recorded as they happen.' },
     { title: 'Read the Web3 tab', body: 'Wallets, connect rate, transactions, chains and the funnel for any date range.' },

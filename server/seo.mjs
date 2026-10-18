@@ -4,7 +4,7 @@
 // The <Seo> component keeps matching titles in the browser; keep the two in step.
 
 import fs from 'node:fs'
-import { APP_HOST, APP_URL, isAppHost, isLegacyDevelopersHost } from './hosts.mjs'
+import { APP_HOST, APP_URL, isAppHost } from './hosts.mjs'
 
 const SITE = 'https://gullylabs.xyz'
 const DOCS = 'https://docs.gullylabs.xyz'
@@ -57,7 +57,7 @@ const DOCS_PAGES = {
   '/analytics': ['Gully Analytics · Gully Labs docs', 'Gully Analytics: sign up with a wallet, install the tracker, Web3 events, address privacy modes, plans and what happens at the quota or when a plan lapses.'],
   '/plans-alerts': ['Plans & alerts · Gully Labs docs', 'Paid API plans paid in ETH, BNB, USDC or USDT on four chains, gap alerts by webhook or Telegram, the webhook payload and how to verify its signature.'],
   '/gully-pay': ['Gully Pay · Gully Labs docs', 'Gully Pay: invoices and reusable pay links in ETH, BNB, USDC or USDT, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them.'],
-  '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the developer portal: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
+  '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the app dashboard: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],
 }
@@ -102,8 +102,8 @@ export function pageMeta(host, pathname) {
     if (m) return { title: m[0], description: m[1], canonical: DOCS + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-docs.png` }
     return { title: 'Not found · Gully Labs docs', description: DOCS_PAGES['/'][1], canonical: null, found: false }
   }
-  // The Gully Labs App (its old developers host only answers 301s for pages, but names the app if asked).
-  if (isAppHost(host) || isLegacyDevelopersHost(host))
+  // The Gully Labs App.
+  if (isAppHost(host))
     return { title: APP_TITLE, description: APP_DESCRIPTION, canonical: `${APP}/`, found: true, image: `${SITE}/social/og-developers.png` }
   // The admin app is one page at the root of its host; any other path is not a page.
   if (host.startsWith('admin.')) return { title: p === '/' ? 'Admin · Gully Labs' : 'Not found · Gully Labs', description: 'Private.', canonical: null, found: p === '/', noindex: true }
@@ -147,15 +147,12 @@ export function renderHead(source, meta) {
 /** robots.txt per host. */
 export function robotsFor(host) {
   if (host.startsWith('admin.')) return 'User-agent: *\nDisallow: /\n'
-  // The old developers host names the app's sitemap: it has none of its own any more.
-  const base = host.startsWith('docs.') ? DOCS : isAppHost(host) || isLegacyDevelopersHost(host) ? APP : SITE
+  const base = host.startsWith('docs.') ? DOCS : isAppHost(host) ? APP : SITE
   return `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml\n`
 }
 
-/** sitemap.xml per host: each host lists only its own pages, as the protocol requires. null: the host has
-    none (the old developers host, whose pages all moved to the app). */
+/** sitemap.xml per host: each host lists only its own pages, as the protocol requires. */
 export function sitemapFor(host) {
-  if (isLegacyDevelopersHost(host)) return null
   const today = new Date().toISOString().slice(0, 10)
   let urls
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])

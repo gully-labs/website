@@ -886,9 +886,9 @@ export async function handleChannelAdmin(req, res, url) {
     if (v.errors.length) return send(400, { error: v.errors.join(' '), errors: v.errors })
     if (!telegramEnabled()) return send(503, { error: 'Telegram is not configured on the server (TELEGRAM_BOT_TOKEN).' })
     const asked = body.chatId != null && String(body.chatId) !== '' ? String(body.chatId) : db.settings.testChat
-    if (!asked) return send(400, { error: 'Pick your linked Telegram chat for tests first (link it from the developer portal, Alerts, Connect Telegram).' })
+    if (!asked) return send(400, { error: 'Pick your linked Telegram chat for tests first (link it from the app dashboard, Alerts, Connect Telegram).' })
     const link = linkedChatById(asked)
-    if (!link) return send(400, { error: 'That chat is not linked to any account. Link your own Telegram from the developer portal first.' })
+    if (!link) return send(400, { error: 'That chat is not linked to any account. Link your own Telegram from the app dashboard first.' })
     if (db.settings.testChat !== link.chatId) {
       db.settings.testChat = link.chatId
       save()

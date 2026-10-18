@@ -4,7 +4,7 @@
 //   API key (Authorization: Bearer gl_live_…): the per-key limit of its wallet's plan (plans.mjs)
 //
 // Fixed one-minute windows held in memory (fast; a restart forgets them, which only ever errs in the
-// caller's favour). Usage per key is kept for the developer dashboard and flushed to disk every minute:
+// caller's favour). Usage per key is kept for the app dashboard and flushed to disk every minute:
 // totals, a per-day count, per-hour buckets split by status class (kept 31 days) and a ring buffer of
 // the last 50 requests (time, path, status, latency).
 // Note: responses are edge-cacheable, so a request served by Cloudflare's cache never reaches this

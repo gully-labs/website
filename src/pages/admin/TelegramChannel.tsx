@@ -443,7 +443,7 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
             <label className="flex min-w-[200px] flex-1 flex-col gap-2 text-[13px] text-ink-2">
               Test chat (your linked Telegram)
               <select value={testChat} onChange={(e) => setTestChat(e.target.value)} className={field}>
-                {!view.linkedChats.length && <option value="">No linked chat: link yours in the developer portal</option>}
+                {!view.linkedChats.length && <option value="">No linked chat: link yours in the app dashboard</option>}
                 {view.linkedChats.map((c) => (
                   <option key={c.chatId} value={c.chatId}>
                     {c.chatTitle ?? c.chatType} · {short(c.address)}

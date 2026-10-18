@@ -85,7 +85,7 @@ export const MENU_KEYBOARD = [
   [btn('📈 Stocks', 'stk'), btn('🔥 Top gaps', 'top')],
   [btn('🚀 Movers', 'mv:24h'), btn('🛰 DeepCore launches', 'dc:0')],
   [btn('🔔 My alerts', 'ma'), btn('🤖 Gully AI', 'ai')],
-  [ubtn('💼 Developer portal ↗', PORTAL), btn('⚙️ Settings', 'set')],
+  [ubtn('💼 App dashboard ↗', PORTAL), btn('⚙️ Settings', 'set')],
 ]
 
 /** The /start banner caption. `n` is the tracker's live count of stock tokens, or null when unreadable. */
@@ -112,7 +112,7 @@ export function helpView(linked) {
     '/movers · biggest gap moves',
     '/launches · latest DeepCore launches',
     '/ask · a question for Gully AI',
-    ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['Alerts: link your wallet in the developer portal, Alerts tab, Connect Telegram.']),
+    ...(linked ? ['/alerts · your alerts', '/stop · unlink this chat'] : ['Alerts: open the app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram.']),
     '',
     '<i>Information only, not investment advice.</i>',
   ].join('\n')
@@ -268,7 +268,7 @@ export function bothChainsView(ticker, found) {
 /* --------------------------------------------------------------- alerts --- */
 
 export const linkNeededView = (back, what = 'Alerts') => ({
-  text: [`<b>🔔 ${esc(what)} need a linked account</b>`, 'Link this chat to your wallet once: open the developer portal, Alerts tab, press <b>Connect Telegram</b> and follow the link back here. Then alerts are one tap away.'].join('\n'),
+  text: [`<b>🔔 ${esc(what)} need a linked account</b>`, 'Link this chat to your wallet once: open the app dashboard (app.gullylabs.xyz), Alerts tab, press <b>Connect Telegram</b> and follow the link back here. Then alerts are one tap away.'].join('\n'),
   keyboard: [[ubtn('🔗 Link wallet ↗', PORTAL_ALERTS)], nav(back)],
 })
 
@@ -468,7 +468,7 @@ export function aiAnswerView(r) {
 /* ------------------------------------------------------------ settings --- */
 
 export function settingsView({ link, workspace, notify, alertsCount, isLinker }) {
-  if (!link) return { text: '<b>⚙️ Settings</b>\nThis chat is not linked to a wallet. Link it in the developer portal (Alerts tab, Connect Telegram) to get alerts here.', keyboard: [[ubtn('🔗 Link wallet ↗', PORTAL_ALERTS)], nav('m')] }
+  if (!link) return { text: '<b>⚙️ Settings</b>\nThis chat is not linked to a wallet. Link it in the app dashboard (app.gullylabs.xyz, Alerts tab, Connect Telegram) to get alerts here.', keyboard: [[ubtn('🔗 Link wallet ↗', PORTAL_ALERTS)], nav('m')] }
   const lines = [
     '<b>⚙️ Settings</b>',
     `Wallet: <code>${esc(shortAddr(link.address))}</code>`,
@@ -489,7 +489,7 @@ export function settingsView({ link, workspace, notify, alertsCount, isLinker })
 }
 
 export const unlinkConfirmView = (link) => ({
-  text: `<b>🔓 Unlink this chat from ${esc(shortAddr(link.address))}?</b>\nAlerts stop arriving here. You can link again from the developer portal at any time.`,
+  text: `<b>🔓 Unlink this chat from ${esc(shortAddr(link.address))}?</b>\nAlerts stop arriving here. You can link again from the app dashboard at any time.`,
   keyboard: [[btn('🔓 Yes, unlink', 'suly'), btn('⬅ Back', 'set')], [btn('🏠 Menu', 'm')]],
 })
 

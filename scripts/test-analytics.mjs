@@ -333,7 +333,7 @@ try {
   /* ------------------------------------------------------------ proxy: login, speed, headers --- */
   const hitsBefore = umami.loginHits
   px = await proxy('/login', { headers: { accept: 'text/html' } })
-  check('GET /login is the branded way in, with the portal first', px.status === 200 && px.text.includes('Sign in from the developer portal') && px.text.includes('app.gullylabs.xyz/#analytics') && px.text.includes('Reset it in the portal') && px.text.includes('Start the 14-day free trial') && px.text.includes('/login?form=password'))
+  check('GET /login is the branded way in, with the portal first', px.status === 200 && px.text.includes('Sign in from the app dashboard') && px.text.includes('app.gullylabs.xyz/#analytics') && px.text.includes('Reset it in the portal') && px.text.includes('Start the 14-day free trial') && px.text.includes('/login?form=password'))
   check('the login page runs no script', /script-src 'none'/.test(px.headers['content-security-policy'] ?? '') && !px.text.includes('<script'))
   await new Promise((res) => setTimeout(res, 150))
   check('it warms Umami’s password form in the background', umami.loginHits > hitsBefore)

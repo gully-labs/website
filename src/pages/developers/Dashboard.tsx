@@ -12,6 +12,8 @@ import { Overview } from './Overview'
 import { PortalReceipt } from './PortalReceipt'
 import { APP_NAME, APP_TITLE, inviteTokenFromHash, usePortal } from './portal'
 import { Products } from './Products'
+import { grouped, isServiceTab, SERVICE_TABS, type ServiceTab } from './services/nav'
+import { ServiceView } from './services/ServiceView'
 import { SettingsTab } from './Settings'
 import { Team } from './Team'
 
@@ -40,26 +42,30 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
 ]
 const LEGACY: Record<string, Tab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings', merchant: 'products' }
 
-type View = { tab: Tab; section: string | null; receipt: string | null; invite: string | null }
+/** Every page: the tabs above plus the service pages (services/nav.ts), each with its icon. */
+type AppTab = Tab | ServiceTab
+const ALL_TABS: { id: AppTab; label: string; icon: ReactNode }[] = [...TABS, ...SERVICE_TABS.map((s) => ({ id: s.id, label: s.label, icon: <s.icon size={ICON} aria-hidden /> }))]
+
+type View = { tab: AppTab; section: string | null; receipt: string | null; invite: string | null }
 
 function readHash(): View {
   const h = window.location.hash.slice(1)
   const none = { section: null, receipt: null, invite: null }
-  if (TABS.some((t) => t.id === h)) return { tab: h as Tab, ...none }
+  if (ALL_TABS.some((t) => t.id === h)) return { tab: h as AppTab, ...none }
   if (LEGACY[h]) return { tab: LEGACY[h], ...none, section: h }
   const r = h.match(/^receipt=(\d{1,10}:0x[0-9a-fA-F]{64})$/)
   if (r) return { tab: 'billing', ...none, receipt: r[1] }
   return { tab: 'overview', ...none, invite: inviteTokenFromHash() }
 }
 
-function useView(): [View, (t: Tab, section?: string | null) => void, () => void] {
+function useView(): [View, (t: AppTab, section?: string | null) => void, () => void] {
   const [state, setState] = useState(readHash)
   useEffect(() => {
     const on = () => setState(readHash())
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])
-  const set = useCallback((t: Tab, section: string | null = null) => {
+  const set = useCallback((t: AppTab, section: string | null = null) => {
     history.replaceState(null, '', t === 'overview' ? window.location.pathname + window.location.search : `#${section ?? t}`)
     setState({ tab: t, section, receipt: null, invite: null })
   }, [])
@@ -98,24 +104,37 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
     setAlertFor(null)
   }, [])
   const go = useCallback(
-    (t: Tab, s: string | null = null) => {
+    (t: AppTab, s: string | null = null) => {
       setTab(t, s)
       if (!s) window.scrollTo({ top: 0, behavior: 'instant' })
     },
     [setTab],
   )
-  const goTab = useCallback((t: Tab) => go(t), [go])
+  const goTab = useCallback((t: AppTab) => go(t), [go])
   const wallet: WalletGo = useMemo(
     () => ({ profile: () => go('settings', 'profile'), team: () => go('team'), activity: () => go('activity'), sessions: () => go('settings', 'sessions'), invites: () => go('overview') }),
     [go],
   )
 
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
-  const items: NavItem<Tab>[] = useMemo(
-    () => TABS.map((t) => (t.id === 'keys' ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
+  const items: NavItem<AppTab>[] = useMemo(
+    () => grouped(ALL_TABS).map((t) => (t.id === 'keys' ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
     [liveKeys],
   )
-  const page = TABS.find((t) => t.id === tab)?.label ?? 'Overview'
+  const page = ALL_TABS.find((t) => t.id === tab)?.label ?? 'Overview'
+  // What the service pages get: the account, navigation by page id, and "add alert" for a stock.
+  const service = useMemo(
+    () => ({
+      account,
+      go: (t: string, s: string | null = null) => go((ALL_TABS.some((x) => x.id === t) ? t : (LEGACY[t] ?? 'overview')) as AppTab, s),
+      createAlert: (stock: string | null = null) => {
+        setAlertFor(stock)
+        setNewAlert(true)
+        go('alerts')
+      },
+    }),
+    [account, go],
+  )
 
   // The tab title names the page: "Billing · Gully Labs App"; the home page carries the app's full title.
   useEffect(() => {
@@ -160,6 +179,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         {tab === 'team' && <Team />}
         {tab === 'activity' && <ActivityTab />}
         {tab === 'settings' && <SettingsTab section={section} />}
+        {isServiceTab(tab) && <ServiceView id={tab} ctx={service} />}
       </main>
     </AppShell>
   )

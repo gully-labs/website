@@ -1,4 +1,4 @@
-// Workspace activity log and usage-threshold notices (developer portal v2).
+// Workspace activity log and usage-threshold notices (app dashboard v2).
 //
 // Activity: one JSON-lines file per workspace, DATA_DIR/activity/<ownerAddress>.jsonl, each line
 //   { id, at, actor, action, target, detail }

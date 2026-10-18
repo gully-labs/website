@@ -184,11 +184,11 @@ const message = (overrides = {}) => client.siweMessage(account, overrides)
   check('the session is gone after logout', (await call('/api/developer/account')).status === 401)
 }
 
-/* ---------------------------------------- SIWE domain per host (app and old developers host) --- */
+/* ---------------------------------------- SIWE domain per host (the app only) --- */
 
-// The app (app.gullylabs.xyz) and, during the transition, its old host (developers.gullylabs.xyz) each
-// accept SIWE for their own domain only, and set their own __Host- session cookie.
-for (const host of ['app.gullylabs.xyz', 'developers.gullylabs.xyz']) {
+// The app (app.gullylabs.xyz) accepts SIWE for its own domain only and sets a __Host- session cookie. The
+// retired developers.* host accepts none.
+for (const host of ['app.gullylabs.xyz']) {
   const w = privateKeyToAccount(generatePrivateKey())
   const ok = await hostSignIn(BASE, host, w)
   const cookie = String(ok.headers['set-cookie'] ?? '')
@@ -196,7 +196,7 @@ for (const host of ['app.gullylabs.xyz', 'developers.gullylabs.xyz']) {
   check(`${host}: the session cookie is __Host-, Secure, host-only`, /^__Host-gl_dev=/.test(cookie) && /; Secure/.test(cookie) && /Path=\//.test(cookie) && !/Domain=/i.test(cookie), cookie.replace(/=[^;]+/, '=…'))
   const acc = await hostRequest(BASE, host, '/api/developer/account', { headers: { cookie: cookie.split(';')[0] } })
   check(`${host}: the session reads the account there`, acc.status === 200 && acc.data?.address === w.address.toLowerCase())
-  const other = host.startsWith('app.') ? 'developers.gullylabs.xyz' : 'app.gullylabs.xyz'
+  const other = 'developers.gullylabs.xyz'
   const cross = await hostSignIn(BASE, host, w, { domain: other })
   check(`${host}: a message signed for ${other} is refused`, cross.status === 401, cross.data?.error)
 }

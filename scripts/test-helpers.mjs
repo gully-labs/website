@@ -26,7 +26,7 @@ export function makeClient(base) {
   /** A SIWE message for `account` with a fresh server nonce. */
   async function siweMessage(account, overrides = {}) {
     const { data } = await call('/api/developer/nonce')
-    return createSiweMessage({ domain: new URL(base).host, address: account.address, uri: base, version: '1', chainId: 1, nonce: data.nonce, issuedAt: new Date(), statement: 'Sign in to the Gully Labs developer dashboard.', ...overrides })
+    return createSiweMessage({ domain: new URL(base).host, address: account.address, uri: base, version: '1', chainId: 1, nonce: data.nonce, issuedAt: new Date(), statement: 'Sign in to the Gully Labs app dashboard.', ...overrides })
   }
 
   /** Signs in and keeps the session cookie. Returns the sign-in response. */

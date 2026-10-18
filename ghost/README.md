@@ -18,7 +18,7 @@ scripts/
 
 - **Header like the site:** GULLY LABS wordmark (to gullylabs.xyz, new tab) plus "Blog"; Products and
   Developers menus, Projects, Pricing, a gold Launch app button. Every item has an icon. Links to other
-  Gully sites (gullylabs.xyz, developers., docs., analytics., github.com, x.com, t.me) open in a new tab
+  Gully sites (gullylabs.xyz, app., docs., analytics., github.com, x.com, t.me) open in a new tab
   with a ↗ marker, `rel="noopener noreferrer"` and hidden "(opens in a new tab)" text.
 - **Blog sections bar** under it: Ghost's own navigation (admin > Settings > Navigation), each item with
   an icon picked by its label (home, tags, about, releases, changelog, news, engineering, guides,

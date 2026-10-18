@@ -176,7 +176,7 @@ export default function ApiDemo(): JSX.Element {
             </button>
           ))}
         </div>
-        <p className="m-0 text-[11px] leading-[1.5] text-faint">This page always sends without a key. The toggle changes the snippet: a free key from the developer portal raises the limit.</p>
+        <p className="m-0 text-[11px] leading-[1.5] text-faint">This page always sends without a key. The toggle changes the snippet: a free key from the app dashboard raises the limit.</p>
         <div className="flex flex-col gap-1">
           <span className="flex justify-between font-mono text-[11px] text-dim">
             <span>Your IP, this minute</span>

@@ -1,18 +1,20 @@
-import { Activity, Bot, BookOpen, Building2, ChartCandlestick, Check, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
+import { Activity, BookOpen, Building2, Check, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { VenueLogo } from '../../components/logos/VenueLogo'
 import { Wordmark } from '../../components/Wordmark'
 import { copyWithToast } from '../../components/ui/toast'
-import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
+import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
+import { AskLauncher } from '../../components/ask/AskLauncher'
 import { Avatar } from './Avatar'
 import { Menu, menuItem } from './Menu'
 import { declinedInvites, restoreFocus, usePortal } from './portal'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
-   Sidebar, top to bottom: the Gully mark and "Gully Labs App", the workspace switcher, the pages (16px
-   icons and labels, the current one marked with aria-current), then Docs ↗, Tracker, Gully AI, Status,
+   Sidebar, top to bottom: the Gully mark and "Gully Labs App", the workspace switcher, the pages under
+   their group headings (16px icons and labels, the current one marked with aria-current; the services,
+   Tracker and Gully AI among them, are app pages), then Docs ↗, Status,
    the gullylabs.xyz home link and the wallet menu. From 1280px it is open (232px); from 860px to 1279px it starts collapsed to icons
    (64px, labels kept for screen readers and as tooltips); the chevron button toggles it at any width
    and the choice is remembered. Under 860px there is no sidebar: a Menu button in the header opens the
@@ -22,7 +24,8 @@ import { declinedInvites, restoreFocus, usePortal } from './portal'
    width), the breadcrumb (workspace / page), the plan pill, and the
    wallet menu on narrow screens (wide screens have it at the foot of the sidebar). */
 
-export type NavItem<T extends string> = { id: T; label: string; icon: ReactNode; badge?: ReactNode }
+/** One sidebar page. Items with a `group` are drawn under that group's heading, in the order given. */
+export type NavItem<T extends string> = { id: T; label: string; icon: ReactNode; badge?: ReactNode; group?: string }
 
 const ICON = 16
 const NARROW = '(max-width: 859.98px)'
@@ -51,7 +54,6 @@ function readPref(): 'open' | 'icons' | null {
   }
 }
 
-const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
 const roleTone = (r: Role) => (r === 'owner' ? 'border-gold text-gold' : r === 'admin' ? 'border-gold-line text-gold' : 'border-line-strong text-muted')
 
 /* ------------------------------------------------------------------ status --- */
@@ -270,7 +272,7 @@ function PlanPill({ account }: { account: Account }) {
 
 /* ------------------------------------------------------------------- items --- */
 
-function NavLinks<T extends string>({ items, current, go, compact }: { items: NavItem<T>[]; current: T; go: (t: T) => void; compact: boolean }) {
+function NavList<T extends string>({ items, current, go, compact }: { items: NavItem<T>[]; current: T; go: (t: T) => void; compact: boolean }) {
   return (
     <ul className="m-0 flex list-none flex-col gap-[2px] p-0">
       {items.map((t) => {
@@ -287,7 +289,7 @@ function NavLinks<T extends string>({ items, current, go, compact }: { items: Na
                 e.preventDefault()
                 go(t.id)
               }}
-              className={`relative flex min-h-11 items-center gap-3 rounded-[10px] text-[14px] font-medium transition-colors ${compact ? 'justify-center px-0' : 'px-3'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
+              className={`relative flex min-h-10 items-center gap-3 rounded-[10px] text-[14px] font-medium transition-colors max-[859px]:min-h-11 ${compact ? 'justify-center px-0' : 'px-3'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
             >
               {on && <span className="absolute top-[10px] bottom-[10px] left-0 w-[3px] rounded-full bg-gold" aria-hidden />}
               <span className={on ? 'text-gold' : ''}>{t.icon}</span>
@@ -301,6 +303,40 @@ function NavLinks<T extends string>({ items, current, go, compact }: { items: Na
   )
 }
 
+/** The pages, under their group headings (Workspace, Services, Developer, Account) when the items carry
+    groups; in the icon rail a group is a thin rule, its name kept for screen readers. */
+function NavLinks<T extends string>({ items, current, go, compact }: { items: NavItem<T>[]; current: T; go: (t: T) => void; compact: boolean }) {
+  const groups: { name: string; items: NavItem<T>[] }[] = []
+  for (const it of items) {
+    const name = it.group ?? ''
+    const last = groups[groups.length - 1]
+    if (last && last.name === name) last.items.push(it)
+    else groups.push({ name, items: [it] })
+  }
+  if (groups.length === 1 && !groups[0].name) return <NavList items={items} current={current} go={go} compact={compact} />
+  return (
+    <div className="flex flex-col gap-3" data-testid="nav-groups">
+      {groups.map((g, i) => {
+        const id = `navgroup-${g.name.toLowerCase().replace(/\W+/g, '-') || i}`
+        return (
+          <div key={g.name || i} role="group" aria-labelledby={id} data-nav-group={g.name}>
+            {compact ? (
+              <span id={id} className="mx-auto mb-1 block h-px w-6 bg-line-strong" aria-label={g.name} role="heading" aria-level={2}>
+                <span className="sr-only">{g.name}</span>
+              </span>
+            ) : (
+              <span id={id} role="heading" aria-level={2} className="block px-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint uppercase">
+                {g.name}
+              </span>
+            )}
+            <NavList items={g.items} current={current} go={go} compact={compact} />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 const footItem = (compact: boolean) => `flex min-h-11 items-center gap-3 rounded-[10px] text-[13px] text-muted transition-colors hover:bg-surface-hover hover:text-ink ${compact ? 'justify-center px-0' : 'px-3'}`
 
 function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: Health; onStatus: () => void }) {
@@ -311,16 +347,6 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
         <a href={`${DOCS_URL}/api`} target="_blank" rel="noopener noreferrer" className={footItem(compact)} title={compact ? 'Docs (opens in a new tab)' : undefined}>
           <BookOpen size={ICON} aria-hidden /> {txt('Docs ↗')}
           {compact && <span className="sr-only"> (opens in a new tab)</span>}
-        </a>
-      </li>
-      <li>
-        <a href={site('/tracker')} className={footItem(compact)} title={compact ? 'Tracker' : undefined}>
-          <ChartCandlestick size={ICON} aria-hidden /> {txt('Tracker')}
-        </a>
-      </li>
-      <li>
-        <a href={site('/ask')} className={footItem(compact)} title={compact ? 'Gully AI' : undefined}>
-          <Bot size={ICON} aria-hidden /> {txt('Gully AI')}
         </a>
       </li>
       <li>
@@ -522,6 +548,12 @@ export function AppShell<T extends string>({
         </header>
 
         {children}
+      </div>
+
+      {/* Gully AI everywhere in the app: the floating button (bottom right) and ⌘K / Ctrl+K. On the Gully AI
+          page itself the chat is the page, so only the shortcut stays. */}
+      <div className="pointer-events-none fixed right-5 bottom-5 z-40 max-[600px]:right-4 max-[600px]:bottom-4 print:hidden" data-testid="corner-dock">
+        <AskLauncher variant="floating" hideButton={current === ('ai' as T)} />
       </div>
 
       <Sheet open={sheet} onClose={() => setSheet(false)}>

@@ -251,6 +251,22 @@ export async function readLaunches({ chainId = null, limit = 5 } = {}) {
   return { state, launches, asOf: db.lastOkAt, chains: db.chains, error: db.lastError?.error ?? null }
 }
 
+/**
+ * GET /api/deepcore/launches?chain=<chainId>&limit=<1..50>: the poller's cached launch list for the app
+ * dashboard's DeepCore view, { state: 'ok' | 'stale' | 'unreadable', launches, asOf, chains, error }.
+ * Reads the same cache as the bot (readLaunches): no extra upstream call while the cache is fresh.
+ */
+export async function handleDeepcoreLaunches(req, res, url) {
+  if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+  const c = url.searchParams.get('chain')
+  const chainId = c === null || c === '' ? null : Number(c)
+  if (chainId !== null && !DEEPCORE_CHAINS[chainId]) return json(res, 400, { error: `chain must be one of ${Object.keys(DEEPCORE_CHAINS).join(', ')}`, code: 'BAD_CHAIN' }), true
+  const l = Number(url.searchParams.get('limit') ?? KEEP_LAUNCHES)
+  if (!Number.isInteger(l) || l < 1 || l > KEEP_LAUNCHES) return json(res, 400, { error: `limit must be a whole number from 1 to ${KEEP_LAUNCHES}`, code: 'BAD_LIMIT' }), true
+  const r = await readLaunches({ chainId, limit: l })
+  return json(res, 200, { ...r, pollSeconds: Math.round(pollMs() / 1000) }, { 'Cache-Control': 'public, max-age=30' }), true
+}
+
 /** For alerts: the chains a launch alert may be limited to. */
 export const deepcoreAlertChains = () => Object.entries(DEEPCORE_CHAINS).map(([id, c]) => ({ chainId: Number(id), name: c.name }))
 

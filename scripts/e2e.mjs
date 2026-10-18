@@ -148,7 +148,7 @@ await step('landing', async () => {
   check('pricing: services are quoted', await page.locator('#price-panel').getByText('Quoted').first().waitFor({ timeout: 8_000 }).then(() => true, () => false))
   // Header menus.
   await page.evaluate(() => window.scrollTo(0, 0))
-  for (const [menu, item] of [['Products', /^Stock tracker/], ['Developers', /^API docs/], ['Company', /^Services/]]) {
+  for (const [menu, item] of [['Products', /^Stock tracker/], ['App & API', /^API docs/], ['Company', /^Services/]]) {
     await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: menu }).click()
     const link = page.getByRole('link', { name: item }).first()
     await link.waitFor({ state: 'visible', timeout: 5_000 })

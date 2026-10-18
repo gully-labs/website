@@ -1,4 +1,4 @@
-// Gully Analytics, self-serve: a wallet signed in to the developer portal starts a free trial, gets its own
+// Gully Analytics, self-serve: a wallet signed in to the app dashboard starts a free trial, gets its own
 // Gully Analytics (Umami) user, adds websites, and buys or extends a plan through Gully Pay. The proxy in
 // analytics.mjs asks admitEvents() before forwarding tracker calls, and counts what was accepted.
 //

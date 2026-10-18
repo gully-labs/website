@@ -228,6 +228,13 @@ try {
   mode = 'ok'
   const base = await dc.readLaunches({ chainId: 8453 })
   check('readLaunches filters by chain, newest first', base.launches.map((l) => l.symbol).join() === 'BASED,NEWB')
+  const gl = (q) => fetch(`${BASE}/api/deepcore/launches${q}`).then(async (r) => ({ status: r.status, cache: r.headers.get('cache-control'), j: await r.json() }))
+  const all = await gl('')
+  check('GET /api/deepcore/launches: the cached list with its state, chains and poll interval', all.status === 200 && all.j.state === 'ok' && all.j.launches.length === 6 && all.j.launches[0].symbol === 'BASED' && Array.isArray(all.j.chains) && all.j.pollSeconds >= 60 && /max-age=30/.test(all.cache ?? ''), JSON.stringify(all.j).slice(0, 160))
+  const one = await gl('?chain=8453&limit=1')
+  check('GET /api/deepcore/launches: filters by chain and limits', one.status === 200 && one.j.launches.length === 1 && one.j.launches[0].symbol === 'BASED')
+  check('GET /api/deepcore/launches: a chain DeepCore does not run on is refused', (await gl('?chain=1')).status === 400)
+  check('GET /api/deepcore/launches: a bad limit is refused', (await gl('?limit=500')).status === 400)
 
   /* ------------------------------------------------------ persistence --- */
   const saved = JSON.parse(fs.readFileSync(path.join(tmp, 'deepcore.json'), 'utf8'))

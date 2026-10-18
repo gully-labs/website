@@ -1,0 +1,103 @@
+import { BookOpen, Globe, type LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
+import { NF, type NumberFormat } from '../../../components/charts/number-formats'
+import { ExtLink } from '../ExtLink'
+import { pillSm } from '../styles'
+
+/* The compact header every service page opens with: icon, name, one line on what it is, a live status
+   pill, "Docs ↗" and "Public page ↗" (new tabs), and a band of live KPI tiles. A tile whose figure could
+   not be read shows its `unknown` text ("not tracked yet", "unreadable"), never 0. */
+
+export type Status = { tone: 'live' | 'down' | 'checking' | 'idle'; text: string }
+
+export type Tile = {
+  label: string
+  value: number | null | undefined
+  format?: NumberFormat
+  prefix?: string
+  suffix?: string
+  /** Shown instead of the number while it is unknown. */
+  unknown?: string
+  note?: ReactNode
+  tone?: string
+}
+
+const dot: Record<Status['tone'], string> = { live: 'bg-green', down: 'bg-error', checking: 'bg-faint', idle: 'bg-gold' }
+
+export function StatusPill({ s }: { s: Status }) {
+  return (
+    <span className="inline-flex min-h-[26px] items-center gap-2 rounded-full border border-line-strong px-[10px] font-mono text-[11px] whitespace-nowrap text-ink-2" data-testid="service-status" data-tone={s.tone}>
+      <span className="relative grid size-2 place-items-center" aria-hidden>
+        {s.tone === 'live' && <span className="absolute size-2 rounded-full bg-green/50" style={{ animation: 'gl-live-pulse 2.4s ease-out infinite' }} />}
+        <span className={`size-[6px] rounded-full ${dot[s.tone]} ${s.tone === 'checking' ? 'animate-pulse' : ''}`} />
+      </span>
+      {s.text}
+    </span>
+  )
+}
+
+export function KpiTile({ t, i }: { t: Tile; i: number }) {
+  const known = typeof t.value === 'number' && Number.isFinite(t.value)
+  return (
+    <div className="group relative flex min-w-0 flex-col gap-1 bg-surface px-4 py-3" style={{ animation: `gl-rise .4s ${i * 0.04}s ease both` }} data-tile={t.label}>
+      <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">{t.label}</span>
+      {known ? (
+        <AnimatedNumber className="font-display text-[26px] leading-none font-bold" style={{ color: t.tone }} value={t.value} format={t.format ?? NF.int} prefix={t.prefix} suffix={t.suffix} countUp />
+      ) : (
+        <span className="flex h-[26px] items-center font-mono text-[12px] text-faint">{t.unknown ?? 'not tracked yet'}</span>
+      )}
+      {t.note && <span className="truncate text-[12px] text-muted">{t.note}</span>}
+      <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
+    </div>
+  )
+}
+
+export function ServiceHeader({ icon: Icon, title, desc, status, tiles, docs, page, actions }: { icon: LucideIcon; title: string; desc: string; status: Status; tiles: Tile[]; docs: string; page: { href: string; label?: string }; actions?: ReactNode }) {
+  return (
+    <header className="flex flex-col gap-4" data-testid="service-header">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.06)] text-gold" aria-hidden>
+          <Icon size={18} />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-[2px]">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="m-0 text-[20px] leading-tight font-semibold text-ink">{title}</h1>
+            <StatusPill s={status} />
+          </span>
+          <p className="m-0 text-[13px] leading-[1.45] text-muted">{desc}</p>
+        </div>
+        <nav aria-label={`${title} links`} className="flex flex-wrap items-center gap-2">
+          {actions}
+          <ExtLink href={docs} className={pillSm}>
+            <BookOpen size={14} aria-hidden /> Docs
+          </ExtLink>
+          <ExtLink href={page.href} className={pillSm}>
+            <Globe size={14} aria-hidden /> {page.label ?? 'Public page'}
+          </ExtLink>
+        </nav>
+      </div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] gap-px overflow-hidden rounded-[14px] border border-line bg-line" aria-label={`${title}, live figures`} role="group">
+        {tiles.map((t, i) => (
+          <KpiTile key={t.label} t={t} i={i} />
+        ))}
+      </div>
+    </header>
+  )
+}
+
+/** A titled panel for a service page's body. */
+export function Section({ title, sub, children, className = '', aside }: { title: string; sub?: string; children: ReactNode; className?: string; aside?: ReactNode }) {
+  return (
+    <section className={`flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-4 ${className}`} aria-label={title}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <span className="flex min-w-0 flex-col gap-[2px]">
+          <h2 className="m-0 text-[15px] leading-tight font-semibold text-ink">{title}</h2>
+          {sub && <span className="font-mono text-[11px] text-faint">{sub}</span>}
+        </span>
+        {aside}
+      </div>
+      {children}
+    </section>
+  )
+}

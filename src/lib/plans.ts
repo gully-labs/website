@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { Offer } from '../pages/developers/api'
-import { DEVELOPERS_URL, isLocalHost } from '../site-host'
+import { APP_URL, isLocalHost } from '../site-host'
 
 /* GET /api/plans for the pricing page and the product pages (server/plans.mjs is the one source). */
 
-/** Where "Start free trial" for Gully Analytics goes: the Analytics tab of the developer dashboard. */
-export const ANALYTICS_SIGNUP = isLocalHost() ? '/developers#analytics' : `${DEVELOPERS_URL}/#analytics`
+/** Where "Start free trial" for Gully Analytics goes: the Analytics tab of the app dashboard. */
+export const ANALYTICS_SIGNUP = isLocalHost() ? '/app#analytics' : `${APP_URL}/#analytics`
 
 export type PlansState = { k: 'loading' } | { k: 'error'; message: string } | { k: 'ok'; offer: Offer }
 

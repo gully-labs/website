@@ -11,6 +11,8 @@ import { usePortal } from './portal'
 import { Skeleton } from './parts'
 import { input, mono, panel, pillGold, pillSm } from './styles'
 import { KeySpark, LiveMarker, QuotaRing, StackedDays } from './vcharts'
+import { useLoad, type Load } from './services/useLoad'
+import type { ServiceTab } from './services/nav'
 
 /* The Products tab: every Gully product in one hub, each card with its live state for the ACTIVE
    workspace and a live chart where data exists (a pulsing live marker where it does not yet; a
@@ -26,24 +28,7 @@ import { KeySpark, LiveMarker, QuotaRing, StackedDays } from './vcharts'
 
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
 const fmt = (n: number) => n.toLocaleString('en-US')
-type Tab = 'keys' | 'alerts' | 'analytics' | 'billing'
-type Load<T> = { k: 'loading' } | { k: 'error'; message: string } | { k: 'ok'; data: T }
-
-function useLoad<T>(path: string): Load<T> {
-  const [s, setS] = useState<Load<T>>({ k: 'loading' })
-  useEffect(() => {
-    let alive = true
-    const go = () => api<T>(path).then((r) => alive && setS((prev) => (r.ok ? { k: 'ok', data: r.data } : prev.k === 'ok' ? prev : { k: 'error', message: r.error })))
-    go()
-    const id = setInterval(go, 60_000)
-    return () => {
-      alive = false
-      clearInterval(id)
-    }
-  }, [path])
-  return s
-}
-
+type Tab = 'keys' | 'alerts' | 'analytics' | 'billing' | ServiceTab
 const store = {
   get<T>(k: string, d: T): T {
     try {
@@ -108,8 +93,8 @@ export function Products({ account, go }: { account: Account; go: (t: Tab) => vo
       <MerchantCard />
       <ChainKitCard />
       <ChainsCard />
-      <AiCard />
-      <WidgetCard />
+      <AiCard go={go} />
+      <WidgetCard go={go} />
     </div>
   )
 }
@@ -235,7 +220,7 @@ function MerchantCard() {
   )
 }
 
-function ChainKitCard() {
+export function ChainKitCard() {
   const { me } = usePortal()
   const ws = me?.active
   const key = `gully:chainkit-requested:${ws?.id ?? ''}`
@@ -316,7 +301,7 @@ function ChainsCard() {
 
 type Asked = { q: string; a: string; at: string }
 
-function AiCard() {
+function AiCard({ go }: { go: (t: Tab) => void }) {
   const [status, setStatus] = useState<boolean | null | 'error'>(null)
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
@@ -342,7 +327,7 @@ function AiCard() {
     setQ('')
   }
   return (
-    <Card icon={<Bot size={16} aria-hidden />} title="Gully AI" badge={status === true ? pill('online', 'green') : status === false ? pill('not switched on') : null} foot={<a href={site('/ask')} className={pillSm}>Open Gully AI <ArrowRight size={14} aria-hidden /></a>}>
+    <Card icon={<Bot size={16} aria-hidden />} title="Gully AI" badge={status === true ? pill('online', 'green') : status === false ? pill('not switched on') : null} foot={goBtn(go, 'ai', 'Open Gully AI')}>
       {status === null ? (
         <Skeleton h={44} />
       ) : status === true ? (
@@ -371,7 +356,7 @@ function AiCard() {
   )
 }
 
-function WidgetCard() {
+function WidgetCard({ go }: { go: (t: Tab) => void }) {
   const [up, setUp] = useState<boolean | null>(null)
   useEffect(() => {
     let alive = true
@@ -387,9 +372,9 @@ function WidgetCard() {
       <p className="m-0 text-[13px] leading-[1.55] text-muted">Live fair prices on any page with two lines of HTML, no key; or the typed TypeScript client for your server.</p>
       <LiveMarker text={up === null ? 'Checking the API…' : up ? 'Public API answering now' : 'The API did not answer the health check'} height={48} />
       <div className="flex flex-wrap gap-2">
-        <a href={site('/widget')} className={pillSm}>
+        <button type="button" onClick={() => go('widgets')} className={pillSm}>
           <AppWindow size={14} aria-hidden /> Widget builder
-        </a>
+        </button>
         <ExtLink href={`${DOCS_URL}/sdk`} className={pillSm}>
           <Code2 size={14} aria-hidden /> SDK docs
         </ExtLink>

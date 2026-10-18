@@ -3,7 +3,8 @@ import { ArrowUp } from 'lucide-react'
 import { useLocation } from 'react-router'
 import { scrollBehavior } from './LayoutNav'
 
-/** A round "back to top" button, shown on long pages once you are well down them. */
+/** A round "back to top" button, shown on long pages once you are well down them. It sits in the
+    layout's bottom-right dock, left of the Gully AI button (Layout.tsx), so the two never overlap. */
 export function BackToTop() {
   const [show, setShow] = useState(false)
   const { pathname } = useLocation()
@@ -39,7 +40,7 @@ export function BackToTop() {
         // Keyboard users land where they went: the top of the page content.
         document.getElementById('main')?.focus({ preventScroll: true })
       }}
-      className={`fixed right-5 bottom-5 z-40 inline-flex size-11 items-center justify-center rounded-full border border-line-strong bg-surface text-ink shadow-[0_10px_28px_rgba(0,0,0,.45)] transition-[opacity,transform,border-color] duration-200 hover:border-gold hover:text-gold max-[600px]:right-4 max-[600px]:bottom-4 ${show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
+      className={`inline-flex size-11 items-center justify-center rounded-full border border-line-strong bg-surface text-ink shadow-[0_10px_28px_rgba(0,0,0,.45)] transition-[opacity,transform,border-color] duration-200 hover:border-gold hover:text-gold ${show ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
     >
       <ArrowUp aria-hidden size={18} strokeWidth={2} />
     </button>

@@ -7,7 +7,7 @@ import { SocialIcon } from './SocialIcon'
 import { Wordmark } from './Wordmark'
 import { btnGold } from './ui'
 
-/* The footer: the header's groups as columns (Products, Developers, Company, Social), "Start a
+/* The footer: the header's groups as columns (Products, App & API, Company, Social), "Start a
    project", and the legal lines. */
 
 const colLabel = 'm-0 inline-flex items-center gap-2 font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase'
@@ -60,7 +60,7 @@ export function Footer() {
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-8 min-[700px]:grid-cols-4">
           <Column id="products" label="Products" icon={LayoutGrid} items={productItems} />
-          <Column id="developers" label="Developers" icon={Code2} items={developers.items} />
+          <Column id="developers" label={developers.label} icon={Code2} items={developers.items} />
           <Column id="company" label="Company" icon={Building2} items={companyItems} />
           <nav aria-labelledby="foot-social" className="flex min-w-0 flex-col gap-2">
             <p id="foot-social" className={colLabel}>

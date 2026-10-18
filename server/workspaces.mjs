@@ -1,4 +1,4 @@
-// Workspaces (teams) for the developer portal v2: members with roles, invites by wallet or by link.
+// Workspaces (teams) for the app dashboard v2: members with roles, invites by wallet or by link.
 //
 // Every wallet account is a workspace owned by that wallet. Its id is the owner's lower-case address,
 // so everything already keyed by the owner (keys, alerts, analytics, billing, Telegram) belongs to the

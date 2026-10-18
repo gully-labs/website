@@ -11,7 +11,7 @@ import { InviteLanding } from './Invite'
 import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, restoreFocusSoon, type Portal } from './portal'
 import { mono, pillGold, pillLine } from './styles'
 
-/* The Gully Labs App, the developer dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
+/* The Gully Labs App, the app dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
    free tier is and a "Connect wallet" button. Signing in is Sign-In with Ethereum: the wallet signs a
    message (no transaction, no gas) and the server sets an HttpOnly session cookie. The wallet libraries
    load only when that button is pressed; the signed-in dashboard itself never needs them. */

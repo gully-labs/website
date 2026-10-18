@@ -8,6 +8,7 @@ import { Footer } from './Footer'
 import { Header } from './Header'
 import { scrollBehavior } from './LayoutNav'
 import { BackToTop } from './LayoutScroll'
+import { AskLauncher } from './ask/AskLauncher'
 import { scrollToAnchor } from '../lib/anchors'
 import { prefetchPath } from '../pages/routeChunks'
 
@@ -101,7 +102,13 @@ export function Layout() {
           </main>
           <ClosingCta />
           <Footer />
-          <BackToTop />
+          {/* The bottom-right dock: Back to top, then Gully AI (also ⌘K / Ctrl+K). Toasts stack above it (offset
+              76 px, 72 px on phones); the site has no cookie bar or bottom bar for it to cover. On /ask the
+              chat is the page, so only the shortcut stays. */}
+          <div className="pointer-events-none fixed right-5 bottom-5 z-40 flex items-center gap-2 max-[600px]:right-4 max-[600px]:bottom-4 print:hidden" data-testid="corner-dock">
+            <BackToTop />
+            <AskLauncher variant="floating" hideButton={pathname === '/ask'} />
+          </div>
           {everOpened && (
             <Suspense fallback={null}>
               <ContactModal open={open} onClose={closeContact} form={form} setForm={setForm} sent={sent} setSent={setSent} />

@@ -1,4 +1,4 @@
-// The signed-in wallet's own things in the developer portal v2: GET /me, profile, company details of the
+// The signed-in wallet's own things in the app dashboard v2: GET /me, profile, company details of the
 // active workspace, and the wallet's sessions.
 //
 // DATA_DIR/profiles.json (atomic writes): { [address]: { displayName, email, notify: { telegramUsage,

@@ -1,12 +1,12 @@
-// Host routing for the Gully Labs App (app.gullylabs.xyz) and its old host (developers.gullylabs.xyz).
+// Host routing for the Gully Labs App (app.gullylabs.xyz); its old host (developers.*) is retired.
 //
 //   npm run test:app-host        (no build needed)
 //
 // The real server runs IN THIS PROCESS on port 8798 (TEST_PORT overrides) with a fresh temporary
 // DATA_DIR and a stub dist/index.html; every request names its host in the Host header, as Cloudflare does.
-// Checks: developers.* answers 301 to the app for pages (path and query kept) but never for /api/*;
+// Checks: the retired developers.* host is no longer routed (no redirect, no sign-in);
 // the app serves the dashboard with the strict headers and its own head tags; robots and sitemaps per host;
-// the main site's /developers and /app move to the app; SIWE and the __Host- cookie per host.
+// the main site's /developers and /app answer 301 to https://app.gullylabs.xyz/; SIWE and the __Host- cookie.
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -58,37 +58,14 @@ const MAIN = 'gullylabs.xyz'
 const get = (host, p, opts) => hostRequest(BASE, host, p, opts)
 
 try {
-  /* ------------------------------------------------ developers.* -> app --- */
+  /* ------------------------------------------ the retired developers.* host --- */
   {
+    // Its DNS record is gone (owner, 2026-10-17); nothing routes it any more, so a stray request is just
+    // the main site: no redirect to the app, no SIWE, never the app's head tags.
     const root = await get(OLD, '/')
-    check('developers /: 301 to https://app.gullylabs.xyz/', root.status === 301 && root.headers.location === `https://${APP}/`, `${root.status} ${root.headers.location}`)
-    const q = await get(OLD, '/?ref=docs&x=1')
-    check('developers /?query: the query is kept', q.status === 301 && q.headers.location === `https://${APP}/?ref=docs&x=1`, q.headers.location)
-    const deep = await get(OLD, '/some/page?a=b')
-    check('developers /some/page: same path and query on the app', deep.status === 301 && deep.headers.location === `https://${APP}/some/page?a=b`, deep.headers.location)
-    const head = await get(OLD, '/', { method: 'HEAD' })
-    check('developers HEAD /: 301 too', head.status === 301 && head.headers.location === `https://${APP}/`)
-    check('the redirect is cacheable for an hour', /max-age=3600/.test(root.headers['cache-control'] ?? ''))
-    check('the redirect carries the strict frame headers', /frame-ancestors 'none'/.test(root.headers['content-security-policy'] ?? '') && root.headers['x-frame-options'] === 'DENY')
-
-    // The API stays on the old host during the transition: a 301 on a POST breaks clients.
-    const nonce = await get(OLD, '/api/developer/nonce')
-    check('developers GET /api/developer/nonce: answered, not redirected', nonce.status === 200 && /^[a-f0-9]{32}$/.test(nonce.data?.nonce ?? ''), String(nonce.status))
-    const acct = await get(OLD, '/api/developer/account')
-    check('developers GET /api/developer/account: 401, not redirected', acct.status === 401 && !acct.headers.location)
-    const post = await get(OLD, '/api/developer/logout', { method: 'POST', body: {}, headers: { 'x-requested-with': 'gully', origin: `https://${OLD}` } })
-    check('developers POST /api/developer/logout: answered, not redirected', post.status === 200 && !post.headers.location, String(post.status))
-    const siwe = await get(OLD, '/api/developer/siwe', { method: 'POST', body: {} })
-    check('developers POST /api/developer/siwe: answered (403 without the header), not redirected', siwe.status === 403 && !siwe.headers.location)
-    const plans = await get(OLD, '/api/plans')
-    check('developers GET /api/plans: answered, not redirected', plans.status === 200)
-    const asset = await get(OLD, '/assets/index-abcdef12.js')
-    check('developers: build files are still served (tabs left open)', asset.status === 200)
-
-    const robots = await get(OLD, '/robots.txt')
-    check('developers robots.txt points to the app sitemap', robots.status === 200 && robots.text.includes(`Sitemap: https://${APP}/sitemap.xml`) && !robots.text.includes(OLD), robots.text)
-    const map = await get(OLD, '/sitemap.xml')
-    check('developers sitemap.xml is gone (404)', map.status === 404)
+    check('developers.*: no longer routed (no 301, not the app)', root.status === 200 && !root.headers.location && !root.text.includes('<title>Gully Labs App'), `${root.status} ${root.headers.location ?? ''}`)
+    const siwe = await hostSignIn(BASE, OLD, privateKeyToAccount(generatePrivateKey()))
+    check('developers.*: SIWE refused, naming the app', siwe.status === 400 && siwe.data?.error === `Sign in at https://${APP}.`, siwe.data?.error)
   }
 
   /* ---------------------------------------------------------------- app.* --- */
@@ -134,19 +111,18 @@ try {
   /* --------------------------------------------- SIWE and cookies per host --- */
   {
     const cookies = {}
-    for (const host of [APP, OLD]) {
+    for (const host of [APP]) {
       const w = privateKeyToAccount(generatePrivateKey())
       const r = await hostSignIn(BASE, host, w)
       const c = String(r.headers['set-cookie'] ?? '')
       cookies[host] = c.split(';')[0]
       check(`${host}: SIWE for its own domain signs in`, r.status === 200, r.data?.error)
       check(`${host}: __Host-gl_dev cookie, Secure, Path=/, no Domain`, /^__Host-gl_dev=/.test(c) && /; Secure/.test(c) && /Path=\//.test(c) && !/Domain=/i.test(c) && /HttpOnly/.test(c))
-      const other = host === APP ? OLD : APP
+      const other = OLD
       const cross = await hostSignIn(BASE, host, w, { domain: other })
       check(`${host}: a message for ${other} is refused`, cross.status === 401, cross.data?.error)
     }
     check('app session reads the account on the app', (await get(APP, '/api/developer/account', { headers: { cookie: cookies[APP] } })).status === 200)
-    check('developers session reads the account on the old host', (await get(OLD, '/api/developer/account', { headers: { cookie: cookies[OLD] } })).status === 200)
     const main = await hostSignIn(BASE, MAIN, privateKeyToAccount(generatePrivateKey()))
     check('main site: sign-in refused with "Sign in at https://app.gullylabs.xyz."', main.status === 400 && main.data?.error === `Sign in at https://${APP}.`, main.data?.error)
   }

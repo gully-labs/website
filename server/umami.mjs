@@ -120,7 +120,7 @@ export async function websiteStats(id, startAt, endAt) {
 export const getUser = (userId) => call('GET', `/api/users/${encodeURIComponent(userId)}`)
 
 /* ---------------------------------------------------------- sign-in tokens --- */
-// One-click sign-in from the developer portal (analytics-sso.mjs). Umami 3.4 keeps no server session
+// One-click sign-in from the app dashboard (analytics-sso.mjs). Umami 3.4 keeps no server session
 // without Redis: its token is a JWT (HS256) signed with secret() = sha512hex(APP_SECRET), then
 // AES-256-GCM encrypted with a key derived from the same secret (src/lib/jwt.ts createSecureToken,
 // src/lib/crypto.ts encrypt). checkAuth (src/lib/auth.ts) loads the user from Umami's own database on
