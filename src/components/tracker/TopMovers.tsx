@@ -8,6 +8,7 @@ import { SocialIcon } from '../SocialIcon'
 import { StockLogo } from './StockLogo'
 import { useReducedMotion } from '../charts/chart-utils'
 import { ChartBox } from '../charts/ChartSkeleton'
+import { MiniSpark } from '../charts/MiniSpark'
 import { CHART_H } from '../charts/chartPresets'
 import { xPost } from '../../lib/share'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPct, fmtPp, moversPost, stockPath, UP, useMovers, type Mover, type MoverWindow } from '../../lib/tracker'
@@ -42,27 +43,9 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
   )
 }
 
-/** The window's gap as a tiny line with a zero rule; only drawn with two or more points. */
-function Spark({ points, color }: { points: [number, number][]; color: string }) {
-  if (points.length < 2) return <span aria-hidden className="h-[26px]" />
-  const W = 188
-  const H = 26
-  const t0 = points[0][0]
-  const t1 = points[points.length - 1][0]
-  const vals = points.map((p) => p[1])
-  const lo = Math.min(0, ...vals)
-  const hi = Math.max(0, ...vals)
-  const span = hi - lo || 1
-  const x = (t: number) => ((t - t0) / (t1 - t0 || 1)) * W
-  const y = (v: number) => H - 2 - ((v - lo) / span) * (H - 4)
-  const d = points.map((p, i) => `${i ? 'L' : 'M'}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join('')
-  return (
-    <svg aria-hidden width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block overflow-visible">
-      <line x1={0} x2={W} y1={y(0)} y2={y(0)} stroke="#2a3542" strokeDasharray="2 3" />
-      <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" pathLength={1} style={{ strokeDasharray: 1, animation: 'gl-draw .9s .15s ease-out both' }} />
-      <circle cx={x(t1)} cy={y(vals[vals.length - 1])} r={2.2} fill={color} />
-    </svg>
-  )
+/** The window's gap as a tiny line with a zero rule (the kit's MiniSpark; a ghost with under two points). */
+function Spark({ points, color, label }: { points: [number, number][]; color: string; label: string }) {
+  return <MiniSpark data={points.map((p) => p[1])} xs={points.map((p) => p[0])} label={label} fmt={fmtGap} color={color} height={26} area={false} zero interactive={false} />
 }
 
 /** A figure that flashes gold when its value changes (keyed on the text). */
@@ -114,7 +97,7 @@ function MoverCard({ m, mode, win, max }: { m: Mover; mode: Mode; win: MoverWind
         </span>
         <MoveBar value={main} max={max} color={tone(main)} />
       </span>
-      <Spark points={m.spark} color={tone(m.gapNow) ?? '#aeb5be'} />
+      <Spark points={m.spark} color={tone(m.gapNow) ?? '#aeb5be'} label={`${m.ticker} gap over ${win}`} />
     </Link>
   )
 }

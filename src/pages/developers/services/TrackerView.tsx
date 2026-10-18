@@ -1,7 +1,7 @@
 import { BarChart3, BellPlus, ChartCandlestick, ChevronLeft, ChevronRight, Rows3, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { NF } from '../../../components/charts/number-formats'
-import { Sparkline } from '../../../components/Sparkline'
+import { MiniSpark } from '../../../components/charts/MiniSpark'
 import { GapBars } from '../../../components/tracker/GapBars'
 import { ChainLogo, StockLogo } from '../../../components/tracker/StockLogo'
 import { StatusBadge } from '../../../components/tracker/TrackerTable'
@@ -31,13 +31,12 @@ const byGap = (a: TrackerRow, b: TrackerRow) => (b.gapPct === null ? -1 : Math.a
 function RowSpark({ m, ticker }: { m: Mover | undefined; ticker: string }) {
   if (!m || m.spark.length < 2) return <span className="font-mono text-[11px] whitespace-nowrap text-faint">not tracked yet</span>
   const vals = m.spark.map((p) => p[1])
-  const lo = Math.min(...vals)
   const c = m.gapChangePp === 0 ? '#aeb5be' : m.gapChangePp > 0 ? UP : DOWN
   const text = `${ticker} gap over 24h: ${fmtGap(m.gapThen)} to ${fmtGap(m.gapNow)} (${fmtPp(m.gapChangePp)})`
   return (
     <span className="flex items-center gap-2" title={text}>
       <span className="block h-[22px] w-[84px] shrink-0">
-        <Sparkline data={vals.map((v) => v - lo + 1)} color={c} label={text} />
+        <MiniSpark data={vals} xs={m.spark.map((p) => p[0])} color={c} label={text} fmt={fmtGap} height={22} zero dot={false} interactive={false} />
       </span>
       <span className="font-mono text-[11px] whitespace-nowrap" style={{ color: c }}>
         {fmtPp(m.gapChangePp)}

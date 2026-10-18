@@ -1,13 +1,14 @@
 import { ArrowUpRight, PencilLine } from 'lucide-react'
-import { useId, useState, type KeyboardEvent } from 'react'
+import { useId } from 'react'
+import { MiniBars } from '../charts/MiniBars'
+import { MiniSpark } from '../charts/MiniSpark'
 import type { AskAction, AskCard, CardStat } from './askApi'
 import { asOfLabel, hrefProps } from './askFormat'
 
 /* Gully AI's live cards and one-tap actions, under an answer. The server builds both from the tool results
    (server/ask.mjs cardsFrom / actionsFrom), so every figure here is exactly what the tool read, with its
-   read time. The mini charts are hand-written SVG in the kit's colours: a spark line draws in, bars grow in
-   (gl-draw / gl-grow-x, which index.css turns into fades under reduced motion), and both answer pointer and
-   keyboard (arrow keys) with the value under the cursor. */
+   read time. The mini charts are the kit's MiniSpark and MiniBars (src/components/charts): they draw in on
+   view, answer pointer and keyboard with the value under the cursor, and ghost when there is too little. */
 
 function fmt(v: number | null, unit: string) {
   if (v === null || !Number.isFinite(v)) return 'not read'
@@ -19,88 +20,21 @@ function fmt(v: number | null, unit: string) {
 const TONE: Record<NonNullable<CardStat['tone']>, string> = { up: 'text-gold', down: 'text-error', ok: 'text-green', warn: 'text-muted' }
 
 function Spark({ points, unit, label }: { points: number[]; unit: string; label: string }) {
-  const [at, setAt] = useState<number | null>(null)
-  const W = 240
-  const H = 56
-  const min = Math.min(...points)
-  const max = Math.max(...points)
-  const span = max - min || 1
-  const x = (i: number) => (i / (points.length - 1)) * (W - 8) + 4
-  const y = (v: number) => H - 6 - ((v - min) / span) * (H - 12)
-  const d = points.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
-  const zero = unit === '%' && min < 0 && max > 0 ? y(0) : null
-  const last = points.length - 1
-  const shown = at ?? last
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') setAt((a) => Math.max(0, (a ?? last) - 1))
-    else if (e.key === 'ArrowRight') setAt((a) => Math.min(last, (a ?? last) + 1))
-    else if (e.key === 'Home') setAt(0)
-    else if (e.key === 'End') setAt(last)
-    else return
-    e.preventDefault()
-  }
   return (
     <figure className="m-0 flex flex-col gap-1">
       <figcaption className="flex items-baseline justify-between gap-2 font-mono text-[11px] text-faint">
         <span>{label}</span>
-        <span className="text-ink" aria-live="polite">
-          {at === null ? 'now ' : `point ${at + 1}/${points.length} `}
-          <b className="font-medium">{fmt(points[shown], unit)}</b>
+        <span className="text-ink">
+          now <b className="font-medium">{fmt(points[points.length - 1] ?? null, unit)}</b>
         </span>
       </figcaption>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="h-[56px] w-full cursor-crosshair overflow-visible rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-gold"
-        role="img"
-        tabIndex={0}
-        aria-label={`${label}: ${points.length} points from ${fmt(points[0], unit)} to ${fmt(points[last], unit)}, low ${fmt(min, unit)}, high ${fmt(max, unit)}. Use the arrow keys to read each point.`}
-        onKeyDown={onKey}
-        onPointerMove={(e) => {
-          const r = e.currentTarget.getBoundingClientRect()
-          setAt(Math.round(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * last))
-        }}
-        onPointerLeave={() => setAt(null)}
-        onBlur={() => setAt(null)}
-      >
-        {zero !== null && <line x1="0" x2={W} y1={zero} y2={zero} stroke="var(--color-line-strong)" strokeDasharray="3 3" />}
-        <path d={d} fill="none" stroke="var(--color-gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="1" style={{ animation: 'gl-draw .9s ease-out both' }} />
-        <circle cx={x(shown)} cy={y(points[shown])} r="3.5" fill="var(--color-gold)" stroke="var(--color-bg)" strokeWidth="1.5" style={{ animation: 'gl-fade .3s ease .6s both' }} />
-      </svg>
+      <MiniSpark data={points} label={label} fmt={(v) => fmt(v, unit)} height={56} zero={unit === '%'} />
     </figure>
   )
 }
 
-export function MiniBars({ bars, unit, label }: { bars: { label: string; value: number | null }[]; unit: string; label: string }) {
-  const [at, setAt] = useState<number | null>(null)
-  const max = Math.max(...bars.map((b) => Math.abs(b.value ?? 0)), 1e-9)
-  return (
-    <figure className="m-0 flex flex-col gap-1">
-      <figcaption className="font-mono text-[11px] text-faint">{label}</figcaption>
-      <ul className="m-0 flex list-none flex-col gap-[6px] p-0" aria-label={label}>
-        {bars.map((b, i) => {
-          const w = b.value === null ? 0 : Math.max(2, (Math.abs(b.value) / max) * 100)
-          return (
-            <li
-              key={`${b.label}-${i}`}
-              tabIndex={0}
-              onPointerEnter={() => setAt(i)}
-              onPointerLeave={() => setAt(null)}
-              onFocus={() => setAt(i)}
-              onBlur={() => setAt(null)}
-              className={`grid grid-cols-[minmax(56px,30%)_1fr_auto] items-center gap-2 rounded-[4px] text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-gold ${at === i ? 'bg-surface-hover' : ''}`}
-              title={`${b.label}: ${fmt(b.value, unit)}`}
-            >
-              <span className="truncate text-ink-2">{b.label}</span>
-              <span className="h-[8px] overflow-hidden rounded-full bg-surface-deep" aria-hidden>
-                <span className={`block h-full origin-left rounded-full ${b.value !== null && b.value < 0 ? 'bg-dim' : 'bg-gold'}`} style={{ width: `${w}%`, animation: `gl-grow-x .7s cubic-bezier(.2,.7,.2,1) ${i * 60}ms both` }} />
-              </span>
-              <span className={`font-mono tabular-nums ${at === i ? 'text-gold' : 'text-ink'}`}>{fmt(b.value, unit)}</span>
-            </li>
-          )
-        })}
-      </ul>
-    </figure>
-  )
+function Bars({ bars, unit, label }: { bars: { label: string; value: number | null }[]; unit: string; label: string }) {
+  return <MiniBars bars={bars} label={label} orientation="rows" fmt={(v) => fmt(v, unit)} />
 }
 
 /** One live card: title, LIVE and read time, the key figures, a mini chart, and where it came from. */
@@ -141,7 +75,7 @@ export function LiveCard({ card }: { card: AskCard }) {
       )}
       {series && <Spark points={series.points} unit={series.unit} label={series.label} />}
       {ch?.type === 'spark' && !series && <p className="m-0 font-mono text-[11px] text-faint">Not enough readings for a series yet.</p>}
-      {bars && <MiniBars bars={bars.bars} unit={bars.unit} label={bars.label} />}
+      {bars && <Bars bars={bars.bars} unit={bars.unit} label={bars.label} />}
       {card.note && <p className="m-0 text-[12px] leading-[1.5] text-faint">{card.note}</p>}
       <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px]">
         {card.source && (

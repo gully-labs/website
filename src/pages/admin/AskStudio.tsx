@@ -1,7 +1,7 @@
 import { Check, Copy, LoaderCircle, RotateCcw, Wand2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { copyWithToast } from '../../components/ui/toast'
-import { MiniBars } from '../../components/ask/AskCards'
+import { MiniBars } from '../../components/charts/MiniBars'
 import { ArrowMark } from './newTab'
 
 /* Gully Ask in the admin dashboard: the content studio (drafts from the docs and live data, never
@@ -334,7 +334,7 @@ function GapsCard({ token }: { token: string }) {
           </p>
           {g.items.length ? (
             <>
-              <MiniBars bars={g.items.slice(0, 8).map((x) => ({ label: x.question, value: x.unanswered + x.down }))} unit="" label="Unanswered + thumbs down, per question" />
+              <MiniBars bars={g.items.slice(0, 8).map((x) => ({ label: x.question, value: x.unanswered + x.down }))} orientation="rows" label="Unanswered + thumbs down, per question" />
               <ol className="m-0 flex list-none flex-col gap-2 p-0">
                 {g.items.map((x) => (
                   <li key={x.question} className="flex flex-col gap-1 rounded-[10px] border border-line px-4 py-3">

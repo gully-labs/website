@@ -1,6 +1,6 @@
 import { projects } from '../content/projects'
 import { fmtUsd, type Stats } from '../lib/stats'
-import { Sparkline } from './Sparkline'
+import { MiniSpark } from './charts/MiniSpark'
 import { BlinkDot } from './ui'
 import { NewTabMark } from './LayoutLinks'
 import { newTab } from './LayoutNav'
@@ -55,7 +55,7 @@ export function VenueTicker({ data, state }: { data: Stats | null; state: 'loadi
             </span>
             <span className="h-7 w-[84px]">
               {series.length > 1 ? (
-                <Sparkline data={series} color={p.accent} delay={0.2 + i * 0.9} loop />
+                <MiniSpark data={series} label={`${p.name} daily volume`} color={p.accent} delay={0.2 + i * 0.9} height={28} loop interactive={false} />
               ) : (
                 <span className="block pt-2 text-right font-mono text-[11px] text-faint">{state === 'ok' ? 'no series' : ''}</span>
               )}

@@ -1880,6 +1880,14 @@ await step('status page and API', async () => {
 // The new docs pages (P1-5): each loads under /docs with its title, sidebar icon and a live chart; the sitemap lists them.
 await step('docs pages', async () => {
   const { sitemapFor } = await import(new URL('../server/seo.mjs', import.meta.url).href)
+  // A few hours of real check history for the components the docs pages chart (Gully AI, the Telegram webhook and
+  // the API): one status round per half hour, recorded through status.mjs as the loop would, so the 24-hour charts
+  // draw real buckets instead of the honest "not enough data" ghost.
+  {
+    const st = await import(new URL('../server/status.mjs', import.meta.url).href)
+    const parts = [['ai', 'ai', 'Gully AI'], ['telegram', 'telegram', 'Telegram bot webhook'], ['api', 'platform', 'Public API']]
+    for (let k = 6; k >= 1; k--) st.recordResults(parts.map(([id, group, name]) => ({ id, group, name, state: 'up', detail: 'seeded by the e2e', latencyMs: 40 + k })), Date.now() - k * 30 * 60_000)
+  }
   const docsMap = sitemapFor('docs.gullylabs.xyz')
   const mainMap = sitemapFor('gullylabs.xyz')
   for (const slug of ['gully-ai', 'telegram', 'chain-kit', 'swaps', 'solana', 'status']) check(`docs sitemap lists /${slug}`, docsMap.includes(`https://docs.gullylabs.xyz/${slug}<`))

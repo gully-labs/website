@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { comingSoon, projects, type Project } from '../content/projects'
 import { fmtTime, fmtUsd, sourceHost, type Point, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
+import { MiniSpark } from './charts/MiniSpark'
 import { BlinkDot } from './ui'
 import { segBtnFrame, segGroup, segText } from './ui/seg'
 import { ChainLogo } from './logos/ChainLogo'
@@ -51,8 +52,6 @@ function extrasOf(v: Venue | undefined): string | null {
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five']
 const ease = [0.2, 0.8, 0.2, 1] as const
-const SW = 240
-const SH = 40
 
 /** The venue's daily volume over its last 30 readings, drawn in once when it comes into view. */
 function Spark({ p, daily, state }: { p: Project; daily: Point[] | null; state: State }) {
@@ -63,28 +62,17 @@ function Spark({ p, daily, state }: { p: Project; daily: Point[] | null; state: 
         {state === 'loading' ? 'reading…' : daily === null ? 'daily series unreadable' : 'no daily series published'}
       </span>
     )
-  const max = Math.max(...pts.map((d) => d.v)) || 1
-  const xy = pts.map((d, i) => [(i / (pts.length - 1)) * SW, SH - 3 - (d.v / max) * (SH - 6)] as const)
-  const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
-  const area = `${line} L${SW} ${SH} L0 ${SH} Z`
-  const [lx, ly] = xy[xy.length - 1]
+  const max = Math.max(...pts.map((d) => d.v))
   return (
-    <svg viewBox={`0 0 ${SW} ${SH}`} preserveAspectRatio="none" className="block h-10 w-full overflow-visible" role="img" aria-label={`${p.name} daily volume, last ${pts.length} days, peak ${fmtUsd(max)}`}>
-      <motion.path d={area} fill={p.accent} initial={{ opacity: 0 }} whileInView={{ opacity: 0.12 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }} />
-      <motion.path
-        d={line}
-        fill="none"
-        stroke={p.accent}
-        strokeWidth={1.5}
-        vectorEffect="non-scaling-stroke"
-        strokeLinejoin="round"
-        initial={{ pathLength: 0 }}
-        whileInView={{ pathLength: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.9, ease }}
-      />
-      <motion.circle cx={lx} cy={ly} r={2.5} fill={p.accent} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.8, duration: 0.3 }} />
-    </svg>
+    <MiniSpark
+      data={pts.map((d) => d.v)}
+      xs={pts.map((d) => d.t)}
+      labels={pts.map((d) => new Date(d.t).toISOString().slice(0, 10))}
+      label={`${p.name} daily volume, last ${pts.length} days, peak ${fmtUsd(max)}`}
+      fmt={fmtUsd}
+      color={p.accent}
+      height={40}
+    />
   )
 }
 
