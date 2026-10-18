@@ -57,7 +57,7 @@ export function PlanLimits({ tiers }: { tiers: LimitTier[] }) {
           backgroundStyle: { color: C.line, borderRadius: 4 },
           label: { show: true, position: 'right', color: C.ink2, fontSize: 12, formatter: (p: ChartEvent) => fmt(p.value) },
           // One hue stepping up with the tier (design audit P2-26): the bigger the plan, the stronger the gold.
-          data: tiers.map((t, i) => ({ value: val(t), itemStyle: { color: i === 0 ? C.lineHover : `rgba(232,192,96,${(0.35 + (0.65 * i) / Math.max(1, tiers.length - 1)).toFixed(2)})`, borderRadius: 4 } })),
+          data: tiers.map((t, i) => ({ value: val(t), itemStyle: { color: i === 0 ? C.lineHover : `rgba(217,181,99,${(0.35 + (0.65 * i) / Math.max(1, tiers.length - 1)).toFixed(2)})`, borderRadius: 4 } })),
         },
       ],
     }),

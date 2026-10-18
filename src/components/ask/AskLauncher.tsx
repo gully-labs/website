@@ -60,7 +60,7 @@ export function AskLauncher() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-[rgba(232,192,96,.08)] px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-[rgba(232,192,96,.14)]"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-[rgba(217,181,99,.08)] px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-[rgba(217,181,99,.14)]"
       >
         <Sparkles size={16} aria-hidden />
         <span className="max-[520px]:sr-only">Gully AI</span>

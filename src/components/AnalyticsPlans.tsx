@@ -34,7 +34,7 @@ export function AnalyticsPlanCards({ state, retry, delay = 0 }: { state: PlansSt
           const featured = p.id === 'starter'
           return (
             <div key={p.id} className={`relative flex flex-col gap-6 overflow-hidden rounded-card border bg-surface p-7 ${featured ? 'border-gold-line' : 'border-line'}`} style={rise(i)}>
-              {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(232,192,96,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
+              {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(217,181,99,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
               <div className="relative flex flex-col gap-2">
                 <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
                 <span className="flex items-baseline gap-2">

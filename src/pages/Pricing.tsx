@@ -124,7 +124,7 @@ export function Pricing() {
       <Seo title="Pricing" description="Plans for the Gully Labs tracker API and for Gully Analytics, paid in ETH, BNB, USDC or USDT on Base, Ethereum, BNB Chain or Arbitrum, with no custody." />
 
       <section className="relative overflow-hidden px-page pt-[72px] pb-12">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.14),transparent_62%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.14),transparent_62%)]" />
         <div className="relative flex max-w-[860px] flex-col gap-6">
           <span className={eyebrow} style={rise(0)}>
             PRICING
@@ -161,7 +161,7 @@ export function Pricing() {
                 const featured = p.id === 'pro'
                 return (
                   <div key={p.id} className={`relative flex flex-col gap-6 overflow-hidden rounded-card border bg-surface p-7 ${featured ? 'border-gold-line' : 'border-line'}`} style={rise(3 + i)}>
-                    {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(232,192,96,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
+                    {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(217,181,99,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
                     <div className="relative flex flex-col gap-2">
                       <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
                       <span className="flex items-baseline gap-2">

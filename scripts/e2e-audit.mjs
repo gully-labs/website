@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Files whose 6-digit hex values are, by definition, the token set. Anything else on a page is off-token. */
-const TOKEN_FILES = ['src/index.css', 'src/components/charts/chartPresets.ts', 'src/content/projects.ts', 'src/lib/tracker.ts', 'src/components/Wordmark.tsx', 'src/components/logos/registry.ts']
+const TOKEN_FILES = ['src/index.css', 'src/components/charts/chartPresets.ts', 'src/content/projects.ts', 'src/lib/tracker.ts', 'src/components/brand/kit.generated.ts', 'src/components/logos/registry.ts']
 
 /** Every token colour, lower-case `#rrggbb`. */
 export function tokenColors() {
@@ -75,7 +75,9 @@ export function auditPage({ allowed, inPlace }) {
     }
     // Colours: text, fills, borders; SVG fills and strokes outside <img> logos. An element whose colour is
     // mid-transition (a hover fade, a count-up flash) is skipped: it is on its way to a token.
-    const moving = typeof el.getAnimations === 'function' && el.getAnimations().some((a) => a.playState === 'running')
+    // An inherited colour moves with its parent's animation (a count-up flash on the figure's wrapper).
+    const running = (e) => !!e && typeof e.getAnimations === 'function' && e.getAnimations().some((a) => a.playState === 'running' || a.pending)
+    const moving = running(el) || running(el.parentElement) || running(el.parentElement?.parentElement)
     if (moving) {
       // fall through to the link check below
     } else if (el instanceof SVGElement) {

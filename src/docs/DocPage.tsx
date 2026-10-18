@@ -124,7 +124,7 @@ export function Section({ id, title, children }: { id: string; title: string; ch
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4">
       <h2 id={id} className={`group m-0 scroll-mt-[88px] leading-none ${title.startsWith('GET ') ? 'font-mono text-[24px] font-medium' : 'font-display text-[30px] font-bold uppercase'}`}>
-        <a href={`#${id}`} className="text-ink no-underline">
+        <a href={`#${id}`} className="-my-[7px] inline-block py-[7px] text-ink no-underline">
           {title}
           <span aria-hidden className="ml-2 text-gold opacity-0 transition-opacity group-hover:opacity-100">
             #
@@ -158,7 +158,7 @@ export function List({ children }: { children: ReactNode }) {
 
 export function Callout({ label, children, tone = 'gold' }: { label: string; children: ReactNode; tone?: 'gold' | 'plain' }) {
   return (
-    <div className={`flex flex-col gap-2 rounded-panel border px-5 py-4 ${tone === 'gold' ? 'border-gold-line bg-[rgba(232,192,96,.06)]' : 'border-line bg-surface'}`}>
+    <div className={`flex flex-col gap-2 rounded-panel border px-5 py-4 ${tone === 'gold' ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line bg-surface'}`}>
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{label}</span>
       <div className="text-[14.5px] leading-[1.65] text-ink-2">{children}</div>
     </div>

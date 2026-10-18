@@ -11,37 +11,42 @@
   line-gap-override: 0%;
 }
 
-/* Brand tokens from BRAND.md, plus the few extra values the prototype uses. */
+/* Page palette = the handoff brand kit (owner, 2026-10-18; public/brand/tokens/tokens.css). Exact kit values:
+   bg lab-night, surface midnight, line-strong slate, ink bone, muted text-muted, gold lab-gold, gold-hover
+   pale-gold, success-line frog-green, bar moss. The rest are tints of kit colours: bg-alt / surface-deep /
+   bg-footer / mascot-bg are stops of the kit's background gradient; line, grid and surface-hover sit between
+   midnight and slate; ink-2 is bone mixed with text-muted; gold-line is lab-gold at 35% on lab-night; green
+   is frog-green lifted to text contrast. Error has no kit colour and stays as it was. */
 @theme {
   --color-*: initial;
-  --color-bg: #0b0e13;
-  --color-bg-alt: #0f1319;
-  --color-bg-footer: #090c10;
-  --color-surface: #10141a;
-  --color-surface-deep: #0d1116;
-  --color-surface-hover: #131820;
-  --color-line: #1d232c;
-  --color-line-strong: #2c3540;
-  --color-line-hover: #3a4452;
-  --color-grid: #1a2029;
-  --color-axis: #5c6878;
-  --color-ink: #eef0f2;
-  --color-ink-2: #cfd5dc;
-  --color-muted: #a6b0bd;
-  --color-dim: #8a96a6;
-  /* Raised from #6c7888 (3.5 to 4.4:1) so small labels pass AA (4.5:1) on every surface, the selected
-     console row (#1a2029) and hairline fills (#1d232c) included. */
-  --color-faint: #7f8b9c;
-  --color-gold: #e8c060;
-  --color-gold-hover: #f4d98c;
-  --color-gold-line: #5a4a22;
-  --color-green: #6fcf6a;
-  --color-success-bg: #16301a;
-  --color-success-line: #2f5a33;
-  --color-bar: #3d4a36;
-  --color-mascot-bg: #24282c;
-  /* The brand kit's palette (public/brand/tokens/tokens.json), for brand surfaces. The logo files carry
-     these values inside them; the site's own tokens above stay the page palette (gully-labs-kit/BRAND.md). */
+  --color-bg: #0d141c;
+  --color-bg-alt: #111923;
+  --color-bg-footer: #0b1118;
+  --color-surface: #151d28;
+  --color-surface-deep: #111923;
+  --color-surface-hover: #1a2330;
+  --color-line: #1f2935;
+  --color-line-strong: #2a3542;
+  --color-line-hover: #3a4656;
+  --color-grid: #1c2531;
+  --color-axis: #5f6a78;
+  --color-ink: #f4f2ec;
+  --color-ink-2: #d1d3d5;
+  --color-muted: #aeb5be;
+  --color-dim: #949daa;
+  /* dim and faint are the kit's text-dim (#7d8794) lifted: at its own value it is 4.0:1 on a hairline fill
+     (#1f2935), and 11 px labels need AA (4.5:1) on every surface, the selected console row (#1c2531) and
+     hairline fills included. faint is 4.8:1 at worst, dim 5.4:1. */
+  --color-faint: #8a94a1;
+  --color-gold: #d9b563;
+  --color-gold-hover: #f2d58a;
+  --color-gold-line: #554c34;
+  --color-green: #74c27b;
+  --color-success-bg: #162a22;
+  --color-success-line: #2f6b35;
+  --color-bar: #3c553b;
+  --color-mascot-bg: #1d2836;
+  /* The brand kit's palette by name (public/brand/tokens/tokens.json), for brand surfaces. */
   --color-kit-lab-night: #0d141c;
   --color-kit-midnight: #151d28;
   --color-kit-slate: #2a3542;
@@ -52,6 +57,25 @@
   --color-kit-moss: #3c553b;
   --color-kit-text-muted: #aeb5be;
   --color-kit-text-dim: #7d8794;
+  /* Light-mode previews (the widget's and Chain Kit explorer's light theme, as a customer's light page shows
+     them). Ink, muted and faint on paper are kit colours: lab-night, slate, axis (5.5:1 on white). */
+  --color-paper: #ffffff;
+  --color-paper-site: #f6f7f9;
+  --color-paper-2: #f4f6f8;
+  --color-paper-3: #eef1f4;
+  --color-paper-line: #dde2e8;
+  --color-paper-site-line: #e2e6ea;
+  --color-paper-gold: #8a6a1a;
+  /* Telegram's own dark chat theme, for the Telegram mock in the alerts demo (a third-party UI, like the
+     chain and token marks; not page colours). */
+  --color-tg-bg: #0e1621;
+  --color-tg-head: #17212b;
+  --color-tg-in: #182533;
+  --color-tg-out: #2b5278;
+  --color-tg-btn: #22303f;
+  --color-tg-btn-hover: #2b3c4f;
+  --color-tg-link: #6ab3f3;
+  --color-tg-meta: #7f91a4;
   --color-error: #ff8a7a;
   /* The hairline round an error notice (the error colour at a dark tint). */
   --color-error-line: #5a2a24;
@@ -116,7 +140,7 @@
 @keyframes gl-count-flash { 0% { color: var(--color-gold-hover); } 100% { color: inherit; } }
 @keyframes gl-pop { from { opacity: 0; transform: translate(-50%, -50%) scale(.2); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes gl-marquee { to { transform: translateX(-50%); } }
-@keyframes gl-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(111,207,106,.55); } 70% { box-shadow: 0 0 0 7px rgba(111,207,106,0); } 100% { box-shadow: 0 0 0 0 rgba(111,207,106,0); } }
+@keyframes gl-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(116,194,123,.55); } 70% { box-shadow: 0 0 0 7px rgba(116,194,123,0); } 100% { box-shadow: 0 0 0 0 rgba(116,194,123,0); } }
 @keyframes gl-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes gl-blink {
   0%, 100% { opacity: 1; }
@@ -145,7 +169,7 @@
 /* The one loading placeholder: a soft pulse (stilled to a steady tint under reduced motion, below). */
 .gl-skeleton { animation: gl-skeleton 1.4s ease-in-out infinite; }
 
-.gl-row-sweep::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(232,192,96,.07), transparent); transform: translateX(-100%); animation: gl-scan 6s var(--sweep-delay, 0s) ease-in-out infinite; }
+.gl-row-sweep::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(217,181,99,.07), transparent); transform: translateX(-100%); animation: gl-scan 6s var(--sweep-delay, 0s) ease-in-out infinite; }
 
 @layer base {
   html {

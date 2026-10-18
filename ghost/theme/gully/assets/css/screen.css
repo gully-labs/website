@@ -14,23 +14,23 @@
 
 /* 1. Tokens ------------------------------------------------------------------------------------- */
 :root {
-    --gl-bg: #0b0e13;
-    --gl-bg-alt: #0f1319;
-    --gl-bg-footer: #090c10;
-    --gl-surface: #10141a;
-    --gl-surface-deep: #0d1116;
-    --gl-surface-hover: #131820;
-    --gl-line: #1d232c;
-    --gl-line-strong: #2c3540;
-    --gl-line-hover: #3a4452;
-    --gl-ink: #eef0f2;
-    --gl-ink-2: #cfd5dc;
-    --gl-muted: #a6b0bd;
-    --gl-dim: #8a96a6;
-    --gl-gold: #e8c060;
-    --gl-gold-hover: #f4d98c;
-    --gl-gold-line: #5a4a22;
-    --gl-green: #6fcf6a;
+    --gl-bg: #0d141c;
+    --gl-bg-alt: #111923;
+    --gl-bg-footer: #0b1118;
+    --gl-surface: #151d28;
+    --gl-surface-deep: #111923;
+    --gl-surface-hover: #1a2330;
+    --gl-line: #1f2935;
+    --gl-line-strong: #2a3542;
+    --gl-line-hover: #3a4656;
+    --gl-ink: #f4f2ec;
+    --gl-ink-2: #d1d3d5;
+    --gl-muted: #aeb5be;
+    --gl-dim: #949daa;
+    --gl-gold: #d9b563;
+    --gl-gold-hover: #f2d58a;
+    --gl-gold-line: #554c34;
+    --gl-green: #74c27b;
     --gl-error: #ff8a7a;
 
     /* Ghost admin's custom fonts (Design > Typography) win when set; the brand fonts otherwise. */
@@ -72,7 +72,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 input { font: inherit; }
 h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 :focus-visible { outline: 2px solid var(--gl-gold); outline-offset: 2px; }
-::selection { background: rgba(232, 192, 96, .32); color: var(--gl-ink); }
+::selection { background: rgba(217, 181, 99, .32); color: var(--gl-ink); }
 [hidden] { display: none !important; }
 
 .gl-viewport { display: flex; flex-direction: column; min-height: 100vh; }
@@ -123,7 +123,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 }
 .gl-btn--gold { background: var(--gl-gold); color: var(--gl-bg); }
 .gl-btn--gold:hover { background: var(--gl-gold-hover); }
-.gl-btn--gold .gl-ext { color: rgba(11, 14, 19, .7); }
+.gl-btn--gold .gl-ext { color: rgba(13, 20, 28, .7); }
 .gl-btn--outline { border: 1px solid var(--gl-line-strong); color: var(--gl-ink); font-weight: 500; }
 .gl-btn--outline:hover { border-color: var(--gl-gold); }
 .gl-btn--small { min-height: 36px; padding: 0 12px; font-size: 13px; }
@@ -150,7 +150,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-chip::before { content: ''; position: absolute; inset: -6px -2px; }
 .gl-chip .gl-icon { width: 12px; height: 12px; color: var(--gl-dim); }
 .gl-chip:hover { border-color: var(--gl-gold); color: var(--gl-ink); }
-.gl-chip.is-current { border-color: var(--gl-gold-line); background: rgba(232, 192, 96, .08); color: var(--gl-gold); }
+.gl-chip.is-current { border-color: var(--gl-gold-line); background: rgba(217, 181, 99, .08); color: var(--gl-gold); }
 .gl-chip.is-current .gl-icon { color: var(--gl-gold); }
 .gl-chip-count { color: var(--gl-dim); }
 
@@ -171,7 +171,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 /* 5. Header + menus ----------------------------------------------------------------------------- */
 .gl-header {
     position: sticky; top: 0; z-index: 50;
-    background: rgba(11, 14, 19, .88); border-bottom: 1px solid var(--gl-line);
+    background: rgba(13, 20, 28, .88); border-bottom: 1px solid var(--gl-line);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
 }
 .gl-bar { display: flex; align-items: center; gap: 24px; min-height: var(--gl-header-h); padding-block: 8px; }
@@ -357,7 +357,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 
 .gl-tile {
     position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; min-height: 220px; padding: 24px;
-    background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(29, 35, 44, .55) 10px 11px), var(--gl-bg);
+    background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(31, 41, 53, .55) 10px 11px), var(--gl-bg);
     transition: background-color .2s;
 }
 .gl-tile:hover { background-color: var(--gl-bg-alt); }
@@ -374,7 +374,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-banner-fallback {
     position: absolute; inset: 0;
     background:
-        radial-gradient(ellipse at 75% 20%, rgba(232, 192, 96, .1), transparent 60%),
+        radial-gradient(ellipse at 75% 20%, rgba(217, 181, 99, .1), transparent 60%),
         linear-gradient(var(--gl-line) 1px, transparent 1px) 0 0 / 40px 40px,
         linear-gradient(90deg, var(--gl-line) 1px, transparent 1px) 0 0 / 40px 40px;
     opacity: .7;
@@ -577,7 +577,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 /* 13. Ghost cards on the dark theme ------------------------------------------------------------- */
 .kg-callout-card.kg-card { border-radius: 10px; }
 .kg-callout-card-grey, .kg-callout-card-white { background: var(--gl-surface) !important; border: 1px solid var(--gl-line); }
-.kg-callout-card-accent { background: rgba(232, 192, 96, .1) !important; border: 1px solid var(--gl-gold-line); }
+.kg-callout-card-accent { background: rgba(217, 181, 99, .1) !important; border: 1px solid var(--gl-gold-line); }
 .kg-callout-card-accent, .kg-callout-card-accent .kg-callout-text { color: var(--gl-ink) !important; }
 .kg-callout-card-accent a { text-decoration: underline; }
 .kg-callout-text { font-size: .95em; }

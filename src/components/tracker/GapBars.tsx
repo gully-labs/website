@@ -66,14 +66,14 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
         max: extent,
         interval: extent / 2,
         axisLabel: { margin: 6, formatter: (v: number) => `${v > 0 ? '+' : ''}${Number.isInteger(v) ? v : v.toFixed(1)}%` },
-        splitLine: { lineStyle: { color: '#1a2029' } },
+        splitLine: { lineStyle: { color: '#1c2531' } },
       },
       yAxis: {
         type: 'category',
         inverse: true,
         data: byId.map(id),
         axisLabel: { show: false },
-        axisLine: { lineStyle: { color: '#2c3540' } },
+        axisLine: { lineStyle: { color: '#2a3542' } },
         animationDuration: 300,
         animationDurationUpdate: SORT_MS,
       },
@@ -106,7 +106,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
               value: g,
               itemStyle: {
                 color: thin ? 'rgba(0,0,0,0)' : c,
-                borderColor: sel ? '#e8c060' : c,
+                borderColor: sel ? '#d9b563' : c,
                 borderWidth: thin || sel ? 1.5 : 0,
                 borderType: thin ? 'dashed' : 'solid',
                 borderRadius: 2,
@@ -114,7 +114,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
               label: { show: true, position: g >= 0 ? 'right' : 'left', distance: 6, color: c, fontSize: 11, formatter: () => fmtGap(r.gapPct) },
             }
           }),
-          markArea: { silent: true, itemStyle: { color: 'rgba(232,192,96,.06)' }, label: { show: false }, data: [[{ xAxis: -inLinePct }, { xAxis: inLinePct }]] },
+          markArea: { silent: true, itemStyle: { color: 'rgba(217,181,99,.06)' }, label: { show: false }, data: [[{ xAxis: -inLinePct }, { xAxis: inLinePct }]] },
         },
       ],
     }
@@ -189,7 +189,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
           <i className="inline-block size-[10px] rounded-bar border border-dashed border-muted" /> thin pool, not trusted
         </span>
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block h-[10px] w-4 bg-[rgba(232,192,96,.18)]" /> ±{inLinePct}% in line
+          <i className="inline-block h-[10px] w-4 bg-[rgba(217,181,99,.18)]" /> ±{inLinePct}% in line
         </span>
       </div>
     </div>

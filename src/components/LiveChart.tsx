@@ -9,7 +9,7 @@ import { areaPreset, axisTooltip, CHART_H, livePoint, tipHtml } from './charts/c
    from the baseline; each is interactive (hover crosshair with exact values, keyboard stepping)
    and has a table twin. Under prefers-reduced-motion the motion is gentle (index.css policy). */
 
-const accentOf = (key: string) => projects.find((p) => p.key === key)?.accent ?? '#e8c060'
+const accentOf = (key: string) => projects.find((p) => p.key === key)?.accent ?? '#d9b563'
 
 function Tip({ x, y, children }: { x: number; y: number; children: React.ReactNode }) {
   return (
@@ -32,12 +32,12 @@ export function EmptySeries({ n }: { n: number }) {
 
 /** Daily totals as an area line, last N days: the line draws on, the area fades up, and a refresh
     glides it to the new values. Crosshair tooltip with the exact figure; arrow keys step days. */
-export function DailyLine({ series, label, color = '#e8c060' }: { series: Point[]; label: string; color?: string }) {
+export function DailyLine({ series, label, color = '#d9b563' }: { series: Point[]; label: string; color?: string }) {
   const key = `${color}|${label}|${series.map((p) => `${p.t}=${p.v}`).join(',')}`
   const option = useMemo(
     () => ({
       grid: { left: 0, right: 14, top: 12, bottom: 0, containLabel: true },
-      xAxis: { type: 'category', boundaryGap: false, data: series.map((p) => fmtDay(p.t)), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
+      xAxis: { type: 'category', boundaryGap: false, data: series.map((p) => fmtDay(p.t)), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: '#2a3542' } } },
       yAxis: { type: 'value', splitNumber: 3, axisLabel: { formatter: (v: number) => fmtUsd(v).replace(/\.00$/, '') } },
       tooltip: axisTooltip((ps: ChartEvent[]) => {
         const p = series[ps[0]?.dataIndex]

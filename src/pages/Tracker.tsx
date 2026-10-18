@@ -166,7 +166,7 @@ export function Tracker() {
         )}
         {st.k === 'error' && <p className="m-0 font-mono text-[13px] text-error">The tracker could not be read just now. It retries every minute.</p>}
         {data?.chains.some((c) => c.poolsStale) && (
-          <p className="m-0 rounded-input border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-2 font-mono text-[12px] text-ink-2">
+          <p className="m-0 rounded-input border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-2 font-mono text-[12px] text-ink-2">
             Pool prices for {data.chains.filter((c) => c.poolsStale).map((c) => `${c.name} are from ${ageText(c.poolsAsOf, now)}`).join('; ')}: the price source is briefly limiting requests. Fair prices are live.
           </p>
         )}
@@ -175,7 +175,7 @@ export function Tracker() {
           <div key={`${data.generatedAt}-${chain}`} className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line" style={rise(5)}>
             <Kpi label="STOCKS" value={rows.length} nf={NF.int} note={`${trusted.length} trusted pools`} />
             <Kpi label="TYPICAL GAP" value={median} nf={NF.fixed2} suffix="%" note="median" />
-            <Kpi label="OFF BY 2%+" value={flagged} nf={NF.int} tone={flagged ? '#e8c060' : undefined} note="flagged now" />
+            <Kpi label="OFF BY 2%+" value={flagged} nf={NF.int} tone={flagged ? '#d9b563' : undefined} note="flagged now" />
             <Kpi label="TOP PREMIUM" value={premium?.gapPct ?? null} nf={NF.signed2} suffix="%" tone={UP} note={premium ? premium.ticker : 'none'} />
             <Kpi label="TOP DISCOUNT" value={discount?.gapPct ?? null} nf={NF.signed2} suffix="%" tone={DOWN} note={discount ? discount.ticker : 'none'} />
             <Kpi label="LIQUIDITY" value={liquidity} nf={NF.compactUsd} note="all pools" />

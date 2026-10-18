@@ -95,20 +95,20 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
       // with animation instead of redrawing.
       legend: { show: false, selected: Object.fromEntries(withSeries.map((p) => [p.key, !hidden[p.key]])) },
       grid: { left: 2, right: 10, top: 22, bottom: 2, containLabel: true },
-      xAxis: { type: 'category', data: days.map(fmtDay), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: '#2c3540' } } },
+      xAxis: { type: 'category', data: days.map(fmtDay), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: '#2a3542' } } },
       yAxis: { type: 'value', splitNumber: 3, axisLabel: { formatter: (v: number) => fmtUsd(v).replace(/\.00$/, '') } },
       tooltip: {
         trigger: 'axis',
         confine: true,
         axisPointer: {
           type: 'cross',
-          crossStyle: { color: '#5c6878', type: 'dashed' },
-          lineStyle: { color: '#5c6878', type: 'dashed' },
+          crossStyle: { color: '#5f6a78', type: 'dashed' },
+          lineStyle: { color: '#5f6a78', type: 'dashed' },
           label: {
-            backgroundColor: '#1a2029',
-            borderColor: '#2c3540',
+            backgroundColor: '#1c2531',
+            borderColor: '#2a3542',
             borderWidth: 1,
-            color: '#eef0f2',
+            color: '#f4f2ec',
             fontFamily: MONO,
             fontSize: 11,
             formatter: (p: ChartEvent) => (p.axisDimension === 'y' ? fmtUsd(Number(p.value)) : p.value),
@@ -121,10 +121,10 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
           const rows = shown
             .map((p) => {
               const v = valueOn(p.key, t)
-              return `<div style="display:flex;gap:14px;justify-content:space-between"><span><span style="color:${p.accent}">■</span> ${esc(p.name)}</span><b style="font-weight:500;color:${v === null ? '#7f8b9c' : '#eef0f2'}">${v === null ? 'no reading' : fmtUsd(v)}</b></div>`
+              return `<div style="display:flex;gap:14px;justify-content:space-between"><span><span style="color:${p.accent}">■</span> ${esc(p.name)}</span><b style="font-weight:500;color:${v === null ? '#8a94a1' : '#f4f2ec'}">${v === null ? 'no reading' : fmtUsd(v)}</b></div>`
             })
             .join('')
-          return `<div style="color:#8a96a6;margin-bottom:4px">${fmtDay(t)}${i === D - 1 && isToday ? ' · today, so far' : ''}</div>${rows || '<div style="color:#7f8b9c">every venue hidden</div>'}<div style="display:flex;gap:14px;justify-content:space-between;border-top:1px solid #2c3540;margin-top:4px;padding-top:4px"><span>day total</span><b style="font-weight:600;color:#e8c060">${fmtUsd(totals[i])}</b></div>`
+          return `<div style="color:#949daa;margin-bottom:4px">${fmtDay(t)}${i === D - 1 && isToday ? ' · today, so far' : ''}</div>${rows || '<div style="color:#8a94a1">every venue hidden</div>'}<div style="display:flex;gap:14px;justify-content:space-between;border-top:1px solid #2a3542;margin-top:4px;padding-top:4px"><span>day total</span><b style="font-weight:600;color:#d9b563">${fmtUsd(totals[i])}</b></div>`
         },
       },
       series: [
@@ -150,10 +150,10 @@ export function HeroLedger({ data, state }: { data: Stats | null; state: State }
           tooltip: { show: false },
           z: 10,
           symbolSize: 7,
-          color: '#6fcf6a',
+          color: '#74c27b',
           rippleEffect: { brushType: 'stroke', scale: 3.2, period: 2.2 },
           animationDelay: withSeries.length * 160 + 300,
-          label: { show: true, position: 'top', distance: 8, formatter: isToday ? 'LIVE' : 'LATEST', color: '#6fcf6a', fontFamily: MONO, fontSize: 11, fontWeight: 600 },
+          label: { show: true, position: 'top', distance: 8, formatter: isToday ? 'LIVE' : 'LATEST', color: '#74c27b', fontFamily: MONO, fontSize: 11, fontWeight: 600 },
           data: D && armed ? [[D - 1, totals[D - 1]]] : [],
         },
       ],

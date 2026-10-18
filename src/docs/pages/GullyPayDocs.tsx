@@ -16,7 +16,7 @@ const sections = [
 
 const BUTTON = `<a href="https://gullylabs.xyz/pay/l/pl_XXXXXXXXXXXXXXXX" target="_blank" rel="noopener"
    data-gully-pay="popup" style="display:inline-flex;align-items:center;min-height:44px;padding:0 20px;
-   border-radius:10px;background:#e8c060;color:#0b0e13;font:600 15px/1 system-ui,sans-serif;text-decoration:none">
+   border-radius:10px;background:#d9b563;color:#0d141c;font:600 15px/1 system-ui,sans-serif;text-decoration:none">
   Pay with crypto
 </a>
 <!-- Optional: opens the checkout in a popup instead of a new tab. -->

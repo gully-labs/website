@@ -11,8 +11,8 @@ import { StockLogo } from '../tracker/StockLogo'
    (lib/widgetEmbed), so what is copied is exactly what renders on another site. */
 
 const THEMES: Record<WidgetTheme, { bg: string; sf: string; sf2: string; ln: string; ink: string; mut: string; fnt: string; acc: string; site: string; siteLine: string }> = {
-  dark: { bg: '#0b0e13', sf: '#10141a', sf2: '#141922', ln: '#1d232c', ink: '#eef0f2', mut: '#a6b0bd', fnt: '#7f8b9c', acc: '#e8c060', site: '#0d1116', siteLine: '#1a2029' },
-  light: { bg: '#ffffff', sf: '#f4f6f8', sf2: '#eef1f4', ln: '#dde2e8', ink: '#0b0e13', mut: '#3a4452', fnt: '#7f8b9c', acc: '#8a6a1a', site: '#f6f7f9', siteLine: '#e2e6ea' },
+  dark: { bg: 'var(--color-bg)', sf: 'var(--color-surface)', sf2: 'var(--color-surface-hover)', ln: 'var(--color-line)', ink: 'var(--color-ink)', mut: 'var(--color-muted)', fnt: 'var(--color-faint)', acc: 'var(--color-gold)', site: 'var(--color-bg-alt)', siteLine: 'var(--color-grid)' },
+  light: { bg: 'var(--color-paper)', sf: 'var(--color-paper-2)', sf2: 'var(--color-paper-3)', ln: 'var(--color-paper-line)', ink: 'var(--color-bg)', mut: 'var(--color-line-strong)', fnt: 'var(--color-axis)', acc: 'var(--color-paper-gold)', site: 'var(--color-paper-site)', siteLine: 'var(--color-paper-site-line)' },
 }
 type Theme = (typeof THEMES)['dark']
 
@@ -303,7 +303,7 @@ export default function WidgetDemo(): JSX.Element {
       {/* Preview, inside a stand-in host page */}
       <div className="flex min-w-0 flex-[999_1_520px] bg-bg p-4">
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-line transition-colors duration-400" style={{ background: t.site }}>
-          <div className="flex items-center gap-2 bg-[#161b22] px-3 py-2">
+          <div className="flex items-center gap-2 bg-surface-hover px-3 py-2">
             <span aria-hidden className="flex gap-[5px]">
               <span className="size-[9px] rounded-full bg-line-hover" />
               <span className="size-[9px] rounded-full bg-line-hover" />

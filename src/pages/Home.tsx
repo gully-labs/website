@@ -74,7 +74,7 @@ export function Home() {
             <button type="button" onClick={() => openContact()} className={`${btnOutline} inline-flex min-h-11 items-center justify-center gap-2 px-[18px]`}>
               <Send aria-hidden size={16} /> Start a project
             </button>
-            <Link to={askHref} className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-btn border border-gold-line px-[18px] text-[15px] font-medium text-gold transition-colors hover:border-gold hover:bg-[rgba(232,192,96,.06)] hover:text-gold">
+            <Link to={askHref} className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-btn border border-gold-line px-[18px] text-[15px] font-medium text-gold transition-colors hover:border-gold hover:bg-[rgba(217,181,99,.06)] hover:text-gold">
               <Sparkles aria-hidden size={16} className="transition-transform duration-200 group-hover:rotate-12" /> Ask Gully AI
             </Link>
           </div>

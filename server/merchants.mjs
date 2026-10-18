@@ -1038,7 +1038,7 @@ async function setProfile(ws, body) {
   }
   if (has('accent')) {
     const a = body.accent == null || body.accent === '' ? null : String(body.accent).trim()
-    if (a && !HEX_RE.test(a)) return bad('The accent colour must be a hex colour like #e8c060.')
+    if (a && !HEX_RE.test(a)) return bad('The accent colour must be a hex colour like #d9b563.')
     next.accent = a ? a.toLowerCase() : null
   }
   if (has('supportEmail')) {

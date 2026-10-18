@@ -34,17 +34,17 @@
     'use strict';
 
     var C = {
-        bg: '#0b0e13',
-        surface: '#10141a',
-        line: '#1d232c',
-        lineStrong: '#2c3540',
-        lineHover: '#3a4452',
-        ink: '#eef0f2',
-        muted: '#a6b0bd',
-        dim: '#8a96a6',
-        gold: '#e8c060',
-        goldHi: '#f4d98c',
-        green: '#6fcf6a'
+        bg: '#0d141c',
+        surface: '#151d28',
+        line: '#1f2935',
+        lineStrong: '#2a3542',
+        lineHover: '#3a4656',
+        ink: '#f4f2ec',
+        muted: '#aeb5be',
+        dim: '#949daa',
+        gold: '#d9b563',
+        goldHi: '#f2d58a',
+        green: '#74c27b'
     };
     var FONT_DISPLAY = '"Barlow Condensed", "Arial Narrow", sans-serif';
     var FONT_MONO = '"IBM Plex Mono", ui-monospace, monospace';

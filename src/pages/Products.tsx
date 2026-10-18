@@ -102,7 +102,7 @@ function ProductPage({ p }: { p: Product }) {
     <>
       <Seo title={p.seo.title} description={p.seo.description} />
       <section className="relative overflow-hidden px-page pt-[72px] pb-16">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.14),transparent_62%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.14),transparent_62%)]" />
         <div className="relative flex max-w-[900px] flex-col gap-6">
           <span className="flex flex-wrap items-center gap-3" style={rise(0)}>
             <span className={eyebrow}>{p.eyebrow}</span>

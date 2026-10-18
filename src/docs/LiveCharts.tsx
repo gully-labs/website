@@ -99,7 +99,7 @@ function LatencyTile({ path, label, probes }: { path: string; label: string; pro
         <EChart option={option} height={CHART_H.spark} label={`Response time of ${path} from this browser, last ${data.length} checks`} skeleton="line" steps={{ count: data.length }} />
       ) : (
         <div className="relative h-[44px] overflow-hidden rounded-input bg-surface-deep">
-          <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(232,192,96,.12),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
+          <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.12),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
           <span className="absolute inset-0 grid place-items-center font-mono text-[11px] text-faint">collecting a series…</span>
         </div>
       )}
@@ -235,7 +235,7 @@ export function PayCoverage() {
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => tip(ps[0]?.dataIndex ?? -1), 'shadow'),
       series: [
         { id: 'native', name: 'Native coin', stack: 'assets', ...barsPreset({ horizontal: true, radius: 0, focus: 'series' }), color: C.gold, data: chains.map((c) => of(c.id, 'native').length) },
-        { id: 'token', name: 'Stablecoins', stack: 'assets', ...barsPreset({ horizontal: true, focus: 'series' }), color: '#1f9e89', data: chains.map((c) => of(c.id, 'token').length) },
+        { id: 'token', name: 'Stablecoins', stack: 'assets', ...barsPreset({ horizontal: true, focus: 'series' }), color: '#26ab94', data: chains.map((c) => of(c.id, 'token').length) },
         {
           id: 'conf',
           name: 'Confirmations',

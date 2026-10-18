@@ -34,7 +34,7 @@ export function MoversRow({ limit = 5 }: { limit?: number }) {
   return (
     <ul aria-label="Biggest gap moves, last 24 hours" className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-2 p-0">
       {list.map((m, i) => {
-        const c = m.gapChangePp === 0 ? '#a6b0bd' : m.gapChangePp > 0 ? UP : DOWN
+        const c = m.gapChangePp === 0 ? '#aeb5be' : m.gapChangePp > 0 ? UP : DOWN
         const d = sparkPath(m.spark)
         return (
           <li key={`${m.chain}:${m.ticker}`} style={{ animation: `gl-rise .45s ${i * 0.06}s ease both` }}>
