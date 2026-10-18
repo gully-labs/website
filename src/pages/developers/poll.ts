@@ -5,7 +5,8 @@ import { api } from './api'
    when a refresh fails; the failure shows as a small "couldn't refresh · retry" chip (RefreshChip in ui.tsx)
    and the read is retried on its own with backoff (5 s, 10 s, 20 s … up to 60 s) until it answers, then
    the normal period resumes. Only a page that has never loaded shows an error in place of its content.
-   A first read that takes longer than `timeoutMs` ends as `timedOut`, so nothing stays a skeleton forever. */
+   A first read that takes longer than `timeoutMs` ends as `timedOut`, so nothing stays a skeleton forever.
+   Focusing the window reads again at once. */
 
 export type Poll<T> = {
   /** The last good answer (kept through failed refreshes), or null before the first one. */
@@ -52,9 +53,15 @@ export function usePoll<T>(path: string | null, every = 60_000, timeoutMs = 15_0
       return read()
     }
     void read()
+    // Coming back to the window reads again at once (a failed read keeps its backoff).
+    const onFocus = () => {
+      if (!document.hidden) void read()
+    }
+    window.addEventListener('focus', onFocus)
     const t = timeoutMs ? window.setTimeout(() => alive && set((p) => (p.data === null && p.error === null ? { ...p, timedOut: true } : p)), timeoutMs) : 0
     return () => {
       alive = false
+      window.removeEventListener('focus', onFocus)
       window.clearTimeout(timer)
       window.clearTimeout(t)
     }

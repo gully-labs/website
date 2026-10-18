@@ -30,7 +30,7 @@ export interface Viewer {
 }
 
 /** The Merchant tab in the app, at the section to fix (locally the app lives at /developers). */
-export const merchantTabUrl = (section?: string) => `${isLocalHost() ? '/developers' : `${APP_URL}/`}#${section ? `m-${section}` : 'merchant'}`
+export const merchantTabUrl = (section?: string) => `${isLocalHost() ? '/developers' : `${APP_URL}/`}#${section ? `merchant/${section}` : 'merchant'}`
 
 /* ------------------------------------------------------------ accent --- */
 

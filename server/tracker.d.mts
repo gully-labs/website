@@ -1,6 +1,8 @@
 /** Types for tracker.mjs. The document shape is `Tracker` in src/lib/tracker.ts. */
 export function readTracker(): Promise<unknown>
 export function readHistory(chain: string, ticker: string): [number, number, number, number][]
+export const GAP_INDEX_TOP: number
+export function readGapIndex(): Promise<{ top: number; tokens: string[]; bucketMinutes: number; points: [number, number][]; generatedAt: string }>
 export function readMovers(window?: string): Promise<import('./movers.mjs').MoversFull>
 export function readHistoryDays(chain: string, ticker: string, days: number): [number, number, number, number][]
 export function startTrackerLoop(): unknown

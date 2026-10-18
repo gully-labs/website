@@ -1,7 +1,7 @@
 import { AlertTriangle, ArrowUpRight, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
-import { DOCS_URL } from '../../site-host'
+import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import { api, ROLE_REFUSED, SESSION_ENDED, type Account, type Me, type Offer, type WorkspaceRef } from './api'
 import { ExtLink } from './ExtLink'
 import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
@@ -122,7 +122,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           <ExtLink href={`${DOCS_URL}/api`} className="inline-flex min-h-11 items-center gap-2 text-[13px] text-muted hover:text-ink">
             <BookOpen size={15} aria-hidden /> Read the docs
           </ExtLink>
-          <a href="/widget" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-muted hover:text-gold">
+          <a href={isLocalHost() ? '/widget' : `${SITE_URL}/widget`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 text-[13px] text-muted hover:text-gold">
             No code? Embed the widget <ArrowUpRight size={13} aria-hidden />
           </a>
         </div>

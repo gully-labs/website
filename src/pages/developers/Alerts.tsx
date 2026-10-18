@@ -1,4 +1,4 @@
-import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
+import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, History, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { DOCS_URL } from '../../site-host'
 import { toastSuccess } from '../../components/ui/toast'
@@ -8,9 +8,13 @@ import { CopyButton, Dialog } from './Dialog'
 import { useWrite } from './portal'
 import { Can } from './RoleGate'
 import { AlertFires } from './tabcharts'
-import { Empty, ErrorLine, Skeleton } from './parts'
+import { ErrorLine, Skeleton } from './parts'
+import { GhostCurves } from './charts'
+import { InfoTip, KpiRow, KpiTile, RefreshChip, Stepper, SubPanel, SubTabs, Unknown } from './ui'
+import { useSubTab } from './subtab'
+import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { ExtLink } from './ExtLink'
-import { input, mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
+import { input, mono, panel, panelTitle, pillGold, pillLine, rise } from './styles'
 
 /* Gap alerts: create, test, pause and delete alerts, and read each one's delivery log. Limits come
    from the plan (server); Telegram appears only when the server has a bot configured, and delivers to
@@ -55,6 +59,8 @@ function DirectionControl({ value, onChange, pct }: { value: GapDirection; onCha
   )
 }
 const fieldLabel = 'flex flex-col gap-2 text-[14px] text-ink-2'
+/** A compact row action (36px on desktop, 44px touch targets on narrow screens). */
+const rowBtn = 'inline-flex min-h-9 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-50 max-[859px]:min-h-11'
 const TG_BLUE = '#2aa3df'
 
 /**
@@ -229,47 +235,49 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
   const mine = (op: string) => busy === `${a.id}:${op}`
   const canEdit = useWrite('alerts', 'change alerts').ok
   return (
-    <li className="flex flex-col gap-3 border-t border-line pt-3" style={rise(i)}>
+    <li className="flex flex-col gap-2 border-t border-line py-2 first:border-t-0 first:pt-0" style={rise(i)} data-alert={a.id}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span className="flex min-w-0 flex-[1_1_200px] flex-col">
-          <b className="font-semibold">{alertName(a)}</b>
-          <span className="font-mono text-[11px] text-faint">{alertRule(a)}</span>
+          <b className="truncate text-[14px] font-semibold">{alertName(a)}</b>
+          <span className="truncate font-mono text-[11px] text-faint" title={a.webhook ? `webhook ${a.webhook.url}` : undefined}>
+            {alertRule(a)}
+          </span>
         </span>
         <ChannelChips a={a} telegram={telegram} act={act} busy={busy} />
         <span className="font-mono text-[11px]" style={{ color: st.c }}>
           {st.t}
         </span>
+        <span className="flex flex-wrap items-center gap-1">
+          {canEdit && (
+            <>
+              <button type="button" className={rowBtn} disabled={!!busy} onClick={() => act(a, 'test')}>
+                <Send size={13} aria-hidden /> {mine('test') ? 'Sending…' : 'Test'}
+              </button>
+              {a.mutedUntil && a.enabled ? (
+                <button type="button" className={rowBtn} disabled={!!busy} onClick={() => act(a, 'resume')}>
+                  <BellRing size={13} aria-hidden /> Unmute
+                </button>
+              ) : (
+                <button type="button" className={rowBtn} disabled={!!busy} onClick={() => act(a, a.enabled ? 'pause' : 'resume')}>
+                  {a.enabled ? <Pause size={13} aria-hidden /> : <Play size={13} aria-hidden />} {a.enabled ? 'Pause' : 'Resume'}
+                </button>
+              )}
+              {a.webhook && (
+                <button type="button" className={rowBtn} disabled={!!busy} onClick={() => act(a, 'rotate')} title="New webhook signing secret">
+                  <RotateCw size={13} aria-hidden /> New secret
+                </button>
+              )}
+              <button type="button" className={`${rowBtn} hover:!border-error hover:!text-error`} disabled={!!busy} onClick={() => act(a, 'delete')}>
+                <Trash2 size={13} aria-hidden /> Delete
+              </button>
+            </>
+          )}
+          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="inline-flex min-h-9 items-center gap-1 rounded-full px-2 font-mono text-[11px] text-muted hover:text-ink max-[859px]:min-h-11">
+            <ChevronDown size={13} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden /> Log ({a.deliveries.length})
+          </button>
+        </span>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {canEdit && (
-        <>
-        <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, 'test')}>
-          <Send size={14} aria-hidden /> {mine('test') ? 'Sending…' : 'Test'}
-        </button>
-        {a.mutedUntil && a.enabled ? (
-          <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, 'resume')}>
-            <BellRing size={14} aria-hidden /> Unmute
-          </button>
-        ) : (
-          <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, a.enabled ? 'pause' : 'resume')}>
-            {a.enabled ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />} {a.enabled ? 'Pause' : 'Resume'}
-          </button>
-        )}
-        {a.webhook && (
-          <button type="button" className={pillSm} disabled={!!busy} onClick={() => act(a, 'rotate')}>
-            <RotateCw size={14} aria-hidden /> New webhook secret
-          </button>
-        )}
-        <button type="button" className={`${pillSm} hover:!border-error hover:!text-error`} disabled={!!busy} onClick={() => act(a, 'delete')}>
-          <Trash2 size={14} aria-hidden /> Delete
-        </button>
-        </>
-        )}
-        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full px-2 font-mono text-[12px] text-muted hover:text-ink">
-          <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden /> Delivery log ({a.deliveries.length})
-        </button>
-      </div>
-      {a.webhook && <span className="font-mono text-[11px] break-all text-faint">webhook {a.webhook.url}</span>}
+      {open && a.webhook && <span className="font-mono text-[11px] break-all text-faint">webhook {a.webhook.url}</span>}
       {open &&
         (!a.deliveries.length ? (
           <p className="m-0 text-[13px] text-faint">Nothing sent yet. Use Test to check your endpoint.</p>
@@ -436,10 +444,89 @@ export function SecretDialog({ secret, onClose }: { secret: Secret; onClose: () 
   )
 }
 
+type AlertsSub = 'list' | 'deliveries' | 'telegram'
+const ALERTS_SUBS: readonly AlertsSub[] = ['list', 'deliveries', 'telegram']
+
+/** Setup as a stepper: Connect Telegram (only when the server has a bot) → Create an alert → Send a test.
+    Each tick is read from the alerts view: a linked chat, an alert, a test delivery in any alert's log. */
+function AlertsSetup({ view, reload, onCreate, act, busy, full }: { view: AlertsView; reload: () => Promise<unknown>; onCreate: () => void; act: (a: GapAlert, op: string, body?: unknown) => void; busy: string | null; full: boolean }) {
+  const tested = view.alerts.some((a) => a.deliveries.some((d) => d.test))
+  const first = view.alerts.find((a) => a.coveredByPlan) ?? view.alerts[0] ?? null
+  const steps = [
+    ...(view.telegram.enabled ? [{ id: 'telegram', label: 'Connect Telegram', done: !!view.telegram.linked }] : []),
+    { id: 'create', label: 'Create an alert', done: view.alerts.length > 0 },
+    { id: 'test', label: 'Send a test', done: tested },
+  ]
+  return (
+    <Stepper title="Set up alerts" steps={steps} testId="alerts-stepper">
+      {(id) =>
+        id === 'telegram' ? (
+          <TelegramCard info={view.telegram} reload={reload} compact />
+        ) : id === 'create' ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="min-w-0 flex-[1_1_260px] text-[13px] text-muted">A webhook{view.telegram.enabled ? ' or Telegram message' : ''} when a stock&apos;s gap crosses your line, or a DeepCore token launches.</span>
+            <Can cat="alerts" what="create alerts">
+              <button type="button" disabled={full} onClick={onCreate} className={pillGold}>
+                <Plus size={16} aria-hidden /> Create your first alert
+              </button>
+            </Can>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="min-w-0 flex-[1_1_260px] text-[13px] text-muted">{first ? <>Send <b className="font-semibold text-ink">{alertName(first)}</b> a test delivery to check your endpoint{first.telegram ? ' and chat' : ''}.</> : 'Create an alert first.'}</span>
+            {first && (
+              <Can cat="alerts" what="test alerts">
+                <button type="button" disabled={!!busy} onClick={() => act(first, 'test')} className={pillGold}>
+                  <Send size={15} aria-hidden /> {busy === `${first.id}:test` ? 'Sending…' : 'Send a test'}
+                </button>
+              </Can>
+            )}
+          </div>
+        )
+      }
+    </Stepper>
+  )
+}
+
+/** Alerts in use, deliveries in the logs over 30 days, the share delivered, and the Telegram chat. */
+function AlertsKpis({ view }: { view: AlertsView }) {
+  const [now] = useState(() => Date.now())
+  const since = now - 30 * 86_400_000
+  const seen = new Set<string>()
+  let sent = 0
+  let ok = 0
+  for (const a of view.alerts)
+    for (const d of a.deliveries) {
+      const k = `${d.id}:${d.channel}`
+      if (d.test || seen.has(k) || Date.parse(d.at) < since) continue
+      seen.add(k)
+      sent++
+      if (d.ok) ok++
+    }
+  const tg = view.telegram
+  return (
+    <KpiRow label="Alerts at a glance">
+      <KpiTile i={0} label="Alerts in use" icon={<BellRing size={13} aria-hidden />} note={`of ${view.limits.max} on ${view.limits.planName}`}>
+        <AnimatedNumber value={view.limits.used} countUp />
+      </KpiTile>
+      <KpiTile i={1} label="Fired · 30 days" icon={<Send size={13} aria-hidden />} note="from the delivery logs">
+        <AnimatedNumber value={sent} countUp />
+      </KpiTile>
+      <KpiTile i={2} label="Delivered" icon={<Check size={13} aria-hidden />} note={sent ? `${ok} of ${sent} answered 2xx` : 'nothing sent yet'}>
+        {sent ? <AnimatedNumber value={(ok / sent) * 100} suffix="%" countUp /> : <Unknown why="No deliveries in 30 days, so there is no rate yet" />}
+      </KpiTile>
+      <KpiTile i={3} label="Telegram" icon={<Send size={13} aria-hidden />} note={!tg.enabled ? 'no bot on this server' : tg.linked ? tg.linked.chatTitle : 'not connected'}>
+        <span className={`text-[18px] ${tg.linked ? 'text-green' : 'text-faint'}`}>{!tg.enabled ? 'off' : tg.linked ? 'linked' : 'not linked'}</span>
+      </KpiTile>
+    </KpiRow>
+  )
+}
+
 export function Alerts({ goBilling, creating, onCreateDone, prefill = null }: { goBilling: () => void; creating: boolean; onCreateDone: () => void; prefill?: string | null }) {
-  const { view, err, load } = useAlertsView()
+  const { view, err, refreshErr, load } = useAlertsView()
   const { act, busy, secret, setSecret } = useAlertActions(load)
   const [opened, setOpen] = useState(false)
+  const [sub, setSub] = useSubTab<AlertsSub>('alerts', ALERTS_SUBS, 'list')
 
   // "+ New alert" on the Overview lands here with the dialog open (once the plan's room is known).
   const full = !!view && view.limits.used >= view.limits.max
@@ -450,82 +537,94 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null }: { 
     onCreateDone()
   }
 
-  if (err) return <ErrorLine onRetry={load}>Alerts could not be read: {err}</ErrorLine>
+  // Only a tab that has never loaded shows an error in place of its content; a failed refresh keeps the
+  // last good view on screen with the retry chip.
+  if (err && !view) return <ErrorLine onRetry={load}>Alerts could not be read: {err}</ErrorLine>
   if (!view)
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <Skeleton h={90} />
         <Skeleton h={160} />
       </div>
     )
 
+  const deliveries = view.alerts.reduce((t, a) => t + a.deliveries.length, 0)
   return (
-    <div className="flex flex-col gap-[14px]">
-      <section className={panel} style={rise(0)} aria-labelledby="alerts-title">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-col gap-[2px]">
-            <h2 id="alerts-title" className={panelTitle}>
-              Gap alerts
-            </h2>
-            <span className={mono}>
-              {view.limits.used} of {view.limits.max} on {view.limits.planName} · checked every five minutes · at most one delivery per alert every {view.limits.cooldownMinutes} minutes
-            </span>
-          </div>
-          <Can cat="alerts" what="create alerts">
-            <button type="button" disabled={full} onClick={() => setOpen(true)} title={full ? 'Your plan’s alerts are all in use' : undefined} className={pillLine}>
-              <Plus size={16} aria-hidden /> New alert
-            </button>
-          </Can>
-        </div>
-        <TelegramCard info={view.telegram} reload={load} />
-        {full && (
-          <p className="m-0 text-[14px] text-muted">
-            Every alert your plan includes is in use.{' '}
-            <button type="button" onClick={goBilling} className="min-h-11 text-gold underline-offset-4 hover:underline">
-              See plans
-            </button>{' '}
-            for more, or delete one.
-          </p>
-        )}
-        {!view.alerts.length ? (
-          <Empty
-            icon={<BellRing size={26} className="text-gold" aria-hidden />}
-            title="No alerts yet"
-            action={
-              <Can cat="alerts" what="create alerts">
-                <button type="button" disabled={full} onClick={() => setOpen(true)} className={pillGold}>
-                  <Plus size={16} aria-hidden /> Create your first alert
-                </button>
-              </Can>
-            }
-          >
-            Get a webhook{view.telegram.enabled ? ' or a Telegram message' : ''} when a stock token&apos;s gap to its fair price crosses your line. An alert fires when its condition becomes true and re-arms once it is false again.
-          </Empty>
-        ) : (
-          <ul className="m-0 flex list-none flex-col gap-3 p-0">
-            {view.alerts.map((a, i) => (
-              <AlertRow key={a.id} a={a} i={i} act={act} busy={busy} telegram={view.telegram} />
-            ))}
-          </ul>
-        )}
-        <p className="m-0 border-t border-line pt-3 text-[12px] leading-[1.6] text-faint">
-          Alerts look only at stocks the tracker would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature:{' '}
-          <ExtLink href={`${DOCS_URL}/plans-alerts`} className="inline-flex items-center gap-1 text-ink-2 underline-offset-4 hover:underline">
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <InfoTip className="flex-1" summary={`${view.limits.used} of ${view.limits.max} alerts on ${view.limits.planName} · checked every five minutes`}>
+          An alert fires when its condition becomes true and re-arms once it is false again, at most one delivery per alert every {view.limits.cooldownMinutes} minutes. Alerts look only at stocks the tracker would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature are in the{' '}
+          <ExtLink href={`${DOCS_URL}/plans-alerts`} className="text-gold underline-offset-4 hover:underline">
             Plans &amp; alerts docs
           </ExtLink>
           .
+        </InfoTip>
+        <RefreshChip error={refreshErr} onRetry={load} />
+        <Can cat="alerts" what="create alerts">
+          <button type="button" disabled={full} onClick={() => setOpen(true)} title={full ? 'Your plan’s alerts are all in use' : undefined} className={pillLine}>
+            <Plus size={16} aria-hidden /> New alert
+          </button>
+        </Can>
+      </div>
+      <AlertsSetup view={view} reload={load} onCreate={() => setOpen(true)} act={act} busy={busy} full={full} />
+      <AlertsKpis view={view} />
+      {full && (
+        <p className="m-0 text-[13px] text-muted">
+          Every alert your plan includes is in use.{' '}
+          <button type="button" onClick={goBilling} className="min-h-9 text-gold underline-offset-4 hover:underline">
+            See plans
+          </button>{' '}
+          for more, or delete one.
         </p>
-      </section>
-
-      <section className={panel} style={rise(1)} aria-labelledby="fired-title" data-testid="alert-timeline">
-        <div className="flex flex-col gap-[2px]">
-          <h2 id="fired-title" className={panelTitle}>
-            Fired alerts
-          </h2>
-          <span className={mono}>From each alert&apos;s delivery log: deliveries a day over 30 days, then each alert&apos;s own · green delivered, red failed, hollow test</span>
-        </div>
-        <AlertFires alerts={view.alerts} nameOf={alertName} />
-      </section>
+      )}
+      <SubTabs
+        label="Alerts sections"
+        idBase="alerts-sub"
+        value={sub}
+        onChange={setSub}
+        items={[
+          { id: 'list', label: 'Alerts', icon: <BellRing size={15} aria-hidden />, count: view.alerts.length },
+          { id: 'deliveries', label: 'Deliveries', icon: <History size={15} aria-hidden />, count: deliveries },
+          { id: 'telegram', label: 'Telegram', icon: <Send size={15} aria-hidden />, dot: view.telegram.enabled && !view.telegram.linked },
+        ]}
+      />
+      <SubPanel idBase="alerts-sub" value={sub}>
+        {sub === 'list' && (
+          <section className={`${panel} gap-2 p-3`} aria-labelledby="alerts-title">
+            <h2 id="alerts-title" className="sr-only">
+              Gap alerts
+            </h2>
+            {!view.alerts.length ? (
+              <GhostCurves height={150} title="Your alerts will list here" colors={['#e8c060', '#6fcf6a']}>
+                <BellRing size={20} className="text-gold" aria-hidden />
+                <span className="max-w-[440px] text-[13px] text-muted">Get a webhook{view.telegram.enabled ? ' or a Telegram message' : ''} when a stock token&apos;s gap to its fair price crosses your line.</span>
+              </GhostCurves>
+            ) : (
+              <ul className="m-0 flex list-none flex-col p-0">
+                {view.alerts.map((a, i) => (
+                  <AlertRow key={a.id} a={a} i={i} act={act} busy={busy} telegram={view.telegram} />
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+        {sub === 'deliveries' && (
+          <section className={`${panel} gap-2 p-3`} aria-labelledby="fired-title" data-testid="alert-timeline">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h2 id="fired-title" className={panelTitle}>
+                Fired alerts
+              </h2>
+              <span className={mono}>deliveries a day over 30 days · green delivered, red failed, hollow test</span>
+            </div>
+            <AlertFires alerts={view.alerts} nameOf={alertName} />
+          </section>
+        )}
+        {sub === 'telegram' && (
+          <section className={`${panel} gap-2 p-3`} aria-label="Telegram">
+            <TelegramCard info={view.telegram} reload={load} />
+          </section>
+        )}
+      </SubPanel>
 
       <CreateDialog
         key={prefill ?? 'any'}

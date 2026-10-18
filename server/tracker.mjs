@@ -730,6 +730,38 @@ export async function readMovers(window = '24h') {
   return body
 }
 
+/* The 24h gap index (the app Overview's market band): the average absolute gap of the GAP_INDEX_TOP widest
+   trusted tokens right now (by their latest recorded gap), per 30-minute bucket over the last 24 hours, from the in-memory history. One
+   computation per GAP_INDEX_CACHE_MS for every visitor, so the band costs one call instead of one per token. */
+export const GAP_INDEX_TOP = 8
+const GAP_INDEX_CACHE_MS = 60_000
+let gapIndexCache = null
+export async function readGapIndex() {
+  if (gapIndexCache && Date.now() - gapIndexCache.at < GAP_INDEX_CACHE_MS) return gapIndexCache.body
+  // The widest by each series' latest recorded gap (only trusted rows are recorded), read in the last hour.
+  const fresh = Date.now() / 1000 - 3600
+  const top = Object.entries(history)
+    .map(([key, pts]) => ({ key, last: pts[pts.length - 1] }))
+    .filter((x) => x.last && x.last[0] >= fresh && Number.isFinite(x.last[1]))
+    .sort((a, b) => Math.abs(b.last[1]) - Math.abs(a.last[1]))
+    .slice(0, GAP_INDEX_TOP)
+  const since = Date.now() / 1000 - 86_400
+  const buckets = new Map()
+  for (const r of top)
+    for (const p of history[r.key]) {
+      if (p[0] < since || !Number.isFinite(p[1])) continue
+      const b = Math.floor(p[0] / 1800) * 1800
+      const cur = buckets.get(b) ?? { sum: 0, n: 0 }
+      cur.sum += Math.abs(p[1])
+      cur.n++
+      buckets.set(b, cur)
+    }
+  const points = [...buckets.entries()].sort((a, b) => a[0] - b[0]).map(([t, v]) => [t * 1000, +(v.sum / v.n).toFixed(3)])
+  const body = { top: GAP_INDEX_TOP, tokens: top.map((r) => r.key), bucketMinutes: 30, points, generatedAt: new Date().toISOString() }
+  gapIndexCache = { at: Date.now(), body }
+  return body
+}
+
 /**
  * The last `days` days of one token's gap history, same point shape. Up to seven days come from
  * memory; beyond that the archive supplies what is older than the in-memory series. Nothing is

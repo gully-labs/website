@@ -4,7 +4,7 @@ import { toastError, toastSuccess } from '../../../components/ui/toast'
 import { api } from '../api'
 import { chip, input, mono, pillGold, pillLine, pillSm } from '../styles'
 import { fmtDay, type MerchantInvoice, type MerchantLink, type MerchantView } from './api'
-import { AssetChips, Field, Section, ShareBox, StatusPill } from './parts'
+import { AssetChips, Confirm, Field, Section, ShareBox, StatusPill } from './parts'
 
 /* Pay links (fixed or open amount) and invoices (line items, due date, customer). Each has its checkout
    URL, a QR and the "Pay with crypto" button snippet. */
@@ -16,7 +16,8 @@ const defaultAssets = (v: MerchantView) => {
   return on.length ? on : v.assets.map((a) => a.id)
 }
 
-function NewLink({ view, onDone }: { view: MerchantView; onDone: () => void }) {
+/** Create a pay link (the Links tab and step 3 of the setup stepper). */
+export function NewLink({ view, onDone, bare = false }: { view: MerchantView; onDone: () => void; bare?: boolean }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [kind, setKind] = useState<'fixed' | 'open'>('fixed')
@@ -45,7 +46,7 @@ function NewLink({ view, onDone }: { view: MerchantView; onDone: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex animate-[gl-rise_.25s_ease_both] flex-col gap-3 rounded-[12px] border border-line bg-bg p-4">
+    <form onSubmit={submit} className={`flex animate-[gl-rise_.25s_ease_both] flex-col gap-3 ${bare ? '' : 'rounded-[12px] border border-line bg-bg p-3'}`} data-testid="new-link-form">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Title">
           <input className={input} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required placeholder="Bag of beans, 1 kg" />
@@ -108,7 +109,8 @@ export function LinksSection({ view, reload }: { view: MerchantView; reload: () 
     <Section
       id="m-links"
       title="Pay links"
-      sub="Reusable checkouts: every payer gets their own invoice. Fixed or open amount, chosen assets, optional expiry and use limit."
+      sub="Reusable checkouts: every payer gets their own invoice."
+      info="Fixed or open amount, the assets you choose, an optional expiry and use limit. Each link has its checkout URL, a QR code and a “Pay with crypto” button snippet for your site."
       action={
         view.can.links && (
           <button type="button" className={pillLine} onClick={() => setCreating((c) => !c)} aria-expanded={creating}>
@@ -126,10 +128,10 @@ export function LinksSection({ view, reload }: { view: MerchantView; reload: () 
           }}
         />
       )}
-      {view.links.length === 0 && !creating && <p className="m-0 text-[14px] text-muted">No pay link yet.</p>}
-      <ul className="m-0 flex list-none flex-col gap-3 p-0">
+      {view.links.length === 0 && !creating && <p className="m-0 text-[13px] text-muted">No pay link yet.</p>}
+      <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 xl:grid-cols-2">
         {view.links.map((l) => (
-          <li key={l.id} className="flex flex-col gap-3 rounded-[12px] border border-line bg-bg p-4 transition-colors hover:border-line-strong">
+          <li key={l.id} className="flex min-w-0 flex-col gap-2 rounded-[12px] border border-line bg-bg p-3 transition-colors hover:border-line-strong">
             <div className="flex flex-wrap items-center gap-3">
               <b className="min-w-0 flex-1 truncate text-[15px] text-ink">{l.title}</b>
               <span className="font-mono text-[13px] text-gold">{l.amount.type === 'fixed' ? `$${l.amount.usd}` : `$${l.amount.min} – $${l.amount.max}`}</span>
@@ -179,8 +181,8 @@ function NewInvoice({ view, onDone }: { view: MerchantView; onDone: () => void }
   }
 
   return (
-    <form onSubmit={submit} className="flex animate-[gl-rise_.25s_ease_both] flex-col gap-3 rounded-[12px] border border-line bg-bg p-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+    <form onSubmit={submit} className="flex animate-[gl-rise_.25s_ease_both] flex-col gap-3 rounded-[12px] border border-line bg-bg p-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Customer name">
           <input className={input} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
         </Field>
@@ -210,10 +212,15 @@ function NewInvoice({ view, onDone }: { view: MerchantView; onDone: () => void }
           <Plus size={14} aria-hidden /> Add line
         </button>
       </div>
-      <Field label="Notes (shown on the invoice)">
-        <textarea className={`${input} h-20 py-2`} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} />
-      </Field>
-      <AssetChips assets={view.assets} value={assets} onChange={setAssets} live={live} />
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <Field label="Notes (shown on the invoice)">
+          <textarea className={`${input} h-[68px] py-2`} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} />
+        </Field>
+        <div className="flex min-w-0 flex-col gap-[6px]">
+          <span className="text-[12px] text-dim">Assets accepted</span>
+          <AssetChips assets={view.assets} value={assets} onChange={setAssets} live={live} />
+        </div>
+      </div>
       {err && (
         <p className="m-0 text-[13px] text-error" role="alert">
           {err}
@@ -228,9 +235,14 @@ function NewInvoice({ view, onDone }: { view: MerchantView; onDone: () => void }
 
 export function InvoicesSection({ view, reload }: { view: MerchantView; reload: () => void }) {
   const [creating, setCreating] = useState(false)
+  const [cancelling, setCancelling] = useState<MerchantInvoice | null>(null)
+  const [busy, setBusy] = useState(false)
   const cancel = async (i: MerchantInvoice) => {
+    setBusy(true)
     const r = await api(`/api/developer/merchant/invoices/${i.id}/cancel`, { method: 'POST' })
+    setBusy(false)
     if (!r.ok) return toastError('Not cancelled', { detail: r.error })
+    setCancelling(null)
     toastSuccess(`Invoice ${i.number} cancelled`)
     reload()
   }
@@ -238,7 +250,8 @@ export function InvoicesSection({ view, reload }: { view: MerchantView; reload: 
     <Section
       id="m-invoices"
       title="Invoices"
-      sub="One payer, line items and a due date. Payable after the due date for 30 days (marked overdue), then it expires."
+      sub="One payer, line items and a due date."
+      info="Payable after the due date for 30 days (marked overdue), then it expires. Each open invoice has its checkout URL, a QR code and a button snippet."
       action={
         view.can.manage && (
           <button type="button" className={pillLine} onClick={() => setCreating((c) => !c)} aria-expanded={creating}>
@@ -256,17 +269,17 @@ export function InvoicesSection({ view, reload }: { view: MerchantView; reload: 
           }}
         />
       )}
-      {view.invoices.length === 0 && !creating && <p className="m-0 text-[14px] text-muted">No invoice yet.</p>}
-      <ul className="m-0 flex list-none flex-col gap-3 p-0">
+      {view.invoices.length === 0 && !creating && <p className="m-0 text-[13px] text-muted">No invoice yet.</p>}
+      <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 xl:grid-cols-2">
         {view.invoices.map((i) => (
-          <li key={i.id} className="flex flex-col gap-3 rounded-[12px] border border-line bg-bg p-4 transition-colors hover:border-line-strong">
+          <li key={i.id} className="flex min-w-0 flex-col gap-2 rounded-[12px] border border-line bg-bg p-3 transition-colors hover:border-line-strong">
             <div className="flex flex-wrap items-center gap-3">
               <span className="font-mono text-[12px] text-faint">{i.number}</span>
               <b className="min-w-0 flex-1 truncate text-[15px] text-ink">{i.title}</b>
               <span className="font-mono text-[13px] text-gold">${i.usd}</span>
               <StatusPill state={i.overdue ? 'overdue' : i.status} />
               {view.can.manage && i.status === 'open' && (
-                <button type="button" className={pillSm} onClick={() => cancel(i)}>
+                <button type="button" className={pillSm} onClick={() => setCancelling(i)} data-testid="invoice-cancel">
                   <Ban size={14} aria-hidden /> Cancel
                 </button>
               )}
@@ -279,6 +292,9 @@ export function InvoicesSection({ view, reload }: { view: MerchantView; reload: 
           </li>
         ))}
       </ul>
+      <Confirm open={!!cancelling} title={`Cancel invoice ${cancelling?.number ?? ''}?`} confirm="Cancel invoice" busy={busy} onConfirm={() => cancelling && cancel(cancelling)} onClose={() => setCancelling(null)}>
+        Its checkout stops taking payments at once and the payer sees it as cancelled{view.webhook ? '; your webhook gets invoice.cancelled' : ''}. This cannot be undone: make a new invoice to bill again.
+      </Confirm>
     </Section>
   )
 }

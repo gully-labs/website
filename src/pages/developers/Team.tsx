@@ -1,5 +1,7 @@
-import { Link2, LogOut, Pencil, Trash2, UserPlus, Users, Wallet } from 'lucide-react'
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { Link2, LogOut, Mail, Pencil, Trash2, UserPlus, Users, Wallet, X } from 'lucide-react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { usePoll } from './poll'
+import { InfoTip, RefreshChip } from './ui'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { ago, api, fmtDate, shortAddress, type InviteCreated, type MemberRole, type Role, type TeamInvite, type TeamMember, type TeamView, type WorkspaceRef } from './api'
 import { Avatar } from './Avatar'
@@ -17,7 +19,9 @@ import { chip, input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, p
    dates, invites by wallet address or by a one-time link, open invites with revoke, and "Leave
    workspace" for members. Everything reads GET /api/developer/team; changes are the POST /team/…
    routes. The owner is members[0] and can be neither changed nor removed; only the owner can make,
-   change or remove admins (the server enforces all of it). */
+   change or remove admins (the server enforces all of it). Compact layout: a one-line workspace header
+   with its limits, then members beside "who changed things" and the open invites, so the whole team fits
+   one screen. Both reads are polled with backoff and keep their last good answer. */
 
 const roleBadge = (r: Role) => `rounded-full border px-2 py-[1px] font-mono text-[11px] ${r === 'owner' ? 'border-gold text-gold' : r === 'admin' ? 'border-gold-line text-gold' : 'border-line-strong text-muted'}`
 
@@ -29,42 +33,23 @@ const grantable = (myRole: Role): MemberRole[] => (myRole === 'owner' ? MEMBER_R
 export function Team() {
   const { me, role, user, refreshAll, reloadMe } = usePortal()
   const team = useWrite('team', 'manage the team')
-  const [view, setView] = useState<TeamView | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const tv = usePoll<TeamView>('/api/developer/team', 60_000)
+  const view = tv.data
+  const err = view ? null : (tv.error ?? (tv.timedOut ? 'no answer in time' : null))
+  const load = () => void tv.reload()
   const [inviting, setInviting] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [removing, setRemoving] = useState<TeamMember | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
-  const [acts, setActs] = useState<Record<string, number> | null | 'error'>(null)
-
-  const load = useCallback(
-    () =>
-      api<TeamView>('/api/developer/team').then((r) => {
-        if (r.ok) {
-          setView(r.data)
-          setErr(null)
-        } else setErr(r.error)
-      }),
-    [],
-  )
-  useEffect(() => {
-    load()
-  }, [load])
   // Who has been active: actions per wallet in the newest page of the activity log.
-  useEffect(() => {
-    let alive = true
-    api<ActivityPage>('/api/developer/activity').then((r) => {
-      if (!alive) return
-      if (!r.ok) return setActs('error')
-      const c: Record<string, number> = {}
-      for (const e of r.data.events) if (e.actor !== 'system') c[e.actor] = (c[e.actor] ?? 0) + 1
-      setActs(c)
-    })
-    return () => {
-      alive = false
-    }
-  }, [])
+  const ap = usePoll<ActivityPage>('/api/developer/activity', 60_000)
+  const acts: Record<string, number> | null | 'error' = useMemo(() => {
+    if (!ap.data) return ap.error || ap.timedOut ? 'error' : null
+    const c: Record<string, number> = {}
+    for (const e of ap.data.events) if (e.actor !== 'system') c[e.actor] = (c[e.actor] ?? 0) + 1
+    return c
+  }, [ap.data, ap.error, ap.timedOut])
 
   const setRole = async (m: TeamMember, next: MemberRole) => {
     if (next === m.role) return
@@ -106,10 +91,9 @@ export function Team() {
   if (err) return <ErrorLine onRetry={load}>The team could not be read: {err}</ErrorLine>
   if (!view)
     return (
-      <div className="flex flex-col gap-[14px]" aria-busy>
-        <Skeleton h={132} />
+      <div className="flex flex-col gap-2" aria-busy>
+        <Skeleton h={88} />
         <Skeleton h={260} />
-        <Skeleton h={120} />
       </div>
     )
 
@@ -119,35 +103,34 @@ export function Team() {
   const invitesFull = view.invites.length >= view.limits.maxOpenInvites
 
   return (
-    <div className="flex flex-col gap-[14px]">
-      <section className={panel} style={rise(0)} aria-labelledby="ws-title">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex min-w-0 flex-col gap-2">
-            <span className="flex items-center gap-2 text-[12px] text-dim">
-              <Users size={14} className="text-gold" aria-hidden /> Workspace
-            </span>
-            <h2 id="ws-title" className="m-0 flex flex-wrap items-center gap-3 font-display text-[34px] leading-none font-bold uppercase">
+    <div className="flex flex-col gap-2">
+      <section className={`${panel} gap-2 p-3`} style={rise(0)} aria-labelledby="ws-title">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 id="ws-title" className="m-0 flex flex-wrap items-center gap-2 font-display text-[24px] leading-none font-bold uppercase">
+              <Users size={18} className="text-gold" aria-hidden />
               <span className="min-w-0 break-words">{ws.name}</span>
               <span className={roleBadge(role)}>you: {role}</span>
+              <RefreshChip error={tv.error} onRetry={load} />
             </h2>
-            <span className="font-mono text-[12px] text-faint">
-              owner {shortAddress(ws.owner)} · keys, alerts, analytics and the plan belong to the workspace
-            </span>
+            <InfoTip summary={<>owner {shortAddress(ws.owner)} · the workspace owns keys, alerts, analytics and the plan</>}>
+              Everything in the app belongs to the workspace, not to a person: API keys, gap and launch alerts, the linked Telegram chat, Gully Analytics and the plan with its payments. Members share all of it. Everyone reads everything; what they can change depends on the role.
+            </InfoTip>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Can cat="team" what="rename the workspace" hide>
-              <button type="button" onClick={() => setRenaming(true)} className={pillSm}>
+              <button type="button" onClick={() => setRenaming(true)} className={`${pillSm} min-h-9`}>
                 <Pencil size={14} aria-hidden /> Rename
               </button>
             </Can>
             <Can cat="team" what="invite members">
-              <button type="button" disabled={full || invitesFull} title={full ? `A workspace can have ${view.limits.maxMembers} members.` : invitesFull ? `${view.limits.maxOpenInvites} invites are open. Revoke one first.` : undefined} onClick={() => setInviting(true)} className={pillGold}>
+              <button type="button" disabled={full || invitesFull} title={full ? `A workspace can have ${view.limits.maxMembers} members.` : invitesFull ? `${view.limits.maxOpenInvites} invites are open. Revoke one first.` : undefined} onClick={() => setInviting(true)} className={`${pillGold} min-h-9`}>
                 <UserPlus size={16} aria-hidden /> Invite
               </button>
             </Can>
           </div>
         </div>
-        <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 border-t border-line pt-3">
+        <dl className="m-0 grid grid-cols-3 gap-2 border-t border-line pt-2">
           <Limit label="Members" used={memberCount} max={view.limits.maxMembers} />
           <Limit label="Open invites" used={view.invites.length} max={view.limits.maxOpenInvites} />
           <div className="flex flex-col gap-1">
@@ -157,12 +140,13 @@ export function Team() {
         </dl>
       </section>
 
-      <section className={panel} style={rise(1)} aria-labelledby="members-title">
-        <div className="flex flex-col gap-[2px]">
+      <div className="grid grid-cols-1 gap-2 min-[1024px]:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+      <section className={`${panel} gap-2 p-3`} style={rise(1)} aria-labelledby="members-title">
+        <div className="flex items-baseline justify-between gap-2">
           <h2 id="members-title" className={panelTitle}>
             Members
           </h2>
-          <span className={mono}>Everyone reads everything in the workspace; what they can change depends on the role</span>
+          <span className={mono}>{memberCount} of {view.limits.maxMembers}</span>
         </div>
         <ul className="m-0 flex list-none flex-col p-0" data-testid="member-list">
           {view.members.map((m) => {
@@ -170,15 +154,15 @@ export function Team() {
             const manage = canManage(role, team.ok, m)
             const name = mine ? (me?.profile.displayName ?? me?.profile.ens ?? null) : null
             return (
-              <li key={m.address} className="flex flex-wrap items-center gap-3 border-t border-line py-3 first:border-t-0" data-member={m.address}>
-                <Avatar address={m.address} src={mine ? me?.profile.avatar : null} size={36} />
-                <span className="flex min-w-0 flex-[1_1_220px] flex-col">
+              <li key={m.address} className="flex flex-wrap items-center gap-2 border-t border-line py-2 first:border-t-0" data-member={m.address}>
+                <Avatar address={m.address} src={mine ? me?.profile.avatar : null} size={30} />
+                <span className="flex min-w-0 flex-[1_1_200px] flex-col">
                   <span className="flex flex-wrap items-center gap-2">
-                    <b className="truncate font-semibold">{name ?? shortAddress(m.address)}</b>
+                    <b className="truncate text-[14px] font-semibold">{name ?? shortAddress(m.address)}</b>
                     {m.you && <span className="rounded-full bg-gold px-2 py-[1px] font-mono text-[11px] font-semibold text-bg">YOU</span>}
                     {name && <span className="font-mono text-[12px] text-faint">{shortAddress(m.address)}</span>}
                   </span>
-                  <span className="font-mono text-[11px] text-dim">
+                  <span className="truncate font-mono text-[11px] text-dim">
                     {m.role === 'owner' ? 'owner since' : 'joined'} {fmtDate(m.joinedAt)} · last seen {m.lastSeenAt ? ago(m.lastSeenAt) : 'not tracked yet'}
                     {m.invitedBy && ` · invited by ${shortAddress(m.invitedBy)}`}
                   </span>
@@ -187,7 +171,7 @@ export function Team() {
                   {manage ? (
                     <label className="flex items-center gap-2">
                       <span className="sr-only">Role of {shortAddress(m.address)}</span>
-                      <select value={m.role} disabled={busy === `role:${m.address}`} onChange={(e) => setRole(m, e.target.value as MemberRole)} className={`${input} h-11 w-[140px] pr-8 font-mono text-[13px]`} data-role-select={m.address}>
+                      <select value={m.role} disabled={busy === `role:${m.address}`} onChange={(e) => setRole(m, e.target.value as MemberRole)} className={`${input} h-9 w-[130px] pr-8 font-mono text-[13px]`} data-role-select={m.address}>
                         {grantable(role).map((r) => (
                           <option key={r} value={r}>
                             {r}
@@ -201,8 +185,8 @@ export function Team() {
                     </span>
                   )}
                   {manage && (
-                    <button type="button" onClick={() => setRemoving(m)} aria-label={`Remove ${shortAddress(m.address)}`} className="inline-flex size-11 items-center justify-center rounded-full border border-line-strong text-muted transition-colors hover:border-error hover:text-error">
-                      <Trash2 size={15} aria-hidden />
+                    <button type="button" onClick={() => setRemoving(m)} aria-label={`Remove ${shortAddress(m.address)}`} className="inline-flex size-9 items-center justify-center rounded-full border border-line-strong text-muted transition-colors hover:border-error hover:text-error">
+                      <Trash2 size={14} aria-hidden />
                     </button>
                   )}
                 </span>
@@ -211,29 +195,30 @@ export function Team() {
           })}
         </ul>
         {role !== 'owner' && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
-            <span className="text-[13px] text-muted">You are a member ({role}) of this workspace. Your own workspace stays yours.</span>
-            <button type="button" onClick={() => setLeaving(true)} className={`${pillSm} hover:!border-error hover:!text-error`}>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
+            <span className="text-[12px] text-muted">You are a member ({role}). Your own workspace stays yours.</span>
+            <button type="button" onClick={() => setLeaving(true)} className={`${pillSm} min-h-9 hover:!border-error hover:!text-error`}>
               <LogOut size={14} aria-hidden /> Leave workspace
             </button>
           </div>
         )}
       </section>
 
-      <section className={panel} style={rise(2)} aria-labelledby="team-act-title" data-testid="team-activity-chart">
+      <div className="flex min-w-0 flex-col gap-2">
+      <section className={`${panel} gap-2 p-3`} style={rise(2)} aria-labelledby="team-act-title" data-testid="team-activity-chart">
         <div className="flex flex-col gap-[2px]">
           <h2 id="team-act-title" className={panelTitle}>
             Who changed things
           </h2>
-          <span className={mono}>Actions per member in the latest 50 events of the activity log</span>
+          <span className={mono}>actions per member, latest 50 events of the activity log</span>
         </div>
         {acts === null ? (
           <Skeleton h={96} />
         ) : acts === 'error' ? (
-          <LiveMarker text="Activity counts: not readable right now" />
+          <LiveMarker text="Activity counts: not available right now" />
         ) : !Object.keys(acts).length ? (
-          <GhostCurves height={140} title="Member activity will draw here">
-            <span className="max-w-[460px] text-[13px] text-muted">Key, alert, billing and team changes count here per member as they happen.</span>
+          <GhostCurves height={120} title="Member activity will draw here">
+            <span className="max-w-[460px] text-[13px] text-muted">Key, alert, billing and team changes count here per member.</span>
           </GhostCurves>
         ) : (
           <HBars
@@ -246,34 +231,34 @@ export function Team() {
         )}
       </section>
 
-      <section className={panel} style={rise(3)} aria-labelledby="invites-title">
-        <div className="flex flex-col gap-[2px]">
-          <h2 id="invites-title" className={panelTitle}>
-            Open invites
+      <section className={`${panel} gap-2 p-3`} style={rise(3)} aria-labelledby="invites-title">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 id="invites-title" className={`${panelTitle} flex items-center gap-2`}>
+            <Mail size={15} className="text-gold" aria-hidden /> Open invites
           </h2>
           <span className={mono}>
-            {view.invites.length} of {view.limits.maxOpenInvites} · links work once; wallet invites only for that wallet
+            {view.invites.length} of {view.limits.maxOpenInvites}
           </span>
         </div>
         {!view.invites.length ? (
-          <p className="m-0 text-[14px] text-faint">No open invites.</p>
+          <p className="m-0 text-[13px] text-faint">No open invites. Links work once; wallet invites only for that wallet.</p>
         ) : (
           <ul className="m-0 flex list-none flex-col p-0" data-testid="invite-list">
             {view.invites.map((inv) => (
-              <li key={inv.id} className="flex flex-wrap items-center gap-3 border-t border-line py-3 first:border-t-0">
-                <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line-strong text-gold">{inv.kind === 'link' ? <Link2 size={15} aria-hidden /> : <Wallet size={15} aria-hidden />}</span>
-                <span className="flex min-w-0 flex-[1_1_220px] flex-col">
+              <li key={inv.id} className="flex flex-wrap items-center gap-2 border-t border-line py-2 first:border-t-0">
+                <span className="grid size-8 shrink-0 place-items-center rounded-full border border-line-strong text-gold">{inv.kind === 'link' ? <Link2 size={14} aria-hidden /> : <Wallet size={14} aria-hidden />}</span>
+                <span className="flex min-w-0 flex-[1_1_180px] flex-col">
                   <span className="flex flex-wrap items-center gap-2">
-                    <b className="font-semibold">{inv.kind === 'link' ? 'Invite link' : shortAddress(inv.address ?? '')}</b>
+                    <b className="text-[14px] font-semibold">{inv.kind === 'link' ? 'Invite link' : shortAddress(inv.address ?? '')}</b>
                     <span className={roleBadge(inv.role)}>{inv.role}</span>
                   </span>
-                  <span className="font-mono text-[11px] text-dim">
+                  <span className="truncate font-mono text-[11px] text-dim">
                     by {inv.createdBy === user ? 'you' : shortAddress(inv.createdBy)} {ago(inv.createdAt)} · expires {untilText(inv.expiresAt)}
                   </span>
                 </span>
                 {team.ok && (inv.role !== 'admin' || role === 'owner') && (
-                  <button type="button" disabled={busy === `inv:${inv.id}`} onClick={() => revoke(inv)} className={`${pillSm} hover:!border-error hover:!text-error`}>
-                    Revoke
+                  <button type="button" disabled={busy === `inv:${inv.id}`} onClick={() => revoke(inv)} className={`${pillSm} min-h-9 hover:!border-error hover:!text-error`}>
+                    <X size={13} aria-hidden /> Revoke
                   </button>
                 )}
               </li>
@@ -281,9 +266,14 @@ export function Team() {
           </ul>
         )}
       </section>
+      </div>
+      </div>
 
       <InviteDialog open={inviting} onClose={() => setInviting(false)} myRole={role} days={view.limits.inviteDays} onCreated={load} />
-      <RenameDialog open={renaming} onClose={() => setRenaming(false)} name={ws.name} onDone={() => (load(), reloadMe())} />
+      <RenameDialog open={renaming} onClose={() => setRenaming(false)} name={ws.name} onDone={() => {
+          load()
+          void reloadMe()
+        }} />
 
       <Dialog open={!!removing} onClose={() => setRemoving(null)} title="Remove member">
         {removing && (

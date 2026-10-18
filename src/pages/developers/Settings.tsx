@@ -1,5 +1,8 @@
 import { Building2, Laptop, LogOut, ShieldCheck, UserRound } from 'lucide-react'
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { usePoll } from './poll'
+import { useSubTab } from './subtab'
+import { InfoTip, RefreshChip, SubPanel, SubTabs } from './ui'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { ago, api, SESSION_ENDED, type Company, type Profile, type SessionInfo } from './api'
 import { Avatar } from './Avatar'
@@ -15,21 +18,39 @@ import { input, mono, panel, panelTitle, pillGold, pillSm, rise } from './styles
    - Company (the ACTIVE workspace; owner, admin and billing may change it): name, address, tax ID,
      printed on receipts. POST /company.
    - Sessions (this wallet): device, created, last seen, which one is this browser; sign one out or
-     every other one. GET /sessions, POST /sessions/revoke. */
+     every other one. GET /sessions, POST /sessions/revoke.
+   Each is its own sub-tab (#settings/profile, #settings/company, #settings/sessions, remembered); the
+   wallet menu's Profile and Sessions links and the old #profile / #sessions hashes open theirs. */
 
-const field = 'flex flex-col gap-2 text-[14px] text-ink-2'
+const field = 'flex flex-col gap-1 text-[13px] text-ink-2'
+const box = `${input} h-10 text-[14px]`
+
+const SETTINGS_SUBS = ['profile', 'company', 'sessions'] as const
+type SettingsSub = (typeof SETTINGS_SUBS)[number]
 
 export function SettingsTab({ section }: { section: string | null }) {
+  const [sub, setSub] = useSubTab<SettingsSub>('settings', SETTINGS_SUBS, 'profile')
   useEffect(() => {
-    if (!section) return
-    const id = requestAnimationFrame(() => document.getElementById(`settings-${section}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
-    return () => cancelAnimationFrame(id)
-  }, [section])
+    if (section && (SETTINGS_SUBS as readonly string[]).includes(section)) setSub(section as SettingsSub)
+  }, [section, setSub])
   return (
-    <div className="flex flex-col gap-[14px]">
-      <ProfileCard />
-      <CompanyCard />
-      <SessionsCard />
+    <div className="flex flex-col gap-2">
+      <SubTabs
+        label="Settings sections"
+        idBase="settings"
+        value={sub}
+        onChange={setSub}
+        items={[
+          { id: 'profile', label: 'Profile', icon: <UserRound size={15} aria-hidden /> },
+          { id: 'company', label: 'Company', icon: <Building2 size={15} aria-hidden /> },
+          { id: 'sessions', label: 'Sessions', icon: <ShieldCheck size={15} aria-hidden /> },
+        ]}
+      />
+      <SubPanel idBase="settings" value={sub}>
+        {sub === 'profile' && <ProfileCard />}
+        {sub === 'company' && <CompanyCard />}
+        {sub === 'sessions' && <SessionsCard />}
+      </SubPanel>
     </div>
   )
 }
@@ -69,7 +90,7 @@ function ProfileCard() {
   }
 
   return (
-    <section id="settings-profile" className={`${panel} scroll-mt-4`} style={rise(0)} aria-labelledby="profile-title">
+    <section id="settings-profile" className={`${panel} scroll-mt-4 gap-2 p-3`} style={rise(0)} aria-labelledby="profile-title">
       <div className="flex flex-wrap items-center gap-3">
         <UserRound size={18} className="text-gold" aria-hidden />
         <div className="flex flex-col gap-[2px]">
@@ -83,8 +104,8 @@ function ProfileCard() {
         <Skeleton h={220} />
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-3 rounded-[12px] border border-line bg-surface-deep px-3 py-3">
-            <Avatar address={me.address} src={p.avatar} size={44} />
+          <div className="flex flex-wrap items-center gap-3 rounded-[12px] border border-line bg-surface-deep px-3 py-2">
+            <Avatar address={me.address} src={p.avatar} size={36} />
             <span className="flex min-w-0 flex-col">
               <span className="font-mono text-[12px] break-all text-ink-2">{me.address}</span>
               <span className="text-[13px] text-muted" data-testid="ens">
@@ -93,25 +114,25 @@ function ProfileCard() {
               </span>
             </span>
           </div>
-          <form onSubmit={save} className="grid grid-cols-2 gap-3 max-[700px]:grid-cols-1">
+          <form onSubmit={save} className="grid grid-cols-2 gap-2 max-[700px]:grid-cols-1">
             <label className={field}>
               Display name
-              <input className={input} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Shown to your team" name="displayName" />
+              <input className={box} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Shown to your team" name="displayName" />
             </label>
             <label className={field}>
               Contact email
-              <input className={input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} placeholder="you@example.com" name="email" />
+              <input className={box} type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} placeholder="you@example.com" name="email" />
             </label>
             <div className="col-span-full flex flex-wrap items-center justify-between gap-3">
               <span className="text-[12px] text-faint">Optional. Used only to reach you about your account; never shared.</span>
-              <button type="submit" disabled={busy === 'save'} className={pillGold}>
+              <button type="submit" disabled={busy === 'save'} className={`${pillGold} min-h-9`}>
                 Save profile
               </button>
             </div>
           </form>
           {err && <ErrorLine>{err}</ErrorLine>}
-          <fieldset className="m-0 flex flex-col gap-2 border-0 border-t border-line p-0 pt-3">
-            <legend className="mb-2 text-[14px] text-ink-2">Telegram notices (to the chat linked in Alerts)</legend>
+          <fieldset className="m-0 grid grid-cols-1 gap-2 border-0 border-t border-line p-0 pt-2 min-[1024px]:grid-cols-2">
+            <legend className="mb-1 text-[13px] text-ink-2">Telegram notices (to the chat linked in Alerts)</legend>
             <Toggle on={p.notify.telegramUsage} busy={busy === 'telegramUsage'} onChange={(v) => toggle('telegramUsage', v)} title="Usage limits" text="When a key passes 80% or 100% of its per-minute limit (at most once a day each)." />
             <Toggle on={p.notify.telegramBilling} busy={busy === 'telegramBilling'} onChange={(v) => toggle('telegramBilling', v)} title="Billing" text="Payments confirmed and plans about to end." />
           </fieldset>
@@ -123,7 +144,7 @@ function ProfileCard() {
 
 function Toggle({ on, busy, onChange, title, text }: { on: boolean; busy: boolean; onChange: (v: boolean) => void; title: string; text: string }) {
   return (
-    <button type="button" role="switch" aria-checked={on} disabled={busy} onClick={() => onChange(!on)} className="flex min-h-12 items-center gap-3 rounded-[10px] border border-line px-3 py-2 text-left transition-colors hover:border-line-strong disabled:opacity-60">
+    <button type="button" role="switch" aria-checked={on} disabled={busy} onClick={() => onChange(!on)} className="flex min-h-11 items-center gap-3 rounded-[10px] border border-line px-3 py-[6px] text-left transition-colors hover:border-line-strong disabled:opacity-60">
       <span className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${on ? 'bg-gold' : 'bg-grid'}`} aria-hidden>
         <span className={`absolute top-[3px] size-[18px] rounded-full bg-ink transition-[left] ${on ? 'left-[19px] bg-bg' : 'left-[3px]'}`} />
       </span>
@@ -160,38 +181,40 @@ function CompanyCard() {
   const set = (k: keyof Company) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   return (
-    <section id="settings-company" className={`${panel} scroll-mt-4`} style={rise(1)} aria-labelledby="company-title">
+    <section id="settings-company" className={`${panel} scroll-mt-4 gap-2 p-3`} style={rise(1)} aria-labelledby="company-title">
       <div className="flex flex-wrap items-center gap-3">
         <Building2 size={18} className="text-gold" aria-hidden />
         <div className="flex flex-col gap-[2px]">
           <h2 id="company-title" className={panelTitle}>
             Company
           </h2>
-          <span className={mono}>{me ? `${me.active.name} · printed on receipts` : 'printed on receipts'}</span>
+          <InfoTip summary={me ? `${me.active.name} · printed on receipts` : 'printed on receipts'}>
+            The company details belong to the active workspace and are printed on every receipt for its plan and invoices. Owners, admins and billing members can change them; leave a field empty to remove it.
+          </InfoTip>
         </div>
       </div>
       {!me ? (
         <Skeleton h={200} />
       ) : (
-        <form onSubmit={save} className="grid grid-cols-2 gap-3 max-[700px]:grid-cols-1">
+        <form onSubmit={save} className="grid grid-cols-2 gap-2 max-[700px]:grid-cols-1">
           <fieldset disabled={!w.ok} className="contents">
             <label className={field}>
               Company name
-              <input className={input} value={form.name ?? ''} onChange={set('name')} maxLength={80} name="companyName" />
+              <input className={box} value={form.name ?? ''} onChange={set('name')} maxLength={80} name="companyName" />
             </label>
             <label className={field}>
               Tax ID (VAT, EIN…)
-              <input className={input} value={form.taxId ?? ''} onChange={set('taxId')} maxLength={40} name="taxId" />
+              <input className={box} value={form.taxId ?? ''} onChange={set('taxId')} maxLength={40} name="taxId" />
             </label>
             <label className={`${field} col-span-full`}>
               Address
-              <textarea className={`${input} h-auto min-h-[88px] py-2`} value={form.address ?? ''} onChange={set('address')} maxLength={300} rows={3} name="companyAddress" />
+              <textarea className={`${input} h-auto min-h-[64px] py-2 text-[14px]`} value={form.address ?? ''} onChange={set('address')} maxLength={300} rows={3} name="companyAddress" />
             </label>
           </fieldset>
           <div className="col-span-full flex flex-wrap items-center justify-between gap-3">
             <span className="text-[12px] text-faint">{w.ok ? 'Optional. Leave a field empty to remove it.' : w.why}</span>
             <Can cat="company" what="change the company details">
-              <button type="submit" disabled={busy} className={pillGold}>
+              <button type="submit" disabled={busy} className={`${pillGold} min-h-9`}>
                 Save company
               </button>
             </Can>
@@ -208,22 +231,11 @@ function CompanyCard() {
 }
 
 function SessionsCard() {
-  const [list, setList] = useState<SessionInfo[] | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const sp = usePoll<{ sessions: SessionInfo[] }>('/api/developer/sessions', 120_000)
+  const list = useMemo(() => (sp.data ? [...sp.data.sessions].sort((a, b) => Number(b.current) - Number(a.current) || b.lastSeenAt.localeCompare(a.lastSeenAt)) : null), [sp.data])
+  const err = list ? null : (sp.error ?? (sp.timedOut ? 'no answer in time' : null))
+  const load = () => void sp.reload()
   const [busy, setBusy] = useState<string | null>(null)
-  const load = useCallback(
-    () =>
-      api<{ sessions: SessionInfo[] }>('/api/developer/sessions').then((r) => {
-        if (r.ok) {
-          setList([...r.data.sessions].sort((a, b) => Number(b.current) - Number(a.current) || b.lastSeenAt.localeCompare(a.lastSeenAt)))
-          setErr(null)
-        } else setErr(r.error)
-      }),
-    [],
-  )
-  useEffect(() => {
-    load()
-  }, [load])
 
   const revoke = async (id: string) => {
     const s = list?.find((x) => x.id === id)
@@ -242,7 +254,7 @@ function SessionsCard() {
   const others = (list ?? []).filter((s) => !s.current).length
 
   return (
-    <section id="settings-sessions" className={`${panel} scroll-mt-4`} style={rise(2)} aria-labelledby="sessions-title">
+    <section id="settings-sessions" className={`${panel} scroll-mt-4 gap-2 p-3`} style={rise(2)} aria-labelledby="sessions-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <ShieldCheck size={18} className="text-gold" aria-hidden />
@@ -252,8 +264,9 @@ function SessionsCard() {
             </h2>
             <span className={mono}>Where this wallet is signed in · each lasts 30 days</span>
           </div>
+          <RefreshChip error={list ? sp.error : null} onRetry={load} />
         </div>
-        <button type="button" disabled={!others || busy === 'others'} onClick={() => revoke('others')} className={pillSm}>
+        <button type="button" disabled={!others || busy === 'others'} onClick={() => revoke('others')} className={`${pillSm} min-h-9`}>
           <LogOut size={14} aria-hidden /> Sign out all others
         </button>
       </div>
@@ -266,7 +279,7 @@ function SessionsCard() {
         {list.length > 1 && (
           <div data-testid="sessions-chart">
             <StackedDays
-              height={130}
+              height={110}
               label={`Sign-ins per day over the last 30 days: ${list.length} live sessions.`}
               kinds={[
                 { id: 'in', name: 'signed in', color: '#e8c060' },
@@ -286,7 +299,7 @@ function SessionsCard() {
         )}
         <ul className="m-0 flex list-none flex-col p-0" data-testid="session-list">
           {list.map((s) => (
-            <li key={s.id} className="flex flex-wrap items-center gap-3 border-t border-line py-3 first:border-t-0">
+            <li key={s.id} className="flex flex-wrap items-center gap-2 border-t border-line py-2 first:border-t-0">
               <Laptop size={18} className={s.current ? 'text-gold' : 'text-faint'} aria-hidden />
               <span className="flex min-w-0 flex-[1_1_220px] flex-col">
                 <span className="flex items-center gap-2">
@@ -297,8 +310,8 @@ function SessionsCard() {
                   signed in {fmtDateTime(s.createdAt)} · last seen {ago(s.lastSeenAt)} · ends {fmtDateTime(s.expiresAt)}
                 </span>
               </span>
-              <button type="button" disabled={busy === s.id} onClick={() => revoke(s.id)} className={`${pillSm} hover:!border-error hover:!text-error`}>
-                {s.current ? 'Sign out' : 'Revoke'}
+              <button type="button" disabled={busy === s.id} onClick={() => revoke(s.id)} className={`${pillSm} min-h-9 hover:!border-error hover:!text-error`}>
+                <LogOut size={13} aria-hidden /> {s.current ? 'Sign out' : 'Revoke'}
               </button>
             </li>
           ))}

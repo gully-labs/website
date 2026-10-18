@@ -23,6 +23,7 @@
     "test:tracker-trust": "node --test scripts/test-tracker-trust.mjs",
     "test:paylinks": "node scripts/test-paylinks.mjs",
     "test:feeproxy": "node scripts/test-fee-proxy.mjs",
+    "test:gas": "node scripts/test-gas.mjs",
     "test:ask": "node scripts/test-ask.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",
     "test:merchants": "node scripts/test-merchants.mjs",

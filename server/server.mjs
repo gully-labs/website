@@ -4,7 +4,7 @@
 import http from 'node:http'
 import { handleIndexNowKey } from './indexnow.mjs'
 import { readStats } from './stats.mjs'
-import { onSnapshot, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
+import { onSnapshot, readGapIndex, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts } from './alerts.mjs'
 import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
@@ -24,6 +24,7 @@ import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { APP_URL, isAppHost } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
+import { handleGas } from './gas.mjs'
 import { CHAIN_LIST, rpc } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { startTreasuryWatch } from './treasury-chains.mjs'
@@ -230,6 +231,8 @@ async function handleRequest(req, res) {
   }
   // Gully Ask (ask.mjs): POST /api/ask and GET /api/ask/status.
   if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status') return void (await handleAsk(req, res, url))
+  // Gully Pay gas costs per chain, cached (gas.mjs): the app's Merchant tab reads it. Public.
+  if (url.pathname === '/api/pay/gas') return void (await handleGas(req, res))
   // Gully Pay: public invoice pages read and pay through here (invoices.mjs).
   if (url.pathname.startsWith('/api/pay/')) {
     if (await handlePay(req, res, url)) return
@@ -275,6 +278,13 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readTracker().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' }),
+      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+    )
+  }
+  if (url.pathname === '/api/tracker/gap-index') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    return readGapIndex().then(
+      (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300' }),
       (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
     )
   }

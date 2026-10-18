@@ -1,4 +1,4 @@
-import { AppWindow, ArrowRight, BellRing, Bot, Boxes, ChartNoAxesCombined, Check, Code2, CreditCard, KeyRound, Loader2, Network, Send, Store } from 'lucide-react'
+import { AppWindow, ArrowRight, ArrowUpRight, BellRing, Bot, Boxes, ChartNoAxesCombined, Check, Code2, CreditCard, KeyRound, Loader2, Network, Send, Store } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { NF } from '../../components/charts/number-formats'
@@ -10,8 +10,10 @@ import { firings, group } from './usage'
 import { usePortal } from './portal'
 import { Skeleton } from './parts'
 import { input, mono, panel, pillGold, pillSm } from './styles'
+import { usePoll } from './poll'
+import { InfoTip, RefreshChip, Unknown } from './ui'
 import { KeySpark, LiveMarker, QuotaRing, StackedDays } from './vcharts'
-import { useLoad, type Load } from './services/useLoad'
+import type { Load } from './services/useLoad'
 import type { ServiceTab } from './services/nav'
 
 /* The Products tab: every Gully product in one hub, each card with its live state for the ACTIVE
@@ -24,7 +26,10 @@ import type { ServiceTab } from './services/nav'
      Chain Kit        "Request your explorer": the site's enquiry endpoint (POST /api/contact)
      Gully Chains     the Devnet waitlist: the launch list (POST /api/notify, slot 90)
      Gully AI         /api/ask/status, and an inline question (POST /api/ask); recent questions stay in this browser
-     Widget and SDK   links, with the API's live health */
+     Widget and SDK   links, with the API's live health
+   Every read is polled with backoff and keeps its last good answer (a failed refresh shows a retry chip);
+   a first read that does not answer in time reads as "not available right now", never as 0. Cards are
+   compact (12px padding, 8px gaps) so the whole hub fits one screen at 1440×900. */
 
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
 const fmt = (n: number) => n.toLocaleString('en-US')
@@ -49,16 +54,25 @@ const store = {
 
 function Card({ icon, title, badge, children, foot, id }: { icon: ReactNode; title: string; badge?: ReactNode; children: ReactNode; foot?: ReactNode; id?: string }) {
   return (
-    <section id={id} className={`${panel} min-h-[260px] scroll-mt-4`} aria-label={title} data-product={title}>
-      <div className="flex items-center gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-line-strong text-gold">{icon}</span>
-        <h2 className="m-0 flex-1 text-[15px] font-semibold">{title}</h2>
+    <section id={id} className={`${panel} scroll-mt-4 gap-2 p-3`} aria-label={title} data-product={title}>
+      <div className="flex items-center gap-2">
+        <span className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-line-strong text-gold">{icon}</span>
+        <h2 className="m-0 flex-1 text-[14px] font-semibold">{title}</h2>
         {badge}
       </div>
-      <div className="flex flex-1 flex-col gap-3">{children}</div>
-      {foot && <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">{foot}</div>}
+      <div className="flex flex-1 flex-col gap-2">{children}</div>
+      {foot && <div className="flex flex-wrap items-center gap-2 border-t border-line pt-2">{foot}</div>}
     </section>
   )
+}
+
+/** usePoll as the Load shape the cards take; a first read with no answer in time becomes an error. */
+function useCard<T>(path: string, every: number): Load<T> & { refreshErr: string | null; retry: () => void } {
+  const p = usePoll<T>(path, every)
+  const retry = () => void p.reload()
+  if (p.data) return { k: 'ok', data: p.data, refreshErr: p.error, retry }
+  if (p.error || p.timedOut) return { k: 'error', message: p.error ?? 'no answer in time', refreshErr: null, retry }
+  return { k: 'loading', refreshErr: null, retry }
 }
 
 const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-[#5a2a24] text-error' : 'border-line-strong text-muted'}`}>{t}</span>
@@ -67,25 +81,28 @@ function Stat({ label, value, unknown }: { label: string; value: number | null; 
   return (
     <span className="flex min-w-[90px] flex-col">
       <span className="text-[11px] text-dim">{label}</span>
-      {value === null ? <span className="font-mono text-[12px] text-faint">{unknown ?? 'not tracked yet'}</span> : <AnimatedNumber value={value} format={NF.int} countUp className="font-display text-[26px] leading-none font-bold" />}
+      {value === null ? <span className="font-mono text-[12px] text-faint">{unknown ?? 'not tracked yet'}</span> : <AnimatedNumber value={value} format={NF.int} countUp className="font-display text-[22px] leading-none font-bold" />}
     </span>
   )
 }
 
 const goBtn = (go: (t: Tab) => void, t: Tab, text: string) => (
-  <button type="button" onClick={() => go(t)} className={pillSm}>
+  <button type="button" onClick={() => go(t)} className={`${pillSm} min-h-9`}>
     {text} <ArrowRight size={14} aria-hidden />
   </button>
 )
 
 export function Products({ account, go }: { account: Account; go: (t: Tab) => void }) {
-  const usage = useLoad<Usage>('/api/developer/usage?range=7d')
-  const alerts = useLoad<AlertsView>('/api/developer/alerts')
-  const ga = useLoad<AnalyticsView>('/api/developer/analytics')
-  const bill = useLoad<BillingView>('/api/developer/billing')
+  const usage = useCard<Usage>('/api/developer/usage?range=7d', 60_000)
+  const alerts = useCard<AlertsView>('/api/developer/alerts', 60_000)
+  const ga = useCard<AnalyticsView>('/api/developer/analytics', 120_000)
+  const bill = useCard<BillingView>('/api/developer/billing', 120_000)
+  const failed = [usage, alerts, ga, bill].find((x) => x.refreshErr)
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-[14px]" data-testid="products">
+    <div className="flex flex-col gap-2">
+    {failed && <RefreshChip error={failed.refreshErr} onRetry={() => [usage, alerts, ga, bill].forEach((x) => x.refreshErr && x.retry())} className="self-start" />}
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-2" data-testid="products">
       <TrackerCard account={account} usage={usage} go={go} />
       <AlertsCard s={alerts} go={go} />
       <AnalyticsCard s={ga} go={go} />
@@ -95,6 +112,7 @@ export function Products({ account, go }: { account: Account; go: (t: Tab) => vo
       <ChainsCard />
       <AiCard go={go} />
       <WidgetCard go={go} />
+    </div>
     </div>
   )
 }
@@ -107,12 +125,12 @@ function TrackerCard({ account, usage, go }: { account: Account; usage: Load<Usa
   const total = usage.k === 'ok' ? (usage.data.countingSince ? usage.data.rangeTotals.total : null) : null
   return (
     <Card icon={<KeyRound size={16} aria-hidden />} title="Tracker API" badge={pill(`${account.plan.name} plan`, account.plan.id === 'free' ? 'dim' : 'gold')} foot={goBtn(go, 'keys', live.length ? 'Manage keys' : 'Create a key')}>
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-3">
         <Stat label="Live keys" value={live.length} />
-        <Stat label="Requests · 7d" value={total} unknown={usage.k === 'loading' ? '…' : 'not tracked yet'} />
+        <Stat label="Requests · 7d" value={total} unknown={usage.k === 'loading' ? '…' : usage.k === 'error' ? 'not available right now' : 'not tracked yet'} />
         <Stat label="Limit / min / key" value={account.limits.keyPerMin} />
       </div>
-      {usage.k === 'loading' ? <Skeleton h={56} /> : usage.k === 'ok' && usage.data.countingSince ? <KeySpark values={spark} labels={labels} color="#e8c060" width={300} height={56} label={`Requests over 7 days: ${fmt(total ?? 0)}`} /> : <LiveMarker text={live.length ? 'Waiting for your keys’ first request' : 'Create a key: its traffic charts here'} height={56} />}
+      {usage.k === 'loading' ? <Skeleton h={44} /> : usage.k === 'ok' && usage.data.countingSince ? <KeySpark values={spark} labels={labels} color="#e8c060" width={300} height={44} label={`Requests over 7 days: ${fmt(total ?? 0)}`} /> : usage.k === 'error' ? <LiveMarker text="Usage: not available right now" height={44} /> : <LiveMarker text={live.length ? 'Waiting for your keys’ first request' : 'Create a key: its traffic charts here'} height={44} />}
     </Card>
   )
 }
@@ -140,15 +158,15 @@ function AlertsCard({ s, go }: { s: Load<AlertsView>; go: (t: Tab) => void }) {
       {s.k === 'error' ? (
         <LiveMarker text="Alerts: not readable right now" />
       ) : !v ? (
-        <Skeleton h={120} />
+        <Skeleton h={90} />
       ) : (
         <>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             <Stat label="Gap alerts" value={gap} />
             <Stat label="DeepCore launch" value={launch} />
             <Stat label="Fired · 14d" value={fired} />
           </div>
-          {fired ? <StackedDays height={90} days={days} kinds={[{ id: 'fired', name: 'fired', color: '#6aa6ff' }]} label={`Alerts fired per day over 14 days: ${fired}.`} /> : <LiveMarker text={v.alerts.length ? 'Watching: firings chart here as they happen' : 'No alerts yet: set one on a gap or a DeepCore launch'} height={90} />}
+          {fired ? <StackedDays height={64} days={days} kinds={[{ id: 'fired', name: 'fired', color: '#6aa6ff' }]} label={`Alerts fired per day over 14 days: ${fired}.`} /> : <LiveMarker text={v.alerts.length ? 'Watching: firings chart here as they happen' : 'No alerts yet: set one on a gap or a DeepCore launch'} height={64} />}
         </>
       )}
     </Card>
@@ -167,19 +185,19 @@ function AnalyticsCard({ s, go }: { s: Load<AnalyticsView>; go: (t: Tab) => void
       {s.k === 'error' ? (
         <LiveMarker text="Gully Analytics: not readable right now" />
       ) : s.k === 'loading' ? (
-        <Skeleton h={140} />
+        <Skeleton h={88} />
       ) : !a ? (
-        <LiveMarker text={s.data.configured ? 'Web3-aware analytics: start a trial and your events ring fills here' : 'Self-serve sign-up is not switched on here yet'} height={120} />
+        <LiveMarker text={s.data.configured ? 'Web3-aware analytics: start a trial and your events ring fills here' : 'Self-serve sign-up is not switched on here yet'} height={64} />
       ) : a.plan ? (
-        <div className="flex items-center gap-4">
-          <QuotaRing caption="Events this month" quota={a.plan.eventsPerMonth} size={120} slices={a.sites.length ? a.sites.map((x, i) => ({ name: x.domain, value: x.eventsThisMonth, color: ['#e8c060', '#6aa6ff', '#6fcf6a', '#c58cff', '#4fd1c5'][i % 5] })) : [{ name: 'events', value: a.eventsThisMonth, color: '#e8c060' }]} />
+        <div className="flex items-center gap-3">
+          <QuotaRing caption="Events this month" quota={a.plan.eventsPerMonth} size={88} slices={a.sites.length ? a.sites.map((x, i) => ({ name: x.domain, value: x.eventsThisMonth, color: ['#e8c060', '#6aa6ff', '#6fcf6a', '#c58cff', '#4fd1c5'][i % 5] })) : [{ name: 'events', value: a.eventsThisMonth, color: '#e8c060' }]} />
           <div className="flex flex-col gap-2">
             <Stat label="Websites" value={a.sites.length} />
             <span className={mono}>{a.plan.sites} on the plan</span>
           </div>
         </div>
       ) : (
-        <LiveMarker text={`No running plan · ${fmt(a.eventsThisMonth)} events this month`} height={120} />
+        <LiveMarker text={`No running plan · ${fmt(a.eventsThisMonth)} events this month`} height={64} />
       )}
     </Card>
   )
@@ -187,23 +205,34 @@ function AnalyticsCard({ s, go }: { s: Load<AnalyticsView>; go: (t: Tab) => void
 
 function PayCard({ s, go }: { s: Load<BillingView>; go: (t: Tab) => void }) {
   const v = s.k === 'ok' ? s.data : null
-  const usd = v ? v.payments.reduce((t, p) => t + Number(p.usd ?? 0), 0) : null
+  // Only payments with a recorded USD value are added; an unknown one is never counted as $0.
+  const usdOf = (u: string | null | undefined) => (u === null || u === undefined || u === '' ? null : Number.isFinite(Number(u)) ? Number(u) : null)
+  const known = v ? v.payments.filter((p) => usdOf(p.usd) !== null) : []
+  const usd = known.length ? known.reduce((t, p) => t + (usdOf(p.usd) ?? 0), 0) : null
+  const partial = !!v && known.length < v.payments.length
   return (
     <Card icon={<CreditCard size={16} aria-hidden />} title="Gully Pay" badge={v ? pill(`${v.plan.name}${v.plan.expiresAt ? ` · until ${fmtDate(v.plan.expiresAt)}` : ''}`, v.plan.id === 'free' ? 'dim' : 'gold') : null} foot={goBtn(go, 'billing', 'Billing and receipts')}>
       {s.k === 'error' ? (
         <LiveMarker text="Billing: not readable right now" />
       ) : !v ? (
-        <Skeleton h={120} />
+        <Skeleton h={90} />
       ) : (
         <>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             <Stat label="Payments to Gully" value={v.payments.length} />
-            <Stat label="Paid, USD" value={usd === null ? null : Math.round(usd)} />
+            {v.payments.length && usd === null ? (
+              <span className="flex min-w-[90px] flex-col">
+                <span className="text-[11px] text-dim">Paid, USD</span>
+                <Unknown className="font-display text-[22px] leading-none font-bold" />
+              </span>
+            ) : (
+              <Stat label={partial ? 'Paid, USD · partial' : 'Paid, USD'} value={usd === null ? 0 : Math.round(usd)} />
+            )}
           </div>
-          {v.payments.length ? (
-            <StackedDays height={90} days={[...v.payments].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { usd: Number(p.usd ?? 0) } }))} kinds={[{ id: 'usd', name: 'USD', color: '#6fcf6a' }]} label={`Payments over time: ${v.payments.length}.`} />
+          {known.length ? (
+            <StackedDays height={64} days={[...known].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { usd: usdOf(p.usd) ?? 0 } }))} kinds={[{ id: 'usd', name: 'USD', color: '#6fcf6a' }]} label={`Payments over time: ${known.length} with a USD value${partial ? ' (partial)' : ''}.`} />
           ) : (
-            <LiveMarker text="Pay for a plan from your wallet: payments chart here" height={90} />
+            <LiveMarker text={v.payments.length ? 'USD values not recorded for these payments' : 'Pay for a plan from your wallet: payments chart here'} height={64} />
           )}
         </>
       )}
@@ -213,9 +242,9 @@ function PayCard({ s, go }: { s: Load<BillingView>; go: (t: Tab) => void }) {
 
 function MerchantCard() {
   return (
-    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('live', 'green')} foot={<a href="#merchant" className={pillSm}>Open your store <ArrowRight size={14} aria-hidden /></a>}>
-      <p className="m-0 text-[13px] leading-[1.55] text-muted">Take crypto payments yourself: pay links, invoices and a “Pay with crypto” button with signed webhooks, run from this workspace.</p>
-      <LiveMarker text="Non-custodial: payments go straight to your wallet. A fee per payment only, no monthly fee." />
+    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('live', 'green')} foot={<a href="#merchant" className={`${pillSm} min-h-9`}>Open your store <ArrowRight size={14} aria-hidden /></a>}>
+      <InfoTip summary="Pay links, invoices and a checkout, self-serve">Take crypto payments yourself: pay links, invoices and a “Pay with crypto” button with signed webhooks, run from this workspace.</InfoTip>
+      <LiveMarker text="Non-custodial: straight to your wallet · fee per payment only" height={44} />
     </Card>
   )
 }
@@ -244,17 +273,17 @@ export function ChainKitCard() {
     toastSuccess('Explorer requested', { detail: 'Gully Labs will write to you about your chain.' })
   }
   return (
-    <Card icon={<Boxes size={16} aria-hidden />} title="Chain Kit" badge={done ? pill('requested', 'green') : pill('on request')} foot={<a href={site('/chain-kit')} className={pillSm}>What Chain Kit is <ArrowRight size={14} aria-hidden /></a>}>
-      <p className="m-0 text-[13px] leading-[1.55] text-muted">A block explorer, faucet and status page for your chain, run for you.</p>
+    <Card icon={<Boxes size={16} aria-hidden />} title="Chain Kit" badge={done ? pill('requested', 'green') : pill('on request')} foot={<a href={site('/chain-kit')} target="_blank" rel="noopener noreferrer" className={`${pillSm} min-h-9`}>What Chain Kit is <ArrowUpRight size={14} aria-hidden /><span className="sr-only"> (opens in a new tab)</span></a>}>
+      <span className="text-[12px] text-dim">An explorer, faucet and status page for your chain, run for you.</span>
       {done ? (
         <p className="m-0 flex items-center gap-2 rounded-[10px] border border-success-line px-3 py-2 text-[13px] text-ink-2" data-testid="chainkit-requested">
           <Check size={15} className="text-green" aria-hidden /> Requested {fmtDate(done)} for {ws?.name}. We reply by email.
         </p>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-2">
-          <input className={input} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email to reach you" aria-label="Email" name="chainkit-email" />
-          <input className={input} value={chain} onChange={(e) => setChain(e.target.value)} placeholder="Your chain (name, chain id, RPC)" aria-label="Your chain" maxLength={200} name="chainkit-chain" />
-          <button type="submit" disabled={busy || !ws} className={pillGold}>
+          <input className={`${input} h-9 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email to reach you" aria-label="Email" name="chainkit-email" />
+          <input className={`${input} h-9 text-[14px]`} value={chain} onChange={(e) => setChain(e.target.value)} placeholder="Your chain (name, chain id, RPC)" aria-label="Your chain" maxLength={200} name="chainkit-chain" />
+          <button type="submit" disabled={busy || !ws} className={`${pillGold} min-h-9`}>
             {busy && <Loader2 size={15} className="animate-spin" aria-hidden />} Request your explorer
           </button>
         </form>
@@ -281,16 +310,16 @@ function ChainsCard() {
   }
   return (
     <Card icon={<Network size={16} aria-hidden />} title="Gully Chains" badge={done ? pill('on the waitlist', 'green') : pill('soon', 'gold')}>
-      <p className="m-0 text-[13px] leading-[1.55] text-muted">App chains, launched for you. The Gully Devnet opens to the waitlist first.</p>
-      <LiveMarker text="Gully Devnet: in development" height={48} />
+      <span className="text-[12px] text-dim">App chains, launched for you. The Devnet opens to the waitlist first.</span>
+      <LiveMarker text="Gully Devnet: in development" height={40} />
       {done ? (
         <p className="m-0 flex items-center gap-2 text-[13px] text-ink-2" data-testid="devnet-joined">
           <Check size={15} className="text-green" aria-hidden /> Joined {fmtDate(done)}. We email you when it opens.
         </p>
       ) : (
         <form onSubmit={submit} className="flex gap-2 max-[420px]:flex-col">
-          <input className={input} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" aria-label="Email for the Devnet waitlist" name="devnet-email" />
-          <button type="submit" disabled={busy} className={`${pillGold} shrink-0`}>
+          <input className={`${input} h-9 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" aria-label="Email for the Devnet waitlist" name="devnet-email" />
+          <button type="submit" disabled={busy} className={`${pillGold} min-h-9 shrink-0`}>
             Join the waitlist
           </button>
         </form>
@@ -332,8 +361,8 @@ function AiCard({ go }: { go: (t: Tab) => void }) {
         <Skeleton h={44} />
       ) : status === true ? (
         <form onSubmit={ask} className="flex gap-2">
-          <input className={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask about the data or the API…" maxLength={500} aria-label="Ask Gully AI" name="ask" />
-          <button type="submit" disabled={busy || !q.trim()} className={`${pillGold} shrink-0`} aria-label="Ask">
+          <input className={`${input} h-9 text-[14px]`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask about the data or the API…" maxLength={500} aria-label="Ask Gully AI" name="ask" />
+          <button type="submit" disabled={busy || !q.trim()} className={`${pillGold} min-h-9 shrink-0`} aria-label="Ask">
             {busy ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Send size={15} aria-hidden />}
           </button>
         </form>
@@ -342,10 +371,10 @@ function AiCard({ go }: { go: (t: Tab) => void }) {
       )}
       {recent.length ? (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {recent.slice(0, 3).map((r) => (
-            <li key={r.at} className="flex flex-col gap-1 rounded-[10px] border border-line px-3 py-2">
-              <b className="text-[13px] font-semibold">{r.q}</b>
-              <span className="line-clamp-3 text-[12px] leading-[1.5] text-muted">{r.a}</span>
+          {recent.slice(0, 2).map((r) => (
+            <li key={r.at} className="flex flex-col gap-[2px] rounded-[10px] border border-line px-3 py-[6px]">
+              <b className="truncate text-[13px] font-semibold">{r.q}</b>
+              <span className="line-clamp-2 text-[12px] leading-[1.45] text-muted">{r.a}</span>
             </li>
           ))}
         </ul>
@@ -369,13 +398,13 @@ function WidgetCard({ go }: { go: (t: Tab) => void }) {
   }, [])
   return (
     <Card icon={<AppWindow size={16} aria-hidden />} title="Widget builder and SDK" badge={up === null ? null : up ? pill('API up', 'green') : pill('API unreachable', 'red')}>
-      <p className="m-0 text-[13px] leading-[1.55] text-muted">Live fair prices on any page with two lines of HTML, no key; or the typed TypeScript client for your server.</p>
-      <LiveMarker text={up === null ? 'Checking the API…' : up ? 'Public API answering now' : 'The API did not answer the health check'} height={48} />
+      <span className="text-[12px] text-dim">Live fair prices on any page with two lines of HTML, no key; or the typed SDK.</span>
+      <LiveMarker text={up === null ? 'Checking the API…' : up ? 'Public API answering now' : 'The API did not answer the health check'} height={40} />
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => go('widgets')} className={pillSm}>
+        <button type="button" onClick={() => go('widgets')} className={`${pillSm} min-h-9`}>
           <AppWindow size={14} aria-hidden /> Widget builder
         </button>
-        <ExtLink href={`${DOCS_URL}/sdk`} className={pillSm}>
+        <ExtLink href={`${DOCS_URL}/sdk`} className={`${pillSm} min-h-9`}>
           <Code2 size={14} aria-hidden /> SDK docs
         </ExtLink>
       </div>

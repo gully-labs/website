@@ -1,9 +1,13 @@
-import { Activity, AlertTriangle, AppWindow, BookOpen, Check, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Trash2 } from 'lucide-react'
+import { Activity, AlertTriangle, AppWindow, BookOpen, Check, Clock, Code2, Gauge, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { CodeBlock } from '../../docs/CodeBlock'
 import { widgetSnippet } from '../../lib/widgetEmbed'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import { ago, api, fmtDate, type Account, type ApiKey, type RecentRequest, type Usage } from './api'
+import { usePoll } from './poll'
+import { useSubTab } from './subtab'
+import { InfoTip, KpiRow, KpiTile, RefreshChip, Stepper, SubPanel, SubTabs, Unknown } from './ui'
 import { Can } from './RoleGate'
 import { useWrite } from './portal'
 import { KeySpark } from './vcharts'
@@ -17,9 +21,12 @@ import { chip, input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, p
 import { keyColors } from './helpers'
 import { group } from './usage'
 
-/* The Keys tab: live keys with their 7-day traffic, create / rename / rotate / revoke (the secret is
-   shown once), linking a legacy key, the last 50 requests, a quickstart and the no-key widget. Every
-   figure comes from /api/developer/account, /usage?range=7d and /requests. */
+/* The Keys tab: a two-step setup stepper (create a key, make a first call), then sub-tabs that show one
+   section at a time (#keys/keys, #keys/requests, #keys/quickstart, #keys/widget, remembered): live keys
+   with a KPI row and their 7-day traffic, create / rename / rotate / revoke (the secret is shown once),
+   linking a legacy key; the last 50 requests; a quickstart; the no-key widget. Every figure comes from
+   /api/developer/account, /usage?range=7d and /requests, polled with backoff (a failed refresh keeps the
+   last good data and shows a retry chip). */
 
 const WIDGET_URL = isLocalHost() ? '/widget' : `${SITE_URL}/widget`
 const API_ORIGIN = 'https://gullylabs.xyz'
@@ -66,23 +73,23 @@ type KeyDialog = { kind: 'create' } | { kind: 'rename'; key: ApiKey } | { kind: 
 
 type Week = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; usage: Usage }
 
+/** GET /usage?range=7d every minute, as the shape the traffic chart takes (last good data kept). */
+function useWeek() {
+  const p = usePoll<Usage>('/api/developer/usage?range=7d', 60_000)
+  const week: Week = p.data ? { state: 'ok', usage: p.data } : p.error || p.timedOut ? { state: 'error', message: p.error ?? 'no answer in time' } : { state: 'loading' }
+  return { week, refreshErr: p.data ? p.error : null, reload: p.reload }
+}
+
 function KeysPanel({ account, reload, creating, onCreateDone }: { account: Account; reload: () => Promise<void>; creating: boolean; onCreateDone: () => void }) {
   const [dialogState, setDialog] = useState<KeyDialog>(null)
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [showRevoked, setShowRevoked] = useState(false)
-  const [week, setWeek] = useState<Week>({ state: 'loading' })
+  const { week, refreshErr, reload: reloadWeek } = useWeek()
   const live = account.keys.filter((k) => !k.revokedAt)
   const revoked = account.keys.filter((k) => k.revokedAt)
   const full = live.length >= account.limits.maxKeys
-
-  const loadWeek = useCallback(() => api<Usage>('/api/developer/usage?range=7d').then((r) => setWeek(r.ok ? { state: 'ok', usage: r.data } : { state: 'error', message: r.error })), [])
-  useEffect(() => {
-    loadWeek()
-    const id = setInterval(loadWeek, 60_000)
-    return () => clearInterval(id)
-  }, [loadWeek])
 
   // "Create a key" from the Overview lands here with the dialog open.
   const canKeys = useWrite('keys', 'create keys').ok
@@ -134,15 +141,15 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
   const th = 'py-2 pr-3 text-left font-mono text-[11px] font-medium tracking-[1px] text-faint'
 
   return (
-    <section className={panel} style={rise(0)} aria-labelledby="keys-title">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-[2px]">
+    <>
+    <KeyKpis account={account} week={week} />
+    <section className={`${panel} gap-2`} style={rise(0)} aria-labelledby="keys-title">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <h2 id="keys-title" className={panelTitle}>
             API keys
           </h2>
-          <span className={mono}>
-            {live.length} of {account.limits.maxKeys} live · {fmt(account.limits.keyPerMin)} requests a minute each
-          </span>
+          <RefreshChip error={refreshErr} onRetry={reloadWeek} />
         </div>
         <Can cat="keys" what="create keys">
           <button
@@ -153,7 +160,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
               setName('')
               setDialog({ kind: 'create' })
             }}
-            className={pillGold}
+            className={`${pillGold} min-h-9`}
           >
             <Plus size={16} aria-hidden /> Create key
           </button>
@@ -247,10 +254,10 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
-        <span className="text-[13px] text-faint">
-          Send a key as <code className="font-mono text-ink-2">Authorization: Bearer gl_live_…</code> from your server, never from browser code.
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
+        <InfoTip summary={<>Send a key as <code className="font-mono text-ink-2">Authorization: Bearer gl_live_…</code> from your server.</>}>
+          Never put a key in browser code: anyone can read it there. The full key is shown once when it is created or rotated; we keep only a hash of it. The no-key widget reads the public API itself.
+        </InfoTip>
         <Can cat="keys" what="link keys" hide>
           <button type="button" onClick={() => setDialog({ kind: 'link' })} className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-mono text-[12px] text-muted hover:text-ink">
             <Link2 size={14} aria-hidden /> Have a key from the old request form? Link it
@@ -369,6 +376,30 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
 
       <LinkDialog open={dialog?.kind === 'link'} onClose={close} reload={reload} />
     </section>
+    </>
+  )
+}
+
+/** Live keys, requests in 7 days, the last call and the per-key limit, in one row. Unknown figures are a dash. */
+function KeyKpis({ account, week }: { account: Account; week: Week }) {
+  const live = account.keys.filter((k) => !k.revokedAt)
+  const total = week.state === 'ok' ? week.usage.points.reduce((a, p) => a + p.total, 0) : null
+  const last = account.keys.map((k) => k.lastUsed ?? '').sort().at(-1) || null
+  return (
+    <KpiRow label="Keys summary">
+      <KpiTile i={0} label="Live keys" icon={<KeyRound size={13} aria-hidden />} note={`of ${account.limits.maxKeys} allowed`}>
+        {live.length ? <AnimatedNumber value={live.length} countUp /> : <span className="font-mono text-[13px] font-normal text-faint">none yet</span>}
+      </KpiTile>
+      <KpiTile i={1} label="Requests · 7 days" icon={<Activity size={13} aria-hidden />} note="with your keys">
+        {total === null ? week.state === 'error' ? <Unknown /> : <span className="font-mono text-[13px] font-normal text-faint">…</span> : total ? <AnimatedNumber value={total} countUp /> : <span className="font-mono text-[13px] font-normal text-faint">none yet</span>}
+      </KpiTile>
+      <KpiTile i={2} label="Last call" icon={<Clock size={13} aria-hidden />} note={last ? new Date(last).toLocaleString() : 'no call with a key yet'}>
+        {last ? <span className="text-[20px]">{ago(last)}</span> : <span className="font-mono text-[13px] font-normal text-faint">not yet</span>}
+      </KpiTile>
+      <KpiTile i={3} label="Limit per key" icon={<Gauge size={13} aria-hidden />} note={`${fmt(account.limits.anonymousPerMin)}/min without a key`}>
+        <AnimatedNumber value={account.limits.keyPerMin} countUp suffix="/min" />
+      </KpiTile>
+    </KpiRow>
   )
 }
 
@@ -423,28 +454,14 @@ function statusTone(s: number) {
 }
 
 function Requests({ account }: { account: Account }) {
-  const [rows, setRows] = useState<RecentRequest[] | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const p = usePoll<{ requests: RecentRequest[] }>('/api/developer/requests', 15_000)
+  const rows = p.data?.requests ?? null
+  const err = rows ? null : (p.error ?? (p.timedOut ? 'no answer in time' : null))
   const [busy, setBusy] = useState(false)
-  const fetchRows = useCallback(
-    () =>
-      api<{ requests: RecentRequest[] }>('/api/developer/requests').then((r) => {
-        if (r.ok) {
-          setRows(r.data.requests)
-          setErr(null)
-        } else setErr(r.error)
-      }),
-    [],
-  )
   const load = () => {
     setBusy(true)
-    fetchRows().then(() => setBusy(false))
+    p.reload().then(() => setBusy(false))
   }
-  useEffect(() => {
-    fetchRows()
-    const id = setInterval(fetchRows, 15_000)
-    return () => clearInterval(id)
-  }, [fetchRows])
   const colors = keyColors(account.keys)
   const colorOfId = (id: string) => colors[id] ?? '#7f8b9c'
   return (
@@ -456,6 +473,7 @@ function Requests({ account }: { account: Account }) {
           </h2>
           <span className={mono}>The last 50 made with your keys · refreshes every 15 seconds</span>
         </div>
+        <RefreshChip error={rows ? p.error : null} onRetry={load} className="ml-auto" />
         <button type="button" onClick={load} disabled={busy} className={pillSm}>
           <RefreshCw size={14} className={busy ? 'animate-spin' : ''} aria-hidden /> Refresh
         </button>
@@ -627,19 +645,88 @@ function WidgetPanel() {
   )
 }
 
+const KEY_SUBS = ['keys', 'requests', 'quickstart', 'widget'] as const
+type KeySub = (typeof KEY_SUBS)[number]
+
 export function KeysTab({ account, reload, creating, onCreateDone, section }: { account: Account; reload: () => Promise<void>; creating: boolean; onCreateDone: () => void; section: string | null }) {
-  // Old deep links (#requests, #quickstart, #widget) land on this tab and scroll to their part.
+  const [sub, setSub] = useSubTab<KeySub>('keys', KEY_SUBS, 'keys')
+  // Old deep links (#requests, #quickstart, #widget) open their sub-tab.
   useEffect(() => {
-    if (!section) return
-    const id = requestAnimationFrame(() => document.getElementById(section)?.scrollIntoView({ block: 'start' }))
-    return () => cancelAnimationFrame(id)
-  }, [section])
+    if (section && (KEY_SUBS as readonly string[]).includes(section)) setSub(section as KeySub)
+  }, [section, setSub])
+  // "Create a key" from the Overview: the dialog lives on the Keys sub-tab.
+  useEffect(() => {
+    if (creating) setSub('keys')
+  }, [creating, setSub])
+  const [askCreate, setAskCreate] = useState(false)
+  const createDone = useCallback(() => {
+    setAskCreate(false)
+    onCreateDone()
+  }, [onCreateDone])
+  const live = account.keys.filter((k) => !k.revokedAt)
+  const called = account.keys.some((k) => !!k.lastUsed)
+  const first = live[0]
   return (
-    <div className="flex flex-col gap-[14px]">
-      <KeysPanel account={account} reload={reload} creating={creating} onCreateDone={onCreateDone} />
-      <Requests account={account} />
-      <Quickstart account={account} />
-      <WidgetPanel />
+    <div className="flex flex-col gap-2">
+      <Stepper
+        title="Set up the API"
+        testId="keys-stepper"
+        steps={[
+          { id: 'create', label: 'Create a key', icon: <KeyRound size={13} aria-hidden />, done: account.keys.length > 0 },
+          { id: 'call', label: 'Make a first call', icon: <Send size={13} aria-hidden />, done: called },
+        ]}
+      >
+        {(step) =>
+          step === 'create' ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="min-w-0 flex-[1_1_260px] text-[13px] text-muted">
+                A key works the moment it exists: {fmt(account.limits.keyPerMin)} requests a minute instead of {fmt(account.limits.anonymousPerMin)}.
+              </span>
+              <Can cat="keys" what="create keys">
+                <button
+                  type="button"
+                  disabled={live.length >= account.limits.maxKeys}
+                  onClick={() => {
+                    setSub('keys')
+                    setAskCreate(true)
+                  }}
+                  className={`${pillGold} min-h-9`}
+                >
+                  <Plus size={16} aria-hidden /> Create key
+                </button>
+              </Can>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="min-w-0 flex-[1_1_320px] truncate rounded-[8px] bg-surface-deep px-3 py-2 font-mono text-[12px] text-ink-2">
+                curl -H &quot;Authorization: Bearer {first ? `${first.prefix}…` : 'gl_live_…'}&quot; {API_ORIGIN}/api/tracker
+              </code>
+              <button type="button" onClick={() => setSub('quickstart')} className={`${pillSm} min-h-9`}>
+                <Code2 size={14} aria-hidden /> Quickstart
+              </button>
+              <span className="w-full font-mono text-[11px] text-faint">Done as soon as the server sees a request with one of your keys.</span>
+            </div>
+          )
+        }
+      </Stepper>
+      <SubTabs
+        label="Keys sections"
+        idBase="keys"
+        value={sub}
+        onChange={setSub}
+        items={[
+          { id: 'keys', label: 'Keys', icon: <KeyRound size={15} aria-hidden />, count: live.length },
+          { id: 'requests', label: 'Requests', icon: <Activity size={15} aria-hidden /> },
+          { id: 'quickstart', label: 'Quickstart', icon: <Code2 size={15} aria-hidden /> },
+          { id: 'widget', label: 'Widget', icon: <AppWindow size={15} aria-hidden /> },
+        ]}
+      />
+      <SubPanel idBase="keys" value={sub}>
+        {sub === 'keys' && <KeysPanel account={account} reload={reload} creating={creating || askCreate} onCreateDone={createDone} />}
+        {sub === 'requests' && <Requests account={account} />}
+        {sub === 'quickstart' && <Quickstart account={account} />}
+        {sub === 'widget' && <WidgetPanel />}
+      </SubPanel>
     </div>
   )
 }

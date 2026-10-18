@@ -129,6 +129,7 @@ const FEEDS = { 8453: 2_400_00000000n, 1: 2_500_00000000n, 56: 700_00000000n, 42
 function rpcAnswer(chainId, q) {
   if (q.method === 'eth_chainId') return hex(chainId)
   if (q.method === 'eth_blockNumber') return hex(5_000_000)
+  if (q.method === 'eth_gasPrice') return hex(1_500_000_000) // 1.5 gwei: the Merchant tab's gas strip (server/gas.mjs)
   if (q.method === 'eth_getBlockByNumber') return { number: q.params[0], timestamp: hex(nowSec()) }
   if (q.method === 'eth_getTransactionReceipt' || q.method === 'eth_getTransactionByHash') return null
   // Every address is a plain wallet (no code): merchant receiving wallets register as EOAs.

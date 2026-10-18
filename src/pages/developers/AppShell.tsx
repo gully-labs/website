@@ -5,6 +5,8 @@ import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
 import { AskLauncher } from '../../components/ask/AskLauncher'
+import { healthOf, useHealthPings, type Health } from './services/health'
+import { StatusDialog } from './services/StatusDialog'
 import { Avatar } from './Avatar'
 import { Menu, menuItem } from './Menu'
 import { declinedInvites, restoreFocus, usePortal } from './portal'
@@ -58,31 +60,8 @@ const roleTone = (r: Role) => (r === 'owner' ? 'border-gold text-gold' : r === '
 
 /* ------------------------------------------------------------------ status --- */
 
-type Health = 'checking' | 'up' | 'down'
-
-/** Whether this server answers (GET /healthz), every minute while the tab is visible. */
-function useHealth(): Health {
-  const [h, setH] = useState<Health>('checking')
-  useEffect(() => {
-    let alive = true
-    const ping = () => {
-      if (document.visibilityState === 'hidden') return
-      fetch('/healthz', { cache: 'no-store' }).then(
-        (r) => alive && setH(r.ok ? 'up' : 'down'),
-        () => alive && setH('down'),
-      )
-    }
-    ping()
-    const id = setInterval(ping, 60_000)
-    document.addEventListener('visibilitychange', ping)
-    return () => {
-      alive = false
-      clearInterval(id)
-      document.removeEventListener('visibilitychange', ping)
-    }
-  }, [])
-  return h
-}
+/** Whether this server answers (GET /healthz, the app's shared pings, at least every minute). */
+const useHealth = (): Health => healthOf(useHealthPings(60_000))
 
 const healthText: Record<Health, string> = { checking: 'checking…', up: 'API online', down: 'API unreachable' }
 const healthDot: Record<Health, string> = { checking: 'bg-faint animate-pulse', up: 'bg-green', down: 'bg-error' }
@@ -601,10 +580,10 @@ export function AppShell<T extends string>({
     [go],
   )
   const first = items[0].id
+  const [statusOpen, setStatusOpen] = useState(false)
   const status = () => {
     setSheet(false)
-    const products = items.find((i) => i.id === ('products' as T))
-    go(products ? products.id : first)
+    setStatusOpen(true)
   }
   const ws = me?.active.name ?? 'Your workspace'
 
@@ -670,6 +649,8 @@ export function AppShell<T extends string>({
       <div className={`pointer-events-none fixed right-5 z-40 max-[600px]:right-4 print:hidden ${narrow ? 'bottom-[calc(76px+env(safe-area-inset-bottom))]' : 'bottom-5'}`} data-testid="corner-dock">
         <AskLauncher variant="floating" hideButton={current === ('ai' as T)} />
       </div>
+
+      <StatusDialog open={statusOpen} onClose={() => setStatusOpen(false)} />
 
       <Sheet open={sheet} onClose={() => setSheet(false)}>
         <WorkspaceList onDone={() => setSheet(false)} />

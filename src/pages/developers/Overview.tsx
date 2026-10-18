@@ -1,5 +1,5 @@
-import { ArrowUpRight, ChartNoAxesCombined, KeyRound, Plus } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { Activity, ArrowUpRight, BellRing, ChartNoAxesCombined, ChartPie, CreditCard, KeyRound, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ChannelChips, SecretDialog, TelegramCard } from './Alerts'
 import { EventsMeter } from './Analytics'
 import { GetStarted, ToolsRow } from './GetStarted'
@@ -7,6 +7,9 @@ import { alertName, alertRule, alertState, defaultAsset, keyColors, priceText, s
 import { api, type Account, type AnalyticsUsage, type AnalyticsView, type BillingView, type PlanId, type Range, type UsageV2 } from './api'
 import { DoubleRing, GhostCurves, GhostSpark, Meter, Spark } from './charts'
 import { MarketBand } from './services/MarketBand'
+import { usePoll, type Poll } from './poll'
+import { useSubTab } from './subtab'
+import { InfoTip, RefreshChip, SubPanel, SubTabs, type SubTabItem } from './ui'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { NF } from '../../components/charts/number-formats'
 import { PendingInvites } from './Invite'
@@ -32,24 +35,17 @@ const fmt = (n: number) => n.toLocaleString('en-US')
 
 type Load<T> = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; data: T }
 
-function useGet<T>(path: string | null, every = 0): [Load<T>, () => void] {
-  const [s, set] = useState<Load<T>>({ state: 'loading' })
-  const alive = useRef(true)
-  const load = useCallback(() => {
-    if (!path) return
-    api<T>(path).then((r) => alive.current && set((prev) => (r.ok ? { state: 'ok', data: r.data } : prev.state === 'ok' ? prev : { state: 'error', message: r.error })))
-  }, [path])
-  useEffect(() => {
-    alive.current = true
-    load()
-    const id = every ? setInterval(load, every) : 0
-    return () => {
-      alive.current = false
-      if (id) clearInterval(id)
-    }
-  }, [load, every])
-  return [s, load]
+/** A usePoll result as a Load (an error only while nothing was ever read; a first read that hangs times out). */
+function toLoad<T>(p: Poll<T>): Load<T> {
+  if (p.data) return { state: 'ok', data: p.data }
+  if (p.error) return { state: 'error', message: p.error }
+  if (p.timedOut) return { state: 'error', message: 'no answer in time' }
+  return { state: 'loading' }
 }
+
+type OvTab = 'requests' | 'answers' | 'alerts' | 'analytics' | 'plan'
+const OV_TABS: readonly OvTab[] = ['requests', 'answers', 'alerts', 'analytics', 'plan']
+const RANGE_MS: Record<Range, number> = { '24h': 86_400_000, '7d': 7 * 86_400_000, '30d': 30 * 86_400_000 }
 
 /* ------------------------------------------------------------------ KPI card --- */
 
@@ -77,21 +73,21 @@ function Delta({ cur, prev, upIsBad = false }: { cur: number | null; prev: numbe
 /** `none` is what a zero says in words ("none yet"): a workspace with nothing counted yet reads as that, never as a flat 0. */
 function Kpi({ label, value, note, spark, color, i, unreadable, delta, none }: { label: string; value: number | null; note: ReactNode; spark?: number[]; color: string; i: number; unreadable?: string | null; delta?: ReactNode; none?: string }) {
   return (
-    <div className="flex min-h-[118px] min-w-0 flex-col gap-1 rounded-[14px] border border-line bg-surface px-4 py-[14px]" style={{ animation: `gl-rise .5s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }} data-kpi={label}>
+    <div className="flex min-w-0 flex-col gap-[2px] rounded-[12px] border border-line bg-surface px-3 py-[10px]" style={{ animation: `gl-rise .5s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }} data-kpi={label}>
       <span className="text-[12px] text-dim">{label}</span>
-      <span className="flex min-h-[34px] items-end justify-between gap-2">
+      <span className="flex min-h-[28px] items-end justify-between gap-2">
         {unreadable ? (
-          <span className="font-display text-[34px] leading-none font-bold text-faint" title={unreadable}>
+          <span className="font-display text-[28px] leading-none font-bold text-faint" title={unreadable}>
             —
           </span>
         ) : value === null ? (
-          <Skeleton h={34} w="55%" />
+          <Skeleton h={28} w="55%" />
         ) : value === 0 && none ? (
-          <span className="flex h-[34px] items-end font-mono text-[13px] text-faint" data-none>
+          <span className="flex h-[28px] items-end font-mono text-[13px] text-faint" data-none>
             {none}
           </span>
         ) : (
-          <AnimatedNumber value={value} format={NF.int} countUp className="font-display text-[34px] leading-none font-bold" />
+          <AnimatedNumber value={value} format={NF.int} countUp className="font-display text-[28px] leading-none font-bold" />
         )}
         {spark && !unreadable && (spark.some((v) => v > 0) ? <Spark values={spark} color={color} /> : <GhostSpark color={color} />)}
       </span>
@@ -128,15 +124,23 @@ function Periods({ value, onChange }: { value: Range; onChange: (r: Range) => vo
 
 export function Overview({ account, go, createKey, createAlert, checkout }: { account: Account; go: (tab: 'keys' | 'alerts' | 'analytics' | 'billing' | 'tracker') => void; createKey: () => void; createAlert: () => void; checkout: (plan: PlanId, asset: string | null) => void }) {
   const [range, setRange] = useState<Range>('24h')
-  const [usageS, reloadUsage] = useGet<UsageV2>(`/api/developer/usage?range=${range}`, 60_000)
+  const up = usePoll<UsageV2>(`/api/developer/usage?range=${range}`, 60_000)
+  const reloadUsage = up.reload
   const alerts = useAlertsView()
   const actions = useAlertActions(alerts.load)
-  const [gaS] = useGet<AnalyticsView>('/api/developer/analytics')
-  const [billS] = useGet<BillingView>('/api/developer/billing')
+  const gaS = toLoad(usePoll<AnalyticsView>('/api/developer/analytics', 5 * 60_000))
+  const billS = toLoad(usePoll<BillingView>('/api/developer/billing', 0))
+  const [sub, setSub] = useSubTab('overview', OV_TABS, 'requests', { hashOnOpen: false })
+  // "Now" for the firings window, moved on every minute.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
-  const usage = usageS.state === 'ok' && usageS.data.range === range ? usageS.data : null
-  const stale = usageS.state === 'ok' && usageS.data.range !== range
-  const shown = usageS.state === 'ok' ? usageS.data : null
+  const shown = up.data && up.data.range === range ? up.data : null
+  const usage = shown
+  const stale = false
   const grouped = useMemo(() => (shown ? group(shown) : []), [shown])
   const hasLimited = grouped.length > 0 && grouped.every((g) => g.limited !== undefined)
 
@@ -149,9 +153,10 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
 
   const live = account.keys.filter((k) => !k.revokedAt)
   const usedInRange = shown ? new Set(grouped.flatMap((g) => Object.entries(g.keys).filter(([, v]) => v > 0).map(([k]) => k))).size : 0
-  const from = grouped.length ? Date.parse(grouped[0].t) : 0
-  const fired = alerts.view && grouped.length ? firings(alerts.view, from) : null
-  const usageErr = usageS.state === 'error' ? usageS.message : null
+  // Firings come from the alerts' own delivery logs, over the chosen range, whether or not usage answered.
+  const from = now - RANGE_MS[range]
+  const fired = alerts.view ? firings(alerts.view, from) : null
+  const usageErr = shown ? null : (up.error ?? (up.timedOut ? 'no answer in time' : null))
 
   const busiest = shown ? busiestKeyRate(shown) : null
   const limit = account.limits.keyPerMin
@@ -160,13 +165,22 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
   const alertUsed = alerts.view?.limits.used ?? null
   const ringInner = alertUsed !== null && alertMax ? (alertUsed / alertMax) * 100 : null
 
+  const alertCount = alerts.view?.alerts.length ?? null
+  const siteCount = gaS.state === 'ok' ? (gaS.data.account?.sites.length ?? 0) : null
+  const tabs: SubTabItem<OvTab>[] = [
+    { id: 'requests', label: 'Requests', icon: <Activity size={15} aria-hidden /> },
+    { id: 'answers', label: 'Answers', icon: <ChartPie size={15} aria-hidden /> },
+    { id: 'alerts', label: 'Alerts', icon: <BellRing size={15} aria-hidden />, count: alertCount },
+    { id: 'analytics', label: 'Analytics', icon: <ChartNoAxesCombined size={15} aria-hidden />, count: siteCount },
+    { id: 'plan', label: 'Plan', icon: <CreditCard size={15} aria-hidden /> },
+  ]
+
   return (
-    <div className="flex flex-col gap-[14px]">
+    <div className="flex flex-col gap-2">
       <PendingInvites />
+      <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
       {/* Live network data first, so even a brand-new workspace opens on moving charts. */}
       <MarketBand onPick={() => go('tracker')} />
-      {/* ------------------------------------------------- checklist and tools */}
-      <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
       <ToolsRow />
 
       {/* ---------------------------------------------------------------- KPIs */}
@@ -174,10 +188,12 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         <h2 className="m-0 text-[15px] font-semibold text-ink">Your workspace</h2>
         <span className="inline-flex items-center gap-2 rounded-full border border-gold-line bg-[rgba(232,192,96,.06)] px-[10px] py-[2px] font-mono text-[11px] text-gold">YOU</span>
         <span className="font-mono text-[11px] text-faint">your keys, alerts and traffic only</span>
+        <RefreshChip error={shown ? up.error : null} onRetry={reloadUsage} />
+        <RefreshChip error={alerts.refreshErr} onRetry={alerts.load} />
       </div>
       {/* 1, 2 or 4 cards a row by the content width (never 3 + 1). */}
       <div className="@container">
-      <section aria-label="Summary" className="grid grid-cols-1 gap-3 @min-[440px]:grid-cols-2 @min-[740px]:grid-cols-4">
+      <section aria-label="Summary" className="grid grid-cols-1 gap-2 @min-[440px]:grid-cols-2 @min-[740px]:grid-cols-4">
         <Kpi
           i={0}
           label={`Requests · ${range}`}
@@ -206,17 +222,20 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           color={BLUE}
           value={fired ? fired.length : alerts.view && !alerts.view.alerts.length ? 0 : null}
           none={alerts.view?.alerts.length ? 'none' : 'none yet'}
-          spark={fired ? bucketize(fired.map((f) => f.at), grouped) : undefined}
+          spark={fired && grouped.length ? bucketize(fired.map((f) => f.at), grouped) : undefined}
           unreadable={alerts.err}
-          note={alerts.view ? (alerts.view.alerts.length ? `${fired ? fired.filter((f) => f.telegram).length : 0} via Telegram · from the delivery logs` : 'no alerts set up') : '…'}
+          note={alerts.view ? (alerts.view.alerts.length ? (fired ? `${fired.filter((f) => f.telegram).length} via Telegram · from the delivery logs` : 'from the delivery logs') : 'no alerts set up') : '…'}
         />
         <Kpi i={3} label="Active keys" color="#8a96a6" value={live.length} none="none yet" note={`of ${account.limits.maxKeys} allowed${shown ? ` · ${usedInRange} used in ${range}` : ''}`} />
       </section>
       </div>
 
-      <div className="flex flex-wrap items-start gap-[14px]">
+      <SubTabs items={tabs} value={sub} onChange={setSub} label="Overview sections" idBase="ov" />
+      <SubPanel idBase="ov" value={sub}>
+      {sub === 'requests' && (
+      <div className="flex flex-wrap items-start gap-2">
         {/* ---------------------------------------------------------- requests */}
-        <section aria-labelledby="ov-req" className={`${panel} flex-[999_1_560px]`} style={rise(1)}>
+        <section aria-labelledby="ov-req" className={`${panel} flex-[999_1_520px]`} style={rise(1)}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <h2 id="ov-req" className={panelTitle}>
               Requests
@@ -240,7 +259,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
             <Periods value={range} onChange={setRange} />
           </div>
           {!account.keys.length ? (
-            <GhostCurves height={286} title="Your traffic will draw here">
+            <GhostCurves height={170} title="Your traffic will draw here">
               <KeyRound size={22} className="text-gold" aria-hidden />
               <span className="max-w-[440px] text-[13px] text-muted">
                 A key works the moment it is created: {fmt(account.limits.keyPerMin)} requests a minute instead of {fmt(account.limits.anonymousPerMin)}. Its traffic shows up here.
@@ -254,9 +273,9 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           ) : usageErr && !shown ? (
             <ErrorLine onRetry={reloadUsage}>Usage could not be read: {usageErr}</ErrorLine>
           ) : !shown ? (
-            <Skeleton h={286} />
+            <Skeleton h={170} />
           ) : !shown.rangeTotals.total && !shown.previous?.total ? (
-            <GhostCurves height={286} title="Your traffic will draw here">
+            <GhostCurves height={170} title="Your traffic will draw here">
               <span className="max-w-[440px] text-[13px] text-muted">
                 No calls with your keys in the last {RANGE_LABEL[shown.range]}. Send one with <code className="font-mono text-[12px] text-ink-2">Authorization: Bearer</code> and your key and it charts here, per key, within the hour.
               </span>
@@ -282,20 +301,20 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
               </Can>
             </p>
           )}
-          <p className="m-0 text-[12px] leading-[1.55] text-faint">
+          <InfoTip summary="Requests with your keys that reached our servers.">
             Counts requests made with your keys that reached our servers. Answers served from Cloudflare&apos;s edge cache never reach us and are not counted. Hours are in your time zone; days are UTC.
-          </p>
+          </InfoTip>
         </section>
 
         {/* ------------------------------------------------------------ limits */}
-        <section aria-labelledby="ov-limits" className={`${panel} flex-[1_1_300px] gap-[14px]`} style={rise(2)}>
+        <section aria-labelledby="ov-limits" className={`${panel} flex-[1_1_360px] gap-2`} style={rise(2)}>
           <h2 id="ov-limits" className={panelTitle}>
             Limits · {account.plan.name}
           </h2>
-          <div className="flex flex-wrap items-center gap-[18px]">
-            <DoubleRing outer={ringOuter} inner={ringInner} label={`Busiest key averaged ${busiest ? busiest.perMin.toFixed(1) : 'unknown'} calls a minute over one ${busiest?.over ?? 'bucket'}, against a limit of ${limit} per key; ${alertUsed ?? 'unknown'} of ${alertMax} alerts in use.`}>
+          <div className="flex flex-wrap items-center gap-3">
+            <DoubleRing size={104} outer={ringOuter} inner={ringInner} label={`Busiest key averaged ${busiest ? busiest.perMin.toFixed(1) : 'unknown'} calls a minute over one ${busiest?.over ?? 'bucket'}, against a limit of ${limit} per key; ${alertUsed ?? 'unknown'} of ${alertMax} alerts in use.`}>
               <span className="flex flex-col">
-                <span className="font-display text-[26px] leading-none font-bold">{ringOuter === null ? '—' : ringOuter > 0 && ringOuter < 1 ? '<1%' : `${Math.round(ringOuter)}%`}</span>
+                <span className="font-display text-[22px] leading-none font-bold">{ringOuter === null ? '—' : ringOuter > 0 && ringOuter < 1 ? '<1%' : `${Math.round(ringOuter)}%`}</span>
                 <span className="text-[11px] text-dim">of limit</span>
               </span>
             </DoubleRing>
@@ -320,16 +339,22 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
               </div>
             </dl>
           </div>
-          <span className="text-[11px] leading-[1.5] text-faint">The limit is per key, per minute. Usage is recorded hourly, so this is the busiest hour&apos;s average, not a one-minute peak.</span>
+          <InfoTip summary="Per key, per minute; the busiest hour's average.">The limit is per key, per minute. Usage is recorded hourly, so this is the busiest hour&apos;s average, not a one-minute peak.</InfoTip>
           <button type="button" onClick={() => go('billing')} className={pillGoldLine}>
             {account.plan.id === 'free' ? 'Upgrade' : 'Extend or upgrade'}
           </button>
         </section>
       </div>
+      )}
 
       {/* ------------------------------------------------- status and endpoints */}
-      {!!account.keys.length && (
-        <div className="flex flex-wrap items-start gap-[14px]">
+      {sub === 'answers' && !account.keys.length && (
+        <GhostCurves height={170} title="Your answers will draw here">
+          <span className="max-w-[440px] text-[13px] text-muted">Answers by status and by endpoint chart here once a key makes its first call.</span>
+        </GhostCurves>
+      )}
+      {sub === 'answers' && !!account.keys.length && (
+        <div className="flex flex-wrap items-start gap-2">
           <section aria-labelledby="ov-status" className={`${panel} min-h-[250px] flex-[1_1_380px]`} style={rise(2)} data-testid="status-donut">
             <h2 id="ov-status" className={panelTitle}>
               Answers by status · {range}
@@ -348,10 +373,8 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         </div>
       )}
 
-
-      <div className="flex flex-wrap items-start gap-[14px]">
-        {/* ------------------------------------------------------------ alerts */}
-        <section aria-labelledby="ov-alerts" className={`${panel} flex-[1_1_420px]`} style={rise(3)}>
+      {sub === 'alerts' && (
+        <section aria-labelledby="ov-alerts" className={panel} style={rise(1)}>
           <div className="flex items-center justify-between gap-3">
             <h2 id="ov-alerts" className={panelTitle}>
               <button type="button" onClick={() => go('alerts')} className="min-h-11 hover:text-gold">
@@ -416,13 +439,14 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
           )}
           <SecretDialog secret={actions.secret} onClose={() => actions.setSecret(null)} />
         </section>
+      )}
 
-        {/* --------------------------------------------------------- analytics */}
-        <AnalyticsCard s={gaS} go={() => go('analytics')} />
-      </div>
+      {/* --------------------------------------------------------- analytics */}
+      {sub === 'analytics' && <AnalyticsCard s={gaS} go={() => go('analytics')} />}
 
       {/* --------------------------------------------------------------- pay */}
-      <PayStrip s={billS} account={account} checkout={checkout} />
+      {sub === 'plan' && <PayStrip s={billS} account={account} checkout={checkout} />}
+      </SubPanel>
     </div>
   )
 }
@@ -442,7 +466,7 @@ function AnalyticsCard({ s, go }: { s: Load<AnalyticsView>; go: () => void }) {
   const total = a ? a.sites.reduce((t, x) => t + x.eventsThisMonth, 0) : 0
   const slots = a?.plan ? a.plan.sites - a.sites.length : 0
   return (
-    <section aria-labelledby="ov-ga" className={`${panel} flex-[1_1_420px]`} style={rise(4)}>
+    <section aria-labelledby="ov-ga" className={panel} style={rise(1)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="ov-ga" className={panelTitle}>
           <button type="button" onClick={go} className="min-h-11 text-left hover:text-gold">
@@ -528,7 +552,7 @@ function PayStrip({ s, account, checkout }: { s: Load<BillingView>; account: Acc
   const extending = target.id === account.plan.id
   const cur = o.assets.find((a) => a.id === assetId) ?? null
   return (
-    <section id="pay" aria-labelledby="ov-pay" className={`${panel} flex-row flex-wrap items-center gap-5`} style={rise(5)}>
+    <section id="pay" aria-labelledby="ov-pay" className={`${panel} flex-row flex-wrap items-center gap-4`} style={rise(1)}>
       <div className="flex flex-[1_1_260px] flex-col gap-1">
         <h2 id="ov-pay" className={panelTitle}>
           {extending ? `Extend ${target.name} by ${o.periodDays} days` : `Upgrade to ${target.name} · ${o.periodDays} days`}

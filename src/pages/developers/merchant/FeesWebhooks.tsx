@@ -1,10 +1,11 @@
-import { ArrowUpRight, KeyRound, Loader2, RotateCcw, Send } from 'lucide-react'
+import { CheckCircle2, Gift, Hourglass, KeyRound, Loader2, Receipt, RotateCcw, Send } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
 import { NF } from '../../../components/charts/number-formats'
 import { copyWithToast, toastError, toastSuccess } from '../../../components/ui/toast'
 import { api } from '../api'
-import { input, label, mono, pillGold, pillLine, pillSm } from '../styles'
+import { input, mono, pillGold, pillLine, pillSm } from '../styles'
+import { KpiRow, KpiTile } from '../ui'
 import { fmtDay, fmtWhen, payOrigin, usd, type MerchantView } from './api'
 import { Field, Section, StatusPill } from './parts'
 
@@ -18,74 +19,42 @@ export function FeesSection({ view }: { view: MerchantView }) {
     <Section
       id="m-fees"
       title="Fees and statements"
-      sub={
+      sub={`${f.ratePct}% per payment after your first ${usd(f.freeUsd)}; nothing monthly.`}
+      info={
         <>
           A {f.ratePct}% transaction fee, nothing monthly. Your first {usd(f.freeUsd)} of lifetime volume is free. When a customer pays a stablecoin from a connected wallet, the fee is taken in the same transaction through Request Network’s open-source fee contract; everything else goes on a statement every Monday (00:00 UTC) once you owe {usd(f.minStatementUsd)} or more; unpaid {f.pauseAfterDays} days after issue, checkout pauses until paid.{' '}
-          <a href={`${payOrigin()}${view.terms.path}#s5`} target="_blank" rel="noopener" className="text-gold underline underline-offset-4 hover:text-gold-hover">
-            Fee terms
+          <a href={`${payOrigin()}${view.terms.path}#s5`} target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-4 hover:text-gold-hover">
+            Fee terms ↗
           </a>
         </>
       }
     >
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="flex flex-col gap-1 rounded-[12px] border border-line bg-bg px-4 py-3">
-          <span className={label}>Fee balance due</span>
-          <span className={`font-display text-[28px] leading-none font-extrabold ${f.paused ? 'text-error' : 'text-ink'}`}>
+      <KpiRow label="Fees">
+        <KpiTile i={0} label="Fee balance due" icon={<Receipt size={13} aria-hidden />} note={`on ${due.length} statement${due.length === 1 ? '' : 's'}`}>
+          <span className={f.paused ? 'text-error' : ''}>
             <AnimatedNumber value={f.outstandingUsd} format={NF.usd} />
           </span>
-          <span className={mono}>on {due.length} statement{due.length === 1 ? '' : 's'}</span>
-        </div>
-        <div className="flex flex-col gap-1 rounded-[12px] border border-line bg-bg px-4 py-3">
-          <span className={label}>Accrued, not billed yet</span>
-          <span className="font-display text-[28px] leading-none font-extrabold text-ink">
-            <AnimatedNumber value={f.unbilledUsd} format={NF.usd} />
-          </span>
-          <span className={mono}>next statement {fmtDay(f.nextStatementAt)}</span>
-        </div>
-        <div className="flex flex-col gap-1 rounded-[12px] border border-line bg-bg px-4 py-3">
-          <span className={label}>Fees paid</span>
-          <span className="font-display text-[28px] leading-none font-extrabold text-ink">
-            <AnimatedNumber value={f.paidUsd} format={NF.usd} />
-          </span>
-          <span className={mono}>{usd(f.accruedUsd)} accrued in all</span>
-        </div>
-        <div className="col-span-2 flex flex-col gap-2 rounded-[12px] border border-line bg-bg px-4 py-3 lg:col-span-4">
-          <span className={label}>How your fees were taken</span>
-          <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-3">
-            <div className="flex min-w-0 flex-col gap-[2px]">
-              <span className="font-display text-[20px] leading-none font-extrabold text-ink">
-                <AnimatedNumber value={f.collectedUsd} format={NF.usd} />
-              </span>
-              <span className={mono}>
-                collected on chain at payment time · {f.collectedPayments} payment{f.collectedPayments === 1 ? '' : 's'}
-              </span>
-            </div>
-            <div className="flex min-w-0 flex-col gap-[2px]">
-              <span className="font-display text-[20px] leading-none font-extrabold text-ink">
-                <AnimatedNumber value={f.billedUsd} format={NF.usd} />
-              </span>
-              <span className={mono}>billed on statements</span>
-            </div>
-            <div className="flex min-w-0 flex-col gap-[2px]">
-              <span className="font-display text-[20px] leading-none font-extrabold text-ink">
-                <AnimatedNumber value={f.unbilledUsd} format={NF.usd} />
-              </span>
-              <span className={mono}>not billed yet</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-bg px-4 py-3">
-          <span className={label}>Free allowance left</span>
-          <span className="font-display text-[28px] leading-none font-extrabold text-ink">
-            <AnimatedNumber value={f.freeLeftUsd} format={NF.usd} />
-          </span>
-          <span className="h-[6px] overflow-hidden rounded-full bg-grid" role="meter" aria-valuemin={0} aria-valuemax={f.freeUsd} aria-valuenow={f.freeUsd - f.freeLeftUsd} aria-label="Free allowance used">
-            <span className="block h-full rounded-full bg-gold transition-[width] duration-700" style={{ width: `${Math.round(used * 100)}%` }} />
-          </span>
-        </div>
+        </KpiTile>
+        <KpiTile i={1} label="Accrued, not billed" icon={<Hourglass size={13} aria-hidden />} note={`next statement ${fmtDay(f.nextStatementAt)}`}>
+          <AnimatedNumber value={f.unbilledUsd} format={NF.usd} />
+        </KpiTile>
+        <KpiTile i={2} label="Fees paid" icon={<CheckCircle2 size={13} aria-hidden />} note={`${usd(f.accruedUsd)} accrued in all`}>
+          <AnimatedNumber value={f.paidUsd} format={NF.usd} />
+        </KpiTile>
+        <KpiTile i={3} label="Free allowance left" icon={<Gift size={13} aria-hidden />} note={`${Math.round(used * 100)}% of ${usd(f.freeUsd)} used`}>
+          <AnimatedNumber value={f.freeLeftUsd} format={NF.usd} />
+        </KpiTile>
+      </KpiRow>
+      <div className="flex flex-col gap-1">
+        <span className="h-[4px] overflow-hidden rounded-full bg-grid" role="meter" aria-valuemin={0} aria-valuemax={f.freeUsd} aria-valuenow={f.freeUsd - f.freeLeftUsd} aria-label="Free allowance used">
+          <span className="block h-full origin-left rounded-full bg-gold transition-[width] duration-700" style={{ width: `${Math.round(used * 100)}%`, animation: 'gl-grow-x .8s cubic-bezier(.2,.8,.2,1) both' }} />
+        </span>
+        <span className={mono}>
+          How fees were taken: {usd(f.collectedUsd)} on chain at payment time ({f.collectedPayments} payment{f.collectedPayments === 1 ? '' : 's'}) · {usd(f.billedUsd)} on statements · {usd(f.unbilledUsd)} not billed yet
+        </span>
       </div>
       {f.statements.length === 0 ? (
-        <p className="m-0 text-[14px] text-muted">No statement yet.</p>
+        <p className="m-0 text-[13px] text-muted">No statement yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px] border-collapse text-[13px]">
@@ -115,8 +84,8 @@ export function FeesSection({ view }: { view: MerchantView }) {
                   </td>
                   <td className="py-2 text-right">
                     {(s.state === 'open' || s.state === 'overdue') && (
-                      <a href={`${payOrigin()}${s.payPath}`} target="_blank" rel="noopener" className={`${s.state === 'overdue' ? pillGold : pillLine} !min-h-10 !px-3 !text-[13px]`}>
-                        Pay now <ArrowUpRight size={13} aria-hidden />
+                      <a href={`${payOrigin()}${s.payPath}`} target="_blank" rel="noopener noreferrer" className={`${s.state === 'overdue' ? pillGold : pillLine} !min-h-10 !px-3 !text-[13px]`}>
+                        Pay now ↗
                       </a>
                     )}
                   </td>
@@ -156,7 +125,7 @@ export function WebhooksSection({ view, reload }: { view: MerchantView; reload: 
   }
 
   return (
-    <Section id="m-webhooks" title="Webhooks" sub="invoice.paid, invoice.expired and invoice.cancelled for this store, signed with your own secret (X-Gully-Signature: sha256 HMAC of “timestamp.body”). Retried for about an hour.">
+    <Section id="m-webhooks" title="Webhooks" sub="invoice.paid, invoice.expired and invoice.cancelled, signed with your secret." info="Each event is signed with your own secret (X-Gully-Signature: sha256 HMAC of “timestamp.body”) and retried for about an hour until your endpoint answers 2xx.">
       <form onSubmit={save} className="flex flex-wrap items-end gap-3">
         <div className="min-w-[240px] flex-1">
           <Field label="Endpoint (https)">

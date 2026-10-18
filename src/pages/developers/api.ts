@@ -538,3 +538,33 @@ export interface RoleError {
   error: string
   code: 'forbidden-role'
 }
+
+/* ---- GET /api/pay/gas (server/gas.mjs): gas cost of a Gully Pay payment per chain, cached by the server. ---- */
+
+export interface GasChain {
+  chainId: number
+  name: string
+  key: string
+  symbol?: string
+  feeSplit?: boolean
+  ok: boolean
+  /** Set when ok is false: why the chain could not be read. */
+  error?: string
+  gasPriceGwei?: number
+  /** USD figures are null when the chain's own price feed could not be read (never a guess). */
+  coinUsd?: number | null
+  priceSource?: string | null
+  l1FeeUsd?: number | null
+  l1?: string | null
+  payUsd?: number | null
+  transferUsd?: number | null
+  approveUsd?: number | null
+  note?: string | null
+}
+
+export interface GasView {
+  at: string
+  cacheSeconds: number
+  gas: { approve: number; pay: number; transfer: number }
+  chains: GasChain[]
+}

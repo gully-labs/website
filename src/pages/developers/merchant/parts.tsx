@@ -5,25 +5,48 @@ import { AssetMark } from '../../../components/pay/AssetPicker'
 import { copyWithToast } from '../../../components/ui/toast'
 import { embedSnippet } from '../../pay/embed'
 import { QrCode } from '../../pay/QrCode'
-import { chip, mono, pillSm } from '../styles'
+import { Dialog } from '../Dialog'
+import { chip, mono, pillDanger, pillLine, pillSm } from '../styles'
+import { InfoTip } from '../ui'
 import { payOrigin } from './api'
 
 /* Small pieces shared by the Merchant tab's sections. */
 
-export function Section({ id, title, sub, action, children }: { id: string; title: string; sub?: ReactNode; action?: ReactNode; children: ReactNode }) {
+/** One Merchant section (one sub-tab): a compact card. A long explanation goes in `info`, behind an (i) next
+    to the one-line `sub`. */
+export function Section({ id, title, sub, info, action, children }: { id: string; title: string; sub?: ReactNode; info?: ReactNode; action?: ReactNode; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="flex min-w-0 scroll-mt-24 flex-col gap-4 rounded-[14px] border border-line bg-surface p-5 max-[600px]:p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 id={`${id}-h`} className="m-0 text-[17px] leading-tight font-semibold text-ink">
+    <section id={id} aria-labelledby={`${id}-h`} className="flex min-w-0 scroll-mt-28 flex-col gap-3 rounded-[14px] border border-line bg-surface p-4 max-[600px]:p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-[1_1_240px] flex-col gap-[2px]">
+          <h2 id={`${id}-h`} className="m-0 text-[15px] leading-tight font-semibold text-ink">
             {title}
           </h2>
-          {sub && <span className="text-[13px] leading-[1.5] text-dim">{sub}</span>}
+          {sub && (info ? <InfoTip summary={sub}>{info}</InfoTip> : <span className="truncate text-[12px] text-dim">{sub}</span>)}
         </div>
         {action}
       </div>
       {children}
     </section>
+  )
+}
+
+/** A confirm dialog for a destructive step (remove a wallet, cancel an invoice). */
+export function Confirm({ open, title, children, confirm, busy, onConfirm, onClose }: { open: boolean; title: string; children: ReactNode; confirm: string; busy?: boolean; onConfirm: () => void; onClose: () => void }) {
+  return (
+    <Dialog open={open} onClose={onClose} title={title}>
+      <div className="flex flex-col gap-4" data-testid="merchant-confirm">
+        <div className="m-0 text-[14px] leading-[1.6] text-muted">{children}</div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <button type="button" onClick={onClose} className={pillLine}>
+            Keep it
+          </button>
+          <button type="button" disabled={busy} onClick={onConfirm} className={pillDanger}>
+            {confirm}
+          </button>
+        </div>
+      </div>
+    </Dialog>
   )
 }
 
@@ -80,7 +103,7 @@ export function ShareBox({ path, label }: { path: string; label: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <a href={url} target="_blank" rel="noopener" className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
           {url}
         </a>
         <button type="button" className={pillSm} onClick={() => copyWithToast(url, 'Checkout link')}>
@@ -95,7 +118,7 @@ export function ShareBox({ path, label }: { path: string; label: string }) {
       </div>
       {qr && (
         <div className="flex animate-[gl-rise_.25s_ease_both] flex-wrap items-center gap-4">
-          <QrCode value={url} size={148} label={`QR code for ${label}`} />
+          <QrCode value={url} size={132} label={`QR code for ${label}`} />
           <span className="max-w-[320px] text-[13px] text-muted">Print it or show it at the counter: the phone opens this checkout and the payer picks a chain and an asset there.</span>
         </div>
       )}

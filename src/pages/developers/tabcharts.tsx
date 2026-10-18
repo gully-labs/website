@@ -81,16 +81,16 @@ export function KeysTraffic({ week, hasKeys }: { week: Week; hasKeys: boolean })
         <span className={mono}>{built ? `${fmt(built.total)} with your keys · per day, by answer` : 'with your keys · per day, by answer'}</span>
       </div>
       {week.state === 'loading' ? (
-        <Skeleton h={130} />
+        <Skeleton h={110} />
       ) : week.state === 'error' ? (
-        <LiveMarker text={`Usage could not be read right now: ${week.message}`} height={130} />
+        <LiveMarker text={`Usage could not be read right now: ${week.message}`} height={110} />
       ) : !built || !built.total ? (
-        <GhostCurves height={150} title="Your traffic will draw here">
+        <GhostCurves height={120} title="Your traffic will draw here">
           <span className="max-w-[460px] text-[13px] text-muted">{hasKeys ? 'No calls with your keys in the last 7 days. Each call charts here by day: ok, errors and rate-limited answers.' : 'Create a key and its calls chart here by day: ok, errors and rate-limited answers.'}</span>
         </GhostCurves>
       ) : (
         <>
-          <StackedDays days={built.days} kinds={built.kinds} height={130} label={`Requests per day over 7 days: ${fmt(built.total)} in all, ${fmt(built.kinds[0].total)} ok, ${fmt(built.kinds[1].total)} errors, ${fmt(built.kinds[2].total)} rate-limited.`} />
+          <StackedDays days={built.days} kinds={built.kinds} height={110} label={`Requests per day over 7 days: ${fmt(built.total)} in all, ${fmt(built.kinds[0].total)} ok, ${fmt(built.kinds[1].total)} errors, ${fmt(built.kinds[2].total)} rate-limited.`} />
           <Legend kinds={built.kinds} />
         </>
       )}
@@ -254,11 +254,15 @@ export function PlanUsage({ account, payments }: { account: Account; payments: P
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
   const alertMax = alerts.view?.limits.max ?? account.plan.alerts
   const alertUsed = alerts.view?.limits.used ?? null
-  const spent = payments.reduce((a, p) => a + Number(p.usd ?? 0), 0)
+  // Only payments with a recorded USD value count; an unknown one is never a $0 (the total says "partial").
+  const values = payments.map((p) => (p.usd === null || p.usd === undefined || p.usd === '' ? NaN : Number(p.usd)))
+  const known = values.filter((v) => Number.isFinite(v))
+  const spent = known.reduce((a, v) => a + v, 0)
+  const partial = known.length < payments.length
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3 border-t border-line pt-3" data-testid="plan-usage">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-2 border-t border-line pt-2" data-testid="plan-usage">
       <div className="flex items-center gap-3">
-        <QuotaRing size={88} quota={account.limits.maxKeys} caption="keys" slices={[{ name: 'live keys', value: liveKeys, color: C.gold }]} />
+        <QuotaRing size={76} quota={account.limits.maxKeys} caption="keys" slices={[{ name: 'live keys', value: liveKeys, color: C.gold }]} />
         <span className="flex flex-col gap-[2px]">
           <span className="font-mono text-[11px] tracking-[1px] text-faint">KEYS</span>
           <span className="font-display text-[22px] leading-none font-bold">
@@ -267,19 +271,21 @@ export function PlanUsage({ account, payments }: { account: Account; payments: P
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <QuotaRing size={88} quota={alertMax} caption="alerts" slices={[{ name: 'alerts', value: alertUsed ?? 0, color: BLUE }]} />
+        <QuotaRing size={76} quota={alertMax} caption="alerts" slices={[{ name: 'alerts', value: alertUsed ?? 0, color: BLUE }]} />
         <span className="flex flex-col gap-[2px]">
           <span className="font-mono text-[11px] tracking-[1px] text-faint">ALERTS</span>
           <span className="font-display text-[22px] leading-none font-bold">
-            {alertUsed === null ? <span className="font-mono text-[13px] font-normal text-faint">{alerts.err ? 'unreadable' : '…'}</span> : alertUsed ? <AnimatedNumber value={alertUsed} countUp /> : <span className="font-mono text-[13px] font-normal text-faint">none yet</span>}{' '}
+            {alertUsed === null ? alerts.err ? <span className="text-faint" title="not available right now" aria-label="not available right now" data-unknown>—</span> : <span className="font-mono text-[13px] font-normal text-faint">…</span> : alertUsed ? <AnimatedNumber value={alertUsed} countUp /> : <span className="font-mono text-[13px] font-normal text-faint">none yet</span>}{' '}
             <span className="font-mono text-[11px] font-normal text-faint">of {alertMax}</span>
           </span>
         </span>
       </div>
       <div className="flex flex-col justify-center gap-[2px]">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">PAID · ALL TIME</span>
-        <span className="font-display text-[22px] leading-none font-bold">{spent > 0 ? <AnimatedNumber value={spent} prefix="$" format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} countUp /> : <span className="font-mono text-[13px] font-normal text-faint">nothing yet</span>}</span>
-        <span className="font-mono text-[11px] text-faint">{payments.length ? `${payments.length} payment${payments.length === 1 ? '' : 's'}, in USD at the time` : 'Free costs nothing'}</span>
+        <span className="font-display text-[22px] leading-none font-bold">
+          {known.length ? <AnimatedNumber value={spent} prefix="$" format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} countUp /> : payments.length ? <span className="text-faint" title="not available right now" aria-label="not available right now" data-unknown>—</span> : <span className="font-mono text-[13px] font-normal text-faint">nothing yet</span>}
+        </span>
+        <span className="font-mono text-[11px] text-faint">{payments.length ? `${payments.length} payment${payments.length === 1 ? '' : 's'}, in USD at the time${partial ? ` · partial: ${payments.length - known.length} without a USD value` : ''}` : 'Free costs nothing'}</span>
       </div>
     </div>
   )

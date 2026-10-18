@@ -374,7 +374,21 @@ await step('portal', async () => {
   await page.getByRole('button', { name: 'Pause', exact: true }).first().click()
   await page.getByText(/paused/).first().waitFor()
   check('alerts: pause', true)
+  check('alerts: the setup stepper shows Create and Test done', (await page.locator('[data-testid="alerts-stepper"] [data-state="done"]').count()) >= 2 || (await page.locator('[data-testid="alerts-stepper"][data-folded]').count()) === 1)
+  await page.getByRole('tab', { name: /^Deliveries/ }).click()
+  check('alerts: the Deliveries sub-tab deep-links as #alerts/deliveries', new URL(page.url()).hash === '#alerts/deliveries', page.url())
   check('alerts: the deliveries-per-day chart draws from the test delivery', await drawnIn(page, '[data-testid="alert-fires"]'))
+  await page.getByRole('tab', { name: /^Alerts/ }).click()
+  // A failed refresh keeps the alerts on screen with a "couldn't refresh · retry" chip (never a blank tab).
+  w.expect(/\/api\/developer\/alerts$/)
+  await page.route('**/api/developer/alerts', (r) => r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"e2e: upstream down"}' }))
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await page.getByTestId('refresh-chip').first().waitFor({ timeout: 10_000 })
+  check('alerts: a failed refresh keeps the list and shows the retry chip', (await page.locator('[data-alert]').count()) >= 1 && (await page.getByText(/Alerts could not be read/).count()) === 0)
+  await page.unroute('**/api/developer/alerts')
+  await page.getByTestId('refresh-chip').first().click()
+  await page.getByTestId('refresh-chip').first().waitFor({ state: 'detached', timeout: 10_000 })
+  check('alerts: retry clears the chip once the read answers', true)
   // Gully Analytics tab (sign-up is off on this server: it must say so, not break).
   await appNav.getByRole('link', { name: /^Analytics/ }).click()
   await page.getByText(/not switched on/).first().waitFor()
@@ -564,6 +578,14 @@ await step('app services', async () => {
   const rowH = await sNav.getByRole('link', { name: 'Keys' }).evaluate((a) => a.getBoundingClientRect().height)
   check('sidebar: rows are compact (32-36 px)', rowH >= 32 && rowH <= 36, String(rowH))
   check('sidebar: Docs, Status and home sit in the header, not in a block under the list', (await sp.getByTestId('header-links').locator('a, button').count()) === 3 && (await sp.getByTestId('app-sidebar').getByTestId('status-link').count()) === 0)
+  await sp.getByTestId('header-links').getByTestId('status-link').click()
+  const st = sp.getByRole('dialog', { name: 'Status' })
+  await st.getByTestId('status-view').waitFor()
+  await st.locator('[data-chart].opacity-100 svg').first().waitFor({ timeout: 20_000 }).catch(() => {})
+  check('status: the Status button opens a Status view (API uptime and latency, tracker and DeepCore health), not another tab', (await st.getByText('Tracker data').count()) === 1 && (await st.getByText('DeepCore launch poller').count()) === 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
+  await shot(sp, 'app-1440x840-status')
+  await sp.keyboard.press('Escape')
+  await st.waitFor({ state: 'hidden' })
   await sp.getByTestId('navgroup-toggle-developer').click()
   check('sidebar: a group folds', (await sNav.locator('[data-nav-group="Developer"]').getByRole('link').count()) === 0)
   // Reload on a page without the market band (its history reads count against the anonymous limit).
@@ -573,9 +595,9 @@ await step('app services', async () => {
   await sp.getByTestId('navgroup-toggle-developer').click()
   check('sidebar: and unfolds', (await sNav.locator('[data-nav-group="Developer"]').getByRole('link').count()) === 3)
   await sNav.getByRole('link', { name: 'Overview', exact: true }).click()
-  const ring = sp.getByTestId('setup-ring')
-  await ring.waitFor()
-  check('overview: "Get started" is a progress ring with the next step and one button', (await ring.getAttribute('role')) === 'progressbar' && /^Next: /.test(((await sp.getByTestId('next-step').textContent()) ?? '').trim()) && !/not tracked or not available/.test((await sp.getByTestId('get-started').textContent()) ?? ''))
+  const gs = sp.getByTestId('get-started')
+  await gs.waitFor()
+  check('overview: "Get started" is a stepper whose current step shows one action button', (await gs.locator('[data-step]').count()) >= 3 && (await gs.locator('[data-state="current"]').count()) === 1 && (await sp.getByTestId('next-step').locator('button, a').count()) === 1 && !/not tracked or not available/.test((await gs.textContent()) ?? ''))
   await sp.setViewportSize({ width: 1440, height: 840 })
   await shot(sp, 'app-1440x840-sidebar')
   await sp.getByTestId('sidebar-toggle').click()
@@ -640,6 +662,32 @@ await step('app services', async () => {
   }
   await mw.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   await m.close()
+
+  // E2E_SHOTS: full-page screenshots of Overview, Merchant, Analytics and Alerts at 1440x900 and 390, with each
+  // page's height in px (page-heights.json), for the owner's "no page way too long" check.
+  if (SHOTS) {
+    const heights = {}
+    for (const [width, height, mobile] of [[1440, 900, false], [390, 844, true]]) {
+      const hc = await newContext({ width, height, mobile, cookie: cookieOf(api3) })
+      const hp = await hc.newPage()
+      for (const id of ['overview', 'merchant', 'analytics', 'alerts']) {
+        await hp.goto(`${BASE}/app#${id}`)
+        await hp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
+        await hp.waitForLoadState('networkidle').catch(() => {})
+        // Charts draw when scrolled into view: walk down the page first so the full-page shot shows them drawn.
+        for (let y = 0; y < (await hp.evaluate(() => document.documentElement.scrollHeight)); y += 500) {
+          await hp.evaluate((top) => window.scrollTo(0, top), y)
+          await hp.waitForTimeout(250)
+        }
+        await hp.evaluate(() => window.scrollTo(0, 0))
+        await hp.waitForTimeout(1200)
+        heights[`${id}-${width}`] = await hp.evaluate(() => document.documentElement.scrollHeight)
+        await hp.screenshot({ path: path.join(SHOTS, `page-${id}-${width}.png`), fullPage: true })
+      }
+      await hc.close()
+    }
+    fs.writeFileSync(path.join(SHOTS, 'page-heights.json'), JSON.stringify(heights, null, 2))
+  }
 })
 
 /* ------------------------------------------------------------- pay --- */
@@ -831,6 +879,34 @@ await step('merchant checkout', async () => {
     await op.goto(BASE + '/developers#merchant')
     await op.getByTestId('finish-profile').waitFor({ timeout: 15_000 })
     check('portal: the Merchant tab asks the owner to finish the store profile', true)
+    // Real sub-tabs (one section at a time, icons, deep links, remembered), the setup stepper, the live network strip.
+    const mt = op.getByRole('tablist', { name: /Merchant/i })
+    await mt.waitFor()
+    const mtabs = await mt.getByRole('tab').evaluateAll((els) => els.map((e) => [e.textContent.trim(), !!e.querySelector('svg')]))
+    check('merchant: seven sub-tabs, each with an icon', mtabs.length === 7 && mtabs.every(([, i]) => i), JSON.stringify(mtabs))
+    check('merchant: the 4-step setup stepper', (await op.locator('[data-testid="merchant-stepper"] [data-step]').count()) === 4 || (await op.locator('[data-testid="merchant-stepper"][data-folded]').count()) === 1)
+    await op.getByTestId('merchant-network').waitFor({ timeout: 15_000 })
+    check('merchant: the NETWORK · LIVE strip names the accepted chains', /\d+ chains/.test((await op.getByTestId('accepting-chains').textContent()) ?? ''))
+    await mt.getByRole('tab', { name: /^Links/ }).click()
+    check('merchant: a sub-tab deep-links as #merchant/links', new URL(op.url()).hash === '#merchant/links', op.url())
+    check('merchant: only one section shows at a time', (await op.locator('[data-sub-panel]').count()) === 1)
+    await op.goto(BASE + '/developers#merchant')
+    await mt.waitFor()
+    check('merchant: the last sub-tab is remembered', (await mt.getByRole('tab', { selected: true }).textContent())?.trim().startsWith('Links'))
+    await mt.getByRole('tab', { name: /^Wallets/ }).click()
+    await op.getByTestId('wallet-remove').first().click()
+    const confirm = op.getByTestId('merchant-confirm')
+    await confirm.waitFor()
+    check('merchant: removing a wallet asks first', await confirm.isVisible())
+    await op.keyboard.press('Escape')
+    await confirm.waitFor({ state: 'detached' })
+    await mt.getByRole('tab', { name: /^Invoices/ }).click()
+    await op.getByTestId('invoice-cancel').first().click()
+    await confirm.waitFor()
+    check('merchant: cancelling an invoice asks first', await confirm.isVisible())
+    await op.keyboard.press('Escape')
+    await confirm.waitFor({ state: 'detached' })
+    check('merchant: the wallet and the invoice are still there after backing out', (await op.getByTestId('invoice-cancel').count()) >= 1)
     await ow.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
     const prof = await api.post('/api/developer/merchant/profile', { name: 'Acme Coffee', logoUrl: `http://127.0.0.1:${logoHost.address().port}/logo.png`, accent: '#3fa7d6', supportEmail: 'help@acme.example', website: 'https://acme.example' })
     check('merchant: the profile is saved with a logo', prof.status === 200 && !!prof.data?.profile?.logoUrl, JSON.stringify(prof.data?.profile ?? prof.data).slice(0, 160))
@@ -912,7 +988,7 @@ await step('merchant checkout', async () => {
       const text = await p.getByTestId('state-unavailable').textContent()
       check(`closed link, ${label}: "isn't available right now" with the store's email`, /isn't available right now/.test(text) && /help@acme\.example/.test(text))
       check(`closed link, ${label}: no payment can start`, (await p.getByTestId('link-continue').count()) === 0)
-      if (opts.cookie) check('closed link, owner: sees the fix with a link to the Merchant tab', (await p.getByTestId('owner-fixes').count()) === 1 && /#m-wallets$/.test(await p.getByTestId('owner-fixes').getByRole('link').first().getAttribute('href')))
+      if (opts.cookie) check('closed link, owner: sees the fix with a link to the Merchant tab', (await p.getByTestId('owner-fixes').count()) === 1 && /#merchant\/wallets$/.test(await p.getByTestId('owner-fixes').getByRole('link').first().getAttribute('href')))
       else check(`closed link, ${label}: a payer sees no owner hints`, (await p.getByTestId('owner-fixes').count()) === 0)
       if (opts.width === 390) await noHorizontalScroll(p, 'closed link')
       await shotFull(p, opts.cookie ? 'merchant-link-closed-owner' : 'merchant-link-closed')
@@ -1130,6 +1206,7 @@ const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterm
 check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)
-check(`the suite runs in under 5 minutes (${secs} s)`, secs < 300)
+// E2E_SHOTS adds full-page screenshots on top of the checks, so the budget applies to plain runs.
+check(`the suite runs in under 5 minutes (${secs} s${SHOTS ? ', screenshots on' : ''})`, SHOTS ? true : secs < 300)
 console.log(`\n${t.passed} passed, ${t.failed} failed (${secs} s)`)
 process.exit(t.failed ? 1 : 0)

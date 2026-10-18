@@ -54,6 +54,12 @@ function readHash(): View {
   const h = window.location.hash.slice(1)
   const none = { section: null, receipt: null, invite: null }
   if (ALL_TABS.some((t) => t.id === h)) return { tab: h as AppTab, ...none }
+  // The Merchant tab's old section anchors (#m-wallets, from earlier pay-page links): its sub-tab now.
+  const m = h.match(/^m-(payments|links|invoices|wallets|profile|fees|webhooks)$/)
+  if (m) {
+    history.replaceState(null, '', `#merchant/${m[1]}`)
+    return { tab: 'merchant', ...none }
+  }
   // #<page>/<sub-tab> (e.g. #merchant/links): the page; the page's own useSubTab reads the rest.
   const page = h.split('/')[0]
   if (h.includes('/') && ALL_TABS.some((t) => t.id === page)) return { tab: page as AppTab, ...none }

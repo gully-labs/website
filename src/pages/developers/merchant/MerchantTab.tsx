@@ -1,53 +1,52 @@
-import { ArrowUpRight, Download, PauseCircle, ShieldCheck, Store } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { BookOpen, ChartColumn, CircleDollarSign, Download, FileText, Link2, PauseCircle, Share2, Store, UserRound, Wallet, Webhook } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import { DOCS_URL } from '../../../site-host'
-import { api } from '../api'
+import { usePoll } from '../poll'
 import { ErrorLine, Skeleton } from '../parts'
-import { pillGold, pillLine } from '../styles'
+import { pillGold, pillSm } from '../styles'
+import { useSubTab } from '../subtab'
+import { InfoTip, RefreshChip, Stepper, SubPanel, SubTabs, type Step, type SubTabItem } from '../ui'
 import { payOrigin, usd, type MerchantView } from './api'
 import { PaymentsDashboard } from './Charts'
 import { FeesSection, WebhooksSection } from './FeesWebhooks'
-import { InvoicesSection, LinksSection } from './LinksInvoices'
-import { ProfileSection, WalletsSection } from './Setup'
+import { InvoicesSection, LinksSection, NewLink } from './LinksInvoices'
+import { NetworkStrip } from './Network'
+import { ShareBox } from './parts'
+import { ProfileForm, ProfileSection, WalletForm, WalletsSection } from './Setup'
 
 /* The portal's Merchant tab (#merchant): Gully Pay for other businesses. A workspace sets its receiving
    wallets and store profile, makes pay links and invoices, watches its payments, pays its fee statements
    and sets a webhook. Everything is the workspace's (server/merchants.mjs); the role decides who may
-   change what (owners, admins and billing run the store; developers make links and webhooks; viewers read). */
+   change what (owners, admins and billing run the store; developers make links and webhooks; viewers read).
 
-const NAV = [
-  ['m-dashboard', 'Payments'],
-  ['m-links', 'Links'],
-  ['m-invoices', 'Invoices'],
-  ['m-wallets', 'Wallets'],
-  ['m-profile', 'Profile'],
-  ['m-fees', 'Fees'],
-  ['m-webhooks', 'Webhooks'],
-] as const
+   Compact by rule (owner, 2026-10-18): a slim header, a 4-step setup stepper (wallet → name → link → get
+   paid; only the current step's form, folding into a thin bar once done), then real sub-tabs showing one
+   section at a time (#merchant/<tab>, remembered, sticky): Payments, Links, Invoices, Wallets, Profile,
+   Fees, Webhooks. The store view is re-read every 30 s; a failed refresh keeps what is shown and says so. */
+
+const TABS = ['payments', 'links', 'invoices', 'wallets', 'profile', 'fees', 'webhooks'] as const
+type Sub = (typeof TABS)[number]
 
 export function MerchantTab() {
-  const [view, setView] = useState<MerchantView | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const poll = usePoll<MerchantView>('/api/developer/merchant', 30_000)
+  // A form's answer (the store as saved) shows at once, until the next read replaces it.
+  const [local, setLocal] = useState<{ base: MerchantView | null; view: MerchantView } | null>(null)
+  const view = local && local.base === poll.data ? local.view : poll.data
+  const setView = useCallback((v: MerchantView) => setLocal({ base: poll.data, view: v }), [poll.data])
   const [tick, setTick] = useState(0)
-
-  const load = useCallback(() => {
-    api<MerchantView>('/api/developer/merchant').then((r) => (r.ok ? (setView(r.data), setErr(null)) : setErr(r.error)))
-  }, [])
-  useEffect(() => {
-    load()
-    const id = setInterval(load, 30_000)
-    return () => clearInterval(id)
-  }, [load])
+  const { reload: reread } = poll
   const reload = useCallback(() => {
-    load()
+    void reread()
     setTick((t) => t + 1)
-  }, [load])
+  }, [reread])
+  const [sub, setSub] = useSubTab<Sub>('merchant', TABS, 'payments')
 
   if (!view)
-    return err ? (
-      <ErrorLine onRetry={load}>The store could not be read: {err}</ErrorLine>
+    return poll.error || poll.timedOut ? (
+      <ErrorLine onRetry={() => void poll.reload()}>The store could not be read: {poll.error ?? 'no answer in time'}</ErrorLine>
     ) : (
-      <div className="flex flex-col gap-3" aria-busy>
+      <div className="flex flex-col gap-2" aria-busy>
+        <Skeleton h={64} />
         <Skeleton h={120} />
         <Skeleton h={320} />
       </div>
@@ -56,87 +55,114 @@ export function MerchantTab() {
   const f = view.fees
   const overdue = f.statements.find((s) => s.state === 'overdue')
   const state = f.paused ? { text: 'Checkout paused', cls: 'border-[#5a2a24] text-error' } : view.ready ? { text: 'Checkout live', cls: 'border-success-line text-green' } : { text: 'Not set up yet', cls: 'border-line-strong text-faint' }
+  const liveWallets = view.wallets.filter((w) => w.enabled && w.status === 'ok')
+  const firstLink = view.links.find((l) => l.active) ?? view.links[0] ?? null
+  const steps: Step[] = [
+    { id: 'wallet', label: 'Add a receiving wallet', icon: <Wallet size={14} aria-hidden />, done: liveWallets.length > 0 },
+    { id: 'name', label: 'Name your store', icon: <Store size={14} aria-hidden />, done: !!view.profile.name },
+    { id: 'link', label: 'Create a pay link', icon: <Link2 size={14} aria-hidden />, done: view.links.length > 0 },
+    { id: 'share', label: 'Share it, get paid', icon: <Share2 size={14} aria-hidden />, done: view.payments.length > 0 },
+  ]
+  const items: SubTabItem<Sub>[] = [
+    { id: 'payments', label: 'Payments', icon: <ChartColumn size={15} aria-hidden />, count: view.payments.length },
+    { id: 'links', label: 'Links', icon: <Link2 size={15} aria-hidden />, count: view.links.length },
+    { id: 'invoices', label: 'Invoices', icon: <FileText size={15} aria-hidden />, count: view.invoices.length },
+    { id: 'wallets', label: 'Wallets', icon: <Wallet size={15} aria-hidden />, count: view.wallets.length, dot: view.wallets.some((w) => w.status === 'not-deployed') },
+    { id: 'profile', label: 'Profile', icon: <UserRound size={15} aria-hidden />, dot: !view.profile.name },
+    { id: 'fees', label: 'Fees', icon: <CircleDollarSign size={15} aria-hidden />, count: f.statements.filter((s) => s.state === 'open' || s.state === 'overdue').length || null, dot: f.paused || f.outstandingUsd > 0 },
+    { id: 'webhooks', label: 'Webhooks', icon: <Webhook size={15} aria-hidden />, count: view.deliveries.length || null },
+  ]
 
   return (
-    <div className="flex flex-col gap-4">
-      <header className="flex flex-col gap-4 rounded-[14px] border border-line bg-surface p-5 max-[600px]:p-4" style={view.profile.accent ? { borderTop: `3px solid ${view.profile.accent}` } : undefined}>
-        <div className="flex flex-wrap items-center gap-3">
-          {view.profile.logoUrl ? <img src={view.profile.logoUrl} alt="" className="size-11 rounded-[10px] object-contain" /> : <Store size={28} className="text-gold" aria-hidden />}
-          <div className="flex min-w-0 flex-[1_1_200px] flex-col">
-            <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY PAY FOR MERCHANTS</span>
-            <h1 className="m-0 truncate text-[22px] font-semibold text-ink">{view.profile.displayName}</h1>
-          </div>
-          <span className={`inline-flex min-h-[30px] items-center gap-2 rounded-full border px-3 text-[13px] ${state.cls}`}>
-            <span aria-hidden className={`size-2 rounded-full ${f.paused ? 'bg-error' : view.ready ? 'animate-[gl-blink_1.6s_ease-in-out_infinite] bg-green' : 'bg-faint'}`} />
-            {state.text}
-          </span>
-          <a href={`/api/developer/merchant/export/payments.csv`} className={pillLine} download>
-            <Download size={15} aria-hidden /> CSV
-          </a>
-          <a href={`${DOCS_URL}/gully-pay-merchants`} target="_blank" rel="noopener" className={pillLine}>
-            Docs <ArrowUpRight size={14} aria-hidden />
-          </a>
+    <div className="flex flex-col gap-2" data-testid="merchant-tab">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[14px] border border-line bg-surface px-4 py-3 max-[600px]:px-3" style={view.profile.accent ? { borderTop: `3px solid ${view.profile.accent}` } : undefined}>
+        {view.profile.logoUrl ? <img src={view.profile.logoUrl} alt="" className="size-9 rounded-[10px] object-contain" /> : <Store size={24} className="text-gold" aria-hidden />}
+        <div className="flex min-w-0 flex-[1_1_220px] flex-col">
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY PAY FOR MERCHANTS</span>
+          <h1 className="m-0 truncate text-[18px] leading-tight font-semibold text-ink">{view.profile.displayName}</h1>
         </div>
-        <p className="m-0 flex items-start gap-2 text-[14px] leading-[1.55] text-ink-2">
-          <ShieldCheck size={16} className="mt-[3px] shrink-0 text-gold" aria-hidden />
-          <span>
-            {view.nonCustodial} Fee: {f.ratePct}% per payment after your first {usd(f.freeUsd)}, no monthly fee.{' '}
-            <a href={`${payOrigin()}${view.terms.path}`} target="_blank" rel="noopener" className="text-gold underline underline-offset-4 hover:text-gold-hover">
-              Merchant terms
-            </a>
-          </span>
-        </p>
-        <nav aria-label="Merchant sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
-          {NAV.map(([id, text]) => (
-            <a key={id} href={`#${id}`} onClick={(e) => (e.preventDefault(), document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))} className="inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-[13px] text-dim hover:bg-surface-hover hover:text-ink">
-              {text}
-            </a>
-          ))}
-        </nav>
+        <span className={`inline-flex min-h-[28px] items-center gap-2 rounded-full border px-3 text-[12px] ${state.cls}`} data-testid="checkout-state">
+          <span aria-hidden className={`size-2 rounded-full ${f.paused ? 'bg-error' : view.ready ? 'animate-[gl-blink_1.6s_ease-in-out_infinite] bg-green' : 'bg-faint'}`} />
+          {state.text}
+        </span>
+        {!view.profile.name && (
+          <button type="button" onClick={() => setSub('profile')} className="inline-flex min-h-[28px] items-center gap-2 rounded-full border border-gold-line px-3 text-[12px] text-gold hover:border-gold" data-testid="finish-profile">
+            <Store size={13} aria-hidden /> Store not named yet
+          </button>
+        )}
+        <RefreshChip error={poll.stale ? poll.error : null} onRetry={() => void poll.reload()} />
+        <span className="flex flex-wrap gap-2">
+          <a href="/api/developer/merchant/export/payments.csv" className={pillSm} download>
+            <Download size={14} aria-hidden /> CSV
+          </a>
+          <a href={`${DOCS_URL}/gully-pay-merchants`} target="_blank" rel="noopener noreferrer" className={pillSm}>
+            <BookOpen size={14} aria-hidden /> Docs ↗
+          </a>
+        </span>
+        <InfoTip className="basis-full" summary={`Non-custodial · ${f.ratePct}% per payment after your first ${usd(f.freeUsd)}, no monthly fee.`}>
+          {view.nonCustodial} Fee: {f.ratePct}% per payment after your first {usd(f.freeUsd)}, no monthly fee.{' '}
+          <a href={`${payOrigin()}${view.terms.path}`} target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-4 hover:text-gold-hover">
+            Merchant terms ↗
+          </a>
+        </InfoTip>
       </header>
 
       {f.paused && (
-        <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-5 py-4" role="alert">
-          <PauseCircle size={22} className="shrink-0 text-error" aria-hidden />
-          <span className="min-w-0 flex-[1_1_240px] text-[14px] leading-[1.55] text-ink">
-            <b>Your checkout is paused.</b> Fee statement {overdue?.number} (${overdue?.usd}) is more than {f.pauseAfterDays} days unpaid, so payers see “This store's checkout is paused” and no new payment can start. Paying it resumes checkout at once.
+        <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-[#5a2a24] bg-[rgba(255,138,122,.06)] px-4 py-3" role="alert">
+          <PauseCircle size={20} className="shrink-0 text-error" aria-hidden />
+          <span className="min-w-0 flex-[1_1_240px] text-[13px] leading-[1.5] text-ink">
+            <b>Your checkout is paused.</b> Fee statement {overdue?.number} (${overdue?.usd}) is more than {f.pauseAfterDays} days unpaid, so no new payment can start. Paying it resumes checkout at once.
           </span>
           {overdue && (
-            <a href={`${payOrigin()}${overdue.payPath}`} target="_blank" rel="noopener" className={pillGold}>
-              Pay now <ArrowUpRight size={14} aria-hidden />
+            <a href={`${payOrigin()}${overdue.payPath}`} target="_blank" rel="noopener noreferrer" className={pillGold}>
+              Pay now ↗
             </a>
           )}
         </div>
       )}
-      {!view.profile.name && (
-        <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-gold-line bg-[rgba(232,192,96,.06)] px-5 py-4" role="status" data-testid="finish-profile">
-          <Store size={22} className="shrink-0 text-gold" aria-hidden />
-          <span className="min-w-0 flex-[1_1_240px] text-[14px] leading-[1.55] text-ink">
-            <b>Finish your store profile.</b> Until you name the store, your checkouts say “Store” with your wallet address. A name, a logo and a support email make them yours.
-          </span>
-          <a href="#m-profile" onClick={(e) => (e.preventDefault(), document.getElementById('m-profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))} className={pillGold}>
-            Set up the profile
-          </a>
-        </div>
-      )}
       {!f.paused && f.outstandingUsd > 0 && (
-        <p className="m-0 rounded-[14px] border border-gold-line bg-[rgba(232,192,96,.06)] px-5 py-3 text-[14px] text-ink-2" role="status">
-          A fee statement of {usd(f.outstandingUsd)} is open. Pay it within {f.pauseAfterDays} days of issue to keep checkout running (see Fees below).
-        </p>
-      )}
-      {!view.ready && (
-        <p className="m-0 rounded-[14px] border border-dashed border-line-strong px-5 py-3 text-[14px] text-muted">
-          Start here: add a receiving wallet (you accept the merchant terms with it) and name your store. Links and invoices can be made at any time; payers can pay once a wallet is on.
-        </p>
+        <button type="button" onClick={() => setSub('fees')} className="m-0 rounded-[12px] border border-gold-line bg-[rgba(232,192,96,.06)] px-4 py-2 text-left text-[13px] text-ink-2" role="status">
+          A fee statement of {usd(f.outstandingUsd)} is open. Pay it within {f.pauseAfterDays} days of issue to keep checkout running. <span className="text-gold">Open Fees</span>
+        </button>
       )}
 
-      <PaymentsDashboard refreshKey={tick} />
-      <LinksSection view={view} reload={reload} />
-      <InvoicesSection view={view} reload={reload} />
-      <WalletsSection view={view} onChange={setView} />
-      <ProfileSection view={view} onChange={setView} />
-      <FeesSection view={view} />
-      <WebhooksSection view={view} reload={reload} />
+      <Stepper title="Set up your store" steps={steps} testId="merchant-stepper">
+        {(id) =>
+          id === 'wallet' ? (
+            <WalletForm view={view} onChange={setView} />
+          ) : id === 'name' ? (
+            <ProfileForm view={view} onChange={setView} />
+          ) : id === 'link' ? (
+            view.can.links ? <NewLink view={view} onDone={reload} bare /> : <p className="m-0 text-[13px] text-faint">Your role ({view.role}) cannot make pay links.</p>
+          ) : firstLink ? (
+            <div className="flex flex-col gap-2">
+              <span className="flex items-center gap-2 text-[13px] text-muted">
+                <span aria-hidden className="size-2 animate-[gl-blink_1.6s_ease-in-out_infinite] rounded-full bg-gold" />
+                Share <b className="font-semibold text-ink">{firstLink.title}</b>: the first confirmed payment ticks this step.
+              </span>
+              <ShareBox path={firstLink.path} label={firstLink.title} />
+            </div>
+          ) : (
+            <p className="m-0 text-[13px] text-muted">Make a pay link or an invoice first, then share it.</p>
+          )
+        }
+      </Stepper>
+
+      <SubTabs items={items} value={sub} onChange={setSub} label="Merchant sections" idBase="merchant" />
+      <SubPanel idBase="merchant" value={sub}>
+        {sub === 'payments' && (
+          <>
+            <PaymentsDashboard refreshKey={tick} />
+            <NetworkStrip view={view} />
+          </>
+        )}
+        {sub === 'links' && <LinksSection view={view} reload={reload} />}
+        {sub === 'invoices' && <InvoicesSection view={view} reload={reload} />}
+        {sub === 'wallets' && <WalletsSection view={view} onChange={setView} />}
+        {sub === 'profile' && <ProfileSection view={view} onChange={setView} />}
+        {sub === 'fees' && <FeesSection view={view} />}
+        {sub === 'webhooks' && <WebhooksSection view={view} reload={reload} />}
+      </SubPanel>
     </div>
   )
 }
