@@ -309,7 +309,7 @@ export function ApiReference() {
             ['GET /api/security/stats', <><C>{'{ generatedAt, totals, days[] }'}</C>: scans started, done, failed and published, and 30 UTC days of counts, oldest first.</>, 'public, max-age=30; CORS *'],
             ['GET /api/security/reports/:id', <>One published report: <C>{'{ report }'}</C> (proof-of-concept code is kept private). <C>404</C> when it is not published.</>, 'public, max-age=30; no CORS'],
             ['GET /api/security/reports/:id/report.html', 'The same report as a standalone, print-ready HTML page.', 'no-store'],
-            ['POST /api/security/review-requests', <>Ask for a Security Review or an Audit. Needs <C>X-Requested-With: gully</C> (same-site forms only). Body: <C>tier</C> (review or audit), <C>name</C>, <C>email</C>, <C>project</C>, <C>scope</C> (20+ characters), optional <C>repo</C>, <C>address</C>, <C>chain</C>, <C>company</C>, <C>timeline</C>, <C>budget</C>. <C>201 {'{ request: { id, tier, status } }'}</C>; <C>400</C> names the field; 5 an hour per address and 3 a day per email.</>, 'no-store'],
+            ['POST /api/security/review-requests', <>Ask for a Security Review (quoted on request). Needs <C>X-Requested-With: gully</C> (same-site forms only). Body: <C>tier</C> (<C>review</C>; <C>audit</C> is accepted as an enquiry, but audits are not offered yet), <C>name</C>, <C>email</C>, <C>project</C>, <C>scope</C> (20+ characters), optional <C>repo</C>, <C>address</C>, <C>chain</C>, <C>company</C>, <C>timeline</C>, <C>budget</C>. <C>201 {'{ request: { id, tier, status } }'}</C>; <C>400</C> names the field; 5 an hour per address and 3 a day per email.</>, 'no-store'],
           ]}
         />
       </Section>

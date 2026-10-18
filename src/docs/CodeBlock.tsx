@@ -22,14 +22,14 @@ export function CodeBlock({ code, lang, caption, wrap = false }: { code: string;
     })
   }
   return (
-    <figure className="m-0 flex min-w-0 flex-col overflow-hidden rounded-panel border border-line bg-surface-deep">
+    <figure className="m-0 flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-surface-deep">
       <div className="flex items-center justify-between gap-3 border-b border-line pr-1 pl-4">
         <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">{caption ?? LABEL[lang]}</span>
         <button
           type="button"
           onClick={copy}
           aria-label={copied ? 'Copied' : 'Copy code'}
-          className={`inline-flex min-h-11 shrink-0 items-center gap-[6px] rounded-btn px-3 font-mono text-[11px] transition-colors ${copied ? 'text-green' : 'text-muted hover:bg-surface-hover hover:text-ink'}`}
+          className={`inline-flex min-h-11 shrink-0 items-center gap-[6px] rounded-sm px-3 font-mono text-[11px] transition-colors ${copied ? 'text-green' : 'text-muted hover:bg-surface-hover hover:text-ink'}`}
         >
           {copied ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}
           {copied ? 'Copied' : 'Copy'}

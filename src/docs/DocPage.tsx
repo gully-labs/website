@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, Hash } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { eyebrow as eyebrowCls } from '../components/ui'
@@ -57,9 +57,10 @@ function OnThisPage({ sections }: { sections: DocSection[] }) {
           <li key={s.id}>
             <a
               href={`#${s.id}`}
-              className={`-ml-px block border-l py-[5px] pl-4 text-[13px] leading-[1.4] transition-colors ${current === s.id ? 'border-gold text-ink' : 'border-transparent text-dim hover:text-ink'}`}
+              className={`-ml-px flex items-start gap-2 border-l py-[5px] pl-3 text-[13px] leading-[1.4] transition-colors ${current === s.id ? 'border-gold text-ink' : 'border-transparent text-dim hover:text-ink'}`}
             >
-              {s.title}
+              <Hash className="icon-sm mt-[2px]" aria-hidden />
+              <span className="min-w-0">{s.title}</span>
             </a>
           </li>
         ))}
@@ -74,7 +75,7 @@ function PrevNext({ slug }: { slug: DocSlug }) {
   const next = DOC_PAGES[i + 1]
   const prevHref = useDocHref(prev?.slug ?? '')
   const nextHref = useDocHref(next?.slug ?? '')
-  const cls = 'flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-panel border border-line px-4 py-3 transition-colors hover:border-gold-line hover:bg-surface'
+  const cls = 'flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-lg border border-line px-4 py-3 transition-colors hover:border-gold-line hover:bg-surface'
   return (
     <nav aria-label="Pages" className="mt-6 flex flex-wrap gap-3 border-t border-line pt-8">
       {prev ? (
@@ -107,7 +108,7 @@ export function DocPage({ slug, eyebrow, title, description, lead, sections, chi
       <article className="flex max-w-[780px] min-w-0 flex-col gap-10" style={{ animation: 'gl-rise .45s ease both' }}>
         <header className="flex flex-col gap-4">
           <span className={eyebrowCls}>{eyebrow}</span>
-          <h1 className="m-0 font-display text-[clamp(40px,5cqw,60px)] leading-[.95] font-extrabold uppercase">{title}</h1>
+          <h1 className="heading-1">{title}</h1>
           <p className="m-0 text-[17px] leading-[1.6] text-muted">{lead}</p>
         </header>
         {children}
@@ -123,7 +124,7 @@ export function DocPage({ slug, eyebrow, title, description, lead, sections, chi
 export function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4">
-      <h2 id={id} className={`group m-0 scroll-mt-[88px] leading-none ${title.startsWith('GET ') ? 'font-mono text-[24px] font-medium' : 'font-display text-[30px] font-bold uppercase'}`}>
+      <h2 id={id} className={`group m-0 scroll-mt-[88px] leading-none ${title.startsWith('GET ') ? 'font-mono text-[24px] font-medium' : 'heading-3'}`}>
         <a href={`#${id}`} className="-my-[10px] inline-block py-[10px] text-ink no-underline">
           {title}
           <span aria-hidden className="ml-2 text-gold opacity-0 transition-opacity group-hover:opacity-100">
@@ -149,7 +150,7 @@ export function P({ children }: { children: ReactNode }) {
 }
 
 export function C({ children }: { children: ReactNode }) {
-  return <code className="rounded-btn border border-line bg-surface-deep px-[5px] py-[1px] font-mono text-[max(11px,.88em)] break-words text-ink">{children}</code>
+  return <code className="rounded-sm border border-line bg-surface-deep px-[5px] py-[1px] font-mono text-[max(11px,.88em)] break-words text-ink">{children}</code>
 }
 
 export function List({ children }: { children: ReactNode }) {
@@ -158,7 +159,7 @@ export function List({ children }: { children: ReactNode }) {
 
 export function Callout({ label, children, tone = 'gold' }: { label: string; children: ReactNode; tone?: 'gold' | 'plain' }) {
   return (
-    <div className={`flex flex-col gap-2 rounded-panel border px-5 py-4 ${tone === 'gold' ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line bg-surface'}`}>
+    <div className={`flex flex-col gap-2 rounded-lg border p-5 ${tone === 'gold' ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line bg-surface'}`}>
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{label}</span>
       <div className="text-[14.5px] leading-[1.65] text-ink-2">{children}</div>
     </div>
@@ -174,7 +175,7 @@ export function Fields({ rows, head = ['Field', 'Type', 'Meaning'], variant = 'f
   const mono = 'font-mono text-[12px] break-words text-dim'
   const text = 'text-[14px] leading-[1.6] text-ink-2'
   return (
-    <div className="overflow-hidden rounded-panel border border-line">
+    <div className="overflow-hidden rounded-lg border border-line">
       <div className={`grid ${grid} gap-4 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] tracking-[1px] text-faint max-[640px]:hidden`}>
         {head.map((h) => (
           <span key={h}>{h.toUpperCase()}</span>

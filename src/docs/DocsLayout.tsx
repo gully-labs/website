@@ -133,7 +133,7 @@ function DocSearch({ onPick }: { onPick: () => void }) {
           spellCheck={false}
           aria-controls={`${id}-results`}
           aria-describedby={`${id}-count`}
-          className="min-h-11 w-full rounded-input border border-line-strong bg-surface-deep pr-3 pl-9 text-[16px] text-ink placeholder:text-faint focus:border-gold focus:outline-none"
+          className="min-h-11 w-full rounded-sm border border-line-strong bg-surface-deep pr-3 pl-9 text-[16px] text-ink placeholder:text-faint focus:border-gold focus:outline-none"
         />
       </div>
       <span id={`${id}-count`} role="status" aria-live="polite" className={query ? 'px-1 font-mono text-[11px] text-faint' : 'sr-only'}>
@@ -149,7 +149,7 @@ function DocSearch({ onPick }: { onPick: () => void }) {
                   to={hrefOf(h.slug)}
                   end
                   onClick={() => open(h.slug)}
-                  className={`group flex min-h-11 items-center gap-3 rounded-btn px-3 text-[14px] transition-colors hover:bg-surface hover:text-ink ${i === 0 ? 'bg-surface text-ink' : 'text-muted'}`}
+                  className={`group flex min-h-11 items-center gap-3 rounded-sm px-3 text-[14px] transition-colors hover:bg-surface hover:text-ink ${i === 0 ? 'bg-surface text-ink' : 'text-muted'}`}
                 >
                   <Icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
                   <span className="flex-1">{h.title}</span>
@@ -173,7 +173,7 @@ function SideLink({ slug, title, onPick }: { slug: DocSlug; title: string; onPic
       end
       onClick={onPick}
       className={({ isActive }) =>
-        `group relative flex min-h-11 items-center gap-3 rounded-btn px-3 text-[14px] transition-colors ${isActive ? 'bg-surface text-ink before:absolute before:inset-y-2 before:left-0 before:w-[2px] before:rounded-full before:bg-gold [&_svg]:text-gold' : 'text-muted hover:bg-surface hover:text-ink'}`
+        `group relative flex min-h-11 items-center gap-3 rounded-sm px-3 text-[14px] transition-colors ${isActive ? 'bg-surface text-ink before:absolute before:inset-y-2 before:left-0 before:w-[2px] before:rounded-full before:bg-gold [&_svg]:text-gold' : 'text-muted hover:bg-surface hover:text-ink'}`
       }
     >
       <Icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
@@ -198,7 +198,7 @@ function Sidebar({ onPick }: { onPick: () => void }) {
       <div className="flex flex-col gap-1 border-t border-line pt-5">
         <span className="px-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint">GULLY LABS</span>
         {GULLY_LINKS.map((l) => (
-          <a key={l.href} href={l.href} {...newTab} className="group flex min-h-11 items-center gap-3 rounded-btn px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
+          <a key={l.href} href={l.href} {...newTab} className="group flex min-h-11 items-center gap-3 rounded-sm px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
             <l.icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
             <span className="flex-1">{l.label}</span>
             <NewTabMark size={14} />
@@ -230,7 +230,7 @@ export function DocsLayout() {
   return (
     <DocsBase.Provider value={home}>
       <ScrollRestoration />
-      <a href="#docs-main" className="absolute top-2 left-2 z-50 inline-flex min-h-11 -translate-y-20 items-center rounded-btn bg-gold px-3 text-[14px] font-semibold text-bg focus:translate-y-0">
+      <a href="#docs-main" className="absolute top-2 left-2 z-50 inline-flex min-h-11 -translate-y-20 items-center rounded-sm bg-gold px-3 text-[14px] font-semibold text-bg focus:translate-y-0">
         Skip to content
       </a>
       <header className="sticky top-0 z-40 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-md">
@@ -242,7 +242,7 @@ export function DocsLayout() {
               aria-expanded={open}
               aria-controls="docs-sheet"
               onClick={() => setOpen((o) => !o)}
-              className="hidden size-11 shrink-0 place-items-center rounded-btn border border-line text-ink-2 transition-colors hover:border-line-hover max-[899px]:grid"
+              className="hidden size-11 shrink-0 place-items-center rounded-sm border border-line text-ink-2 transition-colors hover:border-line-hover max-[899px]:grid"
             >
               {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
             </button>
@@ -263,10 +263,10 @@ export function DocsLayout() {
             <span className="max-[520px]:hidden">
               <ApiPill />
             </span>
-            <a href={`${SITE}/tracker`} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-btn px-3 text-[14px] text-muted transition-colors hover:text-ink max-[700px]:hidden">
+            <a href={`${SITE}/tracker`} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-sm px-3 text-[14px] text-muted transition-colors hover:text-ink max-[700px]:hidden">
               Tracker <NewTabMark size={14} className="flex-none" />
             </a>
-            <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-btn border border-line-strong px-3 text-[14px] whitespace-nowrap text-ink transition-colors hover:border-gold hover:text-ink max-[479px]:px-2 max-[479px]:text-[13px]">
+            <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-sm border border-line-strong px-3 text-[14px] whitespace-nowrap text-ink transition-colors hover:border-gold hover:text-ink max-[479px]:px-2 max-[479px]:text-[13px]">
               gullylabs.xyz
               <NewTabMark size={14} className="flex-none" />
             </a>
