@@ -1,7 +1,6 @@
 import { Activity, BookOpen, Building2, Check, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
-import { VenueLogo } from '../../components/logos/VenueLogo'
-import { Wordmark } from '../../components/Wordmark'
+import { Mascot, Wordmark } from '../../components/brand'
 import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
@@ -371,10 +370,10 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
 function Brand({ compact, onHome }: { compact: boolean; onHome: () => void }) {
   return (
     <button type="button" onClick={onHome} className={`flex min-h-11 min-w-0 items-center gap-[10px] text-ink ${compact ? 'justify-center' : ''}`} aria-label="Gully Labs App: overview" data-testid="app-brand">
-      <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
+      <Mascot size={24} decorative />
       {!compact && (
-        <span className="flex min-w-0 items-baseline gap-2">
-          <Wordmark size={18} />
+        <span className="flex min-w-0 items-center gap-2">
+          <Wordmark height={20} />
           <span className="font-semibold text-muted">App</span>
         </span>
       )}
@@ -527,7 +526,7 @@ export function AppShell<T extends string>({
                   <MenuIcon size={20} aria-hidden />
                 </button>
                 <a href={SITE_URL} className="inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] hover:bg-surface-hover" aria-label="Gully Labs home" data-testid="home-link-header">
-                  <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
+                  <Mascot size={24} decorative />
                 </a>
               </>
             )}

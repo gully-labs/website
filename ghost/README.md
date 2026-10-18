@@ -73,7 +73,8 @@ https://gullylabs.xyz/og/blog/<slug>.png` on the main site's server (`server/og.
   `t0 = (seed % 997) / 31` s, the same frame reduced-motion visitors see; the kicker with the primary
   tag's name and the banner code (`NEWS / GL-1005`); the whole title, upper-cased, in Barlow Condensed 800
   at the largest of 88/78/68/60/52 px that fits three lines of 84% width (long words break; past that
-  the third line ends in an ellipsis); `BLOG.GULLYLABS.XYZ` in IBM Plex Mono and the GULLY LABS wordmark.
+  the third line ends in an ellipsis); `BLOG.GULLYLABS.XYZ` in IBM Plex Mono and the brand kit's wordmark (the kit's outlined paths, from
+  `KIT_WORDMARK` in banner.js, written by `scripts/brand-from-kit.mjs`).
   Characters the brand fonts don't have (emoji) are left out of the image; the seed still uses the
   real title, so the art matches the blog's banner.
 - **Seed:** `seedString = slug + "

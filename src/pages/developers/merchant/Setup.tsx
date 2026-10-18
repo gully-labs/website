@@ -1,5 +1,6 @@
 import { ArrowUpRight, CheckCircle2, Loader2, RefreshCw, ShieldAlert, Store, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { Mascot } from '../../../components/brand'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
 import { isFeeProxy } from '../../../../server/fee-proxy-guard.mjs'
@@ -84,7 +85,7 @@ export function ProfileSection({ view, onChange }: { view: MerchantView; onChang
             </span>
             <span className="text-[12px] text-muted">{view.nonCustodial}</span>
             <span className="inline-flex items-center gap-2 font-mono text-[10.5px] tracking-[1px] text-faint">
-              POWERED BY <img src="/brand/gully-mark-96.png" alt="" aria-hidden width={16} height={16} className="size-4 rounded-full" /> GULLY PAY
+              POWERED BY <Mascot size={16} decorative /> GULLY PAY
             </span>
           </div>
         </div>

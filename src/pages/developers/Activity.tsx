@@ -1,6 +1,7 @@
 import { History, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { ago, api, shortAddress, type ActivityEvent, type ActivityPage } from './api'
+import { Mascot } from '../../components/brand'
 import { Avatar } from './Avatar'
 import { ErrorLine, Skeleton } from './parts'
 import { GhostCurves } from './charts'
@@ -236,7 +237,7 @@ export function ActivityTab() {
                 <li key={e.id} className="flex flex-col" style={{ animation: `gl-rise .35s ${Math.min(i, 12) * 0.03}s ease both` }}>
                   {head && <span className="pt-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint uppercase">{day}</span>}
                   <div className="flex items-start gap-3 border-l-2 py-[10px] pl-3" style={{ borderColor: KIND_COLOR[k] }}>
-                    {e.actor === 'system' ? <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface-deep font-display text-[13px] font-bold text-gold">G</span> : <Avatar address={e.actor} src={e.actor === user ? me?.profile.avatar : null} size={28} />}
+                    {e.actor === 'system' ? <Mascot size={28} label="Gully Labs" /> : <Avatar address={e.actor} src={e.actor === user ? me?.profile.avatar : null} size={28} />}
                     <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
                       <span className="text-[14px] leading-[1.45] break-words">
                         <b className="font-semibold" title={e.actor}>

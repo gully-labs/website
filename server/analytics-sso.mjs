@@ -21,6 +21,7 @@
 //   inline script runs under a per-response CSP nonce.
 
 import crypto from 'node:crypto'
+import { wordmarkSvg } from './brand.mjs'
 import { clientIp, json } from './http.mjs'
 import { getUser, mintUserToken, ssoConfigured, SSO_SESSION_SEC } from './umami.mjs'
 
@@ -115,8 +116,8 @@ export function brandPage({ title, body, nonce = null, script = '', status = 200
 :root{color-scheme:dark;--bg:#0b0e13;--surface:#13181f;--line:#232a34;--ink:#e9edf2;--muted:#a6b0bd;--gold:#e8c060}
 *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:var(--bg);color:var(--ink);font:16px/1.5 "Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px}
 .card{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px 28px}
-.brand{display:flex;align-items:center;gap:10px;font:800 15px/1 "Barlow Condensed",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);text-decoration:none;min-height:44px}
-.brand b{color:var(--gold)}.eyebrow{font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 6px}
+.brand{display:flex;align-items:center;gap:10px;font:500 12px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;min-height:44px}
+.brand svg{display:block;height:22px;width:auto}.eyebrow{font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 6px}
 h1{font:800 34px/1.05 "Barlow Condensed",system-ui,sans-serif;text-transform:uppercase;margin:0 0 10px}p{color:var(--muted);margin:0 0 18px}
 .btn{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:999px;font-weight:600;text-decoration:none;margin-top:12px;padding:0 20px;text-align:center}
 .primary{background:var(--gold);color:#0b0e13}.ghost{border:1px solid var(--line);color:var(--ink)}
@@ -140,7 +141,8 @@ h1{font:800 34px/1.05 "Barlow Condensed",system-ui,sans-serif;text-transform:upp
   }
 }
 
-const BRAND = '<a class="brand" href="https://gullylabs.xyz/">Gully <b>Labs</b> · Analytics</a>'
+// The brand kit's wordmark (server/brand.mjs, inline SVG: the kit's outlined paths, so no font or image request).
+const BRAND = `<a class="brand" href="https://gullylabs.xyz/">${wordmarkSvg({ height: 22, theme: 'dark', id: 'sso' })}<span>Analytics</span></a>`
 
 /** GET /sso?code=… on the analytics host. */
 export function ssoPage(req, url) {

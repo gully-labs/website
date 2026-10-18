@@ -1,7 +1,6 @@
 import { AlertTriangle, ArrowUpRight, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { VenueLogo } from '../../components/logos/VenueLogo'
-import { Wordmark } from '../../components/Wordmark'
+import { Mascot, Wordmark } from '../../components/brand'
 import { DOCS_URL } from '../../site-host'
 import { api, ROLE_REFUSED, SESSION_ENDED, type Account, type Me, type Offer, type WorkspaceRef } from './api'
 import { ExtLink } from './ExtLink'
@@ -57,8 +56,8 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
       <div aria-hidden className="pointer-events-none absolute top-[-200px] left-1/2 size-[640px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.12),transparent_62%)]" />
       <div className="relative flex w-full max-w-[460px] animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-5 rounded-[14px] border border-line bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-5">
         <div className="flex items-center gap-[10px]">
-          <VenueLogo venue="gully" name="Gully Labs" size={24} decorative />
-          <Wordmark size={20} />
+          <Mascot size={24} decorative />
+          <Wordmark height={20} />
           <span className="font-semibold text-muted">App</span>
           <span className="ml-auto font-mono text-[11px] tracking-[1px] text-faint">TRACKER API · ANALYTICS</span>
         </div>

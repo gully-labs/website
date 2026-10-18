@@ -70,7 +70,7 @@ const ORG = {
   '@type': 'Organization',
   name: 'Gully Labs',
   url: SITE,
-  logo: `${SITE}/favicon.png`,
+  logo: `${SITE}/brand/gully-mark-512.png`,
   sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs'],
 }
 const TRACKER_LD = {
