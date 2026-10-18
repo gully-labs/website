@@ -38,7 +38,7 @@ function ScansPerDay({ scans }: { scans: ScanView[] }) {
     const days = Array.from({ length: 14 }, (_, i) => new Date(now - (13 - i) * 86_400_000).toISOString().slice(0, 10))
     const by = (pred: (s: ScanView) => boolean) => days.map((d) => scans.filter((s) => s.createdAt.slice(0, 10) === d && pred(s)).length)
     const series = [
-      { id: 'done', name: 'Done', color: '#6fcf6a', data: by((s) => s.status === 'done') },
+      { id: 'done', name: 'Done', color: C.green, data: by((s) => s.status === 'done') },
       { id: 'running', name: 'Running or waiting', color: C.gold, data: by((s) => isActive(s.status) || s.status === 'awaiting_payment') },
       { id: 'failed', name: 'Failed or cancelled', color: C.error, data: by((s) => s.status === 'failed' || s.status === 'cancelled' || s.status === 'unknown') },
     ]

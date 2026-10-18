@@ -83,7 +83,7 @@ export function ReportsIndex() {
                       <Subject r={r} />
                     </span>
                     <span className="flex h-[8px] overflow-hidden rounded-full bg-line" aria-label={SEVERITIES.map((k) => `${counts[k]} ${SEV_LABEL[k].toLowerCase()}`).join(', ')}>
-                      {total ? SEVERITIES.map((k, j) => (counts[k] ? <span key={k} style={{ width: `${(counts[k] / total) * 100}%`, background: SEV_COLOR[k], transformOrigin: 'left', animation: `gl-grow-x .6s ${j * 0.06}s cubic-bezier(.2,.8,.2,1) both` }} /> : null)) : <span className="w-full bg-[#6fcf6a55]" />}
+                      {total ? SEVERITIES.map((k, j) => (counts[k] ? <span key={k} style={{ width: `${(counts[k] / total) * 100}%`, background: SEV_COLOR[k], transformOrigin: 'left', animation: `gl-grow-x .6s ${j * 0.06}s cubic-bezier(.2,.8,.2,1) both` }} /> : null)) : <span className="w-full bg-green/30" />}
                     </span>
                     <span className="font-mono text-[11px] text-muted">{total ? SEVERITIES.filter((k) => counts[k]).map((k) => `${counts[k]} ${SEV_LABEL[k].toLowerCase()}`).join(' · ') : 'no findings reported'}</span>
                     {r.label && <span className="text-[12px] text-gold">{r.label}</span>}
@@ -159,7 +159,7 @@ export function PublicReportPage() {
           </div>
           <SeverityCharts counts={r.summary?.counts ?? r.counts} />
         </header>
-        <p className="m-0 flex items-start gap-2 rounded-[10px] border border-gold-line bg-[rgba(232,192,96,.05)] px-4 py-3 text-[13px] leading-[1.6] text-ink-2 print:border-[#ccc] print:bg-[#fff] print:text-[#000]" data-testid="not-audit">
+        <p className="m-0 flex items-start gap-2 rounded-[10px] border border-gold-line bg-gold/[.05] px-4 py-3 text-[13px] leading-[1.6] text-ink-2 print:border-[#ccc] print:bg-[#fff] print:text-[#000]" data-testid="not-audit">
           <Info size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden />
           {NOT_AUDIT}
         </p>

@@ -1,6 +1,6 @@
 import { Activity, Gauge, Pause, Play, Plus, Radar, RotateCw, Send, ShieldAlert, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { barsPreset, axisTooltip, C, tipHtml } from '../../../components/charts/chartPresets'
+import { barsPreset, axisTooltip, C, PALETTE, tipHtml } from '../../../components/charts/chartPresets'
 import { EChart } from '../../../components/charts/EChart'
 import { toastSuccess } from '../../../components/ui/toast'
 import { DOCS_URL, isLocalHost } from '../../../site-host'
@@ -67,19 +67,34 @@ function EventDays({ monitors, now }: { monitors: Monitor[]; now: number }) {
     const a = count(true)
     const b = count(false)
     return {
-      grid: { left: 8, right: 8, top: 24, bottom: 8, containLabel: true },
-      legend: { top: 0, right: 0, data: ['Privileged changes', 'Outflows'] },
-      tooltip: axisTooltip((ps: { dataIndex: number }[]) => tipHtml({ title: days[ps[0].dataIndex], rows: [{ name: 'Privileged changes', value: String(a[ps[0].dataIndex]), color: C.gold }, { name: 'Outflows', value: String(b[ps[0].dataIndex]), color: '#5aa9e6' }] }), 'shadow'),
+      grid: { left: 8, right: 8, top: 12, bottom: 8, containLabel: true },
+      tooltip: axisTooltip((ps: { dataIndex: number }[]) => tipHtml({ title: days[ps[0].dataIndex], rows: [{ name: 'Privileged changes', value: String(a[ps[0].dataIndex]), color: C.gold }, { name: 'Outflows', value: String(b[ps[0].dataIndex]), color: PALETTE[1] }] }), 'shadow'),
       xAxis: { type: 'category', data: days.map((d) => d.slice(5)) },
       yAxis: { type: 'value', minInterval: 1 },
       series: [
         { ...barsPreset({ focus: 'series' }), id: 'priv', name: 'Privileged changes', stack: 'e', color: C.gold, data: a, barMaxWidth: 18 },
-        { ...barsPreset({ focus: 'series' }), id: 'out', name: 'Outflows', stack: 'e', color: '#5aa9e6', data: b, barMaxWidth: 18 },
+        { ...barsPreset({ focus: 'series' }), id: 'out', name: 'Outflows', stack: 'e', color: PALETTE[1], data: b, barMaxWidth: 18 },
       ],
     }
   }, [monitors, now])
   const total = monitors.reduce((n, m) => n + m.events.length, 0)
-  return <EChart option={option} height={180} label={`Events seen on watched contracts, last 14 days: ${total} in all`} steps={{ count: 14 }} skeleton="bars" />
+  // The legend is HTML (token colours, 11 px text), not the chart's own.
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex justify-end gap-4 font-mono text-[11px] text-muted" aria-hidden>
+        {[
+          ['Privileged changes', C.gold],
+          ['Outflows', PALETTE[1]],
+        ].map(([t, c]) => (
+          <span key={t} className="inline-flex items-center gap-[6px]">
+            <i className="inline-block size-[8px] rounded-[2px]" style={{ background: c }} />
+            {t}
+          </span>
+        ))}
+      </div>
+      <EChart option={option} height={168} label={`Events seen on watched contracts, last 14 days: ${total} in all`} steps={{ count: 14 }} skeleton="bars" />
+    </div>
+  )
 }
 
 function AddDialog({ open, onClose, view, onAdded }: { open: boolean; onClose: () => void; view: MonitorsView; onAdded: (secret: string | null) => void }) {
@@ -157,12 +172,12 @@ function AddDialog({ open, onClose, view, onAdded }: { open: boolean; onClose: (
         </label>
         {view.telegram.enabled && (
           <label className="flex min-h-11 items-center gap-3 text-[14px] text-ink-2">
-            <input type="checkbox" checked={tg} disabled={!view.telegram.linked} onChange={(e) => setTg(e.target.checked)} className="size-4 accent-[#e8c060]" />
+            <input type="checkbox" checked={tg} disabled={!view.telegram.linked} onChange={(e) => setTg(e.target.checked)} className="size-4 accent-gold" />
             Telegram {view.telegram.linked ? '' : <span className="text-faint">(connect Telegram in Alerts first)</span>}
           </label>
         )}
         <label className="flex min-h-11 items-center gap-3 text-[14px] text-ink-2">
-          <input type="checkbox" checked={listed} onChange={(e) => setListed(e.target.checked)} className="size-4 accent-[#e8c060]" />
+          <input type="checkbox" checked={listed} onChange={(e) => setListed(e.target.checked)} className="size-4 accent-gold" />
           List its Gully Score publicly on /score (the score itself is the same either way)
         </label>
         {err && <ErrorLine>{err}</ErrorLine>}

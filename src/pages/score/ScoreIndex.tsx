@@ -39,7 +39,7 @@ export function ScoreIndex() {
     <>
       <Seo title="Gully Score" description="Transparent contract scores from public evidence only: verified code, who controls it, upgrades, delays, recent privileged changes, locks and holders. Nobody can pay to change a score." />
       <section className="relative overflow-clip px-page pt-[72px] pb-12 max-[600px]:pt-10">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.12),transparent_62%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.12),transparent_62%)]" />
         <div className="relative flex max-w-[900px] flex-col gap-6">
           <span className={`${eyebrow} flex items-center gap-2`} style={rise(0)}>
             <Gauge aria-hidden size={15} /> SECURITY · GULLY SCORE
@@ -93,7 +93,7 @@ export function ScoreIndex() {
           )}
           {data && data.scores.length === 0 && (
             <div className="relative flex flex-col items-center gap-3 overflow-hidden rounded-input border border-dashed border-line-strong px-6 py-10 text-center" data-empty>
-              <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(232,192,96,.45),transparent)]" style={{ animation: 'gl-scan 3.6s linear infinite' }} />
+              <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.45),transparent)]" style={{ animation: 'gl-scan 3.6s linear infinite' }} />
               <span className="relative grid size-14 place-items-center">
                 <span aria-hidden className="absolute inset-0 rounded-full border border-gold-line" style={{ animation: 'gl-live-pulse 2.6s ease-out infinite' }} />
                 <Gauge aria-hidden size={22} className="relative text-gold" />

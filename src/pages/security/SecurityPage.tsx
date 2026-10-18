@@ -207,7 +207,7 @@ function LiveScans() {
       yAxis: { type: 'value', show: false, minInterval: 1 },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const d = days[ps[0]?.dataIndex ?? 0]
-        return d ? tipHtml({ title: d.day, rows: [{ name: 'started', value: String(d.started), color: C.gold }, { name: 'finished', value: String(d.done), color: '#6fcf6a' }, { name: 'failed', value: String(d.failed), color: C.error }] }) : ''
+        return d ? tipHtml({ title: d.day, rows: [{ name: 'started', value: String(d.started), color: C.gold }, { name: 'finished', value: String(d.done), color: C.green }, { name: 'failed', value: String(d.failed), color: C.error }] }) : ''
       }, 'shadow'),
       series: [{ id: 'started', ...barsPreset(), barWidth: '60%', itemStyle: { color: C.gold, borderRadius: [2, 2, 0, 0] }, data: days.map((d) => d.started) }],
     }
@@ -258,7 +258,7 @@ export function SecurityPage() {
     <>
       <Seo title="Gully Security" description="Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price." />
       <section className="relative overflow-hidden px-page pt-[64px] pb-12 max-[600px]:pt-10">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(232,192,96,.14),transparent_62%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.14),transparent_62%)]" />
         <div className="relative grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-center gap-10 max-[960px]:grid-cols-1">
           <div className="flex flex-col gap-5">
             <span className="flex flex-wrap items-center gap-3" style={rise(0)}>

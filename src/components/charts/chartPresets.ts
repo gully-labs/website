@@ -32,6 +32,7 @@ export const C = {
   surface: '#151d28',
   surfaceDeep: '#111923',
   error: '#ff8a7a',
+  green: '#74c27b',
 } as const
 
 /** Categorical series colours, in order (the theme's palette). */

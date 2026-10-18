@@ -34,7 +34,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false, showFee
               <ChainMark chainKey={g.chainKey} name={g.chain} size={24} />
               {g.chain}
             </span>
-            {showFee && <span className="font-mono text-[10px] tracking-[.5px] text-faint">{g.assets.some((a) => a.feeSplit) ? 'FEE IN THE PAYMENT' : 'FEE INVOICED'}</span>}
+            {showFee && <span className="font-mono text-[11px] tracking-[.5px] text-faint">{g.assets.some((a) => a.feeSplit) ? 'FEE IN THE PAYMENT' : 'FEE INVOICED'}</span>}
           </span>
           <div className="flex flex-1 flex-wrap gap-2">
             {g.assets.map((a) => {
@@ -52,7 +52,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false, showFee
                 >
                   <TokenLogo symbol={a.symbol} size={20} decorative />
                   {a.symbol}
-                  <span className={`text-[10px] tracking-[.5px] ${on ? 'text-gold' : 'text-faint'}`}>{a.kind === 'native' ? 'COIN' : 'STABLE'}</span>
+                  <span className={`text-[11px] tracking-[.5px] ${on ? 'text-gold' : 'text-faint'}`}>{a.kind === 'native' ? 'COIN' : 'STABLE'}</span>
                 </button>
               )
             })}

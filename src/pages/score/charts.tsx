@@ -32,7 +32,7 @@ export function ScoreRing({ score, grade, size = 220 }: { score: number | null; 
     <EChart option={option} height={size} label={score === null ? 'Gully Score: not enough public data for a score' : `Gully Score ${score} out of 100, ${grade}`} skeleton="ring" className="max-w-[260px]">
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
         {score === null ? <span className="font-display text-[44px] leading-none font-extrabold text-muted">N/A</span> : <AnimatedNumber value={score} countUp className="font-display text-[64px] leading-none font-extrabold" style={{ color: bandColor(score) }} />}
-        <span className="mt-1 font-mono text-[10px] tracking-[1px] text-faint">{score === null ? 'NOT ENOUGH DATA' : 'OUT OF 100'}</span>
+        <span className="mt-1 font-mono text-[11px] tracking-[1px] text-faint">{score === null ? 'NOT ENOUGH DATA' : 'OUT OF 100'}</span>
         {score !== null && (
           <span className="font-mono text-[11px] tracking-[1px]" style={{ color: bandColor(score) }}>
             {grade?.toUpperCase()}

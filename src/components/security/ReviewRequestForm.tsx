@@ -64,7 +64,7 @@ export function ReviewRequestForm({ source = 'site', chains, auditAvailable = fa
             ['audit', 'Audit', auditAvailable ? 'The premium tier' : 'Not offered yet: ask and we will tell you when', <ShieldCheck key="s" size={16} aria-hidden />],
           ] as const
         ).map(([id, name, text, icon]) => (
-          <button key={id} type="button" role="radio" aria-checked={tier === id} onClick={() => setTier(id)} className={`flex min-h-11 flex-[1_1_220px] items-start gap-3 rounded-[12px] border px-3 py-[10px] text-left transition-colors ${tier === id ? 'border-gold bg-[rgba(232,192,96,.07)]' : 'border-line-strong hover:border-line-hover'}`}>
+          <button key={id} type="button" role="radio" aria-checked={tier === id} onClick={() => setTier(id)} className={`flex min-h-11 flex-[1_1_220px] items-start gap-3 rounded-[12px] border px-3 py-[10px] text-left transition-colors ${tier === id ? 'border-gold bg-gold/[.07]' : 'border-line-strong hover:border-line-hover'}`}>
             <span className={tier === id ? 'text-gold' : 'text-faint'}>{icon}</span>
             <span className="flex flex-col">
               <span className="text-[14px] font-semibold text-ink">{name}</span>
@@ -114,7 +114,7 @@ export function ReviewRequestForm({ source = 'site', chains, auditAvailable = fa
       {/* A field people never see; bots fill it. */}
       <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] h-px w-px opacity-0" />
       {err && (
-        <p className="m-0 rounded-input border border-[#5a2a24] px-3 py-2 text-[13px] text-error" role="alert">
+        <p className="m-0 rounded-input border border-error-line px-3 py-2 text-[13px] text-error" role="alert">
           {err}
         </p>
       )}

@@ -48,7 +48,7 @@ function Stepper({ step, free }: { step: Step; free: boolean | null }) {
         const done = s.n < step
         const skipped = s.n === 3 && free === true
         return (
-          <li key={s.n} aria-current={on ? 'step' : undefined} className={`flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-[13px] transition-colors ${on ? 'border-gold bg-[rgba(232,192,96,.08)] text-ink' : done ? 'border-success-line text-ink-2' : 'border-line text-faint'}`} data-step={s.n}>
+          <li key={s.n} aria-current={on ? 'step' : undefined} className={`flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-[13px] transition-colors ${on ? 'border-gold bg-gold/[.08] text-ink' : done ? 'border-success-line text-ink-2' : 'border-line text-faint'}`} data-step={s.n}>
             <span className={on ? 'text-gold' : done ? 'text-green' : ''}>{s.icon}</span>
             <span className="font-mono text-[11px]">{s.n}</span>
             <span className={skipped ? 'line-through' : ''}>{s.label}</span>
@@ -145,7 +145,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
           </h3>
           <div role="radiogroup" aria-label="Input" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-2">
             {KINDS.map((k) => (
-              <button key={k.id} type="button" role="radio" aria-checked={kind === k.id} onClick={() => (setKind(k.id), setErr(null))} className={`flex min-h-[64px] items-start gap-3 rounded-[12px] border px-3 py-[10px] text-left transition-colors ${kind === k.id ? 'border-gold bg-[rgba(232,192,96,.07)]' : 'border-line-strong hover:border-line-hover'}`}>
+              <button key={k.id} type="button" role="radio" aria-checked={kind === k.id} onClick={() => (setKind(k.id), setErr(null))} className={`flex min-h-[64px] items-start gap-3 rounded-[12px] border px-3 py-[10px] text-left transition-colors ${kind === k.id ? 'border-gold bg-gold/[.07]' : 'border-line-strong hover:border-line-hover'}`}>
                 <span className={kind === k.id ? 'text-gold' : 'text-faint'}>{k.icon}</span>
                 <span className="flex flex-col">
                   <span className="text-[14px] font-semibold text-ink">{KIND_LABEL[k.id]}</span>

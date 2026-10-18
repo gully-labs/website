@@ -22,7 +22,7 @@ import { useScan } from './useSecurity'
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
 
 export function StatusChip({ s }: { s: ScanView['status'] }) {
-  const tone = s === 'done' ? 'border-success-line text-green' : s === 'failed' || s === 'unknown' ? 'border-[#5a2a24] text-error' : s === 'cancelled' ? 'border-line-strong text-faint' : 'border-gold-line text-gold'
+  const tone = s === 'done' ? 'border-success-line text-green' : s === 'failed' || s === 'unknown' ? 'border-error-line text-error' : s === 'cancelled' ? 'border-line-strong text-faint' : 'border-gold-line text-gold'
   return (
     <span className={`inline-flex min-h-[26px] items-center gap-[6px] rounded-full border px-[10px] font-mono text-[11px] whitespace-nowrap ${tone}`} data-status={s}>
       {isActive(s) && <span aria-hidden className="size-[6px] animate-[gl-blink_1.4s_ease-in-out_infinite] rounded-full bg-gold motion-reduce:animate-none" />}
@@ -141,12 +141,12 @@ export function ScanDetail({ id, canPublish, onBack, backLabel = 'All scans' }: 
             {canPublish ? (
               <>
                 <label className="ml-auto inline-flex min-h-11 cursor-pointer items-center gap-2 text-[13px] text-ink">
-                  <input type="checkbox" role="switch" checked={scan.published} disabled={busy === 'publish'} onChange={(e) => act('publish', `/api/developer/security/scans/${scan.id}/publish`, { published: e.target.checked, indexable: e.target.checked ? scan.indexable : false }, e.target.checked ? 'Report published' : 'Report unpublished')} className="size-4 accent-[#e8c060]" />
+                  <input type="checkbox" role="switch" checked={scan.published} disabled={busy === 'publish'} onChange={(e) => act('publish', `/api/developer/security/scans/${scan.id}/publish`, { published: e.target.checked, indexable: e.target.checked ? scan.indexable : false }, e.target.checked ? 'Report published' : 'Report unpublished')} className="size-4 accent-gold" />
                   Publish report
                 </label>
                 {scan.published && (
                   <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-[13px] text-ink-2" title="Off: the page asks search engines not to index it">
-                    <input type="checkbox" checked={scan.indexable} disabled={busy === 'publish'} onChange={(e) => act('publish', `/api/developer/security/scans/${scan.id}/publish`, { published: true, indexable: e.target.checked }, e.target.checked ? 'Search engines may index it' : 'Hidden from search engines')} className="size-4 accent-[#e8c060]" />
+                    <input type="checkbox" checked={scan.indexable} disabled={busy === 'publish'} onChange={(e) => act('publish', `/api/developer/security/scans/${scan.id}/publish`, { published: true, indexable: e.target.checked }, e.target.checked ? 'Search engines may index it' : 'Hidden from search engines')} className="size-4 accent-gold" />
                     Let search engines index it
                   </label>
                 )}

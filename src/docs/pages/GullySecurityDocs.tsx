@@ -74,7 +74,7 @@ function ScanCounter() {
       yAxis: { type: 'value', show: false, minInterval: 1 },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const d = days[ps[0]?.dataIndex ?? 0]
-        return d ? tipHtml({ title: d.day, rows: [{ name: 'started', value: String(d.started), color: COL.gold }, { name: 'finished', value: String(d.done), color: '#6fcf6a' }] }) : ''
+        return d ? tipHtml({ title: d.day, rows: [{ name: 'started', value: String(d.started), color: COL.gold }, { name: 'finished', value: String(d.done), color: COL.green }] }) : ''
       }, 'shadow'),
       series: [{ id: 'started', ...barsPreset(), barWidth: '60%', itemStyle: { color: COL.gold }, data: days.map((d) => d.started) }],
     }

@@ -54,7 +54,7 @@ export function ScanProgress({ status, pct, message, startedAt, failure }: { sta
           const now = !failed && i === cur && status !== 'done'
           const stop = failed && i === Math.max(0, idx === -1 ? 0 : idx)
           return (
-            <li key={s.id} className={`flex items-center gap-2 rounded-[10px] border px-3 py-2 text-[13px] transition-colors ${now ? 'border-gold-line bg-[rgba(232,192,96,.06)] text-ink' : done ? 'border-success-line text-ink-2' : stop ? 'border-[#5a2a24] text-error' : 'border-line text-faint'}`} data-step={s.id} aria-current={now ? 'step' : undefined}>
+            <li key={s.id} className={`flex items-center gap-2 rounded-[10px] border px-3 py-2 text-[13px] transition-colors ${now ? 'border-gold-line bg-gold/[.06] text-ink' : done ? 'border-success-line text-ink-2' : stop ? 'border-error-line text-error' : 'border-line text-faint'}`} data-step={s.id} aria-current={now ? 'step' : undefined}>
               <span className="relative grid size-5 shrink-0 place-items-center">
                 {now && <span aria-hidden className="absolute inset-0 rounded-full border border-gold motion-reduce:hidden" style={{ animation: 'gl-live-pulse 1.8s ease-out infinite' }} />}
                 {done ? <Check size={14} className="text-green" aria-hidden /> : stop ? <X size={14} aria-hidden /> : now ? <Loader2 size={14} className="animate-spin text-gold motion-reduce:animate-none" aria-hidden /> : <span className="size-[6px] rounded-full bg-line-strong" aria-hidden />}
@@ -64,7 +64,7 @@ export function ScanProgress({ status, pct, message, startedAt, failure }: { sta
           )
         })}
       </ol>
-      {status === 'failed' && failure && <p className="m-0 rounded-input border border-[#5a2a24] px-3 py-2 text-[13px] text-error">{failure}</p>}
+      {status === 'failed' && failure && <p className="m-0 rounded-input border border-error-line px-3 py-2 text-[13px] text-error">{failure}</p>}
     </div>
   )
 }

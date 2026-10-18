@@ -1,3 +1,4 @@
+import { C, PALETTE } from '../../components/charts/chartPresets'
 import { useCallback, useEffect, useState } from 'react'
 
 /* The Gully Score's public API (server/gully-score.mjs). Every figure on the score pages comes from here. */
@@ -114,6 +115,6 @@ export function useJson<T>(url: string | null, everyMs = 0) {
 export const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
 /** The brand's band colours for a score (kit tokens only). */
-export const bandColor = (s: number | null) => (s === null ? '#7f8b9c' : s >= 80 ? '#6fcf6a' : s >= 60 ? '#e8c060' : s >= 40 ? '#f49b5a' : '#ff8a7a')
+export const bandColor = (s: number | null) => (s === null ? C.faint : s >= 80 ? C.green : s >= 60 ? C.gold : s >= 40 ? PALETTE[4] : C.error)
 
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })

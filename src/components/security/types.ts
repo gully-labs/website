@@ -3,6 +3,8 @@
    The report is the scan engine's ScanReport (server/security/schema.d.mts, schema 1.x), restated here for
    the browser build; keep the two in step. */
 
+import { C, PALETTE } from '../charts/chartPresets'
+
 export type ScanStatus = 'queued' | 'fetching' | 'analysing' | 'triaging' | 'reporting' | 'done' | 'failed' | 'cancelled'
 /** awaiting_payment is the UI's own state before a paid scan reaches the engine. */
 export type JobStatus = ScanStatus | 'awaiting_payment' | 'unknown'
@@ -196,8 +198,8 @@ export interface SecurityStats {
 
 export const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low', 'info']
 
-/** Severity colours, from the brand palette (src/components/charts/chartPresets PALETTE and the tokens). */
-export const SEV_COLOR: Record<Severity, string> = { critical: '#e4572e', high: '#ff8a7a', medium: '#e8c060', low: '#5aa9e6', info: '#7f8b9c' }
+/** Severity colours: the brand palette and tokens (src/components/charts/chartPresets). */
+export const SEV_COLOR: Record<Severity, string> = { critical: PALETTE[4], high: C.error, medium: C.gold, low: PALETTE[1], info: C.faint }
 export const SEV_LABEL: Record<Severity, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low', info: 'Info' }
 
 /** The engine's pipeline, in order, with what each step does in plain words. */

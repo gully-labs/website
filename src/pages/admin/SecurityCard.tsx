@@ -111,7 +111,7 @@ export function SecurityCard({ token }: { token: string }) {
     const days = data?.days ?? []
     const series = [
       { id: 'started', name: 'Started', color: C.gold, key: 'started' as const },
-      { id: 'done', name: 'Finished', color: '#6fcf6a', key: 'done' as const },
+      { id: 'done', name: 'Finished', color: C.green, key: 'done' as const },
       { id: 'failed', name: 'Failed', color: C.error, key: 'failed' as const },
     ]
     return {
@@ -147,11 +147,11 @@ export function SecurityCard({ token }: { token: string }) {
       {data && (
         <>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
-            <Tile k="QUEUE" v={data.queue.length} note="running or waiting" tone={data.queue.length ? '#e8c060' : undefined} />
+            <Tile k="QUEUE" v={data.queue.length} note="running or waiting" tone={data.queue.length ? C.gold : undefined} />
             <Tile k="AWAITING PAYMENT" v={data.totals.awaitingPayment} note="invoiced, not paid" />
             <Tile k="FINISHED" v={data.totals.done} note={`of ${data.totals.started} started`} />
-            <Tile k="FAILED" v={data.totals.failed} note="engine failures" tone={data.totals.failed ? '#ff8a7a' : undefined} />
-            <Tile k="REVIEW REQUESTS" v={fresh} note={`new of ${data.reviews.length}`} tone={fresh ? '#e8c060' : undefined} />
+            <Tile k="FAILED" v={data.totals.failed} note="engine failures" tone={data.totals.failed ? C.error : undefined} />
+            <Tile k="REVIEW REQUESTS" v={fresh} note={`new of ${data.reviews.length}`} tone={fresh ? C.gold : undefined} />
           </div>
           <div className="flex flex-col gap-2">
             <span className={small}>scans per day, last 30 days · started / finished / failed</span>
