@@ -567,10 +567,8 @@ const adminCall = async (p, body) => {
   return { status: r.status, data: await r.json().catch(() => null) }
 }
 
-// E2E_SHOTS=<dir>: full-page screenshots of every checkout state at 1440 and 390 land there (nothing is written without it).
-const SHOTS = process.env.E2E_SHOTS ? path.resolve(process.env.E2E_SHOTS) : null
-if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true })
-const shot = async (page, name) => {
+// E2E_SHOTS=<dir>: full-page screenshots of every checkout state at 1440 and 390 land there too (shotFull names them <name>-<width>.png).
+const shotFull = async (page, name) => {
   if (!SHOTS) return
   await page.waitForLoadState('networkidle').catch(() => {})
   await page.waitForTimeout(600)
@@ -607,11 +605,11 @@ await step('pay', async () => {
   check('pay: the quote counts down', (await page.getByRole('timer').count()) > 0)
   check('pay: Pay with wallet is the primary action', (await page.getByTestId('pay-with-wallet').count()) === 1)
   check('pay: the status track waits for the payment', (await page.getByTestId('status-track').getAttribute('data-step')) === '0')
-  await shot(page, 'gully-invoice-quote')
+  await shotFull(page, 'gully-invoice-quote')
   await page.clock.fastForward('21:00')
   await page.getByText('quote ran out').first().waitFor({ timeout: 10_000 })
   check('pay: the quote expires after 20 minutes and offers a new one', (await page.getByRole('button', { name: 'New quote' }).count()) > 0)
-  await shot(page, 'gully-invoice-quote-expired')
+  await shotFull(page, 'gully-invoice-quote-expired')
   await w.verify()
   await ctx.close()
 
@@ -628,7 +626,7 @@ await step('pay', async () => {
     await p.getByTestId('state-paid').waitFor()
     check(`pay paid at ${width}: receipt, download and explorer`, (await p.getByTestId('receipt').count()) === 1 && /\/receipt\?print=1$/.test(await p.getByTestId('download-receipt').getAttribute('href')))
     if (width === 390) await noHorizontalScroll(p, 'paid invoice')
-    await shot(p, 'gully-invoice-paid')
+    await shotFull(p, 'gully-invoice-paid')
     await ww.verify()
     await c.close()
   }
@@ -640,7 +638,7 @@ await step('pay', async () => {
   const w2 = watch(p2, 'pay link page')
   await p2.goto(`${BASE}/pay/l/${link.data.link.id}`)
   await p2.getByTestId('link-continue').waitFor()
-  await shot(p2, 'gully-link')
+  await shotFull(p2, 'gully-link')
   await p2.getByRole('button', { name: 'Continue to payment' }).click()
   await p2.waitForURL(/\/pay\/inv_/)
   check('pay link: continue makes an invoice and opens its checkout', true)
@@ -723,7 +721,7 @@ await step('merchant checkout', async () => {
     check('unnamed store: says "Store" with the owner address chip and a store glyph', (await page.getByTestId('store-name').textContent()) === 'Store' && (await page.getByTestId('store-owner').count()) === 1 && (await page.getByTestId('store-glyph').count()) === 1)
     check('unnamed store: no "workspace" anywhere', (await page.getByText(/workspace/i).count()) === 0)
     check('unnamed store: title "Pay Store"', (await page.title()) === 'Pay Store', await page.title())
-    await shot(page, 'merchant-link-unnamed')
+    await shotFull(page, 'merchant-link-unnamed')
     await w.verify()
     await anon.close()
 
@@ -753,7 +751,7 @@ await step('merchant checkout', async () => {
         await noHorizontalScroll(p, 'store link')
         check('store link at 390: a sticky Pay bar', await p.getByRole('region', { name: 'Pay', exact: true }).isVisible())
       }
-      await shot(p, 'merchant-link-open')
+      await shotFull(p, 'merchant-link-open')
       await ww.verify()
       await c.close()
     }
@@ -778,12 +776,12 @@ await step('merchant checkout', async () => {
       await p.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
       check(`store invoice at ${width}: the QR names the store`, /to Acme Coffee$/.test(await p.getByRole('img', { name: /^Wallet payment request:/ }).getAttribute('aria-label')))
       check(`store invoice at ${width}: status waiting`, (await p.getByTestId('status-track').getAttribute('data-step')) === '0')
-      await shot(p, 'merchant-invoice-quote')
+      await shotFull(p, 'merchant-invoice-quote')
       if (width === 1440) {
         await p.clock.fastForward('21:00')
         await p.getByText('quote ran out').first().waitFor({ timeout: 10_000 })
         check('store invoice: an expired quote offers a new one', (await p.getByRole('button', { name: 'New quote' }).count()) > 0)
-        await shot(p, 'merchant-invoice-quote-expired')
+        await shotFull(p, 'merchant-invoice-quote-expired')
       }
       await ww.verify()
       await c.close()
@@ -797,7 +795,7 @@ await step('merchant checkout', async () => {
       await p.goto(BASE + invPath)
       await p.getByTestId('order-total').waitFor()
       check('itemised invoice: two lines, quantities and the total', (await p.getByTestId('order-items').locator('tbody tr').count()) === 2 && /\b205(\.00)?\b/.test(await p.getByTestId('order-total').textContent()) && (await p.getByText('Jane Doe').count()) === 1, `${await p.getByTestId('order-items').locator('tbody tr').count()} rows / ${await p.getByTestId('order-total').textContent()} / Jane ${await p.getByText('Jane Doe').count()}`)
-      await shot(p, 'merchant-invoice-items')
+      await shotFull(p, 'merchant-invoice-items')
       await ww.verify()
       await c.close()
     }
@@ -819,7 +817,7 @@ await step('merchant checkout', async () => {
       if (opts.cookie) check('closed link, owner: sees the fix with a link to the Merchant tab', (await p.getByTestId('owner-fixes').count()) === 1 && /#m-wallets$/.test(await p.getByTestId('owner-fixes').getByRole('link').first().getAttribute('href')))
       else check(`closed link, ${label}: a payer sees no owner hints`, (await p.getByTestId('owner-fixes').count()) === 0)
       if (opts.width === 390) await noHorizontalScroll(p, 'closed link')
-      await shot(p, opts.cookie ? 'merchant-link-closed-owner' : 'merchant-link-closed')
+      await shotFull(p, opts.cookie ? 'merchant-link-closed-owner' : 'merchant-link-closed')
       await ww.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
       await c.close()
     }
@@ -834,7 +832,7 @@ await step('merchant checkout', async () => {
       await p.getByTestId('state-link-expired').waitFor()
       check(`expired link at ${width}: says so and offers no payment`, /has expired/.test(await p.getByTestId('state-link-expired').textContent()) && (await p.getByTestId('link-continue').count()) === 0)
       if (width === 390) await noHorizontalScroll(p, 'expired link')
-      await shot(p, 'merchant-link-expired')
+      await shotFull(p, 'merchant-link-expired')
       await ww.verify()
       await c.close()
     }
@@ -852,7 +850,7 @@ await step('merchant checkout', async () => {
       await p.goto(BASE + linkPath)
       await p.getByTestId(testId).waitFor()
       check(`${name}: shown, with the store's contact, and no payment can start`, /help@acme\.example/.test(await p.getByTestId(testId).textContent()) && (await p.getByTestId('link-continue').count()) === 0)
-      await shot(p, name)
+      await shotFull(p, name)
       await ww.verify()
       await c.close()
     }
@@ -871,13 +869,13 @@ await step('merchant checkout', async () => {
       check(`paid store invoice at ${width}: receipt, download and Return to store`, (await p.getByTestId('receipt').count()) === 1 && /\/pay\/m\/mi_[\w-]+\/receipt\?print=1$/.test(await p.getByTestId('download-receipt').getAttribute('href')) && (await p.getByTestId('return-to-store').getAttribute('href')) === 'https://acme.example/')
       check(`paid store invoice at ${width}: status Paid`, (await p.getByTestId('status-pill').textContent()) === 'Paid' && (await p.getByRole('region', { name: 'Pay', exact: true }).count()) === 0)
       if (width === 390) await noHorizontalScroll(p, 'paid store invoice')
-      await shot(p, 'merchant-invoice-paid')
+      await shotFull(p, 'merchant-invoice-paid')
       if (width === 1440) {
         await p.getByRole('link', { name: 'View receipt' }).click()
         await p.waitForURL(/\/receipt$/)
         await p.getByTestId('receipt-page').waitFor()
         check('store receipt: names the store, the lines and PAID IN FULL', (await p.getByText('PAID IN FULL').count()) === 1 && (await p.getByTestId('receipt-page').getByText('Acme Coffee').count()) >= 1 && (await p.getByTestId('receipt-page').getByText('Descaler, 500 ml').count()) === 1)
-        await shot(p, 'merchant-receipt')
+        await shotFull(p, 'merchant-receipt')
       }
       await ww.verify()
       await c.close()
