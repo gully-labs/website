@@ -3,6 +3,9 @@
    top of the admin panel, plus this small card with the last hourly read of every proxy on every chain. Recent
    pay-guard refusals (a payment instruction the server refused to emit) are raised in the banner too. */
 
+import { useState } from 'react'
+import { flash } from '../../components/ui/toast'
+
 export interface FeeProxyStatus {
   running: boolean
   intervalMs: number
@@ -22,7 +25,7 @@ const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
 export function FeeProxyBanner({ s }: { s: FeeProxyStatus | undefined }) {
   if (!s) return null
-  const recent = s.refusals.filter((r) => Date.now() - Date.parse(r.at) < 86_400_000)
+  const recent = s.refusals // the server sends the last 24 h only (pay-guard.mjs recentRefusals)
   if (!s.alerts.length && !s.config.length && !recent.length) return null
   return (
     <div role="alert" className="flex flex-col gap-2 rounded-card border border-error/50 bg-error/10 px-5 py-4 text-[14px] text-ink">
@@ -46,16 +49,29 @@ export function FeeProxyBanner({ s }: { s: FeeProxyStatus | undefined }) {
   )
 }
 
-export function FeeProxyCard({ s }: { s: FeeProxyStatus | undefined }) {
+export function FeeProxyCard({ s, act }: { s: FeeProxyStatus | undefined; act?: (path: string) => Promise<string | null> }) {
+  const [busy, setBusy] = useState(false)
   if (!s) return null
+  const checkNow = async () => {
+    if (!act) return
+    setBusy(true)
+    const err = await act('/api/admin/fee-proxy/check')
+    setBusy(false)
+    flash(err ? { ok: false, text: err } : { ok: true, text: 'Fee proxy balances read.' })
+  }
   return (
     <section className={card} aria-labelledby="fee-proxy-h">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="fee-proxy-h" className="m-0 font-display text-[22px] font-bold uppercase">
           Fee proxy balances
         </h2>
-        <span className={small}>
-          {s.running ? `hourly · last read ${at(s.checkedAt)}` : 'monitor off'}
+        <span className="flex items-center gap-3">
+          <span className={small}>{s.running ? `hourly · last read ${at(s.checkedAt)}` : `monitor off · last read ${at(s.checkedAt)}`}</span>
+          {act && (
+            <button type="button" onClick={checkNow} disabled={busy} className="rounded-input border border-line px-3 py-1 font-mono text-[12px] text-ink hover:border-gold disabled:opacity-60" aria-label="Read the fee proxy balances now">
+              {busy ? 'Reading…' : 'Check now'}
+            </button>
+          )}
         </span>
       </div>
       <p className="m-0 text-[13px] text-muted">Should always be zero: payments only pass through the proxy in one call. A balance is a third-party mis-send, unrecoverable (no owner).</p>

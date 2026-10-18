@@ -9,6 +9,7 @@ export const SEL_APPROVE: string
 export const ZERO_ADDRESS: string
 export function allFeeProxies(): Set<string>
 export function isFeeProxy(a: unknown): boolean
+export function splitProxyFor(chainId: number): string | null
 export function allowedToken(chainId: number, token: string | null | undefined): 'USDC' | 'USDT' | null
 export function recipientViolations(recipient: unknown, opts?: { chainId?: number | null; label?: string }): string[]
 export function assetViolations(asset: { chainId: number; kind: string; symbol?: string; address: string | null } | null | undefined): string[]

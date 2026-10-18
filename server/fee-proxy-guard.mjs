@@ -48,6 +48,8 @@ export const ALLOWED_TOKENS = {
   1: { '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'USDC', '0xdac17f958d2ee523a2206206994597c13d831ec7': 'USDT' },
   56: { '0x55d398326f99059ff775485246999027b3197955': 'USDT', '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d': 'USDC' },
   42161: { '0xaf88d065e77c8cc2239327c5edb3a432268e5831': 'USDC' },
+  // Base Sepolia (testnet only, offered while GULLY_TESTNET_CHAINS names it): Circle's testnet USDC.
+  84532: { '0x036cbd53842c5426634e7929541ec2318f3dcf7e': 'USDC' },
   [SOLANA_LEDGER_CHAIN_ID]: { EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 'USDC', Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 'USDT' },
 }
 export const STABLE_SYMBOLS = ['USDC', 'USDT']
@@ -81,6 +83,18 @@ export function allFeeProxies() {
 
 /** Whether an address is a fee proxy on any chain (a proxy on one chain is refused on all of them). */
 export const isFeeProxy = (a) => typeof a === 'string' && EVM_RE.test(a.trim()) && allFeeProxies().has(a.trim().toLowerCase())
+
+/**
+ * The ERC20FeeProxy a split on `chainId` must call, lowercase, or null: the mainnet one (SPLIT_PROXIES), else the
+ * testnet one we deployed (GULLY_FEEPROXY_<chainId> under Node, the registry's ERC20FeeProxy in the browser).
+ * payments.mjs FEE_PROXIES is built the same way, so the server and the wallet path agree.
+ */
+export function splitProxyFor(chainId) {
+  if (SPLIT_PROXIES[chainId]) return SPLIT_PROXIES[chainId]
+  const env = typeof process !== 'undefined' && process?.env ? low(String(process.env[`GULLY_FEEPROXY_${chainId}`] ?? '').trim()) : ''
+  if (EVM_RE.test(env)) return env
+  return FEE_PROXY_REGISTRY[chainId]?.erc20?.[0] ?? null
+}
 
 const isZero = (a) => low(a) === ZERO_ADDRESS
 const isEvm = (a) => typeof a === 'string' && EVM_RE.test(a)
@@ -168,7 +182,7 @@ export function splitViolations(split, ctx) {
   const out = []
   const v = (cond, msg) => (cond ? null : out.push(msg))
   if (!split || typeof split !== 'object') return ['split is missing']
-  const proxy = SPLIT_PROXIES[ctx.chainId] ?? null
+  const proxy = splitProxyFor(ctx.chainId)
   if (!proxy) return [`no fee proxy is known on chain ${ctx.chainId}`]
   v(low(split.proxy) === proxy && low(split.spender) === proxy, 'split names a contract other than the known fee proxy')
   v(split.pay && low(split.pay.to) === proxy, 'the payment call does not target the fee proxy')

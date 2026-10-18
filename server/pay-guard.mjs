@@ -28,8 +28,8 @@ export class PaymentGuardError extends Error {
 export const GUARD_PUBLIC_ERROR = 'This payment could not be prepared safely, so no payment details were given. Nothing was charged. Please contact hello@gullylabs.xyz.'
 
 const refusals = [] // the last 20, newest last: { at, where, violations } (the admin panel shows them)
-/** Recent refusals, newest first. */
-export const recentRefusals = () => [...refusals].reverse()
+/** Refusals of the last `maxAgeMs` (default 24 h), newest first. */
+export const recentRefusals = (maxAgeMs = 86_400_000) => [...refusals].reverse().filter((r) => Date.now() - Date.parse(r.at) < maxAgeMs)
 
 /** Logs and throws when there is any violation; otherwise returns nothing. */
 export function refuse(where, violations) {

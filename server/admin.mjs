@@ -53,7 +53,7 @@ import { publicAssets } from './payments.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
-import { feeProxyView } from './fee-proxy-monitor.mjs'
+import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
 import { isFeeProxy } from './fee-proxy-guard.mjs'
 
 /** The plan offer for admin views: still loads when the fee-proxy guard refuses the treasury (and says why). */
@@ -138,6 +138,14 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/merchants' || p.startsWith('/api/admin/merchants/')) return handleMerchantsAdmin(req, res, url)
   if (p === '/api/admin/channel' || p.startsWith('/api/admin/channel/')) return handleChannelAdmin(req, res, url)
   const db = developers()
+
+  // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so
+  // pressing it repeatedly costs nothing on the RPCs; a non-zero balance raises the alert as the hourly pass would.
+  if (p === '/api/admin/fee-proxy/check') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const view = await checkFeeProxies()
+    return json(res, 200, { feeProxy: { ...view, refusals: recentRefusals() } }), true
+  }
 
   if (p === '/api/admin/overview') {
     let venues

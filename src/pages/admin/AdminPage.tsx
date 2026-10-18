@@ -764,7 +764,7 @@ export function AdminPage() {
               <AdminCharts token={token} />
             </Suspense>
 
-            <FeeProxyCard s={o.feeProxy} />
+            <FeeProxyCard s={o.feeProxy} act={act} />
 
             <div className="grid grid-cols-[1.4fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>

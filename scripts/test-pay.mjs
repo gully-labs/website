@@ -39,7 +39,8 @@ const randHash = () => '0x' + crypto.randomBytes(32).toString('hex')
 const nowSec = () => Math.floor(Date.now() / 1000)
 
 function makeChain(chainId, answer) {
-  const c = { chainId, head: 5_000_000, receipts: new Map(), txs: new Map(), blocks: new Map(), feed: { roundId: 777n, answer, updatedAt: nowSec() - 60 } }
+  // balances: `${holder}` (coin) and `${token}:${holder}` (ERC-20), for the fee-proxy monitor; default 0.
+  const c = { chainId, head: 5_000_000, receipts: new Map(), txs: new Map(), blocks: new Map(), balances: new Map(), feed: { roundId: 777n, answer, updatedAt: nowSec() - 60 } }
   c.add = ({ hash = randHash(), from, to = TREASURY, value, token = null, status = '0x1', block = c.head - 30, minedAt = nowSec(), txFrom = from }) => {
     c.blocks.set(block, minedAt)
     const logs = token ? [{ address: token, topics: [TRANSFER, pad(from), pad(to)], data: pad(hex(value)) }] : []
@@ -63,7 +64,8 @@ function makeChain(chainId, answer) {
       } else if (q.method === 'eth_call' && q.params[0].to.toLowerCase() === FEEDS[chainId] && q.params[0].data === '0xfeaf968c') {
         const f = c.feed
         result = '0x' + word(f.roundId) + word(f.answer) + word(f.updatedAt) + word(f.updatedAt) + word(f.roundId)
-      }
+      } else if (q.method === 'eth_getBalance') result = pad(hex(c.balances.get(String(q.params[0]).toLowerCase()) ?? 0n))
+      else if (q.method === 'eth_call' && String(q.params[0].data).startsWith('0x70a08231')) result = pad(hex(c.balances.get(`${String(q.params[0].to).toLowerCase()}:0x${q.params[0].data.slice(34).toLowerCase()}`) ?? 0n))
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify({ jsonrpc: '2.0', id: q.id, result }))
     })
@@ -328,6 +330,23 @@ try {
   check('guard: with the real treasury back, the same paths answer again', (await anon.call('/api/plans')).status === 200 && (await anon.call(`/api/pay/${gInv.id}`)).status === 200 && (await anon.call(`/api/pay/l/${gLink.id}`)).status === 200)
   const okQuote = (await payPost(`/api/pay/${gInv.id}/quote`, { asset: 'base-usdc' })).data?.quote
   check('guard: a normal quote passes (plain transfer, no split, QR names the treasury)', okQuote?.treasury === TREASURY && okQuote.split === null && okQuote.uri.toLowerCase().includes(`address=${TREASURY}`))
+  check('guard: a plan or analytics account that is a fee proxy is refused by the admin (400)', (await admin(`/api/admin/accounts/${PROXY.toLowerCase()}/plan`, 'POST', { plan: 'pro' })).status === 400 && (await admin(`/api/admin/analytics/${PROXY.toLowerCase()}/plan`, 'POST', { plan: 'starter' })).status === 400)
+
+  /* ------------------------------------- fee-proxy monitor through the admin API --- */
+  const Mon = await import('../server/fee-proxy-monitor.mjs')
+  const tg = []
+  Mon.setFeeProxyNotifierForTest(async (text) => (tg.push(text), { ok: true, status: 200, error: null }))
+  let fp = await admin('/api/admin/fee-proxy/check', 'POST')
+  check('monitor: POST /api/admin/fee-proxy/check reads every proxy on every chain: all zero, no alert', fp.status === 200 && fp.data.feeProxy.alerts.length === 0 && fp.data.feeProxy.chains.length === 4 && fp.data.feeProxy.chains.every((c) => c.checkedAt && !c.error && c.proxies.length >= 2 && c.proxies.every((p) => p.balances.length >= 2 && p.balances.every((b) => b.raw === '0'))), JSON.stringify(fp.data?.feeProxy?.chains?.map((c) => [c.chain, c.error])))
+  check('monitor: GET is not allowed on the check endpoint', (await admin('/api/admin/fee-proxy/check')).status === 405)
+  base.balances.set(`${TOKENS.baseUsdc}:${PROXY.toLowerCase()}`, 7_250_000n)
+  Mon.clearFeeProxyCacheForTest()
+  fp = await admin('/api/admin/fee-proxy/check', 'POST')
+  const al = fp.data?.feeProxy?.alerts?.[0]
+  check('monitor: 7.25 USDC found in the Base proxy raises the alert and one Telegram message', fp.status === 200 && fp.data.feeProxy.alerts.length === 1 && al.chain === 'Base' && al.amount === '7.25' && al.symbol === 'USDC' && al.telegram === true && tg.length === 1 && /third-party mis-send/.test(tg[0]) && /cannot be recovered/.test(tg[0]), JSON.stringify(al))
+  const ov2 = await admin('/api/admin/overview')
+  check('monitor: the admin overview carries the alert for the banner and the card', ov2.status === 200 && ov2.data.feeProxy.alerts.length === 1 && ov2.data.feeProxy.alerts[0].message === al.message && ov2.data.feeProxy.chains.find((c) => c.chainId === 8453).proxies.some((p) => p.balances.some((b) => b.raw === '7250000')))
+  check('monitor: a check inside the cache window announces nothing new', (await admin('/api/admin/fee-proxy/check', 'POST')).data.feeProxy.alerts.length === 1 && tg.length === 1)
 
   let limited = false
   for (let i = 0; i < 35 && !limited; i++) limited = (await payPost(`/api/pay/${inv3.id}/quote`, { asset: 'eth-usdt' })).status === 429
