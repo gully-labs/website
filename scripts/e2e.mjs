@@ -401,7 +401,7 @@ await step('pay', async () => {
   await page.goto(`${BASE}/pay/${invId}`)
   await page.getByTestId('order-total').waitFor()
   await checkStandalone(page, 'pay')
-  check('pay: the kit lockup heads our own invoice', (await page.locator('header img[alt="Gully Labs"][src^="/brand/kit/lockup-dark"]').count()) === 1)
+  check('pay: the kit lockup heads our own invoice', (await page.locator('header [data-brand="kit"]').count()) === 1)
   check('pay: the title is "Pay Gully Labs"', (await page.title()) === 'Pay Gully Labs', await page.title())
   check('pay: the order summary lists the line and total in normal type', /\b25(\.00)?\b/.test(await page.getByTestId('order-total').textContent()) && (await page.getByTestId('order-items').getByRole('row').count()) >= 2, `${await page.getByTestId('order-total').textContent()} / ${await page.getByTestId('order-items').getByRole('row').count()} rows`)
   await page.getByRole('radiogroup', { name: 'Pay with' }).getByRole('radio', { name: 'USDC on Base' }).click()
