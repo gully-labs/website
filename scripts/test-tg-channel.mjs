@@ -477,6 +477,17 @@ try {
   check('AI draft: an unknown kind is still refused', (await A('/api/admin/ask/draft', { kind: 'tiktok', topic: 'x' })).status === 400)
   delete process.env.ANTHROPIC_API_KEY
 
+  /* ----------------------------------------------- Start here post and the gate funnel --- */
+  check('welcome: no token, 401', (await admin.call('/api/admin/channel/welcome', { method: 'POST', body: {}, auth: 'x'.repeat(48) })).status === 401)
+  const wd = await A('/api/admin/channel/welcome', {})
+  check('welcome: a draft with the banner, a pin and links to the bot, the tracker and the dashboard', wd.status === 201 && wd.data.post.status === 'draft' && wd.data.post.pin === true && wd.data.post.media?.banner === true && /Start here/.test(wd.data.post.text) && wd.data.post.buttons.length === 3 && wd.data.post.buttons.every((b) => /^https:\/\//.test(b.url)), JSON.stringify(wd.data.post ?? wd.data))
+  check('welcome: a second call returns the existing draft instead of another', (await A('/api/admin/channel/welcome', {})).status === 409)
+  const wp = await A(`/api/admin/channel/posts/${wd.data.post.id}/post`, {})
+  check('welcome: posting it sends it to the channel and pins it', wp.status === 200 && wp.data.post.status === 'sent' && wp.data.post.pinned === true, JSON.stringify(wp.data))
+  check('welcome: once it is in the channel a new one needs force', (await A('/api/admin/channel/welcome', {})).status === 409 && (await A('/api/admin/channel/welcome', { force: true })).status === 201)
+  const gf = await A('/api/admin/channel/gate')
+  check('gate funnel: the admin route returns the counts and the free-action setting', gf.status === 200 && typeof gf.data.gate?.shown === 'number' && typeof gf.data.gate?.joined === 'number' && typeof gf.data.gate?.used === 'number' && gf.data.freeActions >= 0, JSON.stringify(gf.data))
+
   /* ---------------------------------------------------------------- sweeps --- */
   // Automatic posts are read by everyone in the channel: no source names, technical terms or raw timestamps.
   const JARGON = /api\.|\bAPI\b|\bRPC\b|\bfeeds?\b|\bUTC\b|endpoint|indexer|\bpool\b|not reported|unreadable|on[- ]chain|fair price|Chainlink|\d{4}-\d{2}-\d{2} \d{2}:\d{2}/i

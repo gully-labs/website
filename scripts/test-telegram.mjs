@@ -176,6 +176,9 @@ const press = (chat, data, { fromId = chat.id, msgId, banner = false } = {}) => 
   return postUpdate({ callback_query: { id, from: { id: fromId, is_bot: false, first_name: 'U' }, ...(message ? { message } : { message: { message_id: 0, chat, text: '' } }), data } })
 }
 const sent = (chatId) => calls.filter((c) => c.method === 'sendMessage' && String(c.body.chat_id) === String(chatId))
+/** The last message of a chat as the user sees it: a text message, or an animation with its caption (the join screen rides on the banner). */
+const lastShown = (chatId) => calls.filter((c) => (c.method === 'sendMessage' || c.method === 'sendAnimation') && String(c.body.chat_id) === String(chatId)).at(-1)?.body
+const shownText = (chatId) => lastShown(chatId)?.text ?? lastShown(chatId)?.caption ?? ''
 const lastText = (chatId) => sent(chatId).at(-1)?.body.text ?? ''
 const answers = () => calls.filter((c) => c.method === 'answerCallbackQuery')
 const lastAnswer = () => answers().at(-1)?.body ?? {}
@@ -247,6 +250,7 @@ try {
 
   /* ---------------------------------------------------------- startup --- */
   process.env.TELEGRAM_BOT_TOKEN = TOKEN
+  process.env.TELEGRAM_GATE_FREE_ACTIONS = '0' // the hard wall; the free-action tests below switch it on
   const started = await tg.startTelegram()
   const hook = calls.find((c) => c.method === 'setWebhook')
   check('startup: setWebhook to the secret path on gullylabs.xyz', started.ok && hook?.body.url === `https://gullylabs.xyz/api/telegram/${HOOK_PATH}`, hook?.body.url)
@@ -841,13 +845,13 @@ try {
   const ng1 = privateChat(9901, 'Gus')
   nonMembers.add(9901)
   await say(ng1, '/start')
-  const ngMsg = sent(9901).at(-1)?.body
+  const ngMsg = lastShown(9901)
   const ngKb = ngMsg?.reply_markup?.inline_keyboard ?? []
-  check('gate: a non-follower gets the Join @GullyLabsNews screen instead of the bot', /Follow Gully Labs News/.test(ngMsg?.text ?? '') && flat(ngKb).some((b) => b.url === 'https://t.me/GullyLabsNews') && data(ngKb).includes('jchk'), ngMsg?.text)
+  check('gate: a non-follower gets the Join @GullyLabsNews screen instead of the bot', /Follow Gully Labs News/.test(ngMsg?.text ?? ngMsg?.caption ?? '') && flat(ngKb).some((b) => b.url === 'https://t.me/GullyLabsNews') && data(ngKb).includes('jchk'), ngMsg?.text)
   await say(ng1, '/top')
-  check('gate: commands stay blocked until they follow', /Follow Gully Labs News/.test(lastText(9901)))
+  check('gate: commands stay blocked until they follow', /Follow Gully Labs News/.test(shownText(9901)))
   await press(ng1, 'jchk', { msgId: null })
-  check('gate: "I’ve joined" without joining is refused with an alert', /Not joined yet/.test(lastAnswer().text ?? '') && lastAnswer().show_alert === true)
+  check('gate: "I’ve joined" without joining is refused with an alert', /Not joined yet/.test(lastAnswer().text ?? '') && /few seconds/.test(lastAnswer().text ?? '') && lastAnswer().show_alert === true)
   nonMembers.delete(9901)
   await press(ng1, 'jchk', { msgId: null })
   check('gate: after joining, "I’ve joined" opens the menu', /Thanks for following/.test(lastAnswer().text ?? '') && /Pick a screen below/.test(lastText(9901)))
@@ -863,6 +867,47 @@ try {
   await say(ng3, '/help')
   check('gate: if membership cannot be checked, the bot fails open', !/Follow Gully Labs News/.test(lastText(9903)) && lastText(9903).length > 0)
   memberCheckBroken = false
+
+  /* ---- gate improvements: one free action, a join screen that sells the channel, a friendlier retry, the funnel --- */
+  process.env.TELEGRAM_GATE_FREE_ACTIONS = '1'
+  const funBefore = users.gateFunnel()
+  const fa = privateChat(9920, 'Zed')
+  nonMembers.add(9920)
+  await say(fa, '/start')
+  check('free action: the menu itself is free (no join screen on /start)', !/Follow Gully Labs News/.test(shownText(9920)) && shownText(9920).length > 0, shownText(9920))
+  await say(fa, '/top')
+  check('free action: the first feature use goes through before the join screen', !/Follow Gully Labs News/.test(shownText(9920)) && shownText(9920).length > 0, shownText(9920))
+  await say(fa, '/movers')
+  const faGate = lastShown(9920)
+  check('free action: the second one gets the join screen', /Follow Gully Labs News/.test(faGate?.text ?? faGate?.caption ?? ''), faGate?.text ?? faGate?.caption)
+  check('join screen: sells the channel (gaps, launches, product drops) and keeps one Join button', /widest stock-token gaps/.test(faGate?.caption ?? faGate?.text ?? '') && /new DeepCore launches/.test(faGate?.caption ?? faGate?.text ?? '') && flat(faGate?.reply_markup?.inline_keyboard ?? []).filter((b) => b.url === 'https://t.me/GullyLabsNews').length === 1)
+  check('join screen: private chats get it on the kit banner (an animation with the caption)', calls.some((c) => c.method === 'sendAnimation' && String(c.body.chat_id) === '9920' && /Follow Gully Labs News/.test(c.body.caption ?? '')))
+  await press(fa, 'jchk', { msgId: null })
+  check('retry wording: tells them Telegram can take a few seconds', /few seconds/.test(lastAnswer().text ?? ''), lastAnswer().text)
+  let fun = users.gateFunnel()
+  check('funnel: the join screen view and the free action user are counted', fun.shown === funBefore.shown + 1 && fun.freeActionUsers === funBefore.freeActionUsers + 1 && fun.joined === funBefore.joined, JSON.stringify(fun))
+  nonMembers.delete(9920)
+  await press(fa, 'jchk', { msgId: null })
+  await say(fa, '/gap NVDA')
+  fun = users.gateFunnel()
+  check('funnel: joined and first command after joining are counted', fun.joined === funBefore.joined + 1 && fun.used === funBefore.used + 1 && fun.joinRate > 0, JSON.stringify(fun))
+  const fa2 = privateChat(9921, 'Yan')
+  nonMembers.add(9921)
+  await say(fa2, '/top')
+  await say(fa2, '/movers')
+  check('free action: it is once per person, not once per chat message', /Follow Gully Labs News/.test(shownText(9921)))
+  const faGroup = { id: -100778, type: 'supergroup', title: 'Fresh traders' }
+  nonMembers.add(9922)
+  await say(faGroup, '/top', 9922)
+  check('free action: groups still get the join screen at once (no free action in groups)', sent(-100778).some((c) => /Follow Gully Labs News/.test(c.body.text ?? '')))
+  nonMembers.delete(9921)
+  nonMembers.delete(9922)
+  process.env.TELEGRAM_GATE_FREE_ACTIONS = '0'
+  const hw = privateChat(9923, 'Hal')
+  nonMembers.add(9923)
+  await say(hw, '/start')
+  check('free action off (0): the hard wall is back from the first tap', /Follow Gully Labs News/.test(shownText(9923)))
+  nonMembers.delete(9923)
 
   // N-29: in groups the join screen goes to a non-member once per half hour; commands for other bots never meet it.
   const ngGroup = { id: -100777, type: 'supergroup', title: 'Traders' }
@@ -924,7 +969,7 @@ try {
   await say(ex, `/start ${await linkCode(dev)}`)
   check('non-member: /start <code> links the account (account management is not gated)', /Linked to/.test(lastText(9910)) && (await dev.call('/api/developer/telegram')).data.linked?.chatType === 'private', lastText(9910))
   await say(ex, '/top')
-  check('non-member: features stay gated (/top shows the join screen)', /Follow Gully Labs News/.test(lastText(9910)))
+  check('non-member: features stay gated (/top shows the join screen)', /Follow Gully Labs News/.test(shownText(9910)))
   await say(ex, '/alerts')
   check('non-member: /alerts lists their alerts', /My alerts/.test(lastText(9910)), lastText(9910))
   const exA = (await myAlerts())[0]

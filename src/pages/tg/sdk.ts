@@ -92,6 +92,27 @@ export function loadTelegram(): Promise<WebApp | null> {
 
 const HEX = /^#[0-9a-f]{6}$/i
 
+/** WCAG relative luminance of a #rrggbb colour. */
+const lum = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16)
+  const ch = [n >> 16, (n >> 8) & 255, n & 255].map((v) => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
+}
+/** Contrast ratio of two #rrggbb colours. */
+export const contrast = (a: string, b: string) => {
+  const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m)
+  return (x + 0.05) / (y + 0.05)
+}
+/** Telegram's button text on its button colour when that is AA (4.5:1); otherwise the kit's night or bone, whichever reads better. */
+export const buttonText = (btn: string | undefined, text: string | undefined) => {
+  if (!btn || !HEX.test(btn)) return text
+  if (text && HEX.test(text) && contrast(btn, text) >= 4.5) return text
+  return contrast(btn, '#0d141c') >= contrast(btn, '#f4f2ec') ? '#0d141c' : '#f4f2ec'
+}
+
 /** Telegram's theme params as our colour tokens (CSS custom properties). Unknown or missing ones keep the brand's. */
 export function themeVars(p: ThemeParams): Record<string, string> {
   const ok = (c?: string) => (c && HEX.test(c) ? c : undefined)
@@ -123,7 +144,7 @@ export function themeVars(p: ThemeParams): Record<string, string> {
     ['--color-error', ok(p.destructive_text_color)],
     ['--tg-link', ok(p.link_color) ?? ok(p.accent_text_color)],
     ['--tg-accent-text', ok(p.accent_text_color) ?? accent],
-    ['--tg-btn-text', ok(p.button_text_color)],
+    ['--tg-btn-text', buttonText(accent, ok(p.button_text_color))],
     ['--tg-section-head', ok(p.section_header_text_color) ?? hint],
   ]
   return Object.fromEntries(pairs.filter((x): x is [string, string] => !!x[1]))

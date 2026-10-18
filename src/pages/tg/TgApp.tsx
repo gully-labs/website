@@ -1,4 +1,4 @@
-import { BellRing, ChartNoAxesColumn, Rocket } from 'lucide-react'
+import { BellRing, ChartNoAxesColumn, Check, Megaphone, Rocket } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
 import { useTracker, type TrackerRow } from '../../lib/tracker'
@@ -93,7 +93,7 @@ export function TgApp() {
   return (
     <div style={vars as React.CSSProperties} className="min-h-[100svh] bg-bg font-sans text-ink">
       <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 pt-3 pb-[calc(24px+env(safe-area-inset-bottom))]">
-        {wa === undefined ? <Boot /> : !wa || !initData ? <OutsideTelegram /> : <Signed wa={wa} initData={initData} ink={vars['--color-ink'] ?? '#eef0f2'} />}
+        {wa === undefined ? <Boot /> : !wa || !initData ? <OutsideTelegram /> : <Signed wa={wa} initData={initData} ink={vars['--color-ink'] ?? '#f4f2ec'} />}
       </main>
     </div>
   )
@@ -187,19 +187,25 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
       <div className="flex flex-col gap-4 pt-4">
         <Brand />
         <Notice
-          title="📣 Follow Gully Labs News to use this app"
+          title={
+            <>
+              <Megaphone size={20} aria-hidden /> Follow Gully Labs News
+            </>
+          }
           action={
             <div className="grid gap-2">
               <Button onClick={() => wa.openTelegramLink(m.gate.url ?? 'https://t.me/GullyLabsNews')}>Join {m.gate.channel?.startsWith('@') ? m.gate.channel : 'the channel'}</Button>
               <Button tone="line" onClick={() => setFresh((n) => n + 1)}>
-                ✅ I&apos;ve joined
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Check size={16} aria-hidden /> I&apos;ve joined
+                </span>
               </Button>
             </div>
           }
         >
-          Launches, product updates and market notes from Gully Labs. Join the channel, then tap <b>I&apos;ve joined</b>.
+          The widest stock-token gaps, new DeepCore launches as they happen and product drops. Join the channel, then tap <b>I&apos;ve joined</b>.
         </Notice>
-        {fresh > 0 && <p className="m-0 px-1 text-[13px] text-error">Not joined yet: join the channel, then tap again.</p>}
+        {fresh > 0 && <p className="m-0 px-1 text-[13px] text-error">Not joined yet. Telegram can take a few seconds: join the channel, wait a moment, then tap again.</p>}
         {m.linked && (
           <div className="flex flex-col gap-2">
             <p className="m-0 px-1 text-[13px] text-muted">Your alerts keep working. You can pause or delete them here without joining.</p>

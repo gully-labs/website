@@ -86,10 +86,50 @@ export function touchUser(chatId, from) {
 /** The News channel membership the gate last read for a user (a real answer only, never the fail-open). */
 export function setFollows(userId, follows) {
   const u = botUser(userId)
-  if (!u || u.follows === !!follows) return
+  if (!u) return
+  // Funnel: someone who was shown the join screen and now follows has joined.
+  if (follows && u.gateShownAt && !u.joinedAt) {
+    u.joinedAt = new Date().toISOString()
+    saveSoon()
+  }
+  if (u.follows === !!follows) return
   u.follows = !!follows
   u.followsAt = new Date().toISOString()
   saveSoon()
+}
+
+/* The News gate funnel: join screen shown -> joined -> first command after joining. Counts only, no content.
+   A non-follower also gets a few free actions before the join screen (telegram.mjs gate()). */
+const ensureUser = (chatId) => {
+  const id = String(chatId)
+  if (!isPrivateId(id)) return null
+  const now = new Date().toISOString()
+  return (db.users[id] ??= { firstSeen: now, lastSeen: now, lang: null, linked: false, follows: null, followsAt: null, blocked: null, optedOut: null, source: 'start' })
+}
+/** The join screen was shown to this private chat (first time only is recorded). */
+export function noteGateShown(chatId) {
+  const u = ensureUser(chatId)
+  if (!u) return
+  u.gateViews = (u.gateViews ?? 0) + 1
+  u.gateShownAt ??= new Date().toISOString()
+  saveSoon()
+}
+/** A follower used a feature: the first one after the join screen closes the funnel. */
+export function noteFirstUse(chatId) {
+  const u = botUser(chatId)
+  if (!u || !u.gateShownAt || u.firstUseAt) return
+  if (!u.joinedAt) u.joinedAt = new Date().toISOString()
+  u.firstUseAt = new Date().toISOString()
+  saveSoon()
+}
+/** Spends one of a non-follower's free actions; false when they are used up (or `limit` is 0). */
+export function takeFreeAction(chatId, limit) {
+  if (!(limit > 0)) return false
+  const u = ensureUser(chatId)
+  if (!u || (u.freeUsed ?? 0) >= limit) return false
+  u.freeUsed = (u.freeUsed ?? 0) + 1
+  saveSoon()
+  return true
 }
 
 export function setLinked(chatId, linked) {
@@ -140,6 +180,15 @@ export function backfillFromLinks(links) {
 /** Every recorded user as [chatId, record]. */
 export const allBotUsers = () => Object.entries(db.users)
 
+/** The join-screen funnel: users shown the screen, those who then joined, those who then used the bot. */
+export function gateFunnel(list = Object.values(db.users)) {
+  const shown = list.filter((u) => u.gateShownAt)
+  const joined = shown.filter((u) => u.joinedAt)
+  const used = joined.filter((u) => u.firstUseAt)
+  const free = list.filter((u) => (u.freeUsed ?? 0) > 0).length
+  return { freeActionUsers: free, shown: shown.length, joined: joined.length, used: used.length, joinRate: shown.length ? Math.round((joined.length / shown.length) * 1000) / 10 : null }
+}
+
 /** Counts and the daily growth series (users by first-seen day, cumulative). */
 export function botUserStats() {
   const list = Object.values(db.users)
@@ -158,6 +207,7 @@ export function botUserStats() {
     blocked: list.filter((u) => u.blocked).length,
     linked: list.filter((u) => u.linked).length,
     follows: list.filter((u) => u.follows === true).length,
+    gate: gateFunnel(list),
     growth,
     languages: Object.entries(languages).sort((a, b) => b[1] - a[1]).map(([lang, count]) => ({ lang, count })),
   }

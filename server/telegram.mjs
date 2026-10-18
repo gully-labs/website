@@ -74,7 +74,7 @@ import { DEEPCORE_CHAINS, readDeepcorePool, readLaunches } from './deepcore.mjs'
 import { handleProfileRoutes, profileOf } from './profile.mjs'
 import { workspaceName } from './workspaces.mjs'
 import * as ui from './telegram-ui.mjs'
-import { backfillFromLinks, botUser, recordStart, setFollows, setLinked, setOptOut, touchUser } from './telegram-users.mjs'
+import { backfillFromLinks, botUser, noteFirstUse, noteGateShown, recordStart, setFollows, setLinked, setOptOut, takeFreeAction, touchUser } from './telegram-users.mjs'
 
 const { chainName, shortAddr, btn, ubtn } = ui
 
@@ -563,10 +563,10 @@ function bannerFile() {
 }
 
 /** /start: the animated banner with its caption and the main menu. Falls back to a text menu. */
-async function sendBanner(chatId) {
-  const n = await rowCount()
-  const caption = cap(ui.menuCaption(n), MAX_CAPTION)
-  const reply_markup = markup(keyboardFor(chatId, ui.MENU_KEYBOARD))
+async function sendBanner(chatId, view = null) {
+  const n = view ? 0 : await rowCount()
+  const caption = cap(view ? view.text : ui.menuCaption(n), MAX_CAPTION)
+  const reply_markup = markup(view ? view.keyboard : keyboardFor(chatId, ui.MENU_KEYBOARD))
   const file = bannerFile()
   const sha = file?.sha ?? 'url'
   const cached = db.banner?.sha === sha ? db.banner.fileId : null
@@ -593,7 +593,7 @@ async function sendBanner(chatId) {
       db.banner = null // a stale file_id: upload again next time
       save()
     }
-    const t = await show(chatId, ui.menuView(n))
+    const t = await show(chatId, view ?? ui.menuView(n))
     return { ok: t.ok, id: t.id, banner: false }
   }
   return { ok: true, id: r.result?.message_id ?? null, banner: true }
@@ -1254,7 +1254,7 @@ export async function followsChannel(userId, { fresh = false } = {}) {
 }
 
 const gateView = (ch) => ({
-  text: '<b>📣 Follow Gully Labs News to use this bot</b>\nLaunches, product updates and market notes from Gully Labs. Join the channel, then tap <b>I’ve joined</b>.',
+  text: '<b>📣 Follow Gully Labs News to use this bot</b>\n📊 The widest stock-token gaps · 🚀 new DeepCore launches as they happen · 🛠 product drops.\nJoin the channel, then tap <b>I’ve joined</b>.',
   keyboard: [[ubtn(`📣 Join ${ch.startsWith('@') ? ch : 'the channel'} ↗`, channelUrl(ch))], [btn('✅ I’ve joined', 'jchk')]],
 })
 
@@ -1295,11 +1295,22 @@ async function gate(u) {
   const chatId = String((cq?.message?.chat ?? msg?.chat)?.id ?? from.id)
   if (cq && cq.data === 'jchk') {
     const ok = await followsChannel(String(from.id), { fresh: true })
-    await tg('answerCallbackQuery', { callback_query_id: String(cq.id), text: ok ? 'Thanks for following! Opening the menu.' : 'Not joined yet: join the channel, then tap again.', show_alert: !ok }).catch(() => undefined)
+    await tg('answerCallbackQuery', { callback_query_id: String(cq.id), text: ok ? 'Thanks for following! Opening the menu.' : 'Not joined yet. Telegram can take a few seconds: join the channel, wait a moment, then tap again.', show_alert: !ok }).catch(() => undefined)
     if (ok) await showNew(chatId, ui.menuView(await rowCount()))
     return false
   }
-  if (await followsChannel(String(from.id))) return true
+  if (await followsChannel(String(from.id))) {
+    if (!inGroup) noteFirstUse(String(from.id))
+    return true
+  }
+  // One free action before the join screen (TELEGRAM_GATE_FREE_ACTIONS, default 1; 0 = a hard wall): people
+  // join far more readily once they have seen what the bot does. The menu itself is free and costs nothing.
+  if (!inGroup && !(cq && cq.data === 'jchk')) {
+    const isMenu = (msg && /^\/(?:start|menu|help)(?:@\w+)?\s*$/i.test(String(msg.text ?? ''))) || (cq && cq.data === 'm')
+    const free = Math.max(0, Math.min(5, Number(process.env.TELEGRAM_GATE_FREE_ACTIONS ?? 1) || 0))
+    if (free > 0 && isMenu) return true
+    if (takeFreeAction(String(from.id), free)) return true
+  }
   if (cq) await tg('answerCallbackQuery', { callback_query_id: String(cq.id), text: 'Follow Gully Labs News first.', show_alert: inGroup }).catch(() => undefined)
   if (inGroup) {
     // A button press in a group gets the toast only; a command gets the join screen once per member per half hour.
@@ -1309,6 +1320,13 @@ async function gate(u) {
     if (Date.now() - at < GROUP_GATE_MS) return false
     groupGateShown.set(key, Date.now())
     if (groupGateShown.size > 5_000) groupGateShown.delete(groupGateShown.keys().next().value)
+  }
+  if (!inGroup) noteGateShown(String(from.id))
+  if (!inGroup && msg) {
+    // The kit's animated banner carries the join screen in a private chat; a button press edits nothing and sends text.
+    const b = await sendBanner(chatId, gateView(ch))
+    if (b.id) ui.setState(chatId, b.banner ? { bannerId: b.id, viewId: null, pending: null } : { viewId: b.id })
+    return false
   }
   await showNew(chatId, gateView(ch))
   return false
