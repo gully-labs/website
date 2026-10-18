@@ -17,6 +17,7 @@ export const docsRoutes: RouteObject[] = [
       { path: 'api-keys', lazy: () => import('./pages/ApiKeys').then((m) => ({ Component: m.ApiKeys })) },
       { path: 'plans-alerts', lazy: () => import('./pages/PlansAlerts').then((m) => ({ Component: m.PlansAlerts })) },
       { path: 'teams', lazy: () => import('./pages/Teams').then((m) => ({ Component: m.Teams })) },
+      { path: 'holder-map', lazy: () => import('./pages/HolderMapDocs').then((m) => ({ Component: m.HolderMapDocs })) },
       { path: 'analytics', lazy: () => import('./pages/AnalyticsDocs').then((m) => ({ Component: m.AnalyticsDocs })) },
       { path: 'gully-pay', lazy: () => import('./pages/GullyPayDocs').then((m) => ({ Component: m.GullyPayDocs })) },
       { path: 'gully-pay-merchants', lazy: () => import('./pages/GullyPayMerchantsDocs').then((m) => ({ Component: m.GullyPayMerchantsDocs })) },

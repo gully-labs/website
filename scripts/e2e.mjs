@@ -15,7 +15,7 @@ import path from 'node:path'
 import zlib from 'node:zlib'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { blockedOutbound, bootServer, E2E_LAUNCH_TOKEN, historyFixture, holdersFixture, launchesFixture, ROOT, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
+import { blockedOutbound, bootServer, E2E_LAUNCH_TOKEN, historyFixture, holdersExtraFixtures, holdersFixture, launchesFixture, ROOT, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
@@ -62,6 +62,12 @@ async function newContext({ width = 1440, height = 900, mobile = false, geo = { 
   // Holder Maps (server/holders.mjs reads DeepCore, Blockscout and RPCs): a launch for addresses, a stock for tickers.
   await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (route) => json(route, holdersFixture(/\/0x[0-9a-f]{40}$/i.test(new URL(route.request().url()).pathname) ? 'deepcore-launch' : 'stock')))
   await ctx.route(`${BASE}/api/deepcore/launches`, (route) => json(route, launchesFixture()))
+  const HX = holdersExtraFixtures()
+  await ctx.route(new RegExp(`^${BASE}/api/holders/resolve`), (route) => json(route, HX.resolve(new URL(route.request().url()).searchParams.get('q') ?? '')))
+  await ctx.route(`${BASE}/api/holders/launches`, (route) => json(route, HX.launches))
+  await ctx.route(new RegExp(`^${BASE}/api/holders/top`), (route) => json(route, HX.top))
+  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/]+/live`), (route) => json(route, HX.live))
+  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/]+/wallet/`), (route) => json(route, HX.wallet))
   return ctx
 }
 
@@ -764,6 +770,7 @@ await step('holder map', async () => {
   }
   for (const width of [1440, 390]) {
     const ctx = await newContext({ width, mobile: width < 600 })
+    await ctx.route(`${BASE}/api/ask`, (route) => json(route, holdersExtraFixtures().ask))
     const page = await ctx.newPage()
     const w = watch(page, `holder map ${width}`)
     await page.goto(BASE + '/holders/robinhood/' + E2E_LAUNCH_TOKEN)
@@ -775,16 +782,20 @@ await step('holder map', async () => {
     await map.locator('[data-chart] canvas').first().waitFor()
     check(`holder map ${width}: the bubble graph draws (ECharts canvas)`, (await map.locator('[data-chart] canvas').count()) > 0)
     check(`holder map ${width}: the graph has a text summary for screen readers`, /^Holder Map of DTC on Robinhood Chain/.test((await map.locator('[data-chart]').getAttribute('aria-label')) ?? ''))
-    check(`holder map ${width}: a ranked list exists for screen readers`, (await map.locator('table.sr-only tbody tr').count()) === 30)
+    check(`holder map ${width}: a ranked list exists for screen readers`, (await map.locator('.sr-only table tbody tr').count()) === 30)
     await shotTo(page, `launch-${width}.png`)
     // Click the biggest bubble (the layout puts it near the middle) to open its panel.
     const box = await map.locator('[data-chart]').boundingBox()
-    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
     const panel = map.locator('[data-holder-panel]')
-    const openedByClick = await panel.waitFor({ timeout: 3_000 }).then(
-      () => true,
-      () => false,
-    )
+    let openedByClick = false
+    for (const [dx, dy] of [[0, 0], [-0.12, 0], [0.12, 0], [0, -0.15], [0, 0.15], [-0.2, -0.2], [0.2, 0.2]]) {
+      await page.mouse.click(box.x + box.width * (0.5 + dx), box.y + box.height * (0.5 + dy))
+      openedByClick = await panel.waitFor({ timeout: 800 }).then(
+        () => true,
+        () => false,
+      )
+      if (openedByClick) break
+    }
     if (width === 1440) check('holder map: clicking a bubble opens its panel', openedByClick)
     // Search flies to a wallet and opens it.
     await map.getByLabel('Find a wallet by address').fill('0x00000000')
@@ -807,7 +818,61 @@ await step('holder map', async () => {
     await page.waitForTimeout(700)
     check(`holder map ${width}: play replays history (the frame label leaves "Now")`, !/^Now/.test((await map.locator('[data-replay="on"] [aria-live]').textContent()) ?? ''))
     check(`holder map ${width}: buy/sell sits under the risk summary`, (await map.locator('[data-holder-trade]').getByText(/Before you trade:.*3 wallets bought/).count()) === 1)
+    // The explainable health score: tapping a part lights its wallets on the map (free, never gated).
+    const health = map.locator('[data-health]')
+    check(`holder map ${width}: the health score card shows the score and its parts`, (await health.getByRole('img', { name: 'Score 58 out of 100' }).count()) === 1 && (await health.locator('[data-health-part]').count()) === 6)
+    await health.locator('[data-health-part="bundle"]').click()
+    check(`holder map ${width}: tapping a score part highlights its wallets`, (await health.locator('[data-health-part="bundle"]').getAttribute('aria-pressed')) === 'true' && (await map.getByText(/Showing the 3 wallets behind “Bundled buys”/).count()) === 1)
+    await map.getByRole('button', { name: 'Show all' }).click()
+    check(`holder map ${width}: the deployer's record shows outcomes and the serial launcher flag`, (await map.locator('[data-deployer-history]').getByText('Liquidity pulled').count()) === 1 && (await map.locator('[data-deployer-history]').getByText('Serial launcher').count()) === 1)
+    check(`holder map ${width}: same wallets elsewhere links to other maps`, (await map.locator('[data-cross-token] a', { hasText: 'OLD1' }).count()) === 1)
+    check(`holder map ${width}: snipers are named under the launch check`, (await map.locator('[data-risk-line]').getByText(/2 wallets bought in the first 3 blocks/).count()) === 1)
+    // Live mode: the stubbed /live answers, the pill shows.
+    await map.locator('[data-live="on"]').waitFor({ timeout: 10_000 })
+    check(`holder map ${width}: live mode shows the LIVE pill`, (await map.locator('[data-live="on"]').getByText(/LIVE/).count()) === 1)
+    // A wallet's panel reads its first buy and P&L (stubbed /wallet).
+    await map.getByLabel('Find a wallet by address').fill(holdersFixture().nodes[1].id)
+    await map.getByRole('button', { name: 'Find', exact: true }).click()
+    await map.locator('[data-wallet-facts]').waitFor()
+    check(`holder map ${width}: the wallet panel shows first buy and P&L vs entry`, (await map.locator('[data-wallet-facts]').getByText('+42.0% in WETH terms').count()) === 1)
+    // Explain this map (Gully AI, stubbed).
+    await map.getByRole('button', { name: 'Explain this map' }).click()
+    await map.locator('[data-ask]').getByText(/Three of them bought together/).waitFor()
+    check(`holder map ${width}: Gully AI explains the map`, true)
+    check(`holder map ${width}: Alert me opens the app's alert dialog for this token`, ((await map.locator('[data-alert-me]').getAttribute('href')) ?? '').includes(`alert=holders%3Arobinhood%3A${E2E_LAUNCH_TOKEN}`))
+    await shotTo(page, `token-${width}.png`)
     await noHorizontalScroll(page, `/holders ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // The /holders landing: search (one match navigates, several offer a pick, none says so), the checked-launch feed and the top list.
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `holders landing ${width}`)
+    await page.goto(BASE + '/holders')
+    await page.locator('[data-launch-feed] li').first().waitFor()
+    check(`holders landing ${width}: the checked-launch feed lists launches with scores`, (await page.locator('[data-launch-feed] li').count()) === 5 && (await page.locator('[data-launch-feed]').getByRole('img', { name: 'Score 82 out of 100' }).count()) === 1)
+    check(`holders landing ${width}: a launch still being checked says so`, (await page.locator('[data-launch-feed]').getByText('Checking the holders now…').count()) === 1)
+    await page.locator('[data-chart] canvas, [data-chart] svg').first().waitFor()
+    check(`holders landing ${width}: the health score chart draws`, (await page.locator('[data-chart]').count()) >= 1)
+    check(`holders landing ${width}: most scanned today lists maps`, (await page.locator('[data-top-scanned] a').count()) === 2)
+    await shotTo(page, `holders-landing-${width}.png`)
+    const q = page.getByLabel('Token address or ticker')
+    await q.fill('zzz-nothing')
+    await page.getByRole('button', { name: 'Map it' }).click()
+    await page.getByText(/^Nothing matches\./).waitFor()
+    check(`holders landing ${width}: no match says so`, true)
+    await q.fill('$NVDA')
+    await page.getByRole('button', { name: 'Map it' }).click()
+    await page.locator('[data-resolve-matches] a').first().waitFor()
+    check(`holders landing ${width}: several matches offer a pick`, (await page.locator('[data-resolve-matches] a').count()) === 2)
+    await q.fill('DTC')
+    await page.getByRole('button', { name: 'Map it' }).click()
+    await page.waitForURL(new RegExp(`/holders/robinhood/${E2E_LAUNCH_TOKEN}$`))
+    check(`holders landing ${width}: one match opens its map`, true)
+    await page.locator('[data-holder-map="ok"]').waitFor()
+    await noHorizontalScroll(page, `/holders landing ${width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }

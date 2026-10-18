@@ -37,16 +37,17 @@ const TG_DIRECTIONS: { id: GapDirection; label: string }[] = [
 ]
 const LAUNCH_CHAIN_NAMES: Record<number, string> = { 56: 'BNB Chain', 999: 'HyperEVM', 4663: 'Robinhood Chain', 8453: 'Base' }
 /** A Holder Map alert (alerts.mjs condition type 'holders'): the top cluster (or top 10) passing a share, or selling. */
-export type HolderCondition = { type: 'holders'; chain: string; token: string; symbol: string | null; metric: 'cluster' | 'top10'; above: number | null; dropPts: number | null }
+export type HolderCondition = { type: 'holders'; chain: string; token: string; symbol: string | null; metric: 'cluster' | 'top10' | 'deployer'; above: number | null; dropPts: number | null; sellPct?: number | null }
 const HOLDER_CHAIN_NAMES: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }
 const shortToken = (t: string) => (t.length > 14 ? `${t.slice(0, 6)}…${t.slice(-4)}` : t)
 const holderTarget = (c: HolderCondition) => `${c.symbol ?? shortToken(c.token)} on ${HOLDER_CHAIN_NAMES[c.chain] ?? c.chain}`
 /** An alert's condition in plain words, as the bot says it. */
 const plainCondition = (cond: AlertCondition | HolderCondition, chains: Record<string, string> = {}) => {
   if (cond.type === 'holders') {
-    const who = cond.metric === 'top10' ? 'The top 10 wallets' : 'The largest connected cluster of wallets'
+    const who = cond.metric === 'top10' ? 'The top 10 wallets' : cond.metric === 'deployer' ? 'The deployer' : 'The largest connected cluster of wallets'
     if (typeof cond.above === 'number') return `${who} of ${holderTarget(cond)} hold ${cond.above}% or more`
     if (typeof cond.dropPts === 'number') return `${who} of ${holderTarget(cond)} sell ${cond.dropPts} points or more of their share`
+    if (typeof cond.sellPct === 'number') return `${who} of ${holderTarget(cond)} sell ${cond.sellPct}% or more of what they hold`
     return `${who} of ${holderTarget(cond)} change`
   }
   const c = cond

@@ -47,7 +47,7 @@ export function forceLayout(nodes: LayoutNode[], links: { source: string; target
         }
         const d = Math.sqrt(d2)
         const min = nodes[i].r + nodes[j].r + 4
-        let f = (220 * alpha) / d2
+        let f = (36 * alpha) / d2
         if (d < min) f += ((min - d) / d) * 0.5
         vx[i] -= dx * f
         vy[i] -= dy * f
@@ -69,8 +69,8 @@ export function forceLayout(nodes: LayoutNode[], links: { source: string; target
     }
     // Gravity to the centre.
     for (let i = 0; i < n; i++) {
-      vx[i] -= x[i] * 0.012
-      vy[i] -= y[i] * 0.012
+      vx[i] -= x[i] * 0.03
+      vy[i] -= y[i] * 0.03
       x[i] += Math.max(-30, Math.min(30, vx[i]))
       y[i] += Math.max(-30, Math.min(30, vy[i]))
     }

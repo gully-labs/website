@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, HoldersRoute, EmbedHoldersRoute, ReceiptRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, HoldersRoute, HoldersLandingRoute, EmbedHoldersRoute, ReceiptRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
@@ -18,6 +18,7 @@ const mainRoutes = [
       { path: '/about', element: <AboutRoute /> },
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/tracker/:chain/:ticker', element: <StockRoute /> },
+      { path: '/holders', element: <HoldersLandingRoute /> },
       { path: '/holders/:chain/:token', element: <HoldersRoute /> },
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/pricing', element: <PricingRoute /> },

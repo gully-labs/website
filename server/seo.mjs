@@ -27,6 +27,7 @@ const MAIN = {
   '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security audits from the team behind the Gully Labs projects.'],
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
   '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
+  '/holders': ['Holder Map: who really holds a token · Gully Labs', 'Search any DeepCore launch or tokenised stock and see who holds it: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
@@ -47,6 +48,8 @@ for (const key of Object.keys(CHAIN_NAMES)) {
       `${s.ticker} token price vs fair value (${CHAIN_NAMES[key]}) · Gully Labs`,
       `${s.name} (${s.ticker}) token on ${CHAIN_NAMES[key]}: its price in its deepest pool against its ${key === 'solana' ? 'Chainlink (or issuer)' : 'Chainlink'} fair price, the gap, pool depth and history, read live.`,
     ]
+  // Its Holder Map (pageMeta answers these paths itself; listed here for the sitemap).
+  for (const s of stocks) MAIN[`/holders/${key}/${s.ticker}`] = [`Holder Map: ${s.ticker} on ${CHAIN_NAMES[key]} · Gully Labs`, `Who holds ${s.ticker} on ${CHAIN_NAMES[key]}.`]
 }
 
 const DOCS_PAGES = {
@@ -62,6 +65,7 @@ const DOCS_PAGES = {
   '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the developer portal: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
   '/roadmap-l3': ['Roadmap: Gully L3 · Gully Labs docs', 'The plan for the Gully L3: an Arbitrum chain settling to Arbitrum One with Chain Kit, Gully Pay and Hyperlane as its interop layer. Status: spec written, devnet prepared, nothing running.'],
+  '/holder-map': ['Holder Map · Gully Labs docs', 'How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules.'],
   '/changelog': ['Changelog · Gully Labs docs', 'What changed in the Gully Labs tracker, API and widget, and when.'],
 }
 
@@ -135,7 +139,7 @@ export function pageMeta(host, pathname) {
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  const og = p === '/' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
+  const og = p === '/' || p === '/holders' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.startsWith('/legal/') ? 'home' : p.slice(1)
   return { title: m[0], description: m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
 }
 

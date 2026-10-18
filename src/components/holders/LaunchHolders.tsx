@@ -7,8 +7,20 @@ import { holdersPagePath } from '../../lib/holders'
    a link to its Holder Map. On the site the links stay in the tab; in the app (another host) they open the
    site in a new tab. */
 
-type Launch = { chainId: number; chainKey: string; chainName: string; token: string; symbol: string | null; createdAt: string; locked: boolean | null }
-type Body = { state: 'ok' | 'stale' | 'unreadable'; asOf: string | null; launches: Launch[] }
+type Launch = {
+  chainId: number
+  chainKey: string
+  chainName: string
+  token: string
+  symbol: string | null
+  createdAt: string
+  locked: boolean | null
+}
+type Body = {
+  state: 'ok' | 'stale' | 'unreadable'
+  asOf: string | null
+  launches: Launch[]
+}
 
 export function LaunchHolders({ external = false, limit = 8 }: { external?: boolean; limit?: number }) {
   const [s, setS] = useState<{ k: 'loading' } | { k: 'error' } | { k: 'ok'; data: Body }>({ k: 'loading' })
@@ -48,12 +60,7 @@ export function LaunchHolders({ external = false, limit = 8 }: { external?: bool
         ))}
       </div>
     )
-  if (s.k === 'error' || s.data.state === 'unreadable')
-    return (
-      <p className="m-0 flex items-center gap-2 font-mono text-[12px] text-faint">
-        {live} DeepCore’s launch list could not be read just now; it is retried every minute or two.
-      </p>
-    )
+  if (s.k === 'error' || s.data.state === 'unreadable') return <p className="m-0 flex items-center gap-2 font-mono text-[12px] text-faint">{live} DeepCore’s launch list could not be read just now; it is retried every minute or two.</p>
   const list = s.data.launches.slice(0, limit)
   return (
     <div className="flex flex-col gap-2" data-launch-holders>
@@ -68,7 +75,9 @@ export function LaunchHolders({ external = false, limit = 8 }: { external?: bool
             <>
               <span className="min-w-0 flex-1 truncate font-semibold text-ink">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
               <span className="hidden flex-none font-mono text-[11px] text-faint min-[420px]:inline">{l.chainName}</span>
-              <span className="flex-none font-mono text-[11px] text-faint">{l.locked === true ? '🔒' : ''} {ageText(l.createdAt, now)}</span>
+              <span className="flex-none font-mono text-[11px] text-faint">
+                {l.locked === true ? '🔒' : ''} {ageText(l.createdAt, now)}
+              </span>
               <span className="flex-none font-mono text-[12px] text-gold">Who holds it {external ? '↗' : '→'}</span>
             </>
           )
