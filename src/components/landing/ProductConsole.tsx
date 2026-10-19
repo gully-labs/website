@@ -385,8 +385,8 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
             onAnimationComplete={() => setMoving(false)}
             // Clipped only while the height eases, so a demo's own menus and tooltips are never cut.
             style={{ overflow: moving ? 'hidden' : 'visible' }}
-            // From 900 px up the pane holds the tallest demo's height, so switching tabs never moves the page.
-            className="min-w-0 min-[900px]:min-h-[880px]"
+            // No fixed minimum: the tab rail beside it sets the floor, so a short demo leaves no empty band below.
+            className="min-w-0"
           >
             <div ref={inner} id="console-panel" role="tabpanel" aria-labelledby={`console-tab-${cur.id}`} className="min-w-0">
               <AnimatePresence mode="wait" initial={false}>

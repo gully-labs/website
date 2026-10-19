@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { CircleDashed, Radar, Search } from 'lucide-react'
 import { Seo } from '../components/Seo'
+import { ChainLogo } from '../components/logos/ChainLogo'
+import { useLiveSeries } from '../components/charts/useLiveSeries'
 import { EChart } from '../components/charts/EChart'
 import { axisTooltip, barsPreset, itemTooltip, tipHtml } from '../components/charts/chartPresets'
 import { ChartSkeleton } from '../components/charts/ChartSkeleton'
@@ -9,7 +11,7 @@ import { ScoreRing } from '../components/holders/parts'
 import { K } from '../components/holders/theme'
 import type { MapPreview } from '../components/holders/MiniMap'
 import { eyebrow } from '../components/ui'
-import { getJson, type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveChecked, type ResolveMatch, type TopScanned } from '../lib/holders'
+import { type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveChecked, type ResolveMatch, type TopScanned } from '../lib/holders'
 import { ageText } from '../lib/tracker'
 
 /* /holders: the Holder Map's front door. A search for any token: an address on Robinhood Chain, BNB Chain, Base,
@@ -51,26 +53,24 @@ function useNow(ms = 15_000) {
   return now
 }
 
-/** A JSON read refreshed every `ms` (0 = once); a failed refresh keeps the last good answer. */
+/** A JSON read refreshed every `ms` (0 = once an hour); a failed refresh keeps the last good answer. */
 function usePoll<T>(path: string, ms: number) {
-  const [s, setS] = useState<{ k: 'loading' } | { k: 'error' } | { k: 'ok'; data: T }>({ k: 'loading' })
-  useEffect(() => {
-    let alive = true
-    const go = () => getJson<T>(path).then((d) => alive && setS((p) => (d ? { k: 'ok', data: d } : p.k === 'ok' ? p : { k: 'error' })))
-    go()
-    const id = ms ? setInterval(go, ms) : 0
-    return () => {
-      alive = false
-      if (id) clearInterval(id)
-    }
-  }, [path, ms])
+  const { data, error } = useLiveSeries<T>(
+    (signal) =>
+      fetch(path, { headers: { accept: 'application/json' }, signal }).then((r) => {
+        if (!r.ok) throw new Error(String(r.status))
+        return r.json() as Promise<T>
+      }),
+    ms || HOUR,
+  )
+  const s: { k: 'loading' } | { k: 'error' } | { k: 'ok'; data: T } = data !== undefined ? { k: 'ok', data } : error ? { k: 'error' } : { k: 'loading' }
   return s
 }
 
 export function HoldersLanding() {
   const now = useNow()
   const feed = usePoll<CheckedLaunches>('/api/holders/launches', 30_000)
-  const top = usePoll<TopScanned>('/api/holders/top?limit=10', 60_000)
+  const top = usePoll<TopScanned>('/api/holders/top?limit=20', 60_000)
   const sources = usePoll<HolderSources>('/api/holders/sources', 0)
   return (
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
@@ -88,7 +88,7 @@ export function HoldersLanding() {
         <Sources s={sources} />
       </section>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] items-start gap-5">
+      <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-start gap-5 max-[959px]:grid-cols-1">
         <section aria-labelledby="hl-feed" className="card card-pad flex min-w-0 flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="hl-feed" className="heading-4 text-ink">
@@ -138,18 +138,31 @@ export function HoldersLanding() {
 function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
   if (s.k !== 'ok') return null
   const launches = s.data.chains.filter((c) => c.launches).map((c) => c.name)
-  const WORDS = { full: 'any token · full history', top: 'any token · top holders', none: 'any token · coming soon' } as const
+  const WORDS = { full: 'any token · full history', top: 'any token · top holders', none: 'any token' } as const
+  const live = s.data.chains.filter((c) => c.any !== 'none')
+  const soon = s.data.chains.filter((c) => c.any === 'none')
   return (
-    <ul className="m-0 flex max-w-[760px] list-none flex-wrap gap-2 p-0 font-mono text-[12px]" aria-label="Where Holder Maps work today" data-holder-sources>
+    <ul className="m-0 flex max-w-[760px] list-none flex-wrap items-center gap-2 p-0 font-mono text-[12px]" aria-label="Where Holder Maps work today" data-holder-sources>
       <li className="inline-flex min-h-9 items-center gap-2 rounded-full border border-gold/40 px-3 text-ink">
         <Radar aria-hidden size={14} className="text-gold" /> DeepCore launches · live on {launches.join(', ')}
       </li>
-      {s.data.chains.map((c) => (
-        <li key={c.chain} className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 ${c.any !== 'none' ? 'border-gold/40 text-ink' : 'border-line text-muted'}`}>
-          {c.any !== 'none' ? <Radar aria-hidden size={14} className="text-gold" /> : <CircleDashed aria-hidden size={14} className="animate-[spin_6s_linear_infinite] text-faint motion-reduce:animate-none" />}
+      {live.map((c) => (
+        <li key={c.chain} className="inline-flex min-h-9 items-center gap-2 rounded-full border border-gold/40 px-3 text-ink">
+          <ChainLogo chain={c.chain} size={16} decorative />
           {c.name} · {WORDS[c.any]}
         </li>
       ))}
+      {soon.length > 0 && (
+        <li className="inline-flex min-h-9 items-center gap-2 rounded-full border border-line px-3 text-muted">
+          <CircleDashed aria-hidden size={14} className="animate-[spin_6s_linear_infinite] text-faint motion-reduce:animate-none" />
+          <span className="inline-flex -space-x-1">
+            {soon.map((c) => (
+              <ChainLogo key={c.chain} chain={c.chain} size={16} />
+            ))}
+          </span>
+          {soon.map((c) => c.name).join(', ')} · coming soon
+        </li>
+      )}
     </ul>
   )
 }
@@ -407,26 +420,33 @@ function TopList({ s }: { s: ReturnType<typeof usePoll<TopScanned>> }) {
   const items = s.data.items
   const max = Math.max(1, ...items.map((x) => x.scans))
   if (!items.length) return <p className="m-0 text-[14px] text-muted">No maps opened yet today. Search one above.</p>
+  const barOption = {
+    grid: { left: 4, right: 4, top: 12, bottom: 22 },
+    xAxis: { type: 'category', data: items.slice(0, 10).map((x) => x.symbol ?? x.token.slice(0, 5)), axisLabel: { color: K.muted, fontSize: 11, interval: 0, hideOverlap: true }, axisLine: { show: false }, axisTick: { show: false } },
+    yAxis: { type: 'value', minInterval: 1, show: false },
+    tooltip: itemTooltip((p: { dataIndex: number }) => {
+      const x = items[p.dataIndex]
+      return tipHtml({ title: x.symbol ?? 'Token', rows: [{ name: 'Scans today', value: x.scans.toLocaleString('en-US') }] })
+    }),
+    series: [{ id: 'scans', ...barsPreset({ radius: [4, 4, 0, 0] }), barMaxWidth: 26, color: K.gold, data: items.slice(0, 10).map((x) => x.scans) }],
+  }
   return (
-    <ol className="m-0 flex list-none flex-col gap-1 p-0" data-top-scanned>
-      {items.map((x, i) => (
-        <li key={`${x.chain}:${x.token}`}>
-          <Link to={x.path} className="relative flex min-h-11 items-center gap-3 overflow-hidden rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
-            <span
-              aria-hidden
-              className="absolute inset-y-0 left-0 origin-left animate-[gl-grow-x_.8s_ease_both] bg-gold/10 motion-reduce:animate-[gl-fade_.3s_ease_both]"
-              style={{
-                width: `${(x.scans / max) * 100}%`,
-                animationDelay: `${i * 40}ms`,
-              }}
-            />
-            <span className="relative w-5 font-mono text-[12px] text-faint">{i + 1}</span>
-            <span className="relative font-semibold text-ink">{x.symbol ?? `${x.token.slice(0, 6)}…`}</span>
-            <span className="relative font-mono text-[11px] text-dim">{x.kind === 'deepcore-launch' || x.kind === 'launch' ? 'launch' : x.kind === 'token' ? 'token' : 'stock'}</span>
-            <span className="relative ml-auto font-mono text-[12px] text-muted">{x.scans.toLocaleString('en-US')} scans</span>
-          </Link>
-        </li>
-      ))}
-    </ol>
+    <>
+      <EChart option={barOption} height={150} label={`Scans today of the ten most scanned maps: ${items.slice(0, 10).map((x) => `${x.symbol ?? 'token'} ${x.scans}`).join(', ')}`} skeleton="bars" />
+      <ol className="m-0 flex list-none flex-col gap-1 p-0" data-top-scanned>
+        {items.map((x, i) => (
+          <li key={`${x.chain}:${x.token}`}>
+            <Link to={x.path} className="relative flex min-h-11 items-center gap-3 overflow-hidden rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
+              <span aria-hidden className="absolute inset-y-0 left-0 origin-left animate-[gl-grow-x_.8s_ease_both] bg-gold/10 motion-reduce:animate-[gl-fade_.3s_ease_both]" style={{ width: `${(x.scans / max) * 100}%`, animationDelay: `${Math.min(i, 10) * 40}ms` }} />
+              <span className="relative w-5 font-mono text-[12px] text-faint">{i + 1}</span>
+              <ChainLogo chain={x.chain} size={16} decorative className="relative" />
+              <span className="relative font-semibold text-ink">{x.symbol ?? `${x.token.slice(0, 6)}…`}</span>
+              <span className="relative font-mono text-[11px] text-dim">{x.kind === 'deepcore-launch' || x.kind === 'launch' ? 'launch' : x.kind === 'token' ? 'token' : 'stock'}</span>
+              <span className="relative ml-auto font-mono text-[12px] text-muted">{x.scans.toLocaleString('en-US')} scans</span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </>
   )
 }

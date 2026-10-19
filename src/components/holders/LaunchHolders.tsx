@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { ChainLogo } from '../logos/ChainLogo'
+import { TokenLogo } from '../logos/TokenLogo'
 import { ageText } from '../../lib/tracker'
 import { holdersPagePath } from '../../lib/holders'
 
@@ -73,12 +75,18 @@ export function LaunchHolders({ external = false, limit = 8 }: { external?: bool
           const path = holdersPagePath(l.chainKey, l.token)
           const body = (
             <>
+              <TokenLogo symbol={l.symbol ?? 'token'} chain={l.chainKey} address={l.token} size={24} decorative />
               <span className="min-w-0 flex-1 truncate font-semibold text-ink">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
-              <span className="hidden flex-none font-mono text-[11px] text-faint min-[420px]:inline">{l.chainName}</span>
+              <span className="hidden flex-none items-center gap-1 font-mono text-[11px] text-faint min-[420px]:inline-flex">
+                <ChainLogo chain={l.chainKey} size={14} decorative /> {l.chainName}
+              </span>
               <span className="flex-none font-mono text-[11px] text-faint">
                 {l.locked === true ? '🔒' : ''} {ageText(l.createdAt, now)}
               </span>
-              <span className="flex-none font-mono text-[12px] text-gold">Who holds it {external ? '↗' : '→'}</span>
+              <span className="flex-none font-mono text-[12px] text-gold">
+                <span className="max-[559px]:hidden">Who holds it </span>
+                {external ? '↗' : '→'}
+              </span>
             </>
           )
           const cls = 'flex min-h-11 items-center gap-3 rounded-[8px] border border-line px-3 text-[14px] transition-colors hover:border-gold'

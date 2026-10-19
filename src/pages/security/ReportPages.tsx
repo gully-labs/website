@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowUpRight, FileSearch, FileText, Info, Printer, ScanSearc
 import { Link, useParams } from 'react-router'
 import { Lockup } from '../../components/brand'
 import { ChainLogo } from '../../components/logos/ChainLogo'
-import { LiveScans } from '../../components/security/LiveScans'
+import { ScansChart } from './ScansChart'
 import { ModeBadge, ReportBody } from '../../components/security/ReportBody'
 import { SeverityCharts } from '../../components/security/SeverityCharts'
 import { chainLogoKey, fmtWhen, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, type PublicReport, type PublicReportListItem } from '../../components/security/types'
@@ -50,8 +50,8 @@ export function ReportsIndex() {
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </div>
-        <div className="mb-6 max-w-[560px]">
-          <LiveScans />
+        <div className="mb-6 max-w-[620px]">
+          <ScansChart />
         </div>
         {s.k === 'loading' && <div className="h-[160px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface" />}
         {s.k === 'error' && (

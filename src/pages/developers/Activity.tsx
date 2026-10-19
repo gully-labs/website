@@ -8,8 +8,10 @@ import { Avatar } from './Avatar'
 import { ErrorLine, Skeleton } from './parts'
 import { GhostCurves } from './charts'
 import { fmtDateTime, usePortal } from './portal'
-import { chip, mono, panel, panelTitle, pillLine, rise } from './styles'
+import { chip, panel, pillLine, rise } from './styles'
 import { StackedDays, type DayStack } from './vcharts'
+import { ServiceHeader } from './services/ServiceHeader'
+import { docsPage } from './services/links'
 
 /* The Activity tab (portal v2): the workspace's log, newest first, from GET /api/developer/activity
    (50 events a page; "Load more" passes nextCursor back). Each event reads as one sentence: who
@@ -192,15 +194,12 @@ export function ActivityTab() {
   const actorName = (a: string) => (a === user ? 'You' : a === 'system' ? 'Gully Labs' : shortAddress(a))
 
   return (
-    <section className={`${panel} gap-2 p-3`} style={rise(0)} aria-labelledby="act-title">
+    <div className="flex flex-col gap-2">
+    <ServiceHeader icon={History} title="Activity" desc="Who changed what in this workspace · kept 180 days" status={events ? { tone: 'live', text: `${events.length} event${events.length === 1 ? '' : 's'} loaded` } : { tone: 'checking', text: 'reading' }} docs={docsPage('api-keys')}>
+      <RefreshChip error={first.data ? first.error : null} onRetry={() => void first.reload()} />
+    </ServiceHeader>
+    <section className={`${panel} gap-2 p-3`} style={rise(0)} aria-label="Activity log">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-col gap-[2px]">
-          <h2 id="act-title" className={`${panelTitle} flex items-center gap-2`}>
-            Activity
-            <RefreshChip error={first.data ? first.error : null} onRetry={() => void first.reload()} />
-          </h2>
-          <span className={mono}>Who changed what in this workspace · kept 180 days</span>
-        </div>
         <div role="radiogroup" aria-label="Show" onKeyDown={onKey} className="flex flex-wrap gap-[6px]">
           {KINDS.map((k) => (
             <button key={k.id} data-k={k.id} type="button" role="radio" aria-checked={kind === k.id} tabIndex={kind === k.id ? 0 : -1} onClick={() => setKind(k.id)} className={`${chip(kind === k.id)} min-h-11 gap-[6px] px-[10px] text-[12px] max-[600px]:min-h-11`}>
@@ -286,5 +285,6 @@ export function ActivityTab() {
         </div>
       )}
     </section>
+    </div>
   )
 }

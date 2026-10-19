@@ -459,7 +459,7 @@ await step('portal', async () => {
   check('alerts: retry clears the chip once the read answers', true)
   // Gully Analytics tab (sign-up is off on this server: it must say so, not break).
   await appNav.getByRole('link', { name: /^Analytics/ }).click()
-  await page.getByText(/not switched on/).first().waitFor()
+  await page.getByText(/sign-up is not open/).first().waitFor()
   check('analytics tab: says self-serve is off here', true)
   check('analytics tab: the traffic placeholder curve draws while there is no account', (await page.getByTestId('ghost-chart').getByText('Your page views and visitors will draw here').count()) === 1)
   await w.verify()
@@ -518,6 +518,9 @@ await step('portal', async () => {
   check('CSV: usage downloads with its header row', csv.startsWith('time,key,'), csv.slice(0, 40))
   check('billing: plan usage rings draw (keys and alerts against the plan)', await drawnIn(page, '[data-testid="plan-usage"]') && (await page.locator('[data-testid="plan-usage"] [data-chart]').count()) === 2)
   check('billing: with no payments the chart is the ghosted "Your payments will draw here"', (await page.getByTestId('ghost-chart').getByText('Your payments will draw here').count()) === 1)
+  await appNav.getByRole('link', { name: 'Products', exact: true }).click()
+  await page.locator('[data-testid="products"]').waitFor()
+  check('products hub: the Chain Kit card chart is the ghost (or a live chart), and every card has a chart or ghost', (await page.locator('[data-product="Chain Kit"] [data-ghost], [data-product="Chain Kit"] [data-chart]').count()) >= 1 && (await page.locator('[data-testid="products"] [data-product]').evaluateAll((cs) => cs.filter((c) => !c.querySelector('[data-ghost], [data-chart], [data-live], svg[role="img"], [role="img"]')).map((c) => c.dataset.product))).length === 0)
   // Overview with a key but no traffic: the requests chart is the ghosted placeholder, not a flat zero.
   await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
   await page.getByTestId('ghost-chart').waitFor({ timeout: 15_000 })
@@ -1551,6 +1554,7 @@ await step('security', async () => {
     await page.getByRole('heading', { level: 1 }).waitFor()
     await page.locator('[data-testid="live-scans"] [data-chart]').waitFor({ timeout: 10_000 }).catch(() => {})
     check(`/security at ${width}: tiers tablist, prices from the config, a live counter of real scans`, (await page.getByRole('tablist', { name: 'Tiers' }).getByRole('tab').count()) === 3 && /^\$\d+ a scan$/.test((await page.locator('[data-tier-price="scan"]').textContent()) ?? '') && (await page.locator('[data-testid="live-scans"] [data-chart]').count()) === 1)
+    check(`/security at ${width}: the scans chart is live (kit chart or ghost, never a bare dot)`, (await page.locator('[data-testid="live-scans"] [data-live], [data-testid="live-scans"] [data-ghost]').count()) >= 1)
     check(`/security at ${width}: says a scan is not an audit and offers no Audit for sale`, (await page.getByText(/is not an audit/).count()) > 0 && (await page.locator('[data-tier-price="audit"]').textContent()) === 'Not offered yet')
     check(`/security at ${width}: the review form is on the page`, (await page.getByTestId('review-form').count()) === 1)
     check(`/security at ${width}: monitoring limits per plan from the config`, /1\s*contract on Free/.test((await page.getByTestId('monitoring-pricing').textContent()) ?? ''))
@@ -2027,7 +2031,10 @@ await step('holder map', async () => {
     await page.getByRole('button', { name: 'Map it' }).click()
     await page.locator('[data-no-match] li').first().waitFor()
     check(`holders landing ${width}: a valid address that is no token names every chain checked and why`, (await page.locator('[data-no-match] li').count()) === 4 && (await page.locator('[data-no-match]').getByText(/There is no contract at this address on Base/).count()) === 1)
-    check(`holders landing ${width}: the coverage chips name each chain's any-token mode`, (await page.locator('[data-holder-sources] li').filter({ hasText: /any token ·/ }).count()) === 5)
+    const srcChains = (await (await page.request.get(BASE + '/api/holders/sources')).json()).chains
+    const srcText = (await page.locator('[data-holder-sources]').innerText()).replace(/\s+/g, ' ')
+    check(`holders landing ${width}: the coverage chips name every chain, the not-yet ones collapsed into one line with logos`, srcChains.every((c) => srcText.includes(c.name)) && (await page.locator('[data-holder-sources] li').count()) <= srcChains.filter((c) => c.any !== 'none').length + 2 && (await page.locator('[data-holder-sources] img, [data-holder-sources] svg').count()) >= srcChains.length)
+    check(`holders landing ${width}: the scans bar chart sits above Most scanned today and is live`, (await page.locator('#hl-top').locator('xpath=..').locator('[data-chart]').count()) === 1)
     await q.fill('$NVDA')
     await page.getByRole('button', { name: 'Map it' }).click()
     await page.locator('[data-resolve-matches] a').first().waitFor()
@@ -2089,6 +2096,7 @@ await step('holder map', async () => {
   const row = p2.locator('[data-launch-holders] a', { hasText: 'DTC' })
   await row.waitFor()
   check('DeepCore page: launches link to their Holder Maps', (await row.getAttribute('href')) === `/holders/robinhood/${E2E_LAUNCH_TOKEN}`)
+  check('DeepCore page: each launch row has a token logo and a chain logo', (await row.locator('img').count()) >= 2)
   await w2.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx2.close()
 })
@@ -2110,6 +2118,7 @@ await step('chain kit waitlist', async () => {
   await page.goto(BASE + '/pricing')
   await page.locator('#on-request').waitFor()
   const pr = await page.locator('#on-request').innerText()
+  check('/pricing: the FAQ is an accordion (one open, the rest closed) and the plan cards have icons', (await page.locator('[data-testid="pricing-faq"] details').count()) >= 9 && (await page.locator('[data-testid="pricing-faq"] details[open]').count()) === 1 && (await page.locator('#api .rounded-card svg').count()) >= 3)
   check('/pricing: Chain Kit is badged WAITLIST and offers the waitlist, not "start a project"', /WAITLIST/.test(pr) && /Join the waitlist/.test(pr))
   await ctx.close()
 })
@@ -2454,6 +2463,43 @@ await step('analytics events', async () => {
 // Every logo is one of src/components/brand (data-brand="kit", from the kit's own files): no CSS-typed
 // "GULLY LABS" wordmark, letter tile or hand-drawn SVG wordmark on any surface, the self-contained error
 // pages and the widget included (owner rule, CLAUDE.md "Brand kit everywhere").
+await step('design audit 2 group 8: landing console, live charts', async () => {
+  for (const [width, mobile] of [[1440, false], [390, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    const page = await ctx.newPage()
+    const w = watch(page, `home at ${width}`)
+    await page.goto(BASE + '/')
+    await page.locator('#console-panel').waitFor({ timeout: 15_000 })
+    await page.locator('#products').scrollIntoViewIfNeeded()
+    await page.waitForTimeout(1500)
+    // N13: the console pane holds no fixed minimum height, so there is no empty band under a short demo.
+    const gap = await page.evaluate(() => {
+      const inner = document.getElementById('console-panel')
+      const outer = inner?.parentElement
+      return outer && inner ? outer.getBoundingClientRect().height - inner.getBoundingClientRect().height : 999
+    })
+    check(`home at ${width}: no empty band under the product console (pane is ${Math.round(gap)} px taller than its content)`, gap < 24, String(gap))
+    if (SHOTS) {
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += 600) {
+          window.scrollTo(0, y)
+          await new Promise((r) => setTimeout(r, 120))
+        }
+        window.scrollTo(0, 0)
+      })
+      await page.waitForTimeout(800)
+      await page.screenshot({ path: path.join(SHOTS, `home-${width}.png`), fullPage: true })
+      for (const route of ['/security', '/security/reports', '/pricing']) {
+        await page.goto(BASE + route)
+        await page.waitForTimeout(1800)
+        await page.screenshot({ path: path.join(SHOTS, `${route.slice(1).replace(/\//g, '-')}-${width}.png`), fullPage: true })
+      }
+    }
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+})
+
 await step('brand kit everywhere', async () => {
   const ctx = await newContext({ cookie: cookieOf(api) })
   await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowRight, BellRing, Boxes, Check, Fuel, History, Layers, Network, Send, ShieldCheck, Zap } from 'lucide-react'
+import { ArrowRight, BellRing, Boxes, Building2, Check, ChevronDown, Fuel, History, KeyRound, Layers, Network, Send, ShieldCheck, Zap, type LucideIcon } from 'lucide-react'
 import { useContact } from '../components/ContactContext'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
@@ -14,6 +14,7 @@ import type { AlertChannels, Offer } from './developers/api'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { PlanLimits } from '../components/charts/PlanLimits'
 import { EChart } from '../components/charts/EChart'
+import { useLiveSeries } from '../components/charts/useLiveSeries'
 import { axisTooltip, barsPreset, C, tipHtml } from '../components/charts/chartPresets'
 import { track } from '../lib/track'
 
@@ -92,6 +93,8 @@ function SectionHead({ id, eyebrow: label, title }: { id: string; eyebrow: strin
   )
 }
 
+const PLAN_ICON: Record<string, LucideIcon> = { free: KeyRound, pro: Zap, business: Building2 }
+
 const USD0 = { ...NF.usd, minimumFractionDigits: 0, maximumFractionDigits: 0 }
 
 /** Chain Kit (waitlist) and services have no list price: one short block so /pricing covers every product. */
@@ -151,30 +154,18 @@ interface GasRow {
 
 /** What paying a plan costs in network gas right now, per offered chain (GET /api/pay/gas, cached 3 min on the server). */
 function GasCost({ offer }: { offer: Offer }) {
-  const [rows, setRows] = useState<GasRow[] | null>(null)
-  const [at, setAt] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
-  useEffect(() => {
-    let alive = true
-    const read = () =>
-      fetch('/api/pay/gas', { headers: { accept: 'application/json' } })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-        .then(
-          (d: { at?: string; chains?: GasRow[] }) => {
-            if (!alive) return
-            setRows(Array.isArray(d.chains) ? d.chains : [])
-            setAt(d.at ?? null)
-            setFailed(false)
-          },
-          () => alive && setFailed(true),
-        )
-    read()
-    const id = setInterval(read, 180_000)
-    return () => {
-      alive = false
-      clearInterval(id)
-    }
-  }, [])
+  // Re-read every 3 minutes (the server caches for the same time); a failed read keeps the last good answer.
+  const gas = useLiveSeries<{ at?: string; chains?: GasRow[] }>(
+    (signal) =>
+      fetch('/api/pay/gas', { headers: { accept: 'application/json' }, signal }).then((r) => {
+        if (!r.ok) throw new Error(String(r.status))
+        return r.json() as Promise<{ at?: string; chains?: GasRow[] }>
+      }),
+    180_000,
+  )
+  const rows = useMemo(() => (gas.data ? (Array.isArray(gas.data.chains) ? gas.data.chains : []) : null), [gas.data])
+  const at = gas.data?.at ?? null
+  const failed = !!gas.error
   const offered = useMemo(() => new Set(offer.chains.map((c) => c.id)), [offer])
   const list = useMemo(() => (rows ?? []).filter((r) => offered.has(r.chainId)), [rows, offered])
   const known = list.filter((r) => r.ok && typeof r.transferUsd === 'number')
@@ -266,7 +257,15 @@ export function Pricing() {
                   <div key={p.id} className={`relative flex flex-col gap-6 overflow-hidden rounded-card border bg-surface p-7 ${featured ? 'border-gold-line' : 'border-line'}`} style={rise(3 + i)}>
                     {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(217,181,99,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
                     <div className="relative flex flex-col gap-2">
-                      <span className="font-mono text-[12px] tracking-[1.5px] text-faint">{p.name.toUpperCase()}</span>
+                      <span className="flex items-center gap-3 font-mono text-[12px] tracking-[1.5px] text-faint">
+                        <span className={`flex size-9 items-center justify-center rounded-btn border ${featured ? 'border-gold text-gold' : 'border-line-strong text-gold'}`}>
+                          {(() => {
+                            const Icon = PLAN_ICON[p.id] ?? Layers
+                            return <Icon aria-hidden size={18} strokeWidth={1.75} />
+                          })()}
+                        </span>
+                        {p.name.toUpperCase()}
+                      </span>
                       <span className="flex items-baseline gap-2">
                         <AnimatedNumber className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`} value={p.priceUsdc} format={USD0} countUp />
                         <span className="font-mono text-[13px] text-muted">{p.priceUsdc ? `/ ${offer.periodDays} days` : 'free, no time limit'}</span>
@@ -330,14 +329,17 @@ export function Pricing() {
               Plans &amp; alerts docs <NewTabMark size={13} />
             </a>
           </div>
-          <dl className="m-0 flex flex-col gap-6">
-            {FAQ(offer, tg).map((f) => (
-              <div key={f.q} className="flex flex-col gap-2 border-b border-line pb-5 last:border-b-0 last:pb-0">
-                <dt className="font-display text-[22px] leading-none font-bold uppercase">{f.q}</dt>
-                <dd className="m-0 text-[15px] leading-[1.65] text-muted">{f.a}</dd>
-              </div>
+          <div className="flex flex-col" data-testid="pricing-faq">
+            {FAQ(offer, tg).map((f, i) => (
+              <details key={f.q} open={i === 0} className="group border-b border-line first:border-t last:border-b-0 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 py-3 font-display text-[18px] leading-tight font-bold uppercase transition-colors hover:text-gold">
+                  {f.q}
+                  <ChevronDown aria-hidden size={18} className="flex-none text-gold transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <p className="m-0 pb-4 text-[15px] leading-[1.65] text-muted">{f.a}</p>
+              </details>
             ))}
-          </dl>
+          </div>
         </div>
       </section>
     </>
