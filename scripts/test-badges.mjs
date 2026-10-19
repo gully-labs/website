@@ -215,7 +215,7 @@ check(
   const health = renderBadge({ kind: 'holder-map', ...OK(82, 0), href, size: 'L', theme: 'light' })
   const bundles = renderBadge({ kind: 'holder-map', ...OK(82, 3), href })
   const unknown = renderBadge({ kind: 'holder-map', state: 'unknown', href })
-  check('renderBadge({ kind: "holder-map", ...holderBadgeData }): "Holder Map | Health 82", "3 bundles" in the warning field, neutral pill when unknown', health.includes('<title>Holder Map: Health 82</title>') && health.includes('height="36"') && bundles.includes('<title>Holder Map: 3 bundles</title>') && bundles.includes(`fill="${TOKENS.labGold}"`) && unknown.includes('<title>Holder Map</title>') && !/<text/.test(health + bundles + unknown) && health.includes(`href="${href}"`) && wellFormed(health) && wellFormed(unknown))
+  check('renderBadge({ kind: "holder-map", ...holderBadgeData }): "Holder Map | Health 82", "3 bundles" in the warning field, neutral pill when unknown', health.includes('<title>Holder Map: Health 82</title>') && health.includes('height="36"') && bundles.includes('<title>Holder Map: 3 bundles</title>') && bundles.includes(`fill="${TOKENS.alertRed}"`) && unknown.includes('<title>Holder Map</title>') && !/<text/.test(health + bundles + unknown) && health.includes(`href="${href}"`) && wellFormed(health) && wellFormed(unknown))
   check('the neutral pill is the narrowest (no value field)', badgeMetrics({ kind: 'holder-map', state: 'unknown' }).width < badgeMetrics({ kind: 'holder-map', ...OK(82, 0) }).width)
 }
 const call = async (urlPath, method = 'GET') => {

@@ -9,6 +9,7 @@
   --gl-moss: #3C553B;
   --gl-text-muted: #AEB5BE;
   --gl-text-dim: #7D8794;
+  --gl-alert-red: #FF8A7A; /* warning colour, added 2026-10-19 */
 
   --gl-grad-labs: linear-gradient(180deg, #F6E1A0 0%, #D9B563 38%, #8C8150 70%, #3C553B 100%);
   --gl-grad-labs-light: linear-gradient(180deg, #D9B563 0%, #A07C3A 45%, #5C6440 75%, #2F4A33 100%);
