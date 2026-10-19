@@ -54,13 +54,13 @@ Kind regards,
 
 The Gully Labs team
 https://gullylabs.xyz | X: @Gully_Labs
-Reply to: labsgully@gmail.com
+Reply to: team@gullylabs.xyz
 
 ---
 
 Notes for the owner (delete before sending):
 
-- Sender and reply-to address: labsgully@gmail.com (owner-confirmed). The contact form asks for an email; use that one.
+- Sender and reply-to address: team@gullylabs.xyz (owner-confirmed). The contact form asks for an email; use that one.
 - The claims in the "for what it is worth" paragraph are true of the launch flow in `src/pages/developers/chains/`
   (see `ops/LAUNCH-FLOW-LICENCES.md`). Do not send this before that flow is merged if you want the sentence to be
   literally accurate in production.

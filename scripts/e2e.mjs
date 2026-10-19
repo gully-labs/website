@@ -549,10 +549,102 @@ async function overviewIsLive(page, label) {
   check(`${label}: the round trip is a live millisecond figure`, /^\d+ ms$/.test(ms), ms)
 }
 
+await step('chains launch wizard', async () => {
+  const wApi = makeClient(BASE)
+  check('chains: a wallet signs in', (await wApi.signIn(privateKeyToAccount(generatePrivateKey()))).status === 200)
+  // Chain id 7100001 is already used by a chain launched in this workspace (recorded through the API).
+  const hex = (n) => '0x' + Array.from({ length: n * 2 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
+  const used = await wApi.post('/api/developer/chains-launch', { name: 'Taken Chain', chainId: 7100001, type: 'rollup', parentChainId: 421614, owner: hex(20), validators: [hex(20)], batchPosters: [hex(20)], gasToken: 'ETH', txHash: hex(32) })
+  check('chains: a chain is recorded through the API (201)', used.status === 201)
+  const OWNER = '0x1234567890abcdef1234567890abcdef12345678'
+  for (const [width, height, mobile] of [[1440, 900, false], [390, 844, true]]) {
+    const tag = mobile ? '390' : '1440'
+    const c = await newContext({ width, height, mobile, cookie: cookieOf(wApi) })
+    // The SDK's prepare step is stubbed: no wallet, no RPC, no real chain.
+    await c.addInitScript(() => {
+      window.__GULLY_CHAINS_STUB__ = {
+        prepare: async (input, account) => ({ from: account, to: '0xF5962AD061A1aD6F38F340F5b267b3593cC1Cd7B', data: '0x' + 'ab'.repeat(300), value: 128449767360000000n, gas: 9000000n, chainId: 421614, chainConfig: { chainId: input.chainId, arbitrum: { InitialChainOwner: input.owner, DataAvailabilityCommittee: input.type === 'anytrust' } }, stakeToken: '0x980B62Da83eFf3D4576C647993b0c1D7faf17c73' }),
+      }
+    })
+    const p = await c.newPage()
+    const w = watch(p, `chains ${tag}`)
+    await p.goto(`${BASE}/app#chains`)
+    await p.locator('[data-service="chains"]').getByTestId('service-header').waitFor({ timeout: 15_000 })
+    await p.getByTestId('launched-chain').first().waitFor()
+    check(`chains ${tag}: the recorded chain is listed`, (await p.getByTestId('launched-chain').count()) === 1)
+    await noHorizontalScroll(p, 'chains #chains')
+    await shot(p, `launch-flow-${tag}-list`)
+    // The wizard, deep-linked.
+    await p.goto(`${BASE}/app#chains/launch`)
+    await p.reload()
+    const stepper = p.getByTestId('launch-stepper')
+    await stepper.waitFor({ timeout: 15_000 })
+    check(`chains ${tag}: the wizard has six steps`, (await stepper.locator('li[data-step]').count()) === 6)
+    check(`chains ${tag}: Continue is off until a type is chosen`, await p.getByTestId('wizard-next').isDisabled())
+    await noHorizontalScroll(p, 'wizard: chain type')
+    await shot(p, `launch-flow-${tag}-1-type`)
+    await p.locator('[data-type="anytrust"]').click()
+    await p.locator('[data-type="rollup"]').click()
+    check(`chains ${tag}: one type is selected`, (await p.locator('[role="radio"][aria-checked="true"]').count()) === 1)
+    await p.getByTestId('wizard-next').click()
+    // Configure: validation.
+    await p.locator('#chain-name').waitFor()
+    await p.locator('#chain-name').fill('ab')
+    await p.locator('#chain-id').fill('abc')
+    await p.locator('#chain-owner').fill('0x123')
+    await p.getByTestId('wizard-next').click()
+    check(`chains ${tag}: bad name, chain id and owner are each named`, (await p.getByTestId('chain-name-error').count()) === 1 && (await p.getByTestId('chain-id-error').count()) === 1 && (await p.getByTestId('chain-owner-error').count()) === 1)
+    await p.locator('#chain-owner').fill('0x' + 'a'.repeat(64))
+    check(`chains ${tag}: a pasted private key is refused as an owner`, /private key/i.test(await p.getByTestId('chain-owner-error').textContent()))
+    await p.locator('#chain-name').fill('E2E Testnet')
+    await p.locator('#chain-id').fill('7100001')
+    await p.locator('[data-testid="chain-id-status"][data-state="taken"]').waitFor({ timeout: 10_000 })
+    check(`chains ${tag}: a chain id already used here is flagged taken`, /already uses/.test(await p.getByTestId('chain-id-error').textContent()))
+    await p.locator('#chain-owner').fill(OWNER)
+    await p.getByTestId('wizard-next').click()
+    check(`chains ${tag}: Continue does not pass a taken id`, (await p.locator('#chain-name').count()) === 1)
+    await p.locator('#chain-id').fill('7100002')
+    await p.locator('[data-testid="chain-id-status"][data-state="free"]').waitFor({ timeout: 10_000 })
+    const cfg = await p.locator('[data-testid="step-configure"]').textContent()
+    check(`chains ${tag}: gas token ETH and parent Arbitrum Sepolia are fixed`, /ETH/.test(cfg) && /Arbitrum Sepolia/.test(cfg) && /testnet only/.test(cfg))
+    await noHorizontalScroll(p, 'wizard: configure')
+    await shot(p, `launch-flow-${tag}-2-configure`)
+    await p.getByTestId('wizard-next').click()
+    // Validators and batch poster.
+    await p.locator('#validators').waitFor()
+    check(`chains ${tag}: the page says it never holds keys`, /never generates, receives or holds a private key/i.test(await p.getByTestId('no-keys-note').textContent()))
+    await p.locator('#validators').fill('not an address')
+    await p.locator('#posters').fill('0x' + 'b'.repeat(64))
+    await p.getByTestId('wizard-next').click()
+    check(`chains ${tag}: a bad address and a private key are both refused`, (await p.getByTestId('validators-error').count()) === 1 && /private key/i.test(await p.getByTestId('posters-error').textContent()))
+    await shot(p, `launch-flow-${tag}-3-operators`)
+    await p.getByRole('button', { name: 'Use the owner address for both' }).click()
+    await p.getByTestId('wizard-next').click()
+    // Review: the stubbed SDK transaction.
+    await p.getByTestId('tx-preview').getByText('createRollup').first().waitFor({ timeout: 15_000 })
+    const prev = await p.getByTestId('tx-preview').textContent()
+    check(`chains ${tag}: the review shows the SDK transaction (target, value, call data)`, /0xF5962AD0/.test(prev) && /0\.12844976736 ETH/.test(prev) && /600 bytes/.test(prev) && /1 transaction/.test(prev), prev.slice(0, 200))
+    const rev = await p.getByTestId('review').textContent()
+    check(`chains ${tag}: the review shows the chain, owner and operators`, /E2E Testnet/.test(rev) && rev.includes(OWNER))
+    await noHorizontalScroll(p, 'wizard: review')
+    await shot(p, `launch-flow-${tag}-4-review`)
+    await p.getByTestId('wizard-next').click()
+    // Deploy: needs a wallet; none is connected in the test, and nothing is sent.
+    await p.getByTestId('deploy').waitFor()
+    check(`chains ${tag}: Deploy asks for a wallet (nothing is sent in the test)`, (await p.getByTestId('connect-wallet').count()) === 1 && (await p.getByTestId('deploy-send').count()) === 0)
+    await noHorizontalScroll(p, 'wizard: deploy')
+    await shot(p, `launch-flow-${tag}-5-deploy`)
+    check(`chains ${tag}: no chain was recorded by walking the wizard`, (await wApi.call('/api/developer/chains-launch')).data.chains.length === 1)
+    await w.verify([/li\.quest|lifi|wagmi|walletconnect|ERR_BLOCKED_BY_CLIENT|arbitrum/i])
+    await c.close()
+  }
+})
+
 const SERVICES = [
   ['tracker', 'Tracker'],
   ['pay', 'Gully Pay'],
   ['chain-kit', 'Chain Kit'],
+  ['chains', 'Chains'],
   ['ai', 'Gully AI'],
   ['score', 'Gully Score'],
   ['deepcore', 'DeepCore launches'],
@@ -694,7 +786,7 @@ await step('app services', async () => {
       return Object.values(counts)
     })
   // The pixel-pass design audit on every app page (signed in): 11 px minimum, token colours only, other hosts in a new tab.
-  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'security', 'chain-kit', 'ai', 'deepcore', 'holders', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
+  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'security', 'chain-kit', 'chains', 'ai', 'deepcore', 'holders', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
     await sp.goto(`${BASE}/app#${id}`)
     await sp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
     await sp.waitForLoadState('networkidle').catch(() => {})

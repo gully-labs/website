@@ -514,6 +514,7 @@ export async function bootServer({ port }) {
     DEEPCORE_LOOP: 'off',
     TRACKER_SKIP_APIS: '1',
     ASK_REMOTE: 'off',
+    CHAINLIST_URL: 'off',
     GULLY_TREASURY_ADDRESS: treasury,
     ANTHROPIC_API_KEY: 'sk-ant-e2e-' + 'x'.repeat(30),
     TELEGRAM_BOT_TOKEN: E2E_BOT_TOKEN,
