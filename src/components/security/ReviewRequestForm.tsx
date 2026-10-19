@@ -54,7 +54,7 @@ export function ReviewRequestForm({ source = 'site', chains, auditAvailable = fa
 
   if (done)
     return (
-      <div className="flex flex-col items-start gap-3 rounded-[14px] border border-success-line bg-success-bg px-5 py-5" role="status" data-testid="review-sent">
+      <div className="flex flex-col items-start gap-3 rounded-card border border-success-line bg-success-bg px-5 py-5" role="status" data-testid="review-sent">
         <CheckCircle2 size={22} className="text-green" aria-hidden />
         <span className="text-[16px] font-semibold text-ink">Request received.</span>
         <span className="text-[14px] leading-[1.6] text-ink-2">We read every request and reply by email with questions or a quote. Reference: <code className="font-mono text-[12px]">{done}</code></span>
@@ -64,7 +64,7 @@ export function ReviewRequestForm({ source = 'site', chains, auditAvailable = fa
   return (
     <form onSubmit={submit} className="flex flex-col gap-4" aria-label="Request a security review" data-testid="review-form">
       {!auditAvailable && (
-        <p className="m-0 flex items-start gap-3 rounded-[12px] border border-gold bg-gold/[.07] px-3 py-[10px]">
+        <p className="m-0 flex items-start gap-3 rounded-card border border-gold bg-gold/[.07] px-3 py-[10px]">
           <Users size={16} aria-hidden className="mt-[2px] flex-none text-gold" />
           <span className="flex flex-col">
             <span className="text-[14px] font-semibold text-ink">Security Review, quoted on request</span>
@@ -79,7 +79,7 @@ export function ReviewRequestForm({ source = 'site', chains, auditAvailable = fa
             ['audit', 'Audit', 'The premium tier, quoted per project', <ShieldCheck key="s" size={16} aria-hidden />],
           ] as const
         ).map(([id, name, text, icon]) => (
-          <button key={id} type="button" role="radio" aria-checked={tier === id} onClick={() => setTier(id)} className={`flex min-h-11 flex-[1_1_220px] items-start gap-3 rounded-[12px] border px-3 py-[10px] text-left transition-colors ${tier === id ? 'border-gold bg-gold/[.07]' : 'border-line-strong hover:border-line-hover'}`}>
+          <button key={id} type="button" role="radio" aria-checked={tier === id} onClick={() => setTier(id)} className={`flex min-h-11 flex-[1_1_220px] items-start gap-3 rounded-card border px-3 py-[10px] text-left transition-colors ${tier === id ? 'border-gold bg-gold/[.07]' : 'border-line-strong hover:border-line-hover'}`}>
             <span className={tier === id ? 'text-gold' : 'text-faint'}>{icon}</span>
             <span className="flex flex-col">
               <span className="text-[14px] font-semibold text-ink">{name}</span>

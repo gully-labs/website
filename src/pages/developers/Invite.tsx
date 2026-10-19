@@ -5,6 +5,7 @@ import { api, fmtDate, shortAddress, type InviteAccepted, type InvitePreview, ty
 import { clearInviteHash, declinedInvites, declineInvite, ROLE_TEXT, untilText, usePortal } from './portal'
 import { Skeleton } from './parts'
 import { mono, panel, pillGold, pillLine, pillSm } from './styles'
+import { pillClass } from '../../components/ui/pill'
 
 /* Workspace invites (portal v2).
    - PendingInvites: invites addressed to this wallet (GET /me pendingInvites), as a banner on the
@@ -15,7 +16,7 @@ import { mono, panel, pillGold, pillLine, pillSm } from './styles'
      { token }), which switches the session to the workspace. Expired, revoked, used, invalid and
      wrong-wallet invites each say so plainly. */
 
-const roleBadge = 'rounded-full border border-gold-line px-2 py-[1px] font-mono text-[11px] text-gold'
+const roleBadge = pillClass('warn')
 
 export function PendingInvites() {
   const { me, refreshAll } = usePortal()

@@ -11,6 +11,7 @@ import { HBars, LiveMarker } from '../vcharts'
 import { deepcoreColor, useLaunches } from './useDeepcore'
 import { useHealthPings } from './health'
 import { LineChart } from './LineChart'
+import { StatusPill as KitPill } from '../../../components/ui/StatusPill'
 
 /* The Overview's live market band: what is happening across Gully right now, so a brand-new workspace
    (no keys, no traffic yet) opens on live, moving charts instead of flat zeros. Every figure here is
@@ -103,13 +104,7 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
         <h2 id="mk-title" className="m-0 text-[15px] font-semibold text-ink">
           Live across Gully
         </h2>
-        <span className="inline-flex items-center gap-2 rounded-full border border-line-strong px-[10px] py-[2px] font-mono text-[11px] text-ink-2">
-          <span className="relative grid size-2 place-items-center" aria-hidden>
-            <span className="absolute size-2 rounded-full bg-green/50" style={{ animation: 'gl-live-pulse 2.4s ease-out infinite' }} />
-            <span className="size-[6px] rounded-full bg-green" />
-          </span>
-          NETWORK · LIVE
-        </span>
+        <KitPill tone="live">NETWORK · LIVE</KitPill>
         <span className="font-mono text-[11px] text-faint">market data across Gully, not your account</span>
       </div>
       {/* 1, 2 or 4 tiles a row by the band's own width (never 3 + 1). */}

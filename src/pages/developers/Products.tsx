@@ -19,6 +19,7 @@ import type { ServiceTab } from './services/nav'
 import { LaunchHolders } from '../../components/holders/LaunchHolders'
 import type { ScanView } from '../../components/security/types'
 import { bandColor, useJson, type ScoreIndex } from '../score/api'
+import { StatusPill as KitPill } from '../../components/ui/StatusPill'
 
 /* The Products tab: every Gully product in one hub, each card with its live state for the ACTIVE
    workspace and a live chart where data exists (a pulsing live marker where it does not yet; a
@@ -81,7 +82,8 @@ function useCard<T>(path: string, every: number): Load<T> & { refreshErr: string
   return { k: 'loading', refreshErr: null, retry }
 }
 
-const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-error-line text-error' : 'border-line-strong text-muted'}`}>{t}</span>
+const PILL_TONE = { gold: 'warn', green: 'ok', dim: 'neutral', red: 'error' } as const
+const pill = (t: string, tone: keyof typeof PILL_TONE = 'dim') => <KitPill tone={PILL_TONE[tone]}>{t}</KitPill>
 
 function Stat({ label, value, unknown }: { label: string; value: number | null; unknown?: string }) {
   return (

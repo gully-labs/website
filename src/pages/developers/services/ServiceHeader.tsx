@@ -2,6 +2,7 @@ import { BookOpen, Globe, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../../../components/charts/number-formats'
+import { StatusPill as KitPill, type PillTone } from '../../../components/ui/StatusPill'
 import { ExtLink } from '../ExtLink'
 import { pageTitle, pillSm } from '../styles'
 
@@ -25,16 +26,15 @@ export type Tile = {
   title?: string
 }
 
-const dot: Record<Status['tone'], string> = { live: 'bg-green', down: 'bg-error', checking: 'bg-faint', idle: 'bg-gold' }
+/* One status pill everywhere (G51): the header's status is the kit's StatusPill (components/ui), tinted by tone. */
+const PILL_TONE: Record<Status['tone'], PillTone> = { live: 'live', down: 'error', checking: 'neutral', idle: 'warn' }
 
 export function StatusPill({ s }: { s: Status }) {
   return (
-    <span className="inline-flex min-h-[26px] items-center gap-2 rounded-full border border-line-strong px-[10px] font-mono text-[11px] whitespace-nowrap text-ink-2" data-testid="service-status" data-tone={s.tone}>
-      <span className="relative grid size-2 place-items-center" aria-hidden>
-        {s.tone === 'live' && <span className="absolute size-2 rounded-full bg-green/50" style={{ animation: 'gl-live-pulse 2.4s ease-out infinite' }} />}
-        <span className={`size-[6px] rounded-full ${dot[s.tone]} ${s.tone === 'checking' ? 'animate-pulse' : ''}`} />
-      </span>
-      {s.text}
+    <span data-testid="service-status" data-tone={s.tone} className="inline-flex">
+      <KitPill tone={PILL_TONE[s.tone]} dot>
+        {s.text}
+      </KitPill>
     </span>
   )
 }

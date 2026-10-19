@@ -8,6 +8,7 @@ import { api } from '../api'
 import { ErrorLine } from '../parts'
 import { Can } from '../RoleGate'
 import { input, panel, pillGold, pillLine } from '../styles'
+import { ProgressSteps, type ProgressStep } from '../ui'
 import { PayStep, ScanDetail } from './ScanDetail'
 import { fileToBase64, useScan } from './useSecurity'
 
@@ -41,23 +42,17 @@ const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
 const REPO_RE = /^(?:https?:\/\/(?:www\.)?github\.com\/)?[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}?(?:\.git)?\/?$/
 const COMMIT_RE = /^[0-9a-fA-F]{7,40}$/
 
-function Stepper({ step, free }: { step: Step; free: boolean | null }) {
+function ScanSteps({ step, free }: { step: Step; free: boolean | null }) {
+  const steps: ProgressStep[] = STEPS.map((s) => {
+    const skipped = s.n === 3 && free === true
+    return { id: String(s.n), label: s.label, icon: s.icon, skipped, state: s.n < step || (s.n === 5 && step === 5) ? 'done' : s.n === step ? 'active' : 'todo', after: skipped ? <span className="ml-2 font-mono text-[11px] text-green">free</span> : undefined }
+  })
   return (
-    <ol className="m-0 flex list-none gap-1 overflow-x-auto p-0 [scrollbar-width:none]" aria-label="New scan steps" data-testid="stepper">
-      {STEPS.map((s) => {
-        const on = s.n === step
-        const done = s.n < step
-        const skipped = s.n === 3 && free === true
-        return (
-          <li key={s.n} aria-current={on ? 'step' : undefined} className={`flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-[13px] transition-colors ${on ? 'border-gold bg-gold/[.08] text-ink' : done ? 'border-success-line text-ink-2' : 'border-line text-faint'}`} data-step={s.n}>
-            <span className={on ? 'text-gold' : done ? 'text-green' : ''}>{s.icon}</span>
-            <span className="font-mono text-[11px]">{s.n}</span>
-            <span className={skipped ? 'line-through' : ''}>{s.label}</span>
-            {skipped && <span className="font-mono text-[11px] text-green">free</span>}
-          </li>
-        )
-      })}
-    </ol>
+    <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-card border border-line bg-surface p-3 [scrollbar-width:none]">
+      <div className="min-w-0">
+        <ProgressSteps steps={steps} label="New scan steps" testId="stepper" />
+      </div>
+    </div>
   )
 }
 
@@ -133,7 +128,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
 
   return (
     <div className="flex flex-col gap-4" data-testid="new-scan">
-      <Stepper step={step} free={step >= 2 ? free : null} />
+      <ScanSteps step={step} free={step >= 2 ? free : null} />
       {dup && (
         <p className="m-0 rounded-input border border-gold-line px-3 py-2 text-[13px] text-ink-2" role="status" data-testid="duplicate">
           You are already scanning this; here it is. Nothing new was started or charged.
@@ -147,7 +142,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
           </h3>
           <div role="radiogroup" aria-label="Input" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-2">
             {KINDS.map((k) => (
-              <button key={k.id} type="button" role="radio" aria-checked={kind === k.id} onClick={() => (setKind(k.id), setErr(null))} className={`flex min-h-[64px] items-start gap-3 rounded-[12px] border px-3 py-[10px] text-left transition-colors ${kind === k.id ? 'border-gold bg-gold/[.07]' : 'border-line-strong hover:border-line-hover'}`}>
+              <button key={k.id} type="button" role="radio" aria-checked={kind === k.id} onClick={() => (setKind(k.id), setErr(null))} className={`flex min-h-[64px] items-start gap-3 rounded-card border px-3 py-[10px] text-left transition-colors ${kind === k.id ? 'border-gold bg-gold/[.07]' : 'border-line-strong hover:border-line-hover'}`}>
                 <span className={kind === k.id ? 'text-gold' : 'text-faint'}>{k.icon}</span>
                 <span className="flex flex-col">
                   <span className="text-[14px] font-semibold text-ink">{KIND_LABEL[k.id]}</span>
@@ -185,7 +180,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
             </div>
           )}
           {kind === 'upload' && (
-            <label className="flex min-h-[84px] cursor-pointer flex-col items-center justify-center gap-2 rounded-[12px] border border-dashed border-line-strong px-4 py-4 text-center text-[13px] text-muted hover:border-gold">
+            <label className="flex min-h-[84px] cursor-pointer flex-col items-center justify-center gap-2 rounded-card border border-dashed border-line-strong px-4 py-4 text-center text-[13px] text-muted hover:border-gold">
               <FileUp size={20} className="text-gold" aria-hidden />
               {file ? (
                 <span className="font-mono text-ink">
@@ -247,7 +242,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
                 </li>
               </ul>
             </div>
-            <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-surface-deep p-4" data-testid="cost">
+            <div className="flex flex-col gap-2 rounded-card border border-line bg-surface-deep p-4" data-testid="cost">
               <span className="font-mono text-[11px] tracking-[1px] text-faint">{q.plan.name.toUpperCase()} PLAN · THIS MONTH</span>
               <span className="text-[13px] text-ink-2">
                 {q.left} of {q.freePerMonth} free scan{q.freePerMonth === 1 ? '' : 's'} left · resets {fmtWhen(q.resetsAt).replace(/,\s*\d{1,2}:\d{2}.*$/, '')}

@@ -91,7 +91,7 @@ function Tiers({ offer }: { offer: SecurityOffer | null }) {
               <x.icon size={18} strokeWidth={1.75} aria-hidden />
             </span>
             <span className="flex min-w-0 flex-col">
-              <span className="font-display text-[22px] leading-none font-bold uppercase">{name(x.id)}</span>
+              <span className="heading-4 leading-none">{name(x.id)}</span>
               <span className="text-[12px] text-muted">{x.who}</span>
             </span>
             <span className="ml-auto font-mono text-[12px] whitespace-nowrap text-gold" data-tier-price={x.id}>
@@ -157,12 +157,12 @@ function Monitoring({ plans }: { plans: Plan[] | null }) {
   const app = isLocalHost() ? '/developers#security-monitors' : `${APP_URL}/#security-monitors`
   return (
     <section id="monitoring" className="scroll-mt-24 px-page pb-16" aria-labelledby="monitoring-title" data-testid="monitoring-pricing">
-      <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center gap-6 rounded-card border border-line bg-surface p-6 max-[860px]:grid-cols-1 max-[600px]:p-4">
+      <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] card card-pad items-center gap-6 max-[860px]:grid-cols-1">
         <div className="flex flex-col gap-2">
           <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
             <Radar size={14} className="text-gold" aria-hidden /> MONITORING
           </span>
-          <h2 id="monitoring-title" className="m-0 font-display text-[28px] leading-none font-extrabold uppercase">
+          <h2 id="monitoring-title" className="heading-3">
             Watch your contracts <span className="text-gold">after launch</span>
           </h2>
           <p className="m-0 text-[14px] leading-[1.6] text-muted">Privileged changes and large outflows on the contracts you watch, by Telegram or webhook. Each watched contract can show a public Gully Score, worked out from public evidence only.</p>
@@ -252,7 +252,7 @@ export function SecurityPage() {
                 <span className="font-display text-[36px] leading-none font-extrabold text-gold">{i + 1}</span>
                 <h.icon size={18} className="text-faint" aria-hidden />
               </span>
-              <h3 className="m-0 font-display text-[20px] font-bold uppercase">{h.title}</h3>
+              <h3 className="heading-4">{h.title}</h3>
               <span className="text-[14px] leading-[1.5] text-muted">{h.body}</span>
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-gold" style={{ animation: `gl-grow-x .8s ${0.3 + i * 0.15}s cubic-bezier(.2,.8,.2,1) both` }} />
             </li>

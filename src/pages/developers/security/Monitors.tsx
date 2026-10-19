@@ -2,6 +2,7 @@ import { track } from '../../../lib/track'
 import { Activity, Gauge, Pause, Play, Plus, Radar, RotateCw, Send, ShieldAlert, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { barsPreset, axisTooltip, C, PALETTE, tipHtml } from '../../../components/charts/chartPresets'
+import { GhostChart } from '../../../components/charts/GhostChart'
 import { EChart } from '../../../components/charts/EChart'
 import { toastSuccess } from '../../../components/ui/toast'
 import { DOCS_URL, isLocalHost } from '../../../site-host'
@@ -79,6 +80,8 @@ function EventDays({ monitors, now }: { monitors: Monitor[]; now: number }) {
     }
   }, [monitors, now])
   const total = monitors.reduce((n, m) => n + m.events.length, 0)
+  // Nothing seen yet: the kit's ghost (shape only), never a row of zero bars (G18).
+  if (total === 0) return <GhostChart variant="bars" height={120} label="Events on your watched contracts will draw here" />
   // The legend is HTML (token colours, 11 px text), not the chart's own.
   return (
     <div className="flex flex-col gap-1">
@@ -93,7 +96,7 @@ function EventDays({ monitors, now }: { monitors: Monitor[]; now: number }) {
           </span>
         ))}
       </div>
-      <EChart option={option} height={168} label={`Events seen on watched contracts, last 14 days: ${total} in all`} steps={{ count: 14 }} skeleton="bars" />
+      <EChart option={option} height={120} label={`Events seen on watched contracts, last 14 days: ${total} in all`} steps={{ count: 14 }} skeleton="bars" />
     </div>
   )
 }
@@ -336,7 +339,7 @@ export function Monitors() {
     <section className="flex flex-col gap-4" aria-labelledby="monitors-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 id="monitors-title" className={`${panelTitle} flex items-center gap-2 text-[18px]`}>
+          <h2 id="monitors-title" className={`${panelTitle} flex items-center gap-2`}>
             <ShieldAlert aria-hidden size={18} className="text-gold" /> Monitors
           </h2>
           {view && (

@@ -13,6 +13,7 @@ import { HBars, LiveMarker, type HBar } from './vcharts'
 import { GhostCurves } from './charts'
 import type { ActivityPage } from './api'
 import { chip, input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
+import { pillClass } from '../../components/ui/pill'
 
 /* The Team tab (portal v2): the workspace's name (admins and the owner rename it), its members with
    their roles (changed by a select where the signed-in role may change them), joined and last-seen
@@ -23,7 +24,7 @@ import { chip, input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, p
    with its limits, then members beside "who changed things" and the open invites, so the whole team fits
    one screen. Both reads are polled with backoff and keep their last good answer. */
 
-const roleBadge = (r: Role) => `rounded-full border px-2 py-[1px] font-mono text-[11px] ${r === 'owner' ? 'border-gold text-gold' : r === 'admin' ? 'border-gold-line text-gold' : 'border-line-strong text-muted'}`
+const roleBadge = (r: Role) => pillClass(r === 'owner' || r === 'admin' ? 'warn' : 'neutral')
 
 /** Whether `myRole` may change or remove `m` (mirrors workspaces.mjs). */
 const canManage = (myRole: Role, canTeam: boolean, m: TeamMember) => canTeam && m.role !== 'owner' && !m.you && (myRole === 'owner' || m.role !== 'admin')
