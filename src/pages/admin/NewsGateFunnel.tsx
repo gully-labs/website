@@ -1,5 +1,5 @@
 import { LoaderCircle, Pin, Send } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { useReducedMotion } from '../../components/charts/chart-utils'
 import { toastError, toastSuccess } from '../../components/ui/toast'
@@ -39,16 +39,20 @@ export function NewsGateFunnel({ token }: { token: string }) {
   const [note, setNote] = useState('')
   const still = useReducedMotion()
 
-  const load = useCallback(async () => {
-    const r = await adminCall<{ gate: Gate; freeActions: number }>(token, '/api/admin/channel/gate')
-    if (r.ok) {
-      setGate(r.data)
-      setError('')
-    } else setError(r.error)
-  }, [token])
+  // First load: state is set only in the promise callback, never synchronously inside the effect.
   useEffect(() => {
-    void load()
-  }, [load])
+    let live = true
+    adminCall<{ gate: Gate; freeActions: number }>(token, '/api/admin/channel/gate').then((r) => {
+      if (!live) return
+      if (r.ok) {
+        setGate(r.data)
+        setError('')
+      } else setError(r.error)
+    })
+    return () => {
+      live = false
+    }
+  }, [token])
   // The bars grow from zero the first time data arrives.
   useEffect(() => {
     if (!gate) return
