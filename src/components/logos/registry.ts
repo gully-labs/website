@@ -108,6 +108,9 @@ const INTEGRATIONS: Record<string, Mark> = {
   drpc: { src: '/integrations/drpc.png', name: 'dRPC', disc: null, inset: 0 },
   rainbowkit: { src: '/integrations/rainbowkit.svg', name: 'RainbowKit', disc: null, inset: 0 },
   walletconnect: { src: '/integrations/walletconnect.svg', name: 'WalletConnect', disc: '#ffffff', inset: 0.2 },
+  // Hyperlane's GitHub avatar is black on a transparent ground; Offchain Labs (Arbitrum Orbit and Nitro) is a full tile.
+  hyperlane: { src: '/integrations/hyperlane.png', name: 'Hyperlane', disc: '#ffffff', inset: 0.12 },
+  'offchain-labs': { src: '/integrations/offchain-labs.jpg', name: 'Arbitrum Orbit (Offchain Labs)', disc: null, inset: 0 },
   umami: { src: '/integrations/umami.svg', name: 'Umami', disc: '#ffffff', inset: 0.2 },
 }
 

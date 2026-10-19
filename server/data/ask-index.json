@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T18:07:31.004Z",
+ "updatedAt": "2026-10-19T19:01:05.209Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -3617,8 +3617,8 @@
    "title": "Gully SDK (gully-labs/sdk README)",
    "url": "https://github.com/gully-labs/sdk/blob/main/README.md#limits-and-keys",
    "section": "Limits and keys",
-   "text": "Anonymous calls get 60 a minute per IP. A key from the developer portal (sign in with your wallet, no form) gets 600:",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Anonymous calls get 60 a minute per IP. A key from the Gully Labs app (sign in with your wallet, no form) gets 600:",
+   "updatedAt": "2026-10-19T19:01:05.209Z"
   },
   {
    "id": "6e12edc900ac",

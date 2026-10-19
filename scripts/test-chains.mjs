@@ -68,7 +68,6 @@ try {
     ['an unknown scale', { ...good(3), scale: 'huge' }],
     ['an unknown gas token', { ...good(3), gasToken: 'btc' }],
     ['an unknown DA choice', { ...good(3), da: 'celestia' }],
-    ['no AA answer', { ...good(3), wantsAa: undefined }],
     ['a non yes/no DeepCore answer', { ...good(3), wantsDeepcore: 'maybe' }],
   ]
   for (const [name, body] of bad) {
@@ -112,6 +111,19 @@ try {
   check('admin rows carry the answers', adm.data?.rows?.[0] && 'useCase' in adm.data.rows[0] && 'wantsDeepcore' in adm.data.rows[0])
   check('POST to the admin list is 405', (await call('/api/admin/chains/waitlist', { method: 'POST', body: {}, headers: { authorization: `Bearer ${ADMIN}` } })).status === 405)
   check('the waitlist survives in the file after restart-style reload', Array.isArray(stored()) && stored().length === adm.data.total)
+
+  /* ---- optional answers, public sign-up counts, the contact box's Telegram path ---- */
+  const lean = await post({ project: 'Lean', contact: 'lean@example.com' }, '10.3.0.1')
+  check('the questions are optional: a name and a contact are enough, answers stored as empty', lean.status === 201 && stored().some((r) => r.contact === 'lean@example.com' && r.useCase === '' && r.wantsAa === ''))
+  const st = await call('/api/chains/waitlist/stats')
+  check('GET /api/chains/waitlist/stats answers { days, total } with counts only', st.status === 200 && Array.isArray(st.data?.days) && st.data.total === stored().length && st.data.days.every((d) => typeof d.day === 'string' && typeof d.n === 'number' && Object.keys(d).length === 2))
+  check('the stats carry no contact, project or note', !/example.com|Project|hello|@gully_team/.test(st.text))
+  check('the stats are cached publicly', (await fetch(BASE + '/api/chains/waitlist/stats')).headers.get('cache-control')?.includes('max-age'))
+  check("the per-day counts add up to the total", st.data.days.reduce((a, d) => a + d.n, 0) === st.data.total, JSON.stringify(st.data))
+  check('POST on the stats is 405', (await call('/api/chains/waitlist/stats', { method: 'POST', body: {} })).status === 405)
+  const cj = (b) => call('/api/contact', { method: 'POST', body: b, plain: true, ip: '10.3.1.1' })
+  check('/api/contact takes a Telegram handle instead of an email (topic Gully Chains)', (await cj({ name: 'T', telegram: '@gully_team', message: 'hi', types: ['Gully Chains'], topic: 'Gully Chains' })).status === 200)
+  check('/api/contact still refuses a message with neither email nor Telegram', (await cj({ name: 'T', message: 'hi', types: ['Gully Chains'] })).status === 400)
 
   /* ---- SEO ---- */
   const { pageMeta, sitemapFor } = await import('../server/seo.mjs')

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { CheckCircle2, Send } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Send } from 'lucide-react'
 import { track } from '../../lib/track'
 import { btnGold } from '../../components/ui'
 import type { ChainsConfig, Choice } from './useChains'
@@ -8,7 +8,7 @@ import type { ChainsConfig, Choice } from './useChains'
    form: validate here for a fast answer, the server validates again. The hidden `website` field is the honeypot. */
 
 const fieldLabel = 'font-mono text-[11px] tracking-[1px] text-dim'
-const input = 'min-h-12 rounded-input border border-line-strong bg-bg px-4 py-3 text-[15px] text-ink outline-none transition-colors focus:border-gold focus-visible:outline-none'
+const input = 'min-h-11 rounded-input border border-line-strong bg-bg px-3 py-2 text-[14px] text-ink outline-none transition-colors focus:border-gold focus-visible:outline-none'
 
 interface Form {
   project: string
@@ -28,11 +28,11 @@ const TELEGRAM_RE = /^@?[A-Za-z][A-Za-z0-9_]{4,31}$/
 
 function Select({ label, name, value, onChange, options }: { label: string; name: string; value: string; onChange: (v: string) => void; options: Choice[] }) {
   return (
-    <label className="flex flex-col gap-2">
+    <label className="flex flex-col gap-1">
       <span className={fieldLabel}>{label}</span>
       <select name={name} value={value} onChange={(e) => onChange(e.target.value)} className={input}>
         <option value="" disabled>
-          Choose one
+          Optional
         </option>
         {options.map(([v, l]) => (
           <option key={v} value={v}>
@@ -74,7 +74,6 @@ export function Waitlist({ cfg }: { cfg: ChainsConfig }) {
     const contact = f.contact.trim()
     if (!f.project.trim()) return setError('Please tell us the project name.')
     if (!EMAIL_RE.test(contact) && !TELEGRAM_RE.test(contact)) return setError('Please give an email or a Telegram handle (like @yourname).')
-    if (!f.useCase || !f.scale || !f.gasToken || !f.da || !f.wantsAa || !f.wantsDeepcore) return setError('Please answer every question above the notes.')
     setSending(true)
     try {
       const res = await fetch('/api/chains/waitlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'gully' }, body: JSON.stringify(f) })
@@ -100,29 +99,39 @@ export function Waitlist({ cfg }: { cfg: ChainsConfig }) {
     )
 
   return (
-    <form onSubmit={submit} noValidate data-testid="chains-waitlist-form" className="relative flex flex-col gap-5 overflow-hidden rounded-card border border-line bg-surface p-7 max-[600px]:p-4">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,240px),1fr))] gap-4">
-        <label className="flex flex-col gap-2">
+    <form onSubmit={submit} noValidate data-testid="chains-waitlist-form" className="relative flex flex-col gap-4 overflow-hidden rounded-card border border-line bg-card-token p-5 max-[600px]:p-4">
+      <div className="grid grid-cols-2 gap-3 max-[600px]:grid-cols-1">
+        <label className="flex flex-col gap-1">
           <span className={fieldLabel}>PROJECT NAME</span>
           <input name="project" autoComplete="organization" maxLength={80} value={f.project} onChange={(e) => set('project')(e.target.value)} placeholder="Your project" className={input} />
         </label>
-        <label className="flex flex-col gap-2">
+        <label className="flex flex-col gap-1">
           <span className={fieldLabel}>EMAIL OR TELEGRAM</span>
           <input name="contact" autoComplete="email" maxLength={254} value={f.contact} onChange={(e) => set('contact')(e.target.value)} placeholder="you@project.xyz or @yourname" className={input} />
         </label>
         <Select label="USE CASE" name="useCase" value={f.useCase} onChange={set('useCase')} options={cfg.choices.useCase} />
         <Select label="EXPECTED TPS OR USERS" name="scale" value={f.scale} onChange={set('scale')} options={cfg.choices.scale} />
       </div>
-      <Segmented label="GAS TOKEN" name="gasToken" value={f.gasToken} onChange={set('gasToken')} options={cfg.choices.gasToken} />
-      <Segmented label="DATA AVAILABILITY" name="da" value={f.da} onChange={set('da')} options={cfg.choices.da} />
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5">
-        <Segmented label="ACCOUNT ABSTRACTION AND PAYMASTER?" name="wantsAa" value={f.wantsAa} onChange={set('wantsAa')} options={YES_NO} />
-        <Segmented label="DEEPCORE LAUNCHPAD?" name="wantsDeepcore" value={f.wantsDeepcore} onChange={set('wantsDeepcore')} options={YES_NO} />
-      </div>
-      <label className="flex flex-col gap-2">
-        <span className={fieldLabel}>NOTES (OPTIONAL)</span>
-        <textarea name="notes" rows={3} maxLength={2000} value={f.notes} onChange={(e) => set('notes')(e.target.value)} placeholder="Anything we should know: timing, tokens, partners." className={`${input} resize-y`} />
-      </label>
+      <details className="group rounded-btn border border-line" data-testid="chains-more-details">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
+          <span>
+            More details <span className="font-mono text-[11px] text-faint">OPTIONAL</span>
+          </span>
+          <ChevronDown aria-hidden size={16} className="text-gold transition-transform duration-200 group-open:rotate-180" />
+        </summary>
+        <div className="flex flex-col gap-4 border-t border-line p-4">
+          <div className="grid grid-cols-2 gap-4 max-[600px]:grid-cols-1">
+            <Segmented label="GAS TOKEN" name="gasToken" value={f.gasToken} onChange={set('gasToken')} options={cfg.choices.gasToken} />
+            <Segmented label="DATA AVAILABILITY" name="da" value={f.da} onChange={set('da')} options={cfg.choices.da} />
+            <Segmented label="ACCOUNT ABSTRACTION AND PAYMASTER?" name="wantsAa" value={f.wantsAa} onChange={set('wantsAa')} options={YES_NO} />
+            <Segmented label="DEEPCORE LAUNCHPAD?" name="wantsDeepcore" value={f.wantsDeepcore} onChange={set('wantsDeepcore')} options={YES_NO} />
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className={fieldLabel}>NOTES</span>
+            <textarea name="notes" rows={2} maxLength={2000} value={f.notes} onChange={(e) => set('notes')(e.target.value)} placeholder="Anything we should know: timing, tokens, partners." className={`${input} resize-y`} />
+          </label>
+        </div>
+      </details>
       {/* Honeypot: people never see or fill this. */}
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>
@@ -135,7 +144,7 @@ export function Waitlist({ cfg }: { cfg: ChainsConfig }) {
           {error}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <button type="submit" disabled={sending} className={`${btnGold} inline-flex min-h-12 items-center gap-2 px-7 text-[16px] disabled:opacity-60`}>
           <Send aria-hidden size={17} />
           {sending ? 'Sending…' : 'Join the waitlist'}

@@ -144,5 +144,21 @@
     "terms": "Simple Icons (CC0) glyph of the Umami mark; nominative use only.",
     "note": "Path unchanged, default black on a white disc.",
     "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "hyperlane": {
+    "file": "/integrations/hyperlane.png",
+    "from": "https://github.com/hyperlane-xyz.png?size=256",
+    "page": "https://github.com/hyperlane-xyz",
+    "terms": "Hyperlane's official GitHub organisation avatar, unaltered; nominative use only.",
+    "note": "Black mark on a transparent ground, shown on a white disc.",
+    "fetchedAt": "2026-10-19T09:00:00Z"
+  },
+  "offchain-labs": {
+    "file": "/integrations/offchain-labs.jpg",
+    "from": "https://github.com/OffchainLabs.png?size=256",
+    "page": "https://github.com/OffchainLabs",
+    "terms": "Offchain Labs' official GitHub organisation avatar (the company behind Arbitrum Orbit and Nitro), unaltered; nominative use only.",
+    "note": "Names Arbitrum Orbit / Nitro, the software the chain runs; no implied affiliation.",
+    "fetchedAt": "2026-10-19T09:00:00Z"
   }
 }
