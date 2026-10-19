@@ -3,7 +3,7 @@
 Status: DRAFT, not sent. For the owner to review and send.
 
 - To: Blockscout, via the contact form at https://eaas.blockscout.com/#contact
-- From: Gully Labs (gullylabs.xyz, X @Gully_Labs)
+- From: Gully Labs (gullylabs.xyz, X @Gully_Labs), reply-to team@gullylabs.xyz
 - Why now: since 2026-04-22 Blockscout (backend and frontend) is under LicenseRef-Blockscout 1.0. Clause 4a bars paid, hosted or managed use without a commercial licence, and clause 5b bars handing derivatives to third parties. Chain Kit is on a waitlist until this is settled.
 
 ---
@@ -29,7 +29,7 @@ We are happy to share a short description of our setup, expected number of explo
 Thank you for your time.
 
 Kind regards,
-[Name]
+The Gully Labs team
 Gully Labs
 https://gullylabs.xyz · X: @Gully_Labs
-[reply-to email]
+team@gullylabs.xyz
