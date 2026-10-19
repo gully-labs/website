@@ -67,7 +67,7 @@ export const benefits: Benefit[] = [
   { id: 'webhooks', title: 'Launch webhooks', text: 'A signed webhook (and optional Telegram message) for every new DeepCore launch on a chain you choose.', status: 'Live', docs: { label: 'Plans and alerts docs', href: `${DOCS}/plans-alerts` }, for: ['launchpads', 'wallets'] },
   { id: 'whitelabel', title: 'White-label', text: 'The embedded map without the “Powered by Gully Labs” credit, on the Business plan. The plan flag exists; the credit-free embed is not built yet.', status: 'Not live yet', docs: { label: 'API keys docs', href: `${DOCS}/api-keys` }, for: ['launchpads', 'wallets', 'explorers'] },
   { id: 'pay', title: 'Gully Pay', text: 'Non-custodial crypto checkout: invoices, pay links and signed webhooks, paid to your own wallets. A transaction fee only.', status: 'Live', docs: { label: 'Gully Pay docs', href: `${DOCS}/gully-pay-merchants` }, for: ['chains', 'wallets', 'launchpads'] },
-  { id: 'chainkit', title: 'Chain Kit', text: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.', status: 'On request', docs: { label: 'Chain Kit docs', href: `${DOCS}/chain-kit` }, for: ['chains', 'explorers'] },
+  { id: 'chainkit', title: 'Chain Kit', text: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. Join the waitlist.', status: 'Not live yet', docs: { label: 'Chain Kit docs', href: `${DOCS}/chain-kit` }, for: ['chains', 'explorers'] },
 ]
 
 export interface Snippet {

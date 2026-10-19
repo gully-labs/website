@@ -1,4 +1,4 @@
-// General invoices for anything Gully Labs sells besides API plans (Chain Kit, Gully Analytics,
+// General invoices for anything Gully Labs sells besides API plans (Gully Analytics,
 // services work). An admin creates one; anyone holding its link (/pay/<id>, an unguessable id) can pay
 // it with the same quotes and checks as plan checkout (billing.mjs), from a wallet or by pasting a
 // transaction hash. Nobody signs in on a pay page, so a payment matches a quote only by its exact amount.

@@ -149,12 +149,12 @@ export default function ChainKitDemo(): JSX.Element {
           </div>
         </div>
         <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0 text-[12px] text-muted">
-          <li>Blockscout, open source, run by Gully Labs</li>
+          <li>Built on Blockscout, run by Gully Labs</li>
           <li>Your domain, logo, colours and token list</li>
           <li>Contract verification and a public API</li>
         </ul>
-        <Link to="/chain-kit" onClick={() => track('cta-click', { cta: 'request-chain-kit', page: location.pathname })} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-gold font-semibold text-bg transition-colors hover:bg-gold-hover">
-          Request Chain Kit <ArrowRight size={15} aria-hidden />
+        <Link to="/chain-kit" onClick={() => track('cta-click', { cta: 'chain-kit-waitlist', page: location.pathname })} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-gold font-semibold text-bg transition-colors hover:bg-gold-hover">
+          Join the waitlist <ArrowRight size={15} aria-hidden />
         </Link>
       </div>
 

@@ -1812,6 +1812,27 @@ await step('holder map', async () => {
   await ctx2.close()
 })
 
+// Chain Kit (/chain-kit) is on a waitlist while the explorer licence is finalised: the page says so, offers the
+// waitlist, and has no buy, order, request-to-pay or "available" path. It also must not name Blockscout's licence.
+await step('chain kit waitlist', async () => {
+  const ctx = await newContext({ width: 1440, height: 900 })
+  const page = await ctx.newPage()
+  const w = watch(page, '/chain-kit')
+  await page.goto(BASE + '/chain-kit')
+  await page.getByRole('heading', { level: 1 }).waitFor()
+  const main = await page.locator('main').innerText()
+  check('/chain-kit: shows the waitlist status and wording', /WAITLIST/.test(main) && /join the waitlist/i.test(main) && /finalising the explorer licence before taking orders/i.test(main))
+  check('/chain-kit: no buy, order, request or "available on request" path', !/available on request|talk to us about your chain|request (your|an|a) explorer|buy|order now|checkout|pay now|price[ds]?/i.test(main))
+  check('/chain-kit: the call to action is a link to the chains waitlist, not a contact or payment form', (await page.locator('main a[href="/chains#waitlist"]').count()) >= 1 && (await page.locator('main').getByRole('button', { name: /start a project|talk to us|request|buy|order/i }).count()) === 0)
+  check('/chain-kit: does not mention the Blockscout licence', !/blockscout[’']?s? licen[cs]e|licen[cs]e (from|with|of) blockscout|proprietary|LicenseRef|commercial licen/i.test(main))
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+  await page.goto(BASE + '/pricing')
+  await page.locator('#on-request').waitFor()
+  const pr = await page.locator('#on-request').innerText()
+  check('/pricing: Chain Kit is badged WAITLIST and offers the waitlist, not "start a project"', /WAITLIST/.test(pr) && /Join the waitlist/.test(pr))
+  await ctx.close()
+})
+
 // Gully Chains (/chains): the offer reads from GET /api/chains/plans, nothing claims a chain is live, the waitlist
 // form submits to the real server, and the page holds at 1440 and 390 (no sideways scroll, kit colours, 11 px text).
 // CHAINS_SHOTS=<dir> saves a screenshot per width.

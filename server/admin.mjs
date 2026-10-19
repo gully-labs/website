@@ -47,7 +47,7 @@
 //   GET  /api/admin/alerts                    every alert and monitor across accounts, and the alert webhook log
 //   GET  /api/admin/workspaces                workspaces with members or open invites
 //   GET/POST /api/admin/ecosystem/submissions  launchpad submissions: list; { id, action: approve|reject } (ecosystem.mjs)
-//   GET  /api/admin/chain-kit                 Chain Kit explorer requests and the Gully Chains Devnet waitlist
+//   GET  /api/admin/chain-kit                 Chain Kit waitlist entries and the Gully Chains Devnet waitlist
 //   POST /api/admin/telegram/:address/unlink  unlink an account's Telegram chat (telegram.mjs adminUnlinkTelegram)
 
 import fs from 'node:fs'
@@ -358,7 +358,7 @@ function chainKitAdmin() {
       .filter((e) => /Topic: Chain Kit/i.test(e.message ?? ''))
       .map((e) => ({ at: e.receivedAt, email: e.email, chain: /Chain: (.*)/.exec(e.message)?.[1]?.trim() ?? null, workspace: /Workspace: .*\((0x[0-9a-fA-F]{40})\)/.exec(e.message)?.[1] ?? null, address: /Requested by: (0x[0-9a-fA-F]{40})/.exec(e.message)?.[1] ?? null }))
   const fromLaunch = () => listLaunch().filter((r) => String(r.slot) === '90').map((r) => ({ at: r.addedAt, email: r.email }))
-  const pub = (via) => (r) => ({ at: r.at ?? r.createdAt ?? null, email: r.email ?? null, chain: r.chain ?? null, workspace: r.workspace ?? null, address: r.address ?? null, status: r.status ?? null, via })
+  const pub = (via) => (r) => ({ at: r.at ?? r.createdAt ?? null, email: r.email ?? null, chain: r.chain ?? null, workspace: r.workspace ?? null, address: r.address ?? null, status: r.status ?? null, waitlist: r.waitlist ?? undefined, via })
   const byNewest = (x, y) => String(y.at).localeCompare(String(x.at))
   // Requests made before the app kept them server-side arrived as contact enquiries and "notify me" rows: both are shown.
   const merge = (stored, legacy, same) => [...stored.map(pub('app')), ...legacy.map(pub('legacy')).filter((l) => !stored.some((s) => same(s, l)))].sort(byNewest)

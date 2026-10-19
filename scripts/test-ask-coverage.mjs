@@ -50,7 +50,7 @@ const CASES = [
   ['Mini App', 'How do I open the Mini App inside Telegram?', /telegram-mini-app|gullylabs\.xyz\/tg/],
   ['News gate', 'Do I have to follow the news channel to use the bot?', /news-gate|\/telegram/],
   ['Analytics', 'How do I install the Gully Analytics tracking script on my site?', /analytics/],
-  ['Chain Kit', 'What does Chain Kit include for launching my own chain and explorer?', /chain-kit/],
+  ['Chain Kit', 'What does Chain Kit include for launching my own chain and explorer?', /chain-kit/, (c) => /waitlist/i.test(c.text)],
   ['Gully Chains', 'What is the Gully L3 and how does it settle and store data?', /roadmap-l3|l3\/SPEC|roadmap/],
   ['SDK', 'Which npm packages does the Gully SDK have?', /\/sdk|github\.com\/gully-labs\/sdk/],
   ['Widget', 'How do I embed the tracker widget on my page?', /widget/],

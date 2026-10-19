@@ -420,6 +420,7 @@ interface KitRow {
   workspace: string | null
   address: string | null
   status: string | null
+  waitlist?: boolean
   via: 'app' | 'legacy'
 }
 interface KitView {
@@ -429,7 +430,7 @@ interface KitView {
 }
 
 const KIT_SERIES: DaySeries[] = [
-  { key: 'request', label: 'Explorer requests', color: C.gold },
+  { key: 'request', label: 'Chain Kit waitlist', color: C.gold },
   { key: 'waitlist', label: 'Devnet waitlist', color: '#5aa9e6' },
 ]
 
@@ -447,7 +448,7 @@ export function ChainKitAdmin({ token }: { token: string }) {
   }, [data])
   const list = (rows: KitRow[], kind: 'request' | 'waitlist') =>
     !rows.length ? (
-      <p className="m-0 text-[14px] text-muted">{kind === 'request' ? 'No explorer request yet.' : 'Nobody is on the Devnet waitlist yet.'}</p>
+      <p className="m-0 text-[14px] text-muted">{kind === 'request' ? 'Nobody is on the Chain Kit waitlist yet.' : 'Nobody is on the Devnet waitlist yet.'}</p>
     ) : (
       <ul className="m-0 flex max-h-[320px] list-none flex-col gap-2 overflow-y-auto p-0">
         {rows.map((r, i) => (
@@ -476,8 +477,8 @@ export function ChainKitAdmin({ token }: { token: string }) {
         </h2>
         <span className={small}>
           {data
-            ? `${data.requests.length} explorer requests · ${data.waitlist.length} on the Devnet waitlist${data.stored ? '' : ' · from the contact form and launch list'}`
-            : 'explorer requests and the Devnet waitlist'}
+            ? `${data.requests.length} on the Chain Kit waitlist · ${data.waitlist.length} on the Devnet waitlist${data.stored ? '' : ' · from the contact form and launch list'}`
+            : 'the Chain Kit waitlist and the Devnet waitlist'}
         </span>
       </div>
       {err && <p className="m-0 font-mono text-[12px] text-error">{err}</p>}
@@ -487,7 +488,7 @@ export function ChainKitAdmin({ token }: { token: string }) {
           <Daily days={days} series={KIT_SERIES} unit="sign-ups" empty="No request or waitlist sign-up in the last 30 days." />
           <div className="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1">
             <div className="flex min-w-0 flex-col gap-2">
-              <h3 className="m-0 font-mono text-[12px] tracking-[1px] text-faint">EXPLORER REQUESTS</h3>
+              <h3 className="m-0 font-mono text-[12px] tracking-[1px] text-faint">CHAIN KIT WAITLIST</h3>
               {list(data.requests, 'request')}
             </div>
             <div className="flex min-w-0 flex-col gap-2">

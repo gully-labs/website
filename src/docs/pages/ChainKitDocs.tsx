@@ -3,10 +3,10 @@ import { EmptyPulse, StatusChip, StatusHistory } from '../ProductCharts'
 
 const sections = [
   { id: 'what', title: 'What Chain Kit is' },
-  { id: 'included', title: 'What is included' },
-  { id: 'request', title: 'Requesting an explorer' },
+  { id: 'included', title: 'What is planned' },
+  { id: 'request', title: 'Joining the waitlist' },
   { id: 'status', title: 'Status' },
-  { id: 'licence', title: 'Open source' },
+  { id: 'licence', title: 'Built on Blockscout' },
 ]
 
 export function ChainKitDocs() {
@@ -15,8 +15,8 @@ export function ChainKitDocs() {
       slug="chain-kit"
       eyebrow="PRODUCTS · CHAIN KIT"
       title="Chain Kit"
-      description="Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. What is included, how to request one from the app, and its status."
-      lead="A new chain needs a block explorer on day one. Chain Kit is Blockscout, the open-source explorer, set up for your chain, in your brand, and run for you by Gully Labs."
+      description="Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. Chain Kit is on a waitlist: join it from the app. What is planned and its status."
+      lead="A new chain needs a block explorer on day one. Chain Kit is Blockscout, set up for your chain, in your brand, and run for you by Gully Labs. Chain Kit: join the waitlist. We're finalising the explorer licence before taking orders."
       sections={sections}
     >
       <Section id="what" title="What Chain Kit is">
@@ -25,11 +25,11 @@ export function ChainKitDocs() {
           apply your branding through configuration rather than a fork, and keep it indexed, upgraded and backed up.
         </P>
         <P>
-          It is available on request today. The product page is <Ext href="https://gullylabs.xyz/chain-kit">gullylabs.xyz/chain-kit</Ext>.
+          Chain Kit is on a waitlist: we are finalising the explorer licence before taking orders. The product page is <Ext href="https://gullylabs.xyz/chain-kit">gullylabs.xyz/chain-kit</Ext>.
         </P>
       </Section>
 
-      <Section id="included" title="What is included">
+      <Section id="included" title="What is planned">
         <Fields
           head={['Part', 'Scope', 'Notes']}
           rows={[
@@ -42,16 +42,16 @@ export function ChainKitDocs() {
         />
       </Section>
 
-      <Section id="request" title="Requesting an explorer">
+      <Section id="request" title="Joining the waitlist">
         <List>
           <li>
             Sign in to the app at <Ext href="https://app.gullylabs.xyz/#chain-kit">app.gullylabs.xyz</Ext> and open <strong className="text-ink">Chain Kit</strong> under Services.
           </li>
-          <li>Give an email to reach you and your chain: its name, chain id and an RPC. Then press “Request your explorer”.</li>
-          <li>The card shows “requested” with the date for your workspace. We reply by email with questions about history, settlement layer and sizing.</li>
+          <li>Give an email to reach you and your chain: its name, chain id and an RPC. Then press “Join the waitlist”.</li>
+          <li>The card shows “on the waitlist” with the date for your workspace. We write when orders open, and ask about history, settlement layer and sizing then. Nothing is charged.</li>
         </List>
         <P>
-          You can also write to us from the contact form at <Ext href="https://gullylabs.xyz/services">gullylabs.xyz/services</Ext> (topic: Infrastructure).
+          You can also join from <Ext href="https://gullylabs.xyz/chains#waitlist">gullylabs.xyz/chains</Ext> without signing in.
         </P>
       </Section>
 
@@ -65,9 +65,9 @@ export function ChainKitDocs() {
         <EmptyPulse text="No Chain Kit explorer reports to this API yet: nothing to chart, nothing shown as zero." />
       </Section>
 
-      <Section id="licence" title="Open source">
+      <Section id="licence" title="Built on Blockscout">
         <P>
-          Blockscout is GPL-3.0, and our deployment layer is GPL-3.0 too: everything we add is public at <Ext href="https://github.com/gully-labs/blockscout/tree/gully/chain-kit/gully">gully-labs/blockscout</Ext>. You are never locked in.
+          Chain Kit is built on <Ext href="https://github.com/blockscout/blockscout">Blockscout</Ext>. Your chain, your data and your domain stay yours: you are never locked in.
         </P>
         <Callout label="NO INVENTED FIGURES">The product page’s “charts on day one” are illustrations badged as example data. This page charts only what our API actually reports.</Callout>
       </Section>

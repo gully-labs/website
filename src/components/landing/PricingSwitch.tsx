@@ -8,7 +8,7 @@ import { eyebrow, h2, PORTAL_BILLING } from './links'
 
 /* Pricing on the landing: one switch (Tracker API / Gully Analytics / Chain Kit & services) and that
    product's plans as cards, crossfading on a switch. The API and Analytics prices are read from
-   GET /api/plans (server/plans.mjs is the one source); Chain Kit and services are quoted. The payment
+   GET /api/plans (server/plans.mjs is the one source); Chain Kit is on a waitlist and services are quoted. The payment
    line under the cards says which coins and chains are accepted, from the same read.
    On a phone (< 600 px) the cards are a sideways rail with scroll-snap; previous / next buttons (44 px)
    step one card at a time and the rail itself stays focusable, so arrow keys still scroll it. */
@@ -63,7 +63,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
   let cards: Card[] | null = null
   if (product === 'services')
     cards = [
-      { name: 'Chain Kit', price: 'Quoted', feats: ['Branded Blockscout explorer', 'Your domain, colours and token list', 'Hosted and run by us'] },
+      { name: 'Chain Kit', price: 'Waitlist', feats: ['Branded Blockscout explorer', 'Your domain, colours and token list', 'Join the waitlist: we’re finalising the explorer licence before taking orders'] },
       { name: 'Build', price: 'Quoted', feats: ['Smart contracts', 'dApps and frontends', 'Chain infrastructure'] },
       { name: 'Gully Security', price: 'Quoted', feats: ['Code review', 'Fuzzing and invariant tests', 'Post-launch monitoring'] },
     ]
