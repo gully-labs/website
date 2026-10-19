@@ -19,6 +19,7 @@
     "test:tg-channel": "node scripts/test-tg-channel.mjs",
     "test:tg-broadcast": "node scripts/test-tg-broadcast.mjs",
     "test:tg-miniapp": "node scripts/test-tg-miniapp.mjs",
+    "test:launch-radar": "node scripts/test-launch-radar.mjs",
     "test:deepcore": "node --test scripts/test-deepcore.mjs",
     "test:deepcore-alerts": "node scripts/test-deepcore-alerts.mjs",
     "test:tracker-trust": "node --test scripts/test-tracker-trust.mjs",

@@ -32,6 +32,7 @@
 //                                               existing post unless force is true
 //   GET  /api/admin/channel/gate                the News gate funnel: join screen shown -> joined -> first command, and free-action users
 //   GET  /api/admin/channel/followers           { count (live), at, series: [{ day, count }] }
+//   GET|POST /api/admin/channel/radar           the daily Launch radar (launch-radar.mjs): GET = state, POST { action: draft|post }
 //   POST /api/admin/channel/auto                partial auto-post settings -> { auto }
 //   POST /api/admin/channel/auto/:type/preview  the next auto post of that type, rendered, never sent
 //
@@ -487,6 +488,22 @@ function createPost(v, { by = 'admin', autoKey = null, status = 'draft', schedul
   return p
 }
 
+/** What launch-radar.mjs needs from the composer: drafts keyed per day, rewrite, publish, the auto-post block rules. */
+export const channelHooks = {
+  now: () => now(),
+  find: (autoKey) => db.posts.find((x) => x.autoKey === autoKey && x.status !== 'deleted') ?? null,
+  create: (v, autoKey) => createPost(v, { by: 'auto:radar', autoKey }),
+  rewrite(p, v) {
+    Object.assign(p, { text: v.text, media: v.media, buttons: v.buttons })
+    logTo(p, 'update', true, null, 'auto:radar')
+    save()
+    return p
+  },
+  publish: (p, by = 'admin') => publish(p, by),
+  blocked: () => autoBlocked(),
+  view: (p) => (p ? publicPost(p) : null),
+}
+
 const publicPost = (p) => ({ ...p, url: p.status === 'sent' || (p.status === 'deleted' && p.messageId) ? messageUrl(p.messageId) : null, length: visibleLength(p.text), limit: p.media ? MAX_CAPTION : MAX_TEXT })
 
 function parseWhen(s) {
@@ -510,8 +527,10 @@ export async function tickChannel() {
     await publish(p, 'scheduler')
   }
   await runAuto()
+  await radarTickFn?.().catch((e) => console.error('radar:', e?.message ?? e))
   await sampleFollowers()
 }
+let radarTickFn = null
 
 let tickTimer = null
 let blogTimer = null
@@ -526,6 +545,7 @@ export function startChannel() {
   blogTimer = setInterval(safe(checkSources), Math.min(BLOG_POLL_MS, CHANGELOG_POLL_MS))
   blogTimer.unref?.()
   unsubscribe ??= onLaunches((fresh) => onNewLaunches(fresh))
+  import('./launch-radar.mjs').then((m) => (radarTickFn = tickTimer ? m.radarTick : null)).catch((e) => console.error('radar:', e?.message ?? e))
   firstRun = setTimeout(safe(async () => (await checkSources(), await tickChannel())), 5_000)
   firstRun.unref?.()
 }
@@ -535,6 +555,7 @@ export function stopChannel() {
   clearInterval(blogTimer)
   clearTimeout(firstRun)
   tickTimer = blogTimer = firstRun = null
+  radarTickFn = null
 }
 
 /* ----------------------------------------------------------- auto posts --- */
@@ -1062,6 +1083,11 @@ export async function handleChannelAdmin(req, res, url) {
     logTo(post, 'delete', true)
     save()
     return send(200, { post: publicPost(post) })
+  }
+  if (p === '/api/admin/channel/radar') {
+    if (method !== 'GET' && method !== 'POST') return send(405, { error: 'GET or POST only' })
+    const r = await (await import('./launch-radar.mjs')).handleRadarAdmin(method, body)
+    return send(r.status, r.body)
   }
   return send(404, { error: 'not found' })
 }

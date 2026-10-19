@@ -254,7 +254,7 @@ try {
   const started = await tg.startTelegram()
   const hook = calls.find((c) => c.method === 'setWebhook')
   check('startup: setWebhook to the secret path on gullylabs.xyz', started.ok && hook?.body.url === `https://gullylabs.xyz/api/telegram/${HOOK_PATH}`, hook?.body.url)
-  check('startup: the secret token and allowed updates are sent', hook?.body.secret_token === SECRET && JSON.stringify(hook?.body.allowed_updates) === '["message","callback_query"]')
+  check('startup: the secret token and allowed updates are sent', hook?.body.secret_token === SECRET && JSON.stringify(hook?.body.allowed_updates) === '["message","callback_query","inline_query"]')
   const cmdCalls = calls.filter((c) => c.method === 'setMyCommands')
   const scoped = (type) => cmdCalls.find((c) => (c.body.scope?.type ?? 'default') === type)?.body.commands ?? []
   const cmdList = scoped('all_private_chats')
@@ -1003,6 +1003,86 @@ try {
   await say(ex, '/stop')
   check('non-member: /stop in the unlinked chat still answers', /nothing to stop/.test(lastText(9910)))
   nonMembers.delete(9910)
+
+  /* ------------------------------------------------------- inline mode --- */
+  {
+    const inl = await import('../server/telegram-inline.mjs')
+    const holders = await import('../server/holders.mjs')
+    inl.resetInlineForTest()
+    const counts = { resolve: 0, build: 0 }
+    const builds = []
+    let resolveMatches = []
+    let buildBody = { state: 'busy' }
+    inl.setInlineForTest({
+      wait: 300,
+      resolve: async () => (counts.resolve++, { matches: resolveMatches }),
+      build: async (chain, token, o) => (counts.build++, builds.push({ chain, token, ...o }), buildBody),
+    })
+    const ADDR = '0x2222222222222222222222222222222222222222'
+    const mapOf = (address, over = {}) => ({ state: 'ok', kind: 'deepcore-launch', chain: { key: 'base', id: 8453, name: 'Base' }, token: { address, symbol: 'ZED', name: 'Zed' }, asOf: new Date().toISOString(), holders: { count: 1204 }, nodes: [], clusters: [{ id: 1 }], summary: { top10Pct: 41.2, largestCluster: { pct: 28, wallets: 3 } }, health: { score: 72, level: 'mixed' }, ...over })
+    holders.seedHolderMapForTest('base', ADDR, mapOf(ADDR))
+    const askInline = (userId, query, extra = {}) => postUpdate({ inline_query: { id: `iq${updateId}`, from: { id: userId, is_bot: false, first_name: 'U' }, query, offset: '', ...extra } })
+    const inlineAnswers = () => calls.filter((c) => c.method === 'answerInlineQuery')
+    const lastInline = () => inlineAnswers().at(-1)?.body ?? {}
+    const nonMember = 6001
+    nonMembers.add(nonMember)
+
+    const n0 = inlineAnswers().length
+    check('inline: the webhook accepts an inline_query (200)', (await askInline(nonMember, ADDR)) === 200)
+    const hit = lastInline()
+    const photo = hit.results?.[0]
+    check('inline: a cached address answers one photo result, even for a user outside the News channel (no gate)', inlineAnswers().length === n0 + 1 && hit.results?.length === 1 && photo?.type === 'photo' && counts.build === 0 && counts.resolve === 0, JSON.stringify(hit).slice(0, 200))
+    check('inline: the photo is the Holder Map share card, cache-busted by build time', photo?.photo_url === `https://gullylabs.xyz/api/holders/base/${ADDR}/card.png?v=${inl.buildTime()}` && photo.thumbnail_url === photo.photo_url && photo.photo_width === 1200 && photo.photo_height === 630, photo?.photo_url)
+    check('inline: the caption holds measured facts (top 10 share, linked group, health score) and the signals note', /Top 10 wallets hold 41\.2%/.test(photo?.caption) && /3 wallets hold 28%/.test(photo.caption) && /Health score 72\/100/.test(photo.caption) && /signals not verdicts/.test(photo.caption) && photo.parse_mode === 'HTML' && photo.caption.length <= 1024, photo?.caption)
+    const kbi = flat(photo?.reply_markup?.inline_keyboard)
+    check('inline: buttons are Open Holder Map (site), Open in Mini App (startapp h_<chain>_<token>) and Join @GullyLabsNews', kbi.find((b) => b.text === 'Open Holder Map')?.url === `https://gullylabs.xyz/holders/base/${ADDR}` && kbi.find((b) => b.text === 'Open in Mini App')?.url === `https://t.me/${BOT}?startapp=h_base_${ADDR}` && kbi.find((b) => b.text === 'Join @GullyLabsNews')?.url === 'https://t.me/GullyLabsNews' && kbi.every((b) => b.url && !b.web_app), JSON.stringify(kbi))
+    check('inline: cache_time is set on a hit (300 s) and the answer is not personal', hit.cache_time === 300 && hit.is_personal === false)
+    check('inline: a tracked ticker answers without any lookup', (await askInline(nonMember, '$nvda')) === 200 && counts.resolve === 0 && builds.length <= 1 && lastInline().cache_time > 0 && Array.isArray(lastInline().results))
+    check('inline: the inline answer never touched the News gate (no join screen sent)', !calls.some((c) => (c.method === 'sendMessage' || c.method === 'sendAnimation') && String(c.body.chat_id) === String(nonMember)))
+
+    // Junk: no resolve, no build, empty answer with a cache_time.
+    const before = { ...counts }
+    const nJunk = inlineAnswers().length
+    const junk = ['', '   ', 'hello world', '0x123', 'a'.repeat(200), '<b>', 'zzzzzzzzzzzz', '0xZZ22222222222222222222222222222222222222', 'ZZZZ']
+    for (const q of junk) await askInline(7001, q)
+    check('inline: junk queries (empty, spaces, words, short or broken addresses, unknown tickers) do no work', counts.resolve === before.resolve && counts.build === before.build && inlineAnswers().length === nJunk + junk.length)
+    check('inline: a junk answer has no results and a cache_time', inlineAnswers().slice(-junk.length).every((c) => c.body.results.length === 0 && c.body.cache_time === 60))
+
+    // Miss: a valid address that resolves nowhere answers an "Open Holder Map" article built on the site.
+    const MISS = '0x3333333333333333333333333333333333333333'
+    resolveMatches = []
+    await askInline(7002, MISS)
+    const miss = lastInline().results?.[0]
+    check('inline: a miss answers an Open Holder Map article that links to the site, with a short cache_time', miss?.type === 'article' && miss.title === 'Open Holder Map' && flat(miss.reply_markup.inline_keyboard).some((b) => b.text === 'Open Holder Map' && b.url.startsWith('https://gullylabs.xyz/holders')) && flat(miss.reply_markup.inline_keyboard).some((b) => b.text === 'Join @GullyLabsNews') && lastInline().cache_time === 20 && counts.resolve === 1, JSON.stringify(lastInline()).slice(0, 300))
+    // Uncached but resolvable: a fast-path build under the user's own budget key; a busy build falls back to the article.
+    const LAUNCH = '0x4444444444444444444444444444444444444444'
+    resolveMatches = [{ chain: 'base', token: LAUNCH, symbol: 'QQQ', kind: 'deepcore-launch' }]
+    buildBody = { state: 'busy' }
+    await askInline(7003, LAUNCH)
+    check('inline: an uncached map starts one build keyed on the Telegram user (tg:<id>, free tier) and falls back to the article when it is not ready', builds.filter((b) => b.ip === 'tg:7003').length === 1 && builds.at(-1).ip === 'tg:7003' && builds.at(-1).tier === 'free' && lastInline().results[0].type === 'article' && lastInline().cache_time === 20, JSON.stringify(builds))
+    buildBody = mapOf(LAUNCH)
+    await askInline(7003, LAUNCH)
+    check('inline: a build that finishes within the wait answers the card', lastInline().results[0].type === 'photo' && lastInline().results[0].photo_url.includes(`/base/${LAUNCH}/card.png?v=`) && lastInline().cache_time === 300)
+
+    // Per-user budget: at most INLINE_WORK_PER_MIN lookups that do work a minute, per Telegram user.
+    inl.resetInlineForTest()
+    const w0 = counts.resolve
+    resolveMatches = []
+    for (let i = 0; i < 20; i++) await askInline(7100, '0x' + i.toString(16).padStart(2, '0') + 'dd'.repeat(19))
+    check(`inline: one user is held to ${inl.INLINE_WORK_PER_MIN} lookups that do work a minute (the Holder Map's per-IP budget)`, counts.resolve - w0 === inl.INLINE_WORK_PER_MIN && inlineAnswers().slice(-20).every((c) => c.body.results[0]?.type === 'article'), `${counts.resolve - w0} ${inlineAnswers().slice(-20).map((c) => c.body.results[0]?.type).join()}`)
+    const w1 = counts.resolve
+    await askInline(7101, '0x' + 'ab'.repeat(20))
+    check('inline: the budget is per user (another user still gets a lookup)', counts.resolve === w1 + 1)
+    const builtBefore = counts.build
+    await askInline(7100, ADDR)
+    check('inline: a user over budget still gets cached answers', lastInline().results[0].type === 'photo' && counts.build === builtBefore)
+    check('inline: every inline answer carries a cache_time', inlineAnswers().every((c) => Number.isInteger(c.body.cache_time) && c.body.cache_time > 0))
+    const nBots = inlineAnswers().length
+    await askInline(7300, ADDR, { from: { id: 7300, is_bot: true } })
+    check('inline: a query from a bot sends no answer', inlineAnswers().length === nBots)
+    inl.setInlineForTest()
+    nonMembers.delete(nonMember)
+  }
 
   /* ------------------------------------------------------------ token off --- */
   delete process.env.TELEGRAM_BOT_TOKEN

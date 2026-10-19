@@ -13,11 +13,11 @@
 //
 // Updates arrive by webhook: POST /api/telegram/<path>, where <path> is the first 32 hex of
 // sha256(token) and the secret header must match. On start (startTelegram) the server calls setWebhook
-// for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query), setMyCommands
+// for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query + inline_query), setMyCommands
 // per scope (private chats: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help,
 // stop; /menu and /monitors work when typed; groups: gap,
 // top, launches, help; the default scope gets the private list), setChatMenuButton { type: 'commands' } so
-// the Menu button next to the text box lists those commands, and getMe; failures are logged (without the
+// the Menu button next to the text box lists those commands (inline mode, "@bot <address or ticker>": telegram-inline.mjs), and getMe; failures are logged (without the
 // token) and retried, never fatal. The Mini App opens from the "📱 Open app" inline web_app button on the
 // main menu (private chats only: Telegram refuses web_app buttons in groups), from /app, and from the bot
 // profile's "Open app" button once the owner sets it in BotFather (Bot Settings → Configure Mini App; the
@@ -74,6 +74,7 @@ import { DEEPCORE_CHAINS, readDeepcorePool, readLaunches } from './deepcore.mjs'
 import { handleProfileRoutes, profileOf } from './profile.mjs'
 import { workspaceName } from './workspaces.mjs'
 import * as ui from './telegram-ui.mjs'
+import { onInlineQuery } from './telegram-inline.mjs'
 import { backfillFromLinks, botUser, noteFirstUse, noteGateShown, recordStart, setFollows, setLinked, setOptOut, takeFreeAction, touchUser } from './telegram-users.mjs'
 
 const { chainName, shortAddr, btn, ubtn } = ui
@@ -396,7 +397,7 @@ export async function startTelegram({ attempt = 0 } = {}) {
     return { ok: false, enabled: false }
   }
   const url = `${SITE}/api/telegram/${webhookPathFor(token)}`
-  const hook = await tg('setWebhook', { url, secret_token: webhookSecretFor(token), allowed_updates: ['message', 'callback_query'], max_connections: 10 })
+  const hook = await tg('setWebhook', { url, secret_token: webhookSecretFor(token), allowed_updates: ['message', 'callback_query', 'inline_query'], max_connections: 10 })
   let cmds = { ok: true, error: null }
   for (const body of commandScopes()) {
     const r = await tg('setMyCommands', body)
@@ -1348,6 +1349,8 @@ async function onUpdate(u) {
     if (typeof pm?.text === 'string' && /^\/start(?:@\w+)?(?:\s|$)/i.test(pm.text)) recordStart(pChat.id, pFrom, { linked: !!linkOfChat(pChat.id) })
     else touchUser(pChat.id, pFrom)
   }
+  // Inline mode (telegram-inline.mjs) is the growth path: it is never behind the News gate.
+  if (u?.inline_query) return void (await onInlineQuery(u.inline_query, { tg, botName: botUsername }).catch((e) => console.error('telegram inline:', redact(e?.message ?? e))))
   if (!(await gate(u))) return
   if (u?.callback_query) return onCallback(u.callback_query)
   if (u?.message) return onMessage(u.message)
