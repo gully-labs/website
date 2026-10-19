@@ -126,7 +126,7 @@ export function glyphPaths(g: Glyph): Path2D[] {
 }
 export function glyphOf(n: HolderNode): Glyph | null {
   const k = n.label?.kind
-  if (!k) return null
+  if (!k) return n.contract ? 'contract' : null
   if (k === 'pool' || k === 'router') return 'pool'
   if (k === 'lock') return 'lock'
   if (k === 'burn') return 'burn'
@@ -140,7 +140,21 @@ export function glyphOf(n: HolderNode): Glyph | null {
 export function captionOf(n: HolderNode): string | null {
   const k = n.label?.kind
   if (!k) return null
-  return ({ pool: 'POOL', router: 'ROUTER', lock: 'LOCK', burn: 'BURN', deployer: 'DEPLOYER', token: 'TOKEN', exchange: 'EXCHANGE', deepcore: 'DEEPCORE', gully: 'GULLY' } as Partial<Record<HolderLabelKind, string>>)[k] ?? null
+  return (
+    (
+      {
+        pool: 'POOL',
+        router: 'ROUTER',
+        lock: 'LOCK',
+        burn: 'BURN',
+        deployer: 'DEPLOYER',
+        token: 'TOKEN',
+        exchange: 'EXCHANGE',
+        deepcore: 'DEEPCORE',
+        gully: 'GULLY',
+      } as Partial<Record<HolderLabelKind, string>>
+    )[k] ?? null
+  )
 }
 
 const PREVIEW_NODES = 14
@@ -154,7 +168,10 @@ export function previewOf(m: MotionMap): MapPreview {
       p: n.pct ?? 0,
       k: n.label?.kind === 'deployer' ? 'deployer' : n.label && PREVIEW_INFRA.has(n.label.kind) ? (n.label.kind === 'pool' || n.label.kind === 'lock' || n.label.kind === 'burn' ? n.label.kind : 'infra') : n.cluster ? 'cluster' : 'wallet',
     })),
-    flows: (m.recentFlows ?? []).slice(-8).map((f) => ({ f: idx.get(norm(f.from)) ?? -1, t: idx.get(norm(f.to)) ?? -1, s: f.side ?? 'transfer' })),
+    flows: (m.recentFlows ?? []).slice(-8).map((f) => ({
+      f: idx.get(norm(f.from)) ?? -1,
+      t: idx.get(norm(f.to)) ?? -1,
+      s: f.side ?? 'transfer',
+    })),
   }
 }
-

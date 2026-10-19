@@ -8,6 +8,7 @@ import { ChartEmpty } from '../charts/GhostChart'
 import { MiniSpark } from '../charts/MiniSpark'
 import { Segmented, type SegOption } from '../ui/Segmented'
 import { Mascot } from '../brand'
+import { TokenLogo } from '../logos/TokenLogo'
 import { copyWithToast } from '../ui/toast'
 import { newTab } from '../LayoutNav'
 import { feeText, jupiterFeeText } from '../swap/swapConfig'
@@ -20,6 +21,9 @@ import { AskExplain, CrossTokenCard, DeployerHistoryCard, HealthCard, LivePill }
 import { extentOf, forceLayout, radiusFor } from './layout'
 import { fmtPct, norm } from './format'
 import { K } from './theme'
+import { bandOf, BAND_HUES, BAND_STEPS, clusterHue, KIND_HUE, KIND_WORD, shade, textOn, WALLET_HUE, type KindKey } from './palette'
+import { Sphere, SupplyStrip } from './SupplyStrip'
+import { isInfraNode, kindKeyOf } from './supply'
 import { agoText, captionOf, flowText, glyphOf, sideColour, toFlow, type FlowEvent, type MotionMap, type RecentFlow } from './motion'
 import type { BLink, BNode, BTip, BubbleHandle } from './BubbleCanvas'
 import './holders.css'
@@ -137,9 +141,29 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
     const chainName = m.chain?.name ?? 'this chain'
     return (
       <MapEmpty
-        title={m.state === 'not-found' ? 'This address is not a token we can map' : m.state === 'unavailable' ? (m.comingSoon ? `Token maps on ${chainName} are coming soon` : typeof m.progress === 'number' ? 'Reading this token’s history' : 'This token cannot be mapped right now') : m.state === 'error' ? 'The Holder Map could not check this token' : 'The Holder Map is busy'}
+        title={
+          m.state === 'not-found'
+            ? 'This address is not a token we can map'
+            : m.state === 'unavailable'
+              ? m.comingSoon
+                ? `Token maps on ${chainName} are coming soon`
+                : typeof m.progress === 'number'
+                  ? 'Reading this token’s history'
+                  : 'This token cannot be mapped right now'
+              : m.state === 'error'
+                ? 'The Holder Map could not check this token'
+                : 'The Holder Map is busy'
+        }
         text={m.comingSoon ? `Maps for tokens on ${chainName} are on the way. DeepCore launches already have live maps you can open now.` : m.reason}
-        action={m.state === 'busy' ? undefined : { label: 'See tokens with a live map', href: '/holders', external: embed }}
+        action={
+          m.state === 'busy'
+            ? undefined
+            : {
+                label: 'See tokens with a live map',
+                href: '/holders',
+                external: embed,
+              }
+        }
       />
     )
   }
@@ -154,7 +178,12 @@ function MapSkeleton({ compact, page = false }: { compact: boolean; page?: boole
   return (
     <div role="status" aria-label="Reading who holds this token" className="card card-pad flex flex-col gap-3">
       <div className="h-[14px] w-[160px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-full bg-surface" />
-      <div className="relative grid place-items-center overflow-hidden rounded-[10px] bg-surface-deep" style={{ height: mapHeight(page, compact, typeof window !== 'undefined' && window.innerWidth >= 1000) }}>
+      <div
+        className="relative grid place-items-center overflow-hidden rounded-[10px] bg-surface-deep"
+        style={{
+          height: mapHeight(page, compact, typeof window !== 'undefined' && window.innerWidth >= 1000),
+        }}
+      >
         {[64, 40, 28, 22, 16].map((s, i) => (
           <span
             key={s}
@@ -237,7 +266,10 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
   const [view, setView] = useState<'map' | 'list' | null>(null)
   const shownView = view ?? (narrow ? 'list' : 'map')
   const [zoomed, setZoomed] = useState(false)
-  const [highlight, setHighlight] = useState<{ id: HealthPartId; wallets: Set<string> } | null>(null)
+  const [highlight, setHighlight] = useState<{
+    id: HealthPartId
+    wallets: Set<string>
+  } | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
   // The intro: 'wait' until the map is on screen, 'play' while the replay and the latest transfers run, then 'done'.
   const [intro, setIntro] = useState<'wait' | 'play' | 'done'>('wait')
@@ -260,7 +292,18 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
         canvas.current?.flow(e, i * gap)
         const t = window.setTimeout(
           () => {
-            setToasts((ts) => [{ key: e.key, text: flowText(e, m.token.symbol, byId), side: e.side, at: e.at, origin }, ...ts].slice(0, 3))
+            setToasts((ts) =>
+              [
+                {
+                  key: e.key,
+                  text: flowText(e, m.token.symbol, byId),
+                  side: e.side,
+                  at: e.at,
+                  origin,
+                },
+                ...ts,
+              ].slice(0, 3),
+            )
             window.setTimeout(() => setToasts((ts) => ts.filter((x) => x.key !== e.key)), TOAST_MS)
           },
           i * gap + 120,
@@ -294,8 +337,29 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
   )
   const pos = useMemo(() => new Map(placed.map((p) => [p.id, p])), [placed])
 
-  const biggest = m.clusters[0]?.id ?? null
-  const colourOf = useCallback((n: HolderNode) => (isInfra(n) ? K.slate : n.cluster ? (n.cluster === biggest ? K.gold : K.pale) : n.label?.kind === 'deployer' ? K.moss : K.midnight), [biggest])
+  // Colour with meaning (palette.ts): a hue per cluster (gold for the biggest), a family per kind of
+  // infrastructure, slate for people in no cluster; maps without links colour people by size band instead.
+  const noLinks = m.links.length === 0
+  const clusterIdx = useMemo(() => new Map(m.clusters.map((c, i) => [c.id, i])), [m])
+  const top10 = useMemo(
+    () =>
+      new Set(
+        m.nodes
+          .filter((n) => !isInfraNode(n))
+          .slice(0, 10)
+          .map((n) => n.id),
+      ),
+    [m],
+  )
+  const hueOf = useCallback(
+    (n: HolderNode, pct: number | null) => {
+      const kind = kindKeyOf(n)
+      if (kind && (isInfraNode(n) || kind === 'deployer')) return KIND_HUE[kind]
+      if (n.cluster && clusterIdx.has(n.cluster)) return clusterHue(clusterIdx.get(n.cluster) ?? 0)
+      return noLinks ? BAND_HUES[bandOf(pct)] : WALLET_HUE
+    },
+    [clusterIdx, noLinks],
+  )
 
   // The canvas's bubbles: positions from the layout, sizes from the share now (or at the replay frame).
   // A phone's box is taller than wide, so the (wide) layout is turned on its side there.
@@ -314,52 +378,94 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       const p = pos.get(n.id)
       const bundled = n.flags.includes('bundled')
       const infra = isInfra(n)
+      const pct = pctAt(n)
+      const hue = hueOf(n, pct)
+      const kind = kindKeyOf(n)
+      const top = top10.has(n.id)
       return {
         id: n.id,
         x: (portrait ? p?.y : (p?.x ?? 0) * stretch) ?? 0,
         y: (portrait ? p?.x : p?.y) ?? 0,
-        r: radiusFor(pctAt(n), maxPct),
+        r: radiusFor(pct, maxPct),
         fitR: p?.r,
-        fill: colourOf(n),
-        stroke: bundled ? K.warn : infra ? K.dim : n.cluster ? K.pale : K.muted,
-        strokeWidth: bundled ? 2.5 : 1.2,
+        hue,
+        rim: bundled ? K.warn : top ? shade(hue, 0.62) : shade(hue, 0.28),
+        rimWidth: bundled ? 2.5 : top ? 2.6 : 1.2,
         dashed: bundled,
-        text: fmtPct(pctAt(n)),
-        textColour: n.cluster && !infra ? K.night : K.bone,
+        glow: !!n.cluster && !infra,
+        text: fmtPct(pct),
+        textColour: textOn(hue),
         glyph: glyphOf(n),
+        logo: n.label?.kind === 'token' && m.token.symbol ? `/api/logo/${m.chain.key}/${m.token.address}.png?s=64` : null,
         caption: captionOf(n),
+        kindText: kind ? KIND_WORD[kind] : 'wallet',
         pulse: n.label?.kind === 'pool' || n.label?.kind === 'lock' || n.label?.kind === 'token',
         group: n.cluster && !infra ? `c:${n.cluster}` : null,
       }
     })
     for (const v of vias) {
       const p = pos.get(norm(v.via))
-      out.push({ id: norm(v.via), x: (portrait ? p?.y : (p?.x ?? 0) * stretch) ?? 0, y: (portrait ? p?.x : p?.y) ?? 0, r: 3, fill: K.night, stroke: K.muted, strokeWidth: 1.2, dashed: true, text: null, textColour: K.bone, glyph: null, caption: null, pulse: false, group: null })
+      out.push({
+        id: norm(v.via),
+        x: (portrait ? p?.y : (p?.x ?? 0) * stretch) ?? 0,
+        y: (portrait ? p?.x : p?.y) ?? 0,
+        r: 3,
+        hue: K.night,
+        rim: K.muted,
+        rimWidth: 1.2,
+        dashed: true,
+        glow: false,
+        text: null,
+        textColour: K.bone,
+        glyph: null,
+        caption: null,
+        kindText: 'link',
+        pulse: false,
+        group: null,
+      })
     }
     return out
     // pctAt reads frame and live.pcts, listed here
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph, vias, pos, maxPct, frame, live.pcts, colourOf, portrait, stretch])
+  }, [graph, vias, pos, maxPct, frame, live.pcts, hueOf, top10, portrait, stretch, m.token, m.chain.key])
+  const maxTransfers = useMemo(() => Math.max(1, ...links.map((x) => x.transfers)), [links])
   const blinks = useMemo<BLink[]>(
     () =>
       links.flatMap((l) => {
         const via = l.kind === 'via'
-        const base = { colour: via ? K.muted : l.kind === 'funding' ? K.pale : K.gold, dashed: via || l.kind === 'funding', width: via ? 1 : Math.min(4, 1 + Math.log2(1 + l.transfers) * 0.6), particles: !via }
         const a = norm(l.source)
         const b = norm(l.target)
+        const ca = byId.get(a)?.cluster
+        const cb = byId.get(b)?.cluster
+        const inCluster = ca && ca === cb && clusterIdx.has(ca)
+        const base = {
+          colour: via ? K.muted : l.kind === 'funding' ? K.pale : inCluster ? clusterHue(clusterIdx.get(ca) ?? 0) : K.gold,
+          dashed: via || l.kind === 'funding',
+          width: via ? 1 : Math.min(4, 1 + Math.log2(1 + l.transfers) * 0.6),
+          particles: !via,
+          strength: via ? 0.1 : Math.min(1, Math.log2(1 + l.transfers) / Math.log2(1 + maxTransfers)),
+        }
         return l.direction === 'backward' ? [{ ...base, a: b, b: a }] : [{ ...base, a, b }]
       }),
-    [links],
+    [links, byId, clusterIdx, maxTransfers],
   )
   const tip = useCallback(
     (id: string): BTip | null => {
       const v = vias.find((x) => norm(x.via) === id)
-      if (v) return { title: `Linked via ${v.short}`, rows: [['Joins', v.connects.map((c) => byId.get(c)?.short ?? c.slice(0, 8)).join(' + ')], ['Transfers', String(v.transfers)]], note: 'An address that is not on the map passed tokens between these wallets.' }
+      if (v)
+        return {
+          title: `Linked via ${v.short}`,
+          rows: [
+            ['Joins', v.connects.map((c) => byId.get(c)?.short ?? c.slice(0, 8)).join(' + ')],
+            ['Transfers', String(v.transfers)],
+          ],
+          note: 'An address that is not on the map passed tokens between these wallets.',
+        }
       const n = byId.get(id)
       if (!n) return null
       return {
         title: n.label?.name ?? n.short,
-        rows: [['Held', fmtPct(pctAt(n))], ['Rank', `#${n.rank}`], ...(n.label ? ([['Wallet', n.short]] as [string, string][]) : []), ...(n.cluster ? ([['Cluster', n.cluster.toUpperCase()]] as [string, string][]) : [])],
+        rows: [['Held', fmtPct(pctAt(n))], ['Kind', kindKeyOf(n) ? KIND_WORD[kindKeyOf(n) as KindKey] : 'wallet'], ['Rank', `#${n.rank}`], ...(n.label ? ([['Wallet', n.short]] as [string, string][]) : []), ...(n.cluster ? ([['Cluster', n.cluster.toUpperCase()]] as [string, string][]) : [])],
         note: n.flags.length ? n.flags.map(flagText).join(' · ') : undefined,
       }
     },
@@ -449,7 +555,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
   const pageUrl = `https://gullylabs.xyz${holdersPagePath(m.chain.key, m.token.address)}`
   const frameAt = frame !== null ? frames[frame] : null
   const Title = page ? 'h1' : 'h3'
-  const top10 = live.top10Pct ?? m.summary.top10Pct
+  const top10Pct = live.top10Pct ?? m.summary.top10Pct
   const height = mapHeight(page, compact, wide)
 
   const onPart = (id: HealthPartId | null, wallets: string[]) => {
@@ -548,6 +654,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
             tip={tip}
             onSelect={(id) => setSelected(id && byId.has(id) ? id : null)}
             onZoomed={setZoomed}
+            padBottom={frames.length >= 2 ? undefined : 64}
             onInteract={stopIntro}
           />
         </Suspense>
@@ -578,12 +685,19 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       <RankedList m={m} selected={selected} onSelect={setSelected} />
     )
 
+  const strip = <SupplyStrip m={m} pctAt={pctAt} selected={selected} onSelect={(id) => (setSelected(id), shownView === 'map' && canvas.current?.flyTo(id))} compact={compact} />
+
   const stats = (
     <div className="flex flex-col gap-3" data-live-stats>
       <dl className="m-0 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-line bg-line">
         <Stat k="HOLDERS" v={<AnimatedNumber value={m.holders.count} countUp className="font-display text-[26px] leading-none font-bold text-ink" fallback="—" />} />
-        <Stat k="TOP 10 HOLD" v={<AnimatedNumber value={top10} countUp format={PCT} suffix="%" className="font-display text-[26px] leading-none font-bold text-ink" fallback="—" />} />
-        <Stat k="TOP CLUSTER" v={m.summary.largestCluster ? <AnimatedNumber value={m.summary.largestCluster.pct} countUp format={PCT} suffix="%" className="font-display text-[26px] leading-none font-bold text-ink" fallback="—" /> : <span className="font-display text-[22px] leading-none font-bold text-muted">None</span>} />
+        <Stat k="TOP 10 HOLD" v={<AnimatedNumber value={top10Pct} countUp format={PCT} suffix="%" className="font-display text-[26px] leading-none font-bold text-ink" fallback="—" />} />
+        <Stat
+          k="TOP CLUSTER"
+          v={
+            m.summary.largestCluster ? <AnimatedNumber value={m.summary.largestCluster.pct} countUp format={PCT} suffix="%" className="font-display text-[26px] leading-none font-bold text-ink" fallback="—" /> : <span className="font-display text-[22px] leading-none font-bold text-muted">None</span>
+          }
+        />
       </dl>
       <div className="flex flex-col gap-2" data-holder-summary>
         <p className="m-0 font-display text-[19px] leading-[1.15] font-bold text-gold-hover">{m.summary.line}</p>
@@ -647,13 +761,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       {!compact && !embed && (
         <div className="flex flex-col gap-2">
           <AskExplain m={m} />
-          <a
-            href={alertHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-2 self-start rounded-btn border border-line-strong px-4 font-mono text-[12px] text-muted hover:border-gold hover:text-ink"
-            data-alert-me
-          >
+          <a href={alertHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 self-start rounded-btn border border-line-strong px-4 font-mono text-[12px] text-muted hover:border-gold hover:text-ink" data-alert-me>
             <BellRing size={14} aria-hidden /> Alert me if the top cluster moves ↗
           </a>
         </div>
@@ -666,9 +774,12 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       {/* One line: what this is, how fresh, live; the explainer sits behind (i). */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-3">
-          <Title className={`min-w-0 ${page ? 'heading-3 min-[600px]:heading-2' : 'heading-3'}`}>
-            Who holds {m.token.symbol ?? 'this token'}
-            <span className="text-muted max-[599px]:sr-only"> · {m.chain.name}</span>
+          <Title className={`flex min-w-0 items-center gap-2 ${page ? 'heading-3 min-[600px]:heading-2' : 'heading-3'}`}>
+            {m.token.symbol && <TokenLogo symbol={m.token.symbol} chain={m.chain.key} address={m.token.address} size={32} decorative className="max-[599px]:hidden" />}
+            <span className="min-w-0">
+              Who holds {m.token.symbol ?? 'this token'}
+              <span className="text-muted max-[599px]:sr-only"> · {m.chain.name}</span>
+            </span>
           </Title>
           <span className="flex flex-none items-center gap-2">
             <LivePill on={live.on} paused={live.paused} lastAt={live.lastAt} gated={m.features.gated} now={now} beat={live.beat} />
@@ -691,7 +802,11 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
           <p role="note" data-coverage="top" className="m-0 flex items-start gap-2 rounded-btn border border-line-strong px-3 py-2 text-[13px] leading-[1.5] text-muted" style={{ background: alpha(K.night, 0.92) }}>
             <Info size={14} aria-hidden className="mt-[3px] flex-none text-gold" />
             <span>
-              <b className="font-semibold text-ink">Top holders only{m.coverage.shown ? ` (the biggest ${m.coverage.shown.toLocaleString('en-US')})` : ''}.</b> {m.coverage.reason ? `${m.coverage.reason[0].toUpperCase()}${m.coverage.reason.slice(1)}. ` : ''}
+              <b className="font-semibold text-ink">
+                Top holders only
+                {m.coverage.shown ? ` (the biggest ${m.coverage.shown.toLocaleString('en-US')})` : ''}.
+              </b>{' '}
+              {m.coverage.reason ? `${m.coverage.reason[0].toUpperCase()}${m.coverage.reason.slice(1)}. ` : ''}
               Smaller wallets, and links between wallets outside the listed ones, are not shown. Shares are of {m.holders.sharesOf}.
             </span>
           </p>
@@ -709,7 +824,8 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
                 {replay}
               </>
             )}
-            <Legend m={m} />
+            <Legend m={m} noLinks={noLinks} clusterIdx={clusterIdx} />
+            {strip}
             <RankedList m={m} selected={selected} onSelect={setSelected} srOnly />
           </div>
           {side}
@@ -720,7 +836,8 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
           {controls}
           {notes}
           {replay}
-          <Legend m={m} />
+          <Legend m={m} noLinks={noLinks} clusterIdx={clusterIdx} />
+          {strip}
           <RankedList m={m} selected={selected} onSelect={setSelected} srOnly />
           {side}
         </div>
@@ -740,14 +857,13 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
   )
 }
 
-const chip = (on: boolean) =>
-  `inline-flex min-h-11 items-center gap-1 rounded-btn border px-3 font-mono text-[12px] transition-colors ${on ? 'border-gold text-gold-hover' : 'border-line-strong text-muted hover:border-gold'}`
+const chip = (on: boolean) => `inline-flex min-h-11 items-center gap-1 rounded-btn border px-3 font-mono text-[12px] transition-colors ${on ? 'border-gold text-gold-hover' : 'border-line-strong text-muted hover:border-gold'}`
 const zoomBtn = 'inline-flex size-11 items-center justify-center rounded-btn border border-line-strong text-muted transition-colors hover:border-gold hover:text-ink'
 
 function Stat({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 bg-surface px-3 py-2.5">
-      <dt className="truncate font-mono text-[11px] tracking-[1px] text-dim">{k}</dt>
+    <div className="flex min-w-0 flex-col gap-1 bg-surface px-2 py-2.5 min-[600px]:px-3">
+      <dt className="font-mono text-[11px] leading-[1.25] tracking-[0.5px] break-words text-dim">{k}</dt>
       <dd className="m-0">{v}</dd>
     </div>
   )
@@ -773,7 +889,10 @@ function InfoPop() {
     // Kept inside the viewport: shifted left when the button sits near the right edge.
     const r = box.current?.getBoundingClientRect()
     const width = Math.min(360, window.innerWidth - 32)
-    setOpen({ width, left: r ? Math.min(0, window.innerWidth - 16 - width - r.left) : 0 })
+    setOpen({
+      width,
+      left: r ? Math.min(0, window.innerWidth - 16 - width - r.left) : 0,
+    })
   }
   return (
     <span ref={box} className="relative -my-2.5 inline-flex">
@@ -781,9 +900,16 @@ function InfoPop() {
         <Info size={17} aria-hidden />
       </button>
       {open && (
-        <span role="dialog" aria-label="How to read the Holder Map" className="absolute top-full z-30 flex animate-[gl-fade_.2s_ease_both] flex-col gap-2 rounded-[10px] border border-line-strong p-3 text-[13px] leading-[1.55] text-muted" style={{ background: K.night, left: open.left, width: open.width }}>
-          <span>Every bubble is a wallet, sized by how much of the token it holds. Gold bubbles are wallets that sent the token to each other, which often means one person or team behind many wallets.</span>
-          <span>Pools, locks, burn and the deployer are labelled. Moving dots are real transfers: gold for buys, red for sells. Read live; nothing on this page is typed in.</span>
+        <span
+          role="dialog"
+          aria-label="How to read the Holder Map"
+          className="absolute top-full z-30 flex animate-[gl-fade_.2s_ease_both] flex-col gap-2 rounded-[10px] border border-line-strong p-3 text-[13px] leading-[1.55] text-muted"
+          style={{ background: K.night, left: open.left, width: open.width }}
+        >
+          <span>
+            Every bubble is a wallet, sized by how much of the token it holds. Wallets that sent the token to each other share a colour (gold for the biggest group), which often means one person or team behind many wallets. Grey-blue bubbles belong to no group; a bright rim marks the top 10.
+          </span>
+          <span>Pools, exchanges, locks, burn, contracts and the deployer have their own colour and icon. Moving dots are real transfers: gold for buys, red for sells. Read live; nothing on this page is typed in.</span>
         </span>
       )}
     </span>
@@ -795,9 +921,16 @@ function Ticker({ toasts, now, wide }: { toasts: Toast[]; now: number; wide: boo
   return (
     <ol className={`pointer-events-none absolute left-3 m-0 flex max-w-[min(420px,calc(100%-80px))] list-none flex-col-reverse gap-1.5 p-0 ${wide ? 'bottom-[136px]' : 'bottom-8'}`} aria-live="polite" aria-label="Latest transfers" data-flow-ticker>
       {toasts.map((t) => (
-        <li key={t.key} className="flex animate-[gl-toast-in_.3s_ease-out_both] items-center gap-2 rounded-full border px-3 py-1 font-mono text-[12px] text-ink" style={{ borderColor: sideColour(t.side), background: alpha(K.night, 0.94) }}>
+        <li
+          key={t.key}
+          className="flex animate-[gl-toast-in_.3s_ease-out_both] items-center gap-2 rounded-[16px] border px-3 py-1 font-mono text-[12px] text-ink"
+          style={{
+            borderColor: sideColour(t.side),
+            background: alpha(K.night, 0.94),
+          }}
+        >
           <span aria-hidden className="inline-block size-2 flex-none rounded-full" style={{ background: sideColour(t.side) }} />
-          <span className="truncate">{t.text}</span>
+          <span className="min-w-0 break-words">{t.text}</span>
           <span className="flex-none text-dim">· {t.origin === 'live' && !t.at ? 'just now' : agoText(t.at, now)}</span>
         </li>
       ))}
@@ -807,35 +940,62 @@ function Ticker({ toasts, now, wide }: { toasts: Toast[]; now: number; wide: boo
 
 /* ---------- legend ---------- */
 
-function Legend({ m }: { m: HolderMapOk }) {
-  const sw = (bg: string, border: string, dashed = false) => (
-    <span
-      aria-hidden
-      className="inline-block size-3 flex-none rounded-full"
-      style={{
-        background: bg,
-        border: `1.5px ${dashed ? 'dashed' : 'solid'} ${border}`,
-      }}
-    />
-  )
+function Legend({ m, noLinks, clusterIdx }: { m: HolderMapOk; noLinks: boolean; clusterIdx: Map<string, number> }) {
   const anyBundled = m.nodes.some((n) => n.flags.includes('bundled'))
+  const anyContract = m.nodes.some((n) => !n.label && n.contract === true)
+  const shown = m.clusters.slice(0, 4)
+  const note = noLinks && (m.chain.key === 'solana' || m.coverage?.level === 'top')
+  const li = 'flex items-center gap-1.5'
   return (
-    <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-mono text-[11px] text-muted" aria-label="Legend">
-      {m.clusters.length > 0 && <li className="flex items-center gap-1.5">{sw(K.gold, K.pale)} Largest cluster</li>}
-      {m.clusters.length > 1 && <li className="flex items-center gap-1.5">{sw(K.pale, K.pale)} Other clusters</li>}
-      <li className="flex items-center gap-1.5">{sw(K.midnight, K.muted)} Wallet</li>
-      {anyBundled && <li className="flex items-center gap-1.5">{sw(K.midnight, K.warn, true)} Bundled at launch</li>}
-      {m.legend.map((l) => (
-        <li key={l.kind} className="flex items-center gap-1.5">
-          {sw(l.kind === 'deployer' ? K.moss : INFRA.has(l.kind) ? K.slate : K.midnight, INFRA.has(l.kind) ? K.dim : K.muted)} {l.text}
+    <div className="flex flex-col gap-1.5" data-legend>
+      <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-mono text-[11px] text-muted" aria-label="Legend">
+        {shown.map((c, i) => (
+          <li key={c.id} className={li}>
+            <Sphere hue={clusterHue(clusterIdx.get(c.id) ?? i)} size={12} /> {i === 0 ? 'Largest cluster' : `Cluster ${c.id.toUpperCase()}`}
+          </li>
+        ))}
+        {m.clusters.length > shown.length && <li className={li}>+{m.clusters.length - shown.length} more clusters</li>}
+        {noLinks ? (
+          BAND_HUES.map((h, i) => (
+            <li key={h + i} className={li}>
+              <Sphere hue={h} size={12} /> {i === 0 ? `Over ${BAND_STEPS[0]}%` : i === 3 ? `Under ${BAND_STEPS[2]}%` : `${BAND_STEPS[i]}–${BAND_STEPS[i - 1]}%`}
+            </li>
+          ))
+        ) : (
+          <li className={li}>
+            <Sphere hue={WALLET_HUE} size={12} /> Wallet, in no cluster
+          </li>
+        )}
+        <li className={li}>
+          <Sphere hue={WALLET_HUE} size={12} ring={shade(WALLET_HUE, 0.62)} /> Top-10 holder (bright rim)
         </li>
-      ))}
-      {m.links.length > 0 && (
-        <li className="flex items-center gap-1.5">
-          <span aria-hidden className="inline-block h-[2px] w-4" style={{ background: K.gold }} /> Sent tokens to each other
-        </li>
+        {anyBundled && (
+          <li className={li}>
+            <span aria-hidden className="inline-block size-3 flex-none rounded-full" style={{ border: `1.5px dashed ${K.warn}` }} /> Bundled at launch
+          </li>
+        )}
+        {m.legend.map((l) => (
+          <li key={l.kind} className={li}>
+            <Sphere hue={KIND_HUE[l.kind]} size={12} /> {l.text}
+          </li>
+        ))}
+        {anyContract && (
+          <li className={li}>
+            <Sphere hue={KIND_HUE.contract} size={12} /> Contract
+          </li>
+        )}
+        {m.links.length > 0 && (
+          <li className={li}>
+            <span aria-hidden className="inline-block h-[2px] w-4" style={{ background: K.gold }} /> Sent tokens to each other (stronger line, more transfers)
+          </li>
+        )}
+      </ul>
+      {note && (
+        <p role="note" data-no-links className="m-0 font-mono text-[11px] leading-[1.5] text-dim">
+          Links between wallets are not drawn on {m.chain.name} yet. Bubbles are coloured by what they are and sized by share; the colour bands show how big each holder is.
+        </p>
       )}
-    </ul>
+    </div>
   )
 }
 
@@ -885,7 +1045,10 @@ function Replay({
         {locked ? <Lock size={13} aria-hidden /> : null}
         <span className="min-w-0 flex-1">
           {intro && recentCount > 0 ? (
-            <span className="text-gold-hover">Replaying the last {recentCount} transfer{recentCount === 1 ? '' : 's'}…</span>
+            <span className="text-gold-hover">
+              Replaying the last {recentCount} transfer
+              {recentCount === 1 ? '' : 's'}…
+            </span>
           ) : locked ? (
             <>
               The history replay comes with Pro.{' '}
@@ -919,7 +1082,7 @@ function Replay({
           {playing ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
         </button>
         <Segmented label="Replay speed" value={speed === 4 ? '4' : '1'} options={SPEEDS} onChange={(v) => setSpeed(v === '4' ? 4 : 1)} />
-        <span className="min-w-0 flex-1 font-mono text-[12px] text-muted" aria-live="polite">
+        <span className="min-w-[190px] flex-1 font-mono text-[12px] text-muted" aria-live="polite">
           {frameAt ? `${when} · top 10 held ${fmtPct(frameAt.top10Pct)}${frameAt.holders !== null ? ` · ${frameAt.holders} holders` : ''}` : `Now · top 10 hold ${fmtPct(m.summary.top10Pct)}`}
         </span>
         {skip}
@@ -953,7 +1116,11 @@ function Replay({
     latest transfers from its share now. Fewer than two points is not a series. */
 function balanceSeries(n: HolderNode, pct: number | null, frames: HolderFrame[], idx: number | null, recent: RecentFlow[]) {
   if (frames.length >= 2 && idx !== null) {
-    const pts = frames.map((f) => ({ v: f.pcts[idx] ?? 0, at: f.at, block: f.block }))
+    const pts = frames.map((f) => ({
+      v: f.pcts[idx] ?? 0,
+      at: f.at,
+      block: f.block,
+    }))
     pts.push({ v: pct ?? 0, at: null, block: Infinity })
     return pts
   }
@@ -1078,11 +1245,7 @@ function Panel({ n, m, pct, frames, idx, recent, onClose, onPick }: { n: HolderN
               const o = m.nodes.find((x) => x.id === other)
               return (
                 <li key={`${l.source}-${l.target}`}>
-                  <button
-                    type="button"
-                    onClick={() => onPick(other)}
-                    className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[8px] border border-line px-2 text-left font-mono text-[12px] text-muted hover:border-gold"
-                  >
+                  <button type="button" onClick={() => onPick(other)} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[8px] border border-line px-2 text-left font-mono text-[12px] text-muted hover:border-gold">
                     <span>{o?.short ?? other.slice(0, 10)}</span>
                     <span>{l.kind === 'funding' ? 'funded' : `${l.transfers} transfer${l.transfers === 1 ? '' : 's'}`}</span>
                   </button>
@@ -1194,21 +1357,16 @@ function RankedList({ m, selected, onSelect, srOnly = false }: { m: HolderMapOk;
     <ol className="m-0 flex max-h-[460px] list-none flex-col gap-1 overflow-y-auto p-0" aria-label={`Largest holders of ${m.token.symbol ?? 'this token'}`} data-holder-list>
       {rows.map((n) => (
         <li key={n.id}>
-          <button
-            type="button"
-            onClick={() => onSelect(n.id)}
-            aria-pressed={selected === n.id}
-            className={`flex min-h-11 w-full items-center gap-2 rounded-[8px] border px-2 text-left font-mono text-[12px] ${selected === n.id ? 'border-gold' : 'border-line'} animate-[gl-fade_.3s_ease_both]`}
-          >
+          <button type="button" onClick={() => onSelect(n.id)} aria-pressed={selected === n.id} className={`flex min-h-11 w-full items-center gap-2 rounded-[8px] border px-2 text-left font-mono text-[12px] ${selected === n.id ? 'border-gold' : 'border-line'} animate-[gl-fade_.3s_ease_both]`}>
             <span className="w-7 flex-none text-dim">{n.rank}</span>
             <span
               aria-hidden
               className="inline-block size-2.5 flex-none rounded-full"
               style={{
-                background: isInfra(n) ? K.slate : n.cluster ? K.gold : n.label?.kind === 'deployer' ? K.moss : K.muted,
+                background: isInfra(n) || n.label?.kind === 'deployer' ? KIND_HUE[kindKeyOf(n) as KindKey] : n.cluster ? K.gold : K.muted,
               }}
             />
-            <span className="min-w-0 flex-1 truncate text-ink">{n.label?.name ?? n.short}</span>
+            <span className="min-w-0 flex-1 break-words text-ink">{n.label?.name ?? n.short}</span>
             {n.flags.includes('bundled') && <span className="flex-none text-[11px] text-error">BUNDLED</span>}
             <span className="w-16 flex-none text-right text-gold-hover">{fmtPct(n.pct)}</span>
           </button>
@@ -1275,13 +1433,7 @@ function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embe
         {m.summary.line}
       </p>
       <div className="flex flex-wrap items-center gap-3">
-        <a
-          href={href}
-          {...(external ? newTab : {})}
-          onClick={() => onTrade?.()}
-          className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 font-semibold text-bg transition-[filter] hover:brightness-110"
-          style={{ background: K.gold }}
-        >
+        <a href={href} {...(external ? newTab : {})} onClick={() => onTrade?.()} className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 font-semibold text-bg transition-[filter] hover:brightness-110" style={{ background: K.gold }}>
           {generic && !embed ? `View ${sym} on the explorer` : `Buy or sell ${sym}`}
           {external ? ' ↗' : ''}
         </a>
