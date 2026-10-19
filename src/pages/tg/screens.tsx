@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, BellRing, Layers, Lock, Megaphone, Moon, Users } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, BellRing, Layers, Lock, Megaphone, Moon, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { EChart } from '../../components/charts/EChart'
@@ -104,8 +104,31 @@ const gapHex = (v: number | null | undefined, fallback: string) => (typeof v !==
 /* ---------- small parts ---------- */
 
 export function Chips<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string; icon?: React.ReactNode }[]; onChange: (v: T) => void; label: string }) {
+  // A row wider than the screen scrolls sideways, snaps chip by chip and fades out on the side that has more.
+  const ref = useRef<HTMLDivElement>(null)
+  const [edge, setEdge] = useState({ left: false, right: false })
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const measure = () => setEdge({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 })
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    window.addEventListener('resize', measure)
+    return () => {
+      el.removeEventListener('scroll', measure)
+      window.removeEventListener('resize', measure)
+    }
+  }, [options.length])
+  const fade = `linear-gradient(to right, ${edge.left ? 'transparent 0, #000 28px' : '#000 0'}, ${edge.right ? '#000 calc(100% - 28px), transparent 100%' : '#000 100%'})`
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-[6px] overflow-x-auto pb-1 [scrollbar-width:none]">
+    <div
+      ref={ref}
+      role="radiogroup"
+      aria-label={label}
+      data-scroll-fade={edge.right ? 'right' : edge.left ? 'left' : 'none'}
+      className="flex snap-x snap-proximity gap-[6px] overflow-x-auto pb-1 [scrollbar-width:none]"
+      style={{ maskImage: fade, WebkitMaskImage: fade }}
+    >
       {options.map((o) => (
         <button
           key={o.id}
@@ -116,7 +139,7 @@ export function Chips<T extends string>({ value, options, onChange, label }: { v
             if (o.id !== value) haptic.select()
             onChange(o.id)
           }}
-          className={`inline-flex min-h-11 flex-none items-center gap-[6px] rounded-full border px-[14px] text-[13px] font-medium transition-colors ${value === o.id ? 'border-gold bg-gold text-[var(--tg-btn-text,var(--color-bg))]' : 'border-line bg-surface text-muted'}`}
+          className={`inline-flex min-h-11 flex-none snap-start items-center gap-[6px] rounded-full border px-[14px] text-[13px] font-medium transition-colors ${value === o.id ? 'border-gold bg-gold text-[var(--tg-btn-text,var(--color-bg))]' : 'border-line bg-surface text-muted'}`}
         >
           {o.icon}
           {o.label}
@@ -192,8 +215,12 @@ const CHAIN_OPTIONS: { id: ChainFilter; label: string; icon: React.ReactNode }[]
   { id: 'solana', label: 'Solana', icon: <ChainLogo chain="solana" size={14} decorative /> },
 ]
 
+const TOP_ROWS = 10
+
 export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; tracker: Load<Tracker>; onOpen: (r: TrackerRow) => void; ink: string }) {
   const [chain, setChain] = useState<ChainFilter>('all')
+  const [q, setQ] = useState('')
+  const [showAll, setShowAll] = useState(false)
   const { load: sparks } = useTgApi<{ sparks: Record<string, number[]> }>(initData, '/api/tg/sparks', 120_000)
   const now = useNow()
   const rows = useMemo(() => {
@@ -201,17 +228,27 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
     const list = tracker.data.rows.filter((r) => chain === 'all' || r.chain === chain)
     return [...list].sort((a, b) => Number(trusted(b)) - Number(trusted(a)) || Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0))
   }, [tracker, chain])
+  const query = q.trim().toLowerCase()
+  const matched = useMemo(() => (query ? rows.filter((r) => `${r.ticker} ${r.symbol ?? ''} ${r.name}`.toLowerCase().includes(query)) : rows), [rows, query])
+  // The top 10 by gap until "Show all" (or a search, which looks through every row).
+  const shown = showAll || query ? matched : matched.slice(0, TOP_ROWS)
   const flagged = rows.filter((r) => trusted(r) && (r.status === 'premium' || r.status === 'discount')).length
 
   return (
     <div className="flex flex-col gap-3">
       <Chips value={chain} options={CHAIN_OPTIONS} onChange={setChain} label="Chain" />
+      {tracker.k === 'ok' && (
+        <label className="flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface px-3 text-[13px] text-muted">
+          <Search size={14} aria-hidden />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value.slice(0, 40))} placeholder={`Search ${rows.length} stocks`} aria-label="Search stocks" className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-faint" />
+        </label>
+      )}
       {tracker.k === 'loading' && <ListSkeleton />}
       {tracker.k === 'error' && <Notice title="Prices aren’t available right now">Try again in a minute.</Notice>}
       {tracker.k === 'ok' && (
         <Section title={`${rows.length} stock tokens · ${flagged} flagged`} right={<span className="text-[12px] text-faint">updated {ageText(tracker.data.generatedAt, now)}</span>}>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {rows.map((r) => {
+            {shown.map((r) => {
               const key = `${r.chain}:${r.ticker}`
               const spark = sparks.k === 'ok' ? sparks.data.sparks[key] : undefined
               const ok = trusted(r)
@@ -232,7 +269,7 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
                     <span className="flex min-w-0 flex-col">
                       <span className="flex items-center gap-[6px]">
                         <span className="font-semibold text-ink">{r.symbol ?? r.ticker}</span>
-                        <span className="rounded-[4px] border border-line px-1 font-mono text-[11px] text-faint">{CHAIN_SHORT[r.chain] ?? r.chain}</span>
+                        <ChainLogo chain={r.chain} size={14} decorative />
                       </span>
                       <span className="truncate text-[12px] text-muted">{r.name}</span>
                     </span>
@@ -248,6 +285,20 @@ export function GapsTab({ initData, tracker, onOpen, ink }: { initData: string; 
               )
             })}
           </ul>
+          {!shown.length && <p className="m-0 px-1 py-3 text-center text-[12px] text-faint">No stock matches “{q.trim()}”.</p>}
+          {!query && matched.length > TOP_ROWS && (
+            <button
+              type="button"
+              onClick={() => {
+                haptic.select()
+                setShowAll((v) => !v)
+              }}
+              aria-expanded={showAll}
+              className="mt-2 min-h-11 w-full rounded-full border border-line bg-surface text-[13px] font-medium text-muted active:opacity-80"
+            >
+              {showAll ? 'Show top 10' : `Show all ${matched.length}`}
+            </button>
+          )}
         </Section>
       )}
       <p className="m-0 px-1 pb-2 text-[11px] leading-[1.5] text-faint">Gap = how far the token trades above or below the real share price. Information only, not advice.</p>
@@ -525,7 +576,9 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
                       <TokenLogo symbol={l.symbol ?? 'Token'} chain={l.chainKey} address={l.token} size={32} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate font-semibold">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
-                        <span className="truncate text-[12px] text-muted">
+                        <span className="flex items-center gap-1 text-[12px] text-muted">
+                          <ChainLogo chain={l.chainKey} size={14} decorative className="flex-none" />
+                          <span className="min-w-0 truncate">
                           {l.chainName}
                           {leg?.locked === true && (
                             <>
@@ -535,6 +588,7 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
                             </>
                           )}
                           {leg?.locked === false ? ' · Liquidity not locked' : ''}
+                          </span>
                         </span>
                       </span>
                       <span className="flex-none text-[12px] text-faint">{ageText(l.createdAt, now)}</span>
