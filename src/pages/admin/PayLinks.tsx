@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { byChain } from '../../components/pay/assets'
 import type { PayAsset } from '../developers/api'
 import { siteOrigin } from '../pay/api'
@@ -60,9 +62,9 @@ type AdminInvoice = Invoice & { path: string; webhook: Endpoint | null }
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6 max-[600px]:p-4'
 const h2 = 'm-0 font-display text-[22px] font-bold uppercase'
 const small = 'font-mono text-[12px] text-faint'
-const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
+const field = 'min-h-11 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
 export const btn = 'inline-flex min-h-11 items-center rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 hover:border-gold disabled:opacity-50'
-const gold = 'h-10 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-50'
+const gold = 'min-h-11 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-50'
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—')
 const STATE_CLS: Record<string, string> = { active: 'text-green', inactive: 'text-faint', expired: 'text-faint', 'used-up': 'text-gold', open: 'text-gold', paid: 'text-green', cancelled: 'text-faint', pending: 'text-gold', delivered: 'text-green', failed: 'text-error' }
 
@@ -158,7 +160,7 @@ export function DeliveryLog({ rows, token, onChange }: { rows: Delivery[]; token
                   {!d.test && d.state !== 'pending' && (
                     <button
                       type="button"
-                      className={`${btn} min-h-8 px-2 text-[12px] ${d.state === 'failed' ? 'border-gold-line text-gold' : ''}`}
+                      className={`${btn} min-h-11 px-2 text-[12px] ${d.state === 'failed' ? 'border-gold-line text-gold' : ''}`}
                       disabled={busy !== null}
                       title={`Send event ${d.eventId} again as a new delivery`}
                       onClick={async () => {
@@ -262,9 +264,9 @@ function LinkForm({ initial, assets, submitLabel, onSubmit, onCancel }: { initia
         </Label>
         <fieldset className="m-0 flex flex-col gap-1 border-0 p-0 text-[12px] text-faint">
           <legend className="mb-1">Amount</legend>
-          <div className="flex h-10 overflow-hidden rounded-input border border-line-strong">
+          <div className="flex min-h-11 overflow-hidden rounded-input border border-line-strong">
             {(['fixed', 'open'] as const).map((t) => (
-              <button key={t} type="button" aria-pressed={d.type === t} onClick={() => set('type', t)} className={`px-3 text-[13px] ${d.type === t ? 'bg-gold text-bg' : 'text-ink-2 hover:text-ink'}`}>
+              <button key={t} type="button" aria-pressed={d.type === t} onClick={() => set('type', t)} className={`min-h-11 px-3 text-[13px] ${d.type === t ? 'bg-gold text-bg' : 'text-ink-2 hover:text-ink'}`}>
                 {t === 'fixed' ? 'Fixed' : 'Payer chooses'}
               </button>
             ))}
@@ -304,10 +306,14 @@ function LinkForm({ initial, assets, submitLabel, onSubmit, onCancel }: { initia
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {byChain(assets).map((g) => (
             <div key={g.chainId} className="flex flex-wrap items-center gap-2 font-mono text-[12px]">
-              <span className="text-muted">{g.chain}</span>
+              <span className="inline-flex items-center gap-1.5 text-muted">
+                <ChainLogo chain={g.chain} size={16} decorative />
+                {g.chain}
+              </span>
               {g.assets.map((a) => (
-                <label key={a.id} className={`inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-btn border px-2 ${d.assets.includes(a.id) ? 'border-gold text-gold' : 'border-line-strong text-ink-2'}`}>
+                <label key={a.id} className={`inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-btn border px-2 ${d.assets.includes(a.id) ? 'border-gold text-gold' : 'border-line-strong text-ink-2'}`}>
                   <input type="checkbox" className="accent-gold" checked={d.assets.includes(a.id)} onChange={() => toggle(a.id)} />
+                  <TokenLogo symbol={a.symbol} chain={g.chain} size={16} decorative />
                   {a.symbol}
                 </label>
               ))}
@@ -390,8 +396,13 @@ function LinkDetail({ token, link, reload, onSecret }: { token: string; link: Ad
                     <td className={`py-2 pr-3 uppercase ${STATE_CLS[i.status]}`}>{i.status}</td>
                     <td className="py-2 pr-3">
                       {i.payment ? (
-                        <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener noreferrer" className="text-ink-2 hover:text-gold">
-                          {i.payment.amount} {i.payment.symbol} · {i.payment.chain} · from {i.payment.from.slice(0, 8)}…
+                        <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-ink-2 hover:text-gold">
+                          <span className="inline-flex items-center gap-1.5 align-middle">
+                            <TokenLogo symbol={i.payment.symbol} size={16} decorative />
+                            {i.payment.amount} {i.payment.symbol} ·<ChainLogo chain={i.payment.chain} size={16} decorative />
+                            {i.payment.chain}
+                          </span>{' '}
+                          · from {i.payment.from.slice(0, 8)}…
                           <ArrowMark />
                         </a>
                       ) : (

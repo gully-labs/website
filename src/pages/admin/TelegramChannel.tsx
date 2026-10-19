@@ -130,7 +130,7 @@ function Bubble({ channel, html, media, buttons, empty = 'Your post appears here
           </div>
         </div>
         {buttons.map((b, i) => (
-          <a key={i} href={b.url || undefined} target="_blank" rel="noopener noreferrer" className="flex min-h-10 items-center justify-center gap-1 rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2 hover:bg-line-strong">
+          <a key={i} href={b.url || undefined} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2 hover:bg-line-strong">
             {b.text || 'Button'} <ExternalLink size={12} aria-hidden />
             <NewTabNote />
           </a>
@@ -621,8 +621,10 @@ function AutoPanel({ token, view, reload }: { token: string; view: View; reload:
                   <span className="text-[13px] text-muted">{m.about}</span>
                   {m.id === 'blog' && !a.ghostConfigured && <span className="text-[12px] text-gold">GHOST_CONTENT_KEY is not set: the blog cannot be read.</span>}
                 </div>
-                <button type="button" role="switch" aria-checked={on} aria-label={`${m.label} auto posts`} onClick={() => save({ [m.id]: { enabled: !on } }, `${m.label}: ${on ? 'off' : 'on'}`)} className={`relative inline-flex h-7 w-12 shrink-0 before:absolute before:-inset-2 before:content-[''] items-center rounded-full border transition-colors ${on ? 'border-gold bg-[rgba(217,181,99,.25)]' : 'border-line-strong bg-bg'}`}>
-                  <span className={`inline-block size-5 rounded-full transition-transform ${on ? 'translate-x-[22px] bg-gold' : 'translate-x-[3px] bg-faint'}`} />
+                <button type="button" role="switch" aria-checked={on} aria-label={`${m.label} auto posts`} onClick={() => save({ [m.id]: { enabled: !on } }, `${m.label}: ${on ? 'off' : 'on'}`)} className="inline-flex min-h-11 min-w-12 shrink-0 items-center justify-center bg-transparent p-0">
+                  <span className={`inline-flex h-7 w-12 items-center rounded-full border transition-colors ${on ? 'border-gold bg-[rgba(217,181,99,.25)]' : 'border-line-strong bg-bg'}`}>
+                    <span className={`inline-block size-5 rounded-full transition-transform ${on ? 'translate-x-[22px] bg-gold' : 'translate-x-[3px] bg-faint'}`} />
+                  </span>
                 </button>
               </div>
               {(m.id === 'dailyGaps' || m.id === 'weeklyMovers') && (

@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
-import { EChart } from '../../components/charts/EChart'
-import type { ChartEvent } from '../../components/charts/chart-utils'
-import { alpha, axisTooltip, barsPreset, C, linePreset, PALETTE, tipHtml } from '../../components/charts/chartPresets'
+import { alpha, C, PALETTE } from '../../components/charts/chartPresets'
+import { GhostChart } from '../../components/charts/GhostChart'
+import { useLiveSeries } from '../../components/charts/useLiveSeries'
 import { NF } from '../../components/charts/number-formats'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { TokenLogo } from '../../components/logos/TokenLogo'
-import { adminCall } from './payAdmin'
+import { fmtUsd, GHOST_H, known, sum } from './chartFmt'
+import { Daily, type Line } from './DailyChart'
 
 /* The admin dashboard's live charts, from GET /api/admin/charts (server/admin-charts.mjs): revenue by
    asset or chain, new accounts, API calls, alerts fired, Gully AI questions, pay-link payments and
@@ -36,72 +37,6 @@ const card = 'flex min-w-0 flex-col gap-3 rounded-card border border-line bg-sur
 const h3 = 'm-0 font-display text-[19px] leading-none font-bold uppercase'
 const small = 'font-mono text-[11px] text-faint'
 
-const dayLabel = (d: string) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-const sum = (a: Num[] | null | undefined) => (a ? a.reduce<number>((x, y) => x + (y ?? 0), 0) : null)
-const known = (a: Num[]) => a.some((v) => v !== null)
-const fmtInt = (n: number) => n.toLocaleString('en-US')
-const fmtUsd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
-
-interface Line {
-  name: string
-  data: Num[]
-  color: string
-  kind?: 'bar' | 'line'
-  /** Line on a second (right) axis, e.g. a rate or dollars next to counts. */
-  right?: boolean
-}
-
-/** Daily stacked bars (and optional lines) sharing one tooltip, with "not tracked yet" for null days. */
-function Daily({ days, lines, height = 200, fmt = fmtInt, fmtRight, label }: { days: string[]; lines: Line[]; height?: number; fmt?: (n: number) => string; fmtRight?: (n: number) => string; label: string }) {
-  const hasRight = lines.some((l) => l.right)
-  const key = JSON.stringify([days, lines.map((l) => [l.name, l.data, l.kind, l.right])])
-  const option = useMemo(
-    () => ({
-      grid: { left: 4, right: hasRight ? 8 : 4, top: 14, bottom: 4, containLabel: true },
-      legend: lines.length > 1 ? { show: false } : undefined,
-      xAxis: { type: 'category', data: days.map(dayLabel), axisTick: { show: false }, axisLine: { lineStyle: { color: C.lineStrong } }, axisLabel: { color: C.axis, fontSize: 11, hideOverlap: true } },
-      yAxis: [
-        { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.axis, fontSize: 11, formatter: (v: number) => (fmt === fmtUsd ? `$${v}` : String(v)) } },
-        ...(hasRight ? [{ type: 'value', splitLine: { show: false }, axisLabel: { color: C.axis, fontSize: 11, formatter: (v: number) => (fmtRight ? fmtRight(v) : String(v)) } }] : []),
-      ],
-      tooltip: axisTooltip((ps: ChartEvent[]) => {
-        const i = ps[0]?.dataIndex ?? -1
-        if (i < 0) return ''
-        return tipHtml({
-          title: dayLabel(days[i]),
-          rows: lines.map((l) => {
-            const v = l.data[i]
-            return { name: l.name, value: v === null || v === undefined ? 'not tracked yet' : l.right && fmtRight ? fmtRight(v) : fmt(v), color: l.color }
-          }),
-        })
-      }, 'shadow'),
-      series: lines.map((l, j) =>
-        l.kind === 'line'
-          ? { id: `s${j}`, name: l.name, ...linePreset({ color: l.color, width: 2 }), showSymbol: true, symbolSize: 5, connectNulls: false, yAxisIndex: l.right ? 1 : 0, data: l.data }
-          : { id: `s${j}`, name: l.name, ...barsPreset({ stagger: 18, focus: 'series' }), stack: 'all', barMaxWidth: 22, itemStyle: { color: l.color, borderRadius: j === lines.filter((x) => x.kind !== 'line').length - 1 ? [3, 3, 0, 0] : 0 }, data: l.data },
-      ),
-    }),
-    // `key` holds the days and every series' values
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key],
-  )
-  return (
-    <>
-      <EChart option={option} height={height} steps={{ count: days.length }} label={`${label}. Arrow keys step through the days.`} />
-      {lines.length > 1 && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          {lines.map((l) => (
-            <span key={l.name} className="inline-flex items-center gap-2 font-mono text-[11px] text-muted">
-              <i className={`inline-block ${l.kind === 'line' ? 'h-[2px] w-3' : 'size-[9px] rounded-[2px]'}`} style={{ background: l.color }} />
-              {l.name}
-            </span>
-          ))}
-        </div>
-      )}
-    </>
-  )
-}
-
 function Head({ title, figure, note }: { title: string; figure?: React.ReactNode; note?: string }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-2">
@@ -115,14 +50,9 @@ function Head({ title, figure, note }: { title: string; figure?: React.ReactNode
 }
 
 function NotTracked({ text }: { text: string }) {
-  return (
-    <div className="relative flex h-[200px] items-center justify-center overflow-hidden rounded-input border border-dashed border-line-strong bg-bg px-6 text-center">
-      <span aria-hidden className="absolute top-4 left-4 inline-flex items-center gap-2 font-mono text-[11px] text-faint">
-        <i className="size-2 animate-pulse rounded-full bg-gold" /> waiting for data
-      </span>
-      <span className="max-w-[340px] text-[13px] leading-[1.6] text-muted">Not tracked yet. {text}</span>
-    </div>
-  )
+  return <GhostChart label="Not tracked yet" height={GHOST_H} variant="line" testId="admin-ghost">
+    <span className="max-w-[340px] text-[12px] leading-[1.5] text-muted">{text}</span>
+  </GhostChart>
 }
 
 function Toggle<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void; label: string }) {
@@ -144,27 +74,20 @@ const colored = (s: Series, offset = 0): Line[] =>
 
 export default function AdminCharts({ token }: { token: string }) {
   const [days, setDays] = useState<(typeof RANGES)[number]>(30)
-  const [data, setData] = useState<AdminChartsData | null>(null)
-  const [err, setErr] = useState<string | null>(null)
   const [split, setSplit] = useState<'asset' | 'chain' | 'kind'>('asset')
 
-  const load = useCallback(async () => {
-    const r = await adminCall<AdminChartsData>(token, `/api/admin/charts?days=${days}`)
-    if (r.ok) {
-      setData(r.data)
-      setErr(null)
-    } else setErr(r.error)
-  }, [token, days])
-  useEffect(() => {
-    let alive = true
-    const tick = () => alive && load()
-    tick()
-    const id = setInterval(tick, 60_000)
-    return () => {
-      alive = false
-      clearInterval(id)
-    }
-  }, [load])
+  /* Polls every 60 s (the page says so) and pauses while the tab is hidden; each reply merges into the
+     charts, which glide to the new values. A new range refetches at once. */
+  const { data: got, error, refresh } = useLiveSeries(async (signal) => {
+    const r = await fetch(`/api/admin/charts?days=${days}`, { headers: { authorization: `Bearer ${token}` }, signal })
+    const d = await r.json().catch(() => null)
+    if (!r.ok) throw new Error(d?.error ?? 'The server could not be reached.')
+    return { d: d as AdminChartsData }
+  }, 60_000)
+  useEffect(() => refresh(), [days, refresh])
+  const data = got?.d ?? null
+  const err = error ? (error instanceof Error ? error.message : 'The server could not be reached.') : null
+  const load = () => refresh()
 
   return (
     <section className="flex flex-col gap-4" aria-label="Live charts">
@@ -181,7 +104,7 @@ export default function AdminCharts({ token }: { token: string }) {
       {err && (
         <p className="m-0 flex flex-wrap items-center gap-3 rounded-input border border-error/40 px-4 py-3 font-mono text-[12px] text-error" role="alert">
           The charts could not be read: {err}
-          <button type="button" onClick={() => load()} className="min-h-11 rounded-btn border border-line-strong px-3 text-ink-2 hover:border-gold">
+          <button type="button" onClick={load} className="min-h-11 rounded-btn border border-line-strong px-3 text-ink-2 hover:border-gold">
             Try again
           </button>
         </p>
@@ -191,7 +114,7 @@ export default function AdminCharts({ token }: { token: string }) {
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className={card}>
               <span className="h-5 w-40 animate-pulse rounded bg-surface-deep" />
-              <ChartBox height={200} state={err ? 'error' : 'loading'} message={err ? 'Not read yet.' : undefined} onRetry={() => load()} />
+              <ChartBox height={200} state={err ? 'error' : 'loading'} message={err ? 'Not read yet.' : undefined} onRetry={load} />
             </div>
           ))}
         </div>
@@ -209,7 +132,6 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
   const apiKnown = known(data.api.anonymous)
   const ask = data.ask.byChannel
   const wh = data.webhooks
-  const whFinished = (sum(wh.pay.delivered) ?? 0) + (sum(wh.pay.failed) ?? 0) + (sum(wh.alerts.delivered) ?? 0) + (sum(wh.alerts.failed) ?? 0)
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-4">
@@ -226,11 +148,11 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
           onChange={setSplit}
         />
         {revLines.length ? (
-          <Daily days={d} lines={revLines} fmt={fmtUsd} label={`Revenue per day by ${split}, ${fmtUsd(sum(data.revenue.usd) ?? 0)} in total`} />
+          <Daily days={d} lines={revLines} fmt={fmtUsd} label={`Revenue per day by ${split}, ${fmtUsd(sum(data.revenue.usd) ?? 0)} in total`} empty="Revenue will draw here" />
         ) : (
-          <Daily days={d} lines={[{ name: 'Revenue', data: data.revenue.usd, color: C.gold }]} fmt={fmtUsd} label="Revenue per day: no payments in this range" />
+          <Daily days={d} lines={[{ name: 'Revenue', data: data.revenue.usd, color: C.gold }]} fmt={fmtUsd} label="Revenue per day: no payments in this range" empty="Revenue will draw here" />
         )}
-        {split !== 'kind' && revLines.length > 0 && (
+        {split !== 'kind' && revLines.length > 0 && (sum(data.revenue.usd) ?? 0) > 0 && (
           <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label={split === 'asset' ? 'Assets paid in' : 'Chains paid on'}>
             {revLines.map((l) => (
               <li key={l.name} className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[12px] text-ink">
@@ -252,6 +174,7 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
             { name: 'Analytics accounts', data: data.accounts.analytics, color: PALETTE[1] },
           ]}
           label="New accounts per day"
+          empty="New accounts will draw here"
         />
       </section>
 
@@ -266,6 +189,7 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
               { name: 'Rate-limited', data: data.api.limited, color: PALETTE[4] },
             ]}
             label="API requests per day"
+            empty="API calls will draw here"
           />
         ) : (
           <NotTracked text="No request has reached the origin since usage counting began." />
@@ -282,13 +206,14 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
             { name: 'Telegram sends', data: data.alerts.telegram, color: PALETTE[1], kind: 'line' },
           ]}
           label="Alerts fired per day"
+          empty="Alerts fired will draw here"
         />
       </section>
 
       <section className={card}>
         <Head title="Gully AI questions" figure={<AnimatedNumber value={ask ? sum(Object.values(ask).flat()) : null} fallback="not tracked yet" />} note={data.ask.note} />
         {ask ? (
-          <Daily days={d} lines={[...colored(ask), ...(data.ask.unanswered ? [{ name: 'Not answered', data: data.ask.unanswered, color: C.error, kind: 'line' as const }] : [])]} label="Gully AI questions per day by channel" />
+          <Daily days={d} lines={[...colored(ask), ...(data.ask.unanswered ? [{ name: 'Not answered', data: data.ask.unanswered, color: C.error, kind: 'line' as const }] : [])]} label="Gully AI questions per day by channel" empty="Gully AI questions will draw here" />
         ) : (
           <NotTracked text={data.ask.note} />
         )}
@@ -304,26 +229,24 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
           ]}
           fmtRight={fmtUsd}
           label="Pay-link payments per day, count and USD"
+          empty="Pay-link payments will draw here"
         />
       </section>
 
       <section className={card}>
         <Head title="Webhook delivery" figure={<AnimatedNumber value={wh.rateOverall} suffix={wh.rateOverall === null ? undefined : '%'} format={{ maximumFractionDigits: 1 }} fallback="not tracked yet" />} note={wh.note} />
-        {whFinished ? (
-          <Daily
-            days={d}
-            lines={[
-              { name: 'Pay delivered', data: wh.pay.delivered, color: alpha(PALETTE[2], 0.9) },
-              { name: 'Alert webhooks delivered', data: wh.alerts.delivered, color: PALETTE[1] },
-              { name: 'Failed', data: wh.pay.failed.map((v, i) => v + wh.alerts.failed[i]), color: C.error },
-              { name: 'Success rate', data: wh.rate, color: C.gold, kind: 'line', right: true },
-            ]}
-            fmtRight={(v) => `${v}%`}
-            label={`Webhook deliveries per day and success rate, ${wh.rateOverall ?? 'no'} percent overall`}
-          />
-        ) : (
-          <NotTracked text="No merchant or alert webhook has finished a delivery in this range." />
-        )}
+        <Daily
+          days={d}
+          lines={[
+            { name: 'Pay delivered', data: wh.pay.delivered, color: alpha(PALETTE[2], 0.9) },
+            { name: 'Alert webhooks delivered', data: wh.alerts.delivered, color: PALETTE[1] },
+            { name: 'Failed', data: wh.pay.failed.map((v, i) => v + wh.alerts.failed[i]), color: C.error },
+            { name: 'Success rate', data: wh.rate, color: C.gold, kind: 'line', right: true },
+          ]}
+          fmtRight={(v) => `${v}%`}
+          label={`Webhook deliveries per day and success rate, ${wh.rateOverall ?? 'no'} percent overall`}
+          empty="Webhook deliveries will draw here"
+        />
       </section>
     </div>
   )

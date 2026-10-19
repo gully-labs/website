@@ -144,12 +144,12 @@ function DmBubble({ html, media, buttons }: { html: string; media: Media; button
           </div>
         </div>
         {buttons.map((b, i) => (
-          <a key={i} href={b.url || undefined} target="_blank" rel="noopener noreferrer" className="flex min-h-10 items-center justify-center gap-1 rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2 hover:bg-line-strong">
+          <a key={i} href={b.url || undefined} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center gap-1 rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2 hover:bg-line-strong">
             {b.text || 'Button'} <ExternalLink size={12} aria-hidden />
             <NewTabNote />
           </a>
         ))}
-        <span className="flex min-h-10 items-center justify-center rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2">🔕 Stop announcements</span>
+        <span className="flex min-h-11 items-center justify-center rounded-[8px] bg-surface-hover px-3 text-center text-[13px] text-ink-2">🔕 Stop announcements</span>
       </div>
     </div>
   )
@@ -256,7 +256,7 @@ function OwnerStep() {
     botfather: (
       <>
         Open{' '}
-        <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">
+        <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-gold hover:underline">
           @BotFather ↗
           <NewTabNote />
         </a>{' '}
