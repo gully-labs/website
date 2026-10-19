@@ -20,7 +20,7 @@ import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 import { auditPage, tokenColors } from './e2e-audit.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
-await guardTestRun(PORT, { watchdogMs: 8 * 60_000 })
+await guardTestRun(PORT, { watchdogMs: Number(process.env.E2E_WATCHDOG_MS) || 8 * 60_000 })
 const started = Date.now()
 const t = makeChecker()
 const { check } = t
@@ -1786,10 +1786,85 @@ await step('holder map', async () => {
   await ctx2.close()
 })
 
+// Gully Chains (/chains): the offer reads from GET /api/chains/plans, nothing claims a chain is live, the waitlist
+// form submits to the real server, and the page holds at 1440 and 390 (no sideways scroll, kit colours, 11 px text).
+// CHAINS_SHOTS=<dir> saves a screenshot per width.
+await step('chains page', async () => {
+  const shotDir = process.env.CHAINS_SHOTS || null
+  if (shotDir) fs.mkdirSync(shotDir, { recursive: true })
+  for (const [width, height, mobile] of [[1440, 900, false], [390, 844, true]]) {
+    const ctx = await newContext({ width, height, mobile })
+    await ctx.addInitScript(() => {
+      window.__ev = []
+      window.umami = { track: (name, data) => window.__ev.push([name, data ?? null]) }
+    })
+    const page = await ctx.newPage()
+    const w = watch(page, `/chains at ${width}`)
+    await page.goto(BASE + '/chains')
+    await page.getByRole('heading', { level: 1 }).waitFor()
+    await page.getByTestId('chains-waitlist-form').waitFor({ timeout: 15_000 })
+    await page.waitForTimeout(800)
+    const main = await page.locator('main').innerText()
+    check(`/chains at ${width}: from-price and profit share come from the config, testnet price is TBA`, /from \$3,500/i.test(main) && /5%/.test(main) && /TBA/.test(await page.getByTestId('price-testnet').innerText()))
+    check(`/chains at ${width}: says a testnet is coming and that prices may change, claims nothing is live`, /testnet is coming/i.test(main) && /Prices before launch may change/.test(main) && /No chain is running yet/.test(main) && !/\bis live\b|now live|chains are live/i.test(main))
+    check(`/chains at ${width}: services are marked included, add-on, coming with testnet or planned`, (await page.getByText('INCLUDED', { exact: true }).count()) >= 3 && (await page.getByText('ADD-ON', { exact: true }).count()) >= 3 && (await page.getByText('COMING WITH TESTNET', { exact: true }).count()) >= 2 && (await page.getByText('PLANNED', { exact: true }).count()) >= 2)
+    check(`/chains at ${width}: no competitor is named`, !/conduit|caldera|alchemy|altlayer|gelato|zksync|op stack/i.test(main))
+    await page.getByRole('radio', { name: 'Add-ons' }).click()
+    check(`/chains at ${width}: the add-on filter hides the included services`, (await page.locator('#services').getByText('INCLUDED', { exact: true }).count()) === 0)
+    const stackBtn = page.locator('#stack ol button').nth(3)
+    await stackBtn.click()
+    check(`/chains at ${width}: picking a stack layer selects it`, (await stackBtn.getAttribute('aria-pressed')) === 'true')
+    await page.locator('#pricing input[type=range]').fill('100000')
+    check(`/chains at ${width}: the fee estimate follows the slider (base + share of profit)`, (await page.locator('#pricing').getByRole('img', { name: '$8,500' }).count()) >= 1)
+    await noHorizontalScroll(page, `/chains at ${width}`)
+    // The form: an incomplete one is refused client-side, a complete one reaches the server.
+    await page.getByRole('button', { name: 'Join the waitlist' }).last().click()
+    check(`/chains at ${width}: an empty form shows an error and sends nothing`, (await page.getByRole('alert').count()) === 1)
+    await page.getByPlaceholder('Your project').fill(`E2E Chain ${width}`)
+    await page.getByPlaceholder('you@project.xyz or @yourname').fill(`chains-e2e-${width}@example.com`)
+    await page.locator('select[name=useCase]').selectOption('gaming')
+    await page.locator('select[name=scale]').selectOption('medium')
+    for (const label of ['Undecided', 'Rollup']) await page.getByRole('radiogroup', { name: label === 'Rollup' ? 'DATA AVAILABILITY' : 'GAS TOKEN' }).getByText(label, { exact: true }).click()
+    await page.getByRole('radiogroup', { name: 'ACCOUNT ABSTRACTION AND PAYMASTER?' }).getByText('Yes', { exact: true }).click()
+    await page.getByRole('radiogroup', { name: 'DEEPCORE LAUNCHPAD?' }).getByText('No', { exact: true }).click()
+    await designAudit(page, `/chains at ${width}`, 'main')
+    if (shotDir) await page.screenshot({ path: path.join(shotDir, `chains-${width}-form.png`), fullPage: false })
+    await page.getByRole('button', { name: 'Join the waitlist' }).last().click()
+    await page.getByTestId('chains-waitlist-done').waitFor({ timeout: 10_000 })
+    check(`/chains at ${width}: the form submits and confirms`, /on the waitlist/i.test(await page.getByTestId('chains-waitlist-done').innerText()))
+    const ev = await page.evaluate(() => window.__ev)
+    const sent = ev.find((e) => e[0] === 'chains-waitlist')
+    check(`/chains at ${width}: the chains-waitlist event carries choices only, no name, contact or notes`, !!sent && !/E2E Chain|example\.com|@/.test(JSON.stringify(sent)), JSON.stringify(sent))
+    if (shotDir) {
+      await page.evaluate(() => window.scrollTo(0, 0))
+      await page.screenshot({ path: path.join(shotDir, `chains-${width}-full.png`), fullPage: true })
+    }
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  const rows = await (await fetch(`${BASE}/api/admin/chains/waitlist`, { headers: { authorization: `Bearer ${admin}` } })).json()
+  check('/chains: both sign-ups reached the admin list', rows.rows?.some((r) => r.contact === 'chains-e2e-1440@example.com') && rows.rows?.some((r) => r.contact === 'chains-e2e-390@example.com'))
+  // The admin card lists them.
+  const actx = await newContext({ width: 1440, height: 900 })
+  await actx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
+  const apage = await actx.newPage()
+  const aw = watch(apage, 'admin chains waitlist')
+  await apage.goto(BASE + '/admin')
+  const card = apage.locator('section', { has: apage.getByRole('heading', { name: 'Gully Chains waitlist' }) })
+  await card.waitFor({ timeout: 15_000 })
+  await card.getByText('E2E Chain 1440').waitFor({ timeout: 10_000 })
+  check('admin: the Gully Chains waitlist card lists the sign-ups with their answers', (await card.getByText('E2E Chain 390').count()) === 1 && (await card.getByText(/gaming · medium/).count()) >= 1)
+  await aw.verify([/Failed to load resource/])
+  await actx.close()
+  const html = await (await fetch(BASE + '/chains')).text()
+  check('/chains: the server renders its own title and canonical', /<title>Gully Chains/.test(html) && html.includes('https://gullylabs.xyz/chains'))
+  check('/chains: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/chains</loc>'))
+})
+
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links', '/status']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/chains', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links', '/status']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/app') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)

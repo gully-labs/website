@@ -29,6 +29,7 @@ import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
 import { handleFeeHistory } from './fee-history.mjs'
 import { handleSecurityPublic } from './security-routes.mjs'
+import { handleChains } from './chains-waitlist.mjs'
 import { startEngine as startSecurityEngine } from './security-engine.mjs'
 import { CHAIN_LIST, rpc } from './payments.mjs'
 import { treasury } from './plans.mjs'
@@ -271,6 +272,7 @@ async function handleRequest(req, res) {
   // Public status (status.mjs): every check, 24 h of uptime per component and the incident history.
   if (url.pathname === '/api/status') return void (await handleStatus(req, res))
   // Gully Security (security-routes.mjs): published reports, the scan counter, review requests.
+  if (url.pathname.startsWith('/api/chains/')) return void ((await handleChains(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
   if (url.pathname.startsWith('/api/security/')) return void ((await handleSecurityPublic(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
   let access = null
   // /api/plans is metered like the tracker (P2-22): it is in access.mjs ENDPOINTS, so a key's dashboard counts it.

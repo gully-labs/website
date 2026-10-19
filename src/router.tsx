@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, DevelopersRoute, EmbedHoldersRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, ChainsRoute, DevelopersRoute, EmbedHoldersRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
@@ -29,6 +29,7 @@ const mainRoutes = [
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
       { path: '/chain-kit', element: <ChainKitRoute /> },
+      { path: '/chains', element: <ChainsRoute /> },
       { path: '/ask', element: <AskRoute /> },
       // Gully Security: the product page, the published reports and one report (noindex unless its owner opts in).
       { path: '/security', element: <SecurityRoute /> },
