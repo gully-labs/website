@@ -325,7 +325,7 @@ export function ApiReference() {
             ['generatedAt', 'string (ISO)', 'When this answer was built.'],
             ['totals', 'object', <><C>volumeAllUsd</C>, <C>volume24hUsd</C>, <C>tvlUsd</C>, <C>fees24hUsd</C>, <C>feesAllUsd</C>: each the sum over the venues that publish it, or empty when none does. <C>covers</C> names the venues in each total; <C>unread</C> the venues that could not be read.</>],
             ['daily', '{ t, v }[]', 'Daily volume in USD summed across the venues read; t in Unix seconds.'],
-            ['venues', 'Venue[]', <>One per project (<C>cartel-family</C>, <C>deepcore</C>, <C>peddleswap</C>, <C>peddles</C>, <C>peddlequest</C>): <C>state: ok</C> with its figures, <C>daily</C>, <C>counts</C>, <C>notes</C> and <C>source</C> (<C>url</C>, <C>readAt</C>), or <C>state: error</C> with <C>error</C>. A venue that fails is unreadable, never zero.</>],
+            ['venues', 'Venue[]', <>One per project (<C>deepcore</C>, <C>peddleswap</C>, <C>peddles</C>, <C>peddlequest</C>): <C>state: ok</C> with its figures, <C>daily</C>, <C>counts</C>, <C>notes</C> and <C>source</C> (<C>url</C>, <C>readAt</C>), or <C>state: error</C> with <C>error</C>. A venue that fails is unreadable, never zero.</>],
           ]}
         />
         <P>

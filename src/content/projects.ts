@@ -29,26 +29,6 @@ export interface Project {
 
 export const projects: Project[] = [
   {
-    slug: 'cartel-family',
-    key: 'cartel-family',
-    name: 'Cartel Family',
-    tag: 'Social trading',
-    status: 'Live',
-    tagline: 'We trade as one',
-    description: 'Live markets, automated strategies and shared trades across chains.',
-    logo: '/assets/cartel-family.webp',
-    bg: '#12151c',
-    accent: '#b8926a',
-    fit: 'cover',
-    pad: '0px',
-    padSm: '0px',
-    url: 'https://cartel.family/',
-    x: '@carteldotfamily',
-    telegram: 'https://t.me/JoinCartelFamily',
-    chains: ['Solana', 'Multi-chain'],
-    built: ['Member portal and wallet sign-in', 'Live market data and price alerts', 'Copy trading and shared trade feed'],
-  },
-  {
     slug: 'deepcore',
     key: 'deepcore',
     name: 'DeepCore',
@@ -134,9 +114,9 @@ export const projects: Project[] = [
 ]
 
 /** Slots for projects still in development. */
-export const comingSoon = ['06']
+export const comingSoon = [projectNumber(projects.length)]
 
-export const TOTAL_SLOTS = '06'
+export const TOTAL_SLOTS = projectNumber(projects.length + comingSoon.length - 1)
 
 export function projectNumber(index: number) {
   return String(index + 1).padStart(2, '0')

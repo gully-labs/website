@@ -226,24 +226,6 @@ for (const chainId of [8453, 4663, 5042]) {
   }
 }
 
-// ------------------------------------------------------------------------------------------ Cartel Family
-{
-  const source = 'Cartel-Family:deploy/deploy_fee_router.md'
-  const text = read(source)
-  const router = '0x5a423653f722bb427A09d05b4e80175A703e861F'
-  if (!text.includes(router)) throw new Error('Cartel router missing')
-  for (const chainId of [4663, 56])
-    add({
-      chainId,
-      address: router,
-      name: 'CartelFeeRouter v1',
-      role: 'Cartel Family fee router (first build, deployed 2026-10-15): takes the Cartel fee and a launchpad bonding-curve trade in one transaction.',
-      project: 'Cartel Family',
-      source,
-      note: 'The deployment record in deploy_fee_router.md lists this address on Robinhood Chain and BNB Chain. The same file calls this build superseded (two-day route delay); the app does not route through it yet.',
-    })
-}
-
 // ------------------------------------------------------------------------------------------ Sourcify
 const cache = fs.existsSync(CACHE) ? JSON.parse(fs.readFileSync(CACHE, 'utf8')) : {}
 async function ask(e) {
@@ -276,7 +258,7 @@ fs.mkdirSync(path.dirname(CACHE), { recursive: true })
 fs.writeFileSync(CACHE, JSON.stringify(cache, null, 1) + '\n')
 
 // ------------------------------------------------------------------------------------------ write
-const order = { 'Gully Labs': 0, DeepCore: 1, Peddles: 2, PeddleSwap: 3, PeddleQuest: 4, 'Cartel Family': 5 }
+const order = { 'Gully Labs': 0, DeepCore: 1, Peddles: 2, PeddleSwap: 3, PeddleQuest: 4 }
 entries.sort((a, b) => order[a.project] - order[b.project] || a.chainId - b.chainId || a.name.localeCompare(b.name))
 const block = `// BEGIN ENTRIES\nexport const contracts: ContractEntry[] = [\n${entries.map((e) => `  ${JSON.stringify(e)},`).join('\n')}\n]\n// END ENTRIES`
 const src = fs.readFileSync(OUT, 'utf8')

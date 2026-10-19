@@ -2597,6 +2597,37 @@ await step('telegram mini app at 390', async () => {
   await ctx.close()
 })
 
+/* ------------------------------------------------------------- Cartel Family is gone --- */
+
+// The project count comes from the source list, so adding or removing a project never breaks the suite.
+const PROJECT_COUNT = (fs.readFileSync(path.join(ROOT, 'src/content/projects.ts'), 'utf8').match(/^\s{4}slug: /gm) ?? []).length
+
+await step('no Cartel Family anywhere', async () => {
+  check('projects list is not empty', PROJECT_COUNT >= 1, PROJECT_COUNT)
+  const ctx = await newContext({ width: 1440 })
+  const page = await ctx.newPage()
+  const w = watch(page, 'no-cartel')
+  for (const route of ['/', '/ecosystem', '/about', '/docs']) {
+    await page.goto(BASE + route)
+    await page.locator('main, body').first().waitFor()
+    await page.waitForTimeout(600)
+    const text = await page.locator('body').innerText()
+    check(`${route}: no page text mentions Cartel`, !/cartel/i.test(text))
+    check(`${route}: no link points at cartel`, (await page.locator('a[href*="cartel" i]').count()) === 0)
+  }
+  await page.goto(BASE + '/projects/cartel-family')
+  await page.waitForTimeout(400)
+  check('/projects/cartel-family no longer renders a project page', new URL(page.url()).pathname === '/' && !/cartel/i.test(await page.locator('body').innerText()), page.url())
+  for (const file of ['/llms.txt', '/.well-known/contracts.json', '/sitemap.xml', '/api/stats']) {
+    const r = await fetch(BASE + file)
+    check(`${file}: no mention of Cartel`, r.status === 200 && !/cartel/i.test(await r.text()), r.status)
+  }
+  const stats = await (await fetch(BASE + '/api/stats')).json()
+  check('/api/stats: no cartel-family venue', !stats.venues.some((v) => /cartel/i.test(v.key)))
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+  await ctx.close()
+})
+
 /* ------------------------------------------------------------- ecosystem and partners --- */
 
 await step('ecosystem and partners', async () => {
@@ -2606,7 +2637,7 @@ await step('ecosystem and partners', async () => {
     const w = watch(page, `/ecosystem ${width}`)
     await page.goto(BASE + '/ecosystem')
     await page.locator('[data-project]').first().waitFor()
-    check(`/ecosystem ${width}: every project has its own card, none combined`, (await page.locator('[data-project]').count()) === 5)
+    check(`/ecosystem ${width}: every project has its own card, none combined`, (await page.locator('[data-project]').count()) === PROJECT_COUNT)
     await page.getByText(/Source: /).first().waitFor()
     check(`/ecosystem ${width}: integrations are listed and labelled as what we use`, (await page.getByRole('heading', { name: 'Integrates with' }).count()) === 1 && (await page.getByText('Chainlink').count()) >= 1 && (await page.getByText(/partner/i).count()) <= 3)
     // Logo-led tiles: every one shows a loaded logo (naturalWidth > 0) or the lettermark, never "[object Object]".
@@ -2713,7 +2744,7 @@ await step('discovery files and contracts page', async () => {
   }
 })
 
-const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|cartel|peddle|solana|xstocks|jup\.ag/i.test(u))
+const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag/i.test(u))
 check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)

@@ -18,7 +18,7 @@ asks for a square PNG, 256 x 256, UNCONFIRMED) and export from the kit, do not r
 | --- | --- | --- |
 | Treasury Safe `0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6` (2-of-3, same on every chain) | Ethereum, Base, BNB Chain, Arbitrum One, Robinhood Chain, Arc | `Gully Labs: Treasury` |
 | Request Network ERC20FeeProxy (third party) | Ethereum, OP Mainnet, BNB Chain, Arbitrum One, Base | Do NOT tag as ours. Request Network owns it. |
-| Our project contracts (DeepCore, Peddles, PeddleSwap, PeddleQuest, Cartel Family) | see registry | Tag by project, e.g. `Peddles: Launchpad`, from the registry `name` |
+| Our project contracts (DeepCore, Peddles, PeddleSwap, PeddleQuest) | see registry | Tag by project, e.g. `Peddles: Launchpad`, from the registry `name` |
 
 The Safe is a proxy contract, not a token: **token-info forms do not apply to it**. Only a name tag does.
 Token-info forms apply to ERC-20 tokens we deploy (none are in the registry; add them to the registry first).

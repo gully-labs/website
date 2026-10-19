@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T08:55:50.650Z",
+ "updatedAt": "2026-10-19T16:28:48.805Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -260,8 +260,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#stats",
    "section": "GET /api/stats",
-   "text": "The live totals on the Gully Labs home page: volume, TVL and fees across our projects, each read from that project’s own public API (and DefiLlama where noted) and added up in USD. No parameters, no key; cached on the server for a minute. No CORS header: read it from a server, not a browser on another site. generatedAt (string (ISO)): When this answer was built. totals (object): volumeAllUsd, volume24hUsd, tvlUsd, fees24hUsd, feesAllUsd: each the sum over the venues that publish it, or empty when none does. covers names the venues in each total; unread the venues that could not be read. daily ({ t, v }[]): Daily volume in USD summed across the venues read; t in Unix seconds. venues (Venue[]): One per project (cartel-family, deepcore, peddleswap, peddles, peddlequest): state: ok with its figures, daily, counts, notes and source (url, readAt), or state: error with error. A venue that fails is unreadable, never zero. Cache-Control: public, max-age=30. 502 only if the whole answer could not be built.",
-   "updatedAt": "2026-10-19T07:56:51.355Z"
+   "text": "The live totals on the Gully Labs home page: volume, TVL and fees across our projects, each read from that project’s own public API (and DefiLlama where noted) and added up in USD. No parameters, no key; cached on the server for a minute. No CORS header: read it from a server, not a browser on another site. generatedAt (string (ISO)): When this answer was built. totals (object): volumeAllUsd, volume24hUsd, tvlUsd, fees24hUsd, feesAllUsd: each the sum over the venues that publish it, or empty when none does. covers names the venues in each total; unread the venues that could not be read. daily ({ t, v }[]): Daily volume in USD summed across the venues read; t in Unix seconds. venues (Venue[]): One per project (deepcore, peddleswap, peddles, peddlequest): state: ok with its figures, daily, counts, notes and source (url, readAt), or state: error with error. A venue that fails is unreadable, never zero. Cache-Control: public, max-age=30. 502 only if the whole answer could not be built.",
+   "updatedAt": "2026-10-19T16:28:48.805Z"
   },
   {
    "id": "1ad89c4b87c3",
@@ -2856,15 +2856,6 @@
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
-   "id": "f6c9c9ef7449",
-   "source": "Site",
-   "title": "Cartel Family, a Gully Labs project",
-   "url": "https://gullylabs.xyz/projects/cartel-family",
-   "section": null,
-   "text": "Cartel Family (Social trading). We trade as one. Live markets, automated strategies and shared trades across chains. Live. Built: Member portal and wallet sign-in; Live market data and price alerts; Copy trading and shared trade feed. Chains: Solana; Multi-chain. Cartel Family's own site: https://cartel.family/",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
-  },
-  {
    "id": "7af5757e090a",
    "source": "Site",
    "title": "DeepCore, a Gully Labs project",
@@ -4336,8 +4327,8 @@
    "title": "Cross-venue live stats (Gully Labs)",
    "url": "https://gullylabs.xyz/",
    "section": "Cross-venue live stats",
-   "text": "Cross-venue live stats is part of Gully Labs. Status: live now. The home page shows live figures read from each Gully Labs project's own public API, each with its source. Venues read: Cartel Family, DeepCore, PeddleSwap, Peddles and PeddleQuest (server/stats.mjs). A venue that cannot be read is reported as an error, never as zeros; a token-denominated figure is never added to a dollar total.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "text": "Cross-venue live stats is part of Gully Labs. Status: live now. The home page shows live figures read from each Gully Labs project's own public API, each with its source. Venues read: DeepCore, PeddleSwap, Peddles and PeddleQuest (server/stats.mjs). A venue that cannot be read is reported as an error, never as zeros; a token-denominated figure is never added to a dollar total.",
+   "updatedAt": "2026-10-19T16:28:48.805Z",
    "feature": "site-home-stats",
    "status": "live"
   },
@@ -5010,39 +5001,6 @@
    "text": "Task verification and eligibility rules is part of PeddleQuest. Status: live now. Off-chain checks for X, Discord and wallet tasks, with eligibility and sybil rules set in the quest wizard. Docs cover X verification, Discord verification and general verification Quest wizard has an Eligibility step (src/modules/quest/pq-wizard/steps/EligibilityStep.tsx) that references sybil rules Frontend routes include quest, leaderboard, loyalty, referral-invite and profile Production builds carry the four mainnets only (testnets disabled)",
    "updatedAt": "2026-10-19T01:11:03.920Z",
    "feature": "peddlequest-verification-sybil",
-   "status": "live"
-  },
-  {
-   "id": "5c7c8557dffd",
-   "source": "Features",
-   "title": "Social feed and copy trading (Cartel Family)",
-   "url": "https://cartel.family/",
-   "section": "Social feed and copy trading",
-   "text": "Social feed and copy trading is part of Cartel Family. Status: live now. A wallet-native social trading app with a public feed, follows and copy-trade tracking. Public feed with posts, trades and token calls; follows, reactions, replies and direct messages (README) Copy-trade tracking and trader profiles with win rate and PnL (README) Domain cartel.family is defined in site_config.py per CLAUDE.md Python/Flask backend with SQLite, deployed from a Dockerfile (README says Railway)",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
-   "feature": "cartel-social-trading",
-   "status": "live"
-  },
-  {
-   "id": "22b996240a39",
-   "source": "Features",
-   "title": "Multi-chain automated trading bot (Cartel Family)",
-   "url": "https://cartel.family/",
-   "section": "Multi-chain automated trading bot",
-   "text": "Multi-chain automated trading bot is part of Cartel Family. Status: live now. An AI-scored bot trades on a user's behalf with configurable limits. Chains: Solana plus five EVM chains (BNB Chain, Base, Arbitrum, Polygon, Robinhood Chain) Solana swaps use Jupiter; EVM swaps use the 0x API Bot scores tokens every 30 seconds; user sets take-profit, stop-loss, trade size and a daily loss limit Performance fee on profitable trades only (README); CLAUDE.md records a 0.80% per-leg revenue rate set on 2026-10-10 Private keys are encrypted (Fernet with a wallet-derived HMAC)",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
-   "feature": "cartel-multichain-bot",
-   "status": "live"
-  },
-  {
-   "id": "9222d7125ad4",
-   "source": "Features",
-   "title": "Live market and one-send wallet (Cartel Family)",
-   "url": "https://cartel.family/",
-   "section": "Live market and one-send wallet",
-   "text": "Live market and one-send wallet is part of Cartel Family. Status: live now. Live market discovery with a launches tab, plus a single send path across all chains. Live Market page with Trending, New Pairs and Gainers; a Launches tab (New / Hot / Near graduation) is described in CLAUDE.md wallet_send.send_funds is the only way money leaves a wallet: native coin or USDC on Solana and all five EVM chains, behind POST /api/send One EVM address works across the five EVM chains Gas sponsorship for empty EVM wallets is optional via GAS_SPONSOR_PRIVATE_KEY",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
-   "feature": "cartel-live-market-wallet",
    "status": "live"
   }
  ]

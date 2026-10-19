@@ -1,11 +1,4 @@
 {
-  "cartel-family": {
-    "file": "/venues/cartel-family.png",
-    "from": "https://cartel.family/static/icon-512.png",
-    "page": "https://cartel.family/app.webmanifest",
-    "note": "its PWA icon, resized 512 to 256 px",
-    "fetchedAt": "2026-10-17T12:00:00Z"
-  },
   "deepcore": {
     "file": "/venues/deepcore.png",
     "from": "https://deepcore.fun/identity/emblem-512.png",

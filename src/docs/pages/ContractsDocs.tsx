@@ -12,7 +12,7 @@ const sections = [
   { id: 'rules', title: 'What is listed, and what is not' },
 ]
 
-const PROJECTS = ['Gully Labs', 'DeepCore', 'Peddles', 'PeddleSwap', 'PeddleQuest', 'Cartel Family']
+const PROJECTS = ['Gully Labs', 'DeepCore', 'Peddles', 'PeddleSwap', 'PeddleQuest']
 const PAGE = 40
 const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`
 

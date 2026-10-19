@@ -2,7 +2,7 @@
 // public API, added up where the units agree (USD), with the source kept beside every
 // number. Runs on the server (server.mjs in production, a Vite middleware in dev) because
 // Peddles' and PeddleQuest's APIs do not allow a foreign browser origin, and because one
-// cached read a minute is kinder to five upstreams than every visitor reading them.
+// cached read a minute is kinder to four upstreams than every visitor reading them.
 //
 // Rules, so the page can never show a number nobody measured:
 //   - a venue that could not be read is reported as `state: 'error'`, never as zeros;
@@ -10,7 +10,7 @@
 //   - a figure published in a token (Peddles' creator fees, in ETH) is passed through as-is and
 //     never added to a dollar total;
 //   - "all-time" volume is what the venue has recorded since its own `volumeAllSince`, stated
-//     beside the figure: Cartel Family publishes it outright, DeepCore's is the sum of its daily
+//     beside the figure: DeepCore's is the sum of its daily
 //     index, Peddles' is its all-time legs valued at the prices its own token endpoint reports.
 
 const CACHE_MS = 60_000
@@ -61,26 +61,6 @@ async function llama(kind, slug) {
 }
 
 /* ---------------------------------------------------------------- venues --- */
-
-async function cartel() {
-  const url = 'https://cartel.family/api/platform/landing-stats'
-  const j = await getJson(url)
-  // volume_series is cumulative USD per day; the chart wants the daily flow.
-  const cum = (j.volume_series ?? []).map((p) => ({ t: Date.parse(`${p.t}T00:00:00Z`) / 1000, v: num(p.v) ?? 0 }))
-  const daily = cum.map((p, i) => ({ t: p.t, v: Math.max(0, p.v - (i ? cum[i - 1].v : 0)) }))
-  return {
-    volume24hUsd: num(j.volume_24h_usd),
-    volumeAllUsd: num(j.volume_usd),
-    volumeAllSince: cum.length ? new Date(cum[0].t * 1000).toISOString() : null,
-    tvlUsd: null,
-    fees24hUsd: null,
-    feesAllUsd: null,
-    daily,
-    counts: { traders: num(j.traders), trades: num(j.trades) },
-    notes: ['TVL and fees are not published by this venue.'],
-    source: { url, readAt: new Date().toISOString() },
-  }
-}
 
 // DeepCore's documented public API host. The old path on the app host is read only if the API
 // host refuses, so a move or outage of one never blanks the venue.
@@ -282,7 +262,6 @@ async function peddlequest() {
 }
 
 export const VENUES = [
-  { key: 'cartel-family', read: cartel },
   { key: 'deepcore', read: deepcore },
   { key: 'peddleswap', read: peddleswap },
   { key: 'peddles', read: peddles },

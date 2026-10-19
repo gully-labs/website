@@ -5707,38 +5707,6 @@
    "audit": null,
    "source": "peddles-quest:docs/chains.md",
    "note": "The same address on all four production chains (docs/chains.md)."
-  },
-  {
-   "id": "56:0x5a423653f722bb427a09d05b4e80175a703e861f",
-   "name": "CartelFeeRouter v1",
-   "role": "Cartel Family fee router (first build, deployed 2026-10-15): takes the Cartel fee and a launchpad bonding-curve trade in one transaction.",
-   "project": "Cartel Family",
-   "chainId": 56,
-   "chain": "BNB Chain",
-   "address": "0x5a423653f722bb427A09d05b4e80175A703e861F",
-   "owner": "gully-labs",
-   "explorerUrl": "https://bscscan.com/address/0x5a423653f722bb427A09d05b4e80175A703e861F",
-   "verifiedSource": null,
-   "verification": null,
-   "audit": null,
-   "source": "Cartel-Family:deploy/deploy_fee_router.md",
-   "note": "The deployment record in deploy_fee_router.md lists this address on Robinhood Chain and BNB Chain. The same file calls this build superseded (two-day route delay); the app does not route through it yet."
-  },
-  {
-   "id": "4663:0x5a423653f722bb427a09d05b4e80175a703e861f",
-   "name": "CartelFeeRouter v1",
-   "role": "Cartel Family fee router (first build, deployed 2026-10-15): takes the Cartel fee and a launchpad bonding-curve trade in one transaction.",
-   "project": "Cartel Family",
-   "chainId": 4663,
-   "chain": "Robinhood Chain",
-   "address": "0x5a423653f722bb427A09d05b4e80175A703e861F",
-   "owner": "gully-labs",
-   "explorerUrl": "https://robin.etherscan.io/address/0x5a423653f722bb427A09d05b4e80175A703e861F",
-   "verifiedSource": null,
-   "verification": null,
-   "audit": null,
-   "source": "Cartel-Family:deploy/deploy_fee_router.md",
-   "note": "The deployment record in deploy_fee_router.md lists this address on Robinhood Chain and BNB Chain. The same file calls this build superseded (two-day route delay); the app does not route through it yet."
   }
  ]
 }

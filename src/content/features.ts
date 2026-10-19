@@ -756,7 +756,7 @@ export const features: Feature[] = [
     status: "live",
     summary: "The home page shows live figures read from each Gully Labs project's own public API, each with its source.",
     facts: [
-      "Venues read: Cartel Family, DeepCore, PeddleSwap, Peddles and PeddleQuest (server/stats.mjs).",
+      "Venues read: DeepCore, PeddleSwap, Peddles and PeddleQuest (server/stats.mjs).",
       "A venue that cannot be read is reported as an error, never as zeros; a token-denominated figure is never added to a dollar total."
     ],
     url: "https://gullylabs.xyz/",
@@ -1926,65 +1926,5 @@ export const features: Feature[] = [
       "peddles-quest:src/modules/quest/pq-wizard/steps/EligibilityStep.tsx",
       "peddles-quest:CLAUDE.md"
     ]
-  },
-  {
-    id: "cartel-social-trading",
-    product: "Cartel Family",
-    name: "Social feed and copy trading",
-    status: "live",
-    summary: "A wallet-native social trading app with a public feed, follows and copy-trade tracking.",
-    facts: [
-      "Public feed with posts, trades and token calls; follows, reactions, replies and direct messages (README)",
-      "Copy-trade tracking and trader profiles with win rate and PnL (README)",
-      "Domain cartel.family is defined in site_config.py per CLAUDE.md",
-      "Python/Flask backend with SQLite, deployed from a Dockerfile (README says Railway)"
-    ],
-    url: "https://cartel.family/",
-    source: [
-      "Cartel-Family:README.md",
-      "Cartel-Family:CLAUDE.md",
-      "Cartel-Family:app_entry.py"
-    ]
-  },
-  {
-    id: "cartel-multichain-bot",
-    product: "Cartel Family",
-    name: "Multi-chain automated trading bot",
-    status: "live",
-    summary: "An AI-scored bot trades on a user's behalf with configurable limits.",
-    facts: [
-      "Chains: Solana plus five EVM chains (BNB Chain, Base, Arbitrum, Polygon, Robinhood Chain)",
-      "Solana swaps use Jupiter; EVM swaps use the 0x API",
-      "Bot scores tokens every 30 seconds; user sets take-profit, stop-loss, trade size and a daily loss limit",
-      "Performance fee on profitable trades only (README); CLAUDE.md records a 0.80% per-leg revenue rate set on 2026-10-10",
-      "Private keys are encrypted (Fernet with a wallet-derived HMAC)"
-    ],
-    url: "https://cartel.family/",
-    source: [
-      "Cartel-Family:README.md",
-      "Cartel-Family:CLAUDE.md",
-      "Cartel-Family:multichain_auto_bot.py",
-      "Cartel-Family:bot_core.py"
-    ]
-  },
-  {
-    id: "cartel-live-market-wallet",
-    product: "Cartel Family",
-    name: "Live market and one-send wallet",
-    status: "live",
-    summary: "Live market discovery with a launches tab, plus a single send path across all chains.",
-    facts: [
-      "Live Market page with Trending, New Pairs and Gainers; a Launches tab (New / Hot / Near graduation) is described in CLAUDE.md",
-      "wallet_send.send_funds is the only way money leaves a wallet: native coin or USDC on Solana and all five EVM chains, behind POST /api/send",
-      "One EVM address works across the five EVM chains",
-      "Gas sponsorship for empty EVM wallets is optional via GAS_SPONSOR_PRIVATE_KEY"
-    ],
-    url: "https://cartel.family/",
-    source: [
-      "Cartel-Family:CLAUDE.md",
-      "Cartel-Family:README.md",
-      "Cartel-Family:market_sources.py",
-      "Cartel-Family:evm_wallet_parity.py"
-    ]
-  },
+  }
 ]

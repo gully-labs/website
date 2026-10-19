@@ -91,13 +91,9 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Soulbound badges](https://peddlequest.xyz) (live): An optional non-transferable proof-of-completion badge minted after a quest.
 - [Promotion slots](https://peddlequest.xyz) (live): Trending and banner placement is sold on chain, so what was bought is publicly recorded.
 - [Task verification and eligibility rules](https://peddlequest.xyz) (live): Off-chain checks for X, Discord and wallet tasks, with eligibility and sybil rules set in the quest wizard.
-- [Social feed and copy trading](https://cartel.family/) (live): A wallet-native social trading app with a public feed, follows and copy-trade tracking.
-- [Multi-chain automated trading bot](https://cartel.family/) (live): An AI-scored bot trades on a user's behalf with configurable limits.
-- [Live market and one-send wallet](https://cartel.family/) (live): Live market discovery with a launches tab, plus a single send path across all chains.
 
 ## Projects
 
-- [Cartel Family](https://cartel.family/): We trade as one. Live markets, automated strategies and shared trades across chains. (Live; Solana, Multi-chain)
 - [DeepCore](https://deepcore.fun/): Launch on one core. A launchpad, hosted Launchpads and DEXes, and a best-price router on one shared liquidity core, at the same addresses on four chains. (Live; Base, BNB Chain, HyperEVM, Robinhood)
 - [PeddleSwap](https://peddleswap.xyz/): Swap. Lock. Launch.. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks. (Live; Robinhood, Base, Arc)
 - [Peddles](https://peddles.xyz/): Launch, trade and play. Memecoins paired to tokenised stocks. Holders are paid in that stock. (Live; Base, Robinhood, BNB Chain, Arc)
@@ -138,7 +134,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 
 ## Contracts
 
-- [Contracts registry](https://gullylabs.xyz/.well-known/contracts.json): 377 addresses on 8 chains, JSON, open CORS. Docs: https://docs.gullylabs.xyz/contracts
+- [Contracts registry](https://gullylabs.xyz/.well-known/contracts.json): 375 addresses on 8 chains, JSON, open CORS. Docs: https://docs.gullylabs.xyz/contracts
 - [Full text for LLMs](https://gullylabs.xyz/llms-full.txt): this index with every feature fact, the roadmap and every contract address.
 
 ## Optional

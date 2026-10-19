@@ -18,7 +18,6 @@ const APP = APP_URL
 
 // Project copy, restated from src/content/projects.ts (the server cannot import TypeScript).
 const PROJECTS = {
-  'cartel-family': ['Cartel Family', 'We trade as one. Live markets, automated strategies and shared trades across chains.'],
   deepcore: ['DeepCore', 'Launch on one core. Tokens, Launchpads, DEXes and stock markets on one shared, hardened core, on four chains.'],
   peddleswap: ['PeddleSwap', 'Swap. Lock. Launch. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks.'],
   peddles: ['Peddles', 'Launch, trade and play. Memecoins paired to tokenised stocks; holders are paid in that stock.'],

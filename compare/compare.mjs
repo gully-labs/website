@@ -28,7 +28,7 @@ const clickText = (text) => async (page) => {
 
 const pages = [
   { name: 'home', site: '/', proto: null, kit: { desktop: 'desktop-01-home.png', mobile: 'mobile-01-home.png' } },
-  { name: 'project', site: '/projects/cartel-family', proto: clickText('Cartel Family'), kit: { desktop: 'desktop-02-project-detail.png' } },
+  { name: 'project', site: '/projects/deepcore', proto: clickText('DeepCore'), kit: { desktop: 'desktop-02-project-detail.png' } },
   { name: 'services', site: '/services', proto: clickText('All services'), kit: { desktop: 'desktop-03-services.png' } },
   { name: 'about', site: '/about', proto: null, protoAbout: true, kit: { desktop: 'desktop-04-about.png' } },
 ]

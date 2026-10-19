@@ -95,8 +95,6 @@ export function metricsOf(v: Venue | undefined): [Metric, Metric] {
   if (v.state === 'error') return [{ label: 'STATUS', value: 'Unreadable', missing: true }, { label: 'SOURCE', value: 'its own API' }]
   const usd = (label: string, n: number | null | undefined): Metric => ({ label, value: fmtUsd(n), missing: n === null || n === undefined })
   switch (v.key) {
-    case 'cartel-family':
-      return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('VOLUME 24H', v.volume24hUsd)]
     case 'peddles':
       return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('FEES ALL-TIME', v.feesAllUsd)]
     case 'peddlequest':

@@ -259,13 +259,13 @@ export function launchesFixture(at = Date.now()) {
   return { state: 'ok', asOf: new Date(at).toISOString(), launches: [{ chainId: 4663, chainKey: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', createdAt: new Date(at - 7 * 86_400_000).toISOString(), locked: true, links: { token: 'https://deepcore.fun/tokens/x', launch: 'https://deepcore.fun/app/launch/v2/x', swap: 'https://deepcore.fun/app/swap' } }] }
 }
 
-/** /api/stats in the server's shape (server/stats.mjs, src/lib/stats.ts): four venues read, one unreadable. */
+/** /api/stats in the server's shape (server/stats.mjs, src/lib/stats.ts): three venues read, one unreadable. */
 export function statsFixture(at = Date.now()) {
   const day0 = Math.floor(at / 86_400_000) * 86400
   const daily = (base) => Array.from({ length: 30 }, (_, i) => ({ t: day0 - (29 - i) * 86400, v: base + ((i * 53) % 400) }))
   const iso = new Date(at).toISOString()
   const venue = (key, base, extra = {}) => ({ key, state: 'ok', volumeAllUsd: base * 90, volumeAllSince: '2026-01-01', volume30dUsd: base * 30, volume24hUsd: base, tvlUsd: base * 4, fees24hUsd: base / 100, feesAllUsd: base, daily: daily(base), counts: {}, notes: [], source: { url: `https://${key}.example/api`, readAt: iso }, ...extra })
-  const venues = [venue('cartel-family', 1200), venue('deepcore', 900), venue('peddleswap', 400), venue('peddles', 650), { key: 'peddlequest', state: 'error', error: 'e2e: unreadable on purpose' }]
+  const venues = [venue('deepcore', 900), venue('peddleswap', 400), venue('peddles', 650), { key: 'peddlequest', state: 'error', error: 'e2e: unreadable on purpose' }]
   const ok = venues.filter((v) => v.state === 'ok')
   const sum = (k) => ok.reduce((a, v) => a + v[k], 0)
   const keys = ok.map((v) => v.key)

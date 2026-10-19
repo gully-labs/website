@@ -254,7 +254,7 @@ export const TOOLS = [
   },
   {
     name: 'get_ledger',
-    description: 'The live cross-venue figures of the Gully Labs projects (Cartel Family, DeepCore, PeddleSwap, Peddles, PeddleQuest): value locked, volume and fees as each publishes them, with the venues that could not be read.',
+    description: 'The live cross-venue figures of the Gully Labs projects (DeepCore, PeddleSwap, Peddles, PeddleQuest): value locked, volume and fees as each publishes them, with the venues that could not be read.',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {

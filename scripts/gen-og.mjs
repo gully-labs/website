@@ -13,7 +13,6 @@ const font = (pkg, file) => pathToFileURL(path.join(root, 'node_modules/@fontsou
 const out = path.join(root, 'public/social')
 
 const PROJECTS = [
-  { slug: 'cartel-family', name: 'Cartel Family', tagline: 'We trade as one', tag: 'Social trading', logo: '/assets/cartel-family.webp', bg: '#12151c', accent: '#b8926a', fit: 'cover' },
   { slug: 'deepcore', name: 'DeepCore', tagline: 'Launch on one core', tag: 'DeFi infrastructure', logo: '/assets/deepcore.webp', bg: '#061729', accent: '#2ee6c5', fit: 'contain' },
   { slug: 'peddleswap', name: 'PeddleSwap', tagline: 'Swap. Lock. Launch.', tag: 'DEX', logo: '/assets/peddleswap.webp', bg: '#15181b', accent: '#b8f03c', fit: 'contain' },
   { slug: 'peddles', name: 'Peddles', tagline: 'Launch, trade and play', tag: 'Launchpad', logo: '/assets/peddles.webp', bg: '#1c1f22', accent: '#27b6ff', fit: 'cover' },

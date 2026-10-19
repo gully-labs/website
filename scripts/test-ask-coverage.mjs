@@ -65,7 +65,6 @@ const CASES = [
   ['Repos', 'Which GitHub repository is the Gully Analytics fork of Umami?', /github\.com\/gully-labs\/umami/],
   ['Repos', 'What is in the gullylabs.xyz website repository README?', /github\.com\/gully-labs\/website/],
   ['Repos', 'What is the Gully Bridge, the Arbitrum token bridge fork?', /arbitrum-token-bridge|chain-kit/],
-  ['Project: Cartel Family', 'What is Cartel Family?', /projects\/cartel-family/],
   ['Project: DeepCore', 'What is DeepCore?', /projects\/deepcore|deepcore/],
   ['Project: PeddleSwap', 'What is PeddleSwap?', /projects\/peddleswap/],
   ['Project: Peddles', 'What is Peddles?', /projects\/peddles(?!\w)/],
