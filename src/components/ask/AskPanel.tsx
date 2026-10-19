@@ -2,6 +2,7 @@ import { ArrowUpRight, Clock, CornerDownLeft, LoaderCircle, RotateCcw, Sparkles,
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { AskFailure, askStatus, postAsk, postFeedback, type AskAnswer, type AskStatus, type Citation, type LiveCite, type Turn } from './askApi'
 import { Actions, LiveCard } from './AskCards'
+import { HolderMapHit } from './HolderMapHit'
 import { asOfLabel } from './askFormat'
 import { newTab } from '../LayoutNav'
 import { toastError } from '../ui/toast'
@@ -401,6 +402,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
           </span>
         </p>
       )}
+      <HolderMapHit text={q} />
       <form
         className="flex flex-col gap-2"
         onSubmit={(e) => {

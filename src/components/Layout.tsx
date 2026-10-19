@@ -4,6 +4,7 @@ import type { ServiceType } from '../content/services'
 import { ClosingCta } from './ClosingCta'
 import { ContactContext } from './ContactContext'
 import { emptyForm, type ContactForm } from './contactForm'
+import { AnnouncementBar } from './AnnouncementBar'
 import { Footer } from './Footer'
 import { Header } from './Header'
 import { scrollBehavior } from './LayoutNav'
@@ -97,6 +98,7 @@ export function Layout() {
           >
             Skip to content
           </a>
+          {!pathname.startsWith('/holders') && <AnnouncementBar />}
           <Header />
           <main id="main" key={pathname} tabIndex={-1} className="animate-[gl-fade_.25s_ease-out_both] outline-none">
             <Outlet />

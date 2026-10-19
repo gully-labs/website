@@ -31,6 +31,8 @@ export type NavEntry = {
   desc: string
   icon: LucideIcon
   badge?: string
+  /** A small gold NEW dot after the label (the header's plain links). */
+  newDot?: boolean
   /** Paths that light this entry (and its group) up as the current section. */
   match?: string[]
   /** Another app or site (the app, analytics, GitHub, blog, docs): opens in a new tab, marked with ↗.
@@ -99,6 +101,7 @@ export const navLinks: NavEntry[] = [
   { label: 'Projects', desc: 'The venues we run', to: '/#projects', icon: FlaskConical, match: ['/projects'] },
   { label: 'Pricing', desc: 'API, alerts and analytics plans', to: '/pricing', icon: Tag, match: ['/pricing'] },
   { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources (⌘K)', to: '/ask', icon: Sparkles, match: ['/ask'] },
+  { label: 'Holder Map', desc: 'Who really holds any token, on five chains', to: '/holders', icon: ScanSearch, match: ['/holders'], newDot: true },
 ]
 
 /** The "Launch app" split button: the main part opens the tracker, its menu lists the apps. */

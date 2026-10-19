@@ -2,7 +2,7 @@ import { Sparkles, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { askStatus } from './askApi'
-import { ASK_OPEN_EVENT } from './openAsk'
+import { ASK_CLOSE_EVENT, ASK_OPEN_EVENT } from './openAsk'
 
 // The panel (and its code) loads the first time it is opened.
 const AskPanel = lazy(() => import('./AskPanel').then((m) => ({ default: m.AskPanel })))
@@ -41,11 +41,14 @@ export function AskLauncher({ variant = 'header', hideButton = false }: { varian
       }
     }
     const onOpen = () => setOpen(true)
+    const onClose = () => setOpen(false)
     document.addEventListener('keydown', onKey)
     window.addEventListener(ASK_OPEN_EVENT, onOpen)
+    window.addEventListener(ASK_CLOSE_EVENT, onClose)
     return () => {
       document.removeEventListener('keydown', onKey)
       window.removeEventListener(ASK_OPEN_EVENT, onOpen)
+      window.removeEventListener(ASK_CLOSE_EVENT, onClose)
     }
   }, [on])
 

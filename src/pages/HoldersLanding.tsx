@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { CircleDashed, Radar, Search } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { ChainLogo } from '../components/logos/ChainLogo'
@@ -12,7 +12,8 @@ import { ScoreRing } from '../components/holders/parts'
 import { K } from '../components/holders/theme'
 import type { MapPreview } from '../components/holders/MiniMap'
 import { eyebrow } from '../components/ui'
-import { type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveChecked, type ResolveMatch, type TopScanned } from '../lib/holders'
+import { type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveChecked, type TopScanned } from '../lib/holders'
+import { useHolderSearch } from '../lib/holderResolve'
 import { ageText } from '../lib/tracker'
 
 /* /holders: the Holder Map's front door. A search for any token: an address on Robinhood Chain, BNB Chain, Base,
@@ -170,27 +171,7 @@ function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
 }
 
 function SearchBox() {
-  const nav = useNavigate()
-  const [q, setQ] = useState('')
-  const [s, setS] = useState<{ k: 'idle' } | { k: 'busy' } | { k: 'none'; checked: ResolveChecked[]; address: boolean } | { k: 'error' } | { k: 'limit' } | { k: 'many'; matches: ResolveMatch[] }>({ k: 'idle' })
-  const go = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const v = q.trim().replace(/^\$/, '')
-    if (!v) return
-    setS({ k: 'busy' })
-    let r: { matches: ResolveMatch[]; checked?: ResolveChecked[] } | null
-    try {
-      const res = await fetch(`/api/holders/resolve?q=${encodeURIComponent(v)}`, { headers: { accept: 'application/json' } })
-      if (res.status === 429) return setS({ k: 'limit' })
-      r = res.ok ? await res.json() : null
-    } catch {
-      r = null
-    }
-    if (!r) return setS({ k: 'error' })
-    if (!r.matches.length) return setS({ k: 'none', checked: r.checked ?? [], address: /^0x[0-9a-fA-F]{40}$/.test(v) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v) })
-    if (r.matches.length === 1) return nav(r.matches[0].path)
-    setS({ k: 'many', matches: r.matches })
-  }
+  const { q, s, go, change } = useHolderSearch()
   return (
     <div className="flex max-w-[760px] flex-col gap-3">
       <form role="search" onSubmit={go} className="flex items-center gap-2 rounded-card border border-line-strong bg-surface px-4 focus-within:border-gold">
@@ -201,10 +182,7 @@ function SearchBox() {
         <input
           id="hl-q"
           value={q}
-          onChange={(e) => {
-            setQ(e.target.value)
-            if (s.k !== 'busy') setS({ k: 'idle' })
-          }}
+          onChange={(e) => change(e.target.value)}
           placeholder="Address or ticker"
           className="min-h-14 min-w-0 flex-1 bg-transparent font-mono text-[16px] text-ink outline-none"
           spellCheck={false}

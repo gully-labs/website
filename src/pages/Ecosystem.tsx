@@ -17,6 +17,7 @@ import { fmtDate, fmtTime, fmtUsd, sourceHost, type Venue, type VenueOk } from '
 import { getJson } from '../lib/holders'
 import { METRIC_LABEL, sparkPoints } from '../lib/ledgerSeries'
 import { useStats } from '../hooks/useStats'
+import { HoldersChip } from '../components/holders/HoldersChip'
 
 /* /ecosystem: three honest lists.
    - Our projects: every project on the site is Gully Labs' own, one card each with the figures its own API
@@ -337,12 +338,15 @@ export function Ecosystem() {
                     </span>
                   ))}
                 </div>
-                {l.url && (
-                  <a href={l.url} target="_blank" rel="noopener noreferrer" className={`${btnOutline} mt-auto inline-flex min-h-11 w-fit items-center gap-1 px-4 text-[13px]`}>
-                    Visit
-                    <ArrowUpRight size={14} aria-hidden />
-                  </a>
-                )}
+                <div className="mt-auto flex flex-wrap items-center gap-2">
+                  {l.url && (
+                    <a href={l.url} target="_blank" rel="noopener noreferrer" className={`${btnOutline} inline-flex min-h-11 w-fit items-center gap-1 px-4 text-[13px]`}>
+                      Visit
+                      <ArrowUpRight size={14} aria-hidden />
+                    </a>
+                  )}
+                  <HoldersChip symbol={l.name} className="!h-11 px-3 text-[13px]" />
+                </div>
               </motion.li>
             ))}
             <motion.li
