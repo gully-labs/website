@@ -1201,7 +1201,7 @@ export const features: Feature[] = [
       "Package @gullylabs/widget, version 0.1.0",
       "Widget types are ticker, badge and table",
       "Drawn in its own shadow root so it does not clash with page styles",
-      "Script-tag install via https://gullylabs.xyz/widget.js and a data-gully-widget attribute",
+      "Script-tag install via https://embed.gullylabs.xyz/widget.js and a data-gully-widget attribute",
       "React component GullyWidget is exported from @gullylabs/widget/react",
       "Badge shows a 24-hour gap chart for one stock; table and ticker take a limit option",
       "Supports a light theme option"

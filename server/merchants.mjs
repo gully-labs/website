@@ -88,6 +88,7 @@ import { isSolanaAsset } from './solana-pay.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { sendAccountTelegram } from './telegram.mjs'
 import { canWrite, roleIn, workspaceName } from './workspaces.mjs'
+import { payBase, payUrl } from './hosts.mjs'
 
 const FILE = path.join(DATA_DIR, 'merchants.json')
 const LOGO_DIR = path.join(DATA_DIR, 'merchant-logos')
@@ -579,7 +580,7 @@ export function publicMerchantInvoice(inv, { refused = null } = {}) {
 
 function invoiceAdminView(inv) {
   // The store's own view still loads when the guard refuses a recipient (it shows why, with no address).
-  return { ...guardOr(() => publicMerchantInvoice(inv), (e) => publicMerchantInvoice(inv, { refused: e })), customer: inv.customer ?? null, views: inv.views ?? 0, path: `/pay/m/${inv.id}`, items: inv.items.map((i) => ({ description: i.description, quantity: i.quantity, unitUsd: fmtUsd(i.unitCents), totalUsd: fmtUsd(BigInt(i.unitCents) * BigInt(i.quantity)) })) }
+  return { ...guardOr(() => publicMerchantInvoice(inv), (e) => publicMerchantInvoice(inv, { refused: e })), customer: inv.customer ?? null, views: inv.views ?? 0, path: `/pay/m/${inv.id}`, url: payUrl(`/pay/m/${inv.id}`), items: inv.items.map((i) => ({ description: i.description, quantity: i.quantity, unitUsd: fmtUsd(i.unitCents), totalUsd: fmtUsd(BigInt(i.unitCents) * BigInt(i.quantity)) })) }
 }
 
 function parseAssets(raw) {
@@ -673,7 +674,7 @@ export function publicMerchantLink(l) {
 function linkAdminView(l) {
   const inv = db.invoices.filter((i) => i.linkId === l.id)
   const paid = inv.filter((i) => i.paymentId)
-  return { ...publicMerchantLink(l), active: l.active, maxUses: l.maxUses, paidUses: l.paidUses ?? 0, lastPaidAt: l.lastPaidAt ?? null, views: l.views ?? 0, createdAt: l.createdAt, updatedAt: l.updatedAt, path: `/pay/m/l/${l.id}`, stats: { checkouts: inv.length, paid: paid.length, paidUsd: fmtUsd(sum(paid, (i) => i.usdCents)) } }
+  return { ...publicMerchantLink(l), active: l.active, maxUses: l.maxUses, paidUses: l.paidUses ?? 0, lastPaidAt: l.lastPaidAt ?? null, views: l.views ?? 0, createdAt: l.createdAt, updatedAt: l.updatedAt, path: `/pay/m/l/${l.id}`, url: payUrl(`/pay/m/l/${l.id}`), stats: { checkouts: inv.length, paid: paid.length, paidUsd: fmtUsd(sum(paid, (i) => i.usdCents)) } }
 }
 
 function parseLink(body, prev = null) {
@@ -737,10 +738,10 @@ function parseLink(body, prev = null) {
 
 /* ------------------------------------------------------------- webhooks --- */
 
-const brief = (inv) => ({ id: inv.id, number: inv.number, title: inv.title, usd: fmtUsd(inv.usdCents), usdCents: inv.usdCents, status: invoiceState(inv), url: `${SITE}/pay/m/${inv.id}`, linkId: inv.linkId ?? null, customer: inv.customer ?? null, createdAt: inv.createdAt, dueAt: inv.dueAt ?? null, expiresAt: inv.expiresAt, paidAt: inv.paidAt ?? null, cancelledAt: inv.cancelledAt ?? null })
+const brief = (inv) => ({ id: inv.id, number: inv.number, title: inv.title, usd: fmtUsd(inv.usdCents), usdCents: inv.usdCents, status: invoiceState(inv), url: `${payBase()}/pay/m/${inv.id}`, linkId: inv.linkId ?? null, customer: inv.customer ?? null, createdAt: inv.createdAt, dueAt: inv.dueAt ?? null, expiresAt: inv.expiresAt, paidAt: inv.paidAt ?? null, cancelledAt: inv.cancelledAt ?? null })
 const linkBrief = (id) => {
   const l = id ? db.links.find((x) => x.id === id) : null
-  return l ? { id: l.id, title: l.title, url: `${SITE}/pay/m/l/${l.id}` } : null
+  return l ? { id: l.id, title: l.title, url: `${payBase()}/pay/m/l/${l.id}` } : null
 }
 const targetsOf = (ws) => {
   const w = peek(ws)?.webhook
@@ -861,9 +862,9 @@ function warn(st, kind, now = Date.now()) {
   const usd = fmtUsd(st.usdCents)
   const due = new Date(st.dueAt).toUTCString().slice(0, 16)
   const text = {
-    issue: `Your Gully Pay fee statement ${st.number} is ready: $${usd} for the week. Pay it within ${PAUSE_AFTER_DAYS} days (by ${due}) to keep your checkout running: ${SITE}/pay/${st.invoiceId}`,
-    day5: `Reminder: Gully Pay fee statement ${st.number} ($${usd}) is unpaid. Your checkout pauses on ${due} unless it is paid: ${SITE}/pay/${st.invoiceId}`,
-    day7: `Your store's checkout is paused: Gully Pay fee statement ${st.number} ($${usd}) is ${PAUSE_AFTER_DAYS} days unpaid. Paying it resumes checkout at once: ${SITE}/pay/${st.invoiceId}`,
+    issue: `Your Gully Pay fee statement ${st.number} is ready: $${usd} for the week. Pay it within ${PAUSE_AFTER_DAYS} days (by ${due}) to keep your checkout running: ${payBase()}/pay/${st.invoiceId}`,
+    day5: `Reminder: Gully Pay fee statement ${st.number} ($${usd}) is unpaid. Your checkout pauses on ${due} unless it is paid: ${payBase()}/pay/${st.invoiceId}`,
+    day7: `Your store's checkout is paused: Gully Pay fee statement ${st.number} ($${usd}) is ${PAUSE_AFTER_DAYS} days unpaid. Paying it resumes checkout at once: ${payBase()}/pay/${st.invoiceId}`,
     resumed: `Thank you: fee statement ${st.number} is paid and your store's checkout is running.`,
   }[kind]
   const action = { issue: 'merchant.fee_statement', day5: 'merchant.fee_reminder', day7: 'merchant.checkout_paused', resumed: 'merchant.fee_paid' }[kind]
@@ -1437,7 +1438,8 @@ export async function handleMerchantPay(req, res, url) {
     const number = `INV-${String(++merchant.invoiceSeq).padStart(4, '0')}`
     const inv = newInvoice(l.ws, { number, title: l.title, items: [{ description: l.title, quantity: 1, unitCents: String(cents) }], usdCents: String(cents), customer: null, notes: l.description, dueAt: null, expiresAt: new Date(now + LINK_INVOICE_TTL_MS).toISOString(), assets: l.assets }, l.id)
     save()
-    return json(res, 201, { invoice: publicMerchantInvoice(inv), path: `/pay/m/${inv.id}${asset ? `?asset=${encodeURIComponent(asset)}` : ''}` }), true
+    const payPath = `/pay/m/${inv.id}${asset ? `?asset=${encodeURIComponent(asset)}` : ''}`
+    return json(res, 201, { invoice: publicMerchantInvoice(inv), path: payPath, url: payUrl(payPath) }), true
   }
 
   m = p.match(/^\/api\/pay\/m\/i\/([^/]+)(?:\/(quote|verify))?$/)

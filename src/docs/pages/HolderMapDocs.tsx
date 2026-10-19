@@ -13,8 +13,8 @@ const sections = [
   { id: 'honesty', title: 'Honesty rules' },
 ]
 
-const CURL = `curl "https://gullylabs.xyz/api/holders/robinhood/NVDA"
-curl "https://gullylabs.xyz/api/holders/robinhood/0x8d901a1b3f3a57f9c36a71382fa183476c41545b" \\
+const CURL = `curl "https://api.gullylabs.xyz/api/holders/robinhood/NVDA"
+curl "https://api.gullylabs.xyz/api/holders/robinhood/0x8d901a1b3f3a57f9c36a71382fa183476c41545b" \\
   -H "Authorization: Bearer $GULLY_API_KEY"`
 
 export function HolderMapDocs() {

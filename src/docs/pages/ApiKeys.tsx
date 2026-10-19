@@ -11,11 +11,11 @@ const sections = [
   { id: 'safety', title: 'Keeping it safe' },
 ]
 
-const USE = `curl -i https://gullylabs.xyz/api/tracker \
+const USE = `curl -i https://api.gullylabs.xyz/api/tracker \
   -H "Authorization: Bearer $GULLY_API_KEY"`
 
 const USE_JS = `// On your server, never in browser code.
-const res = await fetch('https://gullylabs.xyz/api/tracker', {
+const res = await fetch('https://api.gullylabs.xyz/api/tracker', {
   headers: { Authorization: \`Bearer \${process.env.GULLY_API_KEY}\` },
 })
 console.log(res.headers.get('X-RateLimit-Remaining'))`

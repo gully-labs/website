@@ -18,26 +18,26 @@ const SCRIPT = `<div data-gully-widget="holders"
      data-chain="base"
      data-token="0x0000000000000000000000000000000000000000"
      data-height="640"></div>
-<script src="https://gullylabs.xyz/widget.js" async></script>`
+<script src="https://embed.gullylabs.xyz/widget.js" async></script>`
 
 const IFRAME = `<iframe
-  src="https://gullylabs.xyz/embed/holders/base/0x0000000000000000000000000000000000000000"
+  src="https://embed.gullylabs.xyz/embed/holders/base/0x0000000000000000000000000000000000000000"
   title="Holder Map by Gully Labs"
   loading="lazy"
   style="width:100%;height:760px;border:0;border-radius:12px"></iframe>`
 
 const CURL = `# the map, as JSON (an address, or a ticker the tracker follows)
-curl "https://gullylabs.xyz/api/holders/base/0x0000000000000000000000000000000000000000"
+curl "https://api.gullylabs.xyz/api/holders/base/0x0000000000000000000000000000000000000000"
 
 # the same with an API key (a higher rate limit)
-curl "https://gullylabs.xyz/api/holders/base/0x0000000000000000000000000000000000000000" \\
+curl "https://api.gullylabs.xyz/api/holders/base/0x0000000000000000000000000000000000000000" \\
   -H "Authorization: Bearer $GULLY_API_KEY"
 
 # the share card, a 1200 x 630 PNG
-curl -o card.png "https://gullylabs.xyz/api/holders/base/0x0000000000000000000000000000000000000000/card.png"`
+curl -o card.png "https://api.gullylabs.xyz/api/holders/base/0x0000000000000000000000000000000000000000/card.png"`
 
 const BADGE = `<a href="https://gullylabs.xyz/holders/base/0x0000000000000000000000000000000000000000">
-  <img src="https://gullylabs.xyz/api/holders/base/0x0000000000000000000000000000000000000000/card.png"
+  <img src="https://api.gullylabs.xyz/api/holders/base/0x0000000000000000000000000000000000000000/card.png"
        alt="Holder Map for this token" width="600" height="315">
 </a>`
 
@@ -76,6 +76,12 @@ export function HolderMapIntegrateDocs() {
       </Section>
 
       <Section id="embed" title="The embed">
+        <P>
+          Scripts, frames and badges are served from <C>embed.gullylabs.xyz</C>. Snippets you already pasted that load <C>https://gullylabs.xyz/widget.js</C> or frame <C>https://gullylabs.xyz/embed/…</C> keep working: both hosts serve the same files.
+        </P>
+        <P>
+          The JSON API is at <C>https://api.gullylabs.xyz/api/holders/…</C>, the same paths as before; <C>gullylabs.xyz/api/…</C> still answers too (it names the API host in a <C>Link: rel=&quot;canonical&quot;</C> header), so only the host in your URL changes.
+        </P>
         <CodeBlock lang="html" code={SCRIPT} />
         <Fields
           head={['Attribute', 'Values', 'Meaning']}
@@ -103,7 +109,7 @@ export function HolderMapIntegrateDocs() {
 
       <Section id="frame" title="Framing it yourself">
         <P>
-          The script only builds this iframe. If you prefer to write it yourself, the address is <C>https://gullylabs.xyz/embed/holders/:chain/:token</C>, and it may be framed from any origin:
+          The script only builds this iframe. If you prefer to write it yourself, the address is <C>https://embed.gullylabs.xyz/embed/holders/:chain/:token</C>, and it may be framed from any origin:
         </P>
         <Details summary="The iframe">
           <CodeBlock lang="html" code={IFRAME} />

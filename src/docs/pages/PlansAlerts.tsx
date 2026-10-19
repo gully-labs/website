@@ -16,7 +16,7 @@ const sections = [
   { id: 'telegram', title: 'Telegram' },
 ]
 
-const HISTORY = `curl "https://gullylabs.xyz/api/tracker/history?chain=robinhood&ticker=NVDA&days=90" \\
+const HISTORY = `curl "https://api.gullylabs.xyz/api/tracker/history?chain=robinhood&ticker=NVDA&days=90" \\
   -H "Authorization: Bearer $GULLY_API_KEY"`
 
 const SHAPE = `// The body of every delivery (JSON). Types, not sample values.

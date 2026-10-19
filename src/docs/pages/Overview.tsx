@@ -90,9 +90,9 @@ export function Overview() {
 
       <Section id="quick-start" title="Quick start">
         <P>Read the whole tracker as JSON. No key is needed:</P>
-        <CodeBlock lang="bash" code={'curl https://gullylabs.xyz/api/tracker'} />
+        <CodeBlock lang="bash" code={'curl https://api.gullylabs.xyz/api/tracker'} />
         <P>Or put a live ticker on a web page:</P>
-        <CodeBlock lang="html" code={'<div data-gully-widget="ticker"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>'} />
+        <CodeBlock lang="html" code={'<div data-gully-widget="ticker"></div>\n<script src="https://embed.gullylabs.xyz/widget.js" async></script>'} />
         <P>
           The <DocLink to="api">API reference</DocLink> lists every field; the <DocLink to="widget">widget guide</DocLink> every option. Build a widget visually at <Ext href="https://gullylabs.xyz/widget">gullylabs.xyz/widget</Ext>.
         </P>

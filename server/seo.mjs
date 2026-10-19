@@ -4,7 +4,7 @@
 // The <Seo> component keeps matching titles in the browser; keep the two in step.
 
 import fs from 'node:fs'
-import { APP_HOST, APP_URL, isAppHost } from './hosts.mjs'
+import { APP_HOST, APP_URL, isApiHost, isAppHost, isEmbedHost, isPayHost, PAY_URL } from './hosts.mjs'
 import { published, publishedJobs } from './security-store.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
@@ -163,6 +163,9 @@ export const APP_TITLE = 'Gully Labs App · keys, alerts, analytics, payments'
 const APP_DESCRIPTION = 'Sign in with your wallet to create Gully Labs API keys instantly, set gap and launch alerts, run Gully Analytics, and pay for plans and invoices in crypto, with your team in one workspace.'
 const isLocal = (host) => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)
 
+/** Pay pages are noindex, but name their own host as canonical (links are shared on pay.gullylabs.xyz). */
+const payCanonical = (host, p) => (isLocal(host) ? null : `${PAY_URL}${p}`)
+
 /** Head tags for one request. `found: false` means no page owns the path (served as a 404). */
 export function pageMeta(host, pathname) {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'
@@ -187,10 +190,10 @@ export function pageMeta(host, pathname) {
   if (host.startsWith('admin.')) return { title: p === '/' ? 'Admin · Gully Labs' : 'Not found · Gully Labs', description: 'Private.', canonical: null, found: p === '/', noindex: true }
   // Gully Pay invoices and receipts: real pages for whoever holds the link, never indexed.
   // The standalone checkout (src/pages/pay): the browser retitles it "Pay <store>" once the store is known.
-  if (/^\/pay\/inv_[\w-]{22}(\/receipt)?$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay Gully Labs · Gully Pay', description: 'Pay a Gully Labs invoice in ETH, BNB, USDC or USDT, straight to the Gully Labs treasury.', canonical: null, found: true, noindex: true }
-  if (/^\/pay\/l\/pl_[\w-]{16}$/.test(p)) return { title: 'Pay Gully Labs · Gully Pay', description: 'Pay with crypto in ETH, BNB, USDC or USDT, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
+  if (/^\/pay\/inv_[\w-]{22}(\/receipt)?$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay Gully Labs · Gully Pay', description: 'Pay a Gully Labs invoice in ETH, BNB, USDC or USDT, straight to the Gully Labs treasury.', canonical: payCanonical(host, p), found: true, noindex: true }
+  if (/^\/pay\/l\/pl_[\w-]{16}$/.test(p)) return { title: 'Pay Gully Labs · Gully Pay', description: 'Pay with crypto in ETH, BNB, USDC or USDT, wallet to wallet, through Gully Pay.', canonical: payCanonical(host, p), found: true, noindex: true }
   // Gully Pay merchant checkouts and receipts (merchants.mjs): real pages for whoever holds the link, never indexed.
-  if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
+  if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: payCanonical(host, p), found: true, noindex: true }
   // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
   if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
   // A Holder Map Deep check's report (holders-deep-routes.mjs): a real page for whoever holds the unguessable link, never indexed.
@@ -264,6 +267,8 @@ export function renderHead(source, meta) {
 
 /** robots.txt per host. */
 export function robotsFor(host) {
+  // The service hosts hold no pages worth indexing: checkout links, API JSON and iframes.
+  if (isPayHost(host) || isApiHost(host) || isEmbedHost(host)) return 'User-agent: *\nDisallow: /\n'
   if (host.startsWith('admin.')) return 'User-agent: *\nDisallow: /\n'
   const base = host.startsWith('docs.') ? DOCS : isAppHost(host) ? APP : SITE
   return `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml\n`
@@ -272,7 +277,7 @@ export function robotsFor(host) {
 /** sitemap.xml per host: each host lists only its own pages, as the protocol requires. */
 export function sitemapFor(host) {
   // The admin host has no public pages (robots.txt disallows everything there).
-  if (host.startsWith('admin.')) return null
+  if (host.startsWith('admin.') || isPayHost(host) || isApiHost(host) || isEmbedHost(host)) return null
   const today = new Date().toISOString().slice(0, 10)
   let urls
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])

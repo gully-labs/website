@@ -1,8 +1,8 @@
-import { isDocsHost } from '../site-host'
+import { EMBED_URL, isDocsHost } from '../site-host'
 
 /** The public origin a snippet points at. Previews on this site point at this site's own origin, so a
     development server previews against its own API; the docs host borrows the main site's. */
-export const WIDGET_ORIGIN = 'https://gullylabs.xyz'
+export const WIDGET_ORIGIN = EMBED_URL
 
 export type WidgetType = 'ticker' | 'badge' | 'table'
 export type WidgetTheme = 'dark' | 'light'

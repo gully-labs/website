@@ -46,12 +46,12 @@ GET /score/base/0x…/badge.svg           # the badge (never computes; shows wha
 
 const EMBED = `<!-- Badge: an image that links back to the score page -->
 <a href="https://gullylabs.xyz/score/base/0x…" target="_blank" rel="noopener noreferrer">
-  <img src="https://gullylabs.xyz/score/base/0x…/badge.svg" alt="Gully Score" width="260" height="48">
+  <img src="https://embed.gullylabs.xyz/score/base/0x…/badge.svg" alt="Gully Score" width="260" height="48">
 </a>
 
 <!-- Live widget: the score ring, the date and the link, refreshed every 5 minutes -->
 <div data-gully-score data-chain="base" data-address="0x…"></div>
-<script src="https://gullylabs.xyz/widget.js" async></script>`
+<script src="https://embed.gullylabs.xyz/widget.js" async></script>`
 
 function useMethodology() {
   const m = useApi<Methodology>('/api/score/methodology', 300_000)

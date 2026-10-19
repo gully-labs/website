@@ -51,6 +51,9 @@ export function Sdk() {
       sections={sections}
     >
       <Section id="packages" title="Packages">
+        <P>
+          The public API now has its own host, <C>api.gullylabs.xyz</C> (same <C>/api/…</C> paths). The packages still default to <C>https://gullylabs.xyz</C>, which keeps serving the API without redirects, so nothing needs to change. Calls made without the packages can use the new host today, and the widget script now loads from <C>embed.gullylabs.xyz</C> (the old script address still works).
+        </P>
         <List>
           <li>
             <C>@gullylabs/tracker</C>: a typed client with no dependencies. Runs in browsers, Node 18+, Bun, Deno and edge runtimes.

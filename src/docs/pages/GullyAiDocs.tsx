@@ -13,9 +13,9 @@ const sections = [
   { id: 'api', title: 'The API' },
 ]
 
-const CURL = `curl https://gullylabs.xyz/api/ask/status
+const CURL = `curl https://api.gullylabs.xyz/api/ask/status
 
-curl -X POST https://gullylabs.xyz/api/ask \\
+curl -X POST https://api.gullylabs.xyz/api/ask \\
   -H "Content-Type: application/json" \\
   -H "X-Requested-With: gully" \\
   -d '{"question":"What is the gap on NVDA right now?"}'`

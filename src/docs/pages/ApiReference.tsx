@@ -28,20 +28,20 @@ const sections = [
   { id: 'examples', title: 'Examples' },
 ]
 
-const CURL = `curl https://gullylabs.xyz/api/tracker
+const CURL = `curl https://api.gullylabs.xyz/api/tracker
 
 # with an API key, and the rate-limit headers shown
-curl -i https://gullylabs.xyz/api/tracker \\
+curl -i https://api.gullylabs.xyz/api/tracker \\
   -H "Authorization: Bearer $GULLY_API_KEY"
 
 # one token's gap history
-curl "https://gullylabs.xyz/api/tracker/history?chain=robinhood&ticker=NVDA"
+curl "https://api.gullylabs.xyz/api/tracker/history?chain=robinhood&ticker=NVDA"
 
 # the five biggest gap moves over the last hour, and NVDA's own 24h change
-curl "https://gullylabs.xyz/api/tracker/movers?window=1h&limit=5"
-curl "https://gullylabs.xyz/api/tracker/movers?window=24h&chain=robinhood&ticker=NVDA"`
+curl "https://api.gullylabs.xyz/api/tracker/movers?window=1h&limit=5"
+curl "https://api.gullylabs.xyz/api/tracker/movers?window=24h&chain=robinhood&ticker=NVDA"`
 
-const FETCH = `const res = await fetch('https://gullylabs.xyz/api/tracker')
+const FETCH = `const res = await fetch('https://api.gullylabs.xyz/api/tracker')
 if (res.status === 429) {
   const wait = Number(res.headers.get('Retry-After') ?? 60)
   throw new Error(\`Rate limited, retry in \${wait}s\`)
@@ -69,7 +69,7 @@ export function ApiReference() {
         <Fields
           head={['Item', 'Value', 'Notes']}
           rows={[
-            ['Base URL', 'https://gullylabs.xyz', 'Every endpoint lives under /api, except /healthz and the Score badge.'],
+            ['Base URL', 'https://api.gullylabs.xyz', <>Every endpoint lives under /api, except /healthz and the Score badge. The same paths still answer on <C>https://gullylabs.xyz</C> (no redirect, POSTs included) with a <C>Link: &lt;https://api.gullylabs.xyz/api/…&gt;; rel=&quot;canonical&quot;</C> header, so moving is a change of host only.</>],
             ['Methods', 'GET, OPTIONS', <>The data endpoints are read-only; anything else answers <C>405</C>. The few POST routes (checkout, Gully AI, review requests, Solana) are listed with their section.</>],
             ['Format', 'JSON', 'UTF-8. Times are ISO 8601 in UTC, except history points (Unix seconds) and gap-index points (Unix milliseconds).'],
             ['CORS', 'Access-Control-Allow-Origin: *', <>On <C>/api/tracker*</C>, <C>/api/holders/*</C>, <C>/api/score*</C>, <C>/api/status</C>, <C>/api/plans</C>, <C>/api/alerts/channels</C> and the Security list and stats: call them from any browser origin. The routes behind our own pages (stats, geo, DeepCore, Solana, Gully AI, Gully Pay) send no CORS header.</>],
@@ -566,7 +566,7 @@ export function ApiReference() {
         <CodeBlock lang="js" code={FETCH} />
         <H3 id="example-response">Example response</H3>
         <P>
-          A real answer from <Ext href="https://gullylabs.xyz/api/tracker">/api/tracker</Ext>, fetched {FETCHED_AT}, trimmed from {TRACKER_ROWS_AT_FETCH} rows to two (one per chain). Your answer will differ: it is live.
+          A real answer from <Ext href="https://api.gullylabs.xyz/api/tracker">/api/tracker</Ext>, fetched {FETCHED_AT}, trimmed from {TRACKER_ROWS_AT_FETCH} rows to two (one per chain). Your answer will differ: it is live.
         </P>
         <Details summary="Example response, trimmed">
           <CodeBlock lang="json" caption={`EXAMPLE · REAL RESPONSE, TRIMMED, ${FETCHED_AT}`} code={EXAMPLE_TRACKER} />

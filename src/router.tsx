@@ -6,12 +6,25 @@ import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, Chains
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
-import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isLocalHost } from './site-host'
+import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isEmbedHost, isLocalHost, isPayHost } from './site-host'
 import { installDelegatedTracking } from './lib/track'
 import { HolderMapOpened } from './lib/routeEvents'
 
 // Gully Analytics events for pages whose own files do not send them (link clicks on /links; src/lib/track.ts).
 installDelegatedTracking()
+
+// Gully Pay's checkout pages (pay.gullylabs.xyz; also /pay on the main host in development).
+const payChildren = [
+  // An invoice anyone with its link can pay, and its printable receipt once paid.
+  { path: '/pay/:id', element: <PayRoute /> },
+  { path: '/pay/:id/receipt', element: <ReceiptRoute /> },
+  // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
+  { path: '/pay/l/:id', element: <PayLinkRoute /> },
+  // Gully Pay for merchants: a store's invoice and link checkouts (paid to the store's wallet) and receipts.
+  { path: '/pay/m/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantInvoicePage })) },
+  { path: '/pay/m/:id/receipt', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantReceiptPage })) },
+  { path: '/pay/m/l/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantLinkPage })) },
+]
 
 const mainRoutes = [
   {
@@ -67,20 +80,7 @@ const mainRoutes = [
   { path: '/embed/holders/:chain/:token', element: <HolderMapOpened from="embed"><EmbedHoldersRoute /></HolderMapOpened> },
   // Gully Pay's standalone checkout (src/pages/pay/CheckoutFrame): its own layout, no site header, nav or
   // footer. Never linked from the site, never indexed; whoever holds the link pays here.
-  {
-    element: <CheckoutRoot />,
-    children: [
-      // An invoice anyone with its link can pay, and its printable receipt once paid.
-      { path: '/pay/:id', element: <PayRoute /> },
-      { path: '/pay/:id/receipt', element: <ReceiptRoute /> },
-      // A reusable pay link: makes an invoice per payer, then hands over to /pay/:id.
-      { path: '/pay/l/:id', element: <PayLinkRoute /> },
-      // Gully Pay for merchants: a store's invoice and link checkouts (paid to the store's wallet) and receipts.
-      { path: '/pay/m/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantInvoicePage })) },
-      { path: '/pay/m/:id/receipt', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantReceiptPage })) },
-      { path: '/pay/m/l/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantLinkPage })) },
-    ],
-  },
+  { element: <CheckoutRoot />, children: payChildren },
   // Development only: the docs site under /docs on the main host. In production it lives on its own host.
   { path: '/docs', children: docsRoutes },
 ]
@@ -96,7 +96,11 @@ const appRoutes = [
   { path: '*', element: <ToSite /> },
 ]
 
-const routes = isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isAppHost() ? appRoutes : mainRoutes
+// pay. and embed. are single-purpose hosts (server/hosts.mjs sends everything else to the main site): only their own pages load here.
+const payRoutes = [{ element: <CheckoutRoot />, children: payChildren }, { path: '*', element: <ToSite /> }]
+const embedRoutes = [{ path: '/embed/holders/:chain/:token', element: <HolderMapOpened from="embed"><EmbedHoldersRoute /></HolderMapOpened> }, { path: '*', element: <ToSite /> }]
+
+const routes = isPayHost() ? payRoutes : isEmbedHost() ? embedRoutes : isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isAppHost() ? appRoutes : mainRoutes
 
 // One error boundary over every host's routes: a page left open across a deploy reloads onto the new
 // build instead of showing React Router's default error screen.

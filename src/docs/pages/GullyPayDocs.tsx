@@ -16,13 +16,13 @@ const sections = [
   { id: 'retries', title: 'Delivery and retries' },
 ]
 
-const BUTTON = `<a href="https://gullylabs.xyz/pay/l/pl_XXXXXXXXXXXXXXXX" target="_blank" rel="noopener noreferrer"
+const BUTTON = `<a href="https://pay.gullylabs.xyz/pay/l/pl_XXXXXXXXXXXXXXXX" target="_blank" rel="noopener noreferrer"
    data-gully-pay="popup" style="display:inline-flex;align-items:center;min-height:44px;padding:0 20px;
    border-radius:10px;background:#d9b563;color:#0d141c;font:600 15px/1 system-ui,sans-serif;text-decoration:none">
   Pay with crypto
 </a>
 <!-- Optional: opens the checkout in a popup instead of a new tab. -->
-<script src="https://gullylabs.xyz/pay-button.js" async></script>`
+<script src="https://pay.gullylabs.xyz/pay-button.js" async></script>`
 
 const URIS = `# native coin: value in wei
 ethereum:<treasury>@<chainId>?value=<wei>
@@ -80,10 +80,10 @@ const EXAMPLE = `{
   "createdAt": "2026-10-17T16:01:32.949Z",
   "data": {
     "invoice": { "id": "inv_YyRDxuWTBu6ZnYlPVsGCjQ", "number": "GL-0001", "title": "Analytics setup", "usd": "1,500",
-                 "usdCents": "150000", "status": "paid", "url": "https://gullylabs.xyz/pay/inv_YyRDxuWTBu6ZnYlPVsGCjQ",
+                 "usdCents": "150000", "status": "paid", "url": "https://pay.gullylabs.xyz/pay/inv_YyRDxuWTBu6ZnYlPVsGCjQ",
                  "linkId": "pl_aV2bqpQu_I9b6Hem", "createdAt": "2026-10-17T16:01:32.866Z",
                  "expiresAt": "2026-10-17T17:01:32.866Z", "paidAt": "2026-10-17T16:01:32.945Z", "cancelledAt": null },
-    "link": { "id": "pl_aV2bqpQu_I9b6Hem", "title": "Analytics setup", "url": "https://gullylabs.xyz/pay/l/pl_aV2bqpQu_I9b6Hem" },
+    "link": { "id": "pl_aV2bqpQu_I9b6Hem", "title": "Analytics setup", "url": "https://pay.gullylabs.xyz/pay/l/pl_aV2bqpQu_I9b6Hem" },
     "payment": { "chainId": 56, "chain": "BNB Chain", "asset": "bnb-usdc", "symbol": "USDC", "decimals": 18,
                  "amount": "1500.003161", "amountRaw": "1500003161000000000000", "usd": "1,500",
                  "txHash": "0x94a2…b907", "txUrl": "https://bscscan.com/tx/0x94a2…b907", "blockNumber": 4999970,

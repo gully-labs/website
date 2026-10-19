@@ -6,7 +6,7 @@ import { ErrorLine, Skeleton } from '../parts'
 import { pillGold, pillSm } from '../styles'
 import { useSubTab } from '../subtab'
 import { InfoTip, RefreshChip, Stepper, SubPanel, SubTabs, type Step, type SubTabItem } from '../ui'
-import { payOrigin, usd, type MerchantView } from './api'
+import { payOrigin, siteOrigin, usd, type MerchantView } from './api'
 import { PaymentsDashboard } from './Charts'
 import { FeesSection, WebhooksSection } from './FeesWebhooks'
 import { InvoicesSection, LinksSection, NewLink } from './LinksInvoices'
@@ -103,7 +103,7 @@ export function MerchantTab() {
       </ServiceHeader>
         <InfoTip summary={`Non-custodial · ${f.ratePct}% per payment after your first ${usd(f.freeUsd)}, no monthly fee.`}>
           {view.nonCustodial} Fee: {f.ratePct}% per payment after your first {usd(f.freeUsd)}, no monthly fee.{' '}
-          <ExtLink href={`${payOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
+          <ExtLink href={`${siteOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
             Merchant terms ↗
           </ExtLink>
         </InfoTip>

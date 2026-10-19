@@ -16,7 +16,7 @@ const sections = [
 
 const URL_TOKEN = `solana:<treasury>?amount=<tokens>&spl-token=<mint>&reference=<reference>&label=Gully%20Labs&message=<what-for>`
 const URL_SOL = `solana:<treasury>?amount=<SOL>&reference=<reference>&label=Gully%20Labs&message=<what-for>`
-const FIND = `curl -s "https://gullylabs.xyz/api/solana/pay/find?quote=<quote id>"
+const FIND = `curl -s "https://api.gullylabs.xyz/api/solana/pay/find?quote=<quote id>"
 # { "reference": "…", "paid": false, "signatures": [ { "signature": "…", "slot": 0, "confirmationStatus": "confirmed", "blockTime": 0 } ] }`
 
 export function SolanaPayDocs() {

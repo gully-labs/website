@@ -3,6 +3,7 @@ import { Check, Copy, ExternalLink, ShieldCheck, Store } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { copyWithToast } from '../../components/ui/toast'
 import { Outlet } from 'react-router'
+import { SITE_URL } from '../../site-host'
 import { accentOf, storeName, type Brand } from './brand'
 
 /* The standalone checkout (every /pay page): no site header, nav or footer. A slim top bar with the
@@ -132,10 +133,10 @@ function Foot({ brand }: { brand: Brand }) {
           POWERED BY <GullyMark size={20} /> <span className="text-gold">GULLY PAY</span>
         </a>
         <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-5">
-          <a href="/legal/merchant-terms" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
+          <a href={`${SITE_URL}/legal/merchant-terms`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
             Merchant terms <ExternalLink size={11} aria-hidden />
           <span className="sr-only"> (opens in a new tab)</span></a>
-          <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
+          <a href={`${SITE_URL}/legal/privacy`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
             Privacy <ExternalLink size={11} aria-hidden />
           <span className="sr-only"> (opens in a new tab)</span></a>
           {!brand.gully && brand.supportEmail && (

@@ -30,7 +30,7 @@ import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
-import { APP_URL, isAppHost } from './hosts.mjs'
+import { API_URL, APP_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isPayHost, MAIN_URL, PAY_URL } from './hosts.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
 import { handleFeeHistory } from './fee-history.mjs'
@@ -138,22 +138,26 @@ const notifyHits = new Map()
 const TG_SDK_URL = 'https://telegram.org/js/telegram-web-app.js'
 function securityHeaders(host, pathname = '/') {
   const local = /^(localhost|127.0.0.1|[::1])$/.test(host)
-  const strict = host.startsWith('admin.') || isAppHost(host)
-  // The docs host runs the widget's live examples, which load https://gullylabs.xyz/widget.js (its
+  const pay = isPayHost(host)
+  const strict = host.startsWith('admin.') || isAppHost(host) || pay
+  // The docs host runs the widget's live examples, which load https://embed.gullylabs.xyz/widget.js (and, for older snippets, https://gullylabs.xyz/widget.js) (its
   // reads of /api/tracker and the logos are covered by connect-src https: and img-src https:).
   const docs = host.startsWith('docs.') || local
   const miniApp = !strict && !host.startsWith('docs.') && (pathname === '/tg' || pathname.startsWith('/tg/'))
   // The embeddable Holder Map (widget.js) is the one page any site may frame.
   const embed = !strict && !host.startsWith('docs.') && pathname.startsWith('/embed/')
+  // pay. and embed. load nothing from third parties: no analytics beacon, no Cloudflare insights.
+  const bare = pay || isEmbedHost(host)
   const csp = [
     "default-src 'self'",
     // Cloudflare Web Analytics is enabled on the zone and injects its beacon into every page.
-    `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz' : ''}${miniApp ? ` ${TG_SDK_URL}` : ''}`,
+    bare ? "script-src 'self'" : `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz https://embed.gullylabs.xyz' : ''}${miniApp ? ` ${TG_SDK_URL}` : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     "connect-src 'self' https: wss:",
-    'frame-src https:',
+    // The checkout frames nothing but WalletConnect's verification page; every other host keeps https:.
+    pay ? 'frame-src https://verify.walletconnect.org https://verify.walletconnect.com' : 'frame-src https:',
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
@@ -164,7 +168,7 @@ function securityHeaders(host, pathname = '/') {
   return {
     ...(local ? {} : { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' }),
     'X-Content-Type-Options': 'nosniff',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Referrer-Policy': pay ? 'no-referrer' : 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
     // Wallet popups (Coinbase Wallet, WalletConnect) need to talk back to the opener.
     'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
@@ -201,6 +205,27 @@ async function handleRequest(req, res) {
   if (host.startsWith('analytics.')) return handleAnalytics(req, res)
   // Security headers for everything this server answers itself (the blog and analytics set their own).
   for (const [k, v] of Object.entries(securityHeaders(host, url.pathname))) res.setHeader(k, v)
+  // Service hosts (hosts.mjs): pay. and embed. answer only their own pages and APIs, api. only /api/*.
+  const policy = hostPolicy(host, url.pathname)
+  if (policy === 'redirect') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+    return send(res, 301, '', { Location: MAIN_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
+  }
+  // embed.: widget.js, the iframe pages and badges are read by other sites: open CORS for GET, and this host sets no cookies.
+  if (isEmbedHost(host)) {
+    for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v)
+    if (req.method === 'OPTIONS') return send(res, 204, '')
+  }
+  // pay.: private by link, never indexed.
+  if (isPayHost(host)) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
+  if (policy === 'deny') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+  // The pay pages moved to pay.gullylabs.xyz: old /pay/ links 301 there (GET and HEAD only, path and query kept).
+  if (!isLocal && !isPayHost(host) && (url.pathname === '/pay' || url.pathname.startsWith('/pay/')) && (req.method === 'GET' || req.method === 'HEAD')) {
+    return send(res, 301, '', { Location: PAY_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
+  }
+  // The public API stays served on every host (POSTs and existing integrations cannot follow a redirect);
+  // its canonical home is api.gullylabs.xyz, with the same paths.
+  if (!isLocal && !isApiHost(host) && url.pathname.startsWith('/api/')) res.setHeader('Link', `<${API_URL}${url.pathname}>; rel="canonical"`)
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
   }
@@ -440,7 +465,9 @@ async function handleRequest(req, res) {
       if (e) return send(res, 500, '')
       const meta = pageMeta(host, url.pathname)
       res.writeHead(meta.found ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
-      res.end(req.method === 'HEAD' ? undefined : renderHead(html, meta))
+      // pay. and embed. carry no analytics beacon (their CSP would refuse it anyway).
+      const page = renderHead(html, meta)
+      res.end(req.method === 'HEAD' ? undefined : isPayHost(host) || isEmbedHost(host) ? page.replace(/\s*<script defer src="https:\/\/analytics\.gullylabs\.xyz[^>]*><\/script>/, '') : page)
     })
   })
 }
