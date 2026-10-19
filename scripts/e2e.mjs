@@ -2080,7 +2080,7 @@ await step('holder map', async () => {
     await page.goto(BASE + '/holders')
     await page.locator('[data-launch-feed] li').first().waitFor()
     await page.waitForTimeout(800)
-    const sums = await page.locator('[data-feed-summary]').evaluateAll((els) => els.map((e) => e.scrollHeight <= e.clientHeight + 1 || e.clientHeight <= 2 * parseFloat(getComputedStyle(e).lineHeight) + 1))
+    const sums = await page.locator('[data-feed-summary]').evaluateAll((els) => els.map((e) => getComputedStyle(e).webkitLineClamp === '2' && e.clientHeight <= 2 * parseFloat(getComputedStyle(e).fontSize) * 1.75))
     check(`holders landing ${width}: launch summaries are clamped to two lines`, sums.length > 0 && sums.every(Boolean), JSON.stringify(sums))
     const ticks = await page.locator('[data-feed-ticker]').evaluateAll((els) => els.map((e) => e.scrollWidth <= e.clientWidth + 1 && !/…$/.test(e.textContent ?? '')))
     check(`holders landing ${width}: tickers are whole`, ticks.length > 0 && ticks.every(Boolean), JSON.stringify(ticks))
