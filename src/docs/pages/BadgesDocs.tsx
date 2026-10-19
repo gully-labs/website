@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { CodeBlock } from '../CodeBlock'
-import { C, Callout, DocLink, DocPage, Ext, Fields, P, Section } from '../DocPage'
+import { C, Callout, DocLink, DocPage, Ext, P, Section } from '../DocPage'
 import { LiveBadge } from '../DocExtras'
 import { apiOrigin } from '../nav'
 
@@ -45,6 +45,29 @@ function Panel({ theme, children }: { theme: Theme; children: ReactNode }) {
   return <div className={`flex flex-wrap items-center gap-x-8 gap-y-4 rounded-card border p-card ${theme === 'dark' ? 'border-line bg-bg-footer' : 'border-paper-line bg-paper-3'}`}>{children}</div>
 }
 
+/** The badge list: every cell wraps in full (nothing is clipped), stacked on phones. */
+function BadgeTable() {
+  const grid = 'grid-cols-[minmax(0,1.1fr)_minmax(0,2.2fr)_minmax(0,1.3fr)] max-[640px]:grid-cols-1 max-[640px]:gap-1'
+  return (
+    <div data-testid="badge-table" className="overflow-hidden rounded-card border border-line">
+      <div className={`grid ${grid} gap-4 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] tracking-[1px] text-faint max-[640px]:hidden`}>
+        {['BADGE', 'SAYS', 'ADDRESS'].map((h) => (
+          <span key={h}>{h}</span>
+        ))}
+      </div>
+      <div className="divide-y divide-line">
+        {KINDS.map((x) => (
+          <div key={x.id} className={`grid ${grid} gap-4 px-4 py-3`}>
+            <span className="font-mono text-[13px] break-words text-gold">{x.name}</span>
+            <span className="text-[14px] leading-[1.6] text-ink-2">{x.what}</span>
+            <span className="font-mono text-[12px] break-all text-dim">{x.path}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function BadgesDocs() {
   const [kind, setKind] = useState<Kind>('score')
   const [size, setSize] = useState<Size>('M')
@@ -70,7 +93,7 @@ export function BadgesDocs() {
 
       <Section id="family" title="One family">
         <P>Every badge has the same three parts: the Gully Labs mark, the product in upper case, and a value in a second field. They are plain SVG images, open to any origin, so they work in a README, in an email or on any site.</P>
-        <Fields head={['Badge', 'Says', 'Address']} variant="routes" rows={KINDS.map((x) => [x.name, x.what, <C key={x.id}>{x.path}</C>])} />
+        <BadgeTable />
         <P>
           Add <C>?size=S|M|L</C> (20, 28 or 36 px tall, M by default) and <C>?theme=dark|light</C> (dark by default). The Gully Score, Holder Map and Gully Security badges link back to their page; they are cached and never start a computation, a map build or a scan.
         </P>

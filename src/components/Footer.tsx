@@ -1,5 +1,6 @@
 import { ArrowUpRight } from 'lucide-react'
 import { track } from '../lib/track'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { navGroups, navLinks, socialLinks, type NavEntry } from '../content/site'
 import { useContact } from './ContactContext'
@@ -13,10 +14,10 @@ import { Wordmark } from './brand'
    Products splits in two from 1024 px. Rows are 44 px taps on phones and tighten from 700 px. */
 
 const colLabel = 'm-0 mb-1 font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase'
-const colLink = 'inline-flex min-h-11 items-center gap-[6px] bg-transparent p-0 text-left text-[13px] text-dim transition-colors hover:text-gold min-[700px]:min-h-8'
-const legalLink = 'inline-flex min-h-11 items-center hover:text-gold min-[700px]:min-h-8'
+const colLink = 'inline-flex min-h-11 min-w-11 items-center gap-[6px] bg-transparent p-0 text-left text-[13px] text-dim transition-colors hover:text-gold min-[700px]:min-h-8'
+const legalLink = 'inline-flex min-h-11 min-w-11 items-center hover:text-gold min-[700px]:min-h-8'
 
-function Column({ id, label, items, wide }: { id: string; label: string; items: NavEntry[]; wide?: boolean }) {
+function Column({ id, label, items, wide, extra }: { id: string; label: string; items: NavEntry[]; wide?: boolean; extra?: ReactNode }) {
   return (
     <nav aria-labelledby={`foot-${id}`} className={`flex min-w-0 flex-col ${wide ? 'min-[1024px]:col-span-2' : ''}`}>
       {/* A label, not a heading: extra H2s on every page cluttered the outline. */}
@@ -33,6 +34,7 @@ function Column({ id, label, items, wide }: { id: string; label: string; items: 
             </EntryLink>
           </li>
         ))}
+        {extra}
       </ul>
     </nav>
   )
@@ -44,6 +46,7 @@ export function Footer() {
   const [projects, pricing, gullyAi] = navLinks
   // Swap is a section of the stock pages, not a page of its own: the footer lists the tracker once.
   const productItems = [...products.items.filter((e) => e.label !== 'Swap' && e.label !== 'All products'), pricing]
+  // Contact is the last company entry; the Telegram chat is added right under it.
   const companyItems = [projects, ...company.items]
 
   return (
@@ -55,7 +58,7 @@ export function Footer() {
           <button
             type="button"
             onClick={() => (track('cta-click', { cta: 'start-project', from: 'footer' }), openContact())}
-            className="group inline-flex min-h-11 items-center gap-1 bg-transparent p-0 text-[13px] font-medium text-gold transition-colors hover:text-ink min-[700px]:min-h-8"
+            className="group inline-flex min-h-11 min-w-11 items-center gap-1 bg-transparent p-0 text-[13px] font-medium text-gold transition-colors hover:text-ink min-[700px]:min-h-8"
           >
             Start a project
             <ArrowUpRight aria-hidden size={14} strokeWidth={2} className="transition-transform group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
@@ -71,7 +74,19 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-x-6 gap-y-6 min-[700px]:grid-cols-3 min-[1024px]:grid-cols-4">
           <Column id="products" label="Products" items={productItems} wide />
           <Column id="developers" label={developers.label} items={[gullyAi, ...developers.items]} />
-          <Column id="company" label="Company" items={companyItems} />
+          <Column
+            id="company"
+            label="Company"
+            items={companyItems}
+            extra={
+              <li>
+                <a href="https://t.me/GullyLabsBot?start=contact" {...newTab} onClick={() => track('cta-click', { cta: 'chat-telegram', from: 'footer' })} className={colLink}>
+                  Chat on Telegram
+                  <NewTabMark size={11} />
+                </a>
+              </li>
+            }
+          />
         </div>
       </div>
       <div className="mt-8 flex flex-col gap-2 border-t border-line pt-4 font-mono text-[11px] leading-[1.6] text-faint min-[1024px]:flex-row min-[1024px]:items-center min-[1024px]:justify-between min-[1024px]:gap-8">

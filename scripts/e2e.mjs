@@ -1765,6 +1765,37 @@ await step('docs', async () => {
   }
 })
 
+// Design audit 3, group 1 (D2, D18, D23, D24): docs header, code captions, badge table, footer taps and the Telegram link.
+await step('docs design audit 3 g1', async () => {
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, height: 844, mobile: true })
+    const page = await ctx.newPage()
+    await page.goto(`${BASE}/docs/badges`)
+    await page.locator('#docs-main h1').waitFor()
+    const hdr = await page.evaluate(() => {
+      const hd = document.querySelector('header')
+      const ask = [...hd.querySelectorAll('button')].find((b) => /gully ai/i.test(b.textContent + (b.getAttribute('aria-label') ?? '')))
+      const logo = [...hd.querySelectorAll('a img, a svg')].filter((e) => e.getBoundingClientRect().width > 0)
+      const a = ask?.getBoundingClientRect()
+      const hit = logo.some((e) => { const r = e.getBoundingClientRect(); return a && r.right > a.left && r.left < a.right })
+      return { hit, noScroll: document.documentElement.scrollWidth <= innerWidth, marks: logo.length }
+    })
+    check(`docs header at ${width}: the logo does not sit under the Gully AI button`, !hdr.hit && hdr.noScroll && hdr.marks > 0, JSON.stringify(hdr))
+    const tbl = await page.evaluate(() => [...document.querySelectorAll('[data-testid="badge-table"] span')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent.slice(0, 30)))
+    check(`docs badges at ${width}: no clipped Says or Address cell`, tbl.length === 0, tbl.join(' | '))
+    await page.goto(`${BASE}/docs/api`)
+    await page.locator('#docs-main h1').waitFor()
+    const caps = await page.evaluate(() => [...document.querySelectorAll('#docs-main figure > div > span')].filter((e) => e.scrollWidth > e.clientWidth + 1 || getComputedStyle(e).textOverflow === 'ellipsis').map((e) => e.textContent.slice(0, 40)))
+    check(`docs api at ${width}: no truncated code caption`, caps.length === 0, caps.join(' | '))
+    await page.goto(`${BASE}/`)
+    const foot = await page.evaluate(() => [...document.querySelectorAll('footer nav a, footer nav button')].map((e) => { const r = e.getBoundingClientRect(); return [e.textContent.trim().slice(0, 20), Math.round(r.width), Math.round(r.height)] }).filter(([, w, h]) => w < 44 || h < 44))
+    check(`footer at ${width}: every link is a 44 px tap`, foot.length === 0, JSON.stringify(foot))
+    const tg = page.locator('footer a[href="https://t.me/GullyLabsBot?start=contact"]')
+    check(`footer at ${width}: Chat on Telegram link`, (await tg.count()) === 1 && /Chat on Telegram/.test(await tg.innerText()))
+    await ctx.close()
+  }
+})
+
 // Design audit 2, group 6 (docs): no developer noise in prose, live charts, logos loaded, 44 px badge buttons.
 await step('docs design audit 2', async () => {
   const ctx = await newContext({ width: 1440, height: 900 })
