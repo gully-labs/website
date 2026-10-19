@@ -110,6 +110,17 @@ function MenuGroup({ g, pathname, hash, wide, guard }: { g: NavGroup; pathname: 
   )
 }
 
+/** The small gold dot that marks a new header link (read aloud as "new"). */
+function NewDot() {
+  return (
+    <span data-new-dot className="relative inline-flex size-2 flex-none">
+      <span aria-hidden className="absolute inset-0 animate-[gl-live-pulse_2s_ease-out_infinite] rounded-full bg-gold motion-reduce:animate-none" />
+      <span aria-hidden className="relative size-2 rounded-full bg-gold" />
+      <span className="sr-only">New</span>
+    </span>
+  )
+}
+
 function PlainLink({ e, pathname, hash }: { e: NavEntry; pathname: string; hash: string }) {
   const on = entryActive(e, pathname, hash)
   return (
@@ -118,6 +129,7 @@ function PlainLink({ e, pathname, hash }: { e: NavEntry; pathname: string; hash:
         <EntryLink e={e} className={`${trigger} ${on ? `text-ink ${activeBar}` : 'text-muted'}`}>
           <e.icon aria-hidden size={16} strokeWidth={1.75} className={`flex-none transition-colors ${on ? 'text-gold' : 'text-faint group-hover:text-gold'}`} />
           {e.label}
+          {e.newDot && <NewDot />}
         </EntryLink>
       </NavigationMenu.Link>
     </NavigationMenu.Item>
@@ -313,6 +325,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
             <EntryLink key={e.label} e={e} onPick={pick} current={on} className={`flex min-h-14 items-center gap-3 border-b border-line py-3 font-display text-[24px] font-bold uppercase ${on ? 'text-ink' : 'text-ink-2'}`}>
               <e.icon aria-hidden size={20} strokeWidth={1.75} className={on ? 'text-gold' : 'text-faint'} />
               {e.label}
+              {e.newDot && <NewDot />}
               {on && <span aria-hidden className="size-[6px] rounded-full bg-gold" />}
             </EntryLink>
           )

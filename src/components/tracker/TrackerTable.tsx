@@ -7,6 +7,7 @@ import { SocialIcon } from '../SocialIcon'
 import { C, alpha } from '../charts/chartPresets'
 import { NewTabMark } from '../LayoutLinks'
 import { newTab } from '../LayoutNav'
+import { HoldersChip } from '../holders/HoldersChip'
 
 type SortKey = 'ticker' | 'gap' | 'absgap' | 'onchain' | 'liquidity' | 'volume'
 type Filter = 'all' | 'flagged' | 'in-line' | 'thin'
@@ -178,6 +179,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                       <Link to={stockPath(r)} aria-label={`${r.ticker} page`} className="inline-flex h-8 items-center rounded-btn border border-gold-line px-3 text-[12px] text-gold transition-colors hover:border-gold hover:text-gold">
                         Page
                       </Link>
+                      <HoldersChip chain={r.chain} token={r.ticker} symbol={r.ticker} />
                       {r.pool?.url && (
                         <a href={r.pool.url} {...newTab} aria-label={`${r.ticker} pool on DexScreener (opens in a new tab)`} className="inline-flex h-8 items-center gap-1 rounded-btn border border-line-strong px-3 text-[12px] whitespace-nowrap text-ink transition-colors hover:border-gold hover:text-ink">
                           Pool <NewTabMark size={12} />
@@ -207,7 +209,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
         {shown.map((r) => {
           const id = `${r.chain}:${r.ticker}`
           return (
-            <li key={id}>
+            <li key={id} className="relative">
               <button
                 type="button"
                 onClick={() => onSelect(id)}
@@ -243,6 +245,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
                 </span>
                 <StatusBadge r={r} />
               </button>
+              <HoldersChip chain={r.chain} token={r.ticker} symbol={r.ticker} className="absolute right-3 bottom-3" />
             </li>
           )
         })}

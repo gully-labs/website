@@ -7,6 +7,7 @@ import type { PlansState } from '../../lib/plans'
 import type { Stats } from '../../lib/stats'
 import { ProjectCards } from '../ProjectRows'
 import { eyebrow, h2 } from './links'
+import { MostMapped } from './MostMapped'
 import { PricingSwitch } from './PricingSwitch'
 import { ProductConsole } from './ProductConsole'
 import { OpenStrip, ServicesBlock } from './Sections'
@@ -32,6 +33,7 @@ export default function Below({ data, state, plans }: { data: Stats | null; stat
   return (
     <MotionConfig reducedMotion="user">
       <ProductConsole plans={plans} />
+      <MostMapped />
 
       <section id="projects" aria-labelledby="projects-title" className="scroll-mt-[72px] border-t border-line">
         <div className="flex flex-col gap-4 px-page py-12 max-[599px]:py-9">

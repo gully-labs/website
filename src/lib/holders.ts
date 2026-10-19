@@ -217,6 +217,9 @@ export const holdersPath = (chain: string, token: string) => `/api/holders/${enc
 export const holdersCardUrl = (chain: string, token: string) => `${holdersPath(chain, token)}/card.png`
 export const holdersCsvUrl = (chain: string, token: string) => `${holdersPath(chain, token)}.csv`
 /** The site's page for a map. */
+/** The chains a Holder Map page exists for (server/holders.mjs HOLDER_CHAINS). */
+export const HOLDER_CHAIN_KEYS = ['robinhood', 'bsc', 'base', 'hyperevm', 'solana']
+
 export const holdersPagePath = (chain: string, token: string) => `/holders/${encodeURIComponent(chain)}/${encodeURIComponent(token)}`
 
 const REFRESH_MS = 300_000

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { ScanSearch } from 'lucide-react'
 import { ChainLogo } from '../logos/ChainLogo'
 import { TokenLogo } from '../logos/TokenLogo'
 import { ageText } from '../../lib/tracker'
@@ -83,9 +84,9 @@ export function LaunchHolders({ external = false, limit = 8 }: { external?: bool
               <span className="flex-none font-mono text-[11px] text-faint">
                 {l.locked === true ? '🔒' : ''} {ageText(l.createdAt, now)}
               </span>
-              <span className="flex-none font-mono text-[12px] text-gold">
-                <span className="max-[559px]:hidden">Who holds it </span>
-                {external ? '↗' : '→'}
+              <span data-holders-chip className="inline-flex h-8 flex-none items-center gap-1 rounded-btn border border-gold-line px-2 font-mono text-[12px] text-gold">
+                <ScanSearch aria-hidden size={14} />
+                Holders {external ? '↗' : '→'}
               </span>
             </>
           )

@@ -130,9 +130,11 @@ async function bubbleLook(page, map, label, { kindRe = /^(pool|wallet|contract|l
 }
 
 /** A context with every off-localhost request routed: Gully's own hosts to fixtures, the rest aborted. */
-async function newContext({ width = 1440, height = 900, mobile = false, geo = { country: 'GB', allowed: true, reason: 'ok' }, cookie = null } = {}) {
+async function newContext({ width = 1440, height = 900, mobile = false, geo = { country: 'GB', allowed: true, reason: 'ok' }, cookie = null, announce = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, ...(mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}), permissions: ['clipboard-read', 'clipboard-write'], serviceWorkers: 'block' })
   if (cookie) await ctx.addCookies([{ name: 'gl_dev', value: cookie, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }])
+  // The Holder Map announcement bar is dismissed in every context except the ones that test it (announce: true).
+  if (!announce) await ctx.addInitScript(() => { try { localStorage.setItem('gl-announce-holder-map', '1') } catch { /* no storage */ } })
   await ctx.addInitScript(() => {
     window.__csp = []
     document.addEventListener('securitypolicyviolation', (e) => window.__csp.push(`${e.violatedDirective} ${e.blockedURI}`))
@@ -2870,6 +2872,233 @@ await step('discovery files and contracts page', async () => {
     await designAudit(page, `docs /contracts ${width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
+  }
+})
+
+// Holder Map discovery: the header link, the hero search, the ⌘K hit, the Holders chips, Most mapped today, the announcement bar and the SEO.
+await step('holder map discovery', async () => {
+  const HX = holdersExtraFixtures()
+  const SHOTS_HD = process.env.HD_SHOTS || null
+  if (SHOTS_HD) fs.mkdirSync(SHOTS_HD, { recursive: true })
+  const hdShot = (page, name, opts = {}) => SHOTS_HD && page.screenshot({ path: path.join(SHOTS_HD, name), ...opts })
+  const SCORE_ADDR = '0x' + 'ab'.repeat(20)
+  // 1. The header link: visible at 1440 and 1024 on one line, and in the mobile menu.
+  for (const width of [1440, 1024]) {
+    const ctx = await newContext({ width, height: 900, announce: true })
+    const page = await ctx.newPage()
+    const w = watch(page, `header ${width}`)
+    await page.goto(BASE + '/')
+    const link = page.locator('header nav[aria-label="Main"] a[href="/holders"]')
+    await link.waitFor()
+    check(`header ${width}: a top-level "Holder Map" link with a NEW dot`, (await link.isVisible()) && (await link.locator('[data-new-dot]').count()) === 1 && /Holder Map/.test(await link.innerText()))
+    const heights = await page.evaluate(() => [...document.querySelectorAll('header nav a, header nav button')].filter((el) => el.getBoundingClientRect().width > 0).map((el) => Math.round(el.getBoundingClientRect().height)))
+    check(`header ${width}: nothing in the header wraps`, heights.every((h) => h <= 44), heights.join(','))
+    const hb = await page.locator('header').evaluate((h) => Math.round(h.getBoundingClientRect().height))
+    check(`header ${width}: the header stays one row (${hb} px)`, hb <= 66, String(hb))
+    await noHorizontalScroll(page, `home header ${width}`)
+    if (width === 1440) await hdShot(page, 'header-1440.png', { clip: { x: 0, y: 0, width: 1440, height: 130 } })
+    if (width === 1024) await hdShot(page, 'header-1024.png', { clip: { x: 0, y: 0, width: 1024, height: 130 } })
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, height: 800, mobile: true, announce: true })
+    const page = await ctx.newPage()
+    const w = watch(page, `home ${width}`)
+    await page.goto(BASE + '/')
+    // 6. The announcement bar: compact, in flow above the header, dismissible, remembered.
+    const bar = page.locator('[data-announcement]')
+    await bar.waitFor()
+    const bb = await bar.boundingBox()
+    const hdr = await page.locator('header').boundingBox()
+    check(`announcement ${width}: slim (${Math.round(bb.height)} px) and above the header, not covering it`, bb.height <= 48 && hdr.y >= bb.y + bb.height - 1)
+    check(`announcement ${width}: the dismiss button is a 44 px tap target`, ((await page.getByRole('button', { name: 'Dismiss the announcement' }).boundingBox()).height ?? 0) >= 43.5)
+    await noHorizontalScroll(page, `home with the announcement ${width}`)
+    // 2. The hero search.
+    const q = page.locator('#hero-hq')
+    await q.waitFor()
+    const qb = await q.boundingBox()
+    check(`hero search ${width}: the box is on the first screen and 44 px tall`, qb.y + qb.height < 800 && qb.height >= 43.5, JSON.stringify(qb))
+    if (width === 390) {
+      await hdShot(page, 'home-390.png', { fullPage: false })
+      await page.getByRole('button', { name: 'Menu' }).click()
+      const mob = page.locator('nav[aria-label="Mobile"] a[href="/holders"]').first()
+      await mob.waitFor()
+      check('mobile menu: the "Holder Map" link with its NEW dot', (await mob.isVisible()) && (await mob.locator('[data-new-dot]').count()) === 1)
+      await hdShot(page, 'menu-390.png', { fullPage: false })
+      await page.getByRole('button', { name: 'Close' }).click()
+    }
+    await q.fill(E2E_ANY_TOKEN)
+    await q.press('Enter')
+    await page.waitForURL(new RegExp(`/holders/base/${E2E_ANY_TOKEN}$`))
+    check(`hero search ${width}: Enter on a pasted address opens its map`, true)
+    await page.goto(BASE + '/')
+    await page.locator('#hero-hq').fill('$NVDA')
+    await page.locator('[data-hero-holder-search]').getByRole('button', { name: 'Map it' }).click()
+    await page.locator('[data-hero-holder-search] [data-resolve-matches] a').first().waitFor()
+    check(`hero search ${width}: a ticker on two chains offers the chain picker`, (await page.locator('[data-hero-holder-search] [data-resolve-matches] a').count()) === 2)
+    await noHorizontalScroll(page, `home hero search ${width}`)
+    // 6. Dismissal is remembered.
+    await page.getByRole('button', { name: 'Dismiss the announcement' }).click()
+    check(`announcement ${width}: dismissing removes the bar`, (await page.locator('[data-announcement]').count()) === 0)
+    await page.reload()
+    await page.locator('#hero-hq').waitFor()
+    check(`announcement ${width}: and it stays dismissed after a reload (localStorage)`, (await page.locator('[data-announcement]').count()) === 0 && (await page.evaluate(() => localStorage.getItem('gl-announce-holder-map'))) === '1')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  {
+    // 6. After 2026-11-02 the bar is gone by itself, with nothing stored.
+    const ctx = await newContext({ width: 1440, announce: true })
+    await ctx.addInitScript(() => {
+      const real = Date.now
+      const shift = Date.parse('2026-11-04T10:00:00Z') - real()
+      Date.now = () => real() + shift
+    })
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/')
+    await page.locator('#hero-hq').waitFor()
+    check('announcement: expired after 2026-11-02 (the constant), nothing stored', (await page.locator('[data-announcement]').count()) === 0)
+    await ctx.close()
+    const c2 = await newContext({ width: 1440, announce: true })
+    await c2.addInitScript(() => {
+      Object.defineProperty(window, 'localStorage', {
+        get() {
+          throw new Error('blocked')
+        },
+      })
+    })
+    const p2 = await c2.newPage()
+    await p2.goto(BASE + '/')
+    await p2.locator('[data-announcement]').waitFor()
+    await p2.getByRole('button', { name: 'Dismiss the announcement' }).click()
+    check('announcement: blocked storage does not break it (try/catch), it still hides for the visit', (await p2.locator('[data-announcement]').count()) === 0)
+    await c2.close()
+  }
+  // 5. Most mapped today on the home page, 1440 and 390; and its ghost.
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `most mapped ${width}`)
+    await page.goto(BASE + '/')
+    const list = page.locator('[data-most-mapped-list] li')
+    await list.first().waitFor({ timeout: 20_000 })
+    check(`most mapped ${width}: the live list renders the endpoint's rows`, (await list.count()) === HX.top.items.length)
+    await page.locator('[data-most-mapped-list] img[src*="badge.svg"]').first().waitFor({ state: 'attached' })
+    check(`most mapped ${width}: each row has a token logo and a health badge image`, (await page.locator('[data-most-mapped-list] li [data-logo], [data-most-mapped-list] li svg').count()) >= HX.top.items.length && (await page.locator('[data-most-mapped-list] img[src*="/badge.svg"]').count()) === HX.top.items.length)
+    await page.locator('[data-most-mapped]').scrollIntoViewIfNeeded()
+    await noHorizontalScroll(page, `home most mapped ${width}`)
+    await page.waitForTimeout(800)
+    await hdShot(page, `most-mapped-${width}.png`, { fullPage: false })
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  {
+    const ctx = await newContext({ width: 390, mobile: true })
+    await ctx.route(new RegExp(`^${BASE}/api/holders/top`), (route) => json(route, { day: '2026-10-19', items: [] }))
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/')
+    await page.locator('[data-most-mapped-ghost]').waitFor({ timeout: 20_000 })
+    check('most mapped: nothing today shows the ghost rows and says so', (await page.locator('[data-most-mapped-ghost]').innerText()).includes('No maps opened yet today') && (await page.locator('[data-most-mapped-list]').count()) === 0)
+    await noHorizontalScroll(page, 'home most mapped ghost 390')
+    await ctx.close()
+  }
+  // 3. ⌘K: an address or a ticker puts "Open Holder Map for …" first.
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `launcher ${width}`)
+    await page.goto(BASE + '/pricing')
+    await page.getByTestId('ask-fab').waitFor({ timeout: 10_000 })
+    await page.getByTestId('ask-fab').click()
+    const dlg = page.getByRole('dialog', { name: 'Gully AI' })
+    await dlg.waitFor()
+    const box = dlg.locator('textarea')
+    await box.fill('how do gap alerts work?')
+    await page.waitForTimeout(600)
+    check(`launcher ${width}: an ordinary question shows no Holder Map hit`, (await dlg.locator('[data-holder-hit]').count()) === 0)
+    await box.fill(E2E_ANY_TOKEN)
+    const hit = dlg.locator('[data-holder-hit] a').first()
+    await hit.waitFor()
+    check(`launcher ${width}: a pasted address offers "Open Holder Map for …" above the question form`, /Open Holder Map for/.test(await hit.innerText()) && (await dlg.evaluate((d) => !!(d.querySelector('[data-holder-hit]').compareDocumentPosition(d.querySelector('form')) & Node.DOCUMENT_POSITION_FOLLOWING))))
+    await box.fill('$DTC')
+    await dlg.locator('[data-holder-hit] a').first().waitFor()
+    check(`launcher ${width}: a ticker does too`, /\$DTC/.test(await dlg.locator('[data-holder-hit] a').first().innerText()))
+    await dlg.locator('[data-holder-hit] a').first().click()
+    await page.waitForURL(new RegExp(`/holders/robinhood/${E2E_LAUNCH_TOKEN}$`))
+    check(`launcher ${width}: clicking it opens the map and closes the panel`, (await page.getByRole('dialog', { name: 'Gully AI' }).count()) === 0)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // 4. Holders chips: tracker rows, the stock page, DeepCore launch rows, the score page, the Ecosystem launchpads.
+  for (const width of [1440, 390]) {
+    const mobile = width < 600
+    const ctx = await newContext({ width, mobile })
+    await ctx.route(`${BASE}/api/ecosystem`, (route) => json(route, { chains: [], launchpads: [{ id: 'deepcore', name: 'DeepCore', url: 'https://deepcore.fun', chains: ['Robinhood Chain'] }] }))
+    const page = await ctx.newPage()
+    const w = watch(page, `holders chips ${width}`)
+    const tall = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).every((e) => e.getBoundingClientRect().height >= 43.5))
+    await page.goto(BASE + '/tracker')
+    const visibleChip = page.locator('[data-holders-chip]:visible').first()
+    await visibleChip.waitFor({ timeout: 15_000 })
+    const th = await visibleChip.getAttribute('href')
+    check(`tracker ${width}: a visible row has a Holders chip to /holders/<chain>/<ticker>`, /^\/holders\/(robinhood|bsc|solana)\/[A-Za-z0-9]+$/.test(th ?? ''), th)
+    if (mobile) check('tracker 390: the chip is a 44 px tap target', await tall(page.locator('[data-holders-chip]:visible')))
+    await noHorizontalScroll(page, `tracker chips ${width}`)
+    await page.goto(BASE + '/tracker/robinhood/NVDA')
+    const sc = page.locator('main section').first().locator('[data-holders-chip]')
+    await sc.waitFor()
+    check(`stock page ${width}: the header has a Holders chip to /holders/robinhood/NVDA`, (await sc.getAttribute('href')) === '/holders/robinhood/NVDA' && (!mobile || (await tall(sc))))
+    await page.waitForTimeout(1200)
+    await hdShot(page, `stock-${width}.png`, { fullPage: false })
+    await noHorizontalScroll(page, `stock page chips ${width}`)
+    await page.goto(BASE + '/projects/deepcore')
+    const lc = page.locator('[data-launch-holders] [data-holders-chip]').first()
+    await lc.waitFor({ timeout: 15_000 })
+    check(`DeepCore launch rows ${width}: each row ends in a Holders chip and links to its map`, (await page.locator('[data-launch-holders] li a[href^="/holders/"]').count()) >= 1 && (await page.locator('[data-launch-holders] [data-holders-chip]').count()) === (await page.locator('[data-launch-holders] li').count()))
+    await page.goto(`${BASE}/score/base/${SCORE_ADDR}`)
+    await page.getByRole('heading', { level: 1, name: 'E2E Vault' }).waitFor()
+    const sh = page.locator('main [data-holders-chip]').first()
+    await sh.waitFor()
+    check(`score page ${width}: the header has a Holders chip to the token's map`, (await sh.getAttribute('href')) === `/holders/base/${SCORE_ADDR}` && (!mobile || (await tall(sh))))
+    await noHorizontalScroll(page, `score page chips ${width}`)
+    await page.goto(BASE + '/ecosystem')
+    const ec = page.locator('[data-launchpad] [data-holders-chip]').first()
+    await ec.waitFor({ timeout: 15_000 })
+    check(`ecosystem ${width}: a launchpad card has a Holders chip`, (await ec.getAttribute('href')) === '/holders' && (await tall(ec)))
+    await noHorizontalScroll(page, `ecosystem chips ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // 7. SEO: server-rendered titles and descriptions, the card as og:image, and the sitemap section.
+  {
+    const holders = await import(new URL('../server/holders.mjs', import.meta.url).href)
+    const intel = await import(new URL('../server/holders-intel.mjs', import.meta.url).href)
+    const { sitemapFor } = await import(new URL('../server/seo.mjs', import.meta.url).href)
+    holders.seedHolderMapForTest('robinhood', E2E_LAUNCH_TOKEN, holdersFixture('deepcore-launch'))
+    const sym = holdersFixture('deepcore-launch').token?.symbol
+    const meta = (h, n) => h.match(new RegExp(`<meta (?:property|name)="${n}" content="([^"]*)"`))?.[1] ?? ''
+    const a = await (await fetch(`${BASE}/holders/robinhood/${E2E_LAUNCH_TOKEN}`)).text()
+    const title = a.match(/<title>([^<]*)<\/title>/)?.[1] ?? ''
+    check(`seo: a launch's map title names its symbol and chain (${title})`, sym ? title.startsWith(`Who holds $${sym.toUpperCase()} on Robinhood Chain · Holder Map`) : /^Who holds .* on Robinhood Chain · Holder Map/.test(title), title)
+    check('seo: description says who holds it, og:image is the map card.png', /Who holds/.test(meta(a, 'description')) && meta(a, 'og:image') === `https://gullylabs.xyz/api/holders/robinhood/${E2E_LAUNCH_TOKEN}/card.png`, meta(a, 'og:image'))
+    const b = await (await fetch(`${BASE}/holders/robinhood/NVDA`)).text()
+    check('seo: a ticker page reads "Who holds $NVDA on Robinhood Chain · Holder Map"', /<title>Who holds \$NVDA on Robinhood Chain · Holder Map/.test(b))
+    const c = await (await fetch(`${BASE}/holders/solana/${'7'.repeat(43)}`)).text()
+    check('seo: an unknown mint still gets a proper title and canonical', /<title>Who holds this token on Solana · Holder Map/.test(c) && c.includes(`rel="canonical" href="https://gullylabs.xyz/holders/solana/${'7'.repeat(43)}"`))
+    // The sitemap lists the top mapped tokens: valid ones only, at most 200, no stock map without holder data.
+    intel.resetScansForTest()
+    const addr = (i) => '0x' + i.toString(16).padStart(40, '0')
+    for (let i = 1; i <= 230; i++) intel.recordScan('base', addr(i), `T${i}`, 'token', `10.0.${i >> 8}.${i & 255}`)
+    intel.recordScan('base', 'not-an-address', 'BAD', 'token', '10.9.9.9')
+    intel.recordScan('robinhood', 'NVDA', 'NVDA', 'stock', '10.9.9.8')
+    const sm = sitemapFor('gullylabs.xyz')
+    const locs = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
+    const held = locs.filter((u) => /\/holders\/base\/0x[0-9a-f]{40}$/.test(u))
+    check(`sitemap: the most-mapped tokens are listed, capped at 200 (${held.length})`, held.length === 200 && new Set(locs).size === locs.length)
+    check('sitemap: invalid tokens and a stock map without holder data are not listed', !sm.includes('not-an-address') && !locs.includes('https://gullylabs.xyz/holders/robinhood/NVDA'))
+    intel.resetScansForTest()
+    check('sitemap: with no scans there is no such section', !/\/holders\/base\/0x/.test(sitemapFor('gullylabs.xyz')))
   }
 })
 
