@@ -119,6 +119,7 @@ const DOCS_PAGES = {
   '/chain-kit': ['Chain Kit · Gully Labs docs', 'Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. What is included, how to request one from the app, and its status.'],
   '/swaps': ['Swaps · Gully Labs docs', 'How swaps work on Gully Labs stock pages: LI.FI on Robinhood Chain and BNB Chain, Jupiter on Solana, the region check (GET /api/geo), the Jupiter proxy, fees, and why your wallet signs everything.'],
   '/solana': ['Solana · Gully Labs docs', 'Gully Labs on Solana: xStocks in the tracker, fair prices from Chainlink or the issuer’s quote, the Holder Map on Solana, Solana Pay in Gully Pay, and Jupiter swaps on stock pages.'],
+  '/contracts': ['Contracts · Gully Labs docs', 'Every on-chain address Gully Labs uses, per chain: the treasury Safe, the fee address, the third-party Request Network fee proxy and our projects’ contracts, each with its explorer link, Sourcify status and the file it is quoted from. Also at /.well-known/contracts.json.'],
   '/status': ['Status · Gully Labs docs', 'The Gully Labs status page and GET /api/status: what each check means, how 24-hour uptime is computed, how incidents open and close, and the JSON shape.'],
   '/telegram-mini-app': ['Telegram Mini App · Gully Labs docs', 'The Gully Labs Telegram Mini App at gullylabs.xyz/tg: how it opens, its screens, how each request is signed with Telegram’s initData, the /api/tg routes, rate limits and errors.'],
   '/news-gate': ['News gate · Gully Labs docs', 'Why the Gully Labs Telegram bot and Mini App ask you to follow @GullyLabsNews, how membership is checked and cached, and everything that stays open without it: alerts, Mute, pausing, deleting and unlinking.'],
@@ -133,7 +134,20 @@ const ORG = {
   name: 'Gully Labs',
   url: SITE,
   logo: `${SITE}/brand/gully-mark-512.png`,
-  sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs'],
+  sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://t.me/GullyLabsBot'],
+}
+/** The product as software: the web app and its public API, free to start (plans are listed on /pricing). */
+const APP_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Gully Labs',
+  url: SITE,
+  image: `${SITE}/brand/gully-mark-512.png`,
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web',
+  description: MAIN['/'][1],
+  publisher: { '@type': 'Organization', name: 'Gully Labs', url: SITE },
+  sameAs: ORG.sameAs,
 }
 const TRACKER_LD = {
   '@context': 'https://schema.org',
@@ -209,7 +223,7 @@ export function pageMeta(host, pathname) {
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   const og = p === '/' || p.startsWith('/legal/') || p === '/ecosystem' || p === '/partners' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/security') ? 'security' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
-  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
+  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null }
 }
 
 /** A report's subject in a title: the contract or the repository. */
@@ -243,7 +257,7 @@ export function renderHead(source, meta) {
     html = html.replace(/\s*<link rel="canonical"[^>]*>/, '').replace(/\s*<meta property="og:url"[^>]*>/, '')
   }
   if (!meta.found || meta.noindex) swap(/<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex" />')
-  if (meta.ld) html = html.replace('</head>', `    <script type="application/ld+json">${JSON.stringify(meta.ld).replace(/</g, '\\u003c')}</script>\n  </head>`)
+  for (const ld of [meta.ld ?? []].flat()) html = html.replace('</head>', `    <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n  </head>`)
   return html
 }
 
