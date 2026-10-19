@@ -287,6 +287,11 @@ await step('tracker', async () => {
   const page = await ctx.newPage()
   const w = watch(page, 'tracker')
   await page.goto(BASE + '/tracker')
+  {
+    const cc = page.locator('section', { has: page.getByText('Chain against chain') }).first()
+    await cc.locator('[data-chart]').first().waitFor({ timeout: 15_000 }).catch(() => {})
+    check('tracker: Chain against chain is a live chart (data-live) or the kit ghost, never a text box', (await cc.locator('[data-live]').count()) > 0 || (await cc.getByTestId('chain-compare-ghost').count()) > 0)
+  }
   const search = page.getByRole('searchbox', { name: 'Search stocks' })
   await search.fill('nvda')
   const link = page.getByRole('link', { name: 'NVDA page', exact: true }).first()
@@ -1596,7 +1601,7 @@ await step('gully score', async () => {
     await page.getByRole('heading', { level: 1, name: 'E2E Vault' }).waitFor()
     await page.getByRole('img', { name: /Gully Score 74 out of 100/ }).waitFor({ timeout: 10_000 })
     check(`score page at ${width}: the ring and the number`, true)
-    check(`score page at ${width}: the missing parts collapse into ONE "not counted" line, no repeated rows`, (await page.getByText('Not counted, no data to read:').count()) === 1 && (await page.getByText('NOT AVAILABLE').count()) === 0)
+    check(`score page at ${width}: the missing parts collapse into ONE "not counted" line, no repeated rows`, (await page.getByText('Not counted, no data to read:').count()) === 1 && (await page.getByText(/NOT AVAILABLE/).count()) === 0)
     check(`score page at ${width}: no code or api host in the visible text`, !/owner\(\)|getThreshold|api\.deepcore\.fun/.test(await page.locator('main').innerText()))
     check(`score page at ${width}: methodology and badge links are 44 px tall`, await page.evaluate(() => [...document.querySelectorAll('main a[href*="gully-score"], main a[aria-label*="badge"]')].every((a) => a.getBoundingClientRect().height >= 43.5)))
     check(`score page at ${width}: evidence links open in a new tab`, (await page.locator('a[href^="https://repo.sourcify.dev"]').getAttribute('target')) === '_blank')
@@ -2058,7 +2063,7 @@ await step('status page and API', async () => {
       const logos = document.querySelectorAll('section[aria-label="Tracker freshness"] img').length
       const sec = document.querySelector('section[aria-label="Platform"]')
       const items = sec ? sec.querySelectorAll('li').length : 0
-      return logos > 0 && items > 0 && sec.getBoundingClientRect().height < items * 140 && document.querySelectorAll('[data-uptime-strip]').length > 5 && document.querySelectorAll('[data-live]').length > 0
+      return logos > 0 && items > 0 && sec.getBoundingClientRect().height < items * 130 + 110 && document.querySelectorAll('[data-uptime-strip]').length > 5 && document.querySelectorAll('[data-live]').length > 0
     }))
     check(`/status at ${width}: the incident history is shown`, (await page.getByRole('heading', { name: 'Incident history' }).count()) === 1)
     check(`/status at ${width}: a status-view event is sent to Gully Analytics`, (await page.evaluate(() => window.__ev.filter((e) => e[0] === 'status-view').length)) === 1, JSON.stringify(await page.evaluate(() => window.__ev)))

@@ -164,7 +164,7 @@ export function ScorePage() {
       </section>
 
       {r && (
-        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-6 px-page pb-24 max-[1100px]:grid-cols-1">
+        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-start gap-6 px-page pb-24 max-[1100px]:grid-cols-1">
           <section className={card} aria-labelledby="parts" style={rise(5)}>
             <h2 id="parts" className={cardTitle}>
               <ListChecks aria-hidden size={20} className="text-gold" /> What goes into it
