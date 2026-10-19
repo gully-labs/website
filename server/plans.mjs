@@ -70,7 +70,7 @@ export const SECURITY = {
 //   csv         the holder list as CSV (GET /api/holders/:chain/:token.csv)
 //   alerts      cluster alerts (Telegram and webhook), within the plan's alert count
 //   liveMinutes how long the live view keeps updating on an open map (null: as long as it is open)
-//   whiteLabel  the embedded map without the "Powered by Gully Labs" credit (reserved: not built yet)
+//   whiteLabel  the embedded map without the "Powered by Gully Labs" credit (live: signed embed key, see holders-partners.mjs)
 export const HOLDER_MAP = {
   gated: false,
   tiers: {

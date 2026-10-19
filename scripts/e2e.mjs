@@ -1718,12 +1718,77 @@ await step('holder map', async () => {
     await map.locator('[data-ask]').getByText(/Three of them bought together/).waitFor()
     check(`holder map ${width}: Gully AI explains the map`, true)
     check(`holder map ${width}: Alert me opens the app's alert dialog for this token`, ((await map.locator('[data-alert-me]').getAttribute('href')) ?? '').includes(`alert=holders%3Arobinhood%3A${E2E_LAUNCH_TOKEN}`))
+    const bimg = page.locator('[data-badge-block] [data-badge-img]')
+    await bimg.scrollIntoViewIfNeeded()
+    check(`holder map ${width}: the badge image loads and the HTML and Markdown copy buttons are there`, (await bimg.evaluate((img) => (img.complete && img.naturalWidth > 0 ? img.naturalWidth : new Promise((r) => { img.onload = () => r(img.naturalWidth); img.onerror = () => r(0) })))) > 0 && (await page.locator('[data-copy-html]').count()) === 1 && (await page.locator('[data-copy-md]').count()) === 1)
     await shotTo(page, `token-${width}.png`)
     await noHorizontalScroll(page, `/holders ${width}`)
     await designAudit(page, `holder map ${width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
+  // Deep check: the offer card on a map, a free-quota check started from a quote, the report page and the JPEG card.
+  {
+    const DEEP_CHECK = 'dc_e2e0000000000001'
+    const cov = (k) => ({ chain: k, funding: { state: 'available', reason: null }, clusters: { state: 'available', reason: null }, deployer: { state: 'limited', reason: 'Only DeepCore launches are read' }, trading: { state: 'unavailable', reason: 'No archive RPC answers for this chain' } })
+    const quota = { plan: { id: 'pro', name: 'Pro' }, freePerMonth: 3, used: 0, left: 3, resetsAt: new Date(Date.now() + 864e5 * 10).toISOString(), active: 0, maxActive: 2, credits: 0 }
+    const chainInfo = { key: 'robinhood', id: 46630, name: 'Robinhood Chain' }
+    const report = {
+      version: 1, chain: chainInfo, token: { address: E2E_LAUNCH_TOKEN, symbol: 'DTC', name: 'DeepCore Test', url: 'https://explorer.example/token/x' }, generatedAt: new Date().toISOString(), status: 'partial',
+      partial: { reasons: [{ code: 'archive', text: 'No archive RPC answers for this chain, so sniper history was skipped.' }] },
+      sections: {
+        trading: { state: 'unavailable', reason: 'No archive RPC answers for this chain' },
+        funding: { state: 'ok', source: 'Explorer transfers', confidence: 'medium', wallets: 2, hopsMax: 2, traces: [{ address: '0x' + 'a'.repeat(40), role: 'holder', rank: 1, pctOfSupply: 12.5, hops: [], origin: { type: 'exchange', label: 'Example exchange' } }, { address: '0x' + 'b'.repeat(40), role: 'holder', rank: 2, pctOfSupply: 7.5, hops: [], origin: { type: 'unknown', reason: 'No earlier funding found' } }], sharedFunders: [] },
+        clusters: { state: 'ok', combined: [{ id: 'c1', wallets: ['0x' + 'a'.repeat(40), '0x' + 'b'.repeat(40)], count: 2, pctOfSupply: 20, basis: 'shared funder', confidence: 'medium' }] },
+        deployer: { state: 'partial', address: '0x' + 'd'.repeat(40), source: 'Explorer', tokens: [], chains: [] },
+      },
+      findings: [{ id: 'f1', section: 'clusters', text: 'Two top wallets share one funder and hold 20% together.', confidence: 'medium', source: 'Funding trace' }],
+      unavailable: [{ section: 'trading', what: 'Snipers and bundled buys', reason: 'No archive RPC answers for this chain' }], notes: [],
+    }
+    const checkDoc = (status) => ({ id: DEEP_CHECK, status, chain: chainInfo, token: E2E_LAUNCH_TOKEN, free: true, priceUsd: 0, listPriceUsd: 9, bundled: false, payment: null, progress: null, createdAt: new Date().toISOString(), startedAt: null, completedAt: new Date().toISOString(), cancelReason: null, error: null, credit: null, url: `/holders/deep/${DEEP_CHECK}`, report: status === 'partial' ? report : null })
+    for (const width of [1440, 390]) {
+      const ctx = await newContext({ width, mobile: width < 600 })
+      await ctx.route(`${BASE}/api/ask`, (route) => json(route, holdersExtraFixtures().ask))
+      await ctx.route(`${BASE}/api/holders/deep`, (route) => {
+        if (route.request().method() === 'GET') return json(route, { offer: { id: 'holder-deep', name: 'Deep check', priceUsd: 9, freePerMonth: { pro: 3, business: 10 }, bundleScanDiscountPct: 20, maxActive: 2, maxRunning: 2, budgets: { rpcCalls: 1, logSpans: 1, explorerCalls: 1, ms: 1, holders: 1, hops: 1 } }, checkout: { enabled: true }, coverage: { robinhood: cov('robinhood') }, signedIn: true, quota, credits: 0, contact: 'hello@gullylabs.xyz' })
+        const body = route.request().postDataJSON()
+        if (!body.expect) return json(route, { quote: { chain: chainInfo, token: body.token, priceUsd: 0, listPriceUsd: 9, free: true, bundle: { applied: false, discountPct: 20, scanId: null }, bundleNote: null, credit: { available: 0, used: false }, quota, coverage: cov('robinhood'), checkout: { enabled: true }, signedIn: true } })
+        return json(route, { check: checkDoc('queued') }, 202)
+      })
+      await ctx.route(`${BASE}/api/holders/deep/${DEEP_CHECK}`, (route) => json(route, { check: checkDoc('partial') }))
+      const page = await ctx.newPage()
+      const w = watch(page, `deep check ${width}`)
+      await page.goto(BASE + '/holders/robinhood/' + E2E_LAUNCH_TOKEN)
+      const offer = page.locator('[data-deep-offer]')
+      await offer.waitFor()
+      check(`deep check ${width}: the offer shows the $9 price and the plan's free checks`, (await offer.getByText('Deep check · $9').count()) === 1 && (await offer.getByText(/3 of 3 free this month/).count()) === 1)
+      check(`deep check ${width}: only the parts available on this chain are offered`, (await offer.locator('[data-deep-part]').count()) === 3 && (await offer.locator('[data-deep-part="trading"]').count()) === 0 && (await offer.locator('[data-deep-missing]').count()) === 1)
+      check(`deep check ${width}: the free price and the refund policy are stated`, (await offer.getByText(/credit for a free re-run/).count()) === 1 && (await offer.locator('[data-deep-price]').innerText()) === 'Free')
+      await offer.locator('[data-deep-start]').click()
+      await offer.locator('[data-deep-quote]').waitFor()
+      check(`deep check ${width}: the quote shows nothing charged yet`, (await offer.locator('[data-deep-quote]').getByText(/NOTHING CHARGED YET/).count()) === 1)
+      await shotTo(page, `deep-offer-${width}.png`)
+      await offer.locator('[data-deep-confirm]').click()
+      await page.waitForURL(`**/holders/deep/${DEEP_CHECK}`)
+      await page.getByText('Two top wallets share one funder').first().waitFor()
+      check(`deep check ${width}: confirming a free check opens its page`, /holders\/deep\//.test(page.url()))
+      check(`deep check ${width}: the report page is noindex`, ((await page.locator('meta[name="robots"]').getAttribute('content')) ?? '').includes('noindex'))
+      check(`deep check ${width}: the report shows its findings and the unavailable reason`, (await page.getByText(/No archive RPC answers for this chain/).count()) >= 1)
+      check(`deep check ${width}: the report draws charts`, (await page.locator('[data-chart]').count()) >= 2)
+      await shotTo(page, `deep-report-${width}.png`)
+      await noHorizontalScroll(page, `/holders/deep ${width}`)
+      await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+      await ctx.close()
+    }
+    const cctx = await newContext({ width: 1440 })
+    const jpg = await cctx.request.get(`${BASE}/api/holders/robinhood/${E2E_LAUNCH_TOKEN}/card.jpg`)
+    const jb = await jpg.body()
+    check('holder card: card.jpg answers image/jpeg with JPEG bytes', jpg.status() === 200 && (jpg.headers()['content-type'] ?? '').startsWith('image/jpeg') && jb[0] === 0xff && jb[1] === 0xd8, `${jpg.status()} ${jpg.headers()['content-type']}`)
+    const png = await cctx.request.get(`${BASE}/api/holders/robinhood/${E2E_LAUNCH_TOKEN}/card.png`)
+    check('holder card: card.png still answers image/png', png.status() === 200 && (png.headers()['content-type'] ?? '').startsWith('image/png'), `${png.status()}`)
+    await cctx.close()
+  }
+
   // The /holders landing: search (one match navigates, several offer a pick, none says so), the checked-launch feed and the top list.
   for (const width of [1440, 390]) {
     const ctx = await newContext({ width, mobile: width < 600 })
@@ -2261,7 +2326,8 @@ await step('ecosystem and partners', async () => {
     const w2 = watch(p2, `/partners ${width}`)
     await p2.goto(BASE + '/partners')
     await p2.locator('[data-benefit]').first().waitFor()
-    check(`/partners ${width}: seven benefits, white-label says it is not live yet`, (await p2.locator('[data-benefit]').count()) === 7 && /NOT LIVE YET/.test((await p2.locator('[data-benefit="whitelabel"]').innerText())))
+    const wlText = await p2.locator('[data-benefit="whitelabel"]').innerText()
+    check(`/partners ${width}: seven benefits, white-label is live`, (await p2.locator('[data-benefit]').count()) === 7 && !/not live yet/i.test(wlText) && /\blive\b/i.test(wlText), wlText)
     await p2.getByRole('group', { name: 'I run a' }).getByRole('button', { name: 'CHAINS' }).click()
     check(`/partners ${width}: choosing chains puts Chain Kit or Gully Pay first`, /CHAIN KIT|GULLY PAY|HOLDER MAP/i.test((await p2.locator('[data-benefit]').first().innerText())))
     await p2.getByRole('group', { name: 'Snippet' }).getByRole('button', { name: 'SDK' }).click()

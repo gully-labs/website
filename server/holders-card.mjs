@@ -10,6 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadFonts, loadResvg, SvgContext } from './og.mjs'
+import { encodeJpeg } from './holders-jpeg.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const W = 1200
@@ -274,6 +275,23 @@ const toPng = async (svg) => {
   return png
 }
 
+/** An SVG as JPEG bytes (Telegram's inline photo results must be JPEG): resvg's pixels through the small encoder. */
+async function toJpeg(svg) {
+  const { Resvg } = await loadResvg()
+  const r = new Resvg(svg, { fitTo: { mode: 'original' }, font: { fontBuffers: loadFonts().map((f) => new Uint8Array(f.buf)), loadSystemFonts: false, defaultFontFamily: 'IBM Plex Mono' }, shapeRendering: 2, textRendering: 1 })
+  const img = r.render()
+  const jpg = encodeJpeg(img.pixels, img.width, img.height)
+  img.free()
+  r.free()
+  return jpg
+}
+
+/** The "coming soon / not ready" card as JPEG bytes. */
+export const renderHolderStatusCardJpeg = (body) => toJpeg(renderHolderStatusCardSvg(body))
+
+/** The map's card as JPEG bytes. */
+export const renderHolderCardJpeg = (map) => toJpeg(renderHolderCardSvg(map))
+
 /** The "coming soon / not ready" card as PNG bytes. */
 export const renderHolderStatusCard = (body) => toPng(renderHolderStatusCardSvg(body))
 
@@ -282,6 +300,9 @@ export function fallbackCardPng() {
   const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'social', 'og-image-1200x630.png'), path.join(HERE, 'dist', 'social', 'og-image-1200x630.png'), path.join(HERE, '..', 'public', 'social', 'og-image-1200x630.png'))
   return p ? fs.readFileSync(p) : null
 }
+
+/** The JPEG route has no static last resort (the site's share image is a PNG): null makes it answer 503. */
+export const fallbackCardJpeg = () => null
 
 /** The card as PNG bytes. */
 export async function renderHolderCard(map) {

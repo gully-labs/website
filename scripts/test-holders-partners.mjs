@@ -89,7 +89,8 @@ P.setPartnerHooksForTest({
 const wallet = () => privateKeyToAccount(generatePrivateKey())
 const owner = makeClient(BASE)
 const viewer = makeClient(BASE)
-for (const c of [owner, viewer]) if ((await c.signIn(wallet())).status !== 200) throw new Error('sign-in failed')
+const ownerWallet = wallet()
+if ((await owner.signIn(ownerWallet)).status !== 200 || (await viewer.signIn(wallet())).status !== 200) throw new Error('sign-in failed')
 const key1 = await owner.post('/api/developer/keys', { name: 'Launchpad' })
 const SECRET = key1.data.secret
 const key2 = (await owner.post('/api/developer/keys', { name: 'Second' })).data.secret
@@ -252,6 +253,36 @@ try {
   const rot = await owner.post('/api/developer/partners/webhook/rotate')
   check('rotate: new secret', rot.status === 200 && rot.data.secret !== whsec && /^whsec_/.test(rot.data.secret))
   check('remove: webhook can be cleared', (await owner.post('/api/developer/partners/webhook', { url: null })).data.endpoint === null)
+
+  /* ---- white-label embed key ---- */
+  const billing = await import('../server/billing.mjs')
+  const cfg = (qs) => fetch(`${BASE}/api/holders/embed-config?${qs}`).then(async (r) => ({ status: r.status, headers: r.headers, data: await r.json() }))
+  check('embed-key: signed out is 401', (await fetch(`${BASE}/api/developer/partners/embed-key`)).status === 401)
+  const ek = await owner.call('/api/developer/partners/embed-key')
+  const EK = ek.data?.embedKey
+  check('embed-key: a signed key, not the API secret, for the workspace; free plan has no white label', ek.status === 200 && /^gle_0x[0-9a-f]{40}\.[0-9a-f]{24}$/.test(EK ?? '') && ek.data.whiteLabel === false && !EK.includes(SECRET))
+  check('embed-key: stable between calls', (await owner.call('/api/developer/partners/embed-key')).data.embedKey === EK)
+  const free = await cfg(`key=${EK}&theme=light&accent=%23ff8800`)
+  check('embed-config: a valid key on a plan WITHOUT white label gets the normal embed (credit stays)', free.status === 200 && free.data.whiteLabel === false && free.data.theme === null && free.headers.get('cache-control') === 'no-store')
+  billing.adminSetPlan(ownerWallet.address.toLowerCase(), 'pro', 30)
+  check('embed-config: Pro has no white label either', (await cfg(`key=${EK}`)).data.whiteLabel === false)
+  billing.adminSetPlan(ownerWallet.address.toLowerCase(), 'business', 30)
+  const wl = await cfg(`key=${EK}&theme=light&accent=%23FF8800`)
+  check('embed-config: Business plan with its key: white label, light theme, accent lower-cased', wl.data.whiteLabel === true && wl.data.theme.mode === 'light' && wl.data.theme.accent === '#ff8800', JSON.stringify(wl.data))
+  check('embed-config: theme defaults to dark, accent null when not given', JSON.stringify((await cfg(`key=${EK}`)).data.theme) === JSON.stringify({ mode: 'dark', accent: null }))
+  for (const bad of ['red', 'url(javascript:alert(1))', '#12', '#12345', '#gggggg', '%23ff0000;background:url(x)', '#ff00001', 'expression(1)']) {
+    const r = await cfg(`key=${EK}&accent=${encodeURIComponent(bad)}`)
+    check(`embed-config: accent ${JSON.stringify(bad)} is refused (null), the white label itself stays`, r.data.whiteLabel === true && r.data.theme.accent === null)
+  }
+  check('embed-config: an unknown theme word is dark', (await cfg(`key=${EK}&theme=neon`)).data.theme.mode === 'dark')
+  const tampered = EK.slice(0, -1) + (EK.endsWith('0') ? '1' : '0')
+  check('embed-config: a tampered signature, another workspace, garbage and no key all get the normal embed', (await cfg(`key=${tampered}`)).data.whiteLabel === false && (await cfg(`key=${EK.replace(/gle_0x[0-9a-f]{40}/, 'gle_0x' + 'ab'.repeat(20))}`)).data.whiteLabel === false && (await cfg('key=nonsense')).data.whiteLabel === false && (await cfg('')).data.whiteLabel === false)
+  check('embed-config: a client-side flag alone changes nothing (whitelabel=1, no key)', (await cfg('whitelabel=1&theme=light&accent=%23ff8800')).data.whiteLabel === false)
+  check('embed-config: POST is refused', (await fetch(`${BASE}/api/holders/embed-config?key=${EK}`, { method: 'POST' })).status === 405)
+  const rotated = await owner.post('/api/developer/partners/embed-key/rotate')
+  check('embed-key: rotating gives a new key and ends the old one at once', rotated.status === 200 && rotated.data.embedKey !== EK && (await cfg(`key=${EK}`)).data.whiteLabel === false && (await cfg(`key=${rotated.data.embedKey}`)).data.whiteLabel === true)
+  billing.adminSetPlan(ownerWallet.address.toLowerCase(), 'free', 0)
+  check('embed-config: when the plan lapses the white label ends with it (the plan is read live)', (await cfg(`key=${rotated.data.embedKey}`)).data.whiteLabel === false)
 } catch (e) {
   t.failed++
   console.error('FAIL  test run crashed:', e?.stack ?? e)

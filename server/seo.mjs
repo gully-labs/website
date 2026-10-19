@@ -194,6 +194,8 @@ export function pageMeta(host, pathname) {
   if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
   // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
   if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
+  // A Holder Map Deep check's report (holders-deep-routes.mjs): a real page for whoever holds the unguessable link, never indexed.
+  if (/^\/holders\/deep\/hd_[\w-]{16}$/.test(p)) return { title: 'Deep check · Holder Map · Gully Labs', description: 'A Holder Map Deep check report: funding trace, shared-funder clusters, deployer record, snipers and bundles.', canonical: null, found: true, noindex: true, image: `${SITE}/social/og-holders.png` }
   // Holder Maps (holders.mjs): a page per DeepCore launch or tracked stock token; the share image is the map's own card.
   const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana)\/([A-Za-z0-9]{1,64})$/)
   if (hm) {

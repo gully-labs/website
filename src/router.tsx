@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, ChainsRoute, DevelopersRoute, EmbedHoldersRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, ChainsRoute, DevelopersRoute, EmbedHoldersRoute, HoldersDeepRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
@@ -24,6 +24,7 @@ const mainRoutes = [
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/tracker/:chain/:ticker', element: <StockRoute /> },
       { path: '/holders', element: <HoldersLandingRoute /> },
+      { path: '/holders/deep/:id', element: <HoldersDeepRoute /> },
       { path: '/holders/:chain/:token', element: <HolderMapOpened from="holders-page"><HoldersRoute /></HolderMapOpened> },
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/pricing', element: <PricingRoute /> },
