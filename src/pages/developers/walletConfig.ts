@@ -3,7 +3,7 @@ import { coinbaseWallet, injectedWallet, metaMaskWallet, rabbyWallet, rainbowWal
 import { QueryClient } from '@tanstack/react-query'
 import { defineChain } from 'viem'
 import { createConfig, http } from 'wagmi'
-import { arbitrum, avalanche, base, bsc, mainnet, optimism, polygon } from 'wagmi/chains'
+import { arbitrum, arbitrumSepolia, avalanche, base, bsc, mainnet, optimism, polygon } from 'wagmi/chains'
 import { APP_URL } from '../../site-host'
 
 /* The wallet set-up shared by sign-in (WalletSignIn) and Gully Pay checkout (components/pay/PayWallet). Both are lazy chunks;
@@ -33,10 +33,11 @@ const connectors = connectorsForWallets(
 )
 
 export const wagmiConfig = createConfig({
-  // Every Gully Pay chain (server/payments.mjs CHAINS) plus Robinhood Chain for the tracker.
-  chains: [mainnet, base, bsc, arbitrum, optimism, polygon, avalanche, robinhood],
+  // Every Gully Pay chain (server/payments.mjs CHAINS) plus Robinhood Chain for the tracker, and Arbitrum Sepolia for
+  // the chain launch wizard (testnet only; no payment or sign-in uses it).
+  chains: [mainnet, base, bsc, arbitrum, optimism, polygon, avalanche, robinhood, arbitrumSepolia],
   connectors,
-  transports: { [mainnet.id]: http(), [base.id]: http(), [bsc.id]: http(), [arbitrum.id]: http(), [optimism.id]: http(), [polygon.id]: http(), [avalanche.id]: http(), [robinhood.id]: http() },
+  transports: { [mainnet.id]: http(), [base.id]: http(), [bsc.id]: http(), [arbitrum.id]: http(), [optimism.id]: http(), [polygon.id]: http(), [avalanche.id]: http(), [robinhood.id]: http(), [arbitrumSepolia.id]: http() },
   ssr: false,
 })
 

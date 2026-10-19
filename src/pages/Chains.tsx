@@ -8,7 +8,7 @@ import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
 import { BlinkDot, btnGold, btnOutline, eyebrow, h1, h2, h4 } from '../components/ui'
 import { track } from '../lib/track'
-import { DOCS_URL } from '../site-host'
+import { APP_URL, DOCS_URL, isLocalHost } from '../site-host'
 import { Estimator } from './chains/Estimator'
 import { STATUS_LABEL, usd0, useChains, type ChainsConfig, type ChainsService } from './chains/useChains'
 import { Waitlist } from './chains/Waitlist'
@@ -262,6 +262,9 @@ export function Chains() {
             <Link to="/chain-kit" onClick={() => track('cta-click', { cta: 'chains-chain-kit', page: '/chains' })} className={`${btnOutline} inline-flex min-h-12 items-center gap-2 px-[26px] text-[16px]`}>
               Chain Kit explorer <ArrowRight aria-hidden size={16} />
             </Link>
+            <a href={isLocalHost() ? '/app#chains/launch' : `${APP_URL}/#chains/launch`} {...newTab} onClick={() => track('cta-click', { cta: 'chains-launch-yourself', page: '/chains' })} data-testid="launch-yourself" className={`${btnOutline} inline-flex min-h-12 items-center gap-2 px-[26px] text-[16px]`}>
+              Launch a testnet chain yourself <NewTabMark size={14} className="flex-none" />
+            </a>
           </div>
         </div>
       </section>

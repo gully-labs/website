@@ -519,7 +519,7 @@ export interface SessionInfo {
 export type ActivityAction =
   | 'key.created' | 'key.renamed' | 'key.rotated' | 'key.revoked' | 'key.linked'
   | 'alert.created' | 'alert.updated' | 'alert.deleted' | 'alert.tested'
-  | 'telegram.linked' | 'telegram.unlinked'
+  | 'chain.launched' | 'chain.removed' | 'telegram.linked' | 'telegram.unlinked'
   | 'analytics.trial' | 'analytics.site_added' | 'analytics.site_removed' | 'analytics.password_reset' | 'analytics.quote' | 'analytics.plan'
   | 'billing.quote' | 'billing.paid'
   | 'team.invited' | 'team.invite_revoked' | 'team.joined' | 'team.role_changed' | 'team.removed' | 'team.left' | 'workspace.renamed'

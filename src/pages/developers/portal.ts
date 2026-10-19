@@ -7,15 +7,15 @@ import type { Me, MemberRole, Role } from './api'
    (server/workspaces.mjs, WRITES); this only keeps the UI honest. */
 
 /** What a POST changes, as the server groups it (workspaces.mjs categoryOf). */
-export type WriteCategory = 'keys' | 'alerts' | 'telegram' | 'analytics' | 'billing' | 'company' | 'team' | 'admin' | 'owner' | 'security'
+export type WriteCategory = 'keys' | 'alerts' | 'telegram' | 'analytics' | 'billing' | 'company' | 'team' | 'admin' | 'owner' | 'security' | 'chains'
 
 /** The write categories each role holds (mirrors workspaces.mjs WRITES). */
 export const WRITES: Record<Role, WriteCategory[]> = {
   viewer: [],
-  developer: ['keys', 'alerts', 'telegram', 'analytics', 'security'],
+  developer: ['keys', 'alerts', 'telegram', 'analytics', 'security', 'chains'],
   billing: ['billing', 'company'],
-  admin: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'security'],
-  owner: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'owner', 'security'],
+  admin: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'security', 'chains'],
+  owner: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'owner', 'security', 'chains'],
 }
 
 export const ROLE_TEXT: Record<Role, string> = {

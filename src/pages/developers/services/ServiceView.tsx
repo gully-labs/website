@@ -10,6 +10,7 @@ const VIEWS = {
   tracker: lazy(() => import('./TrackerView')),
   pay: lazy(() => import('./PayView')),
   'chain-kit': lazy(() => import('./ChainKitView')),
+  chains: lazy(() => import('../chains/ChainsView')),
   ai: lazy(() => import('./AiView')),
   deepcore: lazy(() => import('./DeepcoreView')),
   holders: lazy(() => import('./HoldersView')),
