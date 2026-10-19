@@ -75,6 +75,7 @@ import { handleProfileRoutes, profileOf } from './profile.mjs'
 import { workspaceName } from './workspaces.mjs'
 import * as ui from './telegram-ui.mjs'
 import { onInlineQuery } from './telegram-inline.mjs'
+import { createRelay } from './telegram-relay.mjs'
 import { backfillFromLinks, botUser, noteFirstUse, noteGateShown, recordStart, setFollows, setLinked, setOptOut, takeFreeAction, touchUser } from './telegram-users.mjs'
 
 const { chainName, shortAddr, btn, ubtn } = ui
@@ -343,11 +344,12 @@ const COMMANDS = {
   security: '🛡 Contract scans, Gully Score and monitors',
   score: '🏅 A contract’s Gully Score, e.g. /score 0x…',
   ask: '🤖 Ask Gully AI a question',
+  contact: '💬 Write to the Gully Labs team',
   help: '❓ What this bot does',
   stop: '🔕 Stop announcements, or unlink this chat',
 }
 const SCOPE_COMMANDS = {
-  private: ['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'help', 'stop'],
+  private: ['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop'],
   group: ['gap', 'top', 'launches', 'help'],
 }
 /** The command list for one scope ('private' or 'group'). */
@@ -1365,6 +1367,8 @@ async function gate(u) {
   return false
 }
 
+const relay = createRelay({ send: sendToChat, tg, adminChatId, botUsername })
+
 /** Handles one update. Exported for tests through the webhook only. */
 async function onUpdate(u) {
   if (typeof u?.update_id === 'number') {
@@ -1381,6 +1385,8 @@ async function onUpdate(u) {
     if (typeof pm?.text === 'string' && /^\/start(?:@\w+)?(?:\s|$)/i.test(pm.text)) recordStart(pChat.id, pFrom, { linked: !!linkOfChat(pChat.id) })
     else touchUser(pChat.id, pFrom)
   }
+  // Support relay (telegram-relay.mjs): /contact, /start <topic>, the conversation and the admin replies. Never behind the News gate.
+  if ((u?.message || u?.callback_query) && (await relay.handle(u).catch((e) => (console.error('telegram relay:', redact(e?.message ?? e)), false)))) return
   // Inline mode (telegram-inline.mjs) is the growth path: it is never behind the News gate.
   if (u?.inline_query) return void (await onInlineQuery(u.inline_query, { tg, botName: botUsername }).catch((e) => console.error('telegram inline:', redact(e?.message ?? e))))
   if (!(await gate(u))) return

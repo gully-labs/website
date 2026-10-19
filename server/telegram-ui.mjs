@@ -201,6 +201,7 @@ export function helpView(linked) {
     '/security · 🛡 Gully Security: contract scans, Gully Score and monitors',
     '/score 0x… · the Gully Score of a contract (add <code>base</code>, <code>ethereum</code>…)',
     '/ask · ask Gully AI a question',
+    '/contact · 💬 write to the Gully Labs team (we reply here)',
     '/app · open the Gully app inside Telegram',
     ...(linked ? ['/alerts · your alerts', '/monitors · your contract monitors', '/stop · unlink this chat'] : ['🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram.']),
     '/stop announcements · no more news from Gully Labs (alerts keep coming)',

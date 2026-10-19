@@ -21,6 +21,7 @@
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:tg-channel": "node scripts/test-tg-channel.mjs",
     "test:tg-broadcast": "node scripts/test-tg-broadcast.mjs",
+    "test:tg-relay": "node scripts/test-tg-relay.mjs",
     "test:tg-miniapp": "node scripts/test-tg-miniapp.mjs",
     "test:launch-radar": "node scripts/test-launch-radar.mjs",
     "test:deepcore": "node --test scripts/test-deepcore.mjs",

@@ -259,7 +259,7 @@ try {
   const scoped = (type) => cmdCalls.find((c) => (c.body.scope?.type ?? 'default') === type)?.body.commands ?? []
   const cmdList = scoped('all_private_chats')
   const cmds = cmdList.map((c) => c.command)
-  check('startup: private chats see start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop (in that order, no scan)', JSON.stringify(cmds) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'help', 'stop']), cmds.join())
+  check('startup: private chats see start, app, gap, top, movers, launches, holders, alerts, security, score, ask, contact, help, stop (in that order, no scan)', JSON.stringify(cmds) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop']), cmds.join())
   check('startup: groups see gap, top, launches, help only', JSON.stringify(scoped('all_group_chats').map((c) => c.command)) === JSON.stringify(['gap', 'top', 'launches', 'help']), scoped('all_group_chats').map((c) => c.command).join())
   check('startup: the default scope gets the private list', JSON.stringify(scoped('default').map((c) => c.command)) === JSON.stringify(cmds))
   check('startup: command descriptions are short, plain and start with an emoji (3 to 60 characters)', cmdCalls.flatMap((c) => c.body.commands).every((c) => c.description.length >= 3 && c.description.length <= 60 && /^\p{Extended_Pictographic}/u.test(c.description)), cmdList.map((c) => c.description).join(' | '))
