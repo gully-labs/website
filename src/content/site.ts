@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, BellRing, BookOpen, Boxes, Building2, ChartNoAxesCombined, CircleDollarSign, Code2, FileJson, FlaskConical, HeartPulse, History, Info, KeyRound, LayoutGrid, Layers, Mail, Network, Newspaper, Package, Puzzle, ScanSearch, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowLeftRight, BellRing, BookOpen, Boxes, Building2, ChartNoAxesCombined, CircleDollarSign, Code2, Globe, Handshake, FileJson, FlaskConical, HeartPulse, History, Info, KeyRound, LayoutGrid, Layers, Mail, Network, Newspaper, Package, Puzzle, ScanSearch, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { scoreNavEntry } from '../pages/score/nav'
 
@@ -56,7 +56,7 @@ export const productsNav: NavGroup = {
     { label: 'Chain Kit', desc: 'Branded block explorers', to: '/chain-kit', icon: Boxes, match: ['/chain-kit'] },
     { label: 'Gully Security', desc: 'AI Security Scan and code reviews', to: '/security', icon: ShieldCheck, match: ['/security'] },
     scoreNavEntry,
-    { label: 'Gully Chains', desc: 'App chains, launched for you', to: '/#chains', icon: Network, badge: 'Soon' },
+    { label: 'Gully Chains', desc: 'Your own Arbitrum chain, run by us', to: '/chains', icon: Network, match: ['/chains'], badge: 'Waitlist' },
     { label: 'Gully Pay', desc: 'Crypto billing and pay links', to: '/#pay', icon: CircleDollarSign },
     { label: 'All products', desc: 'Try each one live on the home page', to: '/#products', icon: LayoutGrid },
   ],
@@ -85,6 +85,8 @@ export const companyNav: NavGroup = {
   items: [
     { label: 'Services', desc: 'Contracts to launch, built with you', to: '/services', icon: Layers, match: ['/services'] },
     { label: 'About', desc: 'Who we are and how we work', to: '/about', icon: Info, match: ['/about'] },
+    { label: 'Ecosystem', desc: 'Our projects, live, and what we integrate with', to: '/ecosystem', icon: Globe, match: ['/ecosystem'] },
+    { label: 'Partners', desc: 'Holder Map, SDK and webhooks for launchpads, wallets and chains', to: '/partners', icon: Handshake, match: ['/partners'] },
     { label: 'Blog', desc: 'Releases and write-ups', href: 'https://blog.gullylabs.xyz', icon: Newspaper, newTab: true },
     { label: 'Contact', desc: 'Start a project with us', action: 'contact', icon: Mail },
   ],

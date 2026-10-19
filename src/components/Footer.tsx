@@ -41,7 +41,7 @@ function Column({ id, label, items, wide }: { id: string; label: string; items: 
 export function Footer() {
   const { openContact } = useContact()
   const [products, developers, company] = navGroups
-  const [projects, pricing] = navLinks
+  const [projects, pricing, gullyAi] = navLinks
   // Swap is a section of the stock pages, not a page of its own: the footer lists the tracker once.
   const productItems = [...products.items.filter((e) => e.label !== 'Swap' && e.label !== 'All products'), pricing]
   const companyItems = [projects, ...company.items]
@@ -70,7 +70,7 @@ export function Footer() {
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-6 min-[700px]:grid-cols-3 min-[1024px]:grid-cols-4">
           <Column id="products" label="Products" items={productItems} wide />
-          <Column id="developers" label={developers.label} items={developers.items} />
+          <Column id="developers" label={developers.label} items={[gullyAi, ...developers.items]} />
           <Column id="company" label="Company" items={companyItems} />
         </div>
       </div>
