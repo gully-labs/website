@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T01:23:17.562Z",
+ "updatedAt": "2026-10-19T04:55:07.585Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -2127,6 +2127,51 @@
    "updatedAt": "2026-10-18T19:46:28.270Z"
   },
   {
+   "id": "f12267559726",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts",
+   "section": null,
+   "text": "Every address Gully Labs uses on chain, in one list, so you can check any of them before you send value. Each one names the file in our repositories it is quoted from. Machine-readable at /.well-known/contracts.json. Every on-chain address Gully Labs uses, per chain: the treasury Safe, the fee address, the third-party Request Network fee proxy and our projects’ contracts, each with its explorer link, Sourcify status and the file it is quoted from.",
+   "updatedAt": "2026-10-19T04:55:07.585Z"
+  },
+  {
+   "id": "a3032182b95c",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#treasury",
+   "section": "Treasury and fee address",
+   "text": "The Gully Labs treasury is one Safe (2-of-3), at the same address on every chain it is deployed on. It receives plan payments and is the feeAddress of every Gully Pay fee split. Payments to Gully Labs go nowhere else. Request Network’s ERC20FeeProxy is not ours. Gully Pay calls it to split a stablecoin payment between the merchant and the treasury in one transaction; it holds nothing. It is marked third-party in the list and in the JSON.",
+   "updatedAt": "2026-10-19T04:55:07.585Z"
+  },
+  {
+   "id": "19662550c935",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#all",
+   "section": "All contracts",
+   "text": "Sourcify status was checked on. “No verified source” means Sourcify holds no verified source for that address. No audit report is published for any of these contracts, so none is linked.",
+   "updatedAt": "2026-10-19T04:55:07.585Z"
+  },
+  {
+   "id": "27e3b56673ae",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#json",
+   "section": "The JSON file",
+   "text": "/.well-known/contracts.json is public, cached for an hour and readable from any origin. It carries one object per address: name, role, chainId, address (checksummed), owner (gully-labs or third-party), explorerUrl, verifiedSource, verification, audit and source.",
+   "updatedAt": "2026-10-19T04:55:07.585Z"
+  },
+  {
+   "id": "3f4d3f6e4029",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#rules",
+   "section": "What is listed, and what is not",
+   "text": "An address is listed only when it is written in a file in one of our repositories, and the entry names that file. Nothing comes from memory or an explorer. Constructor-time values that a later deployment replaced are left out, and so are token, wrapped-native and Permit2 addresses that other projects own. If an address claims to be Gully Labs and is not listed here, it is not ours.",
+   "updatedAt": "2026-10-19T04:55:07.585Z"
+  },
+  {
    "id": "1f70f2278c6e",
    "source": "Docs",
    "title": "Status",
@@ -2870,8 +2915,8 @@
    "title": "Gully Labs links and contact",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. Stock tracker: https://gullylabs.xyz/tracker. Holder Map: https://gullylabs.xyz/holders. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. Security: https://gullylabs.xyz/security. Gully Chains: https://gullylabs.xyz/#chains. Gully Pay: https://gullylabs.xyz/#pay. All products: https://gullylabs.xyz/#products. Gully AI: https://gullylabs.xyz/ask. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. Stock tracker: https://gullylabs.xyz/tracker. Holder Map: https://gullylabs.xyz/holders. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. Gully Security: https://gullylabs.xyz/security. Gully Chains: https://gullylabs.xyz/chains. Gully Pay: https://gullylabs.xyz/#pay. All products: https://gullylabs.xyz/#products. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
+   "updatedAt": "2026-10-19T04:55:07.585Z"
   },
   {
    "id": "b33b0edf6fb3",
