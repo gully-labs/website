@@ -1,7 +1,7 @@
 import { realCount } from './chartData'
 import { C } from './chartTheme'
 import { ChartEmpty } from './GhostChart'
-import { useCursor, useSeen, useTween } from './useMiniChart'
+import { useCursor, useInView, useSeen, useTween } from './useMiniChart'
 
 /* The kit's small bar chart (design audit G32), for cards and rows where a full ECharts chart is too
    heavy. Two shapes:
@@ -34,15 +34,20 @@ export interface MiniBarsProps {
   height?: number | string
   /** Shown with the ghost when there is nothing to draw. */
   emptyLabel?: string
+  /** Live mode (default on): columns grow in with a gentle stagger, glide to new values, and the newest
+      column breathes (slowly and subtly under reduced motion). Pauses off-screen. */
+  live?: boolean
   /** Show the label as a caption above rows (default on for rows). */
   caption?: boolean
   className?: string
 }
 
-export function MiniBars({ bars, label, orientation = 'columns', fmt = (v) => v.toLocaleString('en-US'), color = C.gold, negColor = C.dim, height = 56, emptyLabel = 'Not enough data for a chart yet', caption = orientation === 'rows', className = '' }: MiniBarsProps) {
+export function MiniBars({ bars, label, orientation = 'columns', fmt = (v) => v.toLocaleString('en-US'), color = C.gold, negColor = C.dim, height = 56, emptyLabel = 'Not enough data for a chart yet', caption = orientation === 'rows', live = true, className = '' }: MiniBarsProps) {
   const values = useTween(bars.map((b) => b.value))
   const [ref, seen] = useSeen<HTMLDivElement>()
+  const [, inView] = useInView(ref)
   const cursor = useCursor(bars.length)
+  const liveAttr = live ? (inView ? 'on' : 'paused') : undefined
   const fmtOr = (v: number | null) => (v === null || !Number.isFinite(v) ? 'not read' : fmt(v))
   const real = realCount(bars.map((b) => b.value))
   const play = seen ? 'running' : 'paused'
@@ -67,7 +72,7 @@ export function MiniBars({ bars, label, orientation = 'columns', fmt = (v) => v.
   if (orientation === 'rows') {
     const max = Math.max(...values.map((v) => Math.abs(v ?? 0)), 1e-9)
     return (
-      <figure ref={ref} className={`m-0 flex flex-col gap-1 ${className}`} data-mini-chart="rows">
+      <figure ref={ref} className={`m-0 flex flex-col gap-1 ${className}`} data-mini-chart="rows" data-live={liveAttr}>
         {caption && <figcaption className="font-mono text-[11px] text-faint">{label}</figcaption>}
         <ul className="m-0 flex list-none flex-col gap-[6px] rounded-input p-0 outline-none focus-visible:ring-2 focus-visible:ring-gold" aria-label={`${label}. Arrow keys read each row.`} {...keys}>
           {bars.map((b, i) => {
@@ -105,13 +110,13 @@ export function MiniBars({ bars, label, orientation = 'columns', fmt = (v) => v.
   const span = hi - lo || 1
   const base = (hi / span) * 100 // the zero line, as a percent from the top
   return (
-    <div ref={ref} className={`relative w-full ${className}`} style={{ height }} data-mini-chart="columns">
+    <div ref={ref} className={`relative w-full ${className}`} style={{ height }} data-mini-chart="columns" data-live={liveAttr}>
       <ul className="absolute inset-0 m-0 flex list-none items-stretch gap-[3px] rounded-input p-0 outline-none focus-visible:ring-2 focus-visible:ring-gold" aria-label={`${label}. Arrow keys read each bar.`} {...keys}>
         {bars.map((b, i) => {
           const v = values[i]
           const h = v === null ? 0 : Math.max(1.5, (Math.abs(v) / span) * 100)
           return (
-            <li key={`${b.label}-${i}`} className="relative flex-1" onPointerEnter={() => cursor.setAt(i)} aria-current={at === i || undefined}>
+            <li key={`${b.label}-${i}`} className={`relative flex-1 ${live && i === bars.length - 1 && v !== null ? 'gl-live-breathe' : ''}`} onPointerEnter={() => cursor.setAt(i)} aria-current={at === i || undefined}>
               <span className="sr-only">
                 {b.label}: {fmtOr(bars[i].value)}
               </span>

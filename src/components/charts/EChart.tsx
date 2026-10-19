@@ -4,6 +4,9 @@ import { loadECharts, motionFor, useReducedMotion, type ChartEvent } from './cha
 import { ghostVariantOf, optionIsEmpty } from './chartData'
 import { ChartError, ChartSkeleton, type SkeletonVariant } from './ChartSkeleton'
 import { ChartEmpty } from './GhostChart'
+import { hasLiveArea, liveDefaults, liveMarkers } from './liveMotion'
+import { useInView } from './useMiniChart'
+import { C } from './chartTheme'
 
 /* The one wrapper every chart on the site goes through. ECharts loads on demand (its own chunk),
    so the page paints first and the chart's box holds its size with a skeleton meanwhile. The
@@ -13,6 +16,10 @@ import { ChartEmpty } from './GhostChart'
    entry animation (bars growing, lines drawing, rings sweeping) plays where it can be seen rather
    than off-screen while the page loads. Under prefers-reduced-motion the animation is not switched off
    but made gentle (motionFor: ~150 ms, linear, no stagger), so a change still reads as a change.
+   Live mode (`live`, on by default; CHART-KIT-LIVE.md): line charts get a pulsing "now" marker on the
+   newest point of each plain line, an area fill that slowly breathes (CSS), a glide to new data (700 ms)
+   and bars a gentle staggered grow-in. No per-frame JS, and every loop pauses while the chart is off
+   screen. Under reduced motion the pulse and breathing stay, slower and smaller.
    If ECharts itself cannot load, or the caller says its data failed (`error`), the box shows
    "Couldn't load" with a retry button in place of the chart.
    Nothing real to draw (every series under 2 real points, or every value null/unknown; chartData.ts
@@ -40,6 +47,8 @@ export interface EChartProps {
   /** The chart's data could not be read: shows the message (or a default) with `onRetry`. */
   error?: boolean | string
   onRetry?: () => void
+  /** Live mode (default on): "now" marker, breathing area, glide to new data, staggered bars. false for a still chart. */
+  live?: boolean
   /** 'auto' (default): ghost the chart when its option has nothing real to draw. true/false force it. */
   empty?: boolean | 'auto'
   /** The ghost's label, e.g. "Your payments will draw here". */
@@ -48,7 +57,15 @@ export interface EChartProps {
   children?: React.ReactNode
 }
 
-export function EChart({ option, height, label, renderer = 'svg', replaceMerge = ['series'], onEvents, steps, onChart, skeleton = 'bars', error, onRetry, empty = 'auto', emptyLabel, className = '', children }: EChartProps) {
+interface Mark {
+  key: string
+  x: number
+  y: number
+  color: string
+}
+const sameMarks = (a: Mark[], b: Mark[]) => a.length === b.length && a.every((m, i) => m.key === b[i].key && m.color === b[i].color && Math.abs(m.x - b[i].x) < 0.5 && Math.abs(m.y - b[i].y) < 0.5)
+
+export function EChart({ option, height, label, renderer = 'svg', replaceMerge = ['series'], onEvents, steps, onChart, skeleton = 'bars', live = true, error, onRetry, empty = 'auto', emptyLabel, className = '', children }: EChartProps) {
   const isEmpty = empty === 'auto' ? optionIsEmpty(option) : empty
   const el = useRef<HTMLDivElement>(null)
   const box = useRef<HTMLDivElement>(null)
@@ -58,6 +75,8 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const reduced = useReducedMotion()
+  const [, inView] = useInView(box)
+  const [marks, setMarks] = useState<Mark[]>([])
   const events = useRef(onEvents)
   const notify = useRef(onChart)
   const step = useRef(-1)
@@ -127,14 +146,47 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
     }
   }, [lib, renderer])
 
+  // The "now" marker: an HTML dot over the newest point of each plain line, placed from the chart's own
+  // axes right after each update (so it glides with the line) and after a resize. Pure CSS pulse.
+  const syncMarks = () => {
+    const c = chart.current
+    if (!live || !c || isEmpty) return setMarks((m) => (m.length ? [] : m))
+    const next: Mark[] = []
+    for (const s of liveMarkers(option)) {
+      try {
+        const [x, y] = c.convertToPixel({ seriesIndex: s.seriesIndex }, s.point as never) as unknown as number[]
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue
+        const style = (c as never as { getModel: () => { getSeriesByIndex: (i: number) => { getData: () => { getVisual: (k: string) => unknown } } } }).getModel().getSeriesByIndex(s.seriesIndex).getData().getVisual('style') as { stroke?: string } | undefined
+        next.push({ key: String(s.seriesIndex), x, y, color: s.color ?? (typeof style?.stroke === 'string' ? style.stroke : C.gold) })
+      } catch {
+        /* not a cartesian chart, or not laid out yet */
+      }
+    }
+    setMarks((m) => (sameMarks(m, next) ? m : next))
+  }
+  const syncRef = useRef(syncMarks)
+  useEffect(() => {
+    syncRef.current = syncMarks
+  })
+  useEffect(() => {
+    const c = chart.current
+    if (!c) return
+    const f = () => syncRef.current()
+    c.on('finished', f)
+    return () => {
+      c.off('finished', f)
+    }
+  }, [lib, renderer])
+
   // Every new option merges into the live chart: an update animates from the old values.
   useEffect(() => {
     const c = chart.current
     if (!c || !seen || isEmpty) return
-    c.setOption(motionFor(option as EChartsCoreOption, reduced), { replaceMerge, lazyUpdate: false })
+    c.setOption(motionFor((live ? liveDefaults(option) : option) as EChartsCoreOption, reduced), { replaceMerge, lazyUpdate: false })
+    syncMarks()
     // replaceMerge is a stable literal per call site
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [option, reduced, lib, renderer, seen, isEmpty])
+  }, [option, reduced, lib, renderer, seen, isEmpty, live])
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     const c = chart.current
@@ -157,7 +209,7 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
 
   const broken = failed || !!error
   return (
-    <div ref={box} className={`relative w-full ${className}`} style={{ height }}>
+    <div ref={box} className={`relative w-full ${className}`} style={{ height }} data-live={live ? (inView ? 'on' : 'paused') : undefined} data-live-area={live && !isEmpty && renderer === 'svg' && hasLiveArea(option) ? '' : undefined}>
       <div
         ref={el}
         className={`absolute inset-0 rounded-input outline-offset-4 transition-opacity duration-300 ${lib && seen && !error && !isEmpty ? 'opacity-100' : 'opacity-0'}`}
@@ -190,6 +242,15 @@ export function EChart({ option, height, label, renderer = 'svg', replaceMerge =
           }
         />
       )}
+      {live &&
+        !broken &&
+        !isEmpty &&
+        marks.map((m) => (
+          <span key={m.key} aria-hidden className="gl-live-mark" style={{ left: m.x, top: m.y }}>
+            <i className="absolute -m-[3px] block size-[6px] rounded-full" style={{ background: m.color, boxShadow: `0 0 6px ${m.color}` }} />
+            <i className="gl-live-ring absolute -m-[3px] block size-[6px] rounded-full border" style={{ borderColor: m.color }} />
+          </span>
+        ))}
       {!broken && !isEmpty && children}
     </div>
   )
