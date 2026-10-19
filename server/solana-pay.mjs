@@ -159,7 +159,7 @@ export async function readSolanaPayment(asset, signature, treasury, { reference 
   const credit = touched.filter((x) => x.account === ata && x.mint === asset.address && x.delta > 0n)
   if (!credit.length) {
     if (touched.some((x) => x.owner === treasury && x.delta > 0n && x.mint !== asset.address)) return { ok: false, status: 422, error: `This transaction sent a token other than ${asset.symbol} to the treasury. Only ${asset.symbol} (${asset.address.slice(0, 4)}…${asset.address.slice(-4)}) counts.` }
-    if (touched.some((x) => x.owner === treasury && x.delta > 0n && x.mint === asset.address)) return { ok: false, status: 422, error: `This transaction sent ${asset.symbol} to a token account of the treasury that is not its associated account (${ata}). Write to hello@gullylabs.xyz with the signature.` }
+    if (touched.some((x) => x.owner === treasury && x.delta > 0n && x.mint === asset.address)) return { ok: false, status: 422, error: `This transaction sent ${asset.symbol} to a token account of the treasury that is not its associated account (${ata}). Write to team@gullylabs.xyz with the signature.` }
     if (touched.some((x) => x.mint === asset.address && x.delta > 0n)) return { ok: false, status: 422, error: `This transaction sent ${asset.symbol}, but not to the Gully Labs treasury.` }
     if (lamportsDelta(ti) > 0n) return { ok: false, status: 422, error: `This transaction sent SOL, not ${asset.symbol}. Choose SOL as the asset to pay with it.` }
     return { ok: false, status: 422, error: `This transaction has no ${asset.symbol} transfer to the Gully Labs treasury.` }

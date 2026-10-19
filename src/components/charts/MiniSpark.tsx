@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { tooFewPoints } from './chartData'
 import { C } from './chartTheme'
 import { GhostSpark } from './GhostChart'
-import { useCursor, useSeen, useTween } from './useMiniChart'
+import { useCursor, useInView, useSeen, useTween } from './useMiniChart'
 
 /* The kit's small trend line (design audit G32), for places a full ECharts chart is too heavy: table
    rows, cards, tickers. Hand-written SVG in kit colours. It draws in left to right when it scrolls into
@@ -33,6 +33,9 @@ export interface MiniSparkProps {
   zero?: boolean
   /** The newest point's dot and live pulse (default on). */
   dot?: boolean
+  /** Live mode (default on): the area fill breathes and the newest point pulses (a slow, small pulse under
+      reduced motion). Pauses off-screen. false for a still strip. */
+  live?: boolean
   /** Ticker style: draw on, hold, fade and draw again (once under reduced motion). */
   loop?: boolean
   /** Seconds before the draw-in starts. */
@@ -44,9 +47,10 @@ export interface MiniSparkProps {
 
 const PAD = 8 // percent of the height kept clear above and below the line
 
-export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLocaleString('en-US'), color = C.gold, height = 40, area = true, zero = false, dot = true, loop = false, delay = 0, interactive = true, className = '' }: MiniSparkProps) {
+export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLocaleString('en-US'), color = C.gold, height = 40, area = true, zero = false, dot = true, live = true, loop = false, delay = 0, interactive = true, className = '' }: MiniSparkProps) {
   const data = useTween(target)
   const [ref, seen] = useSeen<HTMLDivElement>()
+  const [, inView] = useInView(ref)
   const cursor = useCursor(data.length)
   const gid = useId().replace(/:/g, '')
 
@@ -113,6 +117,7 @@ export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLo
       }
       onPointerLeave={cursor.clear}
       data-mini-chart="spark"
+      data-live={live && !loop ? (inView ? 'on' : 'paused') : undefined}
     >
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
         <defs>
@@ -122,10 +127,15 @@ export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLo
           </linearGradient>
         </defs>
         {zero && lo < 0 && hi > 0 && <line x1={0} x2={100} y1={Y(0)} y2={Y(0)} stroke={C.lineStrong} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />}
-        {area &&
-          runs
-            .filter((r) => r.length > 1)
-            .map((r) => <path key={`a${r[0]}`} d={`${path(r)} L${X(r[r.length - 1]).toFixed(2)},100 L${X(r[0]).toFixed(2)},100 Z`} fill={`url(#s${gid})`} style={{ animation: fadeAnim, animationPlayState: play }} />)}
+        {area && (
+          <g className={live && !loop ? 'gl-live-breathe' : undefined}>
+            {runs
+              .filter((r) => r.length > 1)
+              .map((r) => (
+                <path key={`a${r[0]}`} d={`${path(r)} L${X(r[r.length - 1]).toFixed(2)},100 L${X(r[0]).toFixed(2)},100 Z`} fill={`url(#s${gid})`} style={{ animation: fadeAnim, animationPlayState: play }} />
+              ))}
+          </g>
+        )}
         {runs.map((r) =>
           r.length > 1 ? (
             <path key={`l${r[0]}`} d={path(r)} fill="none" stroke={color} strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray={1} style={{ animation: drawAnim, animationPlayState: play }} />
@@ -142,7 +152,7 @@ export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLo
       {dot && (
         <span aria-hidden className="pointer-events-none absolute" style={{ left: `${X(lastIdx)}%`, top: `${Y(data[lastIdx]!)}%` }}>
           <i className="absolute -m-[3px] block size-[6px] rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}`, animation: loop ? fadeAnim : `gl-fade .3s ${delay + 1.1}s ease both`, animationPlayState: play }} />
-          {!loop && <i className="absolute -m-[3px] block size-[6px] rounded-full border" style={{ borderColor: color, animation: `gl-live-pulse 2.4s ${delay + 1.4}s ease-out infinite both`, animationPlayState: play }} />}
+          {live && !loop && <i className="gl-live-ring absolute -m-[3px] block size-[6px] rounded-full border" style={{ borderColor: color, animationDelay: `${delay + 1.4}s`, animationPlayState: play }} />}
         </span>
       )}
       {at !== null && (

@@ -19,6 +19,7 @@ import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, t
 import { ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
 import { mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
+import { StatusPill as KitPill } from '../../components/ui/StatusPill'
 
 /* Billing, as sub-tabs that show one section at a time (#billing/plan, #billing/plans, #billing/history,
    remembered): the plan in force with its usage rings and the payments chart (and the CSV exports); the
@@ -307,7 +308,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                         <div className="flex items-baseline justify-between gap-3">
                           <span className="flex items-center gap-2 text-[15px] font-semibold">
                             {p.name}
-                            {isCur && <span className="rounded-full border border-gold-line px-2 font-mono text-[11px] text-gold">CURRENT</span>}
+                            {isCur && <KitPill tone="warn">CURRENT</KitPill>}
                           </span>
                           <span className="font-display text-[26px] leading-none font-bold">
                             {p.priceUsdc} <span className="font-mono text-[11px] font-normal text-faint">USD / {offer.periodDays} days</span>

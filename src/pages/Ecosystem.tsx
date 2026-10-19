@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { motion } from 'motion/react'
-import { ArrowUpRight } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { ArrowUpRight, Code2, Info, Plus } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { MiniSpark } from '../components/charts/MiniSpark'
 import { NF } from '../components/charts/number-formats'
 import { ChainLogo } from '../components/logos/ChainLogo'
+import { IntegrationLogo } from '../components/logos/IntegrationLogo'
 import { VenueLogo } from '../components/logos/VenueLogo'
 import { Segmented } from '../components/ui/Segmented'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
 import { projects, type Project } from '../content/projects'
-import { integrationKinds, integrations, type IntegrationKind } from '../content/ecosystem'
+import { integrationKinds, integrations, type Integration, type IntegrationKind } from '../content/ecosystem'
 import { fetchStats, fmtDate, fmtTime, fmtUsd, sourceHost, type Stats, type Venue, type VenueOk } from '../lib/stats'
 import { getJson } from '../lib/holders'
 
@@ -70,7 +71,8 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.45, ease }}
-      className="card card-pad flex min-w-0 flex-col gap-4"
+      whileHover={{ y: -3 }}
+      className="card card-pad flex min-w-0 flex-col gap-4 transition-colors hover:border-line-hover"
       style={{ borderTop: `2px solid ${p.accent}` }}
       data-project={p.slug}
     >
@@ -150,6 +152,45 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
   )
 }
 
+/** One integration: its logo, name and a line of use; the file that proves it is behind "In code". */
+function IntegrationTile({ i, n }: { i: Integration; n: number }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <motion.li
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-30px' }}
+      transition={{ duration: 0.35, ease, delay: Math.min(n, 5) * 0.04 }}
+      whileHover={{ y: -3 }}
+      data-integration={i.id}
+      className="card flex min-w-0 flex-col transition-colors focus-within:border-gold hover:border-gold"
+    >
+      <a href={i.href} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 flex-col gap-2.5 rounded-t-lg p-3.5 pb-2">
+        <IntegrationLogo id={i.id} name={i.name} size={40} />
+        <span className="inline-flex items-center gap-1 font-display text-[18px] leading-tight font-bold text-ink uppercase">
+          {i.name}
+          <ArrowUpRight size={14} aria-hidden className="flex-none text-faint" />
+          <span className="sr-only">(opens in a new tab)</span>
+        </span>
+        <span className="text-[13px] leading-[1.5] text-muted">{i.use}</span>
+      </a>
+      <div className="flex flex-col px-3.5 pb-2.5">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="inline-flex min-h-8 w-fit items-center gap-1 rounded-btn font-mono text-[11px] text-faint transition-colors hover:text-gold">
+          <Code2 size={13} aria-hidden />
+          In code
+        </button>
+        <AnimatePresence initial={false}>
+          {open && (
+            <motion.code initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2, ease }} className="block overflow-hidden font-mono text-[11px] break-all text-ink-2">
+              {i.where}
+            </motion.code>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.li>
+  )
+}
+
 interface LaunchpadsDoc {
   chains: { key: string; name: string }[]
   launchpads: { id: string | null; name: string | null; url: string | null; chains: string[] }[] | null
@@ -172,7 +213,9 @@ export function Ecosystem() {
     const venueOf = (key: string) => (stats.k === 'ok' ? stats.data.venues.find((v) => v.key === key) : undefined)
     return projects.map((p) => ({ p, venue: venueOf(p.key) }))
   }, [stats])
-  const shown = integrations.filter((i) => kind === 'All' || i.kind === kind)
+  // Grouped by category in the order of integrationKinds; one group when a kind is chosen.
+  const groups = useMemo(() => integrationKinds.filter((k) => kind === 'All' || k === kind).map((k) => ({ kind: k, items: integrations.filter((i) => i.kind === k) })), [kind])
+  const padChains = useMemo(() => new Set((pads ?? []).flatMap((l) => l.chains)).size, [pads])
 
   return (
     <div className="flex flex-col gap-14 px-page pt-10 pb-24">
@@ -230,32 +273,41 @@ export function Ecosystem() {
             <h2 id="eco-int" className="heading-2">
               Integrates with
             </h2>
-            <p className="m-0 max-w-[680px] text-[14px] text-muted">Third-party services our shipped code calls, each with the file that does. This is a list of what we use, not of who endorses us.</p>
+            <p className="m-0 max-w-[680px] text-[14px] text-muted">Third-party services our shipped code calls today. A list of what we use, not of who endorses us.</p>
           </div>
-          <Segmented<IntegrationKind | 'All'> label="Filter by kind" value={kind} onChange={setKind} options={[{ id: 'All', label: 'ALL' }, ...integrationKinds.map((k) => ({ id: k, label: k.toUpperCase() }))]} className="max-w-full overflow-x-auto" />
+          <Segmented<IntegrationKind | 'All'>
+            label="Filter by kind"
+            value={kind}
+            onChange={setKind}
+            options={[{ id: 'All', label: `ALL ${integrations.length}` }, ...integrationKinds.map((k) => ({ id: k, label: `${k.toUpperCase()} ${integrations.filter((i) => i.kind === k).length}` }))]}
+            className="max-w-full overflow-x-auto"
+          />
         </div>
-        <motion.ul layout className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-3 p-0">
-          {shown.map((i) => (
-            <motion.li
-              layout
-              key={i.name}
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, ease }}
-              className="card flex min-w-0 flex-col gap-2 p-4"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <a href={i.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-display text-[18px] leading-tight font-bold text-ink uppercase hover:text-gold">
-                  {i.name}
-                  <ArrowUpRight size={14} aria-hidden className="flex-none text-faint" />
-                </a>
-                <span className="flex-none rounded-full border border-line px-2 py-0.5 font-mono text-[11px] tracking-[1px] text-faint">{i.kind.toUpperCase()}</span>
-              </div>
-              <p className="m-0 text-[13px] leading-[1.55] text-muted">{i.use}</p>
-              <code className="mt-auto font-mono text-[11px] break-all text-faint">{i.where}</code>
-            </motion.li>
+        <details className="group w-fit max-w-full rounded-input border border-line px-3 py-2 text-[13px] text-muted open:border-line-strong">
+          <summary className="inline-flex min-h-6 cursor-pointer list-none items-center gap-1.5 font-mono text-[12px] text-ink-2 marker:hidden hover:text-gold [&::-webkit-details-marker]:hidden">
+            <Info size={14} aria-hidden />
+            How we verified this
+          </summary>
+          <p className="m-0 mt-2 max-w-[640px] leading-[1.55]">
+            Every entry is a call in code we ship; open “In code” on a tile to see the file that makes it. Plans are not listed. Each logo is the company’s own mark, used only to name the service; it does not mean they endorse us.
+          </p>
+        </details>
+        <div className="flex flex-col gap-7">
+          {groups.map((g) => (
+            <div key={g.kind} className="flex flex-col gap-3" data-kind={g.kind}>
+              <h3 className="m-0 flex items-center gap-2 font-mono text-[12px] tracking-[1px] text-faint">
+                {g.kind.toUpperCase()}
+                <span className="rounded-full border border-line px-2 py-px text-[11px] text-muted">{g.items.length}</span>
+                <span aria-hidden className="h-px flex-1 bg-line" />
+              </h3>
+              <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 md:grid-cols-3 xl:grid-cols-5">
+                {g.items.map((i, n) => (
+                  <IntegrationTile key={i.id} i={i} n={n} />
+                ))}
+              </ul>
+            </div>
           ))}
-        </motion.ul>
+        </div>
       </section>
 
       {pads && pads.length > 0 && (
@@ -264,21 +316,62 @@ export function Ecosystem() {
             <h2 id="eco-pads" className="heading-2">
               Launchpads on the Holder Map
             </h2>
-            <p className="m-0 text-[14px] text-muted">Launchpads whose new tokens get a map and a launch check. Listed by an admin after review; there is no automatic listing.</p>
+            <p className="m-0 max-w-[680px] text-[14px] text-muted">Launchpads whose new tokens get a map and a launch check. Listed by an admin after review; there is no automatic listing.</p>
+            <p className="m-0 font-mono text-[12px] text-faint" data-pads-count="">
+              {pads.length} {pads.length === 1 ? 'launchpad' : 'launchpads'} live on {padChains} {padChains === 1 ? 'chain' : 'chains'}
+            </p>
           </div>
-          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))] gap-3 p-0">
-            {pads.map((l) => (
-              <li key={l.id ?? l.name} className="card flex flex-col gap-1 p-4">
-                {l.url ? (
-                  <a href={l.url} target="_blank" rel="noopener noreferrer" className="font-display text-[18px] font-bold text-ink uppercase hover:text-gold">
-                    {l.name}
+          <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
+            {pads.map((l, n) => (
+              <motion.li
+                key={l.id ?? l.name}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.4, ease, delay: n * 0.05 }}
+                whileHover={{ y: -3 }}
+                data-launchpad={l.id ?? l.name}
+                className="card flex min-w-0 flex-col gap-4 p-4 transition-colors focus-within:border-gold hover:border-gold"
+              >
+                <div className="flex items-center gap-3">
+                  <VenueLogo venue={l.id ?? ''} name={l.name ?? 'Launchpad'} size={48} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <h3 className="m-0 truncate font-display text-[22px] leading-none font-bold uppercase">{l.name}</h3>
+                    {l.url && <span className="truncate font-mono text-[11px] text-faint">{l.url.replace(/^https:\/\//, '').replace(/\/$/, '')}</span>}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2" aria-label={`${l.name} chains`}>
+                  {l.chains.map((c) => (
+                    <span key={c} className="inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 font-mono text-[11px] text-muted">
+                      <ChainLogo chain={c} size={14} decorative />
+                      {c}
+                    </span>
+                  ))}
+                </div>
+                {l.url && (
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" className={`${btnOutline} mt-auto inline-flex min-h-11 w-fit items-center gap-1 px-4 text-[13px]`}>
+                    Visit
+                    <ArrowUpRight size={14} aria-hidden />
                   </a>
-                ) : (
-                  <span className="font-display text-[18px] font-bold uppercase">{l.name}</span>
                 )}
-                <span className="font-mono text-[11px] text-faint">{l.chains.join(' · ')}</span>
-              </li>
+              </motion.li>
             ))}
+            <motion.li
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.4, ease, delay: pads.length * 0.05 }}
+              whileHover={{ y: -3 }}
+              className="flex min-w-0"
+            >
+              <Link to="/partners#list-your-launchpad" className="flex min-h-[150px] w-full flex-col items-start justify-center gap-2 rounded-lg border border-dashed border-line-strong p-4 transition-colors hover:border-gold hover:bg-surface">
+                <span className="inline-flex size-12 items-center justify-center rounded-lg border border-dashed border-line-strong text-gold">
+                  <Plus size={20} aria-hidden />
+                </span>
+                <span className="font-display text-[20px] leading-none font-bold text-ink uppercase">Your launchpad here →</span>
+                <span className="text-[13px] text-muted">Ask to be listed; a person reviews every request.</span>
+              </Link>
+            </motion.li>
           </ul>
         </section>
       )}

@@ -31,7 +31,7 @@
 //   GET  /api/developer/chain-kit             -> { request, waitlist: { joined, at }, stats: { requests, waitlist, daily } }
 //                                             this workspace's Chain Kit request, the wallet's devnet waitlist row,
 //                                             and everyone's counts per UTC day for 30 days (store.mjs)
-//   POST /api/developer/chain-kit/request { email, chain }  -> the view above; also saved as a contact enquiry
+//   POST /api/developer/chain-kit/request { email, chain }  -> the view above; also saved as a contact enquiry. Chain Kit is on a waitlist: this records interest (waitlist: true), never an order
 //   POST /api/developer/chains-waitlist { email }           -> the view above + { already }  Gully Chains devnet waitlist
 //
 // Workspaces: every signed-in route runs in the session's active workspace (the wallet's own by default).
@@ -233,7 +233,7 @@ export async function handleDeveloper(req, res, url) {
     const body = await readJson(req, 24_000)
     const v = await verifySiwe({ message: body?.message, signature: body?.signature, host, secureOrigin: !local })
     if (!v.ok) return json(res, 401, { error: v.error }), true
-    if (getAccount(v.address)?.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact hello@gullylabs.xyz.' }), true
+    if (getAccount(v.address)?.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact team@gullylabs.xyz.' }), true
     touchAccount(v.address)
     const id = createSession(v.address, { userAgent: String(req.headers['user-agent'] ?? '') })
     return json(res, 200, { address: v.address }, { 'Set-Cookie': sessionCookie(req, id, Math.floor(SESSION_TTL_MS / 1000)) }), true
@@ -304,7 +304,7 @@ export async function handleDeveloper(req, res, url) {
     if (!s) return json(res, 401, { error: 'Not signed in.' }), true
     const user = s.address
     const account = getAccount(user)
-    if (!account || account.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact hello@gullylabs.xyz.' }), true
+    if (!account || account.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact team@gullylabs.xyz.' }), true
 
     // The active workspace, re-checked on every request: a removed member falls back to their own.
     let workspace = s.activeWorkspace ?? user
@@ -468,7 +468,7 @@ async function chainKitRoutes(req, res, p, post, { user, workspace }) {
     const r = chainKitRequestOf(workspace)
     const w = waitlistRowOf(user)
     return {
-      request: r ? { at: r.at, chain: r.chain, email: r.email, status: r.status } : null,
+      request: r ? { at: r.at, chain: r.chain, email: r.email, status: r.status, waitlist: true } : null,
       waitlist: { joined: !!w, at: w?.at ?? null },
       stats: { requests: chainKitRequests().length, waitlist: chainsWaitlist().length, daily: chainKitDaily(30) },
     }
@@ -486,7 +486,7 @@ async function chainKitRoutes(req, res, p, post, { user, workspace }) {
     const chain = clean(body?.chain, 200)
     addChainKitRequest({ address: user, workspace, email, chain })
     // Also an enquiry, so the admin dashboard's enquiries list shows it as before.
-    addEnquiry({ name: user, email, types: ['Infrastructure'], budget: '', message: `Topic: Chain Kit — request an explorer\nChain: ${chain || '(not given)'}\nWorkspace: ${workspace}\nRequested by: ${user}` })
+    addEnquiry({ name: user, email, types: ['Infrastructure'], budget: '', message: `Topic: Chain Kit — waitlist\nChain: ${chain || '(not given)'}\nWorkspace: ${workspace}\nRequested by: ${user}` })
     return json(res, 200, view()), true
   }
   const { already } = joinChainsWaitlist({ address: user, workspace, email })

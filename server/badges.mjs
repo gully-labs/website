@@ -8,8 +8,8 @@
 //                                                        (its own outlined paths, server/brand.mjs) in the value slot
 // size   'S' (20 px tall) | 'M' (28) | 'L' (36)
 // theme  'dark' | 'light'
-// tone   'brand' (gold on midnight) | 'neutral' | 'good' (frog green) | 'warn' (a solid lab-gold field: the kit has
-//        no red or amber, gold is its attention colour)
+// tone   'brand' (gold on midnight) | 'neutral' | 'good' (frog green) | 'warn' (a solid alert-red field with lab-night ink:
+//        the site's error red, the kit's warning colour since 2026-10-19)
 //
 // What makes it pixel-exact:
 //  - Every letter is a path. scripts/gen-badge-glyphs.py outlines the kit typefaces (Barlow Condensed 700 for the
@@ -37,6 +37,8 @@ export const TOKENS = {
   moss: '#3C553B',
   textMuted: '#AEB5BE',
   textDim: '#7D8794',
+  // The site's error red (src/index.css --color-error), added to the badge kit by the owner on 2026-10-19 as the warning tone.
+  alertRed: '#FF8A7A',
 }
 
 export const SIZES = ['S', 'M', 'L']
@@ -89,13 +91,13 @@ const SEGMENT = {
     brand: { field: TOKENS.midnight, ink: TOKENS.labGold },
     neutral: { field: TOKENS.midnight, ink: TOKENS.textMuted },
     good: { field: TOKENS.frogGreen, ink: TOKENS.bone },
-    warn: { field: TOKENS.labGold, ink: TOKENS.labNight },
+    warn: { field: TOKENS.alertRed, ink: TOKENS.labNight },
   },
   light: {
     brand: { field: TOKENS.labNight, ink: TOKENS.labGold },
     neutral: { field: TOKENS.slate, ink: TOKENS.bone },
     good: { field: TOKENS.frogGreen, ink: TOKENS.bone },
-    warn: { field: TOKENS.labGold, ink: TOKENS.labNight },
+    warn: { field: TOKENS.alertRed, ink: TOKENS.labNight },
   },
 }
 

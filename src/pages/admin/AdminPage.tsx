@@ -12,6 +12,7 @@ import { TelegramChats } from './TelegramChats'
 import { MerchantsAdmin } from './MerchantsAdmin'
 import { SecurityCard } from './SecurityCard'
 import { TelegramChannel } from './TelegramChannel'
+import { NewsGateFunnel } from './NewsGateFunnel'
 import { LaunchRadar } from './LaunchRadar'
 import { TreasurySafe } from './TreasurySafe'
 import { TelegramBroadcasts } from './TelegramBroadcasts'
@@ -628,7 +629,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
     <section className={card}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className={h2}>Invoices</h2>
-        <span className={small}>Gully Pay · Chain Kit, Gully Analytics, services · anyone with the link can pay</span>
+        <span className={small}>Gully Pay · Gully Analytics, services · anyone with the link can pay</span>
       </div>
       <form
         className="flex flex-col gap-3"
@@ -640,7 +641,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex min-w-[min(100%,320px)] flex-[2] flex-col gap-1 text-[12px] text-faint">
             Title
-            <input className={field} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required placeholder="Chain Kit: first month" />
+            <input className={field} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required placeholder="Analytics: first month" />
           </label>
           <label className="flex w-[140px] flex-col gap-1 text-[12px] text-faint">
             Amount (USD)
@@ -1083,6 +1084,7 @@ export function AdminPage() {
             <div id="telegram" className={sectionCls}>
               <TelegramChats token={token} />
               <TelegramChannel token={token} />
+              <NewsGateFunnel token={token} />
               <LaunchRadar token={token} />
               <TelegramBroadcasts token={token} />
             </div>

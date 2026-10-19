@@ -269,12 +269,12 @@ export async function checkTx({ quote, asset, txHash, signer, minRaw, label, run
     const enough = read.credits.filter((x) => x.value >= min)
     if (!enough.length) {
       const best = read.credits.reduce((a, x) => (x.value > a ? x.value : a), 0n)
-      return { ok: false, status: 422, error: `This transaction paid ${fmtUnits(best, asset.decimals)} ${asset.symbol}; ${label} costs ${fmtUnits(min, asset.decimals)} ${asset.symbol}. Nothing was applied; write to hello@gullylabs.xyz with the hash to settle the difference.` }
+      return { ok: false, status: 422, error: `This transaction paid ${fmtUnits(best, asset.decimals)} ${asset.symbol}; ${label} costs ${fmtUnits(min, asset.decimals)} ${asset.symbol}. Nothing was applied; write to team@gullylabs.xyz with the hash to settle the difference.` }
     }
     const match = (signer ? enough.find((x) => x.from === signer) : undefined) ?? (exact != null ? enough.find((x) => x.value === exact) : undefined)
     if (!match) {
-      if (!signer) return { ok: false, status: 422, error: `This transaction paid ${fmtUnits(enough[0].value, asset.decimals)} ${asset.symbol}, not the exact amount of this quote (${fmtUnits(exact, asset.decimals)} ${asset.symbol}), so it cannot be matched to it. Write to hello@gullylabs.xyz with the hash.` }
-      return { ok: false, status: 422, error: quote ? `This payment came from another wallet and is not the exact checkout amount (${fmtUnits(exact, asset.decimals)} ${asset.symbol}), so it cannot be matched to you. Write to hello@gullylabs.xyz with the hash.` : 'This payment came from another wallet. Start a checkout first: it gives an exact amount that ties a payment from any wallet to you.' }
+      if (!signer) return { ok: false, status: 422, error: `This transaction paid ${fmtUnits(enough[0].value, asset.decimals)} ${asset.symbol}, not the exact amount of this quote (${fmtUnits(exact, asset.decimals)} ${asset.symbol}), so it cannot be matched to it. Write to team@gullylabs.xyz with the hash.` }
+      return { ok: false, status: 422, error: quote ? `This payment came from another wallet and is not the exact checkout amount (${fmtUnits(exact, asset.decimals)} ${asset.symbol}), so it cannot be matched to you. Write to team@gullylabs.xyz with the hash.` : 'This payment came from another wallet. Start a checkout first: it gives an exact amount that ties a payment from any wallet to you.' }
     }
     // Matched by amount, or priced by a feed: it must fall inside the quote's life.
     if (quote && (asset.kind === 'native' || match.from !== signer)) {
@@ -285,8 +285,8 @@ export async function checkTx({ quote, asset, txHash, signer, minRaw, label, run
         return { ok: false, status: 502, error: `${CHAINS[asset.chainId].name} could not be read just now (${String(e?.message ?? e)}). Try again in a minute.` }
       }
       if (minedAt == null) return { ok: false, status: 502, error: `${CHAINS[asset.chainId].name}'s node did not give the block time. Try again in a minute.` }
-      if (minedAt < Date.parse(quote.createdAt) - CLOCK_SKEW_MS) return { ok: false, status: 422, error: 'This payment was made before your checkout was opened, so it cannot be matched to you. Write to hello@gullylabs.xyz with the hash.' }
-      if (minedAt > Date.parse(quote.expiresAt) + QUOTE_GRACE_MS) return { ok: false, status: 422, error: `This payment was mined after its quote ran out (${quote.expiresAt}), so the quoted ${asset.kind === 'native' ? 'price' : 'amount'} no longer holds. Write to hello@gullylabs.xyz with the hash.` }
+      if (minedAt < Date.parse(quote.createdAt) - CLOCK_SKEW_MS) return { ok: false, status: 422, error: 'This payment was made before your checkout was opened, so it cannot be matched to you. Write to team@gullylabs.xyz with the hash.' }
+      if (minedAt > Date.parse(quote.expiresAt) + QUOTE_GRACE_MS) return { ok: false, status: 422, error: `This payment was mined after its quote ran out (${quote.expiresAt}), so the quoted ${asset.kind === 'native' ? 'price' : 'amount'} no longer holds. Write to team@gullylabs.xyz with the hash.` }
     }
     if (read.confirmations < read.needed) return { ok: false, status: 202, pending: true, confirmations: read.confirmations, needed: read.needed, error: `Waiting for confirmations: ${read.confirmations} of ${read.needed}.` }
     if (hashUsed(asset.chainId, txHash)) return { ok: false, status: 409, error: 'This transaction has already been used for a payment.' }

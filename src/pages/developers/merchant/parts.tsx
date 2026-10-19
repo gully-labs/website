@@ -10,6 +10,7 @@ import { chip, mono, pillDanger, pillLine, pillSm } from '../styles'
 import { InfoTip } from '../ui'
 import { payOrigin } from './api'
 import { ExtLink } from '../ExtLink'
+import { StatusPill as KitPill, type PillTone } from '../../../components/ui/StatusPill'
 
 /* Small pieces shared by the Merchant tab's sections. */
 
@@ -79,20 +80,11 @@ export function AssetChips({ assets, value, onChange, live }: { assets: PayAsset
   )
 }
 
-const STATUS_CLS: Record<string, string> = {
-  open: 'border-line-strong text-ink-2',
-  active: 'border-success-line text-green',
-  paid: 'border-success-line text-green',
-  overdue: 'border-error-line text-error',
-  expired: 'border-line-strong text-faint',
-  cancelled: 'border-line-strong text-faint',
-  inactive: 'border-line-strong text-faint',
-  'used-up': 'border-line-strong text-faint',
-  waived: 'border-line-strong text-faint',
-}
+const STATUS_TONE: Record<string, PillTone> = { open: 'neutral', active: 'ok', paid: 'ok', overdue: 'error', expired: 'off', cancelled: 'off', inactive: 'off', 'used-up': 'off', waived: 'off' }
 
+/** An invoice, link or statement state, on the kit's one StatusPill (G51). */
 export function StatusPill({ state }: { state: string }) {
-  return <span className={`inline-flex min-h-[26px] items-center rounded-full border px-[10px] font-mono text-[11px] ${STATUS_CLS[state] ?? 'border-line-strong text-ink-2'}`}>{state}</span>
+  return <KitPill tone={STATUS_TONE[state] ?? 'neutral'}>{state}</KitPill>
 }
 
 /** Checkout URL with copy, a QR on demand and the "Pay with crypto" button snippet. */

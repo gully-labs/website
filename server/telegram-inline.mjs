@@ -52,7 +52,7 @@ export function buildTime() {
   buildStamp = Math.floor(t / 1000).toString(36)
   return buildStamp
 }
-export const cardUrl = (chain, token) => `${SITE}/api/holders/${chain}/${encodeURIComponent(token)}/card.png?v=${buildTime()}`
+export const cardUrl = (chain, token) => `${SITE}/api/holders/${chain}/${encodeURIComponent(token)}/card.jpg?v=${buildTime()}`
 const mapUrl = (chain, token) => `${SITE}/holders/${chain}/${encodeURIComponent(token)}`
 
 /* ------------------------------------------------------------ the query --- */

@@ -53,7 +53,8 @@
     "test:status": "node --test scripts/test-status.mjs",
     "test:token-logos": "node --test scripts/test-token-logos.mjs",
     "test:chart-kit": "node --test scripts/test-chart-kit.mjs",
-    "test:ecosystem": "node scripts/test-ecosystem.mjs"
+    "test:ecosystem": "node scripts/test-ecosystem.mjs",
+    "test:contracts": "node scripts/test-contracts.mjs"
   },
   "dependencies": {
     "@arbitrum/chain-sdk": "0.28.0",

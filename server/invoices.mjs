@@ -1,4 +1,4 @@
-// General invoices for anything Gully Labs sells besides API plans (Chain Kit, Gully Analytics,
+// General invoices for anything Gully Labs sells besides API plans (Gully Analytics,
 // services work). An admin creates one; anyone holding its link (/pay/<id>, an unguessable id) can pay
 // it with the same quotes and checks as plan checkout (billing.mjs), from a wallet or by pasting a
 // transaction hash. Nobody signs in on a pay page, so a payment matches a quote only by its exact amount.
@@ -226,7 +226,7 @@ async function verifyFor(inv, quoteId, txHashIn) {
   if (!isHash(txHash)) return badHash
   const s = invoiceStatus(inv)
   if (s === 'paid') return { ok: false, status: 409, error: 'This invoice is paid already.' }
-  if (s === 'cancelled') return { ok: false, status: 409, error: 'This invoice was cancelled. Write to hello@gullylabs.xyz if you paid it.' }
+  if (s === 'cancelled') return { ok: false, status: 409, error: 'This invoice was cancelled. Write to team@gullylabs.xyz if you paid it.' }
   // An expired invoice still accepts a payment for a quote made while it was open (the quote's own
   // window is checked against the block time).
   return checkInvoiceTx({

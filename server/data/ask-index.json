@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T06:32:08.944Z",
+ "updatedAt": "2026-10-19T07:57:18.540Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -620,8 +620,8 @@
    "title": "Plans & alerts",
    "url": "https://docs.gullylabs.xyz/plans-alerts#paying",
    "section": "Paying",
-   "text": "starts that day. Nothing renews by itself: to cancel, don’t pay again. When a plan lapses you are back on Free and your keys keep working at the Free limit. The payment goes straight to the treasury wallet in your own transfer. We hold no balance and no card, and nothing leaves your wallet unless you sign it. Other Gully Labs work (Chain Kit, Gully Analytics, services) is billed with an invoice link of the form gullylabs.xyz/pay/…. It takes the same assets and checks; since nobody signs in there, a payment matches an invoice only by the exact quoted amount. Once paid, the page links the transaction and a printable receipt.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "starts that day. Nothing renews by itself: to cancel, don’t pay again. When a plan lapses you are back on Free and your keys keep working at the Free limit. The payment goes straight to the treasury wallet in your own transfer. We hold no balance and no card, and nothing leaves your wallet unless you sign it. Other Gully Labs work (Gully Analytics, services) is billed with an invoice link of the form gullylabs.xyz/pay/…. It takes the same assets and checks; since nobody signs in there, a payment matches an invoice only by the exact quoted amount. Once paid, the page links the transaction and a printable receipt.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "e6e2691ff462",
@@ -908,8 +908,17 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#embed",
    "section": "The embed",
-   "text": "data-gully-widget (holders): Selects the Holder Map (the same script also draws the tracker widgets). data-chain (robinhood | bsc | base | hyperevm | solana): Required. Anything else shows “Holder Map: set data-chain and data-token.” data-token (address, or a ticker): Required: 1 to 64 letters and digits. The token address, or a ticker the tracker follows (data-ticker is accepted as an alias). data-height (360 to 2000): Pixels. Default 760; a value outside the range falls back to the default. data-api (URL): Origin to frame. Default https://gullylabs.xyz; only for testing against another deployment. The script adds one lazy-loaded iframe, full width of its element, with rounded corners and a dark background. Size the element to size the map. The map reads its own data inside the frame. Your page makes no requests for it and the script sends no key. Trades and shares open gullylabs.xyz in a new tab. A “Powered by Gully Labs” credit always shows; a white-label embed is reserved for a plan and is not built yet. If your site sends a Content Security Policy, allow the script and the frame: script-src https://gullylabs.xyz; frame-src https://gullylabs.xyz;",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "data-gully-widget (holders): Selects the Holder Map (the same script also draws the tracker widgets). data-chain (robinhood | bsc | base | hyperevm | solana): Required. Anything else shows “Holder Map: set data-chain and data-token.” data-token (address, or a ticker): Required: 1 to 64 letters and digits. The token address, or a ticker the tracker follows (data-ticker is accepted as an alias). data-height (360 to 2000): Pixels. Default 760; a value outside the range falls back to the default. data-badge (true): Draws the small badge (/api/holders/:chain/:token/badge.svg) linked to the map, instead of the frame. It uses cached data only. data-embed-key (gle_0x…): White-label plans only: your signed embed key (GET /api/developer/partners/embed-key, signed in). Public by design; it unlocks only this option, never the API. data-theme (light | dark): White-label plans only. Default dark. data-accent (#rgb | #rrggbb): White-label plans only. Anything that is not a hex colour is ignored. data-api (URL): Origin to frame. Default https://gullylabs.xyz; only for testing against another deployment. The script adds one lazy-loaded iframe, full width of its element, with rounded corners and a dark background. Size the element to size the map. The map reads its own data inside the frame. Your page makes no requests for it and the script sends no key.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
+  },
+  {
+   "id": "cbf9f58a97b3",
+   "source": "Docs",
+   "title": "Integrate the Holder Map",
+   "url": "https://docs.gullylabs.xyz/holder-map-integrate#embed",
+   "section": "The embed",
+   "text": "background. Size the element to size the map. The map reads its own data inside the frame. Your page makes no requests for it and the script sends no key. Trades and shares open gullylabs.xyz in a new tab. A “Powered by Gully Labs” credit shows unless the embed carries a valid embed key of a workspace on a white-label plan (Business). The server decides on every load from the live plan: a downgraded plan or a rotated key brings the credit back, and a theme or accent in the URL alone does nothing. If your site sends a Content Security Policy, allow the script and the frame: script-src https://gullylabs.xyz; frame-src https://gullylabs.xyz;",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "7e7ebfcf2833",
@@ -971,7 +980,7 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#launchpads",
    "section": "Get your launchpad listed",
-   "text": "The Holder Map keeps a registry of launchpads. One declarative entry per launchpad is all it takes: its chains, and either a token endpoint on your API or the factory contract and the event it emits when a token is created. Peddles and PeddleSwap are the first two entries. What we need from you: Your name, website and the chains you launch on (Robinhood Chain, BNB Chain, Base and HyperEVM are supported). Either a token endpoint that answers whether an address is one of your launches and names its creator (and ideally the creation block), or your factory or hook contract address per chain with the signature of the event it emits at creation and where the token and creator sit in it. Optionally the address of the pool or pool manager that holds a launch’s liquidity, so it is labelled on the map. Send these to hello@gullylabs.xyz. Gully Labs adds the entry, checks it against live launches and replies when it is live. We take contract addresses only from you or from your deployments; we never guess them.",
+   "text": "The Holder Map keeps a registry of launchpads. One declarative entry per launchpad is all it takes: its chains, and either a token endpoint on your API or the factory contract and the event it emits when a token is created. Peddles and PeddleSwap are the first two entries. What we need from you: Your name, website and the chains you launch on (Robinhood Chain, BNB Chain, Base and HyperEVM are supported). Either a token endpoint that answers whether an address is one of your launches and names its creator (and ideally the creation block), or your factory or hook contract address per chain with the signature of the event it emits at creation and where the token and creator sit in it. Optionally the address of the pool or pool manager that holds a launch’s liquidity, so it is labelled on the map. Send these to team@gullylabs.xyz. Gully Labs adds the entry, checks it against live launches and replies when it is live. We take contract addresses only from you or from your deployments; we never guess them.",
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
@@ -2042,7 +2051,7 @@
    "title": "Solana Pay",
    "url": "https://docs.gullylabs.xyz/solana-pay#rules",
    "section": "When a payment counts",
-   "text": "The transaction is finalized, which takes about 15 seconds, and did not fail. Anything less answers “not finalized yet”: check again shortly. SOL: the treasury’s own balance rose by the amount. USDC or USDT: the treasury’s associated token account for that mint rose by the amount, in that mint, under the classic SPL Token program. A transfer to any other account or in any other mint does not count. The amount is at least the quote’s minimum, and a payment from a wallet other than the signed-in one must equal the quoted amount exactly. It falls inside the quote’s life: not made before the checkout was opened (two minutes of clock skew are allowed), and not mined more than 10 minutes after the quote ran out. The signature was never used before for any payment, on any chain. If an amount is short or cannot be matched, nothing is applied, and the message asks you to write to hello@gullylabs.xyz with the signature so the difference can be settled by hand.",
+   "text": "The transaction is finalized, which takes about 15 seconds, and did not fail. Anything less answers “not finalized yet”: check again shortly. SOL: the treasury’s own balance rose by the amount. USDC or USDT: the treasury’s associated token account for that mint rose by the amount, in that mint, under the classic SPL Token program. A transfer to any other account or in any other mint does not count. The amount is at least the quote’s minimum, and a payment from a wallet other than the signed-in one must equal the quoted amount exactly. It falls inside the quote’s life: not made before the checkout was opened (two minutes of clock skew are allowed), and not mined more than 10 minutes after the quote ran out. The signature was never used before for any payment, on any chain. If an amount is short or cannot be matched, nothing is applied, and the message asks you to write to team@gullylabs.xyz with the signature so the difference can be settled by hand.",
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
@@ -2060,7 +2069,7 @@
    "title": "Solana Pay",
    "url": "https://docs.gullylabs.xyz/solana-pay#errors",
    "section": "Refusals you may see",
-   "text": "Not a Solana signature (400): A 0x hash, or text that is not base58, was given for a Solana quote. Failed on Solana, so nothing was paid (422): The transaction ran and failed. Not finalized yet (202): Seen but not final, or not yet known to the node. Check again shortly. Sent SOL to another address (422): The treasury was not a recipient. Sent a token other than USDC or USDT (422): Only the two mints above count. Not its associated account (422): The token went to another account of the treasury; write to hello@gullylabs.xyz. Already used for a payment (409): One signature pays one thing. Paid before your checkout was opened, or after its quote ran out (422): It falls outside the quote’s life. Solana could not be read just now (502): Every RPC failed; try again in a minute.",
+   "text": "Not a Solana signature (400): A 0x hash, or text that is not base58, was given for a Solana quote. Failed on Solana, so nothing was paid (422): The transaction ran and failed. Not finalized yet (202): Seen but not final, or not yet known to the node. Check again shortly. Sent SOL to another address (422): The treasury was not a recipient. Sent a token other than USDC or USDT (422): Only the two mints above count. Not its associated account (422): The token went to another account of the treasury; write to team@gullylabs.xyz. Already used for a payment (409): One signature pays one thing. Paid before your checkout was opened, or after its quote ran out (422): It falls outside the quote’s life. Solana could not be read just now (502): Every RPC failed; try again in a minute.",
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
@@ -2078,8 +2087,8 @@
    "title": "Chain Kit",
    "url": "https://docs.gullylabs.xyz/chain-kit",
    "section": null,
-   "text": "A new chain needs a block explorer on day one. Chain Kit is Blockscout, the open-source explorer, set up for your chain, in your brand, and run for you by Gully Labs. Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. What is included, how to request one from the app, and its status.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "A new chain needs a block explorer on day one. Chain Kit is Blockscout, set up for your chain, in your brand, and run for you by Gully Labs. Chain Kit: join the waitlist. We're finalising the explorer licence before taking orders. Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. Chain Kit is on a waitlist: join it from the app. What is planned and its status.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "34f191eba007",
@@ -2087,26 +2096,26 @@
    "title": "Chain Kit",
    "url": "https://docs.gullylabs.xyz/chain-kit#what",
    "section": "What Chain Kit is",
-   "text": "Chain Kit is a managed deployment of Blockscout for one EVM chain. We size the server and the RPC for your chain, deploy the indexer and the explorer on a domain you choose, apply your branding through configuration rather than a fork, and keep it indexed, upgraded and backed up. It is available on request today. The product page is gullylabs.xyz/chain-kit.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Chain Kit is a managed deployment of Blockscout for one EVM chain. We size the server and the RPC for your chain, deploy the indexer and the explorer on a domain you choose, apply your branding through configuration rather than a fork, and keep it indexed, upgraded and backed up. Chain Kit is on a waitlist: we are finalising the explorer licence before taking orders. The product page is gullylabs.xyz/chain-kit.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
-   "id": "5b1517745835",
+   "id": "52f4d24fd6fc",
    "source": "Docs",
    "title": "Chain Kit",
    "url": "https://docs.gullylabs.xyz/chain-kit#included",
-   "section": "What is included",
+   "section": "What is planned",
    "text": "Full explorer (Blockscout): Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts Your brand (configuration): Your name, logos, colours and links across the explorer, so upgrades stay simple Rollups (profiles): Arbitrum Nitro and Orbit chains like Robinhood Chain, and chains with a stablecoin as gas Operations (run for you): Provisioning, TLS, backups, upgrades and monitoring, with a runbook for common failures Sizing (before any promise): A busy rollup needs terabytes; a young chain far less. We size it to your chain first",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
-   "id": "6ec951ef53f1",
+   "id": "bf6413fc7ddb",
    "source": "Docs",
    "title": "Chain Kit",
    "url": "https://docs.gullylabs.xyz/chain-kit#request",
-   "section": "Requesting an explorer",
-   "text": "Sign in to the app at app.gullylabs.xyz and open Chain Kit under Services. Give an email to reach you and your chain: its name, chain id and an RPC. Then press “Request your explorer”. The card shows “requested” with the date for your workspace. We reply by email with questions about history, settlement layer and sizing. You can also write to us from the contact form at gullylabs.xyz/services (topic: Infrastructure).",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "section": "Joining the waitlist",
+   "text": "Sign in to the app at app.gullylabs.xyz and open Chain Kit under Services. Give an email to reach you and your chain: its name, chain id and an RPC. Then press “Join the waitlist”. The card shows “on the waitlist” with the date for your workspace. We write when orders open, and ask about history, settlement layer and sizing then. Nothing is charged. You can also join from gullylabs.xyz/chains without signing in.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "bf4b6eb0f297",
@@ -2118,13 +2127,58 @@
    "updatedAt": "2026-10-18T19:46:28.270Z"
   },
   {
-   "id": "cc5cc0f0082d",
+   "id": "983a139ba501",
    "source": "Docs",
    "title": "Chain Kit",
    "url": "https://docs.gullylabs.xyz/chain-kit#licence",
-   "section": "Open source",
-   "text": "Blockscout is GPL-3.0, and our deployment layer is GPL-3.0 too: everything we add is public at gully-labs/blockscout. You are never locked in. The product page’s “charts on day one” are illustrations badged as example data. This page charts only what our API actually reports.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "section": "Built on Blockscout",
+   "text": "Chain Kit is built on Blockscout. Your chain, your data and your domain stay yours: you are never locked in. The product page’s “charts on day one” are illustrations badged as example data. This page charts only what our API actually reports.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
+  },
+  {
+   "id": "f12267559726",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts",
+   "section": null,
+   "text": "Every address Gully Labs uses on chain, in one list, so you can check any of them before you send value. Each one names the file in our repositories it is quoted from. Machine-readable at /.well-known/contracts.json. Every on-chain address Gully Labs uses, per chain: the treasury Safe, the fee address, the third-party Request Network fee proxy and our projects’ contracts, each with its explorer link, Sourcify status and the file it is quoted from.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
+  },
+  {
+   "id": "a3032182b95c",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#treasury",
+   "section": "Treasury and fee address",
+   "text": "The Gully Labs treasury is one Safe (2-of-3), at the same address on every chain it is deployed on. It receives plan payments and is the feeAddress of every Gully Pay fee split. Payments to Gully Labs go nowhere else. Request Network’s ERC20FeeProxy is not ours. Gully Pay calls it to split a stablecoin payment between the merchant and the treasury in one transaction; it holds nothing. It is marked third-party in the list and in the JSON.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
+  },
+  {
+   "id": "19662550c935",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#all",
+   "section": "All contracts",
+   "text": "Sourcify status was checked on. “No verified source” means Sourcify holds no verified source for that address. No audit report is published for any of these contracts, so none is linked.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
+  },
+  {
+   "id": "27e3b56673ae",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#json",
+   "section": "The JSON file",
+   "text": "/.well-known/contracts.json is public, cached for an hour and readable from any origin. It carries one object per address: name, role, chainId, address (checksummed), owner (gully-labs or third-party), explorerUrl, verifiedSource, verification, audit and source.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
+  },
+  {
+   "id": "3f4d3f6e4029",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#rules",
+   "section": "What is listed, and what is not",
+   "text": "An address is listed only when it is written in a file in one of our repositories, and the entry names that file. Nothing comes from memory or an explorer. Constructor-time values that a later deployment replaced are left out, and so are token, wrapped-native and Permit2 addresses that other projects own. If an address claims to be Gully Labs and is not listed here, it is not ours.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
   },
   {
    "id": "1f70f2278c6e",
@@ -2393,8 +2447,8 @@
    "title": "Changelog",
    "url": "https://docs.gullylabs.xyz/changelog#2026-10-18",
    "section": "18 October 2026",
-   "text": "Gully Security is live: the AI Security Scan of a deployed contract, a GitHub repository at a commit, an upload or a web2 codebase, run from the app, with free scans each month by plan. For now it is an AI review only: our static-tools worker is not running yet, so no Slither, Aderyn or fuzzing runs, and every report is labelled “AI review only”. Reports can be published at a stable link (published reports). A human Security Review is quoted on request. A full audit is not offered. The Gully Score is live at gullylabs.xyz/score: a 0 to 100 score for any contract from public evidence, every weight and source shown, with an embeddable badge. Contract monitors are live in the app: privileged changes and large outflows on the contracts you watch, by Telegram or signed webhook. The Holder Map is live for every DeepCore launch at gullylabs.xyz/holders: who holds a token, the wallets that trade with each other, bundled launch buys, the deployer’s record and a health score, with holder alerts. Maps for tokenised stocks open chain by chain; until a chain’s holder data is connected its pages say “coming soon”. A general Roadmap page listing each track with its status: the Gully L3 (planned) and Gully Security (scan, score and monitors live; reviews on request; audits not offered). Telegram announcements from @GullyLabsBot, with a 🔕 Stop announcements button on every one; alerts are never affected. See the privacy policy for what an announcement records.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Chain Kit is on a waitlist: we are finalising the explorer licence before taking orders. Join from the app or gullylabs.xyz/chains. Gully Security is live: the AI Security Scan of a deployed contract, a GitHub repository at a commit, an upload or a web2 codebase, run from the app, with free scans each month by plan. For now it is an AI review only: our static-tools worker is not running yet, so no Slither, Aderyn or fuzzing runs, and every report is labelled “AI review only”. Reports can be published at a stable link (published reports). A human Security Review is quoted on request. A full audit is not offered. The Gully Score is live at gullylabs.xyz/score: a 0 to 100 score for any contract from public evidence, every weight and source shown, with an embeddable badge. Contract monitors are live in the app: privileged changes and large outflows on the contracts you watch, by Telegram or signed webhook. The Holder Map is live for every DeepCore launch at gullylabs.xyz/holders: who holds a token, the wallets that trade with each other, bundled launch buys, the deployer’s record and a health score, with holder alerts. Maps for tokenised stocks open chain by chain; until a chain’s holder data is connected its pages say “coming soon”. A general Roadmap page listing each track with its status: the Gully L3 (planned) and Gully Security (scan, score and monitors live; reviews on request; audits not offered).",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "c76657451788",
@@ -2402,8 +2456,8 @@
    "title": "Changelog",
    "url": "https://docs.gullylabs.xyz/changelog#2026-10-18",
    "section": "18 October 2026",
-   "text": "request; audits not offered). Telegram announcements from @GullyLabsBot, with a 🔕 Stop announcements button on every one; alerts are never affected. See the privacy policy for what an announcement records. Gully Pay on three more chains: OP Mainnet (USDC, USDT, ETH), Polygon (USDC, POL) and Avalanche (USDC, USDT, AVAX). Every token and Chainlink feed was read on chain first. Request Network's fee proxy was compared byte for byte with Base's: OP Mainnet's matches and will carry the merchant fee inside the payment once the treasury Safe is deployed there; Polygon's and Avalanche's are other builds, so the fee is invoiced there. Each chain opens for Gully Labs' own checkout once the treasury Safe is deployed on it. The treasury is a Safe, so each chain is now offered only where the Safe is deployed; the server checks hourly and the admin panel says what to do. Merchant stores get the in-payment fee on the same condition; elsewhere the fee is invoiced as before. A store's own Safe that is not deployed on a chain yet is read again every hour and switches on by itself once it is. A public status page and GET /api/status: the API, tracker freshness on each chain, the DeepCore launch poller, the Telegram bot webhook, Gully Pay RPCs per chain, Gully AI, the security scan engine, contract monitors and Holder Map sources, checked every minute by the server, with 24 h uptime and the incident history. See Status.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "“coming soon”. A general Roadmap page listing each track with its status: the Gully L3 (planned) and Gully Security (scan, score and monitors live; reviews on request; audits not offered). Telegram announcements from @GullyLabsBot, with a 🔕 Stop announcements button on every one; alerts are never affected. See the privacy policy for what an announcement records. Gully Pay on three more chains: OP Mainnet (USDC, USDT, ETH), Polygon (USDC, POL) and Avalanche (USDC, USDT, AVAX). Every token and Chainlink feed was read on chain first. Request Network's fee proxy was compared byte for byte with Base's: OP Mainnet's matches and will carry the merchant fee inside the payment once the treasury Safe is deployed there; Polygon's and Avalanche's are other builds, so the fee is invoiced there. Each chain opens for Gully Labs' own checkout once the treasury Safe is deployed on it. The treasury is a Safe, so each chain is now offered only where the Safe is deployed; the server checks hourly and the admin panel says what to do. Merchant stores get the in-payment fee on the same condition; elsewhere the fee is invoiced as before. A store's own Safe that is not deployed on a chain yet is read again every hour and switches on by itself once it is.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "c22785cceba0",
@@ -2411,8 +2465,8 @@
    "title": "Changelog",
    "url": "https://docs.gullylabs.xyz/changelog#2026-10-18",
    "section": "18 October 2026",
-   "text": "per chain, Gully AI, the security scan engine, contract monitors and Holder Map sources, checked every minute by the server, with 24 h uptime and the incident history. See Status. New docs pages: Gully AI, the Telegram bot and Mini App, Chain Kit, Swaps (LI.FI on EVM chains, Jupiter on Solana), Solana and Status. The API reference now covers every public endpoint group, including /api/pay/gas, /api/tracker/gap-index, /api/holders, /api/score and /api/status; unknown /api/ paths answer a JSON 404. The docs have a search box and a live chart on every page.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "fee is invoiced as before. A store's own Safe that is not deployed on a chain yet is read again every hour and switches on by itself once it is. A public status page and GET /api/status: the API, tracker freshness on each chain, the DeepCore launch poller, the Telegram bot webhook, Gully Pay RPCs per chain, Gully AI, the security scan engine, contract monitors and Holder Map sources, checked every minute by the server, with 24 h uptime and the incident history. See Status. New docs pages: Gully AI, the Telegram bot and Mini App, Chain Kit, Swaps (LI.FI on EVM chains, Jupiter on Solana), Solana and Status. The API reference now covers every public endpoint group, including /api/pay/gas, /api/tracker/gap-index, /api/holders, /api/score and /api/status; unknown /api/ paths answer a JSON 404. The docs have a search box and a live chart on every page.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "4d7f719fcf69",
@@ -2447,8 +2501,8 @@
    "title": "Chain Kit",
    "url": "https://gullylabs.xyz/chain-kit",
    "section": null,
-   "text": "An explorer for your chain. A new chain needs a block explorer on day one. Chain Kit is Blockscout, the open-source explorer, set up for your chain, in your brand, and run by the team that builds on these chains every day. Available on request. Built on Blockscout, GPL-3.0. Our deployment layer is GPL-3.0 too. Talk to us about your chain Full explorer. Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts, from Blockscout. Your brand. Your name, logos, colours and links across the explorer, configured rather than forked, so upgrades stay simple. Rollups included. Profiles for Arbitrum Nitro and Orbit chains like Robinhood Chain, and for chains like Arc with a stablecoin as gas. Operated for you. Provisioning, TLS, backups, upgrades and monitoring, with a runbook for every common failure. Sized honestly. A busy rollup needs terabytes; a young chain needs far less. We size the server and the RPC to your chain before anything is promised. Open source. Everything we add is public and GPL-3.0 like Blockscout itself. You are never locked in. Tell us about your chain. Chain id, RPC, settlement layer and how much history you need. We size and deploy. A dedicated server, your branding and the indexer, on a domain of your choice. Launch and run. We keep it indexed, upgraded and backed up while you build the chain. Chain Kit. A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "An explorer for your chain. A new chain needs a block explorer on day one. Chain Kit is Blockscout, set up for your chain, in your brand, and run by the team that builds on these chains every day. Chain Kit: join the waitlist. We’re finalising the explorer licence before taking orders. Waitlist. Built on Blockscout. Join the waitlist Full explorer. Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts, from Blockscout. Your brand. Your name, logos, colours and links across the explorer, configured rather than forked, so upgrades stay simple. Rollups included. Profiles for Arbitrum Nitro and Orbit chains like Robinhood Chain, and for chains like Arc with a stablecoin as gas. Operated for you. Provisioning, TLS, backups, upgrades and monitoring, with a runbook for every common failure. Sized honestly. A busy rollup needs terabytes; a young chain needs far less. We size the server and the RPC to your chain before anything is promised. No lock-in. Your chain, your data and your domain stay yours. You are never locked in. Join the waitlist. Tell us your chain id, RPC, settlement layer and how much history you need. We size and deploy. A dedicated server, your branding and the indexer, on a domain of your choice. Launch and run. We keep it indexed, upgraded and backed up while you build the chain. Chain Kit. A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "faaefd127565",
@@ -2717,8 +2771,8 @@
    "title": "Gully Chains",
    "url": "https://gullylabs.xyz/chains",
    "section": "Your own Arbitrum chain, run by Gully Labs",
-   "text": "We launch and operate an Arbitrum Orbit chain for your project, with the explorer, bridge, faucet and monitoring built in. A testnet is coming. Join the waitlist to be among the first. Join the waitlist Chain Kit explorer Launch a testnet chain yourself Chain Kit: the explorer Read the docs",
-   "updatedAt": "2026-10-19T06:32:08.944Z"
+   "text": "We launch and operate an Arbitrum Orbit chain for your project, with the explorer, bridge, faucet and monitoring built in. A testnet is coming. Join the waitlist to be among the first. Join the waitlist Chain Kit explorer Launch a testnet chain yourself Chain Kit: the explorer, waitlist Read the docs",
+   "updatedAt": "2026-10-19T07:57:18.540Z"
   },
   {
    "id": "fa3ebb823471",
@@ -2753,8 +2807,8 @@
    "title": "Gully Labs ecosystem",
    "url": "https://gullylabs.xyz/ecosystem",
    "section": "Integrates with",
-   "text": "Third-party services our shipped code calls, each with the file that does. This is a list of what we use, not of who endorses us.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Third-party services our shipped code calls today. A list of what we use, not of who endorses us. How we verified this Every entry is a call in code we ship; open “In code” on a tile to see the file that makes it. Plans are not listed. Each logo is the company’s own mark, used only to name the service; it does not mean they endorse us.",
+   "updatedAt": "2026-10-19T07:57:18.540Z"
   },
   {
    "id": "7eb2752b9587",
@@ -2764,6 +2818,15 @@
    "section": "Run a launchpad, wallet, explorer or chain?",
    "text": "See what you get, copy the setup, and ask to be listed. See the partner page List your launchpad",
    "updatedAt": "2026-10-19T01:11:03.920Z"
+  },
+  {
+   "id": "72f3fe4c08ae",
+   "source": "Site",
+   "title": "Holders Deep Page",
+   "url": "https://gullylabs.xyz/holders-deep-page",
+   "section": null,
+   "text": "A Holder Map Deep check report: funding trace, shared-funder clusters, deployer record, snipers and bundles.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "d249d9b2008e",
@@ -2871,7 +2934,7 @@
    "url": "https://gullylabs.xyz/",
    "section": null,
    "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. Stock tracker: https://gullylabs.xyz/tracker. Holder Map: https://gullylabs.xyz/holders. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. Gully Security: https://gullylabs.xyz/security. Gully Chains: https://gullylabs.xyz/chains. Gully Pay: https://gullylabs.xyz/#pay. All products: https://gullylabs.xyz/#products. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
-   "updatedAt": "2026-10-19T06:32:08.944Z"
+   "updatedAt": "2026-10-19T04:57:29.901Z"
   },
   {
    "id": "b33b0edf6fb3",
@@ -2897,7 +2960,7 @@
    "title": "Gully Pay merchant terms",
    "url": "https://gullylabs.xyz/legal/merchant-terms#s2",
    "section": "Accounts and wallets",
-   "text": "2.1 Your workspace. You are responsible for everything done through your workspace and by its members, and for their compliance with these terms. Keep your wallets and sign-in secure, and tell us at hello@gullylabs.xyz at once if you suspect misuse. 2.2 Receiving wallets. You choose the receiving address on each chain and you are responsible for controlling it. We check the address’s checksum and, for a contract wallet, that it is deployed on that chain before the chain can take payments; we cannot check that you hold its keys. A payment sent to the address you set is final.",
+   "text": "2.1 Your workspace. You are responsible for everything done through your workspace and by its members, and for their compliance with these terms. Keep your wallets and sign-in secure, and tell us at team@gullylabs.xyz at once if you suspect misuse. 2.2 Receiving wallets. You choose the receiving address on each chain and you are responsible for controlling it. We check the address’s checksum and, for a contract wallet, that it is deployed on that chain before the chain can take payments; we cannot check that you hold its keys. A payment sent to the address you set is final.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
@@ -2924,7 +2987,7 @@
    "title": "Gully Pay merchant terms",
    "url": "https://gullylabs.xyz/legal/merchant-terms#s5",
    "section": "Fees, statements and taxes",
-   "text": "5.1 Fees. You pay a transaction fee only: of each confirmed payment, at the payment’s quoted value in US dollars. There is no monthly fee and no set-up fee. Your workspace’s first of lifetime payment volume is fee-free; a payment that crosses it pays only on the part above it. Fees are in US dollars, exclude taxes and are not refundable once a statement is paid. We may change the fee or the allowance with at least 30 days’ notice in the Gully Labs App; a change applies only to payments confirmed after it takes effect. 5.2 Statements. Every Monday at 00:00 UTC we issue a statement for fees accrued and not yet billed, once they reach; smaller amounts roll into the next week. A statement is a Gully Labs invoice, payable in crypto through the Gully Pay checkout, and is due within days of issue. When a customer pays in a stablecoin from a connected wallet, the fee on that payment may instead be deducted at payment time, in the same transaction, through Request Network’s open-source fee contract (ERC20FeeProxy), which sends it straight to Gully Labs; a statement then bills only the fees not collected that way. 5.3 Disputes. If you disagree in good faith with a statement, tell us at hello@gullylabs.xyz before it is due and pay any undisputed part on time. We will work with you to resolve it within 15 days. 5.4 Taxes. You are responsible for all taxes on your sales, on the payments you receive and on our fees (including sales, use, VAT, GST and withholding), except for Gully Labs’ own income taxes. We do not collect, report or remit taxes for you.",
+   "text": "5.1 Fees. You pay a transaction fee only: of each confirmed payment, at the payment’s quoted value in US dollars. There is no monthly fee and no set-up fee. Your workspace’s first of lifetime payment volume is fee-free; a payment that crosses it pays only on the part above it. Fees are in US dollars, exclude taxes and are not refundable once a statement is paid. We may change the fee or the allowance with at least 30 days’ notice in the Gully Labs App; a change applies only to payments confirmed after it takes effect. 5.2 Statements. Every Monday at 00:00 UTC we issue a statement for fees accrued and not yet billed, once they reach; smaller amounts roll into the next week. A statement is a Gully Labs invoice, payable in crypto through the Gully Pay checkout, and is due within days of issue. When a customer pays in a stablecoin from a connected wallet, the fee on that payment may instead be deducted at payment time, in the same transaction, through Request Network’s open-source fee contract (ERC20FeeProxy), which sends it straight to Gully Labs; a statement then bills only the fees not collected that way. 5.3 Disputes. If you disagree in good faith with a statement, tell us at team@gullylabs.xyz before it is due and pay any undisputed part on time. We will work with you to resolve it within 15 days. 5.4 Taxes. You are responsible for all taxes on your sales, on the payments you receive and on our fees (including sales, use, VAT, GST and withholding), except for Gully Labs’ own income taxes. We do not collect, report or remit taxes for you.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
@@ -2987,7 +3050,7 @@
    "title": "Gully Pay merchant terms",
    "url": "https://gullylabs.xyz/legal/merchant-terms#s12",
    "section": "General",
-   "text": "Entire agreement. These terms are the whole agreement between us about the Service and replace any earlier statements about it. Changes. We may update these terms with at least 30 days’ notice in the Gully Labs App; continuing to use the Service after that accepts the new version. Fee changes follow Section 5.1. Severability and waiver. If a term is invalid, the rest stays in force. Not enforcing a term is not a waiver of it. Assignment. Neither party may assign these terms without the other’s written consent, except on notice in a merger, change of control or sale of the business they relate to. Notices. We send notices in the Gully Labs App, to your workspace’s activity log, and to your linked Telegram chat or email when set. You send notices to hello@gullylabs.xyz. Force majeure. Neither party is liable for a delay or failure caused by events beyond its reasonable control, including blockchain or network failures; this does not excuse paying fees already due. Independent parties. We are independent contractors, not agents, partners or joint venturers, and there are no third-party beneficiaries. Governing law. These terms are governed by the laws of the place where Gully Labs is established, and its courts have exclusive jurisdiction, unless Gully Labs names others in a notice to you. Interpretation. Headings are for convenience; “including” means “including without limitation”.",
+   "text": "Entire agreement. These terms are the whole agreement between us about the Service and replace any earlier statements about it. Changes. We may update these terms with at least 30 days’ notice in the Gully Labs App; continuing to use the Service after that accepts the new version. Fee changes follow Section 5.1. Severability and waiver. If a term is invalid, the rest stays in force. Not enforcing a term is not a waiver of it. Assignment. Neither party may assign these terms without the other’s written consent, except on notice in a merger, change of control or sale of the business they relate to. Notices. We send notices in the Gully Labs App, to your workspace’s activity log, and to your linked Telegram chat or email when set. You send notices to team@gullylabs.xyz. Force majeure. Neither party is liable for a delay or failure caused by events beyond its reasonable control, including blockchain or network failures; this does not excuse paying fees already due. Independent parties. We are independent contractors, not agents, partners or joint venturers, and there are no third-party beneficiaries. Governing law. These terms are governed by the laws of the place where Gully Labs is established, and its courts have exclusive jurisdiction, unless Gully Labs names others in a notice to you. Interpretation. Headings are for convenience; “including” means “including without limitation”.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
@@ -3005,7 +3068,7 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s1",
    "section": "Who we are",
-   "text": "Gully Labs (“we”, “us”) builds and runs these sites and services. We decide what personal data they collect and why, so we are responsible for it. If you run a Gully Pay store or use Gully Analytics on your own site, you are responsible for your own customers’ and visitors’ data, and we process it for you to provide the service. Questions or requests about your data: hello@gullylabs.xyz.",
+   "text": "Gully Labs (“we”, “us”) builds and runs these sites and services. We decide what personal data they collect and why, so we are responsible for it. If you run a Gully Pay store or use Gully Analytics on your own site, you are responsible for your own customers’ and visitors’ data, and we process it for you to provide the service. Questions or requests about your data: team@gullylabs.xyz.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
@@ -3149,7 +3212,7 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s13",
    "section": "Your choices",
-   "text": "Sign out, or revoke any session, in the app’s Settings. Revoke API keys, delete alerts, remove webhooks and switch off pay links in the app. Unlink Telegram with /stop or in the bot’s settings, and switch announcements off with 🔕 Stop announcements or in Settings. Delete a monitor, or unpublish a scan report, in the app; ask us to delete a scan’s code before the 180 days are up. Opt out of Gully Analytics as described above, or use a browser that blocks scripts. Ask us at hello@gullylabs.xyz to see, correct, export or delete what we hold about you off-chain. The app doesn’t have a self-service “delete my account” button yet, so email us and we will do it. We may keep payment records where the law requires, and we can’t delete anything that is on a public blockchain. Depending on where you live, you may also have the right to object to or restrict how we use your data, and to complain to your data protection authority. Our services are not meant for anyone under 18.",
+   "text": "Sign out, or revoke any session, in the app’s Settings. Revoke API keys, delete alerts, remove webhooks and switch off pay links in the app. Unlink Telegram with /stop or in the bot’s settings, and switch announcements off with 🔕 Stop announcements or in Settings. Delete a monitor, or unpublish a scan report, in the app; ask us to delete a scan’s code before the 180 days are up. Opt out of Gully Analytics as described above, or use a browser that blocks scripts. Ask us at team@gullylabs.xyz to see, correct, export or delete what we hold about you off-chain. The app doesn’t have a self-service “delete my account” button yet, so email us and we will do it. We may keep payment records where the law requires, and we can’t delete anything that is on a public blockchain. Depending on where you live, you may also have the right to object to or restrict how we use your data, and to complain to your data protection authority. Our services are not meant for anyone under 18.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
@@ -3158,7 +3221,7 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s14",
    "section": "Changes and contact",
-   "text": "When we change this policy we update the version date at the top, and for a material change we say so on the site. Our server and our providers may process data in countries other than yours. Questions, requests or complaints: hello@gullylabs.xyz.",
+   "text": "When we change this policy we update the version date at the top, and for a material change we say so on the site. Our server and our providers may process data in countries other than yours. Questions, requests or complaints: team@gullylabs.xyz.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
@@ -3446,7 +3509,7 @@
    "title": "Launchpad integration: Holder Map on launchpads",
    "url": "https://github.com/gully-labs/website/blob/main/ops/LAUNCHPAD-INTEGRATION.md#launchpad-integration-the-holder-map-for-your-launchpad",
    "section": "Launchpad integration: the Holder Map for your launchpad",
-   "text": "For launchpads and token platforms that want the Gully Labs Holder Map (who holds a token, how the biggest wallets are connected, launch checks) on their own pages, and want their launches recognised by it. Contact: hello@gullylabs.xyz.",
+   "text": "For launchpads and token platforms that want the Gully Labs Holder Map (who holds a token, how the biggest wallets are connected, launch checks) on their own pages, and want their launches recognised by it. Contact: team@gullylabs.xyz.",
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
@@ -4312,15 +4375,15 @@
    "status": "live"
   },
   {
-   "id": "d383bfd67a08",
-   "source": "Features",
-   "title": "Chain Kit managed explorer (Chain Kit)",
-   "url": "https://gullylabs.xyz/chain-kit",
-   "section": "Chain Kit managed explorer",
-   "text": "Chain Kit managed explorer is part of Chain Kit. Status: live now. A branded Blockscout block explorer for your EVM chain, deployed and run by Gully Labs. Available on request. Requested from the app (POST /api/developer/chain-kit/request) or the contact form. Blockscout and our deployment layer are GPL-3.0. Rollup profiles cover Arbitrum Nitro and Orbit chains.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "id": "b0b82ec19c62",
+   "source": "Roadmap",
+   "title": "Roadmap: Chain Kit managed explorer (Chain Kit), not available yet",
+   "url": "https://docs.gullylabs.xyz/chain-kit",
+   "section": "Chain Kit managed explorer (building)",
+   "text": "Chain Kit managed explorer (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A branded Blockscout block explorer for your EVM chain, to be deployed and run by Gully Labs. Waitlist: licensing in progress; Chain Kit is not available to order yet. Chain Kit is on a waitlist: join the waitlist from the app (POST /api/developer/chain-kit/request records interest, flagged waitlist, and takes no order or payment) or at gullylabs.xyz/chains. Gully Labs is finalising the explorer licence before taking orders. Rollup profiles cover Arbitrum Nitro and Orbit chains.",
+   "updatedAt": "2026-10-19T06:35:57.249Z",
    "feature": "chain-kit-explorer",
-   "status": "live"
+   "status": "building"
   },
   {
    "id": "20bf67cd70c1",
@@ -4460,8 +4523,8 @@
    "title": "Included services on the testnet (Gully Chains)",
    "url": "https://gullylabs.xyz/chains",
    "section": "Included services on the testnet",
-   "text": "Included services on the testnet is part of Gully Chains. Status: on testnet only, not on mainnet yet. The Chain Kit explorer, Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain. SERVICES in server/chains-plans.mjs gives chainkit, insight, pay and hyperlane the status testnet. Chain Kit and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons. The page says nothing about Gully Chains is live yet.",
-   "updatedAt": "2026-10-19T01:23:17.562Z",
+   "text": "Included services on the testnet is part of Gully Chains. Status: on testnet only, not on mainnet yet. The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain. SERVICES in server/chains-plans.mjs gives insight, pay and hyperlane the status testnet; chainkit (the explorer, bridge and faucet) is planned and on a waitlist. Chain Kit (waitlist) and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons. The page says nothing about Gully Chains is live yet.",
+   "updatedAt": "2026-10-19T06:35:57.249Z",
    "feature": "chains-testnet-services",
    "status": "testnet"
   },
@@ -4581,8 +4644,8 @@
    "title": "Roadmap: Hosted Blockscout explorer (Chain Kit), not available yet",
    "url": "https://docs.gullylabs.xyz/chain-kit",
    "section": "Hosted Blockscout explorer (building)",
-   "text": "Hosted Blockscout explorer (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A branded Blockscout explorer for an EVM chain, configured and run by Gully Labs. The deployment layer exists in the fork; no hosted explorer is confirmed in the repo. Lives in gully-blockscout/gully on branch gully/chain-kit Upstream Blockscout code is unchanged; the fork adds a pinned compose stack, chain profiles, branding and a provisioning script Stack is backend, frontend, stats, visualizer, sig-provider and optional user-ops-indexer images, with Postgres 17, Redis and a Caddy proxy Caddy gives automatic Let's Encrypt TLS on one hostname Footer credit reads 'Explorer by Gully Labs' Service level targets in the README are marked 'to be set by Gully Labs'",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "text": "Hosted Blockscout explorer (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A branded Blockscout explorer for an EVM chain, configured and run by Gully Labs. The deployment layer exists in the fork; no hosted explorer is confirmed in the repo. Lives in gully-blockscout/gully on branch gully/chain-kit Upstream Blockscout code is unchanged; the fork adds a pinned compose stack, chain profiles, branding and a provisioning script Stack is backend, frontend, stats, visualizer, sig-provider and optional user-ops-indexer images, with Postgres 17, Redis and a Caddy proxy Caddy gives automatic Let's Encrypt TLS on one hostname Footer credit reads 'Explorer by Gully Labs' Chain Kit is on a waitlist and cannot be ordered yet: Gully Labs is finalising the explorer licence first Service level targets in the README are marked 'to be set by Gully Labs'",
+   "updatedAt": "2026-10-19T06:35:57.249Z",
    "feature": "chainkit-explorer",
    "status": "building"
   },

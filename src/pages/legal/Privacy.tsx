@@ -136,7 +136,7 @@ export function PrivacyPage() {
             <P>
               Gully Labs (“<b>we</b>”, “<b>us</b>”) builds and runs these sites and services. We decide what personal data they collect and why, so we are responsible for it. If you run a Gully Pay store or use Gully Analytics on your own site, you are responsible for your own customers’ and visitors’ data, and we process it for you to provide the service.
             </P>
-            <P>Questions or requests about your data: <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a>.</P>
+            <P>Questions or requests about your data: <a href="mailto:team@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a>.</P>
           </S>
 
           <S n={2} title="What we collect">
@@ -316,7 +316,7 @@ export function PrivacyPage() {
               <li>Delete a monitor, or unpublish a scan report, in the app; ask us to delete a scan’s code before the 180 days are up.</li>
               <li>Opt out of Gully Analytics as described above, or use a browser that blocks scripts.</li>
               <li>
-                Ask us at <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a> to see, correct, export or delete what we hold about you off-chain. The app doesn’t have a self-service “delete my account” button yet, so email us and we will do it. We may keep payment records where the law requires, and we can’t delete anything that is on a public blockchain.
+                Ask us at <a href="mailto:team@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a> to see, correct, export or delete what we hold about you off-chain. The app doesn’t have a self-service “delete my account” button yet, so email us and we will do it. We may keep payment records where the law requires, and we can’t delete anything that is on a public blockchain.
               </li>
             </L>
             <P>Depending on where you live, you may also have the right to object to or restrict how we use your data, and to complain to your data protection authority.</P>
@@ -325,7 +325,7 @@ export function PrivacyPage() {
 
           <S n={14} title="Changes and contact">
             <P>
-              When we change this policy we update the version date at the top, and for a material change we say so on the site. Our server and our providers may process data in countries other than yours. Questions, requests or complaints: <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a>.
+              When we change this policy we update the version date at the top, and for a material change we say so on the site. Our server and our providers may process data in countries other than yours. Questions, requests or complaints: <a href="mailto:team@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a>.
             </P>
           </S>
 

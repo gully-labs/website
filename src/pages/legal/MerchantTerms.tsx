@@ -98,7 +98,7 @@ export function MerchantTermsPage() {
 
           <S n={2} title="Accounts and wallets">
             <P>
-              <b>2.1 Your workspace.</b> You are responsible for everything done through your workspace and by its members, and for their compliance with these terms. Keep your wallets and sign-in secure, and tell us at <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a> at once if you suspect misuse.
+              <b>2.1 Your workspace.</b> You are responsible for everything done through your workspace and by its members, and for their compliance with these terms. Keep your wallets and sign-in secure, and tell us at <a href="mailto:team@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a> at once if you suspect misuse.
             </P>
             <P>
               <b>2.2 Receiving wallets.</b> You choose the receiving address on each chain and you are responsible for controlling it. We check the address’s checksum and, for a contract wallet, that it is deployed on that chain before the chain can take payments; we cannot check that you hold its keys. A payment sent to the address you set is final.
@@ -142,7 +142,7 @@ export function MerchantTermsPage() {
               <b>5.2 Statements.</b> Every Monday at 00:00 UTC we issue a statement for fees accrued and not yet billed, once they reach {cfg ? money(cfg.minStatementUsd) : 'the minimum shown in your portal'}; smaller amounts roll into the next week. A statement is a Gully Labs invoice, payable in crypto through the Gully Pay checkout, and is due within {days} days of issue. When a customer pays in a stablecoin from a connected wallet, the fee on that payment may instead be deducted at payment time, in the same transaction, through Request Network’s open-source fee contract (ERC20FeeProxy), which sends it straight to Gully Labs; a statement then bills only the fees not collected that way.
             </P>
             <P>
-              <b>5.3 Disputes.</b> If you disagree in good faith with a statement, tell us at <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a> before it is due and pay any undisputed part on time. We will work with you to resolve it within 15 days.
+              <b>5.3 Disputes.</b> If you disagree in good faith with a statement, tell us at <a href="mailto:team@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a> before it is due and pay any undisputed part on time. We will work with you to resolve it within 15 days.
             </P>
             <P>
               <b>5.4 Taxes.</b> You are responsible for all taxes on your sales, on the payments you receive and on our fees (including sales, use, VAT, GST and withholding), except for Gully Labs’ own income taxes. We do not collect, report or remit taxes for you.
@@ -212,7 +212,7 @@ export function MerchantTermsPage() {
                 <b>Assignment.</b> Neither party may assign these terms without the other’s written consent, except on notice in a merger, change of control or sale of the business they relate to.
               </li>
               <li>
-                <b>Notices.</b> We send notices in the Gully Labs App, to your workspace’s activity log, and to your linked Telegram chat or email when set. You send notices to <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a>.
+                <b>Notices.</b> We send notices in the Gully Labs App, to your workspace’s activity log, and to your linked Telegram chat or email when set. You send notices to <a href="mailto:team@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a>.
               </li>
               <li>
                 <b>Force majeure.</b> Neither party is liable for a delay or failure caused by events beyond its reasonable control, including blockchain or network failures; this does not excuse paying fees already due.
@@ -242,7 +242,7 @@ export function MerchantTermsPage() {
               . Changes made: shortened and reorganised; adapted to a non-custodial crypto payment service (custody, onchain finality, refunds, prohibited businesses, fee statements and checkout pauses, webhooks added); subscription, support, confidentiality, machine-learning and government-use clauses removed. Common Paper does not endorse these terms. These merchant terms are also available under CC BY 4.0.
             </p>
             <p className="m-0">
-              Questions: <a href="mailto:hello@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">hello@gullylabs.xyz</a> ·{' '}
+              Questions: <a href="mailto:team@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a> ·{' '}
               <a href="https://docs.gullylabs.xyz/gully-pay-merchants" target="_blank" rel="noopener noreferrer" className="hover:text-gold">
                 Gully Pay for merchants docs
               </a>{' '}

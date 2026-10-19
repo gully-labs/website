@@ -406,7 +406,7 @@ export async function readPayment(asset, txHash, treasury, opts = {}) {
   }
   if (!receipt && !tx) {
     const other = await findElsewhere(c.id, txHash)
-    if (other) return { ok: false, status: 422, error: `This transaction is on ${other.name}, but this payment was quoted on ${c.name}. Choose ${other.name} and the same asset to have it checked, or write to hello@gullylabs.xyz with the hash.` }
+    if (other) return { ok: false, status: 422, error: `This transaction is on ${other.name}, but this payment was quoted on ${c.name}. Choose ${other.name} and the same asset to have it checked, or write to team@gullylabs.xyz with the hash.` }
     return { ok: false, status: 202, pending: true, confirmations: 0, needed, error: `${c.name} does not know this transaction yet. If you just sent it, wait a few seconds and check again.` }
   }
   if (!receipt) return { ok: false, status: 202, pending: true, confirmations: 0, needed, error: `The transaction is waiting to be included in a block on ${c.name}.` }

@@ -10,7 +10,7 @@ const GLYPHS: Record<LogoGlyph, LucideIcon> = { chain: Network, token: CircleDol
    whole-pixel padding, lazy loading and async decoding. Only if the file fails to load (or none is
    known) does a neutral disc with a kit-coloured glyph stand in (the name stays in the label). Round for chains and tokens, a rounded tile
    for venues. */
-export function Logo({ mark, glyph, size, shape, alt, title, className = '' }: { mark: Mark | null; glyph: LogoGlyph; size: number; shape: 'round' | 'tile'; alt: string; title?: string; className?: string }) {
+export function Logo({ mark, glyph, size, shape, alt, title, letter, className = '' }: { mark: Mark | null; glyph: LogoGlyph; /** A name whose first letter stands in for a missing mark (third-party integrations only). */ letter?: string; size: number; shape: 'round' | 'tile'; alt: string; title?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
   // Tiles take the radius scale (src/index.css): 8 from 32 px, 6 from 20 px, 4 below.
   const radius = shape === 'round' ? '50%' : `${size >= 32 ? 8 : size >= 20 ? 6 : 4}px`
@@ -25,7 +25,11 @@ export function Logo({ mark, glyph, size, shape, alt, title, className = '' }: {
         className={`inline-flex flex-none select-none items-center justify-center overflow-hidden border border-line-strong bg-surface-deep text-muted ${className}`}
         style={{ width: size, height: size, borderRadius: radius }}
       >
-        {size >= 12 && <Glyph aria-hidden size={Math.max(8, Math.round(size * 0.56))} strokeWidth={size >= 24 ? 1.75 : 2} />}
+        {size >= 12 && letter ? (
+          <span aria-hidden data-lettermark="" className="font-display font-bold uppercase" style={{ fontSize: Math.round(size * 0.5), lineHeight: 1 }}>
+            {letter.trim().charAt(0)}
+          </span>
+        ) : size >= 12 && <Glyph aria-hidden size={Math.max(8, Math.round(size * 0.56))} strokeWidth={size >= 24 ? 1.75 : 2} />}
       </span>
     )
   }

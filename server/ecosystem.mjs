@@ -180,7 +180,8 @@ async function launchpads() {
       id: s(l.id ?? l.key, 60),
       name: s(l.name ?? l.id ?? l.key, 80),
       url: s(l.url ?? l.website, 300),
-      chains: Array.isArray(l.chains) ? l.chains.map((c) => s(String(c), 30)).filter(Boolean).slice(0, 12) : [],
+      // listLaunchpads() gives { key, id, name } per chain; older shapes gave the key string. Either becomes a display name.
+      chains: Array.isArray(l.chains) ? l.chains.map((c) => s(typeof c === 'string' ? c : String(c?.name ?? c?.key ?? ''), 30)).filter(Boolean).slice(0, 12) : [],
     }))
   } catch {
     return null
@@ -205,7 +206,7 @@ export async function handleEcosystem(req, res, url) {
   const v = validateSubmission(body)
   if (!v.ok) return json(res, 400, { error: v.error, field: v.field }), true
   const d = read()
-  if (d.submissions.filter((s) => s.status === 'pending').length >= MAX_PENDING) return json(res, 503, { error: 'The review queue is full. Please try again later or write to hello@gullylabs.xyz.' }), true
+  if (d.submissions.filter((s) => s.status === 'pending').length >= MAX_PENDING) return json(res, 503, { error: 'The review queue is full. Please try again later or write to team@gullylabs.xyz.' }), true
   d.submissions.push({ id: `es_${crypto.randomBytes(9).toString('base64url')}`, ...v.value, status: 'pending', createdAt: new Date().toISOString(), decidedAt: null })
   if (d.submissions.length > MAX_STORED) d.submissions = [...d.submissions.filter((s) => s.status === 'pending'), ...d.submissions.filter((s) => s.status !== 'pending').slice(-(MAX_STORED - MAX_PENDING))]
   write(d)

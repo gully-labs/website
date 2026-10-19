@@ -132,7 +132,7 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
                   <GullyLockup height={34} light />
                 )}
                 <span className="font-mono text-[12px] text-[#5f6a78]">
-                  {store ? [store.website?.replace(/^https?:\/\//, '').replace(/\/$/, ''), store.supportEmail].filter(Boolean).join(' · ') : 'gullylabs.xyz · hello@gullylabs.xyz'}
+                  {store ? [store.website?.replace(/^https?:\/\//, '').replace(/\/$/, ''), store.supportEmail].filter(Boolean).join(' · ') : 'gullylabs.xyz · team@gullylabs.xyz'}
                 </span>
               </div>
               <div className="flex flex-col items-end gap-1 text-right max-[600px]:items-start max-[600px]:text-left">

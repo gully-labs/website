@@ -817,11 +817,11 @@ export const features: Feature[] = [
     id: "chain-kit-explorer",
     product: "Chain Kit",
     name: "Chain Kit managed explorer",
-    status: "live",
-    summary: "A branded Blockscout block explorer for your EVM chain, deployed and run by Gully Labs. Available on request.",
+    status: "building",
+    summary: "A branded Blockscout block explorer for your EVM chain, to be deployed and run by Gully Labs. Waitlist: licensing in progress; Chain Kit is not available to order yet.",
     facts: [
-      "Requested from the app (POST /api/developer/chain-kit/request) or the contact form.",
-      "Blockscout and our deployment layer are GPL-3.0.",
+      "Chain Kit is on a waitlist: join the waitlist from the app (POST /api/developer/chain-kit/request records interest, flagged waitlist, and takes no order or payment) or at gullylabs.xyz/chains.",
+      "Gully Labs is finalising the explorer licence before taking orders.",
       "Rollup profiles cover Arbitrum Nitro and Orbit chains."
     ],
     url: "https://gullylabs.xyz/chain-kit",
@@ -1051,10 +1051,10 @@ export const features: Feature[] = [
     product: "Gully Chains",
     name: "Included services on the testnet",
     status: "testnet",
-    summary: "The Chain Kit explorer, Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.",
+    summary: "The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.",
     facts: [
-      "SERVICES in server/chains-plans.mjs gives chainkit, insight, pay and hyperlane the status testnet.",
-      "Chain Kit and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons.",
+      "SERVICES in server/chains-plans.mjs gives insight, pay and hyperlane the status testnet; chainkit (the explorer, bridge and faucet) is planned and on a waitlist.",
+      "Chain Kit (waitlist) and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons.",
       "The page says nothing about Gully Chains is live yet."
     ],
     url: "https://gullylabs.xyz/chains",
@@ -1268,6 +1268,7 @@ export const features: Feature[] = [
       "Stack is backend, frontend, stats, visualizer, sig-provider and optional user-ops-indexer images, with Postgres 17, Redis and a Caddy proxy",
       "Caddy gives automatic Let's Encrypt TLS on one hostname",
       "Footer credit reads 'Explorer by Gully Labs'",
+      "Chain Kit is on a waitlist and cannot be ordered yet: Gully Labs is finalising the explorer licence first",
       "Service level targets in the README are marked 'to be set by Gully Labs'"
     ],
     url: "https://gullylabs.xyz/chain-kit",

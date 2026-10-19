@@ -4,7 +4,7 @@ For launchpads and token platforms that want the Gully Labs Holder Map (who hold
 connected, launch checks) on their own pages, and want their launches recognised by it.
 
 Public docs for the embed and the API: `https://docs.gullylabs.xyz/holder-map-integrate`.
-Contact: hello@gullylabs.xyz.
+Contact: team@gullylabs.xyz.
 
 ## What we need from you
 

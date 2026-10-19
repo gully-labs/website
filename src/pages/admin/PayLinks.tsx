@@ -258,7 +258,7 @@ function LinkForm({ initial, assets, submitLabel, onSubmit, onCancel }: { initia
     >
       <div className="flex flex-wrap items-end gap-2">
         <Label text="Title (shown to the payer)" className="min-w-[min(100%,320px)] flex-[2]">
-          <input className={field} value={d.title} onChange={(e) => set('title', e.target.value)} maxLength={120} required placeholder="Chain Kit setup" />
+          <input className={field} value={d.title} onChange={(e) => set('title', e.target.value)} maxLength={120} required placeholder="Analytics setup" />
         </Label>
         <fieldset className="m-0 flex flex-col gap-1 border-0 p-0 text-[12px] text-faint">
           <legend className="mb-1">Amount</legend>

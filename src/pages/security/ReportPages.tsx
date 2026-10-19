@@ -68,7 +68,7 @@ export function ReportsIndex() {
               <span aria-hidden className="absolute inset-0 rounded-full border border-gold-line" style={{ animation: 'gl-live-pulse 2.6s ease-out infinite' }} />
               <FileSearch size={22} className="text-gold" aria-hidden />
             </span>
-            <span className="font-display text-[22px] font-bold uppercase">No published reports yet</span>
+            <span className="heading-4">No published reports yet</span>
             <span className="max-w-[460px] text-[14px] text-muted">When an owner publishes a scan report from the app, it appears here.</span>
           </div>
         )}
@@ -143,11 +143,11 @@ export function PublicReportPage() {
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </div>
-        <header className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-center gap-6 rounded-card border border-line bg-surface p-6 max-[860px]:grid-cols-1 max-[600px]:p-4 print:border-[#ccc] print:bg-[#fff]">
+        <header className="card card-pad grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-center gap-6 max-[860px]:grid-cols-1 print:border-[#ccc] print:bg-[#fff]">
           <div className="flex min-w-0 flex-col gap-3">
             <span className={`${eyebrow} print:text-[#000]`}>AI SECURITY SCAN REPORT</span>
             <ModeBadge label={r.label} mode={r.mode} />
-            <h1 className="m-0 text-[22px] font-semibold text-ink print:text-[#000]">
+            <h1 className="m-0 font-display text-h3 font-extrabold break-words text-ink print:text-[#000]">
               <Subject r={r} />
             </h1>
             <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 font-mono text-[12px]">
@@ -163,7 +163,7 @@ export function PublicReportPage() {
           </div>
           <SeverityCharts counts={r.summary?.counts ?? r.counts} />
         </header>
-        <p className="m-0 flex items-start gap-2 rounded-[10px] border border-gold-line bg-gold/[.05] px-4 py-3 text-[13px] leading-[1.6] text-ink-2 print:border-[#ccc] print:bg-[#fff] print:text-[#000]" data-testid="not-audit">
+        <p className="m-0 flex items-start gap-2 rounded-tile border border-gold-line bg-gold/[.05] px-4 py-3 text-[13px] leading-[1.6] text-ink-2 print:border-[#ccc] print:bg-[#fff] print:text-[#000]" data-testid="not-audit">
           <Info size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden />
           {NOT_AUDIT}
         </p>

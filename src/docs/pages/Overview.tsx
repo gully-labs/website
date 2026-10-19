@@ -27,7 +27,7 @@ const PRODUCTS: { slug: DocSlug; title: string; note: string }[] = [
   { slug: 'holder-map', title: 'Holder Map', note: 'Who really holds a token, clusters and the launch health score.' },
   { slug: 'gully-ai', title: 'Gully AI', note: 'Answers from our docs and live data, with a source on every fact.' },
   { slug: 'telegram', title: 'Telegram bot', note: '@GullyLabsBot: gaps, launches, alerts with Mute, and the Mini App.' },
-  { slug: 'chain-kit', title: 'Chain Kit', note: 'A branded Blockscout explorer for your EVM chain, run for you.' },
+  { slug: 'chain-kit', title: 'Chain Kit', note: 'A branded Blockscout explorer for your EVM chain, run for you. Waitlist.' },
   { slug: 'status', title: 'Status', note: 'What each live check means, uptime and incidents.' },
 ]
 

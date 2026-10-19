@@ -1693,7 +1693,9 @@ await step('gully score', async () => {
     check(`score page at ${width}: the change log`, (await page.getByText('Recent privileged changes').count()) > 0)
     const badge = page.locator(`img[src="/score/base/${SC}/badge.svg"]`)
     await badge.scrollIntoViewIfNeeded()
-    check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n === 260))
+    // The badge's width follows its text (badges.mjs measures the outlined glyphs), so it must equal the SVG's own width.
+    const badgeW = Number(((await (await fetch(BASE + `/score/base/${SC}/badge.svg`)).text()).match(/<svg[^>]*\swidth="(\d+)"/) || [])[1])
+    check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n > 0 && n === badgeW), `badge ${badgeW}`)
     check(`score page at ${width}: methodology says informational, nobody can pay`, (await page.getByText(/not an endorsement and not investment advice/).count()) > 0)
     if (mobile) await noHorizontalScroll(page, 'score page')
     await page.waitForTimeout(1200)
@@ -1808,12 +1810,77 @@ await step('holder map', async () => {
     await map.locator('[data-ask]').getByText(/Three of them bought together/).waitFor()
     check(`holder map ${width}: Gully AI explains the map`, true)
     check(`holder map ${width}: Alert me opens the app's alert dialog for this token`, ((await map.locator('[data-alert-me]').getAttribute('href')) ?? '').includes(`alert=holders%3Arobinhood%3A${E2E_LAUNCH_TOKEN}`))
+    const bimg = page.locator('[data-badge-block] [data-badge-img]')
+    await bimg.scrollIntoViewIfNeeded()
+    check(`holder map ${width}: the badge image loads and the HTML and Markdown copy buttons are there`, (await bimg.evaluate((img) => (img.complete && img.naturalWidth > 0 ? img.naturalWidth : new Promise((r) => { img.onload = () => r(img.naturalWidth); img.onerror = () => r(0) })))) > 0 && (await page.locator('[data-copy-html]').count()) === 1 && (await page.locator('[data-copy-md]').count()) === 1)
     await shotTo(page, `token-${width}.png`)
     await noHorizontalScroll(page, `/holders ${width}`)
     await designAudit(page, `holder map ${width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
+  // Deep check: the offer card on a map, a free-quota check started from a quote, the report page and the JPEG card.
+  {
+    const DEEP_CHECK = 'dc_e2e0000000000001'
+    const cov = (k) => ({ chain: k, funding: { state: 'available', reason: null }, clusters: { state: 'available', reason: null }, deployer: { state: 'limited', reason: 'Only DeepCore launches are read' }, trading: { state: 'unavailable', reason: 'No archive RPC answers for this chain' } })
+    const quota = { plan: { id: 'pro', name: 'Pro' }, freePerMonth: 3, used: 0, left: 3, resetsAt: new Date(Date.now() + 864e5 * 10).toISOString(), active: 0, maxActive: 2, credits: 0 }
+    const chainInfo = { key: 'robinhood', id: 46630, name: 'Robinhood Chain' }
+    const report = {
+      version: 1, chain: chainInfo, token: { address: E2E_LAUNCH_TOKEN, symbol: 'DTC', name: 'DeepCore Test', url: 'https://explorer.example/token/x' }, generatedAt: new Date().toISOString(), status: 'partial',
+      partial: { reasons: [{ code: 'archive', text: 'No archive RPC answers for this chain, so sniper history was skipped.' }] },
+      sections: {
+        trading: { state: 'unavailable', reason: 'No archive RPC answers for this chain' },
+        funding: { state: 'ok', source: 'Explorer transfers', confidence: 'medium', wallets: 2, hopsMax: 2, traces: [{ address: '0x' + 'a'.repeat(40), role: 'holder', rank: 1, pctOfSupply: 12.5, hops: [], origin: { type: 'exchange', label: 'Example exchange' } }, { address: '0x' + 'b'.repeat(40), role: 'holder', rank: 2, pctOfSupply: 7.5, hops: [], origin: { type: 'unknown', reason: 'No earlier funding found' } }], sharedFunders: [] },
+        clusters: { state: 'ok', combined: [{ id: 'c1', wallets: ['0x' + 'a'.repeat(40), '0x' + 'b'.repeat(40)], count: 2, pctOfSupply: 20, basis: 'shared funder', confidence: 'medium' }] },
+        deployer: { state: 'partial', address: '0x' + 'd'.repeat(40), source: 'Explorer', tokens: [], chains: [] },
+      },
+      findings: [{ id: 'f1', section: 'clusters', text: 'Two top wallets share one funder and hold 20% together.', confidence: 'medium', source: 'Funding trace' }],
+      unavailable: [{ section: 'trading', what: 'Snipers and bundled buys', reason: 'No archive RPC answers for this chain' }], notes: [],
+    }
+    const checkDoc = (status) => ({ id: DEEP_CHECK, status, chain: chainInfo, token: E2E_LAUNCH_TOKEN, free: true, priceUsd: 0, listPriceUsd: 9, bundled: false, payment: null, progress: null, createdAt: new Date().toISOString(), startedAt: null, completedAt: new Date().toISOString(), cancelReason: null, error: null, credit: null, url: `/holders/deep/${DEEP_CHECK}`, report: status === 'partial' ? report : null })
+    for (const width of [1440, 390]) {
+      const ctx = await newContext({ width, mobile: width < 600 })
+      await ctx.route(`${BASE}/api/ask`, (route) => json(route, holdersExtraFixtures().ask))
+      await ctx.route(`${BASE}/api/holders/deep`, (route) => {
+        if (route.request().method() === 'GET') return json(route, { offer: { id: 'holder-deep', name: 'Deep check', priceUsd: 9, freePerMonth: { pro: 3, business: 10 }, bundleScanDiscountPct: 20, maxActive: 2, maxRunning: 2, budgets: { rpcCalls: 1, logSpans: 1, explorerCalls: 1, ms: 1, holders: 1, hops: 1 } }, checkout: { enabled: true }, coverage: { robinhood: cov('robinhood') }, signedIn: true, quota, credits: 0, contact: 'team@gullylabs.xyz' })
+        const body = route.request().postDataJSON()
+        if (!body.expect) return json(route, { quote: { chain: chainInfo, token: body.token, priceUsd: 0, listPriceUsd: 9, free: true, bundle: { applied: false, discountPct: 20, scanId: null }, bundleNote: null, credit: { available: 0, used: false }, quota, coverage: cov('robinhood'), checkout: { enabled: true }, signedIn: true } })
+        return json(route, { check: checkDoc('queued') }, 202)
+      })
+      await ctx.route(`${BASE}/api/holders/deep/${DEEP_CHECK}`, (route) => json(route, { check: checkDoc('partial') }))
+      const page = await ctx.newPage()
+      const w = watch(page, `deep check ${width}`)
+      await page.goto(BASE + '/holders/robinhood/' + E2E_LAUNCH_TOKEN)
+      const offer = page.locator('[data-deep-offer]')
+      await offer.waitFor()
+      check(`deep check ${width}: the offer shows the $9 price and the plan's free checks`, (await offer.getByText('Deep check · $9').count()) === 1 && (await offer.getByText(/3 of 3 free this month/).count()) === 1)
+      check(`deep check ${width}: only the parts available on this chain are offered`, (await offer.locator('[data-deep-part]').count()) === 3 && (await offer.locator('[data-deep-part="trading"]').count()) === 0 && (await offer.locator('[data-deep-missing]').count()) === 1)
+      check(`deep check ${width}: the free price and the refund policy are stated`, (await offer.getByText(/credit for a free re-run/).count()) === 1 && (await offer.locator('[data-deep-price]').innerText()) === 'Free')
+      await offer.locator('[data-deep-start]').click()
+      await offer.locator('[data-deep-quote]').waitFor()
+      check(`deep check ${width}: the quote shows nothing charged yet`, (await offer.locator('[data-deep-quote]').getByText(/NOTHING CHARGED YET/).count()) === 1)
+      await shotTo(page, `deep-offer-${width}.png`)
+      await offer.locator('[data-deep-confirm]').click()
+      await page.waitForURL(`**/holders/deep/${DEEP_CHECK}`)
+      await page.getByText('Two top wallets share one funder').first().waitFor()
+      check(`deep check ${width}: confirming a free check opens its page`, /holders\/deep\//.test(page.url()))
+      check(`deep check ${width}: the report page is noindex`, ((await page.locator('meta[name="robots"]').getAttribute('content')) ?? '').includes('noindex'))
+      check(`deep check ${width}: the report shows its findings and the unavailable reason`, (await page.getByText(/No archive RPC answers for this chain/).count()) >= 1)
+      check(`deep check ${width}: the report draws charts`, (await page.locator('[data-chart]').count()) >= 2)
+      await shotTo(page, `deep-report-${width}.png`)
+      await noHorizontalScroll(page, `/holders/deep ${width}`)
+      await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+      await ctx.close()
+    }
+    const cctx = await newContext({ width: 1440 })
+    const jpg = await cctx.request.get(`${BASE}/api/holders/robinhood/${E2E_LAUNCH_TOKEN}/card.jpg`)
+    const jb = await jpg.body()
+    check('holder card: card.jpg answers image/jpeg with JPEG bytes', jpg.status() === 200 && (jpg.headers()['content-type'] ?? '').startsWith('image/jpeg') && jb[0] === 0xff && jb[1] === 0xd8, `${jpg.status()} ${jpg.headers()['content-type']}`)
+    const png = await cctx.request.get(`${BASE}/api/holders/robinhood/${E2E_LAUNCH_TOKEN}/card.png`)
+    check('holder card: card.png still answers image/png', png.status() === 200 && (png.headers()['content-type'] ?? '').startsWith('image/png'), `${png.status()}`)
+    await cctx.close()
+  }
+
   // The /holders landing: search (one match navigates, several offer a pick, none says so), the checked-launch feed and the top list.
   for (const width of [1440, 390]) {
     const ctx = await newContext({ width, mobile: width < 600 })
@@ -1900,6 +1967,27 @@ await step('holder map', async () => {
   check('DeepCore page: launches link to their Holder Maps', (await row.getAttribute('href')) === `/holders/robinhood/${E2E_LAUNCH_TOKEN}`)
   await w2.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx2.close()
+})
+
+// Chain Kit (/chain-kit) is on a waitlist while the explorer licence is finalised: the page says so, offers the
+// waitlist, and has no buy, order, request-to-pay or "available" path. It also must not name Blockscout's licence.
+await step('chain kit waitlist', async () => {
+  const ctx = await newContext({ width: 1440, height: 900 })
+  const page = await ctx.newPage()
+  const w = watch(page, '/chain-kit')
+  await page.goto(BASE + '/chain-kit')
+  await page.getByRole('heading', { level: 1 }).waitFor()
+  const main = await page.locator('main').innerText()
+  check('/chain-kit: shows the waitlist status and wording', /WAITLIST/.test(main) && /join the waitlist/i.test(main) && /finalising the explorer licence before taking orders/i.test(main))
+  check('/chain-kit: no buy, order, request or "available on request" path', !/available on request|talk to us about your chain|request (your|an|a) explorer|buy|order now|checkout|pay now|price[ds]?/i.test(main))
+  check('/chain-kit: the call to action is a link to the chains waitlist, not a contact or payment form', (await page.locator('main a[href="/chains#waitlist"]').count()) >= 1 && (await page.locator('main').getByRole('button', { name: /start a project|talk to us|request|buy|order/i }).count()) === 0)
+  check('/chain-kit: does not mention the Blockscout licence', !/blockscout[’']?s? licen[cs]e|licen[cs]e (from|with|of) blockscout|proprietary|LicenseRef|commercial licen/i.test(main))
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+  await page.goto(BASE + '/pricing')
+  await page.locator('#on-request').waitFor()
+  const pr = await page.locator('#on-request').innerText()
+  check('/pricing: Chain Kit is badged WAITLIST and offers the waitlist, not "start a project"', /WAITLIST/.test(pr) && /Join the waitlist/.test(pr))
+  await ctx.close()
 })
 
 // Gully Chains (/chains): the offer reads from GET /api/chains/plans, nothing claims a chain is live, the waitlist
@@ -2278,6 +2366,8 @@ await step('telegram mini app at 390', async () => {
     sdkUrl = route.request().url()
     return route.fulfill({ status: 200, contentType: 'text/javascript', body: sdk })
   })
+  const TG_LAUNCHES = { state: 'ok', asOf: new Date().toISOString(), error: null, chainNames: { 56: 'BNB Chain', 8453: 'Base' }, launches: [['BNB Chain', 56, 'bsc', 'AAA'], ['Base', 8453, 'base', 'BBB'], ['BNB Chain', 56, 'bsc', 'CCC']].map(([chainName, chainId, chainKey, symbol], i) => ({ key: `${chainKey}:${i}`, chainId, chainKey, chainName, token: `0x${String(i + 1).repeat(40)}`, symbol, createdAt: new Date(Date.now() - i * 600_000).toISOString(), legs: [{ kind: 'v2', quote: 'WETH', locked: true }], links: { token: 'https://deepcore.fun/token' } })) }
+  await ctx.route(/\/api\/tg\/launches/, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TG_LAUNCHES) }))
   const page = await ctx.newPage()
   const w = watch(page, '/tg at 390')
   await page.goto(BASE + '/tg')
@@ -2285,8 +2375,20 @@ await step('telegram mini app at 390', async () => {
   check('mini app: loads the SDK from the exact telegram.org URL', sdkUrl === 'https://telegram.org/js/telegram-web-app.js?59', sdkUrl)
   check('mini app: the theme maps onto the tokens (Telegram bg)', (await page.evaluate(() => getComputedStyle(document.querySelector('main').parentElement).backgroundColor)) === 'rgb(23, 33, 43)')
   const nvda = page.getByRole('button', { name: /^NVDA on Robinhood Chain/ })
-  await nvda.waitFor()
+  await page.getByRole('button', { name: /^Show all \d+$/ }).waitFor()
   check('mini app: the gap list shows tracker rows', (await page.getByRole('button', { name: / on (Robinhood Chain|BNB Chain): gap / }).count()) > 3)
+  const gapRows = page.getByRole('button', { name: / on (Robinhood Chain|BNB Chain|Solana): gap / })
+  check('mini app: the gap list starts at 10 rows', (await gapRows.count()) === 10, String(await gapRows.count()))
+  check('mini app: rows show chain logos, not chain-name tags', (await page.locator('main li img[alt=""]').count()) > 0 && (await page.getByText('BNB', { exact: true }).count()) <= 1)
+  if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/after-390.png`, fullPage: true })
+  const showAll = page.getByRole('button', { name: /^Show all \d+$/ })
+  await showAll.click()
+  check('mini app: Show all expands the list past 10 rows', (await gapRows.count()) > 10)
+  await page.getByRole('button', { name: /^Show top 10$/ }).click()
+  await page.getByRole('searchbox', { name: 'Search stocks' }).fill('nvda')
+  const found = await gapRows.count()
+  check('mini app: search filters across every row', found >= 1 && found < 10, String(found))
+  await noHorizontalScroll(page, '/tg list')
   await nvda.click()
   await page.getByText('Gap to the real share price').waitFor()
   check('mini app: a tap opens the stock with a haptic, and shows BackButton', (await page.evaluate(() => window.__tg.haptics.includes('impact:light') && window.__tg.back)) === true)
@@ -2299,6 +2401,12 @@ await step('telegram mini app at 390', async () => {
   await page.evaluate(() => window.__tgBack())
   await page.getByRole('radiogroup', { name: 'Section' }).waitFor()
   check('mini app: BackButton returns to the list and hides', (await page.evaluate(() => window.__tg.back)) === false)
+  await page.getByRole('radio', { name: 'Launches' }).click()
+  await page.getByRole('button', { name: /^AAA on BNB Chain/ }).waitFor()
+  await page.waitForTimeout(500)
+  const launchImgs = await page.evaluate(() => [...document.querySelectorAll('main li img[alt$=" logo"]')].map((i) => i.getAttribute('src')))
+  check('mini app: launch rows carry token logo images from the logo service', launchImgs.length === 3 && launchImgs.every((u) => /^\/api\/logo\//.test(u)), JSON.stringify(launchImgs))
+  await noHorizontalScroll(page, '/tg launches')
   await page.getByRole('radio', { name: 'My alerts' }).click()
   check('mini app: alerts ask an unlinked user to link a wallet', await page.getByText('Link your wallet for alerts').isVisible())
   await noHorizontalScroll(page, '/tg')
@@ -2318,8 +2426,32 @@ await step('ecosystem and partners', async () => {
     check(`/ecosystem ${width}: every project has its own card, none combined`, (await page.locator('[data-project]').count()) === 5)
     await page.getByText(/Source: /).first().waitFor()
     check(`/ecosystem ${width}: integrations are listed and labelled as what we use`, (await page.getByRole('heading', { name: 'Integrates with' }).count()) === 1 && (await page.getByText('Chainlink').count()) >= 1 && (await page.getByText(/partner/i).count()) <= 3)
-    await page.getByRole('group', { name: 'Filter by kind' }).getByRole('button', { name: 'SECURITY' }).click()
-    check(`/ecosystem ${width}: the kind filter narrows the list`, (await page.locator('#integrates li').count()) === 2)
+    // Logo-led tiles: every one shows a loaded logo (naturalWidth > 0) or the lettermark, never "[object Object]".
+    const tiles = page.locator('#integrates [data-integration]')
+    const nTiles = await tiles.count()
+    check(`/ecosystem ${width}: 20 integration tiles, grouped by category`, nTiles === 20 && (await page.locator('#integrates [data-kind]').count()) === 5)
+    for (const t of await tiles.all()) await t.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(400)
+    const logos = await page.evaluate(() =>
+      [...document.querySelectorAll('#integrates [data-integration]')].map((li) => {
+        const img = li.querySelector('img')
+        return { id: li.getAttribute('data-integration'), ok: img ? img.complete && img.naturalWidth > 0 : !!li.querySelector('[data-lettermark]') }
+      }),
+    )
+    check(`/ecosystem ${width}: every integration tile has a loaded logo or the lettermark`, logos.every((l) => l.ok), logos.filter((l) => !l.ok).map((l) => l.id).join(', '))
+    check(`/ecosystem ${width}: no "[object Object]" on the page`, !(await page.locator('body').innerText()).includes('[object Object]'))
+    const first = tiles.first()
+    check(`/ecosystem ${width}: tiles link out in a new tab`, (await first.locator('a').getAttribute('target')) === '_blank')
+    await first.getByRole('button', { name: 'In code' }).click()
+    check(`/ecosystem ${width}: "In code" shows the file path`, (await first.getByText('server/tracker.mjs').count()) === 1)
+    const pads = page.locator('#launchpads [data-launchpad]')
+    if (await pads.count()) {
+      check(`/ecosystem ${width}: launchpads show chain names, a Visit link and the ghost tile`, (await page.locator('#launchpads').getByText('Your launchpad here').count()) === 1 && (await pads.first().getByRole('link', { name: /Visit/ }).count()) === 1 && (await pads.first().locator('img').count()) >= 2)
+    }
+    await page.getByRole('group', { name: 'Filter by kind' }).getByRole('button', { name: /^SECURITY/ }).click()
+    await page.waitForTimeout(200)
+    check(`/ecosystem ${width}: the kind filter narrows the list`, (await page.locator('#integrates [data-integration]').count()) === 5)
+    await page.getByRole('group', { name: 'Filter by kind' }).getByRole('button', { name: /^ALL/ }).click()
     await noHorizontalScroll(page, `/ecosystem ${width}`)
     await designAudit(page, `/ecosystem ${width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
@@ -2330,7 +2462,8 @@ await step('ecosystem and partners', async () => {
     const w2 = watch(p2, `/partners ${width}`)
     await p2.goto(BASE + '/partners')
     await p2.locator('[data-benefit]').first().waitFor()
-    check(`/partners ${width}: seven benefits, white-label says it is not live yet`, (await p2.locator('[data-benefit]').count()) === 7 && /NOT LIVE YET/.test((await p2.locator('[data-benefit="whitelabel"]').innerText())))
+    const wlText = await p2.locator('[data-benefit="whitelabel"]').innerText()
+    check(`/partners ${width}: seven benefits, white-label is live`, (await p2.locator('[data-benefit]').count()) === 7 && !/not live yet/i.test(wlText) && /\blive\b/i.test(wlText), wlText)
     await p2.getByRole('group', { name: 'I run a' }).getByRole('button', { name: 'CHAINS' }).click()
     check(`/partners ${width}: choosing chains puts Chain Kit or Gully Pay first`, /CHAIN KIT|GULLY PAY|HOLDER MAP/i.test((await p2.locator('[data-benefit]').first().innerText())))
     await p2.getByRole('group', { name: 'Snippet' }).getByRole('button', { name: 'SDK' }).click()
@@ -2363,6 +2496,37 @@ await step('ecosystem and partners', async () => {
     await designAudit(p2, `/partners ${width}`)
     await w2.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx2.close()
+  }
+})
+
+await step('discovery files and contracts page', async () => {
+  const cj = await fetch(`${BASE}/.well-known/contracts.json`)
+  const reg = await cj.json()
+  check('contracts.json: 200, JSON, open CORS, cache header', cj.status === 200 && /json/.test(cj.headers.get('content-type')) && cj.headers.get('access-control-allow-origin') === '*' && /max-age/.test(cj.headers.get('cache-control') ?? ''))
+  const safe = reg.contracts.find((c) => c.chainId === 8453 && c.address === '0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6')
+  check('contracts.json: the treasury Safe on Base, owned by gully-labs, with its source file', safe?.owner === 'gully-labs' && /CHOICE\.md$/.test(safe.source))
+  check('contracts.json: the Request fee proxy is marked third-party', reg.contracts.some((c) => /ERC20FeeProxy/.test(c.name) && c.owner === 'third-party'))
+  const ll = await (await fetch(`${BASE}/llms.txt`)).text()
+  check('llms.txt: H1, docs and contracts links', ll.startsWith('# Gully Labs') && ll.includes('docs.gullylabs.xyz/contracts') && ll.includes('/llms-full.txt'))
+  const lf = await (await fetch(`${BASE}/llms-full.txt`)).text()
+  check('llms-full.txt: lists the treasury address and a roadmap section', lf.includes('0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6') && lf.includes('## Roadmap (not available yet)'))
+  const home = await (await fetch(`${BASE}/`)).text()
+  check('home page head carries Organization and SoftwareApplication JSON-LD', home.includes('"@type":"Organization"') && home.includes('"@type":"SoftwareApplication"'))
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `docs /contracts ${width}`)
+    await page.goto(`${BASE}/docs/contracts`)
+    await page.getByRole('heading', { level: 1, name: 'Contracts' }).waitFor()
+    await page.locator('[data-contract]').first().waitFor()
+    check(`docs /contracts ${width}: the treasury is listed with a copy button and an explorer link`, (await page.locator('[data-contract="0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6"]').count()) >= 4 && (await page.getByRole('button', { name: /Copy address 0xCaf7/ }).count()) >= 4 && (await page.locator('a[href^="https://basescan.org/address/0xCaf7"]').count()) >= 1)
+    await page.getByLabel('Search contracts').fill('ERC20FeeProxy')
+    await page.getByText(/^\d+ of \d+ contracts$/).first().waitFor()
+    check(`docs /contracts ${width}: the search narrows the list and the proxy shows THIRD PARTY`, (await page.getByText('THIRD PARTY').count()) >= 1 && (await page.locator('[data-contract]').count()) < 40)
+    await noHorizontalScroll(page, `docs /contracts ${width}`)
+    await designAudit(page, `docs /contracts ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
   }
 })
 

@@ -75,13 +75,17 @@ export function HolderMapIntegrateDocs() {
             ['data-chain', 'robinhood | bsc | base | hyperevm | solana', 'Required. Anything else shows “Holder Map: set data-chain and data-token.”'],
             ['data-token', 'address, or a ticker', <>Required: 1 to 64 letters and digits. The token address, or a ticker the tracker follows (<C>data-ticker</C> is accepted as an alias).</>],
             ['data-height', '360 to 2000', <>Pixels. Default <C>760</C>; a value outside the range falls back to the default.</>],
+            ['data-badge', 'true', <>Draws the small badge (<C>/api/holders/:chain/:token/badge.svg</C>) linked to the map, instead of the frame. It uses cached data only.</>],
+            ['data-embed-key', 'gle_0x…', <>White-label plans only: your signed embed key (<C>GET /api/developer/partners/embed-key</C>, signed in). Public by design; it unlocks only this option, never the API.</>],
+            ['data-theme', 'light | dark', 'White-label plans only. Default dark.'],
+            ['data-accent', '#rgb | #rrggbb', 'White-label plans only. Anything that is not a hex colour is ignored.'],
             ['data-api', 'URL', <>Origin to frame. Default <C>https://gullylabs.xyz</C>; only for testing against another deployment.</>],
           ]}
         />
         <List>
           <li>The script adds one lazy-loaded iframe, full width of its element, with rounded corners and a dark background. Size the element to size the map.</li>
           <li>The map reads its own data inside the frame. Your page makes no requests for it and the script sends no key.</li>
-          <li>Trades and shares open gullylabs.xyz in a new tab. A “Powered by Gully Labs” credit always shows; a white-label embed is reserved for a plan and is not built yet.</li>
+          <li>Trades and shares open gullylabs.xyz in a new tab. A “Powered by Gully Labs” credit shows unless the embed carries a valid embed key of a workspace on a white-label plan (Business). The server decides on every load from the live plan: a downgraded plan or a rotated key brings the credit back, and a theme or accent in the URL alone does nothing.</li>
           <li>If your site sends a Content Security Policy, allow the script and the frame: <C>script-src https://gullylabs.xyz; frame-src https://gullylabs.xyz;</C></li>
         </List>
       </Section>
@@ -187,7 +191,7 @@ export function HolderMapIntegrateDocs() {
           <li>Optionally the address of the pool or pool manager that holds a launch’s liquidity, so it is labelled on the map.</li>
         </List>
         <P>
-          Send these to <Ext href="mailto:hello@gullylabs.xyz">hello@gullylabs.xyz</Ext>. Gully Labs adds the entry, checks it against live launches and replies when it is live. We take contract addresses only from you or from your deployments; we never guess them.
+          Send these to <Ext href="mailto:team@gullylabs.xyz">team@gullylabs.xyz</Ext>. Gully Labs adds the entry, checks it against live launches and replies when it is live. We take contract addresses only from you or from your deployments; we never guess them.
         </P>
       </Section>
     </DocPage>

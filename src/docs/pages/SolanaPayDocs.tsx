@@ -94,7 +94,7 @@ export function SolanaPayDocs() {
           <li>The signature was never used before for any payment, on any chain.</li>
         </List>
         <P>
-          If an amount is short or cannot be matched, nothing is applied, and the message asks you to write to <C>hello@gullylabs.xyz</C> with the signature so the difference can be settled by hand.
+          If an amount is short or cannot be matched, nothing is applied, and the message asks you to write to <C>team@gullylabs.xyz</C> with the signature so the difference can be settled by hand.
         </P>
       </Section>
 
@@ -126,7 +126,7 @@ export function SolanaPayDocs() {
             ['Not finalized yet', '202', 'Seen but not final, or not yet known to the node. Check again shortly.'],
             ['Sent SOL to another address', '422', 'The treasury was not a recipient.'],
             ['Sent a token other than USDC or USDT', '422', 'Only the two mints above count.'],
-            ['Not its associated account', '422', 'The token went to another account of the treasury; write to hello@gullylabs.xyz.'],
+            ['Not its associated account', '422', 'The token went to another account of the treasury; write to team@gullylabs.xyz.'],
             ['Already used for a payment', '409', 'One signature pays one thing.'],
             ['Paid before your checkout was opened, or after its quote ran out', '422', 'It falls outside the quote’s life.'],
             ['Solana could not be read just now', '502', 'Every RPC failed; try again in a minute.'],

@@ -189,6 +189,36 @@
   0%, 100% { opacity: 0.35; }
   50% { opacity: 0.7; }
 }
+/* Chart kit live mode (EChart, MiniSpark, MiniBars; docs: CHART-KIT-LIVE.md). Pure CSS, no per-frame JS.
+   .gl-live-ring: the ring that grows and fades from the newest reading. .gl-live-breathe: an area fill or
+   newest bar that slowly brightens and dims. [data-live='paused'] (set while the chart is off-screen)
+   freezes every loop inside it. Under reduced motion these stay on as a slow, small pulse (see the
+   reduced-motion block): the owner dislikes fully static charts. */
+@keyframes gl-live-ring {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  70%, 100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes gl-area-breathe {
+  0%, 100% { opacity: var(--gl-breathe-lo, 0.6); }
+  50% { opacity: 1; }
+}
+.gl-live-ring { animation: gl-live-ring 2.4s ease-out infinite both; }
+.gl-live-breathe { animation: gl-area-breathe 5s ease-in-out infinite; }
+[data-live-area] [data-chart] svg path[fill^='url('] { animation: gl-area-breathe 5s ease-in-out infinite; }
+/* Hover: the chart's own emphasis and blur take over from the breathing. */
+[data-live-area] [data-chart]:hover svg path[fill^='url('] { animation: none; }
+/* The "now" marker EChart places on the newest point of a line; it glides to the new point on a refresh. */
+.gl-live-mark {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transition: left 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s;
+  animation: gl-fade 0.4s 1.1s ease both;
+}
+[data-live='paused'] *,
+[data-live='paused'] *::before,
+[data-live='paused'] *::after { animation-play-state: paused !important; }
 /* The /links page's background grid, drifting one cell (64 px) per loop so it repeats seamlessly. */
 @keyframes gl-grid-drift { from { background-position: 0 0, 0 0; } to { background-position: 64px 64px, 64px 64px; } }
 
@@ -202,12 +232,20 @@
 /* The one card: surface fill, hairline border, radius lg. Padding is separate (card-pad), so a card
    that holds a full-bleed chart or table can skip it. */
 @utility card {
-  background-color: var(--color-surface);
+  background-color: var(--card-bg);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--card-radius);
 }
 @utility card-pad {
-  padding: 20px;
+  padding: var(--card-pad);
+}
+/* The same tokens as single-property utilities, for a card that is not a div.card (a link tile, a table
+   wrapper): rounded-card, bg-card-token, p-card. */
+@utility bg-card-token {
+  background-color: var(--card-bg);
+}
+@utility p-card {
+  padding: var(--card-pad);
 }
 
 /* The heading scale as whole recipes (family, weight, case, size). text-h1..h4 alone set only the size. */
@@ -281,6 +319,14 @@
 .gl-row-sweep::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(217,181,99,.07), transparent); transform: translateX(-100%); animation: gl-scan 6s var(--sweep-delay, 0s) ease-in-out infinite; }
 
 @layer base {
+  /* The one card token set (design audit N31): radius 12, fill #151d28, padding 20. The card and card-pad
+     utilities, the ghost chart and the chart kit read these; a page that builds its own card uses them
+     (style={{ borderRadius: 'var(--card-radius)' }} or the p-card / bg-card-token / rounded-card classes). */
+  :root {
+    --card-radius: var(--radius-lg);
+    --card-bg: var(--color-surface);
+    --card-pad: 20px;
+  }
   html {
     /* The prototype relies on browser-default line-height. */
     line-height: normal;
@@ -371,6 +417,17 @@
   @keyframes gl-live-pulse { from { opacity: 0; } to { opacity: 0; } }
   @keyframes gl-skeleton { from { opacity: 0.6; } to { opacity: 0.6; } }
   @keyframes gl-grid-drift { from { background-position: 0 0, 0 0; } to { background-position: 0 0, 0 0; } }
+  /* Chart kit live mode stays on, slower and smaller: a gentle pulse, never a static chart. */
+  @keyframes gl-live-ring { 0%, 100% { transform: scale(2); opacity: 0.1; } 50% { transform: scale(2); opacity: 0.4; } }
+  @keyframes gl-area-breathe { 0%, 100% { opacity: var(--gl-breathe-lo, 0.82); } 50% { opacity: 1; } }
+  .gl-live-ring,
+  .gl-live-breathe,
+  [data-live-area] [data-chart] svg path[fill^='url('] {
+    --gl-breathe-lo: 0.82;
+    animation-duration: 4.8s !important;
+    animation-iteration-count: infinite !important;
+  }
+  .gl-live-mark { transition-duration: 0.15s !important; }
   /* Movement: none. */
   @keyframes gl-marquee { from { transform: none; } to { transform: none; } }
   @keyframes gl-scan { from { transform: translateX(-100%); } to { transform: translateX(-100%); } }

@@ -36,7 +36,7 @@ const MAIN = {
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
   '/security': ['Gully Security: AI Security Scan and Security Review · Gully Labs', 'Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price.'],
   '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
-  '/chain-kit': ['Chain Kit: a branded block explorer for your chain · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.'],
+  '/chain-kit': ['Chain Kit: a branded block explorer for your chain, waitlist · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. Join the waitlist.'],
   '/chains': ['Gully Chains: your own Arbitrum chain, run by Gully Labs · Gully Labs', 'Your own Arbitrum Orbit chain, launched and run by Gully Labs, with an explorer, bridge, faucet, account abstraction and monitoring. A testnet is coming: join the waitlist.'],
   '/holders': ['Holder Map: who really holds a token · Gully Labs', 'See who holds any DeepCore launch: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part. Tokenised stocks follow chain by chain.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
@@ -116,9 +116,10 @@ const DOCS_PAGES = {
   '/gully-score': ['Gully Score methodology · Gully Labs docs', 'How the Gully Score is worked out: every component, its weight and source, what happens when data is missing, the badge and widget, and why nobody can pay to change a score.'],
   '/gully-ai': ['Gully AI · Gully Labs docs', 'How Gully AI answers questions about Gully Labs: its sources and citations, the live tools it reads, where it runs (site, ⌘K, docs, app, Telegram), its limits and what it logs.'],
   '/telegram': ['Telegram bot and Mini App · Gully Labs docs', 'The @GullyLabsBot Telegram bot and its Mini App: commands, menus, gap and launch alerts with Mute, connecting a chat from the app, the @GullyLabsNews channel requirement, groups and announcements.'],
-  '/chain-kit': ['Chain Kit · Gully Labs docs', 'Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. What is included, how to request one from the app, and its status.'],
+  '/chain-kit': ['Chain Kit · Gully Labs docs', 'Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. What is planned, how to join the waitlist, and its status.'],
   '/swaps': ['Swaps · Gully Labs docs', 'How swaps work on Gully Labs stock pages: LI.FI on Robinhood Chain and BNB Chain, Jupiter on Solana, the region check (GET /api/geo), the Jupiter proxy, fees, and why your wallet signs everything.'],
   '/solana': ['Solana · Gully Labs docs', 'Gully Labs on Solana: xStocks in the tracker, fair prices from Chainlink or the issuer’s quote, the Holder Map on Solana, Solana Pay in Gully Pay, and Jupiter swaps on stock pages.'],
+  '/contracts': ['Contracts · Gully Labs docs', 'Every on-chain address Gully Labs uses, per chain: the treasury Safe, the fee address, the third-party Request Network fee proxy and our projects’ contracts, each with its explorer link, Sourcify status and the file it is quoted from. Also at /.well-known/contracts.json.'],
   '/status': ['Status · Gully Labs docs', 'The Gully Labs status page and GET /api/status: what each check means, how 24-hour uptime is computed, how incidents open and close, and the JSON shape.'],
   '/telegram-mini-app': ['Telegram Mini App · Gully Labs docs', 'The Gully Labs Telegram Mini App at gullylabs.xyz/tg: how it opens, its screens, how each request is signed with Telegram’s initData, the /api/tg routes, rate limits and errors.'],
   '/news-gate': ['News gate · Gully Labs docs', 'Why the Gully Labs Telegram bot and Mini App ask you to follow @GullyLabsNews, how membership is checked and cached, and everything that stays open without it: alerts, Mute, pausing, deleting and unlinking.'],
@@ -133,7 +134,20 @@ const ORG = {
   name: 'Gully Labs',
   url: SITE,
   logo: `${SITE}/brand/gully-mark-512.png`,
-  sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs'],
+  sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://t.me/GullyLabsBot'],
+}
+/** The product as software: the web app and its public API, free to start (plans are listed on /pricing). */
+const APP_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Gully Labs',
+  url: SITE,
+  image: `${SITE}/brand/gully-mark-512.png`,
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web',
+  description: MAIN['/'][1],
+  publisher: { '@type': 'Organization', name: 'Gully Labs', url: SITE },
+  sameAs: ORG.sameAs,
 }
 const TRACKER_LD = {
   '@context': 'https://schema.org',
@@ -180,6 +194,8 @@ export function pageMeta(host, pathname) {
   if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: null, found: true, noindex: true }
   // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
   if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
+  // A Holder Map Deep check's report (holders-deep-routes.mjs): a real page for whoever holds the unguessable link, never indexed.
+  if (/^\/holders\/deep\/hd_[\w-]{16}$/.test(p)) return { title: 'Deep check · Holder Map · Gully Labs', description: 'A Holder Map Deep check report: funding trace, shared-funder clusters, deployer record, snipers and bundles.', canonical: null, found: true, noindex: true, image: `${SITE}/social/og-holders.png` }
   // Holder Maps (holders.mjs): a page per DeepCore launch or tracked stock token; the share image is the map's own card.
   const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana)\/([A-Za-z0-9]{1,64})$/)
   if (hm) {
@@ -209,7 +225,7 @@ export function pageMeta(host, pathname) {
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   const og = p === '/' || p.startsWith('/legal/') || p === '/ecosystem' || p === '/partners' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/security') ? 'security' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
-  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? ORG : p === '/tracker' ? TRACKER_LD : null }
+  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null }
 }
 
 /** A report's subject in a title: the contract or the repository. */
@@ -243,7 +259,7 @@ export function renderHead(source, meta) {
     html = html.replace(/\s*<link rel="canonical"[^>]*>/, '').replace(/\s*<meta property="og:url"[^>]*>/, '')
   }
   if (!meta.found || meta.noindex) swap(/<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex" />')
-  if (meta.ld) html = html.replace('</head>', `    <script type="application/ld+json">${JSON.stringify(meta.ld).replace(/</g, '\\u003c')}</script>\n  </head>`)
+  for (const ld of [meta.ld ?? []].flat()) html = html.replace('</head>', `    <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n  </head>`)
   return html
 }
 

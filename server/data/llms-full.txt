@@ -1,0 +1,1369 @@
+# Gully Labs
+
+> Gully Labs builds onchain tools: a tracker of tokenised stocks against their fair price, the Holder Map, Gully Pay, Gully Security, Gully AI and a Telegram bot, plus the projects the team has shipped. Everything below is public.
+
+Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram news: https://t.me/GullyLabsNews. Bot: https://t.me/GullyLabsBot.
+
+Statuses: live = running on the site, app or bot today; beta = running but unfinished; testnet = testnets only. Anything under Roadmap is NOT available yet.
+
+## Features available today
+
+### Stock token fair-price gap (Tracker, live)
+
+Shows every tracked tokenised stock at its onchain price next to its fair price and the percentage gap between them, read live.
+
+- Chains: Robinhood Chain (33 stock tokens in server/data/robinhood-stocks.json), BNB Chain (14 Binance bStocks in bsc-stocks.json) and Solana (49 xStocks in solana-stocks.json).
+- Fair price is a Chainlink feed read on chain with latestRoundData(); on BNB Chain it is the feed times the token's uiMultiplier(); on Solana, where a share has no Chainlink feed, it is the issuer's xStocks quote.
+- Onchain price is read from each token's deepest pool; DexScreener or GeckoTerminal only find the pool.
+- A pool under MIN_LIQUIDITY_USD (10,000) is shown but never flagged; a gap under IN_LINE_PCT (1) is "in line"; a gap of IMPLAUSIBLE_PCT (15) or more is withheld as unverified unless the pool holds TRUST_LIQUIDITY_USD (1,000,000) or more and was read on chain.
+- A price that cannot be read is reported as unreadable, never as zero.
+- History snapshots are taken every 5 minutes and kept for 7 days.
+
+URL: https://gullylabs.xyz/tracker
+
+### Gap movers and gap index (Tracker, live)
+
+Lists the stock tokens whose gap has moved most over the last hour or day, and a single gap index across the tracker.
+
+- Mover windows are 1h and 24h (MOVER_WINDOWS in server/movers.mjs).
+- Endpoints: GET /api/tracker/movers and GET /api/tracker/gap-index.
+- Movers are in percentage points of gap, with the gap then and now.
+
+URL: https://docs.gullylabs.xyz/api
+
+### Stock pages (Tracker, live)
+
+Gives every tracked stock token its own page with price against fair price, the gap chart, pool depth, contracts, swap, alerts and its Holder Map.
+
+- Pages live at /tracker/<chain>/<TICKER>; the chain keys are robinhood, bsc and solana.
+- The gap chart shows 24 hours or 7 days from the tracker's five-minute snapshots, with drag-to-zoom.
+- The page links to the app's Alerts tab with the token preset, and copies an embeddable badge.
+- A value that could not be read shows a dash, never zero.
+
+URL: https://gullylabs.xyz/tracker
+
+### Public tracker API (Tracker, live)
+
+A read-only JSON API for the tracker, open without a key; a key raises the rate limit.
+
+- Endpoints include GET /api/tracker, /api/tracker/history, /api/tracker/movers, /api/tracker/gap-index, /api/plans, /api/status and /api/stats.
+- Anonymous callers get ANONYMOUS.perMin (60) requests a minute per IP and 7 days of history (server/plans.mjs).
+- Keys are Bearer tokens that start gl_live_.
+
+URL: https://docs.gullylabs.xyz/api
+
+### In-page stock token swaps (Tracker, live)
+
+Lets a visitor swap into or out of a stock token from its page, routed by LI.FI on Robinhood Chain and BNB Chain and by Jupiter on Solana. The visitor's own wallet signs everything.
+
+- Solana quotes and swap transactions go through GET /api/solana/jupiter/quote and POST /api/solana/jupiter/swap; the server returns an unsigned transaction and holds no key.
+- A region check (GET /api/geo, from Cloudflare's CF-IPCountry header) can close the swap card; the list is in server/geo.mjs.
+
+URL: https://docs.gullylabs.xyz/swaps
+
+### Solana xStocks coverage (Tracker, live)
+
+Extends the tracker to Solana xStocks, with the Holder Map, Solana Pay payments and Jupiter swaps on the same chain.
+
+- 49 xStocks are followed (those with a DEX pool of at least $1,000 per DexScreener, server/data/solana-stocks.json).
+- Gully Pay accepts SOL, USDC and USDT on Solana.
+
+URL: https://docs.gullylabs.xyz/solana
+
+### Gap alerts (Tracker, live)
+
+Tells a signed-in user, by signed webhook or Telegram, when a stock token's gap crosses a line they set.
+
+- Conditions: a gap percentage above, below or either way, or a status of premium, discount or either; the target is one stock or any stock.
+- Alert counts by plan come from PLANS in server/plans.mjs: Free 1, Pro 10, Business 100.
+- Webhooks are signed with HMAC-SHA256 in X-Gully-Signature (sha256=<hex>) with an X-Gully-Timestamp header.
+- Alerts can also be created from the Telegram Mini App.
+
+URL: https://docs.gullylabs.xyz/plans-alerts
+
+### API plans (Free, Pro, Business) (Tracker, live)
+
+Paid tiers of the tracker API that raise the per-key rate limit, add alerts and monitors, and lengthen history. Paid by crypto, with no custody.
+
+- Free: $0, 600 requests a minute, 1 alert, 7 days of history, 1 contract monitor (PLANS.free).
+- Pro: $49 per 30 days, 3,000 requests a minute, 10 alerts, 90 days of history, 10 monitors (PLANS.pro).
+- Business: $199 per 30 days, 10,000 requests a minute, 100 alerts, 365 days of history, 50 monitors (PLANS.business).
+- Each wallet may hold up to 5 keys on every plan; one payment buys PERIOD_DAYS (30) days.
+- All prices and limits are read from server/plans.mjs and served at GET /api/plans.
+
+URL: https://gullylabs.xyz/pricing
+
+### Embeddable tracker widget (Widget, live)
+
+Puts live tracker data on any web page from one script tag: a ticker, a one-stock badge, a table of the widest gaps, or a Holder Map frame.
+
+- Kinds via data-gully-widget: ticker, badge, table and holders.
+- Themes: dark and light (data-theme); the script is public/widget.js, served from gullylabs.xyz/widget.js.
+- One request per API base per minute, however many widgets are on the page.
+- A widget builder is at /widget.
+
+URL: https://gullylabs.xyz/widget
+
+### Holder Map (Holder Map, live)
+
+Shows who really holds a token: the biggest wallets as bubbles, wallets that trade with each other linked as clusters, and a plain-words summary.
+
+- Chains: Robinhood Chain, BNB Chain, Base, HyperEVM and Solana (HOLDER_CHAINS in server/holders.mjs); any token can be mapped, with launch checks for DeepCore launches and registered launchpads.
+- Pools, locks, burn addresses, exchanges and the token contract are labelled grey and never counted as wallets or put in a cluster.
+- A chain without a data source says holder data is not available; it never draws an empty or invented map.
+- Per-tier limits come from HOLDER_MAP in server/plans.mjs: Free lists 50 holders, Pro and Business 500; the map draws at most 120.
+- HOLDER_MAP.gated is false today, so every visitor gets the Pro features; safety warnings are never gated.
+
+URL: https://gullylabs.xyz/holders
+
+### Launch Health score (Holder Map, live)
+
+Scores a DeepCore launch from 0 to 100 on liquidity, bundled buyers, the deployer's share and record, top-10 concentration and snipers. It is never behind a paywall.
+
+- Weights (server/holders-intel.mjs): liquidity 20, bundle 20, deployer 20, top10 15, snipers 10, record 15.
+- A part that cannot be read is left out and the score is computed over the rest.
+
+URL: https://docs.gullylabs.xyz/holder-map
+
+### Replay, live view and CSV (Holder Map, live)
+
+Replays a holder map over time with a scrubber, keeps it updating live while open, and exports the holder list as CSV.
+
+- Live updates for an open map are polled from the server and shared per token for 10 seconds.
+- CSV is GET /api/holders/:chain/:token.csv, controlled by HOLDER_MAP.tiers.*.csv.
+- Free-tier live view lasts liveMinutes 5; Pro and Business have no limit (HOLDER_MAP in plans.mjs).
+- A share card is served at /card.png (1200 x 630).
+
+URL: https://docs.gullylabs.xyz/holder-map
+
+### Holder Map alerts (Holder Map, live)
+
+Alerts when the largest cluster or the top-10 share of a token reaches a level or drops, by Telegram or webhook.
+
+- Metric is cluster or top10; fires at an "above" percentage or after a drop of dropPts points from its high (server/alerts.mjs).
+- Alerts count against the plan's alert limit.
+
+URL: https://docs.gullylabs.xyz/holder-map
+
+### Deep check (Holder Map, live)
+
+A paid, bounded investigation of one token that traces where top holders were funded from, shared funders, the deployer's record and snipers.
+
+- Price $9 per token (HOLDER_DEEP.priceUsd); free checks a month: Free 0, Pro 3, Business 3.
+- A 20% discount applies when bought with a paid Gully Security scan of the same contract.
+- Budgets per check: 150 RPC calls, 12 log spans, 60 explorer calls, 120,000 ms, 12 holders traced, 3 hops. A check that hits a limit finishes "partial" with the reason.
+- Up to 3 checks per workspace may be active and 2 run at once on the server.
+
+URL: https://docs.gullylabs.xyz/holder-map
+
+### Launchpad partner webhooks (Holder Map, live)
+
+Lets a launchpad tell Gully Labs about a new token and receive a signed risk flag when the pre-built Holder Map shows warning signs.
+
+- Inbound: POST /api/partners/launch with a Bearer API key; 30 launch events a minute and 1,000 a day per key; the same token is queued once per workspace per 24 hours.
+- Outbound: launch.flagged is sent only when risk signals exist, signed with a whsec_ secret.
+- Registered per workspace with POST /api/developer/partners/webhook.
+
+URL: https://docs.gullylabs.xyz/holder-map
+
+### Invoices and pay links (Gully Pay, live)
+
+Non-custodial crypto billing: invoices and reusable pay links where the payer sends a plain transfer straight to the treasury (or the merchant), read back from the chain.
+
+- EVM chains: Base (8453), Ethereum (1), BNB Chain (56), Arbitrum (42161), OP Mainnet (10), Polygon (137), Avalanche (43114), plus Solana; each is offered only while the Safe treasury is deployed there (server/treasury-chains.mjs).
+- Confirmations required: Base 10, Ethereum 6, BNB Chain 15, Arbitrum 10, OP Mainnet 10, Polygon 64, Avalanche 2 (server/payments.mjs).
+- A pay link is a fixed USD amount or an open amount between a minimum and maximum; a link makes at most LINK_INVOICES_PER_HOUR (10) invoices per IP per hour.
+- Gully Labs never holds funds; a chainId:hash can be used once only.
+
+URL: https://docs.gullylabs.xyz/gully-pay
+
+### Solana Pay (Gully Pay, live)
+
+Takes SOL, USDC and USDT on Solana through Solana Pay transfer requests with a per-quote reference key.
+
+- A payment counts only when the transaction is finalized.
+- Found by reference with GET /api/solana/pay/find, or by a pasted signature.
+
+URL: https://docs.gullylabs.xyz/solana-pay
+
+### Signed payment webhooks (Gully Pay, live)
+
+Sends signed events when an invoice is paid, expires or is cancelled.
+
+- Events: invoice.paid, invoice.expired, invoice.cancelled and webhook.test.
+- Signed with HMAC-SHA256 in X-Gully-Signature with X-Gully-Timestamp, using the endpoint's own whsec_ secret.
+
+URL: https://docs.gullylabs.xyz/gully-pay
+
+### Pay with crypto button (Gully Pay, live)
+
+An optional script that opens a Gully Pay checkout in a popup from a normal link.
+
+- Add data-gully-pay="popup" to a link to a pay URL; "tab" or no script opens a new tab.
+- The checkout cannot be put in an iframe; the script sets no cookies.
+
+URL: https://docs.gullylabs.xyz/gully-pay
+
+### Live gas costs per chain (Gully Pay, live)
+
+Shows what a Gully Pay payment costs in gas right now on each payment chain.
+
+- GET /api/pay/gas; costs assume 106k gas for a fee-proxy payment and 65k for a plain ERC-20 transfer, including the L1 data fee on OP Stack chains and Arbitrum.
+- A chain that cannot be read says unavailable.
+
+URL: https://docs.gullylabs.xyz/gully-pay
+
+### Merchant checkout (Gully Pay, live)
+
+Lets any workspace run its own non-custodial crypto checkout, paid straight into its own wallets, for a transaction fee only.
+
+- Default fee is DEFAULT_FEE_BPS 50 (0.5%) of payment value above a lifetime free allowance of DEFAULT_FREE_USD ($5,000), both env-overridable (server/merchant-fees.mjs).
+- Fee statements are issued every Monday 00:00 UTC to merchants owing at least $1; unpaid after PAUSE_AFTER_DAYS (7) the merchant's checkouts pause until paid.
+- Merchants get pay links, invoices, signed webhooks, CSV export and a branded profile.
+- Supports USDC, USDT and each chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon and Avalanche.
+
+URL: https://docs.gullylabs.xyz/gully-pay-merchants
+
+### Fee split and no-stuck-funds guards (Gully Pay, live)
+
+Collects the merchant fee inside the payment through Request Network's ERC20FeeProxy on stablecoins, with guards so funds can never end up stuck in the proxy.
+
+- A plain transfer, QR code or link never names a fee proxy as recipient on any chain (server/fee-proxy-guard.mjs).
+- Split calls use only USDC or USDT, with the fee strictly between 0 and the amount.
+- An hourly monitor reads every known proxy's balance and raises an admin alert on a non-zero balance (server/fee-proxy-monitor.mjs).
+
+URL: https://docs.gullylabs.xyz/gully-pay-merchants
+
+### One-click Safe deployment (Gully Pay, live)
+
+Deploys a Safe multisig at the same address on another chain from inside the app, with the user's own wallet signing.
+
+- The server works out the factory call and never holds a key or sends a transaction.
+- Uses Safe's CREATE2 proxy factory so the address matches across chains.
+
+URL: https://docs.gullylabs.xyz/gully-pay-merchants
+
+### AI Security Scan (Gully Security, live)
+
+A self-serve automated scan of a deployed contract, a Solidity repository, an upload or a web2 codebase. It is an AI review only until the static-tools worker runs, and is never called an audit.
+
+- Inputs: deployed address, GitHub repo and commit, uploaded file, or web2 repo (checklist mode).
+- Chains: Ethereum, Base, Arbitrum, OP Mainnet, BNB Chain, Polygon, Avalanche, Sepolia and Base Sepolia (server/security/chains.mjs).
+- Price $99 per scan beyond the monthly allowance (SECURITY.scan.priceUsd); free scans a month: Free 1, Pro 3, Business 10; up to 2 active scans; uploads up to 2,000,000 bytes (server/plans.mjs).
+- Every report is labelled "AI review only — static tools unavailable" and every finding has verifiedByHuman false.
+
+URL: https://gullylabs.xyz/security
+
+### Published scan reports (Gully Security, live)
+
+Scan reports can be published and read as web pages, with findings, locations and draft proofs of concept.
+
+- Pages at /security/reports and /security/reports/:id; API under /api/security/reports.
+- Reports state the target, tools run or not run, the commit or address and a point-in-time disclaimer.
+
+URL: https://gullylabs.xyz/security/reports
+
+### Contract monitors (Gully Security, live)
+
+Watches a contract and tells you by Telegram or signed webhook when a privileged change happens.
+
+- Watches ownership transfers, ERC-1967 admin and upgrade changes, role grants and revokes, pauses, large outflows, and Safe owner or threshold changes.
+- One pass per chain every LOOP_MS (60,000 ms); each event is delivered at most once.
+- Monitors per plan come from PLANS: Free 1, Pro 10, Business 50.
+
+URL: https://docs.gullylabs.xyz/gully-security
+
+### Security Review (Gully Security, live)
+
+People on the team read the code in scope and write up what they find. Quoted per project after a request.
+
+- SECURITY.review is quoted with no list price and available (server/plans.mjs).
+- Requested through the form at /security (POST /api/security/review-requests).
+
+URL: https://gullylabs.xyz/security
+
+### Gully Score (Gully Score, live)
+
+A 0 to 100 reading of how a contract is controlled and how it has behaved, from public evidence only, with every component, weight and source shown.
+
+- Nine components with weights: code verified 15, who controls it 20, delay on changes 10, can the code change 10, recent privileged changes 10, liquidity locked 10, holder spread 10, Gully Security review 10, age 5 (COMPONENTS in server/gully-score.mjs).
+- A component that cannot be read is left out, never scored as zero; below MIN_COVERAGE (40) of the 100 weight points no score is given.
+- Paying Gully Labs never changes a score. Methodology at GET /api/score/methodology.
+
+URL: https://gullylabs.xyz/score
+
+### Score badge (Gully Score, live)
+
+An SVG badge of a contract's score that a project can embed on its own site.
+
+- Rendered by server/gully-score.mjs as an SVG labelled GULLY SCORE.
+
+URL: https://docs.gullylabs.xyz/gully-score
+
+### Gully AI assistant (Gully AI, live)
+
+Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not.
+
+- Retrieval is hybrid: BM25, a synonym-expanded BM25 and, when VOYAGE_API_KEY is set, embeddings, fused by reciprocal-rank fusion.
+- Live tools include get_plans, get_stock, get_top_gaps, deepcore_launches, deepcore_pool, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.
+- Default answer model is claude-haiku-5-5 (ASK_MODEL); the log keeps a salted IP hash only, for 90 days.
+- Per-visitor limits default to 6 a minute and 60 a day; ASK_DAILY_LIMIT caps all surfaces at 2000 a day.
+- It runs on the site (/ask), the docs, the app, ⌘K and Telegram (/ask).
+
+URL: https://gullylabs.xyz/ask
+
+### @GullyLabsBot commands and alerts (Telegram bot, live)
+
+A Telegram bot with a menu for gaps, movers, new DeepCore launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.
+
+- Private-chat commands: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop. Groups get gap, top, launches and help.
+- Alerts can be paused, muted for 24 hours, tested or deleted from the chat.
+- A chat is connected to a wallet account from the app dashboard.
+
+URL: https://docs.gullylabs.xyz/telegram
+
+### News channel gate (Telegram bot, live)
+
+Asks users to follow @GullyLabsNews to use the bot's features, while leaving alerts, mute, pause, delete and unlink open.
+
+- If membership cannot be checked, the gate lets people through.
+- The same gate applies in the Mini App.
+
+URL: https://docs.gullylabs.xyz/news-gate
+
+### Telegram Mini App (Mini App, live)
+
+The Gully app inside Telegram, with stock gaps, DeepCore launches and alerts for the account linked to your chat.
+
+- Served at gullylabs.xyz/tg; each request carries Telegram initData, validated with HMAC-SHA256 and refused after 24 hours.
+- Routes: /api/tg/me, /sparks, /launches, /alerts and /announcements.
+
+URL: https://gullylabs.xyz/tg
+
+### New DeepCore launch alerts (Telegram bot, live)
+
+Alerts when a new token launches on DeepCore, on any chain or one you pick.
+
+- DeepCore chains: BNB Chain (56), HyperEVM (999), Robinhood Chain (4663) and Base (8453).
+
+URL: https://docs.gullylabs.xyz/telegram
+
+### Gully Analytics (Gully Analytics, live)
+
+Privacy-friendly web analytics with Web3 events, a fork of Umami, that a wallet signs up for in the app and pays for with Gully Pay.
+
+- Free trial of ANALYTICS_TRIAL_DAYS (14) days with 1 site and 10,000 events a month.
+- Starter: $19, 3 sites, 100,000 events a month. Growth: $79, 10 sites, 1,000,000 events a month (ANALYTICS_PLANS; the prices are placeholders until the owner sets them).
+- After a lapse, events are refused but the dashboard stays readable for ANALYTICS_GRACE_DAYS (30) days.
+- Events over quota are answered 402 by the proxy at analytics.gullylabs.xyz.
+
+URL: https://gullylabs.xyz/analytics
+
+### Gully Labs App dashboard (App, live)
+
+A wallet-signed-in dashboard at app.gullylabs.xyz for keys, alerts, usage, billing, analytics, security, Gully Pay and the other services.
+
+- Sign-in is Sign-In with Ethereum (EIP-4361), including smart-contract wallets via EIP-1271 and ERC-6492.
+- The old developers host was retired on 2026-10-17; /app and /developers on the main site redirect to the app.
+
+URL: https://app.gullylabs.xyz/
+
+### Teams and workspaces (App, live)
+
+Every wallet is a workspace; owners invite teammates by wallet or link with roles, and an activity log records changes.
+
+- Roles: owner, admin, developer, billing, viewer (server/workspaces.mjs).
+- CSV exports of usage and payments: GET /api/developer/export/usage.csv and payments.csv.
+- Usage notices fire at 80% and 100% of a key's per-minute limit.
+
+URL: https://docs.gullylabs.xyz/teams
+
+### Public status page (Docs, live)
+
+A public page and JSON endpoint showing the health of the API, tracker data, DeepCore poller, Telegram bot, payment RPCs, Gully AI, the scan engine, monitors and Holder Map sources.
+
+- Checks run every 60 seconds with 24 hours of samples kept; incidents open and close on state changes.
+- Endpoint: GET /api/status.
+
+URL: https://gullylabs.xyz/status
+
+### Docs site and changelog (Docs, live)
+
+Documentation for every product at docs.gullylabs.xyz, with a searchable sidebar, an API reference, a roadmap and a dated changelog.
+
+- Pages cover the tracker, API, widget, SDK, Holder Map, Gully Pay, Gully Security, Gully Score, Gully AI, Telegram, Solana, Chain Kit, status, roadmap and changelog (src/docs/nav.ts).
+
+URL: https://docs.gullylabs.xyz/
+
+### Cross-venue live stats (Gully Labs, live)
+
+The home page shows live figures read from each Gully Labs project's own public API, each with its source.
+
+- Venues read: Cartel Family, DeepCore, PeddleSwap, Peddles and PeddleQuest (server/stats.mjs).
+- A venue that cannot be read is reported as an error, never as zeros; a token-denominated figure is never added to a dollar total.
+
+URL: https://gullylabs.xyz/
+
+### Engineering services (Gully Labs, live)
+
+Gully Labs takes on smart contract, dApp, chain infrastructure and security work on request.
+
+- Smart Contracts (6-12 weeks), dApps and Frontends (8-16 weeks), Chain Infrastructure (8-20 weeks) and Gully Security (quoted) are listed in src/content/services.ts.
+- Enquiries go through POST /api/contact.
+
+URL: https://gullylabs.xyz/services
+
+### Blog (Gully Labs, live)
+
+A self-hosted Ghost blog at blog.gullylabs.xyz with generated share images.
+
+- Share images are 1200 x 630 PNGs rendered at /og/blog/<slug>.png.
+- New posts can auto-post to the @GullyLabsNews channel.
+
+URL: https://blog.gullylabs.xyz/
+
+### Token logo service (Gully Labs, live)
+
+Serves token logos by chain and address for the whole stack, from the first source that returns a valid image.
+
+- GET /api/logo/:chain/:address at 64, 128 or 256 px.
+- Sources in order: DeepCore, DexScreener, Jupiter or the xStocks logo, CoinGecko, Trust Wallet.
+
+URL: https://gullylabs.xyz/
+
+### Gully Chains waitlist (Gully Chains, live)
+
+A waitlist in the app for Gully Chains devnet news. No chain is running yet.
+
+- POST /api/developer/chains-waitlist saves an email against the wallet.
+- POST /api/chains/waitlist is the public form on /chains; the app waitlist remains.
+
+URL: https://gullylabs.xyz/
+
+### Map any token (Holder Map, live)
+
+The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only DeepCore launches and stock tokens. A pasted address is checked to be a token first.
+
+- Chains in HOLDER_CHAINS (server/holders.mjs): Robinhood Chain (4663), BNB Chain (56), Base (8453), HyperEVM (999) and Solana.
+- An address is probed before anything is built: an ERC-20 must answer decimals() and totalSupply(); on Solana it must be a mint. With no chain given, every supported chain is checked at once.
+- Limits for non-listed tokens (ANY in server/holders-any.mjs): 5 new maps per IP per minute, 30 a minute across all IPs, 2 built at once; address probes 8 per IP per minute and 60 a minute overall. Maps already built are free.
+- Launch checks and the Launch Health score stay limited to DeepCore launches and launchpads in the registry; a plain token gets holders, clusters and concentration.
+- GET /api/holders/sources reports per chain whether tokens map with full history, as top holders only, or not yet.
+
+URL: https://gullylabs.xyz/holders
+
+### Launchpad registry (Peddles, PeddleSwap) (Holder Map, live)
+
+A registry of launchpads lets the Holder Map recognise a token as a launch from a known launchpad. Peddles and PeddleSwap are the first two entries.
+
+- Peddles: Robinhood Chain 4663, Base 8453 and BNB Chain 56, looked up through its API with the PoolRegistered fee-hook event as a fallback.
+- PeddleSwap: Robinhood Chain 4663 and Base 8453, looked up through its launches API.
+- Lookups time out at 6 s (HTTP_MS), run at most 4 at a time (MAX_INFLIGHT) and 120 uncached lookups a minute (MAX_PER_MIN). Positive results are cached for 24 hours and "not a launch" for 10 minutes.
+- An unknown or unreachable launchpad degrades to a generic token map.
+
+URL: https://docs.gullylabs.xyz/holder-map-integrate
+
+### Integrate the Holder Map (Holder Map, live)
+
+A docs page and a partner guide that explain the embed, the iframe, the public API and the share card, and invite launchpads to be listed.
+
+- Docs page: holder-map-integrate, in the Products group of docs.gullylabs.xyz.
+- Partner guide ops/LAUNCHPAD-INTEGRATION.md: a launchpad supplies either a token API (404 when the token is not theirs) or a factory event.
+- Public API: GET /api/holders/:chain/:token, the .csv export (plan-gated) and /card.png (1200 x 630).
+
+URL: https://docs.gullylabs.xyz/holder-map-integrate
+
+### Holder Map badge (Holder Map, live)
+
+A small SVG badge for a token showing its launch health or the number of bundles, built only from cached map data.
+
+- GET /api/holders/:chain/:token/badge.svg never builds a map; until one is cached it shows a neutral "Holder Map" pill.
+
+URL: https://docs.gullylabs.xyz/badges
+
+### Gully Labs badges (Brand, live)
+
+One family of embeddable SVG badges for README files and project sites: Gully Score, Holder Map, Gully Security and Built by Gully Labs.
+
+- Sizes S (20 px tall), M (28) and L (36); themes dark and light; tones brand, neutral, good and warn (server/badges.mjs).
+- Built-by badge: /badges/built-by-gully-labs.svg for our own projects; example faces for the docs gallery are fixed values, never real data.
+- Letters are outlined paths, so a badge needs no font; PNG output is rendered with resvg.
+- The Gully Security badge exists only for a published report.
+
+URL: https://docs.gullylabs.xyz/badges
+
+### Inline Holder Map in any chat (Telegram bot, live)
+
+Typing @GullyLabsBot followed by a token address or ticker in any Telegram chat answers with the Holder Map share card, a short caption of measured facts and buttons.
+
+- Only a valid address (0x or a Solana mint) or a tracked ticker does any work; anything else gets no results.
+- At most INLINE_WORK_PER_MIN (12) lookups that do work per Telegram user a minute; cached answers are free.
+- The News channel gate does not apply to inline results, which carry a Join @GullyLabsNews button.
+- Captions state facts only, never a verdict.
+
+URL: https://docs.gullylabs.xyz/telegram
+
+### Daily Launch radar post (Telegram bot, live)
+
+A daily post for the @GullyLabsNews channel naming the cleanest and the most concentrated new launches, from maps the Holder Map has already built.
+
+- One draft a day (default 15:00 UTC, TELEGRAM_RADAR_TIME); it is posted only when an admin approves it, unless TELEGRAM_RADAR_AUTOPOST=1 (default off).
+- Posts carry measured facts and a "signals, not verdicts" note, never an accusation.
+
+URL: https://t.me/GullyLabsNews
+
+### Ecosystem and partners pages (Ecosystem, live)
+
+Public pages that list the third-party data and infrastructure Gully Labs relies on, and what launchpads, wallets, explorers and chains get from a partnership.
+
+- Every integration on /ecosystem names the file that proves it (src/content/ecosystem.ts); plans are not listed as integrations.
+- GET /api/ecosystem returns the chains and the launchpad registry; POST /api/ecosystem/submissions stores a "List your launchpad" request, rate limited and with a honeypot.
+- A submission is only stored; nothing is listed automatically, and an admin approves by hand.
+
+URL: https://gullylabs.xyz/ecosystem
+
+### Gully Chains offer and waitlist (Gully Chains, live)
+
+A public page with the managed-chain offer, its prices read from config, and a waitlist form. No Gully Chains network is running yet; a testnet is coming.
+
+- Testnet: free for freeDays 30, then a monthly price that is not set (monthlyUsd null, shown as TBA) (CHAINS.testnet in server/chains-plans.mjs).
+- Managed mainnet: from $3,500 a month (fromUsdPerMonth) plus 5% of the sequencer's profit (sequencerProfitPct), with data availability at cost.
+- Add-on prices are null (TBA) for the paymaster, pay gas in USDC, Gully Pay on your chain, Hyperlane setup and DeepCore; prices before launch may change.
+- Stack: Arbitrum Orbit (Nitro), settlement to Arbitrum, Hyperlane, Chain Kit explorer, Gully Bridge, faucet and RPC.
+- GET /api/chains/plans serves the config; POST /api/chains/waitlist takes the form with a per-IP rate limit and a honeypot.
+
+URL: https://gullylabs.xyz/chains
+
+### Included services on the testnet (Gully Chains, testnet)
+
+The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
+
+- SERVICES in server/chains-plans.mjs gives insight, pay and hyperlane the status testnet; chainkit (the explorer, bridge and faucet) is planned and on a waitlist.
+- Chain Kit (waitlist) and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons.
+- The page says nothing about Gully Chains is live yet.
+
+URL: https://gullylabs.xyz/chains
+
+### Tracker API client (SDK, beta)
+
+@gullylabs/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists.
+
+- Package @gullylabs/tracker, version 0.1.0 in package.json
+- Methods include getTracker, getStock, getRows, widestGaps, getHistory and watch
+- Covers tokenised stocks on Robinhood Chain and BNB Chain (chain keys 'robinhood' and 'bsc')
+- Anonymous calls are limited to 60 a minute per IP; an API key raises that to 600
+- watch() polls every 60 seconds by default, matching the tracker refresh
+- isTrusted(row) keeps rows with a readable gap and status in-line, drifting, premium or discount
+- A price that cannot be read is null, never zero
+- Failures raise GullyApiError with a status (0 for network error or timeout) and retryAfter on a 429
+
+URL: https://docs.gullylabs.xyz/api
+
+### Embeddable tracker widget (SDK, beta)
+
+@gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component.
+
+- Package @gullylabs/widget, version 0.1.0
+- Widget types are ticker, badge and table
+- Drawn in its own shadow root so it does not clash with page styles
+- Script-tag install via https://gullylabs.xyz/widget.js and a data-gully-widget attribute
+- React component GullyWidget is exported from @gullylabs/widget/react
+- Badge shows a 24-hour gap chart for one stock; table and ticker take a limit option
+- Supports a light theme option
+
+URL: https://gullylabs.xyz/tracker
+
+### Holder Map client and component (SDK, beta)
+
+@gullylabs/holders is a typed client for the Holder Map API plus a React component that frames the live map.
+
+- Package @gullylabs/holders, version 0.1.0
+- createHoldersClient().getMap(chain, tokenOrTicker) returns the map or a state of unavailable, not-found, busy or error
+- Chains supported: robinhood, bsc, base, hyperevm, solana
+- cardUrl() builds a 1200 x 630 share card image URL
+- getCsv needs a plan that includes CSV export
+- React HolderMap component frames gullylabs.xyz/embed/holders/:chain/:token; height is 360 to 2000, default 760
+- A 'Powered by Gully Labs' credit always shows in the frame
+
+URL: https://gullylabs.xyz/holders
+
+### API keys and licence (SDK, beta)
+
+The SDK is MIT licensed. Keys come from the developer portal and raise the rate limit tenfold.
+
+- Repository licence is MIT (LICENSE file present)
+- Keys are issued at developers.gullylabs.xyz by signing in with a wallet
+- createTrackerClient accepts an apiKey option
+
+URL: https://developers.gullylabs.xyz
+
+### Web3 tracking (Gully Analytics, live)
+
+An opt-in tracker mode that records wallet connects, chain switches and transactions on top of normal Umami analytics.
+
+- Enabled with data-web3="true" on the tracker script; without it the script behaves like the Umami tracker
+- Events: wallet-connect, wallet-disconnect, chain-switch, tx-sent
+- Finds wallets through EIP-6963 and window.ethereum, and never calls a wallet method itself
+- Adds about 2.4 KB to script.js (about 1 KB gzipped)
+- Code lives in src/tracker/web3.ts
+
+URL: https://gullylabs.xyz/analytics
+
+### Wallet address privacy modes (Gully Analytics, live)
+
+The site owner chooses how wallet addresses are stored: hashed, in full, or not at all.
+
+- data-web3-address accepts hash (default), full or none
+- hash stores the first 16 hex characters of the SHA-256 of the lowercase address
+- On plain HTTP the address is dropped rather than sent in clear
+- Telemetry and update checks to Umami's servers are turned off (DISABLE_TELEMETRY, DISABLE_UPDATES) in the Gully compose file
+
+### Web3 dashboard (Gully Analytics, live)
+
+A per-website Web3 page shows unique wallets, connect rate, transactions and a funnel.
+
+- Shows unique wallets, connect rate, transactions, tx per wallet, a visit-connect-transaction funnel, chains, wallet apps and top pages by connects
+- API: GET /api/websites/{websiteId}/web3
+- Named chains: Ethereum 1, Optimism 10, BNB Chain 56, Polygon 137, HyperEVM 999, Robinhood Chain 4663, Arc 5042, Base 8453, Arbitrum 42161
+- Runs on PostgreSQL only; ClickHouse answers 501 not-implemented
+
+### Self-hosting and fork licence (Gully Analytics, live)
+
+A Docker Compose file runs the app with PostgreSQL. The fork is MIT licensed, like Umami.
+
+- docker-compose.gully.yml defines app and db services; app binds 127.0.0.1:3000
+- TRACKER_SCRIPT_NAME can rename the tracker script
+- Healthcheck calls /api/heartbeat
+- Fork of Umami (MIT, Umami Software, Inc.); Gully's changes are MIT too
+- Gully Labs look: dark theme by default with a gold accent
+
+URL: https://analytics.gullylabs.xyz
+
+### Launchpad (DeepCore, live)
+
+A token, its pool and locked liquidity are created in one transaction, with a decaying anti-snipe fee at the open.
+
+- LaunchpadKitV2 opens a launch on a concentrated-liquidity range or a shaped Bin distribution
+- Liquidity is locked forever via DeepCoreLPLocker / DeepCoreBinLPLocker
+- Anti-snipe fee: LaunchGuardHook caps the initial fee at 50% (MAX_INITIAL_FEE) and the final fee at 10%; README states 50% at the open, 10% on Bin, decaying over at least 60 seconds
+- Optional creator tax is capped at 10% (MAX_TAX_BPS = 1000) and expires by itself, at most 180 days
+- LaunchpadKitV2 is recorded in the SDK address book on Base, BNB Chain, HyperEVM and Robinhood Chain at the same address 0x78781DC6...
+- Wizard is market-cap-first with a $3.5K-equivalent default per the README
+
+URL: https://deepcore.fun
+
+### Hosted Launchpads and DEXes (DeepCore, live)
+
+Anyone can open their own Launchpad or DEX on the core in one transaction, with a share of fees going to the site.
+
+- DeepCorePadFactory clones a pad at the same address on every chain (0x7878647B... in the address book)
+- Owner, name, brand and terms are stored on chain
+- Hosted site can use a deepcore.fun subdomain or the owner's own domain, with a theme pack and its own fee share (README)
+- Contracts: DeepCorePad, DeepCorePadFactory in packages/launchpad/src/pad
+
+URL: https://deepcore.fun
+
+### Best-price router (DeepCore, live)
+
+Swaps route across DeepCore pools and other venues. DeepCore pools carry no router fee; fills on other venues pay a small capped fee.
+
+- DeepCoreFillRouter charges feeBps() on fills elsewhere; README states 0.15%
+- The fee is bounded in the contract by ABSOLUTE_MAX_FEE_BPS = 100 (1%)
+- Fee changes use a notice period of up to MAX_FEE_NOTICE_SECONDS = 30 days
+- fillRouter is 0x78786244... on all four chains in the SDK address book
+
+URL: https://deepcore.fun
+
+### Locks, vesting, airdrops, splits and multisend (DeepCore, live)
+
+Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.
+
+- Contracts: DeepCorePositionLock, DeepCoreTokenLock, DeepCoreMerkleDrop with DeepCoreDropFactory, DeepCoreSplit with DeepCoreSplitFactory, DeepCoreMultisend
+- positionLock, tokenLock, splitFactory and multisend are recorded at the same address on HyperEVM, BNB Chain, Robinhood Chain and Base
+- Airdrops are Merkle-based
+
+URL: https://deepcore.fun
+
+### Limit orders and DCA (DeepCore, live)
+
+On-chain range (limit) orders and dollar-cost averaging contracts, deployed on three of the four chains.
+
+- Contracts: DeepCoreRangeOrders and DeepCoreDCA
+- In the SDK address book rangeOrders and dca have addresses on HyperEVM, Robinhood Chain and Base, and are null on BNB Chain
+- Also in the repo but not in the README feature list: DeepCoreManagedVault and DeepCoreVaultFactory (vaultFactory set on HyperEVM, Robinhood Chain and Base) and a liquidity-rewards hook
+
+URL: https://deepcore.fun
+
+### Same addresses on four chains (DeepCore, live)
+
+The core is deployed at the same contract addresses on HyperEVM, BNB Chain, Robinhood Chain and Base.
+
+- Chain IDs in the SDK address book: 999, 56, 4663, 8453
+- Address book is packages/sdk/src/deployments/index.ts; null means not deployed, never zero
+- Contracts are owned by a 2-of-3 Safe multisig and renounceOwnership is disabled on DeepCore's own contracts (README)
+- Built on the PancakeSwap Infinity architecture (GPL-2.0-or-later forks); SDK, widgets and tooling are MIT
+
+URL: https://deepcore.fun
+
+### SDK, widgets and scaffolders (DeepCore, beta)
+
+An MIT SDK, swap widgets and project scaffolders for builders. The README says npm publication is pending.
+
+- Packages in the repo: sdk, widgets, connect, cli, create-deepcore-app, create-deepcore-hook, router-core, tokenlists
+- npm scope @deepcoreprotocol; the README says publication is pending
+- Dynamic-fee hooks exist for CL and Bin pools (DeepCoreDynamicFeeHook, DeepCoreBinDynamicFeeHook)
+
+URL: https://deepcore.fun
+
+### Swap (PeddleSwap, live)
+
+V2 and V3 liquidity behind one router, with an Auto mode that picks the better venue.
+
+- Auto mode races V2 against all four V3 fee tiers (0.01%, 0.05%, 0.30%, 1.00%)
+- Exact-input and exact-output swaps, multi-hop paths, native ETH on both sides, Permit2
+- TokenValidator flash-borrows a pasted token to detect fee-on-transfer and honeypot behaviour, and separates 'tested clean' from 'could not be tested'
+- Contracts deployed per deployments files on Robinhood Chain (4663), Arc (5042) and Base (8453), plus Sepolia
+- The README still says 'live on Sepolia'; the repo's mainnet deployment files and projects.ts list Robinhood, Base and Arc
+
+URL: https://peddleswap.xyz
+
+### Volatility-aware dynamic fee (PeddleSwap, live)
+
+A V3 pool can attach a fee module that raises the swap fee as spot drifts from the pool's TWAP.
+
+- Dynamic fee module address recorded in deployment files for 4663, 5042, 8453 and Sepolia
+- README reports a Sepolia measurement of 11124 vs 3000 fee units on two otherwise identical 0.30% pools
+
+URL: https://peddleswap.xyz
+
+### Token and LP locker (PeddleSwap, live)
+
+Locks tokens, V2 LP and V3 positions with no admin unlock. Locked V3 positions keep earning fees.
+
+- PeddleLockerERC20 for fungible tokens and V2 LP; PeddleLockerERC721 for V3/V4 positions and NFTs
+- No admin unlock, no emergency withdraw, no upgrade path; unlock times can only be extended
+- Locks are transferable and splittable; a split inherits the parent's unlock time
+- Locker addresses recorded for 4663, 5042 and 8453
+
+URL: https://peddleswap.xyz
+
+### Bridge (PeddleSwap, live)
+
+A bridge page that uses Relay's quote service to move native ETH and ERC-20s between chains.
+
+- Uses Relay request-for-quote (web/src/app/api/relay/quote/route.ts)
+- Page at web/src/app/bridge/page.tsx
+- Destination resolved to the same asset on the far chain; changing asset is a swap
+
+URL: https://peddleswap.xyz
+
+### Limit orders (PeddleSwap, live)
+
+Escrowed limit orders filled by a keeper through V2 or V3 pools.
+
+- PeddleLimitOrders: the maker escrows tokenIn and names a floor, a deadline and a tip in tokenOut
+- The keeper takes exactly the tip and the maker keeps the surplus
+- No owner and no pause; partial fills, native ETH and mixed V2/V3 routes are not built
+- limitOrders address is present in the 4663, 5042 and 8453 deployment files
+
+URL: https://peddleswap.xyz
+
+### Token launcher and creator fees (PeddleSwap, live)
+
+An ownerless token factory with a fixed-supply token, and a fee router that pays a share of swaps back to the token's project.
+
+- PeddleToken has no mint, owner, pause, blocklist or proxy (ADR 0006)
+- PeddleTokenFactory deploys with CREATE2 under a caller-derived salt
+- tokenFactory has a non-zero address on Robinhood Chain (4663) and Sepolia; it is the zero address in the Base (8453) and Arc (5042) files
+- PeddleFeeRouter pays a creator share; registering one is an owner-only call
+
+URL: https://peddleswap.xyz
+
+### Stock-paired token launches (Peddles, live)
+
+Launch a token whose pool is quoted in a tokenised stock. All supply goes to liquidity locked from block zero.
+
+- Built on Uniswap v4 single-sided liquidity; the liquidity position is permanently locked and there is no bonding curve or migration
+- Deployed default allocation is 100% liquidity; setAllocation refuses a non-zero burn leg
+- Live on Base 8453, Robinhood Chain 4663, BNB Smart Chain 56 and Arc 5042 since 2026-10-01 per CLAUDE.md
+- Launch fee is about $2 on every launch type, paid in the chain's native currency
+- Starting market cap is about $3.5K on every launch type and chain
+- Anti-sniper opening-tax window defaults to 3 minutes of wall-clock time on every chain; Arc stock pairs stay hidden until issuer tokens are verified
+
+URL: https://peddles.xyz
+
+### Holder rewards (Peddles, live)
+
+A distributor pays launched-token holders from the token's fee stream, notified on every transfer.
+
+- PeddlesHolderRewards and PeddlesHolderRewardsFactory in contracts/src
+- Launched tokens hold a write-once holderRewards address and send a notification after every transfer, mint and burn, with a fixed gas stipend
+- The notification moves no value
+- PeddlesNftHolderRewards does the same for NFT collection holders
+
+URL: https://peddles.xyz
+
+### Other launch types (Peddles, live)
+
+Beyond stock pairs: WETH-paired, Clog, handle and NFT launches.
+
+- Clog: PeddlesClogVault sells a marketing allocation into the pool in capped slices and the creator pulls the proceeds
+- Handle launches: PeddlesHandleLauncher launches a coin whose creator fees go to an X account's pot; deployment files exist for 8453, 4663, 5042, 56
+- NFT launchpad: bonding-curve collections that graduate into tokens (PeddlesNFTFactory, graduation orchestrators)
+- Solana launchpad and deploy-from-a-tweet are marked coming soon in CLAUDE.md
+
+URL: https://peddles.xyz
+
+### Perps (Peddles, live)
+
+Perpetual markets via a factory and hook, live on all four mainnets.
+
+- Deployment files 4663-perp.json, 8453-perp.json, 56-perp.json and 5042-perp.json each have status 'live'
+- Robinhood perp deployment dated 2026-09-30
+- Contracts: PeddlesPerpFactory, PeddlesPerpHookDeployer, PeddlesPerpTreasury, PeddlesPerpHook
+
+URL: https://peddles.xyz
+
+### Terminal and Telegram trade bot (Peddles, live)
+
+A multi-chain token terminal at peddles.xyz/terminal and a Telegram trade bot that uses the same API.
+
+- Terminal API chain slugs: ethereum, bsc, base, robinhood, arc, solana
+- Terminal is served at peddles.xyz/terminal (CLAUDE.md domain table)
+- Trade bot wallets are custodial: keys are created and held by the bot, encrypted with AES-256-GCM
+- Prediction games are non-wagering; bots default to paper trading
+
+URL: https://peddles.xyz
+
+### Arcade (Peddles, beta)
+
+A launchpad for browser games, with server-validated XP and leaderboards. Holders of a coin get ranked play on its game.
+
+- Repo status says 'phase 2': creator platform with a 9-step game wizard, uploads and a build pipeline
+- Game templates in the repo: endless-runner, racing, party-arena, arena-shooter, retro-fps, candle-runner, puzzle
+- A coin's game is materialised on first open; a run is 'ranked' only if a verified wallet holds the coin
+- Non-wagering: XP, points, badges and leaderboards only
+- CLAUDE.md of peddles-launchpad places the Arcade app at peddles.xyz/arcade
+- peddles-arcade-shooters is a near-copy of the same repo without the party-arena template
+
+URL: https://peddles.xyz/arcade
+
+### Quest reward escrow (PeddleQuest, live)
+
+Quest reward pools are escrowed on chain first and paid out by Merkle proof.
+
+- PeddlesQuestEscrow holds reward pools; creator deposits gross and the fee is taken once at deposit, never from participants
+- Participants claim by Merkle proof; the operator publishes the root
+- Same contract addresses on Base 8453, Robinhood Chain 4663, BSC 56 and Arc 5042 per docs/monetization.md (escrow 0x16267bE6...)
+- Contracts are described as unaudited; the repo says never to claim an audit
+- Starting fee model: quest creation free, deposit fee 3% (permanent cap 10%), per-quest pool cap $100,000
+
+URL: https://peddlequest.xyz
+
+### Soulbound badges (PeddleQuest, live)
+
+An optional non-transferable proof-of-completion badge minted after a quest.
+
+- PeddlesQuestBadge is soulbound; transfers revert with a Soulbound error
+- Badge mint fee starts at $0.30 with a $10 permanent cap
+- PeddlesQuestBadge address 0x6DA219d4... is the same on all four chains per docs/monetization.md
+
+URL: https://peddlequest.xyz
+
+### Promotion slots (PeddleQuest, live)
+
+Trending and banner placement is sold on chain, so what was bought is publicly recorded.
+
+- PeddlesPromotionMarket sells time-boxed trending slots and banners for native currency, flat rate per day
+- Starting rate is $3 per day with a $500 per day cap
+- Proceeds go to the treasury
+
+URL: https://peddlequest.xyz
+
+### Task verification and eligibility rules (PeddleQuest, live)
+
+Off-chain checks for X, Discord and wallet tasks, with eligibility and sybil rules set in the quest wizard.
+
+- Docs cover X verification, Discord verification and general verification
+- Quest wizard has an Eligibility step (src/modules/quest/pq-wizard/steps/EligibilityStep.tsx) that references sybil rules
+- Frontend routes include quest, leaderboard, loyalty, referral-invite and profile
+- Production builds carry the four mainnets only (testnets disabled)
+
+URL: https://peddlequest.xyz
+
+### Social feed and copy trading (Cartel Family, live)
+
+A wallet-native social trading app with a public feed, follows and copy-trade tracking.
+
+- Public feed with posts, trades and token calls; follows, reactions, replies and direct messages (README)
+- Copy-trade tracking and trader profiles with win rate and PnL (README)
+- Domain cartel.family is defined in site_config.py per CLAUDE.md
+- Python/Flask backend with SQLite, deployed from a Dockerfile (README says Railway)
+
+URL: https://cartel.family/
+
+### Multi-chain automated trading bot (Cartel Family, live)
+
+An AI-scored bot trades on a user's behalf with configurable limits.
+
+- Chains: Solana plus five EVM chains (BNB Chain, Base, Arbitrum, Polygon, Robinhood Chain)
+- Solana swaps use Jupiter; EVM swaps use the 0x API
+- Bot scores tokens every 30 seconds; user sets take-profit, stop-loss, trade size and a daily loss limit
+- Performance fee on profitable trades only (README); CLAUDE.md records a 0.80% per-leg revenue rate set on 2026-10-10
+- Private keys are encrypted (Fernet with a wallet-derived HMAC)
+
+URL: https://cartel.family/
+
+### Live market and one-send wallet (Cartel Family, live)
+
+Live market discovery with a launches tab, plus a single send path across all chains.
+
+- Live Market page with Trending, New Pairs and Gainers; a Launches tab (New / Hot / Near graduation) is described in CLAUDE.md
+- wallet_send.send_funds is the only way money leaves a wallet: native coin or USDC on Solana and all five EVM chains, behind POST /api/send
+- One EVM address works across the five EVM chains
+- Gas sponsorship for empty EVM wallets is optional via GAS_SPONSOR_PRIVATE_KEY
+
+URL: https://cartel.family/
+
+## Roadmap (not available yet)
+
+- Audit (planned): A premium audit tier is not offered yet. Gully Labs has published no audit reports.
+- Chain Kit managed explorer (building): A branded Blockscout block explorer for your EVM chain, to be deployed and run by Gully Labs. Waitlist: licensing in progress; Chain Kit is not available to order yet.
+- Gully L3 (Arbitrum chain) (planned): A planned Arbitrum chain settling to Arbitrum One with Chain Kit as explorer, Gully Pay native and Hyperlane interop. Spec written, nothing running.
+- Bug bounty hosting (planned): Hosting bug bounty programmes for reviewed projects is a later item on the security roadmap.
+- Account abstraction and sponsored gas (building): An ERC-4337 bundler and EntryPoint with EIP-7702-ready smart accounts, plus a usage-billed paymaster so users can transact without holding gas. Both are coming with the testnet.
+- Pay gas in USDC (planned): Letting users pay fees in USDC instead of the chain token is planned as a monthly add-on. It is not built.
+- DeepCore built into client chains (planned): Putting the DeepCore launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built.
+- Peddles and PeddleQuest read on chain (building): Peddles and PeddleQuest figures would be read straight from their contracts instead of only from the venues' APIs, with a live ledger series and an on-chain panel on their project pages.
+- Holder Map tab in the home console (building): The home page product console gains a Holder Map tab showing the live mini map of the newest DeepCore launch with the latest launches under it.
+- Token logos on tracker, swap, score and widget (building): Stock rows, stock pages, the swap and the widget would show token logos from the logo service instead of a generic building icon, and the stock page keeps the self-gating Holder Map.
+- Hosted Blockscout explorer (building): A branded Blockscout explorer for an EVM chain, configured and run by Gully Labs. The deployment layer exists in the fork; no hosted explorer is confirmed in the repo.
+- Chain profiles (building): Each chain is one env file. Profiles exist for Robinhood Chain and Arc, plus a template for any EVM chain.
+- One-command provisioning (building): provision.sh sets up a server for a chosen chain profile and is safe to re-run.
+- Explorer APIs and contract verification (building): The explorer exposes the standard Blockscout interfaces and contract verification.
+- Operations runbook (building): An operator runbook covers upgrades, reindexing, backups and disk sizing for hosted explorers.
+- Chain launch interface (building): A rebranded Arbitrum Orbit deployment UI. It is not deployed and currently targets Arbitrum Sepolia only.
+- Gully Bridge (building): A fork of the Arbitrum token bridge for moving assets between a Gully chain and its parent chain. Only the README header is changed so far.
+
+## Projects
+
+- [Cartel Family](https://cartel.family/): We trade as one. Live markets, automated strategies and shared trades across chains. (Live; Solana, Multi-chain)
+- [DeepCore](https://deepcore.fun/): Launch on one core. A launchpad, hosted Launchpads and DEXes, and a best-price router on one shared liquidity core, at the same addresses on four chains. (Live; Base, BNB Chain, HyperEVM, Robinhood)
+- [PeddleSwap](https://peddleswap.xyz/): Swap. Lock. Launch.. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks. (Live; Robinhood, Base, Arc)
+- [Peddles](https://peddles.xyz/): Launch, trade and play. Memecoins paired to tokenised stocks. Holders are paid in that stock. (Live; Base, Robinhood, BNB Chain, Arc)
+- [PeddleQuest](https://peddlequest.xyz/): Quest on-chain, earn the proof. Verified quests on four chains. XP, soulbound badges, reward pools escrowed first. (Live; Base, Robinhood, BNB Chain, Arc)
+
+## Docs
+
+- [Overview](https://docs.gullylabs.xyz/): Start
+- [Tracker methodology](https://docs.gullylabs.xyz/methodology): Start
+- [API reference](https://docs.gullylabs.xyz/api): Build
+- [Widget guide](https://docs.gullylabs.xyz/widget): Build
+- [API keys](https://docs.gullylabs.xyz/api-keys): Build
+- [Plans & alerts](https://docs.gullylabs.xyz/plans-alerts): Build
+- [SDK](https://docs.gullylabs.xyz/sdk): Build
+- [Teams & workspaces](https://docs.gullylabs.xyz/teams): Build
+- [Badges](https://docs.gullylabs.xyz/badges): Build
+- [Holder Map](https://docs.gullylabs.xyz/holder-map): Products
+- [Integrate the Holder Map](https://docs.gullylabs.xyz/holder-map-integrate): Products
+- [Gully Analytics](https://docs.gullylabs.xyz/analytics): Products
+- [Gully Pay](https://docs.gullylabs.xyz/gully-pay): Products
+- [Gully Pay for merchants](https://docs.gullylabs.xyz/gully-pay-merchants): Products
+- [Gully Security](https://docs.gullylabs.xyz/gully-security): Products
+- [Gully Score](https://docs.gullylabs.xyz/gully-score): Products
+- [Gully AI](https://docs.gullylabs.xyz/gully-ai): Products
+- [Telegram bot](https://docs.gullylabs.xyz/telegram): Products
+- [Telegram Mini App](https://docs.gullylabs.xyz/telegram-mini-app): Products
+- [News channel gate](https://docs.gullylabs.xyz/news-gate): Products
+- [Stock pages](https://docs.gullylabs.xyz/stock-pages): Products
+- [Swaps](https://docs.gullylabs.xyz/swaps): Products
+- [Solana](https://docs.gullylabs.xyz/solana): Products
+- [Solana Pay](https://docs.gullylabs.xyz/solana-pay): Products
+- [Chain Kit](https://docs.gullylabs.xyz/chain-kit): Products
+- [Contracts](https://docs.gullylabs.xyz/contracts): More
+- [Status](https://docs.gullylabs.xyz/status): More
+- [Roadmap](https://docs.gullylabs.xyz/roadmap): More
+- [Roadmap: Gully L3](https://docs.gullylabs.xyz/roadmap-l3): More
+- [Changelog](https://docs.gullylabs.xyz/changelog): More
+
+## Contracts (377, verified against Sourcify on 2026-10-18)
+
+Each line: chain, name, address, owner, Sourcify-verified source (or "no verified source"), file the address is quoted from. JSON: https://gullylabs.xyz/.well-known/contracts.json
+
+- Ethereum | Gully Labs: Treasury | 0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | gully-labs | https://repo.sourcify.dev/1/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | website:contracts/CHOICE.md
+- Ethereum | Request Network ERC20FeeProxy | 0x370DE27fdb7D1Ff1e1BaA7D11c5820a324Cf623C | third-party | https://repo.sourcify.dev/1/0x370DE27fdb7D1Ff1e1BaA7D11c5820a324Cf623C | website:contracts/CHOICE.md
+- OP Mainnet | Request Network ERC20FeeProxy | 0x399F5EE127ce7432E4921a61b8CF52b0af52cbfE | third-party | https://repo.sourcify.dev/10/0x399F5EE127ce7432E4921a61b8CF52b0af52cbfE | website:contracts/CHOICE.md
+- BNB Chain | Gully Labs: Treasury | 0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | gully-labs | https://repo.sourcify.dev/56/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | website:contracts/CHOICE.md
+- BNB Chain | Request Network ERC20FeeProxy | 0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9 | third-party | https://repo.sourcify.dev/56/0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9 | website:contracts/CHOICE.md
+- Robinhood Chain | Gully Labs: Treasury | 0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | gully-labs | no verified source | peddles-quest:docs/mainnet-readiness.md
+- Arc | Gully Labs: Treasury | 0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | gully-labs | no verified source | peddles-quest:docs/mainnet-readiness.md
+- Base | Gully Labs: Treasury | 0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | gully-labs | https://repo.sourcify.dev/8453/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | website:contracts/CHOICE.md
+- Base | Request Network ERC20FeeProxy | 0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814 | third-party | https://repo.sourcify.dev/8453/0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814 | website:contracts/CHOICE.md
+- Arbitrum One | Gully Labs: Treasury | 0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | gully-labs | https://repo.sourcify.dev/42161/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | website:contracts/CHOICE.md
+- Arbitrum One | Request Network ERC20FeeProxy | 0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9 | third-party | https://repo.sourcify.dev/42161/0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9 | website:contracts/CHOICE.md
+- BNB Chain | DeepCore Bin Dynamic Fee Hook | 0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | gully-labs | https://repo.sourcify.dev/56/0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Bin Launch Guard Hook | 0x787802F88BB73FcF49B3e879A47bDB1C42852178 | gully-labs | https://repo.sourcify.dev/56/0x787802F88BB73FcF49B3e879A47bDB1C42852178 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Bin LP Locker | 0x7878B240E282026e2318f69966A5e1c44293dc78 | gully-labs | https://repo.sourcify.dev/56/0x7878B240E282026e2318f69966A5e1c44293dc78 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Bin Pool Manager | 0x004a786C4cB79358e2f86467B0eBFD87028648F4 | gully-labs | https://repo.sourcify.dev/56/0x004a786C4cB79358e2f86467B0eBFD87028648F4 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Bin Position Manager | 0xEC7523d7FC95e335d2629150356C986946538d96 | gully-labs | https://repo.sourcify.dev/56/0xEC7523d7FC95e335d2629150356C986946538d96 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Bin Quoter | 0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | gully-labs | https://repo.sourcify.dev/56/0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore CL Launch Guard Hook | 0x787888386b536536176aC6E0b0F3f398A929db78 | gully-labs | https://repo.sourcify.dev/56/0x787888386b536536176aC6E0b0F3f398A929db78 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore CL LP Locker | 0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | gully-labs | https://repo.sourcify.dev/56/0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore CL Pool Manager | 0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | gully-labs | https://repo.sourcify.dev/56/0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore CL Position Descriptor | 0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | gully-labs | https://repo.sourcify.dev/56/0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore CL Position Manager | 0x2D608934De0684B151261cbdd71A9134bE349F9d | gully-labs | https://repo.sourcify.dev/56/0x2D608934De0684B151261cbdd71A9134bE349F9d | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore CL Quoter | 0x366FbA57a555B351834EC6e5b18301974E1504Ed | gully-labs | https://repo.sourcify.dev/56/0x366FbA57a555B351834EC6e5b18301974E1504Ed | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Drop Factory | 0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | gully-labs | https://repo.sourcify.dev/56/0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Dynamic Fee Hook | 0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | gully-labs | https://repo.sourcify.dev/56/0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Fee Controller | 0x7878BAB23799d3e015998906Ea33327C183e3d78 | gully-labs | https://repo.sourcify.dev/56/0x7878BAB23799d3e015998906Ea33327C183e3d78 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Fill Router | 0x7878624417E9d69219EAdD14bA1B01459C87b578 | gully-labs | https://repo.sourcify.dev/56/0x7878624417E9d69219EAdD14bA1B01459C87b578 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Governance Safe | 0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Launch And Buy | 0x78785C407A481FA5a68Ae04dd3196d3051214f78 | gully-labs | https://repo.sourcify.dev/56/0x78785C407A481FA5a68Ae04dd3196d3051214f78 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Launch Legs | 0x78783F3AAaB10a84D7FC0a00d243e19467531878 | gully-labs | https://repo.sourcify.dev/56/0x78783F3AAaB10a84D7FC0a00d243e19467531878 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Launch Registry | 0x787871D20335808aD72DCAF96FE7b5b7eF616078 | gully-labs | https://repo.sourcify.dev/56/0x787871D20335808aD72DCAF96FE7b5b7eF616078 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Launch Token Factory | 0x787826056c9A23f2B658f29956C63eCAdA8C0178 | gully-labs | https://repo.sourcify.dev/56/0x787826056c9A23f2B658f29956C63eCAdA8C0178 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Launchpad Kit V2 | 0x78781DC6a34F0dcA85929Db22e04815096aAD378 | gully-labs | https://repo.sourcify.dev/56/0x78781DC6a34F0dcA85929Db22e04815096aAD378 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Multisend | 0x7878D62c54e6C7a073E6114F478774277F595878 | gully-labs | https://repo.sourcify.dev/56/0x7878D62c54e6C7a073E6114F478774277F595878 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Pad Factory | 0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | gully-labs | https://repo.sourcify.dev/56/0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Position Lock | 0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | gully-labs | https://repo.sourcify.dev/56/0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Registry | 0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | gully-labs | https://repo.sourcify.dev/56/0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Rev Share Hook | 0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | gully-labs | https://repo.sourcify.dev/56/0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Split Factory | 0x7878E295dF781eB25A941e788695CC58aA715F78 | gully-labs | https://repo.sourcify.dev/56/0x7878E295dF781eB25A941e788695CC58aA715F78 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Timelock Custody | 0xF7e0DE74b01e82A308BEb5B1376673117e12225C | gully-labs | https://repo.sourcify.dev/56/0xF7e0DE74b01e82A308BEb5B1376673117e12225C | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Token Lock | 0x78787661C6B2D4bdd447456e47304F9E092D8678 | gully-labs | https://repo.sourcify.dev/56/0x78787661C6B2D4bdd447456e47304F9E092D8678 | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Universal Router | 0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | gully-labs | https://repo.sourcify.dev/56/0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | DeepCore Vault | 0x405515DB94aDBF3A827349f2C096809639581D09 | gully-labs | https://repo.sourcify.dev/56/0x405515DB94aDBF3A827349f2C096809639581D09 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Bin Dynamic Fee Hook | 0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | gully-labs | https://repo.sourcify.dev/999/0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Bin Launch Guard Hook | 0x787802F88BB73FcF49B3e879A47bDB1C42852178 | gully-labs | https://repo.sourcify.dev/999/0x787802F88BB73FcF49B3e879A47bDB1C42852178 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Bin LP Locker | 0x7878B240E282026e2318f69966A5e1c44293dc78 | gully-labs | https://repo.sourcify.dev/999/0x7878B240E282026e2318f69966A5e1c44293dc78 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Bin Pool Manager | 0x004a786C4cB79358e2f86467B0eBFD87028648F4 | gully-labs | https://repo.sourcify.dev/999/0x004a786C4cB79358e2f86467B0eBFD87028648F4 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Bin Position Manager | 0xEC7523d7FC95e335d2629150356C986946538d96 | gully-labs | https://repo.sourcify.dev/999/0xEC7523d7FC95e335d2629150356C986946538d96 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Bin Quoter | 0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | gully-labs | https://repo.sourcify.dev/999/0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore CL Launch Guard Hook | 0x787888386b536536176aC6E0b0F3f398A929db78 | gully-labs | https://repo.sourcify.dev/999/0x787888386b536536176aC6E0b0F3f398A929db78 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore CL LP Locker | 0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | gully-labs | https://repo.sourcify.dev/999/0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore CL Pool Manager | 0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | gully-labs | https://repo.sourcify.dev/999/0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore CL Position Descriptor | 0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | gully-labs | https://repo.sourcify.dev/999/0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore CL Position Manager | 0x2D608934De0684B151261cbdd71A9134bE349F9d | gully-labs | https://repo.sourcify.dev/999/0x2D608934De0684B151261cbdd71A9134bE349F9d | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore CL Quoter | 0x366FbA57a555B351834EC6e5b18301974E1504Ed | gully-labs | https://repo.sourcify.dev/999/0x366FbA57a555B351834EC6e5b18301974E1504Ed | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore DCA | 0x7878947dC3a69d03C3d9431d9bDC536d1e0A0878 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore DEX Hook | 0x7878D43C5065F82608cdE151B46946A0a6B7E778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Drop Factory | 0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | gully-labs | https://repo.sourcify.dev/999/0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Dynamic Fee Hook | 0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | gully-labs | https://repo.sourcify.dev/999/0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Fee Controller | 0x7878BAB23799d3e015998906Ea33327C183e3d78 | gully-labs | https://repo.sourcify.dev/999/0x7878BAB23799d3e015998906Ea33327C183e3d78 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Fill Router | 0x7878624417E9d69219EAdD14bA1B01459C87b578 | gully-labs | https://repo.sourcify.dev/999/0x7878624417E9d69219EAdD14bA1B01459C87b578 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Governance Safe | 0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Launch And Buy | 0x78785C407A481FA5a68Ae04dd3196d3051214f78 | gully-labs | https://repo.sourcify.dev/999/0x78785C407A481FA5a68Ae04dd3196d3051214f78 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Launch Legs | 0x78783F3AAaB10a84D7FC0a00d243e19467531878 | gully-labs | https://repo.sourcify.dev/999/0x78783F3AAaB10a84D7FC0a00d243e19467531878 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Launch Registry | 0x787871D20335808aD72DCAF96FE7b5b7eF616078 | gully-labs | https://repo.sourcify.dev/999/0x787871D20335808aD72DCAF96FE7b5b7eF616078 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Launch Token Factory | 0x787826056c9A23f2B658f29956C63eCAdA8C0178 | gully-labs | https://repo.sourcify.dev/999/0x787826056c9A23f2B658f29956C63eCAdA8C0178 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Launchpad Kit V2 | 0x78781DC6a34F0dcA85929Db22e04815096aAD378 | gully-labs | https://repo.sourcify.dev/999/0x78781DC6a34F0dcA85929Db22e04815096aAD378 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore LP Rewards Hook | 0x7878081C835d9069FacDb861563cf3cA8A7c2678 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Multisend | 0x7878D62c54e6C7a073E6114F478774277F595878 | gully-labs | https://repo.sourcify.dev/999/0x7878D62c54e6C7a073E6114F478774277F595878 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Oracle Hook | 0x7878cB78E32d815e515E3d7b98463E8aFc996178 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Pad Factory | 0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | gully-labs | https://repo.sourcify.dev/999/0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Position Lock | 0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | gully-labs | https://repo.sourcify.dev/999/0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Range Orders | 0x787888B35e67DC155E612c862c6A2f60f512D378 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Registry | 0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | gully-labs | https://repo.sourcify.dev/999/0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Rev Share Hook | 0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | gully-labs | https://repo.sourcify.dev/999/0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Split Factory | 0x7878E295dF781eB25A941e788695CC58aA715F78 | gully-labs | https://repo.sourcify.dev/999/0x7878E295dF781eB25A941e788695CC58aA715F78 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Timelock Custody | 0x26A09095965d0fF05f7cd600bCfCBb01A66680Bd | gully-labs | https://repo.sourcify.dev/999/0x26A09095965d0fF05f7cd600bCfCBb01A66680Bd | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Token Lock | 0x78787661C6B2D4bdd447456e47304F9E092D8678 | gully-labs | https://repo.sourcify.dev/999/0x78787661C6B2D4bdd447456e47304F9E092D8678 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Tuner Gate | 0x7878e7c192967621aaece271A41F050a337C6578 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Universal Router | 0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | gully-labs | https://repo.sourcify.dev/999/0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Vault | 0x405515DB94aDBF3A827349f2C096809639581D09 | gully-labs | https://repo.sourcify.dev/999/0x405515DB94aDBF3A827349f2C096809639581D09 | deepcore:packages/sdk/src/deployments/index.ts
+- HyperEVM | DeepCore Vault Factory | 0x787889b36FEc39564Dda016572D68d641e455778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Bin Dynamic Fee Hook | 0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | gully-labs | https://repo.sourcify.dev/4663/0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Bin Launch Guard Hook | 0x787802F88BB73FcF49B3e879A47bDB1C42852178 | gully-labs | https://repo.sourcify.dev/4663/0x787802F88BB73FcF49B3e879A47bDB1C42852178 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Bin LP Locker | 0x7878B240E282026e2318f69966A5e1c44293dc78 | gully-labs | https://repo.sourcify.dev/4663/0x7878B240E282026e2318f69966A5e1c44293dc78 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Bin Pool Manager | 0x004a786C4cB79358e2f86467B0eBFD87028648F4 | gully-labs | https://repo.sourcify.dev/4663/0x004a786C4cB79358e2f86467B0eBFD87028648F4 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Bin Position Manager | 0xEC7523d7FC95e335d2629150356C986946538d96 | gully-labs | https://repo.sourcify.dev/4663/0xEC7523d7FC95e335d2629150356C986946538d96 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Bin Quoter | 0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | gully-labs | https://repo.sourcify.dev/4663/0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore CL Launch Guard Hook | 0x787888386b536536176aC6E0b0F3f398A929db78 | gully-labs | https://repo.sourcify.dev/4663/0x787888386b536536176aC6E0b0F3f398A929db78 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore CL LP Locker | 0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | gully-labs | https://repo.sourcify.dev/4663/0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore CL Pool Manager | 0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | gully-labs | https://repo.sourcify.dev/4663/0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore CL Position Descriptor | 0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | gully-labs | https://repo.sourcify.dev/4663/0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore CL Position Manager | 0x2D608934De0684B151261cbdd71A9134bE349F9d | gully-labs | https://repo.sourcify.dev/4663/0x2D608934De0684B151261cbdd71A9134bE349F9d | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore CL Quoter | 0x366FbA57a555B351834EC6e5b18301974E1504Ed | gully-labs | https://repo.sourcify.dev/4663/0x366FbA57a555B351834EC6e5b18301974E1504Ed | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore DCA | 0x7878947dC3a69d03C3d9431d9bDC536d1e0A0878 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore DEX Hook | 0x7878D43C5065F82608cdE151B46946A0a6B7E778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Drop Factory | 0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | gully-labs | https://repo.sourcify.dev/4663/0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Dynamic Fee Hook | 0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | gully-labs | https://repo.sourcify.dev/4663/0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Fee Controller | 0x7878BAB23799d3e015998906Ea33327C183e3d78 | gully-labs | https://repo.sourcify.dev/4663/0x7878BAB23799d3e015998906Ea33327C183e3d78 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Fill Router | 0x7878624417E9d69219EAdD14bA1B01459C87b578 | gully-labs | https://repo.sourcify.dev/4663/0x7878624417E9d69219EAdD14bA1B01459C87b578 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Governance Safe | 0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Launch And Buy | 0x78785C407A481FA5a68Ae04dd3196d3051214f78 | gully-labs | https://repo.sourcify.dev/4663/0x78785C407A481FA5a68Ae04dd3196d3051214f78 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Launch Legs | 0x78783F3AAaB10a84D7FC0a00d243e19467531878 | gully-labs | https://repo.sourcify.dev/4663/0x78783F3AAaB10a84D7FC0a00d243e19467531878 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Launch Registry | 0x787871D20335808aD72DCAF96FE7b5b7eF616078 | gully-labs | https://repo.sourcify.dev/4663/0x787871D20335808aD72DCAF96FE7b5b7eF616078 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Launch Token Factory | 0x787826056c9A23f2B658f29956C63eCAdA8C0178 | gully-labs | https://repo.sourcify.dev/4663/0x787826056c9A23f2B658f29956C63eCAdA8C0178 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Launchpad Kit V2 | 0x78781DC6a34F0dcA85929Db22e04815096aAD378 | gully-labs | https://repo.sourcify.dev/4663/0x78781DC6a34F0dcA85929Db22e04815096aAD378 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore LP Rewards Hook | 0x7878081C835d9069FacDb861563cf3cA8A7c2678 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Multisend | 0x7878D62c54e6C7a073E6114F478774277F595878 | gully-labs | https://repo.sourcify.dev/4663/0x7878D62c54e6C7a073E6114F478774277F595878 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Oracle Hook | 0x7878cB78E32d815e515E3d7b98463E8aFc996178 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Pad Factory | 0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | gully-labs | https://repo.sourcify.dev/4663/0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Position Lock | 0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | gully-labs | https://repo.sourcify.dev/4663/0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Range Orders | 0x787888B35e67DC155E612c862c6A2f60f512D378 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Registry | 0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | gully-labs | https://repo.sourcify.dev/4663/0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Rev Share Hook | 0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | gully-labs | https://repo.sourcify.dev/4663/0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Split Factory | 0x7878E295dF781eB25A941e788695CC58aA715F78 | gully-labs | https://repo.sourcify.dev/4663/0x7878E295dF781eB25A941e788695CC58aA715F78 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Timelock Custody | 0xF7e0DE74b01e82A308BEb5B1376673117e12225C | gully-labs | https://repo.sourcify.dev/4663/0xF7e0DE74b01e82A308BEb5B1376673117e12225C | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Token Lock | 0x78787661C6B2D4bdd447456e47304F9E092D8678 | gully-labs | https://repo.sourcify.dev/4663/0x78787661C6B2D4bdd447456e47304F9E092D8678 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Tuner Gate | 0x7878e7c192967621aaece271A41F050a337C6578 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Universal Router | 0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | gully-labs | https://repo.sourcify.dev/4663/0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Vault | 0x405515DB94aDBF3A827349f2C096809639581D09 | gully-labs | https://repo.sourcify.dev/4663/0x405515DB94aDBF3A827349f2C096809639581D09 | deepcore:packages/sdk/src/deployments/index.ts
+- Robinhood Chain | DeepCore Vault Factory | 0x787889b36FEc39564Dda016572D68d641e455778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Bin Dynamic Fee Hook | 0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | gully-labs | https://repo.sourcify.dev/8453/0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Bin Launch Guard Hook | 0x787802F88BB73FcF49B3e879A47bDB1C42852178 | gully-labs | https://repo.sourcify.dev/8453/0x787802F88BB73FcF49B3e879A47bDB1C42852178 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Bin LP Locker | 0x7878B240E282026e2318f69966A5e1c44293dc78 | gully-labs | https://repo.sourcify.dev/8453/0x7878B240E282026e2318f69966A5e1c44293dc78 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Bin Pool Manager | 0x004a786C4cB79358e2f86467B0eBFD87028648F4 | gully-labs | https://repo.sourcify.dev/8453/0x004a786C4cB79358e2f86467B0eBFD87028648F4 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Bin Position Manager | 0xEC7523d7FC95e335d2629150356C986946538d96 | gully-labs | https://repo.sourcify.dev/8453/0xEC7523d7FC95e335d2629150356C986946538d96 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Bin Quoter | 0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | gully-labs | https://repo.sourcify.dev/8453/0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore CL Launch Guard Hook | 0x787888386b536536176aC6E0b0F3f398A929db78 | gully-labs | https://repo.sourcify.dev/8453/0x787888386b536536176aC6E0b0F3f398A929db78 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore CL LP Locker | 0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | gully-labs | https://repo.sourcify.dev/8453/0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore CL Pool Manager | 0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | gully-labs | https://repo.sourcify.dev/8453/0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore CL Position Descriptor | 0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | gully-labs | https://repo.sourcify.dev/8453/0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore CL Position Manager | 0x2D608934De0684B151261cbdd71A9134bE349F9d | gully-labs | https://repo.sourcify.dev/8453/0x2D608934De0684B151261cbdd71A9134bE349F9d | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore CL Quoter | 0x366FbA57a555B351834EC6e5b18301974E1504Ed | gully-labs | https://repo.sourcify.dev/8453/0x366FbA57a555B351834EC6e5b18301974E1504Ed | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore DCA | 0x7878947dC3a69d03C3d9431d9bDC536d1e0A0878 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore DEX Hook | 0x7878D43C5065F82608cdE151B46946A0a6B7E778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Drop Factory | 0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | gully-labs | https://repo.sourcify.dev/8453/0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Dynamic Fee Hook | 0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | gully-labs | https://repo.sourcify.dev/8453/0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Fee Controller | 0x7878BAB23799d3e015998906Ea33327C183e3d78 | gully-labs | https://repo.sourcify.dev/8453/0x7878BAB23799d3e015998906Ea33327C183e3d78 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Fill Router | 0x7878624417E9d69219EAdD14bA1B01459C87b578 | gully-labs | https://repo.sourcify.dev/8453/0x7878624417E9d69219EAdD14bA1B01459C87b578 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Governance Safe | 0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | gully-labs | https://repo.sourcify.dev/8453/0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Launch And Buy | 0x78785C407A481FA5a68Ae04dd3196d3051214f78 | gully-labs | https://repo.sourcify.dev/8453/0x78785C407A481FA5a68Ae04dd3196d3051214f78 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Launch Legs | 0x78783F3AAaB10a84D7FC0a00d243e19467531878 | gully-labs | https://repo.sourcify.dev/8453/0x78783F3AAaB10a84D7FC0a00d243e19467531878 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Launch Registry | 0x787871D20335808aD72DCAF96FE7b5b7eF616078 | gully-labs | https://repo.sourcify.dev/8453/0x787871D20335808aD72DCAF96FE7b5b7eF616078 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Launch Token Factory | 0x787826056c9A23f2B658f29956C63eCAdA8C0178 | gully-labs | https://repo.sourcify.dev/8453/0x787826056c9A23f2B658f29956C63eCAdA8C0178 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Launchpad Kit V2 | 0x78781DC6a34F0dcA85929Db22e04815096aAD378 | gully-labs | https://repo.sourcify.dev/8453/0x78781DC6a34F0dcA85929Db22e04815096aAD378 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore LP Rewards Hook | 0x7878081C835d9069FacDb861563cf3cA8A7c2678 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Multisend | 0x7878D62c54e6C7a073E6114F478774277F595878 | gully-labs | https://repo.sourcify.dev/8453/0x7878D62c54e6C7a073E6114F478774277F595878 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Oracle Hook | 0x7878cB78E32d815e515E3d7b98463E8aFc996178 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Pad Factory | 0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | gully-labs | https://repo.sourcify.dev/8453/0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Position Lock | 0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | gully-labs | https://repo.sourcify.dev/8453/0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Range Orders | 0x787888B35e67DC155E612c862c6A2f60f512D378 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Registry | 0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | gully-labs | https://repo.sourcify.dev/8453/0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Rev Share Hook | 0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | gully-labs | https://repo.sourcify.dev/8453/0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Split Factory | 0x7878E295dF781eB25A941e788695CC58aA715F78 | gully-labs | https://repo.sourcify.dev/8453/0x7878E295dF781eB25A941e788695CC58aA715F78 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Timelock Custody | 0x1AdC141Cfe8E0a0e074c7c45898babb3f1DE5256 | gully-labs | https://repo.sourcify.dev/8453/0x1AdC141Cfe8E0a0e074c7c45898babb3f1DE5256 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Token Lock | 0x78787661C6B2D4bdd447456e47304F9E092D8678 | gully-labs | https://repo.sourcify.dev/8453/0x78787661C6B2D4bdd447456e47304F9E092D8678 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Tuner Gate | 0x7878e7c192967621aaece271A41F050a337C6578 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Universal Router | 0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | gully-labs | https://repo.sourcify.dev/8453/0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Vault | 0x405515DB94aDBF3A827349f2C096809639581D09 | gully-labs | https://repo.sourcify.dev/8453/0x405515DB94aDBF3A827349f2C096809639581D09 | deepcore:packages/sdk/src/deployments/index.ts
+- Base | DeepCore Vault Factory | 0x787889b36FEc39564Dda016572D68d641e455778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
+- BNB Chain | PeddlesClogVaultFactory | 0x019d6A0e4c8a0E585946eF12dCFA1e8E2f0BCd0b | gully-labs | https://repo.sourcify.dev/56/0x019d6A0e4c8a0E585946eF12dCFA1e8E2f0BCd0b | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesFactoryV20 | 0x220F5e98C3085E34EE68298847Fb63a3132D1978 | gully-labs | https://repo.sourcify.dev/56/0x220F5e98C3085E34EE68298847Fb63a3132D1978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesFeeForwarder | 0x97b0d349FFE2eD262654C60dCC04d9622970Ae4F | gully-labs | https://repo.sourcify.dev/56/0x97b0d349FFE2eD262654C60dCC04d9622970Ae4F | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesFeeHook | 0x39D760601731025e0F02A3e5D232445797fAC0CC | gully-labs | https://repo.sourcify.dev/56/0x39D760601731025e0F02A3e5D232445797fAC0CC | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesHandleLauncher | 0x328F5E4C10a410c85fF081823d97E07d8E931978 | gully-labs | https://repo.sourcify.dev/56/0x328F5E4C10a410c85fF081823d97E07d8E931978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesHandlePotFactory | 0xeb4151af845A51a8d14917fA9dC47cAd208bEf8D | gully-labs | https://repo.sourcify.dev/56/0xeb4151af845A51a8d14917fA9dC47cAd208bEf8D | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesHolderRewardsFactory | 0xa298E61fa142FD4b402ce1d03F0F5b2Ba6261978 | gully-labs | https://repo.sourcify.dev/56/0xa298E61fa142FD4b402ce1d03F0F5b2Ba6261978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesLaunchOrchestratorV20 | 0x87f4c95773eA0bD5dddF948e4F4Ef55a09791978 | gully-labs | https://repo.sourcify.dev/56/0x87f4c95773eA0bD5dddF948e4F4Ef55a09791978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesLiquidityActivationManager | 0xe01ba8A47da547BB72cD61100F3D50a627331978 | gully-labs | https://repo.sourcify.dev/56/0xe01ba8A47da547BB72cD61100F3D50a627331978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesNFTBondingGraduationOrchestratorV20 | 0x6e3F734BAA78205f91404178AB5Cb0C04aB61978 | gully-labs | https://repo.sourcify.dev/56/0x6e3F734BAA78205f91404178AB5Cb0C04aB61978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesNFTFactory | 0x533cBF74c6f2F0A96900F61A95E13D3c63d21978 | gully-labs | https://repo.sourcify.dev/56/0x533cBF74c6f2F0A96900F61A95E13D3c63d21978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesNftFeeDistributorFactory | 0x623E59f26b9C277F4481D2418d4665d255E31978 | gully-labs | https://repo.sourcify.dev/56/0x623E59f26b9C277F4481D2418d4665d255E31978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesNftLiquidityReserve | 0x8bE8A8EDefaD08345a8b53E1A6532E0ebF991978 | gully-labs | https://repo.sourcify.dev/56/0x8bE8A8EDefaD08345a8b53E1A6532E0ebF991978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesNFTMarketplace | 0xD4682e185010f93a5Ce0Ba859cE3AD9c4FB11978 | gully-labs | https://repo.sourcify.dev/56/0xD4682e185010f93a5Ce0Ba859cE3AD9c4FB11978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesNftStockGraduationOrchestrator | 0x46B2Ade88b098c7b5e3AB29cAE44EBb016cb1978 | gully-labs | https://repo.sourcify.dev/56/0x46B2Ade88b098c7b5e3AB29cAE44EBb016cb1978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesPartnerFeeForwarder | 0x36b2fa3c827d5F2475254191209548364A6F9a88 | gully-labs | https://repo.sourcify.dev/56/0x36b2fa3c827d5F2475254191209548364A6F9a88 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesRouteSwapRouter | 0xde677e2A912B0169716E10244921c90fbE88Dea3 | gully-labs | https://repo.sourcify.dev/56/0xde677e2A912B0169716E10244921c90fbE88Dea3 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesSnowballFactory | 0xe3c49423edFE54909BCB2B140eF15c401e645Bb1 | gully-labs | https://repo.sourcify.dev/56/0xe3c49423edFE54909BCB2B140eF15c401e645Bb1 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesSnowballHandleFactory | 0xB31C7DcAd2b1e10B7FF67F376bE7235cbcD50dC0 | gully-labs | https://repo.sourcify.dev/56/0xB31C7DcAd2b1e10B7FF67F376bE7235cbcD50dC0 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesSnowballHandleVaultDeployer | 0x9096740D9134876fb1f3e464f27C8904f3E5c881 | gully-labs | https://repo.sourcify.dev/56/0x9096740D9134876fb1f3e464f27C8904f3E5c881 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesSnowballVaultDeployer | 0xd1ea1A3c3FF0A1BF6b18ADA64ad04E424C86b6d5 | gully-labs | https://repo.sourcify.dev/56/0xd1ea1A3c3FF0A1BF6b18ADA64ad04E424C86b6d5 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesStockLaunchpad | 0xB2dea73eC6673d13e020E1e4eA966321790e1978 | gully-labs | https://repo.sourcify.dev/56/0xB2dea73eC6673d13e020E1e4eA966321790e1978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesStockSwapRouter | 0x593d9Df3aAAcDC0466462107C14AB9Edf2711978 | gully-labs | https://repo.sourcify.dev/56/0x593d9Df3aAAcDC0466462107C14AB9Edf2711978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesStockVaultFactory | 0x252A47c58E82C2f26eF910F25f94203680111978 | gully-labs | https://repo.sourcify.dev/56/0x252A47c58E82C2f26eF910F25f94203680111978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesTransferValidator | 0x0bF567a2aaEe5426C3Db0519409367fC8b9d1978 | gully-labs | https://repo.sourcify.dev/56/0x0bF567a2aaEe5426C3Db0519409367fC8b9d1978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesV4LiquidityExecutor | 0x8e13c0713733294a2DED1DcE71Df9cb5F4251978 | gully-labs | https://repo.sourcify.dev/56/0x8e13c0713733294a2DED1DcE71Df9cb5F4251978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesV4SwapRouter | 0x2ab259c52e93ef0bD6deecF98D60e2494F221978 | gully-labs | https://repo.sourcify.dev/56/0x2ab259c52e93ef0bD6deecF98D60e2494F221978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesVaultFactoryV20 | 0xDE0A7E2aACD433846483F80160c25CB310A91978 | gully-labs | https://repo.sourcify.dev/56/0xDE0A7E2aACD433846483F80160c25CB310A91978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | PeddlesVaultRegistry | 0x3F6A92B1e758D4C95160C68859c79977A5d31978 | gully-labs | https://repo.sourcify.dev/56/0x3F6A92B1e758D4C95160C68859c79977A5d31978 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | permit2 | 0x000000000022D473030F116dDEE9F6B43aC78BA3 | gully-labs | https://repo.sourcify.dev/56/0x000000000022D473030F116dDEE9F6B43aC78BA3 | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | poolManager | 0x28e2Ea090877bF75740558f6BFB36A5ffeE9e9dF | gully-labs | https://repo.sourcify.dev/56/0x28e2Ea090877bF75740558f6BFB36A5ffeE9e9dF | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | positionManager | 0x7A4a5c919aE2541AeD11041A1AEeE68f1287f95b | gully-labs | https://repo.sourcify.dev/56/0x7A4a5c919aE2541AeD11041A1AEeE68f1287f95b | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | protocolOwner | 0x7ED8Db5E9778eEc833EF70d9330820c413d0CD26 | gully-labs | no verified source | peddles-launchpad:contracts/deployments/56.json
+- BNB Chain | quoteToken | 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c | gully-labs | https://repo.sourcify.dev/56/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c | peddles-launchpad:contracts/deployments/56.json
+- Robinhood Chain | PeddlesClogVaultFactory | 0x1d2142699F1D818203738226240C605243a39b9e | gully-labs | https://repo.sourcify.dev/4663/0x1d2142699F1D818203738226240C605243a39b9e | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesFactoryV20 | 0x51336A94B55Ad82D1099Dc82b27b151eDFfc1978 | gully-labs | https://repo.sourcify.dev/4663/0x51336A94B55Ad82D1099Dc82b27b151eDFfc1978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesFeeForwarder | 0xc572A003d0Ab529da670a42177Fc583b03D5b026 | gully-labs | https://repo.sourcify.dev/4663/0xc572A003d0Ab529da670a42177Fc583b03D5b026 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesFeeHook | 0xfe055282E3cD471A8b2cd922d31E75ECd3bBc0CC | gully-labs | https://repo.sourcify.dev/4663/0xfe055282E3cD471A8b2cd922d31E75ECd3bBc0CC | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesHandleLauncher | 0x4930F82F2F92427CcFa1116ef0E68835328C1978 | gully-labs | https://repo.sourcify.dev/4663/0x4930F82F2F92427CcFa1116ef0E68835328C1978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesHandlePotFactory | 0x2b5881c79a83C9EB17C67354F6737f3c9A120DE2 | gully-labs | https://repo.sourcify.dev/4663/0x2b5881c79a83C9EB17C67354F6737f3c9A120DE2 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesHolderRewardsFactory | 0xB22d6D7B1eC296AA79cbFf4ABE4992A726BE1978 | gully-labs | https://repo.sourcify.dev/4663/0xB22d6D7B1eC296AA79cbFf4ABE4992A726BE1978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesLaunchOrchestratorV20 | 0x8BD4Cdb2248E4a5443Acdf52b22FE1A4A2ca1978 | gully-labs | https://repo.sourcify.dev/4663/0x8BD4Cdb2248E4a5443Acdf52b22FE1A4A2ca1978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesLiquidityActivationManager | 0xBE8d8999b53c5E5249feBafe5f505221F3e41978 | gully-labs | https://repo.sourcify.dev/4663/0xBE8d8999b53c5E5249feBafe5f505221F3e41978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesNFTBondingGraduationOrchestratorV20 | 0x6C5032DeDCc78b92b370C86a2aA0EA3AD0D71978 | gully-labs | https://repo.sourcify.dev/4663/0x6C5032DeDCc78b92b370C86a2aA0EA3AD0D71978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesNFTFactory | 0x2e0029BeDCBb2f211Fd17EeBA8f40657cF6A1978 | gully-labs | https://repo.sourcify.dev/4663/0x2e0029BeDCBb2f211Fd17EeBA8f40657cF6A1978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesNftFeeDistributorFactory | 0x3081d5E69b7D12A330C9594C175F88EB77f31978 | gully-labs | https://repo.sourcify.dev/4663/0x3081d5E69b7D12A330C9594C175F88EB77f31978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesNftLiquidityReserve | 0x367F626775E22818C369BB3a276E3e9Fbc201978 | gully-labs | https://repo.sourcify.dev/4663/0x367F626775E22818C369BB3a276E3e9Fbc201978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesNFTMarketplace | 0xC0374a0776449fE60dD1653C6421bEB41e911978 | gully-labs | https://repo.sourcify.dev/4663/0xC0374a0776449fE60dD1653C6421bEB41e911978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesNftStockGraduationOrchestrator | 0x3DAd8D2B78C8a71f01600FDecA0b17af5F961978 | gully-labs | https://repo.sourcify.dev/4663/0x3DAd8D2B78C8a71f01600FDecA0b17af5F961978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesPartnerFeeForwarder | 0x1d1f4293c1b5475aa7A4ae2e4475E85930F4906C | gully-labs | https://repo.sourcify.dev/4663/0x1d1f4293c1b5475aa7A4ae2e4475E85930F4906C | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesRouteSwapRouter | 0xA4858047F9c7359CC0d9071598BFA74187739d8D | gully-labs | https://repo.sourcify.dev/4663/0xA4858047F9c7359CC0d9071598BFA74187739d8D | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesSnowballFactory | 0x8Bf9DD5E7a64e8818d170f857d146D34c48939E6 | gully-labs | https://repo.sourcify.dev/4663/0x8Bf9DD5E7a64e8818d170f857d146D34c48939E6 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesSnowballHandleFactory | 0xD0CF6a70B4aB609d95A34B60a9D09a3DA3362245 | gully-labs | https://repo.sourcify.dev/4663/0xD0CF6a70B4aB609d95A34B60a9D09a3DA3362245 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesSnowballHandleVaultDeployer | 0x9051ed499E496f4D45F848698c7589d54667483E | gully-labs | https://repo.sourcify.dev/4663/0x9051ed499E496f4D45F848698c7589d54667483E | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesSnowballVaultDeployer | 0xe756a92cff0512BB87DeB784A6897f7a9E7b8a02 | gully-labs | https://repo.sourcify.dev/4663/0xe756a92cff0512BB87DeB784A6897f7a9E7b8a02 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesStockLaunchpad | 0x4b7Aa977eA4B95D9859D73e6bc922ecF2F881978 | gully-labs | https://repo.sourcify.dev/4663/0x4b7Aa977eA4B95D9859D73e6bc922ecF2F881978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesStockSwapRouter | 0x5A934c5eE47daa3b4562f9Dc9224bB00e9191978 | gully-labs | https://repo.sourcify.dev/4663/0x5A934c5eE47daa3b4562f9Dc9224bB00e9191978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesStockVaultFactory | 0xa565E57046B51C4C1144b837A1871FF89c141978 | gully-labs | https://repo.sourcify.dev/4663/0xa565E57046B51C4C1144b837A1871FF89c141978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesTransferValidator | 0x2ADA0EA86925b5EbA1CF7B75e0d606C89b1B1978 | gully-labs | https://repo.sourcify.dev/4663/0x2ADA0EA86925b5EbA1CF7B75e0d606C89b1B1978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesV4LiquidityExecutor | 0xAB23BD1234AB1BCa48a97aB8e2baaFAaE7A21978 | gully-labs | https://repo.sourcify.dev/4663/0xAB23BD1234AB1BCa48a97aB8e2baaFAaE7A21978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesV4SwapRouter | 0xDd1F65380C9f7283A61FC489DCAceA352ee31978 | gully-labs | https://repo.sourcify.dev/4663/0xDd1F65380C9f7283A61FC489DCAceA352ee31978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesVaultFactoryV20 | 0x33c100477D9D2E5d0f0Ed9Ab82aa2ea62d601978 | gully-labs | https://repo.sourcify.dev/4663/0x33c100477D9D2E5d0f0Ed9Ab82aa2ea62d601978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | PeddlesVaultRegistry | 0xd322A44c4600dfDcF399Ceb7a32869e83d561978 | gully-labs | https://repo.sourcify.dev/4663/0xd322A44c4600dfDcF399Ceb7a32869e83d561978 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | permit2 | 0x000000000022D473030F116dDEE9F6B43aC78BA3 | gully-labs | https://repo.sourcify.dev/4663/0x000000000022D473030F116dDEE9F6B43aC78BA3 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | poolManager | 0x8366a39CC670B4001A1121B8F6A443A643e40951 | gully-labs | https://repo.sourcify.dev/4663/0x8366a39CC670B4001A1121B8F6A443A643e40951 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | positionManager | 0x58daec3116aae6D93017bAAea7749052E8a04fA7 | gully-labs | https://repo.sourcify.dev/4663/0x58daec3116aae6D93017bAAea7749052E8a04fA7 | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | protocolOwner | 0x57F8d8523F83eAfC82F6cC5Db5796f59c32A9EFB | gully-labs | no verified source | peddles-launchpad:contracts/deployments/4663.json
+- Robinhood Chain | quoteToken | 0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73 | gully-labs | https://repo.sourcify.dev/4663/0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73 | peddles-launchpad:contracts/deployments/4663.json
+- Arc | PeddlesClogVaultFactory | 0x019d6A0e4c8a0E585946eF12dCFA1e8E2f0BCd0b | gully-labs | https://repo.sourcify.dev/5042/0x019d6A0e4c8a0E585946eF12dCFA1e8E2f0BCd0b | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesFactoryV20 | 0x1f9D8c53028d5289C9B206B6684bFC2BaC001978 | gully-labs | https://repo.sourcify.dev/5042/0x1f9D8c53028d5289C9B206B6684bFC2BaC001978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesFeeForwarder | 0xfe9563B7952fEB2091816133a22A4D62171fD77e | gully-labs | https://repo.sourcify.dev/5042/0xfe9563B7952fEB2091816133a22A4D62171fD77e | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesFeeHook | 0x317e34De0298F23bd41bf9A853289e227E9cC0CC | gully-labs | https://repo.sourcify.dev/5042/0x317e34De0298F23bd41bf9A853289e227E9cC0CC | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesHandleLauncher | 0xA4336E83E3dd124Cd366705b5CC3C285BdfD1978 | gully-labs | https://repo.sourcify.dev/5042/0xA4336E83E3dd124Cd366705b5CC3C285BdfD1978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesHandlePotFactory | 0xeb4151af845A51a8d14917fA9dC47cAd208bEf8D | gully-labs | https://repo.sourcify.dev/5042/0xeb4151af845A51a8d14917fA9dC47cAd208bEf8D | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesHolderRewardsFactory | 0x5Db48C3EfcacBd42539C766d1B4f8c32C15B1978 | gully-labs | https://repo.sourcify.dev/5042/0x5Db48C3EfcacBd42539C766d1B4f8c32C15B1978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesLaunchOrchestratorV20 | 0xe7666f1D0d7b9026CaCAe4a267c14CD490c01978 | gully-labs | https://repo.sourcify.dev/5042/0xe7666f1D0d7b9026CaCAe4a267c14CD490c01978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesLiquidityActivationManager | 0x3A1a67005100DEB206be2f9C5Ae3B665d08d1978 | gully-labs | https://repo.sourcify.dev/5042/0x3A1a67005100DEB206be2f9C5Ae3B665d08d1978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesNFTBondingGraduationOrchestratorV20 | 0x586afEdc7721076BD854c1eF560f90AE48Aa1978 | gully-labs | https://repo.sourcify.dev/5042/0x586afEdc7721076BD854c1eF560f90AE48Aa1978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesNFTFactory | 0x4f5199cA08864A85da6AB483Da93b8e40E501978 | gully-labs | https://repo.sourcify.dev/5042/0x4f5199cA08864A85da6AB483Da93b8e40E501978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesNftFeeDistributorFactory | 0x32fC87f491F9F5e5FDd93c2175828A12eAa81978 | gully-labs | https://repo.sourcify.dev/5042/0x32fC87f491F9F5e5FDd93c2175828A12eAa81978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesNftLiquidityReserve | 0x268C91647cD5d884B99Fa25C6141A83df8BA1978 | gully-labs | https://repo.sourcify.dev/5042/0x268C91647cD5d884B99Fa25C6141A83df8BA1978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesNFTMarketplace | 0xa6Ac3Cc4126C171f948431D66b23ff5DFb861978 | gully-labs | https://repo.sourcify.dev/5042/0xa6Ac3Cc4126C171f948431D66b23ff5DFb861978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesNftStockGraduationOrchestrator | 0x9aa971BA0698da9193535Dd0D1C70Af8945e1978 | gully-labs | https://repo.sourcify.dev/5042/0x9aa971BA0698da9193535Dd0D1C70Af8945e1978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesPartnerFeeForwarder | 0x97b0d349FFE2eD262654C60dCC04d9622970Ae4F | gully-labs | https://repo.sourcify.dev/5042/0x97b0d349FFE2eD262654C60dCC04d9622970Ae4F | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesRouteSwapRouter | 0x3a6a8e21Fc09d27fc3f9Ad57E012dA69032149D4 | gully-labs | https://repo.sourcify.dev/5042/0x3a6a8e21Fc09d27fc3f9Ad57E012dA69032149D4 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesSnowballFactory | 0x2C322f48B2dD97f6c5050eDF5F349C7f70126dB5 | gully-labs | https://repo.sourcify.dev/5042/0x2C322f48B2dD97f6c5050eDF5F349C7f70126dB5 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesSnowballHandleFactory | 0xde677e2A912B0169716E10244921c90fbE88Dea3 | gully-labs | https://repo.sourcify.dev/5042/0xde677e2A912B0169716E10244921c90fbE88Dea3 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesSnowballHandleVaultDeployer | 0x540f0E93E6a9bE2A44e6f0290004EAae296cfD8D | gully-labs | https://repo.sourcify.dev/5042/0x540f0E93E6a9bE2A44e6f0290004EAae296cfD8D | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesSnowballVaultDeployer | 0x6Eb675f991c4B7645660aCbc289AF41528886724 | gully-labs | https://repo.sourcify.dev/5042/0x6Eb675f991c4B7645660aCbc289AF41528886724 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesStockLaunchpad | 0x6B176b9FDB11ffDc35dDdC0839EB62D537Ee1978 | gully-labs | https://repo.sourcify.dev/5042/0x6B176b9FDB11ffDc35dDdC0839EB62D537Ee1978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesStockSwapRouter | 0x02DCd8b32F98905F54425c64B9FB8e9717d11978 | gully-labs | https://repo.sourcify.dev/5042/0x02DCd8b32F98905F54425c64B9FB8e9717d11978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesStockVaultFactory | 0xF94B0Db7420A36a7E3c48c4F7907464B85241978 | gully-labs | https://repo.sourcify.dev/5042/0xF94B0Db7420A36a7E3c48c4F7907464B85241978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesTransferValidator | 0x141313774788Cecb1a58B9d93653D6df862C1978 | gully-labs | https://repo.sourcify.dev/5042/0x141313774788Cecb1a58B9d93653D6df862C1978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesV4LiquidityExecutor | 0xD4F4b9cddbbf62E5Af822118EF7e5e08a1301978 | gully-labs | https://repo.sourcify.dev/5042/0xD4F4b9cddbbf62E5Af822118EF7e5e08a1301978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesV4SwapRouter | 0xDD4fBa27a668F616dBb0b10c0881480bFAc31978 | gully-labs | https://repo.sourcify.dev/5042/0xDD4fBa27a668F616dBb0b10c0881480bFAc31978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesVaultFactoryV20 | 0x760707bad60FbFcC4CDb21A3C894770010841978 | gully-labs | https://repo.sourcify.dev/5042/0x760707bad60FbFcC4CDb21A3C894770010841978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | PeddlesVaultRegistry | 0xD9d977FDc79B39f9c12c3D480E9ABd886F721978 | gully-labs | https://repo.sourcify.dev/5042/0xD9d977FDc79B39f9c12c3D480E9ABd886F721978 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | permit2 | 0x000000000022D473030F116dDEE9F6B43aC78BA3 | gully-labs | https://repo.sourcify.dev/5042/0x000000000022D473030F116dDEE9F6B43aC78BA3 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | poolManager | 0x8366a39CC670B4001A1121B8F6A443A643e40951 | gully-labs | https://repo.sourcify.dev/5042/0x8366a39CC670B4001A1121B8F6A443A643e40951 | peddles-launchpad:contracts/deployments/5042.json
+- Arc | positionManager | 0x6049c9a0e26405C0985f9E3685C87d0aE917f82B | gully-labs | no verified source | peddles-launchpad:contracts/deployments/5042.json
+- Arc | protocolOwner | 0x7ED8Db5E9778eEc833EF70d9330820c413d0CD26 | gully-labs | no verified source | peddles-launchpad:contracts/deployments/5042.json
+- Arc | quoteToken | 0x3600000000000000000000000000000000000000 | gully-labs | no verified source | peddles-launchpad:contracts/deployments/5042.json
+- Base | PeddlesClogVaultFactory | 0x8563Aeec8C63d53BC8dfbE56FF9134a7b1e80503 | gully-labs | https://repo.sourcify.dev/8453/0x8563Aeec8C63d53BC8dfbE56FF9134a7b1e80503 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesFactoryV20 | 0x90bD4d38F621529b4aD6480c221075B7317b1978 | gully-labs | https://repo.sourcify.dev/8453/0x90bD4d38F621529b4aD6480c221075B7317b1978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesFeeForwarder | 0x77886951f19458B2FC27D4373553001A620264D3 | gully-labs | https://repo.sourcify.dev/8453/0x77886951f19458B2FC27D4373553001A620264D3 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesFeeHook | 0xAB8E39207718f519865D6f0d52eFB31b231D40cc | gully-labs | https://repo.sourcify.dev/8453/0xAB8E39207718f519865D6f0d52eFB31b231D40cc | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesFlywheel | 0x2E9366BF81d0D0ebA905927B55d3Fa3008891978 | gully-labs | https://repo.sourcify.dev/8453/0x2E9366BF81d0D0ebA905927B55d3Fa3008891978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesHandleLauncher | 0xC4E82Bd9a0d3cfa00CdCc0de1ADfE0461B761978 | gully-labs | https://repo.sourcify.dev/8453/0xC4E82Bd9a0d3cfa00CdCc0de1ADfE0461B761978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesHandlePotFactory | 0xC2575Cc3Eb3934C826Fa33FC9BA2e6DA8186D725 | gully-labs | https://repo.sourcify.dev/8453/0xC2575Cc3Eb3934C826Fa33FC9BA2e6DA8186D725 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesHolderRewardsFactory | 0xE4A89dCb02211409b50CEFd9B570E67dA2aD1978 | gully-labs | https://repo.sourcify.dev/8453/0xE4A89dCb02211409b50CEFd9B570E67dA2aD1978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesLaunchOrchestratorV20 | 0xB2f25Fd1b20269CD1553d63A942935Ab09F91978 | gully-labs | https://repo.sourcify.dev/8453/0xB2f25Fd1b20269CD1553d63A942935Ab09F91978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesLiquidityActivationManager | 0xa8bfd83d21eec43F9a984C6B13a31Ce1df191978 | gully-labs | https://repo.sourcify.dev/8453/0xa8bfd83d21eec43F9a984C6B13a31Ce1df191978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesNFTBondingGraduationOrchestratorV20 | 0xB7bB0f25B1AE59adcAa2787C68cd50296d2B1978 | gully-labs | https://repo.sourcify.dev/8453/0xB7bB0f25B1AE59adcAa2787C68cd50296d2B1978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesNFTFactory | 0xd111413B91b0E31865464658071099779e2C1978 | gully-labs | https://repo.sourcify.dev/8453/0xd111413B91b0E31865464658071099779e2C1978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesNftFeeDistributorFactory | 0x9B0c155e7248706860c9707c2a8f41A0a2281978 | gully-labs | https://repo.sourcify.dev/8453/0x9B0c155e7248706860c9707c2a8f41A0a2281978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesNftLiquidityReserve | 0x444C34FF8503eA088a36792659D7c34D7F931978 | gully-labs | https://repo.sourcify.dev/8453/0x444C34FF8503eA088a36792659D7c34D7F931978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesNFTMarketplace | 0x5362a7DE96E8b3474Aef1a0fE6F6e2427Bd81978 | gully-labs | https://repo.sourcify.dev/8453/0x5362a7DE96E8b3474Aef1a0fE6F6e2427Bd81978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesNftStockGraduationOrchestrator | 0xD6d41a5029EC7F78886C135A71A9c85e96781978 | gully-labs | https://repo.sourcify.dev/8453/0xD6d41a5029EC7F78886C135A71A9c85e96781978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesPartnerFeeForwarder | 0xB31C7DcAd2b1e10B7FF67F376bE7235cbcD50dC0 | gully-labs | https://repo.sourcify.dev/8453/0xB31C7DcAd2b1e10B7FF67F376bE7235cbcD50dC0 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesRouteSwapRouter | 0x8f04A804Ba989d38A68D93eb8679d3a967f2b079 | gully-labs | https://repo.sourcify.dev/8453/0x8f04A804Ba989d38A68D93eb8679d3a967f2b079 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesSnowballFactory | 0x249fcF53b13f3bd27e2969D5A3DF6f6B96aCDaAb | gully-labs | https://repo.sourcify.dev/8453/0x249fcF53b13f3bd27e2969D5A3DF6f6B96aCDaAb | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesSnowballHandleFactory | 0xa9657E7ECcf589bd9A3FD460bA4a610f310DfF1F | gully-labs | https://repo.sourcify.dev/8453/0xa9657E7ECcf589bd9A3FD460bA4a610f310DfF1F | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesSnowballHandleVaultDeployer | 0xdB3869F858fF95d99725a6b4a8a3dFfc2689947E | gully-labs | https://repo.sourcify.dev/8453/0xdB3869F858fF95d99725a6b4a8a3dFfc2689947E | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesSnowballVaultDeployer | 0x2B86071De444F68931FA91EF26B71D2c34bcf3b9 | gully-labs | https://repo.sourcify.dev/8453/0x2B86071De444F68931FA91EF26B71D2c34bcf3b9 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesStockLaunchpad | 0x680805FBd0D6225d0bE4E12A2B73b2Ed83a31978 | gully-labs | https://repo.sourcify.dev/8453/0x680805FBd0D6225d0bE4E12A2B73b2Ed83a31978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesStockSwapRouter | 0xd150B1E102493e4F35A1e95DdA80948C0e581978 | gully-labs | https://repo.sourcify.dev/8453/0xd150B1E102493e4F35A1e95DdA80948C0e581978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesStockVaultFactory | 0x5EF74DFc6Dfd9e5dAb314Df5747AC4E117e41978 | gully-labs | https://repo.sourcify.dev/8453/0x5EF74DFc6Dfd9e5dAb314Df5747AC4E117e41978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesToken | 0xCF2Be52981b5BD563C268a0e2b17D50B53e21978 | gully-labs | https://repo.sourcify.dev/8453/0xCF2Be52981b5BD563C268a0e2b17D50B53e21978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesTransferValidator | 0xD1390f3E4741963A7eEd1E53163a1B09c97e1978 | gully-labs | https://repo.sourcify.dev/8453/0xD1390f3E4741963A7eEd1E53163a1B09c97e1978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesV4LiquidityExecutor | 0x4Ca94531420F0e4f5a612475c8c4E35E9c8d1978 | gully-labs | https://repo.sourcify.dev/8453/0x4Ca94531420F0e4f5a612475c8c4E35E9c8d1978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesV4SwapRouter | 0xbf7A709cBf71b303B856126D3aEb5051a07c1978 | gully-labs | https://repo.sourcify.dev/8453/0xbf7A709cBf71b303B856126D3aEb5051a07c1978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesVaultFactoryV20 | 0x80d0B683B5e8D4B4e669d0367C62fC9893F11978 | gully-labs | https://repo.sourcify.dev/8453/0x80d0B683B5e8D4B4e669d0367C62fC9893F11978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | PeddlesVaultRegistry | 0xb390c4A83D8B308b378250a59F273A7c9aDF1978 | gully-labs | https://repo.sourcify.dev/8453/0xb390c4A83D8B308b378250a59F273A7c9aDF1978 | peddles-launchpad:contracts/deployments/8453.json
+- Base | permit2 | 0x000000000022D473030F116dDEE9F6B43aC78BA3 | gully-labs | https://repo.sourcify.dev/8453/0x000000000022D473030F116dDEE9F6B43aC78BA3 | peddles-launchpad:contracts/deployments/8453.json
+- Base | poolManager | 0x498581fF718922c3f8e6A244956aF099B2652b2b | gully-labs | https://repo.sourcify.dev/8453/0x498581fF718922c3f8e6A244956aF099B2652b2b | peddles-launchpad:contracts/deployments/8453.json
+- Base | positionManager | 0x7C5f5A4bBd8fD63184577525326123B519429bDc | gully-labs | https://repo.sourcify.dev/8453/0x7C5f5A4bBd8fD63184577525326123B519429bDc | peddles-launchpad:contracts/deployments/8453.json
+- Base | protocolOwner | 0x7ED8Db5E9778eEc833EF70d9330820c413d0CD26 | gully-labs | https://repo.sourcify.dev/8453/0x7ED8Db5E9778eEc833EF70d9330820c413d0CD26 | peddles-launchpad:contracts/deployments/8453.json
+- Base | quoteToken | 0x4200000000000000000000000000000000000006 | gully-labs | https://repo.sourcify.dev/8453/0x4200000000000000000000000000000000000006 | peddles-launchpad:contracts/deployments/8453.json
+- Robinhood Chain | PeddleSwap Dynamic Fee Module | 0xfDdD380B30479aD23B213C5C6dB32a4F91bcD9A6 | gully-labs | https://repo.sourcify.dev/4663/0xfDdD380B30479aD23B213C5C6dB32a4F91bcD9A6 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Fee Router | 0x52F4610119D1f7d4C754547a8Ba4D5421b67131d | gully-labs | https://repo.sourcify.dev/4663/0x52F4610119D1f7d4C754547a8Ba4D5421b67131d | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Interface Multicall | 0xE59aDc2355C91d39237aD38AF182e53C83629127 | gully-labs | https://repo.sourcify.dev/4663/0xE59aDc2355C91d39237aD38AF182e53C83629127 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Limit Orders | 0x0fC7E9BB0b2F84b33a16F6b985F8e99c4E104cd9 | gully-labs | https://repo.sourcify.dev/4663/0x0fC7E9BB0b2F84b33a16F6b985F8e99c4E104cd9 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Locker ERC20 | 0x681ae73b76Eb17456e3E2af949bC0b323905926B | gully-labs | https://repo.sourcify.dev/4663/0x681ae73b76Eb17456e3E2af949bC0b323905926B | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Locker ERC721 | 0xd34F4d87eDc0AB0Cd6b5a5A36A2677eec15E7299 | gully-labs | https://repo.sourcify.dev/4663/0xd34F4d87eDc0AB0Cd6b5a5A36A2677eec15E7299 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Mixed Route Quoter | 0x615402673390a16026D1CB29daE909C27a3F0ee7 | gully-labs | https://repo.sourcify.dev/4663/0x615402673390a16026D1CB29daE909C27a3F0ee7 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Position Manager | 0x85073d6b5E40233fEFDA391b7B492737A4637689 | gully-labs | https://repo.sourcify.dev/4663/0x85073d6b5E40233fEFDA391b7B492737A4637689 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Quoter | 0xc67b2512Fe32A7DAB01A438e36f79492330a8Cad | gully-labs | https://repo.sourcify.dev/4663/0xc67b2512Fe32A7DAB01A438e36f79492330a8Cad | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Quoter V2 | 0xCc25a4Ffe669c0Ad5ba4fCD61fE42a0Fa702fE10 | gully-labs | https://repo.sourcify.dev/4663/0xCc25a4Ffe669c0Ad5ba4fCD61fE42a0Fa702fE10 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Swap Router | 0x58b0e60715E33B2B73288EE126EC25a87f2DcB8e | gully-labs | https://repo.sourcify.dev/4663/0x58b0e60715E33B2B73288EE126EC25a87f2DcB8e | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Swap Router02 | 0xf50f939b9b4739bdb678Ef4306796935e9A2d4DD | gully-labs | https://repo.sourcify.dev/4663/0xf50f939b9b4739bdb678Ef4306796935e9A2d4DD | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Tick Lens | 0x8Ef9bE8AFbd0aa4CCa709E59c2cbE19469E6B4c2 | gully-labs | https://repo.sourcify.dev/4663/0x8Ef9bE8AFbd0aa4CCa709E59c2cbE19469E6B4c2 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Token Descriptor | 0xaD5977875e171c14027a1f9FA734AD46d7b7Ae3e | gully-labs | https://repo.sourcify.dev/4663/0xaD5977875e171c14027a1f9FA734AD46d7b7Ae3e | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Token Factory | 0x84E2F7d216e0c579e3D2236E14E308bD727205CD | gully-labs | https://repo.sourcify.dev/4663/0x84E2F7d216e0c579e3D2236E14E308bD727205CD | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap Token Validator | 0xCB96d54aF83Ae2F46134b1c42c6A08e8450B1aC9 | gully-labs | https://repo.sourcify.dev/4663/0xCB96d54aF83Ae2F46134b1c42c6A08e8450B1aC9 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap V2 Factory | 0x5612aEAE68a31f5dD1fb995e2d47B795fEDe8779 | gully-labs | https://repo.sourcify.dev/4663/0x5612aEAE68a31f5dD1fb995e2d47B795fEDe8779 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap V2 Router | 0x0B35Fa0cf2C58cCf4d26F1E7466b94e18f27F61c | gully-labs | https://repo.sourcify.dev/4663/0x0B35Fa0cf2C58cCf4d26F1E7466b94e18f27F61c | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap V3 Factory | 0xd0E25fD59A18f9728E11A04a24CaF0982231cf95 | gully-labs | https://repo.sourcify.dev/4663/0xd0E25fD59A18f9728E11A04a24CaF0982231cf95 | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap V3 Fee Adapter | 0x610951B1096868a0841bAC5c5a7dfe1F516015aE | gully-labs | https://repo.sourcify.dev/4663/0x610951B1096868a0841bAC5c5a7dfe1F516015aE | peddleswap:contracts/deployments/4663.json
+- Robinhood Chain | PeddleSwap V3 Pool Deployer | 0x170d0DF8dCb865269C947A928dfE847919E3c181 | gully-labs | https://repo.sourcify.dev/4663/0x170d0DF8dCb865269C947A928dfE847919E3c181 | peddleswap:contracts/deployments/4663.json
+- Arc | PeddleSwap Dynamic Fee Module | 0x7F5fb39ED1f1B150faef55d3868DA142FDaA0A4d | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Fee Router | 0x7E3dDb385ce7c0492f34b3f2D2eFe6E698486B75 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Interface Multicall | 0xd8a99B32aCad8c1ddC709E29992cbC19dF34286D | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Limit Orders | 0x333aD94e8B6FD2C0980681253D6EEc14d0884128 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Locker ERC20 | 0x9Dc72C10F210e4C842d086Dc7A153887f6709FE3 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Locker ERC721 | 0x3ca4C9F740003bCd7fEbF5d4C7c2956E5860D803 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Mixed Route Quoter | 0x8785Da212D634Da92efA6FA5E4a3e5097ebe56C4 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Position Manager | 0x897B8d7a4E461F0713Fa6CD0cC9412985a7f0305 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Quoter | 0x04C144cab58b4aa08A005ff90F5Bb28F798FB89E | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Quoter V2 | 0xAda1611232F3369bacba40447Ba5eD853D3597F1 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Swap Router | 0x2077810Ccd04C7bb6cae66462DdBa8Bc1AE72f33 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Swap Router02 | 0xb142dD5163beBc9F4125c4abBfb97f9358973612 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Tick Lens | 0x2e03623c495f3912f294bF7cC1598af1110FA28C | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Token Descriptor | 0xD5F79bA1D2c6441477A8b5b9dC595E8Fb5B6d96d | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap Token Validator | 0xe29fe05A54796F0301D7395f98A45DD1fa3025Cf | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap V2 Factory | 0x4dcBA0BD291e68D9A3A64A8900C4A67Cd1B149d3 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap V2 Router | 0xacDDF4543b0c99e33a851febef0bDdae7E470B24 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap V3 Factory | 0x94C0883ec4A24BD69610bdD408Fd8263119827A2 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap V3 Fee Adapter | 0x21Fc5C7AA794C5E6e2D09fa1aB0C22009aD8a992 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Arc | PeddleSwap V3 Pool Deployer | 0x37bc0bd4250c334d12D9163c6c499bcB26C138A9 | gully-labs | no verified source | peddleswap:contracts/deployments/5042.json
+- Base | PeddleSwap Dynamic Fee Module | 0xAda1611232F3369bacba40447Ba5eD853D3597F1 | gully-labs | https://repo.sourcify.dev/8453/0xAda1611232F3369bacba40447Ba5eD853D3597F1 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Fee Router | 0xe29fe05A54796F0301D7395f98A45DD1fa3025Cf | gully-labs | https://repo.sourcify.dev/8453/0xe29fe05A54796F0301D7395f98A45DD1fa3025Cf | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Interface Multicall | 0x04C144cab58b4aa08A005ff90F5Bb28F798FB89E | gully-labs | https://repo.sourcify.dev/8453/0x04C144cab58b4aa08A005ff90F5Bb28F798FB89E | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Limit Orders | 0xd8a99B32aCad8c1ddC709E29992cbC19dF34286D | gully-labs | https://repo.sourcify.dev/8453/0xd8a99B32aCad8c1ddC709E29992cbC19dF34286D | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Locker ERC20 | 0x2e03623c495f3912f294bF7cC1598af1110FA28C | gully-labs | https://repo.sourcify.dev/8453/0x2e03623c495f3912f294bF7cC1598af1110FA28C | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Locker ERC721 | 0x8785Da212D634Da92efA6FA5E4a3e5097ebe56C4 | gully-labs | https://repo.sourcify.dev/8453/0x8785Da212D634Da92efA6FA5E4a3e5097ebe56C4 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Mixed Route Quoter | 0x897B8d7a4E461F0713Fa6CD0cC9412985a7f0305 | gully-labs | https://repo.sourcify.dev/8453/0x897B8d7a4E461F0713Fa6CD0cC9412985a7f0305 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Position Manager | 0xacDDF4543b0c99e33a851febef0bDdae7E470B24 | gully-labs | https://repo.sourcify.dev/8453/0xacDDF4543b0c99e33a851febef0bDdae7E470B24 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Quoter | 0x94C0883ec4A24BD69610bdD408Fd8263119827A2 | gully-labs | https://repo.sourcify.dev/8453/0x94C0883ec4A24BD69610bdD408Fd8263119827A2 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Quoter V2 | 0x929a2CBb3264B53d32bbB1A345FcB248ec75EDa8 | gully-labs | https://repo.sourcify.dev/8453/0x929a2CBb3264B53d32bbB1A345FcB248ec75EDa8 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Swap Router | 0x37bc0bd4250c334d12D9163c6c499bcB26C138A9 | gully-labs | https://repo.sourcify.dev/8453/0x37bc0bd4250c334d12D9163c6c499bcB26C138A9 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Swap Router02 | 0xD5F79bA1D2c6441477A8b5b9dC595E8Fb5B6d96d | gully-labs | https://repo.sourcify.dev/8453/0xD5F79bA1D2c6441477A8b5b9dC595E8Fb5B6d96d | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Tick Lens | 0x6Eee5aaB26301CF0373F67c503C4823EE57913bF | gully-labs | https://repo.sourcify.dev/8453/0x6Eee5aaB26301CF0373F67c503C4823EE57913bF | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Token Descriptor | 0x4dcBA0BD291e68D9A3A64A8900C4A67Cd1B149d3 | gully-labs | https://repo.sourcify.dev/8453/0x4dcBA0BD291e68D9A3A64A8900C4A67Cd1B149d3 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap Token Validator | 0x2077810Ccd04C7bb6cae66462DdBa8Bc1AE72f33 | gully-labs | https://repo.sourcify.dev/8453/0x2077810Ccd04C7bb6cae66462DdBa8Bc1AE72f33 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap V2 Factory | 0x0fC7E9BB0b2F84b33a16F6b985F8e99c4E104cd9 | gully-labs | https://repo.sourcify.dev/8453/0x0fC7E9BB0b2F84b33a16F6b985F8e99c4E104cd9 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap V2 Router | 0x0482B678A56c65Bb96Aa82576d8B50a178a35613 | gully-labs | https://repo.sourcify.dev/8453/0x0482B678A56c65Bb96Aa82576d8B50a178a35613 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap V3 Factory | 0x8f5890e843C89a7f963ecdEFF84D0900518AE106 | gully-labs | https://repo.sourcify.dev/8453/0x8f5890e843C89a7f963ecdEFF84D0900518AE106 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap V3 Fee Adapter | 0xb142dD5163beBc9F4125c4abBfb97f9358973612 | gully-labs | https://repo.sourcify.dev/8453/0xb142dD5163beBc9F4125c4abBfb97f9358973612 | peddleswap:contracts/deployments/8453.json
+- Base | PeddleSwap V3 Pool Deployer | 0xFc0bd2e4e1E1d80749Df8865850025E419Fe37Fe | gully-labs | https://repo.sourcify.dev/8453/0xFc0bd2e4e1E1d80749Df8865850025E419Fe37Fe | peddleswap:contracts/deployments/8453.json
+- BNB Chain | PeddlesPromotionMarket | 0x704E5eA6752EbfcEDB377512b67c0138461f4849 | gully-labs | https://repo.sourcify.dev/56/0x704E5eA6752EbfcEDB377512b67c0138461f4849 | peddles-quest:docs/chains.md
+- BNB Chain | PeddlesQuestBadge | 0x6DA219d4072A91665F702e34ca6CcaCd3eA7AE91 | gully-labs | https://repo.sourcify.dev/56/0x6DA219d4072A91665F702e34ca6CcaCd3eA7AE91 | peddles-quest:docs/chains.md
+- BNB Chain | PeddlesQuestEscrow | 0x16267bE6D067b3d411bf779B5aD041f9eba4CadE | gully-labs | https://repo.sourcify.dev/56/0x16267bE6D067b3d411bf779B5aD041f9eba4CadE | peddles-quest:docs/chains.md
+- BNB Chain | PeddlesQuestRouter | 0x0c90BD0A17879C9b627705206522020078C51231 | gully-labs | https://repo.sourcify.dev/56/0x0c90BD0A17879C9b627705206522020078C51231 | peddles-quest:docs/chains.md
+- Robinhood Chain | PeddlesPromotionMarket | 0x704E5eA6752EbfcEDB377512b67c0138461f4849 | gully-labs | https://repo.sourcify.dev/4663/0x704E5eA6752EbfcEDB377512b67c0138461f4849 | peddles-quest:docs/chains.md
+- Robinhood Chain | PeddlesQuestBadge | 0x6DA219d4072A91665F702e34ca6CcaCd3eA7AE91 | gully-labs | https://repo.sourcify.dev/4663/0x6DA219d4072A91665F702e34ca6CcaCd3eA7AE91 | peddles-quest:docs/chains.md
+- Robinhood Chain | PeddlesQuestEscrow | 0x16267bE6D067b3d411bf779B5aD041f9eba4CadE | gully-labs | https://repo.sourcify.dev/4663/0x16267bE6D067b3d411bf779B5aD041f9eba4CadE | peddles-quest:docs/chains.md
+- Robinhood Chain | PeddlesQuestRouter | 0x0c90BD0A17879C9b627705206522020078C51231 | gully-labs | https://repo.sourcify.dev/4663/0x0c90BD0A17879C9b627705206522020078C51231 | peddles-quest:docs/chains.md
+- Arc | PeddlesPromotionMarket | 0x704E5eA6752EbfcEDB377512b67c0138461f4849 | gully-labs | https://repo.sourcify.dev/5042/0x704E5eA6752EbfcEDB377512b67c0138461f4849 | peddles-quest:docs/chains.md
+- Arc | PeddlesQuestBadge | 0x6DA219d4072A91665F702e34ca6CcaCd3eA7AE91 | gully-labs | https://repo.sourcify.dev/5042/0x6DA219d4072A91665F702e34ca6CcaCd3eA7AE91 | peddles-quest:docs/chains.md
+- Arc | PeddlesQuestEscrow | 0x16267bE6D067b3d411bf779B5aD041f9eba4CadE | gully-labs | https://repo.sourcify.dev/5042/0x16267bE6D067b3d411bf779B5aD041f9eba4CadE | peddles-quest:docs/chains.md
+- Arc | PeddlesQuestRouter | 0x0c90BD0A17879C9b627705206522020078C51231 | gully-labs | https://repo.sourcify.dev/5042/0x0c90BD0A17879C9b627705206522020078C51231 | peddles-quest:docs/chains.md
+- Base | PeddlesPromotionMarket | 0x704E5eA6752EbfcEDB377512b67c0138461f4849 | gully-labs | https://repo.sourcify.dev/8453/0x704E5eA6752EbfcEDB377512b67c0138461f4849 | peddles-quest:docs/chains.md
+- Base | PeddlesQuestBadge | 0x6DA219d4072A91665F702e34ca6CcaCd3eA7AE91 | gully-labs | https://repo.sourcify.dev/8453/0x6DA219d4072A91665F702e34ca6CcaCd3eA7AE91 | peddles-quest:docs/chains.md
+- Base | PeddlesQuestEscrow | 0x16267bE6D067b3d411bf779B5aD041f9eba4CadE | gully-labs | https://repo.sourcify.dev/8453/0x16267bE6D067b3d411bf779B5aD041f9eba4CadE | peddles-quest:docs/chains.md
+- Base | PeddlesQuestRouter | 0x0c90BD0A17879C9b627705206522020078C51231 | gully-labs | https://repo.sourcify.dev/8453/0x0c90BD0A17879C9b627705206522020078C51231 | peddles-quest:docs/chains.md
+- BNB Chain | CartelFeeRouter v1 | 0x5a423653f722bb427A09d05b4e80175A703e861F | gully-labs | no verified source | Cartel-Family:deploy/deploy_fee_router.md
+- Robinhood Chain | CartelFeeRouter v1 | 0x5a423653f722bb427A09d05b4e80175A703e861F | gully-labs | no verified source | Cartel-Family:deploy/deploy_fee_router.md

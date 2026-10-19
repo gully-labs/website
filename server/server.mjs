@@ -22,6 +22,7 @@ import { addEnquiry, addToLaunchList } from './store.mjs'
 import { clientIp, DATA_DIR, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { handleEcosystem } from './ecosystem.mjs'
+import { handleDiscovery } from './discovery.mjs'
 import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { handleBlog } from './blog.mjs'
 import { handleOg } from './og.mjs'
@@ -213,6 +214,7 @@ async function handleRequest(req, res) {
   if (url.pathname === '/gully-pay/merchant-terms' || url.pathname === '/gully-pay/merchant-terms/') {
     return send(res, 301, '', { Location: '/legal/merchant-terms', 'Cache-Control': 'public, max-age=86400' })
   }
+  if (handleDiscovery(req, res, url)) return
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {
     const map = sitemapFor(host)

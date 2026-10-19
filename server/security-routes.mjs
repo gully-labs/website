@@ -567,7 +567,7 @@ export async function handleSecurityPublic(req, res, url) {
   if (p === '/api/security/review-requests') {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
     if (req.headers['x-requested-with'] !== 'gully') return json(res, 403, { error: 'Cross-site request refused.' }), true
-    if (!allow('review', ip, 5, 3_600_000)) return json(res, 429, { error: 'Too many requests from this address. Try again in an hour, or write to hello@gullylabs.xyz.' }), true
+    if (!allow('review', ip, 5, 3_600_000)) return json(res, 429, { error: 'Too many requests from this address. Try again in an hour, or write to team@gullylabs.xyz.' }), true
     const body = await readJson(req, 12_000)
     // A filled honeypot is a bot: answered like a success, stored nowhere.
     if (typeof body?.website === 'string' && body.website.trim()) return json(res, 201, { request: { id: 'rr_' + randomToken(9), status: 'new' } }), true

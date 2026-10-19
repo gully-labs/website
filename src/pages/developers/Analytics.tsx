@@ -22,6 +22,7 @@ import { PayFlow } from './PayFlow'
 import { track } from '../../lib/track'
 import { input, mono, panel, panelTitle, pillDanger, pillGold, pillLine, pillSm, rise } from './styles'
 import { toastError, toastSuccess } from '../../components/ui/toast'
+import { StatusPill as KitPill } from '../../components/ui/StatusPill'
 
 /* Gully Analytics, self-serve: start a free trial (the server creates a Gully Analytics login for this
    wallet and shows its password once), add websites, copy the install snippet (with data-web3), watch
@@ -137,7 +138,7 @@ function StartStep({ view, onStarted }: { view: AnalyticsView; onStarted: (s: Se
       </div>
       {!view.configured && (
         <p className="m-0 text-[13px] text-faint" role="status">
-          Self-serve sign-up is not switched on on this server yet. Write to hello@gullylabs.xyz for early access.
+          Self-serve sign-up is not switched on on this server yet. Write to team@gullylabs.xyz for early access.
         </p>
       )}
       <GhostCurves height={120} title="Your page views and visitors will draw here">
@@ -327,7 +328,7 @@ function PlanList({ view, account, onBuy }: { view: AnalyticsView; account: Anal
               <div className="flex items-baseline justify-between gap-3">
                 <span className="flex items-center gap-2 text-[15px] font-semibold">
                   {p.name}
-                  {isCur && <span className="rounded-full border border-gold-line px-2 font-mono text-[11px] text-gold">CURRENT</span>}
+                  {isCur && <KitPill tone="warn">CURRENT</KitPill>}
                 </span>
                 <span className="font-display text-[24px] leading-none font-bold">
                   {p.priceUsdc} <span className="font-mono text-[11px] font-normal text-faint">USD / {offer.analytics.periodDays} days</span>

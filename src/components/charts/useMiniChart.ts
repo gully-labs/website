@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
 import { useReducedMotion } from './chart-utils'
+import { lerpSeries, tweenEase, tweenMs } from './liveMotion'
 
 /* Shared plumbing for the kit's small SVG charts (MiniSpark, MiniBars): start the entry animation
    when the chart scrolls into view, glide between values on refresh, and step a tooltip through the
@@ -17,6 +18,22 @@ export function useSeen<T extends Element>() {
     return () => io.disconnect()
   }, [seen])
   return [ref, seen] as const
+}
+
+/** True while the element is on screen (follows scrolling both ways). Live loops pause when false: put
+    it on the box as data-live={inView ? 'on' : 'paused'} (index.css freezes every loop inside it). */
+export function useInView<T extends Element>(shared?: RefObject<T | null>) {
+  const own = useRef<T>(null)
+  const ref = shared ?? own
+  const [inView, setInView] = useState(true)
+  useEffect(() => {
+    const node = ref.current
+    if (!node || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver((es) => setInView(es.some((e) => e.isIntersecting)))
+    io.observe(node)
+    return () => io.disconnect()
+  }, [ref])
+  return [ref, inView] as const
 }
 
 /**
@@ -39,9 +56,8 @@ export function useTween(target: readonly (number | null)[], ms = 700): readonly
     const t0 = performance.now()
     let raf = 0
     const step = (now: number) => {
-      const k = Math.min(1, (now - t0) / (reduced ? 150 : ms))
-      const e = reduced ? k : 1 - (1 - k) ** 3
-      const v = k === 1 ? target : target.map((x, i) => (x === null || a[i] === null || a[i] === undefined ? x : a[i]! + (x - a[i]!) * e))
+      const k = Math.min(1, (now - t0) / tweenMs(reduced, ms))
+      const v = lerpSeries(a, target, tweenEase(k, reduced))
       from.current = v
       setShown(v)
       if (k < 1) raf = requestAnimationFrame(step)

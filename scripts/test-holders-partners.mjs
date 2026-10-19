@@ -89,7 +89,8 @@ P.setPartnerHooksForTest({
 const wallet = () => privateKeyToAccount(generatePrivateKey())
 const owner = makeClient(BASE)
 const viewer = makeClient(BASE)
-for (const c of [owner, viewer]) if ((await c.signIn(wallet())).status !== 200) throw new Error('sign-in failed')
+const ownerWallet = wallet()
+if ((await owner.signIn(ownerWallet)).status !== 200 || (await viewer.signIn(wallet())).status !== 200) throw new Error('sign-in failed')
 const key1 = await owner.post('/api/developer/keys', { name: 'Launchpad' })
 const SECRET = key1.data.secret
 const key2 = (await owner.post('/api/developer/keys', { name: 'Second' })).data.secret
@@ -223,20 +224,22 @@ try {
   const before = builds
   const bn = await badge(`base/${addr(0xa7)}`)
   const bnText = await bn.text()
-  check('badge: unknown token gets a neutral pill, 200 image/svg+xml', bn.status === 200 && bn.headers.get('content-type').startsWith('image/svg+xml') && bnText.includes('HOLDER MAP') && !/Health|bundled/.test(bnText))
+  check('badge: unknown token gets a neutral pill, 200 image/svg+xml', bn.status === 200 && bn.headers.get('content-type').startsWith('image/svg+xml') && bnText.includes('<title>Holder Map</title>') && !/<title>[^<]*(Health|bundle)/.test(bnText))
   check('badge: never builds (no uncached build)', builds === before && (await badge(`base/${addr(0xa1)}`)).status === 200 && builds === before)
-  check('badge: bad chain and bad token still a neutral pill', (await (await badge('nochain/zzz')).text()).includes('HOLDER MAP'))
+  check('badge: bad chain and bad token still a neutral pill', (await (await badge('nochain/zzz')).text()).includes('<title>Holder Map</title>'))
   H.seedHolderMapForTest('base', addr(0xa2), cleanMap(addr(0xa2)))
   H.seedHolderMapForTest('base', addr(0xa1), riskyMap(addr(0xa1)))
   const good = await badge(`base/${addr(0xa2)}`)
   const goodText = await good.text()
-  check('badge: cached healthy map shows "Health 82" in gold', goodText.includes('Health 82') && goodText.includes('#D9B563'))
+  // Text is outlined to paths by badges.mjs, so the words are read from <title>; 70+ is the kit's frog green.
+  check('badge: cached healthy map shows "Health 82" in green', goodText.includes('<title>Holder Map: Health 82</title>') && goodText.includes('#2F6B35'))
   check('badge: well-formed, kit styled, linked and sandboxed', goodText.startsWith('<svg') && goodText.trim().endsWith('</svg>') && goodText.includes('data:image/png') && goodText.includes('/holders/base/') && good.headers.get('content-security-policy').includes("default-src 'none'"))
   check('badge: cached by the CDN for 5 minutes (neutral 1 minute)', good.headers.get('cache-control') === 'public, max-age=300' && bn.headers.get('cache-control') === 'public, max-age=60')
   const bad = await (await badge(`base/${addr(0xa1)}`)).text()
-  check('badge: poor health shows "Health 38" in red', bad.includes('Health 38') && bad.includes('#E5574B'))
+  // Bundled wallets take the value slot ahead of the health score (badges.mjs holderMapFace), in the kit alert red.
+  check('badge: a risky map shows its bundles in the kit alert red', bad.includes('<title>Holder Map: 4 bundles</title>') && bad.includes('#FF8A7A'))
   H.seedHolderMapForTest('base', addr(0xa4), { ...riskyMap(addr(0xa4)), health: null })
-  check('badge: no health but a bundle shows "4 bundled"', (await (await badge(`base/${addr(0xa4)}`)).text()).includes('4 bundled'))
+  check('badge: no health but a bundle shows "4 bundles"', (await (await badge(`base/${addr(0xa4)}`)).text()).includes('<title>Holder Map: 4 bundles</title>'))
   H.seedHolderMapForTest('base', addr(0xa3), { ...cleanMap(addr(0xa3)), health: null, forensics: null })
   check('badge: a map without a health score stays neutral', !/Health \d/.test(await (await badge(`base/${addr(0xa3)}`)).text()))
   check('badge: HEAD works and POST is refused', (await fetch(`${BASE}/api/holders/base/${addr(0xa2)}/badge.svg`, { method: 'HEAD' })).status === 200 && (await fetch(`${BASE}/api/holders/base/${addr(0xa2)}/badge.svg`, { method: 'POST' })).status === 405)
@@ -250,6 +253,36 @@ try {
   const rot = await owner.post('/api/developer/partners/webhook/rotate')
   check('rotate: new secret', rot.status === 200 && rot.data.secret !== whsec && /^whsec_/.test(rot.data.secret))
   check('remove: webhook can be cleared', (await owner.post('/api/developer/partners/webhook', { url: null })).data.endpoint === null)
+
+  /* ---- white-label embed key ---- */
+  const billing = await import('../server/billing.mjs')
+  const cfg = (qs) => fetch(`${BASE}/api/holders/embed-config?${qs}`).then(async (r) => ({ status: r.status, headers: r.headers, data: await r.json() }))
+  check('embed-key: signed out is 401', (await fetch(`${BASE}/api/developer/partners/embed-key`)).status === 401)
+  const ek = await owner.call('/api/developer/partners/embed-key')
+  const EK = ek.data?.embedKey
+  check('embed-key: a signed key, not the API secret, for the workspace; free plan has no white label', ek.status === 200 && /^gle_0x[0-9a-f]{40}\.[0-9a-f]{24}$/.test(EK ?? '') && ek.data.whiteLabel === false && !EK.includes(SECRET))
+  check('embed-key: stable between calls', (await owner.call('/api/developer/partners/embed-key')).data.embedKey === EK)
+  const free = await cfg(`key=${EK}&theme=light&accent=%23ff8800`)
+  check('embed-config: a valid key on a plan WITHOUT white label gets the normal embed (credit stays)', free.status === 200 && free.data.whiteLabel === false && free.data.theme === null && free.headers.get('cache-control') === 'no-store')
+  billing.adminSetPlan(ownerWallet.address.toLowerCase(), 'pro', 30)
+  check('embed-config: Pro has no white label either', (await cfg(`key=${EK}`)).data.whiteLabel === false)
+  billing.adminSetPlan(ownerWallet.address.toLowerCase(), 'business', 30)
+  const wl = await cfg(`key=${EK}&theme=light&accent=%23FF8800`)
+  check('embed-config: Business plan with its key: white label, light theme, accent lower-cased', wl.data.whiteLabel === true && wl.data.theme.mode === 'light' && wl.data.theme.accent === '#ff8800', JSON.stringify(wl.data))
+  check('embed-config: theme defaults to dark, accent null when not given', JSON.stringify((await cfg(`key=${EK}`)).data.theme) === JSON.stringify({ mode: 'dark', accent: null }))
+  for (const bad of ['red', 'url(javascript:alert(1))', '#12', '#12345', '#gggggg', '%23ff0000;background:url(x)', '#ff00001', 'expression(1)']) {
+    const r = await cfg(`key=${EK}&accent=${encodeURIComponent(bad)}`)
+    check(`embed-config: accent ${JSON.stringify(bad)} is refused (null), the white label itself stays`, r.data.whiteLabel === true && r.data.theme.accent === null)
+  }
+  check('embed-config: an unknown theme word is dark', (await cfg(`key=${EK}&theme=neon`)).data.theme.mode === 'dark')
+  const tampered = EK.slice(0, -1) + (EK.endsWith('0') ? '1' : '0')
+  check('embed-config: a tampered signature, another workspace, garbage and no key all get the normal embed', (await cfg(`key=${tampered}`)).data.whiteLabel === false && (await cfg(`key=${EK.replace(/gle_0x[0-9a-f]{40}/, 'gle_0x' + 'ab'.repeat(20))}`)).data.whiteLabel === false && (await cfg('key=nonsense')).data.whiteLabel === false && (await cfg('')).data.whiteLabel === false)
+  check('embed-config: a client-side flag alone changes nothing (whitelabel=1, no key)', (await cfg('whitelabel=1&theme=light&accent=%23ff8800')).data.whiteLabel === false)
+  check('embed-config: POST is refused', (await fetch(`${BASE}/api/holders/embed-config?key=${EK}`, { method: 'POST' })).status === 405)
+  const rotated = await owner.post('/api/developer/partners/embed-key/rotate')
+  check('embed-key: rotating gives a new key and ends the old one at once', rotated.status === 200 && rotated.data.embedKey !== EK && (await cfg(`key=${EK}`)).data.whiteLabel === false && (await cfg(`key=${rotated.data.embedKey}`)).data.whiteLabel === true)
+  billing.adminSetPlan(ownerWallet.address.toLowerCase(), 'free', 0)
+  check('embed-config: when the plan lapses the white label ends with it (the plan is read live)', (await cfg(`key=${rotated.data.embedKey}`)).data.whiteLabel === false)
 } catch (e) {
   t.failed++
   console.error('FAIL  test run crashed:', e?.stack ?? e)

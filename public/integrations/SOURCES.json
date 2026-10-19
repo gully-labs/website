@@ -1,0 +1,148 @@
+{
+  "chainlink": {
+    "file": "/integrations/chainlink.svg",
+    "from": "https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/chainlink.svg",
+    "page": "https://simpleicons.org/?q=chainlink",
+    "terms": "Simple Icons (CC0) glyph of the Chainlink mark; nominative use only.",
+    "note": "Filled with the brand colour #375BD2 (the Simple Icons brand colour); path unchanged.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "defillama": {
+    "file": "/integrations/defillama.jpg",
+    "from": "https://github.com/DefiLlama.png?size=256",
+    "page": "https://github.com/DefiLlama",
+    "terms": "DefiLlama's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "dexscreener": {
+    "file": "/integrations/dexscreener.png",
+    "from": "https://github.com/dexscreener.png?size=256",
+    "page": "https://github.com/dexscreener",
+    "terms": "DexScreener's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "geckoterminal": {
+    "file": "/integrations/geckoterminal.png",
+    "from": "https://www.geckoterminal.com/images/icons/180x180.png",
+    "page": "https://www.geckoterminal.com/",
+    "terms": "GeckoTerminal's own site icon (apple-touch-icon), unaltered; nominative use only.",
+    "note": "No GitHub org or press kit found; the site icon is the official mark.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "coingecko": {
+    "file": "/integrations/coingecko.png",
+    "from": "https://github.com/coingecko.png?size=256",
+    "page": "https://github.com/coingecko",
+    "terms": "CoinGecko's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "blockscout": {
+    "file": "/integrations/blockscout.jpg",
+    "from": "https://github.com/blockscout.png?size=256",
+    "page": "https://github.com/blockscout",
+    "terms": "Blockscout's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "moralis": {
+    "file": "/integrations/moralis.png",
+    "from": "https://avatars.githubusercontent.com/MoralisWeb3?s=256",
+    "page": "https://github.com/MoralisWeb3",
+    "terms": "Moralis's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "lifi": {
+    "file": "/integrations/lifi.png",
+    "from": "https://github.com/lifinance.png?size=256",
+    "page": "https://github.com/lifinance",
+    "terms": "LI.FI's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "jupiter": {
+    "file": "/integrations/jupiter.jpg",
+    "from": "https://github.com/jup-ag.png?size=256",
+    "page": "https://github.com/jup-ag",
+    "terms": "Jupiter's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "request-network": {
+    "file": "/integrations/request-network.png",
+    "from": "https://github.com/RequestNetwork.png?size=256",
+    "page": "https://github.com/RequestNetwork",
+    "terms": "Request Network's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "safe": {
+    "file": "/integrations/safe.jpg",
+    "from": "https://github.com/safe-global.png?size=256",
+    "page": "https://github.com/safe-global",
+    "terms": "Safe's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "sourcify": {
+    "file": "/integrations/sourcify.jpg",
+    "from": "https://github.com/sourcifyeth.png?size=256",
+    "page": "https://github.com/sourcifyeth",
+    "terms": "Sourcify's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "etherscan": {
+    "file": "/integrations/etherscan.png",
+    "from": "https://github.com/etherscan.png?size=256",
+    "page": "https://github.com/etherscan",
+    "terms": "Etherscan's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z",
+    "note": "White mark on transparent; shown on a dark navy disc."
+  },
+  "slither": {
+    "file": "/integrations/slither.png",
+    "from": "https://github.com/crytic.png?size=256",
+    "page": "https://github.com/crytic",
+    "terms": "Crytic (Trail of Bits, the maker of Slither)'s official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z",
+    "note": "Slither's repo lives in the crytic org; this is that org's avatar, the Trail of Bits security group mark."
+  },
+  "aderyn": {
+    "file": "/integrations/aderyn.jpg",
+    "from": "https://github.com/Cyfrin.png?size=256",
+    "page": "https://github.com/Cyfrin",
+    "terms": "Cyfrin (the maker of Aderyn)'s official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "semgrep": {
+    "file": "/integrations/semgrep.png",
+    "from": "https://github.com/semgrep.png?size=256",
+    "page": "https://github.com/semgrep",
+    "terms": "Semgrep's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "drpc": {
+    "file": "/integrations/drpc.png",
+    "from": "https://github.com/drpcorg.png?size=256",
+    "page": "https://github.com/drpcorg",
+    "terms": "dRPC's official GitHub organisation avatar, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "rainbowkit": {
+    "file": "/integrations/rainbowkit.svg",
+    "from": "https://www.rainbowkit.com/rainbow.svg",
+    "page": "https://www.rainbowkit.com/",
+    "terms": "The Rainbow mark served by rainbowkit.com, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "walletconnect": {
+    "file": "/integrations/walletconnect.svg",
+    "from": "https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/walletconnect.svg",
+    "page": "https://simpleicons.org/?q=walletconnect",
+    "terms": "Simple Icons (CC0) glyph of the WalletConnect mark; nominative use only.",
+    "note": "Filled with the brand colour #3B99FC (the Simple Icons brand colour); path unchanged.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  },
+  "umami": {
+    "file": "/integrations/umami.svg",
+    "from": "https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/umami.svg",
+    "page": "https://simpleicons.org/?q=umami",
+    "terms": "Simple Icons (CC0) glyph of the Umami mark; nominative use only.",
+    "note": "Path unchanged, default black on a white disc.",
+    "fetchedAt": "2026-10-18T22:00:00Z"
+  }
+}

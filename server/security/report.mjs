@@ -47,7 +47,9 @@ export function targetText(t) {
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const loc = (l) => (l ? `${esc(l.file)}${l.line ? `:${l.line}${l.endLine && l.endLine !== l.line ? `-${l.endLine}` : ''}` : ''}` : '')
 
-/** Kit tokens (src/index.css / BRAND.md), printable on light paper. Override any --gs-* to restyle. */
+/** Kit tokens (src/index.css / BRAND.md), printable on light paper. Override any --gs-* to restyle.
+    Ink, panel and gold are the kit's own (#0d141c, #f4f2ec, #d9b563); the severity colours and the muted greys are
+    darker print-safe cousins of the app's, chosen to pass AA on white. Corner radii follow the kit scale (sm 6, md 8). */
 export const REPORT_CSS = `
 .gs-report{--gs-ink:#0d141c;--gs-muted:#4a5564;--gs-line:#d9dde3;--gs-paper:#ffffff;--gs-panel:#f4f2ec;--gs-gold:#d9b563;--gs-gold-ink:#5a4a22;
 --gs-critical:#9b1c1c;--gs-high:#c2410c;--gs-medium:#a16207;--gs-low:#1d4ed8;--gs-info:#4a5564;
@@ -61,10 +63,10 @@ background:var(--gs-paper);color:var(--gs-ink);font:14px/1.55 var(--gs-font-body
 .gs-report th{font-family:var(--gs-font-display);font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--gs-muted)}
 .gs-header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--gs-line);padding-bottom:16px}
 .gs-logo{height:36px;width:auto}
-.gs-badge{display:inline-block;border:1px solid var(--gs-gold-ink);background:var(--gs-panel);color:var(--gs-gold-ink);font:600 12px/1 var(--gs-font-mono);padding:6px 10px;border-radius:4px}
-.gs-sev{display:inline-block;min-width:68px;text-align:center;color:#fff;font:600 11px/1 var(--gs-font-mono);text-transform:uppercase;padding:5px 6px;border-radius:3px}
+.gs-badge{display:inline-block;border:1px solid var(--gs-gold-ink);background:var(--gs-panel);color:var(--gs-gold-ink);font:600 12px/1 var(--gs-font-mono);padding:6px 10px;border-radius:6px}
+.gs-sev{display:inline-block;min-width:68px;text-align:center;color:#fff;font:600 11px/1 var(--gs-font-mono);text-transform:uppercase;padding:5px 6px;border-radius:6px}
 .gs-sev-critical{background:var(--gs-critical)}.gs-sev-high{background:var(--gs-high)}.gs-sev-medium{background:var(--gs-medium)}.gs-sev-low{background:var(--gs-low)}.gs-sev-info{background:var(--gs-info)}
-.gs-finding{border:1px solid var(--gs-line);border-left:4px solid var(--gs-line);padding:12px 16px;margin:12px 0;break-inside:avoid}
+.gs-finding{border:1px solid var(--gs-line);border-left:4px solid var(--gs-line);padding:12px 16px;margin:12px 0;break-inside:avoid;border-radius:8px}
 .gs-finding[data-severity=critical]{border-left-color:var(--gs-critical)}.gs-finding[data-severity=high]{border-left-color:var(--gs-high)}.gs-finding[data-severity=medium]{border-left-color:var(--gs-medium)}.gs-finding[data-severity=low]{border-left-color:var(--gs-low)}
 .gs-meta{color:var(--gs-muted);font-size:12px}.gs-muted{color:var(--gs-muted)}
 .gs-disclaimer{background:var(--gs-panel);border:1px solid var(--gs-line);padding:12px 16px;font-size:12px}

@@ -1,0 +1,147 @@
+# Gully Labs
+
+> Gully Labs builds onchain tools: a tracker of tokenised stocks against their fair price, the Holder Map, Gully Pay, Gully Security, Gully AI and a Telegram bot, plus the projects the team has shipped. Everything below is public.
+
+Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram news: https://t.me/GullyLabsNews. Bot: https://t.me/GullyLabsBot.
+
+## Products and features (live)
+
+- [Stock token fair-price gap](https://gullylabs.xyz/tracker) (live): Shows every tracked tokenised stock at its onchain price next to its fair price and the percentage gap between them, read live.
+- [Gap movers and gap index](https://docs.gullylabs.xyz/api) (live): Lists the stock tokens whose gap has moved most over the last hour or day, and a single gap index across the tracker.
+- [Stock pages](https://gullylabs.xyz/tracker) (live): Gives every tracked stock token its own page with price against fair price, the gap chart, pool depth, contracts, swap, alerts and its Holder Map.
+- [Public tracker API](https://docs.gullylabs.xyz/api) (live): A read-only JSON API for the tracker, open without a key; a key raises the rate limit.
+- [In-page stock token swaps](https://docs.gullylabs.xyz/swaps) (live): Lets a visitor swap into or out of a stock token from its page, routed by LI.FI on Robinhood Chain and BNB Chain and by Jupiter on Solana. The visitor's own wallet signs everything.
+- [Solana xStocks coverage](https://docs.gullylabs.xyz/solana) (live): Extends the tracker to Solana xStocks, with the Holder Map, Solana Pay payments and Jupiter swaps on the same chain.
+- [Gap alerts](https://docs.gullylabs.xyz/plans-alerts) (live): Tells a signed-in user, by signed webhook or Telegram, when a stock token's gap crosses a line they set.
+- [API plans (Free, Pro, Business)](https://gullylabs.xyz/pricing) (live): Paid tiers of the tracker API that raise the per-key rate limit, add alerts and monitors, and lengthen history. Paid by crypto, with no custody.
+- [Embeddable tracker widget](https://gullylabs.xyz/widget) (live): Puts live tracker data on any web page from one script tag: a ticker, a one-stock badge, a table of the widest gaps, or a Holder Map frame.
+- [Holder Map](https://gullylabs.xyz/holders) (live): Shows who really holds a token: the biggest wallets as bubbles, wallets that trade with each other linked as clusters, and a plain-words summary.
+- [Launch Health score](https://docs.gullylabs.xyz/holder-map) (live): Scores a DeepCore launch from 0 to 100 on liquidity, bundled buyers, the deployer's share and record, top-10 concentration and snipers. It is never behind a paywall.
+- [Replay, live view and CSV](https://docs.gullylabs.xyz/holder-map) (live): Replays a holder map over time with a scrubber, keeps it updating live while open, and exports the holder list as CSV.
+- [Holder Map alerts](https://docs.gullylabs.xyz/holder-map) (live): Alerts when the largest cluster or the top-10 share of a token reaches a level or drops, by Telegram or webhook.
+- [Deep check](https://docs.gullylabs.xyz/holder-map) (live): A paid, bounded investigation of one token that traces where top holders were funded from, shared funders, the deployer's record and snipers.
+- [Launchpad partner webhooks](https://docs.gullylabs.xyz/holder-map) (live): Lets a launchpad tell Gully Labs about a new token and receive a signed risk flag when the pre-built Holder Map shows warning signs.
+- [Invoices and pay links](https://docs.gullylabs.xyz/gully-pay) (live): Non-custodial crypto billing: invoices and reusable pay links where the payer sends a plain transfer straight to the treasury (or the merchant), read back from the chain.
+- [Solana Pay](https://docs.gullylabs.xyz/solana-pay) (live): Takes SOL, USDC and USDT on Solana through Solana Pay transfer requests with a per-quote reference key.
+- [Signed payment webhooks](https://docs.gullylabs.xyz/gully-pay) (live): Sends signed events when an invoice is paid, expires or is cancelled.
+- [Pay with crypto button](https://docs.gullylabs.xyz/gully-pay) (live): An optional script that opens a Gully Pay checkout in a popup from a normal link.
+- [Live gas costs per chain](https://docs.gullylabs.xyz/gully-pay) (live): Shows what a Gully Pay payment costs in gas right now on each payment chain.
+- [Merchant checkout](https://docs.gullylabs.xyz/gully-pay-merchants) (live): Lets any workspace run its own non-custodial crypto checkout, paid straight into its own wallets, for a transaction fee only.
+- [Fee split and no-stuck-funds guards](https://docs.gullylabs.xyz/gully-pay-merchants) (live): Collects the merchant fee inside the payment through Request Network's ERC20FeeProxy on stablecoins, with guards so funds can never end up stuck in the proxy.
+- [One-click Safe deployment](https://docs.gullylabs.xyz/gully-pay-merchants) (live): Deploys a Safe multisig at the same address on another chain from inside the app, with the user's own wallet signing.
+- [AI Security Scan](https://gullylabs.xyz/security) (live): A self-serve automated scan of a deployed contract, a Solidity repository, an upload or a web2 codebase. It is an AI review only until the static-tools worker runs, and is never called an audit.
+- [Published scan reports](https://gullylabs.xyz/security/reports) (live): Scan reports can be published and read as web pages, with findings, locations and draft proofs of concept.
+- [Contract monitors](https://docs.gullylabs.xyz/gully-security) (live): Watches a contract and tells you by Telegram or signed webhook when a privileged change happens.
+- [Security Review](https://gullylabs.xyz/security) (live): People on the team read the code in scope and write up what they find. Quoted per project after a request.
+- [Gully Score](https://gullylabs.xyz/score) (live): A 0 to 100 reading of how a contract is controlled and how it has behaved, from public evidence only, with every component, weight and source shown.
+- [Score badge](https://docs.gullylabs.xyz/gully-score) (live): An SVG badge of a contract's score that a project can embed on its own site.
+- [Gully AI assistant](https://gullylabs.xyz/ask) (live): Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not.
+- [@GullyLabsBot commands and alerts](https://docs.gullylabs.xyz/telegram) (live): A Telegram bot with a menu for gaps, movers, new DeepCore launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.
+- [News channel gate](https://docs.gullylabs.xyz/news-gate) (live): Asks users to follow @GullyLabsNews to use the bot's features, while leaving alerts, mute, pause, delete and unlink open.
+- [Telegram Mini App](https://gullylabs.xyz/tg) (live): The Gully app inside Telegram, with stock gaps, DeepCore launches and alerts for the account linked to your chat.
+- [New DeepCore launch alerts](https://docs.gullylabs.xyz/telegram) (live): Alerts when a new token launches on DeepCore, on any chain or one you pick.
+- [Gully Analytics](https://gullylabs.xyz/analytics) (live): Privacy-friendly web analytics with Web3 events, a fork of Umami, that a wallet signs up for in the app and pays for with Gully Pay.
+- [Gully Labs App dashboard](https://app.gullylabs.xyz/) (live): A wallet-signed-in dashboard at app.gullylabs.xyz for keys, alerts, usage, billing, analytics, security, Gully Pay and the other services.
+- [Teams and workspaces](https://docs.gullylabs.xyz/teams) (live): Every wallet is a workspace; owners invite teammates by wallet or link with roles, and an activity log records changes.
+- [Public status page](https://gullylabs.xyz/status) (live): A public page and JSON endpoint showing the health of the API, tracker data, DeepCore poller, Telegram bot, payment RPCs, Gully AI, the scan engine, monitors and Holder Map sources.
+- [Docs site and changelog](https://docs.gullylabs.xyz/) (live): Documentation for every product at docs.gullylabs.xyz, with a searchable sidebar, an API reference, a roadmap and a dated changelog.
+- [Cross-venue live stats](https://gullylabs.xyz/) (live): The home page shows live figures read from each Gully Labs project's own public API, each with its source.
+- [Engineering services](https://gullylabs.xyz/services) (live): Gully Labs takes on smart contract, dApp, chain infrastructure and security work on request.
+- [Blog](https://blog.gullylabs.xyz/) (live): A self-hosted Ghost blog at blog.gullylabs.xyz with generated share images.
+- [Token logo service](https://gullylabs.xyz/) (live): Serves token logos by chain and address for the whole stack, from the first source that returns a valid image.
+- [Gully Chains waitlist](https://gullylabs.xyz/) (live): A waitlist in the app for Gully Chains devnet news. No chain is running yet.
+- [Map any token](https://gullylabs.xyz/holders) (live): The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only DeepCore launches and stock tokens. A pasted address is checked to be a token first.
+- [Launchpad registry (Peddles, PeddleSwap)](https://docs.gullylabs.xyz/holder-map-integrate) (live): A registry of launchpads lets the Holder Map recognise a token as a launch from a known launchpad. Peddles and PeddleSwap are the first two entries.
+- [Integrate the Holder Map](https://docs.gullylabs.xyz/holder-map-integrate) (live): A docs page and a partner guide that explain the embed, the iframe, the public API and the share card, and invite launchpads to be listed.
+- [Holder Map badge](https://docs.gullylabs.xyz/badges) (live): A small SVG badge for a token showing its launch health or the number of bundles, built only from cached map data.
+- [Gully Labs badges](https://docs.gullylabs.xyz/badges) (live): One family of embeddable SVG badges for README files and project sites: Gully Score, Holder Map, Gully Security and Built by Gully Labs.
+- [Inline Holder Map in any chat](https://docs.gullylabs.xyz/telegram) (live): Typing @GullyLabsBot followed by a token address or ticker in any Telegram chat answers with the Holder Map share card, a short caption of measured facts and buttons.
+- [Daily Launch radar post](https://t.me/GullyLabsNews) (live): A daily post for the @GullyLabsNews channel naming the cleanest and the most concentrated new launches, from maps the Holder Map has already built.
+- [Ecosystem and partners pages](https://gullylabs.xyz/ecosystem) (live): Public pages that list the third-party data and infrastructure Gully Labs relies on, and what launchpads, wallets, explorers and chains get from a partnership.
+- [Gully Chains offer and waitlist](https://gullylabs.xyz/chains) (live): A public page with the managed-chain offer, its prices read from config, and a waitlist form. No Gully Chains network is running yet; a testnet is coming.
+- [Included services on the testnet](https://gullylabs.xyz/chains) (testnet): The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
+- [Tracker API client](https://docs.gullylabs.xyz/api) (beta): @gullylabs/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists.
+- [Embeddable tracker widget](https://gullylabs.xyz/tracker) (beta): @gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component.
+- [Holder Map client and component](https://gullylabs.xyz/holders) (beta): @gullylabs/holders is a typed client for the Holder Map API plus a React component that frames the live map.
+- [API keys and licence](https://developers.gullylabs.xyz) (beta): The SDK is MIT licensed. Keys come from the developer portal and raise the rate limit tenfold.
+- [Web3 tracking](https://gullylabs.xyz/analytics) (live): An opt-in tracker mode that records wallet connects, chain switches and transactions on top of normal Umami analytics.
+- [Wallet address privacy modes](https://gullylabs.xyz) (live): The site owner chooses how wallet addresses are stored: hashed, in full, or not at all.
+- [Web3 dashboard](https://gullylabs.xyz) (live): A per-website Web3 page shows unique wallets, connect rate, transactions and a funnel.
+- [Self-hosting and fork licence](https://analytics.gullylabs.xyz) (live): A Docker Compose file runs the app with PostgreSQL. The fork is MIT licensed, like Umami.
+- [Launchpad](https://deepcore.fun) (live): A token, its pool and locked liquidity are created in one transaction, with a decaying anti-snipe fee at the open.
+- [Hosted Launchpads and DEXes](https://deepcore.fun) (live): Anyone can open their own Launchpad or DEX on the core in one transaction, with a share of fees going to the site.
+- [Best-price router](https://deepcore.fun) (live): Swaps route across DeepCore pools and other venues. DeepCore pools carry no router fee; fills on other venues pay a small capped fee.
+- [Locks, vesting, airdrops, splits and multisend](https://deepcore.fun) (live): Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.
+- [Limit orders and DCA](https://deepcore.fun) (live): On-chain range (limit) orders and dollar-cost averaging contracts, deployed on three of the four chains.
+- [Same addresses on four chains](https://deepcore.fun) (live): The core is deployed at the same contract addresses on HyperEVM, BNB Chain, Robinhood Chain and Base.
+- [SDK, widgets and scaffolders](https://deepcore.fun) (beta): An MIT SDK, swap widgets and project scaffolders for builders. The README says npm publication is pending.
+- [Swap](https://peddleswap.xyz) (live): V2 and V3 liquidity behind one router, with an Auto mode that picks the better venue.
+- [Volatility-aware dynamic fee](https://peddleswap.xyz) (live): A V3 pool can attach a fee module that raises the swap fee as spot drifts from the pool's TWAP.
+- [Token and LP locker](https://peddleswap.xyz) (live): Locks tokens, V2 LP and V3 positions with no admin unlock. Locked V3 positions keep earning fees.
+- [Bridge](https://peddleswap.xyz) (live): A bridge page that uses Relay's quote service to move native ETH and ERC-20s between chains.
+- [Limit orders](https://peddleswap.xyz) (live): Escrowed limit orders filled by a keeper through V2 or V3 pools.
+- [Token launcher and creator fees](https://peddleswap.xyz) (live): An ownerless token factory with a fixed-supply token, and a fee router that pays a share of swaps back to the token's project.
+- [Stock-paired token launches](https://peddles.xyz) (live): Launch a token whose pool is quoted in a tokenised stock. All supply goes to liquidity locked from block zero.
+- [Holder rewards](https://peddles.xyz) (live): A distributor pays launched-token holders from the token's fee stream, notified on every transfer.
+- [Other launch types](https://peddles.xyz) (live): Beyond stock pairs: WETH-paired, Clog, handle and NFT launches.
+- [Perps](https://peddles.xyz) (live): Perpetual markets via a factory and hook, live on all four mainnets.
+- [Terminal and Telegram trade bot](https://peddles.xyz) (live): A multi-chain token terminal at peddles.xyz/terminal and a Telegram trade bot that uses the same API.
+- [Arcade](https://peddles.xyz/arcade) (beta): A launchpad for browser games, with server-validated XP and leaderboards. Holders of a coin get ranked play on its game.
+- [Quest reward escrow](https://peddlequest.xyz) (live): Quest reward pools are escrowed on chain first and paid out by Merkle proof.
+- [Soulbound badges](https://peddlequest.xyz) (live): An optional non-transferable proof-of-completion badge minted after a quest.
+- [Promotion slots](https://peddlequest.xyz) (live): Trending and banner placement is sold on chain, so what was bought is publicly recorded.
+- [Task verification and eligibility rules](https://peddlequest.xyz) (live): Off-chain checks for X, Discord and wallet tasks, with eligibility and sybil rules set in the quest wizard.
+- [Social feed and copy trading](https://cartel.family/) (live): A wallet-native social trading app with a public feed, follows and copy-trade tracking.
+- [Multi-chain automated trading bot](https://cartel.family/) (live): An AI-scored bot trades on a user's behalf with configurable limits.
+- [Live market and one-send wallet](https://cartel.family/) (live): Live market discovery with a launches tab, plus a single send path across all chains.
+
+## Projects
+
+- [Cartel Family](https://cartel.family/): We trade as one. Live markets, automated strategies and shared trades across chains. (Live; Solana, Multi-chain)
+- [DeepCore](https://deepcore.fun/): Launch on one core. A launchpad, hosted Launchpads and DEXes, and a best-price router on one shared liquidity core, at the same addresses on four chains. (Live; Base, BNB Chain, HyperEVM, Robinhood)
+- [PeddleSwap](https://peddleswap.xyz/): Swap. Lock. Launch.. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks. (Live; Robinhood, Base, Arc)
+- [Peddles](https://peddles.xyz/): Launch, trade and play. Memecoins paired to tokenised stocks. Holders are paid in that stock. (Live; Base, Robinhood, BNB Chain, Arc)
+- [PeddleQuest](https://peddlequest.xyz/): Quest on-chain, earn the proof. Verified quests on four chains. XP, soulbound badges, reward pools escrowed first. (Live; Base, Robinhood, BNB Chain, Arc)
+
+## Docs
+
+- [Overview](https://docs.gullylabs.xyz/): Start
+- [Tracker methodology](https://docs.gullylabs.xyz/methodology): Start
+- [API reference](https://docs.gullylabs.xyz/api): Build
+- [Widget guide](https://docs.gullylabs.xyz/widget): Build
+- [API keys](https://docs.gullylabs.xyz/api-keys): Build
+- [Plans & alerts](https://docs.gullylabs.xyz/plans-alerts): Build
+- [SDK](https://docs.gullylabs.xyz/sdk): Build
+- [Teams & workspaces](https://docs.gullylabs.xyz/teams): Build
+- [Badges](https://docs.gullylabs.xyz/badges): Build
+- [Holder Map](https://docs.gullylabs.xyz/holder-map): Products
+- [Integrate the Holder Map](https://docs.gullylabs.xyz/holder-map-integrate): Products
+- [Gully Analytics](https://docs.gullylabs.xyz/analytics): Products
+- [Gully Pay](https://docs.gullylabs.xyz/gully-pay): Products
+- [Gully Pay for merchants](https://docs.gullylabs.xyz/gully-pay-merchants): Products
+- [Gully Security](https://docs.gullylabs.xyz/gully-security): Products
+- [Gully Score](https://docs.gullylabs.xyz/gully-score): Products
+- [Gully AI](https://docs.gullylabs.xyz/gully-ai): Products
+- [Telegram bot](https://docs.gullylabs.xyz/telegram): Products
+- [Telegram Mini App](https://docs.gullylabs.xyz/telegram-mini-app): Products
+- [News channel gate](https://docs.gullylabs.xyz/news-gate): Products
+- [Stock pages](https://docs.gullylabs.xyz/stock-pages): Products
+- [Swaps](https://docs.gullylabs.xyz/swaps): Products
+- [Solana](https://docs.gullylabs.xyz/solana): Products
+- [Solana Pay](https://docs.gullylabs.xyz/solana-pay): Products
+- [Chain Kit](https://docs.gullylabs.xyz/chain-kit): Products
+- [Contracts](https://docs.gullylabs.xyz/contracts): More
+- [Status](https://docs.gullylabs.xyz/status): More
+- [Roadmap](https://docs.gullylabs.xyz/roadmap): More
+- [Roadmap: Gully L3](https://docs.gullylabs.xyz/roadmap-l3): More
+- [Changelog](https://docs.gullylabs.xyz/changelog): More
+
+## Contracts
+
+- [Contracts registry](https://gullylabs.xyz/.well-known/contracts.json): 377 addresses on 8 chains, JSON, open CORS. Docs: https://docs.gullylabs.xyz/contracts
+- [Full text for LLMs](https://gullylabs.xyz/llms-full.txt): this index with every feature fact, the roadmap and every contract address.
+
+## Optional
+
+- [Roadmap](https://docs.gullylabs.xyz/roadmap): what is being built, with honest status
+- [Status](https://gullylabs.xyz/status): live uptime of every service

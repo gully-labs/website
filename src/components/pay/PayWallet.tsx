@@ -23,7 +23,7 @@ import { btnGold } from '../ui'
    transaction passes txViolations (never native value to a proxy, never a plain transfer to one); and a split
    that fails any of this is refused outright, never retried as a plain transfer. Funds can't get stuck. */
 
-const SAFETY = 'This payment failed a safety check, so nothing was sent. Please contact hello@gullylabs.xyz.'
+const SAFETY = 'This payment failed a safety check, so nothing was sent. Please contact team@gullylabs.xyz.'
 
 /** Every fee-proxy rule against the quote as received. Empty = safe to start. */
 function quoteIssues(q: Quote): string[] {
@@ -89,7 +89,7 @@ function PayButton({ quote, onSent, onError, disabled }: { quote: Quote; onSent:
       await client.call({ account: owner, to: s.pay.to as `0x${string}`, data: s.pay.data as `0x${string}`, value: 0n })
     } catch (e) {
       const why = String((e as { shortMessage?: string })?.shortMessage ?? (e as Error)?.message ?? e).slice(0, 160)
-      throw new GuardError(`The payment did not pass its simulation (${why}), so nothing was sent. Try again, or contact hello@gullylabs.xyz.`)
+      throw new GuardError(`The payment did not pass its simulation (${why}), so nothing was sent. Try again, or contact team@gullylabs.xyz.`)
     }
     setBusy(allowance < total ? 'Confirm the payment in your wallet (2 of 2)…' : 'Confirm in your wallet…')
     return send({ to: s.pay.to as `0x${string}`, data: s.pay.data as `0x${string}`, value: 0n })

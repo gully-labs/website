@@ -302,6 +302,21 @@ test('card.png for a chain with no data yet is a branded PNG, never JSON', async
   assert.match(svg, /NVDA/)
 })
 
+test('card.jpg is a real JPEG of the same card (Telegram inline photos must be JPEG)', async () => {
+  H.resetHoldersForTest()
+  const r = fakeRes()
+  await H.handleHolders({ method: 'GET', url: '/api/holders/robinhood/NVDA/card.jpg', headers: { 'x-forwarded-for': '198.51.100.9' }, socket: { remoteAddress: '198.51.100.9' } }, r, new URL('http://x/api/holders/robinhood/NVDA/card.jpg'), null)
+  assert.equal(r.out.status, 200)
+  assert.equal(r.out.headers['Content-Type'], 'image/jpeg')
+  const b = r.out.body
+  assert.deepEqual([...b.subarray(0, 3)], [0xff, 0xd8, 0xff])
+  assert.deepEqual([...b.subarray(b.length - 2)], [0xff, 0xd9])
+  const sof = b.indexOf(Buffer.from([0xff, 0xc0]))
+  assert.equal(b.readUInt16BE(sof + 5), 630)
+  assert.equal(b.readUInt16BE(sof + 7), 1200)
+  assert.ok(b.length > 5000 && b.length < 400_000, `size ${b.length}`)
+})
+
 test('with a Blockscout key: top holders, exchange tags, recent-transfer links and the fair overlay', async () => {
   H.resetHoldersForTest()
   process.env.BLOCKSCOUT_API_KEY = 'proapi_test'

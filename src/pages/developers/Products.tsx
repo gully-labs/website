@@ -19,6 +19,7 @@ import type { ServiceTab } from './services/nav'
 import { LaunchHolders } from '../../components/holders/LaunchHolders'
 import type { ScanView } from '../../components/security/types'
 import { bandColor, useJson, type ScoreIndex } from '../score/api'
+import { StatusPill as KitPill } from '../../components/ui/StatusPill'
 
 /* The Products tab: every Gully product in one hub, each card with its live state for the ACTIVE
    workspace and a live chart where data exists (a pulsing live marker where it does not yet; a
@@ -81,7 +82,8 @@ function useCard<T>(path: string, every: number): Load<T> & { refreshErr: string
   return { k: 'loading', refreshErr: null, retry }
 }
 
-const pill = (t: string, tone: 'gold' | 'green' | 'dim' | 'red' = 'dim') => <span className={`rounded-full border px-2 py-[1px] font-mono text-[11px] ${tone === 'gold' ? 'border-gold-line text-gold' : tone === 'green' ? 'border-success-line text-green' : tone === 'red' ? 'border-error-line text-error' : 'border-line-strong text-muted'}`}>{t}</span>
+const PILL_TONE = { gold: 'warn', green: 'ok', dim: 'neutral', red: 'error' } as const
+const pill = (t: string, tone: keyof typeof PILL_TONE = 'dim') => <KitPill tone={PILL_TONE[tone]}>{t}</KitPill>
 
 function Stat({ label, value, unknown }: { label: string; value: number | null; unknown?: string }) {
   return (
@@ -267,7 +269,7 @@ export type ChainKitState = {
 }
 
 const CK_KINDS = [
-  { id: 'requests', name: 'Explorer requests', color: '#d9b563' },
+  { id: 'requests', name: 'Chain Kit waitlist', color: '#d9b563' },
   { id: 'waitlist', name: 'Devnet waitlist', color: '#5aa9e6' },
 ]
 
@@ -275,8 +277,8 @@ const CK_KINDS = [
 function ChainKitDays({ s, height = 64 }: { s: ChainKitState | null; height?: number }) {
   if (!s) return <Skeleton h={height} />
   const { requests, waitlist, daily } = s.stats
-  if (!requests && !waitlist) return <LiveMarker text="No requests in the last 30 days yet: each one charts here" height={height} />
-  return <StackedDays height={height} days={daily.map((d) => ({ label: d.day.slice(5), values: { requests: d.requests, waitlist: d.waitlist } }))} kinds={CK_KINDS} label={`Last 30 days: ${requests} explorer requests and ${waitlist} devnet waitlist sign-ups in total.`} />
+  if (!requests && !waitlist) return <LiveMarker text="No waitlist sign-ups in the last 30 days yet: each one charts here" height={height} />
+  return <StackedDays height={height} days={daily.map((d) => ({ label: d.day.slice(5), values: { requests: d.requests, waitlist: d.waitlist } }))} kinds={CK_KINDS} label={`Last 30 days: ${requests} Chain Kit waitlist sign-ups and ${waitlist} devnet waitlist sign-ups in total.`} />
 }
 
 export function ChainKitCard() {
@@ -295,26 +297,26 @@ export function ChainKitCard() {
     setBusy(true)
     const r = await api<ChainKitState>('/api/developer/chain-kit/request', { method: 'POST', body: { email: email.trim(), chain: chain.trim() } })
     setBusy(false)
-    if (!r.ok) return toastError('The request could not be sent', { detail: r.status === 400 ? 'Check the email address.' : r.error })
+    if (!r.ok) return toastError('Could not join the waitlist', { detail: r.status === 400 ? 'Check the email address.' : r.error })
     setFresh(r.data)
     void ck.reload()
-    toastSuccess('Explorer requested', { detail: 'Gully Labs will write to you about your chain.' })
+    toastSuccess('You are on the Chain Kit waitlist', { detail: 'Gully Labs will write to you when orders open.' })
   }
   return (
-    <Card icon={<Boxes size={16} aria-hidden />} title="Chain Kit" badge={done ? pill('requested', 'green') : pill('on request')} foot={<ExtLink href={site('/chain-kit')} className={`${pillSm} min-h-11`}>What Chain Kit is</ExtLink>}>
-      <span className="text-[12px] text-dim">An explorer, faucet and status page for your chain, run for you.</span>
+    <Card icon={<Boxes size={16} aria-hidden />} title="Chain Kit" badge={done ? pill('on the waitlist', 'green') : pill('waitlist')} foot={<ExtLink href={site('/chain-kit')} className={`${pillSm} min-h-11`}>What Chain Kit is</ExtLink>}>
+      <span className="text-[12px] text-dim">An explorer for your chain, run for you. Join the waitlist: we’re finalising the explorer licence before taking orders.</span>
       {!state && !ck.error && !ck.timedOut ? (
         <Skeleton h={44} />
       ) : done ? (
         <p className="m-0 flex items-center gap-2 rounded-[10px] border border-success-line px-3 py-2 text-[13px] text-ink-2" data-testid="chainkit-requested">
-          <Check size={15} className="text-green" aria-hidden /> Requested {fmtDate(done.at)} for {ws?.name}{done.chain ? ` (${done.chain})` : ''}. We reply by email.
+          <Check size={15} className="text-green" aria-hidden /> On the waitlist since {fmtDate(done.at)} for {ws?.name}{done.chain ? ` (${done.chain})` : ''}. We write when orders open.
         </p>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-2">
           <input className={`${input} h-11 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email to reach you" aria-label="Email" name="chainkit-email" />
           <input className={`${input} h-11 text-[14px]`} value={chain} onChange={(e) => setChain(e.target.value)} placeholder="Your chain (name, chain id, RPC)" aria-label="Your chain" maxLength={200} name="chainkit-chain" />
           <button type="submit" disabled={busy || !ws} className={`${pillGold} min-h-11`}>
-            {busy && <Loader2 size={15} className="animate-spin" aria-hidden />} Request your explorer
+            {busy && <Loader2 size={15} className="animate-spin" aria-hidden />} Join the waitlist
           </button>
         </form>
       )}

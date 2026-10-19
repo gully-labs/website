@@ -1,5 +1,5 @@
-import { Ban, Bold, CalendarClock, ChevronDown, Eye, ExternalLink, Italic, Link2, LoaderCircle, Megaphone, Pause, Play, Plus, RotateCcw, Send, Smartphone, Trash2, Users, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Ban, Bold, CalendarClock, Check, ChevronDown, Settings2, Eye, ExternalLink, Italic, Link2, LoaderCircle, Megaphone, Pause, Play, Plus, RotateCcw, Send, Smartphone, Trash2, Users, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { areaPreset, axisTooltip, C, tipHtml } from '../../components/charts/chartPresets'
 import { GhostChart } from '../../components/charts/GhostChart'
@@ -8,6 +8,7 @@ import { toastError, toastSuccess } from '../../components/ui/toast'
 import { adminCall } from './payAdmin'
 import { LINK_BLUE, renderTg } from './tgHtml'
 import { NewTabNote } from './newTab'
+import { Stepper } from '../developers/ui'
 import { chip, pillCls } from './ui'
 
 /* Admin: DMs to everyone who started @GullyLabsBot (server/telegram-broadcast.mjs, /api/admin/broadcasts*).
@@ -247,30 +248,48 @@ function Progress({ c }: { c: Counts }) {
 /* ------------------------------------------------------------- owner step --- */
 
 function OwnerStep() {
+  // The four BotFather steps on the shared Stepper (G61/X2): one step's instructions at a time, ticked off as the
+  // owner goes; the tick is only this page's memory, nothing is saved.
+  const [done, setDone] = useState<string[]>([])
+  const mark = (id: string) => setDone((d) => (d.includes(id) ? d : [...d, id]))
+  const body: Record<string, ReactNode> = {
+    botfather: (
+      <>
+        Open{' '}
+        <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">
+          @BotFather ↗
+          <NewTabNote />
+        </a>{' '}
+        and send <code className="font-mono text-[13px]">/mybots</code>.
+      </>
+    ),
+    menu: <>Pick @GullyLabsBot → Bot Settings → Configure Mini App → Enable.</>,
+    url: (
+      <>
+        Set the URL to <code className="font-mono text-[13px]">https://gullylabs.xyz/tg</code>.
+      </>
+    ),
+    done: <>This adds an “Open app” button to the bot’s profile. The Menu button next to the text box lists the commands (set by the server at start-up); the app also opens from “📱 Open app” in the main menu and from /app.</>,
+  }
+  const steps = [
+    { id: 'botfather', label: 'Open BotFather', icon: <Smartphone size={14} aria-hidden /> },
+    { id: 'menu', label: 'Configure Mini App', icon: <Settings2 size={14} aria-hidden /> },
+    { id: 'url', label: 'Set the URL', icon: <Link2 size={14} aria-hidden /> },
+    { id: 'done', label: 'Check it', icon: <Check size={14} aria-hidden /> },
+  ].map((x) => ({ ...x, done: done.includes(x.id) }))
   return (
-    <details className="group rounded-input border border-gold-line bg-[rgba(217,181,99,.05)] px-4 py-3">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-[14px] text-gold">
-        <span className="inline-flex items-center gap-2">
-          <Smartphone size={16} aria-hidden /> Owner step: make the Mini App the bot’s main app
-        </span>
-        <ChevronDown size={16} className="transition-transform group-open:rotate-180" aria-hidden />
-      </summary>
-      <ol className="m-0 mt-2 flex list-decimal flex-col gap-1 pl-5 text-[14px] text-ink-2">
-        <li>
-          Open{' '}
-          <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">
-            @BotFather ↗
-            <NewTabNote />
-          </a>{' '}
-          and send <code className="font-mono text-[13px]">/mybots</code>.
-        </li>
-        <li>Pick @GullyLabsBot → Bot Settings → Configure Mini App → Enable.</li>
-        <li>
-          Set the URL to <code className="font-mono text-[13px]">https://gullylabs.xyz/tg</code>.
-        </li>
-      </ol>
-      <p className="m-0 mt-2 text-[13px] text-muted">This adds an “Open app” button to the bot’s profile. The Menu button next to the text box lists the commands (set by the server at start-up); the app also opens from “📱 Open app” in the main menu and from /app.</p>
-    </details>
+    <Stepper title="Owner step: make the Mini App the bot’s main app" steps={steps} testId="owner-stepper">
+      {(id) => (
+        <>
+          <p className="m-0 text-[14px] text-ink-2">{body[id]}</p>
+          {!done.includes(id) && (
+            <button type="button" onClick={() => mark(id)} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full border border-line-strong px-4 text-[13px] text-ink-2 hover:border-gold hover:text-ink">
+              <Check size={14} aria-hidden /> Done, next step
+            </button>
+          )}
+        </>
+      )}
+    </Stepper>
   )
 }
 

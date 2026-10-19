@@ -34,6 +34,7 @@ export const docsRoutes: RouteObject[] = [
       { path: 'solana', lazy: () => import('./pages/SolanaDocs').then((m) => ({ Component: m.SolanaDocs })) },
       { path: 'solana-pay', lazy: () => import('./pages/SolanaPayDocs').then((m) => ({ Component: m.SolanaPayDocs })) },
       { path: 'chain-kit', lazy: () => import('./pages/ChainKitDocs').then((m) => ({ Component: m.ChainKitDocs })) },
+      { path: 'contracts', lazy: () => import('./pages/ContractsDocs').then((m) => ({ Component: m.ContractsDocs })) },
       { path: 'status', lazy: () => import('./pages/StatusDocs').then((m) => ({ Component: m.StatusDocs })) },
       { path: 'roadmap', lazy: () => import('./pages/Roadmap').then((m) => ({ Component: m.Roadmap })) },
       { path: 'roadmap-l3', lazy: () => import('./pages/RoadmapL3').then((m) => ({ Component: m.RoadmapL3 })) },

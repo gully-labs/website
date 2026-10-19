@@ -53,7 +53,7 @@ export const productsNav: NavGroup = {
     { label: 'Swap', desc: 'Swap any stock token from its page', to: '/tracker/robinhood/NVDA#swap', icon: ArrowLeftRight },
     { label: 'Alerts', desc: 'Gap alerts by Telegram or webhook', to: '/#alerts', icon: BellRing },
     { label: 'Gully Analytics', desc: 'Web analytics that see the wallet', to: '/analytics', icon: ChartNoAxesCombined, match: ['/analytics'] },
-    { label: 'Chain Kit', desc: 'Branded block explorers', to: '/chain-kit', icon: Boxes, match: ['/chain-kit'] },
+    { label: 'Chain Kit', desc: 'Branded block explorers', to: '/chain-kit', icon: Boxes, match: ['/chain-kit'], badge: 'Waitlist' },
     { label: 'Gully Security', desc: 'AI Security Scan and code reviews', to: '/security', icon: ShieldCheck, match: ['/security'] },
     scoreNavEntry,
     { label: 'Gully Chains', desc: 'Your own Arbitrum chain, run by us', to: '/chains', icon: Network, match: ['/chains'], badge: 'Waitlist' },

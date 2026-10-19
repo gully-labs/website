@@ -58,6 +58,8 @@ try {
   check('GET /api/ecosystem answers 200', eco.status === 200)
   check('it lists the supported chains', Array.isArray(eco.data?.chains) && eco.data.chains.some((c) => c.key === 'base') && eco.data.chains.some((c) => c.key === 'solana'))
   check('launchpads is null or a list (hidden while there is no registry)', eco.data?.launchpads === null || Array.isArray(eco.data?.launchpads))
+  // The registry gives chains as { key, id, name }: the page shows names, never "[object Object]".
+  check('launchpad chains are display names (strings)', (eco.data?.launchpads ?? []).every((l) => l.chains.every((c) => typeof c === 'string' && c !== '[object Object]')))
   check('POST /api/ecosystem is refused', (await call('/api/ecosystem', { method: 'POST', body: {} })).status === 405)
   check('GET on the submissions route is refused', (await call('/api/ecosystem/submissions')).status === 405)
 

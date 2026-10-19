@@ -72,7 +72,7 @@ export async function issueSso(req, res, acc, statusOf) {
   if (statusOf(acc).deletable) return json(res, 410, { error: 'This Gully Analytics account has lapsed past its grace period.' }), true
   if (!allow('sso-issue', actor, 10, 600_000)) return json(res, 429, { error: 'Too many sign-in links in the last ten minutes. Try again shortly.' }), true
   const u = await getUser(acc.umamiUserId)
-  if (!u.ok) return json(res, u.status === 404 ? 410 : u.status, { error: u.status === 404 ? 'The Gully Analytics user for this workspace no longer exists. Write to hello@gullylabs.xyz.' : u.error }), true
+  if (!u.ok) return json(res, u.status === 404 ? 410 : u.status, { error: u.status === 404 ? 'The Gully Analytics user for this workspace no longer exists. Write to team@gullylabs.xyz.' : u.error }), true
   const code = crypto.randomBytes(32).toString('base64url')
   const expiresAt = Date.now() + SSO_CODE_TTL_MS
   codes.set(sha256(code), { address: acc.address, umamiUserId: acc.umamiUserId, role: u.data?.role === 'view-only' ? 'view-only' : 'user', uaHash: sha256(req.headers['user-agent'] ?? ''), net: netOf(clientIp(req)), expiresAt, actor })
