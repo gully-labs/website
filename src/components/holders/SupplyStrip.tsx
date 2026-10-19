@@ -124,7 +124,7 @@ export function SupplyStrip({ m, pctAt, selected, onSelect, compact }: { m: Hold
                       </Sphere>
                     )}
                     <span className="flex min-w-0 flex-1 flex-col leading-[1.2]">
-                      <span className="truncate text-ink">{n.label?.name ?? n.short}</span>
+                      <span className="break-words text-ink">{n.label?.name ?? n.short}</span>
                       <span className="flex items-center gap-2">
                         <span className="text-[11px] tracking-[0.5px] text-dim uppercase">{kind ? KIND_WORD[kind] : 'wallet'}</span>
                         <span className="h-[3px] min-w-0 flex-1 overflow-hidden rounded-full bg-surface">

@@ -47,6 +47,7 @@ for (const width of [1440, 390]) {
     await page.goto(BASE + url)
     await page.locator('[data-holder-map="ok"]').waitFor()
     await page.locator('[data-chart] canvas').first().waitFor()
+    await page.addStyleTag({ content: '[data-testid="ask-fab"] { display: none !important }' })
     await page.locator('[data-supply-strip]').scrollIntoViewIfNeeded().catch(() => {})
     await page.waitForTimeout(2500)
     await page.evaluate(() => window.scrollTo(0, 0))

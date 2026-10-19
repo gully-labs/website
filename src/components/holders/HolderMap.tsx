@@ -862,8 +862,8 @@ const zoomBtn = 'inline-flex size-11 items-center justify-center rounded-btn bor
 
 function Stat({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 bg-surface px-3 py-2.5">
-      <dt className="truncate font-mono text-[11px] tracking-[1px] text-dim">{k}</dt>
+    <div className="flex min-w-0 flex-col gap-1 bg-surface px-2 py-2.5 min-[600px]:px-3">
+      <dt className="font-mono text-[11px] leading-[1.25] tracking-[0.5px] break-words text-dim">{k}</dt>
       <dd className="m-0">{v}</dd>
     </div>
   )
@@ -923,14 +923,14 @@ function Ticker({ toasts, now, wide }: { toasts: Toast[]; now: number; wide: boo
       {toasts.map((t) => (
         <li
           key={t.key}
-          className="flex animate-[gl-toast-in_.3s_ease-out_both] items-center gap-2 rounded-full border px-3 py-1 font-mono text-[12px] text-ink"
+          className="flex animate-[gl-toast-in_.3s_ease-out_both] items-center gap-2 rounded-[16px] border px-3 py-1 font-mono text-[12px] text-ink"
           style={{
             borderColor: sideColour(t.side),
             background: alpha(K.night, 0.94),
           }}
         >
           <span aria-hidden className="inline-block size-2 flex-none rounded-full" style={{ background: sideColour(t.side) }} />
-          <span className="truncate">{t.text}</span>
+          <span className="min-w-0 break-words">{t.text}</span>
           <span className="flex-none text-dim">· {t.origin === 'live' && !t.at ? 'just now' : agoText(t.at, now)}</span>
         </li>
       ))}
@@ -1082,7 +1082,7 @@ function Replay({
           {playing ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
         </button>
         <Segmented label="Replay speed" value={speed === 4 ? '4' : '1'} options={SPEEDS} onChange={(v) => setSpeed(v === '4' ? 4 : 1)} />
-        <span className="min-w-0 flex-1 font-mono text-[12px] text-muted" aria-live="polite">
+        <span className="min-w-[190px] flex-1 font-mono text-[12px] text-muted" aria-live="polite">
           {frameAt ? `${when} · top 10 held ${fmtPct(frameAt.top10Pct)}${frameAt.holders !== null ? ` · ${frameAt.holders} holders` : ''}` : `Now · top 10 hold ${fmtPct(m.summary.top10Pct)}`}
         </span>
         {skip}
@@ -1366,7 +1366,7 @@ function RankedList({ m, selected, onSelect, srOnly = false }: { m: HolderMapOk;
                 background: isInfra(n) || n.label?.kind === 'deployer' ? KIND_HUE[kindKeyOf(n) as KindKey] : n.cluster ? K.gold : K.muted,
               }}
             />
-            <span className="min-w-0 flex-1 truncate text-ink">{n.label?.name ?? n.short}</span>
+            <span className="min-w-0 flex-1 break-words text-ink">{n.label?.name ?? n.short}</span>
             {n.flags.includes('bundled') && <span className="flex-none text-[11px] text-error">BUNDLED</span>}
             <span className="w-16 flex-none text-right text-gold-hover">{fmtPct(n.pct)}</span>
           </button>

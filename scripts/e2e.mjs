@@ -18,6 +18,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { blockedOutbound, bootServer, E2E_ANY_TOKEN, E2E_LAUNCH_TOKEN, E2E_NOT_A_TOKEN, historyFixture, holdersExtraFixtures, holdersFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 import { auditPage, tokenColors } from './e2e-audit.mjs'
+import { clippedIn } from './holders-clip.mjs'
 import { busyFixture, solanaFixture, SOLANA_TOKEN } from './holders-shots-fixtures.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
@@ -2025,6 +2026,25 @@ await step('holder map', async () => {
     await bubbleLook(page, map, `busy map ${width}`, { quiet: width === 1440 })
     check(`busy map ${width}: 300+ bubbles draw (${await map.locator('[data-bubble-canvas]').getAttribute('data-bodies')})`, Number(await map.locator('[data-bubble-canvas]').getAttribute('data-bodies')) >= 300)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // Nothing in the holder map is clipped or truncated on a phone: title, stats, controls, chips, legend, supply strip, lists (390 and 320).
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, mobile: true })
+    await ctx.route(`${BASE}/api/ask`, (route) => json(route, holdersExtraFixtures().ask))
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/holders/robinhood/' + E2E_LAUNCH_TOKEN)
+    const map = page.locator('[data-holder-map="ok"]')
+    await map.waitFor()
+    await map.locator('[data-live-stats] dt').first().waitFor()
+    await page.waitForTimeout(2500)
+    const clipped = await clippedIn(page, '[data-holder-map="ok"]')
+    check(`holder map ${width}: no title, stat, control, chip, legend or list label is clipped or truncated`, clipped.length === 0, clipped.slice(0, 5).join(' | '))
+    const labels = await map.locator('[data-live-stats] dt').allTextContents()
+    check(`holder map ${width}: every stat label is fully readable (${labels.join(' / ')})`, labels.length === 3 && (await map.locator('[data-live-stats] dt').evaluateAll((els) => els.every((e) => e.scrollWidth <= e.clientWidth + 1))))
+    const seg = await map.locator('[data-segmented]').first().boundingBox()
+    check(`holder map ${width}: the Map/List control sits fully inside the screen`, !!seg && seg.x >= 0 && seg.x + seg.width <= width, JSON.stringify(seg))
+    await noHorizontalScroll(page, `/holders ${width} (phone clip pass)`)
     await ctx.close()
   }
   // Deep check: the offer card on a map, a free-quota check started from a quote, the report page and the JPEG card.
