@@ -31,7 +31,7 @@
 //   GET  /api/developer/chain-kit             -> { request, waitlist: { joined, at }, stats: { requests, waitlist, daily } }
 //                                             this workspace's Chain Kit request, the wallet's devnet waitlist row,
 //                                             and everyone's counts per UTC day for 30 days (store.mjs)
-//   POST /api/developer/chain-kit/request { email, chain }  -> the view above; also saved as a contact enquiry
+//   POST /api/developer/chain-kit/request { email, chain }  -> the view above; also saved as a contact enquiry. Chain Kit is on a waitlist: this records interest (waitlist: true), never an order
 //   POST /api/developer/chains-waitlist { email }           -> the view above + { already }  Gully Chains devnet waitlist
 //
 // Workspaces: every signed-in route runs in the session's active workspace (the wallet's own by default).
@@ -463,7 +463,7 @@ async function chainKitRoutes(req, res, p, post, { user, workspace }) {
     const r = chainKitRequestOf(workspace)
     const w = waitlistRowOf(user)
     return {
-      request: r ? { at: r.at, chain: r.chain, email: r.email, status: r.status } : null,
+      request: r ? { at: r.at, chain: r.chain, email: r.email, status: r.status, waitlist: true } : null,
       waitlist: { joined: !!w, at: w?.at ?? null },
       stats: { requests: chainKitRequests().length, waitlist: chainsWaitlist().length, daily: chainKitDaily(30) },
     }
@@ -481,7 +481,7 @@ async function chainKitRoutes(req, res, p, post, { user, workspace }) {
     const chain = clean(body?.chain, 200)
     addChainKitRequest({ address: user, workspace, email, chain })
     // Also an enquiry, so the admin dashboard's enquiries list shows it as before.
-    addEnquiry({ name: user, email, types: ['Infrastructure'], budget: '', message: `Topic: Chain Kit — request an explorer\nChain: ${chain || '(not given)'}\nWorkspace: ${workspace}\nRequested by: ${user}` })
+    addEnquiry({ name: user, email, types: ['Infrastructure'], budget: '', message: `Topic: Chain Kit — waitlist\nChain: ${chain || '(not given)'}\nWorkspace: ${workspace}\nRequested by: ${user}` })
     return json(res, 200, view()), true
   }
   const { already } = joinChainsWaitlist({ address: user, workspace, email })

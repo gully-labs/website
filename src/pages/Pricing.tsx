@@ -94,12 +94,12 @@ function SectionHead({ id, eyebrow: label, title }: { id: string; eyebrow: strin
 
 const USD0 = { ...NF.usd, minimumFractionDigits: 0, maximumFractionDigits: 0 }
 
-/** Chain Kit and services have no list price: one short block so /pricing covers every product. */
+/** Chain Kit (waitlist) and services have no list price: one short block so /pricing covers every product. */
 function OnRequest() {
   const { openContact } = useContact()
   const items = [
-    { icon: Boxes, name: 'Chain Kit', body: 'A branded Blockscout explorer for your chain, run by us. Priced to your chain’s size and history.', to: '/chain-kit', type: 'Infrastructure' as const },
-    { icon: Layers, name: 'Services', body: 'Smart contracts, dApps, infrastructure and security testing. Quoted per project after a first call.', to: '/services', type: 'Other' as const },
+    { icon: Boxes, name: 'Chain Kit', body: 'A branded Blockscout explorer for your chain, run by us. Join the waitlist: we’re finalising the explorer licence before taking orders.', to: '/chain-kit', type: 'Infrastructure' as const, waitlist: true },
+    { icon: Layers, name: 'Services', body: 'Smart contracts, dApps, infrastructure and security testing. Quoted per project after a first call.', to: '/services', type: 'Other' as const, waitlist: false },
   ]
   return (
     <section id="on-request" className="scroll-mt-24 border-t border-line px-page pt-16 pb-16" aria-labelledby="on-request-title">
@@ -112,13 +112,19 @@ function OnRequest() {
                 <it.icon aria-hidden size={20} strokeWidth={1.75} />
               </span>
               <h3 className="m-0 font-display text-h4 font-bold uppercase">{it.name}</h3>
-              <span className="ml-auto rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">ON REQUEST</span>
+              <span className="ml-auto rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">{it.waitlist ? 'WAITLIST' : 'ON REQUEST'}</span>
             </span>
             <p className="m-0 text-[15px] leading-[1.55] text-muted">{it.body}</p>
             <div className="mt-auto flex flex-wrap gap-3">
-              <button type="button" onClick={() => (track('cta-click', { cta: 'start-project', page: '/pricing' }), openContact(it.type))} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
-                <Send aria-hidden size={16} /> Start a project
-              </button>
+              {it.waitlist ? (
+                <a href="/chains#waitlist" onClick={() => track('cta-click', { cta: 'chain-kit-waitlist', page: '/pricing' })} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+                  <Send aria-hidden size={16} /> Join the waitlist
+                </a>
+              ) : (
+                <button type="button" onClick={() => (track('cta-click', { cta: 'start-project', page: '/pricing' }), openContact(it.type))} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+                  <Send aria-hidden size={16} /> Start a project
+                </button>
+              )}
               <Link to={it.to} onClick={() => track('cta-click', { cta: `pricing-${it.name}`, page: '/pricing' })} className="inline-flex min-h-11 items-center gap-1 text-[15px] text-gold hover:text-gold-hover">
                 {it.name} <ArrowRight aria-hidden size={15} />
               </Link>

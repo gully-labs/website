@@ -260,7 +260,7 @@ export function scoreLookupView(chain, address) {
 
 /** 🧭 More from Gully Labs: links to the products that live on the site and in the app. */
 export const moreView = () => ({
-  text: ['<b>🧭 More from Gully Labs</b>', 'Plans and prices, Gully Pay for your store, Gully Analytics, Chain Kit, the docs, the blog and the news channel.'].join('\n'),
+  text: ['<b>🧭 More from Gully Labs</b>', 'Plans and prices, Gully Pay for your store, Gully Analytics, the Chain Kit waitlist, the docs, the blog and the news channel.'].join('\n'),
   keyboard: [
     [ubtn('💳 Plans & prices ↗', `${SITE}/pricing`), ubtn('🧾 Gully Pay ↗', `${PORTAL}/#pay`)],
     [ubtn('📊 Gully Analytics ↗', `${SITE}/analytics`), ubtn('🧱 Chain Kit ↗', `${SITE}/chain-kit`)],

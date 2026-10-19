@@ -235,6 +235,11 @@ function Faq({ cfg }: { cfg: ChainsConfig }) {
 
 export function Chains() {
   const [state, retry] = useChains()
+  // Arriving on /chains#waitlist (from Chain Kit): scroll to the form once the offer has loaded.
+  const loaded = state.k === 'ok'
+  useEffect(() => {
+    if (loaded && location.hash === '#waitlist') document.getElementById('waitlist')?.scrollIntoView({ block: 'start' })
+  }, [loaded])
   const goForm = () => {
     track('cta-click', { cta: 'chains-join-waitlist', page: '/chains' })
     document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -308,7 +313,7 @@ export function Chains() {
       <section className="border-t border-line px-page py-12">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-[15px]">
           <Link to="/chain-kit" className="inline-flex min-h-11 items-center gap-2 text-gold hover:text-gold-hover">
-            <Check aria-hidden size={15} /> Chain Kit: the explorer <ArrowRight aria-hidden size={15} />
+            <Check aria-hidden size={15} /> Chain Kit: the explorer, waitlist <ArrowRight aria-hidden size={15} />
           </Link>
           <a href={`${DOCS_URL}/chain-kit`} {...newTab} className="inline-flex min-h-11 items-center gap-2 text-gold hover:text-gold-hover">
             <Send aria-hidden size={15} /> Read the docs <NewTabMark size={14} className="flex-none" />

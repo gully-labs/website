@@ -79,11 +79,11 @@ const EXAMPLE = `{
   "type": "invoice.paid",
   "createdAt": "2026-10-17T16:01:32.949Z",
   "data": {
-    "invoice": { "id": "inv_YyRDxuWTBu6ZnYlPVsGCjQ", "number": "GL-0001", "title": "Chain Kit setup", "usd": "1,500",
+    "invoice": { "id": "inv_YyRDxuWTBu6ZnYlPVsGCjQ", "number": "GL-0001", "title": "Analytics setup", "usd": "1,500",
                  "usdCents": "150000", "status": "paid", "url": "https://gullylabs.xyz/pay/inv_YyRDxuWTBu6ZnYlPVsGCjQ",
                  "linkId": "pl_aV2bqpQu_I9b6Hem", "createdAt": "2026-10-17T16:01:32.866Z",
                  "expiresAt": "2026-10-17T17:01:32.866Z", "paidAt": "2026-10-17T16:01:32.945Z", "cancelledAt": null },
-    "link": { "id": "pl_aV2bqpQu_I9b6Hem", "title": "Chain Kit setup", "url": "https://gullylabs.xyz/pay/l/pl_aV2bqpQu_I9b6Hem" },
+    "link": { "id": "pl_aV2bqpQu_I9b6Hem", "title": "Analytics setup", "url": "https://gullylabs.xyz/pay/l/pl_aV2bqpQu_I9b6Hem" },
     "payment": { "chainId": 56, "chain": "BNB Chain", "asset": "bnb-usdc", "symbol": "USDC", "decimals": 18,
                  "amount": "1500.003161", "amountRaw": "1500003161000000000000", "usd": "1,500",
                  "txHash": "0x94a2…b907", "txUrl": "https://bscscan.com/tx/0x94a2…b907", "blockNumber": 4999970,

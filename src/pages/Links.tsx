@@ -67,7 +67,7 @@ function groups(pay: PayCfg | null): Group[] {
           href: utm('https://docs.gullylabs.xyz/gully-pay-merchants'),
           icon: CircleDollarSign,
         },
-        { label: 'Chain Kit', desc: 'Branded block explorers', href: utm('https://gullylabs.xyz/chain-kit'), icon: Boxes },
+        { label: 'Chain Kit', desc: 'Branded block explorers · waitlist', href: utm('https://gullylabs.xyz/chain-kit'), icon: Boxes },
         { label: 'Pricing', desc: 'API, alerts and analytics plans', href: utm('https://gullylabs.xyz/pricing'), icon: Tag },
       ],
     },

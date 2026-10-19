@@ -8,7 +8,7 @@
 
 /** Where each service stands: included in the managed price, an add-on, or not built yet. */
 export const SERVICES = [
-  { id: 'chainkit', name: 'Chain Kit explorer, bridge and faucet', kind: 'included', status: 'testnet', body: 'A branded block explorer, the Gully Bridge to and from Arbitrum, and a faucet for your testnet.' },
+  { id: 'chainkit', name: 'Chain Kit explorer, bridge and faucet', kind: 'included', status: 'planned', body: 'A branded block explorer, the Gully Bridge to and from Arbitrum, and a faucet for your testnet. The explorer is planned: join the waitlist.' },
   { id: 'insight', name: 'Gully Analytics, Holder Map and Security monitors', kind: 'included', status: 'testnet', body: 'Wallet-aware analytics, holder maps and contract monitors, pointed at your chain.' },
   { id: 'aa', name: 'Account abstraction', kind: 'included', status: 'with-testnet', body: 'An ERC-4337 bundler and EntryPoint, with EIP-7702-ready smart accounts.' },
   { id: 'paymaster', name: 'Sponsored gas paymaster', kind: 'addon', status: 'with-testnet', body: 'Let your users transact without holding gas. Billed by usage.' },
