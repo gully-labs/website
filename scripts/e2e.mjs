@@ -2893,6 +2893,79 @@ await step('no Cartel Family anywhere', async () => {
   await ctx.close()
 })
 
+/* ------------------------------------------------------------- live ledger chart --- */
+
+await step('ledger chart', async () => {
+  const stamp = (page) => page.locator('#ledger').getByText(/^read \d\d:\d\d UTC$/).first().innerText()
+  const open = async (fixture, { clock = false } = {}) => {
+    const ctx = await newContext()
+    const page = await ctx.newPage()
+    const w = watch(page, 'ledger chart')
+    let n = 0
+    await page.route(`${BASE}/api/stats`, (route) => json(route, fixture(n++)))
+    if (clock) await page.clock.install()
+    await page.goto(BASE + '/')
+    await page.locator('#ledger').scrollIntoViewIfNeeded()
+    await page.getByTestId('ledger-chart').waitFor()
+    return { ctx, page, w, polls: () => n }
+  }
+  const at = Date.now()
+
+  // Trading in the window: the chart opens on Volume, is live, the tabs switch, and the choice sticks.
+  {
+    const { ctx, page, w } = await open((i) => statsFixture(at, { step: i }))
+    const root = page.getByTestId('ledger-chart')
+    check('ledger chart: opens on Volume when the window has trades', (await root.getAttribute('data-metric')) === 'volume' && (await page.getByRole('tab', { name: 'Volume' }).getAttribute('aria-selected')) === 'true')
+    check('ledger chart: three tabs (Value locked, Volume, Fees)', (await page.locator('#ledger').getByRole('tablist', { name: 'Metric' }).getByRole('tab').allInnerTexts()).join('|') === 'Value locked|Volume|Fees')
+    check('ledger chart: live mode is set on the chart box', (await page.locator('#ledger [data-live]').count()) > 0, await page.locator('#ledger [data-live]').count())
+    check('ledger chart: no ghost while there is data', (await page.getByTestId('ledger-ghost').count()) === 0)
+    check('ledger chart: venue toggles carry their logos', (await page.locator('#ledger').getByRole('group', { name: 'Venues in the chart' }).getByRole('button', { name: /DeepCore/ }).locator('img, [role=img]').count()) > 0)
+    check('ledger chart: the source is named under the chart', /DefiLlama|deepcore/i.test(await page.getByTestId('ledger-sources').innerText()), await page.getByTestId('ledger-sources').innerText())
+    await page.getByRole('tab', { name: 'Value locked' }).click()
+    check('ledger chart: the Value locked tab switches', (await root.getAttribute('data-metric')) === 'tvl' && (await page.getByRole('tab', { name: 'Value locked' }).getAttribute('aria-selected')) === 'true')
+    await page.getByRole('tab', { name: 'Fees' }).click()
+    check('ledger chart: the Fees tab switches', (await root.getAttribute('data-metric')) === 'fees')
+    await page.getByRole('tab', { name: 'Value locked' }).click()
+    await page.reload()
+    await page.locator('#ledger').scrollIntoViewIfNeeded()
+    await page.getByTestId('ledger-chart').waitFor()
+    check('ledger chart: an explicit choice sticks for the session', (await page.getByTestId('ledger-chart').getAttribute('data-metric')) === 'tvl' && (await page.getByTestId('ledger-chart').getAttribute('data-auto')) === 'false')
+    check('ledger chart: no "no series" chip once series exist', (await page.locator('#ledger').getByText('no series').count()) === 0)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+
+  // Production today: every volume day is zero. Value locked is the default, Volume shows the ghost and the honest line, no axis.
+  {
+    const { ctx, page, w } = await open((i) => statsFixture(at, { quiet: true, step: i }))
+    const root = page.getByTestId('ledger-chart')
+    check('ledger chart: all-zero volume opens on Value locked', (await root.getAttribute('data-metric')) === 'tvl' && (await root.getAttribute('data-auto')) === 'true')
+    check('ledger chart: value locked is drawn (no ghost)', (await page.getByTestId('ledger-ghost').count()) === 0 && (await page.locator('#ledger [role=tabpanel] [data-chart]').count()) > 0)
+    await page.getByRole('tab', { name: 'Volume' }).click()
+    const ghost = page.getByTestId('ledger-ghost')
+    await ghost.waitFor({ timeout: 10_000 })
+    const text = await ghost.innerText()
+    check('ledger chart: all-zero volume shows the ghost and the last-trade line', /No trades in the last 7 days · last trade [A-Z][a-z]{2} \d{1,2}, \d{4}/.test(text), text)
+    check('ledger chart: no fake axis on an empty window', !/\$\d/.test(await page.locator('#ledger [role=tabpanel]').innerText()) && (await page.locator('#ledger [role=tabpanel] [data-chart]').count()) === 0)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+
+  // Polling: the page asks again after a minute and the read stamp moves on.
+  {
+    const { ctx, page, w, polls } = await open((i) => statsFixture(at, { step: i }), { clock: true })
+    const first = await stamp(page)
+    const before = polls()
+    await page.clock.fastForward(61_000)
+    await page.waitForTimeout(500)
+    const second = await stamp(page)
+    check('ledger chart: polls /api/stats again after a minute', polls() > before, `${before} -> ${polls()}`)
+    check('ledger chart: the read stamp updates with polling', first !== second, `${first} -> ${second}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+})
+
 /* ------------------------------------------------------------- ecosystem and partners --- */
 
 await step('ecosystem and partners', async () => {

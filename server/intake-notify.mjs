@@ -127,6 +127,21 @@ async function sendWithRetry(fn, what) {
   return false
 }
 
+/** A plain operator alert (not an intake: no kind, no digest line, no per-kind cap; the caller rate-limits).
+    Same transport, retry and quiet "not configured" as notifyIntake. Never throws. Resolves { sent }. */
+export async function notifyAdminAlert({ emoji = '🚨', title, fields, adminUrl } = {}) {
+  try {
+    const rows = (Array.isArray(fields) ? fields : Object.entries(fields ?? {}))
+      .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '')
+      .map(([l, v]) => `<b>${escTg(oneLine(l, 40))}:</b> ${escTg(oneLine(v))}`)
+    const html = [`${emoji} <b>${escTg(oneLine(title, 120))}</b>`, ...rows, '', `<a href="${escTg(String(adminUrl ?? ADMIN_BASE + '#health'))}">Open in admin</a>`].join('\n')
+    return { sent: await sendWithRetry(() => sendAdmin(html), `alert ${oneLine(title, 40)}`) }
+  } catch (e) {
+    console.error('admin alert:', String(e?.message ?? e).slice(0, 120))
+    return { sent: false }
+  }
+}
+
 /* ------------------------------------------------------------- rate cap --- */
 
 const windows = new Map() // kind -> { start, sent, over, timer }

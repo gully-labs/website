@@ -1,26 +1,21 @@
-import { useCallback, useMemo, useState } from 'react'
-import { projects } from '../../content/projects'
-import { fmtDay, fmtTime, fmtUsd, nameOf, type Stats, type VenueOk } from '../../lib/stats'
-import { EChart } from '../charts/EChart'
-import { esc, useReducedMotion, type ChartEvent } from '../charts/chart-utils'
-import { CHART_H, C } from '../charts/chartPresets'
-import { segBtn, segGroup } from '../ui/seg'
+import { fmtTime, nameOf, type Stats } from '../../lib/stats'
 import { Figure } from './Figure'
+import { LedgerChart } from './LedgerChart'
 
-/* The hero's ledger card: three combined figures that count up, then the venues' own daily volume as
-   stacked bars (ECharts, through the shared wrapper). Everything is read from /api/stats (useStats);
-   nothing here is sample data. A venue that publishes no daily series is not drawn, and a day a venue
-   did not report adds nothing to its stack and reads "no reading" in the tooltip, never zero. The chips
-   are the legend: press one to hide that venue and the rest re-stack. A refresh merges into the live
-   chart, so the bars move to their new heights instead of redrawing. */
+/* The hero's ledger card: three combined figures that count up, then the venues' daily value locked,
+   volume or fees (LedgerChart). Everything is read from /api/stats (useStats, polled every minute);
+   nothing here is sample data. */
 
 type State = 'loading' | 'error' | 'ok'
-type Range = 7 | 30
-const okOnly = (data: Stats | null) => (data ? data.venues.filter((v): v is VenueOk => v.state === 'ok') : [])
-const MONO = "'IBM Plex Mono', monospace"
-const DAY = 86400
 
-function Kpi({ label, short, span, value, cover, state }: { label: string; short?: string; span?: string; value: number | null | undefined; cover?: string[]; state: State }) {
+/** What the figure adds up, in words: the venues it sums and why each other one is left out. */
+function coverage(data: Stats | null, cover: string[] | undefined): string {
+  if (!data || !cover) return ''
+  const left = data.venues.filter((v) => !cover.includes(v.key)).map((v) => `${nameOf(v.key)} (${v.state === 'error' ? 'could not be read' : 'does not publish it'})`)
+  return `Adds up ${cover.map(nameOf).join(', ') || 'no venue'}.${left.length ? ` Left out: ${left.join('; ')}.` : ''}`
+}
+
+function Kpi({ label, short, span, value, cover, of, hint, state }: { label: string; short?: string; span?: string; value: number | null | undefined; cover?: string[]; of: number; hint?: string; state: State }) {
   const shown = state === 'ok' && value !== null && value !== undefined
   return (
     <div className="flex min-w-0 flex-col gap-[2px] border-r border-line px-4 py-3 last:border-r-0 max-[459px]:px-3">
@@ -44,6 +39,11 @@ function Kpi({ label, short, span, value, cover, state }: { label: string; short
           <>
             {span && <span className="max-[459px]:hidden">{span} · </span>}
             {cover.length} of {projects.length}<span className="max-[459px]:hidden"> venues</span>
+      <span className="truncate font-mono text-[11px] text-faint" title={hint || undefined}>
+        {state === 'loading' ? 'reading…' : state === 'error' ? 'could not be read' : cover?.length ? (
+          <>
+            {span && <span className="max-[459px]:hidden">{span} · </span>}
+            {cover.length}/{of} venues
           </>
         ) : (
           'not published'
@@ -54,197 +54,25 @@ function Kpi({ label, short, span, value, cover, state }: { label: string; short
 }
 
 export function HeroLedger({ data, state }: { data: Stats | null; state: State }) {
-  const [hidden, setHidden] = useState<Record<string, boolean>>({})
-  const [picked, setRange] = useState<Range | null>(null)
-  const reduced = useReducedMotion()
-  // The bars are handed to the chart two frames after it exists. The wrapper's first ResizeObserver
-  // pass calls resize(), which finishes any running animation at once; data that arrives after it
-  // grows in as it should.
-  const [armed, setArmed] = useState(false)
-  const onChart = useCallback((c: unknown) => {
-    if (!c) return setArmed(false)
-    requestAnimationFrame(() => requestAnimationFrame(() => setArmed(true)))
-  }, [])
-
-  const ok = okOnly(data)
-  const byKey = Object.fromEntries(ok.map((v) => [v.key, v]))
-  const withSeries = projects.filter((p) => (byKey[p.key]?.daily.length ?? 0) > 1)
-  const allDays = [...new Set(ok.flatMap((v) => v.daily.map((d) => d.t)))].sort((a, b) => a - b).slice(-30)
-  // The range switch only appears when there is more than a week to show.
-  const canRange = allDays.length > 7
-  // Default to 7D while the 30-day view would be mostly empty (fewer than half its days have a reading).
-  const filled = allDays.filter((t) => ok.some((v) => (v.daily.find((d) => d.t === t)?.v ?? 0) > 0)).length
-  const range: Range = picked ?? (filled < 15 ? 7 : 30)
-  const days = canRange ? allDays.slice(-range) : allDays
-  const D = days.length
-  const valueOn = (key: string, t: number) => byKey[key]?.daily.find((d) => d.t === t)?.v ?? null
-  const shown = withSeries.filter((p) => !hidden[p.key])
-  const totals = days.map((t) => shown.reduce((a, p) => a + (valueOn(p.key, t) ?? 0), 0))
-  const last = days[D - 1]
-  // "LIVE" only when the last bar is the day of the read (UTC); otherwise it is the latest day read.
-  const isToday = last !== undefined && !!data && Math.floor(Date.parse(data.generatedAt) / 1000 / DAY) === Math.floor(last / DAY)
-
-  const key = `${data?.generatedAt}|${range}|${days.join()}|${withSeries.map((p) => p.key).join()}|${JSON.stringify(hidden)}|${reduced}|${armed}`
-  const option = useMemo(
-    () => ({
-      animationDuration: 650,
-      animationEasing: 'cubicOut',
-      animationDurationUpdate: 650,
-      animationEasingUpdate: 'cubicInOut',
-      // The chips are the legend; this hidden one carries their on/off state, so a toggle re-stacks
-      // with animation instead of redrawing.
-      legend: { show: false, selected: Object.fromEntries(withSeries.map((p) => [p.key, !hidden[p.key]])) },
-      grid: { left: 2, right: 10, top: 22, bottom: 2, containLabel: true },
-      xAxis: { type: 'category', data: days.map(fmtDay), axisLabel: { hideOverlap: true }, axisLine: { lineStyle: { color: C.lineStrong } } },
-      yAxis: { type: 'value', splitNumber: 3, axisLabel: { formatter: (v: number) => fmtUsd(v).replace(/\.00$/, '') } },
-      tooltip: {
-        trigger: 'axis',
-        confine: true,
-        axisPointer: {
-          type: 'cross',
-          crossStyle: { color: C.axis, type: 'dashed' },
-          lineStyle: { color: C.axis, type: 'dashed' },
-          label: {
-            backgroundColor: C.grid,
-            borderColor: C.lineStrong,
-            borderWidth: 1,
-            color: C.ink,
-            fontFamily: MONO,
-            fontSize: 11,
-            formatter: (p: ChartEvent) => (p.axisDimension === 'y' ? fmtUsd(Number(p.value)) : p.value),
-          },
-        },
-        formatter: (ps: ChartEvent[]) => {
-          const i = ps[0]?.dataIndex
-          const t = days[i]
-          if (t === undefined) return ''
-          const rows = shown
-            .map((p) => {
-              const v = valueOn(p.key, t)
-              return `<div style="display:flex;gap:14px;justify-content:space-between"><span><span style="color:${p.accent}">■</span> ${esc(p.name)}</span><b style="font-weight:500;color:${v === null ? C.faint : C.ink}">${v === null ? 'no reading' : fmtUsd(v)}</b></div>`
-            })
-            .join('')
-          return `<div style="color:#949daa;margin-bottom:4px">${fmtDay(t)}${i === D - 1 && isToday ? ' · today, so far' : ''}</div>${rows || '<div style="color:#8a94a1">every venue hidden</div>'}<div style="display:flex;gap:14px;justify-content:space-between;border-top:1px solid #2a3542;margin-top:4px;padding-top:4px"><span>day total</span><b style="font-weight:600;color:#d9b563">${fmtUsd(totals[i])}</b></div>`
-        },
-      },
-      series: [
-        ...withSeries.map((p, j) => ({
-          id: p.key,
-          name: p.key,
-          type: 'bar',
-          stack: 'volume',
-          barCategoryGap: '30%',
-          barMaxWidth: 26,
-          color: p.accent,
-          itemStyle: { borderRadius: 2 },
-          data: days.map((t) => (armed ? valueOn(p.key, t) : null)),
-          // Each venue's bars rise after the one below it, left to right.
-          animationDelay: (i: number) => j * 160 + i * 14,
-          emphasis: { focus: 'series' },
-          blur: { itemStyle: { opacity: 0.35 } },
-        })),
-        {
-          id: 'live',
-          type: reduced ? 'scatter' : 'effectScatter',
-          silent: true,
-          tooltip: { show: false },
-          z: 10,
-          symbolSize: 7,
-          color: C.green,
-          rippleEffect: { brushType: 'stroke', scale: 3.2, period: 2.2 },
-          animationDelay: withSeries.length * 160 + 300,
-          label: { show: true, position: 'top', distance: 8, formatter: isToday ? 'LIVE' : 'LATEST', color: C.green, fontFamily: MONO, fontSize: 11, fontWeight: 600 },
-          data: D && armed ? [[D - 1, totals[D - 1]]] : [],
-        },
-      ],
-    }),
-    // `key` holds the read, the range, the drawn venues, the toggles and the motion setting
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key],
-  )
-
   const T = data?.totals
-  let chart: React.ReactNode
-  if (state === 'loading') chart = <div className="h-[220px] gl-skeleton rounded-tile bg-surface-deep" />
-  else if (state === 'error' || !data) chart = <p className="m-0 flex h-[220px] items-center justify-center font-mono text-[12px] text-error">The venues could not be read. Try again in a minute.</p>
-  else if (D < 2 || !withSeries.length) chart = <p className="m-0 flex h-[220px] items-center justify-center px-4 text-center font-mono text-[12px] text-faint">No venue publishes a daily series yet, so there is nothing to stack.</p>
-  else
-    chart = (
-      <EChart
-        option={option}
-        height={CHART_H.md}
-        steps={{ count: D }}
-        onChart={onChart}
-        label={`Daily volume by venue, stacked, last ${D} days. ${days.map((t, i) => `${fmtDay(t)} ${fmtUsd(totals[i])}`).join(', ')}. Arrow keys step through the days.`}
-      />
-    )
-
-
+  // The denominator is the venues in the document, so a fraction always counts the same venues as the sum.
+  const N = data?.venues.length ?? 0
   return (
     <div className="min-w-0 overflow-hidden rounded-card border border-line bg-surface transition-[border-color] duration-300 hover:border-line-strong">
       {/* Provenance first: where these figures come from, and when they were read. */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line px-4 py-2 font-mono text-[11px] text-faint">
         <span className="inline-flex items-center gap-2 text-ink-2">
           <span aria-hidden className="size-[6px] flex-none rounded-full bg-green" style={{ animation: 'gl-pulse-ring 1.8s infinite' }} />
-          LIVE LEDGER · READ FROM EACH VENUE'S OWN API
+          LIVE LEDGER · VENUE APIS + DEFILLAMA
         </span>
         <span>{data ? `read ${fmtTime(data.generatedAt)}` : state === 'error' ? 'could not be read' : 'reading…'}</span>
       </div>
       <div className="grid grid-cols-3 border-b border-line">
-        <Kpi label="VALUE LOCKED" short="TVL" value={T?.tvlUsd} cover={T?.covers.tvlUsd} state={state} />
-        <Kpi label="VOLUME" span="all-time" value={T?.volumeAllUsd} cover={T?.covers.volumeAllUsd} state={state} />
-        <Kpi label="FEES" span="all-time" value={T?.feesAllUsd} cover={T?.covers.feesAllUsd} state={state} />
+        <Kpi label="VALUE LOCKED" short="TVL" value={T?.tvlUsd} cover={T?.covers.tvlUsd} of={N} hint={coverage(data, T?.covers.tvlUsd)} state={state} />
+        <Kpi label="VOLUME" span="all-time" value={T?.volumeAllUsd} cover={T?.covers.volumeAllUsd} of={N} hint={coverage(data, T?.covers.volumeAllUsd)} state={state} />
+        <Kpi label="FEES" span="all-time" value={T?.feesAllUsd} cover={T?.covers.feesAllUsd} of={N} hint={coverage(data, T?.covers.feesAllUsd)} state={state} />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-2 px-[14px] pt-1">
-        <div className="flex flex-wrap gap-x-[6px]" role="group" aria-label="Venues in the chart">
-          {projects.map((p) => {
-            const has = withSeries.includes(p)
-            const on = has && !hidden[p.key]
-            // A venue with no daily series is a legend entry that says so, not a dimmed dead button.
-            if (state === 'ok' && !has)
-              return (
-                <span key={p.key} title={`${p.name} publishes no daily series, so it has no bars`} className="inline-flex min-h-11 items-center text-[12px]">
-                  <span className="inline-flex min-h-[30px] items-center gap-[6px] rounded-full border border-dashed border-line px-[10px] text-muted">
-                    <span aria-hidden className="size-2 rounded-bar opacity-60" style={{ background: p.accent }} />
-                    {p.name}
-                    <span className="font-mono text-[11px] text-faint">no series</span>
-                  </span>
-                </span>
-              )
-            return (
-              <button
-                key={p.key}
-                type="button"
-                aria-pressed={on}
-                disabled={state !== 'ok'}
-                onClick={() => setHidden((h) => ({ ...h, [p.key]: !h[p.key] }))}
-                className="group inline-flex min-h-11 items-center bg-transparent p-0 text-[12px] disabled:cursor-default"
-              >
-                {/* The button is 44 px tall for touch; the pill inside is the visible chip. */}
-                <span className={`inline-flex min-h-[30px] items-center gap-[6px] rounded-full border px-[10px] transition-[color,opacity,border-color] duration-200 group-enabled:group-hover:border-line-hover ${on ? 'border-line-strong text-ink' : 'border-line text-faint opacity-70'}`}>
-                  <span aria-hidden className={`size-2 rounded-bar transition-transform duration-200 ${on ? 'scale-100' : 'scale-75'}`} style={{ background: p.accent }} />
-                  {p.name}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-      <div className="px-[6px] pt-[6px]">{chart}</div>
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pt-[2px] pb-2 font-mono text-[11px] text-faint">
-        <span>Daily volume · last {D || '—'} days · press a venue to hide it</span>
-        {/* While loading the switch is held (disabled) so the row does not wrap differently when the data lands. */}
-        {(canRange || state === 'loading') && (
-          <div role="group" aria-label="Range" className={segGroup}>
-            {([7, 30] as Range[]).map((r) => (
-              <button key={r} type="button" aria-pressed={range === r} disabled={state === 'loading'} onClick={() => setRange(r)} className={`${segBtn(range === r)} min-w-11`}>
-                {r}D
-              </button>
-            ))}
-          </div>
-        )}
-        {T?.unread.length ? <span>{T.unread.map(nameOf).join(', ')} unreadable</span> : null}
-      </div>
+      <LedgerChart data={data} state={state} />
     </div>
   )
 }

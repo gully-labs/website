@@ -4,6 +4,7 @@
 import http from 'node:http'
 import { handleIndexNowKey } from './indexnow.mjs'
 import { readStats } from './stats.mjs'
+import { startStatsWatchdog } from './stats-watchdog.mjs'
 import { onSnapshot, readGapIndex, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts, startHolderAlerts } from './alerts.mjs'
@@ -502,6 +503,8 @@ function startLoops() {
   startFeeProxyMonitor()
   // Daily intake digest to the operators' Telegram chat at INTAKE_DIGEST_TIME (UTC, default 09:00; intake-notify.mjs).
   startIntakeDigest()
+  // Every 15 min: are the home ledger's venue feeds and series sane? One Telegram admin alert per venue per day (stats-watchdog.mjs).
+  if (process.env.STATS_WATCHDOG !== 'off' && process.env.TRACKER_LOOP !== 'off') startStatsWatchdog()
   // Gully Security's scan queue (server/security): requeues interrupted scans and starts the runner.
   startSecurityEngine()
   startDeepRunner() // Holder Map Deep checks interrupted by a restart run again
