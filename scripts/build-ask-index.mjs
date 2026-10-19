@@ -8,7 +8,14 @@
 //     (ops/l3/SPEC.md, labelled "Roadmap"), capped in length, hashes and addresses shortened, at their GitHub
 //     section anchors in the public gully-labs/website repo;
 //   - the Telegram bot's help, menu and Gully AI screens (server/telegram-ui.mjs) and its command list;
-//   - the Telegram Mini App's copy (src/pages/tg/*.tsx).
+//   - the Telegram Mini App's copy (src/pages/tg/*.tsx);
+//   - the feature catalog (src/content/features.ts, source "Features"): one chunk per feature that is live, beta or
+//     testnet; building and planned features only as "Roadmap" chunks that say they are NOT available yet. A missing
+//     catalog is skipped with a warning (`--features <file>` reads another one, tests);
+//   - every site page src/pages/*.tsx not listed above (Ecosystem, Partners, Chains, ...), found by glob, at /<kebab-name>;
+//   - ops notes (ops/TREASURY-SAFE.md, ops/LAUNCHPAD-INTEGRATION.md when it exists) and the READMEs of our public repos
+//     (sdk, website, the forks' Gully headers), read from local clones when present (GULLY_REPOS_DIR, default the folder
+//     next to this repo) at their GitHub URLs; a missing clone keeps its chunks from the committed index.
 // The blog is not here: ask-remote.mjs reads it from the Ghost Content API at runtime (GHOST_CONTENT_KEY).
 //
 //   npm run ask:index            rebuild (also runs as `prebuild`, so every build ships a fresh index)
@@ -225,6 +232,11 @@ function docRoutes() {
 function docsChunks() {
   const routes = docRoutes()
   const chunks = []
+  // Every page file should be routed (and so indexed); say so when one is not, so a new docs page is never silently missed.
+  for (const f of fs.readdirSync(path.join(ROOT, 'src/docs/pages'))) {
+    const name = f.replace(/\.tsx$/, '')
+    if (f.endsWith('.tsx') && name !== 'NotFound' && !routes.has(name)) console.warn(`warning: src/docs/pages/${f} has no route in src/docs/routes.tsx: not indexed`)
+  }
   for (const [file, slug] of routes) {
     const rel = `src/docs/pages/${file}.tsx`
     const sf = parse(rel)
@@ -262,6 +274,7 @@ const SITE_PAGES = [
   { file: 'src/pages/HoldersLanding.tsx', url: '/holders', title: 'Holder Map' },
   { file: 'src/pages/score/ScoreIndex.tsx', url: '/score', title: 'Gully Score' },
   { file: 'src/pages/Status.tsx', url: '/status', title: 'Status' },
+  { file: 'src/pages/Home.tsx', url: '/', title: 'Gully Labs home' },
   { file: 'src/pages/Tracker.tsx', url: '/tracker', title: 'Stock token tracker' },
   { file: 'src/pages/widget/WidgetPage.tsx', url: '/widget', title: 'Tracker widget' },
   { file: 'src/components/landing/ProductConsole.tsx', jsx: false, consts: { SECURITY_STEPS: { url: '/#security', title: 'Gully Security on the home page', section: 'What is live, on request and not offered' } } },
@@ -282,9 +295,27 @@ function seoDescription(sf) {
   return seo ? (attr(seo, 'description')?.str ?? null) : null
 }
 
+/** Top-level site pages that are not marketing copy (app shells, redirects, per-item views) or are read elsewhere. */
+const AUTO_SKIP = new Set(['Home', 'Links', 'NotFound', 'RouteError', 'GoTo', 'LazyRoutes', 'ProjectDetail', 'StockPage', 'HoldersPage', 'EmbedHolders'])
+const AUTO_TITLES = { Chains: 'Gully Chains', Ecosystem: 'Gully Labs ecosystem', Partners: 'Gully Labs partners' }
+const kebab = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+
+/** Pages src/pages/*.tsx that SITE_PAGES does not list (Ecosystem, Partners, Chains once merged, ...): found by glob, served at /<kebab-name>. */
+function autoSitePages() {
+  const listed = new Set(SITE_PAGES.map((p) => p.file))
+  return fs
+    .readdirSync(path.join(ROOT, 'src/pages'))
+    .filter((f) => /^[A-Z]\w*\.tsx$/.test(f) && !AUTO_SKIP.has(f.replace('.tsx', '')) && !listed.has(`src/pages/${f}`))
+    .sort()
+    .map((f) => {
+      const name = f.replace('.tsx', '')
+      return { file: `src/pages/${f}`, url: `/${kebab(name)}`, title: AUTO_TITLES[name] ?? name.replace(/([a-z])([A-Z])/g, '$1 $2') }
+    })
+}
+
 function siteChunks() {
   const chunks = []
-  for (const pg of SITE_PAGES) {
+  for (const pg of [...SITE_PAGES, ...autoSitePages()]) {
     const sf = parse(pg.file)
     if (pg.jsx !== false) {
       const fn = sf.statements.find((s) => ts.isFunctionDeclaration(s) && s.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword))
@@ -404,23 +435,137 @@ const REPO_DOCS = [
   { file: 'contracts/CHOICE.md', source: 'Gully Pay contracts', title: 'Gully Pay fee split: which contract and why', maxWords: 1_400 },
   { file: 'contracts/TESTNET-RESULTS.md', source: 'Gully Pay contracts', title: 'Gully Pay fee path: testnet results', maxWords: 900 },
   { file: 'ops/l3/SPEC.md', source: 'Roadmap', title: 'Roadmap: the Gully L3 spec', maxWords: 2_200 },
+  { file: 'ops/TREASURY-SAFE.md', source: 'Ops notes', title: 'Treasury Safe: how the Gully Labs treasury Safe is deployed', maxWords: 1_200 },
+  { file: 'ops/LAUNCHPAD-INTEGRATION.md', source: 'Ops notes', title: 'Launchpad integration: Holder Map on launchpads', maxWords: 1_200, optional: true },
 ]
 const SECRET_LINE = /(private|secret|mnemonic|seed|api)[ _-]?(key|phrase)?\s*[=:]|BEGIN [A-Z ]*PRIVATE KEY|\bsk-[A-Za-z0-9]/i
 
-/** Summarised repo notes: capped in words, no secrets, 32-byte hex (keys, hashes) dropped, addresses shortened. */
+/** No secrets, 32-byte hex (keys, hashes) dropped, addresses shortened. */
+const redact = (md) =>
+  String(md)
+    .split('\n')
+    .filter((l) => !SECRET_LINE.test(l))
+    .join('\n')
+    .replace(/\b0x[0-9a-fA-F]{64}\b/g, '(hash)')
+    .replace(/\b(0x[0-9a-fA-F]{4})[0-9a-fA-F]{32}([0-9a-fA-F]{4})\b/g, '$1…$2')
+
+/** Summarised repo notes: capped in words, redacted. */
 function repoDocChunks() {
   const chunks = []
   for (const d of REPO_DOCS) {
-    const md = read(d.file)
-      .split('\n')
-      .filter((l) => !SECRET_LINE.test(l))
-      .join('\n')
-      .replace(/\b0x[0-9a-fA-F]{64}\b/g, '(hash)')
-      .replace(/\b(0x[0-9a-fA-F]{4})[0-9a-fA-F]{32}([0-9a-fA-F]{4})\b/g, '$1…$2')
+    if (d.optional && !fs.existsSync(path.join(ROOT, d.file))) continue
+    const md = redact(read(d.file))
     for (const s of markdownSections(md, { maxWords: d.maxWords })) {
       const paragraphs = s.paras.filter((p) => !CODE_RE.test(p))
       if (!paragraphs.length) continue
       chunks.push(...chunkSection({ source: d.source, title: d.title, url: `${REPO}/${d.file}${s.heading ? `#${githubAnchor(s.heading)}` : ''}`, section: s.heading, paragraphs }))
+    }
+  }
+  return chunks
+}
+
+/* ---------------------------------------------------------- public READMEs --- */
+
+const GH = 'https://github.com/gully-labs'
+// Local clones sit next to this repo (GULLY_REPOS_DIR overrides). `dir: null` is this repo. The forks' READMEs are
+// mostly upstream text, so they are capped short: the Gully header and the first sections.
+const README_REPOS = [
+  { repo: 'sdk', dir: 'gully-sdk', branch: 'main', title: 'Gully SDK (gully-labs/sdk README)', maxWords: 900 },
+  { repo: 'website', dir: null, branch: 'main', title: 'gullylabs.xyz website (gully-labs/website README)', maxWords: 900 },
+  { repo: 'umami', dir: 'gully-umami', branch: 'gully/analytics', title: 'Gully Analytics, the Umami fork (gully-labs/umami README)', maxWords: 450 },
+  { repo: 'blockscout', dir: 'gully-blockscout', branch: 'gully/chain-kit', title: 'Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)', maxWords: 450 },
+  { repo: 'arbitrum-token-bridge', dir: 'gully-bridge', branch: 'gully/main', title: 'Gully Bridge, the Arbitrum token bridge fork (gully-labs/arbitrum-token-bridge README)', maxWords: 450 },
+]
+const REPOS_DIR = path.resolve(process.env.GULLY_REPOS_DIR ?? path.join(ROOT, '..'))
+
+/** READMEs of our public repos at their GitHub URLs. A repo with no local clone keeps its chunks from the committed index. */
+function readmeChunks(previousChunks) {
+  const chunks = []
+  for (const r of README_REPOS) {
+    const file = r.dir === null ? path.join(ROOT, 'README.md') : path.join(REPOS_DIR, r.dir, 'README.md')
+    const page = `${GH}/${r.repo}/blob/${r.branch}/README.md`
+    if (!fs.existsSync(file)) {
+      const kept = previousChunks.filter((c) => c.source === 'GitHub README' && (c.url === page || c.url.startsWith(`${page}#`)))
+      console.warn(`warning: no local clone for ${r.repo} (${file}): ${kept.length ? `keeping its ${kept.length} chunks from the committed index` : 'skipped'}`)
+      chunks.push(...kept.map(({ updatedAt: _u, ...c }) => c))
+      continue
+    }
+    for (const s of markdownSections(redact(fs.readFileSync(file, 'utf8')), { maxWords: r.maxWords })) {
+      const paragraphs = s.paras.filter((p) => !CODE_RE.test(p))
+      if (!paragraphs.length) continue
+      chunks.push(...chunkSection({ source: 'GitHub README', title: r.title, url: s.heading ? `${page}#${githubAnchor(s.heading)}` : page, section: s.heading, paragraphs }))
+    }
+  }
+  return chunks
+}
+
+/* ------------------------------------------------------------ feature catalog --- */
+
+const STATUSES = { live: 'live now', beta: 'in beta (usable, and still changing)', testnet: 'on testnet only, not on mainnet yet', building: 'being built', planned: 'planned' }
+const AVAILABLE = new Set(['live', 'beta', 'testnet'])
+/** Where a product lives, by the product's name: the docs page, else the site page. */
+const PRODUCT_PAGES = [
+  [/solana pay/i, `${DOCS}/solana-pay`],
+  [/gully pay|merchant/i, `${DOCS}/gully-pay`],
+  [/holder/i, `${DOCS}/holder-map`],
+  [/security/i, `${DOCS}/gully-security`],
+  [/score/i, `${DOCS}/gully-score`],
+  [/tracker|stock/i, `${SITE}/tracker`],
+  [/gully ai|\bask\b/i, `${DOCS}/gully-ai`],
+  [/mini ?app/i, `${DOCS}/telegram-mini-app`],
+  [/news gate/i, `${DOCS}/news-gate`],
+  [/telegram|bot/i, `${DOCS}/telegram`],
+  [/analytics/i, `${DOCS}/analytics`],
+  [/chain kit/i, `${DOCS}/chain-kit`],
+  [/chains?\b/i, `${SITE}/chain-kit`],
+  [/sdk/i, `${DOCS}/sdk`],
+  [/widget/i, `${DOCS}/widget`],
+  [/solana/i, `${DOCS}/solana`],
+  [/swap/i, `${DOCS}/swaps`],
+  [/status/i, `${DOCS}/status`],
+]
+const productPage = (product) => PRODUCT_PAGES.find(([re]) => re.test(product))?.[1] ?? `${SITE}/products`
+
+/** The catalog (src/content/features.ts, or --features <file>), or null with a warning when it is missing. */
+async function loadFeatures() {
+  const at = argv.indexOf('--features')
+  const file = at >= 0 && argv[at + 1] ? path.resolve(argv[at + 1]) : path.join(ROOT, 'src/content/features.ts')
+  if (!fs.existsSync(file)) {
+    console.warn(`warning: ${path.relative(ROOT, file)} is missing: the feature catalog is not indexed (it is merged separately)`)
+    return null
+  }
+  const js = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
+  const mod = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
+  if (!Array.isArray(mod.features)) throw new Error(`${file}: no exported features array`)
+  return mod.features
+}
+
+/**
+ * One chunk per feature. live, beta and testnet go in under "Features" with their honest status; building and planned
+ * go in only as "Roadmap" chunks that say, in so many words, that the feature is NOT available yet.
+ */
+function featureChunks(features) {
+  const chunks = []
+  const ids = new Set()
+  for (const f of features ?? []) {
+    if (!f || typeof f.id !== 'string' || typeof f.name !== 'string' || typeof f.summary !== 'string' || !Object.hasOwn(STATUSES, f.status)) throw new Error(`features: a malformed entry ${JSON.stringify(f?.id ?? f?.name ?? f)}`)
+    if (ids.has(f.id)) throw new Error(`features: duplicate id ${f.id}`)
+    ids.add(f.id)
+    const facts = (Array.isArray(f.facts) ? f.facts : []).map((x) => clean(redact(x))).filter(Boolean)
+    const product = f.product || 'Gully Labs'
+    if (AVAILABLE.has(f.status)) {
+      const url = f.url && /^https:\/\//.test(f.url) ? f.url : productPage(product)
+      chunks.push(...chunkSection({ source: 'Features', title: `${f.name} (${product})`, url, section: f.name, paragraphs: [`${f.name} is part of ${product}. Status: ${STATUSES[f.status]}.`, f.summary, ...facts] }).map((c) => ({ ...c, feature: f.id, status: f.status })))
+    } else {
+      chunks.push(
+        ...chunkSection({
+          source: 'Roadmap',
+          title: `Roadmap: ${f.name} (${product}), not available yet`,
+          url: productPage(product),
+          section: `${f.name} (${f.status})`,
+          paragraphs: [`${f.name} (${product}) is ${STATUSES[f.status]} and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today.`, f.summary, ...facts],
+        }).map((c) => ({ ...c, feature: f.id, status: f.status })),
+      )
     }
   }
   return chunks
@@ -470,7 +615,7 @@ try {
 const prevById = new Map((previous?.chunks ?? []).map((c) => [c.id, c]))
 const now = new Date().toISOString()
 const seen = new Map()
-const chunks = [...docsChunks(), ...siteChunks(), ...legalChunks(), ...repoDocChunks(), ...telegramChunks(), ...miniAppChunks()].map((c0) => {
+const chunks = [...docsChunks(), ...siteChunks(), ...legalChunks(), ...repoDocChunks(), ...telegramChunks(), ...miniAppChunks(), ...readmeChunks(previous?.chunks ?? []), ...featureChunks(await loadFeatures())].map((c0) => {
   // Two blocks of one page under the same heading (a page's own "Questions" and its FAQ data) share a seed.
   const k = seen.get(c0.id) ?? 0
   seen.set(c0.id, k + 1)

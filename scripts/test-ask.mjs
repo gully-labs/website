@@ -29,7 +29,7 @@ const { check } = t
 
 // The index this run uses is built from the working tree (the committed file can lag behind the sources).
 const INDEX = path.join(tmp, 'ask-index.json')
-execFileSync(process.execPath, [fileURLToPath(new URL('./build-ask-index.mjs', import.meta.url)), '--out', INDEX], { stdio: 'pipe' })
+execFileSync(process.execPath, [fileURLToPath(new URL('./build-ask-index.mjs', import.meta.url)), '--out', INDEX, '--features', fileURLToPath(new URL('./fixtures/features.sample.ts', import.meta.url))], { stdio: 'pipe' })
 
 /* ------------------------------------------------------ embeddings stub --- */
 // Deterministic "embeddings": a bag of hashed words, where a few words share one concept, so a question
@@ -186,7 +186,7 @@ try {
   const local = JSON.parse(fs.readFileSync(INDEX, 'utf8'))
   const ix = makeIndex(local.chunks)
   check('the committed index has chunks from docs, site and changelog', ['Docs', 'Site', 'Changelog'].every((s) => local.chunks.some((c) => c.source === s)), `${local.chunks.length} chunks`)
-  check('every chunk has id, source, title, url, text and updatedAt', local.chunks.every((c) => c.id && c.source && c.title && /^https:\/\/((docs\.)?gullylabs\.xyz\/|github\.com\/gully-labs\/website\/blob\/main\/|t\.me\/GullyLabsBot$)/.test(c.url) && c.text.length > 20 && c.updatedAt), local.chunks.filter((c) => !/^https:\/\/((docs\.)?gullylabs\.xyz\/|github\.com\/gully-labs\/website\/blob\/main\/|t\.me\/GullyLabsBot$)/.test(c.url)).map((c) => c.url).slice(0, 3).join(' '))
+  check('every chunk has id, source, title, url, text and updatedAt', local.chunks.every((c) => c.id && c.source && c.title && /^https:\/\/((docs\.)?gullylabs\.xyz\/|github\.com\/gully-labs\/[\w-]+\/blob\/|t\.me\/GullyLabsBot$)/.test(c.url) && c.text.length > 20 && c.updatedAt), local.chunks.filter((c) => !/^https:\/\/((docs\.)?gullylabs\.xyz\/|github\.com\/gully-labs\/[\w-]+\/blob\/|t\.me\/GullyLabsBot$)/.test(c.url)).map((c) => c.url).slice(0, 3).join(' '))
   /* ----------------------------------------------------- new sources --- */
   const has = (pred) => local.chunks.some(pred)
   check('sources: the privacy policy, by numbered section (#s4 is Gully AI)', has((c) => c.source === 'Legal' && c.url === 'https://gullylabs.xyz/legal/privacy#s4' && c.section === 'Gully AI' && /90 days/.test(c.text)))
@@ -438,6 +438,15 @@ try {
   reply = () => textReply('NVDA explainer.')
   const se = await call('/api/admin/ask/draft', { method: 'POST', body: { kind: 'stock_explainer', topic: 'NVDA', ticker: 'NVDA', chain: 'robinhood' }, auth: ADMIN })
   check('admin draft: a stock explainer reads get_stock and sends it as delimited data', se.status === 200 && se.data.usedTools.includes('get_stock') && /<src-[A-Za-z0-9]+ n="live">\{"asOf"/.test(userTextOf(calls.at(-1).body)))
+  reply = () => textReply('Zeta vault sweeper: coming soon.')
+  const fd = await call('/api/admin/ask/draft', { method: 'POST', body: { kind: 'x_thread', feature: 'zeta-vault-sweeper' }, auth: ADMIN })
+  const fdText = userTextOf(calls.at(-1).body)
+  check('admin draft: a feature id needs no topic, leads with its chunk and states it is not available yet', fd.status === 200 && /Feature: Zeta vault sweeper \(id zeta-vault-sweeper\), status: building\. It is NOT available yet/.test(fdText) && fd.data.sources[0].source === 'Roadmap', JSON.stringify(fd.data).slice(0, 200))
+  reply = () => textReply('Launch Health.')
+  const fl = await call('/api/admin/ask/draft', { method: 'POST', body: { kind: 'blog_post', feature: 'holder-launch-health', topic: 'Launch Health' }, auth: ADMIN })
+  check('admin draft: a live feature is sent with its status and its Features chunk first', fl.status === 200 && fl.data.sources[0].source === 'Features' && /status: live\. Write its status honestly/.test(userTextOf(calls.at(-1).body)))
+  check('admin draft: an unknown feature id is 400', (await call('/api/admin/ask/draft', { method: 'POST', body: { kind: 'blog_post', feature: 'no-such-feature' }, auth: ADMIN })).status === 400)
+  check('draft rules: catalog facts only, honest status, coming soon, no invented numbers', calls.at(-2).body.system[0].text.includes('Roadmap') && /coming soon/.test(calls.at(-2).body.system[0].text) && /Never invent a number/.test(calls.at(-2).body.system[0].text))
   const lv = await call('/api/admin/ask/log', { auth: ADMIN })
   check('admin ask log: totals, per day, top and recent questions, the don\'t-know rate', lv.status === 200 && lv.data.totals.questions > 10 && lv.data.perDay.length >= 1 && lv.data.top.length > 0 && lv.data.recent.length > 0 && typeof lv.data.totals.unansweredRate === 'number' && lv.data.totals.drafts >= 3)
   check('admin ask log holds no IPs', !/203\.0\.113\.|198\.51\.100\./.test(lv.text))
