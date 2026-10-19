@@ -9,6 +9,7 @@ import { handleAdmin } from './server/admin.mjs'
 import { handleDeveloper } from './server/developer.mjs'
 import { handlePay } from './server/invoices.mjs'
 import { handleSecurityPublic } from './server/security-routes.mjs'
+import { handleChains } from './server/chains-waitlist.mjs'
 import { publicPlans } from './server/plans.mjs'
 import { alertChannels } from './server/telegram.mjs'
 import { geoFor } from './server/geo.mjs'
@@ -140,6 +141,7 @@ function serverModules(): Plugin {
           return
         }
         const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname === '/api/ecosystem' || url.pathname.startsWith('/api/ecosystem/') ? handleEcosystem : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : null
+        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : url.pathname.startsWith('/api/chains/') ? handleChains : null
         if (!handler) return next()
         handler(req, res, url).then((done) => {
           if (done) return

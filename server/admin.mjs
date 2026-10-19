@@ -10,6 +10,7 @@
 //   POST /api/admin/keys/:id/revoke
 //   POST /api/admin/accounts/:address/block|unblock   wallet accounts (Sign-In with Ethereum)
 //   GET  /api/admin/enquiries                 contact-form enquiries, newest first
+//   GET  /api/admin/chains/waitlist           Gully Chains waitlist rows (chains-waitlist.mjs), newest first
 //   GET  /api/admin/launch-list[?format=csv]  "notify me" sign-ups
 //   POST /api/admin/enquiries/:id/handled     { handled: boolean }
 //   GET  /api/admin/billing                   subscriptions (wallets with a plan), every payment, checkout state
@@ -65,6 +66,7 @@ import { handleMerchantsAdmin } from './merchants.mjs'
 import { handleEcosystemAdmin } from './ecosystem.mjs'
 import { handleSecurityAdmin } from './security-routes.mjs'
 import { handleAdminSafe } from './safe-deploy.mjs'
+import { handleChainsAdmin } from './chains-waitlist.mjs'
 import { planOf, publicPlans, treasury } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
 import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
@@ -599,6 +601,7 @@ export async function handleAdmin(req, res, url) {
     return (r.ok ? json(res, 200, { account: r.account }) : json(res, r.status, { error: r.error }), true)
   }
 
+  if (p === '/api/admin/chains/waitlist') return handleChainsAdmin(req, res)
   if (p === '/api/admin/enquiries') return json(res, 200, { enquiries: [...listEnquiries()].reverse() }), true
 
   if (p === '/api/admin/launch-list') {

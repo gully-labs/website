@@ -27,6 +27,7 @@ import { pillCls } from './ui'
 import { sectionCls } from './adminSections'
 import { HealthCard } from './HealthCard'
 import { AlertsAdmin, ChainKitAdmin, WorkspacesAdmin } from './OpsAdmin'
+import { ChainsWaitlist } from './ChainsWaitlist'
 import { ArrowMark } from './newTab'
 import { EcosystemSubmissions } from './EcosystemSubmissions'
 
@@ -1100,6 +1101,7 @@ export function AdminPage() {
             <div id="chainkit" className={sectionCls}>
               <ChainKitAdmin token={token} />
               <EcosystemSubmissions token={token} />
+              <ChainsWaitlist token={token} />
             </div>
 
             <div id="inbox" className={sectionCls}>
