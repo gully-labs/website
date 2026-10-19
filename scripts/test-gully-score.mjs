@@ -334,13 +334,16 @@ try {
   check('badge: well-formed XML', wellFormed(svg), svg.slice(0, 120))
   const stored = (await anon.call(`/api/score/base/${A}`)).data
   const date = new Date(stored.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
-  check('badge: shows the score, the grade and the date it was read', svg.includes(`>${stored.score}</text>`) && svg.includes(stored.grade.toUpperCase()) && svg.includes(date), date)
-  check('badge: the kit mark is embedded (mark-64.png at 32 px) and it links back', svg.includes('data:image/png;base64,iVBOR') && /width="32" height="32"/.test(svg) && svg.includes(`https://gullylabs.xyz/score/base/${A}`))
-  check('badge: kit colours only', [...svg.matchAll(/#[0-9A-Fa-f]{6}\b/g)].every((m) => ['#0D141C', '#2A3542', '#151D28', '#D9B563', '#F4F2EC', '#7D8794', '#6F7560', '#F2D58A', '#AEB5BE'].includes(m[0].toUpperCase())))
+  // The badge is the shared kit badge (server/badges.mjs): every letter is a path, so the score, grade and date are
+  // read from its <title> and aria-label; the geometry and colour checks live in scripts/test-badges.mjs.
+  check('badge: the title says the score, the grade and the date it was read', svg.includes(`<title>Gully Score ${stored.score} out of 100 (${stored.grade}), ${date}</title>`) && svg.includes(`aria-label="Gully Score ${stored.score} out of 100 (${stored.grade}), ${date}"`), date)
+  check('badge: paths only (no <text>), the kit mark is embedded and it links back', !/<text/.test(svg) && svg.includes('data:image/png;base64,iVBOR') && /<image [^>]*width="21" height="20"/.test(svg) && svg.includes(`https://gullylabs.xyz/score/base/${A}`))
+  check('badge: kit colours only', [...svg.matchAll(/#[0-9A-Fa-f]{6}/g)].every((m) => ['#0D141C', '#2A3542', '#151D28', '#D9B563', '#F4F2EC', '#7D8794', '#6F7560', '#F2D58A', '#AEB5BE', '#2F6B35', '#3C553B'].includes(m[0].toUpperCase())))
+  check('badge: ?size=L&theme=light is honoured (36 px tall, bone field)', /height="36"/.test(await (await fetch(`${BASE}/score/base/${A}/badge.svg?size=L&theme=light`)).text()) && (await (await fetch(`${BASE}/score/base/${A}/badge.svg?theme=light`)).text()).includes('#F4F2EC'))
   const blank = await (await fetch(`${BASE}/score/base/${addr(0x777)}/badge.svg`)).text()
-  check('badge for a contract never scored: valid, says so, no number', wellFormed(blank) && blank.includes('not scored yet') && !/>\d+<\/text>/.test(blank))
+  check('badge for a contract never scored: valid, says so, no number', wellFormed(blank) && blank.includes('<title>Gully Score: not scored yet</title>') && !/out of 100/.test(blank))
   const gb = await (await fetch(`${BASE}/score/base/${G}/badge.svg`)).text()
-  check('badge with too little data: N/A, not 0', wellFormed(gb) && gb.includes('>N/A</text>') && gb.includes('not enough data'))
+  check('badge with too little data: N/A, not 0', wellFormed(gb) && gb.includes('<title>Gully Score: not enough data</title>') && !/out of 100/.test(gb))
   check('badge on an unknown chain: 404', (await fetch(`${BASE}/score/mars/${A}/badge.svg`)).status === 404)
   check('the badge never computes (a page view does)', !fetched.some((u) => u.includes(addr(0x777))))
 } catch (err) {

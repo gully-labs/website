@@ -42,6 +42,7 @@ import { adminCancelInvoice, adminInvoice, createInvoiceRecord, invoicePaidHooks
 import { ACTIVE_STATUSES, checkUploadName, MODE_LABELS, normaliseInput, SCAN_CHAINS, scopeLabel, SEVERITIES, TERMINAL_STATUSES, toEngineInput } from './security-contract.mjs'
 import { checkInput, readReport, readScan, renderReportHtml, startScan, status as engineStatus, stopScan, watchScan } from './security-engine.mjs'
 import { findJob, isJobId, jobs, published, publishedJobs, reviews, save } from './security-store.mjs'
+import { badgeHeaders, badgeStyleFrom, renderBadge } from './badges.mjs'
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { ASSET_IDS } from './payments.mjs'
 import { planOf, SECURITY, treasury } from './plans.mjs'
@@ -602,6 +603,17 @@ export async function handleSecurityPublic(req, res, url) {
   if (p === '/api/security/reports') return json(res, 200, { reports: publishedJobs().slice(0, 200).map(publicView) }, open), true
 
   if (p === '/api/security/stats') return json(res, 200, statsOf(30), open), true
+
+  // The embeddable badge, for a published report only: "Gully Security | Scanned <date>".
+  const bm = p.match(/^\/api\/security\/reports\/([^/]+)\/badge\.svg$/)
+  if (bm) {
+    const job = isJobId(bm[1]) ? published(bm[1]) : null
+    if (!job?.snapshot) return json(res, 404, { error: 'No published report has that address. The owner may have taken it down.' }, { 'X-Robots-Tag': 'noindex', 'Access-Control-Allow-Origin': '*' }), true
+    const at = new Date(job.publishedAt ?? job.completedAt ?? Date.now())
+    const date = at.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+    res.writeHead(200, badgeHeaders(300))
+    return res.end(req.method === 'HEAD' ? undefined : renderBadge({ kind: 'security', label: 'Gully Security', value: `Scanned ${date}`, title: `Gully Security: report published ${date}`, href: `https://gullylabs.xyz/security/reports/${job.id}`, ...badgeStyleFrom(url.searchParams) })), true
+  }
 
   const m = p.match(/^\/api\/security\/reports\/([^/]+?)(\/report\.html)?$/)
   if (m) {

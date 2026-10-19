@@ -13,6 +13,7 @@ import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
 import { handleHolderBadge, handlePartnerLaunch } from './holders-partners.mjs'
 import { handleHolderDeep, startDeepRunner } from './holders-deep-routes.mjs'
+import { handleBadgeRoutes } from './badge-routes.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
@@ -279,6 +280,11 @@ async function handleRequest(req, res) {
   if (url.pathname.startsWith('/api/holders/') && url.pathname.endsWith('/badge.svg') && (await handleHolderBadge(req, res, url))) return
   // Holder Map Deep check (holders-deep-routes.mjs): paid per token through Gully Pay.
   if (url.pathname === '/api/holders/deep' || url.pathname.startsWith('/api/holders/deep/')) return void (await handleHolderDeep(req, res, url))
+  // Badges (badge-routes.mjs): the Holder Map badge and "Built by Gully Labs". Open and cacheable, never metered.
+  if (url.pathname.startsWith('/badges/')) {
+    if (await handleBadgeRoutes(req, res, url)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
   let access = null
   // /api/plans is metered like the tracker (P2-22): it is in access.mjs ENDPOINTS, so a key's dashboard counts it.
   if (url.pathname.startsWith('/api/tracker') || url.pathname.startsWith('/api/holders/') || url.pathname === '/api/plans') {

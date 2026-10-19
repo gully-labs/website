@@ -16,6 +16,7 @@ export const docsRoutes: RouteObject[] = [
       { path: 'sdk', lazy: () => import('./pages/Sdk').then((m) => ({ Component: m.Sdk })) },
       { path: 'api-keys', lazy: () => import('./pages/ApiKeys').then((m) => ({ Component: m.ApiKeys })) },
       { path: 'plans-alerts', lazy: () => import('./pages/PlansAlerts').then((m) => ({ Component: m.PlansAlerts })) },
+      { path: 'badges', lazy: () => import('./pages/BadgesDocs').then((m) => ({ Component: m.BadgesDocs })) },
       { path: 'teams', lazy: () => import('./pages/Teams').then((m) => ({ Component: m.Teams })) },
       { path: 'holder-map', lazy: () => import('./pages/HolderMapDocs').then((m) => ({ Component: m.HolderMapDocs })) },
       { path: 'holder-map-integrate', lazy: () => import('./pages/HolderMapIntegrateDocs').then((m) => ({ Component: m.HolderMapIntegrateDocs })) },

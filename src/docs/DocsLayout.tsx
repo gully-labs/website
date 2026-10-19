@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, BellRing, Blocks, BookOpen, Bot, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HeartPulse, History, Home, KeyRound, Layers, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, ScanSearch, Search, Send, ShieldCheck, Smartphone, Store, Tags, Users, Wallet, X } from 'lucide-react'
+import { Activity, ArrowLeftRight, BadgeCheck, BellRing, Blocks, BookOpen, Bot, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HeartPulse, History, Home, KeyRound, Layers, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, ScanSearch, Search, Send, ShieldCheck, Smartphone, Store, Tags, Users, Wallet, X } from 'lucide-react'
 import { useContext, useEffect, useId, useMemo, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useNavigate, useResolvedPath } from 'react-router'
 import { NewTabMark } from '../components/LayoutLinks'
@@ -38,7 +38,7 @@ function ApiPill() {
   )
 }
 
-const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, 'gully-pay-merchants': Store, 'gully-security': ShieldCheck, 'gully-score': Gauge, teams: Users, roadmap: Milestone, 'roadmap-l3': Layers, changelog: History, 'holder-map': ScanSearch, 'gully-ai': Bot, telegram: Send, 'telegram-mini-app': Smartphone, 'news-gate': Newspaper, 'stock-pages': ChartCandlestick, 'solana-pay': QrCode, swaps: ArrowLeftRight, solana: Orbit, 'chain-kit': Blocks, status: HeartPulse, 'holder-map-integrate': Plug }
+const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, 'gully-pay-merchants': Store, 'gully-security': ShieldCheck, 'gully-score': Gauge, teams: Users, roadmap: Milestone, 'roadmap-l3': Layers, changelog: History, 'holder-map': ScanSearch, 'gully-ai': Bot, telegram: Send, 'telegram-mini-app': Smartphone, 'news-gate': Newspaper, 'stock-pages': ChartCandlestick, 'solana-pay': QrCode, swaps: ArrowLeftRight, solana: Orbit, 'chain-kit': Blocks, status: HeartPulse, 'holder-map-integrate': Plug, badges: BadgeCheck }
 
 /** Links to the rest of Gully Labs: all on another host, so each opens in a new tab with the ↗ marker. */
 const GULLY_LINKS: { label: string; href: string; icon: LucideIcon }[] = [

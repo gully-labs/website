@@ -40,6 +40,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { badgeHeaders, badgeStyleFrom, renderBadge } from './badges.mjs'
 import { clientIp, DATA_DIR, json } from './http.mjs'
 import { CHAINS, rpc as payRpc } from './payments.mjs'
 import { chainOf, decodeString, listedContracts, monitorChains, monitorFacts, onMonitorEvents, readControl, SEL, short } from './sec-monitor.mjs'
@@ -537,41 +538,14 @@ export function scorePageMeta(p) {
 
 /* -------------------------------------------------------------- the badge --- */
 
-let markDataUri = null
-function mark() {
-  if (markDataUri) return markDataUri
-  try {
-    const file = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'brand', 'kit', 'mark-64.png')
-    markDataUri = `data:image/png;base64,${fs.readFileSync(file).toString('base64')}`
-  } catch {
-    markDataUri = ''
-  }
-  return markDataUri
-}
-const xmlEsc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-
-/** The embeddable badge: the kit's mark (mark-64.png drawn at 32 px, 2x), "GULLY SCORE", the score and its date. */
-export function badgeSvg(r, chain, address) {
+/** The embeddable badge (server/badges.mjs, the shared kit badge): mark | GULLY SCORE | the score and its grade. The date it was read is in the title. */
+export function badgeSvg(r, chain, address, style = {}) {
   const score = r?.score ?? null
   const date = r?.computedAt ? new Date(r.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : null
-  const big = score === null ? (r ? 'N/A' : '—') : String(score)
-  const sub = score === null ? (r ? 'not enough data' : 'not scored yet') : `${grade(score).toUpperCase()} · ${date}`
-  const href = `${SITE}/score/${chain.key}/${address}`
-  const title = score === null ? `Gully Score: ${sub}` : `Gully Score ${score} out of 100 (${grade(score)}), ${date}`
-  const m = mark()
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="260" height="48" viewBox="0 0 260 48" role="img" aria-label="${xmlEsc(title)}">
-<title>${xmlEsc(title)}</title>
-<defs><linearGradient id="gb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2A3542"/><stop offset=".4" stop-color="#6F7560"/><stop offset=".85" stop-color="#D9B563"/><stop offset="1" stop-color="#F2D58A"/></linearGradient></defs>
-<a xlink:href="${xmlEsc(href)}" href="${xmlEsc(href)}" target="_blank" rel="noopener noreferrer">
-<rect x=".5" y=".5" width="259" height="47" rx="8" fill="#0D141C" stroke="#2A3542"/>
-${m ? `<image x="8" y="8" width="32" height="32" href="${m}" xlink:href="${m}"/>` : ''}
-<text x="48" y="21" fill="#F4F2EC" font-family="'Barlow Condensed','Arial Narrow',Arial,sans-serif" font-weight="700" font-size="14" letter-spacing=".6">GULLY SCORE</text>
-<text x="48" y="36" fill="#7D8794" font-family="'IBM Plex Mono','JetBrains Mono',Menlo,monospace" font-size="11">${xmlEsc(sub)}</text>
-<rect x="188" y="8" width="64" height="32" rx="6" fill="#151D28" stroke="#2A3542"/>
-<text x="220" y="31" text-anchor="middle" fill="${score === null ? '#AEB5BE' : '#D9B563'}" font-family="'Barlow Condensed','Arial Narrow',Arial,sans-serif" font-weight="700" font-size="${score === null ? 16 : 22}">${xmlEsc(big)}</text>
-<rect x="8" y="44" width="244" height="1.5" fill="url(#gb)"/>
-</a>
-</svg>`
+  const value = score === null ? (r ? 'N/A' : 'Not scored yet') : `${score} ${grade(score)}`
+  const tone = score === null ? 'neutral' : score >= 80 ? 'good' : score >= 40 ? 'brand' : 'warn'
+  const title = score === null ? `Gully Score: ${r ? 'not enough data' : 'not scored yet'}` : `Gully Score ${score} out of 100 (${grade(score)}), ${date}`
+  return renderBadge({ kind: 'score', label: 'Gully Score', value, tone, title, href: `${SITE}/score/${chain.key}/${address}`, ...style })
 }
 
 /* -------------------------------------------------------------- handler --- */
@@ -654,8 +628,8 @@ export async function handleScore(req, res, url) {
   if (badge) {
     // The badge never computes: it shows what is stored (a page view computes it first).
     const r = publicSafe(db.scores[keyOf(chain.id, address)] ?? null)
-    res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600', ...CORS, 'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'" })
-    return res.end(req.method === 'HEAD' ? undefined : badgeSvg(r, chain, address)), true
+    res.writeHead(200, badgeHeaders(3600))
+    return res.end(req.method === 'HEAD' ? undefined : badgeSvg(r, chain, address, badgeStyleFrom(url.searchParams))), true
   }
   const r = await scoreFor(req, chain, address)
   if (r.error) return json(res, r.status ?? 502, { error: r.error }, CORS), true
