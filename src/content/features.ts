@@ -211,7 +211,7 @@ export const features: Feature[] = [
     status: "live",
     summary: "Shows who really holds a token: the biggest wallets as bubbles, wallets that trade with each other linked as clusters, and a plain-words summary.",
     facts: [
-      "Supported tokens on main are DeepCore launches and the tracker's stock tokens, on Robinhood Chain, BNB Chain, Base, HyperEVM and Solana (HOLDER_CHAINS in server/holders.mjs).",
+      "Chains: Robinhood Chain, BNB Chain, Base, HyperEVM and Solana (HOLDER_CHAINS in server/holders.mjs); any token can be mapped, with launch checks for DeepCore launches and registered launchpads.",
       "Pools, locks, burn addresses, exchanges and the token contract are labelled grey and never counted as wallets or put in a cluster.",
       "A chain without a data source says holder data is not available; it never draws an empty or invented map.",
       "Per-tier limits come from HOLDER_MAP in server/plans.mjs: Free lists 50 holders, Pro and Business 500; the map draws at most 120.",
@@ -839,7 +839,7 @@ export const features: Feature[] = [
     summary: "A waitlist in the app for Gully Chains devnet news. No chain is running yet.",
     facts: [
       "POST /api/developer/chains-waitlist saves an email against the wallet.",
-      "The home console labels Gully Chains as SOON."
+      "POST /api/chains/waitlist is the public form on /chains; the app waitlist remains."
     ],
     url: "https://gullylabs.xyz/",
     source: [
@@ -884,68 +884,225 @@ export const features: Feature[] = [
     id: "holder-map-any-token",
     product: "Holder Map",
     name: "Map any token",
-    status: "building",
-    summary: "Holder Map would accept any ERC-20 on four EVM chains and any SPL token on Solana, not only DeepCore launches and tracked stock tokens. A pasted address is checked to be a token first, and a plain token gets holders, clusters and concentration.",
+    status: "live",
+    summary: "The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only DeepCore launches and stock tokens. A pasted address is checked to be a token first.",
     facts: [
-      "Chains in HOLDER_CHAINS: Robinhood Chain (4663), BNB Chain (56), Base (8453), HyperEVM (999) and Solana.",
-      "An address is probed before anything is built: an ERC-20 must answer decimals() and totalSupply(); on Solana it must be a mint. With no chain given, every supported chain is checked at once and a token found on several chains gives a picker.",
-      "Holder sources in order: own Transfer-log index on an archive node (exact balances), then Blockscout, then Moralis (top holders only, labelled).",
-      "Tokens nobody listed are capped at 40,000 transfers (anyCap) and 300 log-read calls (anyMaxCalls); past a cap the map is labelled 'top holders only' or 'unavailable'. Listed DeepCore tokens keep a 15,000-transfer rebuild cap.",
-      "Limits for non-listed tokens: 5 new maps per IP per minute, 30 per minute across all IPs, 2 built at once; address checks 8 per IP per minute and 60 per minute overall. Maps already built are free.",
-      "Launch checks and the health score stay limited to DeepCore launches and launchpads in the registry; a plain token gets holders, clusters and concentration.",
-      "GET /api/holders/sources reports per chain whether any token maps with full history, top holders or not yet; the /holders page shows the same as chips.",
-      "A map still being read returns a progress value (0 to 1) and the page asks again every 8 seconds."
+      "Chains in HOLDER_CHAINS (server/holders.mjs): Robinhood Chain (4663), BNB Chain (56), Base (8453), HyperEVM (999) and Solana.",
+      "An address is probed before anything is built: an ERC-20 must answer decimals() and totalSupply(); on Solana it must be a mint. With no chain given, every supported chain is checked at once.",
+      "Limits for non-listed tokens (ANY in server/holders-any.mjs): 5 new maps per IP per minute, 30 a minute across all IPs, 2 built at once; address probes 8 per IP per minute and 60 a minute overall. Maps already built are free.",
+      "Launch checks and the Launch Health score stay limited to DeepCore launches and launchpads in the registry; a plain token gets holders, clusters and concentration.",
+      "GET /api/holders/sources reports per chain whether tokens map with full history, as top holders only, or not yet."
     ],
     url: "https://gullylabs.xyz/holders",
     source: [
-      "website:feat/holder-map-any-token:server/holders-any.mjs",
-      "website:feat/holder-map-any-token:server/holders.mjs",
-      "website:feat/holder-map-any-token:server/holders-logs.mjs",
-      "website:feat/holder-map-any-token:src/pages/HoldersLanding.tsx",
-      "website:feat/holder-map-any-token:src/docs/pages/HolderMapDocs.tsx",
-      "website:feat/holder-map-any-token:src/lib/holders.ts"
+      "website:server/holders-any.mjs",
+      "website:server/holders.mjs",
+      "website:src/pages/HoldersLanding.tsx",
+      "website:src/docs/pages/HolderMapDocs.tsx"
     ]
   },
   {
-    id: "holder-map-launchpad-detection",
+    id: "holder-map-launchpad-registry",
     product: "Holder Map",
-    name: "Launchpad launch detection (Peddles, PeddleSwap)",
-    status: "building",
+    name: "Launchpad registry (Peddles, PeddleSwap)",
+    status: "live",
     summary: "A registry of launchpads lets the Holder Map recognise a token as a launch from a known launchpad. Peddles and PeddleSwap are the first two entries.",
     facts: [
-      "Peddles: Robinhood Chain 4663, Base 8453, BNB Chain 56; looked up via api.peddles.xyz (/api/v1/tokens/:chainId/:token, kind LAUNCH) with the PoolRegistered fee-hook event as fallback.",
-      "PeddleSwap: Robinhood Chain 4663 (api.peddleswap.xyz) and Base 8453 (api-base.peddleswap.xyz); looked up via /v1/launches/:token.",
-      "Positive results are cached for a day, 'not a launch' for 10 minutes; calls time out at 6 s, 4 lookups at a time, 120 uncached lookups a minute.",
-      "The registry is read-only and an unknown or unreachable result degrades to a generic token map. Wiring into the map endpoint (knownLaunch) is in feat/holder-map-any-token; the launchpads branch adds only the module and tests."
-    ],
-    url: "https://gullylabs.xyz/holders",
-    source: [
-      "website:feat/holder-map-launchpads:server/holders-launchpads.mjs",
-      "website:feat/holder-map-launchpads:scripts/test-launchpads.mjs",
-      "website:feat/holder-map-integrations:server/holders-launchpads.mjs",
-      "website:feat/holder-map-any-token:server/holders.mjs"
-    ]
-  },
-  {
-    id: "holder-map-integrate-docs",
-    product: "Holder Map",
-    name: "Integrate the Holder Map: docs and launchpad partner guide",
-    status: "building",
-    summary: "A new docs page, 'Integrate the Holder Map', explains the embed, the iframe, the public API and the share card, and invites launchpads to be listed. A partner guide describes what a launchpad must supply.",
-    facts: [
-      "New docs page slug holder-map-integrate, in the Products group, with sections: overview, embed, frame, API, response, card, SDK, launchpads.",
-      "Embed: a div with data-gully-widget=\"holders\", data-chain (robinhood|bsc|base|hyperevm|solana), data-token and data-height (360 to 2000, default 760), plus widget.js; a 'Powered by Gully Labs' credit shows on the free embed.",
-      "API: GET /api/holders/:chain/:token (CORS open, no key to start), /:token.csv (needs a plan that includes it, otherwise 403), /card.png (1200 x 630 share card, free).",
-      "Partner guide ops/LAUNCHPAD-INTEGRATION.md: a launchpad supplies either a token API (404 when not theirs) or a factory event; at most 120 calls a minute, 6 s timeout, a day's cache; contact hello@gullylabs.xyz.",
-      "Part 1 of the kit: the registry is not yet wired into the map in this branch (only in feat/holder-map-any-token)."
+      "Peddles: Robinhood Chain 4663, Base 8453 and BNB Chain 56, looked up through its API with the PoolRegistered fee-hook event as a fallback.",
+      "PeddleSwap: Robinhood Chain 4663 and Base 8453, looked up through its launches API.",
+      "Lookups time out at 6 s (HTTP_MS), run at most 4 at a time (MAX_INFLIGHT) and 120 uncached lookups a minute (MAX_PER_MIN). Positive results are cached for 24 hours and \"not a launch\" for 10 minutes.",
+      "An unknown or unreachable launchpad degrades to a generic token map."
     ],
     url: "https://docs.gullylabs.xyz/holder-map-integrate",
     source: [
-      "website:feat/holder-map-integrations:src/docs/pages/HolderMapIntegrateDocs.tsx",
-      "website:feat/holder-map-integrations:src/docs/nav.ts",
-      "website:feat/holder-map-integrations:src/docs/routes.tsx",
-      "website:feat/holder-map-integrations:ops/LAUNCHPAD-INTEGRATION.md",
-      "website:feat/holder-map-integrations:server/holders-launchpads.mjs"
+      "website:server/holders-launchpads.mjs",
+      "website:scripts/test-launchpads.mjs",
+      "website:ops/LAUNCHPAD-INTEGRATION.md"
+    ]
+  },
+  {
+    id: "holder-map-integrate",
+    product: "Holder Map",
+    name: "Integrate the Holder Map",
+    status: "live",
+    summary: "A docs page and a partner guide that explain the embed, the iframe, the public API and the share card, and invite launchpads to be listed.",
+    facts: [
+      "Docs page: holder-map-integrate, in the Products group of docs.gullylabs.xyz.",
+      "Partner guide ops/LAUNCHPAD-INTEGRATION.md: a launchpad supplies either a token API (404 when the token is not theirs) or a factory event.",
+      "Public API: GET /api/holders/:chain/:token, the .csv export (plan-gated) and /card.png (1200 x 630)."
+    ],
+    url: "https://docs.gullylabs.xyz/holder-map-integrate",
+    source: [
+      "website:src/docs/pages/HolderMapIntegrateDocs.tsx",
+      "website:ops/LAUNCHPAD-INTEGRATION.md",
+      "website:src/docs/nav.ts"
+    ]
+  },
+  {
+    id: "holder-map-badge",
+    product: "Holder Map",
+    name: "Holder Map badge",
+    status: "live",
+    summary: "A small SVG badge for a token showing its launch health or the number of bundles, built only from cached map data.",
+    facts: [
+      "GET /api/holders/:chain/:token/badge.svg never builds a map; until one is cached it shows a neutral \"Holder Map\" pill."
+    ],
+    url: "https://docs.gullylabs.xyz/badges",
+    source: [
+      "website:server/holders-partners.mjs",
+      "website:server/server.mjs"
+    ]
+  },
+  {
+    id: "badges-family",
+    product: "Brand",
+    name: "Gully Labs badges",
+    status: "live",
+    summary: "One family of embeddable SVG badges for README files and project sites: Gully Score, Holder Map, Gully Security and Built by Gully Labs.",
+    facts: [
+      "Sizes S (20 px tall), M (28) and L (36); themes dark and light; tones brand, neutral, good and warn (server/badges.mjs).",
+      "Built-by badge: /badges/built-by-gully-labs.svg for our own projects; example faces for the docs gallery are fixed values, never real data.",
+      "Letters are outlined paths, so a badge needs no font; PNG output is rendered with resvg.",
+      "The Gully Security badge exists only for a published report."
+    ],
+    url: "https://docs.gullylabs.xyz/badges",
+    source: [
+      "website:server/badges.mjs",
+      "website:server/badge-routes.mjs",
+      "website:src/docs/pages/BadgesDocs.tsx"
+    ]
+  },
+  {
+    id: "telegram-inline-radar",
+    product: "Telegram bot",
+    name: "Inline Holder Map in any chat",
+    status: "live",
+    summary: "Typing @GullyLabsBot followed by a token address or ticker in any Telegram chat answers with the Holder Map share card, a short caption of measured facts and buttons.",
+    facts: [
+      "Only a valid address (0x or a Solana mint) or a tracked ticker does any work; anything else gets no results.",
+      "At most INLINE_WORK_PER_MIN (12) lookups that do work per Telegram user a minute; cached answers are free.",
+      "The News channel gate does not apply to inline results, which carry a Join @GullyLabsNews button.",
+      "Captions state facts only, never a verdict."
+    ],
+    url: "https://docs.gullylabs.xyz/telegram",
+    source: [
+      "website:server/telegram-inline.mjs",
+      "website:scripts/test-telegram.mjs"
+    ]
+  },
+  {
+    id: "telegram-launch-radar",
+    product: "Telegram bot",
+    name: "Daily Launch radar post",
+    status: "live",
+    summary: "A daily post for the @GullyLabsNews channel naming the cleanest and the most concentrated new launches, from maps the Holder Map has already built.",
+    facts: [
+      "One draft a day (default 15:00 UTC, TELEGRAM_RADAR_TIME); it is posted only when an admin approves it, unless TELEGRAM_RADAR_AUTOPOST=1 (default off).",
+      "Posts carry measured facts and a \"signals, not verdicts\" note, never an accusation."
+    ],
+    url: "https://t.me/GullyLabsNews",
+    source: [
+      "website:server/launch-radar.mjs",
+      "website:scripts/test-launch-radar.mjs"
+    ]
+  },
+  {
+    id: "ecosystem-page",
+    product: "Ecosystem",
+    name: "Ecosystem and partners pages",
+    status: "live",
+    summary: "Public pages that list the third-party data and infrastructure Gully Labs relies on, and what launchpads, wallets, explorers and chains get from a partnership.",
+    facts: [
+      "Every integration on /ecosystem names the file that proves it (src/content/ecosystem.ts); plans are not listed as integrations.",
+      "GET /api/ecosystem returns the chains and the launchpad registry; POST /api/ecosystem/submissions stores a \"List your launchpad\" request, rate limited and with a honeypot.",
+      "A submission is only stored; nothing is listed automatically, and an admin approves by hand."
+    ],
+    url: "https://gullylabs.xyz/ecosystem",
+    source: [
+      "website:server/ecosystem.mjs",
+      "website:src/content/ecosystem.ts",
+      "website:src/pages/Ecosystem.tsx",
+      "website:src/pages/Partners.tsx"
+    ]
+  },
+  {
+    id: "chains-offer",
+    product: "Gully Chains",
+    name: "Gully Chains offer and waitlist",
+    status: "live",
+    summary: "A public page with the managed-chain offer, its prices read from config, and a waitlist form. No Gully Chains network is running yet; a testnet is coming.",
+    facts: [
+      "Testnet: free for freeDays 30, then a monthly price that is not set (monthlyUsd null, shown as TBA) (CHAINS.testnet in server/chains-plans.mjs).",
+      "Managed mainnet: from $3,500 a month (fromUsdPerMonth) plus 5% of the sequencer's profit (sequencerProfitPct), with data availability at cost.",
+      "Add-on prices are null (TBA) for the paymaster, pay gas in USDC, Gully Pay on your chain, Hyperlane setup and DeepCore; prices before launch may change.",
+      "Stack: Arbitrum Orbit (Nitro), settlement to Arbitrum, Hyperlane, Chain Kit explorer, Gully Bridge, faucet and RPC.",
+      "GET /api/chains/plans serves the config; POST /api/chains/waitlist takes the form with a per-IP rate limit and a honeypot."
+    ],
+    url: "https://gullylabs.xyz/chains",
+    source: [
+      "website:server/chains-plans.mjs",
+      "website:server/chains-waitlist.mjs",
+      "website:src/pages/Chains.tsx",
+      "website:src/pages/chains/Estimator.tsx"
+    ]
+  },
+  {
+    id: "chains-testnet-services",
+    product: "Gully Chains",
+    name: "Included services on the testnet",
+    status: "testnet",
+    summary: "The Chain Kit explorer, Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.",
+    facts: [
+      "SERVICES in server/chains-plans.mjs gives chainkit, insight, pay and hyperlane the status testnet.",
+      "Chain Kit and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons.",
+      "The page says nothing about Gully Chains is live yet."
+    ],
+    url: "https://gullylabs.xyz/chains",
+    source: [
+      "website:server/chains-plans.mjs",
+      "website:src/pages/Chains.tsx"
+    ]
+  },
+  {
+    id: "chains-account-abstraction",
+    product: "Gully Chains",
+    name: "Account abstraction and sponsored gas",
+    status: "building",
+    summary: "An ERC-4337 bundler and EntryPoint with EIP-7702-ready smart accounts, plus a usage-billed paymaster so users can transact without holding gas. Both are coming with the testnet.",
+    facts: [
+      "Account abstraction has status with-testnet and is included in the managed price; the sponsored gas paymaster is an add-on billed by usage, price TBA (server/chains-plans.mjs)."
+    ],
+    url: "https://gullylabs.xyz/chains",
+    source: [
+      "website:server/chains-plans.mjs"
+    ]
+  },
+  {
+    id: "chains-pay-gas-usdc",
+    product: "Gully Chains",
+    name: "Pay gas in USDC",
+    status: "planned",
+    summary: "Letting users pay fees in USDC instead of the chain token is planned as a monthly add-on. It is not built.",
+    facts: [
+      "usdc-gas has status planned and a null price in server/chains-plans.mjs."
+    ],
+    url: "https://gullylabs.xyz/chains",
+    source: [
+      "website:server/chains-plans.mjs"
+    ]
+  },
+  {
+    id: "chains-deepcore-day-one",
+    product: "Gully Chains",
+    name: "DeepCore built into client chains",
+    status: "planned",
+    summary: "Putting the DeepCore launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built.",
+    facts: [
+      "deepcore has status planned and model \"revenue share on launch fees\" in server/chains-plans.mjs; price TBA."
+    ],
+    url: "https://gullylabs.xyz/chains",
+    source: [
+      "website:server/chains-plans.mjs"
     ]
   },
   {
