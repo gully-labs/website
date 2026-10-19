@@ -107,7 +107,9 @@ const bc = await import('../server/telegram-broadcast.mjs')
 const users = await import('../server/telegram-users.mjs')
 ch.stopChannel()
 bc.stopBroadcasts() // the test drives the sender by hand
-await new Promise((r) => setTimeout(r, 400))
+// Startup (setWebhook, setMyCommands x3, setChatMenuButton) runs in the background: wait for its last call, with a
+// deadline, instead of guessing how long it takes on a busy machine.
+for (const deadline = Date.now() + 30_000; Date.now() < deadline && !calls.some((c) => c.method === 'setChatMenuButton'); ) await new Promise((r) => setTimeout(r, 25))
 
 const admin = makeClient(BASE)
 const A = (p, body) => (body === undefined ? admin.call(p, { auth: ADMIN }) : admin.call(p, { method: 'POST', body, auth: ADMIN }))
@@ -146,7 +148,9 @@ try {
   check('startup: private chats get start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop', JSON.stringify(scoped('all_private_chats')) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'help', 'stop']))
   check('startup: groups get gap, top, launches, help only', JSON.stringify(scoped('all_group_chats')) === JSON.stringify(['gap', 'top', 'launches', 'help']))
   check('startup: no scan command anywhere', !cmdCalls.some((c) => c.body.commands.some((x) => x.command === 'scan')))
-  check('startup: the Menu button lists the commands (setChatMenuButton type commands)', calls.find((c) => c.method === 'setChatMenuButton')?.body.menu_button?.type === 'commands')
+  const menuAt = calls.findIndex((c) => c.method === 'setChatMenuButton')
+  const lastCmdAt = calls.findLastIndex((c) => c.method === 'setMyCommands')
+  check('startup: the Menu button lists the commands (setChatMenuButton type commands), set after every setMyCommands', calls[menuAt]?.body.menu_button?.type === 'commands' && lastCmdAt >= 0 && lastCmdAt < menuAt)
   check('startup: command descriptions are plain words led by an emoji', cmdCalls.flatMap((c) => c.body.commands).every((x) => /^\p{Extended_Pictographic}/u.test(x.description) && !JARGON.test(x.description) && x.description.length <= 60))
 
   /* ------------------------------------------------------- bot users --- */

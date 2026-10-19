@@ -50,7 +50,10 @@ import { announceOffBtn, esc, SITE } from './telegram-ui.mjs'
 
 const FILE = () => path.join(DATA_DIR, 'broadcasts.json')
 export const RATE_PER_S = 25
-const BATCH_MS = 1_100
+// The pause after a batch has FINISHED (every response in), not after it started: under load a batch's requests can
+// reach Telegram well after it began, and a pause counted from the start let the next batch land inside the same
+// second (27-30 sends in a second on the wire). Counted from the end, no second can hold two batches.
+const BATCH_MS = 1_050
 const DAY_MS = 24 * 3_600_000
 const DELETE_WINDOW_MS = 48 * 3_600_000
 const MISSED_MS = 6 * 3_600_000
@@ -239,15 +242,13 @@ async function runLoop(b) {
     let size = b.media?.banner && !channelBanner().fileId ? 1 : RATE_PER_S
     if (haltAfter !== null) size = Math.min(size, haltAfter)
     const batch = pending.slice(0, size)
-    const t0 = Date.now()
     for (const i of batch) b.recipients[i].s = 'inflight'
     save()
     await Promise.all(batch.map((i) => sendOne(b, b.recipients[i], i).catch((e) => Object.assign(b.recipients[i], { s: 'failed', e: String(e?.message ?? e).slice(0, 120), at: iso() }))))
     if (haltAfter !== null) haltAfter -= batch.length
     save()
     // A batch a second, with a small margin so network jitter never puts two batches in one second.
-    const wait = BATCH_MS - (Date.now() - t0)
-    if (wait > 0 && b.recipients.some((r) => r.s === 'pending')) await sleep(wait)
+    if (b.recipients.some((r) => r.s === 'pending')) await sleep(BATCH_MS)
   }
 }
 
@@ -278,7 +279,6 @@ async function deleteForEveryone(b) {
   let ok = 0
   let failed = 0
   for (let i = 0; i < list.length; i += RATE_PER_S) {
-    const t0 = Date.now()
     await Promise.all(
       list.slice(i, i + RATE_PER_S).map(async (r) => {
         const res = await sendToChannel(r.c, 'deleteMessage', { message_id: r.m })
@@ -287,8 +287,7 @@ async function deleteForEveryone(b) {
       }),
     )
     save()
-    const wait = BATCH_MS - (Date.now() - t0)
-    if (wait > 0 && i + RATE_PER_S < list.length) await sleep(wait)
+    if (i + RATE_PER_S < list.length) await sleep(BATCH_MS)
   }
   b.status = 'deleted'
   b.deletedAt = iso()
