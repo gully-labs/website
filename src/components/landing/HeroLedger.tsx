@@ -34,16 +34,11 @@ function Kpi({ label, short, span, value, cover, of, hint, state }: { label: str
       <b className={`font-display text-[30px] leading-none font-bold max-[459px]:text-[22px] ${shown ? 'text-ink' : 'text-dim'}`}>
         {shown ? <Figure value={value} /> : '—'}
       </b>
-      <span className="font-mono text-[11px] leading-[1.3] break-words text-faint">
+      <span className="font-mono text-[11px] leading-[1.3] break-words text-faint" title={hint || undefined}>
         {state === 'loading' ? 'reading…' : state === 'error' ? 'could not be read' : cover?.length ? (
           <>
             {span && <span className="max-[459px]:hidden">{span} · </span>}
-            {cover.length} of {projects.length}<span className="max-[459px]:hidden"> venues</span>
-      <span className="truncate font-mono text-[11px] text-faint" title={hint || undefined}>
-        {state === 'loading' ? 'reading…' : state === 'error' ? 'could not be read' : cover?.length ? (
-          <>
-            {span && <span className="max-[459px]:hidden">{span} · </span>}
-            {cover.length}/{of} venues
+            {cover.length} of {of}<span className="max-[459px]:hidden"> venues</span>
           </>
         ) : (
           'not published'
