@@ -364,3 +364,20 @@ test('logoCoverage reports per chain and source', async () => {
   assert.deepEqual(c.chains.base.sources, { deepcore: 1, coingecko: 1 })
   assert.deepEqual(c.sources, { deepcore: 1, coingecko: 1 })
 })
+
+/* ------------------------------------------------------- integration logos --- */
+
+test('every file in public/integrations has a SOURCES.json entry with its origin and terms', () => {
+  const dir = path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')), '..', 'public', 'integrations')
+  const sources = JSON.parse(fs.readFileSync(path.join(dir, 'SOURCES.json'), 'utf8'))
+  const listed = new Map(Object.values(sources).map((s) => [s.file, s]))
+  const files = fs.readdirSync(dir).filter((f) => f !== 'SOURCES.json')
+  assert.ok(files.length >= 20, `expected the integration logos, found ${files.length}`)
+  for (const f of files) {
+    const s = listed.get(`/integrations/${f}`)
+    assert.ok(s, `public/integrations/${f} has no SOURCES.json entry`)
+    assert.match(s.from, /^https:\/\//, `${f}: from must be a URL`)
+    assert.ok(s.terms && s.fetchedAt, `${f}: terms and fetchedAt are required`)
+  }
+  for (const file of listed.keys()) assert.ok(files.includes(file.replace('/integrations/', '')), `SOURCES.json lists ${file} but the file is missing`)
+})

@@ -5,9 +5,11 @@
 
 import { DOCS_URL } from '../site-host'
 
-export type IntegrationKind = 'Data' | 'Swaps & payments' | 'Security' | 'Wallets & infra'
+export type IntegrationKind = 'Data' | 'Swaps & payments' | 'Security' | 'Wallets & infra' | 'Analytics'
 
 export interface Integration {
+  /** The key of its logo in src/components/logos/registry.ts (INTEGRATIONS) and of its file in public/integrations. */
+  id: string
   name: string
   kind: IntegrationKind
   /** What Gully Labs uses it for, in a sentence. */
@@ -18,25 +20,29 @@ export interface Integration {
 }
 
 export const integrations: Integration[] = [
-  { name: 'Chainlink', kind: 'Data', use: 'Fair prices for every tokenised stock, read on chain with latestRoundData().', where: 'server/tracker.mjs', href: 'https://chain.link/' },
-  { name: 'DefiLlama', kind: 'Data', use: 'All-time and fee figures for Peddles, PeddleQuest and DeepCore where a venue has no dollar figure of its own.', where: 'server/stats.mjs', href: 'https://defillama.com/' },
-  { name: 'DexScreener', kind: 'Data', use: 'On-chain price and pool depth of each stock token in its deepest pool.', where: 'server/tracker.mjs', href: 'https://dexscreener.com/' },
-  { name: 'GeckoTerminal', kind: 'Data', use: 'The second pool-price source, used when DexScreener refuses.', where: 'server/tracker.mjs', href: 'https://www.geckoterminal.com/' },
-  { name: 'CoinGecko', kind: 'Data', use: 'Token logos, by contract address.', where: 'server/token-logos.mjs', href: 'https://www.coingecko.com/' },
-  { name: 'Blockscout', kind: 'Data', use: 'Top holders and address name tags for the Holder Map, and the explorer Chain Kit deploys.', where: 'server/holders.mjs', href: 'https://www.blockscout.com/' },
-  { name: 'Moralis', kind: 'Data', use: 'Top holders and the latest transfers for tokens on BNB Chain.', where: 'server/holders.mjs', href: 'https://moralis.com/' },
-  { name: 'LI.FI', kind: 'Swaps & payments', use: 'Swaps and bridging on the stock pages (Robinhood Chain and BNB Chain).', where: 'src/components/swap/SwapWidget.tsx', href: 'https://li.fi/' },
-  { name: 'Jupiter', kind: 'Swaps & payments', use: 'Swaps on Solana stock pages, through our own proxy.', where: 'server/jupiter.mjs', href: 'https://jup.ag/' },
-  { name: 'Request Network', kind: 'Swaps & payments', use: 'Its ERC20FeeProxy contract pays a merchant and the Gully Pay fee in one transaction.', where: 'server/payments.mjs', href: 'https://request.network/' },
-  { name: 'Safe', kind: 'Swaps & payments', use: 'One-click deployment of the treasury Safe at the same address on each chain.', where: 'server/safe-deploy.mjs', href: 'https://safe.global/' },
-  { name: 'Sourcify and Etherscan', kind: 'Security', use: 'Verified source for the contract an AI Security Scan reads.', where: 'server/security/chains.mjs', href: 'https://sourcify.dev/' },
-  { name: 'Slither, Aderyn and Semgrep', kind: 'Security', use: 'The static-analysis tools the AI Security Scan runs.', where: 'server/security/tools.mjs', href: 'https://github.com/crytic/slither' },
-  { name: 'dRPC', kind: 'Wallets & infra', use: 'The primary RPC for the chains we read, with public nodes behind it.', where: 'server/payments.mjs', href: 'https://drpc.org/' },
-  { name: 'RainbowKit and WalletConnect', kind: 'Wallets & infra', use: 'Wallet connection in the app, the swap and Gully Pay.', where: 'src/pages/developers/walletConfig.ts', href: 'https://www.rainbowkit.com/' },
-  { name: 'Umami', kind: 'Wallets & infra', use: 'The open-source engine under Gully Analytics (our fork).', where: 'server/analytics.mjs', href: 'https://umami.is/' },
+  { id: 'chainlink', name: 'Chainlink', kind: 'Data', use: 'Fair prices for every tokenised stock, read on chain.', where: 'server/tracker.mjs', href: 'https://chain.link/' },
+  { id: 'defillama', name: 'DefiLlama', kind: 'Data', use: 'All-time and fee figures where a venue has no dollar figure of its own.', where: 'server/stats.mjs', href: 'https://defillama.com/' },
+  { id: 'dexscreener', name: 'DexScreener', kind: 'Data', use: 'On-chain price and pool depth of each stock token.', where: 'server/tracker.mjs', href: 'https://dexscreener.com/' },
+  { id: 'geckoterminal', name: 'GeckoTerminal', kind: 'Data', use: 'The second pool-price source, used when DexScreener refuses.', where: 'server/tracker.mjs', href: 'https://www.geckoterminal.com/' },
+  { id: 'coingecko', name: 'CoinGecko', kind: 'Data', use: 'Token logos, by contract address.', where: 'server/token-logos.mjs', href: 'https://www.coingecko.com/' },
+  { id: 'blockscout', name: 'Blockscout', kind: 'Data', use: 'Top holders and address name tags for the Holder Map.', where: 'server/holders.mjs', href: 'https://www.blockscout.com/' },
+  { id: 'moralis', name: 'Moralis', kind: 'Data', use: 'Top holders and latest transfers for tokens on BNB Chain.', where: 'server/holders.mjs', href: 'https://moralis.com/' },
+  { id: 'lifi', name: 'LI.FI', kind: 'Swaps & payments', use: 'Swaps and bridging on the stock pages (Robinhood Chain and BNB Chain).', where: 'src/components/swap/SwapWidget.tsx', href: 'https://li.fi/' },
+  { id: 'jupiter', name: 'Jupiter', kind: 'Swaps & payments', use: 'Swaps on Solana stock pages, through our own proxy.', where: 'server/jupiter.mjs', href: 'https://jup.ag/' },
+  { id: 'request-network', name: 'Request Network', kind: 'Swaps & payments', use: 'Its fee-proxy contract pays a merchant and the Gully Pay fee in one transaction.', where: 'server/payments.mjs', href: 'https://request.network/' },
+  { id: 'safe', name: 'Safe', kind: 'Swaps & payments', use: 'One-click treasury Safe, at the same address on each chain.', where: 'server/safe-deploy.mjs', href: 'https://safe.global/' },
+  { id: 'sourcify', name: 'Sourcify', kind: 'Security', use: 'Verified source for the contract an AI Security Scan reads.', where: 'server/security/chains.mjs', href: 'https://sourcify.dev/' },
+  { id: 'etherscan', name: 'Etherscan', kind: 'Security', use: 'Verified source where Sourcify has none.', where: 'server/security/chains.mjs', href: 'https://etherscan.io/' },
+  { id: 'slither', name: 'Slither', kind: 'Security', use: 'Static analysis in the AI Security Scan (by Trail of Bits).', where: 'server/security/tools.mjs', href: 'https://github.com/crytic/slither' },
+  { id: 'aderyn', name: 'Aderyn', kind: 'Security', use: 'Static analysis in the AI Security Scan (by Cyfrin).', where: 'server/security/tools.mjs', href: 'https://github.com/Cyfrin/aderyn' },
+  { id: 'semgrep', name: 'Semgrep', kind: 'Security', use: 'Rule-based code checks in the AI Security Scan.', where: 'server/security/tools.mjs', href: 'https://semgrep.dev/' },
+  { id: 'drpc', name: 'dRPC', kind: 'Wallets & infra', use: 'The primary RPC for the chains we read, with public nodes behind it.', where: 'server/payments.mjs', href: 'https://drpc.org/' },
+  { id: 'rainbowkit', name: 'RainbowKit', kind: 'Wallets & infra', use: 'The wallet picker in the app, the swap and Gully Pay.', where: 'src/pages/developers/walletConfig.ts', href: 'https://www.rainbowkit.com/' },
+  { id: 'walletconnect', name: 'WalletConnect', kind: 'Wallets & infra', use: 'Connects mobile wallets to the app, the swap and Gully Pay.', where: 'src/pages/developers/walletConfig.ts', href: 'https://walletconnect.com/' },
+  { id: 'umami', name: 'Umami', kind: 'Analytics', use: 'The open-source engine under Gully Analytics (our fork).', where: 'server/analytics.mjs', href: 'https://umami.is/' },
 ]
 
-export const integrationKinds: IntegrationKind[] = ['Data', 'Swaps & payments', 'Security', 'Wallets & infra']
+export const integrationKinds: IntegrationKind[] = ['Data', 'Swaps & payments', 'Security', 'Wallets & infra', 'Analytics']
 
 export type Audience = 'launchpads' | 'wallets' | 'explorers' | 'chains'
 

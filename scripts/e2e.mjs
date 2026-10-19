@@ -2228,8 +2228,32 @@ await step('ecosystem and partners', async () => {
     check(`/ecosystem ${width}: every project has its own card, none combined`, (await page.locator('[data-project]').count()) === 5)
     await page.getByText(/Source: /).first().waitFor()
     check(`/ecosystem ${width}: integrations are listed and labelled as what we use`, (await page.getByRole('heading', { name: 'Integrates with' }).count()) === 1 && (await page.getByText('Chainlink').count()) >= 1 && (await page.getByText(/partner/i).count()) <= 3)
-    await page.getByRole('group', { name: 'Filter by kind' }).getByRole('button', { name: 'SECURITY' }).click()
-    check(`/ecosystem ${width}: the kind filter narrows the list`, (await page.locator('#integrates li').count()) === 2)
+    // Logo-led tiles: every one shows a loaded logo (naturalWidth > 0) or the lettermark, never "[object Object]".
+    const tiles = page.locator('#integrates [data-integration]')
+    const nTiles = await tiles.count()
+    check(`/ecosystem ${width}: 20 integration tiles, grouped by category`, nTiles === 20 && (await page.locator('#integrates [data-kind]').count()) === 5)
+    for (const t of await tiles.all()) await t.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(400)
+    const logos = await page.evaluate(() =>
+      [...document.querySelectorAll('#integrates [data-integration]')].map((li) => {
+        const img = li.querySelector('img')
+        return { id: li.getAttribute('data-integration'), ok: img ? img.complete && img.naturalWidth > 0 : !!li.querySelector('[data-lettermark]') }
+      }),
+    )
+    check(`/ecosystem ${width}: every integration tile has a loaded logo or the lettermark`, logos.every((l) => l.ok), logos.filter((l) => !l.ok).map((l) => l.id).join(', '))
+    check(`/ecosystem ${width}: no "[object Object]" on the page`, !(await page.locator('body').innerText()).includes('[object Object]'))
+    const first = tiles.first()
+    check(`/ecosystem ${width}: tiles link out in a new tab`, (await first.locator('a').getAttribute('target')) === '_blank')
+    await first.getByRole('button', { name: 'In code' }).click()
+    check(`/ecosystem ${width}: "In code" shows the file path`, (await first.getByText('server/tracker.mjs').count()) === 1)
+    const pads = page.locator('#launchpads [data-launchpad]')
+    if (await pads.count()) {
+      check(`/ecosystem ${width}: launchpads show chain names, a Visit link and the ghost tile`, (await page.locator('#launchpads').getByText('Your launchpad here').count()) === 1 && (await pads.first().getByRole('link', { name: /Visit/ }).count()) === 1 && (await pads.first().locator('img').count()) >= 2)
+    }
+    await page.getByRole('group', { name: 'Filter by kind' }).getByRole('button', { name: /^SECURITY/ }).click()
+    await page.waitForTimeout(200)
+    check(`/ecosystem ${width}: the kind filter narrows the list`, (await page.locator('#integrates [data-integration]').count()) === 5)
+    await page.getByRole('group', { name: 'Filter by kind' }).getByRole('button', { name: /^ALL/ }).click()
     await noHorizontalScroll(page, `/ecosystem ${width}`)
     await designAudit(page, `/ecosystem ${width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
