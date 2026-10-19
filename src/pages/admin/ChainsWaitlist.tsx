@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { C } from '../../components/charts/chartPresets'
 import { LiveDayBars } from './DailyChart'
+import { DownloadCsv } from './DownloadCsv'
 import { adminCall } from './payAdmin'
 
 /* Admin: the Gully Chains waitlist (GET /api/admin/chains/waitlist, server/chains-waitlist.mjs). Sign-ups per day for
@@ -52,6 +53,11 @@ export function ChainsWaitlist({ token }: { token: string }) {
         </h2>
         <span className="font-mono text-[12px] text-faint">{rows ? `${rows.length} on the list` : 'the /chains form'}</span>
       </div>
+      {rows && !!rows.length && (
+        <div>
+          <DownloadCsv token={token} path="/api/admin/chains/waitlist?format=csv" filename="chains-waitlist.csv" />
+        </div>
+      )}
       {err && <p className="m-0 font-mono text-[12px] text-error">{err}</p>}
       {!rows && !err && <span className="font-mono text-[12px] text-faint">Loading…</span>}
       {rows && <LiveDayBars days={days} series={[{ key: 'signups', label: 'Sign-ups', color: C.gold }]} height={120} unit="sign-ups" empty="Waitlist sign-ups will draw here" />}

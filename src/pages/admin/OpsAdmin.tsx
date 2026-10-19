@@ -4,6 +4,7 @@ import type { DaySeries } from '../../components/charts/DayBars'
 import { LiveDayBars } from './DailyChart'
 import { C } from '../../components/charts/chartPresets'
 import { adminCall } from './payAdmin'
+import { DownloadCsv } from './DownloadCsv'
 
 /* Admin views over data the app already keeps: every alert and security monitor across accounts with the
    webhook delivery log (GET /api/admin/alerts), workspaces with teams (GET /api/admin/workspaces), and Chain
@@ -477,6 +478,10 @@ export function ChainKitAdmin({ token }: { token: string }) {
       {!data && !err && <span className={small}>Loading…</span>}
       {data && (
         <>
+          <div className="flex flex-wrap gap-2">
+            {!!data.requests.length && <DownloadCsv token={token} path="/api/admin/chain-kit?format=csv&list=requests" filename="chain-kit-waitlist.csv" />}
+            {!!data.waitlist.length && <DownloadCsv token={token} path="/api/admin/chain-kit?format=csv&list=waitlist" filename="devnet-waitlist.csv" />}
+          </div>
           <Daily days={days} series={KIT_SERIES} unit="sign-ups" empty="No request or waitlist sign-up in the last 30 days." />
           <div className="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1">
             <div className="flex min-w-0 flex-col gap-2">

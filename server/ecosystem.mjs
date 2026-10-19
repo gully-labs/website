@@ -18,6 +18,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { clientIp, DATA_DIR, json } from './http.mjs'
 import { HOLDER_CHAINS } from './holders.mjs'
+import { notifyIntake, sendCsv, toCsv } from './intake-notify.mjs'
 
 const FILE = () => path.join(DATA_DIR, 'ecosystem-submissions.json')
 export const MAX_BODY = 6_000
@@ -210,13 +211,35 @@ export async function handleEcosystem(req, res, url) {
   d.submissions.push({ id: `es_${crypto.randomBytes(9).toString('base64url')}`, ...v.value, status: 'pending', createdAt: new Date().toISOString(), decidedAt: null })
   if (d.submissions.length > MAX_STORED) d.submissions = [...d.submissions.filter((s) => s.status === 'pending'), ...d.submissions.filter((s) => s.status !== 'pending').slice(-(MAX_STORED - MAX_PENDING))]
   write(d)
+  const x = v.value
+  void notifyIntake({
+    kind: 'ecosystem',
+    title: `New launchpad submission: ${unesc(x.name)}`,
+    fields: [['Website', x.url], ['Contact', unesc(x.contact)], ['Chains', x.chains.join(', ')], ['Factory', x.factory], ['Event', x.eventSignature && unesc(x.eventSignature)], ['Note', unesc(x.note)]],
+    contact: unesc(x.contact),
+  })
   return json(res, 200, { ok: true }), true
 }
 
 /** Admin routes (the caller has already checked the admin token): list, approve, reject. */
+const CSV_COLUMNS = [
+  ['submitted_at', (s) => s.createdAt],
+  ['status', (s) => s.status],
+  ['name', (s) => unesc(s.name)],
+  ['website', (s) => s.url],
+  ['contact', (s) => unesc(s.contact)],
+  ['chains', (s) => (s.chains ?? []).join(' ')],
+  ['factory', (s) => s.factory],
+  ['creation_event', (s) => s.eventSignature && unesc(s.eventSignature)],
+  ['lookup_url', (s) => s.lookupUrl],
+  ['note', (s) => unesc(s.note)],
+  ['decided_at', (s) => s.decidedAt],
+]
+
 export async function handleEcosystemAdmin(req, res) {
   if (req.method === 'GET') {
     const submissions = listSubmissions()
+    if (new URL(req.url, 'http://x').searchParams.get('format') === 'csv') return sendCsv(res, 'ecosystem-submissions.csv', toCsv(CSV_COLUMNS, submissions))
     const count = (st) => submissions.filter((s) => s.status === st).length
     return json(res, 200, { submissions, counts: { pending: count('pending'), approved: count('approved'), rejected: count('rejected') } }), true
   }

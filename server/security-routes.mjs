@@ -47,11 +47,14 @@ import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { ASSET_IDS } from './payments.mjs'
 import { planOf, SECURITY, treasury } from './plans.mjs'
 import { addEnquiry, randomToken } from './store.mjs'
-import { sendAdminTelegram } from './telegram.mjs'
+import { notifyIntake } from './intake-notify.mjs'
 
 const UPLOADS = path.join(DATA_DIR, 'security-uploads')
 const INVOICE_TTL_MS = 7 * 86_400_000
 const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,24}$/
+/** Every stored review request, oldest first (the daily digest counts them). */
+export const securityReviewRows = () => reviews()
+
 export const REVIEW_STATUSES = ['new', 'contacted', 'quoted', 'won', 'declined', 'closed']
 const ADMIN_ROLES = ['owner', 'admin']
 
@@ -588,10 +591,12 @@ export async function handleSecurityPublic(req, res, url) {
     const label = review.tier === 'audit' ? 'Audit' : 'Security Review'
     // The existing admin inbox (enquiries) and the operators' Telegram chat both hear about it.
     addEnquiry({ name: review.name, email: review.email, message: `${label} request for ${review.project}${review.company ? ` (${review.company})` : ''}.\n\n${review.scope}${review.repo ? `\n\nRepository: ${review.repo}` : ''}${review.address ? `\nContract: ${review.address}${review.chain ? ` on ${review.chain}` : ''}` : ''}${review.timeline ? `\nTimeline: ${review.timeline}` : ''}`, types: [label], budget: review.budget ?? '', securityReviewId: review.id })
-    sendAdminTelegram(`New ${label} request: ${review.project} from ${review.name} <${review.email}>. Open the admin Security card.`).then(
-      (t) => t.ok || /not set|not configured/.test(t.error ?? '') || console.error('security review telegram:', t.error),
-      () => {},
-    )
+    void notifyIntake({
+      kind: 'security',
+      title: `New ${label} request: ${review.project}`,
+      fields: [['From', review.name], ['Email', review.email], ['Company', review.company], ['Tier', review.tier], ['Budget', review.budget], ['Timeline', review.timeline], ['Contract', review.address && `${review.address}${review.chain ? ` on ${review.chain}` : ''}`], ['Repository', review.repo], ['Scope', review.scope]],
+      contact: review.email,
+    })
     return json(res, 201, { request: { id: review.id, tier: review.tier, status: review.status } }), true
   }
 

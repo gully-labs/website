@@ -11,6 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { publicChains, WAITLIST_CHOICES } from './chains-plans.mjs'
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
+import { decodeEntities, notifyIntake, sendCsv, toCsv } from './intake-notify.mjs'
 
 const MAX_BODY = 8_000
 const MAX_ROWS = 5_000
@@ -79,9 +80,26 @@ export function readEntry(b) {
   return { ok: true, row: { project, contact: clean(contact, 254), useCase, scale, gasToken, da, wantsAa, wantsDeepcore, notes: clean(b?.notes, 2000) } }
 }
 
-/** GET /api/admin/chains/waitlist: newest first, as stored (escaped). The caller has already checked the bearer token. */
+/** Every stored row, oldest first (the daily digest counts them). */
+export const waitlistRows = () => load()
+
+const CSV_COLUMNS = [
+  ['signed_up_at', (r) => r.at],
+  ['project', (r) => decodeEntities(r.project)],
+  ['contact', (r) => decodeEntities(r.contact)],
+  ['use_case', (r) => r.useCase],
+  ['scale', (r) => r.scale],
+  ['gas_token', (r) => r.gasToken],
+  ['data_availability', (r) => r.da],
+  ['wants_account_abstraction', (r) => r.wantsAa],
+  ['wants_deepcore', (r) => r.wantsDeepcore],
+  ['notes', (r) => decodeEntities(r.notes)],
+]
+
+/** GET /api/admin/chains/waitlist (?format=csv for a download): newest first, as stored (escaped). The caller has already checked the bearer token. */
 export function handleChainsAdmin(req, res) {
   if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+  if (new URL(req.url, 'http://x').searchParams.get('format') === 'csv') return sendCsv(res, 'chains-waitlist.csv', toCsv(CSV_COLUMNS, [...load()].reverse()))
   const list = [...load()].reverse()
   return json(res, 200, { total: list.length, rows: list }), true
 }
@@ -112,6 +130,14 @@ export async function handleChains(req, res, url) {
     } catch {
       /* kept in memory */
     }
+    // Tell the operators (and thank the submitter when they are on the bot); never delays or fails the sign-up.
+    const x = r.row
+    void notifyIntake({
+      kind: 'chains-waitlist',
+      title: `New Gully Chains waitlist sign-up: ${decodeEntities(x.project)}`,
+      fields: [['Contact', decodeEntities(x.contact)], ['Use case', x.useCase], ['Scale', x.scale], ['Gas token', x.gasToken], ['DA', x.da], ['Account abstraction', x.wantsAa], ['DeepCore', x.wantsDeepcore], ['Notes', decodeEntities(x.notes)]],
+      contact: decodeEntities(x.contact),
+    })
     return json(res, 201, { ok: true, alreadyOnList: false }), true
   }
   return false

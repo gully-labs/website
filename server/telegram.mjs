@@ -457,6 +457,38 @@ ${esc(String(text ?? ''))}`)
   }
 }
 
+/**
+ * An already-built HTML message (the caller escaped every dynamic piece) to the operators' chat. Used by the intake
+ * notifier (intake-notify.mjs). Never throws.
+ * @returns {Promise<{ ok: boolean, status: number | null, error: string | null }>}
+ */
+export async function sendAdminHtml(html) {
+  if (!telegramEnabled()) return { ok: false, status: null, error: 'Telegram is not configured on the server.' }
+  const chatId = adminChatId()
+  if (!chatId) return { ok: false, status: null, error: 'TELEGRAM_ADMIN_CHAT_ID is not set.' }
+  try {
+    const r = await sendText(chatId, String(html ?? ''))
+    return { ok: r.ok, status: r.status ?? null, error: r.error ?? null }
+  } catch (e) {
+    return { ok: false, status: null, error: redact(e?.message ?? e) }
+  }
+}
+
+/**
+ * An already-built HTML message to a private chat that started the bot (a submitter's confirmation). Never throws.
+ * @returns {Promise<{ ok: boolean, status: number | null, error: string | null }>}
+ */
+export async function sendHtmlToPrivateChat(chatId, html) {
+  if (!telegramEnabled()) return { ok: false, status: null, error: 'Telegram is not configured on the server.' }
+  if (!/^\d{1,20}$/.test(String(chatId ?? ''))) return { ok: false, status: null, error: 'Not a private chat.' }
+  try {
+    const r = await sendText(chatId, String(html ?? ''))
+    return { ok: r.ok, status: r.status ?? null, error: r.error ?? null }
+  } catch (e) {
+    return { ok: false, status: null, error: redact(e?.message ?? e) }
+  }
+}
+
 /* ---------------------------------------------------------- alert sends --- */
 
 /**

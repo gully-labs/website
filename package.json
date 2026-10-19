@@ -54,6 +54,7 @@
     "test:token-logos": "node --test scripts/test-token-logos.mjs",
     "test:chart-kit": "node --test scripts/test-chart-kit.mjs",
     "test:ecosystem": "node scripts/test-ecosystem.mjs",
+    "test:intake-notify": "node scripts/test-intake-notify.mjs",
     "test:contracts": "node scripts/test-contracts.mjs"
   },
   "dependencies": {

@@ -19,6 +19,7 @@ import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.m
 import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
+import { notifyIntake, startIntakeDigest } from './intake-notify.mjs'
 import { clientIp, DATA_DIR, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { handleEcosystem } from './ecosystem.mjs'
@@ -94,9 +95,11 @@ function handleContact(req, res) {
     if (!EMAIL_RE.test(data?.email ?? '') || !Array.isArray(data?.types) || data.types.length === 0) {
       return send(res, 400, JSON.stringify({ ok: false }), { 'Content-Type': 'application/json' })
     }
-    // Saved for the admin dashboard (/admin). Forwarding to email or Telegram is still to be wired.
+    // Saved for the admin dashboard (/admin) and announced to the operators' Telegram chat (intake-notify.mjs).
     const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '')
-    addEnquiry({ name: str(data.name, 120), email: str(data.email, 254), message: str(data.message, 5000), types: data.types.slice(0, 8).map((t) => str(t, 40)), budget: str(data.budget, 40) })
+    const enq = { name: str(data.name, 120), email: str(data.email, 254), message: str(data.message, 5000), types: data.types.slice(0, 8).map((t) => str(t, 40)), budget: str(data.budget, 40) }
+    addEnquiry(enq)
+    void notifyIntake({ kind: 'contact', title: `New contact form message${enq.name ? ` from ${enq.name}` : ''}`, fields: [['Email', enq.email], ['Interested in', enq.types.join(', ')], ['Budget', enq.budget], ['Message', enq.message]], contact: enq.email })
     console.log('New enquiry saved')
     send(res, 200, JSON.stringify({ ok: true }), { 'Content-Type': 'application/json' })
   })
@@ -488,6 +491,8 @@ function startLoops() {
   startAsk()
   // Hourly balance check of every fee-proxy contract (fee-proxy-monitor.mjs): non-zero = a third-party mis-send.
   startFeeProxyMonitor()
+  // Daily intake digest to the operators' Telegram chat at INTAKE_DIGEST_TIME (UTC, default 09:00; intake-notify.mjs).
+  startIntakeDigest()
   // Gully Security's scan queue (server/security): requeues interrupted scans and starts the runner.
   startSecurityEngine()
   startDeepRunner() // Holder Map Deep checks interrupted by a restart run again

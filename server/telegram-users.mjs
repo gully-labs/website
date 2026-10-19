@@ -1,8 +1,9 @@
 // Who has started @GullyLabsBot in a private chat: the audience for admin broadcasts (telegram-broadcast.mjs).
-// Lightweight on purpose: no names, no usernames, no message content.
+// Lightweight on purpose: no names, no message content. The @username (lowercased) is kept only so a form submitter's
+// Telegram handle can be matched to a chat that started the bot (intake-notify.mjs confirmations).
 //
 // Stored in DATA_DIR/bot-users.json (written atomically: .tmp then rename):
-//   users { [chatId]: { firstSeen, lastSeen, lang, linked, follows, followsAt, blocked: null | { at, reason },
+//   users { [chatId]: { firstSeen, lastSeen, lang, username, linked, follows, followsAt, blocked: null | { at, reason },
 //           optedOut: null | iso, source: 'start' | 'link' } }
 //
 // A user is recorded when they send /start in a private chat (and backfilled from the private chats already
@@ -54,6 +55,19 @@ const langOf = (from) => {
   return /^[a-z]{2}$/.test(l) ? l : null
 }
 
+const usernameOf = (from) => {
+  const n = String(from?.username ?? '').toLowerCase()
+  return /^[a-z][a-z0-9_]{4,31}$/.test(n) ? n : null
+}
+
+/** The private chat id of a user who started the bot under this @username (not blocked), or null. */
+export function chatIdOfUsername(handle) {
+  const n = String(handle ?? '').trim().replace(/^@/, '').toLowerCase()
+  if (!n) return null
+  for (const [id, u] of Object.entries(db.users)) if (u.username === n && !u.blocked && isPrivateId(id)) return id
+  return null
+}
+
 /** The stored record of a private chat, or null. */
 export const botUser = (chatId) => db.users[String(chatId)] ?? null
 
@@ -65,6 +79,7 @@ export function recordStart(chatId, from, { linked } = {}) {
   const u = db.users[id] ?? { firstSeen: now, lastSeen: now, lang: null, linked: false, follows: null, followsAt: null, blocked: null, optedOut: null, source: 'start' }
   u.lastSeen = now
   u.lang = langOf(from) ?? u.lang
+  u.username = usernameOf(from) ?? u.username ?? null
   if (linked !== undefined) u.linked = !!linked
   u.blocked = null
   db.users[id] = u
@@ -78,6 +93,7 @@ export function touchUser(chatId, from) {
   if (!u) return null
   u.lastSeen = new Date().toISOString()
   u.lang = langOf(from) ?? u.lang
+  u.username = usernameOf(from) ?? u.username ?? null
   if (u.blocked) u.blocked = null // they wrote to the bot: not blocking it any more
   saveSoon()
   return u

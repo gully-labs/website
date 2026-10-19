@@ -54,6 +54,7 @@ import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests, u
 import { eventFor, noteTelegramConnect, recordEvent, activityPage, syncTelegram } from './activity.mjs'
 import { handleAlerts } from './alerts.mjs'
 import { handleChainsLaunch } from './chains-launch.mjs'
+import { notifyIntake } from './intake-notify.mjs'
 import { handleExport } from './exports.mjs'
 import { handlePartnerRoutes } from './holders-partners.mjs'
 import { handleMerchant } from './merchants.mjs'
@@ -487,9 +488,11 @@ async function chainKitRoutes(req, res, p, post, { user, workspace }) {
     addChainKitRequest({ address: user, workspace, email, chain })
     // Also an enquiry, so the admin dashboard's enquiries list shows it as before.
     addEnquiry({ name: user, email, types: ['Infrastructure'], budget: '', message: `Topic: Chain Kit — waitlist\nChain: ${chain || '(not given)'}\nWorkspace: ${workspace}\nRequested by: ${user}` })
+    void notifyIntake({ kind: 'chain-kit', title: 'New Chain Kit waitlist request', fields: [['Email', email], ['Chain', chain || '(not given)'], ['Workspace', workspace]], contact: email })
     return json(res, 200, view()), true
   }
   const { already } = joinChainsWaitlist({ address: user, workspace, email })
+  if (!already) void notifyIntake({ kind: 'chains-devnet', title: 'New Gully Chains devnet waitlist sign-up', fields: [['Email', email], ['Workspace', workspace]], contact: email })
   return json(res, 200, { ...view(), already }), true
 }
 

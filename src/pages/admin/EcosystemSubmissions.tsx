@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { Segmented } from '../../components/ui/Segmented'
 import { copyWithToast, toastError, toastSuccess } from '../../components/ui/toast'
+import { DownloadCsv } from './DownloadCsv'
 import { adminCall } from './payAdmin'
 import { pillCls } from './ui'
 
@@ -70,6 +71,11 @@ export function EcosystemSubmissions({ token }: { token: string }) {
           options={(['pending', 'approved', 'rejected'] as const).map((k) => ({ id: k, label: `${k.toUpperCase()} ${data?.counts[k] ?? 0}` }))}
         />
       </div>
+      {!!data?.submissions.length && (
+        <div>
+          <DownloadCsv token={token} path="/api/admin/ecosystem/submissions?format=csv" filename="ecosystem-submissions.csv" />
+        </div>
+      )}
       <p className="m-0 text-[13px] text-muted">Approving marks the submission and shows the registry entry to paste by hand. It changes nothing automatically.</p>
       {err && <p className="m-0 text-[14px] text-error">{err}</p>}
       {!data && !err && <p className="m-0 text-[14px] text-muted">Loading…</p>}

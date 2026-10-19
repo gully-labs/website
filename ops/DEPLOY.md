@@ -203,3 +203,22 @@ crashes between deploys. HAProxy then has no healthy server and Cloudflare repor
   against a fake `docker` (legacy, edge and fresh modes, rollback, and the guard refusing a foreign network
   and a bad tag). It has not run against real Docker. Run `--dry-run` on the box first, then the migration
   at a quiet hour.
+
+## Intake notifications (Telegram) and the daily digest
+
+Every sign-up and submission (Gully Chains waitlist, Chain Kit waitlist, devnet waitlist, launchpad submissions, the
+contact form, Security review requests) sends one message to the operators' chat with a link to its admin section
+(`server/intake-notify.mjs`). Honeypot hits and rate-limited or invalid posts send nothing.
+
+- Needs `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_CHAT_ID` (already used by the fee-proxy monitor). Without them it is silent.
+- At most 30 messages per kind per hour (`INTAKE_NOTIFY_PER_HOUR`), then one "N more" summary when the hour ends.
+- Contacts appear only in that private chat; server logs show them masked (`ab***@ex***.com`).
+- Daily digest at `INTAKE_DIGEST_TIME` (UTC, `HH:MM`, default `09:00`): new counts per kind over 24 h plus totals,
+  skipped when nothing is new. The day last sent is kept in `DATA_DIR/intake-notify.json`.
+- Submitter thank-you: only when the contact is a Telegram handle AND that person has started @GullyLabsBot (the bot
+  keeps their lowercased @username in `bot-users.json`). Everyone else gets nothing.
+- CSV exports (admin bearer): `GET /api/admin/chains/waitlist?format=csv`, `/api/admin/ecosystem/submissions?format=csv`,
+  `/api/admin/chain-kit?format=csv&list=requests|waitlist`. Cells starting with `= + - @` get a leading quote.
+
+TODO(email): there is no mail provider, so e-mail confirmations to submitters are NOT sent. Adding one (Resend,
+Postmark or SES) means calling it from `sendConfirmation()` in `server/intake-notify.mjs` for e-mail contacts.

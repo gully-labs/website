@@ -47,7 +47,7 @@
 //   GET  /api/admin/alerts                    every alert and monitor across accounts, and the alert webhook log
 //   GET  /api/admin/workspaces                workspaces with members or open invites
 //   GET/POST /api/admin/ecosystem/submissions  launchpad submissions: list; { id, action: approve|reject } (ecosystem.mjs)
-//   GET  /api/admin/chain-kit                 Chain Kit waitlist entries and the Gully Chains Devnet waitlist
+//   GET  /api/admin/chain-kit                 Chain Kit waitlist entries and the Gully Chains Devnet waitlist (?format=csv&list=requests|waitlist: download)
 //   POST /api/admin/telegram/:address/unlink  unlink an account's Telegram chat (telegram.mjs adminUnlinkTelegram)
 
 import fs from 'node:fs'
@@ -67,6 +67,7 @@ import { handleEcosystemAdmin } from './ecosystem.mjs'
 import { handleSecurityAdmin } from './security-routes.mjs'
 import { handleAdminSafe } from './safe-deploy.mjs'
 import { handleChainsAdmin } from './chains-waitlist.mjs'
+import { sendCsv, toCsv } from './intake-notify.mjs'
 import { planOf, publicPlans, treasury } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
 import { checkFeeProxies, feeProxyView } from './fee-proxy-monitor.mjs'
@@ -430,7 +431,14 @@ export async function handleAdmin(req, res, url) {
   }
   if (p === '/api/admin/chain-kit') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
-    return json(res, 200, chainKitAdmin()), true
+    const kit = chainKitAdmin()
+    if (url.searchParams.get('format') === 'csv') {
+      // ?list=waitlist is the Devnet waitlist; anything else is the Chain Kit waitlist.
+      const devnet = url.searchParams.get('list') === 'waitlist'
+      const cols = [['requested_at', (r) => r.at], ['email', (r) => r.email], ['chain', (r) => r.chain], ['workspace', (r) => r.workspace], ['wallet', (r) => r.address], ['status', (r) => r.status], ['source', (r) => r.via]]
+      return sendCsv(res, devnet ? 'devnet-waitlist.csv' : 'chain-kit-waitlist.csv', toCsv(cols, devnet ? kit.waitlist : kit.requests))
+    }
+    return json(res, 200, kit), true
   }
 
   if (p === '/api/admin/charts') {
