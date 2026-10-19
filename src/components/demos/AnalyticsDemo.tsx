@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react'
 import { useReducedMotion } from '../charts/chart-utils'
 import { ANALYTICS_SIGNUP, usePlans } from '../../lib/plans'
 import { track } from '../../lib/track'
+import { ChainLogo } from '../logos/ChainLogo'
 import { NewTabMark } from '../LayoutLinks'
 import { newTab } from '../LayoutNav'
 
@@ -129,7 +130,7 @@ export default function AnalyticsDemo(): JSX.Element {
   const paid = offer?.plans.filter((p) => p.priceUsdc > 0) ?? []
 
   return (
-    <div className="flex w-full flex-col overflow-hidden rounded-card border border-line bg-surface text-[13px] leading-[1.45] text-ink lg:h-[600px]">
+    <div className="flex w-full flex-col overflow-hidden rounded-card border border-line bg-card-token text-[13px] leading-[1.45] text-ink lg:h-[600px]">
       {/* Top bar */}
       <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-4 py-2.5">
         <span className="flex items-center gap-2 rounded-full border border-line-strong px-3 py-1.5 font-mono text-[12px]">
@@ -277,7 +278,10 @@ export default function AnalyticsDemo(): JSX.Element {
                     className={`grid min-h-[26px] w-full grid-cols-[8px_1fr_auto] items-center gap-2 rounded-[4px] px-1 text-left max-lg:min-h-11 ${chain === null || chain === c.i ? 'text-ink' : 'text-faint'}`}
                   >
                     <span aria-hidden className="size-2 rounded-[2px]" style={{ background: c.c }} />
-                    <span>{c.l}</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <ChainLogo chain={c.l} size={16} decorative />
+                      {c.l}
+                    </span>
                     <span className="font-mono text-[11px]">{c.p}%</span>
                   </button>
                 </li>

@@ -232,22 +232,22 @@ export function MerchantTermsPage() {
           <footer className="flex flex-col gap-3 border-t border-line pt-6 font-mono text-[12px] leading-[1.7] text-faint">
             <p className="m-0">
               Adapted from the{' '}
-              <a href={CP_URL} target="_blank" rel="noopener noreferrer" className="text-dim underline underline-offset-4 hover:text-gold">
+              <a href={CP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-dim underline underline-offset-4 hover:text-gold">
                 Common Paper Cloud Service Agreement Standard Terms Version 2.1
               </a>{' '}
               by Common Paper, Inc., free to use under{' '}
-              <a href={CC_URL} target="_blank" rel="noopener noreferrer license" className="text-dim underline underline-offset-4 hover:text-gold">
+              <a href={CC_URL} target="_blank" rel="noopener noreferrer license" className="inline-flex min-h-11 items-center text-dim underline underline-offset-4 hover:text-gold">
                 CC BY 4.0
               </a>
               . Changes made: shortened and reorganised; adapted to a non-custodial crypto payment service (custody, onchain finality, refunds, prohibited businesses, fee statements and checkout pauses, webhooks added); subscription, support, confidentiality, machine-learning and government-use clauses removed. Common Paper does not endorse these terms. These merchant terms are also available under CC BY 4.0.
             </p>
             <p className="m-0">
-              Questions: <a href="mailto:team@gullylabs.xyz" className="text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a> ·{' '}
+              Questions: <a href="mailto:team@gullylabs.xyz" className="inline-flex min-h-11 items-center text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a> ·{' '}
               <a href="https://docs.gullylabs.xyz/gully-pay-merchants" target="_blank" rel="noopener noreferrer" className="hover:text-gold">
                 Gully Pay for merchants docs
               </a>{' '}
               ·{' '}
-              <Link to="/" className="hover:text-gold">
+              <Link to="/" className="inline-flex min-h-11 items-center hover:text-gold">
                 gullylabs.xyz
               </Link>
             </p>

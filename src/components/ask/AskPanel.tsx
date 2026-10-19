@@ -436,7 +436,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
         </div>
         <div id={`${ids}-hint`} className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-faint">
           <span className="inline-flex items-center gap-1">
-            <Sparkles size={12} aria-hidden className="text-gold" /> Answers from the Gully Labs docs, site and live data, with sources. Information only, not advice. Questions are kept 90 days (<a href={isLocalHost() ? '/legal/privacy#s4' : `${SITE_URL}/legal/privacy#s4`} {...linkProps(isLocalHost() ? '/legal/privacy' : `${SITE_URL}/legal/privacy`)} className="underline underline-offset-2 hover:text-gold">privacy</a>).
+            <Sparkles size={12} aria-hidden className="text-gold" /> Answers from the Gully Labs docs, site and live data, with sources. Information only, not advice. Questions are kept 90 days (<a href={isLocalHost() ? '/legal/privacy#s4' : `${SITE_URL}/legal/privacy#s4`} {...linkProps(isLocalHost() ? '/legal/privacy' : `${SITE_URL}/legal/privacy`)} className="relative underline underline-offset-2 before:absolute before:-inset-x-1 before:-inset-y-3 before:content-[''] hover:text-gold">privacy</a>).
           </span>
           <span className={tooLong ? 'text-error' : undefined}>
             {q.length}/{MAX}

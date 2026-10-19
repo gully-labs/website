@@ -25,11 +25,18 @@ const lum = (c: string) => {
   })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
+/* The scale is four fixed steps per side, each a set share of the kit's UP or DOWN token over the neutral, so a
+   tile never lands on an off-token in-between colour (design audit N24). */
+const STEPS = [0.3, 0.55, 0.8, 1]
+const RAMP_UP = STEPS.map((t) => mix(NEUTRAL, UP, t))
+const RAMP_DOWN = STEPS.map((t) => mix(NEUTRAL, DOWN, t))
+const LEGEND = `linear-gradient(90deg, ${[...RAMP_DOWN.slice().reverse(), NEUTRAL, ...RAMP_UP].map((c, i, a) => `${c} ${(i / a.length) * 100}% ${((i + 1) / a.length) * 100}%`).join(', ')})`
 /** The tile colour for a gap: neutral inside ±in-line/4, then towards UP or DOWN, full at ±SCALE%. */
 const gapColour = (gap: number, inLinePct: number) => {
   const a = Math.abs(gap)
   if (a < inLinePct / 4) return NEUTRAL
-  return mix(NEUTRAL, gap >= 0 ? UP : DOWN, Math.min(1, a / SCALE) ** 0.75)
+  const step = Math.min(STEPS.length - 1, Math.floor(Math.min(1, a / SCALE) ** 0.75 * STEPS.length))
+  return (gap >= 0 ? RAMP_UP : RAMP_DOWN)[step]
 }
 const idOf = (r: TrackerRow) => `${r.chain}:${r.ticker}`
 const HEIGHT = 320
@@ -127,7 +134,7 @@ export function GapHeatmap({ rows, inLinePct }: { rows: TrackerRow[]; inLinePct:
       />
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-faint" aria-hidden>
         <span>below fair</span>
-        <span className="h-[6px] max-w-[260px] min-w-[80px] flex-1 rounded-full" style={{ background: `linear-gradient(90deg, ${DOWN}, ${NEUTRAL} 42%, ${NEUTRAL} 58%, ${UP})` }} />
+        <span className="h-[6px] max-w-[260px] min-w-[80px] flex-1 rounded-full" style={{ background: LEGEND }} />
         <span>above fair</span>
         <span className="ml-auto">−{SCALE}% · 0 · +{SCALE}% · tile = pool liquidity · RH = Robinhood Chain</span>
       </div>

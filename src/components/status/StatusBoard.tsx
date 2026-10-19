@@ -1,5 +1,6 @@
 import { Activity, Bot, Boxes, CircleCheck, CircleDollarSign, Network, ScanSearch, ShieldCheck, Sparkles, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useMemo } from 'react'
+import { ChainLogo } from '../logos/ChainLogo'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { EChart } from '../charts/EChart'
 import { GhostChart } from '../charts/GhostChart'
@@ -45,7 +46,28 @@ function UptimeBars({ c, height = 30 }: { c: StatusComponent; height?: number })
     }),
     [c],
   )
-  return <EChart option={option} height={height} label={`${c.name}: uptime per 30 minutes over the last 24 hours`} skeleton="bars" steps={{ count: c.history.length }} />
+  const n = Math.max(1, c.history.length)
+  const last = c.history[c.history.length - 1]
+  return (
+    <div className="relative" data-uptime-strip={c.id}>
+      <EChart option={option} height={height} label={`${c.name}: uptime per 30 minutes over the last 24 hours`} skeleton="bars" steps={{ count: c.history.length }} />
+      {last && last.up !== null && (
+        <span aria-hidden className="gl-live-breathe pointer-events-none absolute" style={{ top: 2, bottom: 2, right: `${11 / n}%`, width: `${78 / n}%`, background: bucketColor(last.up), borderRadius: 2, opacity: 0.55 }} />
+      )}
+    </div>
+  )
+}
+
+/** "Tracker: Base" and "Gully Pay RPC: Base" lead with the chain's own mark; the name stays written beside it. */
+function RowName({ c }: { c: StatusComponent }) {
+  const m = c.group === 'tracker' || c.group === 'payments' ? /^(?:Tracker|Gully Pay RPC): (.+)$/.exec(c.name) : null
+  if (!m) return <>{c.name}</>
+  return (
+    <span className="inline-flex items-center gap-2">
+      <ChainLogo chain={m[1]} size={20} decorative />
+      {c.name}
+    </span>
+  )
 }
 
 function ComponentRow({ c, compact }: { c: StatusComponent; compact: boolean }) {
@@ -53,7 +75,9 @@ function ComponentRow({ c, compact }: { c: StatusComponent; compact: boolean }) 
     <li className="flex flex-col gap-2 border-t border-line py-3 first:border-t-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <StateDot state={c.state} />
-        <span className="min-w-0 flex-1 text-[15px] text-ink">{c.name}</span>
+        <span className="min-w-0 flex-1 text-[15px] text-ink">
+          <RowName c={c} />
+        </span>
         <span className="font-mono text-[12px]" style={{ color: STATE_COLOR[c.state] }}>
           {STATE_WORDS[c.state]}
         </span>
@@ -85,7 +109,7 @@ function Overall({ data }: { data: StatusBody }) {
   const color = data.overall === 'operational' ? C.green : data.overall === 'degraded' ? C.gold : C.error
   const Icon = data.overall === 'operational' ? CircleCheck : TriangleAlert
   return (
-    <div className="flex flex-wrap items-center gap-6 rounded-card border border-line bg-surface p-6 max-[600px]:p-4">
+    <div className="flex flex-wrap items-center gap-6 rounded-card border border-line bg-card-token p-card">
       <div className="size-[112px] shrink-0">
         <EChart option={option} height={112} label="Components by state right now" skeleton="ring" />
       </div>
@@ -127,7 +151,7 @@ function PayLatency({ data }: { data: StatusBody }) {
   )
   if (!pay.length) return null
   return (
-    <div className="flex flex-col gap-2 rounded-panel border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-card border border-line bg-card-token p-card">
       <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY PAY CHAIN RESPONSE TIME · 24 H · LIVE FROM /api/status</span>
       {any ? (
         <EChart option={option} height={CHART_H.md} label="Mean response time per payment chain, every 30 minutes over the last 24 hours" skeleton="line" steps={{ count: labels.length }} />
@@ -141,14 +165,14 @@ function PayLatency({ data }: { data: StatusBody }) {
 export function IncidentList({ incidents }: { incidents: StatusIncident[] }) {
   if (!incidents.length)
     return (
-      <p className="m-0 flex items-center gap-2 rounded-panel border border-line bg-surface px-4 py-4 text-[14px] text-muted">
+      <p className="m-0 flex items-center gap-2 rounded-card border border-line bg-card-token px-4 py-4 text-[14px] text-muted">
         <StateDot state="up" /> No incidents recorded in the history this server keeps.
       </p>
     )
   return (
     <ol className="m-0 flex list-none flex-col gap-2 p-0">
       {incidents.map((i) => (
-        <li key={i.id} className="flex flex-col gap-1 rounded-panel border border-line bg-surface px-4 py-3">
+        <li key={i.id} className="flex flex-col gap-1 rounded-card border border-line bg-card-token px-4 py-3">
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <StateDot state={i.endedAt ? 'up' : i.state} />
             <span className="text-[15px] text-ink">{i.name}</span>
@@ -170,7 +194,7 @@ export function IncidentList({ incidents }: { incidents: StatusIncident[] }) {
 function Skeleton({ error, onRetry }: { error: string | null; onRetry: () => void }) {
   return (
     <div className="flex flex-col gap-3" aria-busy={!error}>
-      <div className="relative h-[140px] overflow-hidden rounded-card border border-line bg-surface">
+      <div className="relative h-[140px] overflow-hidden rounded-card border border-line bg-card-token">
         <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.10),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
         <span className="absolute inset-0 grid place-items-center px-4 text-center font-mono text-[12px] text-faint" role={error ? 'alert' : 'status'}>
           {error ?? 'Reading the live status…'}
@@ -193,13 +217,14 @@ export function StatusBoard({ compact = false }: { compact?: boolean }) {
     <div className="flex flex-col gap-6">
       <Overall data={data} />
       {error && <p className="m-0 font-mono text-[12px] text-error">{error} Showing the last answer.</p>}
-      <div className={`grid gap-4 ${compact ? 'grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))]' : 'grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))]'}`}>
+      {/* Columns, not a grid: each card is as tall as its own rows, so nothing is stretched over empty space. */}
+      <div className={`gap-4 ${compact ? 'columns-[320px]' : 'columns-[440px]'}`}>
         {STATUS_GROUPS.map((g) => {
           const list = data.components.filter((c) => c.group === g.id)
           if (!list.length) return null
           const Icon = GROUP_ICON[g.id]
           return (
-            <section key={g.id} aria-label={g.label} className="flex min-w-0 flex-col rounded-panel border border-line bg-surface-deep px-4 py-3">
+            <section key={g.id} aria-label={g.label} className="mb-4 flex min-w-0 break-inside-avoid flex-col rounded-card border border-line bg-card-token p-card">
               <h3 className="m-0 mb-1 inline-flex items-center gap-2 font-display text-h4 font-bold uppercase">
                 <Icon aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> {g.label}
               </h3>
