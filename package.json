@@ -43,6 +43,7 @@
     "test:holders": "node --test scripts/test-holders.mjs",
     "test:holders-partners": "node scripts/test-holders-partners.mjs",
     "test:holders-deep": "node scripts/test-holders-deep.mjs",
+    "test:launchpads": "node --test scripts/test-launchpads.mjs",
     "test:status": "node --test scripts/test-status.mjs",
     "test:token-logos": "node --test scripts/test-token-logos.mjs",
     "test:chart-kit": "node --test scripts/test-chart-kit.mjs"

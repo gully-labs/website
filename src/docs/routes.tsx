@@ -18,6 +18,7 @@ export const docsRoutes: RouteObject[] = [
       { path: 'plans-alerts', lazy: () => import('./pages/PlansAlerts').then((m) => ({ Component: m.PlansAlerts })) },
       { path: 'teams', lazy: () => import('./pages/Teams').then((m) => ({ Component: m.Teams })) },
       { path: 'holder-map', lazy: () => import('./pages/HolderMapDocs').then((m) => ({ Component: m.HolderMapDocs })) },
+      { path: 'holder-map-integrate', lazy: () => import('./pages/HolderMapIntegrateDocs').then((m) => ({ Component: m.HolderMapIntegrateDocs })) },
       { path: 'analytics', lazy: () => import('./pages/AnalyticsDocs').then((m) => ({ Component: m.AnalyticsDocs })) },
       { path: 'gully-pay', lazy: () => import('./pages/GullyPayDocs').then((m) => ({ Component: m.GullyPayDocs })) },
       { path: 'gully-pay-merchants', lazy: () => import('./pages/GullyPayMerchantsDocs').then((m) => ({ Component: m.GullyPayMerchantsDocs })) },
