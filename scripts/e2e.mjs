@@ -1750,7 +1750,7 @@ await step('holder map', async () => {
       const ctx = await newContext({ width, mobile: width < 600 })
       await ctx.route(`${BASE}/api/ask`, (route) => json(route, holdersExtraFixtures().ask))
       await ctx.route(`${BASE}/api/holders/deep`, (route) => {
-        if (route.request().method() === 'GET') return json(route, { offer: { id: 'holder-deep', name: 'Deep check', priceUsd: 9, freePerMonth: { pro: 3, business: 10 }, bundleScanDiscountPct: 20, maxActive: 2, maxRunning: 2, budgets: { rpcCalls: 1, logSpans: 1, explorerCalls: 1, ms: 1, holders: 1, hops: 1 } }, checkout: { enabled: true }, coverage: { robinhood: cov('robinhood') }, signedIn: true, quota, credits: 0, contact: 'hello@gullylabs.xyz' })
+        if (route.request().method() === 'GET') return json(route, { offer: { id: 'holder-deep', name: 'Deep check', priceUsd: 9, freePerMonth: { pro: 3, business: 10 }, bundleScanDiscountPct: 20, maxActive: 2, maxRunning: 2, budgets: { rpcCalls: 1, logSpans: 1, explorerCalls: 1, ms: 1, holders: 1, hops: 1 } }, checkout: { enabled: true }, coverage: { robinhood: cov('robinhood') }, signedIn: true, quota, credits: 0, contact: 'team@gullylabs.xyz' })
         const body = route.request().postDataJSON()
         if (!body.expect) return json(route, { quote: { chain: chainInfo, token: body.token, priceUsd: 0, listPriceUsd: 9, free: true, bundle: { applied: false, discountPct: 20, scanId: null }, bundleNote: null, credit: { available: 0, used: false }, quota, coverage: cov('robinhood'), checkout: { enabled: true }, signedIn: true } })
         return json(route, { check: checkDoc('queued') }, 202)

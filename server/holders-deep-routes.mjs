@@ -38,11 +38,11 @@
 //                                       -> 200 { check } · 409 when it is paid, running or finished.
 //
 // REFUNDS (owner decision): a PAID check that ends 'failed' gives its buyer one credit for a free re-run (never an
-// on-chain refund; they can also write to hello@gullylabs.xyz). Credits are counted per buyer (the workspace, else
+// on-chain refund; they can also write to team@gullylabs.xyz). Credits are counted per buyer (the workspace, else
 // the address the buyer paid from) and are spent before the price: a quote or check made with a credit is free and
 // `quote.credit` / `check.credit` say so. A re-run bought with a credit that itself fails gives the credit back.
 //   Quota gains `credits` (this buyer's unspent credits); GET /api/holders/deep also returns `credits`.
-//   check.credit = { usedForThis: boolean, earned: boolean, contact: 'hello@gullylabs.xyz' } | null
+//   check.credit = { usedForThis: boolean, earned: boolean, contact: 'team@gullylabs.xyz' } | null
 //
 // Check = {
 //   id, status: 'awaiting_payment' | 'queued' | 'running' | 'done' | 'partial' | 'failed' | 'cancelled',
@@ -179,7 +179,7 @@ const depsNow = () => engine.deps ?? liveDeps()
 
 /* --------------------------------------------------------------- credits --- */
 
-const CONTACT = 'hello@gullylabs.xyz'
+const CONTACT = 'team@gullylabs.xyz'
 /** Free re-runs a buyer holds after paid checks failed. */
 export const creditsOf = (owner) => Math.max(0, Number(load().credits[owner]) || 0)
 function addCredit(owner, n) {
@@ -284,7 +284,6 @@ async function runJob(job) {
     console.error(`holders-deep ${job.id}:`, e?.message ?? e)
     if (job.attempts < MAX_ATTEMPTS) Object.assign(job, { state: 'queued', status: 'queued' })
     else Object.assign(job, { state: 'finished', status: 'failed', error: 'The check could not be completed. Write to team@gullylabs.xyz with this check id.', completedAt: new Date().toISOString() })
-    else Object.assign(job, { state: 'finished', status: 'failed', error: 'The check could not be completed. Write to hello@gullylabs.xyz with this check id.', completedAt: new Date().toISOString() })
     settleFailure(job)
   } finally {
     running.delete(job.id)

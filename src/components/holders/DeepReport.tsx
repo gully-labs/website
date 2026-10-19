@@ -129,7 +129,7 @@ export function DeepEnded({ check, mapHref }: { check: DeepCheck; mapHref: strin
         <a href={mapHref} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`}>
           {check.credit?.earned ? 'Re-run it free from the Holder Map' : 'Back to the Holder Map'}
         </a>
-        <a href={`mailto:${check.credit?.contact ?? 'hello@gullylabs.xyz'}?subject=${encodeURIComponent(`Deep check refund ${check.id}`)}`} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-4 text-[13px]`} data-deep-contact>
+        <a href={`mailto:${check.credit?.contact ?? 'team@gullylabs.xyz'}?subject=${encodeURIComponent(`Deep check refund ${check.id}`)}`} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-4 text-[13px]`} data-deep-contact>
           <Mail className="icon-md" aria-hidden /> Contact us for a refund
         </a>
       </span>

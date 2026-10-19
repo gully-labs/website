@@ -431,16 +431,6 @@ Serves token logos by chain and address for the whole stack, from the first sour
 
 URL: https://gullylabs.xyz/
 
-### Chain Kit managed explorer (Chain Kit, live)
-
-A branded Blockscout block explorer for your EVM chain, deployed and run by Gully Labs. Available on request.
-
-- Requested from the app (POST /api/developer/chain-kit/request) or the contact form.
-- Blockscout and our deployment layer are GPL-3.0.
-- Rollup profiles cover Arbitrum Nitro and Orbit chains.
-
-URL: https://gullylabs.xyz/chain-kit
-
 ### Gully Chains waitlist (Gully Chains, live)
 
 A waitlist in the app for Gully Chains devnet news. No chain is running yet.
@@ -546,10 +536,10 @@ URL: https://gullylabs.xyz/chains
 
 ### Included services on the testnet (Gully Chains, testnet)
 
-The Chain Kit explorer, Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
+The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
 
-- SERVICES in server/chains-plans.mjs gives chainkit, insight, pay and hyperlane the status testnet.
-- Chain Kit and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons.
+- SERVICES in server/chains-plans.mjs gives insight, pay and hyperlane the status testnet; chainkit (the explorer, bridge and faucet) is planned and on a waitlist.
+- Chain Kit (waitlist) and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons.
 - The page says nothing about Gully Chains is live yet.
 
 URL: https://gullylabs.xyz/chains
@@ -938,6 +928,7 @@ URL: https://cartel.family/
 ## Roadmap (not available yet)
 
 - Audit (planned): A premium audit tier is not offered yet. Gully Labs has published no audit reports.
+- Chain Kit managed explorer (building): A branded Blockscout block explorer for your EVM chain, to be deployed and run by Gully Labs. Waitlist: licensing in progress; Chain Kit is not available to order yet.
 - Gully L3 (Arbitrum chain) (planned): A planned Arbitrum chain settling to Arbitrum One with Chain Kit as explorer, Gully Pay native and Hyperlane interop. Spec written, nothing running.
 - Bug bounty hosting (planned): Hosting bug bounty programmes for reviewed projects is a later item on the security roadmap.
 - Account abstraction and sponsored gas (building): An ERC-4337 bundler and EntryPoint with EIP-7702-ready smart accounts, plus a usage-billed paymaster so users can transact without holding gas. Both are coming with the testnet.

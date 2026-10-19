@@ -49,7 +49,6 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Engineering services](https://gullylabs.xyz/services) (live): Gully Labs takes on smart contract, dApp, chain infrastructure and security work on request.
 - [Blog](https://blog.gullylabs.xyz/) (live): A self-hosted Ghost blog at blog.gullylabs.xyz with generated share images.
 - [Token logo service](https://gullylabs.xyz/) (live): Serves token logos by chain and address for the whole stack, from the first source that returns a valid image.
-- [Chain Kit managed explorer](https://gullylabs.xyz/chain-kit) (live): A branded Blockscout block explorer for your EVM chain, deployed and run by Gully Labs. Available on request.
 - [Gully Chains waitlist](https://gullylabs.xyz/) (live): A waitlist in the app for Gully Chains devnet news. No chain is running yet.
 - [Map any token](https://gullylabs.xyz/holders) (live): The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only DeepCore launches and stock tokens. A pasted address is checked to be a token first.
 - [Launchpad registry (Peddles, PeddleSwap)](https://docs.gullylabs.xyz/holder-map-integrate) (live): A registry of launchpads lets the Holder Map recognise a token as a launch from a known launchpad. Peddles and PeddleSwap are the first two entries.
@@ -60,7 +59,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Daily Launch radar post](https://t.me/GullyLabsNews) (live): A daily post for the @GullyLabsNews channel naming the cleanest and the most concentrated new launches, from maps the Holder Map has already built.
 - [Ecosystem and partners pages](https://gullylabs.xyz/ecosystem) (live): Public pages that list the third-party data and infrastructure Gully Labs relies on, and what launchpads, wallets, explorers and chains get from a partnership.
 - [Gully Chains offer and waitlist](https://gullylabs.xyz/chains) (live): A public page with the managed-chain offer, its prices read from config, and a waitlist form. No Gully Chains network is running yet; a testnet is coming.
-- [Included services on the testnet](https://gullylabs.xyz/chains) (testnet): The Chain Kit explorer, Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
+- [Included services on the testnet](https://gullylabs.xyz/chains) (testnet): The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
 - [Tracker API client](https://docs.gullylabs.xyz/api) (beta): @gullylabs/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists.
 - [Embeddable tracker widget](https://gullylabs.xyz/tracker) (beta): @gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component.
 - [Holder Map client and component](https://gullylabs.xyz/holders) (beta): @gullylabs/holders is a typed client for the Holder Map API plus a React component that frames the live map.

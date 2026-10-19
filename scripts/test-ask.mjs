@@ -39,9 +39,11 @@ const DIM = 512
 function fakeVec(text) {
   const v = new Array(DIM).fill(0)
   for (const w of String(text).toLowerCase().split(/[^a-z0-9]+/).filter((x) => x.length > 2)) {
-    const c = CONCEPT[w] ?? w
+    // Own keys only: words like "constructor" would otherwise hit Object.prototype.
+    const known = Object.hasOwn(CONCEPT, w)
+    const c = known ? CONCEPT[w] : w
     const h = crypto.createHash('md5').update(c).digest().readUInt32BE(0) % DIM
-    v[h] += CONCEPT[w] ? 5 : 1
+    v[h] += known ? 5 : 1
   }
   return v
 }
@@ -480,6 +482,7 @@ try {
   ])
   check('re-rank: near neighbours are reordered by question coverage (title counts)', rr[0].chunk.id === '2' && rr[0].fused === 0.0161)
   check('expansion: plain words gain the docs\' words', /fee/.test(expandQuery('how much do you charge') ?? '') && /privacy/.test(expandQuery('do you track me') ?? '') && expandQuery('zzz') === null)
+  check('expansion: words that are Object.prototype keys (constructor, toString) add nothing', expandQuery('what is the constructor of toString') === null)
 
   ask.addChunksForTest([{ id: 'quokka000001', source: 'Docs', title: 'Rottnest notes', url: 'https://docs.gullylabs.xyz/rottnest#quokka', section: 'Quokka', text: 'The quokka is a marsupial that lives on Rottnest Island and grins in photographs.', updatedAt: new Date().toISOString() }])
   const b1 = await ask.retrieve('tiny smiling animal')

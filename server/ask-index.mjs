@@ -208,7 +208,8 @@ const SYNONYMS = {
 /** The question plus the docs' words for the plain words in it, or null when nothing is added. */
 export function expandQuery(q) {
   const add = []
-  for (const w of fold(q).split(/[^a-z0-9]+/)) if (SYNONYMS[w]) add.push(SYNONYMS[w])
+  // Own keys only: "constructor" or "toString" in a question would otherwise pull in Object.prototype.
+  for (const w of fold(q).split(/[^a-z0-9]+/)) if (Object.hasOwn(SYNONYMS, w)) add.push(SYNONYMS[w])
   return add.length ? `${q} ${add.join(' ')}` : null
 }
 

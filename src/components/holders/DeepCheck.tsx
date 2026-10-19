@@ -185,7 +185,7 @@ export function DeepCheckCard({ chain, token, symbol }: { chain: string; token: 
         </div>
       )}
       <p className="m-0 font-mono text-[11px] leading-[1.5] text-dim">
-        If a paid check fails you get a credit for a free re-run (not an on-chain refund); write to hello@gullylabs.xyz for a refund. Information only, not advice.
+        If a paid check fails you get a credit for a free re-run (not an on-chain refund); write to team@gullylabs.xyz for a refund. Information only, not advice.
       </p>
     </section>
   )
