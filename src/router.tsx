@@ -30,6 +30,9 @@ const mainRoutes = [
       { path: '/analytics', element: <AnalyticsRoute /> },
       { path: '/chain-kit', element: <ChainKitRoute /> },
       { path: '/ask', element: <AskRoute /> },
+      // Our own projects with live numbers, what the code integrates with, and the partner page with its two forms.
+      { path: '/ecosystem', lazy: () => import('./pages/Ecosystem').then((m) => ({ Component: m.Ecosystem })) },
+      { path: '/partners', lazy: () => import('./pages/Partners').then((m) => ({ Component: m.Partners })) },
       // Gully Security: the product page, the published reports and one report (noindex unless its owner opts in).
       { path: '/security', element: <SecurityRoute /> },
       { path: '/security/reports', element: <SecurityReportsRoute /> },

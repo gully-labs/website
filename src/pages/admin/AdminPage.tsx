@@ -28,6 +28,7 @@ import { sectionCls } from './adminSections'
 import { HealthCard } from './HealthCard'
 import { AlertsAdmin, ChainKitAdmin, WorkspacesAdmin } from './OpsAdmin'
 import { ArrowMark } from './newTab'
+import { EcosystemSubmissions } from './EcosystemSubmissions'
 
 // The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
 const AdminCharts = lazy(() => import('./AdminCharts'))
@@ -1098,6 +1099,7 @@ export function AdminPage() {
             </div>
             <div id="chainkit" className={sectionCls}>
               <ChainKitAdmin token={token} />
+              <EcosystemSubmissions token={token} />
             </div>
 
             <div id="inbox" className={sectionCls}>

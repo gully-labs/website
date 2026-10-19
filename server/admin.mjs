@@ -45,6 +45,7 @@
 //                                             Gully AI retrieval), with a per-minute history for sparklines
 //   GET  /api/admin/alerts                    every alert and monitor across accounts, and the alert webhook log
 //   GET  /api/admin/workspaces                workspaces with members or open invites
+//   GET/POST /api/admin/ecosystem/submissions  launchpad submissions: list; { id, action: approve|reject } (ecosystem.mjs)
 //   GET  /api/admin/chain-kit                 Chain Kit explorer requests and the Gully Chains Devnet waitlist
 //   POST /api/admin/telegram/:address/unlink  unlink an account's Telegram chat (telegram.mjs adminUnlinkTelegram)
 
@@ -61,6 +62,7 @@ import { defaultEndpoint, deliveries, redeliver, rotateDefaultSecret, sendTest, 
 import { CHAIN_LIST, publicAssets, rpc } from './payments.mjs'
 import { checkTreasuryChains, treasuryStatus } from './treasury-chains.mjs'
 import { handleMerchantsAdmin } from './merchants.mjs'
+import { handleEcosystemAdmin } from './ecosystem.mjs'
 import { handleSecurityAdmin } from './security-routes.mjs'
 import { handleAdminSafe } from './safe-deploy.mjs'
 import { planOf, publicPlans, treasury } from './plans.mjs'
@@ -377,6 +379,7 @@ export async function handleAdmin(req, res, url) {
   // The treasury Safe per chain and its one-click deployment (safe-deploy.mjs).
   if (p.startsWith('/api/admin/safe/')) return handleAdminSafe(req, res, url)
   if (p === '/api/admin/broadcasts' || p.startsWith('/api/admin/broadcasts/')) return handleBroadcastAdmin(req, res, url)
+  if (p === '/api/admin/ecosystem/submissions') return handleEcosystemAdmin(req, res)
   const db = developers()
 
   // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so

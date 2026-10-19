@@ -16,6 +16,7 @@ import { handleAsk } from './server/ask.mjs'
 import { handleDeepcoreLaunches } from './server/deepcore.mjs'
 import { handleSolana } from './server/solana-routes.mjs'
 import { handleHolders } from './server/holders.mjs'
+import { handleEcosystem } from './server/ecosystem.mjs'
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
 function mockContactApi(): Plugin {
@@ -138,7 +139,7 @@ function serverModules(): Plugin {
           handleSolana(req, res, url, geoFor(req, true)).then((done: boolean) => done || next(), next)
           return
         }
-        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : null
+        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname === '/api/ecosystem' || url.pathname.startsWith('/api/ecosystem/') ? handleEcosystem : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : null
         if (!handler) return next()
         handler(req, res, url).then((done) => {
           if (done) return
