@@ -4,6 +4,7 @@
 //
 //   TEST_PORT=9351 AUDIT_OUT=<dir> node scripts/design-audit-3.mjs      (needs dist/: npm run build)
 //
+// AUDIT_FAST=1 skips screenshots, the motion check and the interaction checks (writes results-fast.json); AUDIT_WIDTHS=320,390 limits widths.
 // Output: <AUDIT_OUT>/shots/<page>-<width>.png and <AUDIT_OUT>/results.json. It changes no product code.
 
 import fs from 'node:fs'
@@ -17,6 +18,7 @@ import { auditPage, tokenColors } from './e2e-audit.mjs'
 const PORT = Number(process.env.TEST_PORT) || 9351
 const OUT = process.env.AUDIT_OUT || path.resolve(ROOT, '..', 'gully-session-tools', 'design-audit-3')
 const SHOTS = path.join(OUT, 'shots')
+const FAST = !!process.env.AUDIT_FAST // skip screenshots, the motion check and the interaction checks
 const ONLY = process.env.AUDIT_ONLY ? new RegExp(process.env.AUDIT_ONLY) : null
 fs.mkdirSync(SHOTS, { recursive: true })
 await guardTestRun(PORT, { watchdogMs: 110 * 60_000 })
@@ -317,6 +319,28 @@ function details() {
     if (r.right > vw + 2 || r.left < -2) spill.push({ sel: sel(el), t: own(el).slice(0, 30), l: Math.round(r.left), r: Math.round(r.right) })
   }
   out.spill = spill
+  // text or controls pushed past the viewport, or past the edge of a clipping ancestor (overflow hidden/clip hides the spill)
+  const spill2 = []
+  for (const el of document.body.querySelectorAll('a, button, h1, h2, h3, h4, p, label, th, td, li, span, input, select')) {
+    if (spill2.length >= 10) break
+    if (!visible(el) || el.closest('[data-chart], svg, .sr-only, [class*="sr-only"]')) continue
+    const t = own(el)
+    const ctl = /^(A|BUTTON|INPUT|SELECT)$/.test(el.tagName)
+    if (!t && !ctl) continue
+    let ok = true, clipEl = null
+    for (let sc = el.parentElement; sc && sc !== document.documentElement; sc = sc.parentElement) {
+      const o = getComputedStyle(sc).overflowX
+      if (o === 'auto' || o === 'scroll') { ok = false; break }
+      if ((o === 'hidden' || o === 'clip') && !clipEl && sc !== document.body) clipEl = sc
+    }
+    if (!ok) continue
+    let r
+    if (ctl) r = el.getBoundingClientRect()
+    else { const tn = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim()); const rg = document.createRange(); rg.selectNodeContents(tn); const rs = [...rg.getClientRects()].filter((q) => q.width > 1); if (!rs.length) continue; r = { left: Math.min(...rs.map((q) => q.left)), right: Math.max(...rs.map((q) => q.right)) } }
+    const limit = clipEl ? Math.min(clipEl.getBoundingClientRect().right, vw) : vw
+    if (r.right > limit + 1.5 || r.left < -1.5) spill2.push({ sel: sel(el), t: (t || el.getAttribute('aria-label') || '').slice(0, 30), right: Math.round(r.right), limit: Math.round(limit) })
+  }
+  out.spill2 = spill2
 
   // 2. overlapping text or controls (text-node boxes)
   const items = []
@@ -639,21 +663,23 @@ for (const p of pages) {
         if (width < 600) for (const h of await page.evaluate(fabScan)) fabHits.add(h)
       }
       await page.evaluate(() => window.scrollTo(0, 0))
-      await page.waitForTimeout(900)
+      await page.waitForTimeout(FAST ? 300 : 900)
       Object.assign(r, await page.evaluate(measure))
       r.detail = await page.evaluate(details).catch((e) => ({ error: String(e.message).slice(0, 120) }))
       r.audit = await page.evaluate(auditPage, { allowed: TOKENS, root: null }).then((a) => ({ small: a.small.length, smallSample: a.small.slice(0, 2).map((s) => `${s.size}px ${s.sel} "${s.text}"`), offTokenN: a.offToken.length, offToken: a.offToken.slice(0, 4).map((o) => `${o.color} ${o.kind} x${o.count} ${o.sample}`), ext: a.ext.length, extSample: a.ext.slice(0, 2).map((e) => e.href) }))
-      await page.evaluate(() => { const c = document.querySelector('[data-chart]') || document.querySelector('svg'); c?.scrollIntoView({ block: 'center' }) })
-      await page.waitForTimeout(400)
-      const s1 = await page.evaluate(chartSignature)
-      await page.waitForTimeout(3000)
-      const s2 = await page.evaluate(chartSignature)
-      r.live = { charts: s1.sigs.length, changed: s1.sigs.filter((v, i) => s2.sigs[i] !== v).length, anims: s2.anims, smil: s2.smil, textChanged: s1.text !== s2.text }
-      await page.evaluate(() => window.scrollTo(0, 0))
-      await page.waitForTimeout(300)
-      await page.screenshot({ path: path.join(SHOTS, `${p.name}-${width}.png`), fullPage: true, timeout: 30_000 }).catch((e) => (r.shotError = String(e.message).slice(0, 80)))
+      if (!FAST) {
+        await page.evaluate(() => { const c = document.querySelector('[data-chart]') || document.querySelector('svg'); c?.scrollIntoView({ block: 'center' }) })
+        await page.waitForTimeout(400)
+        const s1 = await page.evaluate(chartSignature)
+        await page.waitForTimeout(3000)
+        const s2 = await page.evaluate(chartSignature)
+        r.live = { charts: s1.sigs.length, changed: s1.sigs.filter((v, i) => s2.sigs[i] !== v).length, anims: s2.anims, smil: s2.smil, textChanged: s1.text !== s2.text }
+        await page.evaluate(() => window.scrollTo(0, 0))
+        await page.waitForTimeout(300)
+        await page.screenshot({ path: path.join(SHOTS, `${p.name}-${width}.png`), fullPage: true, timeout: 30_000 }).catch((e) => (r.shotError = String(e.message).slice(0, 80)))
+      }
       r.fabHits = [...fabHits].slice(0, 6)
-      if (width === 1440) Object.assign(r, await interactionChecks(page))
+      if (width === 1440 && !FAST) Object.assign(r, await interactionChecks(page))
     } catch (e) {
       r.error = String(e?.message ?? e).slice(0, 200)
     }
@@ -663,7 +689,7 @@ for (const p of pages) {
     await page.close()
   }
 }
-fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({ at: new Date().toISOString(), note, results }, null, 1))
+fs.writeFileSync(path.join(OUT, FAST ? 'results-fast.json' : 'results.json'), JSON.stringify({ at: new Date().toISOString(), note, results }, null, 1))
 await browser.close()
 console.log(`done: ${results.length} page-views; notes: ${note.join(' | ') || 'none'}`)
 process.exit(0)
