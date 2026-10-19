@@ -149,7 +149,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
 
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
   const items: NavItem<AppTab>[] = useMemo(
-    () => grouped(ALL_TABS).map((t) => (t.id === 'keys' ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
+    () => grouped(ALL_TABS).map((t) => (t.id === 'keys' && liveKeys > 0 ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
     [liveKeys],
   )
   const page = ALL_TABS.find((t) => t.id === tab)?.label ?? 'Overview'

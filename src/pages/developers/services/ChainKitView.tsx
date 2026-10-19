@@ -52,7 +52,7 @@ export default function ChainKitView() {
 
       <SubPanel idBase="chain-kit" value={sub}>
       {sub === 'live' ? (
-      <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
+      <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-stretch gap-4 max-[1100px]:grid-cols-[minmax(0,1fr)]">
         <Section
           title="What our indexer reads now"
           sub="chain against chain · live from /api/tracker, every minute"

@@ -118,7 +118,7 @@ export function Products({ account, go }: { account: Account; go: (t: Tab) => vo
   return (
     <div className="flex flex-col gap-2">
     {failed && <RefreshChip error={failed.refreshErr} onRetry={() => [usage, alerts, ga, bill].forEach((x) => x.refreshErr && x.retry())} className="self-start" />}
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-2" data-testid="products">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] items-stretch gap-2" data-testid="products">
       <TrackerCard account={account} usage={usage} go={go} />
       <AlertsCard s={alerts} go={go} />
       <AnalyticsCard s={ga} go={go} />

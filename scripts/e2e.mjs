@@ -915,6 +915,28 @@ await step('app services', async () => {
     await noHorizontalScroll(mp, `app #${id}`)
     await shot(mp, `app-390-${id}`)
   }
+  // Design audit 3 (D1, D4, D9, D10, D28): narrow screens read in full, nothing clipped, no empty-count badges.
+  for (const w of [390, 320]) {
+    await mp.setViewportSize({ width: w, height: 760 })
+    for (const id of ['deepcore', 'overview', 'keys', 'tracker', 'pay', 'chain-kit']) {
+      await mp.goto(`${BASE}/app#${id}`)
+      await mp.locator(id === 'overview' ? 'main[data-page="overview"]' : id === 'keys' ? 'main[data-page="keys"]' : `[data-service="${id}"] [data-testid="service-header"]`).first().waitFor({ timeout: 15_000 })
+      await mp.waitForTimeout(700)
+      await noHorizontalScroll(mp, `app #${id} at ${w}`)
+      const crumb = await mp.locator('[data-testid="breadcrumb"] [aria-current="page"]').evaluate((e) => [e.scrollWidth, e.clientWidth, e.textContent])
+      check(`app #${id} at ${w}: the breadcrumb shows the page name in full`, crumb[0] <= crumb[1] + 1, JSON.stringify(crumb))
+      const clipped = await mp.evaluate(() => [...document.querySelectorAll('[data-kpi] > span, [data-tile] > span')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent))
+      check(`app #${id} at ${w}: no stat label or note is clipped`, clipped.length === 0, JSON.stringify(clipped))
+      const tip = await mp.locator('[data-testid="info-tip"] > span:first-child').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).textOverflow === 'ellipsis').length)
+      check(`app #${id} at ${w}: the hint line wraps instead of ending in an ellipsis`, tip === 0)
+      if (id === 'tracker') {
+        const small = await mp.locator('[data-service="tracker"] tbody tr').first().locator('button, a').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width < 43.5 || e.getBoundingClientRect().height < 43.5).map((e) => e.getAttribute('aria-label') || e.textContent))
+        check(`app #tracker at ${w}: row Alert and Page buttons are 44 px targets`, small.length === 0, JSON.stringify(small))
+      }
+      const zero = await mp.locator('[data-testid="sub-tabs"] [role="tab"] > span.font-mono').evaluateAll((els) => els.filter((e) => e.textContent.trim() === '0').length)
+      check(`app #${id} at ${w}: no tab badge reads 0`, zero === 0)
+    }
+  }
   await mw.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   await m.close()
 
