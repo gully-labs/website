@@ -31,6 +31,7 @@ import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { APP_URL, isAppHost } from './hosts.mjs'
+import { handleManifest } from './pwa.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
 import { handleFeeHistory } from './fee-history.mjs'
@@ -230,6 +231,8 @@ async function handleRequest(req, res) {
     if (!map) return send(res, 404, '', { 'Cache-Control': 'public, max-age=3600' })
     return send(res, 200, map, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   }
+  // The web app manifest, one per host (pwa.mjs): the site's, the app's, none for admin and docs.
+  if (handleManifest(req, res, url, host)) return
   if (isAdmin) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
 
   if (url.pathname.startsWith('/api/admin/')) {

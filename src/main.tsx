@@ -12,12 +12,16 @@ import '@fontsource/ibm-plex-mono/500.css'
 import './index.css'
 import { ToastRoot } from './components/ui/ToastRoot'
 import { reloadForNewBuild } from './lib/staleBuild'
+import { initPwa } from './pwa/pwa'
 import { router } from './router'
 
 // Vite reports a code file that failed to load (usually: deleted by a deploy while this page was open).
 window.addEventListener('vite:preloadError', (e) => {
   if (reloadForNewBuild()) e.preventDefault()
 })
+
+// The service worker, the install prompt and update detection (src/pwa/pwa.ts).
+initPwa()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
