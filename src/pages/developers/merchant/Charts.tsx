@@ -1,13 +1,13 @@
 import { Activity, BadgeDollarSign, Percent, Receipt } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
+import { GhostChart } from '../../../components/charts/GhostChart'
 import { ChartBox } from '../../../components/charts/ChartSkeleton'
 import { EChart } from '../../../components/charts/EChart'
 import { alpha, axisTooltip, barsPreset, C, itemTooltip, livePoint, PALETTE, ringPreset, tipHtml } from '../../../components/charts/chartPresets'
 import { NF } from '../../../components/charts/number-formats'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { TokenLogo } from '../../../components/logos/TokenLogo'
-import { GhostCurves } from '../charts'
 import { usePoll } from '../poll'
 import { chip, label } from '../styles'
 import { KpiRow, KpiTile, RefreshChip, Unknown } from '../ui'
@@ -135,9 +135,9 @@ export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number
         </KpiTile>
       </KpiRow>
       {none ? (
-        <GhostCurves height={110} title="Your payments will draw here">
+        <GhostChart height={150} variant="bars" label="Your payments will draw here">
           <span className="max-w-[440px] text-[13px] text-muted">Volume per day by chain, payments per day and the asset mix appear within seconds of your first confirmed payment.</span>
-        </GhostCurves>
+        </GhostChart>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col gap-1">
@@ -158,7 +158,7 @@ export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number
                 </span>
               </EChart>
             ) : data ? (
-              <GhostCurves height={170} title="No volume in this range" />
+              <GhostChart height={170} variant="ring" label="No volume in this range" />
             ) : (
               <ChartBox height={170} variant="ring" state={failed ? 'error' : 'loading'} />
             )}

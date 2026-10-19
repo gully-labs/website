@@ -11,7 +11,7 @@ import { useWrite } from './portal'
 import { Can } from './RoleGate'
 import { AlertFires } from './tabcharts'
 import { ErrorLine, Skeleton } from './parts'
-import { GhostCurves } from './charts'
+import { GhostChart } from '../../components/charts/GhostChart'
 import { InfoTip, KpiRow, KpiTile, RefreshChip, Stepper, SubPanel, SubTabs, Unknown } from './ui'
 import { useSubTab } from './subtab'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
@@ -664,10 +664,10 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
               Gap alerts
             </h2>
             {!view.alerts.length ? (
-              <GhostCurves height={150} title="Your alerts will list here" colors={['#d9b563', '#74c27b']}>
+              <GhostChart height={150} label="Your alerts will list here" colors={['#d9b563', '#74c27b']}>
                 <BellRing size={20} className="text-gold" aria-hidden />
                 <span className="max-w-[440px] text-[13px] text-muted">Get a webhook{view.telegram.enabled ? ' or a Telegram message' : ''} when a stock token&apos;s gap to its fair price crosses your line.</span>
-              </GhostCurves>
+              </GhostChart>
             ) : (
               <ul className="m-0 flex list-none flex-col p-0">
                 {view.alerts.map((a, i) => (

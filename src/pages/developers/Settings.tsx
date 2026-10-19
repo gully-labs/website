@@ -1,4 +1,4 @@
-import { Building2, ExternalLink, Laptop, LogOut, Lock, ShieldCheck, UserRound } from 'lucide-react'
+import { Building2, ExternalLink, Laptop, LogOut, Lock, Settings as SettingsIcon, ShieldCheck, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { usePoll } from './poll'
 import { useSubTab } from './subtab'
@@ -13,6 +13,7 @@ import { Can } from './RoleGate'
 import { StackedDays } from './vcharts'
 import { input, mono, panel, panelTitle, pillGold, pillSm, rise } from './styles'
 import { ExtLink } from './ExtLink'
+import { ServiceHeader } from './services/ServiceHeader'
 
 /* The Settings tab (portal v2):
    - Profile (this wallet, every role): display name, contact email, the ENS / Basename found by the
@@ -37,7 +38,8 @@ export function SettingsTab({ section }: { section: string | null }) {
     if (section && (SETTINGS_SUBS as readonly string[]).includes(section)) setSub(section as SettingsSub)
   }, [section, setSub])
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
+      <ServiceHeader icon={SettingsIcon} title="Settings" desc="Your profile, this workspace's company details, signed-in devices and privacy." />
       <SubTabs
         label="Settings sections"
         idBase="settings"
