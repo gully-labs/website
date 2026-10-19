@@ -46,8 +46,8 @@ export function LiveBadge({ theme }: { theme: 'dark' | 'light' }) {
   }, [])
   const ago = updatedAt ? Math.max(0, Math.round((now - updatedAt) / 1000)) : null
   return (
-    <div ref={ref} data-live={inView ? 'on' : 'paused'} data-testid="live-badge" className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-card border border-line bg-card-token px-4 py-3">
-      <div className={`relative flex min-h-[64px] min-w-[170px] items-center justify-center rounded-card border px-5 ${theme === 'dark' ? 'border-line bg-bg-footer' : 'border-paper-line bg-paper-3'}`}>
+    <div ref={ref} data-live={inView ? 'on' : 'paused'} data-testid="live-badge" className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-card-token px-4 py-3">
+      <div className={`relative flex min-h-[64px] items-center justify-center rounded-card border px-5 ${theme === 'dark' ? 'border-line bg-bg-footer' : 'border-paper-line bg-paper-3'}`}>
         {data ? <img key={data.url} src={data.url} alt="Gully Score badge, rendered by the server just now (example)" height={36} style={{ animation: 'gl-fade .5s ease both' }} /> : error ? <span className="font-mono text-[11px] text-error">unreachable</span> : <GhostChart label="Rendering…" height={56} badge={false} framed={false} />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">

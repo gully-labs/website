@@ -106,9 +106,9 @@ export function ApiReference() {
             ['sessionOpen', 'boolean', <>Whether the chain’s feed session is open now. See <DocLink to="methodology" hash="sessions">sessions</DocLink>.</>],
             ['sessionName', 'string', <><C>24/5</C> or <C>NYSE hours</C>.</>],
             ['fairMethod', 'string', 'How fair is derived on this chain, in words.'],
-            ['poolsAsOf', 'string | null', 'Time of the pool read in use.'],
+            ['poolsAsOf', 'string, or empty', 'Time of the pool read in use.'],
             ['poolsStale', 'boolean', 'True when the pool read is the last good one, served while every price source for that chain is backing off.'],
-            ['poolSource', 'string | null', 'Where pool prices came from this cycle: on chain, DexScreener or GeckoTerminal.'],
+            ['poolSource', 'string, or empty', 'Where pool prices came from this cycle: on chain, DexScreener or GeckoTerminal.'],
           ]}
         />
       </Section>
@@ -121,23 +121,23 @@ export function ApiReference() {
             ['name', 'string', 'Company name.'],
             ['token', 'string', 'Token contract address.'],
             ['feed', 'string', 'Chainlink feed address.'],
-            ['fair', 'number | null', 'Fair price in USD per token.'],
+            ['fair', 'number, or empty', 'Fair price in USD per token.'],
             ['feedPrices', 'string', <><C>tokenized-instrument</C> (the feed prices the token) or <C>underlying-share</C> (it prices the share).</>],
-            ['multiplier', 'number | null', <>Shares per token from <C>uiMultiplier()</C> on BNB Chain; 1 on Robinhood Chain; empty when the feed could not be read.</>],
-            ['feedUpdatedAt', 'string | null', 'When the feed last updated.'],
-            ['feedError', 'string | null', 'Why the feed could not be read, if it could not.'],
-            ['onchain', 'number | null', 'Price in the chosen pool, USD per token.'],
-            ['gapPct', 'number | null', <>(onchain − fair) / fair × 100. Empty unless both prices were read, and empty on an <C>unverified</C> row (the figure is withheld; see <C>rawGapPct</C>).</>],
-            ['rawGapPct', 'number | null', <>The same gap before the plausibility check. Equal to <C>gapPct</C> on every row except an <C>unverified</C> one, where it keeps the figure that was withheld. Never chart, rank or alert on it.</>],
+            ['multiplier', 'number, or empty', <>Shares per token from <C>uiMultiplier()</C> on BNB Chain; 1 on Robinhood Chain; empty when the feed could not be read.</>],
+            ['feedUpdatedAt', 'string, or empty', 'When the feed last updated.'],
+            ['feedError', 'string, or empty', 'Why the feed could not be read, if it could not.'],
+            ['onchain', 'number, or empty', 'Price in the chosen pool, USD per token.'],
+            ['gapPct', 'number, or empty', <>(onchain − fair) / fair × 100. Empty unless both prices were read, and empty on an <C>unverified</C> row (the figure is withheld; see <C>rawGapPct</C>).</>],
+            ['rawGapPct', 'number, or empty', <>The same gap before the plausibility check. Equal to <C>gapPct</C> on every row except an <C>unverified</C> one, where it keeps the figure that was withheld. Never chart, rank or alert on it.</>],
             ['status', 'string', <>One of <C>premium</C>, <C>discount</C>, <C>drifting</C>, <C>in-line</C>, <C>thin</C>, <C>unverified</C>, <C>no-pool</C>, <C>pool-unreadable</C>, <C>feed-unreadable</C>. Rules in the <DocLink to="methodology" hash="gap">methodology</DocLink>.</>],
             ['trusted', 'boolean', <>Whether the tracker stands behind this row’s gap: true only for <C>premium</C>, <C>discount</C>, <C>drifting</C> and <C>in-line</C> rows whose pool read is fresh (not <C>poolStale</C>). Top movers and gap alerts use trusted rows only.</>],
-            ['untrustedReason', 'string | null', <>Why <C>trusted</C> is false, in a sentence, e.g. <C>The pool holds $4,210, under the $10,000 needed to flag a gap.</C> Empty on a trusted row.</>],
-            ['onchainSource', 'string | null', <><C>chain</C> when this cycle’s onchain price was read from the pool contract itself, <C>api</C> when it is DexScreener’s or GeckoTerminal’s reading (a venue the tracker cannot re-read on chain). Empty when there is no onchain price.</>],
-            ['onchainAt', 'string | null', <>When that onchain price was read (ISO). For <C>api</C> prices this can be older than <C>generatedAt</C>. Empty when there is no onchain price.</>],
-            ['pool', 'Pool | null', 'The pool used, below.'],
-            ['poolError', 'string | null', 'Why pools could not be read, if they could not.'],
-            ['logo', 'string | null', 'The stock’s logo: the token’s own where it carries the company mark, else the company’s own site icon. An absolute URL on gullylabs.xyz.'],
-            ['chainLogo', 'string | null', 'The chain’s logo, an absolute URL on gullylabs.xyz.'],
+            ['untrustedReason', 'string, or empty', <>Why <C>trusted</C> is false, in a sentence, e.g. <C>The pool holds $4,210, under the $10,000 needed to flag a gap.</C> Empty on a trusted row.</>],
+            ['onchainSource', 'string, or empty', <><C>chain</C> when this cycle’s onchain price was read from the pool contract itself, <C>api</C> when it is DexScreener’s or GeckoTerminal’s reading (a venue the tracker cannot re-read on chain). Empty when there is no onchain price.</>],
+            ['onchainAt', 'string, or empty', <>When that onchain price was read (ISO). For <C>api</C> prices this can be older than <C>generatedAt</C>. Empty when there is no onchain price.</>],
+            ['pool', 'Pool, or empty', 'The pool used, below.'],
+            ['poolError', 'string, or empty', 'Why pools could not be read, if they could not.'],
+            ['logo', 'string, or empty', 'The stock’s logo: the token’s own where it carries the company mark, else the company’s own site icon. An absolute URL on gullylabs.xyz.'],
+            ['chainLogo', 'string, or empty', 'The chain’s logo, an absolute URL on gullylabs.xyz.'],
             ['poolStale', 'boolean', 'True when the pool figures are the last good read rather than a fresh one.'],
           ]}
         />
@@ -195,15 +195,15 @@ export function ApiReference() {
             ['window', 'string', <><C>1h</C> or <C>24h</C>.</>],
             ['windowSeconds', 'number', '3600 or 86400.'],
             ['toleranceSeconds', 'number', 'How far the earlier snapshot may sit from exactly one window ago: 15 minutes for 1h, 2 hours for 24h. Further than that and the token is left out.'],
-            ['asOf', 'string | null', 'The newest snapshot compared. Empty when nothing could be compared.'],
-            ['from, to', 'string | null', <>The comparison times: <C>to</C> is <C>asOf</C>, <C>from</C> one window earlier. Each row carries its own exact pair.</>],
+            ['asOf', 'string, or empty', 'The newest snapshot compared. Empty when nothing could be compared.'],
+            ['from, to', 'string, or empty', <>The comparison times: <C>to</C> is <C>asOf</C>, <C>from</C> one window earlier. Each row carries its own exact pair.</>],
             ['eligible', 'number', 'Tokens with both points and a trusted status.'],
             ['left', 'object', <>Why the others are out: <C>untrusted</C>, <C>noHistory</C>, <C>staleHistory</C> (latest snapshot over 30 minutes old), <C>tooShort</C>.</>],
             ['historyHours', 'number', 'How many hours the longest series covers.'],
-            ['note', 'string | null', <>Set when nothing could be ranked, e.g. <C>Needs 24h of snapshots: the longest series so far covers 6.5 h.</C></>],
+            ['note', 'string, or empty', <>Set when nothing could be ranked, e.g. <C>Needs 24h of snapshots: the longest series so far covers 6.5 h.</C></>],
             ['byGap', 'Mover[]', 'Largest absolute gap change first.'],
             ['byPrice', 'Mover[]', 'Largest absolute onchain price change first.'],
-            ['stock', 'Mover | null', <>Only with <C>chain</C> and <C>ticker</C>.</>],
+            ['stock', 'Mover, or empty', <>Only with <C>chain</C> and <C>ticker</C>.</>],
           ]}
         />
         <H3>Mover</H3>
@@ -211,11 +211,11 @@ export function ApiReference() {
           rows={[
             ['chain, ticker, name, token', 'string', 'As in the tracker rows.'],
             ['status, gapPct, onchain, fair', 'see Rows', 'The token’s current status and prices, as in /api/tracker.'],
-            ['liquidityUsd', 'number | null', 'Liquidity of the pool its price comes from.'],
+            ['liquidityUsd', 'number, or empty', 'Liquidity of the pool its price comes from.'],
             ['gapThen, gapNow', 'number', 'Gap % in the earlier and the latest snapshot.'],
             ['gapChangePp', 'number', 'gapNow − gapThen, in percentage points.'],
             ['onchainThen, onchainNow', 'number', 'Onchain price in the two snapshots.'],
-            ['priceChangePct', 'number | null', 'Onchain price change in %.'],
+            ['priceChangePct', 'number, or empty', 'Onchain price change in %.'],
             ['from, to', 'string', 'Times of the two snapshots compared.'],
             ['spark', '[unixSeconds, gapPct][]', 'The gap over the window, at most 48 points, for a sparkline.'],
           ]}
@@ -266,11 +266,11 @@ export function ApiReference() {
             ['nodes', 'Node[]', <>Ranked wallets: <C>id</C>, <C>rank</C>, <C>balance</C>, <C>pct</C>, <C>label</C> (<C>kind</C>: deployer, pool, lock, burn, token, deepcore, router, gully, exchange, known), <C>contract</C>, <C>cluster</C>, <C>flags</C> (sniper, bundled, funded-by-deployer, deployer), <C>url</C>; stocks add <C>valueAtFairUsd</C>, <C>premiumUsd</C>, <C>boughtGapPct</C>.</>],
             ['links, clusters, hidden', 'array', <>Transfers and funding between mapped wallets; clusters (<C>id</C>, <C>wallets</C>, <C>count</C>, <C>pct</C>, <C>hasDeployer</C>), largest first; wallets outside the map that connect two groups.</>],
             ['summary', 'object', <><C>top10Pct</C>, <C>largestCluster</C>, <C>line</C>, <C>plain</C> (sentences).</>],
-            ['forensics', 'object | null', <>Launches only: bundled buyers, snipers, deployer share and funding, liquidity lock, <C>riskLine</C>.</>],
+            ['forensics', 'object, or empty', <>Launches only: bundled buyers, snipers, deployer share and funding, liquidity lock, <C>riskLine</C>.</>],
             ['health', 'object', <>Launches only: <C>score</C>, <C>level</C>, <C>verdict</C>, <C>counted</C>, and <C>parts[]</C> with <C>weight</C>, <C>points</C> (empty when not known), <C>value</C>, <C>reason</C>.</>],
-            ['fair', 'object | null', <>Stocks only: <C>fair</C>, <C>onchain</C>, <C>gapPct</C>, the top 10’s value at fair and premium.</>],
-            ['timeline', 'object | null', 'Replay frames (24 at most) on the Pro tier.'],
-            ['deployerHistory, crossToken', 'object | null', 'The deployer’s earlier launches and their outcome; the largest cluster’s wallets in other launches.'],
+            ['fair', 'object, or empty', <>Stocks only: <C>fair</C>, <C>onchain</C>, <C>gapPct</C>, the top 10’s value at fair and premium.</>],
+            ['timeline', 'object, or empty', 'Replay frames (24 at most) on the Pro tier.'],
+            ['deployerHistory, crossToken', 'object, or empty', 'The deployer’s earlier launches and their outcome; the largest cluster’s wallets in other launches.'],
             ['features, tier, locked', 'object', <>What this caller’s plan includes (<C>holders</C>, <C>replay</C>, <C>csv</C>, <C>alerts</C>, <C>liveMinutes</C>, <C>gated</C>). Gating is off today, so everyone gets the Pro features.</>],
             ['sources, asOf', 'object, string', 'Where each part was read, and when.'],
           ]}
@@ -394,7 +394,7 @@ export function ApiReference() {
         </P>
         <Fields
           rows={[
-            ['country', 'string | null', 'Two-letter country code, or empty when it could not be determined.'],
+            ['country', 'string, or empty', 'Two-letter country code, or empty when it could not be determined.'],
             ['allowed', 'boolean', 'False in the blocked regions (US, CU, IR, KP, SY) and when the country is unknown.'],
             ['reason', 'string', <><C>ok</C>, <C>blocked</C>, <C>unknown</C> or <C>local</C> (development).</>],
           ]}

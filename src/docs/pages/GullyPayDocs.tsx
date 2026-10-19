@@ -227,9 +227,9 @@ export function GullyPayDocs() {
             ['amount', 'fixed | open', <>A fixed USD amount, or <C>open</C>: the payer types an amount between a minimum and a maximum. The server checks it; the page cannot change it.</>],
             ['assets', 'string[]', 'Which chain and asset pairs it takes (all by default).'],
             ['active', 'boolean', 'Switched off links take no payments.'],
-            ['expiresAt', 'date | null', 'After it, the link takes no payments.'],
-            ['maxUses', 'number | null', 'How many paid uses it allows. Checkouts in progress count against it, so a one-off link cannot be paid twice.'],
-            ['webhook', 'https URL | null', <>Where its events go (<a href="#webhooks">webhooks</a>).</>],
+            ['expiresAt', 'date, or empty', 'After it, the link takes no payments.'],
+            ['maxUses', 'number, or empty', 'How many paid uses it allows. Checkouts in progress count against it, so a one-off link cannot be paid twice.'],
+            ['webhook', 'https URL, or empty', <>Where its events go (<a href="#webhooks">webhooks</a>).</>],
           ]}
         />
         <Details summary="Pay links: the details">
