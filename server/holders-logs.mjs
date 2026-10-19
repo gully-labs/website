@@ -12,7 +12,10 @@
    - After that: incremental reads from the cursor on any URL (recent windows work on public nodes).
    - Archive capability is probed per configured URL (GULLY_RPC_<chainId>; an old, narrow log range and an
      old balance read) and cached. The public defaults are never probed or asked for history.
-   - A token with more than CAP transfers stops there with a clear note.
+   - A token with more than CAP transfers stops there with a clear note. Tokens nobody listed (any ERC-20 someone
+     pastes) get tighter caps: anyCap transfers and anyMaxCalls log reads over the token's whole life, so one
+     busy token can neither fill the disk nor keep our RPC busy; past them the map falls back to a holder API
+     ("top holders only") or says plainly that it is unavailable. At most anyMaxFiles such stores are kept.
    Store: DATA_DIR/holder-logs/<chain>-<token>.json. Pure IO helpers here; the map is built in holders.mjs. */
 
 import fs from 'node:fs'
@@ -23,6 +26,11 @@ import { decodeTransfer, HOLDER_CHAINS, rpcAt, rpcEnvUrls, rpcUrlList, TRANSFER_
 export const LOGS = {
   /** Transfers above this are not rebuilt (memory and time); the map says so. */
   cap: 200_000,
+  /** Tokens nobody listed: transfers kept, log reads over the token's life, background backfills at once, stores kept. */
+  anyCap: 40_000,
+  anyMaxCalls: 300,
+  anyMaxBackground: 3,
+  anyMaxFiles: 300,
   startWindow: 5_000,
   minWindow: 10,
   maxWindow: 1_000_000,
@@ -108,14 +116,34 @@ function load(chainKey, token) {
   } catch {
     s = null
   }
-  s ??= { v: 1, chain: chainKey, token: token.toLowerCase(), startBlock: null, cursor: null, window: LOGS.startWindow, complete: false, capped: false, head: null, transfers: [] }
+  s ??= { v: 1, chain: chainKey, token: token.toLowerCase(), startBlock: null, cursor: null, window: LOGS.startWindow, complete: false, capped: false, cappedBy: null, capLimit: null, calls: 0, head: null, transfers: [] }
   mem.set(f, s)
   return s
+}
+/** Keeps at most LOGS.anyMaxFiles stores: the least recently written ones go first (never a listed token's). */
+function pruneAny(keep) {
+  try {
+    const dir = storeDir()
+    const files = fs.readdirSync(dir).filter((n) => n.endsWith('.json'))
+    if (files.length <= LOGS.anyMaxFiles) return
+    const aged = files.map((n) => ({ n, t: fs.statSync(path.join(dir, n)).mtimeMs })).filter((x) => path.join(dir, x.n) !== keep && !mem.get(path.join(dir, x.n))?.listed)
+    aged.sort((a, b) => a.t - b.t)
+    for (const x of aged.slice(0, files.length - LOGS.anyMaxFiles)) {
+      fs.rmSync(path.join(dir, x.n), { force: true })
+      mem.delete(path.join(dir, x.n))
+    }
+  } catch {
+    /* best effort */
+  }
 }
 function save(s) {
   try {
     fs.mkdirSync(storeDir(), { recursive: true })
     const f = fileOf(s.chain, s.token)
+    if (s.any && !s.pruned) {
+      s.pruned = true
+      pruneAny(f)
+    }
     fs.writeFileSync(f + '.tmp', JSON.stringify(s))
     fs.renameSync(f + '.tmp', f)
   } catch (e) {
@@ -164,9 +192,17 @@ export async function findStartBlock(chainKey, token, url, head) {
  * One bounded session: reads logs from the cursor towards the head. Archive URLs only until the history is
  * complete; any URL after. Returns the store's state ('ok' | 'backfilling' | 'no-archive' | 'capped' | 'error').
  */
-export async function backfillStep(chainKey, tokenIn, { calls = LOGS.sessionCalls, ms = LOGS.sessionMs } = {}) {
+export async function backfillStep(chainKey, tokenIn, { calls = LOGS.sessionCalls, ms = LOGS.sessionMs, any = false } = {}) {
   const token = tokenIn.toLowerCase()
   const s = load(chainKey, token)
+  const cap = any ? LOGS.anyCap : LOGS.cap
+  const maxCalls = any ? LOGS.anyMaxCalls : Infinity
+  if (any) s.any = true
+  else s.listed = true
+  // A store capped under a tighter limit starts over when the token is asked for under a looser one (it became listed).
+  if (s.capped && s.capLimit !== null && cap > s.capLimit) {
+    Object.assign(s, { startBlock: null, cursor: null, window: LOGS.startWindow, complete: false, capped: false, cappedBy: null, capLimit: null, calls: 0, transfers: [] })
+  }
   if (s.capped) return 'capped'
   // No archive URL configured and answering: say so before any call (the public defaults are not asked).
   const urls = s.complete ? rpcUrlList(chainKey) : await archiveUrls(chainKey)
@@ -182,6 +218,12 @@ export async function backfillStep(chainKey, tokenIn, { calls = LOGS.sessionCall
   let u = 0
   let dirty = false
   while (s.cursor < head && used < calls && Date.now() - t0 < ms) {
+    if (!s.complete && s.calls >= maxCalls) {
+      Object.assign(s, { capped: true, cappedBy: 'calls', capLimit: cap, transfers: [] })
+      dirty = true
+      break
+    }
+    s.calls++
     const from = s.cursor + 1
     const to = Math.min(head, from + s.window - 1)
     used++
@@ -214,14 +256,13 @@ export async function backfillStep(chainKey, tokenIn, { calls = LOGS.sessionCall
     s.cursor = to
     if (logs.length < LOGS.growBelow) s.window = Math.min(LOGS.maxWindow, s.window * 2)
     dirty = true
-    if (s.transfers.length > LOGS.cap) {
-      s.capped = true
-      s.transfers = []
+    if (s.transfers.length > cap) {
+      Object.assign(s, { capped: true, cappedBy: 'transfers', capLimit: cap, transfers: [] })
       break
     }
     if (used % 20 === 0) save(s)
   }
-  if (s.cursor >= head) s.complete = true
+  if (s.cursor >= head && !s.capped) s.complete = true
   s.head = head
   if (dirty || s.complete) save(s)
   if (s.capped) return 'capped'
@@ -231,15 +272,17 @@ export async function backfillStep(chainKey, tokenIn, { calls = LOGS.sessionCall
 
 const running = new Map()
 /** Keeps a backfill going in the background until it is complete (one per token). */
-function continueInBackground(chainKey, token) {
+function continueInBackground(chainKey, token, any) {
   const k = `${chainKey}:${token}`
   if (running.has(k) || LOGS.noBackground) return
+  if (any && [...running.values()].filter((r) => r.any).length >= LOGS.anyMaxBackground) return
   const p = (async () => {
     for (let i = 0; i < 10_000; i++) {
-      const st = await backfillStep(chainKey, token).catch(() => 'error')
+      const st = await backfillStep(chainKey, token, { any }).catch(() => 'error')
       if (st !== 'backfilling') break
     }
   })().finally(() => running.delete(k))
+  p.any = any
   running.set(k, p)
 }
 
@@ -248,16 +291,16 @@ function continueInBackground(chainKey, token) {
  *   { state: 'ok', transfers, fromBlock, toBlock, complete: true, count }
  *   { state: 'backfilling', progress (0..1) } · { state: 'no-archive' } · { state: 'capped', cap } · { state: 'error' }
  */
-export async function readOwnHistory(chainKey, token) {
+export async function readOwnHistory(chainKey, token, { any = false } = {}) {
   if (!HOLDER_CHAINS[chainKey] || chainKey === 'solana') return { state: 'error' }
-  const st = await backfillStep(chainKey, token)
+  const st = await backfillStep(chainKey, token, { any })
   const s = load(chainKey, token.toLowerCase())
   if (st === 'backfilling') {
-    continueInBackground(chainKey, token.toLowerCase())
+    continueInBackground(chainKey, token.toLowerCase(), any)
     const span = Math.max(1, (s.head ?? 0) - (s.startBlock ?? 0))
     return { state: 'backfilling', progress: Math.max(0, Math.min(0.99, ((s.cursor ?? 0) - (s.startBlock ?? 0)) / span)) }
   }
-  if (st === 'capped') return { state: 'capped', cap: LOGS.cap }
+  if (st === 'capped') return { state: 'capped', cap: s.capLimit ?? LOGS.cap, by: s.cappedBy ?? 'transfers' }
   if (st !== 'ok' && !s.complete) return { state: st }
   // Complete, possibly a little behind the head when the incremental read failed: still exact up to the cursor.
   return { state: 'ok', transfers: s.transfers.map(toTransfer), fromBlock: s.startBlock ?? 0, toBlock: s.cursor, complete: true, count: s.transfers.length }

@@ -167,7 +167,7 @@ export function renderHolderCardSvg(map) {
   ctx.fillText(title, X, 192)
   ctx.font = '500 18px "IBM Plex Mono"'
   ctx.fillStyle = K.muted
-  ctx.fillText(`${map.kind === 'deepcore-launch' ? 'DeepCore launch' : 'Stock token'} · ${map.chain?.name ?? ''}`, X, 226)
+  ctx.fillText(`${map.kind === 'deepcore-launch' ? 'DeepCore launch' : map.kind === 'launch' ? `${map.venue ?? 'Launchpad'} launch` : map.kind === 'token' ? 'Token' : 'Stock token'} · ${map.chain?.name ?? ''}`, X, 226)
   ctx.font = '800 34px "Barlow Condensed"'
   ctx.fillStyle = K.pale
   let y = 284

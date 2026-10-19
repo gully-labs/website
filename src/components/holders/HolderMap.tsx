@@ -137,8 +137,8 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
     const chainName = m.chain?.name ?? 'this chain'
     return (
       <MapEmpty
-        title={m.state === 'not-found' ? 'No Holder Map for this token' : m.state === 'unavailable' ? (m.comingSoon ? `Stock maps on ${chainName} are coming soon` : 'Holder data could not be read just now') : 'The Holder Map is busy'}
-        text={m.comingSoon ? `Maps for tokenised stocks on ${chainName} are on the way. DeepCore launches already have live maps you can open now.` : m.reason}
+        title={m.state === 'not-found' ? 'This address is not a token we can map' : m.state === 'unavailable' ? (m.comingSoon ? `Token maps on ${chainName} are coming soon` : typeof m.progress === 'number' ? 'Reading this token’s history' : 'This token cannot be mapped right now') : m.state === 'error' ? 'The Holder Map could not check this token' : 'The Holder Map is busy'}
+        text={m.comingSoon ? `Maps for tokens on ${chainName} are on the way. DeepCore launches already have live maps you can open now.` : m.reason}
         action={m.state === 'busy' ? undefined : { label: 'See tokens with a live map', href: '/holders', external: embed }}
       />
     )
@@ -671,13 +671,22 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
         <div className="flex flex-wrap items-center gap-x-2">
           <span className="font-mono text-[12px] text-dim">
             <span className="min-[600px]:hidden">{m.chain.name} · </span>
-            {m.kind === 'deepcore-launch' ? 'DeepCore launch' : 'Stock token'} · updated {ageText(m.asOf, now)}
+            {kindLabel(m)} · updated {ageText(m.asOf, now)}
             {m.holders.count !== null ? ` · ${m.holders.count.toLocaleString('en-US')} holders` : ''}
             <span className="max-[599px]:hidden"> · {m.holders.shown} listed</span>
             {m.stale ? ' · showing the last good read' : ''}
           </span>
           <InfoPop />
         </div>
+        {m.coverage?.level === 'top' && (
+          <p role="note" data-coverage="top" className="m-0 flex items-start gap-2 rounded-btn border border-line-strong px-3 py-2 text-[13px] leading-[1.5] text-muted" style={{ background: alpha(K.night, 0.92) }}>
+            <Info size={14} aria-hidden className="mt-[3px] flex-none text-gold" />
+            <span>
+              <b className="font-semibold text-ink">Top holders only{m.coverage.shown ? ` (the biggest ${m.coverage.shown.toLocaleString('en-US')})` : ''}.</b> {m.coverage.reason ? `${m.coverage.reason[0].toUpperCase()}${m.coverage.reason.slice(1)}. ` : ''}
+              Smaller wallets, and links between wallets outside the listed ones, are not shown. Shares are of {m.holders.sharesOf}.
+            </span>
+          </p>
+        )}
       </div>
 
       {wide ? (
@@ -1236,14 +1245,20 @@ function FairBlock({ m }: { m: HolderMapOk }) {
 
 /* ---------- trade ---------- */
 
+/** The line under the title: what kind of token this map is of. */
+function kindLabel(m: HolderMapOk) {
+  return m.kind === 'deepcore-launch' ? 'DeepCore launch' : m.kind === 'launch' ? `${m.venue ?? 'Launchpad'} launch` : m.kind === 'token' ? 'Token' : 'Stock token'
+}
+
 function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embed: boolean; tradeHref?: string | null; onTrade?: () => void; pageUrl: string }) {
   if (tradeHref === null) return null
   const sym = m.token.symbol ?? 'this token'
   const launch = m.kind === 'deepcore-launch'
+  const generic = m.kind === 'token' || m.kind === 'launch'
   const net = { robinhood: 'robinhood', bsc: 'bsc', base: 'base', hyperevm: 'hyperevm' }[m.chain.key] ?? m.chain.key
-  const href = embed ? pageUrl : (tradeHref ?? (launch ? `https://deepcore.fun/app/swap?net=${net}&in=0x0000000000000000000000000000000000000000&out=${m.token.address}` : `/tracker/${m.chain.key}/${sym}#swap`))
+  const href = embed ? pageUrl : (tradeHref ?? (generic ? m.token.url : launch ? `https://deepcore.fun/app/swap?net=${net}&in=0x0000000000000000000000000000000000000000&out=${m.token.address}` : `/tracker/${m.chain.key}/${sym}#swap`))
   const external = embed || /^https?:/.test(href)
-  const note = launch ? `Opens DeepCore’s own swap; Gully Labs takes no fee there.` : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
+  const note = generic ? 'Opens the block explorer; Gully Labs has no swap for this token.' : launch ? `Opens DeepCore’s own swap; Gully Labs takes no fee there.` : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
   return (
     <div className="flex flex-col gap-2 rounded-[12px] border border-line-strong p-4" style={{ background: K.night }} data-holder-trade>
       <p className="m-0 text-[14px] leading-[1.5] text-ink">
@@ -1258,7 +1273,7 @@ function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embe
           className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 font-semibold text-bg transition-[filter] hover:brightness-110"
           style={{ background: K.gold }}
         >
-          Buy or sell {sym}
+          {generic && !embed ? `View ${sym} on the explorer` : `Buy or sell ${sym}`}
           {external ? ' ↗' : ''}
         </a>
         <span className="font-mono text-[11px] text-dim">{embed ? 'Opens Gully Labs.' : note}</span>

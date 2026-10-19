@@ -24,13 +24,13 @@ export function HolderMapDocs() {
       eyebrow="PRODUCTS · HOLDER MAP"
       title="Holder Map"
       description="How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules."
-      lead="Who really holds a token: the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every DeepCore launch."
+      lead="Who really holds a token: the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every DeepCore launch. Any token on Robinhood Chain, BNB Chain, Base, HyperEVM and Solana can be mapped."
       sections={sections}
     >
       <Section id="what" title="What it shows">
         <P>
-          The Holder Map covers two kinds of token: DeepCore launches and the stock tokens the tracker follows. Open one at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext> by address or ticker, from a stock page, or from a
-          launch in the Telegram bot.
+          The Holder Map covers any ERC-20 token on Robinhood Chain, BNB Chain, Base and HyperEVM and any SPL token on Solana, plus DeepCore launches and the stock tokens the tracker follows. Paste an address at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext>: it is first checked to be a token
+          (an ERC-20 that answers decimals and total supply, or a Solana mint), and with no chain given every supported chain is checked at once (a token on several chains gives a picker). Launch checks and the health score are for DeepCore launches and launchpads we know; a plain token gets holders, clusters and concentration.
         </P>
         <List>
           <li>Every bubble is a wallet, sized by its share of the total supply (or of the listed holders when the supply could not be read; the map says which).</li>
@@ -44,14 +44,18 @@ export function HolderMapDocs() {
       </Section>
 
       <Section id="sources" title="Data sources per chain">
-        <P>The map reads each chain from the cheapest source that is complete. A chain without its source says “holder data is not available on this chain yet”; it never shows an empty or made-up map.</P>
+        <P>
+          The map reads each token from the cheapest source that is complete, in this order: our own index of the chain’s Transfer logs on an archive node (every transfer, so balances are exact), then Blockscout, then Moralis (the biggest holders). A token with a very long history
+          (over 40,000 transfers for tokens nobody listed, or too many chain reads) is not rebuilt in full: it gets a “top holders only” map, labelled as such with the reason, or, when no holder source is available on that chain, a plain “unavailable”. A chain without any source says “holder
+          data is not available on this chain yet”. It never shows an empty or made-up map. Which chains map any token today, and how (full history or top holders), is shown on the Holder Map page and in <C>GET /api/holders/sources</C>.
+        </P>
+        <P>To keep the service fair, new maps of tokens nobody listed are limited per visitor (5 a minute) and across all visitors (30 a minute), address checks too (8 a minute per visitor); maps already built are free for everyone.</P>
         <Fields
           head={['Tokens', 'Holders', 'Links']}
           rows={[
             ['DeepCore launches (BNB Chain, HyperEVM, Robinhood Chain, Base)', 'DeepCore’s own log index: every transfer since the launch, so balances are exact', 'Every transfer between mapped wallets since the launch'],
-            ['Stock tokens on Robinhood Chain', 'Blockscout’s API (top holders)', 'The latest transfers, read from the chain'],
-            ['Stock tokens on BNB Chain', 'Moralis (top holders)', 'The latest transfers from Moralis'],
-            ['Stock tokens on Solana', 'The Solana RPC (the 20 largest token accounts, merged by owner)', 'Not read on Solana yet'],
+            ['Any ERC-20 and stock tokens (Robinhood Chain, BNB Chain, Base, HyperEVM)', 'Our own Transfer-log index on an archive node (exact balances); past its caps or without one: Blockscout, then Moralis (top holders, labelled)', 'Every transfer since the token was deployed; for top-holders maps, the latest transfers'],
+            ['Any SPL token and stock tokens on Solana', 'Every token account of the mint where the RPC allows it, else the 20 largest token accounts, merged by owner (labelled)', 'Not read on Solana yet'],
           ]}
         />
         <P>Labels come from DeepCore’s list of its own contracts, the launch’s lock, the Gully Pay fee proxies, the tracker’s pool and public name tags (exchanges among them) from Blockscout’s metadata service.</P>

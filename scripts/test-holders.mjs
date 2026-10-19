@@ -337,12 +337,16 @@ test('cache: a second read within the window makes no upstream call; tiers are c
 
 test('per-IP budget: builds beyond the limit answer busy, cached answers stay free', async () => {
   H.resetHoldersForTest()
+  // Listed tokens (tracked stocks): 12 new builds a minute per IP.
+  const tickers = JSON.parse(fs.readFileSync(new URL('../server/data/robinhood-stocks.json', import.meta.url), 'utf8')).stocks.slice(0, 14).map((s) => s.ticker)
   let busy = 0
-  for (let i = 0; i < 14; i++) {
-    const r = await H.readHolderMap('robinhood', addr(0x500 + i), { ip: '203.0.113.9', tier: 'free' })
+  for (const t of tickers) {
+    const r = await H.readHolderMap('robinhood', t, { ip: '203.0.113.9', tier: 'free' })
     if (r.state === 'busy') busy++
   }
   assert.equal(busy, 2)
+  const again = await H.readHolderMap('robinhood', tickers[0], { ip: '203.0.113.9', tier: 'free' })
+  assert.equal(again.cached, true, 'a cached answer is free even when the budget is spent')
 })
 
 /* --------------------------------------------------------------- routes --- */
@@ -663,7 +667,12 @@ function simRpc(token, ranges) {
     if (q.method === 'eth_blockNumber') return { jsonrpc: '2.0', id: q.id, result: '0x' + SIM_HEAD.toString(16) }
     if (q.method === 'eth_getBalance') return !archiveOk && num(q.params[1]) < SIM_HEAD - 10_000 ? err(q, 'Archive requests require a personal token') : { jsonrpc: '2.0', id: q.id, result: '0x0' }
     if (q.method === 'eth_getCode') return { jsonrpc: '2.0', id: q.id, result: String(q.params[0]).toLowerCase() === token && num(q.params[1] ?? 'latest') >= SIM_DEPLOY ? '0x6080' : '0x' }
-    if (q.method === 'eth_call') return { jsonrpc: '2.0', id: q.id, result: '0x' + (1_000_000n * E18).toString(16) }
+    if (q.method === 'eth_call') {
+      const data = String(q.params[0].data)
+      const str = (t) => '0x' + '20'.padStart(64, '0') + t.length.toString(16).padStart(64, '0') + Buffer.from(t).toString('hex').padEnd(64, '0')
+      const result = data === '0x313ce567' ? '0x' + (18).toString(16).padStart(64, '0') : data === '0x95d89b41' ? str('GEN') : data === '0x06fdde03' ? str('Generic Token') : '0x' + (1_000_000n * E18).toString(16)
+      return { jsonrpc: '2.0', id: q.id, result }
+    }
     if (q.method === 'eth_getLogs') {
       const f = q.params[0]
       const from = num(f.fromBlock)
@@ -679,8 +688,8 @@ function simRpc(token, ranges) {
     return { jsonrpc: '2.0', id: q.id, result: null }
   }
 }
-async function withSim(urls, fn, over = {}) {
-  const token = H.findStock('robinhood', 'NVDA').token.toLowerCase()
+async function withSim(urls, fn, over = {}, tokenIn = null) {
+  const token = tokenIn ?? H.findStock('robinhood', 'NVDA').token.toLowerCase()
   const ranges = []
   const sim = simRpc(token, ranges)
   const prevEnv = process.env.GULLY_RPC_4663
@@ -836,4 +845,231 @@ test('Solana: the full holder list from getProgramAccounts where the RPC allows 
   } finally {
     globalThis.fetch = real
   }
+})
+
+/* ------------------------------------------------------------ any token --- */
+
+const ANYM = await import('../server/holders-any.mjs')
+const GEN = addr(0xabc1)
+
+test('any token: a generic ERC-20 is mapped from our own index, no launch score, named from the chain', async () => {
+  await withSim(
+    ['arch.test'],
+    async ({ token }) => {
+      const m = await H.computeHolderMap('robinhood', token, 'pro')
+      assert.equal(m.state, 'ok', m.reason)
+      assert.equal(m.kind, 'token')
+      assert.equal(m.token.symbol, 'GEN')
+      assert.equal(m.token.name, 'Generic Token')
+      assert.equal(m.coverage.level, 'full')
+      assert.equal(m.forensics, null, 'no launch forensics for a plain token')
+      assert.equal(m.health, null, 'no launch-health score for a plain token')
+      assert.match(m.sources.holders, /all 1,200 transfers/)
+      assert.ok(m.clusters.length > 0)
+    },
+    {},
+    GEN,
+  )
+})
+
+test('any token: past the transfer cap the map is "top holders only", labelled; without a holder API it is unavailable with the reason', async () => {
+  await withSim(
+    ['arch.test'],
+    async () => {
+      const bare = await H.computeHolderMap('robinhood', GEN, 'pro')
+      assert.equal(bare.state, 'unavailable')
+      assert.match(bare.reason, /more than 500 transfers, too many to rebuild its holders here yet/)
+      H.resetHoldersForTest()
+      process.env.BLOCKSCOUT_API_KEY = 'proapi_test'
+      blockscoutHolders = [{ address: { hash: addr(1), is_contract: false }, value: String(600n * E18) }, { address: { hash: addr(2), is_contract: false }, value: String(300n * E18) }]
+      try {
+        const m = await H.computeHolderMap('robinhood', GEN, 'pro')
+        assert.equal(m.state, 'ok', m.reason)
+        assert.equal(m.coverage.level, 'top')
+        assert.match(m.coverage.reason, /more than 500 transfers/)
+        assert.match(m.sources.holders, /^Blockscout \(top 2 holders\)/)
+        assert.equal(m.holders.sharesOf, 'total supply')
+      } finally {
+        delete process.env.BLOCKSCOUT_API_KEY
+        blockscoutHolders = null
+      }
+    },
+    { anyCap: 500 },
+    GEN,
+  )
+  // A tight read budget caps the same way, for its own reason.
+  await withSim(
+    ['arch.test'],
+    async () => {
+      const m = await H.computeHolderMap('robinhood', GEN, 'pro')
+      assert.equal(m.state, 'unavailable')
+      assert.match(m.reason, /too many chain reads/)
+    },
+    { anyMaxCalls: 3 },
+    GEN,
+  )
+})
+
+test('any token: a listed (stock) token keeps the larger cap; the tight one applies to unlisted tokens only', async () => {
+  await withSim(['arch.test'], async () => {
+    const m = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
+    assert.equal(m.state, 'ok', m.reason)
+    assert.equal(m.kind, 'stock')
+  }, { anyCap: 500 })
+})
+
+test('any token: an address that is not a token is refused with a plain reason, before any history is read', async () => {
+  await withSim(['arch.test'], async ({ ranges }) => {
+    const m = await H.computeHolderMap('robinhood', addr(0x77), 'pro')
+    assert.equal(m.state, 'not-found')
+    assert.match(m.reason, /no contract at this address on Robinhood Chain/)
+    assert.equal(ranges.length, 0, 'no log read for a non-token')
+  }, {}, GEN)
+})
+
+/** A chain stub for probes: tokens = { host: Set of lowercase addresses that are ERC-20 tokens }. */
+function probeFetch(tokens) {
+  return (url, init = {}) => {
+    const u = new URL(String(url))
+    if (u.host === 'dc.test') return Promise.resolve(new Response('{"error":{}}', { status: 404 }))
+    if (!tokens[u.host]) return Promise.reject(new TypeError('down'))
+    const one = (q) => {
+      const a = String(q.params[0]?.to ?? q.params[0]).toLowerCase()
+      const isTok = tokens[u.host].has(a)
+      if (q.method === 'eth_getCode') return { jsonrpc: '2.0', id: q.id, result: isTok || a === CONTRACT ? '0x6080' : '0x' }
+      if (q.method === 'eth_call') {
+        if (!isTok) return { jsonrpc: '2.0', id: q.id, error: { code: 3, message: 'execution reverted' } }
+        const d = q.params[0].data
+        return { jsonrpc: '2.0', id: q.id, result: d === '0x313ce567' ? '0x' + (6).toString(16).padStart(64, '0') : d === '0x18160ddd' ? '0x' + (5000n).toString(16).padStart(64, '0') : '0x' }
+      }
+      return { jsonrpc: '2.0', id: q.id, result: null }
+    }
+    const body = JSON.parse(String(init.body))
+    return Promise.resolve(new Response(JSON.stringify(Array.isArray(body) ? body.map(one) : one(body)), { status: 200, headers: { 'content-type': 'application/json' } }))
+  }
+}
+const CONTRACT = '0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0'
+
+test('chain detection: a pasted address is probed on every chain at once; a token on several chains gives a picker', async () => {
+  const X = addr(0xfeed1)
+  process.env.GULLY_RPC_8453 = 'https://rpc8453.test'
+  H.setHoldersFetchForTest(probeFetch({ 'rpc4663.test': new Set([X]), 'rpc56.test': new Set([X]), 'rpc8453.test': new Set() }))
+  try {
+    H.resetHoldersForTest()
+    const { resolveHolders } = await import('../server/holders-intel.mjs')
+    const r = await resolveHolders(X, { ip: '198.51.100.1' })
+    assert.deepEqual(r.matches.map((m) => [m.chain, m.kind]), [['robinhood', 'token'], ['bsc', 'token']], 'a token on two chains: the picker')
+    assert.deepEqual(r.checked.map((c) => [c.chain, c.status]), [['robinhood', 'token'], ['bsc', 'token'], ['base', 'not-token'], ['hyperevm', 'unreadable']])
+    assert.match(r.matches[0].path, /^\/holders\/robinhood\/0x/)
+    // A contract that is not a token: no match, and every chain is named with its reason.
+    const n = await resolveHolders(CONTRACT, { ip: '198.51.100.1' })
+    assert.equal(n.matches.length, 0)
+    assert.equal(n.checked.length, 4)
+    assert.match(n.checked.find((c) => c.chain === 'robinhood').reason, /does not answer like an ERC-20/)
+    assert.match(n.checked.find((c) => c.chain === 'hyperevm').reason, /did not answer/)
+  } finally {
+    delete process.env.GULLY_RPC_8453
+    H.setHoldersFetchForTest(stubFetch)
+    H.resetHoldersForTest()
+  }
+})
+
+test('budgets: unlisted maps have a tighter per-IP and a global per-minute budget; busy is never cached; cached answers stay free', async () => {
+  H.setHoldersFetchForTest(probeFetch({ 'rpc4663.test': new Set(Array.from({ length: 120 }, (_, i) => addr(0x9000 + i))) }))
+  try {
+    H.resetHoldersForTest()
+    const states = []
+    for (let i = 0; i < 7; i++) states.push((await H.readHolderMap('robinhood', addr(0x9000 + i), { ip: '203.0.113.20', tier: 'free' })).state)
+    assert.equal(states.filter((s) => s === 'busy').length, 2, '5 new unlisted maps a minute per IP: ' + states)
+    const again = await H.readHolderMap('robinhood', addr(0x9000), { ip: '203.0.113.20', tier: 'free' })
+    assert.equal(again.cached, true, 'cached: free')
+    // The refused token is not poisoned: another visitor builds it.
+    const other = await H.readHolderMap('robinhood', addr(0x9006), { ip: '203.0.113.21', tier: 'free' })
+    assert.notEqual(other.state, 'busy')
+    // Global: 30 a minute across all visitors (6 used above).
+    let busy = 0
+    for (let i = 0; i < 30; i++) if ((await H.readHolderMap('robinhood', addr(0x9010 + i), { ip: `192.0.2.${i + 1}`, tier: 'free' })).state === 'busy') busy++
+    assert.equal(busy, 6, 'the global budget of 30 a minute is spent after 24 more')
+    // Listed tokens are not held back by it.
+    const stock = await H.readHolderMap('robinhood', 'NVDA', { ip: '192.0.2.99', tier: 'free' })
+    assert.notEqual(stock.state, 'busy')
+    // Search probes have their own budget: 8 uncached addresses a minute per IP.
+    ANYM.resetAnyForTest()
+    let probeBusy = 0
+    for (let i = 0; i < 10; i++) if ((await ANYM.detectChains(addr(0xa000 + i), { ip: '198.51.100.50' })).busy) probeBusy++
+    assert.equal(probeBusy, 2)
+    assert.equal((await ANYM.detectChains(addr(0xa000), { ip: '198.51.100.50' })).busy, undefined, 'a cached probe is free')
+  } finally {
+    H.setHoldersFetchForTest(stubFetch)
+    H.resetHoldersForTest()
+  }
+})
+
+test('any token: a token of another launchpad runs the launch forensics, names the venue, never the DeepCore health score', async () => {
+  await withSim(
+    ['arch.test'],
+    async ({ token }) => {
+      H.setKnownLaunchForTest(async (chain, t) => (chain === 'robinhood' && t === token ? { venue: 'peddles', chainId: 4663, token, creationBlock: null, deployer: addr(1), pool: addr(0xb0b) } : null))
+      try {
+        const m = await H.computeHolderMap('robinhood', token, 'pro')
+        assert.equal(m.state, 'ok', m.reason)
+        assert.equal(m.kind, 'launch')
+        assert.equal(m.venue, 'Peddles')
+        assert.ok(m.forensics, 'launch forensics unlocked by knownLaunch')
+        assert.equal(m.health, null, 'the health score is DeepCore’s')
+        assert.equal(m.forensics.deployer, addr(1))
+      } finally {
+        H.setKnownLaunchForTest(null)
+      }
+    },
+    {},
+    GEN,
+  )
+  // The Uniswap v4 PoolManagers are pools, not wallets.
+  const l = H.staticLabels({ chainKey: 'base', token: TOKEN, venue: null, launch: null })
+  assert.equal(l.get('0x498581ff718922c3f8e6a244956af099b2652b2b').kind, 'pool')
+})
+
+test('any token on Solana: only a mint is mapped; every holder where the RPC allows it, else the top 20, labelled', async () => {
+  const MINT = 'So11111111111111111111111111111111111111112'
+  const NOT_MINT = '9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin'
+  const OWNER_A = '9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin'
+  const OWNER_B = 'HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH'
+  const real = globalThis.fetch
+  let allow = true
+  const acct = (owner, amount) => ({ account: { data: { parsed: { info: { owner, tokenAmount: { amount } } } } } })
+  globalThis.fetch = async (url, init) => {
+    const q = JSON.parse(String(init.body))
+    const res = (result) => new Response(JSON.stringify({ jsonrpc: '2.0', id: q.id, result }), { status: 200 })
+    if (q.method === 'getAccountInfo') return q.params[0] === MINT ? res({ value: { owner: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', data: { parsed: { type: 'mint', info: { decimals: 6, supply: '1000' } } } } }) : res({ value: { owner: '11111111111111111111111111111111', data: { parsed: { type: 'system' } } } })
+    if (q.method === 'getTokenSupply') return res({ value: { amount: '1000', decimals: 6 } })
+    if (q.method === 'getTokenLargestAccounts') return res({ value: [{ address: OWNER_A, amount: '700' }, { address: OWNER_B, amount: '200' }] })
+    if (q.method === 'getMultipleAccounts') return res({ value: [{ data: { parsed: { info: { owner: OWNER_A } } } }, { data: { parsed: { info: { owner: OWNER_B } } } }] })
+    if (q.method === 'getProgramAccounts') return allow ? res([acct(OWNER_A, '700'), acct(OWNER_B, '200'), acct(OWNER_A, '50')]) : new Response(JSON.stringify({ jsonrpc: '2.0', id: q.id, error: { code: -32010, message: 'not available' } }), { status: 200 })
+    return res(null)
+  }
+  try {
+    H.resetHoldersForTest()
+    const bad = await H.computeHolderMap('solana', NOT_MINT, 'pro')
+    assert.equal(bad.state, 'not-found')
+    assert.match(bad.reason, /not a token mint/)
+    const full = await H.computeHolderMap('solana', MINT, 'pro')
+    assert.equal(full.state, 'ok', full.reason)
+    assert.equal(full.kind, 'token')
+    assert.equal(full.coverage.level, 'full')
+    allow = false
+    H.resetHoldersForTest()
+    const top = await H.computeHolderMap('solana', MINT, 'pro')
+    assert.equal(top.state, 'ok', top.reason)
+    assert.equal(top.coverage.level, 'top')
+    assert.match(top.coverage.reason, /20 largest token accounts/)
+  } finally {
+    globalThis.fetch = real
+  }
+})
+
+test('any token: sources report which chains map any token, and how', () => {
+  const rows = H.holdersSourceHealth()
+  assert.ok(rows.every((r) => ['full', 'top', 'none'].includes(r.any) && typeof r.tokens === 'boolean'))
+  assert.equal(H.holdersAvailable('robinhood', 'token'), H.holdersAvailable('robinhood', 'stock'))
 })

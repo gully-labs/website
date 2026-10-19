@@ -9,10 +9,11 @@ import { ScoreRing } from '../components/holders/parts'
 import { K } from '../components/holders/theme'
 import type { MapPreview } from '../components/holders/MiniMap'
 import { eyebrow } from '../components/ui'
-import { getJson, type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveMatch, type TopScanned } from '../lib/holders'
+import { getJson, type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveChecked, type ResolveMatch, type TopScanned } from '../lib/holders'
 import { ageText } from '../lib/tracker'
 
-/* /holders: the Holder Map's front door. A search for any DeepCore launch or tracked stock token
+/* /holders: the Holder Map's front door. A search for any token: an address on Robinhood Chain, BNB Chain, Base,
+   HyperEVM or Solana (every supported chain is checked at once), a DeepCore launch or a tracked stock ticker
    (GET /api/holders/resolve), the newest DeepCore launches as they are checked (GET /api/holders/launches,
    every 30 s), the maps people opened most today (GET /api/holders/top) and how to read a map. Every
    figure is read live; a launch still being checked says so. */
@@ -75,13 +76,13 @@ export function HoldersLanding() {
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
       <Seo
         title="Holder Map: who really holds a token"
-        description="See who holds any DeepCore launch: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part. Tokenised stocks follow chain by chain."
+        description="See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part."
       />
       <section className="flex flex-col gap-4">
         <span className={eyebrow}>HOLDER MAP · GULLY LABS</span>
         <h1 className="heading-1">Who really holds it?</h1>
         <p className="m-0 max-w-[720px] text-[18px] leading-[1.6] text-muted">
-          Paste a token address or a ticker. See the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every new DeepCore launch: bundled buys, snipers, the deployer’s share and record.
+          Paste any token address, on any chain we cover, or a ticker. See the biggest wallets as bubbles and the ones that trade with each other in gold. New DeepCore launches also get a plain check: bundled buys, snipers, the deployer’s share and record.
         </p>
         <SearchBox />
         <Sources s={sources} />
@@ -137,16 +138,16 @@ export function HoldersLanding() {
 function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
   if (s.k !== 'ok') return null
   const launches = s.data.chains.filter((c) => c.launches).map((c) => c.name)
-  const stockChains = s.data.chains.filter((c) => ['robinhood', 'bsc', 'solana'].includes(c.chain))
+  const WORDS = { full: 'any token · full history', top: 'any token · top holders', none: 'any token · coming soon' } as const
   return (
     <ul className="m-0 flex max-w-[760px] list-none flex-wrap gap-2 p-0 font-mono text-[12px]" aria-label="Where Holder Maps work today" data-holder-sources>
       <li className="inline-flex min-h-9 items-center gap-2 rounded-full border border-gold/40 px-3 text-ink">
         <Radar aria-hidden size={14} className="text-gold" /> DeepCore launches · live on {launches.join(', ')}
       </li>
-      {stockChains.map((c) => (
-        <li key={c.chain} className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 ${c.stocks ? 'border-gold/40 text-ink' : 'border-line text-muted'}`}>
-          {c.stocks ? <Radar aria-hidden size={14} className="text-gold" /> : <CircleDashed aria-hidden size={14} className="animate-[spin_6s_linear_infinite] text-faint motion-reduce:animate-none" />}
-          Stock maps on {c.name} · {c.stocks ? 'live' : 'coming soon'}
+      {s.data.chains.map((c) => (
+        <li key={c.chain} className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 ${c.any !== 'none' ? 'border-gold/40 text-ink' : 'border-line text-muted'}`}>
+          {c.any !== 'none' ? <Radar aria-hidden size={14} className="text-gold" /> : <CircleDashed aria-hidden size={14} className="animate-[spin_6s_linear_infinite] text-faint motion-reduce:animate-none" />}
+          {c.name} · {WORDS[c.any]}
         </li>
       ))}
     </ul>
@@ -156,15 +157,22 @@ function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
 function SearchBox() {
   const nav = useNavigate()
   const [q, setQ] = useState('')
-  const [s, setS] = useState<{ k: 'idle' } | { k: 'busy' } | { k: 'none' } | { k: 'error' } | { k: 'many'; matches: ResolveMatch[] }>({ k: 'idle' })
+  const [s, setS] = useState<{ k: 'idle' } | { k: 'busy' } | { k: 'none'; checked: ResolveChecked[]; address: boolean } | { k: 'error' } | { k: 'limit' } | { k: 'many'; matches: ResolveMatch[] }>({ k: 'idle' })
   const go = async (e: React.FormEvent) => {
     e.preventDefault()
     const v = q.trim().replace(/^\$/, '')
     if (!v) return
     setS({ k: 'busy' })
-    const r = await getJson<{ matches: ResolveMatch[] }>(`/api/holders/resolve?q=${encodeURIComponent(v)}`)
+    let r: { matches: ResolveMatch[]; checked?: ResolveChecked[] } | null = null
+    try {
+      const res = await fetch(`/api/holders/resolve?q=${encodeURIComponent(v)}`, { headers: { accept: 'application/json' } })
+      if (res.status === 429) return setS({ k: 'limit' })
+      r = res.ok ? await res.json() : null
+    } catch {
+      r = null
+    }
     if (!r) return setS({ k: 'error' })
-    if (!r.matches.length) return setS({ k: 'none' })
+    if (!r.matches.length) return setS({ k: 'none', checked: r.checked ?? [], address: /^0x[0-9a-fA-F]{40}$/.test(v) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v) })
     if (r.matches.length === 1) return nav(r.matches[0].path)
     setS({ k: 'many', matches: r.matches })
   }
@@ -192,7 +200,8 @@ function SearchBox() {
         </button>
       </form>
       <div aria-live="polite">
-        {s.k === 'none' && <p className="m-0 text-[14px] text-muted">Nothing matches. The Holder Map covers DeepCore launches and the stock tokens the Stock tracker follows.</p>}
+        {s.k === 'none' && <NoMatch checked={s.checked} address={s.address} />}
+        {s.k === 'limit' && <p className="m-0 text-[14px] text-muted">That is a lot of new addresses in a minute. Wait a moment and try again; tokens already mapped open straight away.</p>}
         {s.k === 'error' && <p className="m-0 text-[14px] text-error">The search did not answer just now. Try again.</p>}
         {s.k === 'many' && (
           <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Pick a token" data-resolve-matches>
@@ -202,7 +211,7 @@ function SearchBox() {
                   <span className="font-semibold text-ink">{m.symbol ?? `${m.token.slice(0, 6)}…${m.token.slice(-4)}`}</span>
                   <span className="font-mono text-[12px] text-faint">{m.chainName}</span>
                   <span className="ml-auto font-mono text-[11px] text-dim">
-                    {m.kind === 'deepcore-launch' ? 'DeepCore launch' : 'Stock token'}
+                    {m.kind === 'deepcore-launch' ? 'DeepCore launch' : m.kind === 'launch' ? 'Launchpad token' : m.kind === 'token' ? 'Token' : 'Stock token'}
                     {m.available === false ? ' · coming soon' : ''}
                   </span>
                 </Link>
@@ -211,6 +220,31 @@ function SearchBox() {
           </ul>
         )}
       </div>
+    </div>
+  )
+}
+
+/** No dead end: what was checked and why nothing can be mapped, in plain words. */
+function NoMatch({ checked, address }: { checked: ResolveChecked[]; address: boolean }) {
+  if (!address)
+    return (
+      <p className="m-0 text-[14px] leading-[1.6] text-muted" data-no-match>
+        That is not a token address or a ticker we follow. Paste a 0x… address (any ERC-20 on Robinhood Chain, BNB Chain, Base or HyperEVM), a Solana token address, or a stock ticker such as NVDA.
+      </p>
+    )
+  return (
+    <div className="flex flex-col gap-1" data-no-match>
+      <p className="m-0 text-[14px] leading-[1.6] text-ink">
+        No token found at that address. Checked {checked.length ? checked.map((c) => c.chainName).join(', ') : 'every supported chain'}:
+      </p>
+      <ul className="m-0 list-disc pl-5 text-[13px] leading-[1.6] text-muted">
+        {checked.map((c) => (
+          <li key={c.chain}>
+            <b className="font-semibold text-ink">{c.chainName}</b>: {c.reason ?? (c.status === 'unreadable' ? 'could not be reached just now' : 'not a token')}
+          </li>
+        ))}
+      </ul>
+      {checked.some((c) => c.status === 'unreadable') && <p className="m-0 text-[13px] text-muted">A chain that could not be reached may still hold it; try again in a minute.</p>}
     </div>
   )
 }
@@ -388,7 +422,7 @@ function TopList({ s }: { s: ReturnType<typeof usePoll<TopScanned>> }) {
             />
             <span className="relative w-5 font-mono text-[12px] text-faint">{i + 1}</span>
             <span className="relative font-semibold text-ink">{x.symbol ?? `${x.token.slice(0, 6)}…`}</span>
-            <span className="relative font-mono text-[11px] text-dim">{x.kind === 'deepcore-launch' ? 'launch' : 'stock'}</span>
+            <span className="relative font-mono text-[11px] text-dim">{x.kind === 'deepcore-launch' || x.kind === 'launch' ? 'launch' : x.kind === 'token' ? 'token' : 'stock'}</span>
             <span className="relative ml-auto font-mono text-[12px] text-muted">{x.scans.toLocaleString('en-US')} scans</span>
           </Link>
         </li>
