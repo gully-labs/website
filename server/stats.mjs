@@ -13,7 +13,8 @@
 //     beside the figure: DeepCore's is the sum of its daily
 //     index, Peddles' is its all-time legs valued at the prices its own token endpoint reports.
 
-const CACHE_MS = 60_000
+// Under the page's 60 s poll, so every poll lands on a fresh read and the "read HH:MM" stamp moves each time.
+const CACHE_MS = 45_000
 const TIMEOUT_MS = 15_000
 
 const num = (v) => {
@@ -45,20 +46,135 @@ async function getJson(url, ms = TIMEOUT_MS) {
 
 // DefiLlama lists Peddles (volume + fees), PeddleQuest (TVL + fees) and DeepCore (all three),
 // each from an adapter in its public repositories with a stated methodology. Where a venue's own
-// API has no dollar figure, DefiLlama's is used and named as the source. Its figures lag the
-// venue's own by up to a day (DefiLlama runs adapters daily), which the provenance says.
+// API has no dollar figure or no daily history, DefiLlama's is used and named as the source. Its
+// figures lag the venue's own by up to a day (DefiLlama runs adapters daily), which the provenance says.
+//
+// DefiLlama moves once a day, so each document is cached for LLAMA_TTL_MS; when it cannot be read
+// the last good copy (up to LLAMA_STALE_MS old) is served, and a slug it does not know is not asked
+// again for LLAMA_MISS_MS. A failure never reaches the page as zeros.
+const LLAMA_TTL_MS = 10 * 60_000
+const LLAMA_STALE_MS = 36 * 3_600_000
+const LLAMA_MISS_MS = 5 * 60_000
+const SERIES_DAYS = 120
+const llamaCache = new Map() // url -> { at, doc } | { at, error }
+const llamaInflight = new Map() // url -> Promise, so one document is read once however many series ask for it
+
+function llamaDoc(url) {
+  let p = llamaInflight.get(url)
+  if (!p) {
+    p = readLlamaDoc(url).finally(() => llamaInflight.delete(url))
+    llamaInflight.set(url, p)
+  }
+  return p
+}
+
+async function readLlamaDoc(url) {
+  const hit = llamaCache.get(url)
+  const now = Date.now()
+  if (hit?.doc && now - hit.at < LLAMA_TTL_MS) return hit.doc
+  if (hit?.error && now - hit.at < LLAMA_MISS_MS) throw new Error(hit.error)
+  try {
+    const j = await getJson(url, 20_000)
+    if (j.message || j.error) throw new Error(String(j.message ?? j.error))
+    llamaCache.set(url, { at: now, doc: j })
+    return j
+  } catch (e) {
+    if (hit?.doc && now - hit.at < LLAMA_STALE_MS) return hit.doc
+    llamaCache.set(url, { at: now, error: String(e?.message ?? e) })
+    throw e
+  }
+}
+
+const pointsOf = (rows, tOf, vOf) => {
+  const byDay = new Map()
+  for (const r of rows ?? []) {
+    const t = num(tOf(r))
+    const v = num(vOf(r))
+    if (t !== null && v !== null) byDay.set(dayKey(t), v)
+  }
+  return seriesOf(byDay)
+}
+
 async function llama(kind, slug) {
-  const url = kind === 'tvl' ? `https://api.llama.fi/protocol/${slug}` : `https://api.llama.fi/summary/${kind}/${slug}?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true`
-  const j = await getJson(url, 20_000)
-  if (j.message || j.error) throw new Error(String(j.message ?? j.error))
+  const url = kind === 'tvl' ? `https://api.llama.fi/protocol/${slug}` : `https://api.llama.fi/summary/${kind}/${slug}?excludeTotalDataChartBreakdown=true`
+  const j = await llamaDoc(url)
   if (kind === 'tvl') {
     const byChain = j.currentChainTvls ?? {}
     const tvl = Object.entries(byChain).filter(([k]) => !/-|borrowed|staking|pool2/i.test(k)).map(([, v]) => num(v) ?? 0)
     const last = (j.tvl ?? []).at(-1)
-    return { url, tvlUsd: tvl.length ? tvl.reduce((a, b) => a + b, 0) : null, at: last ? new Date(last.date * 1000).toISOString() : null }
+    return {
+      url,
+      tvlUsd: tvl.length ? tvl.reduce((a, b) => a + b, 0) : null,
+      at: last ? new Date(last.date * 1000).toISOString() : null,
+      points: pointsOf(j.tvl, (r) => r.date, (r) => r.totalLiquidityUSD),
+    }
   }
-  return { url, total24h: num(j.total24h), total7d: num(j.total7d), totalAllTime: num(j.totalAllTime), chains: j.chains ?? [], methodology: j.methodology ?? null }
+  return { url, total24h: num(j.total24h), total7d: num(j.total7d), totalAllTime: num(j.totalAllTime), chains: j.chains ?? [], methodology: j.methodology ?? null, points: pointsOf(j.totalDataChart, (r) => r[0], (r) => r[1]) }
 }
+
+/* ----------------------------------------------------------------- series --- */
+
+const hasValue = (pts) => !!pts?.some((p) => p.v > 0)
+const lastNonZero = (pts) => {
+  for (let i = (pts?.length ?? 0) - 1; i >= 0; i--) if (pts[i].v > 0) return pts[i].t
+  return null
+}
+const trim = (pts) => pts.slice(-SERIES_DAYS)
+
+/**
+ * The daily series of one venue: volume, fees and value locked, each from the venue's own API first and
+ * DefiLlama second, with the source named per series.
+ *   spec[metric] = { own?: Point[], ownSource?: { name, url }, llama?: slug, now?: number | null (tvl only) }
+ * The venue's own series wins when it has any activity or DefiLlama has none; an own series that is empty
+ * or flat while DefiLlama shows activity is replaced by DefiLlama's (fallback: true). A series nobody can
+ * supply is [] with source null, never zeros. `lastActivity` is the last day with non-zero volume.
+ */
+export async function buildSeries(spec) {
+  const series = { volume: [], fees: [], tvl: [] }
+  const sources = { volume: null, fees: null, tvl: null }
+  const notes = []
+  let fullVolume = []
+  const llamaTotals = {}
+  const kinds = { volume: 'dexs', fees: 'fees', tvl: 'tvl' }
+  await Promise.all(
+    Object.entries(kinds).map(async ([metric, kind]) => {
+      const s = spec[metric]
+      if (!s) return
+      let alt = null
+      if (s.llama) {
+        try {
+          alt = await llama(kind, s.llama)
+          llamaTotals[metric] = alt
+        } catch (e) {
+          notes.push(`DefiLlama has no ${metric} history for ${s.llama} (${String(e?.message ?? e).slice(0, 80)}).`)
+        }
+      }
+      const own = s.own ?? []
+      const altSource = alt ? { name: 'DefiLlama', url: alt.url, fallback: true } : null
+      let pts = own
+      let source = own.length ? { name: s.ownSource?.name ?? 'the venue API', url: s.ownSource?.url ?? null, fallback: false } : null
+      if (alt?.points.length && (!own.length || (!hasValue(own) && hasValue(alt.points)))) {
+        pts = alt.points
+        source = altSource
+      }
+      if (metric === 'tvl' && s.now !== null && s.now !== undefined && pts.length) {
+        const today = dayKey(Date.now() / 1000)
+        if (pts.at(-1).t < today) {
+          pts = [...pts, { t: today, v: s.now }]
+          if (source?.fallback) source = { ...source, name: `DefiLlama + ${s.ownSource?.name ?? 'the venue API'} (latest point)` }
+        }
+      }
+      if (metric === 'volume') fullVolume = pts
+      series[metric] = trim(pts)
+      sources[metric] = source
+    }),
+  )
+  const lastT = lastNonZero(fullVolume)
+  return { series, sources, lastActivity: lastT === null ? null : new Date(lastT * 1000).toISOString(), notes, llama: llamaTotals }
+}
+
+/** What a venue adds to its document from buildSeries: the series, their sources, lastActivity, and `daily` (volume) for older readers. */
+const seriesFields = (b) => ({ series: b.series, sources: b.sources, lastActivity: b.lastActivity, daily: b.series.volume })
 
 /* ---------------------------------------------------------------- venues --- */
 
@@ -141,18 +257,22 @@ async function deepcore() {
   } catch (e) {
     notes.push(`DefiLlama could not be read for 24h fees (${String(e?.message ?? e)}).`)
   }
+  const own = { name: 'DeepCore API', url }
+  const tvlUsd = sumKnown(chains.map((c) => c.tvlUsd))
+  const built = await buildSeries({ volume: { own: daily, ownSource: own, llama: 'deepcore' }, fees: { llama: 'deepcore' }, tvl: { llama: 'deepcore', now: tvlUsd, ownSource: own } })
+  notes.push(...built.notes)
   return {
+    ...seriesFields(built),
     volume24hUsd: sumKnown(chains.map((c) => c.volume24hUsd)),
     // The index's daily dollars, summed from the first day it holds.
     volumeAllUsd: daily.length ? daily.reduce((a, p) => a + p.v, 0) : null,
     volumeAllSince: daily.length ? new Date(daily[0].t * 1000).toISOString() : null,
-    tvlUsd: sumKnown(chains.map((c) => c.tvlUsd)),
+    tvlUsd,
     fees24hUsd,
     feesAllUsd,
     // Dollars held in DeepCore locks (launch liquidity locked forever, timed LP locks, token locks
     // and vesting), as the index values them. Not added to any total: it overlaps value locked.
     lockedUsd: extras.lockedUsd,
-    daily,
     chains,
     counts: { launches, pools, chains: items.length, sites: extras.sites, sites24h: extras.sites24h, launches24h: extras.launches24h, locks: extras.locks },
     notes,
@@ -172,18 +292,21 @@ async function peddleswap() {
   const byDay = new Map()
   for (const { j } of ok) for (const p of j.volumeSeries ?? []) byDay.set(dayKey(p.t), (byDay.get(dayKey(p.t)) ?? 0) + (num(p.v) ?? 0))
   const daily = seriesOf(byDay)
+  const own = { name: 'PeddleSwap API', url: ok.map((o) => `${o.host}/v1/stats/overview`).join(' + ') }
+  const tvlUsd = sumKnown(ok.map(({ j }) => num(j.tvlUsd)))
+  const built = await buildSeries({ volume: { own: daily, ownSource: own, llama: 'peddleswap' }, fees: { llama: 'peddleswap' }, tvl: { llama: 'peddleswap', now: tvlUsd, ownSource: own } })
   return {
+    ...seriesFields(built),
     volume24hUsd: sumKnown(ok.map(({ j }) => num(j.volumeUsd24h))),
     // The overview carries 30 days of daily volume, not an all-time figure.
     volumeAllUsd: null,
     volumeAllSince: null,
     volume30dUsd: daily.length ? daily.reduce((a, p) => a + p.v, 0) : null,
-    tvlUsd: sumKnown(ok.map(({ j }) => num(j.tvlUsd))),
+    tvlUsd,
     fees24hUsd: sumKnown(ok.map(({ j }) => num(j.fees24hUsd))),
     feesAllUsd: null,
-    daily,
     counts: { pools: sumKnown(ok.map(({ j }) => num(j.counts?.pools))), activeLocks: sumKnown(ok.map(({ j }) => num(j.counts?.activeLocks))), chains: ok.length },
-    notes: ['All-time volume is not published; the last 30 days are.', ...failed.map((f) => `${f.host.replace('https://', '')} could not be read (${f.error}).`)],
+    notes: ['All-time volume is not published; the last 30 days are.', ...built.notes, ...failed.map((f) => `${f.host.replace('https://', '')} could not be read (${f.error}).`)],
     source: { url: ok.map((o) => `${o.host}/v1/stats/overview`).join(' + '), readAt: new Date().toISOString() },
   }
 }
@@ -226,15 +349,19 @@ async function peddles() {
     notes.push(`DefiLlama could not be read for all-time volume and fees (${String(e?.message ?? e)}).`)
   }
   notes.push('Creator fees are published in ETH only; they are shown beside the dollar figure, not added to it.')
+  const tvlUsd = sumKnown(chains.map((c) => c.tvlUsd))
+  const own = { name: 'Peddles API', url }
+  const built = await buildSeries({ volume: { llama: 'peddles' }, fees: { llama: 'peddles' }, tvl: { llama: 'peddles', now: tvlUsd, ownSource: own } })
+  notes.push(...built.notes)
   return {
+    ...seriesFields(built),
     volume24hUsd: sumKnown(chains.map((c) => c.volume24hUsd)),
     volumeAllUsd,
     volumeAllSince,
-    tvlUsd: sumKnown(chains.map((c) => c.tvlUsd)),
+    tvlUsd,
     fees24hUsd,
     feesAllUsd,
     feesNative,
-    daily: [],
     chains,
     counts: { launches24h: num(d.launches24h), pools: num(d.poolCount), users: num(d.totalUsers), chains: chains.length },
     notes,
@@ -247,16 +374,17 @@ async function peddlequest() {
   // API publishes no figures; DefiLlama's PeddleQuest adapters report the escrowed reward pools
   // as TVL and what the platform charges as fees, on all four chains.
   const [tvl, fees] = await Promise.all([llama('tvl', 'peddlequest'), llama('fees', 'peddlequest')])
+  const built = await buildSeries({ fees: { llama: 'peddlequest' }, tvl: { llama: 'peddlequest' } })
   return {
+    ...seriesFields(built),
     volume24hUsd: null,
     volumeAllUsd: null,
     volumeAllSince: null,
     tvlUsd: tvl.tvlUsd,
     fees24hUsd: fees.total24h,
     feesAllUsd: fees.totalAllTime,
-    daily: [],
     counts: {},
-    notes: ['Quests, not trading: no volume. Value locked is the reward pools escrowed on chain and fees are what the platform charges, both read from DefiLlama (its PeddleQuest adapters), which lags by up to a day.'],
+    notes: [...built.notes, 'Quests, not trading: no volume. Value locked is the reward pools escrowed on chain and fees are what the platform charges, both read from DefiLlama (its PeddleQuest adapters), which lags by up to a day.'],
     source: { url: `${tvl.url} + ${fees.url}`, readAt: tvl.at ?? new Date().toISOString() },
   }
 }
@@ -269,6 +397,14 @@ export const VENUES = [
 ]
 
 let cache = null
+
+/** Tests: forget the cached document and (unless documentOnly) every cached DefiLlama read. */
+export function resetStatsForTest({ documentOnly = false } = {}) {
+  cache = null
+  if (documentOnly) return
+  llamaCache.clear()
+  llamaInflight.clear()
+}
 
 /** The combined document the page renders. Cached for a minute; never throws for one bad venue. */
 export async function readStats() {
@@ -296,6 +432,7 @@ export async function readStats() {
       unread: venues.filter((v) => v.state === 'error').map((v) => v.key),
     },
     daily: seriesOf(byDay),
+    lastActivity: ok.map((v) => v.lastActivity).filter(Boolean).sort().at(-1) ?? null,
     venues,
   }
   cache = { at: Date.now(), body }

@@ -13,8 +13,10 @@ import { Segmented } from '../components/ui/Segmented'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
 import { projects, type Project } from '../content/projects'
 import { integrationKinds, integrations, type Integration, type IntegrationKind } from '../content/ecosystem'
-import { fetchStats, fmtDate, fmtTime, fmtUsd, sourceHost, type Stats, type Venue, type VenueOk } from '../lib/stats'
+import { fmtDate, fmtTime, fmtUsd, sourceHost, type Venue, type VenueOk } from '../lib/stats'
 import { getJson } from '../lib/holders'
+import { METRIC_LABEL, sparkPoints } from '../lib/ledgerSeries'
+import { useStats } from '../hooks/useStats'
 
 /* /ecosystem: three honest lists.
    - Our projects: every project on the site is Gully Labs' own, one card each with the figures its own API
@@ -31,21 +33,6 @@ const COLS: { id: Col; label: string }[] = [
   { id: 'tvl', label: 'TVL' },
   { id: 'fees', label: 'FEES' },
 ]
-
-function useStats() {
-  const [s, setS] = useState<{ k: 'loading' } | { k: 'error' } | { k: 'ok'; data: Stats }>({ k: 'loading' })
-  useEffect(() => {
-    let alive = true
-    const go = () => fetchStats().then((data) => alive && setS({ k: 'ok', data }), () => alive && setS((p) => (p.k === 'ok' ? p : { k: 'error' })))
-    go()
-    const id = setInterval(go, 60_000)
-    return () => {
-      alive = false
-      clearInterval(id)
-    }
-  }, [])
-  return s
-}
 
 /** A venue's figure for a column and what it is (all-time, 30 days or 24 hours); null when it publishes none. */
 function figure(v: VenueOk, c: Col): { n: number | null; note: string } {
@@ -64,7 +51,9 @@ const fromLlama = (v: VenueOk) => v.notes.some((n) => /defillama/i.test(n) && !/
 
 function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | undefined; loading: boolean; col: Col }) {
   const ok = venue?.state === 'ok' ? venue : null
-  const pts = (ok?.daily ?? []).slice(-30)
+  // The series is the one for the sorted column (volume, TVL or fees), from the venue's API or DefiLlama.
+  const spark = ok ? sparkPoints(ok, col) : null
+  const pts = (spark?.points ?? []).slice(-30)
   return (
     <motion.article
       initial={{ opacity: 0, y: 14 }}
@@ -120,7 +109,7 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
         })}
       </dl>
       {pts.length >= 2 ? (
-        <MiniSpark data={pts.map((d) => d.v)} xs={pts.map((d) => d.t)} labels={pts.map((d) => new Date(d.t * (d.t > 1e11 ? 1 : 1000)).toISOString().slice(0, 10))} label={`${p.name} daily volume, last ${pts.length} days`} fmt={fmtUsd} color={p.accent} height={44} />
+        <MiniSpark data={pts.map((d) => d.v)} xs={pts.map((d) => d.t)} labels={pts.map((d) => new Date(d.t * (d.t > 1e11 ? 1 : 1000)).toISOString().slice(0, 10))} label={`${p.name} daily ${METRIC_LABEL[spark?.metric ?? 'volume'].toLowerCase()}, last ${pts.length} days`} fmt={fmtUsd} color={p.accent} height={44} />
       ) : (
         <span className="flex h-11 items-center font-mono text-[11px] text-faint">{loading ? 'reading…' : ok ? 'no daily series published' : 'daily series unreadable'}</span>
       )}

@@ -85,6 +85,8 @@ interface Health {
       needs: string | null
     } | null
   }
+  /** The home ledger's data watchdog (server/stats-watchdog.mjs); absent on an older server. */
+  stats?: { at: string | null; issues: { venue: string; kind: string; detail: string }[]; alerted: string[] }
   history: Record<string, number | string | null>[]
 }
 
@@ -286,6 +288,7 @@ export function HealthCard({ token }: { token: string }) {
             ['launches cached', num(d.cached)],
             ['launches seen', num(d.seen)],
             ['last error', d.lastError ?? 'none'],
+            ['ledger feeds', !h.stats?.at ? 'not checked yet' : h.stats.issues.length ? `${h.stats.issues.length} problem${h.stats.issues.length === 1 ? '' : 's'}: ${h.stats.issues.map((i) => `${i.venue} ${i.kind}`).join(', ')}` : `all venues fine · checked ${ago(h.stats.at)}`],
           ]}
           testId="health-deepcore"
         >
