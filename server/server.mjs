@@ -92,14 +92,20 @@ function handleContact(req, res) {
     } catch {
       return send(res, 400, JSON.stringify({ ok: false }), { 'Content-Type': 'application/json' })
     }
-    if (!EMAIL_RE.test(data?.email ?? '') || !Array.isArray(data?.types) || data.types.length === 0) {
+    // An email, or (from the Gully Chains "Message us" box) a Telegram handle instead.
+    const handle = typeof data?.telegram === 'string' ? data.telegram.trim() : ''
+    const tgOk = /^@?[A-Za-z][A-Za-z0-9_]{4,31}$/.test(handle)
+    if (!(EMAIL_RE.test(data?.email ?? '') || (!data?.email && tgOk)) || !Array.isArray(data?.types) || data.types.length === 0) {
       return send(res, 400, JSON.stringify({ ok: false }), { 'Content-Type': 'application/json' })
     }
     // Saved for the admin dashboard (/admin) and announced to the operators' Telegram chat (intake-notify.mjs).
     const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '')
     const enq = { name: str(data.name, 120), email: str(data.email, 254), message: str(data.message, 5000), types: data.types.slice(0, 8).map((t) => str(t, 40)), budget: str(data.budget, 40) }
+    if (!enq.email) enq.message = `Telegram: @${handle.replace(/^@/, '')}
+
+${enq.message}`.slice(0, 5000)
     addEnquiry(enq)
-    void notifyIntake({ kind: 'contact', title: `New contact form message${enq.name ? ` from ${enq.name}` : ''}`, fields: [['Email', enq.email], ['Interested in', enq.types.join(', ')], ['Budget', enq.budget], ['Message', enq.message]], contact: enq.email })
+    void notifyIntake({ kind: 'contact', title: `New contact form message${enq.name ? ` from ${enq.name}` : ''}`, fields: [['Email', enq.email || '(Telegram, see message)'], ['Interested in', enq.types.join(', ')], ['Budget', enq.budget], ['Message', enq.message]], contact: enq.email || '@' + handle.replace(/^@/, '') })
     console.log('New enquiry saved')
     send(res, 200, JSON.stringify({ ok: true }), { 'Content-Type': 'application/json' })
   })

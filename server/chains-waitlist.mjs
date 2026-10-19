@@ -58,8 +58,10 @@ setInterval(() => {
   for (const [k, list] of hits) if (!list.some((t) => now - t < WINDOW_MS)) hits.delete(k)
 }, 600_000).unref?.()
 
-const oneOf = (field, v) => (WAITLIST_CHOICES[field].some(([k]) => k === v) ? v : null)
-const yesNo = (v) => (v === 'yes' || v === true ? 'yes' : v === 'no' || v === false ? 'no' : null)
+// The questions are optional: left out they are stored as '' (not given); a value that is given must be a listed one.
+const given = (v) => v === undefined || v === null || v === ''
+const oneOf = (field, v) => (given(v) ? '' : WAITLIST_CHOICES[field].some(([k]) => k === v) ? v : null)
+const yesNo = (v) => (given(v) ? '' : v === 'yes' || v === true ? 'yes' : v === 'no' || v === false ? 'no' : null)
 
 /** Validates a body. { ok: true, row } or { ok: false, error }. */
 export function readEntry(b) {
@@ -76,7 +78,7 @@ export function readEntry(b) {
   const da = oneOf('da', b?.da)
   const wantsAa = yesNo(b?.wantsAa)
   const wantsDeepcore = yesNo(b?.wantsDeepcore)
-  if (!useCase || !scale || !gasToken || !da || !wantsAa || !wantsDeepcore) return { ok: false, error: 'Please answer every question in the form.' }
+  if ([useCase, scale, gasToken, da, wantsAa, wantsDeepcore].includes(null)) return { ok: false, error: 'One of the answers is not a listed choice.' }
   return { ok: true, row: { project, contact: clean(contact, 254), useCase, scale, gasToken, da, wantsAa, wantsDeepcore, notes: clean(b?.notes, 2000) } }
 }
 
@@ -104,12 +106,45 @@ export function handleChainsAdmin(req, res) {
   return json(res, 200, { total: list.length, rows: list }), true
 }
 
+/* GET /api/chains/waitlist/stats: sign-ups per UTC day, a public aggregate (counts only, never a name or contact),
+   cached 60 s. Days run from the first sign-up to today, zeros included, the newest 30 at most. */
+const STATS_MS = 60_000
+let statsCache = null
+export function waitlistStats(now = Date.now()) {
+  if (statsCache && now - statsCache.at < STATS_MS) return statsCache.body
+  const list = load()
+  const per = new Map()
+  for (const r of list) {
+    const d = String(r.at ?? '').slice(0, 10)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) per.set(d, (per.get(d) ?? 0) + 1)
+  }
+  const days = []
+  if (per.size) {
+    const first = [...per.keys()].sort()[0]
+    const end = new Date(now).toISOString().slice(0, 10)
+    for (let t = Date.parse(first + 'T00:00:00Z'); days.length < 400; t += 86_400_000) {
+      const d = new Date(t).toISOString().slice(0, 10)
+      if (d > end) break
+      days.push({ day: d, n: per.get(d) ?? 0 })
+    }
+  }
+  const body = { days: days.slice(-30), total: list.length }
+  statsCache = { at: now, body }
+  return body
+}
+/** Tests: forget the stats cache. */
+export const resetWaitlistStatsForTest = () => (statsCache = null)
+
 /** /api/chains/*. Resolves true when it answered. */
 export async function handleChains(req, res, url) {
   const p = url.pathname
   if (p === '/api/chains/plans') {
     if (req.method !== 'GET') return res.writeHead(405, { Allow: 'GET' }).end(), true
     return json(res, 200, publicChains(), { 'Cache-Control': 'public, max-age=60' }), true
+  }
+  if (p === '/api/chains/waitlist/stats') {
+    if (req.method !== 'GET') return res.writeHead(405, { Allow: 'GET' }).end(), true
+    return json(res, 200, waitlistStats(), { 'Cache-Control': 'public, max-age=60' }), true
   }
   if (p === '/api/chains/waitlist') {
     if (req.method !== 'POST') return res.writeHead(405, { Allow: 'POST' }).end(), true
@@ -123,6 +158,7 @@ export async function handleChains(req, res, url) {
     if (!r.ok) return json(res, 400, { error: r.error }), true
     const list = load()
     if (list.some((x) => x.contact === r.row.contact)) return json(res, 200, { ok: true, alreadyOnList: true }), true
+    statsCache = null
     list.push({ id: crypto.randomBytes(9).toString('base64url'), at: new Date().toISOString(), ...r.row })
     if (list.length > MAX_ROWS) list.splice(0, list.length - MAX_ROWS)
     try {
