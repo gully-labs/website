@@ -6,6 +6,7 @@ import { newTab } from '../LayoutNav'
 import { NewTabMark } from '../LayoutLinks'
 import { SocialIcon } from '../SocialIcon'
 import { StockLogo } from './StockLogo'
+import { MoversEmpty } from './MoversRow'
 import { useReducedMotion } from '../charts/chart-utils'
 import { ChartBox } from '../charts/ChartSkeleton'
 import { MiniSpark } from '../charts/MiniSpark'
@@ -202,9 +203,10 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
       )}
       {st.k === 'error' && <ChartBox height={CHART_H.sm} state="error" message="Couldn't load the movers. It also retries every minute." onRetry={onRetry} />}
       {data && list.length === 0 && (
-        <p className="m-0 py-4 font-mono text-[12px] text-faint">
-          {data.note ?? (chain !== 'all' ? `No trusted pool on this chain has ${win} of snapshots yet.` : `No trusted pool has ${win} of snapshots yet.`)}
-        </p>
+        <MoversEmpty
+          height={120}
+          note={data.note ?? (chain !== 'all' ? `No trusted pool on this chain has ${win} of snapshots yet.` : `No trusted pool has ${win} of snapshots yet.`)}
+        />
       )}
       {list.length > 0 && (
         <div className="relative">

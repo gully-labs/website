@@ -106,7 +106,7 @@ export const logoFit: Record<string, { full: boolean; scale: number }> = {
     "full": false,
     "scale": 0.82
   },
-  "/tokens/logos/EWY.ico": {
+  "/tokens/logos/EWY.png": {
     "full": false,
     "scale": 0.78
   },
@@ -126,7 +126,7 @@ export const logoFit: Record<string, { full: boolean; scale: number }> = {
     "full": false,
     "scale": 0.57
   },
-  "/tokens/logos/SLV.ico": {
+  "/tokens/logos/SLV.png": {
     "full": false,
     "scale": 0.78
   },

@@ -2381,6 +2381,153 @@ await step('links hub', async () => {
   await ctx.close()
 })
 
+// Design audit 3, group 6: movers empty state, stock KPI ghosts, tracker card fill, docs logo chips and plain
+// prose, hero art and token logos at 2x, and the docs charts staying live at phone widths.
+await step('da3-g6 empty states, fills, logos and prose', async () => {
+  const EMPTY_MOVERS = { window: '24h', windowSeconds: 86400, toleranceSeconds: 1800, asOf: null, from: null, to: null, eligible: 0, historyHours: 6, note: 'Needs 24h of snapshots: the longest series so far covers 6 h.', limit: 10, chain: null, byGap: [], byPrice: [] }
+  const lum = (c) => {
+    const [r, g, b] = c.map((v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4 })
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  const ratio = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05) }
+  // D17: the movers' "needs 24h" note sits on a ghost chart in muted ink, not faint text on a shimmer.
+  for (const [url, width, mobile] of [['/tracker', 1440, false], ['/tracker', 390, true], ['/links', 390, true], ['/links', 320, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    await ctx.route('**/api/tracker/movers*', (route) => json(route, EMPTY_MOVERS))
+    const page = await ctx.newPage()
+    const w = watch(page, `da3-g6 ${url} ${width}`)
+    await page.goto(BASE + url)
+    const ghost = page.getByTestId('movers-empty').first()
+    await ghost.waitFor({ timeout: 15_000 })
+    await ghost.scrollIntoViewIfNeeded()
+    const r = await page.evaluate(() => {
+      const g = document.querySelector('[data-testid="movers-empty"]')
+      const n = document.querySelector('[data-testid="movers-empty-note"]')
+      const rgb = (s) => (s.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number)
+      const cs = getComputedStyle(n)
+      return { color: rgb(cs.color), size: parseFloat(cs.fontSize), text: n.textContent, hasSvg: !!g.querySelector('svg'), shimmer: !!n.closest('.gl-skeleton'), clipped: n.scrollWidth > n.clientWidth + 1 }
+    })
+    check(`da3-g6 ${url} ${width}: the movers note is on a ghost chart at 4.5:1 or better, not on a shimmer`, r.hasSvg && !r.shimmer && r.size >= 11 && ratio(r.color, [21, 29, 40]) >= 4.5 && /Needs 24h of snapshots/.test(r.text), JSON.stringify(r))
+    await noHorizontalScroll(page, `da3-g6 ${url} ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // D29: a stock page's "-" stat cells hold a ghost sparkline and keep their caption.
+  {
+    const ctx = await newContext({ width: 390, height: 844, mobile: true })
+    await ctx.route('**/api/tracker/movers*', (route) => json(route, { ...EMPTY_MOVERS, stock: null }))
+    const page = await ctx.newPage()
+    const w = watch(page, 'da3-g6 stock page')
+    await page.goto(BASE + '/tracker/robinhood/NVDA')
+    await page.getByTestId('kpi-ghost').first().waitFor({ timeout: 15_000 })
+    const k = await page.evaluate(() => [...document.querySelectorAll('[data-testid="kpi-ghost"]')].map((g) => ({ svg: !!g.querySelector('svg'), caption: g.closest('div')?.querySelector('span:last-child')?.textContent ?? '', dash: /—/.test(g.textContent ?? '') })))
+    check('da3-g6 stock page 390: the empty GAP stat cells draw a ghost sparkline with their caption', k.length >= 2 && k.every((c) => c.svg && /snapshots|trusted/.test(c.caption) && !c.dash), JSON.stringify(k))
+    await noHorizontalScroll(page, 'da3-g6 stock page')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // D30: the "Gap to fair price" card fills the height of the detail card beside it on a wide screen.
+  {
+    const ctx = await newContext({ width: 1440, height: 900 })
+    const page = await ctx.newPage()
+    const w = watch(page, 'da3-g6 tracker fill')
+    await page.goto(BASE + '/tracker')
+    await page.locator('#tracker-detail').waitFor({ timeout: 15_000 })
+    await page.waitForTimeout(800)
+    const h = await page.evaluate(() => {
+      const detail = document.querySelector('#tracker-detail').getBoundingClientRect()
+      const card = [...document.querySelectorAll('section')].find((s) => s.querySelector(':scope > div > h2')?.textContent === 'Gap to fair price')
+      const rows = card ? [...card.querySelectorAll('ul[aria-label="Gap to fair price, by token"] li')] : []
+      const last = rows.at(-1)?.getBoundingClientRect()
+      const cr = card?.getBoundingClientRect()
+      return { detail: Math.round(detail.height), card: Math.round(cr?.height ?? 0), rows: rows.length, blank: last && cr ? Math.round(cr.bottom - last.bottom) : null }
+    })
+    check('da3-g6 /tracker 1440: the Gap to fair price card is as tall as the chart card and its rows use the room', h.card >= h.detail - 4 && h.blank !== null && h.blank < 140, JSON.stringify(h))
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // D21, D25: docs Contracts, Solana Pay and Swaps wear logo chips; no developer residue in the prose.
+  for (const [width, mobile] of [[1440, false], [390, true], [320, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    const page = await ctx.newPage()
+    const w = watch(page, `da3-g6 docs ${width}`)
+    await page.goto(`${BASE}/docs/contracts`)
+    await page.locator('[data-contract]').first().waitFor()
+    await page.locator('[data-contract] img').first().scrollIntoViewIfNeeded()
+    await page.waitForTimeout(600)
+    const c = await page.evaluate(() => {
+      const row = document.querySelector('[data-contract]:has(a[href*="sourcify"])') ?? document.querySelector('[data-contract]')
+      const imgs = [...document.querySelectorAll('main img')]
+      const verified = [...document.querySelectorAll('[data-contract] a[href*="sourcify"]')]
+      return { rows: document.querySelectorAll('[data-contract]').length, chain: !!row.querySelector('img[src*="/chains/"]'), venue: !!row.querySelector('img[src*="/venues/"], img[src*="/brand/"]'), sourcify: verified.length > 0 && verified.every((a) => a.querySelector('img[src*="sourcify"]')), broken: imgs.filter((i) => i.complete && !i.naturalWidth).length, path: /src\/deployments|packages\/sdk/.test(document.querySelector('main')?.textContent ?? '') }
+    })
+    check(`da3-g6 docs /contracts ${width}: chain, project and Sourcify names carry logos, none broken, no file paths`, c.chain && c.venue && c.sourcify && !c.broken && !c.path, JSON.stringify(c))
+    await noHorizontalScroll(page, `da3-g6 docs /contracts ${width}`)
+    for (const slug of ['solana-pay', 'swaps']) {
+      await page.goto(`${BASE}/docs/${slug}`)
+      await page.getByRole('heading', { level: 1 }).first().waitFor()
+      await page.waitForTimeout(500)
+      const n = await page.evaluate(() => ({ chips: document.querySelectorAll('main span.inline-flex img').length, broken: [...document.querySelectorAll('main img')].filter((i) => i.complete && !i.naturalWidth).length }))
+      check(`da3-g6 docs /${slug} ${width}: names are logo chips and every logo loads`, n.chips >= 4 && !n.broken, JSON.stringify(n))
+      await noHorizontalScroll(page, `da3-g6 docs /${slug} ${width}`)
+    }
+    if (width === 1440) {
+      // "null" belongs in code only; no raw error JSON in prose.
+      for (const slug of ['api', 'gully-ai', 'gully-score', 'status', 'teams', 'plans-alerts', 'sdk', 'gully-pay', 'gully-pay-merchants']) {
+        await page.goto(`${BASE}/docs/${slug}`)
+        await page.getByRole('heading', { level: 1 }).first().waitFor()
+        const prose = await page.evaluate(() => {
+          const main = document.querySelector('main').cloneNode(true)
+          main.querySelectorAll('pre, code, [data-code]').forEach((e) => e.remove())
+          return main.textContent ?? ''
+        })
+        check(`da3-g6 docs /${slug}: no "null" or raw error JSON in the prose`, !/\bnull\b/.test(prose) && !/\{\s*"?error"?\s*[:}]/.test(prose), (prose.match(/.{20}(\bnull\b|\{\s*"?error).{20}/) ?? [''])[0])
+      }
+    }
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // D20: hero art is exported larger than the slot's 1x and the two ETF logos are real PNGs.
+  {
+    const ctx = await newContext({ width: 1440, height: 900 })
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/about')
+    const dims = await page.evaluate(async () => {
+      const load = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => res([0, 0]); i.src = src })
+      const out = {}
+      for (const f of ['/assets/mascot-scientist.webp', '/assets/peddles.webp', '/assets/peddlequest.webp', '/tokens/logos/SLV.png', '/tokens/logos/EWY.png']) out[f] = await load(f)
+      return out
+    })
+    check('da3-g6 hero art: mascot 1000+ px, Peddles 1200+ px, PeddleQuest 1100+ px wide', dims['/assets/mascot-scientist.webp'][0] >= 1000 && dims['/assets/peddles.webp'][0] >= 1200 && dims['/assets/peddlequest.webp'][0] >= 1100, JSON.stringify(dims))
+    check('da3-g6 token logos: SLV and EWY are 128+ px PNGs', dims['/tokens/logos/SLV.png'][0] >= 128 && dims['/tokens/logos/EWY.png'][0] >= 128, JSON.stringify(dims))
+    await ctx.close()
+  }
+  // D32: the live charts on these docs pages are alive at phone widths: on screen they are marked live and animate.
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, height: 844, mobile: true })
+    const page = await ctx.newPage()
+    for (const slug of ['widget', 'api-keys', 'plans-alerts', 'gully-score', 'swaps', 'roadmap']) {
+      const w = watch(page, `da3-g6 docs /${slug} ${width}`)
+      await page.goto(`${BASE}/docs/${slug}`)
+      await page.getByRole('heading', { level: 1 }).first().waitFor()
+      await page.waitForTimeout(800)
+      const box = page.locator('[data-live]').first()
+      await box.waitFor({ state: 'attached', timeout: 15_000 })
+      await box.scrollIntoViewIfNeeded()
+      await page.waitForTimeout(1500)
+      const s = await page.evaluate(() => {
+        const el = document.querySelector('[data-live]')
+        const r = el.getBoundingClientRect()
+        const running = el.getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length
+        return { live: el.getAttribute('data-live'), w: Math.round(r.width), vw: window.innerWidth, running, marks: el.querySelectorAll('.gl-live-mark, .gl-live-ring').length }
+      })
+      check(`da3-g6 docs /${slug} ${width}: the live chart is on, inside the screen and animating`, s.live === 'on' && s.w <= s.vw && s.w > 100 && (s.running > 0 || s.marks > 0), JSON.stringify(s))
+      await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    }
+    await ctx.close()
+  }
+})
+
 /* ------------------------------------------------------------- status, docs, analytics --- */
 
 // The public status (P1-1): GET /api/status from the server's own checks, and the /status page drawn from it.

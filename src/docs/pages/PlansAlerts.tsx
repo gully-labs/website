@@ -54,7 +54,7 @@ type LaunchDelivery = {
     id: string
     name: string | null
     kind: 'deepcore-launch'
-    target: { deepcoreChainId: 56 | 999 | 4663 | 8453 | null }   // null = every chain
+    target: { deepcoreChainId: 56 | 999 | 4663 | 8453 | null }   // empty = every chain
     condition: { type: 'deepcore-launch'; chainId: number | null }
   }
   events: Array<{                    // oldest launch first; up to 20 in one delivery
@@ -70,7 +70,7 @@ type LaunchDelivery = {
       poolId: string | null
       kind: 'CL' | 'Bin' | null
       quote: string | null           // the symbol it is paired with
-      locked: boolean | null         // true: DeepCore's indexer has a lock record; null: unknown
+      locked: boolean | null         // true: DeepCore's indexer has a lock record; empty: unknown
       lockId: string | null
     }>
     links: { token: string; launch: string; swap: string }   // pages on deepcore.fun

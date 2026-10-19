@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T19:43:50.826Z",
+ "updatedAt": "2026-10-19T20:56:31.915Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -143,8 +143,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#basics",
    "section": "Basics",
-   "text": "Base URL (https://gullylabs.xyz): Every endpoint lives under /api, except /healthz and the Score badge. Methods (GET, OPTIONS): The data endpoints are read-only; anything else answers 405. The few POST routes (checkout, Gully AI, review requests, Solana) are listed with their section. Format (JSON): UTF-8. Times are ISO 8601 in UTC, except history points (Unix seconds) and gap-index points (Unix milliseconds). CORS (Access-Control-Allow-Origin: *): On /api/tracker*, /api/holders/*, /api/score*, /api/status, /api/plans, /api/alerts/channels and the Security list and stats: call them from any browser origin. The routes behind our own pages (stats, geo, DeepCore, Solana, Gully AI, Gully Pay) send no CORS header. Auth (Optional): Send Authorization: Bearer <key> on the tracker and Holder Map for a higher limit. See API keys. Not found (404 {\"error\":\"not found\"}): Any unknown /api/… path answers JSON, never the HTML page. Prices are US dollars per token. Any price may be empty, meaning it could not be read; it is never replaced with zero. Live, from your browser: the response time of /api/tracker, measured every 10 seconds while this tab is open, and the rows it returns by status.",
-   "updatedAt": "2026-10-19T07:56:51.355Z"
+   "text": "Base URL (https://gullylabs.xyz): Every endpoint lives under /api, except /healthz and the Score badge. Methods (GET, OPTIONS): The data endpoints are read-only; anything else answers 405. The few POST routes (checkout, Gully AI, review requests, Solana) are listed with their section. Format (JSON): UTF-8. Times are ISO 8601 in UTC, except history points (Unix seconds) and gap-index points (Unix milliseconds). CORS (Access-Control-Allow-Origin: *): On /api/tracker*, /api/holders/*, /api/score*, /api/status, /api/plans, /api/alerts/channels and the Security list and stats: call them from any browser origin. The routes behind our own pages (stats, geo, DeepCore, Solana, Gully AI, Gully Pay) send no CORS header. Auth (Optional): Send Authorization: Bearer <key> on the tracker and Holder Map for a higher limit. See API keys. Not found (404, with a short JSON message): Any unknown /api/… path answers JSON, never the HTML page. Prices are US dollars per token. Any price may be empty, meaning it could not be read; it is never replaced with zero. Live, from your browser: the response time of /api/tracker, measured every 10 seconds while this tab is open, and the rows it returns by status.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "3a4c7040af79",
@@ -332,8 +332,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#pay",
    "section": "Gully Pay: /api/pay",
-   "text": "{ asset }. A 20-minute quote: { quote } with the exact amount, treasury, token, an EIP-681 or Solana Pay uri, the Chainlink price used and expiresAt.): 30 an hour POST /api/pay/:id/verify (Body { quoteId, txHash }. Checks the transaction on chain; 200 { invoice } when paid, 202 with confirmations and needed while waiting, 409 for a reused hash, 422 for a wrong amount or time.): 120 an hour GET /api/pay/l/:id (A Gully Labs pay link (pl_…): { link } with title, amount (fixed, or open with min and max), assets, state.): 600 an hour POST /api/pay/l/:id/invoice (Body { usd?, asset? }. Starts a checkout: 201 { invoice, path }, an invoice that expires in an hour.): 10 an hour GET /api/pay/m/config (Merchant fee settings: feeBps, feePct, freeUsd (fee-free lifetime volume), minStatementUsd, pauseAfterDays, chains, assets.): public, max-age=60 GET /api/pay/m/l/:id, POST …/invoice (A store’s pay link (ml_…) and starting its checkout, as above, plus merchant (name, logo, accent, contact) and nonCustodial. A paused store answers 423.): 600 / 10 an hour GET /api/pay/m/i/:id, POST …/quote, POST …/verify (A store’s invoice (mi_…) with line items, recipients per chain, dueAt; quote and verify as above. The quote pays the store’s own wallet and may carry a fee split (approve + pay calls).): 600 / 30 / 120 an hour GET /api/pay/m/logo/:sha (A store’s uploaded logo.): public, max-age=86400, immutable Errors are JSON { error }: 400 bad asset, amount or hash; 403 missing header; 404 unknown id; 409 not open, wrong chain or already used; 423 paused store; 429 over a limit; 502 / 503 chain or price feed unreadable, or no treasury configured. Live gas per chain is drawn on the Gully Pay page.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "{ asset }. A 20-minute quote: { quote } with the exact amount, treasury, token, an EIP-681 or Solana Pay uri, the Chainlink price used and expiresAt.): 30 an hour POST /api/pay/:id/verify (Body { quoteId, txHash }. Checks the transaction on chain; 200 { invoice } when paid, 202 with confirmations and needed while waiting, 409 for a reused hash, 422 for a wrong amount or time.): 120 an hour GET /api/pay/l/:id (A Gully Labs pay link (pl_…): { link } with title, amount (fixed, or open with min and max), assets, state.): 600 an hour POST /api/pay/l/:id/invoice (Body { usd?, asset? }. Starts a checkout: 201 { invoice, path }, an invoice that expires in an hour.): 10 an hour GET /api/pay/m/config (Merchant fee settings: feeBps, feePct, freeUsd (fee-free lifetime volume), minStatementUsd, pauseAfterDays, chains, assets.): public, max-age=60 GET /api/pay/m/l/:id, POST …/invoice (A store’s pay link (ml_…) and starting its checkout, as above, plus merchant (name, logo, accent, contact) and nonCustodial. A paused store answers 423.): 600 / 10 an hour GET /api/pay/m/i/:id, POST …/quote, POST …/verify (A store’s invoice (mi_…) with line items, recipients per chain, dueAt; quote and verify as above. The quote pays the store’s own wallet and may carry a fee split (approve + pay calls).): 600 / 30 / 120 an hour GET /api/pay/m/logo/:sha (A store’s uploaded logo.): public, max-age=86400, immutable Errors come back as JSON with a short message: 400 bad asset, amount or hash; 403 missing header; 404 unknown id; 409 not open, wrong chain or already used; 423 paused store; 429 over a limit; 502 / 503 chain or price feed unreadable, or no treasury configured. Live gas per chain is drawn on the Gully Pay page.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "230de398ffb8",
@@ -368,8 +368,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#errors",
    "section": "Errors",
-   "text": "Errors are JSON with a single error string. 400 (history: chain or ticker malformed): Check the parameters. Body: {\"error\":\"chain and ticker\"}. 400 (movers: window, limit, chain or ticker malformed): Use window=1h or 24h, a limit from 1 to 50, and a ticker only with a chain. 404 (an unknown /api/ path): Body: {\"error\":\"not found\"}. Check the path. 405 (a method other than GET or OPTIONS): Use GET. 401 (unknown or revoked API key): Check the key, or request one at app.gullylabs.xyz. 403 (history: days beyond what your plan includes): Ask for fewer days, or move to a plan with more history. The body names your limit in historyDays. 429 (rate limit exceeded): Wait for Retry-After seconds, or use an API key. 502 (the tracker could not be built at all): Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Errors are JSON with a single error string. 400 (history: chain or ticker malformed): Check the parameters. The reply is a short JSON message saying both chain and ticker are needed. 400 (movers: window, limit, chain or ticker malformed): Use window=1h or 24h, a limit from 1 to 50, and a ticker only with a chain. 404 (an unknown /api/ path): The reply is a short JSON message saying not found. Check the path. 405 (a method other than GET or OPTIONS): Use GET. 401 (unknown or revoked API key): Check the key, or request one at app.gullylabs.xyz. 403 (history: days beyond what your plan includes): Ask for fewer days, or move to a plan with more history. The body names your limit in historyDays. 429 (rate limit exceeded): Wait for Retry-After seconds, or use an API key. 502 (the tracker could not be built at all): Retry in a minute. A partial failure is not a 502: it shows as unreadable rows.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "9eb94f89f74e",
@@ -1862,8 +1862,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#what",
    "section": "Swaps on stock pages",
-   "text": "Open a token from the tracker and its page has a swap card. On Robinhood Chain and BNB Chain it pays with the chain’s native coin (ETH or BNB) through LI.FI; on Solana it buys or sells the xStock with SOL or USDC through Jupiter. The card sits next to the live gap so you can see the fair price before you trade. Swaps are executed by third-party exchanges. The token is issued by a third party that can pause, block or change it; it tracks the stock but is not the share itself.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Open a token from the tracker and its page has a swap card. On and it pays with the chain’s native coin (ETH or BNB) through; on it buys or sells the xStock with SOL or USDC through. The card sits next to the live gap so you can see the fair price before you trade. Swaps are executed by third-party exchanges. The token is issued by a third party that can pause, block or change it; it tracks the stock but is not the share itself.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "00175a84e9f3",
@@ -1880,8 +1880,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#gates",
    "section": "Before a swap is shown",
-   "text": "Three checks run before any swap code is even loaded: The token is on a chain we can route: Robinhood Chain or BNB Chain (LI.FI), or Solana (Jupiter). Your region may see it. The page asks GET /api/geo, which reads the country Cloudflare attaches to the request; no third-party geo service is called. The United States and comprehensively sanctioned countries (Cuba, Iran, North Korea, Syria) are not offered swaps. If the country cannot be told (no header, unknown, Tor), the swap is not shown; if the check itself fails, the page fails closed too. You tick “I understand” under a short notice. The tick is remembered in this browser only. A blocked or unknown region still sees the gap, a gap alert button and the pool on DexScreener: never a dead end. The country is a guess from the IP address, not identity.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Three checks run before any swap code is even loaded: The token is on a chain we can route: or ( ), or ( ). Your region may see it. The page asks GET /api/geo, which reads the country Cloudflare attaches to the request; no third-party geo service is called. The United States and comprehensively sanctioned countries (Cuba, Iran, North Korea, Syria) are not offered swaps. If the country cannot be told (no header, unknown, Tor), the swap is not shown; if the check itself fails, the page fails closed too. You tick “I understand” under a short notice. The tick is remembered in this browser only. A blocked or unknown region still sees the gap, a gap alert button and the pool on: never a dead end. The country is a guess from the IP address, not identity.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "eb0cf484acd2",
@@ -1889,8 +1889,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#evm",
    "section": "EVM chains: LI.FI",
-   "text": "On Robinhood Chain and BNB Chain the card is the LI.FI widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what DeepCore’s router would give for the same payment (read through our cached GET /api/deepcore/quote); “Swap on DeepCore” opens deepcore.fun, nothing is executed from here.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "On and the card is the widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what ’s router would give for the same payment (read through our cached GET /api/deepcore/quote); “Swap on DeepCore” opens ’s site (deepcore.fun), nothing is executed from here.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "302950459016",
@@ -1898,8 +1898,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#solana",
    "section": "Solana: Jupiter",
-   "text": "On Solana the card asks this site for a Jupiter quote and an unsigned transaction, so the browser talks only to gullylabs.xyz. Your wallet signs and sends it. The proxy applies the same region check (it answers 451 where swaps are not offered), caches quotes and limits the rate: GET /api/solana/jupiter/quote (20 a minute per IP): A quote to buy the xStock with SOL or USDC, or sell it back; cached 10 s per pair and amount POST /api/solana/jupiter/swap (6 a minute per IP): Turns a quote (valid 60 s) into an unsigned transaction for your wallet: { quoteId, userPublicKey } Slippage (0.5%): Every quote states its minimum out and its price impact More on Solana coverage: Solana.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "On the card asks this site for a quote and an unsigned transaction, so the browser talks only to gullylabs.xyz. Your wallet signs and sends it. The proxy applies the same region check (it answers 451 where swaps are not offered), caches quotes and limits the rate: GET /api/solana/jupiter/quote (20 a minute per IP): A quote to buy the xStock with SOL or USDC, or sell it back; cached 10 s per pair and amount POST /api/solana/jupiter/swap (6 a minute per IP): Turns a quote (valid 60 s) into an unsigned transaction for your wallet: { quoteId, userPublicKey } Slippage (0.5%): Every quote states its minimum out and its price impact More on Solana coverage: Solana.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "b3762e753f3d",
@@ -1907,8 +1907,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#fees",
    "section": "Fees",
-   "text": "Any fee Gully Labs adds is set by the owner on the server and stated in the quote before you confirm. Exchanges and networks charge their own fees and slippage on top. What this build of the site says: Robinhood Chain, BNB Chain (LI.FI): Solana (Jupiter): On Solana the fee and its recipient come from the same server-side record for the quote and the swap, so a page cannot ask for a different fee or recipient. A swap with no usable fee account carries no fee, and the quote says so.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Any fee Gully Labs adds is set by the owner on the server and stated in the quote before you confirm. Exchanges and networks charge their own fees and slippage on top. What this build of the site says: ,: On Solana the fee and its recipient come from the same server-side record for the quote and the swap, so a page cannot ask for a different fee or recipient. A swap with no usable fee account carries no fee, and the quote says so.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "677d9202055e",
@@ -1916,8 +1916,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#custody",
    "section": "What we never do",
-   "text": "Gully Labs never holds your funds or your keys. Quotes and unsigned transactions come from LI.FI or Jupiter through our pages and proxy; your wallet signs and sends every transaction. Swaps are information and tooling, not investment advice.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Gully Labs never holds your funds or your keys. Quotes and unsigned transactions come from or through our pages and proxy; your wallet signs and sends every transaction. Swaps are information and tooling, not investment advice.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "91ecb051746a",
@@ -2006,8 +2006,8 @@
    "title": "Solana Pay",
    "url": "https://docs.gullylabs.xyz/solana-pay",
    "section": null,
-   "text": "Gully Pay takes SOL, USDC and USDT on Solana as Solana Pay transfer requests. Each quote has its own reference key, so a phone wallet that follows the spec pays from a QR code and the page finds the payment by itself. How Gully Pay takes SOL, USDC and USDT on Solana: the Solana Pay transfer request and its reference key, paying by QR, wallet or pasted signature, when a payment counts, the find endpoint and the refusals.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Gully Pay takes, and on as Solana Pay transfer requests. Each quote has its own reference key, so a phone wallet that follows the spec pays from a QR code and the page finds the payment by itself. How Gully Pay takes SOL, USDC and USDT on Solana: the Solana Pay transfer request and its reference key, paying by QR, wallet or pasted signature, when a payment counts, the find endpoint and the refusals.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "63c9c9542eae",
@@ -2015,8 +2015,8 @@
    "title": "Solana Pay",
    "url": "https://docs.gullylabs.xyz/solana-pay#what",
    "section": "What it covers",
-   "text": "Solana Pay works in Gully Labs’ own checkout: the quotes made for the pay page and the app’s checkout. It uses the same quotes, ledger and one-signature-one-payment rule as the EVM chains. Merchant stores take the EVM chains for now, so a store does not offer Solana. The specification is the Solana Pay transfer request. Solana as a whole (the tracker, Holder Map and swaps) is on the Solana page.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Solana Pay works in Gully Labs’ own checkout: the quotes made for the pay page and the app’s checkout. It uses the same quotes, ledger and one-signature-one-payment rule as the EVM chains. Merchant stores take the EVM chains for now, so a store does not offer Solana. The specification is the Solana Pay transfer request. as a whole (the tracker, Holder Map and swaps) is on the Solana page.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "9df9e62b96ec",
@@ -2024,8 +2024,8 @@
    "title": "Solana Pay",
    "url": "https://docs.gullylabs.xyz/solana-pay#assets",
    "section": "Assets and prices",
-   "text": "(SPL token (mint EPjF…Dt1v), 6 decimals): One USDC per dollar of the quote (SPL token (mint Es9v…NYB), 6 decimals): One USDT per dollar of the quote (A plain transfer of the coin, 9 decimals): Chainlink’s SOL / USD feed, read on Arbitrum The SOL feed is read through Arbitrum’s RPCs, because Chainlink’s SOL / USD price feed we use lives there. If the feed’s last answer is older than two hours, no SOL quote is given and the page suggests a stablecoin. The feed and its last answer are shown on the quote.",
-   "updatedAt": "2026-10-19T07:56:51.355Z"
+   "text": "(SPL token (mint EPjF…Dt1v), 6 decimals): One USDC per dollar of the quote (SPL token (mint Es9v…NYB), 6 decimals): One USDT per dollar of the quote (A plain transfer of the coin, 9 decimals): ’s SOL / USD feed, read on The feed is read through ’s RPCs, because ’s SOL / USD price feed we use lives there. If the feed’s last answer is older than two hours, no SOL quote is given and the page suggests a stablecoin. The feed and its last answer are shown on the quote.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "99d2b4faf533",
@@ -3599,8 +3599,8 @@
    "title": "Gully SDK (gully-labs/sdk README)",
    "url": "https://github.com/gully-labs/sdk/blob/main/README.md#gully-labs-sdk",
    "section": "Gully Labs SDK",
-   "text": "Build on the Gully Labs stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price, refreshed every minute. Package — What it is @gullylabs/tracker — A typed client for the tracker API. No dependencies; runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget — The embeddable widget (ticker, badge, table) with a loader and a React component. @gullylabs/holders — A typed client for the Holder Map API (who holds a token, wallet clusters) and a React component that frames the map.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Build on the Gully Labs stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price, refreshed every minute. Package — What it is @gullylabs/tracker — A typed client for the tracker API. No dependencies; runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget — The embeddable widget (ticker, badge, table) with a loader and a React component. @gullylabs/holders — A typed client for the Holder Map API (who holds a token, wallet clusters) and a React component that frames the map. Not published to npm yet.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "657efa7a3f14",
@@ -3644,8 +3644,26 @@
    "title": "gullylabs.xyz website (gully-labs/website README)",
    "url": "https://github.com/gully-labs/website/blob/main/README.md#what-this-is",
    "section": "What this is",
-   "text": "The source of gullylabs.xyz and the sites that share its code: Host — What it serves gullylabs.xyz — The ledger: volume, value locked and fees across every Gully Labs project, read live from each project's own API gullylabs.xyz/tracker — The stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price docs.gullylabs.xyz — Methodology, API reference, widget guide, SDK, plans and alerts app.gullylabs.xyz — The Gully Labs App (app dashboard): sign in with a wallet; API keys, usage, alerts, analytics, payments, and every service (tracker, Gully Pay, Chain Kit, Gully AI, DeepCore launches, widgets, Telegram) gullylabs.xyz/widget — The embeddable widget and its builder One React bundle renders the right app for each host. A dependency-free Node server (server/) serves it, answers the public API (/api/tracker, /api/stats, /api/plans) and forwards the blog and analytics hosts to their own containers.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "The source of gullylabs.xyz and the sites that share its code. One React bundle renders the right app for each host, and a dependency-free Node server serves it and answers the API. Host — What it serves gullylabs.xyz — The home ledger (live figures from each project's own API), the stock tracker, Holder Map, Gully Security, Gully Score, Gully AI, Gully Analytics, the Gully Chains waitlist, widget, pricing and status pages docs.gullylabs.xyz — The docs host: methodology, API reference, products, SDK, plans, roadmap and changelog app.gullylabs.xyz — The app host: sign in with a wallet; API keys, usage, alerts, analytics, payments, security and every other service blog and analytics hosts — Self-hosted Ghost and Umami containers; the server forwards these hosts to them",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
+  },
+  {
+   "id": "50478f2afb51",
+   "source": "GitHub README",
+   "title": "gullylabs.xyz website (gully-labs/website README)",
+   "url": "https://github.com/gully-labs/website/blob/main/README.md#products",
+   "section": "Products",
+   "text": "Status follows src/content/features.ts, the single source of truth (also published at gullylabs.xyz/llms.txt). Product — Status Stock tracker (Robinhood Chain, BNB Chain, Solana), API, alerts, widget — Live Holder Map, Launch Health score, Deep check, badges — Live Gully Security (AI scan, monitors, reports, security review) — Live Gully Score — Live Gully Pay (invoices, pay links, merchant checkout, Solana Pay) — Live Gully AI — Live Telegram bot (@GullyLabsBot) and Mini App — Live Gully Analytics (Umami fork) — Live SDK (@gullylabs/tracker, @gullylabs/widget, @gullylabs/holders) — Beta Gully Chains — Waitlist; no chain is running yet Chain Kit — Waitlist; explorer licence being finalised",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
+  },
+  {
+   "id": "91f910ef9131",
+   "source": "GitHub README",
+   "title": "gullylabs.xyz website (gully-labs/website README)",
+   "url": "https://github.com/gully-labs/website/blob/main/README.md#architecture",
+   "section": "Architecture",
+   "text": "The server answers the public API (/api/tracker, /api/stats, /api/plans, /api/status) and the signed-in app API.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "2e2977802d8b",
@@ -3653,8 +3671,8 @@
    "title": "gullylabs.xyz website (gully-labs/website README)",
    "url": "https://github.com/gully-labs/website/blob/main/README.md#stack",
    "section": "Stack",
-   "text": "React 19 · Vite · TypeScript · Tailwind CSS v4 · React Router · ECharts · wagmi + RainbowKit (app dashboard only) · Node (no runtime dependencies) · Docker Compose.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "React 19 · Vite · TypeScript · Tailwind CSS v4 · React Router · ECharts · wagmi + RainbowKit (app host only) · Node (no runtime dependencies) · Docker Compose.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "e2f24f1f3957",
@@ -3662,8 +3680,8 @@
    "title": "gullylabs.xyz website (gully-labs/website README)",
    "url": "https://github.com/gully-labs/website/blob/main/README.md#related",
    "section": "Related",
-   "text": "gully-labs/sdk: @gullylabs/tracker and @gullylabs/widget gully-labs/umami: Gully Analytics gully-labs/blockscout: Chain Kit Information on these sites is not investment advice.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "gully-labs/sdk: @gullylabs/tracker, @gullylabs/widget and @gullylabs/holders gully-labs/umami: Gully Analytics Contact: team@gullylabs.xyz Information on these sites is not investment advice.",
+   "updatedAt": "2026-10-19T20:56:31.915Z"
   },
   {
    "id": "172cdae62148",

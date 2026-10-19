@@ -1,3 +1,7 @@
+import type { ReactNode } from 'react'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { IntegrationLogo } from '../../components/logos/IntegrationLogo'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { CodeBlock } from '../CodeBlock'
 import { GasCostChart } from '../LiveCharts'
 import { StatusHistory } from '../ProductCharts'
@@ -14,6 +18,19 @@ const sections = [
   { id: 'off', title: 'When it is off' },
 ]
 
+const Chip = ({ logo, children }: { logo: ReactNode; children: ReactNode }) => (
+  <span className="inline-flex items-center gap-1 align-middle whitespace-nowrap">
+    {logo}
+    {children}
+  </span>
+)
+const SOLANA = <Chip logo={<ChainLogo chain="solana" size={14} decorative />}>Solana</Chip>
+const CHAINLINK = <Chip logo={<IntegrationLogo id="chainlink" name="Chainlink" size={14} decorative />}>Chainlink</Chip>
+const ARBITRUM = <Chip logo={<ChainLogo chain="arbitrum" size={14} decorative />}>Arbitrum</Chip>
+const TOK = (s: string) => (
+  <Chip logo={<TokenLogo symbol={s} size={14} decorative />}>{s}</Chip>
+)
+
 const URL_TOKEN = `solana:<treasury>?amount=<tokens>&spl-token=<mint>&reference=<reference>&label=Gully%20Labs&message=<what-for>`
 const URL_SOL = `solana:<treasury>?amount=<SOL>&reference=<reference>&label=Gully%20Labs&message=<what-for>`
 const FIND = `curl -s "https://gullylabs.xyz/api/solana/pay/find?quote=<quote id>"
@@ -28,7 +45,7 @@ export function SolanaPayDocs() {
       description="How Gully Pay takes SOL, USDC and USDT on Solana: the Solana Pay transfer request and its reference key, paying by QR, wallet or pasted signature, when a payment counts, the find endpoint and the refusals."
       lead={
         <>
-          <DocLink to="gully-pay">Gully Pay</DocLink> takes SOL, USDC and USDT on Solana as Solana Pay transfer requests. Each quote has its own reference key, so a phone wallet that follows the spec pays from a QR code and the page finds the payment by itself.
+          <DocLink to="gully-pay">Gully Pay</DocLink> takes {TOK('SOL')}, {TOK('USDC')} and {TOK('USDT')} on {SOLANA} as Solana Pay transfer requests. Each quote has its own reference key, so a phone wallet that follows the spec pays from a QR code and the page finds the payment by itself.
         </>
       }
       sections={sections}
@@ -41,7 +58,7 @@ export function SolanaPayDocs() {
           Solana Pay works in Gully Labs’ own checkout: the quotes made for the pay page and the app’s checkout. It uses the same quotes, ledger and one-signature-one-payment rule as the EVM chains. Merchant stores take the EVM chains for now, so a store does not offer Solana.
         </P>
         <P>
-          The specification is the <Ext href="https://docs.solanapay.com/spec">Solana Pay transfer request</Ext>. Solana as a whole (the tracker, Holder Map and swaps) is on the <DocLink to="solana">Solana</DocLink> page.
+          The specification is the <Ext href="https://docs.solanapay.com/spec">Solana Pay transfer request</Ext>. {SOLANA} as a whole (the tracker, Holder Map and swaps) is on the <DocLink to="solana">Solana</DocLink> page.
         </P>
       </Section>
 
@@ -52,11 +69,11 @@ export function SolanaPayDocs() {
           rows={[
             [<AssetText key="usdc" text="USDC" />, 'SPL token (mint EPjF…Dt1v), 6 decimals', 'One USDC per dollar of the quote'],
             [<AssetText key="usdt" text="USDT" />, 'SPL token (mint Es9v…NYB), 6 decimals', 'One USDT per dollar of the quote'],
-            [<AssetText key="sol" text="SOL" />, 'A plain transfer of the coin, 9 decimals', 'Chainlink’s SOL / USD feed, read on Arbitrum'],
+            [<AssetText key="sol" text="SOL" />, 'A plain transfer of the coin, 9 decimals', <>{CHAINLINK}’s SOL / USD feed, read on {ARBITRUM}</>],
           ]}
         />
         <P>
-          The SOL feed is read through Arbitrum’s RPCs, because Chainlink’s SOL / USD price feed we use lives there. If the feed’s last answer is older than two hours, no SOL quote is given and the page suggests a stablecoin. The feed and its last answer are shown on the quote.
+          The {TOK('SOL')} feed is read through {ARBITRUM}’s RPCs, because {CHAINLINK}’s SOL / USD price feed we use lives there. If the feed’s last answer is older than two hours, no SOL quote is given and the page suggests a stablecoin. The feed and its last answer are shown on the quote.
         </P>
       </Section>
 

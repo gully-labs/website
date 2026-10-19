@@ -31,7 +31,7 @@ type MonitorDelivery = {
         | 'safe-owner-added' | 'safe-owner-removed' | 'safe-threshold-changed'
         | 'outflow' | 'native-outflow'
     text: string                   // the plain-language line, e.g. "⚠️ Owner of Vault changed from 0x12…ab to 0x98…cd · Base · <link>"
-    txHash: string | null          // null for changes found by reading the contract (no transaction to point at)
+    txHash: string | null          // empty for changes found by reading the contract (no transaction to point at)
     link: string                   // the transaction, or the contract, on the explorer
     blockNumber: number | null
     privileged: boolean            // true for owner, admin, role, code, pause and Safe signer changes

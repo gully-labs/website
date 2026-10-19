@@ -3,6 +3,9 @@ import { useMemo, useState } from 'react'
 import { contracts, type ContractEntry, VERIFIED_ON } from '../../content/contracts'
 import { copyWithToast } from '../../components/ui/toast'
 import { CodeBlock } from '../CodeBlock'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { IntegrationLogo } from '../../components/logos/IntegrationLogo'
+import { VenueLogo } from '../../components/logos/VenueLogo'
 import { C, Callout, DocPage, Ext, List, P, Section } from '../DocPage'
 
 const sections = [
@@ -13,6 +16,15 @@ const sections = [
 ]
 
 const PROJECTS = ['Gully Labs', 'DeepCore', 'Peddles', 'PeddleSwap', 'PeddleQuest']
+const VENUE_KEY: Record<string, string> = { 'Gully Labs': 'gully', DeepCore: 'deepcore', Peddles: 'peddles', PeddleSwap: 'peddleswap', PeddleQuest: 'peddlequest' }
+const REPO_NAME: Record<string, string> = { deepcore: 'DeepCore SDK', 'peddles-launchpad': 'Peddles', peddleswap: 'PeddleSwap', 'peddles-quest': 'PeddleQuest', website: 'Gully Labs' }
+/** "repo:path" as plain words: the repository's product and what kind of file, never a file path. */
+function sourceWords(source: string) {
+  const [repo, path = ''] = source.split(':')
+  const who = REPO_NAME[repo] ?? repo
+  const what = /deployments\/\d+\.json$/.test(path) ? 'deployment record' : /deployments\/index/.test(path) ? 'deployment list' : /\.md$/.test(path) ? 'docs' : 'repository'
+  return `the ${who} ${what}`
+}
 const PAGE = 40
 const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`
 
@@ -41,7 +53,16 @@ function Row({ c }: { c: ContractEntry }) {
     <li className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-surface" data-contract={c.address}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-[14.5px] font-medium text-ink">{c.name}</span>
-        <span className="font-mono text-[11px] tracking-[1px] text-faint">{c.chain.toUpperCase()}</span>
+        <span className="inline-flex items-center gap-1 font-mono text-[11px] tracking-[1px] text-faint">
+          <ChainLogo chain={c.chain} size={14} decorative />
+          {c.chain.toUpperCase()}
+        </span>
+        {VENUE_KEY[c.project] && (
+          <span className="inline-flex items-center gap-1 font-mono text-[11px] tracking-[1px] text-faint">
+            <VenueLogo venue={VENUE_KEY[c.project]} name={c.project} size={14} decorative />
+            {c.project.toUpperCase()}
+          </span>
+        )}
         {c.owner === 'third-party' && <span className="rounded-sm border border-gold-line px-[6px] font-mono text-[11px] tracking-[1px] text-gold">THIRD PARTY</span>}
         {c.verification ? <span className="font-mono text-[11px] tracking-[1px] text-green">SOURCE {c.verification === 'full' ? 'VERIFIED' : 'PARTIAL MATCH'}</span> : <span className="font-mono text-[11px] tracking-[1px] text-faint">NO VERIFIED SOURCE</span>}
       </div>
@@ -55,11 +76,12 @@ function Row({ c }: { c: ContractEntry }) {
       </div>
       <p className="m-0 text-[13.5px] leading-[1.55] text-dim">{c.role}</p>
       <p className="m-0 font-mono text-[11.5px] break-words text-faint">
-        quoted from {c.source}
+        quoted from {sourceWords(c.source)}
         {c.verifiedSource && (
           <>
             {' · '}
-            <a href={c.verifiedSource} target="_blank" rel="noopener noreferrer" className="text-gold underline decoration-gold-line underline-offset-[3px]">
+            <a href={c.verifiedSource} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 align-middle text-gold underline decoration-gold-line underline-offset-[3px]">
+              <IntegrationLogo id="sourcify" name="Sourcify" size={14} decorative />
               Sourcify
             </a>
           </>
@@ -94,9 +116,12 @@ function Registry() {
               setShown(PAGE)
             }}
             aria-pressed={project === p}
-            className="group grid min-h-11 grid-cols-[110px_1fr_40px] items-center gap-3 text-left font-mono text-[12px] text-muted hover:text-ink max-[640px]:grid-cols-[96px_1fr_36px]"
+            className="group grid min-h-11 grid-cols-[140px_1fr_40px] items-center gap-3 text-left font-mono text-[12px] text-muted hover:text-ink max-[640px]:grid-cols-[124px_1fr_36px]"
           >
-            <span className={project === p ? 'text-gold' : ''}>{p}</span>
+            <span className={`inline-flex min-w-0 items-center gap-2 ${project === p ? 'text-gold' : ''}`}>
+              {VENUE_KEY[p] && <VenueLogo venue={VENUE_KEY[p]} name={p} size={16} decorative />}
+              <span className="truncate">{p}</span>
+            </span>
             <span className="h-[6px] overflow-hidden rounded-full bg-surface-deep">
               <span className="block h-full rounded-full bg-gold transition-[width,opacity] duration-700 ease-out" style={{ width: `${Math.max(3, (counts[p] / max) * 100)}%`, opacity: project === 'all' || project === p ? 1 : 0.3 }} />
             </span>
@@ -126,7 +151,10 @@ function Registry() {
               setShown(PAGE)
             }}
           >
-            {name}
+            <span className="inline-flex items-center gap-2">
+              <ChainLogo chain={name} size={16} decorative />
+              {name}
+            </span>
           </button>
         ))}
       </div>

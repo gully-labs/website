@@ -16,7 +16,7 @@ const SHAPE = `type StatusState = 'up' | 'degraded' | 'down' | 'off' | 'unknown'
 
 interface StatusBucket {
   t: string            // start of a 30-minute bucket (ISO time)
-  up: number | null    // share of checks up in it, 0..1 (null: none counted)
+  up: number | null    // share of checks up in it, 0..1 (empty: none counted)
   ms: number | null    // mean latency of the checks in it
 }
 
@@ -38,7 +38,7 @@ interface StatusIncident {
   name: string
   state: 'down' | 'degraded'
   startedAt: string
-  endedAt: string | null     // null while it is still open
+  endedAt: string | null     // empty while it is still open
   detail: string
 }
 
