@@ -183,7 +183,7 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
     the same circles, connectors and check-pop as the Stepper, but driven by the caller's state instead of the
     user's clicks. `state` per step: done, active (spinner), failed or todo; `after` is extra content beside the
     label (a link to the transaction). SafeDeploy and the Security flows use it, so there is one stepper look. */
-export type ProgressStep = { id: string; label: string; state: 'done' | 'active' | 'failed' | 'todo'; after?: ReactNode }
+export type ProgressStep = { id: string; label: string; state: 'done' | 'active' | 'failed' | 'todo'; after?: ReactNode; /** Shown in the circle while the step is still to do (the number otherwise). */ icon?: ReactNode; /** A step that does not apply this time: struck through, with `after` as the reason. */ skipped?: boolean }
 export function ProgressSteps({ steps, label, testId = 'progress-steps' }: { steps: ProgressStep[]; label: string; testId?: string }) {
   return (
     <ol className="m-0 flex list-none items-stretch gap-0 p-0" aria-label={label} data-testid={testId}>
@@ -196,10 +196,10 @@ export function ProgressSteps({ steps, label, testId = 'progress-steps' }: { ste
             <span className="relative flex size-7 shrink-0 items-center justify-center">
               {active && <span aria-hidden className="absolute inset-0 rounded-full border border-gold-line animate-[gl-pulse-ring_1.6s_ease-out_infinite]" />}
               <span className={`grid size-7 place-items-center rounded-full border text-bg transition-colors duration-500 ${done ? 'border-success-line bg-green' : failed ? 'border-error-line bg-error' : active ? 'border-gold bg-gold' : 'border-line-strong bg-transparent'}`}>
-                {done ? <Check size={14} aria-hidden style={{ animation: 'gl-check-pop .45s cubic-bezier(.2,1.4,.4,1) both' }} /> : failed ? <X size={14} aria-hidden /> : active ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <span className="font-mono text-[11px] text-faint">{i + 1}</span>}
+                {done ? <Check size={14} aria-hidden style={{ animation: 'gl-check-pop .45s cubic-bezier(.2,1.4,.4,1) both' }} /> : failed ? <X size={14} aria-hidden /> : active ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <span className="font-mono text-[11px] text-faint">{s.icon ?? i + 1}</span>}
               </span>
             </span>
-            <span className={`min-w-0 truncate text-[13px] ${done || active ? 'text-ink' : failed ? 'text-error' : 'text-faint'}`}>
+            <span className={`min-w-0 truncate text-[13px] ${done || active ? 'text-ink' : failed ? 'text-error' : 'text-faint'} ${s.skipped ? 'line-through' : ''}`}>
               {s.label}
               <span className="sr-only"> · {done ? 'done' : failed ? 'failed' : active ? 'current step' : 'to do'}</span>
               {s.after}

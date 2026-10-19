@@ -11,6 +11,8 @@ import { InfoTip } from '../ui'
 import { KIND_TEXT, payOrigin, type MerchantView, type MerchantWallet } from './api'
 import { Confirm, Field, Section } from './parts'
 import { ExtLink } from '../ExtLink'
+import { pillClass } from '../../../components/ui/pill'
+import { StatusPill as KitPill } from '../../../components/ui/StatusPill'
 
 /* Store profile (shown on the checkout) and the receiving wallets, one per chain. The forms are their own
    components so the setup stepper (MerchantTab) shows the same form as the Wallets and Profile tabs. */
@@ -116,7 +118,7 @@ export function ProfileForm({ view, onChange }: { view: MerchantView; onChange: 
               </span>
             )}
             <b className="min-w-0 truncate text-[15px] text-ink">{name.trim() || 'Store'}</b>
-            {!name.trim() && <span className="shrink-0 rounded-full border border-line-strong px-2 py-[1px] font-mono text-[11px] text-dim">your wallet</span>}
+            {!name.trim() && <KitPill tone="neutral" className="shrink-0">your wallet</KitPill>}
           </span>
           <span className="text-[12px] text-muted">{view.nonCustodial}</span>
           <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
@@ -150,7 +152,7 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
       <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-[2px]">
         <span className="flex flex-wrap items-center gap-2 text-[14px] text-ink">
           {w.chain}
-          <span className={`inline-flex items-center gap-1 rounded-full border px-2 font-mono text-[11px] ${live ? 'border-success-line text-green' : w.status === 'not-deployed' ? 'border-error-line text-error' : 'border-line-strong text-faint'}`}>
+          <span className={pillClass(live ? 'ok' : w.status === 'not-deployed' ? 'error' : 'off')}>
             {live ? <CheckCircle2 size={11} aria-hidden /> : w.status === 'not-deployed' ? <ShieldAlert size={11} aria-hidden /> : null}
             {live ? 'receiving' : w.status === 'not-deployed' ? 'not deployed' : 'off'}
           </span>

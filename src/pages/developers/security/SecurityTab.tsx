@@ -1,13 +1,14 @@
-import { BookOpen, FileText, Gauge, List, Plus, Radar, ScanSearch, ShieldCheck, Users } from 'lucide-react'
+import { FileText, Gauge, List, Plus, Radar, ScanSearch, ShieldCheck, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { axisTooltip, barsPreset, C, tipHtml } from '../../../components/charts/chartPresets'
+import { GhostChart } from '../../../components/charts/GhostChart'
 import { EChart } from '../../../components/charts/EChart'
 import { ReviewRequestForm } from '../../../components/security/ReviewRequestForm'
-import { fmtWhen, isActive, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, type ScanView, type SecurityOverview } from '../../../components/security/types'
+import { fmtWhen, isActive, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, type ScanView, type SecurityOverview, type Severity } from '../../../components/security/types'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../../site-host'
 import { Empty, ErrorLine, Skeleton } from '../parts'
 import { Can } from '../RoleGate'
-import { mono, panel, pillGold, pillSm } from '../styles'
+import { mono, panel, pillGold } from '../styles'
 import { Monitors } from './Monitors'
 import { NewScan } from './NewScan'
 import { usePlans } from '../../../lib/plans'
@@ -16,6 +17,7 @@ import { useSubTab } from '../subtab'
 import { InfoTip, SubPanel, SubTabs } from '../ui'
 import { subFromSection, useOverview, useScans, type SecuritySub } from './useSecurity'
 import { ExtLink } from '../ExtLink'
+import { ServiceHeader, type Status, type Tile } from '../services/ServiceHeader'
 
 /* The app's Security page (#security): Gully Security for the active workspace.
    Sub-tabs (a real tablist, arrow keys move between them): Scans (every scan with its live status and a
@@ -105,7 +107,7 @@ function MonitorLimits() {
   const [plans] = usePlans()
   const list = plans.k === 'ok' ? plans.offer.plans.filter((p) => typeof p.monitors === 'number') : []
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[14px] border border-line px-4 py-3 text-[13px] text-muted" data-testid="monitor-limits">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-card border border-line px-4 py-3 text-[13px] text-muted" data-testid="monitor-limits">
       <span className="font-mono text-[11px] tracking-[1px] text-faint">CONTRACTS WATCHED BY PLAN</span>
       {plans.k === 'loading' && <span className="text-faint">reading…</span>}
       {plans.k === 'error' && <span className="text-error">unreadable right now</span>}
@@ -172,32 +174,38 @@ export function SecurityTab({ section }: { section: string | null }) {
   const o = ov.data
   const scans = list.k === 'ok' ? list.data.scans : []
   const done = scans.filter((s) => s.status === 'done')
+  // The engine's state as the shared header's status pill; the tooltip names the static tools.
+  const engine: Status = o.engine.worker ? { tone: 'live', text: 'Static tools + AI review' } : o.engine.ai ? { tone: 'idle', text: 'AI review only' } : { tone: 'down', text: 'Scanning unavailable' }
+  const known = list.k === 'ok'
+  const sum = (keys: readonly Severity[]) => done.reduce((n, s) => n + keys.reduce((m, k) => m + (s.counts?.[k] ?? 0), 0), 0)
+  const tiles: Tile[] = [
+    { label: 'SCANS', value: known ? scans.length : null, unknown: 'reading…', note: known ? `${scans.filter((s) => isActive(s.status)).length} running` : undefined },
+    { label: 'REPORTS', value: known ? done.length : null, unknown: 'reading…', note: known ? `${done.filter((s) => s.published).length} published` : undefined },
+    { label: 'FINDINGS', value: known ? sum(SEVERITIES) : null, unknown: 'reading…', note: 'across finished scans' },
+    { label: 'CRITICAL + HIGH', value: known ? sum(['critical', 'high']) : null, unknown: 'reading…', tone: known && sum(['critical', 'high']) > 0 ? C.error : undefined, note: 'worth a look first' },
+  ]
 
   return (
     <div className="flex flex-col gap-2" data-testid="security-tab">
-      <header className={`${panel} print:hidden`}>
-        <div className="flex flex-wrap items-center gap-3">
-          <ShieldCheck size={26} className="text-gold" aria-hidden />
-          <div className="flex min-w-0 flex-[1_1_220px] flex-col">
-            <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY SECURITY</span>
-            <h1 className="m-0 text-[20px] font-semibold text-ink">{o.offer.scan.name}</h1>
-          </div>
+      <div className="print:hidden">
+        <ServiceHeader
+          icon={ShieldCheck}
+          eyebrow="GULLY SECURITY"
+          title={o.offer.scan.name}
+          status={engine}
+          docs={`${DOCS_URL}/gully-security`}
+          page={{ href: site('/security') }}
+          tiles={sub === 'new' || sub === 'review' ? undefined : tiles}
+        >
           <QuotaPill ov={o} />
-          <span className={`inline-flex min-h-[30px] items-center gap-2 rounded-full border px-[10px] text-[13px] ${o.engine.worker ? 'border-success-line text-green' : o.engine.ai ? 'border-gold-line text-gold' : 'border-line-strong text-faint'}`} data-testid="engine-state" title={o.engine.worker ? `Static tools: ${o.engine.tools.join(', ')}` : 'The static-analysis worker is not running on this server yet'}>
-            <span aria-hidden className={`size-2 rounded-full ${o.engine.worker || o.engine.ai ? 'animate-[gl-blink_1.6s_ease-in-out_infinite] motion-reduce:animate-none' : ''} ${o.engine.worker ? 'bg-green' : o.engine.ai ? 'bg-gold' : 'bg-faint'}`} />
-            {o.engine.worker ? 'Static tools + AI review' : o.engine.ai ? 'AI review only' : 'Scanning unavailable'}
-          </span>
-          <ExtLink href={`${DOCS_URL}/gully-security`} className={pillSm}>
-            <BookOpen size={14} aria-hidden /> Docs
-          </ExtLink>
-        </div>
-        <InfoTip summary="Automated scans of contracts and code. A scan is not an audit.">
+        </ServiceHeader>
+        <InfoTip summary="Automated scans of contracts and code. A scan is not an audit." className="mt-2">
           Automated scans of contracts and code: findings with locations, draft proofs of concept and the tools that ran. A scan is not an audit; for people reading your code, request a Security Review.{' '}
           <ExtLink href={site('/security')} arrow={false} className="text-gold underline-offset-4 hover:underline">
             What each tier covers ↗
           </ExtLink>
         </InfoTip>
-      </header>
+      </div>
       <SubTabs
         label="Security sections"
         idBase="sec"
@@ -228,7 +236,7 @@ export function SecurityTab({ section }: { section: string | null }) {
               <Skeleton h={160} />
             ) : (
               <>
-                {scans.length > 0 && <ScansPerDay scans={scans} />}
+                {scans.length > 0 ? <ScansPerDay scans={scans} /> : <GhostChart variant="bars" height={120} label="Your scans will draw here, per day" />}
                 <ScanRows
                   scans={scans.slice(0, 50)}
                   open={open}

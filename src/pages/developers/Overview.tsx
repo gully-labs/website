@@ -20,6 +20,7 @@ import { ExtLink } from './ExtLink'
 import { ChainAssetChips } from './PayFlow'
 import { BLUE, chip, LIMITED_COLOR, mono, panel, panelTitle, pillGold, pillGoldLine, pillLine, rise } from './styles'
 import { bucketize, busiestKeyRate, firings, group, RANGE_LABEL } from './usage'
+import { StatusPill as KitPill } from '../../components/ui/StatusPill'
 
 /* The Overview tab of the console: pending workspace invites, the "Get started" checklist and the Tools
    row (GetStarted.tsx), four KPI cards (animated, with the change against the previous period),
@@ -186,7 +187,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
       {/* ---------------------------------------------------------------- KPIs */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="you-title">
         <h2 className="m-0 text-[15px] font-semibold text-ink">Your workspace</h2>
-        <span className="inline-flex items-center gap-2 rounded-full border border-gold-line bg-[rgba(217,181,99,.06)] px-[10px] py-[2px] font-mono text-[11px] text-gold">YOU</span>
+        <KitPill tone="warn">YOU</KitPill>
         <span className="font-mono text-[11px] text-faint">your keys, alerts and traffic only</span>
         <RefreshChip error={shown ? up.error : null} onRetry={reloadUsage} />
         <RefreshChip error={alerts.refreshErr} onRetry={alerts.load} />

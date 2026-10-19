@@ -15,6 +15,7 @@ import { Can } from '../RoleGate'
 import { mono, panel, pillLine, pillSm } from '../styles'
 import { useScan } from './useSecurity'
 import { ExtLink } from '../ExtLink'
+import { StatusPill as KitPill, type PillTone } from '../../../components/ui/StatusPill'
 
 /* One scan in the app: its live progress while it runs (Server-Sent Events), the Gully Pay step while it
    waits for payment, and the report once done (ReportBody: charts, tools, findings with the draft PoC).
@@ -24,11 +25,12 @@ import { ExtLink } from '../ExtLink'
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
 
 export function StatusChip({ s }: { s: ScanView['status'] }) {
-  const tone = s === 'done' ? 'border-success-line text-green' : s === 'failed' || s === 'unknown' ? 'border-error-line text-error' : s === 'cancelled' ? 'border-line-strong text-faint' : 'border-gold-line text-gold'
+  const tone: PillTone = s === 'done' ? 'ok' : s === 'failed' || s === 'unknown' ? 'error' : s === 'cancelled' ? 'off' : 'warn'
   return (
-    <span className={`inline-flex min-h-[26px] items-center gap-[6px] rounded-full border px-[10px] font-mono text-[11px] whitespace-nowrap ${tone}`} data-status={s}>
-      {isActive(s) && <span aria-hidden className="size-[6px] animate-[gl-blink_1.4s_ease-in-out_infinite] rounded-full bg-gold motion-reduce:animate-none" />}
-      {STATUS_LABEL[s]}
+    <span className="inline-flex" data-status={s}>
+      <KitPill tone={tone} dot={isActive(s)}>
+        {STATUS_LABEL[s]}
+      </KitPill>
     </span>
   )
 }

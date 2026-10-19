@@ -24,6 +24,7 @@ import { keyColors } from './helpers'
 import { ServiceHeader } from './services/ServiceHeader'
 import { docsPage } from './services/links'
 import { group } from './usage'
+import { StatusPill as KitPill } from '../../components/ui/StatusPill'
 
 /* The Keys tab: a two-step setup stepper (create a key, make a first call), then sub-tabs that show one
    section at a time (#keys/keys, #keys/requests, #keys/quickstart, #keys/widget, remembered): live keys
@@ -627,7 +628,7 @@ function Quickstart({ account }: { account: Account }) {
       {endpoints.map((e) => (
         <div key={e.path} className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="rounded-full border border-success-line bg-success-bg px-2 py-[1px] font-mono text-[11px] text-green">GET</span>
+            <KitPill tone="ok">GET</KitPill>
             <code className="font-mono text-[13px] break-all text-ink">{e.path}</code>
             <span className="text-[13px] text-faint">{e.note}</span>
           </div>

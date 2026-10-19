@@ -11,6 +11,7 @@ import { Avatar } from './Avatar'
 import { Menu, menuItem } from './Menu'
 import { declinedInvites, restoreFocus, usePortal } from './portal'
 import { ExtLink } from './ExtLink'
+import { StatusPill as KitPill, type PillTone } from '../../components/ui/StatusPill'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
@@ -58,7 +59,7 @@ function readPref(): 'open' | 'icons' | null {
   }
 }
 
-const roleTone = (r: Role) => (r === 'owner' ? 'border-gold text-gold' : r === 'admin' ? 'border-gold-line text-gold' : 'border-line-strong text-muted')
+const roleTone = (r: Role): PillTone => (r === 'owner' || r === 'admin' ? 'warn' : 'neutral')
 
 /* ------------------------------------------------------------------ status --- */
 
@@ -115,7 +116,7 @@ function WorkspaceSwitcher({ compact, onTeam }: { compact: boolean; onTeam: () =
                 <span className="truncate">{w.name}</span>
                 <span className="font-mono text-[11px] text-faint">{w.id === me.address ? 'yours' : `owner ${shortAddress(w.owner)}`}</span>
               </span>
-              <span className={`rounded-full border px-[6px] font-mono text-[11px] ${roleTone(w.role)}`}>{w.role}</span>
+              <KitPill tone={roleTone(w.role)}>{w.role}</KitPill>
               {w.id === active.id ? <Check size={ICON} className="text-gold" aria-label="active" /> : <span className="w-4" aria-hidden />}
             </button>
           ))}
@@ -160,7 +161,7 @@ function WorkspaceList({ onDone }: { onDone: () => void }) {
           >
             {w.id === me.address ? <UserRound size={ICON} aria-hidden /> : <Building2 size={ICON} className="text-gold" aria-hidden />}
             <span className="min-w-0 flex-1 truncate">{w.name}</span>
-            <span className={`rounded-full border px-[6px] font-mono text-[11px] ${roleTone(w.role)}`}>{w.role}</span>
+            <KitPill tone={roleTone(w.role)}>{w.role}</KitPill>
             {on && <Check size={ICON} className="text-gold" aria-label="active" />}
           </button>
         )

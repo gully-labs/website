@@ -8,6 +8,7 @@ import type { GasView } from '../api'
 import { usePoll } from '../poll'
 import { RefreshChip } from '../ui'
 import type { MerchantView } from './api'
+import { StatusPill as KitPill } from '../../../components/ui/StatusPill'
 
 /* The Payments tab's NETWORK · LIVE strip: what a Gully Pay payment costs in gas right now on each chain
    (GET /api/pay/gas, cached by the server for a few minutes and re-read here every 3 minutes) and the chains
@@ -52,13 +53,7 @@ export function NetworkStrip({ view }: { view: MerchantView }) {
         <h3 id="m-net-h" className="m-0 flex items-center gap-2 text-[14px] font-semibold text-ink">
           <Fuel size={15} className="text-gold" aria-hidden /> Gas per payment, now
         </h3>
-        <span className="inline-flex items-center gap-2 rounded-full border border-line-strong px-[10px] py-[2px] font-mono text-[11px] text-ink-2">
-          <span className="relative grid size-2 place-items-center" aria-hidden>
-            <span className="absolute size-2 rounded-full bg-green/50" style={{ animation: 'gl-live-pulse 2.4s ease-out infinite' }} />
-            <span className="size-[6px] rounded-full bg-green" />
-          </span>
-          NETWORK · LIVE
-        </span>
+        <KitPill tone="live">NETWORK · LIVE</KitPill>
         <span className="font-mono text-[11px] text-faint">what your payer spends in gas, not your store&apos;s data</span>
         <RefreshChip error={gas.stale ? gas.error : null} onRetry={() => void gas.reload()} className="ml-auto" />
       </div>

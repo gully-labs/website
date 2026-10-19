@@ -11,7 +11,7 @@ import { countsOf, locationText, POC_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, ta
    recommendation and the draft PoC (its code in the app only; a public report keeps it private). Then the
    checklist (web2), dismissed tool findings, limitations and the engine's disclaimer, verbatim. */
 
-const chipCls = (on: boolean) => `inline-flex min-h-9 items-center gap-[6px] rounded-full border px-3 text-[12px] transition-colors print:hidden ${on ? 'border-gold bg-gold text-bg' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`
+const chipCls = (on: boolean) => `inline-flex min-h-11 items-center gap-[6px] rounded-full border px-3 text-[12px] transition-colors print:hidden ${on ? 'border-gold bg-gold text-bg' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`
 const TOOL_TONE: Record<Tool['status'], string> = { ran: 'text-green', failed: 'text-error', 'not-run': 'text-error', skipped: 'text-faint' }
 
 export function SevBadge({ s }: { s: Severity }) {
@@ -37,8 +37,8 @@ export function ModeBadge({ label, mode }: { label: string | null; mode: string 
 
 function Block({ title, icon, children, className = '' }: { title: string; icon: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-4 print:break-inside-avoid print:border-[#ccc] print:bg-[#fff] ${className}`}>
-      <h3 className="m-0 flex items-center gap-2 text-[14px] font-semibold text-ink print:text-[#000]">
+    <section className={`flex min-w-0 flex-col gap-3 card card-pad print:break-inside-avoid print:border-[#ccc] print:bg-[#fff] ${className}`}>
+      <h3 className="heading-4 flex items-center gap-2 print:text-[#000]">
         <span className="text-gold" aria-hidden>
           {icon}
         </span>
@@ -79,7 +79,7 @@ function Label({ icon, children }: { icon: ReactNode; children: ReactNode }) {
 function FindingItem({ f, open, onToggle }: { f: Finding; open: boolean; onToggle: () => void }) {
   const id = useId()
   return (
-    <li className="rounded-[10px] border border-line bg-surface-deep print:break-inside-avoid print:border-[#ccc] print:bg-[#fff]" data-finding={f.id} data-severity={f.severity}>
+    <li className="rounded-tile border border-line bg-surface-deep print:break-inside-avoid print:border-[#ccc] print:bg-[#fff]" data-finding={f.id} data-severity={f.severity}>
       <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle} className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left">
         <SevBadge s={f.severity} />
         <span className="min-w-0 flex-1">
@@ -119,7 +119,7 @@ function FindingItem({ f, open, onToggle }: { f: Finding; open: boolean; onToggl
             <span className="flex flex-wrap items-center gap-2 font-mono text-[11px] tracking-[.5px] text-faint">
               <FlaskConical size={13} aria-hidden /> PROOF OF CONCEPT · <span data-testid="poc-status">{POC_LABEL[f.poc.status]}</span>
               {f.poc.code && (
-                <button type="button" onClick={() => void copyWithToast(f.poc?.code ?? '', 'PoC')} className="ml-auto inline-flex min-h-9 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 hover:border-gold hover:text-ink print:hidden">
+                <button type="button" onClick={() => void copyWithToast(f.poc?.code ?? '', 'PoC')} className="ml-auto inline-flex min-h-11 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 hover:border-gold hover:text-ink print:hidden">
                   <Copy size={13} aria-hidden /> Copy
                 </button>
               )}
@@ -281,7 +281,7 @@ export function ReportBody({ report }: { report: Report }) {
             </ul>
           </Block>
         )}
-        <p className="m-0 flex items-start gap-2 rounded-[10px] border border-line px-3 py-2 text-[12px] leading-[1.6] text-faint print:text-[#333]" data-testid="disclaimer">
+        <p className="m-0 flex items-start gap-2 rounded-tile border border-line px-3 py-2 text-[12px] leading-[1.6] text-faint print:text-[#333]" data-testid="disclaimer">
           <Info size={14} className="mt-[2px] shrink-0" aria-hidden />
           <span>{report.disclaimer}</span>
         </p>
