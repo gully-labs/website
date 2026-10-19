@@ -86,5 +86,35 @@ export function venueMark(key: string | null | undefined): Mark | null {
   return key ? (VENUES[key] ?? null) : null
 }
 
+/* Third-party services the site integrates with (public/integrations; sources and terms in its SOURCES.json).
+   Each file is the company's own mark: its GitHub organisation avatar, site icon or Simple Icons glyph.
+   Full tiles (disc null) keep their own ground; line-art glyphs sit on a disc. */
+const INTEGRATIONS: Record<string, Mark> = {
+  chainlink: { src: '/integrations/chainlink.svg', name: 'Chainlink', disc: '#ffffff', inset: 0.2 },
+  defillama: { src: '/integrations/defillama.jpg', name: 'DefiLlama', disc: null, inset: 0 },
+  dexscreener: { src: '/integrations/dexscreener.png', name: 'DexScreener', disc: null, inset: 0 },
+  geckoterminal: { src: '/integrations/geckoterminal.png', name: 'GeckoTerminal', disc: null, inset: 0 },
+  coingecko: { src: '/integrations/coingecko.png', name: 'CoinGecko', disc: null, inset: 0 },
+  blockscout: { src: '/integrations/blockscout.jpg', name: 'Blockscout', disc: null, inset: 0 },
+  moralis: { src: '/integrations/moralis.png', name: 'Moralis', disc: null, inset: 0 },
+  lifi: { src: '/integrations/lifi.png', name: 'LI.FI', disc: null, inset: 0 },
+  jupiter: { src: '/integrations/jupiter.jpg', name: 'Jupiter', disc: null, inset: 0 },
+  'request-network': { src: '/integrations/request-network.png', name: 'Request Network', disc: null, inset: 0 },
+  safe: { src: '/integrations/safe.jpg', name: 'Safe', disc: null, inset: 0 },
+  sourcify: { src: '/integrations/sourcify.jpg', name: 'Sourcify', disc: null, inset: 0 },
+  etherscan: { src: '/integrations/etherscan.png', name: 'Etherscan', disc: '#21325b', inset: 0.04 },
+  slither: { src: '/integrations/slither.png', name: 'Slither', disc: '#ffffff', inset: 0 },
+  aderyn: { src: '/integrations/aderyn.jpg', name: 'Aderyn', disc: null, inset: 0 },
+  semgrep: { src: '/integrations/semgrep.png', name: 'Semgrep', disc: null, inset: 0 },
+  drpc: { src: '/integrations/drpc.png', name: 'dRPC', disc: null, inset: 0 },
+  rainbowkit: { src: '/integrations/rainbowkit.svg', name: 'RainbowKit', disc: null, inset: 0 },
+  walletconnect: { src: '/integrations/walletconnect.svg', name: 'WalletConnect', disc: '#ffffff', inset: 0.2 },
+  umami: { src: '/integrations/umami.svg', name: 'Umami', disc: '#ffffff', inset: 0.2 },
+}
+
+export function integrationMark(id: string | null | undefined): Mark | null {
+  return id ? (INTEGRATIONS[id] ?? null) : null
+}
+
 /** Pixels left empty on each side: whole and equal, so the mark stays centred and crisp at 1x. */
 export const insetPx = (size: number, inset: number) => Math.round(size * inset)
