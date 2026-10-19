@@ -103,7 +103,7 @@ const Nav = ({ back, onBack, next, nextLabel = 'Continue', disabled, busy }: { b
         <ArrowLeft size={14} aria-hidden /> Back
       </button>
     )}
-    <button type="button" onClick={next} disabled={disabled || busy} className={`${pillGold} ml-auto max-[480px]:w-full`} data-testid="wizard-next">
+    <button type="button" onClick={next} disabled={disabled || busy} className={`${pillGold} max-[480px]:w-full`} data-testid="wizard-next">
       {busy && <Loader2 size={15} className="animate-spin" aria-hidden />}
       {nextLabel} {!busy && <ArrowRight size={15} aria-hidden />}
     </button>
@@ -318,7 +318,7 @@ function Deploy({ input: inp, w, prepared, onBackToReview, onLaunched }: { input
         )}
         {w.address && <span className={mono}>from {w.address.slice(0, 6)}…{w.address.slice(-4)}</span>}
         {!busy && (
-          <button type="button" onClick={onBackToReview} className={`${pillSm} ml-auto`}>
+          <button type="button" onClick={onBackToReview} className={pillSm}>
             <ArrowLeft size={14} aria-hidden /> Back
           </button>
         )}

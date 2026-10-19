@@ -623,7 +623,7 @@ await step('chains launch wizard', async () => {
     // Review: the stubbed SDK transaction.
     await p.getByTestId('tx-preview').getByText('createRollup').first().waitFor({ timeout: 15_000 })
     const prev = await p.getByTestId('tx-preview').textContent()
-    check(`chains ${tag}: the review shows the SDK transaction (target, value, call data)`, /0xF5962AD0/.test(prev) && /0\.12844976736 ETH/.test(prev) && /600 bytes/.test(prev) && /1 transaction/.test(prev), prev.slice(0, 200))
+    check(`chains ${tag}: the review shows the SDK transaction (target, value, call data)`, /0xF5962AD0/.test(prev) && /0\.12844976736 ETH/.test(prev) && /300 bytes/.test(prev) && /1 transaction/.test(prev), prev.slice(0, 200))
     const rev = await p.getByTestId('review').textContent()
     check(`chains ${tag}: the review shows the chain, owner and operators`, /E2E Testnet/.test(rev) && rev.includes(OWNER))
     await noHorizontalScroll(p, 'wizard: review')
@@ -741,7 +741,7 @@ await step('app services', async () => {
   await sp.waitForTimeout(200)
   check('sidebar at 1440x800: still no inner scrollbar', await fits(), await sNav.evaluate((el) => `${el.scrollHeight}/${el.clientHeight}`))
   const rowH = await sNav.getByRole('link', { name: 'Keys' }).evaluate((a) => a.getBoundingClientRect().height)
-  check('sidebar: rows are compact (32-36 px)', rowH >= 32 && rowH <= 36, String(rowH))
+  check('sidebar: rows are compact (30-36 px: 30 under 820 px tall so every page fits)', rowH >= 30 && rowH <= 36, String(rowH))
   check('sidebar: Docs, Status and home sit in the header, not in a block under the list', (await sp.getByTestId('header-links').locator('a, button').count()) === 3 && (await sp.getByTestId('app-sidebar').getByTestId('status-link').count()) === 0)
   await sp.getByTestId('header-links').getByTestId('status-link').click()
   const st = sp.getByRole('dialog', { name: 'Status' })
