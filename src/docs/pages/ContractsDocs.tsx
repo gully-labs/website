@@ -42,8 +42,8 @@ function Row({ c }: { c: ContractEntry }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-[14.5px] font-medium text-ink">{c.name}</span>
         <span className="font-mono text-[11px] tracking-[1px] text-faint">{c.chain.toUpperCase()}</span>
-        {c.owner === 'third-party' && <span className="rounded-sm border border-gold-line px-[6px] font-mono text-[10.5px] tracking-[1px] text-gold">THIRD PARTY</span>}
-        {c.verification ? <span className="font-mono text-[10.5px] tracking-[1px] text-green">SOURCE {c.verification === 'full' ? 'VERIFIED' : 'PARTIAL MATCH'}</span> : <span className="font-mono text-[10.5px] tracking-[1px] text-faint">NO VERIFIED SOURCE</span>}
+        {c.owner === 'third-party' && <span className="rounded-sm border border-gold-line px-[6px] font-mono text-[11px] tracking-[1px] text-gold">THIRD PARTY</span>}
+        {c.verification ? <span className="font-mono text-[11px] tracking-[1px] text-green">SOURCE {c.verification === 'full' ? 'VERIFIED' : 'PARTIAL MATCH'}</span> : <span className="font-mono text-[11px] tracking-[1px] text-faint">NO VERIFIED SOURCE</span>}
       </div>
       <div className="flex min-w-0 items-center gap-1">
         <code className="min-w-0 font-mono text-[12.5px] break-all text-ink-2 max-[640px]:hidden">{c.address}</code>
