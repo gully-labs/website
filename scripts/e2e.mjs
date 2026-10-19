@@ -1602,7 +1602,7 @@ await step('gully score', async () => {
     const badge = page.locator(`img[src="/score/base/${SC}/badge.svg"]`)
     await badge.scrollIntoViewIfNeeded()
     // The badge's width follows its text (badges.mjs measures the outlined glyphs), so it must equal the SVG's own width.
-    const badgeW = Number(((await (await fetch(BASE + `/score/base/${SC}/badge.svg`)).text()).match(/<svg[^>]*swidth="(d+)"/) || [])[1])
+    const badgeW = Number(((await (await fetch(BASE + `/score/base/${SC}/badge.svg`)).text()).match(/<svg[^>]*\swidth="(\d+)"/) || [])[1])
     check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n > 0 && n === badgeW), `badge ${badgeW}`)
     check(`score page at ${width}: methodology says informational, nobody can pay`, (await page.getByText(/not an endorsement and not investment advice/).count()) > 0)
     if (mobile) await noHorizontalScroll(page, 'score page')
