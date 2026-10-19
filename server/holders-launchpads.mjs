@@ -173,7 +173,9 @@ const validateAll = (list) => {
     if (bad.length) throw new Error(`launchpad ${e?.id ?? '?'}: ${bad.join('; ')}`)
   }
 }
-validateAll(LAUNCHPADS)
+// holders.mjs imports this module and this module reads holders.mjs's HOLDER_CHAINS, so the check waits until both
+// have loaded (a microtask runs after the whole import graph). A bad entry still stops the server at start.
+queueMicrotask(() => validateAll(LAUNCHPADS))
 
 let registry = LAUNCHPADS
 

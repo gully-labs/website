@@ -163,7 +163,7 @@ function SearchBox() {
     const v = q.trim().replace(/^\$/, '')
     if (!v) return
     setS({ k: 'busy' })
-    let r: { matches: ResolveMatch[]; checked?: ResolveChecked[] } | null = null
+    let r: { matches: ResolveMatch[]; checked?: ResolveChecked[] } | null
     try {
       const res = await fetch(`/api/holders/resolve?q=${encodeURIComponent(v)}`, { headers: { accept: 'application/json' } })
       if (res.status === 429) return setS({ k: 'limit' })
