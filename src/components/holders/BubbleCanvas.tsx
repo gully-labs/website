@@ -1,18 +1,23 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { glyphPaths, sideColour, type FlowEvent, type Glyph } from './motion'
 import { K } from './theme'
+import { shade } from './palette'
 import { esc } from '../charts/chart-utils'
 
 /* The Holder Map's bubbles, drawn on one canvas with requestAnimationFrame (this module is its own lazy
    chunk). It owns everything that moves, so React renders only when the data changes:
+   - look: every bubble is a lit sphere (radial gradient and a soft highlight) in its meaning's colour, with a
+     glow on clusters, a brighter rim on the top 10 and a halo behind each cluster; links are curved lines whose
+     opacity follows the transfer count;
    - entrance: bubbles grow out of the centre, where the token sits, and settle into the layout;
-   - idle life: every bubble breathes and drifts a few pixels, pools and locks pulse, links carry particles;
+   - idle life: every bubble breathes and drifts, pools and locks pulse, links carry particles;
+   - hover lifts a bubble (it grows, casts a shadow, nudges its neighbours aside); a click flies the camera to it;
    - flows: a transfer is a stream of particles from sender to receiver (gold buys, red sells), and the
      receiving bubble grows or shrinks when the stream lands;
    - hover lights a wallet's cluster and its links and dims the rest; a tooltip follows the pointer;
    - the camera fits the map, flies to a wallet, zooms (ctrl/⌘ + wheel, pinch, buttons) and pans (drag).
-   Under reduced motion nothing moves or loops: the map fades in where it lands, sizes change in place and
-   a flow is a line that fades in and out, so the same information still shows.
+   Under reduced motion the map fades in where it lands and sizes change in place, but it is never frozen: the
+   bubbles drift slowly (a fraction of the speed and reach), and a flow is a line that fades in and out.
    The loop stops while the map is off-screen or the tab is hidden, and particles are capped. */
 
 export interface BNode {
@@ -23,15 +28,24 @@ export interface BNode {
   r: number
   /** The radius the camera fits to (the layout's, so the view holds still while sizes change). */
   fitR?: number
-  fill: string
-  stroke: string
-  strokeWidth: number
+  /** The sphere's base colour (palette.ts); the canvas shades it into a highlight and a dark edge. */
+  hue: string
+  /** The outline: its colour and width (bundled buyers are red and dashed, the top 10 brighter). */
+  rim: string
+  rimWidth: number
   dashed: boolean
+  /** Clusters glow. */
+  glow: boolean
   /** Share text drawn inside big enough bubbles. */
   text: string | null
   textColour: string
   glyph: Glyph | null
+  /** The token's own logo, drawn inside the bubble that is the token. */
+  logo?: string | null
+  /** What an infrastructure bubble is (POOL, LOCK…): inside big ones, on a tab under small ones. */
   caption: string | null
+  /** What any bubble is, in words ("wallet", "contract"): inside bubbles big enough to carry it. */
+  kindText: string
   /** Pools, locks and the token pulse softly. */
   pulse: boolean
   /** Bubbles with the same group light together on hover (a cluster). */
@@ -45,6 +59,8 @@ export interface BLink {
   width: number
   /** Carries an idle particle (direction a -> b). */
   particles: boolean
+  /** 0..1, from the transfer count: the line's opacity. */
+  strength: number
 }
 export interface BTip {
   title: string
@@ -76,6 +92,8 @@ export interface BubbleCanvasProps {
   /** Any direct interaction (drag, click, zoom): the caller can stop its intro. */
   onInteract?: () => void
   className?: string
+  /** Room kept free under the map on a wide screen (the replay bar); default fits a bar over the map. */
+  padBottom?: number
 }
 
 interface NodeState {
@@ -87,6 +105,11 @@ interface NodeState {
   pop: number
   popColour: string
   hold: number
+  /** 0..1: how far the hover has lifted this bubble. */
+  lift: number
+  /** Where the hover nudged it (screen pixels), eased. */
+  ox: number
+  oy: number
   dying: number | null
   phase: number
   period: number
@@ -120,7 +143,33 @@ const hash = (s: string) => {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
   return h
 }
-const withAlpha = (hex: string, a: number) => `${hex.slice(0, 7)}${Math.round(clamp01(a) * 255).toString(16).padStart(2, '0')}`
+const withAlpha = (hex: string, a: number) =>
+  `${hex.slice(0, 7)}${Math.round(clamp01(a) * 255)
+    .toString(16)
+    .padStart(2, '0')}`
+
+/** Light, base and dark tones of a hue, cached (a sphere is shaded with these). */
+const toneCache = new Map<string, { hi: string; mid: string; lo: string }>()
+const tones = (hue: string) => {
+  let t = toneCache.get(hue)
+  if (!t) toneCache.set(hue, (t = { hi: shade(hue, 0.42), mid: hue, lo: shade(hue, -0.5) }))
+  return t
+}
+/** Logos drawn inside bubbles: loaded once, drawn when ready (a missing one just leaves the glyph). */
+const logos = new Map<string, HTMLImageElement | null>()
+function logoOf(url: string, onReady: () => void) {
+  if (!logos.has(url)) {
+    logos.set(url, null)
+    const img = new Image()
+    img.onload = () => {
+      logos.set(url, img)
+      onReady()
+    }
+    img.src = url
+  }
+  const img = logos.get(url)
+  return img && img.complete && img.naturalWidth > 0 ? img : null
+}
 
 export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function BubbleCanvas(props, ref) {
   const boxRef = useRef<HTMLDivElement>(null)
@@ -149,7 +198,12 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
     zoomed: false,
     hover: null as string | null,
     pointers: new Map<number, { x: number; y: number }>(),
-    drag: null as null | { x: number; y: number; moved: boolean; pinch: number | null },
+    drag: null as null | {
+      x: number
+      y: number
+      moved: boolean
+      pinch: number | null
+    },
     dirty: true,
     cost: 0,
     gap: 16,
@@ -162,6 +216,7 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
     carry: 0,
     layer: null as HTMLCanvasElement | null,
     layerKey: '',
+    bigAt: -1000,
   })
 
   const fitOf = (w: number, h: number) => {
@@ -184,9 +239,13 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
     // A short, wide box (the embed's 340 px strip) has no overlays over the map: keep the margins small.
     const shortBox = wideBox && h < 420
     const padTop = shortBox ? 22 : wideBox ? 70 : 20
-    const padBottom = shortBox ? 44 : wideBox ? 132 : 52
+    const padBottom = shortBox ? 44 : wideBox ? (P.current.padBottom ?? 132) : 52
     const s = Math.max(0.05, Math.min((w - padX * 2) / Math.max(1, x1 - x0), (h - padTop - padBottom) / Math.max(1, y1 - y0)))
-    return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 - (padTop - padBottom) / 2 / s, s }
+    return {
+      x: (x0 + x1) / 2,
+      y: (y0 + y1) / 2 - (padTop - padBottom) / 2 / s,
+      s,
+    }
   }
   const setZoomed = (z: boolean) => {
     const s = S.current
@@ -218,6 +277,9 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
         pop: 0,
         popColour: K.gold,
         hold: 0,
+        lift: 0,
+        ox: 0,
+        oy: 0,
         dying: null,
         phase: (h % 628) / 100,
         period: 3600 + (h % 7) * 300,
@@ -244,38 +306,56 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
       while (s.flows.length && active + n > MAX_PARTICLES) s.flows.shift()
       const st = s.states.get(e.to)
       if (st) st.hold = s.clock + delay + FLOW_MS
-      s.flows.push({ e, start: s.clock + delay, n, dur: FLOW_MS, colour: sideColour(e.side), arrived: false, bend: hash(e.key) % 2 ? 1 : -1 })
+      s.flows.push({
+        e,
+        start: s.clock + delay,
+        n,
+        dur: FLOW_MS,
+        colour: sideColour(e.side),
+        arrived: false,
+        bend: hash(e.key) % 2 ? 1 : -1,
+      })
       s.dirty = true
     },
-    flyTo: (id) => {
-      const s = S.current
-      const n = P.current.nodes.find((x) => x.id === id)
-      if (!n) return
-      s.userCam = true
-      const target = { x: n.x, y: n.y, s: Math.max(s.fitCam.s * 2.2, Math.min(s.fitCam.s * 8, 60 / Math.max(1, n.r))) }
-      s.camT = target
-      if (P.current.reduced) s.cam = { ...target }
-      setZoomed(true)
-      s.dirty = true
-    },
-    fit: () => {
-      const s = S.current
-      s.userCam = false
-      s.camT = { ...s.fitCam }
-      if (P.current.reduced) s.cam = { ...s.fitCam }
-      setZoomed(false)
-      s.dirty = true
-    },
+    flyTo: (id) => flyToId(id),
+    fit: () => fitView(),
     zoomBy: (f) => zoomAt(f, S.current.w / 2, S.current.h / 2),
   }))
 
+  const flyToId = (id: string) => {
+    const s = S.current
+    const n = P.current.nodes.find((x) => x.id === id)
+    if (!n) return
+    s.userCam = true
+    const target = {
+      x: n.x,
+      y: n.y,
+      s: Math.max(s.fitCam.s * 2.2, Math.min(s.fitCam.s * 8, 60 / Math.max(1, n.r))),
+    }
+    s.camT = target
+    if (P.current.reduced) s.cam = { ...target }
+    setZoomed(true)
+    s.dirty = true
+  }
+  const fitView = () => {
+    const s = S.current
+    s.userCam = false
+    s.camT = { ...s.fitCam }
+    if (P.current.reduced) s.cam = { ...s.fitCam }
+    setZoomed(false)
+    s.dirty = true
+  }
   const zoomAt = (f: number, px: number, py: number) => {
     const s = S.current
     const c = s.camT
     const wx = c.x + (px - s.w / 2) / c.s
     const wy = c.y + (py - s.h / 2) / c.s
     const ns = Math.max(s.fitCam.s * 0.6, Math.min(s.fitCam.s * 14, c.s * f))
-    s.camT = { s: ns, x: wx - (px - s.w / 2) / ns, y: wy - (py - s.h / 2) / ns }
+    s.camT = {
+      s: ns,
+      x: wx - (px - s.w / 2) / ns,
+      y: wy - (py - s.h / 2) / ns,
+    }
     if (P.current.reduced) s.cam = { ...s.camT }
     s.userCam = true
     setZoomed(Math.abs(ns / s.fitCam.s - 1) > 0.04 || Math.hypot(s.camT.x - s.fitCam.x, s.camT.y - s.fitCam.y) * ns > 6)
@@ -295,7 +375,13 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
     if (!ctx2d) return
     const ctx: CanvasRenderingContext2D = ctx2d
     // Kit colours, read once (theme.ts caches them too).
-    const C = { pale: K.pale, bone: K.bone, gold: K.gold, night: K.night, muted: K.muted }
+    const C = {
+      pale: K.pale,
+      bone: K.bone,
+      gold: K.gold,
+      night: K.night,
+      muted: K.muted,
+    }
     const size = () => {
       const w = box.clientWidth
       const h = box.clientHeight
@@ -378,12 +464,6 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
       const reduced = p.reduced
       s.clock += dt
       const t = s.clock
-      // Reduced motion: nothing loops, so a frame is drawn only when something changes or is fading.
-      if (reduced && !s.dirty && !s.flows.length && dt > 0) {
-        let busy = false
-        for (const st of s.states.values()) if (t - st.born < 500 || st.dying !== null || st.pop > 0.01) busy = true
-        if (!busy) return
-      }
       s.dirty = false
       const { w, h, dpr } = s
       // Camera glide.
@@ -412,6 +492,8 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
       const kp = reduced ? 1 : 1 - Math.exp(-dt / 180)
       const kr = reduced ? 1 : 1 - Math.exp(-dt / 260)
       const ka = 1 - Math.exp(-dt / 130)
+      const kl = 1 - Math.exp(-dt / 110)
+      const hv = s.hover ? s.states.get(s.hover) : undefined
       const pos = new Map<string, { x: number; y: number; r: number; a: number; st: NodeState }>()
       for (const [id, st] of s.states) {
         const n = st.node
@@ -436,28 +518,52 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
           st.y += (n.y - st.y) * kp
           if (t >= st.hold) st.r += (n.r - st.r) * kr
         }
-        const targetA = st.dying !== null ? 0 : lit && !lit.has(id) ? 0.16 : 1
+        const targetA = st.dying !== null ? 0 : lit && !lit.has(id) ? 0.2 : 1
         const enterA = reduced ? clamp01(age / 450) : 1
         st.alpha += (targetA * enterA - st.alpha) * (reduced && age < 450 ? 1 : ka)
         st.pop = Math.max(0, st.pop - dt / 750)
-        // Idle life: breathe and drift (screen pixels, so it reads the same at any zoom).
+        st.lift += ((s.hover === id && st.dying === null ? 1 : 0) - st.lift) * kl
+        // Idle life: breathe and drift (screen pixels, so it reads the same at any zoom). Reduced motion keeps
+        // the drift at a third of the speed and half the reach, and drops the breathing: slower, never still.
         let bx = 0
         let by = 0
         let br = 1
-        if (!reduced && st.dying === null && !(s.lite && st.r * cam.s < 14)) {
-          const w1 = (t / st.period) * Math.PI * 2 + st.phase
-          br = 1 + 0.03 * Math.sin(w1)
-          const amp = 2.6 / cam.s
-          bx = Math.sin(t / (st.period * 0.83) + st.phase) * amp
-          by = Math.cos(t / (st.period * 1.07) + st.phase * 1.3) * amp
+        if (st.dying === null && !(s.lite && st.r * cam.s < 14)) {
+          const tt = reduced ? t * 0.33 : t
+          if (!reduced) br = 1 + 0.03 * Math.sin((t / st.period) * Math.PI * 2 + st.phase)
+          const amp = (reduced ? 1.6 : 3.8) / cam.s
+          bx = Math.sin(tt / (st.period * 0.83) + st.phase) * amp
+          by = Math.cos(tt / (st.period * 1.07) + st.phase * 1.3) * amp
         }
-        pos.set(id, { x: st.x + bx, y: st.y + by, r: Math.max(0, st.r * br), a: st.alpha, st })
+        // The hovered bubble lifts and its neighbours step aside (eased, so they spring back).
+        let tx = 0
+        let ty = 0
+        if (hv && hv !== st && hv.lift > 0.01 && hv.dying === null) {
+          const dx = st.x - hv.x
+          const dy = st.y - hv.y
+          const d = Math.hypot(dx, dy) || 1
+          const reach = (hv.r + st.r) * 1.35 + 14
+          if (d < reach) {
+            const k = (1 - d / reach) * hv.lift * (reduced ? 0.5 : 1) * 11
+            tx = (dx / d) * k
+            ty = (dy / d) * k
+          }
+        }
+        st.ox += (tx - st.ox) * kl
+        st.oy += (ty - st.oy) * kl
+        pos.set(id, {
+          x: st.x + bx + st.ox / cam.s,
+          y: st.y + by + st.oy / cam.s,
+          r: Math.max(0, st.r * br * (1 + 0.1 * st.lift)),
+          a: st.alpha,
+          st,
+        })
       }
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, w, h)
 
-      // Links, then their idle particles.
+      // Links (curved, their opacity follows the transfer count), then their idle particles.
       ctx.lineCap = 'round'
       let li = 0
       for (const l of p.links) {
@@ -465,19 +571,29 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
         const b = pos.get(l.b)
         if (!a || !b) continue
         const on = !lit || (lit.has(l.a) && lit.has(l.b))
-        const al = Math.min(a.a, b.a, 1) * (on ? 0.55 : 0.07) + (on && lit ? 0.25 : 0)
+        const x0 = sx(a.x)
+        const y0 = sy(a.y)
+        const x1 = sx(b.x)
+        const y1 = sy(b.y)
+        const len = Math.hypot(x1 - x0, y1 - y0) || 1
+        const bend = (hash(l.a + l.b) % 2 ? 1 : -1) * 0.13
+        const cx = (x0 + x1) / 2 - ((y1 - y0) / len) * len * bend
+        const cy = (y0 + y1) / 2 + ((x1 - x0) / len) * len * bend
+        const al = Math.min(a.a, b.a, 1) * (on ? 0.2 + 0.5 * l.strength : 0.05) + (on && lit ? 0.22 : 0)
         ctx.strokeStyle = withAlpha(l.colour, al)
-        ctx.lineWidth = l.width
+        ctx.lineWidth = l.width + (on && lit ? 0.8 : 0)
         ctx.setLineDash(l.dashed ? [4, 4] : [])
         ctx.beginPath()
-        ctx.moveTo(sx(a.x), sy(a.y))
-        ctx.lineTo(sx(b.x), sy(b.y))
+        ctx.moveTo(x0, y0)
+        ctx.quadraticCurveTo(cx, cy, x1, y1)
         ctx.stroke()
-        if (!reduced && !s.lite && l.particles && li < MAX_LINK_PARTICLES && on) {
-          const u = (t / 2600 + li * 0.37) % 1
+        if (!s.lite && l.particles && li < MAX_LINK_PARTICLES && on) {
+          const u = ((reduced ? t * 0.33 : t) / 2600 + li * 0.37) % 1
+          const px = (1 - u) * (1 - u) * x0 + 2 * (1 - u) * u * cx + u * u * x1
+          const py = (1 - u) * (1 - u) * y0 + 2 * (1 - u) * u * cy + u * u * y1
           ctx.fillStyle = withAlpha(C.pale, 0.85 * Math.min(a.a, b.a))
           ctx.beginPath()
-          ctx.arc(sx(a.x + (b.x - a.x) * u), sy(a.y + (b.y - a.y) * u), 1.8, 0, Math.PI * 2)
+          ctx.arc(px, py, 1.8, 0, Math.PI * 2)
           ctx.fill()
           li++
         }
@@ -491,7 +607,11 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
         if ((role === 'from' && (side === 'buy' || side === 'mint')) || (role === 'to' && side === 'sell')) return { x: sx(0), y: sy(0), r: 0 }
         const ang = ((hash(id) % 360) * Math.PI) / 180
         const R = Math.hypot(w, h) * 0.55
-        return { x: w / 2 + Math.cos(ang) * R, y: h / 2 + Math.sin(ang) * R, r: 0 }
+        return {
+          x: w / 2 + Math.cos(ang) * R,
+          y: h / 2 + Math.sin(ang) * R,
+          r: 0,
+        }
       }
 
       // Flows.
@@ -568,9 +688,17 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
         if (src && f.e.side !== 'buy') src.hold = 0
       }
 
-      // Bubbles: visible ones in screen units, then one batched path per look (fill, stroke, alpha), so 200
-      // bubbles cost a handful of draw calls; decorations go on top, one by one, for the few that have them.
-      const vis: { id: string; n: BNode; st: NodeState; X: number; Y: number; R: number; a: number }[] = []
+      // Bubbles: visible ones in screen units, biggest first (small ones sit on top), the hovered and the
+      // selected one last. Each is a lit sphere; clusters get a halo behind them and a glow around them.
+      const vis: {
+        id: string
+        n: BNode
+        st: NodeState
+        X: number
+        Y: number
+        R: number
+        a: number
+      }[] = []
       for (const [id, q] of pos) {
         const R = q.r * cam.s
         if (R < 0.3 || q.a < 0.01) continue
@@ -579,45 +707,121 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
         if (X + R < -40 || X - R > w + 40 || Y + R < -40 || Y - R > h + 40) continue
         vis.push({ id, n: q.st.node, st: q.st, X, Y, R, a: q.a })
       }
+      const front = (v: { id: string }) => (v.id === s.hover || v.id === p.selected ? 1 : 0)
+      vis.sort((x, y) => front(x) - front(y) || y.R - x.R)
+      type Vis = (typeof vis)[number]
+
+      // Cluster halos: a soft pool of the cluster's colour behind its members.
+      const halos = new Map<string, Vis[]>()
+      for (const v of vis) {
+        if (!v.n.group) continue
+        const list = halos.get(v.n.group)
+        if (list) list.push(v)
+        else halos.set(v.n.group, [v])
+      }
+      for (const items of halos.values()) {
+        if (items.length < 2) continue
+        let cx = 0
+        let cy = 0
+        let wt = 0
+        let al = 0
+        for (const v of items) {
+          cx += v.X * v.R
+          cy += v.Y * v.R
+          wt += v.R
+          al += v.a
+        }
+        cx /= wt
+        cy /= wt
+        al /= items.length
+        let rad = 0
+        for (const v of items) rad = Math.max(rad, Math.hypot(v.X - cx, v.Y - cy) + v.R)
+        rad += 18
+        const g = ctx.createRadialGradient(cx, cy, rad * 0.25, cx, cy, rad)
+        g.addColorStop(0, withAlpha(items[0].n.hue, 0.17 * al))
+        g.addColorStop(0.7, withAlpha(items[0].n.hue, 0.07 * al))
+        g.addColorStop(1, withAlpha(items[0].n.hue, 0))
+        ctx.fillStyle = g
+        ctx.beginPath()
+        ctx.arc(cx, cy, rad, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
       // Soft pulse rings on pools, locks and the token (under the bubbles).
       if (!reduced)
         for (const v of vis) {
           if (!v.n.pulse || v.st.dying !== null) continue
           const ph = ((t + v.st.phase * 400) % 2600) / 2600
           ctx.globalAlpha = v.a
-          ctx.strokeStyle = withAlpha(C.pale, 0.4 * (1 - ph))
+          ctx.strokeStyle = withAlpha(shade(v.n.hue, 0.35), 0.45 * (1 - ph))
           ctx.lineWidth = 1.5
           ctx.beginPath()
           ctx.arc(v.X, v.Y, v.R + 2 + ph * Math.min(28, 10 + v.R * 0.25), 0, Math.PI * 2)
           ctx.stroke()
         }
-      type Vis = (typeof vis)[number]
-      const drawGroups = (g2: CanvasRenderingContext2D, items: Vis[]) => {
-        const groups = new Map<string, { n: BNode; a: number; R: number; items: Vis[] }>()
-        for (const v of items) {
-          const a = Math.round(v.a * 20) / 20
-          const k = `${v.n.fill}|${v.n.stroke}|${v.n.strokeWidth}|${v.n.dashed ? 1 : 0}|${a}`
-          const g = groups.get(k)
-          if (g) {
-            g.items.push(v)
-            g.R = Math.max(g.R, v.R)
-          } else groups.set(k, { n: v.n, a, R: v.R, items: [v] })
-        }
-        for (const g of [...groups.values()].sort((x, y) => y.R - x.R)) {
-          g2.globalAlpha = g.a
+
+      const drawBody = (g2: CanvasRenderingContext2D, v: Vis) => {
+        const { X, Y, R, n } = v
+        const tn = tones(n.hue)
+        g2.globalAlpha = v.a
+        if (n.glow && R >= 8) {
+          const g = g2.createRadialGradient(X, Y, R * 0.85, X, Y, R * 1.7)
+          g.addColorStop(0, withAlpha(n.hue, 0.34))
+          g.addColorStop(1, withAlpha(n.hue, 0))
+          g2.fillStyle = g
           g2.beginPath()
-          for (const v of g.items) {
-            g2.moveTo(v.X + v.R, v.Y)
-            g2.arc(v.X, v.Y, v.R, 0, Math.PI * 2)
-          }
-          g2.fillStyle = g.n.fill
+          g2.arc(X, Y, R * 1.7, 0, Math.PI * 2)
           g2.fill()
-          g2.strokeStyle = g.n.stroke
-          g2.lineWidth = g.n.strokeWidth
-          if (g.n.dashed) g2.setLineDash([5, 4])
-          g2.stroke()
-          if (g.n.dashed) g2.setLineDash([])
         }
+        if (v.st.lift > 0.02) {
+          const sy2 = Y + R * 0.22 + 7 * v.st.lift
+          const g = g2.createRadialGradient(X, sy2, R * 0.7, X, sy2, R * 1.5)
+          g.addColorStop(0, `rgba(0,0,0,${0.5 * v.st.lift})`)
+          g.addColorStop(1, 'rgba(0,0,0,0)')
+          g2.fillStyle = g
+          g2.beginPath()
+          g2.arc(X, sy2, R * 1.5, 0, Math.PI * 2)
+          g2.fill()
+        }
+        if (R < 4) {
+          g2.fillStyle = tn.mid
+          g2.beginPath()
+          g2.arc(X, Y, R, 0, Math.PI * 2)
+          g2.fill()
+          return
+        }
+        const g = g2.createRadialGradient(X - R * 0.34, Y - R * 0.4, R * 0.08, X, Y, R * 1.02)
+        g.addColorStop(0, tn.hi)
+        g.addColorStop(0.5, tn.mid)
+        g.addColorStop(1, tn.lo)
+        g2.fillStyle = g
+        g2.beginPath()
+        g2.arc(X, Y, R, 0, Math.PI * 2)
+        g2.fill()
+        if (R >= 9) {
+          // A soft highlight, so the sphere reads as lit from the top left.
+          g2.fillStyle = 'rgba(255,255,255,0.16)'
+          g2.beginPath()
+          g2.ellipse(X - R * 0.3, Y - R * 0.42, R * 0.34, R * 0.2, -0.6, 0, Math.PI * 2)
+          g2.fill()
+        }
+        g2.strokeStyle = n.rim
+        g2.lineWidth = n.rimWidth
+        if (n.dashed) g2.setLineDash([5, 4])
+        g2.beginPath()
+        g2.arc(X, Y, R, 0, Math.PI * 2)
+        g2.stroke()
+        if (n.dashed) g2.setLineDash([])
+        if (v.st.lift > 0.02) {
+          g2.strokeStyle = withAlpha(C.bone, 0.75 * v.st.lift)
+          g2.lineWidth = 2
+          g2.beginPath()
+          g2.arc(X, Y, R + 1.5, 0, Math.PI * 2)
+          g2.stroke()
+        }
+      }
+      const drawBodies = (g2: CanvasRenderingContext2D, items: Vis[]) => {
+        for (const v of items) drawBody(g2, v)
         g2.globalAlpha = 1
       }
       // A slow device: small bubbles that have settled are drawn once into a layer, re-drawn only when the
@@ -625,7 +829,20 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
       if (s.lite) {
         const settled = (v: Vis) => {
           const n = v.n
-          return v.R < 14 && v.st.pop <= 0.01 && v.st.dying === null && p.selected !== v.id && !p.ringed?.has(v.id) && t - v.st.born > ENTER_MS && Math.abs(v.st.x - n.x) < 0.01 && Math.abs(v.st.y - n.y) < 0.01 && Math.abs(v.st.r - n.r) < 0.01 && Math.abs(v.a - Math.round(v.a * 20) / 20) < 0.01
+          return (
+            v.R < 14 &&
+            v.st.pop <= 0.01 &&
+            v.st.lift < 0.01 &&
+            v.st.dying === null &&
+            p.selected !== v.id &&
+            !p.ringed?.has(v.id) &&
+            t - v.st.born > ENTER_MS &&
+            Math.abs(v.st.x - n.x) < 0.01 &&
+            Math.abs(v.st.y - n.y) < 0.01 &&
+            Math.abs(v.st.r - n.r) < 0.01 &&
+            Math.abs(v.a - Math.round(v.a * 20) / 20) < 0.01 &&
+            Math.hypot(v.st.ox, v.st.oy) < 0.05
+          )
         }
         const still = vis.filter(settled)
         const key = `${cam.x.toFixed(3)},${cam.y.toFixed(3)},${cam.s.toFixed(5)}|${w}x${h}|${still.length}|${still.map((v) => v.id.slice(-4) + Math.round(v.a * 20)).join('')}`
@@ -637,7 +854,7 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
           if (l2) {
             l2.setTransform(dpr, 0, 0, dpr, 0, 0)
             l2.clearRect(0, 0, w, h)
-            drawGroups(l2, still)
+            drawBodies(l2, still)
           }
           s.layerKey = key
         }
@@ -645,21 +862,27 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
         ctx.drawImage(s.layer, 0, 0)
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
         const stillSet = new Set(still)
-        drawGroups(ctx, vis.filter((v) => !stillSet.has(v)))
-      } else drawGroups(ctx, vis)
+        drawBodies(
+          ctx,
+          vis.filter((v) => !stillSet.has(v)),
+        )
+      } else drawBodies(ctx, vis)
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       let font = ''
       const setFont = (f: string) => {
         if (f !== font) ctx.font = font = f
       }
-      for (const { id, n, st, X, Y, R, a } of vis) {
+      let big: Vis | null = null
+      for (const v of vis) {
+        const { id, n, st, X, Y, R, a } = v
+        if (!big || R > big.R) big = v
         ctx.globalAlpha = a
         if (p.selected === id) {
           ctx.strokeStyle = C.bone
           ctx.lineWidth = 3
           ctx.beginPath()
-          ctx.arc(X, Y, R, 0, Math.PI * 2)
+          ctx.arc(X, Y, R + 1, 0, Math.PI * 2)
           ctx.stroke()
         }
         // A flow just landed: a ring in its colour (expanding; under reduced motion it only fades).
@@ -683,43 +906,76 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
           ctx.setLineDash([])
           ctx.lineDashOffset = 0
         }
-        // Glyph, share and caption.
-        const showText = !!n.text && R >= 20
-        const inCaption = !!n.caption && R >= 38
-        if (n.glyph && R >= 9) {
-          const gs = Math.min(26, Math.max(10, R * (showText ? 0.42 : 0.9)))
-          const gy = showText ? Y - Math.min(R * 0.42, gs * 1.05) : Y
-          ctx.save()
-          ctx.translate(X - gs / 2, gy - gs / 2)
-          ctx.scale(gs / 24, gs / 24)
-          ctx.strokeStyle = n.textColour
-          ctx.lineWidth = 2
-          ctx.lineJoin = 'round'
-          for (const g of glyphPaths(n.glyph)) ctx.stroke(g)
-          ctx.restore()
+        // Icon (or logo), share and kind, stacked and centred. A bubble too small for the stack drops the kind
+        // first, then the share; the kind of every bubble is always in its tooltip and the list.
+        const logo = n.logo && R >= 14 ? logoOf(n.logo, () => (s.dirty = true)) : null
+        const showText = !!n.text && R >= 18
+        const kind = R >= 30 ? (n.caption ?? n.kindText.toUpperCase()) : null
+        const icon = (logo || n.glyph) && R >= 9
+        const gs = icon ? Math.min(30, Math.max(10, R * (showText ? 0.4 : 0.9))) : 0
+        const fs = showText ? Math.round(Math.min(24, Math.max(11, R * 0.28))) : 0
+        const ks = kind ? 10 : 0
+        const total = gs + fs + ks + (gs && (fs || ks) ? 3 : 0) + (fs && ks ? 2 : 0)
+        let cy = Y - total / 2
+        if (icon) {
+          const gcy = cy + gs / 2
+          if (logo) {
+            ctx.save()
+            ctx.beginPath()
+            ctx.arc(X, gcy, gs / 2, 0, Math.PI * 2)
+            ctx.clip()
+            ctx.drawImage(logo, X - gs / 2, gcy - gs / 2, gs, gs)
+            ctx.restore()
+          } else if (n.glyph) {
+            ctx.save()
+            ctx.translate(X - gs / 2, gcy - gs / 2)
+            ctx.scale(gs / 24, gs / 24)
+            ctx.strokeStyle = n.textColour
+            ctx.lineWidth = 2
+            ctx.lineJoin = 'round'
+            for (const g of glyphPaths(n.glyph)) ctx.stroke(g)
+            ctx.restore()
+          }
+          cy += gs + 3
         }
         if (showText) {
-          const fs = Math.round(Math.min(16, Math.max(11, R * 0.3)))
-          setFont(`500 ${fs}px 'IBM Plex Mono', monospace`)
+          setFont(`600 ${fs}px 'IBM Plex Mono', monospace`)
           ctx.fillStyle = n.textColour
-          ctx.fillText(n.text as string, X, n.glyph ? Y + fs * 0.35 : Y)
+          ctx.fillText(n.text as string, X, cy + fs / 2)
+          cy += fs + 2
         }
-        if (n.caption) {
+        if (kind) {
+          setFont(`500 10px 'IBM Plex Mono', monospace`)
+          ctx.fillStyle = n.textColour
+          ctx.globalAlpha = a * 0.85
+          ctx.fillText(kind, X, cy + 5)
+          ctx.globalAlpha = a
+        } else if (n.caption) {
+          // Under the bubble, on a dark tab so it reads over neighbours.
           setFont(`500 11px 'IBM Plex Mono', monospace`)
-          if (inCaption) {
-            ctx.fillStyle = n.textColour
-            ctx.fillText(n.caption, X, Y + Math.min(R * 0.55, 34))
-          } else {
-            // Under the bubble, on a dark tab so it reads over neighbours.
-            const tw = ctx.measureText(n.caption).width + 8
-            ctx.fillStyle = withAlpha(C.night, 0.82)
-            ctx.fillRect(X - tw / 2, Y + R + 3, tw, 15)
-            ctx.fillStyle = C.muted
-            ctx.fillText(n.caption, X, Y + R + 11)
-          }
+          const tw = ctx.measureText(n.caption).width + 8
+          ctx.fillStyle = withAlpha(C.night, 0.82)
+          ctx.fillRect(X - tw / 2, Y + R + 3, tw, 15)
+          ctx.fillStyle = C.muted
+          ctx.fillText(n.caption, X, Y + R + 11)
         }
       }
       ctx.globalAlpha = 1
+      // The biggest bubble's words and place, for checks and assistive tooling (twice a second).
+      if (t - s.bigAt > 500) {
+        s.bigAt = t
+        const b = big as Vis | null
+        box.dataset.big = b
+          ? JSON.stringify({
+              label: `${b.n.kindText} · ${b.n.text ?? ''}`.trim(),
+              shown: b.R >= 30 || !!b.n.text,
+              x: Math.round(b.X),
+              y: Math.round(b.Y),
+              r: Math.round(b.R),
+            })
+          : ''
+        box.dataset.bodies = String(vis.length)
+      }
     }
 
     // Pointer: hover (tooltip), drag to pan, pinch, click to select.
@@ -771,7 +1027,12 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
       canvas.setPointerCapture?.(e.pointerId)
       if (s.pointers.size === 2) {
         const [a, b] = [...s.pointers.values()]
-        s.drag = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, moved: true, pinch: Math.hypot(a.x - b.x, a.y - b.y) }
+        s.drag = {
+          x: (a.x + b.x) / 2,
+          y: (a.y + b.y) / 2,
+          moved: true,
+          pinch: Math.hypot(a.x - b.x, a.y - b.y),
+        }
       } else s.drag = { x: p.x, y: p.y, moved: false, pinch: null }
     }
     const onMove = (e: PointerEvent) => {
@@ -801,8 +1062,16 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
       d.moved = true
       d.x = p.x
       d.y = p.y
-      s.camT = { ...s.camT, x: s.camT.x - dx / s.camT.s, y: s.camT.y - dy / s.camT.s }
-      s.cam = { ...s.cam, x: s.cam.x - dx / s.cam.s, y: s.cam.y - dy / s.cam.s }
+      s.camT = {
+        ...s.camT,
+        x: s.camT.x - dx / s.camT.s,
+        y: s.camT.y - dy / s.camT.s,
+      }
+      s.cam = {
+        ...s.cam,
+        x: s.cam.x - dx / s.cam.s,
+        y: s.cam.y - dy / s.cam.s,
+      }
       s.userCam = true
       setZoomed(true)
       canvas.style.cursor = 'grabbing'
@@ -821,6 +1090,9 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
         const id = hit(p.x, p.y)
         P.current.onSelect(id)
         P.current.onInteract?.()
+        // A click flies to the bubble; a click on empty space while zoomed flies back out.
+        if (id) flyToId(id)
+        else if (s.zoomed) fitView()
         if (e.pointerType !== 'mouse') showTip(null, 0, 0)
       }
     }
@@ -889,26 +1161,19 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
   }
 
   return (
-    <div
-      ref={boxRef}
-      className={`relative w-full overflow-hidden ${props.className ?? ''}`}
-      style={{ height: props.height }}
-      role="img"
-      aria-label={props.label}
-      data-chart=""
-      data-bubble-canvas=""
-      data-hover=""
-      tabIndex={0}
-      onKeyDown={onKeyDown}
-    >
+    <div ref={boxRef} className={`relative w-full overflow-hidden ${props.className ?? ''}`} style={{ height: props.height }} role="img" aria-label={props.label} data-chart="" data-bubble-canvas="" data-hover="" tabIndex={0} onKeyDown={onKeyDown}>
       {/* Its own compositing layer, so a frame repaints the canvas only, never the page around it. */}
-      <canvas ref={canvasRef} className="absolute inset-0 block size-full" style={{ touchAction: 'pan-y', willChange: 'transform', contain: 'strict' }} aria-hidden />
-      <div
-        ref={tipRef}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 block size-full"
+        style={{
+          touchAction: 'pan-y',
+          willChange: 'transform',
+          contain: 'strict',
+        }}
         aria-hidden
-        className="pointer-events-none absolute top-0 left-0 z-10 flex min-w-[160px] flex-col gap-0.5 rounded-[8px] border border-line-strong px-2.5 py-2 font-mono text-[12px] opacity-0 transition-opacity duration-150"
-        style={{ background: K.midnight }}
       />
+      <div ref={tipRef} aria-hidden className="pointer-events-none absolute top-0 left-0 z-10 flex min-w-[160px] flex-col gap-0.5 rounded-[8px] border border-line-strong px-2.5 py-2 font-mono text-[12px] opacity-0 transition-opacity duration-150" style={{ background: K.midnight }} />
     </div>
   )
 })

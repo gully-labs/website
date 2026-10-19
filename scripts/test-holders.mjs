@@ -1088,3 +1088,31 @@ test('any token: sources report which chains map any token, and how', () => {
   assert.ok(rows.every((r) => ['full', 'top', 'none'].includes(r.any) && typeof r.tokens === 'boolean'))
   assert.equal(H.holdersAvailable('robinhood', 'token'), H.holdersAvailable('robinhood', 'stock'))
 })
+
+/* ------------------------------------------------ bubble map palette (src/components/holders/palette.ts) --- */
+
+test('bubble palette: every hue is legible on the stage, its text reads on it, and no cluster looks like a sell', async () => {
+  const { registerHooks } = await import('node:module')
+  registerHooks({
+    resolve(spec, ctx, next) {
+      try {
+        return next(spec, ctx)
+      } catch (e) {
+        if (!/^\.\.?\//.test(spec) || /\.[cm]?[jt]sx?$/.test(spec)) throw e
+        return next(`${spec}.ts`, ctx)
+      }
+    },
+  })
+  const P = await import('../src/components/holders/palette.ts')
+  const stage = '#111923'
+  for (const h of P.ALL_HUES) {
+    assert.ok(P.contrast(h, stage) >= 3, `${h} needs 3:1 on the stage, has ${P.contrast(h, stage).toFixed(2)}`)
+    assert.ok(P.contrast(h, P.textOn(h)) >= 4.5, `${h} needs 4.5:1 text, has ${P.contrast(h, P.textOn(h)).toFixed(2)}`)
+  }
+  assert.equal(P.CLUSTER_HUES[0], '#d9b563', 'the biggest cluster is kit gold')
+  assert.equal(new Set(P.CLUSTER_HUES).size, P.CLUSTER_HUES.length, 'cluster hues are distinct')
+  assert.ok(!P.CLUSTER_HUES.includes('#ff8a7a'), 'the alert red is for sells and bundles only')
+  assert.notEqual(P.clusterHue(8), P.clusterHue(1), 'hues repeat lighter past the palette')
+  assert.equal(P.bandOf(86), 0)
+  assert.equal(P.bandOf(0.05), 3)
+})

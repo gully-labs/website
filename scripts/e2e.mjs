@@ -18,6 +18,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { blockedOutbound, bootServer, E2E_ANY_TOKEN, E2E_LAUNCH_TOKEN, E2E_NOT_A_TOKEN, historyFixture, holdersExtraFixtures, holdersFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 import { auditPage, tokenColors } from './e2e-audit.mjs'
+import { busyFixture, solanaFixture, SOLANA_TOKEN } from './holders-shots-fixtures.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
 // E2E_WATCHDOG_MS (or E2E_WATCHDOG_MIN) raises the limit when the machine is busy (other builds running); the default stays 8 minutes.
@@ -83,6 +84,48 @@ async function launcherWorks(page, label) {
   check(`${label}: ⌘K opens Gully AI`, await dlg.isVisible())
   await page.keyboard.press('Escape')
   await dlg.waitFor({ state: 'hidden', timeout: 5_000 })
+}
+
+
+/** The bubble map's look and motion (v3): lit fills, a legend, a labelled biggest bubble, the supply strip, drift and a quiet main thread. */
+async function bubbleLook(page, map, label, { kindRe = /^(pool|wallet|contract|lock|burn|exchange|deployer|token|DeepCore|Gully|router|known)/, quiet = false } = {}) {
+  const chart = map.locator('[data-bubble-canvas]')
+  await chart.scrollIntoViewIfNeeded()
+  await page.waitForFunction(() => document.querySelector('[data-bubble-canvas]')?.getAttribute('data-big'), null, { timeout: 15_000 })
+  await page.waitForTimeout(1800)
+  const big = JSON.parse((await chart.getAttribute('data-big')) ?? '{}')
+  check(`${label}: the biggest bubble says what it is (${big.label})`, kindRe.test(big.label ?? '') && /\d/.test(big.label ?? '') && big.shown === true, JSON.stringify(big))
+  // Fills, not outlines: the middle of the biggest bubble is opaque and lit from the top left (its highlight side is lighter than its far edge).
+  const px = await page.evaluate(({ x, y, r }) => {
+    const c = document.querySelector('[data-bubble-canvas] canvas')
+    const k = c.width / c.clientWidth
+    const g = c.getContext('2d')
+    const at = (dx, dy) => Array.from(g.getImageData(Math.round((x + dx) * k), Math.round((y + dy) * k), 1, 1).data)
+    return { hi: at(-r * 0.45, -r * 0.5), lo: at(r * 0.6, r * 0.6) }
+  }, big)
+  const lum = (p) => p[0] * 0.3 + p[1] * 0.59 + p[2] * 0.11
+  check(`${label}: bubbles are filled spheres, not outlines (opaque, lit)`, px.hi[3] > 200 && px.lo[3] > 200 && lum(px.hi) > lum(px.lo) + 8, JSON.stringify(px))
+  check(`${label}: the legend is present with colour swatches`, (await map.locator('[data-legend] li').count()) >= 4 && (await map.locator('[data-legend] li span[aria-hidden]').count()) >= 4)
+  const strip = map.locator('[data-supply-strip]')
+  await strip.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(1300)
+  const widths = await strip.locator('[data-supply-seg]').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().width))
+  check(`${label}: the supply strip renders as an animated stacked bar (${widths.length} segments)`, widths.length >= 2 && widths.filter((w) => w > 2).length >= 2, JSON.stringify(widths))
+  check(`${label}: the biggest-holders list shows logos and kinds`, (await strip.locator('[data-holder-leaders] li').count()) >= 5 && (await strip.locator('[data-holder-leaders] li').first().textContent()).length > 5)
+  await chart.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
+    window.__long = []
+    new PerformanceObserver((l) => l.getEntries().forEach((e) => window.__long.push(Math.round(e.duration)))).observe({ entryTypes: ['longtask'] })
+  })
+  const a = await page.evaluate(() => document.querySelector('[data-bubble-canvas] canvas').toDataURL().length + ':' + document.querySelector('[data-bubble-canvas] canvas').toDataURL().slice(-400))
+  await page.waitForTimeout(2000)
+  const b = await page.evaluate(() => document.querySelector('[data-bubble-canvas] canvas').toDataURL().length + ':' + document.querySelector('[data-bubble-canvas] canvas').toDataURL().slice(-400))
+  check(`${label}: the map animates (pixels change over 2 s)`, a !== b)
+  if (quiet) {
+    await page.waitForTimeout(1500)
+    const long = await page.evaluate(() => window.__long)
+    check(`${label}: no long task over 50 ms while idle (${long.length} seen, frame ${await chart.getAttribute('data-frame-ms')} ms)`, long.every((d) => d <= 50) && Number(await chart.getAttribute('data-frame-ms')) < 16, JSON.stringify(long))
+  }
 }
 
 /** A context with every off-localhost request routed: Gully's own hosts to fixtures, the rest aborted. */
@@ -1898,6 +1941,7 @@ await step('holder map', async () => {
     check(`holder map ${width}: the graph has a text summary for screen readers`, /^Holder Map of DTC on Robinhood Chain/.test((await map.locator('[data-chart]').getAttribute('aria-label')) ?? ''))
     check(`holder map ${width}: a ranked list exists for screen readers`, (await map.locator('.sr-only table tbody tr').count()) === 30)
     await shotTo(page, `launch-${width}.png`)
+    await bubbleLook(page, map, `holder map ${width}`)
     // Click the biggest bubble (the layout puts it near the middle) to open its panel.
     const box = await map.locator('[data-chart]').boundingBox()
     const panel = map.locator('[data-holder-panel]')
@@ -1960,6 +2004,26 @@ await step('holder map', async () => {
     await shotTo(page, `token-${width}.png`)
     await noHorizontalScroll(page, `/holders ${width}`)
     await designAudit(page, `holder map ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // The bubble map on a Solana token (top holders, no links) and on a busy 320-wallet map (frame budget).
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    await ctx.route(`${BASE}/api/holders/solana/${SOLANA_TOKEN}`, (route) => json(route, solanaFixture()))
+    await ctx.route(`${BASE}/api/holders/base/0x0000000000000000000000000000000000b0b05`, (route) => json(route, busyFixture()))
+    const page = await ctx.newPage()
+    const w = watch(page, `bubble map ${width}`)
+    await page.goto(BASE + '/holders/solana/' + SOLANA_TOKEN)
+    const map = page.locator('[data-holder-map="ok"]')
+    await map.waitFor()
+    await bubbleLook(page, map, `solana map ${width}`, { kindRe: /^wallet/ })
+    check(`solana map ${width}: it says plainly that links are not drawn on this chain yet`, (await map.locator('[data-no-links]').getByText(/Links between wallets are not drawn on Solana yet/).count()) === 1)
+    await noHorizontalScroll(page, `/holders solana ${width}`)
+    await page.goto(BASE + '/holders/base/0x0000000000000000000000000000000000b0b05')
+    await map.waitFor()
+    await bubbleLook(page, map, `busy map ${width}`, { quiet: width === 1440 })
+    check(`busy map ${width}: 300+ bubbles draw (${await map.locator('[data-bubble-canvas]').getAttribute('data-bodies')})`, Number(await map.locator('[data-bubble-canvas]').getAttribute('data-bodies')) >= 300)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
