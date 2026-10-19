@@ -2873,6 +2873,67 @@ await step('discovery files and contracts page', async () => {
   }
 })
 
+await step('design audit 3 group 3: narrow-width fixes (D5 D6 D7 D10 D15 D16 D19 D21 + Telegram)', async () => {
+  for (const width of [320, 390]) {
+    const ctx = await newContext({ width, mobile: true })
+    const page = await ctx.newPage()
+    const w = watch(page, `da3-g3 ${width}`)
+    const visit = async (route) => {
+      await page.goto(BASE + route)
+      await page.locator('h1').first().waitFor()
+      await page.waitForTimeout(900)
+    }
+    // Every element of `sel` shows all its text (nothing cut by overflow) at this width.
+    const unclipped = (sel) => page.evaluate((q) => [...document.querySelectorAll(q)].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => `${e.tagName} "${(e.textContent || '').trim().slice(0, 30)}"`).slice(0, 4), sel)
+    await visit('/analytics')
+    await noHorizontalScroll(page, 'da3-g3 /analytics')
+    const srcBtn = page.locator('a[href*="gully-labs/umami"]')
+    check(`da3-g3 analytics ${width}: the Source button stays inside the viewport`, (await srcBtn.count()) === 1 && (await srcBtn.evaluate((e) => e.getBoundingClientRect().right <= window.innerWidth && e.scrollWidth <= e.clientWidth + 1)))
+    check(`da3-g3 ${width}: no link to the private gully-labs/blockscout repo anywhere on Chain Kit`, await (async () => { await visit('/chain-kit').catch(() => {}); return (await page.locator('a[href*="gully-labs/blockscout"]').count()) === 0 })())
+    for (const route of ['/services', '/pricing', '/partners', '/ecosystem', '/about', '/status', '/']) {
+      await visit(route)
+      await noHorizontalScroll(page, `da3-g3 ${route}`)
+      const cut = await unclipped('h1, h2, h3, [data-project] dd, [data-project] dt, section[aria-label="Services"] li, section[aria-label="Services"] span, dl dd, dl dt')
+      check(`da3-g3 ${route} at ${width}: no clipped headings, figures or chips`, cut.length === 0, cut.join(' | '))
+    }
+    await visit('/services')
+    const h2s = await page.locator('section[aria-label="Services"] h2').evaluateAll((els) => els.map((e) => e.scrollWidth <= e.clientWidth + 1))
+    check(`da3-g3 services ${width}: the card headings fit`, h2s.length === 4 && h2s.every(Boolean))
+    check(`da3-g3 services ${width}: venue and chain chips carry logos`, (await page.locator('[aria-label="Venues and chains"] img').count()) >= 4)
+    await visit('/pricing')
+    const h1 = await page.locator('h1').first().evaluate((e) => e.scrollWidth <= e.clientWidth + 1 && e.getBoundingClientRect().right <= window.innerWidth)
+    check(`da3-g3 pricing ${width}: the title stays inside the gutter`, h1)
+    await visit('/partners')
+    const notLive = page.locator('[data-benefit="chainkit"]')
+    check(`da3-g3 partners ${width}: the not-live Chain Kit card is dashed and not dimmed`, (await notLive.evaluate((e) => getComputedStyle(e).borderStyle === 'dashed' && Number(getComputedStyle(e).opacity) === 1)) && (await notLive.getByText('NOT LIVE YET').count()) === 1)
+    check(`da3-g3 partners ${width}: Chain Kit card says Built on Blockscout with its logo`, (await notLive.getByText('Built on Blockscout').count()) === 1 && (await notLive.locator('img').count()) >= 1)
+    const tgP = page.locator('a[href="https://t.me/GullyLabsBot?start=partners"]')
+    check(`da3-g3 partners ${width}: a Chat on Telegram button`, (await tgP.count()) === 1 && (await tgP.evaluate((e) => e.getBoundingClientRect().height >= 44)))
+    check(`da3-g3 partners ${width}: chain chips carry logos`, (await page.locator('[aria-label="Chains on the Holder Map"] img').count()) >= 3)
+    await visit('/about')
+    check(`da3-g3 about ${width}: venue names are logo chips`, (await page.locator('section[aria-label="Gully Labs in numbers"] img').count()) >= 3)
+    await visit('/status')
+    check(`da3-g3 status ${width}: chains are logo chips`, (await page.locator('[aria-label="Chains the Holder Map covers"] img').count()) >= 3)
+    for (const route of ['/', '/ecosystem']) {
+      await visit(route)
+      check(`da3-g3 ${route} at ${width}: no red "unreadable" text in a figure`, (await page.locator('dd .text-error').count()) === 0)
+    }
+    if (width === 390) {
+      await visit('/')
+      await page.getByRole('button', { name: /start a project|contact|get in touch/i }).first().click().catch(() => {})
+      const tgC = page.locator('a[href="https://t.me/GullyLabsBot?start=contact"]')
+      await tgC.first().waitFor({ timeout: 5000 }).catch(() => {})
+      check('da3-g3 contact modal: a Chat on Telegram button next to the form', (await tgC.count()) === 1)
+      await visit('/')
+    }
+    // D15: headings balance their lines.
+    const bal = await page.evaluate(() => getComputedStyle(document.querySelector('h1')).textWrap)
+    check(`da3-g3 ${width}: headings use text-wrap: balance`, bal === 'balance', bal)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+})
+
 const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag/i.test(u))
 check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()

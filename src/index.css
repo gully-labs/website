@@ -248,6 +248,10 @@
   padding: var(--card-pad);
 }
 
+/* Headings balance their lines so none ends on a single orphaned word (design audit D15). */
+h1, h2, h3, h4, .heading-1, .heading-2, .heading-3, .heading-4, .font-display[class*='text-h'] { text-wrap: balance; }
+@media (max-width: 359px) { h1 { overflow-wrap: anywhere; font-size: min(var(--text-h1), 40px); } }
+
 /* The heading scale as whole recipes (family, weight, case, size). text-h1..h4 alone set only the size. */
 @utility heading-1 {
   margin: 0;
