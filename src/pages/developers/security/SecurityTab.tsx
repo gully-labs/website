@@ -186,7 +186,7 @@ export function SecurityTab({ section }: { section: string | null }) {
   ]
 
   return (
-    <div className="flex flex-col gap-2" data-testid="security-tab">
+    <div className="flex min-w-0 max-w-full flex-col gap-2" data-testid="security-tab">
       <div className="print:hidden">
         <ServiceHeader
           icon={ShieldCheck}

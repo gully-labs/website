@@ -48,8 +48,8 @@ function ScanSteps({ step, free }: { step: Step; free: boolean | null }) {
     return { id: String(s.n), label: s.label, icon: s.icon, skipped, state: s.n < step || (s.n === 5 && step === 5) ? 'done' : s.n === step ? 'active' : 'todo', after: skipped ? <span className="ml-2 font-mono text-[11px] text-green">free</span> : undefined }
   })
   return (
-    <div className="overflow-x-auto rounded-card border border-line bg-surface p-3 [scrollbar-width:none]">
-      <div className="min-w-[560px]">
+    <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-card border border-line bg-surface p-3 [scrollbar-width:none]">
+      <div className="min-w-0">
         <ProgressSteps steps={steps} label="New scan steps" testId="stepper" />
       </div>
     </div>

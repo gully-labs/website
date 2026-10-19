@@ -187,7 +187,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
       {/* ---------------------------------------------------------------- KPIs */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="you-title">
         <h2 className="m-0 text-[15px] font-semibold text-ink">Your workspace</h2>
-        <KitPill tone="warn">YOU</KitPill>
+        <KitPill tone="warn" className="!h-[18px] !min-h-0 !py-0">YOU</KitPill>
         <span className="font-mono text-[11px] text-faint">your keys, alerts and traffic only</span>
         <RefreshChip error={shown ? up.error : null} onRetry={reloadUsage} />
         <RefreshChip error={alerts.refreshErr} onRetry={alerts.load} />
