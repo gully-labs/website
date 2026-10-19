@@ -2881,7 +2881,13 @@ await step('holder map discovery', async () => {
   const SHOTS_HD = process.env.HD_SHOTS || null
   if (SHOTS_HD) fs.mkdirSync(SHOTS_HD, { recursive: true })
   const hdShot = (page, name, opts = {}) => SHOTS_HD && page.screenshot({ path: path.join(SHOTS_HD, name), ...opts })
-  const SCORE_ADDR = '0x' + 'ab'.repeat(20)
+  const SCORE_ADDR = '0x' + 'cd'.repeat(20)
+  {
+    // A scored contract of its own, so this step does not depend on the Gully Score step having run.
+    const gs = await import('../server/gully-score.mjs')
+    const nowIso = new Date().toISOString()
+    gs.putScoreForTest({ chainId: 8453, chainKey: 'base', chainName: 'Base', address: SCORE_ADDR, name: 'E2E Vault', symbol: null, score: 74, grade: 'Fair', coverage: { weight: 75, components: 6, of: 9 }, computedAt: nowIso, methodVersion: 1, components: gs.COMPONENTS.map((c) => ({ ...c, evidence: [], available: false, score: null, value: 'Not available', reason: 'Not read in this test.' })), history: [{ at: nowIso, score: 74 }], changes: [] })
+  }
   // 1. The header link: visible at 1440 and 1024 on one line, and in the mobile menu.
   for (const width of [1440, 1024]) {
     const ctx = await newContext({ width, height: 900, announce: true })
@@ -2896,6 +2902,7 @@ await step('holder map discovery', async () => {
     const hb = await page.locator('header').evaluate((h) => Math.round(h.getBoundingClientRect().height))
     check(`header ${width}: the header stays one row (${hb} px)`, hb <= 66, String(hb))
     await noHorizontalScroll(page, `home header ${width}`)
+    if (width === 1440) await hdShot(page, 'home-1440.png', { fullPage: false })
     if (width === 1440) await hdShot(page, 'header-1440.png', { clip: { x: 0, y: 0, width: 1440, height: 130 } })
     if (width === 1024) await hdShot(page, 'header-1024.png', { clip: { x: 0, y: 0, width: 1024, height: 130 } })
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
@@ -2922,7 +2929,7 @@ await step('holder map discovery', async () => {
     if (width === 390) {
       await hdShot(page, 'home-390.png', { fullPage: false })
       await page.getByRole('button', { name: 'Menu' }).click()
-      const mob = page.locator('nav[aria-label="Mobile"] a[href="/holders"]').first()
+      const mob = page.locator('nav[aria-label="Mobile"] a[href="/holders"]:has([data-new-dot])')
       await mob.waitFor()
       check('mobile menu: the "Holder Map" link with its NEW dot', (await mob.isVisible()) && (await mob.locator('[data-new-dot]').count()) === 1)
       await hdShot(page, 'menu-390.png', { fullPage: false })
@@ -3049,6 +3056,7 @@ await step('holder map discovery', async () => {
     const sc = page.locator('main section').first().locator('[data-holders-chip]')
     await sc.waitFor()
     check(`stock page ${width}: the header has a Holders chip to /holders/robinhood/NVDA`, (await sc.getAttribute('href')) === '/holders/robinhood/NVDA' && (!mobile || (await tall(sc))))
+    await page.evaluate(() => window.scrollTo(0, 0))
     await page.waitForTimeout(1200)
     await hdShot(page, `stock-${width}.png`, { fullPage: false })
     await noHorizontalScroll(page, `stock page chips ${width}`)
