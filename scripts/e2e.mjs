@@ -1339,10 +1339,33 @@ await step('admin', async () => {
   await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
   const page = await ctx.newPage()
   const w = watch(page, 'admin')
-  await page.goto(BASE + '/admin')
+  // The admin shows one section at a time (N10): the URL hash picks it, the nav chips and [ ] keys switch it.
+  await page.goto(BASE + '/admin#pay')
   await page.getByRole('heading', { name: 'Invoices' }).waitFor({ timeout: 15_000 })
-  for (const h of ['Developer wallets', 'Pay links', 'Gully Analytics', 'Treasury Safe']) check(`admin: the ${h} section renders`, (await page.getByRole('heading', { name: h }).count()) > 0)
+  check('admin: a deep link (#pay) opens only that section', (await page.locator('[data-admin-section]').count()) === 1 && (await page.locator('[data-admin-section="pay"]').count()) === 1 && (await page.locator('a[aria-current="true"]').first().getAttribute('id')) === 'adm-nav-pay')
+  check('admin: the Pay links section renders', (await page.getByRole('heading', { name: 'Pay links' }).count()) > 0)
+  check('admin: the section is short (not one 14,000 px page)', (await page.evaluate(() => document.documentElement.scrollHeight)) < 6000)
+  await page.locator('a#adm-nav-developers').click()
+  await page.getByRole('heading', { name: 'Developer wallets' }).waitFor({ timeout: 10_000 })
+  check('admin: a nav chip switches the section and the hash', page.url().endsWith('#developers') && (await page.getByRole('heading', { name: 'Invoices' }).count()) === 0)
+  await page.keyboard.press(']')
+  await page.waitForFunction(() => location.hash === '#alerts')
+  await page.locator('a#adm-nav-alerts').focus()
+  await page.keyboard.press('ArrowRight')
+  await page.waitForFunction(() => location.hash === '#workspaces')
+  await page.waitForSelector('a#adm-nav-workspaces[aria-current="true"]', { timeout: 5_000 }).catch(() => {})
+  check('admin: "]" and the arrow keys step through the sections', (await page.locator('a#adm-nav-workspaces').getAttribute('aria-current')) === 'true')
+  await page.goto(BASE + '/admin#analytics')
+  await page.getByRole('heading', { name: 'Gully Analytics' }).first().waitFor({ timeout: 15_000 })
+  check('admin: the Gully Analytics section renders', (await page.getByRole('heading', { name: 'Gully Analytics' }).count()) > 0)
+  await page.goto(BASE + '/admin#billing')
+  await page.getByRole('heading', { name: 'Treasury Safe' }).waitFor({ timeout: 15_000 })
+  check('admin: the Treasury Safe section renders', (await page.getByRole('heading', { name: 'Treasury Safe' }).count()) > 0)
+  // The invoice made above is listed in the Pay section.
+  await page.goto(BASE + '/admin#pay')
+  await page.getByRole('heading', { name: 'Invoices' }).waitFor({ timeout: 15_000 })
   check('admin: the invoice made above is listed', (await page.getByText('E2E: first month').count()) > 0)
+  await page.goto(BASE + '/admin#billing')
   // Treasury Safe (the harness's chain matrix): the Safe on Base, Ethereum, BNB Chain and Arbitrum; OP Mainnet,
   // Polygon and Avalanche are payment chains where it is not deployed yet, so they say "not deployed" and offer
   // Deploy. The demo deploys on Avalanche and reaches "connect a wallet".
@@ -1358,6 +1381,43 @@ await step('admin', async () => {
   const tp = page.getByTestId('treasury-chain-43114').locator('[data-testid="safe-deploy"]')
   await tp.getByText('address verified').waitFor({ timeout: 20_000 })
   check('admin treasury: the plan predicts the treasury address, prices the gas in AVAX and waits for a wallet', /0\.00023688 AVAX/.test(await tp.textContent()) && (await tp.getByRole('button', { name: 'Connect a wallet to deploy' }).count()) === 1)
+  // Live charts (N1/N3/N32): every card is a live chart or a collapsed ghost, never a blank axis box.
+  await page.goto(BASE + '/admin#overview')
+  await page.getByRole('heading', { name: 'Live charts' }).waitFor({ timeout: 15_000 })
+  await page.getByRole('heading', { name: 'Webhook delivery' }).waitFor({ timeout: 15_000 })
+  await page.waitForTimeout(1500)
+  const cards = await page.locator('section[aria-label="Live charts"] section').evaluateAll((els) => els.map((e) => ({ title: e.querySelector('h3')?.textContent ?? '', ghost: e.querySelector('[data-ghost]')?.getBoundingClientRect().height ?? 0, chart: e.querySelectorAll('[data-chart]').length, live: [...e.querySelectorAll('[data-live]')].length })))
+  check('admin charts: all seven cards have a chart or a ghost', cards.length === 7 && cards.every((c) => c.chart > 0 || c.ghost > 0), JSON.stringify(cards))
+  check('admin charts: an empty chart is a ghost collapsed to about 90 px', cards.filter((c) => c.ghost > 0).every((c) => c.ghost >= 80 && c.ghost <= 110), JSON.stringify(cards))
+  check('admin charts: real charts are in live mode (data-live)', cards.filter((c) => c.chart > 0).every((c) => c.live > 0), JSON.stringify(cards))
+  const noise = await page.evaluate(() => /\[object Object\]|\bundefined\b|\bNaN\b|\bnull\b/.test(document.body.innerText))
+  check('admin: no developer noise on the overview', !noise)
+  // Chain and asset names carry their logos.
+  await page.goto(BASE + '/admin#pay')
+  await page.getByRole('heading', { name: 'Pay links' }).first().waitFor({ timeout: 15_000 })
+  await page.waitForTimeout(1200)
+  const logos = await page.locator('main img').evaluateAll((els) => els.map((i) => i.complete && i.naturalWidth > 0))
+  check('admin: chain and asset logos load', logos.length > 0 && logos.every(Boolean), `${logos.filter(Boolean).length}/${logos.length}`)
+  // Tap targets (N36): every visible control is 44 px high.
+  for (const sec of ['health', 'overview', 'traffic', 'developers', 'alerts', 'workspaces', 'security', 'telegram', 'billing', 'pay', 'analytics', 'chainkit', 'inbox', 'ai']) {
+    await page.goto(BASE + '/admin#' + sec)
+    await page.waitForTimeout(1500)
+    const small = await page.locator('main').locator('button, select, input:not([type=checkbox]):not([type=radio]), textarea, a[href], summary').evaluateAll((els) => els.filter((e) => { const r = e.getBoundingClientRect(); const st = getComputedStyle(e); return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && !e.closest('.sr-only') && r.height < 43.5 }).map((e) => `${e.tagName} ${(e.textContent ?? '').trim().slice(0, 24)} ${Math.round(e.getBoundingClientRect().height)}`))
+    check(`admin #${sec}: every control is at least 44 px high`, small.length === 0, small.slice(0, 6).join(' | '))
+  }
+  if (process.env.ADMIN_SHOTS) {
+    for (const [width, mobile] of [[1440, false], [390, true]]) {
+      const sctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+      await sctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
+      const sp = await sctx.newPage()
+      for (const sec of ['health', 'overview', 'traffic', 'pay', 'billing', 'ai']) {
+        await sp.goto(BASE + '/admin#' + sec)
+        await sp.waitForTimeout(2500)
+        await sp.screenshot({ path: path.join(process.env.ADMIN_SHOTS, `admin-${sec}-${width}.png`), fullPage: true })
+      }
+      await sctx.close()
+    }
+  }
   // Tracker health and venues read live upstreams this server cannot reach here.
   await w.verify([/Failed to load resource/])
   await ctx.close()
@@ -1539,7 +1599,7 @@ await step('security', async () => {
     await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
     const page = await ctx.newPage()
     const w = watch(page, 'admin security')
-    await page.goto(BASE + '/admin')
+    await page.goto(BASE + '/admin#security')
     await page.getByTestId('admin-security').waitFor({ timeout: 15_000 })
     await page.getByTestId('admin-security').scrollIntoViewIfNeeded()
     await page.locator('[data-testid="admin-security"] [data-chart]').waitFor({ timeout: 10_000 }).catch(() => {})
@@ -1570,7 +1630,7 @@ await step('admin: bot broadcasts at 1440 and 390', async () => {
     await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
     const page = await ctx.newPage()
     const w = watch(page, `admin broadcasts at ${width}`)
-    await page.goto(BASE + '/admin')
+    await page.goto(BASE + '/admin#telegram')
     const section = page.locator('section', { has: page.getByRole('heading', { name: 'Bot broadcasts' }) })
     await section.waitFor({ timeout: 15_000 })
     await section.getByText('E2E broadcast').first().waitFor({ timeout: 10_000 })
@@ -2073,7 +2133,7 @@ await step('chains page', async () => {
   await actx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)
   const apage = await actx.newPage()
   const aw = watch(apage, 'admin chains waitlist')
-  await apage.goto(BASE + '/admin')
+  await apage.goto(BASE + '/admin#chainkit')
   const card = apage.locator('section', { has: apage.getByRole('heading', { name: 'Gully Chains waitlist' }) })
   await card.waitFor({ timeout: 15_000 })
   await card.getByText('E2E Chain 1440').waitFor({ timeout: 10_000 })

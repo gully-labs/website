@@ -124,7 +124,7 @@ export function TreasurySafe({ token }: { token: string }) {
                     </span>
                     {!r.payments && <span className={pill('border-line-strong text-faint')}>{r.testnet ? 'testnet' : 'ahead of payments'}</span>}
                   </span>
-                  <a href={r.explorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
+                  <a href={r.explorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-ink-2 underline-offset-4 hover:text-gold hover:underline">
                     {r.explorerUrl.replace(/^https?:\/\//, '').split('/')[0]} <ArrowUpRight size={11} aria-hidden />
                     <NewTabNote />
                   </a>

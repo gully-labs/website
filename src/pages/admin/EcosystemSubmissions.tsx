@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ChainLogo } from '../../components/logos/ChainLogo'
 import { Segmented } from '../../components/ui/Segmented'
 import { copyWithToast, toastError, toastSuccess } from '../../components/ui/toast'
 import { adminCall } from './payAdmin'
@@ -83,14 +84,21 @@ export function EcosystemSubmissions({ token }: { token: string }) {
             <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 font-mono text-[12px] break-all text-muted">
               <dt className="text-faint">site</dt>
               <dd className="m-0">
-                <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-gold underline">
+                <a href={s.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-gold underline">
                   {s.url}
                 </a>
               </dd>
               <dt className="text-faint">contact</dt>
               <dd className="m-0">{unesc(s.contact)}</dd>
               <dt className="text-faint">chains</dt>
-              <dd className="m-0">{s.chains.join(', ')}</dd>
+              <dd className="m-0 flex flex-wrap items-center gap-2">
+                {s.chains.map((c) => (
+                  <span key={c} className="inline-flex items-center gap-1">
+                    <ChainLogo chain={c} size={16} decorative />
+                    {c}
+                  </span>
+                ))}
+              </dd>
               {s.factory && (
                 <>
                   <dt className="text-faint">factory</dt>

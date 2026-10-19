@@ -1,6 +1,6 @@
 import { Fragment, lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { DayBars } from '../../components/charts/DayBars'
+import { LiveDayBars } from './DailyChart'
 import { byChain } from '../../components/pay/assets'
 import { Wordmark } from '../../components/brand'
 import type { PayAsset } from '../developers/api'
@@ -24,6 +24,7 @@ import { ChainLogo } from '../../components/logos/ChainLogo'
 import { toastError } from '../../components/ui/toast'
 import { LogOut, RefreshCw } from 'lucide-react'
 import { AdminNav } from './AdminNav'
+import { useAdminSection } from './useAdminSection'
 import { pillCls } from './ui'
 import { sectionCls } from './adminSections'
 import { HealthCard } from './HealthCard'
@@ -280,7 +281,7 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
   const [plan, setPlan] = useState('pro')
   const [days, setDays] = useState('30')
   const setMsg = flash
-  const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold'
+  const field = 'min-h-11 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold'
   const grant = async (addr: string, p: string, d?: number) => {
     const err = await act(`/api/admin/accounts/${addr}/plan`, { plan: p, days: d })
     setMsg(err ? { ok: false, text: err } : { ok: true, text: p === 'free' ? `${addr} is back on Free.` : `${addr} has ${p} for ${d} days.` })
@@ -327,7 +328,7 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
             <input className={field} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} required />
           </label>
         )}
-        <button type="submit" className="h-10 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover">
+        <button type="submit" className="min-h-11 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover">
           {plan === 'free' ? 'Revoke plan' : 'Grant plan'}
         </button>
       </form>
@@ -356,7 +357,7 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
                   <td className="py-3 pr-3 font-mono text-[12px]">{s.active ? <span className="text-green">{when(s.expiresAt)}</span> : <span className="text-faint">lapsed {when(s.expiresAt)}</span>}</td>
                   <td className="py-3 text-right whitespace-nowrap">
                     {s.active && (
-                      <button type="button" onClick={() => window.confirm(`Revoke ${s.plan} from ${s.address}? It returns to Free now.`) && grant(s.address, 'free')} className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error">
+                      <button type="button" onClick={() => window.confirm(`Revoke ${s.plan} from ${s.address}? It returns to Free now.`) && grant(s.address, 'free')} className="rounded-btn border border-line-strong inline-flex min-h-11 items-center px-3 text-[13px] text-ink-2 hover:border-error hover:text-error">
                         Revoke
                       </button>
                     )}
@@ -396,7 +397,7 @@ function Subscriptions({ billing, accounts, act, invoices }: { billing: Billing;
                   <td className="py-2 pr-3 text-faint">{p.chain}</td>
                   <td className="py-2 pr-3">
                     {p.txUrl ? (
-                      <a href={p.txUrl} target="_blank" rel="noopener noreferrer" className="text-ink-2 hover:text-gold">
+                      <a href={p.txUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-ink-2 hover:text-gold">
                         {p.txHash.slice(0, 10)}…
                         <ArrowMark />
                       </a>
@@ -420,7 +421,7 @@ function AnalyticsAccounts({ data, act }: { data: AnalyticsAdmin; act: (path: st
   const [plan, setPlan] = useState('starter')
   const [days, setDays] = useState('30')
   const setMsg = flash
-  const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold'
+  const field = 'min-h-11 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold'
   const paid = data.offer.plans.filter((p) => p.priceUsdc > 0)
   const grant = async (addr: string, p: string, d?: number) => {
     const err = await act(`/api/admin/analytics/${addr}/plan`, { plan: p, days: d })
@@ -472,7 +473,7 @@ function AnalyticsAccounts({ data, act }: { data: AnalyticsAdmin; act: (path: st
             <input className={field} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} required />
           </label>
         )}
-        <button type="submit" className="h-10 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover">
+        <button type="submit" className="min-h-11 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover">
           {plan === 'none' ? 'Revoke' : 'Grant plan'}
         </button>
       </form>
@@ -509,12 +510,12 @@ function AnalyticsAccounts({ data, act }: { data: AnalyticsAdmin; act: (path: st
                   </td>
                   <td className="py-3 text-right whitespace-nowrap">
                     {a.state !== 'lapsed' && (
-                      <button type="button" onClick={() => window.confirm(`Stop Gully Analytics for ${a.address}? Its events are refused from now.`) && grant(a.address, 'none')} className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error">
+                      <button type="button" onClick={() => window.confirm(`Stop Gully Analytics for ${a.address}? Its events are refused from now.`) && grant(a.address, 'none')} className="rounded-btn border border-line-strong inline-flex min-h-11 items-center px-3 text-[13px] text-ink-2 hover:border-error hover:text-error">
                         Revoke
                       </button>
                     )}
                     {a.deletable && (
-                      <button type="button" onClick={() => window.confirm(`Delete the Gully Analytics account of ${a.address}, its user and all its data? This cannot be undone.`) && remove(a.address)} className="rounded-btn border border-error px-3 py-[6px] text-[13px] text-error hover:bg-[rgba(255,138,122,.08)]">
+                      <button type="button" onClick={() => window.confirm(`Delete the Gully Analytics account of ${a.address}, its user and all its data? This cannot be undone.`) && remove(a.address)} className="rounded-btn border border-error inline-flex min-h-11 items-center px-3 text-[13px] text-error hover:bg-[rgba(255,138,122,.08)]">
                         Delete
                       </button>
                     )}
@@ -582,7 +583,7 @@ function InvoiceExtras({ token, invoice, reload, onSecret }: { token: string; in
               call(`/api/admin/invoices/${invoice.id}/webhook`, { url }, 'Webhook set.')
             }}
           >
-            <input className="h-10 min-w-[min(100%,300px)] flex-1 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com/hooks/gully" required aria-label="Webhook URL for this invoice" />
+            <input className="min-h-11 min-w-[min(100%,300px)] flex-1 rounded-input border border-line-strong bg-bg px-3 font-mono text-[13px] text-ink outline-none focus:border-gold" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com/hooks/gully" required aria-label="Webhook URL for this invoice" />
             <button type="submit" className={btn}>
               Set webhook
             </button>
@@ -608,7 +609,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
   const setMsg = flash
   const [secret, setSecret] = useState<string | null>(null)
   const [extras, setExtras] = useState<string | null>(null)
-  const field = 'h-10 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
+  const field = 'min-h-11 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
   const link = (path: string) => `${window.location.protocol}//${window.location.host.replace(/^admin\./, '')}${path}`
   const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
   const create = async () => {
@@ -667,7 +668,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
               <div key={g.chainId} className="flex flex-wrap items-center gap-2 font-mono text-[12px]">
                 <span className="text-muted">{g.chain}</span>
                 {g.assets.map((a) => (
-                  <label key={a.id} className={`inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-btn border px-2 ${chosen.includes(a.id) ? 'border-gold text-gold' : 'border-line-strong text-ink-2'}`}>
+                  <label key={a.id} className={`inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-btn border px-2 ${chosen.includes(a.id) ? 'border-gold text-gold' : 'border-line-strong text-ink-2'}`}>
                     <input type="checkbox" className="accent-gold" checked={chosen.includes(a.id)} onChange={() => toggle(a.id)} />
                     {a.symbol}
                   </label>
@@ -677,7 +678,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
           </div>
         </fieldset>
         <div>
-          <button type="submit" disabled={!chosen.length} className="h-10 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-50">
+          <button type="submit" disabled={!chosen.length} className="min-h-11 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-50">
             Create invoice
           </button>
         </div>
@@ -714,7 +715,7 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
                   <td className="py-3 pr-3 font-mono text-[12px] text-faint">{when(i.expiresAt)}</td>
                   <td className="py-3 pr-3 font-mono text-[12px]">
                     {i.payment ? (
-                      <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener noreferrer" className="text-ink-2 hover:text-gold">
+                      <a href={i.payment.txUrl ?? undefined} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-ink-2 hover:text-gold">
                         {i.payment.amount} {i.payment.symbol} · {i.payment.chain}
                         <ArrowMark />
                       </a>
@@ -763,9 +764,20 @@ function Invoices({ invoices, assets, act, token, reload }: { invoices: AdminInv
   )
 }
 
+/** One admin section. Only the section in view is mounted, so the page stays short and the others do not poll. */
+function Sec({ id, at, children }: { id: string; at: string; children: React.ReactNode }) {
+  if (id !== at) return null
+  return (
+    <div id={id} className={sectionCls} data-admin-section={id}>
+      {children}
+    </div>
+  )
+}
+
 export function AdminPage() {
   const [token, setTok] = useState<string | null>(getToken)
   const { data, err, reload } = useAdmin(token)
+  const [sec, goSection] = useAdminSection()
   const signOut = () => {
     setToken(null)
     setTok(null)
@@ -824,20 +836,20 @@ export function AdminPage() {
             Sign out
           </button>
         </div>
-        <AdminNav />
+        <AdminNav section={sec} go={goSection} />
       </header>
 
       <main className="flex flex-col gap-5 px-page py-8">
         {err && data && <p className="m-0 rounded-input border border-error/40 px-4 py-3 font-mono text-[12px] text-error">Last refresh failed: {err.message}. Showing the previous read.</p>}
         <FeeProxyBanner s={o?.feeProxy} />
-        <div id="health" className={sectionCls}>
+        <Sec id="health" at={sec}>
           <HealthCard token={token} />
-        </div>
+        </Sec>
         {!o ? (
           <p className="m-0 font-mono text-[13px] text-faint">Reading the server…</p>
         ) : (
           <>
-            <div id="overview" className={sectionCls}>
+            <Sec id="overview" at={sec}>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,170px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
               <Tile k="API REQUESTS TODAY" v={((o.api.days.at(-1)?.anonymous ?? 0) + (o.api.days.at(-1)?.keyed ?? 0)).toLocaleString('en-US')} note={`${o.api.days.at(-1)?.limited ?? 0} rate-limited`} />
               <Tile k="ACCOUNTS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#d9b563' : undefined} />
@@ -853,16 +865,18 @@ export function AdminPage() {
             </Suspense>
 
             <FeeProxyCard s={o.feeProxy} act={act} />
-            </div>
+            </Sec>
 
-            <div id="traffic" className={sectionCls}>
+            <Sec id="traffic" at={sec}>
             <div className="grid grid-cols-[1.4fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h2 className={h2}>API traffic</h2>
                   <span className={small}>origin requests per day · anonymous limit {o.api.anonymousLimitPerMin}/min</span>
                 </div>
-                <DayBars
+                <LiveDayBars
+                  unit="origin requests"
+                  empty="API traffic will draw here"
                   days={o.api.days}
                   series={[
                     { key: 'anonymous', label: 'Anonymous', color: '#aeb5be' },
@@ -920,9 +934,9 @@ export function AdminPage() {
                 )}
               </section>
             </div>
-            </div>
+            </Sec>
 
-            <div id="developers" className={sectionCls}>
+            <Sec id="developers" at={sec}>
             <section className={card}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className={h2}>Developer wallets</h2>
@@ -955,14 +969,14 @@ export function AdminPage() {
                           <td className="py-3 pr-3 font-mono text-[12px]">{a.blocked ? <span className="text-error">blocked {when(a.blockedAt)}</span> : <span className="text-green">active</span>}</td>
                           <td className="py-3 text-right whitespace-nowrap">
                             {a.blocked ? (
-                              <button type="button" onClick={() => act(`/api/admin/accounts/${a.address}/unblock`)} className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-gold hover:text-ink">
+                              <button type="button" onClick={() => act(`/api/admin/accounts/${a.address}/unblock`)} className="rounded-btn border border-line-strong inline-flex min-h-11 items-center px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink">
                                 Unblock
                               </button>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => window.confirm(`Block ${a.address}? Its ${a.liveKeys} live keys stop working and it is signed out.`) && act(`/api/admin/accounts/${a.address}/block`)}
-                                className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error"
+                                className="rounded-btn border border-line-strong inline-flex min-h-11 items-center px-3 text-[13px] text-ink-2 hover:border-error hover:text-error"
                               >
                                 Block
                               </button>
@@ -1003,7 +1017,7 @@ export function AdminPage() {
                           <td className="py-3 pr-3">
                             <div className="font-medium">{r.project}</div>
                             {r.url && (
-                              <a href={r.url} target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] text-gold">
+                              <a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-mono text-[11px] text-gold">
                                 {r.url.replace(/^https?:\/\//, '')}
                                 <ArrowMark />
                               </a>
@@ -1019,10 +1033,10 @@ export function AdminPage() {
                           <td className="py-3 text-right whitespace-nowrap">
                             {r.status === 'pending' && (
                               <span className="flex justify-end gap-2">
-                                <button type="button" onClick={() => act(`/api/admin/requests/${r.id}/approve`)} className="rounded-btn bg-gold px-3 py-[6px] text-[13px] font-semibold text-bg hover:bg-gold-hover">
+                                <button type="button" onClick={() => act(`/api/admin/requests/${r.id}/approve`)} className="rounded-btn bg-gold inline-flex min-h-11 items-center px-3 text-[13px] font-semibold text-bg hover:bg-gold-hover">
                                   Approve
                                 </button>
-                                <button type="button" onClick={() => act(`/api/admin/requests/${r.id}/reject`)} className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error">
+                                <button type="button" onClick={() => act(`/api/admin/requests/${r.id}/reject`)} className="rounded-btn border border-line-strong inline-flex min-h-11 items-center px-3 text-[13px] text-ink-2 hover:border-error hover:text-error">
                                   Reject
                                 </button>
                               </span>
@@ -1059,7 +1073,7 @@ export function AdminPage() {
                             <button
                               type="button"
                               onClick={() => window.confirm(`Revoke ${k.name ?? k.project ?? 'this'} key? It stops working immediately.`) && act(`/api/admin/keys/${k.id}/revoke`)}
-                              className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-error hover:text-error"
+                              className="rounded-btn border border-line-strong inline-flex min-h-11 items-center px-3 text-[13px] text-ink-2 hover:border-error hover:text-error"
                             >
                               Revoke
                             </button>
@@ -1070,43 +1084,43 @@ export function AdminPage() {
                   </ul>
                 )}
               </section>
-            </div>
+            </Sec>
 
-            <div id="alerts" className={sectionCls}>
+            <Sec id="alerts" at={sec}>
               <AlertsAdmin token={token} />
-            </div>
-            <div id="workspaces" className={sectionCls}>
+            </Sec>
+            <Sec id="workspaces" at={sec}>
               <WorkspacesAdmin token={token} />
-            </div>
-            <div id="security" className={sectionCls}>
+            </Sec>
+            <Sec id="security" at={sec}>
               <SecurityCard token={token} />
-            </div>
-            <div id="telegram" className={sectionCls}>
+            </Sec>
+            <Sec id="telegram" at={sec}>
               <TelegramChats token={token} />
               <TelegramChannel token={token} />
               <NewsGateFunnel token={token} />
               <LaunchRadar token={token} />
               <TelegramBroadcasts token={token} />
-            </div>
-            <div id="billing" className={sectionCls}>
+            </Sec>
+            <Sec id="billing" at={sec}>
               <Subscriptions billing={data.billing} accounts={data.accounts} act={act} invoices={data.invoices.invoices} />
               <TreasurySafe token={token} />
-            </div>
-            <div id="pay" className={sectionCls}>
+            </Sec>
+            <Sec id="pay" at={sec}>
               <Invoices invoices={data.invoices.invoices} assets={data.invoices.assets} act={act} token={token} reload={reload} />
               <PayLinks token={token} />
               <MerchantsAdmin token={token} />
-            </div>
-            <div id="analytics" className={sectionCls}>
+            </Sec>
+            <Sec id="analytics" at={sec}>
               <AnalyticsAccounts data={data.analytics} act={act} />
-            </div>
-            <div id="chainkit" className={sectionCls}>
+            </Sec>
+            <Sec id="chainkit" at={sec}>
               <ChainKitAdmin token={token} />
               <EcosystemSubmissions token={token} />
               <ChainsWaitlist token={token} />
-            </div>
+            </Sec>
 
-            <div id="inbox" className={sectionCls}>
+            <Sec id="inbox" at={sec}>
             <div className="grid grid-cols-[1fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>
                 <h2 className={h2}>Enquiries</h2>
@@ -1119,7 +1133,7 @@ export function AdminPage() {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="text-[14px]">
                             {e.name || 'No name'}{' '}
-                            <a href={`mailto:${e.email}`} className="font-mono text-[12px] text-gold">
+                            <a href={`mailto:${e.email}`} className="inline-flex min-h-11 items-center font-mono text-[12px] text-gold">
                               {e.email}
                             </a>
                           </span>
@@ -1130,7 +1144,7 @@ export function AdminPage() {
                           {e.budget && ` · ${e.budget}`}
                         </span>
                         {e.message && <p className="m-0 text-[13px] leading-[1.5] whitespace-pre-wrap text-ink-2">{e.message}</p>}
-                        <button type="button" onClick={() => act(`/api/admin/enquiries/${e.id}/handled`, { handled: !e.handled })} className="self-start bg-transparent p-0 font-mono text-[12px] text-faint hover:text-ink">
+                        <button type="button" onClick={() => act(`/api/admin/enquiries/${e.id}/handled`, { handled: !e.handled })} className="inline-flex min-h-11 items-center self-start bg-transparent p-0 font-mono text-[12px] text-faint hover:text-ink">
                           {e.handled ? 'Mark open' : 'Mark handled'}
                         </button>
                       </li>
@@ -1158,7 +1172,7 @@ export function AdminPage() {
                     a.click()
                     URL.revokeObjectURL(url)
                   }}
-                  className="rounded-btn border border-line-strong px-3 py-[6px] font-mono text-[12px] text-ink-2 hover:border-gold"
+                  className="inline-flex min-h-11 items-center rounded-btn border border-line-strong px-3 font-mono text-[12px] text-ink-2 hover:border-gold"
                 >
                   Export CSV
                 </button>
@@ -1179,11 +1193,11 @@ export function AdminPage() {
               )}
             </section>
 
-            </div>
+            </Sec>
 
-            <div id="ai" className={sectionCls}>
+            <Sec id="ai" at={sec}>
               <AskStudio token={token} />
-            </div>
+            </Sec>
           </>
         )}
       </main>

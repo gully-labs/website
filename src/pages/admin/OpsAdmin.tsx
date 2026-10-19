@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowUpRight } from 'lucide-react'
-import { DayBars, type DaySeries } from '../../components/charts/DayBars'
-import { ChartSkeleton } from '../../components/charts/ChartSkeleton'
+import type { DaySeries } from '../../components/charts/DayBars'
+import { LiveDayBars } from './DailyChart'
 import { C } from '../../components/charts/chartPresets'
 import { adminCall } from './payAdmin'
 
@@ -60,19 +60,11 @@ function perDay<T>(rows: T[], at: (r: T) => string | null, key: (r: T) => string
   return days
 }
 
-/** DayBars, or an animated empty state when the range has nothing yet. */
+/** Live daily bars, or a 90 px ghost when the range has fewer than 2 days of data. */
 function Daily({ days, series, unit, empty }: { days: ({ day: string } & Record<string, number | string>)[]; series: DaySeries[]; unit: string; empty: string }) {
-  const any = days.some((d) => series.some((s) => Number(d[s.key] ?? 0) > 0))
-  if (!any)
-    return (
-      <div className="relative h-[120px] w-full">
-        <ChartSkeleton variant="bars" />
-        <span className="absolute inset-0 grid place-items-center px-4 text-center font-mono text-[12px] text-faint">{empty}</span>
-      </div>
-    )
   return (
     <>
-      <DayBars days={days} series={series} height={120} unit={unit} />
+      <LiveDayBars days={days} series={series} height={130} unit={unit} empty={empty} />
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {series.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-2 font-mono text-[11px] text-muted">
@@ -454,7 +446,7 @@ export function ChainKitAdmin({ token }: { token: string }) {
         {rows.map((r, i) => (
           <li key={`${r.email}-${r.at}-${i}`} className="flex flex-wrap items-center justify-between gap-2 rounded-input border border-line px-3 py-2 font-mono text-[12px]">
             <span className="flex min-w-0 flex-col">
-              <a href={r.email ? `mailto:${r.email}` : undefined} className="truncate text-gold">
+              <a href={r.email ? `mailto:${r.email}` : undefined} className="inline-flex min-h-11 items-center truncate text-gold">
                 {r.email ?? 'no email'}
               </a>
               {kind === 'request' && <span className="truncate text-muted">{r.chain ?? 'chain not given'}</span>}

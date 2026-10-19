@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { C } from '../../components/charts/chartPresets'
-import { ChartSkeleton } from '../../components/charts/ChartSkeleton'
-import { DayBars } from '../../components/charts/DayBars'
+import { LiveDayBars } from './DailyChart'
 import { adminCall } from './payAdmin'
 
 /* Admin: the Gully Chains waitlist (GET /api/admin/chains/waitlist, server/chains-waitlist.mjs). Sign-ups per day for
@@ -45,7 +44,6 @@ export function ChainsWaitlist({ token }: { token: string }) {
     }
     return out
   }, [rows])
-  const any = days.some((d) => d.signups > 0)
   return (
     <section className={card} aria-labelledby="admin-chains-waitlist">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -56,15 +54,7 @@ export function ChainsWaitlist({ token }: { token: string }) {
       </div>
       {err && <p className="m-0 font-mono text-[12px] text-error">{err}</p>}
       {!rows && !err && <span className="font-mono text-[12px] text-faint">Loading…</span>}
-      {rows &&
-        (any ? (
-          <DayBars days={days} series={[{ key: 'signups', label: 'Sign-ups', color: C.gold }]} height={120} unit="sign-ups" />
-        ) : (
-          <div className="relative h-[120px] w-full">
-            <ChartSkeleton variant="bars" />
-            <span className="absolute inset-0 grid place-items-center px-4 text-center font-mono text-[12px] text-faint">No sign-up in the last 30 days.</span>
-          </div>
-        ))}
+      {rows && <LiveDayBars days={days} series={[{ key: 'signups', label: 'Sign-ups', color: C.gold }]} height={120} unit="sign-ups" empty="Waitlist sign-ups will draw here" />}
       {rows && !!rows.length && (
         <ul className="m-0 flex max-h-[420px] list-none flex-col gap-2 overflow-y-auto p-0">
           {rows.slice(0, 100).map((r) => (

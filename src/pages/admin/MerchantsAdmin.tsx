@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { pillCls } from './ui'
+import { ChainLogo } from '../../components/logos/ChainLogo'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { EChart } from '../../components/charts/EChart'
@@ -151,7 +152,17 @@ export function MerchantsAdmin({ token }: { token: string }) {
                       </span>
                     </span>
                   </td>
-                  <td className="py-2 pr-3 text-muted">{m.chains.join(', ') || '—'}</td>
+                  <td className="py-2 pr-3 text-muted">
+                    {m.chains.length ? (
+                      <span className="flex flex-wrap gap-1">
+                        {m.chains.map((c) => (
+                          <ChainLogo key={c} chain={c} size={20} />
+                        ))}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className="py-2 pr-3 font-mono text-ink-2">{m.payments}</td>
                   <td className="py-2 pr-3 font-mono text-ink-2">
                     {usd(m.volumeUsd)}

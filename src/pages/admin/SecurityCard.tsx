@@ -186,7 +186,7 @@ export function SecurityCard({ token }: { token: string }) {
                       <span className="text-muted">
                         {r.name}
                         {r.company ? `, ${r.company}` : ''} ·{' '}
-                        <a href={`mailto:${r.email}`} className="text-gold underline-offset-4 hover:underline">
+                        <a href={`mailto:${r.email}`} className="inline-flex min-h-11 items-center text-gold underline-offset-4 hover:underline">
                           {r.email}
                         </a>
                       </span>
@@ -203,7 +203,7 @@ export function SecurityCard({ token }: { token: string }) {
                     <div className="flex flex-wrap items-center gap-2">
                       <label className="flex items-center gap-2 text-[12px] text-dim">
                         Status
-                        <select value={r.status} onChange={(e) => update(r.id, { status: e.target.value })} className="h-9 rounded-input border border-line-strong bg-bg px-2 text-[13px] text-ink">
+                        <select value={r.status} onChange={(e) => update(r.id, { status: e.target.value })} className="min-h-11 rounded-input border border-line-strong bg-bg px-2 text-[13px] text-ink">
                           {data.reviewStatuses.map((s) => (
                             <option key={s} value={s}>
                               {s}
@@ -211,8 +211,8 @@ export function SecurityCard({ token }: { token: string }) {
                           ))}
                         </select>
                       </label>
-                      <input value={notes[r.id] ?? r.note ?? ''} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))} placeholder="Note (internal)" maxLength={2000} className="h-9 min-w-[160px] flex-1 rounded-input border border-line-strong bg-bg px-2 text-[13px] text-ink" />
-                      <button type="button" onClick={() => update(r.id, { note: notes[r.id] ?? r.note ?? '' })} className="rounded-btn border border-line-strong px-3 py-[6px] text-[13px] text-ink-2 hover:border-gold hover:text-ink">
+                      <input value={notes[r.id] ?? r.note ?? ''} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))} placeholder="Note (internal)" maxLength={2000} className="min-h-11 min-w-[160px] flex-1 rounded-input border border-line-strong bg-bg px-2 text-[13px] text-ink" />
+                      <button type="button" onClick={() => update(r.id, { note: notes[r.id] ?? r.note ?? '' })} className="rounded-btn border border-line-strong inline-flex min-h-11 items-center px-3 text-[13px] text-ink-2 hover:border-gold hover:text-ink">
                         Save note
                       </button>
                     </div>

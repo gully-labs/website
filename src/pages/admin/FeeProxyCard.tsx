@@ -4,6 +4,7 @@
    pay-guard refusals (a payment instruction the server refused to emit) are raised in the banner too. */
 
 import { useState } from 'react'
+import { ChainLogo } from '../../components/logos/ChainLogo'
 import { flash } from '../../components/ui/toast'
 
 export interface FeeProxyStatus {
@@ -68,7 +69,7 @@ export function FeeProxyCard({ s, act }: { s: FeeProxyStatus | undefined; act?: 
         <span className="flex items-center gap-3">
           <span className={small}>{s.running ? `hourly · last read ${at(s.checkedAt)}` : `monitor off · last read ${at(s.checkedAt)}`}</span>
           {act && (
-            <button type="button" onClick={checkNow} disabled={busy} className="rounded-input border border-line px-3 py-1 font-mono text-[12px] text-ink hover:border-gold disabled:opacity-60" aria-label="Read the fee proxy balances now">
+            <button type="button" onClick={checkNow} disabled={busy} className="rounded-input border border-line inline-flex min-h-11 items-center px-3 font-mono text-[12px] text-ink hover:border-gold disabled:opacity-60" aria-label="Read the fee proxy balances now">
               {busy ? 'Reading…' : 'Check now'}
             </button>
           )}
@@ -83,6 +84,7 @@ export function FeeProxyCard({ s, act }: { s: FeeProxyStatus | undefined; act?: 
             <li key={c.chainId} className="flex flex-wrap items-center justify-between gap-2 rounded-input border border-line px-3 py-2 text-[14px]">
               <span className="flex items-center gap-2">
                 <i className={`size-2 rounded-full ${nonZero.length ? 'bg-error' : !c.checkedAt || failed ? 'bg-gold' : 'bg-green'}`} />
+                <ChainLogo chain={c.chain} size={20} decorative />
                 {c.chain} <span className={small}>{c.proxies.length} contracts</span>
               </span>
               <span className={small}>{nonZero.length ? nonZero.join(' · ') : !c.checkedAt ? 'not read yet' : failed ? (c.error ?? 'some reads failed') : 'all zero'}</span>

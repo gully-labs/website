@@ -10,3 +10,12 @@ export const pillCls = (tone: string) => `inline-flex min-h-6 items-center gap-1
 
 /** A 44 px secondary button (icon + label). */
 export const ctl = 'inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-3 text-[13px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:opacity-50'
+
+/** A 44 px text link (mailto, transaction, source): the link text keeps its look, the tap area grows. */
+export const link44 = 'inline-flex min-h-11 items-center'
+
+/** A 44 px text field or select. */
+export const field44 = 'min-h-11 rounded-input border border-line-strong bg-bg px-3 text-[14px] text-ink outline-none focus:border-gold'
+
+/** A 44 px gold primary button. */
+export const goldCtl = 'inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-50'
