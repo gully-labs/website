@@ -1,3 +1,5 @@
+import { GhostChart } from '../../../components/charts/GhostChart'
+import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { TokenLogo } from '../../../components/logos/TokenLogo'
 import { BellRing, Lock, LockOpen, Rocket } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -8,7 +10,7 @@ import { ago } from '../api'
 import { ExtLink } from '../ExtLink'
 import { ErrorLine, Skeleton } from '../parts'
 import { chip, pillSm } from '../styles'
-import { KeySpark, LiveMarker, StackedDays } from '../vcharts'
+import { KeySpark, StackedDays } from '../vcharts'
 import { sitePage, type ServiceCtx } from './links'
 import { Section, ServiceHeader, type Status } from './ServiceHeader'
 import { deepcoreColor, useLaunches } from './useDeepcore'
@@ -20,6 +22,8 @@ import { deepcoreColor, useLaunches } from './useDeepcore'
    unreadable, never empty. */
 
 const colorOf = deepcoreColor
+/** DeepCore's chain keys by id, for a launch the server sent without one (so the logo still resolves). */
+const CHAIN_KEY: Record<number, string> = { 4663: 'robinhood', 56: 'bsc', 8453: 'base', 999: 'hyperevm' }
 
 export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
   const s = useLaunches()
@@ -44,6 +48,10 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
     })
   }, [d])
   const kinds = useMemo(() => chains.map(([id, name]) => ({ id: String(id), name, color: colorOf(id) })), [chains])
+  // The ledger may not count launches (null); the launch list does, so fall back to it (N33).
+  const asOfMs = d?.asOf ? Date.parse(d.asOf) : 0
+  const since24h = d && asOfMs ? d.launches.filter((l) => asOfMs - Date.parse(l.createdAt) < 86_400_000).length : null
+  const launches24h = venue?.counts.launches24h ?? since24h
   const daily = venue?.daily.slice(-30) ?? []
 
   const status: Status = !d ? (s.k === 'error' ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }) : d.state === 'ok' ? { tone: 'live', text: `live · polled every ${d.pollSeconds} s` } : d.state === 'stale' ? { tone: 'idle', text: `stale · last read ${d.asOf ? ago(d.asOf) : 'never'}` } : { tone: 'down', text: 'unreadable' }
@@ -65,7 +73,7 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
           </button>
         }
         tiles={[
-          { label: 'LAUNCHES 24H', value: venue ? (venue.counts.launches24h ?? null) : null, unknown: venue ? 'not tracked yet' : venuePend, note: 'every DeepCore chain' },
+          { label: 'LAUNCHES 24H', value: launches24h, unknown: d || venue ? 'not tracked yet' : venuePend, note: 'every DeepCore chain' },
           { label: 'LATEST LISTED', value: d && d.state !== 'unreadable' ? d.launches.length : null, unknown: pend(s.k), note: d?.asOf ? `read ${ago(d.asOf)}` : 'from the poller' },
           { label: 'VOLUME 24H', value: venue?.volume24hUsd ?? null, format: NF.compactUsd, unknown: venue ? 'not tracked yet' : venuePend, note: 'DeepCore’s own API' },
           { label: 'TVL', value: venue?.tvlUsd ?? null, format: NF.compactUsd, unknown: venue ? 'not tracked yet' : venuePend, note: venue?.lockedUsd != null ? `locked ${new Intl.NumberFormat('en-US', NF.compactUsd).format(venue.lockedUsd)}` : 'value locked' },
@@ -77,7 +85,7 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
 
       <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
         <Section title="Launches per day" sub="the latest launches, by chain">
-          {!d ? <Skeleton h={180} /> : perDay.length ? <StackedDays height={180} days={perDay} kinds={kinds} label={`DeepCore launches per day by chain, ${d.launches.length} latest.`} /> : <LiveMarker text="Watching DeepCore: launches chart here as they land" height={180} />}
+          {!d ? <Skeleton h={180} /> : perDay.length ? <StackedDays height={180} days={perDay} kinds={kinds} label={`DeepCore launches per day by chain, ${d.launches.length} latest.`} /> : <GhostChart height={180} variant="bars" label="Launches will draw here as they land" />}
         </Section>
         <Section title="DeepCore volume" sub="daily, USD · live ledger">
           {stats.k === 'loading' ? (
@@ -85,7 +93,7 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
           ) : daily.length >= 2 ? (
             <KeySpark values={daily.map((p) => p.v)} labels={daily.map((p) => new Date(p.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))} color="#d9b563" width={420} height={120} label={`DeepCore daily volume over ${daily.length} days`} />
           ) : (
-            <LiveMarker text={venue ? 'Not enough for a series yet' : 'DeepCore’s figures are unreadable right now'} height={120} />
+            <GhostChart height={120} label={venue ? 'Volume will draw here' : 'DeepCore’s figures are unreadable right now'} badge={venue ? undefined : false} />
           )}
         </Section>
       </div>
@@ -98,6 +106,7 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
             <div role="group" aria-label="Chain" className="flex flex-wrap gap-1">
               {[['all', 'All'] as const, ...chains].map(([id, name]) => (
                 <button key={id} type="button" aria-pressed={chain === id} onClick={() => setChain(id)} className={chip(chain === id, true)}>
+                  {id !== 'all' && <ChainLogo chain={CHAIN_KEY[id as number] ?? String(name)} size={14} decorative />}
                   {name}
                 </button>
               ))}
@@ -114,8 +123,8 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
               return (
                 <li key={l.key} className="flex items-center gap-3 rounded-[10px] border border-line px-3 py-2" style={{ animation: `gl-rise .35s ${Math.min(i * 0.03, 0.4)}s ease both` }}>
                   <span className="relative inline-flex shrink-0" title={l.chainName}>
-                    <TokenLogo symbol={l.symbol ?? 'token'} chain={l.chainKey} address={l.token} size={24} decorative />
-                    <span className="absolute -right-[2px] -bottom-[2px] size-[8px] rounded-full border border-surface" style={{ background: colorOf(l.chainId) }} aria-hidden />
+                    <TokenLogo symbol={l.symbol ?? 'token'} chain={l.chainKey ?? CHAIN_KEY[l.chainId]} address={l.token} size={24} decorative />
+                    <ChainLogo chain={l.chainKey ?? CHAIN_KEY[l.chainId] ?? l.chainName} size={12} decorative className="absolute -right-[3px] -bottom-[3px] ring-1 ring-surface" />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col leading-tight">
                     <b className="truncate font-display text-[15px]">{l.symbol ?? `${l.token.slice(0, 8)}…`}</b>
@@ -135,7 +144,7 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
             })}
           </ul>
         ) : (
-          <LiveMarker text={d.state === 'unreadable' ? 'Unreadable: no launch list yet' : 'No launches on this chain in the latest list'} height={80} />
+          <GhostChart height={110} label={d.state === 'unreadable' ? 'Unreadable: no launch list yet' : 'No launches on this chain in the latest list'} badge={false} />
         )}
       </Section>
     </>

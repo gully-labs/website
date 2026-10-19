@@ -1,6 +1,7 @@
 import { ArrowRight, CircleDollarSign, CreditCard, Link2, Receipt, Store, TrendingUp, Wallet } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { NF } from '../../../components/charts/number-formats'
+import { GhostChart } from '../../../components/charts/GhostChart'
 import { TokenLogo } from '../../../components/logos/TokenLogo'
 import { ChainConfirmations, PriceChart } from '../../pay/PayCharts'
 import { fmtDate, usdOf, type BillingView } from '../api'
@@ -8,7 +9,8 @@ import { ErrorLine, Skeleton } from '../parts'
 import { chip, pillGold, pillSm } from '../styles'
 import { useSubTab } from '../subtab'
 import { SubPanel, SubTabs, type SubTabItem } from '../ui'
-import { LiveMarker, StackedDays } from '../vcharts'
+import { StackedDays } from '../vcharts'
+import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { docsPage, sitePage, type ServiceCtx } from './links'
 import { Section, ServiceHeader, type Status } from './ServiceHeader'
 import { useLoad } from './useLoad'
@@ -43,6 +45,8 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
   const pending = s.k === 'error' ? 'unreadable' : '…'
   const status: Status = !v ? (s.k === 'error' ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }) : offer?.checkout.enabled ? { tone: 'live', text: 'checkout open' } : { tone: 'idle', text: 'checkout closed here' }
 
+  // Nothing paid and nothing quoted: one line and a ghost, not a row of zeros (N30).
+  const allZero = !!v && v.payments.length === 0 && v.intents.length === 0
   const items: SubTabItem<Sub>[] = [
     { id: 'payments', label: 'Payments', icon: <Wallet size={15} aria-hidden />, count: v ? v.payments.length : null },
     { id: 'prices', label: 'Live prices', icon: <TrendingUp size={15} aria-hidden /> },
@@ -62,13 +66,21 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
             <Store size={14} aria-hidden /> Merchants
           </button>
         }
-        tiles={[
+        tiles={allZero ? undefined : [
           { label: 'PAYMENTS', value: v?.payments.length, unknown: pending, note: 'to Gully, this workspace' },
           { label: 'PAID', value: usd === null ? null : Math.round(usd), format: NF.compactUsd, unknown: usdUnknown, note: usdNote, title: usdTitle },
           { label: 'ASSETS', value: offer?.assets.length, unknown: pending, note: offer ? `${offer.chains.length} chains` : 'accepted' },
           { label: 'OPEN QUOTES', value: v?.intents.length, unknown: pending, note: '20 minutes each' },
         ]}
       />
+
+      {allZero && (
+        <p className="m-0 flex flex-wrap items-center gap-2 text-[13px] text-muted" data-testid="pay-zero-line">
+          No payments or open quotes yet{offer ? ` · ${offer.assets.length} assets accepted on ` : ''}
+          {offer?.chains.map((c) => <ChainLogo key={c.name} chain={c.name} size={16} />)}
+          {offer ? `${offer.chains.length} chains` : ''}
+        </p>
+      )}
 
       <SubTabs items={items} value={sub} onChange={setSub} label="Gully Pay sections" idBase="pay" />
 
@@ -83,9 +95,9 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
           ) : days.length ? (
             <StackedDays height={170} days={days} kinds={[{ id: 'usd', name: 'USD', color: '#74c27b' }]} label={`Payments over time: ${known.length}${missing ? `, plus ${missing} with no USD value (not charted)` : ''}.`} />
           ) : v.payments.length ? (
-            <LiveMarker text={`${v.payments.length} payment${v.payments.length === 1 ? '' : 's'} with no recorded USD value: nothing to chart (see Billing)`} height={170} />
+            <GhostChart height={170} variant="bars" label="No USD values to chart yet" badge={false}><span className="text-[12px] text-muted">{v.payments.length} payment{v.payments.length === 1 ? '' : 's'} without a recorded USD value (see Billing)</span></GhostChart>
           ) : (
-            <LiveMarker text="No payments yet: pay for a plan from Billing and it charts here" height={170} />
+            <GhostChart height={170} variant="bars" label="Your payments will draw here" />
           )}
         </Section>
 
@@ -117,10 +129,10 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
             ) : null
           }
         >
-          {!v ? <Skeleton h={190} /> : asset ? <PriceChart key={asset.id} asset={asset} /> : <LiveMarker text="No native coin with a price feed is accepted here" height={150} />}
+          {!v ? <Skeleton h={190} /> : asset ? <PriceChart key={asset.id} asset={asset} /> : <GhostChart height={150} label="No coin price feed accepted here" badge={false} />}
         </Section>
         <Section title="Confirmations" sub="what each accepted chain needs before a payment counts">
-          {!offer ? <Skeleton h={150} /> : offer.assets.length ? <ChainConfirmations assets={offer.assets} /> : <LiveMarker text="No assets accepted on this server" height={120} />}
+          {!offer ? <Skeleton h={150} /> : offer.assets.length ? <ChainConfirmations assets={offer.assets} /> : <GhostChart height={120} variant="bars" label="No assets accepted on this server" badge={false} />}
         </Section>
       </div>
       )}

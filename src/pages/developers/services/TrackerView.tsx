@@ -1,6 +1,7 @@
 import { BarChart3, BellPlus, ChartCandlestick, ChevronLeft, ChevronRight, Rows3, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { NF } from '../../../components/charts/number-formats'
+import { GhostChart, GhostSpark } from '../../../components/charts/GhostChart'
 import { MiniSpark } from '../../../components/charts/MiniSpark'
 import { GapBars } from '../../../components/tracker/GapBars'
 import { ChainLogo, StockLogo } from '../../../components/tracker/StockLogo'
@@ -29,7 +30,12 @@ const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: 
 const byGap = (a: TrackerRow, b: TrackerRow) => (b.gapPct === null ? -1 : Math.abs(b.gapPct)) - (a.gapPct === null ? -1 : Math.abs(a.gapPct))
 
 function RowSpark({ m, ticker }: { m: Mover | undefined; ticker: string }) {
-  if (!m || m.spark.length < 2) return <span className="font-mono text-[11px] whitespace-nowrap text-faint">not tracked yet</span>
+  if (!m || m.spark.length < 2) return (
+      <span className="flex items-center" title="No 24h history for this stock yet: its gap trend draws here once the tracker has two readings." data-testid="spark-ghost">
+        <GhostSpark w={84} h={22} />
+        <span className="sr-only">no 24 hour history yet</span>
+      </span>
+    )
   const vals = m.spark.map((p) => p[1])
   const c = m.gapChangePp === 0 ? '#aeb5be' : m.gapChangePp > 0 ? UP : DOWN
   const text = `${ticker} gap over 24h: ${fmtGap(m.gapThen)} to ${fmtGap(m.gapNow)} (${fmtPp(m.gapChangePp)})`
@@ -136,7 +142,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
                   }}
                 />
               ) : (
-                <p className="m-0 animate-[gl-skeleton_2s_ease-in-out_infinite] font-mono text-[12px] text-faint">Not tracked yet: no trusted pool has a gap on this chain right now.</p>
+                <GhostChart height={200} variant="bars" label="Gap bars will draw here" badge={false}><span className="text-[12px] text-muted">No trusted pool has a gap on this chain right now.</span></GhostChart>
               )
             ) : (
               <Skeleton h={280} />
@@ -199,7 +205,8 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
                               <StockLogo row={r} size={24} active={on} />
                               <span className="flex min-w-0 flex-col leading-tight">
                                 <b className={`font-display text-[15px] font-bold ${on ? 'text-gold' : 'text-ink'}`}>{r.ticker}</b>
-                                <span className="truncate font-mono text-[11px] text-faint" title={CHAIN_NAME[r.chain] ?? r.chain}>
+                                <span className="flex items-center gap-1 truncate font-mono text-[11px] text-faint" title={CHAIN_NAME[r.chain] ?? r.chain}>
+                                  <ChainLogo chain={r.chain} size={10} />
                                   {CHAIN_SHORT[r.chain] ?? r.chain}
                                 </span>
                               </span>

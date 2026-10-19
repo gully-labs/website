@@ -3,12 +3,14 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { NF } from '../../../components/charts/number-formats'
 import { bandColor, shortAddr, useJson, type ScoreIndex } from '../../score/api'
 import { BandBars } from '../../score/charts'
+import { GhostChart } from '../../../components/charts/GhostChart'
+import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { ExtLink } from '../ExtLink'
 import { ErrorLine, Skeleton } from '../parts'
 import { input, pillGold } from '../styles'
 import { useSubTab } from '../subtab'
 import { SubPanel, SubTabs, type SubTabItem } from '../ui'
-import { EmptyChart, HBars } from '../vcharts'
+import { HBars } from '../vcharts'
 import { docsPage, sitePage } from './links'
 import { Section, ServiceHeader, type Status } from './ServiceHeader'
 
@@ -76,9 +78,7 @@ export default function ScoreView() {
           ) : d.scores.length ? (
             <BandBars rows={d.scores} />
           ) : (
-            <EmptyChart height={200} title="No listed score yet">
-              Watch a contract in Security → Monitors (listing on) and its score charts here.
-            </EmptyChart>
+            <GhostChart height={200} variant="bars" label="Listed scores will draw here"><span className="max-w-[320px] text-[12px] text-muted">Watch a contract in Security → Monitors (listing on) and its score charts here.</span></GhostChart>
           )}
         </Section>
         <Section title="What a score weighs" sub="the methodology's weights, live">
@@ -99,13 +99,13 @@ export default function ScoreView() {
                       {r.score ?? '—'}
                     </span>
                     <span className="min-w-0 flex-1 truncate">{r.name ?? r.symbol ?? shortAddr(r.address)}</span>
-                    <span className="font-mono text-[11px] text-faint">{r.chainName}</span>
+                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-faint"><ChainLogo chain={r.chainKey} size={14} decorative />{r.chainName}</span>
                   </ExtLink>
                 </li>
               ))}
             </ul>
           ) : (
-            <EmptyChart height={120} title="Nothing listed yet" />
+            <GhostChart height={120} variant="bars" label="Nothing listed yet" badge={false} />
           )}
         </Section>
         <Section title="Look up a contract" sub="any contract on a scored chain">

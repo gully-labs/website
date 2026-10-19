@@ -688,11 +688,26 @@ await step('app services', async () => {
     check(`app ${label}: the hash deep-links it`, new URL(page.url()).hash === `#${id}`, page.url())
     const ext = await view.getByTestId('service-header').locator('a').evaluateAll((as) => as.map((a) => [a.textContent, a.target, a.rel]))
     check(`app ${label}: Docs and Public page open in a new tab`, ext.length >= 2 && ext.every(([, t, r]) => t === '_blank' && /noopener/.test(r)), JSON.stringify(ext))
-    await view.locator('[data-tile]').first().waitFor()
+    await view.locator('[data-tile], [data-testid$="zero-line"]').first().waitFor()
     if (id === 'tracker') await view.locator('tr[data-row]').first().waitFor({ timeout: 15_000 })
     if (id === 'deepcore') await view.getByTestId('deepcore-launches').waitFor({ timeout: 15_000 })
     if (id === 'widgets') await page.waitForFunction(() => [...document.querySelectorAll('[data-gully-widget]')].some((el) => /%/.test(el.shadowRoot?.textContent ?? '')), null, { timeout: 10_000 })
     if (id === 'ai') check('app Gully AI: the full chat is on the page', (await view.getByPlaceholder('How do gap alerts work?').count()) === 1)
+    // DA2 group 5: no developer noise, ghosts for empty charts, logos on launch rows, no cut-off symbols.
+    const noise = await view.evaluate((el) => /\[object Object\]|\bundefined\b|\bnull\b/.test(el.innerText))
+    check(`app ${label}: no developer noise in the page text`, !noise)
+    if (id === 'deepcore') {
+      await view.getByTestId('deepcore-launches').locator('[data-logo="token"], img').first().waitFor({ timeout: 10_000 })
+      check('app DeepCore: launch rows carry a token logo and chain logo', (await view.getByTestId('deepcore-launches').locator('li').first().locator('img').count()) >= 2)
+      check('app DeepCore: LAUNCHES 24H is a number, not "not tracked yet"', !/not tracked yet/.test((await view.locator('[data-tile="LAUNCHES 24H"]').textContent()) ?? ''))
+    }
+    if (id === 'holders') {
+      const hrow = view.locator('[data-launch-holders] a').first()
+      await hrow.waitFor({ timeout: 10_000 })
+      check('app Holder Map: launch rows have a token logo and the whole symbol', (await hrow.locator('img').count()) >= 2 && !/…$/.test(((await hrow.locator('b').first().textContent()) ?? '').trim()))
+    }
+    if (id === 'tracker') check('app Tracker: no 24H cell says "not tracked yet"', (await view.locator('tr[data-row]').filter({ hasText: 'not tracked yet' }).count()) === 0)
+    if (id === 'pay' || id === 'telegram') check(`app ${label}: an empty chart is a ghost, not a dashed text box`, (await view.getByTestId('empty-chart').count()) === 0)
     await page.waitForTimeout(600)
     await shot(page, `app-1440-${id}`)
   }
@@ -1984,7 +1999,7 @@ await step('chain kit waitlist', async () => {
   await page.getByRole('heading', { level: 1 }).waitFor()
   const main = await page.locator('main').innerText()
   check('/chain-kit: shows the waitlist status and wording', /WAITLIST/.test(main) && /join the waitlist/i.test(main) && /finalising the explorer licence before taking orders/i.test(main))
-  check('/chain-kit: no buy, order, request or "available on request" path', !/available on request|talk to us about your chain|request (your|an|a) explorer|buy|order now|checkout|pay now|price[ds]?/i.test(main))
+  check('/chain-kit: no buy, order, request or "available on request" path', !/available on request|talk to us about your chain|request (your|an|a) explorer|buy|order now|checkout|pay now|\bprice[ds]?\b/i.test(main))
   check('/chain-kit: the call to action is a link to the chains waitlist, not a contact or payment form', (await page.locator('main a[href="/chains#waitlist"]').count()) >= 1 && (await page.locator('main').getByRole('button', { name: /start a project|talk to us|request|buy|order/i }).count()) === 0)
   check('/chain-kit: does not mention the Blockscout licence', !/blockscout[’']?s? licen[cs]e|licen[cs]e (from|with|of) blockscout|proprietary|LicenseRef|commercial licen/i.test(main))
   await w.verify([/ERR_BLOCKED_BY_CLIENT/i])

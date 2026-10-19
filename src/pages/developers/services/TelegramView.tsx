@@ -1,5 +1,6 @@
 import { BellRing, Loader2, Megaphone, MessageCircle, Send } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { GhostChart } from '../../../components/charts/GhostChart'
 import { toastError, toastSuccess } from '../../../components/ui/toast'
 import { api } from '../api'
 import { usePoll } from '../poll'
@@ -9,7 +10,7 @@ import { TelegramCard } from '../Alerts'
 import { ExtLink } from '../ExtLink'
 import { ErrorLine, Skeleton } from '../parts'
 import { pillGold, pillSm } from '../styles'
-import { LiveMarker, StackedDays } from '../vcharts'
+import { StackedDays } from '../vcharts'
 import { docsPage, type ServiceCtx } from './links'
 import { Section, ServiceHeader, type Status } from './ServiceHeader'
 
@@ -89,6 +90,8 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
   const sent = days.reduce((t, d) => t + d.values.ok, 0)
   const failed = days.reduce((t, d) => t + d.values.failed, 0)
   const status: Status = !view ? (err ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }) : !tg?.enabled ? { tone: 'idle', text: 'bot not configured here' } : tg.linked ? { tone: 'live', text: `linked · ${tg.linked.chatTitle}` } : { tone: 'idle', text: 'not linked yet' }
+  // No alert sends here, nothing delivered, no chat linked: one line and a ghost, not a row of zeros (N30).
+  const allZero = !!view && !onTg.length && !sent && !failed && !tg?.linked
   const pending = err ? 'unreadable' : '…'
   return (
     <>
@@ -99,12 +102,13 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
         status={status}
         docs={docsPage('plans-alerts')}
         page={{ href: bot, label: 'Open the bot' }}
-        tiles={[
+        tiles={allZero ? undefined : [
           { label: 'ALERTS TO TELEGRAM', value: view ? onTg.length : null, unknown: pending, note: view ? `of ${view.alerts.length} alerts` : 'in this workspace' },
           { label: 'SENT · 14D', value: view ? sent : null, unknown: pending, note: failed ? `${failed} failed` : 'delivered to the chat' },
           { label: 'LINKED CHATS', value: view ? (tg?.linked ? 1 : 0) : null, unknown: pending, note: tg?.linked ? tg.linked.chatType : 'one per workspace' },
         ]}
       />
+      {allZero && <p className="m-0 text-[13px] text-muted" data-testid="telegram-zero-line">Nothing sent yet: link a chat and tick Telegram on an alert.</p>}
       {err && !view && <ErrorLine onRetry={load}>Telegram could not be read just now: {err}</ErrorLine>}
 
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start gap-4 max-[1100px]:grid-cols-1">
@@ -136,7 +140,7 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
           ) : sent || failed ? (
             <StackedDays height={180} days={days} kinds={[{ id: 'ok', name: 'delivered', color: '#74c27b' }, { id: 'failed', name: 'failed', color: '#ff8a7a' }]} label={`Telegram deliveries over 14 days: ${sent} delivered, ${failed} failed.`} />
           ) : (
-            <LiveMarker text={onTg.length ? 'Watching: deliveries chart here as alerts fire' : 'No alert sends to Telegram yet: tick Telegram on an alert'} height={180} />
+            <GhostChart height={180} variant="bars" colors={['#74c27b', '#ff8a7a']} label={onTg.length ? 'Your deliveries will draw here' : 'Telegram deliveries will draw here'} />
           )}
           {view && onTg.length > 0 && (
             <ul className="m-0 flex list-none flex-col gap-1 p-0">
