@@ -18,6 +18,7 @@ import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
 import { clientIp, DATA_DIR, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
+import { handleEcosystem } from './ecosystem.mjs'
 import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { handleBlog } from './blog.mjs'
 import { handleOg } from './og.mjs'
@@ -308,6 +309,11 @@ async function handleRequest(req, res) {
     if (!EMAIL_RE.test(email) || !slot) return send(res, 400, JSON.stringify({ error: 'A valid email is required.' }), { 'Content-Type': 'application/json' })
     const added = addToLaunchList(email, slot)
     return send(res, 200, JSON.stringify({ ok: true, alreadyOnList: !added }), { 'Content-Type': 'application/json' })
+  }
+  // Ecosystem page: the launchpad registry and "List your launchpad" submissions (ecosystem.mjs; stored, never auto-listed).
+  if (url.pathname === '/api/ecosystem' || url.pathname.startsWith('/api/ecosystem/')) {
+    if (await handleEcosystem(req, res, url)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
   if (url.pathname === '/api/contact') {
     if (req.method !== 'POST') return send(res, 405, '', { Allow: 'POST' })

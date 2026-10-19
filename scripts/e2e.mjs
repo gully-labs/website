@@ -20,7 +20,7 @@ import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 import { auditPage, tokenColors } from './e2e-audit.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
-await guardTestRun(PORT, { watchdogMs: 8 * 60_000 })
+await guardTestRun(PORT, { watchdogMs: (Number(process.env.E2E_WATCHDOG_MIN) || 8) * 60_000 })
 const started = Date.now()
 const t = makeChecker()
 const { check } = t
@@ -161,6 +161,8 @@ async function noHorizontalScroll(page, label) {
 }
 
 const step = async (name, fn) => {
+  // E2E_ONLY=<text> runs only the steps whose name contains it (a quick run of one area).
+  if (process.env.E2E_ONLY && !name.includes(process.env.E2E_ONLY)) return
   try {
     await fn()
   } catch (e) {
@@ -2113,6 +2115,66 @@ await step('telegram mini app at 390', async () => {
   await noHorizontalScroll(page, '/tg')
   await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
+})
+
+/* ------------------------------------------------------------- ecosystem and partners --- */
+
+await step('ecosystem and partners', async () => {
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `/ecosystem ${width}`)
+    await page.goto(BASE + '/ecosystem')
+    await page.locator('[data-project]').first().waitFor()
+    check(`/ecosystem ${width}: every project has its own card, none combined`, (await page.locator('[data-project]').count()) === 5)
+    await page.getByText(/Source: /).first().waitFor()
+    check(`/ecosystem ${width}: integrations are listed and labelled as what we use`, (await page.getByRole('heading', { name: 'Integrates with' }).count()) === 1 && (await page.getByText('Chainlink').count()) >= 1 && (await page.getByText(/partner/i).count()) <= 3)
+    await page.getByRole('group', { name: 'Filter by kind' }).getByRole('button', { name: 'SECURITY' }).click()
+    check(`/ecosystem ${width}: the kind filter narrows the list`, (await page.locator('#integrates li').count()) === 2)
+    await noHorizontalScroll(page, `/ecosystem ${width}`)
+    await designAudit(page, `/ecosystem ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+
+    const ctx2 = await newContext({ width, mobile: width < 600 })
+    const p2 = await ctx2.newPage()
+    const w2 = watch(p2, `/partners ${width}`)
+    await p2.goto(BASE + '/partners')
+    await p2.locator('[data-benefit]').first().waitFor()
+    check(`/partners ${width}: seven benefits, white-label says it is not live yet`, (await p2.locator('[data-benefit]').count()) === 7 && /NOT LIVE YET/.test((await p2.locator('[data-benefit="whitelabel"]').innerText())))
+    await p2.getByRole('group', { name: 'I run a' }).getByRole('button', { name: 'CHAINS' }).click()
+    check(`/partners ${width}: choosing chains puts Chain Kit or Gully Pay first`, /CHAIN KIT|GULLY PAY|HOLDER MAP/i.test((await p2.locator('[data-benefit]').first().innerText())))
+    await p2.getByRole('group', { name: 'Snippet' }).getByRole('button', { name: 'SDK' }).click()
+    check(`/partners ${width}: the SDK snippet shows the package`, (await p2.getByText('@gullylabs/tracker').count()) >= 1)
+    // Form A: nothing is sent while invalid; the honeypot is out of sight; a valid one is stored for review.
+    await p2.getByRole('button', { name: 'Submit for review' }).click()
+    check(`/partners ${width}: an empty launchpad form shows errors and sends nothing`, (await p2.getByRole('alert').count()) >= 4)
+    await p2.locator('#f-name').fill(`E2E Pad ${width}`)
+    await p2.locator('#f-url').fill('https://e2e-pad.xyz')
+    await p2.locator('#f-contact').fill('@e2epad_bot')
+    await p2.getByRole('group', { name: 'Chains your launchpad is on' }).getByRole('button', { name: 'Base' }).click()
+    await p2.locator('#f-factory').fill('0x1234')
+    await p2.locator('#f-eventSignature').fill('TokenCreated(address,address)')
+    await p2.getByRole('button', { name: 'Submit for review' }).click()
+    await p2.getByText('A 0x address with 40 hex characters.').waitFor()
+    await p2.locator('#f-factory').fill('0x' + 'ab'.repeat(20))
+    await p2.getByRole('button', { name: 'Submit for review' }).click()
+    await p2.getByText(/Received\. We read every submission/).waitFor()
+    const listed = { data: await (await fetch(`${BASE}/api/admin/ecosystem/submissions`, { headers: { authorization: `Bearer ${admin}` } })).json() }
+    check(`/partners ${width}: the submission is stored pending and nothing is listed`, listed.data.submissions.some((s) => s.name === `E2E Pad ${width}` && s.status === 'pending'))
+    // Form B: the Holder Map route opens the map.
+    await p2.getByRole('group', { name: 'Chain of the token' }).getByRole('button', { name: 'Robinhood Chain' }).click()
+    await p2.locator('#f-token').fill(E2E_LAUNCH_TOKEN)
+    await p2.getByRole('button', { name: 'Open the Holder Map' }).click()
+    await p2.waitForURL(new RegExp(`/holders/robinhood/${E2E_LAUNCH_TOKEN}$`))
+    check(`/partners ${width}: the token form opens the Holder Map`, true)
+    await p2.goBack()
+    await p2.locator('[data-benefit]').first().waitFor()
+    await noHorizontalScroll(p2, `/partners ${width}`)
+    await designAudit(p2, `/partners ${width}`)
+    await w2.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx2.close()
+  }
 })
 
 const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|cartel|peddle|solana|xstocks|jup\.ag/i.test(u))
