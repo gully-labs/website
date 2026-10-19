@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router'
 import { Seo } from '../components/Seo'
 import { DeepEnded, DeepReportView, DeepStatusPanel } from '../components/holders/DeepReport'
+import { BadgeBlock } from '../components/holders/BadgeBlock'
 import { holdersPagePath } from '../lib/holders'
 import { isActive, useDeepCheck } from '../lib/holdersDeep'
 import { useEffect } from 'react'
@@ -56,6 +57,7 @@ export function HoldersDeepPage() {
           {isActive(check.status) && <DeepStatusPanel check={check} onChange={load.reload} />}
           {(check.status === 'failed' || check.status === 'cancelled') && <DeepEnded check={check} mapHref={mapHref} />}
           {report && check.status !== 'cancelled' && (check.status !== 'failed' || report.findings.length > 0 || report.unavailable.length > 0) && <DeepReportView check={check} report={report} />}
+          {report && <BadgeBlock chain={check.chain.key} token={check.token} />}
         </>
       )}
     </div>
