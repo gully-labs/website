@@ -1,6 +1,7 @@
 import { Lockup, Mascot } from '../../components/brand'
-import { ExternalLink, ShieldCheck, Store } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Check, Copy, ExternalLink, ShieldCheck, Store } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { copyWithToast } from '../../components/ui/toast'
 import { Outlet } from 'react-router'
 import { accentOf, storeName, type Brand } from './brand'
 
@@ -168,13 +169,35 @@ export function CheckoutFrame({ brand, summary, children, bar = false, single = 
 }
 
 /** The payment panel: a card with a header (title and status pill) and its body. */
-export function PayPanel({ title, sub, pill, children, label = 'Payment' }: { title: string; sub?: string; pill?: { text: string; cls: string }; children: ReactNode; label?: string }) {
+/** The pay link as a "copy link" button (never the raw URL printed under the title). `path` is host + path. */
+function CopyLink({ path }: { path: string }) {
+  const [done, setDone] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        copyWithToast(`${window.location.protocol}//${path}`, 'Link').then((ok) => {
+          if (!ok) return
+          setDone(true)
+          setTimeout(() => setDone(false), 1600)
+        })
+      }
+      className={`inline-flex w-fit items-center gap-1 font-mono text-[11px] transition-colors ${done ? 'text-green' : 'text-faint hover:text-ink'}`}
+      aria-label={done ? 'Link copied' : 'Copy link'}
+      data-testid="copy-link"
+    >
+      {done ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />} {done ? 'Link copied' : 'Copy link'}
+    </button>
+  )
+}
+
+export function PayPanel({ title, copyLink, pill, children, label = 'Payment' }: { title: string; copyLink?: string; pill?: { text: string; cls: string }; children: ReactNode; label?: string }) {
   return (
     <section className="flex min-w-0 flex-col overflow-hidden rounded-card border border-line bg-surface lg:sticky lg:top-6" aria-label={label} style={{ animation: 'gl-rise .5s .07s ease both' }}>
       <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-3 max-[600px]:px-4">
         <span className="flex min-w-0 flex-col leading-[1.25]">
           <b className="truncate text-[15px] font-semibold text-ink">{title}</b>
-          {sub && <span className="truncate font-mono text-[11px] text-faint">{sub}</span>}
+          {copyLink && <CopyLink path={copyLink} />}
         </span>
         {pill && (
           <span className={`shrink-0 rounded-full border px-3 py-[3px] text-[12px] font-semibold transition-colors duration-300 ${pill.cls}`} data-testid="status-pill">

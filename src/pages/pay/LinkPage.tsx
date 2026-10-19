@@ -155,7 +155,7 @@ function LinkView({ link, viewer = null }: { link: PayLink; viewer?: Viewer | nu
         </OrderSummary>
       }
     >
-      <PayPanel title="Pay Gully Labs" sub={`${window.location.host}/pay/l/${link.id}`} pill={pill} label="Start a payment">
+      <PayPanel title="Pay Gully Labs" copyLink={`${window.location.host}/pay/l/${link.id}`} pill={pill} label="Start a payment">
         {link.state !== 'active' && <LinkClosed state={link.state} text={link.stateText} brand={GULLY_BRAND} viewer={viewer} />}
         {link.state === 'active' && !link.checkout.enabled && <Unavailable brand={GULLY_BRAND} reason={link.checkout.reason} viewer={viewer} />}
         {live && <LinkForm link={link} api={`/api/pay/l/${link.id}/invoice`} brand={GULLY_BRAND} />}

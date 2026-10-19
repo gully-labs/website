@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { EChart } from '../../components/charts/EChart'
 import type { ChartEvent } from '../../components/charts/chart-utils'
@@ -6,7 +6,8 @@ import { axisTooltip, barsPreset, C, linePreset, livePoint, PALETTE, ringPreset,
 import { GhostChart } from '../../components/charts/GhostChart'
 import { TokenLogo } from '../../components/logos/TokenLogo'
 import { NF } from '../../components/charts/number-formats'
-import { payApi, type PayAsset } from './api'
+import { useLiveSeries } from '../../components/charts/useLiveSeries'
+import type { PayAsset } from './api'
 
 /* The pay pages' live charts (loaded on demand with ECharts, from Checkout.tsx and LinkPage.tsx):
    - ConfirmRing: the confirmations of the payer's transaction against what its chain needs, from the
@@ -75,32 +76,30 @@ interface Sample {
   updatedAt: string
 }
 
-/** Reads the coin's price every 30 s while mounted; returns the samples and the last error. */
+/** Reads the coin's price every 30 s while mounted (useLiveSeries: paused in a hidden tab); returns the samples and the last error. */
 function usePriceSamples(assetId: string) {
-  // Kept per asset: switching coin starts a fresh line (the old asset's reads are simply not shown).
-  const [state, setState] = useState<{ asset: string; samples: Sample[]; error: string | null }>({ asset: assetId, samples: [], error: null })
-  useEffect(() => {
-    let alive = true
-    const read = async () => {
-      const r = await payApi<{ price: string; updatedAt: string }>(`/api/pay/price?asset=${encodeURIComponent(assetId)}`)
-      if (!alive) return
-      setState((cur) => {
-        const prev = cur.asset === assetId ? cur.samples : []
-        if (r.ok && Number.isFinite(Number(r.data.price))) return { asset: assetId, samples: [...prev, { t: Date.now(), price: Number(r.data.price), updatedAt: r.data.updatedAt }].slice(-120), error: null }
-        return { asset: assetId, samples: prev, error: r.ok ? 'The price answer was unreadable.' : r.error }
-      })
-    }
-    read()
-    const timer = setInterval(read, 30_000)
-    return () => {
-      alive = false
-      clearInterval(timer)
-    }
-  }, [assetId])
-  return state.asset === assetId ? { samples: state.samples, error: state.error } : { samples: [] as Sample[], error: null }
+  const [samples, setSamples] = useState<Sample[]>([])
+  const live = useLiveSeries(async (signal) => {
+    const r = await fetch(`/api/pay/price?asset=${encodeURIComponent(assetId)}`, { signal })
+    const d = (await r.json().catch(() => null)) as { price?: string; updatedAt?: string; error?: string } | null
+    if (!r.ok) throw new Error(d?.error ?? `The server answered ${r.status}.`)
+    if (!d || !Number.isFinite(Number(d.price))) throw new Error('The price answer was unreadable.')
+    const sample = { t: Date.now(), price: Number(d.price), updatedAt: String(d.updatedAt ?? '') }
+    if (!signal.aborted) setSamples((prev) => [...prev, sample].slice(-120))
+    return sample
+  }, 30_000)
+  const error = live.error ? (live.error instanceof Error ? live.error.message : 'The price could not be read.') : null
+  return { samples, error }
 }
 
-export function PriceChart({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'symbol' | 'chain'> & Partial<Pick<PayAsset, 'chainKey' | 'address'>> & { feed?: PayAsset['feed'] }; quoted?: { answer: string; updatedAt: string; label?: string } | null }) {
+export function PriceChart(props: PriceChartProps) {
+  // Keyed by asset: switching coin starts a fresh line (the old asset's reads are simply not shown).
+  return <PriceChartBody key={props.asset.id} {...props} />
+}
+
+type PriceChartProps = Parameters<typeof PriceChartBody>[0]
+
+function PriceChartBody({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'symbol' | 'chain'> & Partial<Pick<PayAsset, 'chainKey' | 'address'>> & { feed?: PayAsset['feed'] }; quoted?: { answer: string; updatedAt: string; label?: string } | null }) {
   const { samples, error } = usePriceSamples(asset.id)
   const q = quoted ? Number(quoted.answer) : null
   const qt = quoted ? Date.parse(quoted.updatedAt) : null

@@ -1,6 +1,8 @@
 import { ArrowUpRight, ChevronDown, Clock, Copy, CreditCard, Download, ExternalLink, FileText, Loader2, QrCode as QrIcon, RefreshCw, ShieldCheck, TriangleAlert } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { GhostChart } from '../../components/charts/GhostChart'
 import { AssetPicker } from '../../components/pay/AssetPicker'
 import { TokenLogo } from '../../components/logos/TokenLogo'
 import { btnOutline } from '../../components/ui'
@@ -26,6 +28,7 @@ const PayWallet = lazy(() => import('../../components/pay/PayWallet'))
 const SolanaPayWallet = lazy(() => import('../../components/solana/SolanaPayWallet'))
 // The live confirmations ring and the native-coin price chart (ECharts loads with them, on demand).
 const ConfirmRing = lazy(() => import('./PayCharts').then((m) => ({ default: m.ConfirmRing })))
+const ChainConfirmations = lazy(() => import('./PayCharts').then((m) => ({ default: m.ChainConfirmations })))
 const PriceChart = lazy(() => import('./PayCharts').then((m) => ({ default: m.PriceChart })))
 const chartWait = <span className="block h-[112px] animate-pulse rounded-input bg-surface-deep" />
 
@@ -45,6 +48,19 @@ function useNow(on: boolean) {
     return () => clearInterval(id)
   }, [on])
   return now
+}
+
+/** The left column's slot (#pay-aside in the order summary) on desktop, where the live chart and the QR sit beside the panel. Null on a phone or where the page has no slot. */
+function useAside() {
+  const [node, setNode] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const sync = () => setNode(mq.matches ? document.getElementById('pay-aside') : null)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+  return node
 }
 
 export function CopyChip({ text, label, size = 'sm' }: { text: string; label: string; size?: 'sm' | 'md' }) {
@@ -266,6 +282,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
   const [showQr, setShowQr] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches)
   const [check, setCheck] = useState<Check>({ s: 'idle' })
   const now = useNow(!!quote)
+  const asideNode = useAside()
   const run = useRef(0)
   const quoteRun = useRef(0)
   const walletSlot = useRef<HTMLDivElement>(null)
@@ -413,6 +430,34 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
     </div>
   )
 
+  const qrBlock = quote && asset && (
+    <div id="pay-qr" className="flex flex-col gap-4 rounded-input border border-line bg-bg p-4" style={{ animation: 'gl-fade .25s ease both' }}>
+      <div className="flex flex-wrap items-start gap-5">
+        <div className="relative mx-auto shrink-0 sm:mx-0">
+          <div className={expired ? 'opacity-15 blur-[2px]' : ''} aria-hidden={expired}>
+            <QrCode value={quote.uri} size={176} label={`Wallet payment request: ${quote.amount} ${quote.asset.symbol} on ${quote.asset.chain} to ${who}`} />
+          </div>
+          {expired && (
+            <div className="absolute inset-0 flex items-center justify-center p-3">
+              <button type="button" onClick={() => load(asset.id)} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-60">
+                <RefreshCw size={15} aria-hidden /> New quote
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-3">
+          <span className="text-[13px] leading-[1.55] text-ink-2">Scan this with your wallet app, or copy the details in by hand.</span>
+          <Row k={`${brand.gully ? 'TREASURY' : 'WALLET'} ON ${quote.asset.chain.toUpperCase()}`} v={quote.treasury} copy={quote.treasury} copyLabel="Address" />
+          {quote.asset.kind === 'token' && quote.asset.address ? <Row k={`${quote.asset.symbol} CONTRACT · ${quote.asset.decimals} DECIMALS`} v={quote.asset.address} copy={quote.asset.address} copyLabel="Contract" /> : <Row k="ASSET" v={`${quote.asset.chain}’s own coin (a plain transfer, not a token)`} />}
+        </div>
+      </div>
+      <p className="m-0 flex items-start gap-2 text-[12.5px] leading-[1.55] text-muted">
+        <TriangleAlert size={14} className="mt-[2px] shrink-0 text-gold" aria-hidden />
+        <span>Check the amount, the network and the address in your wallet before sending. Not every wallet reads the QR’s amount; if yours does not, copy it in. Send exactly this amount: its last digits tie the payment to this invoice.</span>
+      </p>
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-6">
       <StatusTrack check={check} hasQuote={!!quote} needed={quote?.confirmations ?? 0} />
@@ -511,33 +556,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
               </p>
             )}
 
-            {showQr && (
-              <div id="pay-qr" className="flex flex-col gap-4 rounded-input border border-line bg-bg p-4" style={{ animation: 'gl-fade .25s ease both' }}>
-                <div className="flex flex-wrap items-start gap-5">
-                  <div className="relative mx-auto shrink-0 sm:mx-0">
-                    <div className={expired ? 'opacity-15 blur-[2px]' : ''} aria-hidden={expired}>
-                      <QrCode value={quote.uri} size={176} label={`Wallet payment request: ${quote.amount} ${quote.asset.symbol} on ${quote.asset.chain} to ${who}`} />
-                    </div>
-                    {expired && (
-                      <div className="absolute inset-0 flex items-center justify-center p-3">
-                        <button type="button" onClick={() => load(asset.id)} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-60">
-                          <RefreshCw size={15} aria-hidden /> New quote
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-3">
-                    <span className="text-[13px] leading-[1.55] text-ink-2">Scan this with your wallet app, or copy the details in by hand.</span>
-                    <Row k={`${brand.gully ? 'TREASURY' : 'WALLET'} ON ${quote.asset.chain.toUpperCase()}`} v={quote.treasury} copy={quote.treasury} copyLabel="Address" />
-                    {quote.asset.kind === 'token' && quote.asset.address ? <Row k={`${quote.asset.symbol} CONTRACT · ${quote.asset.decimals} DECIMALS`} v={quote.asset.address} copy={quote.asset.address} copyLabel="Contract" /> : <Row k="ASSET" v={`${quote.asset.chain}’s own coin (a plain transfer, not a token)`} />}
-                  </div>
-                </div>
-                <p className="m-0 flex items-start gap-2 text-[12.5px] leading-[1.55] text-muted">
-                  <TriangleAlert size={14} className="mt-[2px] shrink-0 text-gold" aria-hidden />
-                  <span>Check the amount, the network and the address in your wallet before sending. Not every wallet reads the QR’s amount; if yours does not, copy it in. Send exactly this amount: its last digits tie the payment to this invoice.</span>
-                </p>
-              </div>
-            )}
+            {showQr && !asideNode && qrBlock}
 
             <details className="group rounded-input border border-line bg-bg">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 text-[13px] text-ink-2 [&::-webkit-details-marker]:hidden">
@@ -559,7 +578,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
           </Step>
 
           <Step n={4} title="Status">
-            <div className={`grid grid-cols-1 gap-5 rounded-input border border-line bg-bg p-4 ${quote.asset.kind === 'native' ? 'md:grid-cols-[minmax(0,240px)_minmax(0,1fr)]' : ''}`}>
+            <div className={`grid grid-cols-1 gap-5 rounded-input border border-line bg-bg p-4 ${quote.asset.kind === 'native' && !asideNode ? 'md:grid-cols-[minmax(0,240px)_minmax(0,1fr)]' : ''}`}>
               <Suspense fallback={chartWait}>
                 <ConfirmRing
                   n={check.s === 'pending' ? check.confirmations : 0}
@@ -567,7 +586,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
                   state={check.s === 'done' ? 'done' : check.s === 'pending' ? 'pending' : check.s === 'checking' ? 'checking' : 'waiting'}
                   chain={quote.asset.chain}
                 />
-                {quote.asset.kind === 'native' && <PriceChart asset={quote.asset} quoted={quote.price ? { answer: quote.price.answer, updatedAt: quote.price.updatedAt } : null} />}
+                {quote.asset.kind === 'native' && !asideNode && <PriceChart asset={quote.asset} quoted={quote.price ? { answer: quote.price.answer, updatedAt: quote.price.updatedAt } : null} />}
               </Suspense>
             </div>
             {check.s === 'pending' && <ConfirmBar n={check.confirmations} needed={check.needed} />}
@@ -605,6 +624,25 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
           </Step>
         </>
       )}
+
+      {asideNode &&
+        createPortal(
+          <div className="flex flex-col gap-4 rounded-card border border-line bg-card-token p-card" data-testid="pay-aside-content">
+            <Suspense fallback={chartWait}>
+              {quote && asset ? (
+                quote.asset.kind === 'native' ? (
+                  <PriceChart asset={quote.asset} quoted={quote.price ? { answer: quote.price.answer, updatedAt: quote.price.updatedAt } : null} />
+                ) : (
+                  <ChainConfirmations assets={assets} />
+                )
+              ) : (
+                <GhostChart variant="line" height={150} label="The live price draws here once you pick a token" />
+              )}
+            </Suspense>
+            {showQr && qrBlock}
+          </div>,
+          asideNode,
+        )}
 
       <p className="m-0 flex items-start gap-2 border-t border-line pt-4 text-[12.5px] leading-[1.6] text-faint">
         <ShieldCheck size={15} className="mt-[2px] shrink-0 text-gold" aria-hidden />

@@ -141,10 +141,11 @@ function StoreInvoiceView({ invoice, viewer, onPaid }: { invoice: StoreInvoice; 
       summary={
         <OrderSummary brand={brand} eyebrow={invoice.linkId ? 'Payment' : `Invoice ${invoice.number}`} title={invoice.title} items={invoice.items} total={invoice.usd} description={invoice.note} meta={meta}>
           {invoice.items.length > 1 && <ItemsRing invoice={invoice} accent={accent.color} />}
+          {live && <div id="pay-aside" className="empty:hidden" />}
         </OrderSummary>
       }
     >
-      <PayPanel title={`Pay ${storeName(brand)}`} sub={`${window.location.host}/pay/m/${invoice.id}`} pill={pill}>
+      <PayPanel title={`Pay ${storeName(brand)}`} copyLink={`${window.location.host}/pay/m/${invoice.id}`} pill={pill}>
         {invoice.status === 'paid' && <PaidPanel invoice={invoice as unknown as Invoice} brand={brand} receiptPath={`/pay/m/${invoice.id}/receipt`} />}
         {invoice.status === 'expired' && <Expired when={fmtDay(invoice.expiresAt)} brand={brand} fromLink={!!invoice.linkId} />}
         {invoice.status === 'cancelled' && <Cancelled when={fmtDay(invoice.cancelledAt)} brand={brand} />}
@@ -202,7 +203,7 @@ function StoreLinkView({ link, viewer }: { link: StoreLink; viewer: Viewer | nul
         </OrderSummary>
       }
     >
-      <PayPanel title={`Pay ${storeName(brand)}`} sub={`${window.location.host}/pay/m/l/${link.id}`} pill={pill} label="Start a payment">
+      <PayPanel title={`Pay ${storeName(brand)}`} copyLink={`${window.location.host}/pay/m/l/${link.id}`} pill={pill} label="Start a payment">
         {link.state !== 'active' && <LinkClosed state={link.state} text={link.stateText} brand={brand} viewer={viewer} />}
         {link.state === 'active' && link.checkout.paused && <Paused brand={brand} viewer={viewer} />}
         {link.state === 'active' && !link.checkout.enabled && !link.checkout.paused && <Unavailable brand={brand} reason={link.checkout.reason} viewer={viewer} />}

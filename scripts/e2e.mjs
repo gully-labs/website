@@ -1199,6 +1199,11 @@ await step('merchant checkout', async () => {
       await p.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
       check(`store invoice at ${width}: the QR names the store`, /to Acme Coffee$/.test(await p.getByRole('img', { name: /^Wallet payment request:/ }).getAttribute('aria-label')))
       check(`store invoice at ${width}: status waiting`, (await p.getByTestId('status-track').getAttribute('data-step')) === '0')
+      check(`store invoice at ${width}: the header has a copy-link button, not a raw URL`, (await p.getByTestId('copy-link').count()) === 1 && !/\/pay\/m\/mi_/.test((await p.getByRole('region', { name: 'Payment' }).locator('header').first().textContent()) ?? ''))
+      if (width === 1440) {
+        await p.getByTestId('pay-aside-content').locator('[data-live]').first().waitFor({ timeout: 10_000 }).catch(() => {})
+        check('store invoice at 1440: the left column holds a live chart and the QR', (await p.getByTestId('pay-aside-content').locator('[data-live]').count()) > 0 && (await p.getByTestId('pay-aside-content').getByRole('img', { name: /^Wallet payment request:/ }).count()) === 1)
+      }
       await shotFull(p, 'merchant-invoice-quote')
       if (width === 1440) {
         await p.clock.fastForward('21:00')

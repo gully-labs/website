@@ -15,10 +15,11 @@
   },
   "base": {
     "file": "/chains/base.svg",
-    "from": "https://github.com/base/brand-kit/blob/main/logo/TheSquare/Digital/Base_square_blue.svg",
+    "from": "https://github.com/base/web/blob/master/apps/web/public/images/logo.svg (github.com/base org, the circle symbol: white notch path taken unaltered, on the Base blue #0000FF disc)",
     "page": "https://base.org/brand",
-    "terms": "Base brand kit (Coinbase). No licence file in the repo; use per Base's brand guide (guides/brand-guide.pdf): unaltered marks, no implied partnership.",
-    "fetchedAt": "2026-10-17T12:00:00Z"
+    "terms": "Base brand kit (Coinbase). No licence file in the repo; use per Base's brand guide: unaltered marks, no implied partnership.",
+    "fetchedAt": "2026-10-19T12:00:00Z",
+    "note": "Replaces the flat blue Base_square_blue.svg from github.com/base/brand-kit (logo/TheSquare/Digital), which read as a plain square in the pay picker and receipt."
   },
   "ethereum": {
     "file": "/chains/ethereum.svg",
