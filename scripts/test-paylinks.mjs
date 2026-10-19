@@ -256,6 +256,7 @@ try {
   const paidReq = hook.got.find((g) => g.path === '/fixed')
   const paidEvt = paidReq ? JSON.parse(paidReq.body) : null
   check('invoice.paid reaches the link endpoint', paidEvt?.type === 'invoice.paid' && /^evt_/.test(paidEvt.id), paidReq?.body)
+  check('generated URLs use the pay host: link response and the webhook event', fixed.url === `https://pay.gullylabs.xyz/pay/l/${fixed.id}` && paidEvt?.data?.invoice?.url === `https://pay.gullylabs.xyz/pay/${inv1.id}` && paidEvt?.data?.link?.url === `https://pay.gullylabs.xyz/pay/l/${fixed.id}`, JSON.stringify([fixed.url, paidEvt?.data?.link]))
   check('the merchant verifies the HMAC exactly as documented', !!paidReq && merchantVerifies(paidReq, fixedSecret))
   check('a wrong secret does not verify', !!paidReq && !merchantVerifies(paidReq, 'whsec_wrong'))
   check('the signature header is sha256=<64 hex> and the timestamp is unix seconds', /^sha256=[0-9a-f]{64}$/.test(paidReq?.headers['x-gully-signature'] ?? '') && /^\d{10}$/.test(paidReq?.headers['x-gully-timestamp'] ?? ''))
@@ -486,8 +487,8 @@ try {
 
   /* ------------------------------------------------------------- pages --- */
   const { pageMeta } = await import('../server/seo.mjs')
-  const lm = pageMeta('gullylabs.xyz', `/pay/l/${fixed.id}`)
-  check('/pay/l/<id> is a page that is never indexed', lm.found && lm.noindex && !lm.canonical)
+  const lm = pageMeta('pay.gullylabs.xyz', `/pay/l/${fixed.id}`)
+  check('/pay/l/<id> is a page that is never indexed, canonical on pay.', lm.found && lm.noindex && lm.canonical === `https://pay.gullylabs.xyz/pay/l/${fixed.id}`)
   check('the Gully Pay docs page has its own title', pageMeta('docs.gullylabs.xyz', '/gully-pay').found)
 } catch (e) {
   check(`no exception (${e?.stack ?? e})`, false)
