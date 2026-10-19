@@ -127,8 +127,11 @@ export function ScorePage() {
                 <span className="min-w-0">{title}</span>
               </h1>
               <div className="flex flex-wrap items-center gap-3 font-mono text-[12px] text-ink-2" style={rise(3)}>
-                <code title={addr} className="break-all">
+                <code title={addr} className="break-all max-[600px]:hidden">
                   {addr}
+                </code>
+                <code title={addr} aria-hidden className="hidden max-[600px]:inline">
+                  {addr.length > 20 ? `${addr.slice(0, 10)}…${addr.slice(-8)}` : addr}
                 </code>
                 <button type="button" onClick={() => void copyWithToast(addr, 'Address')} aria-label="Copy the address" className="inline-flex size-11 items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-gold min-[860px]:size-8">
                   <Copy aria-hidden size={13} />

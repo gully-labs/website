@@ -423,6 +423,25 @@ await step('Gully AI', async () => {
   await ctx.close()
 })
 
+await step('Gully AI and Gully Score layout (DA3 D26, D27, D32)', async () => {
+  for (const width of [1440, 320]) {
+    const ctx = await newContext(width === 320 ? { width: 320, height: 800, mobile: true } : {})
+    const page = await ctx.newPage()
+    const w = watch(page, `ask layout at ${width}`)
+    await page.goto(BASE + '/ask')
+    await page.getByRole('heading', { level: 1 }).waitFor()
+    const x = await page.evaluate(() => ({ h1: document.querySelector('main h1').getBoundingClientRect().left, foot: Math.max(24, Math.min(64, window.innerWidth * 0.045)) }))
+    check(`/ask at ${width}: content starts on the site gutter`, Math.abs(x.h1 - x.foot) <= 2, JSON.stringify(x))
+    const hint = await page.evaluate(() => { const link = [...document.querySelectorAll('main a')].find((a) => a.textContent === 'privacy'); const p = link?.parentElement; const r = link?.getBoundingClientRect(); return { inSentence: !!p && /Questions are kept 90 days/.test(p.textContent), h: r ? r.height : 0 } })
+    check(`/ask at ${width}: the privacy link stays inside its sentence`, hint.inSentence, JSON.stringify(hint))
+    await page.waitForTimeout(800)
+    check(`/ask at ${width}: the live gap bars breathe (not static)`, (await page.locator('[data-live-breathe] .gl-live-breathe').count()) > 0)
+    if (width === 320) await noHorizontalScroll(page, '/ask')
+    await w.verify()
+    await ctx.close()
+  }
+})
+
 await step('privacy page', async () => {
   const ctx = await newContext()
   const page = await ctx.newPage()
@@ -1275,6 +1294,15 @@ await step('merchant checkout', async () => {
       await p.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
       check(`store invoice at ${width}: the QR names the store`, /to Acme Coffee$/.test(await p.getByRole('img', { name: /^Wallet payment request:/ }).getAttribute('aria-label')))
       check(`store invoice at ${width}: status waiting`, (await p.getByTestId('status-track').getAttribute('data-step')) === '0')
+      if (width === 390) {
+        // DA3 D14: at 320 every step label of the status track wraps whole (none clipped, none overlapping its neighbour).
+        await p.setViewportSize({ width: 320, height: 844 })
+        await p.waitForTimeout(200)
+        const track = await p.getByTestId('status-track').locator('li').evaluateAll((lis) => lis.map((li) => { const t = li.querySelector('span:last-child > span:last-child'); const r = li.getBoundingClientRect(); return { clipped: t.scrollWidth > t.clientWidth + 1, l: r.left, r: r.right } }))
+        check('status track at 320: no label is clipped and the four steps do not overlap', track.length === 4 && track.every((x, i) => !x.clipped && (i === 0 || x.l >= track[i - 1].r - 0.5)), JSON.stringify(track))
+        await noHorizontalScroll(p, 'status track at 320')
+        await p.setViewportSize({ width: 390, height: 844 })
+      }
       check(`store invoice at ${width}: the header has a copy-link button, not a raw URL`, (await p.getByTestId('copy-link').count()) === 1 && !/\/pay\/m\/mi_/.test((await p.getByRole('region', { name: 'Payment' }).locator('header').first().textContent()) ?? ''))
       if (width === 1440) {
         await p.getByTestId('pay-aside-content').locator('[data-live]').first().waitFor({ timeout: 10_000 }).catch(() => {})
@@ -1886,6 +1914,14 @@ await step('gully score', async () => {
     check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n > 0 && n === badgeW), `badge ${badgeW}`)
     check(`score page at ${width}: methodology says informational, nobody can pay`, (await page.getByText(/not an endorsement and not investment advice/).count()) > 0)
     if (mobile) await noHorizontalScroll(page, 'score page')
+    if (mobile) {
+      // DA3 D27: at 320 the address is one middle-truncated line, never wrapped mid-string.
+      await page.setViewportSize({ width: 320, height: 844 })
+      const code = await page.evaluate(() => [...document.querySelectorAll('main code')].filter((c) => c.getClientRects().length).map((c) => ({ t: c.textContent, h: c.getBoundingClientRect().height })))
+      check('score page at 320: the address is one line (middle-truncated), not wrapped mid-string', code.length === 1 && code[0].h < 24, JSON.stringify(code))
+      await noHorizontalScroll(page, 'score page at 320')
+      await page.setViewportSize({ width: 390, height: 844 })
+    }
     await page.waitForTimeout(1200)
     await shot(page, 'score-page')
     await w.verify()

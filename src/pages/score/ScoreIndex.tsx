@@ -78,7 +78,7 @@ export function ScoreIndex() {
         </div>
       </section>
 
-      <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6 px-page pb-24 max-[1100px]:grid-cols-1">
+      <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start gap-6 px-page pb-24 max-[1100px]:grid-cols-1">
         <section className={card} aria-labelledby="listed" style={rise(4)}>
           <h2 id="listed" className={cardTitle}>
             <Radar aria-hidden size={20} className="text-gold" /> Listed scores

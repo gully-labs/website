@@ -91,6 +91,23 @@ interface Health {
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6 max-[600px]:p-4'
 const h2 = 'm-0 font-display text-[22px] font-bold uppercase'
 const small = 'font-mono text-[12px] text-faint'
+/** An error from the server as text: a string as is, an Error or { message } by its message, else "none" (never "[object Object]"). */
+function errText(v: unknown, none = 'none'): string {
+  if (v == null || v === '') return none
+  if (typeof v === 'string') return v
+  if (typeof v === 'object') {
+    const o = v as { message?: unknown; error?: unknown }
+    if (typeof o.message === 'string' && o.message) return o.message
+    if (typeof o.error === 'string' && o.error) return o.error
+    try {
+      return JSON.stringify(v)
+    } catch {
+      return none
+    }
+  }
+  return String(v)
+}
+
 const TONE: Record<Tone, { dot: string; text: string; word: string; color: string }> = {
   ok: { dot: 'bg-green', text: 'text-green', word: 'ok', color: C.green },
   warn: { dot: 'bg-gold', text: 'text-gold', word: 'degraded', color: C.gold },
@@ -200,7 +217,7 @@ export function HealthCard({ token }: { token: string }) {
         <h2 id="admin-health" className={h2}>
           Health
         </h2>
-        {err ? <p className="m-0 font-mono text-[12px] text-error">{err}</p> : <span className={small}>Reading every background part…</span>}
+        {err ? <p className="m-0 font-mono text-[12px] text-error">{errText(err)}</p> : <span className={small}>Reading every background part…</span>}
       </section>
     )
 
@@ -236,7 +253,7 @@ export function HealthCard({ token }: { token: string }) {
           read {ago(h.at)} · history every {h.everySeconds}s, {h.history.length} points since the last restart
         </span>
       </div>
-      {err && <p className="m-0 font-mono text-[12px] text-error">Last refresh failed: {err}. Showing the previous read.</p>}
+      {err && <p className="m-0 font-mono text-[12px] text-error">Last refresh failed: {errText(err)}. Showing the previous read.</p>}
 
       <ul className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-3 p-0">
         <Item icon={Network} title="Holder Map data" tone={holdersTone} status={`${holdersOn} of ${h.holders.length} chains`} rows={[]} testId="health-holders">
@@ -267,7 +284,7 @@ export function HealthCard({ token }: { token: string }) {
             ['last tick', m.detail === 'loop' ? ago(m.lastTickAt) : 'not reported by this build'],
             ['lag', dur(m.lagMs)],
             ['tick took', m.lastTickMs == null ? '—' : `${m.lastTickMs} ms`],
-            ['errors', `${num(m.errors)}${m.lastError ? ` · ${m.lastError}` : ''}`],
+            ['errors', `${num(m.errors)}${m.lastError ? ` · ${errText(m.lastError)}` : ''}`],
             ['RPC load', m.requestsPerMin == null ? '—' : `${m.requestsPerMin}/min`],
           ]}
           testId="health-monitors"
@@ -285,7 +302,7 @@ export function HealthCard({ token }: { token: string }) {
             ['polls every', dur(d.pollMs)],
             ['launches cached', num(d.cached)],
             ['launches seen', num(d.seen)],
-            ['last error', d.lastError ?? 'none'],
+            ['last error', errText(d.lastError)],
           ]}
           testId="health-deepcore"
         >
@@ -300,7 +317,7 @@ export function HealthCard({ token }: { token: string }) {
           rows={[
             ['last update', b.detail === 'webhook' ? ago(b.lastUpdateAt) : 'not reported by this build'],
             ['updates', num(b.updates)],
-            ['errors', `${num(b.errors)}${b.lastError ? ` · ${b.lastError}` : ''}`],
+            ['errors', `${num(b.errors)}${b.lastError ? ` · ${errText(b.lastError)}` : ''}`],
             ['linked chats', num(b.links)],
           ]}
           testId="health-bot"
@@ -321,7 +338,7 @@ export function HealthCard({ token }: { token: string }) {
                   ['explorer key', e.explorerKey ? 'set' : 'not configured'],
                   ['queue', `${num(e.queue?.running)} running · ${num(e.queue?.queued)} queued`],
                 ]
-              : [['error', e.error ?? 'unreadable']]
+              : [['error', errText(e.error, 'unreadable')]]
           }
           testId="health-engine"
         >
@@ -344,7 +361,7 @@ export function HealthCard({ token }: { token: string }) {
                   : `not configured: ${em.embeddings.needs ?? 'VOYAGE_API_KEY'}`
                 : '—',
             ],
-            ['last error', em.embeddings?.lastError ?? 'none'],
+            ['last error', errText(em.embeddings?.lastError)],
           ]}
           testId="health-embeddings"
         >

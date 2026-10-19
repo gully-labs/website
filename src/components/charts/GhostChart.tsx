@@ -80,12 +80,12 @@ export function GhostChart({ label, height, variant = 'line', colors = [C.gold, 
         </div>
       )}
       <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.07),transparent)]" style={{ animation: 'gl-scan 4.5s linear infinite' }} />
-      <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
+      <div className="relative flex h-full flex-col items-center justify-center px-6 text-center max-[480px]:px-3">
         {/* The caption sits in a masked band (design audit N4): a soft card-coloured pad that fades the curves
             out beneath the badge, label and any buttons, so nothing is struck through. */}
-        <div data-ghost-band="" className="flex max-w-full flex-col items-center gap-2 rounded-card px-10 py-4" style={{ background: 'radial-gradient(ellipse closest-side at 50% 50%, color-mix(in srgb, var(--ghost-band, var(--card-bg)) 96%, transparent) 62%, transparent 100%)' }}>
-          {badge && <span className="rounded-full border border-line-strong bg-surface px-2 py-[2px] font-mono text-[11px] tracking-[1px] text-faint">{badge}</span>}
-          <b className="text-[15px] font-semibold text-ink">{label}</b>
+        <div data-ghost-band="" className="flex max-w-full flex-col items-center gap-2 rounded-card px-10 py-4 max-[480px]:gap-1 max-[480px]:px-4 max-[480px]:py-2" style={{ background: 'radial-gradient(ellipse closest-side at 50% 50%, color-mix(in srgb, var(--ghost-band, var(--card-bg)) 96%, transparent) 62%, transparent 100%)' }}>
+          {badge && <span className="whitespace-nowrap rounded-full border border-line-strong bg-surface px-2 py-[2px] font-mono text-[11px] tracking-[1px] text-faint max-[480px]:tracking-[0]">{badge}</span>}
+          <b className="text-[15px] font-semibold text-ink max-[480px]:text-[13px] max-[480px]:leading-[1.25]">{label}</b>
           {children}
         </div>
       </div>
