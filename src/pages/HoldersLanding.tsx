@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { CircleDashed, Radar, Search } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { ChainLogo } from '../components/logos/ChainLogo'
+import { TokenLogo } from '../components/logos/TokenLogo'
 import { useLiveSeries } from '../components/charts/useLiveSeries'
 import { EChart } from '../components/charts/EChart'
 import { axisTooltip, barsPreset, itemTooltip, tipHtml } from '../components/charts/chartPresets'
@@ -153,14 +154,15 @@ function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
         </li>
       ))}
       {soon.length > 0 && (
-        <li className="inline-flex min-h-9 items-center gap-2 rounded-full border border-line px-3 text-muted">
+        <li className="inline-flex min-h-9 items-center gap-2 rounded-full border border-line px-3 whitespace-nowrap text-muted" data-sources-soon>
           <CircleDashed aria-hidden size={14} className="animate-[spin_6s_linear_infinite] text-faint motion-reduce:animate-none" />
           <span className="inline-flex -space-x-1">
             {soon.map((c) => (
               <ChainLogo key={c.chain} chain={c.chain} size={16} />
             ))}
           </span>
-          {soon.map((c) => c.name).join(', ')} · coming soon
+          <span className="sr-only">{soon.map((c) => c.name).join(', ')}</span>
+          coming soon
         </li>
       )}
     </ul>
@@ -203,7 +205,7 @@ function SearchBox() {
             setQ(e.target.value)
             if (s.k !== 'busy') setS({ k: 'idle' })
           }}
-          placeholder="0x… address or $ticker (NVDA, DTC…)"
+          placeholder="Address or ticker"
           className="min-h-14 min-w-0 flex-1 bg-transparent font-mono text-[16px] text-ink outline-none"
           spellCheck={false}
           autoComplete="off"
@@ -387,7 +389,15 @@ function FeedRow({ l, i, now }: { l: CheckedLaunch & { preview?: MapPreview | nu
             <MiniMap preview={preview} label={`Holder Map of ${l.symbol ?? 'this launch'} in miniature: ${preview.nodes.length} biggest holders and its latest transfers`} />
           </Suspense>
         ) : (
-          <span aria-hidden className="h-[56px] w-[76px] flex-none animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[8px] border border-line" style={{ background: K.night }} />
+          <span data-feed-logo className="flex h-[56px] w-[76px] flex-none items-center justify-center rounded-[8px] border border-line" style={{ background: K.night }}>
+            {l.symbol ? (
+              <TokenLogo symbol={l.symbol} chain={l.chainKey} address={l.token} size={32} decorative />
+            ) : (
+              <span aria-hidden className="inline-flex size-8 items-center justify-center rounded-full bg-surface-deep font-mono text-[14px] text-muted">
+                {l.token.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+          </span>
         )}
         {l.state === 'checked' ? (
           <ScoreRing score={score} level={l.health?.level ?? null} size={44} />
@@ -397,14 +407,14 @@ function FeedRow({ l, i, now }: { l: CheckedLaunch & { preview?: MapPreview | nu
           </span>
         )}
         <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
-          <span className="flex items-baseline gap-2">
-            <span className="truncate font-semibold text-ink">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
+          <span className="flex flex-wrap items-baseline gap-x-2">
+            <span className="flex-none font-semibold text-ink" data-feed-ticker>{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
             <span className="flex-none font-mono text-[11px] text-dim">
               <span className="max-[419px]:hidden">{l.chainName} · </span>
               {ageText(l.createdAt, now)}
             </span>
           </span>
-          <span className="truncate text-[12px] text-muted">
+          <span className="line-clamp-2 text-[12px] text-muted" data-feed-summary>
             {l.state === 'checking' ? 'Checking the holders now…' : l.state === 'unavailable' ? 'Holder data is not available for this one yet.' : (l.riskLine ?? l.health?.verdict ?? '')}
           </span>
         </span>
