@@ -7,8 +7,9 @@ import { routeFor, SW_RULES } from './pwa.mjs'
 
 const FIXED = ['/index.html', '/errors/offline.html', '/icon-192.png']
 const isFont = (f) => /\.(woff2?|ttf|otf)$/.test(f)
-// Fonts: only the latin subsets (fontsource ships one file per unicode range; the rest load on demand).
-const wantAsset = (f) => (!isFont(f) || /-latin-\d+-/.test(f)) && /^assets\/.+-[\w-]{8}\./.test(f)
+// Fonts: only the latin subsets, as woff2 (fontsource ships one file per unicode range and a woff fallback of each; the
+// rest load on demand and browsers that can run a service worker all read woff2).
+const wantAsset = (f) => (!isFont(f) || (/-latin-\d+-/.test(f) && f.endsWith('.woff2'))) && /^assets\/.+-[\w-]{8}\./.test(f)
 
 /**
  * The files the app shell needs on first paint, from a Rollup/Vite output bundle (fileName -> chunk or asset):
