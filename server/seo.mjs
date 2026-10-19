@@ -103,6 +103,7 @@ const DOCS_PAGES = {
   '/gully-pay': ['Gully Pay · Gully Labs docs', 'Gully Pay: invoices and reusable pay links in ETH, BNB, USDC or USDT, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them.'],
   '/gully-pay-merchants': ['Gully Pay for merchants · Gully Labs docs', 'Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy.'],
   '/gully-security': ['Gully Security · Gully Labs docs', 'Gully Security: the AI Security Scan (inputs, steps, quotas and payment), reading a report, publishing it, and requesting a human Security Review.'],
+  '/badges': ['Badges · Gully Labs docs', 'The Gully Labs badges: Gully Score, Holder Map, Gully Security and Built by Gully Labs, in three sizes and two themes, with HTML and Markdown snippets to copy.'],
   '/teams': ['Teams & workspaces · Gully Labs docs', 'Workspaces in the app dashboard: roles and what each may change, invites by wallet or link, the activity log, and CSV exports of usage and payments.'],
   '/sdk': ['SDK · Gully Labs docs', 'A typed TypeScript client for the tracker API, and the embeddable widget with a React component.'],
   '/roadmap': ['Roadmap · Gully Labs docs', 'What Gully Labs is building, with an honest status for each track. Gully Security’s AI Security Scan, Gully Score and monitors are live; Security Reviews are quoted on request; audits are not offered. The Gully L3 is planned.'],
