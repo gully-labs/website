@@ -10,6 +10,7 @@ import { BlinkDot } from './ui'
 import { segBtnFrame, segGroup, segText } from './ui/seg'
 import { ChainLogo } from './logos/ChainLogo'
 import { VenueLogo } from './logos/VenueLogo'
+import { IntegrationLogo } from './logos/IntegrationLogo'
 import { chainMark } from './logos/registry'
 
 /* The projects as compact cards: venue badge, name, tagline, chains, status, a sparkline of its daily
@@ -80,7 +81,7 @@ function Metric({ p, venue, c, max, state, active }: { p: Project; venue?: Venue
   const f = figure(venue, c.key)
   let text: React.ReactNode
   if (state === 'loading') text = <span className="text-dim">…</span>
-  else if (!venue || venue.state !== 'ok') text = <span className="text-error">unreadable</span>
+  else if (!venue || venue.state !== 'ok') text = <span className="text-dim" title="This venue could not be read">—</span>
   else if (f.n === null) text = <span className="text-dim" title="This venue does not publish this figure">—</span>
   else
     text = (
@@ -98,7 +99,7 @@ function Metric({ p, venue, c, max, state, active }: { p: Project; venue?: Venue
         </abbr>
       </dt>
       <dd className="m-0 flex flex-col gap-1">
-        <span className="truncate font-mono text-[13px] whitespace-nowrap">{text}</span>
+        <span className="font-mono text-[13px] leading-[1.3] break-words">{text}</span>
         <span aria-hidden className="h-1 overflow-hidden rounded-bar bg-grid">
           <motion.span
             className="block h-full origin-left rounded-bar transition-[width] duration-700"
@@ -175,7 +176,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
                   </Link>
                   <span className="text-[12px] text-dim">{p.tagline}</span>
                 </span>
-                <span className={`flex-none rounded-full border px-2 py-px font-mono text-[11px] ${venue?.state === 'error' ? 'border-line-strong text-error' : 'border-success-line text-green'}`}>{venue?.state === 'error' ? 'UNREAD' : p.status.toUpperCase()}</span>
+                <span className={`flex-none rounded-full border px-2 py-px font-mono text-[11px] ${venue?.state === 'error' ? 'border-line-strong text-error' : 'border-success-line text-green'}`}>{venue?.state === 'error' ? 'UNREADABLE' : p.status.toUpperCase()}</span>
               </div>
               <span className="-mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] text-faint">
                 {p.chains.map((c) => (
@@ -192,7 +193,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
                 ))}
               </dl>
               <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-2">
-                <span className="min-w-0 font-mono text-[11px] leading-[1.4] text-faint">{extras ?? (state === 'ok' && venue?.state === 'ok' ? `read ${fmtTime(venue.source.readAt)}` : '')}</span>
+                <span className="min-w-0 font-mono text-[11px] leading-[1.4] break-words text-faint">{extras ?? (state === 'ok' && venue?.state === 'ok' ? `read ${fmtTime(venue.source.readAt)}` : '')}</span>
                 <a href={p.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 min-w-11 flex-none items-center justify-end gap-1 text-[13px] text-gold hover:text-gold-hover">
                   Visit <ArrowUpRight aria-hidden size={13} />
                   <span className="sr-only"> {p.name}</span>
@@ -224,5 +225,37 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
         {state === 'ok' && data ? `Read at ${fmtTime(data.generatedAt)}. ` : ''}Volume and fees are all-time unless marked. — means the venue does not publish that figure; hover a card for its source.
       </p>
     </div>
+  )
+}
+
+const chipCls = 'inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-0.5 font-mono text-[11px] text-muted'
+
+/** A chain named in text, as a chip with its own mark. */
+export function ChainChip({ chain, name }: { chain: string; name?: string }) {
+  return (
+    <span className={chipCls}>
+      <ChainLogo chain={chain} size={14} decorative />
+      {name ?? chain}
+    </span>
+  )
+}
+
+/** A Gully venue named in text, as a chip with its own icon. */
+export function VenueChip({ venue, name }: { venue: string; name: string }) {
+  return (
+    <span className={chipCls}>
+      <VenueLogo venue={venue} name={name} size={14} decorative />
+      {name}
+    </span>
+  )
+}
+
+/** A third-party tool named in text, as a chip with its own mark. */
+export function IntegrationChip({ id, name }: { id: string; name: string }) {
+  return (
+    <span className={chipCls}>
+      <IntegrationLogo id={id} name={name} size={14} decorative />
+      {name}
+    </span>
   )
 }

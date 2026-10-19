@@ -5,6 +5,8 @@ import { newTab } from '../components/LayoutNav'
 import { Seo } from '../components/Seo'
 import { StatusBoard } from '../components/status/StatusBoard'
 import { eyebrow } from '../components/ui'
+import { ChainChip } from '../components/ProjectRows'
+import { FALLBACK_CHAINS } from '../content/ecosystem'
 import { track } from '../lib/track'
 import { DOCS_URL } from '../site-host'
 
@@ -33,6 +35,11 @@ export function StatusPage() {
             Every part of the stack we can check from our own server, checked once a minute: the API, how fresh the tracker is on each chain, the DeepCore launch poller, the Telegram bot, the payment RPCs, Gully AI, the security scan engine, contract monitors and the Holder Map sources. Not configured means the
             feature is switched off on this server, not broken.
           </p>
+          <div className="flex flex-wrap gap-2" style={rise(3)} aria-label="Chains the Holder Map covers">
+            {FALLBACK_CHAINS.map((c) => (
+              <ChainChip key={c.key} chain={c.key} name={c.name} />
+            ))}
+          </div>
           <div className="flex flex-wrap gap-3" style={rise(3)}>
             <a href={`${DOCS_URL}/status`} {...newTab} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink transition-colors hover:border-gold">
               <BookOpen aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> What each check means <NewTabMark size={13} />

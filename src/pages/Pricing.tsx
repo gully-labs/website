@@ -224,7 +224,7 @@ export function Pricing() {
             PRICING
           </span>
           <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-            Tracker API and <span className="text-gold whitespace-nowrap">Gully Analytics</span>
+            Tracker API and <span className="text-gold">Gully Analytics</span>
           </h1>
           <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
             Two products, priced separately. The tracker API stays free and open; paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. Gully Analytics starts with a free trial. You pay in ETH, BNB, USDC or USDT from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.

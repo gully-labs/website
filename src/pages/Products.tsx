@@ -43,7 +43,7 @@ type Product = {
   ctaHref?: string
   /** Shows the plans read from GET /api/plans. */
   pricing?: boolean
-  source: { label: string; href: string }
+  source: { label: string; href: string } | null
   features: Feature[]
   how: { title: string; body: string }[]
   code?: string
@@ -104,7 +104,7 @@ const CHAIN_KIT: Product = {
   cta: 'Join the waitlist',
   ctaType: 'Infrastructure',
   ctaHref: '/chains#waitlist',
-  source: { label: 'gully-labs/blockscout', href: 'https://github.com/gully-labs/blockscout/tree/gully/chain-kit/gully' },
+  source: null, // gully-labs/blockscout is private
   features: [
     { icon: Boxes, title: 'Full explorer', body: 'Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts, from Blockscout.' },
     { icon: Palette, title: 'Your brand', body: 'Your name, logos, colours and links across the explorer, configured rather than forked, so upgrades stay simple.' },
@@ -172,11 +172,13 @@ function ProductPage({ p }: { p: Product }) {
                 {p.cta}
               </button>
             )}
-            <a href={p.source.href} {...newTab} className={`${btnOutline} inline-flex items-center gap-2 px-[26px] py-4 text-[16px]`}>
-              <GitBranch aria-hidden size={18} strokeWidth={1.75} />
-              Source: {p.source.label}
-              <NewTabMark size={16} className="flex-none" />
-            </a>
+            {p.source && (
+              <a href={p.source.href} {...newTab} className={`${btnOutline} inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-0.5 px-[26px] py-4 text-[16px] max-[479px]:px-4 max-[479px]:text-[15px]`}>
+                <GitBranch aria-hidden size={18} strokeWidth={1.75} />
+                <span className="min-w-0 break-words">Source: {p.source.label}</span>
+                <NewTabMark size={16} className="flex-none" />
+              </a>
+            )}
           </div>
         </div>
       </section>

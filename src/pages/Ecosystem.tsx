@@ -79,10 +79,10 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
       <div className="flex items-center gap-3">
         <VenueLogo venue={p.key} name={p.name} size={40} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <h3 className="m-0 truncate font-display text-[22px] leading-none font-bold uppercase">{p.name}</h3>
+          <h3 className="m-0 break-words font-display text-[22px] leading-none font-bold uppercase">{p.name}</h3>
           <span className="font-mono text-[11px] tracking-[1px] text-faint">{p.tag.toUpperCase()}</span>
         </div>
-        <span className="rounded-full border border-line-strong px-2.5 py-0.5 font-mono text-[11px] text-ink-2">{p.status}</span>
+        <span className={`flex-none rounded-full border px-2.5 py-0.5 font-mono text-[11px] ${!loading && !ok ? 'border-error-line text-error' : 'border-line-strong text-ink-2'}`}>{!loading && !ok ? 'UNREADABLE' : p.status}</span>
       </div>
       <p className="m-0 text-[14px] leading-[1.55] text-muted">{p.tagline}. {p.description}</p>
       <div className="flex flex-wrap items-center gap-2" aria-label={`${p.name} chains`}>
@@ -99,11 +99,11 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
           return (
             <div key={c.id} className="flex min-w-0 flex-col gap-1">
               <dt className={`font-mono text-[11px] tracking-[1px] ${col === c.id ? 'text-gold' : 'text-faint'}`}>{c.label}</dt>
-              <dd className="m-0 truncate font-mono text-[14px] whitespace-nowrap">
+              <dd className="m-0 font-mono text-[14px] leading-[1.3] break-words">
                 {loading ? (
                   <span className="text-dim">…</span>
                 ) : !ok ? (
-                  <span className="text-error">unreadable</span>
+                  <span className="text-dim" title="This venue could not be read">—</span>
                 ) : f && f.n !== null ? (
                   <>
                     <AnimatedNumber value={f.n} format={NF.compactUsd} countUp />

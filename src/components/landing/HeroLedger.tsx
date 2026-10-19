@@ -37,13 +37,13 @@ function Kpi({ label, short, span, value, cover, state }: { label: string; short
         )}
       </span>
       <b className={`font-display text-[30px] leading-none font-bold max-[459px]:text-[22px] ${shown ? 'text-ink' : 'text-dim'}`}>
-        {shown ? <Figure value={value} /> : state === 'error' ? 'unreadable' : '—'}
+        {shown ? <Figure value={value} /> : '—'}
       </b>
-      <span className="truncate font-mono text-[11px] text-faint">
+      <span className="font-mono text-[11px] leading-[1.3] break-words text-faint">
         {state === 'loading' ? 'reading…' : state === 'error' ? 'could not be read' : cover?.length ? (
           <>
             {span && <span className="max-[459px]:hidden">{span} · </span>}
-            {cover.length}/{projects.length} venues
+            {cover.length} of {projects.length}<span className="max-[459px]:hidden"> venues</span>
           </>
         ) : (
           'not published'

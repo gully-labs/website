@@ -3,6 +3,7 @@ import { FlaskConical, Handshake } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { VenueBars, VenueTimeline } from '../components/charts/VenueCharts'
 import { eyebrow, h2 } from '../components/ui'
+import { VenueChip } from '../components/ProjectRows'
 import { comingSoon, projects } from '../content/projects'
 import { IN_THE_LAB, PROJECTS_LIVE } from '../content/stats'
 import { useCountUp } from '../hooks/useCountUp'
@@ -23,6 +24,18 @@ function Money({ value, state }: { value: number | null | undefined; state: 'loa
   return (
     <span role="img" aria-label={fmtUsd(value)} style={{ animation: 'gl-count-flash 1.6s ease both' }}>
       <span aria-hidden>{fmtUsd(n)}</span>
+    </span>
+  )
+}
+
+function Covers({ keys }: { keys: string[] }) {
+  if (!keys.length) return <>from no venue</>
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      from
+      {keys.map((k) => (
+        <VenueChip key={k} venue={k} name={nameOf(k)} />
+      ))}
     </span>
   )
 }
@@ -62,15 +75,15 @@ export function About() {
       <section aria-label="Gully Labs in numbers" className="flex flex-col gap-3 px-page pb-24">
         <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
           {[
-            { label: 'PROJECTS LIVE', value: <>{PROJECTS_LIVE}</>, gold: false, note: projects.map((p) => p.name).join(', ') },
+            { label: 'PROJECTS LIVE', value: <>{PROJECTS_LIVE}</>, gold: false, note: <span className="flex flex-wrap gap-1.5">{projects.map((p) => <VenueChip key={p.key} venue={p.key} name={p.name} />)}</span> },
             { label: 'IN THE LAB', value: <>{IN_THE_LAB}</>, gold: false, note: `slot ${comingSoon.join(', ')}` },
-            { label: 'TOTAL VALUE LOCKED', value: <Money value={T?.tvlUsd} state={st.k} />, gold: true, note: T ? `from ${T.covers.tvlUsd.map(nameOf).join(', ') || 'no venue'}` : '' },
-            { label: 'VOLUME ALL-TIME', value: <Money value={T?.volumeAllUsd} state={st.k} />, gold: false, note: T ? `from ${T.covers.volumeAllUsd.map(nameOf).join(', ') || 'no venue'}` : '' },
+            { label: 'TOTAL VALUE LOCKED', value: <Money value={T?.tvlUsd} state={st.k} />, gold: true, note: T ? <Covers keys={T.covers.tvlUsd} /> : '' },
+            { label: 'VOLUME ALL-TIME', value: <Money value={T?.volumeAllUsd} state={st.k} />, gold: false, note: T ? <Covers keys={T.covers.volumeAllUsd} /> : '' },
           ].map((s, i) => (
             <div key={s.label} className="group relative flex flex-col gap-2 overflow-hidden bg-surface p-7" style={rise(i)}>
               <dt className="font-mono text-[11px] tracking-[1px] text-faint">{s.label}</dt>
               <dd className={`m-0 font-display text-[56px] leading-none font-extrabold ${s.gold ? 'text-gold' : 'text-ink'}`}>{s.value}</dd>
-              {s.note && <span className="text-[13px] text-muted">{s.note}</span>}
+              {s.note && <span className="min-w-0 text-[13px] break-words text-muted">{s.note}</span>}
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
             </div>
           ))}
