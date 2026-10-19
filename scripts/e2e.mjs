@@ -1109,6 +1109,7 @@ await step('merchant checkout', async () => {
       check(`store invoice at ${width}: status waiting`, (await p.getByTestId('status-track').getAttribute('data-step')) === '0')
       check(`store invoice at ${width}: the header has a copy-link button, not a raw URL`, (await p.getByTestId('copy-link').count()) === 1 && !/\/pay\/m\/mi_/.test((await p.getByRole('region', { name: 'Payment' }).locator('header').first().textContent()) ?? ''))
       if (width === 1440) {
+        await p.getByTestId('pay-aside-content').locator('[data-live]').first().waitFor({ timeout: 10_000 }).catch(() => {})
         check('store invoice at 1440: the left column holds a live chart and the QR', (await p.getByTestId('pay-aside-content').locator('[data-live]').count()) > 0 && (await p.getByTestId('pay-aside-content').getByRole('img', { name: /^Wallet payment request:/ }).count()) === 1)
       }
       await shotFull(p, 'merchant-invoice-quote')
