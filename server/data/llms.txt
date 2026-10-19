@@ -63,7 +63,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Tracker API client](https://docs.gullylabs.xyz/api) (beta): @gullylabs/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists.
 - [Embeddable tracker widget](https://gullylabs.xyz/tracker) (beta): @gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component.
 - [Holder Map client and component](https://gullylabs.xyz/holders) (beta): @gullylabs/holders is a typed client for the Holder Map API plus a React component that frames the live map.
-- [API keys and licence](https://developers.gullylabs.xyz) (beta): The SDK is MIT licensed. Keys come from the developer portal and raise the rate limit tenfold.
+- [API keys and licence](https://docs.gullylabs.xyz/api-keys) (beta): The SDK is MIT licensed. Keys come from the Gully Labs app and raise the rate limit tenfold.
 - [Web3 tracking](https://gullylabs.xyz/analytics) (live): An opt-in tracker mode that records wallet connects, chain switches and transactions on top of normal Umami analytics.
 - [Wallet address privacy modes](https://gullylabs.xyz) (live): The site owner chooses how wallet addresses are stored: hashed, in full, or not at all.
 - [Web3 dashboard](https://gullylabs.xyz) (live): A per-website Web3 page shows unique wallets, connect rate, transactions and a funnel.

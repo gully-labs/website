@@ -589,13 +589,13 @@ URL: https://gullylabs.xyz/holders
 
 ### API keys and licence (SDK, beta)
 
-The SDK is MIT licensed. Keys come from the developer portal and raise the rate limit tenfold.
+The SDK is MIT licensed. Keys come from the Gully Labs app and raise the rate limit tenfold.
 
 - Repository licence is MIT (LICENSE file present)
-- Keys are issued at developers.gullylabs.xyz by signing in with a wallet
+- Keys are issued in the Gully Labs app (app.gullylabs.xyz) by signing in with a wallet
 - createTrackerClient accepts an apiKey option
 
-URL: https://developers.gullylabs.xyz
+URL: https://docs.gullylabs.xyz/api-keys
 
 ### Web3 tracking (Gully Analytics, live)
 

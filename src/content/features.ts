@@ -1243,13 +1243,13 @@ export const features: Feature[] = [
     product: "SDK",
     name: "API keys and licence",
     status: "beta",
-    summary: "The SDK is MIT licensed. Keys come from the developer portal and raise the rate limit tenfold.",
+    summary: "The SDK is MIT licensed. Keys come from the Gully Labs app and raise the rate limit tenfold.",
     facts: [
       "Repository licence is MIT (LICENSE file present)",
-      "Keys are issued at developers.gullylabs.xyz by signing in with a wallet",
+      "Keys are issued in the Gully Labs app (app.gullylabs.xyz) by signing in with a wallet",
       "createTrackerClient accepts an apiKey option"
     ],
-    url: "https://developers.gullylabs.xyz",
+    url: "https://docs.gullylabs.xyz/api-keys",
     source: [
       "gully-sdk:README.md",
       "gully-sdk:LICENSE",
