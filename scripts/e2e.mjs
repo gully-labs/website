@@ -20,10 +20,8 @@ import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 import { auditPage, tokenColors } from './e2e-audit.mjs'
 
 const PORT = Number(process.env.TEST_PORT) || 8792
-// E2E_WATCHDOG_MS raises the limit when the machine is busy (other builds running); the default stays 8 minutes.
-await guardTestRun(PORT, { watchdogMs: Number(process.env.E2E_WATCHDOG_MS) || 8 * 60_000 })
-await guardTestRun(PORT, { watchdogMs: (Number(process.env.E2E_WATCHDOG_MIN) || 8) * 60_000 })
-await guardTestRun(PORT, { watchdogMs: Number(process.env.E2E_WATCHDOG_MS) || 8 * 60_000 })
+// E2E_WATCHDOG_MS (or E2E_WATCHDOG_MIN) raises the limit when the machine is busy (other builds running); the default stays 8 minutes.
+await guardTestRun(PORT, { watchdogMs: Number(process.env.E2E_WATCHDOG_MS) || (Number(process.env.E2E_WATCHDOG_MIN) || 8) * 60_000 })
 const started = Date.now()
 const t = makeChecker()
 const { check } = t
