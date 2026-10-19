@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T21:48:06.915Z",
+ "updatedAt": "2026-10-19T22:11:01.469Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -260,8 +260,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#stats",
    "section": "GET /api/stats",
-   "text": "The live totals on the Gully Labs home page: volume, TVL and fees across our projects, each read from that project’s own public API (and DefiLlama where noted) and added up in USD. No parameters, no key; cached on the server for a minute. No CORS header: read it from a server, not a browser on another site. generatedAt (string (ISO)): When this answer was built. totals (object): volumeAllUsd, volume24hUsd, tvlUsd, fees24hUsd, feesAllUsd: each the sum over the venues that publish it, or empty when none does. covers names the venues in each total; unread the venues that could not be read. daily ({ t, v }[]): Daily volume in USD summed across the venues read; t in Unix seconds. venues (Venue[]): One per project (deepcore, peddleswap, peddles, peddlequest): state: ok with its figures, daily, series ({ volume, fees, tvl }, each { t, v }[] in USD, the last 120 days), sources (who supplied each series: the venue's own API, or DefiLlama with fallback: true), lastActivity (the last day with non-zero volume, ISO, or null), counts, notes and source (url, readAt), or state: error with error. A venue that fails is unreadable, never zero. Cache-Control: public, max-age=30. 502 only if the whole answer could not be built.",
-   "updatedAt": "2026-10-19T21:48:06.915Z"
+   "text": "The live totals on the Gully Labs home page: volume, TVL and fees across our projects, each read from that project’s own public API (and DefiLlama where noted) and added up in USD. No parameters, no key; cached on the server for a minute. No CORS header: read it from a server, not a browser on another site. generatedAt (string (ISO)): When this answer was built. totals (object): volumeAllUsd, volume24hUsd, tvlUsd, fees24hUsd, feesAllUsd: each the sum over the venues that publish it, or empty when none does. covers names the venues in each total; unread the venues that could not be read. daily ({ t, v }[]): Daily volume in USD summed across the venues read; t in Unix seconds. venues (Venue[]): One per project (deepcore, peddleswap, peddles, peddlequest): state: ok with its figures, daily, series ({ volume, fees, tvl }, each { t, v }[] in USD, the last 120 days), sources (who supplied each series: the venue's own API, or DefiLlama with fallback: true), lastActivity (when the last day with non-zero volume was, or absent when none is known), counts, notes and source (url, readAt), or state: error with error. A venue that fails is unreadable, never zero. Cache-Control: public, max-age=30. 502 only if the whole answer could not be built.",
+   "updatedAt": "2026-10-19T22:11:01.469Z"
   },
   {
    "id": "1ad89c4b87c3",
