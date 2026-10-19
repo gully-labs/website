@@ -87,7 +87,7 @@ export function ScoreIndex() {
           {s.state === 'error' && (
             <p role="alert" className="m-0 flex items-center gap-3 text-error">
               {s.error}
-              <button type="button" onClick={retry} className="font-mono text-[12px] text-ink-2 underline underline-offset-4">
+              <button type="button" onClick={retry} className="inline-flex min-h-11 items-center font-mono text-[12px] text-ink-2 underline underline-offset-4">
                 Retry
               </button>
             </p>
@@ -174,10 +174,10 @@ export function ScoreIndex() {
             </>
           )}
           <div className="flex flex-wrap gap-4 text-[14px]">
-            <a href={`${DOCS_URL}/gully-score`} {...newTab} className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
+            <a href={`${DOCS_URL}/gully-score`} {...newTab} className="inline-flex min-h-11 items-center gap-1 text-gold underline-offset-4 hover:underline">
               Full methodology <NewTabMark size={12} className="flex-none text-gold" />
             </a>
-            <a href={`${APP_URL}/#security-monitors`} {...newTab} className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
+            <a href={`${APP_URL}/#security-monitors`} {...newTab} className="inline-flex min-h-11 items-center gap-1 text-gold underline-offset-4 hover:underline">
               Watch a contract <NewTabMark size={12} className="flex-none text-gold" />
             </a>
           </div>

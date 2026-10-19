@@ -14,6 +14,8 @@ import { track } from '../lib/track'
 import { BlinkDot } from '../components/ui'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
+import { ChainLogo } from '../components/logos/ChainLogo'
+import { VenueLogo } from '../components/logos/VenueLogo'
 import { EChart } from '../components/charts/EChart'
 import { ChartBox } from '../components/charts/ChartSkeleton'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
@@ -261,7 +263,7 @@ function Plans() {
 
 function LiveFrame({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
   return (
-    <figure className="m-0 flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-5">
+    <figure className="m-0 flex min-w-0 flex-col gap-4 rounded-card border border-line bg-card-token p-card">
       <figcaption className="flex flex-wrap items-start justify-between gap-3">
         <span className="flex min-w-0 flex-col gap-1">
           <span className="font-display text-[20px] leading-none font-bold uppercase">{title}</span>
@@ -339,6 +341,7 @@ function VenueVolumeLive() {
             {model.series.map((s) => (
               <li key={s.p.key} className="flex items-center gap-1.5">
                 <span aria-hidden className="size-2 rounded-full" style={{ background: s.p.accent }} />
+                <VenueLogo venue={s.p.key} name={s.p.name} size={16} decorative />
                 {s.p.name}
               </li>
             ))}
@@ -425,6 +428,14 @@ function ChainsLive() {
             <span className="font-mono text-[12px] text-faint">stock tokens on {model.chains.length} chains, re-read every minute</span>
           </div>
           <EChart option={option} height={height} label={`Live: stock tokens read per chain, ${model.chains.map((c) => `${c.name} ${c.total}`).join(', ')}`} steps={{ count: model.chains.length }} />
+          <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-mono text-[12px] text-muted">
+            {model.chains.map((c) => (
+              <li key={c.key} className="flex items-center gap-1.5 text-ink-2">
+                <ChainLogo chain={c.key} size={16} decorative />
+                {c.name}
+              </li>
+            ))}
+          </ul>
           <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-mono text-[12px] text-muted">
             {KINDS.map((k) => (
               <li key={k} className="flex items-center gap-1.5">

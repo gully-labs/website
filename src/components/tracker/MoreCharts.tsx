@@ -3,6 +3,7 @@ import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
+import { GhostChart } from '../charts/GhostChart'
 import { NF, type NumberFormat } from '../charts/number-formats'
 import { axisTooltip, barsPreset, C, CHART_H, itemTooltip, PALETTE, ringPreset, tipHtml } from '../charts/chartPresets'
 import { ChainLogo } from './StockLogo'
@@ -288,6 +289,8 @@ export function ChainCompare({ rows, chains }: { rows: TrackerRow[]; chains: { k
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [key],
   )
+  // Nothing read yet on any chain: the kit's ghost bars say so, in the same box the bars will fill.
+  if (!table.some((col) => col.some((v) => v !== null && v > 0))) return <GhostChart variant="bars" height={metrics.length * CC_ROW - (CC_ROW - CC_LABEL - CC_BARS)} label="Chain figures appear once the tracker has read prices" testId="chain-compare-ghost" />
   return (
     <div className="flex flex-col gap-4">
       {stats.length > 1 && (

@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { C, PALETTE, areaPreset, axisTooltip, barsPreset, itemTooltip, livePoint, ringPreset, tipHtml } from '../../components/charts/chartPresets'
 import { EChart } from '../../components/charts/EChart'
-import { bandColor, fmtDate, type ScoreComponent, type ScoreRow } from './api'
+import { bandColor, fmtDate, partColor, sourceWords, type ScoreComponent, type ScoreRow } from './api'
 
 /* The Gully Score's charts. Every one draws only what the API returned: a component that could not be read has
    no bar (it is labelled "not available"), and a history of fewer than two points is not drawn as a line. */
@@ -51,7 +51,7 @@ export function ComponentBars({ parts }: { parts: ScoreComponent[] }) {
       grid: { left: 8, right: 44, top: 6, bottom: 6, containLabel: true },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const p = rows[ps[0]?.dataIndex ?? 0]
-        return tipHtml({ title: `${p.label} · weight ${p.weight}`, rows: [{ name: 'Points', value: p.available ? `${p.score} / 100` : 'not available', valueColor: p.available ? bandColor(p.score) : C.faint }], note: p.reason })
+        return tipHtml({ title: `${p.label} · weight ${p.weight}`, rows: [{ name: 'Points', value: p.available ? `${p.score} / 100` : 'not available', valueColor: p.available ? partColor(p.score) : C.faint }], note: p.reason })
       }, 'shadow'),
       xAxis: { type: 'value', min: 0, max: 100, splitNumber: 4 },
       yAxis: { type: 'category', data: rows.map((p) => `${p.label} (${p.weight})`), axisLabel: { color: C.muted, fontSize: 11 } },
@@ -60,7 +60,7 @@ export function ComponentBars({ parts }: { parts: ScoreComponent[] }) {
           ...barsPreset({ horizontal: true, stagger: 50 }),
           id: 'points',
           barMaxWidth: 14,
-          data: rows.map((p) => (p.available ? { value: p.score, itemStyle: { color: bandColor(p.score) } } : { value: null })),
+          data: rows.map((p) => (p.available ? { value: p.score, itemStyle: { color: partColor(p.score) } } : { value: null })),
           label: { show: true, position: 'right', color: C.faint, fontSize: 11, formatter: (x: { dataIndex: number }) => (rows[x.dataIndex].available ? String(rows[x.dataIndex].score) : 'n/a') },
         },
       ],
@@ -124,13 +124,13 @@ export function BandBars({ rows }: { rows: ScoreRow[] }) {
  * of the Gully Score counts for. Hover or focus a slice for its source. Shown on /score even before anything
  * is listed, and on the docs Roadmap.
  */
-export function WeightsRing({ parts, size = 200 }: { parts: { id: string; label: string; weight: number; source: string }[]; size?: number }) {
+export function WeightsRing({ parts, size = 200 }: { parts: { id: string; label: string; weight: number }[]; size?: number }) {
   const total = parts.reduce((a, p) => a + p.weight, 0)
   const option = useMemo(
     () => ({
       tooltip: itemTooltip((p: { dataIndex: number }) => {
         const c = parts[p.dataIndex]
-        return c ? tipHtml({ title: c.label, rows: [{ name: 'Weight', value: `${c.weight} of ${total}` }], note: `Source: ${c.source}` }) : ''
+        return c ? tipHtml({ title: c.label, rows: [{ name: 'Weight', value: `${c.weight} of ${total}` }], note: sourceWords(c) }) : ''
       }),
       series: [
         {

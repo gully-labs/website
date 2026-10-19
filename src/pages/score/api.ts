@@ -118,3 +118,20 @@ export const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 export const bandColor = (s: number | null) => (s === null ? C.faint : s >= 80 ? C.green : s >= 60 ? C.gold : s >= 40 ? PALETTE[4] : C.error)
 
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+
+/** A part's tone: a low part is a weakness to read, not an alarm, so it is amber, never the error red. */
+export const partColor = (s: number | null) => (s === null ? C.faint : s >= 80 ? C.green : s >= 40 ? C.gold : PALETTE[4])
+
+/** Where each part is read from, in plain words. The exact calls stay in the tooltip (`source` from the API). */
+const SOURCE_WORDS: Record<string, string> = {
+  verified: 'Read from the public source-code registries',
+  control: 'Read from the contract and its owner or signers on the chain',
+  timelock: 'Read from the contract that delays changes, on the chain',
+  upgradeability: 'Read from the contract’s upgrade settings on the chain',
+  changes: 'Read from Gully Security monitoring of the last 30 days',
+  liquidity: 'Read from DeepCore’s launch records (DeepCore launches only)',
+  holders: 'Read from the Gully Holder Map',
+  review: 'Read from published Gully Security reports',
+  age: 'Read from the contract’s deployment on the chain',
+}
+export const sourceWords = (c: { id: string }) => SOURCE_WORDS[c.id] ?? 'Read from public records'

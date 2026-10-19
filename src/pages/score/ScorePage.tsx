@@ -1,4 +1,4 @@
-import { ArrowLeft, BadgeCheck, CalendarClock, Code2, Copy, GitBranch, History, KeyRound, ListChecks, Lock, Scale, ShieldCheck, Timer, Users, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, BadgeCheck, CalendarClock, CircleSlash, Code2, Copy, GitBranch, History, KeyRound, ListChecks, Lock, Scale, ShieldCheck, Timer, Users, type LucideIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
 import { NewTabMark } from '../../components/LayoutLinks'
@@ -9,7 +9,7 @@ import { copyWithToast } from '../../components/ui/toast'
 import { eyebrow, h1 } from '../../components/ui'
 import { DOCS_URL } from '../../site-host'
 import { track } from '../../lib/track'
-import { bandColor, fmtDate, shortAddr, useJson, type ScoreComponent, type ScoreResult } from './api'
+import { fmtDate, partColor, shortAddr, sourceWords, useJson, type ScoreComponent, type ScoreResult } from './api'
 import { ComponentBars, ScoreHistory, ScoreRing } from './charts'
 
 /* One contract's Gully Score: every component with its weight, points, plain reason, source and evidence links,
@@ -33,17 +33,17 @@ function Component({ c, i }: { c: ScoreComponent; i: number }) {
         <span className="ml-auto flex items-center gap-2">
           <span className="font-mono text-[12px] text-ink-2">{c.value}</span>
           {c.available ? (
-            <span className="rounded-full border px-2 py-[2px] font-mono text-[12px]" style={{ color: bandColor(c.score), borderColor: bandColor(c.score) }}>
+            <span className="rounded-full border px-2 py-[2px] font-mono text-[12px]" style={{ color: partColor(c.score), borderColor: partColor(c.score) }}>
               {c.score}/100
             </span>
-          ) : (
-            <span className="rounded-full border border-dashed border-line-strong px-2 py-[2px] font-mono text-[11px] text-faint">NOT AVAILABLE · NOT COUNTED</span>
-          )}
+          ) : null}
         </span>
       </div>
       <p className="m-0 text-[14px] leading-[1.55] text-muted">{c.reason}</p>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-faint">
-        <span>Source: {c.source}</span>
+        <span title={`Exact source: ${c.source}`} className="cursor-help underline decoration-dotted underline-offset-4">
+          {sourceWords(c)}
+        </span>
         {c.evidence.map((e) => (
           <a key={e.url} href={e.url} {...newTab} className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
             {e.label}
@@ -51,6 +51,19 @@ function Component({ c, i }: { c: ScoreComponent; i: number }) {
           </a>
         ))}
       </div>
+    </li>
+  )
+}
+
+/** The parts that could not be read, in one line instead of a row each. */
+function Unavailable({ parts }: { parts: ScoreComponent[] }) {
+  if (!parts.length) return null
+  return (
+    <li className="flex min-w-0 items-start gap-3 border-t border-line pt-4 text-[14px] leading-[1.55] text-muted" title={parts.map((p) => `${p.label}: ${p.reason}`).join(' · ')}>
+      <CircleSlash aria-hidden size={17} className="mt-[2px] flex-none text-faint" />
+      <span>
+        <b className="font-semibold text-ink-2">Not counted, no data to read:</b> {parts.map((p) => p.label).join(', ')}. Left out of the score, never counted as zero.
+      </span>
     </li>
   )
 }
@@ -130,7 +143,7 @@ export function ScorePage() {
               {s.state === 'error' && (
                 <p role="alert" className="m-0 flex flex-wrap items-center gap-3 text-[15px] text-error">
                   {s.error}
-                  <button type="button" onClick={retry} className="font-mono text-[12px] text-ink-2 underline underline-offset-4">
+                  <button type="button" onClick={retry} className="inline-flex min-h-11 items-center font-mono text-[12px] text-ink-2 underline underline-offset-4">
                     Retry
                   </button>
                 </p>
@@ -151,15 +164,16 @@ export function ScorePage() {
       </section>
 
       {r && (
-        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-6 px-page pb-24 max-[1100px]:grid-cols-1">
+        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-start gap-6 px-page pb-24 max-[1100px]:grid-cols-1">
           <section className={card} aria-labelledby="parts" style={rise(5)}>
             <h2 id="parts" className={cardTitle}>
               <ListChecks aria-hidden size={20} className="text-gold" /> What goes into it
             </h2>
             <ol className="m-0 flex list-none flex-col p-0">
-              {r.components.map((c, i) => (
+              {r.components.filter((c) => c.available).map((c, i) => (
                 <Component key={c.id} c={c} i={i} />
               ))}
+              <Unavailable parts={r.components.filter((c) => !c.available)} />
             </ol>
           </section>
 
@@ -168,7 +182,7 @@ export function ScorePage() {
               <h2 id="points" className={cardTitle}>
                 <Scale aria-hidden size={20} className="text-gold" /> Points per part
               </h2>
-              <ComponentBars parts={r.components} />
+              <ComponentBars parts={r.components.filter((c) => c.available)} />
             </section>
             <section className={card} aria-labelledby="history" style={rise(7)}>
               <h2 id="history" className={cardTitle}>
@@ -196,7 +210,7 @@ export function ScorePage() {
               <h2 id="embed" className={cardTitle}>
                 <Code2 aria-hidden size={20} className="text-gold" /> Embed
               </h2>
-              <a href={page} {...newTab} className="w-fit" aria-label="The Gully Score badge (opens in a new tab)">
+              <a href={page} {...newTab} className="inline-flex min-h-11 w-fit items-center" aria-label="The Gully Score badge (opens in a new tab)">
                 <img src={`/score/${r.chainKey}/${r.address}/badge.svg`} alt={r.score === null ? 'Gully Score: not enough data' : `Gully Score ${r.score}`} width={260} height={48} />
               </a>
               <Snippet label="BADGE" code={badge} />
@@ -213,7 +227,7 @@ export function ScorePage() {
                 <li key={x}>{x}</li>
               ))}
             </ul>
-            <a href={`${DOCS_URL}/gully-score`} {...newTab} className="inline-flex w-fit items-center gap-1 text-[14px] text-gold underline-offset-4 hover:underline">
+            <a href={`${DOCS_URL}/gully-score`} {...newTab} className="inline-flex min-h-11 w-fit items-center gap-1 text-[14px] text-gold underline-offset-4 hover:underline">
               The full methodology <NewTabMark size={12} className="flex-none text-gold" />
             </a>
           </section>
