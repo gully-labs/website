@@ -79,7 +79,7 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
       <div className="flex items-center gap-3">
         <VenueLogo venue={p.key} name={p.name} size={40} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <h3 className="m-0 truncate font-display text-[22px] leading-none font-bold uppercase">{p.name}</h3>
+          <h3 className="m-0 break-words font-display text-[22px] leading-none font-bold uppercase">{p.name}</h3>
           <span className="font-mono text-[11px] tracking-[1px] text-faint">{p.tag.toUpperCase()}</span>
         </div>
         <span className={`flex-none rounded-full border px-2.5 py-0.5 font-mono text-[11px] ${!loading && !ok ? 'border-error-line text-error' : 'border-line-strong text-ink-2'}`}>{!loading && !ok ? 'UNREADABLE' : p.status}</span>
