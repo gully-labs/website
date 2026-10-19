@@ -18,6 +18,7 @@ const ChainKit = lazy(() => chunks.products().then((m) => ({ default: m.ChainKit
 const Chains = lazy(() => chunks.chains().then((m) => ({ default: m.Chains })))
 const Stock = lazy(() => chunks.stock().then((m) => ({ default: m.StockPage })))
 const Holders = lazy(() => chunks.holders().then((m) => ({ default: m.HoldersPage })))
+const HoldersDeep = lazy(() => chunks.holdersDeep().then((m) => ({ default: m.HoldersDeepPage })))
 const HoldersHome = lazy(() => chunks.holdersLanding().then((m) => ({ default: m.HoldersLanding })))
 const EmbedHoldersPage = lazy(() => chunks.embedHolders().then((m) => ({ default: m.EmbedHolders })))
 const Tracker = lazy(() => chunks.tracker().then((m) => ({ default: m.Tracker })))
@@ -59,6 +60,7 @@ export const ChainKitRoute = () => page(<ChainKit />)
 export const ChainsRoute = () => page(<Chains />)
 export const StockRoute = () => page(<Stock />)
 export const HoldersRoute = () => page(<Holders />)
+export const HoldersDeepRoute = () => page(<HoldersDeep />)
 export const HoldersLandingRoute = () => page(<HoldersHome />)
 // The embed has no site chrome: a plain outline while its chunk loads.
 export const EmbedHoldersRoute = () => <Suspense fallback={<div role="status" aria-label="Loading" className="min-h-[100svh] bg-kit-lab-night" />}><EmbedHoldersPage /></Suspense>

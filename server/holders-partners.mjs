@@ -43,7 +43,9 @@ import { fileURLToPath } from 'node:url'
 import { checkWebhookForm, postWebhook, resolvePublic } from './alerts.mjs'
 import { bearer, DATA_DIR, json, readJson } from './http.mjs'
 import { apiAccess } from './access.mjs'
+import crypto from 'node:crypto'
 import { findKey, randomToken } from './store.mjs'
+import { HOLDER_MAP, planOf } from './plans.mjs'
 import { recordEvent } from './activity.mjs'
 
 const FILE = path.join(DATA_DIR, 'holders-partners.json')
@@ -75,6 +77,8 @@ try {
 }
 db.webhooks ??= {} // workspace -> { url, secret, deployerPct, createdAt, rotatedAt }
 db.launches ??= [] // { id, ws, keyId, chain, token, txHash, state, tries, nextAt, createdAt, finishedAt, result }
+db.embed ??= {} // workspace -> { salt, createdAt, rotatedAt }
+db.embedSecret ??= crypto.randomBytes(32).toString('hex') // signs embed keys (HOLDER_EMBED_SECRET overrides)
 db.deliveries ??= [] // { id, ws, eventId, type, test, launchId, url, body, state, attempts, nextAt, createdAt, finishedAt }
 
 function save() {
@@ -478,6 +482,14 @@ export async function handlePartnerRoutes(req, res, url, ctx) {
     return json(res, 200, { webhook: endpointView(db.webhooks[ws]), thresholds: THRESHOLDS, rate: { perKeyPerMin: PER_KEY_PER_MIN, perKeyPerDay: PER_KEY_PER_DAY }, launches: launchesOf(ws), deliveries: deliveriesOf(ws, 10) }), true
   }
   if (p === '/api/developer/partners/deliveries' && !post) return json(res, 200, { deliveries: deliveriesOf(ws, Math.min(200, Math.max(1, Number(url.searchParams.get('limit')) || 50))) }), true
+  if (p === '/api/developer/partners/embed-key') {
+    const allowed = embedAllowed(ws)
+    return json(res, 200, { embedKey: embedKeyOf(ws), whiteLabel: allowed, plan: planOf(ws).id, note: allowed ? 'Your plan hides the Gully Labs mark on embeds that carry this key.' : 'The key works as a normal embed; the white-label option needs a plan that includes it.' }), true
+  }
+  if (p === '/api/developer/partners/embed-key/rotate' && post) {
+    ev('holders.embedkey.rotated')
+    return json(res, 200, { embedKey: embedKeyOf(ws, { rotate: true }), whiteLabel: embedAllowed(ws), plan: planOf(ws).id }), true
+  }
   if (!post) return json(res, 404, { error: 'not found' }), true
   if (p === '/api/developer/partners/webhook') {
     const body = await readJson(req, 2_000)
@@ -499,6 +511,49 @@ export async function handlePartnerRoutes(req, res, url, ctx) {
     return json(res, 200, { delivery: r.delivery }), true
   }
   return json(res, 404, { error: 'not found' }), true
+}
+
+/* ------------------------------------------------------------ white-label embed --- */
+
+// A signed EMBED KEY lets a workspace's embedded Holder Map (widget.js data-embed-key, or ?key= on /embed/holders)
+// show no Gully Labs mark and take a theme, when the workspace's plan has HOLDER_MAP whiteLabel (plans.mjs).
+//   Key:   gle_<workspace>.<HMAC-SHA256 of workspace+salt, 24 hex>. It is public by design (it sits in page source)
+//          and unlocks only this one cosmetic option, never the API; the real API key is never put in a page.
+//   Mint:  GET/POST /api/developer/partners/embed-key (the workspace session), POST .../embed-key/rotate.
+//   Check: GET /api/holders/embed-config?key=…&theme=light|dark&accent=%23c9a24a, public, no-store. The EMBED PAGE
+//          asks this on every load; the plan is read live, so a downgrade or a rotated key ends the white label at
+//          once. The answer is { whiteLabel: boolean, theme: { mode, accent } | null }. No client-side flag is read.
+const ACCENT_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+const embedSecret = () => process.env.HOLDER_EMBED_SECRET || db.embedSecret
+const embedSig = (ws, salt) => crypto.createHmac('sha256', embedSecret()).update(`holder-embed:${lower(ws)}:${salt}`).digest('hex').slice(0, 24)
+export const embedAllowed = (ws) => HOLDER_MAP.tiers[planOf(ws).id]?.whiteLabel === true
+
+function embedKeyOf(ws, { rotate = false } = {}) {
+  let e = db.embed[ws]
+  if (!e || rotate) {
+    e = db.embed[ws] = { salt: randomToken(6), createdAt: e?.createdAt ?? new Date().toISOString(), rotatedAt: e ? new Date().toISOString() : null }
+    save()
+  }
+  return `gle_${lower(ws)}.${embedSig(ws, e.salt)}`
+}
+
+/** Sanitises a requested theme: mode light|dark (default dark), accent only as #rgb or #rrggbb (else null). */
+export function safeTheme(mode, accent) {
+  return { mode: mode === 'light' ? 'light' : 'dark', accent: typeof accent === 'string' && ACCENT_RE.test(accent) ? accent.toLowerCase() : null }
+}
+
+/** What an embed with this key may show: { whiteLabel, theme }. Anything wrong with the key gives the normal embed. */
+export function embedConfig({ key, theme, accent } = {}) {
+  const none = { whiteLabel: false, theme: null }
+  const m = typeof key === 'string' ? key.match(/^gle_(0x[0-9a-f]{40})\.([0-9a-f]{24})$/) : null
+  if (!m) return none
+  const e = db.embed[m[1]]
+  if (!e) return none
+  const want = Buffer.from(embedSig(m[1], e.salt))
+  const got = Buffer.from(m[2])
+  if (want.length !== got.length || !crypto.timingSafeEqual(want, got)) return none
+  if (!embedAllowed(m[1])) return none
+  return { whiteLabel: true, theme: safeTheme(theme, accent) }
 }
 
 /* -------------------------------------------------------------------- badge --- */

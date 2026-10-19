@@ -2,6 +2,7 @@
 //
 //   GET /api/holders/:chain/:token          the map (JSON), :token = an address or a tracked stock's ticker
 //   GET /api/holders/:chain/:token/card.png the same map as a share card (1200 x 630, holders-card.mjs)
+//   GET /api/holders/:chain/:token/card.jpg the same card as a JPEG (Telegram inline photo results must be JPEG)
 //
 // Any ERC-20 on Robinhood Chain, BNB Chain, Base and HyperEVM and any SPL token on Solana can be mapped
 // (kind 'token'), next to DeepCore launches ('deepcore-launch'), other launchpads' tokens (knownLaunch in
@@ -1363,6 +1364,12 @@ export async function handleHolders(req, res, url, access = null) {
     if (r.busy) return json(res, 429, { error: 'Too many address checks in the last minute; try again shortly.', matches: [], checked: [] }, { 'Cache-Control': 'no-store' }), true
     return json(res, 200, { matches: r.matches.map((m) => ({ ...m, available: holdersAvailable(m.chain, m.kind) })), checked: r.checked ?? [] }, { 'Cache-Control': r.matches.length ? 'public, max-age=60' : 'no-store' }), true
   }
+  if (p === '/api/holders/embed-config') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    const { embedConfig } = await import('./holders-partners.mjs')
+    const q = url.searchParams
+    return json(res, 200, embedConfig({ key: q.get('key') ?? '', theme: q.get('theme') ?? '', accent: q.get('accent') ?? '' }), { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }), true
+  }
   const sub = p.match(/^\/api\/holders\/([a-z0-9]{2,12})\/([A-Za-z0-9]{1,64})\/(live|wallet\/([A-Za-z0-9]{32,44}))$/)
   if (sub) {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
@@ -1376,7 +1383,7 @@ export async function handleHolders(req, res, url, access = null) {
     const out = await readWalletDetail(ck, sub[2], sub[4])
     return json(res, out.state === 'error' ? 502 : 200, out, { 'Cache-Control': 'public, max-age=60' }), true
   }
-  const m = url.pathname.match(/^\/api\/holders\/([a-z0-9]{2,12})\/([A-Za-z0-9]{1,64}?)(\.csv|\/card\.png)?$/)
+  const m = url.pathname.match(/^\/api\/holders\/([a-z0-9]{2,12})\/([A-Za-z0-9]{1,64}?)(\.csv|\/card\.png|\/card\.jpg)?$/)
   if (!m) return false
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }), true
   const chainKey = chainKeyOf(m[1])
@@ -1386,6 +1393,7 @@ export async function handleHolders(req, res, url, access = null) {
   if (!valid) return json(res, 400, { error: 'Give a token address or a tracked stock ticker.' }), true
   const features = holderMapFeatures(access?.plan ?? 'anonymous')
   const kind = m[3] === '.csv' ? 'csv' : m[3] ? 'card' : 'json'
+  const jpeg = m[3] === '/card.jpg'
   if (kind === 'csv' && !features.csv) return json(res, 403, { error: 'The CSV export comes with the Pro plan (https://gullylabs.xyz/pricing).', locked: 'csv' }), true
   // The share card is free for everyone and always drawn from the free view (the same picture for all).
   const tier = kind === 'card' ? 'free' : features.tier
@@ -1396,14 +1404,15 @@ export async function handleHolders(req, res, url, access = null) {
     const ok = body.state === 'ok'
     let png = null
     try {
-      png = ok ? await card.renderHolderCard(body) : await card.renderHolderStatusCard(body)
+      if (jpeg) png = ok ? await card.renderHolderCardJpeg(body) : await card.renderHolderStatusCardJpeg(body)
+      else png = ok ? await card.renderHolderCard(body) : await card.renderHolderStatusCard(body)
     } catch (e) {
       console.error('holders card:', e?.message ?? e)
-      png = card.fallbackCardPng()
+      png = jpeg ? card.fallbackCardJpeg() : card.fallbackCardPng()
     }
     if (!png) return json(res, 503, { error: 'The share card could not be drawn just now.' }), true
     const status = body.state === 'not-found' ? 404 : 200
-    res.writeHead(status, { 'Content-Type': 'image/png', 'Content-Length': String(png.length), 'Cache-Control': ok || body.comingSoon ? 'public, max-age=300' : 'public, max-age=60' })
+    res.writeHead(status, { 'Content-Type': jpeg ? 'image/jpeg' : 'image/png', 'Content-Length': String(png.length), 'Cache-Control': ok || body.comingSoon ? 'public, max-age=300' : 'public, max-age=60' })
     res.end(req.method === 'HEAD' ? undefined : png)
     return true
   }

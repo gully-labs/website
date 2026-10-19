@@ -468,6 +468,27 @@ try {
     payInvoice(r.data.payment.invoiceId)
     const f = await waitFor(ANON, r.data.check.id, finished, 10_000)
     check('an engine crash is retried up to 3 times, then the check is "failed" with a way to reach us (never stuck running)', f.status === 'failed' && n === 3 && /hello@gullylabs\.xyz/.test(f.error ?? ''), `${f?.status} runs ${n}`)
+    check('the failed paid check carries the credit notice and the contact (a credit, never an on-chain refund)', f.credit?.earned === true && f.credit.usedForThis === false && f.credit.contact === 'hello@gullylabs.xyz')
+    check('the buyer holds exactly one credit (the failed paid check), shown by GET and the quote', routes.creditsOf(A.sub) === 1 && (await C.sub.call(DEEP)).data.credits === 1 && (await C.sub.call(DEEP)).data.quota.credits === 1)
+    routes.setDeepEngineForTest({ deps: makeDeps().deps })
+    const qc = await post(C.sub, { chain: 'base', token: addr(0xe6) })
+    check('with a credit the quote is free (used before the price, even with the plan quota used up)', qc.data.quote.free === true && qc.data.quote.priceUsd === 0 && qc.data.quote.credit.used === true && qc.data.quote.credit.available === 1 && qc.data.quote.quota.left === 0)
+    const staleCredit = await post(C.sub, { chain: 'base', token: addr(0xe6), expect: { priceUsd: 9 } })
+    check('confirming the old price while a credit applies: 409 price-changed, nothing spent', staleCredit.status === 409 && routes.creditsOf(A.sub) === 1)
+    const rr = await post(C.sub, { chain: 'base', token: addr(0xe6), expect: { priceUsd: 0 } })
+    check('the credit re-run: 201, free, no invoice, the credit is spent', rr.status === 201 && rr.data.check.free === true && rr.data.check.payment === null && rr.data.check.credit?.usedForThis === true && routes.creditsOf(A.sub) === 0)
+    const rd = await waitFor(C.sub, rr.data.check.id, finished)
+    check('the re-run finishes with a full report and does not use the plan quota', rd.status === 'done' && (await post(C.sub, { chain: 'base', token: addr(0xe7) })).data.quote.quota.used === 3)
+    check('with the credit spent the next check costs $9 again', (await post(C.sub, { chain: 'base', token: addr(0xe7) })).data.quote.priceUsd === 9)
+    // A credit re-run that fails itself gives the credit back (once), and a free (quota) check that fails earns none.
+    routes.setDeepEngineForTest({ deps: makeDeps().deps, run: async () => { throw new Error('boom') } })
+    routes.addCreditForTest(A.sub, 1)
+    const rf = await post(C.sub, { chain: 'base', token: addr(0xe8), expect: { priceUsd: 0 } })
+    const rfd = await waitFor(C.sub, rf.data.check.id, finished, 10_000)
+    check('a failed credit re-run gives the credit back, once', rfd.status === 'failed' && routes.creditsOf(A.sub) === 1, `${rfd.status} ${routes.creditsOf(A.sub)}`)
+    routes.addCreditForTest(A.sub, -1)
+    // The anonymous buyer's earlier failed paid check (sources gave nothing) earned a credit for their address.
+    check('an anonymous buyer failed paid check earned a credit for their address', Object.entries(routes.creditsForTest()).some(([k, v]) => k.startsWith('ip:') && v === 1) && (await ANON.call(DEEP)).data.credits === 1 && (await post(ANON, T)).data.quote.free === true)
     routes.setDeepEngineForTest({ deps: makeDeps().deps })
   }
 } catch (e) {

@@ -37,6 +37,13 @@
 //   POST /api/holders/deep/:id/cancel   before payment: cancels the invoice; a queued free check: drops it.
 //                                       -> 200 { check } · 409 when it is paid, running or finished.
 //
+// REFUNDS (owner decision): a PAID check that ends 'failed' gives its buyer one credit for a free re-run (never an
+// on-chain refund; they can also write to hello@gullylabs.xyz). Credits are counted per buyer (the workspace, else
+// the address the buyer paid from) and are spent before the price: a quote or check made with a credit is free and
+// `quote.credit` / `check.credit` say so. A re-run bought with a credit that itself fails gives the credit back.
+//   Quota gains `credits` (this buyer's unspent credits); GET /api/holders/deep also returns `credits`.
+//   check.credit = { usedForThis: boolean, earned: boolean, contact: 'hello@gullylabs.xyz' } | null
+//
 // Check = {
 //   id, status: 'awaiting_payment' | 'queued' | 'running' | 'done' | 'partial' | 'failed' | 'cancelled',
 //   chain: { key, id, name }, token, free, priceUsd, listPriceUsd, bundled: boolean,
@@ -107,6 +114,7 @@ function load() {
   }
   if (!db || typeof db !== 'object' || Array.isArray(db)) db = {}
   db.jobs = Array.isArray(db.jobs) ? db.jobs : []
+  if (!db.credits || typeof db.credits !== 'object' || Array.isArray(db.credits)) db.credits = {}
   // A restart interrupts a running check: it runs again (the invoice is paid, the computation is the product).
   for (const j of db.jobs) if (j.state === 'running') Object.assign(j, { state: 'queued', status: 'queued' })
   return db
@@ -169,6 +177,31 @@ export function setDeepEngineForTest({ deps = null, limits = HOLDER_DEEP.budgets
 }
 const depsNow = () => engine.deps ?? liveDeps()
 
+/* --------------------------------------------------------------- credits --- */
+
+const CONTACT = 'hello@gullylabs.xyz'
+/** Free re-runs a buyer holds after paid checks failed. */
+export const creditsOf = (owner) => Math.max(0, Number(load().credits[owner]) || 0)
+function addCredit(owner, n) {
+  const next = creditsOf(owner) + n
+  if (next > 0) load().credits[owner] = next
+  else delete load().credits[owner]
+}
+/** Test hooks: grant or read credits directly. */
+export const addCreditForTest = (owner, n) => addCredit(owner, n)
+export const creditsForTest = () => ({ ...load().credits })
+/** A check just ended 'failed': a paid one earns its buyer a credit (once); a credit-run that failed gives it back. */
+function settleFailure(job) {
+  if (job.status !== 'failed') return
+  if (!job.free && Number(job.priceCents) > 0 && !job.creditEarned) {
+    job.creditEarned = true
+    addCredit(job.owner, 1)
+  } else if (job.creditUsed && !job.creditEarned) {
+    job.creditEarned = true
+    addCredit(job.owner, 1)
+  }
+}
+
 /* ---------------------------------------------------------------- quotas --- */
 
 const monthStart = (now = new Date()) => Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
@@ -181,7 +214,7 @@ export function deepQuotaOf(workspace) {
   const perMonth = HOLDER_DEEP.freePerMonth[plan.id] ?? 0
   const from = monthStart()
   const mine = jobs().filter((j) => j.workspace === workspace)
-  const used = mine.filter((j) => j.free && !['failed', 'cancelled'].includes(j.status) && Date.parse(j.createdAt) >= from).length
+  const used = mine.filter((j) => j.free && !j.creditUsed && !['failed', 'cancelled'].includes(j.status) && Date.parse(j.createdAt) >= from).length
   return { plan: { id: plan.id, name: plan.name }, freePerMonth: perMonth, used, left: Math.max(0, perMonth - used), resetsAt: nextMonth(), active: mine.filter((j) => ACTIVE.includes(j.status)).length, maxActive: HOLDER_DEEP.maxActive }
 }
 
@@ -211,6 +244,7 @@ function view(job, { full = false } = {}) {
     completedAt: job.completedAt ?? null,
     cancelReason: job.cancelReason ?? null,
     error: job.status === 'failed' ? (job.error ?? null) : null,
+    credit: job.creditEarned || job.creditUsed ? { usedForThis: !!job.creditUsed, earned: !!job.creditEarned, contact: CONTACT } : null,
     url: `/holders/deep/${job.id}`,
     ...(full ? { report: finished ? readReport(job.id) : null } : {}),
   }
@@ -245,10 +279,12 @@ async function runJob(job) {
     job.error = report.status === 'failed' ? report.error : null
     job.completedAt = new Date().toISOString()
     delete job.progress
+    settleFailure(job)
   } catch (e) {
     console.error(`holders-deep ${job.id}:`, e?.message ?? e)
     if (job.attempts < MAX_ATTEMPTS) Object.assign(job, { state: 'queued', status: 'queued' })
     else Object.assign(job, { state: 'finished', status: 'failed', error: 'The check could not be completed. Write to hello@gullylabs.xyz with this check id.', completedAt: new Date().toISOString() })
+    settleFailure(job)
   } finally {
     running.delete(job.id)
     save()
@@ -351,12 +387,16 @@ function checkBundle(raw, { chainKey, token, ctx }) {
 }
 
 /** The price and the quota decision for a request (pure given the store). */
-function decide({ ctx, bundle }) {
+function decide({ ctx, bundle, owner }) {
   const quota = ctx?.usable ? deepQuotaOf(ctx.workspace) : null
-  const free = !!quota && quota.left > 0
+  const credits = creditsOf(owner)
+  // Credits first (a failed paid check's free re-run), then the plan's free checks, then the price.
+  const viaCredit = credits > 0
+  const free = viaCredit || (!!quota && quota.left > 0)
   const cents = free ? 0 : holderDeepPriceCents(!!bundle)
-  return { quota, free, cents, priceUsd: usd(cents) }
+  return { quota: quota && { ...quota, credits }, credits, viaCredit, free, cents, priceUsd: usd(cents) }
 }
+const ownerOf = (req, ctx) => (ctx?.usable ? ctx.workspace : 'ip:' + crypto.createHash('sha256').update(clientIp(req)).digest('hex').slice(0, 16))
 
 const bundleView = (bundle) => ({ applied: !!bundle, discountPct: HOLDER_DEEP.bundleScanDiscountPct, scanId: bundle?.scanId ?? null })
 
@@ -369,6 +409,7 @@ function quoteOf({ chainKey, token, symbol = null, ctx, bundle, d }) {
     free: d.free,
     bundle: bundleView(bundle),
     bundleNote: d.free ? 'Free checks come first; the scan discount applies only to a check you pay for.' : null,
+    credit: { available: d.credits, used: d.viaCredit },
     quota: d.quota,
     coverage: coverage(chainKey, { deps: engine.deps }),
     budgets: HOLDER_DEEP.budgets,
@@ -397,13 +438,13 @@ async function create(req, res) {
     if (!b.ok) return json(res, b.status, { error: b.error, code: b.code }), true
     bundle = b
   }
-  const d = decide({ ctx, bundle })
+  const owner = ownerOf(req, ctx)
+  const d = decide({ ctx, bundle, owner })
   const quote = quoteOf({ chainKey, token, ctx, bundle: d.free ? null : bundle, d })
   if (!body.expect) return json(res, 200, { quote }), true
   if (!allow('create', ip, 30, 3_600_000)) return json(res, 429, { error: 'Too many checks asked for from this address in the last hour. Try again later.' }), true
 
   // The same token already in progress for this buyer: that check, not a second charge.
-  const owner = ctx?.usable ? ctx.workspace : 'ip:' + crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)
   const same = jobs().find((j) => j.owner === owner && j.chain.key === chainKey && j.token === token && ACTIVE.includes(j.status))
   if (same) return json(res, 200, { check: view(same), payment: paymentView(same), duplicate: true }), true
   if (Number(body.expect.priceUsd) !== d.priceUsd) return json(res, 409, { error: d.priceUsd ? `This check costs $${d.priceUsd}. Confirm again.` : 'This check is free after all. Confirm again.', code: 'price-changed', quote }), true
@@ -421,6 +462,7 @@ async function create(req, res) {
     chain: { key: chainKey, id: HOLDER_CHAINS[chainKey].id, name: HOLDER_CHAINS[chainKey].name },
     token,
     free: d.free,
+    creditUsed: d.viaCredit,
     priceCents: String(d.cents),
     bundleScanId: !d.free && bundle ? bundle.scanId : null,
     invoiceId: null,
@@ -432,6 +474,7 @@ async function create(req, res) {
     const inv = createInvoiceRecord({ title: `${HOLDER_DEEP.name}: ${token.slice(0, 6)}…${token.slice(-4)} on ${job.chain.name}`, note: `Holder Map Deep check ${job.id}. The check starts as soon as this invoice is paid. Payment buys the computation only.`, usdCents: BigInt(job.priceCents), assets: ASSET_IDS, ttlMs: INVOICE_TTL_MS })
     job.invoiceId = inv.id
   }
+  if (d.viaCredit) addCredit(owner, -1)
   jobs().push(job)
   save()
   if (!d.free) return json(res, 202, { check: view(job), payment: paymentView(job) }), true
@@ -453,7 +496,7 @@ export async function handleHolderDeep(req, res, url) {
     if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET or POST only' }), true
     const ctx = await whoIs(req)
     const chains = Object.fromEntries(Object.keys(HOLDER_CHAINS).map((k) => [k, coverage(k, { deps: engine.deps })]))
-    return json(res, 200, { offer: HOLDER_DEEP, checkout: { enabled: !!treasury() }, coverage: chains, signedIn: !!ctx, quota: ctx?.usable ? deepQuotaOf(ctx.workspace) : null }), true
+    return json(res, 200, { offer: HOLDER_DEEP, checkout: { enabled: !!treasury() }, coverage: chains, signedIn: !!ctx, quota: ctx?.usable ? { ...deepQuotaOf(ctx.workspace), credits: creditsOf(ownerOf(req, ctx)) } : null, credits: creditsOf(ownerOf(req, ctx)), contact: CONTACT }), true
   }
 
   const m = p.match(/^\/api\/holders\/deep\/([^/]+?)(\/cancel)?$/)
@@ -481,6 +524,10 @@ export async function handleHolderDeep(req, res, url) {
   }
   if (job.state === 'queued' && job.free && !running.has(job.id)) {
     Object.assign(job, { state: 'cancelled', status: 'cancelled', cancelledAt: new Date().toISOString(), cancelReason: 'cancelled' })
+    if (job.creditUsed) {
+      job.creditUsed = false
+      addCredit(job.owner, 1)
+    }
     save()
     return json(res, 200, { check: view(job) }), true
   }

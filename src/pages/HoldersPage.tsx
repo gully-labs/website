@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router'
 import { Seo } from '../components/Seo'
+import { DeepCheckCard } from '../components/holders/DeepCheck'
 import { HolderMap } from '../components/holders/HolderMap'
 import { useHolderMap } from '../lib/holders'
 
@@ -45,6 +46,7 @@ export function HoldersPage() {
         )}
       </nav>
       <HolderMap chain={chain} token={token} page tradeHref={isStock && symbol ? `/tracker/${chain}/${symbol}#swap` : undefined} />
+      {m?.state === 'ok' && m.chain && m.token && <DeepCheckCard chain={m.chain.key} token={m.token.address} symbol={symbol} />}
       <section aria-labelledby="hm-how" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-4">
         <h2 id="hm-how" className="sr-only">
           How to read the Holder Map

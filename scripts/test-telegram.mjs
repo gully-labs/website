@@ -1032,7 +1032,7 @@ try {
     const hit = lastInline()
     const photo = hit.results?.[0]
     check('inline: a cached address answers one photo result, even for a user outside the News channel (no gate)', inlineAnswers().length === n0 + 1 && hit.results?.length === 1 && photo?.type === 'photo' && counts.build === 0 && counts.resolve === 0, JSON.stringify(hit).slice(0, 200))
-    check('inline: the photo is the Holder Map share card, cache-busted by build time', photo?.photo_url === `https://gullylabs.xyz/api/holders/base/${ADDR}/card.png?v=${inl.buildTime()}` && photo.thumbnail_url === photo.photo_url && photo.photo_width === 1200 && photo.photo_height === 630, photo?.photo_url)
+    check('inline: the photo is the Holder Map share card, cache-busted by build time', photo?.photo_url === `https://gullylabs.xyz/api/holders/base/${ADDR}/card.jpg?v=${inl.buildTime()}` && photo.thumbnail_url === photo.photo_url && photo.photo_width === 1200 && photo.photo_height === 630, photo?.photo_url)
     check('inline: the caption holds measured facts (top 10 share, linked group, health score) and the signals note', /Top 10 wallets hold 41\.2%/.test(photo?.caption) && /3 wallets hold 28%/.test(photo.caption) && /Health score 72\/100/.test(photo.caption) && /signals not verdicts/.test(photo.caption) && photo.parse_mode === 'HTML' && photo.caption.length <= 1024, photo?.caption)
     const kbi = flat(photo?.reply_markup?.inline_keyboard)
     check('inline: buttons are Open Holder Map (site), Open in Mini App (startapp h_<chain>_<token>) and Join @GullyLabsNews', kbi.find((b) => b.text === 'Open Holder Map')?.url === `https://gullylabs.xyz/holders/base/${ADDR}` && kbi.find((b) => b.text === 'Open in Mini App')?.url === `https://t.me/${BOT}?startapp=h_base_${ADDR}` && kbi.find((b) => b.text === 'Join @GullyLabsNews')?.url === 'https://t.me/GullyLabsNews' && kbi.every((b) => b.url && !b.web_app), JSON.stringify(kbi))
@@ -1062,7 +1062,7 @@ try {
     check('inline: an uncached map starts one build keyed on the Telegram user (tg:<id>, free tier) and falls back to the article when it is not ready', builds.filter((b) => b.ip === 'tg:7003').length === 1 && builds.at(-1).ip === 'tg:7003' && builds.at(-1).tier === 'free' && lastInline().results[0].type === 'article' && lastInline().cache_time === 20, JSON.stringify(builds))
     buildBody = mapOf(LAUNCH)
     await askInline(7003, LAUNCH)
-    check('inline: a build that finishes within the wait answers the card', lastInline().results[0].type === 'photo' && lastInline().results[0].photo_url.includes(`/base/${LAUNCH}/card.png?v=`) && lastInline().cache_time === 300)
+    check('inline: a build that finishes within the wait answers the card', lastInline().results[0].type === 'photo' && lastInline().results[0].photo_url.includes(`/base/${LAUNCH}/card.jpg?v=`) && lastInline().cache_time === 300)
 
     // Per-user budget: at most INLINE_WORK_PER_MIN lookups that do work a minute, per Telegram user.
     inl.resetInlineForTest()
