@@ -3,6 +3,7 @@ import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { EChart } from '../../components/charts/EChart'
 import type { ChartEvent } from '../../components/charts/chart-utils'
 import { axisTooltip, barsPreset, C, linePreset, livePoint, PALETTE, ringPreset, tipHtml } from '../../components/charts/chartPresets'
+import { LiveBreathe } from '../../components/ask/LiveBreathe'
 import { GhostChart } from '../../components/charts/GhostChart'
 import { TokenLogo } from '../../components/logos/TokenLogo'
 import { NF } from '../../components/charts/number-formats'
@@ -48,7 +49,9 @@ export function ConfirmRing({ n, needed, state, chain }: { n: number; needed: nu
   return (
     <div className="flex items-center gap-4">
       <div className="relative size-[112px] shrink-0">
-        <EChart option={option} height={112} skeleton="ring" label={`Confirmations: ${have} of ${needed} on ${chain}. ${text}.`} />
+        <LiveBreathe>
+          <EChart option={option} height={112} skeleton="ring" label={`Confirmations: ${have} of ${needed} on ${chain}. ${text}.`} />
+        </LiveBreathe>
         <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center leading-none">
           <span className="font-display text-[28px] font-extrabold text-ink">
             <AnimatedNumber value={have} />
@@ -165,7 +168,7 @@ function PriceChartBody({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'symbo
         )}
       </div>
       {points.length < 2 && !error ? (
-        <GhostChart variant="line" height={150} label={`${asset.symbol} price will draw here as it is read`} />
+        <GhostChart variant="line" height={150} label={`${asset.symbol} price draws here`} />
       ) : (
         <EChart option={option} height={150} skeleton="line" error={!samples.length && error ? `Price unreadable: ${error}` : undefined} label={`${asset.symbol} price in USD from Chainlink on ${asset.chain === 'Solana' ? 'Arbitrum' : asset.chain}${now !== null ? `, now ${fmtUsd(now)}` : ''}${q ? `, ${fmtUsd(q)} at quote time` : ''}. Read every 30 seconds while this page is open.`} />
       )}
@@ -198,7 +201,9 @@ export function ChainConfirmations({ assets }: { assets: PayAsset[] }) {
   return (
     <div className="flex flex-col gap-2">
       <span className="font-mono text-[11px] tracking-[1px] text-faint">CONFIRMATIONS EACH CHAIN NEEDS</span>
-      <EChart option={option} height={Math.max(90, chains.length * 34)} steps={{ count: chains.length }} label={`Confirmations needed: ${chains.map((c) => `${c[0]} ${c[1]}`).join(', ')}.`} />
+      <LiveBreathe>
+        <EChart option={option} height={Math.max(90, chains.length * 34)} steps={{ count: chains.length }} label={`Confirmations needed: ${chains.map((c) => `${c[0]} ${c[1]}`).join(', ')}.`} />
+      </LiveBreathe>
     </div>
   )
 }
