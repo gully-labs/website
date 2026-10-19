@@ -2,6 +2,7 @@ import { Activity, Bot, Boxes, CircleCheck, CircleDollarSign, Network, ScanSearc
 import { useMemo } from 'react'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { EChart } from '../charts/EChart'
+import { GhostChart } from '../charts/GhostChart'
 import { axisTooltip, barsPreset, C, CHART_H, itemTooltip, linePreset, PALETTE, ringPreset, tipHtml } from '../charts/chartPresets'
 import { OVERALL_WORDS, STATE_WORDS, STATUS_GROUPS, useStatus, type StatusBody, type StatusComponent, type StatusGroup, type StatusIncident, type StatusState } from '../../lib/status'
 
@@ -9,7 +10,7 @@ import { OVERALL_WORDS, STATE_WORDS, STATUS_GROUPS, useStatus, type StatusBody, 
    component by group with its state, plain-words detail, 24 h uptime and a bar per 30 minutes, the Gully Pay
    RPC latency over the day, and the incident history. Used by /status and (compact) by the docs' Status page. */
 
-const STATE_COLOR: Record<StatusState, string> = { up: C.green, degraded: C.gold, down: C.error, off: C.faint, unknown: C.axis }
+const STATE_COLOR: Record<StatusState, string> = { up: C.green, degraded: C.gold, down: C.error, off: C.faint, unknown: C.muted }
 const GROUP_ICON: Record<StatusGroup, LucideIcon> = { platform: Activity, tracker: Network, deepcore: Boxes, telegram: Bot, payments: CircleDollarSign, ai: Sparkles, security: ShieldCheck, holders: ScanSearch }
 
 const hhmm = (iso: string) => `${new Date(iso).toISOString().slice(11, 16)} UTC`
@@ -108,7 +109,7 @@ function Overall({ data }: { data: StatusBody }) {
   )
 }
 
-/** Mean RPC latency per payment chain over the day, one line per chain. */
+/** Mean response time of each payment chain's connection over the day, one line per chain. */
 function PayLatency({ data }: { data: StatusBody }) {
   const pay = useMemo(() => data.components.filter((c) => c.group === 'payments' && c.id !== 'pay-feeproxy'), [data])
   const labels = useMemo(() => pay[0]?.history.map((b) => b.t) ?? [], [pay])
@@ -127,14 +128,11 @@ function PayLatency({ data }: { data: StatusBody }) {
   if (!pay.length) return null
   return (
     <div className="flex flex-col gap-2 rounded-panel border border-line bg-surface px-4 py-3">
-      <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY PAY RPC LATENCY · 24 H · LIVE FROM /api/status</span>
+      <span className="font-mono text-[11px] tracking-[1px] text-faint">GULLY PAY CHAIN RESPONSE TIME · 24 H · LIVE FROM /api/status</span>
       {any ? (
-        <EChart option={option} height={CHART_H.md} label="Mean RPC latency per payment chain, every 30 minutes over the last 24 hours" skeleton="line" steps={{ count: labels.length }} />
+        <EChart option={option} height={CHART_H.md} label="Mean response time per payment chain, every 30 minutes over the last 24 hours" skeleton="line" steps={{ count: labels.length }} />
       ) : (
-        <div className="relative h-[120px] overflow-hidden rounded-input bg-surface-deep">
-          <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.12),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
-          <span className="absolute inset-0 grid place-items-center font-mono text-[12px] text-faint">collecting the first checks…</span>
-        </div>
+        <GhostChart height={CHART_H.md} label="The first checks are being collected" framed={false} />
       )}
     </div>
   )
@@ -202,8 +200,8 @@ export function StatusBoard({ compact = false }: { compact?: boolean }) {
           const Icon = GROUP_ICON[g.id]
           return (
             <section key={g.id} aria-label={g.label} className="flex min-w-0 flex-col rounded-panel border border-line bg-surface-deep px-4 py-3">
-              <h3 className="m-0 mb-1 inline-flex items-center gap-2 font-mono text-[12px] font-normal tracking-[1px] text-faint uppercase">
-                <Icon aria-hidden size={14} strokeWidth={1.75} className="text-gold" /> {g.label}
+              <h3 className="m-0 mb-1 inline-flex items-center gap-2 font-display text-h4 font-bold uppercase">
+                <Icon aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> {g.label}
               </h3>
               <ul className="m-0 list-none p-0">
                 {list.map((c) => (

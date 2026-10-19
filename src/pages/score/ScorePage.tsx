@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
 import { NewTabMark } from '../../components/LayoutLinks'
 import { newTab } from '../../components/LayoutNav'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { Seo } from '../../components/Seo'
 import { copyWithToast } from '../../components/ui/toast'
 import { eyebrow, h1 } from '../../components/ui'
@@ -100,7 +101,7 @@ export function ScorePage() {
       <section className="relative overflow-clip px-page pt-[56px] pb-10 max-[600px]:pt-8">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.12),transparent_62%)]" />
         <div className="relative flex flex-col gap-6">
-          <Link to="/score" className="inline-flex w-fit items-center gap-2 font-mono text-[12px] text-dim hover:text-ink" style={rise(0)}>
+          <Link to="/score" className="inline-flex min-h-11 w-fit items-center gap-2 font-mono text-[12px] text-dim hover:text-ink" style={rise(0)}>
             <ArrowLeft aria-hidden size={14} /> All scores
           </Link>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-8 max-[860px]:grid-cols-1">
@@ -108,8 +109,9 @@ export function ScorePage() {
               <span className={eyebrow} style={rise(1)}>
                 GULLY SCORE · {(r?.chainName ?? chain).toUpperCase()}
               </span>
-              <h1 className={`${h1} break-words`} style={rise(2)}>
-                {title}
+              <h1 className={`${h1} flex items-center gap-4 break-words`} style={rise(2)}>
+                {r && <TokenLogo symbol={r.symbol ?? title} chain={r.chainKey} address={r.address} size={40} decorative />}
+                <span className="min-w-0">{title}</span>
               </h1>
               <div className="flex flex-wrap items-center gap-3 font-mono text-[12px] text-ink-2" style={rise(3)}>
                 <code title={addr} className="break-all">
@@ -119,7 +121,7 @@ export function ScorePage() {
                   <Copy aria-hidden size={13} />
                 </button>
                 {r?.links.explorer && (
-                  <a href={r.links.explorer} {...newTab} className="inline-flex items-center gap-1 text-gold underline-offset-4 hover:underline">
+                  <a href={r.links.explorer} {...newTab} className="inline-flex min-h-11 items-center gap-1 text-gold underline-offset-4 hover:underline">
                     Explorer <NewTabMark size={12} className="flex-none text-gold" />
                   </a>
                 )}
@@ -173,7 +175,7 @@ export function ScorePage() {
                 <History aria-hidden size={20} className="text-gold" /> History
               </h2>
               <ScoreHistory points={r.history} />
-              <h3 className="m-0 font-mono text-[11px] tracking-[1px] text-faint">CHANGE LOG</h3>
+              <h3 className="m-0 font-display text-h4 font-bold uppercase">Change log</h3>
               <ul className="m-0 flex max-h-[280px] list-none flex-col gap-3 overflow-y-auto p-0">
                 {[...r.changes].reverse().map((c, i) => (
                   <li key={`${c.at}-${c.id}-${i}`} className="flex flex-col gap-1 text-[13px]">

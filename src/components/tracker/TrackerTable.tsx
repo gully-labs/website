@@ -4,6 +4,7 @@ import { ChainLogo, StockLogo } from './StockLogo'
 import { xPost } from '../../lib/share'
 import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, gapPost, STATUS_LABEL, stockPath, UP, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
 import { SocialIcon } from '../SocialIcon'
+import { C, alpha } from '../charts/chartPresets'
 import { NewTabMark } from '../LayoutLinks'
 import { newTab } from '../LayoutNav'
 
@@ -21,7 +22,7 @@ const SHARE_URL = 'https://gullylabs.xyz/tracker'
 
 export function StatusBadge({ r }: { r: TrackerRow }) {
   const tone =
-    r.status === 'premium' ? { c: UP, bg: 'rgba(38,171,148,.09)' } : r.status === 'discount' ? { c: DOWN, bg: 'rgba(242,112,74,.09)' } : r.status === 'in-line' ? { c: '#aeb5be', bg: 'rgba(174,181,190,.08)' } : r.status === 'drifting' ? { c: '#d9b563', bg: 'rgba(217,181,99,.1)' } : { c: '#8a94a1', bg: 'transparent' }
+    r.status === 'premium' ? { c: UP, bg: alpha(UP, 0.09) } : r.status === 'discount' ? { c: DOWN, bg: alpha(DOWN, 0.09) } : r.status === 'in-line' ? { c: C.muted, bg: alpha(C.muted, 0.08) } : r.status === 'drifting' ? { c: C.gold, bg: alpha(C.gold, 0.1) } : { c: C.faint, bg: 'transparent' }
   return (
     <span className="inline-flex items-center gap-[6px] rounded-full border px-[9px] py-[2px] font-mono text-[11px] whitespace-nowrap" style={{ color: tone.c, background: tone.bg, borderColor: `${tone.c}40` }}>
       {(r.status === 'premium' || r.status === 'discount') && <i className="size-[6px] rounded-full" style={{ background: tone.c, animation: 'gl-blink 1.6s ease-in-out infinite' }} />}

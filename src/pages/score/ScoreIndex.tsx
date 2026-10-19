@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { NewTabMark } from '../../components/LayoutLinks'
 import { newTab } from '../../components/LayoutNav'
+import { TokenLogo } from '../../components/logos/TokenLogo'
 import { Seo } from '../../components/Seo'
 import { eyebrow, h1 } from '../../components/ui'
 import { APP_URL, DOCS_URL } from '../../site-host'
@@ -109,13 +110,16 @@ export function ScoreIndex() {
                 {data.scores.map((r, i) => (
                   <li key={`${r.chainKey}:${r.address}`} className="border-t border-line first:border-t-0" style={rise(i % 12)}>
                     <Link to={`/score/${r.chainKey}/${r.address}`} className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 hover:bg-surface-hover">
-                      <span className="flex min-w-0 flex-col">
+                      <span className="flex min-w-0 items-center gap-3">
+                        <TokenLogo symbol={r.symbol ?? r.name ?? 'token'} chain={r.chainKey} address={r.address} size={24} decorative />
+                        <span className="flex min-w-0 flex-col">
                         <span className="truncate text-[15px] font-semibold text-ink">
                           {r.name ?? shortAddr(r.address)}
                           {r.symbol ? <span className="ml-2 font-mono text-[12px] font-normal text-faint">{r.symbol}</span> : null}
                         </span>
                         <span className="font-mono text-[11px] text-faint">
                           {r.chainName} · {shortAddr(r.address)} · {r.coverage.components}/{r.coverage.of} parts · {fmtDate(r.computedAt)}
+                        </span>
                         </span>
                       </span>
                       <span className="flex items-center gap-3">

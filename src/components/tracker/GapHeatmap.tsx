@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
-import { heatmapPreset, itemTooltip, tipHtml } from '../charts/chartPresets'
+import { heatmapPreset, itemTooltip, tipHtml, C } from '../charts/chartPresets'
 import { CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, stockPath, UP, type TrackerRow } from '../../lib/tracker'
 
 /* Gap heatmap: every trusted stock as a tile, sized by the liquidity of the pool its price comes from
@@ -10,7 +10,7 @@ import { CHAIN_NAME, DOWN, fmtCompactUsd, fmtGap, fmtPrice, stockPath, UP, type 
    slate near zero; the CVD-safe pair used everywhere on the tracker). Tiles grow in on load and
    resize and recolour in place on every refresh; click one for the stock's page. */
 
-const NEUTRAL = '#3a4656'
+const NEUTRAL = C.lineHover
 const SCALE = 3 // % at which a tile reaches full colour
 const hex = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16))
 const mix = (a: string, b: string, t: number) => {
@@ -92,7 +92,7 @@ export function GapHeatmap({ rows, inLinePct }: { rows: TrackerRow[]; inLinePct:
           },
           data: tiles.map((r) => {
             const fill = gapColour(r.gapPct!, inLinePct)
-            const ink = lum(fill) > 0.18 ? '#0d141c' : '#f4f2ec'
+            const ink = lum(fill) > 0.18 ? C.bg : C.ink
             // Rough tile area from its share of the box (gaps and squarifying ignored).
             const area = total && width ? (r.pool!.liquidityUsd / total) * width * HEIGHT * 0.85 : 0
             return {

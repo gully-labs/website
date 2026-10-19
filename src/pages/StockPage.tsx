@@ -9,6 +9,7 @@ import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
 import { GapHistory } from '../components/tracker/GapHistory'
 import { ChainLogo, StockLogo } from '../components/tracker/StockLogo'
+import { servable } from '../components/tracker/servable'
 import { StatusBadge } from '../components/tracker/TrackerTable'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF } from '../components/charts/number-formats'
@@ -20,6 +21,7 @@ import { APP_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
 import { HolderMap } from '../components/holders/HolderMap'
+import { TokenLogo } from '../components/logos/TokenLogo'
 import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
 
 /* One stock token on one chain: everything the tracker knows about it, read live. Nothing on this page is
@@ -223,16 +225,18 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             </button>
             {elsewhere.map((r) => (
               <Link key={r.chain} to={stockPath(r)} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-4 text-[14px] text-ink hover:border-gold hover:text-ink">
-                <ChainLogo chain={r.chain} size={16} /> {r.ticker} on {CHAIN_NAME[r.chain] ?? r.chain} · {fmtGap(r.gapPct)}
+                <TokenLogo symbol={r.ticker} chain={servable(r.chain, r.token) ? r.chain : null} address={servable(r.chain, r.token) ? r.token : null} size={16} decorative /> {r.ticker} on {CHAIN_NAME[r.chain] ?? r.chain} · {fmtGap(r.gapPct)}
               </Link>
             ))}
           </div>
         </div>
       </section>
 
+      {/* The map itself says "coming soon" where the chain has no archive RPC (the server decides, same as the
+          /holders chips), so this section never shows a map-shaped box that cannot be read. */}
       <section className="px-page pb-8" aria-labelledby="who-holds" id="holders">
-        <h2 id="who-holds" className="m-0 mb-4 font-display text-h4 font-bold uppercase">
-          Who holds {row.ticker}?
+        <h2 id="who-holds" className="m-0 mb-4 flex items-center gap-3 font-display text-h4 font-bold uppercase">
+          <TokenLogo symbol={row.ticker} chain={servable(row.chain, row.token) ? row.chain : null} address={servable(row.chain, row.token) ? row.token : null} size={24} decorative /> Who holds {row.ticker}?
         </h2>
         <HolderMap chain={row.chain} token={row.ticker} tradeHref="#swap" />
       </section>

@@ -9,7 +9,7 @@ import { StockLogo } from './StockLogo'
 import { useReducedMotion } from '../charts/chart-utils'
 import { ChartBox } from '../charts/ChartSkeleton'
 import { MiniSpark } from '../charts/MiniSpark'
-import { CHART_H } from '../charts/chartPresets'
+import { C, CHART_H } from '../charts/chartPresets'
 import { xPost } from '../../lib/share'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPct, fmtPp, moversPost, stockPath, UP, useMovers, type Mover, type MoverWindow } from '../../lib/tracker'
 
@@ -62,7 +62,7 @@ function MoveBar({ value, max, color }: { value: number | null; max: number; col
     <span aria-hidden className="block h-[3px] overflow-hidden rounded-full bg-line">
       <span
         className="block h-full origin-left rounded-full"
-        style={{ width: `${pct}%`, background: color ?? '#aeb5be', transition: 'width .7s cubic-bezier(.2,.8,.2,1)', animation: 'gl-grow-x .8s .25s cubic-bezier(.2,.8,.2,1) both' }}
+        style={{ width: `${pct}%`, background: color ?? C.muted, transition: 'width .7s cubic-bezier(.2,.8,.2,1)', animation: 'gl-grow-x .8s .25s cubic-bezier(.2,.8,.2,1) both' }}
       />
     </span>
   )
@@ -97,7 +97,7 @@ function MoverCard({ m, mode, win, max }: { m: Mover; mode: Mode; win: MoverWind
         </span>
         <MoveBar value={main} max={max} color={tone(main)} />
       </span>
-      <Spark points={m.spark} color={tone(m.gapNow) ?? '#aeb5be'} label={`${m.ticker} gap over ${win}`} />
+      <Spark points={m.spark} color={tone(m.gapNow) ?? C.muted} label={`${m.ticker} gap over ${win}`} />
     </Link>
   )
 }

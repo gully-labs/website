@@ -54,7 +54,7 @@ export const productsNav: NavGroup = {
     { label: 'Alerts', desc: 'Gap alerts by Telegram or webhook', to: '/#alerts', icon: BellRing },
     { label: 'Gully Analytics', desc: 'Web analytics that see the wallet', to: '/analytics', icon: ChartNoAxesCombined, match: ['/analytics'] },
     { label: 'Chain Kit', desc: 'Branded block explorers', to: '/chain-kit', icon: Boxes, match: ['/chain-kit'] },
-    { label: 'Security', desc: 'AI Security Scan and code reviews', to: '/security', icon: ShieldCheck, match: ['/security'] },
+    { label: 'Gully Security', desc: 'AI Security Scan and code reviews', to: '/security', icon: ShieldCheck, match: ['/security'] },
     scoreNavEntry,
     { label: 'Gully Chains', desc: 'App chains, launched for you', to: '/#chains', icon: Network, badge: 'Soon' },
     { label: 'Gully Pay', desc: 'Crypto billing and pay links', to: '/#pay', icon: CircleDollarSign },
@@ -67,7 +67,7 @@ export const developersNav: NavGroup = {
   label: 'App & API',
   icon: Code2,
   items: [
-    { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources', to: '/ask', icon: Sparkles, match: ['/ask'], badge: 'New' },
+    // Gully AI is the plain header link beside this menu (navLinks), so it is not listed twice in the header.
     devPortal,
     { label: 'Docs', desc: 'Guides for every product', href: DOCS_URL, icon: BookOpen, newTab: true },
     { label: 'API docs', desc: 'Free REST API reference', href: `${DOCS_URL}/api`, icon: FileJson, newTab: true },
@@ -103,7 +103,7 @@ export const navLinks: NavEntry[] = [
 export const launchApp = {
   to: '/tracker',
   items: [
-    { label: 'Tracker', desc: 'Live stock token gaps', to: '/tracker', icon: Activity },
+    { label: 'Stock tracker', desc: 'Live stock token gaps', to: '/tracker', icon: Activity },
     { label: 'Holder Map', desc: 'Who holds a launch or a stock token', to: '/holders', icon: ScanSearch },
     { label: 'Gully AI', desc: 'Ask about any product', to: '/ask', icon: Sparkles },
     devPortal,
