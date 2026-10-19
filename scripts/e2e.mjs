@@ -596,7 +596,7 @@ await step('app services', async () => {
     check(`app ${label}: the hash deep-links it`, new URL(page.url()).hash === `#${id}`, page.url())
     const ext = await view.getByTestId('service-header').locator('a').evaluateAll((as) => as.map((a) => [a.textContent, a.target, a.rel]))
     check(`app ${label}: Docs and Public page open in a new tab`, ext.length >= 2 && ext.every(([, t, r]) => t === '_blank' && /noopener/.test(r)), JSON.stringify(ext))
-    await view.locator('[data-tile]').first().waitFor()
+    await view.locator('[data-tile], [data-testid$="zero-line"]').first().waitFor()
     if (id === 'tracker') await view.locator('tr[data-row]').first().waitFor({ timeout: 15_000 })
     if (id === 'deepcore') await view.getByTestId('deepcore-launches').waitFor({ timeout: 15_000 })
     if (id === 'widgets') await page.waitForFunction(() => [...document.querySelectorAll('[data-gully-widget]')].some((el) => /%/.test(el.shadowRoot?.textContent ?? '')), null, { timeout: 10_000 })

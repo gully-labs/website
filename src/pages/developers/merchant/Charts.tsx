@@ -135,7 +135,7 @@ export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number
         </KpiTile>
       </KpiRow>
       {none ? (
-        <GhostChart height={150} variant="bars" label="Your payments will draw here">
+        <GhostChart height={110} variant="bars" badge={false} label="Your payments will draw here">
           <span className="max-w-[440px] text-[13px] text-muted">Volume per day by chain, payments per day and the asset mix appear within seconds of your first confirmed payment.</span>
         </GhostChart>
       ) : (
