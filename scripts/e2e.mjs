@@ -158,8 +158,17 @@ async function designAudit(page, label, root = null) {
 }
 
 async function noHorizontalScroll(page, label) {
-  const w = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth])
-  check(`${label}: no horizontal scroll at ${w[1]} px`, w[0] <= w[1], `scrollWidth ${w[0]}`)
+  // On a failure, name the element that sticks out furthest, so the fix is obvious from the log.
+  const w = await page.evaluate(() => {
+    const vw = window.innerWidth
+    let worst = null
+    for (const el of document.querySelectorAll('body *')) {
+      const r = el.getBoundingClientRect()
+      if (r.right > vw + 0.5 && (!worst || r.right > worst.right)) worst = { right: Math.round(r.right), tag: el.tagName.toLowerCase(), cls: String(el.className?.baseVal ?? el.className ?? '').slice(0, 80), text: (el.textContent ?? '').trim().slice(0, 40) }
+    }
+    return [document.documentElement.scrollWidth, vw, worst]
+  })
+  check(`${label}: no horizontal scroll at ${w[1]} px`, w[0] <= w[1], `scrollWidth ${w[0]}${w[2] ? ` · widest: <${w[2].tag} class="${w[2].cls}"> "${w[2].text}" right ${w[2].right}` : ''}`)
 }
 
 const step = async (name, fn) => {
@@ -2615,6 +2624,8 @@ await step('no Cartel Family anywhere', async () => {
     check(`${route}: no page text mentions Cartel`, !/cartel/i.test(text))
     check(`${route}: no link points at cartel`, (await page.locator('a[href*="cartel" i]').count()) === 0)
   }
+  // The removed project's URL answers 404 from the server, then the page sends the visitor home: expected.
+  w.expect(/\/projects\/cartel-family$/)
   await page.goto(BASE + '/projects/cartel-family')
   await page.waitForTimeout(400)
   check('/projects/cartel-family no longer renders a project page', new URL(page.url()).pathname === '/' && !/cartel/i.test(await page.locator('body').innerText()), page.url())
