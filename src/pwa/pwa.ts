@@ -115,7 +115,7 @@ export function initPwa() {
   window.addEventListener('appinstalled', () => set({ installed: true, prompt: null }))
   // Production builds only (dev has no dist/sw.js), and never on admin, Gully Pay checkouts, the Mini App or the embed.
   if (!import.meta.env.PROD || !('serviceWorker' in navigator) || !swEligible(window.location.hostname, window.location.pathname)) return
-  const register = () => navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).then(watchRegistration, () => undefined)
+  const register = () => navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).then((reg) => reg && watchRegistration(reg), () => undefined)
   if (document.readyState === 'complete') register()
   else window.addEventListener('load', register, { once: true })
 }
