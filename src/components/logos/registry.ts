@@ -11,7 +11,7 @@ export type LogoSize = 10 | 12 | 14 | 16 | 20 | 24 | 32 | 40 | 48 | 64
 export type Mark = { src: string; name: string; disc: string | null; inset: number }
 
 const CHAINS: Record<string, Mark> = {
-  base: { src: '/chains/base.svg', name: 'Base', disc: null, inset: 0.1 },
+  base: { src: '/chains/base.svg', name: 'Base', disc: null, inset: 0.04 },
   ethereum: { src: '/chains/ethereum.svg', name: 'Ethereum', disc: '#ffffff', inset: 0.16 },
   bsc: { src: '/chains/bnb-chain.svg', name: 'BNB Chain', disc: null, inset: 0.04 },
   arbitrum: { src: '/chains/arbitrum.svg', name: 'Arbitrum', disc: null, inset: 0 },
