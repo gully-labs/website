@@ -5,6 +5,7 @@ import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
 import { AskLauncher } from '../../components/ask/AskLauncher'
+import { PwaCards } from '../../components/pwa/PwaCards'
 import { healthOfStatus, useAppStatus, type Health } from './services/health'
 import { StatusDialog } from './services/StatusDialog'
 import { Avatar } from './Avatar'
@@ -656,6 +657,8 @@ export function AppShell<T extends string>({
       <div className={`pointer-events-none fixed right-5 z-40 max-[600px]:right-4 print:hidden ${narrow ? 'bottom-[calc(76px+env(safe-area-inset-bottom))]' : 'bottom-5'}`} data-testid="corner-dock">
         <AskLauncher variant="floating" hideButton={current === ('ai' as T)} />
       </div>
+
+      <PwaCards kind="app" lift={narrow} />
 
       <StatusDialog open={statusOpen} onClose={() => setStatusOpen(false)} />
 

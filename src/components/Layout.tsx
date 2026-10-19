@@ -9,6 +9,7 @@ import { Header } from './Header'
 import { scrollBehavior } from './LayoutNav'
 import { BackToTop } from './LayoutScroll'
 import { AskLauncher } from './ask/AskLauncher'
+import { PwaCards } from './pwa/PwaCards'
 import { scrollToAnchor } from '../lib/anchors'
 import { prefetchPath } from '../pages/routeChunks'
 
@@ -109,6 +110,7 @@ export function Layout() {
             <BackToTop />
             <AskLauncher variant="floating" hideButton={pathname === '/ask'} />
           </div>
+          <PwaCards kind="site" />
           {everOpened && (
             <Suspense fallback={null}>
               <ContactModal open={open} onClose={closeContact} form={form} setForm={setForm} sent={sent} setSent={setSent} />
