@@ -201,6 +201,8 @@ const SYNONYMS = {
   safe: 'audit security custody',
   custody: 'non-custodial wallet funds',
   refund: 'refunds payment',
+  outage: 'status down uptime incident',
+  broken: 'status outage incident',
 }
 
 /** The question plus the docs' words for the plain words in it, or null when nothing is added. */
@@ -231,7 +233,7 @@ export function rrf(lists, { k = RRF_K } = {}) {
 }
 
 /** A small prior by source: the docs and the legal pages are the reference; UI copy and notes rank a little lower. */
-const SOURCE_PRIOR = { Docs: 0.06, Legal: 0.05, Site: 0.03, Changelog: 0, Roadmap: 0, Blog: 0, GitHub: 0, 'DeepCore docs': 0.02, 'Gully Pay contracts': -0.03, 'Telegram bot': -0.05, 'Telegram Mini App': -0.08 }
+const SOURCE_PRIOR = { Docs: 0.06, Legal: 0.05, Site: 0.03, Changelog: 0, Roadmap: 0, Features: 0.05, 'Ops notes': -0.02, 'GitHub README': 0, Blog: 0, GitHub: 0, 'DeepCore docs': 0.02, 'Gully Pay contracts': -0.03, 'Telegram bot': -0.05, 'Telegram Mini App': -0.08 }
 
 /**
  * Re-ranks fused candidates by question coverage: the share of the question's distinct terms found in the

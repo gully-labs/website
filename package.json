@@ -26,6 +26,7 @@
     "test:feeproxy": "node scripts/test-fee-proxy.mjs",
     "test:gas": "node scripts/test-gas.mjs",
     "test:ask": "node scripts/test-ask.mjs",
+    "test:ask-coverage": "node scripts/test-ask-coverage.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",
     "test:merchants": "node scripts/test-merchants.mjs",
     "test:safe-deploy": "node scripts/test-safe-deploy.mjs",

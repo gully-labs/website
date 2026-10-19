@@ -34,7 +34,7 @@ interface Draft {
 
 interface AskLog {
   days: number
-  status: { configured: boolean; model: string; draftModel: string; indexSize: number; updatedAt: string | null; dailyLimit: number; usedToday: number; localChunks: number; remote: { key: string; label: string; ok: boolean; chunks: number; lastGoodAt: string | null; error: string | null }[] }
+  status: { features?: { id: string; name: string; status: string }[]; configured: boolean; model: string; draftModel: string; indexSize: number; updatedAt: string | null; dailyLimit: number; usedToday: number; localChunks: number; remote: { key: string; label: string; ok: boolean; chunks: number; lastGoodAt: string | null; error: string | null }[] }
   totals: { questions: number; errors: number; unanswered: number; unansweredRate: number | null; drafts: number; avgLatencyMs: number | null; tokens: { input: number; output: number; cacheRead: number } }
   perDay: { date: string; count: number; unanswered: number; errors: number; web: number; telegram: number }[]
   top: { question: string; count: number; unanswered: number }[]
@@ -43,26 +43,27 @@ interface AskLog {
 
 const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-function Studio({ token, configured }: { token: string; configured: boolean }) {
+function Studio({ token, configured, features }: { token: string; configured: boolean; features: { id: string; name: string; status: string }[] }) {
   const [kind, setKind] = useState<Kind>('blog_post')
   const [topic, setTopic] = useState('')
   const [notes, setNotes] = useState('')
   const [ticker, setTicker] = useState('')
   const [chain, setChain] = useState('')
+  const [feature, setFeature] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [copied, setCopied] = useState(false)
 
   const generate = async () => {
-    if (!topic.trim() || busy) return
+    if ((!topic.trim() && !feature) || busy) return
     setBusy(true)
     setErr(null)
     setCopied(false)
     const r = await fetch('/api/admin/ask/draft', {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ kind, topic: topic.trim(), notes: notes.trim() || undefined, ...(kind === 'stock_explainer' ? { ticker: ticker.trim(), chain: chain || undefined } : {}) }),
+      body: JSON.stringify({ kind, topic: topic.trim() || undefined, feature: feature || undefined, notes: notes.trim() || undefined, ...(kind === 'stock_explainer' ? { ticker: ticker.trim(), chain: chain || undefined } : {}) }),
     }).catch(() => null)
     const d = r ? await r.json().catch(() => null) : null
     setBusy(false)
@@ -101,6 +102,17 @@ function Studio({ token, configured }: { token: string; configured: boolean }) {
           Topic
           <input value={topic} maxLength={300} onChange={(e) => setTopic(e.target.value)} placeholder="Telegram gap alerts are live" className={field} />
         </label>
+        <label className="flex flex-col gap-2 text-[13px] text-ink-2">
+          Feature (optional: draft about one catalog feature)
+          <select value={feature} onChange={(e) => setFeature(e.target.value)} className={field}>
+            <option value="">None</option>
+            {features.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name} ({f.status})
+              </option>
+            ))}
+          </select>
+        </label>
         {kind === 'stock_explainer' ? (
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-2 text-[13px] text-ink-2">
@@ -124,7 +136,7 @@ function Studio({ token, configured }: { token: string; configured: boolean }) {
           <textarea value={notes} maxLength={3000} rows={3} onChange={(e) => setNotes(e.target.value)} className={`${field} py-2 leading-[1.5]`} />
         </label>
         <div className="col-span-full flex flex-wrap items-center gap-3">
-          <button type="submit" disabled={busy || !topic.trim() || !configured} className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-5 text-[15px] font-semibold text-bg transition-colors hover:bg-gold-hover disabled:opacity-40">
+          <button type="submit" disabled={busy || (!topic.trim() && !feature) || !configured} className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-5 text-[15px] font-semibold text-bg transition-colors hover:bg-gold-hover disabled:opacity-40">
             {busy ? <LoaderCircle size={16} aria-hidden className="animate-spin" /> : <Wand2 size={16} aria-hidden />}
             {busy ? 'Writing…' : 'Generate'}
           </button>
@@ -386,7 +398,7 @@ export function AskStudio({ token }: { token: string }) {
   }, [load])
   return (
     <>
-      <Studio token={token} configured={log?.status.configured ?? true} />
+      <Studio token={token} configured={log?.status.configured ?? true} features={log?.status.features ?? []} />
       <GapsCard token={token} />
       {log ? <Log log={log} /> : <p className={`m-0 ${small}`}>{err ?? 'Reading the ask log…'}</p>}
     </>
