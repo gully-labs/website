@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T18:07:31.004Z",
+ "updatedAt": "2026-10-19T18:56:24.933Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -3563,8 +3563,8 @@
    "title": "Gully Labs Telegram bot (@GullyLabsBot)",
    "url": "https://t.me/GullyLabsBot",
    "section": "Help",
-   "text": "Gully Labs · see if stock tokens trade above or below the real share price. 📈 Stock tokens on Robinhood Chain, BNB Chain and Solana · 🔔 alerts right here · 🤖 Gully AI answers. Information only, not investment advice. Gully Labs bot See how far each stock token trades above or below the real share price (the share price comes from Chainlink). Tap the buttons below, or type: /start or /menu · the main menu /gap NVDA · one stock (add bsc , robinhood or solana ) /top · biggest gaps right now /movers · biggest changes /launches · newest tokens on DeepCore /holders · 👥 Holder Map: who holds a token, and which wallets belong together /security · 🛡 Gully Security: contract scans, Gully Score and monitors /score 0x… · the Gully Score of a contract (add base , ethereum …) /ask · ask Gully AI a question /app · open the Gully app inside Telegram 🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram. /stop announcements · no more news from Gully Labs (alerts keep coming) Information only, not investment advice. /alerts · your alerts /monitors · your contract monitors /stop · unlink this chat To use the bot you follow the Gully Labs News channel (https://t.me/GullyLabsNews); alerts you already set up still arrive either way.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Gully Labs · see if stock tokens trade above or below the real share price. 📈 Stock tokens on Robinhood Chain, BNB Chain and Solana · 🔔 alerts right here · 🤖 Gully AI answers. Information only, not investment advice. Gully Labs bot See how far each stock token trades above or below the real share price (the share price comes from Chainlink). Tap the buttons below, or type: /start or /menu · the main menu /gap NVDA · one stock (add bsc , robinhood or solana ) /top · biggest gaps right now /movers · biggest changes /launches · newest tokens on DeepCore /holders · 👥 Holder Map: who holds a token, and which wallets belong together /security · 🛡 Gully Security: contract scans, Gully Score and monitors /score 0x… · the Gully Score of a contract (add base , ethereum …) /ask · ask Gully AI a question /contact · 💬 write to the Gully Labs team (we reply here) /app · open the Gully app inside Telegram 🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram. /stop announcements · no more news from Gully Labs (alerts keep coming) Information only, not investment advice. /alerts · your alerts /monitors · your contract monitors /stop · unlink this chat To use the bot you follow the Gully Labs News channel (https://t.me/GullyLabsNews); alerts you already set up still arrive either way.",
+   "updatedAt": "2026-10-19T18:56:24.933Z"
   },
   {
    "id": "44e023f8910c",
@@ -3572,8 +3572,8 @@
    "title": "Gully Labs Telegram bot (@GullyLabsBot)",
    "url": "https://t.me/GullyLabsBot",
    "section": "Commands",
-   "text": "The bot's commands. /start: Main menu. /app: Open the Gully app inside Telegram. /gap: One stock token, e.g. /gap NVDA. /top: Furthest from the real share price. /movers: Biggest gap moves in 24 hours. /launches: Newest tokens launched on DeepCore. /holders: Holder Map: who holds a token. /alerts: Your alerts: pause, mute, test or delete. /security: Contract scans, Gully Score and monitors. /score: A contract’s Gully Score, e.g. /score 0x…. /ask: Ask Gully AI a question. /help: What this bot does. /stop: Stop announcements, or unlink this chat. 🤖 Gully AI Answers from the Gully Labs docs, with sources. Type your question in the reply box below, or tap an example. Information only, not investment advice.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "The bot's commands. /start: Main menu. /app: Open the Gully app inside Telegram. /gap: One stock token, e.g. /gap NVDA. /top: Furthest from the real share price. /movers: Biggest gap moves in 24 hours. /launches: Newest tokens launched on DeepCore. /holders: Holder Map: who holds a token. /alerts: Your alerts: pause, mute, test or delete. /security: Contract scans, Gully Score and monitors. /score: A contract’s Gully Score, e.g. /score 0x…. /ask: Ask Gully AI a question. /contact: Write to the Gully Labs team. /help: What this bot does. /stop: Stop announcements, or unlink this chat. 🤖 Gully AI Answers from the Gully Labs docs, with sources. Type your question in the reply box below, or tap an example. Information only, not investment advice.",
+   "updatedAt": "2026-10-19T18:56:24.933Z"
   },
   {
    "id": "dd88463c294b",
@@ -3617,8 +3617,8 @@
    "title": "Gully SDK (gully-labs/sdk README)",
    "url": "https://github.com/gully-labs/sdk/blob/main/README.md#limits-and-keys",
    "section": "Limits and keys",
-   "text": "Anonymous calls get 60 a minute per IP. A key from the developer portal (sign in with your wallet, no form) gets 600:",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Anonymous calls get 60 a minute per IP. A key from the Gully Labs app (sign in with your wallet, no form) gets 600:",
+   "updatedAt": "2026-10-19T18:56:24.933Z"
   },
   {
    "id": "6e12edc900ac",

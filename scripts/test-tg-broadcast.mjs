@@ -145,7 +145,7 @@ try {
   const cmdCalls = calls.filter((c) => c.method === 'setMyCommands')
   const scoped = (type) => cmdCalls.find((c) => (c.body.scope?.type ?? 'default') === type)?.body.commands?.map((x) => x.command) ?? null
   check('startup: setMyCommands for the default scope, private chats and groups', cmdCalls.length >= 3 && !!scoped('default') && !!scoped('all_private_chats') && !!scoped('all_group_chats'))
-  check('startup: private chats get start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop', JSON.stringify(scoped('all_private_chats')) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'help', 'stop']))
+  check('startup: private chats get start, app, gap, top, movers, launches, holders, alerts, security, score, ask, contact, help, stop', JSON.stringify(scoped('all_private_chats')) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop']))
   check('startup: groups get gap, top, launches, help only', JSON.stringify(scoped('all_group_chats')) === JSON.stringify(['gap', 'top', 'launches', 'help']))
   check('startup: no scan command anywhere', !cmdCalls.some((c) => c.body.commands.some((x) => x.command === 'scan')))
   const menuAt = calls.findIndex((c) => c.method === 'setChatMenuButton')
