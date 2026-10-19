@@ -117,15 +117,17 @@ export function StockSwap({ row, alerts }: { row: TrackerRow; alerts?: string })
         <li>Information only, not investment advice. Prices move, and swaps carry fees and slippage. {solana ? jupiterFeeText() : feeText()}</li>
       </ul>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-input border border-line-strong px-4 text-[14px] text-ink hover:border-gold">
-        <input
-          type="checkbox"
-          checked={ack}
-          onChange={(e) => {
-            setAck(e.target.checked)
-            writeAck(e.target.checked)
-          }}
-          className="size-4 accent-gold"
-        />
+        <span className="-my-2 -ml-3 grid size-11 shrink-0 place-items-center">
+          <input
+            type="checkbox"
+            checked={ack}
+            onChange={(e) => {
+              setAck(e.target.checked)
+              writeAck(e.target.checked)
+            }}
+            className="size-5 accent-gold"
+          />
+        </span>
         I understand
       </label>
       {ack && !solana && <DeepCoreQuote row={row} />}

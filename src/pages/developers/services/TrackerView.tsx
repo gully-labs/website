@@ -225,11 +225,11 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
                           </td>
                           <td className="px-4 py-[6px]">
                             <span className="flex items-center justify-end gap-1">
-                              <button type="button" onClick={() => ctx.createAlert(id)} aria-label={`Add a gap alert for ${r.ticker} on ${CHAIN_NAME[r.chain] ?? r.chain}`} title="Add a gap alert" className="relative inline-flex min-h-9 items-center gap-1 rounded-full border border-gold-line px-[10px] text-[12px] text-gold transition-colors after:absolute after:inset-x-0 after:-inset-y-[4px] hover:border-gold max-[859px]:min-h-11">
+                              <button type="button" onClick={() => ctx.createAlert(id)} aria-label={`Add a gap alert for ${r.ticker} on ${CHAIN_NAME[r.chain] ?? r.chain}`} title="Add a gap alert" className="relative inline-flex min-h-9 items-center justify-center gap-1 rounded-full border border-gold-line px-[10px] max-[859px]:min-w-11 text-[12px] text-gold transition-colors after:absolute after:inset-x-0 after:-inset-y-[4px] hover:border-gold max-[859px]:min-h-11">
                                 <BellPlus size={13} aria-hidden />
                                 <span className="max-[640px]:sr-only">Alert</span>
                               </button>
-                              <ExtLink href={sitePage(stockPath(r))} className="relative inline-flex min-h-9 items-center gap-1 rounded-full border border-line-strong px-[10px] text-[12px] text-ink-2 transition-colors after:absolute after:inset-x-0 after:-inset-y-[4px] hover:border-gold hover:text-ink max-[859px]:min-h-11">
+                              <ExtLink href={sitePage(stockPath(r))} className="relative inline-flex min-h-9 items-center justify-center gap-1 rounded-full border border-line-strong px-[10px] max-[859px]:min-w-11 text-[12px] text-ink-2 transition-colors after:absolute after:inset-x-0 after:-inset-y-[4px] hover:border-gold hover:text-ink max-[859px]:min-h-11">
                                 <span className="max-[640px]:sr-only">Page</span>
                                 <span className="sr-only"> for {r.ticker}</span>
                               </ExtLink>

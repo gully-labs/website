@@ -43,13 +43,13 @@ export function KpiTile({ t, i }: { t: Tile; i: number }) {
   const known = typeof t.value === 'number' && Number.isFinite(t.value)
   return (
     <div className="group relative flex min-w-0 flex-col gap-1 bg-surface px-4 py-3 shadow-[1px_0_0_var(--color-line),0_1px_0_var(--color-line)]" style={{ animation: `gl-rise .4s ${i * 0.04}s ease both` }} data-tile={t.label} title={t.title} tabIndex={t.title ? 0 : undefined}>
-      <span className="truncate font-mono text-[11px] tracking-[1px] text-faint">{t.label}</span>
+      <span className="font-mono text-[11px] tracking-[1px] [overflow-wrap:anywhere] text-faint">{t.label}</span>
       {known ? (
         <AnimatedNumber className="font-display text-[26px] leading-none font-bold" style={{ color: t.tone }} value={t.value} format={t.format ?? NF.int} prefix={t.prefix} suffix={t.suffix} countUp />
       ) : (
         <span className="flex h-[26px] items-center font-mono text-[12px] text-faint">{t.unknown ?? 'not tracked yet'}</span>
       )}
-      {t.note && <span className="truncate text-[12px] text-muted">{t.note}</span>}
+      {t.note && <span className="text-[12px] [overflow-wrap:anywhere] text-muted">{t.note}</span>}
       <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
     </div>
   )

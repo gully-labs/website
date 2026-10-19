@@ -88,7 +88,7 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
 
       <SubPanel idBase="pay" value={sub}>
       {sub === 'payments' ? (
-      <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
+      <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-stretch gap-4 max-[1100px]:grid-cols-[minmax(0,1fr)]">
         <Section title="Payments" sub="every payment this workspace made through Gully Pay, in USD" aside={<button type="button" onClick={() => ctx.go('billing')} className={pillSm}><CreditCard size={14} aria-hidden /> Billing and receipts</button>}>
           {!v ? (
             <Skeleton h={170} />
@@ -113,7 +113,7 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
         </Section>
       </div>
       ) : (
-      <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
+      <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-stretch gap-4 max-[1100px]:grid-cols-[minmax(0,1fr)]">
         <Section
           title="Live coin prices"
           sub="Chainlink USD feed, read every 30 seconds while open"
