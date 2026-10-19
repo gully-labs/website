@@ -53,7 +53,7 @@ Requested name tag: Gully Labs: Treasury
 Label: Treasury / Gully Labs
 Official site: https://gullylabs.xyz
 The list of every address we use, with the repo file each is quoted from: https://gullylabs.xyz/.well-known/contracts.json (docs: https://docs.gullylabs.xyz/contracts)
-Proof: Safe-signed message from the owners, plus an email from our site domain. Contact: hello@gullylabs.xyz
+Proof: Safe-signed message from the owners, plus an email from our site domain. Contact: <owner-confirmed email>
 ```
 
 Repeat per explorer. The contact email must be one the owner confirms exists before sending.
