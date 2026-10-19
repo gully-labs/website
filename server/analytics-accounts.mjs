@@ -276,7 +276,7 @@ export function cleanDomain(v) {
 }
 
 async function start(address) {
-  if (!umami.umamiConfigured()) return { ok: false, status: 503, error: 'Self-serve Gully Analytics is not switched on yet on this server. Write to hello@gullylabs.xyz.' }
+  if (!umami.umamiConfigured()) return { ok: false, status: 503, error: 'Self-serve Gully Analytics is not switched on yet on this server. Write to team@gullylabs.xyz.' }
   if (findAccount(address)) return { ok: false, status: 409, error: 'This wallet already has a Gully Analytics account.' }
   if (starting.has(address)) return { ok: false, status: 409, error: 'Your account is being created already.' }
   starting.add(address)
@@ -441,7 +441,7 @@ export async function handleAnalyticsAccount(req, res, url, address) {
       quoteId: body?.quoteId,
       txHashIn: body?.txHash,
       label: (q) => `Gully Analytics ${ANALYTICS_PLANS[q.plan]?.name ?? q.plan}`,
-      apply: (q) => (ANALYTICS_PLANS[q.plan] ? applyPlan(acc, q.plan, 'payment') : { ok: false, status: 409, error: 'That plan is no longer offered. Write to hello@gullylabs.xyz with the hash.' }),
+      apply: (q) => (ANALYTICS_PLANS[q.plan] ? applyPlan(acc, q.plan, 'payment') : { ok: false, status: 409, error: 'That plan is no longer offered. Write to team@gullylabs.xyz with the hash.' }),
     })
     if (r.ok) return json(res, 200, { payment: r.payment, account: accountView(acc) }), true
     return json(res, r.status, { error: r.error, ...(r.pending ? { pending: true, confirmations: r.confirmations, needed: r.needed } : {}) }), true

@@ -96,7 +96,7 @@ export async function handleChains(req, res, url) {
   if (p === '/api/chains/waitlist') {
     if (req.method !== 'POST') return res.writeHead(405, { Allow: 'POST' }).end(), true
     if (req.headers['x-requested-with'] !== 'gully') return json(res, 403, { error: 'Cross-site request refused.' }), true
-    if (!allow(clientIp(req))) return json(res, 429, { error: 'Too many sign-ups from this address. Try again in an hour, or write to hello@gullylabs.xyz.' }), true
+    if (!allow(clientIp(req))) return json(res, 429, { error: 'Too many sign-ups from this address. Try again in an hour, or write to team@gullylabs.xyz.' }), true
     const body = await readJson(req, MAX_BODY)
     if (!body || typeof body !== 'object') return json(res, 400, { error: 'The request could not be read.' }), true
     // A filled honeypot is a bot: answered like a success, stored nowhere.

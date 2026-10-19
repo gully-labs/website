@@ -187,7 +187,7 @@ export function HolderMapIntegrateDocs() {
           <li>Optionally the address of the pool or pool manager that holds a launch’s liquidity, so it is labelled on the map.</li>
         </List>
         <P>
-          Send these to <Ext href="mailto:hello@gullylabs.xyz">hello@gullylabs.xyz</Ext>. Gully Labs adds the entry, checks it against live launches and replies when it is live. We take contract addresses only from you or from your deployments; we never guess them.
+          Send these to <Ext href="mailto:team@gullylabs.xyz">team@gullylabs.xyz</Ext>. Gully Labs adds the entry, checks it against live launches and replies when it is live. We take contract addresses only from you or from your deployments; we never guess them.
         </P>
       </Section>
     </DocPage>

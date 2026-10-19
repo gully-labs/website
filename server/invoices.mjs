@@ -226,7 +226,7 @@ async function verifyFor(inv, quoteId, txHashIn) {
   if (!isHash(txHash)) return badHash
   const s = invoiceStatus(inv)
   if (s === 'paid') return { ok: false, status: 409, error: 'This invoice is paid already.' }
-  if (s === 'cancelled') return { ok: false, status: 409, error: 'This invoice was cancelled. Write to hello@gullylabs.xyz if you paid it.' }
+  if (s === 'cancelled') return { ok: false, status: 409, error: 'This invoice was cancelled. Write to team@gullylabs.xyz if you paid it.' }
   // An expired invoice still accepts a payment for a quote made while it was open (the quote's own
   // window is checked against the block time).
   return checkInvoiceTx({

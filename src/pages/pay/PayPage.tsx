@@ -21,7 +21,7 @@ export function PayPage() {
     <>
       {SEO}
       {state.k === 'loading' && <Reading what="invoice" />}
-      {state.k === 'missing' && <Missing what="invoice" text="This link does not match an invoice. Check that it was copied whole, or write to hello@gullylabs.xyz." />}
+      {state.k === 'missing' && <Missing what="invoice" text="This link does not match an invoice. Check that it was copied whole, or write to team@gullylabs.xyz." />}
       {state.k === 'error' && <LoadFailed what="invoice" message={state.message} retry={retry} />}
       {state.k === 'ok' && <InvoiceView invoice={state.invoice} onPaid={set} />}
     </>

@@ -25,7 +25,7 @@ export class PaymentGuardError extends Error {
 }
 
 /** The public message for a refused instruction (no addresses, nothing internal). */
-export const GUARD_PUBLIC_ERROR = 'This payment could not be prepared safely, so no payment details were given. Nothing was charged. Please contact hello@gullylabs.xyz.'
+export const GUARD_PUBLIC_ERROR = 'This payment could not be prepared safely, so no payment details were given. Nothing was charged. Please contact team@gullylabs.xyz.'
 
 const refusals = [] // the last 20, newest last: { at, where, violations } (the admin panel shows them)
 /** Refusals of the last `maxAgeMs` (default 24 h), newest first. */

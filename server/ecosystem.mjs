@@ -206,7 +206,7 @@ export async function handleEcosystem(req, res, url) {
   const v = validateSubmission(body)
   if (!v.ok) return json(res, 400, { error: v.error, field: v.field }), true
   const d = read()
-  if (d.submissions.filter((s) => s.status === 'pending').length >= MAX_PENDING) return json(res, 503, { error: 'The review queue is full. Please try again later or write to hello@gullylabs.xyz.' }), true
+  if (d.submissions.filter((s) => s.status === 'pending').length >= MAX_PENDING) return json(res, 503, { error: 'The review queue is full. Please try again later or write to team@gullylabs.xyz.' }), true
   d.submissions.push({ id: `es_${crypto.randomBytes(9).toString('base64url')}`, ...v.value, status: 'pending', createdAt: new Date().toISOString(), decidedAt: null })
   if (d.submissions.length > MAX_STORED) d.submissions = [...d.submissions.filter((s) => s.status === 'pending'), ...d.submissions.filter((s) => s.status !== 'pending').slice(-(MAX_STORED - MAX_PENDING))]
   write(d)

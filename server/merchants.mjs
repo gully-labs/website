@@ -218,8 +218,8 @@ const forStore = (msg) =>
     .replace(/not to the Gully Labs treasury address/g, "not to this store's wallet")
     .replace(/the Gully Labs treasury/g, "this store's wallet")
     .replace(/to the treasury/g, "to this store's wallet")
-    .replace(/Write to hello@gullylabs\.xyz with the hash( to settle the difference)?/g, 'Contact the store with the transaction hash')
-    .replace(/write to hello@gullylabs\.xyz with the hash/g, 'contact the store with the transaction hash')
+    .replace(/Write to team@gullylabs\.xyz with the hash( to settle the difference)?/g, 'Contact the store with the transaction hash')
+    .replace(/write to team@gullylabs\.xyz with the hash/g, 'contact the store with the transaction hash')
     .replace(/your checkout/g, 'this checkout')
 
 /* -------------------------------------------------------- the fee state --- */

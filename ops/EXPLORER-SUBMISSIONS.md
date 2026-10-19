@@ -53,10 +53,10 @@ Requested name tag: Gully Labs: Treasury
 Label: Treasury / Gully Labs
 Official site: https://gullylabs.xyz
 The list of every address we use, with the repo file each is quoted from: https://gullylabs.xyz/.well-known/contracts.json (docs: https://docs.gullylabs.xyz/contracts)
-Proof: Safe-signed message from the owners, plus an email from our site domain. Contact: labsgully@gmail.com
+Proof: Safe-signed message from the owners, plus an email from our site domain. Contact: team@gullylabs.xyz
 ```
 
-Repeat per explorer. Contact email (owner-confirmed 2026-10-19): labsgully@gmail.com.
+Repeat per explorer. Contact email (owner-confirmed 2026-10-19): team@gullylabs.xyz.
 
 ## Blockscout instances (Robinhood Chain via robin.etherscan.io is Etherscan-style; Arc explorer is UNCONFIRMED)
 
@@ -87,7 +87,7 @@ makes the explorers' "verified" tick and the registry's `verifiedSource` fill in
 `node scripts/gen-contracts.mjs` then `node scripts/build-discovery.mjs`.
 
 ## Order of work
-1. Contact email confirmed: labsgully@gmail.com. Owner confirms which Safe signers sign the ownership proof.
+1. Contact email confirmed: team@gullylabs.xyz. Owner confirms which Safe signers sign the ownership proof.
 2. Treasury Safe name tag on Etherscan, BaseScan, BscScan, Arbiscan; Blockscout public tag on the Blockscout chains.
 3. Project contracts, one project at a time, after their sources are verified.
 4. Token info only when we have our own ERC-20.

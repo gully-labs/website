@@ -18,7 +18,7 @@ export interface Brand {
   gully?: boolean
 }
 
-export const GULLY_BRAND: Brand = { name: 'Gully Labs', named: true, ownerShort: '', logoUrl: null, accent: null, supportEmail: 'hello@gullylabs.xyz', website: 'https://gullylabs.xyz', gully: true }
+export const GULLY_BRAND: Brand = { name: 'Gully Labs', named: true, ownerShort: '', logoUrl: null, accent: null, supportEmail: 'team@gullylabs.xyz', website: 'https://gullylabs.xyz', gully: true }
 
 /** The store as the page names it: its name, or "Store" until the merchant sets one. */
 export const storeName = (b: Brand) => (b.named ? b.name : 'Store')
