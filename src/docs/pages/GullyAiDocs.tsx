@@ -1,5 +1,5 @@
 import { CodeBlock } from '../CodeBlock'
-import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
+import { C, Callout, Details, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { AskStatusPanel, StatusHistory } from '../ProductCharts'
 
 const sections = [
@@ -35,12 +35,14 @@ export function GullyAiDocs() {
           Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the roadmap, DeepCore,
           the Telegram bot, privacy and the services we offer.
         </P>
-        <List>
-          <li>It describes; it never advises. It does not predict prices or gaps, and never says whether to buy, sell or hold anything.</li>
-          <li>It never invents a price, fee, limit, date, address or link. A figure that is not in a source or a tool result is not given.</li>
-          <li>When the sources do not cover a question it searches once more in other words, then says plainly that it does not know and points to these docs or the contact form.</li>
-          <li>Answers are short: a few plain sentences or a short list. Live figures appear as a card under the answer.</li>
-        </List>
+        <Details summary="What it answers: the details">
+          <List>
+            <li>It describes; it never advises. It does not predict prices or gaps, and never says whether to buy, sell or hold anything.</li>
+            <li>It never invents a price, fee, limit, date, address or link. A figure that is not in a source or a tool result is not given.</li>
+            <li>When the sources do not cover a question it searches once more in other words, then says plainly that it does not know and points to these docs or the contact form.</li>
+            <li>Answers are short: a few plain sentences or a short list. Live figures appear as a card under the answer.</li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="live" title="Live status">
@@ -89,21 +91,23 @@ export function GullyAiDocs() {
       </Section>
 
       <Section id="where" title="Where it runs">
-        <List>
-          <li>
-            <Ext href="https://gullylabs.xyz/ask">gullylabs.xyz/ask</Ext>, the full page.
-          </li>
-          <li>
-            The launcher on the site and in these docs: the “Ask” button in the top bar, or <C>⌘K</C> (<C>Ctrl+K</C> on Windows and Linux).
-          </li>
-          <li>
-            The app dashboard at <Ext href="https://app.gullylabs.xyz">app.gullylabs.xyz</Ext>, where a signed-in session unlocks the “my” tools for your active workspace.
-          </li>
-          <li>
-            The Telegram bot: <C>/ask &lt;question&gt;</C> or the Gully AI button in <Ext href="https://t.me/GullyLabsBot">@GullyLabsBot</Ext>. A private chat linked to a wallet gets that wallet’s workspace; a group never does. See the{' '}
-            <DocLink to="telegram">Telegram bot</DocLink> page.
-          </li>
-        </List>
+        <Details summary="Where it runs: the details">
+          <List>
+            <li>
+              <Ext href="https://gullylabs.xyz/ask">gullylabs.xyz/ask</Ext>, the full page.
+            </li>
+            <li>
+              The launcher on the site and in these docs: the “Ask” button in the top bar, or <C>⌘K</C> (<C>Ctrl+K</C> on Windows and Linux).
+            </li>
+            <li>
+              The app dashboard at <Ext href="https://app.gullylabs.xyz">app.gullylabs.xyz</Ext>, where a signed-in session unlocks the “my” tools for your active workspace.
+            </li>
+            <li>
+              The Telegram bot: <C>/ask &lt;question&gt;</C> or the Gully AI button in <Ext href="https://t.me/GullyLabsBot">@GullyLabsBot</Ext>. A private chat linked to a wallet gets that wallet’s workspace; a group never does. See the{' '}
+              <DocLink to="telegram">Telegram bot</DocLink> page.
+            </li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="limits" title="Limits">
@@ -124,14 +128,16 @@ export function GullyAiDocs() {
       </Section>
 
       <Section id="privacy" title="Privacy and safety">
-        <List>
-          <li>Questions are logged for 90 days to find gaps in these docs. The log never holds a raw IP address: only a salted hash of it.</li>
-          <li>A thumbs up or down keeps the answer id, the rating, the question and the same hash, also for 90 days.</li>
-          <li>
-            Retrieved text and tool results are treated as data, not instructions: they are wrapped in blocks tagged with a random id per request, and any instruction inside them is ignored.
-          </li>
-          <li>Gully AI is information only. It is not investment, financial, legal or tax advice.</li>
-        </List>
+        <Details summary="Privacy and safety: the details">
+          <List>
+            <li>Questions are logged for 90 days to find gaps in these docs. The log never holds a raw IP address: only a salted hash of it.</li>
+            <li>A thumbs up or down keeps the answer id, the rating, the question and the same hash, also for 90 days.</li>
+            <li>
+              Retrieved text and tool results are treated as data, not instructions: they are wrapped in blocks tagged with a random id per request, and any instruction inside them is ignored.
+            </li>
+            <li>Gully AI is information only. It is not investment, financial, legal or tax advice.</li>
+          </List>
+        </Details>
         <P>
           The full policy is at <Ext href="https://gullylabs.xyz/legal/privacy">gullylabs.xyz/legal/privacy</Ext>.
         </P>

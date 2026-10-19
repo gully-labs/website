@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
 import type { AlertChannels, Offer } from '../../pages/developers/api'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { PlanLimits } from '../../components/charts/PlanLimits'
 import { CodeBlock } from '../CodeBlock'
-import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
-import { apiOrigin } from '../nav'
+import { C, Callout, Details, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
+import { useApi } from '../useApi'
 
 const sections = [
   { id: 'plans', title: 'Plans' },
@@ -107,36 +106,12 @@ app.post('/hooks/gully', express.raw({ type: 'application/json' }), (req, res) =
 app.listen(3000)`
 
 function useOffer() {
-  const [offer, setOffer] = useState<Offer | null | 'error'>(null)
-  useEffect(() => {
-    let alive = true
-    fetch(`${apiOrigin()}/api/plans`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(
-        (o: Offer) => alive && setOffer(o),
-        () => alive && setOffer('error'),
-      )
-    return () => {
-      alive = false
-    }
-  }, [])
+  const offer = useApi<Offer>('/api/plans', 60000)
   return offer
 }
 
 function useChannels() {
-  const [ch, setCh] = useState<AlertChannels | null | 'error'>(null)
-  useEffect(() => {
-    let alive = true
-    fetch(`${apiOrigin()}/api/alerts/channels`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(
-        (c: AlertChannels) => alive && setCh(c),
-        () => alive && setCh('error'),
-      )
-    return () => {
-      alive = false
-    }
-  }, [])
+  const ch = useApi<AlertChannels>('/api/alerts/channels', 60000)
   return ch
 }
 
@@ -195,24 +170,26 @@ export function PlansAlerts() {
             ])}
           />
         )}
-        <List>
-          <li>
-            Open <b>Plan &amp; billing</b> on the <Ext href="https://app.gullylabs.xyz">app dashboard</Ext>, choose a plan, then a chain and an asset. You get a quote: the exact amount to send and the treasury address, valid for 20 minutes.
-          </li>
-          <li>
-            Stablecoins count one to one with the dollar; the quote adds a few millionths as a tag. ETH and BNB are priced by the Chainlink USD feed on the same chain at the moment of the quote and rounded up, with a unique tail in the last digits. The quote shows the feed, its round and when it last updated. If the feed is more than two hours old, no quote is given in that coin.
-          </li>
-          <li>
-            Press <b>Pay with a wallet</b> for a one-click transfer (the wallet is asked to switch to the quote’s chain), or send the amount from any wallet or exchange and paste the transaction hash.
-          </li>
-          <li>
-            The server reads the receipt and the transaction from a public node of that chain and checks that they agree. A payment counts when it succeeded, is on the quote’s chain, paid the treasury in the quoted asset, has the confirmations above, and its hash was never used before on any chain. The plan starts the moment it is confirmed.
-          </li>
-          <li>
-            From the wallet you signed in with, at least the price counts: any stablecoin amount from the dollar price up, or at least the quoted amount of ETH or BNB (paying more is accepted, paying less is refused and says by how much). From any other wallet or an exchange, send the exact quoted amount: its last digits tag the payment as yours, so nobody watching the treasury can claim it. A coin payment must be mined while its quote holds (ten minutes of grace).
-          </li>
-          <li>A payment buys {offer && offer !== 'error' ? offer.periodDays : 30} days. Paying again for the same plan adds them to the end; a different plan starts that day. Nothing renews by itself: to cancel, don’t pay again. When a plan lapses you are back on Free and your keys keep working at the Free limit.</li>
-        </List>
+        <Details summary="Paying: the details">
+          <List>
+            <li>
+              Open <b>Plan &amp; billing</b> on the <Ext href="https://app.gullylabs.xyz">app dashboard</Ext>, choose a plan, then a chain and an asset. You get a quote: the exact amount to send and the treasury address, valid for 20 minutes.
+            </li>
+            <li>
+              Stablecoins count one to one with the dollar; the quote adds a few millionths as a tag. ETH and BNB are priced by the Chainlink USD feed on the same chain at the moment of the quote and rounded up, with a unique tail in the last digits. The quote shows the feed, its round and when it last updated. If the feed is more than two hours old, no quote is given in that coin.
+            </li>
+            <li>
+              Press <b>Pay with a wallet</b> for a one-click transfer (the wallet is asked to switch to the quote’s chain), or send the amount from any wallet or exchange and paste the transaction hash.
+            </li>
+            <li>
+              The server reads the receipt and the transaction from a public node of that chain and checks that they agree. A payment counts when it succeeded, is on the quote’s chain, paid the treasury in the quoted asset, has the confirmations above, and its hash was never used before on any chain. The plan starts the moment it is confirmed.
+            </li>
+            <li>
+              From the wallet you signed in with, at least the price counts: any stablecoin amount from the dollar price up, or at least the quoted amount of ETH or BNB (paying more is accepted, paying less is refused and says by how much). From any other wallet or an exchange, send the exact quoted amount: its last digits tag the payment as yours, so nobody watching the treasury can claim it. A coin payment must be mined while its quote holds (ten minutes of grace).
+            </li>
+            <li>A payment buys {offer && offer !== 'error' ? offer.periodDays : 30} days. Paying again for the same plan adds them to the end; a different plan starts that day. Nothing renews by itself: to cancel, don’t pay again. When a plan lapses you are back on Free and your keys keep working at the Free limit.</li>
+          </List>
+        </Details>
         <Callout label="NO CUSTODY">The payment goes straight to the treasury wallet in your own transfer. We hold no balance and no card, and nothing leaves your wallet unless you sign it.</Callout>
         <P>
           Other Gully Labs work (Gully Analytics, services) is billed with an invoice link of the form <C>gullylabs.xyz/pay/…</C>. It takes the same assets and checks; since nobody signs in there, a payment matches an invoice only by the exact quoted amount. Once paid, the page links the transaction and a printable receipt.
@@ -235,14 +212,16 @@ export function PlansAlerts() {
             ['status', '{ type: "status", status }', <>The tracker flags the stock <C>premium</C>, <C>discount</C>, or <C>either</C>.</>],
           ]}
         />
-        <List>
-          <li>Alerts are checked on every tracker snapshot, every five minutes.</li>
-          <li>Per stock, an alert fires when its condition becomes true and re-arms once it is false again. It does not repeat while the condition simply stays true.</li>
-          <li>Each alert sends at most one delivery every 30 minutes. Stocks that trigger during that pause go out with the next delivery if their condition still holds.</li>
-          <li>Only rows the tracker would itself flag count: a readable feed and pool, a pool deep enough to flag, a fresh pool read and an open feed session. Anything else neither fires nor re-arms.</li>
-          <li>Each delivery is logged in the dashboard with its HTTP status (the last 50 per alert). Use <b>Test</b> to send an <C>alert.test</C> delivery with no events.</li>
-          <li>When a plan lapses, the alerts beyond the Free allowance stay listed but are paused until you delete some or upgrade; the oldest ones keep running.</li>
-        </List>
+        <Details summary="Gap alerts: the details">
+          <List>
+            <li>Alerts are checked on every tracker snapshot, every five minutes.</li>
+            <li>Per stock, an alert fires when its condition becomes true and re-arms once it is false again. It does not repeat while the condition simply stays true.</li>
+            <li>Each alert sends at most one delivery every 30 minutes. Stocks that trigger during that pause go out with the next delivery if their condition still holds.</li>
+            <li>Only rows the tracker would itself flag count: a readable feed and pool, a pool deep enough to flag, a fresh pool read and an open feed session. Anything else neither fires nor re-arms.</li>
+            <li>Each delivery is logged in the dashboard with its HTTP status (the last 50 per alert). Use <b>Test</b> to send an <C>alert.test</C> delivery with no events.</li>
+            <li>When a plan lapses, the alerts beyond the Free allowance stay listed but are paused until you delete some or upgrade; the oldest ones keep running.</li>
+          </List>
+        </Details>
         <H3Note />
       </Section>
 
@@ -252,17 +231,21 @@ export function PlansAlerts() {
         </P>
         <Fields
           head={['Condition', 'Body', 'Fires when']}
-          rows={[['deepcore-launch', '{ type: "deepcore-launch", chainId }', <>A token launches on DeepCore on that chain: <C>56</C> BNB Chain, <C>999</C> HyperEVM, <C>4663</C> Robinhood Chain or <C>8453</C> Base; <C>null</C> for any of them.</>]]}
+          rows={[['deepcore-launch', '{ type: "deepcore-launch", chainId }', <>A token launches on DeepCore on that chain: <C>56</C> BNB Chain, <C>999</C> HyperEVM, <C>4663</C> Robinhood Chain or <C>8453</C> Base; empty for any of them.</>]]}
         />
-        <List>
-          <li>DeepCore’s public API (<C>GET /v1/launches</C>) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again.</li>
-          <li>Only launches made after the alert was created count (with an hour of slack for indexer lag), so a new alert does not replay the backlog.</li>
-          <li>One delivery at most every 5 minutes per alert: launches seen in the meantime wait and go out together, up to the 20 most recent.</li>
-          <li>A paused, muted or over-the-plan alert neither sends nor queues: launches it missed are not sent later.</li>
-          <li>It counts against your plan’s alerts like a gap alert, and delivers the same way: webhook, Telegram or both, signed the same way (see below).</li>
-          <li>When DeepCore cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.</li>
-        </List>
-        <CodeBlock lang="js" code={LAUNCH} caption="TypeScript · a launch delivery" />
+        <Details summary="DeepCore launch alerts: the details">
+          <List>
+            <li>DeepCore’s public API (<C>GET /v1/launches</C>) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again.</li>
+            <li>Only launches made after the alert was created count (with an hour of slack for indexer lag), so a new alert does not replay the backlog.</li>
+            <li>One delivery at most every 5 minutes per alert: launches seen in the meantime wait and go out together, up to the 20 most recent.</li>
+            <li>A paused, muted or over-the-plan alert neither sends nor queues: launches it missed are not sent later.</li>
+            <li>It counts against your plan’s alerts like a gap alert, and delivers the same way: webhook, Telegram or both, signed the same way (see below).</li>
+            <li>When DeepCore cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.</li>
+          </List>
+        </Details>
+        <Details summary="A launch delivery, as TypeScript">
+          <CodeBlock lang="js" code={LAUNCH} caption="TypeScript · a launch delivery" />
+        </Details>
         <P>
           In Telegram, anyone can ask the bot <C>/launches</C> for the five latest DeepCore launches on every chain, or <C>/launches base</C> (also <C>bsc</C>, <C>robinhood</C>, <C>hyperevm</C>, or a chain id) for one chain. It reads the same 90-second cache as the alerts, says when the list is older because DeepCore could not be read, and names any chain DeepCore itself could not read. Launch information is not advice.
         </P>
@@ -272,14 +255,18 @@ export function PlansAlerts() {
         <P>
           We <C>POST</C> JSON with these headers: <C>Content-Type: application/json</C>, <C>X-Gully-Timestamp</C> (Unix seconds) and <C>X-Gully-Signature</C> (<C>sha256=</C> and the hex HMAC). Answer with any <C>2xx</C> within 5 seconds; we do not follow redirects and do not retry, and the status is shown in your delivery log.
         </P>
-        <CodeBlock lang="js" code={SHAPE} caption="TypeScript · shape of a delivery" />
+        <Details summary="Shape of a delivery, as TypeScript">
+          <CodeBlock lang="js" code={SHAPE} caption="TypeScript · shape of a delivery" />
+        </Details>
       </Section>
 
       <Section id="verify" title="Verifying the signature">
         <P>
           The signature is HMAC-SHA256 with the alert’s secret over <C>{'`${timestamp}.${rawBody}`'}</C>. The secret (<C>whsec_…</C>) is shown once when you create the alert; <b>New secret</b> replaces it. Compare in constant time and refuse old timestamps.
         </P>
-        <CodeBlock lang="js" code={VERIFY} caption="Node · Express receiver" />
+        <Details summary="Express receiver in Node">
+          <CodeBlock lang="js" code={VERIFY} caption="Node · Express receiver" />
+        </Details>
         <P>
           Webhook URLs must be <C>https://</C> on a public address. The host is resolved before every delivery and private, loopback, link-local and other reserved addresses are refused. See <DocLink to="api-keys">API keys</DocLink> for keeping secrets out of browser code; the same applies here.
         </P>
@@ -294,16 +281,18 @@ export function PlansAlerts() {
         <P>
           An alert can message a Telegram chat as well as, or instead of, calling a webhook{channels && channels !== 'error' && channels.telegram.bot ? <> (the bot is <Ext href={`https://t.me/${channels.telegram.bot}`}>@{channels.telegram.bot}</Ext>)</> : null}. In the Alerts tab of the dashboard press <C>Connect Telegram</C>: it opens the bot with a one-time code (ten minutes, single use) that links the chat to your wallet account, so there is no chat id to copy. <C>Add to a group</C> does the same for a group; only the person who linked a group can unlink it. Then tick Telegram on any alert.
         </P>
-        <List>
-          <li>Each message names the stock and chain, the gap, the onchain and fair prices, the status and the pool liquidity, with a link to the stock page.</li>
-          <li>
-            <C>Open NVDA</C> opens the stock page; <C>Mute 24h</C> pauses that alert, on every channel, for 24 hours. <C>Resume</C> in the dashboard ends a mute early.
-          </li>
-          <li>Deliveries appear in the alert&apos;s log like webhook ones, with the result Telegram gave.</li>
-          <li>
-            In the chat, <C>/alerts</C> lists your alerts and <C>/stop</C> unlinks. Anyone can ask the bot <C>/gap NVDA</C> (or <C>/gap NVDA bsc</C>) and <C>/top</C> for the five widest trusted gaps. A figure the tracker could not read is said to be unreadable, never shown as zero.
-          </li>
-        </List>
+        <Details summary="Telegram: the details">
+          <List>
+            <li>Each message names the stock and chain, the gap, the onchain and fair prices, the status and the pool liquidity, with a link to the stock page.</li>
+            <li>
+              <C>Open NVDA</C> opens the stock page; <C>Mute 24h</C> pauses that alert, on every channel, for 24 hours. <C>Resume</C> in the dashboard ends a mute early.
+            </li>
+            <li>Deliveries appear in the alert&apos;s log like webhook ones, with the result Telegram gave.</li>
+            <li>
+              In the chat, <C>/alerts</C> lists your alerts and <C>/stop</C> unlinks. Anyone can ask the bot <C>/gap NVDA</C> (or <C>/gap NVDA bsc</C>) and <C>/top</C> for the five widest trusted gaps. A figure the tracker could not read is said to be unreadable, never shown as zero.
+            </li>
+          </List>
+        </Details>
         <P>
           Which channels the server offers is public at <C>GET /api/alerts/channels</C>.
         </P>

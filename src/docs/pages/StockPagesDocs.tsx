@@ -1,6 +1,6 @@
 import { CodeBlock } from '../CodeBlock'
 import { GapHistoryChart } from '../LiveCharts'
-import { C, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
+import { C, Details, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 
 const sections = [
   { id: 'what', title: 'One page per stock token' },
@@ -66,17 +66,19 @@ export function StockPagesDocs() {
       </Section>
 
       <Section id="side" title="Swap, contracts and follow">
-        <List>
-          <li>
-            <strong className="text-ink">Swap</strong>: a swap card for the token, through LI.FI on Robinhood Chain and BNB Chain and Jupiter on Solana. It stays closed where the region check says so. Your wallet signs everything; see <DocLink to="swaps">Swaps</DocLink>.
-          </li>
-          <li>
-            <strong className="text-ink">Contracts</strong>: the token, its fair-price feed (or the fair-price source) and its pool, each with a copy button and an explorer link (Blockscout, BscScan, Etherscan or Solscan, by chain).
-          </li>
-          <li>
-            <strong className="text-ink">Follow</strong>: “Alert me when the gap moves” opens the app’s Alerts tab with this token ready in the new-alert dialog, a button that copies a live badge for your site, and the same token on other chains.
-          </li>
-        </List>
+        <Details summary="Swap, contracts and follow: the details">
+          <List>
+            <li>
+              <strong className="text-ink">Swap</strong>: a swap card for the token, through LI.FI on Robinhood Chain and BNB Chain and Jupiter on Solana. It stays closed where the region check says so. Your wallet signs everything; see <DocLink to="swaps">Swaps</DocLink>.
+            </li>
+            <li>
+              <strong className="text-ink">Contracts</strong>: the token, its fair-price feed (or the fair-price source) and its pool, each with a copy button and an explorer link (Blockscout, BscScan, Etherscan or Solscan, by chain).
+            </li>
+            <li>
+              <strong className="text-ink">Follow</strong>: “Alert me when the gap moves” opens the app’s Alerts tab with this token ready in the new-alert dialog, a button that copies a live badge for your site, and the same token on other chains.
+            </li>
+          </List>
+        </Details>
         <P>
           The page also has a “Post on X” button that shares the token’s gap, and a link to the pool on DexScreener.
         </P>
@@ -89,22 +91,26 @@ export function StockPagesDocs() {
       </Section>
 
       <Section id="missing" title="Unreadable and unknown tokens">
-        <List>
-          <li>A value that could not be read shows a dash, never zero. If the whole tracker cannot be read the page says so.</li>
-          <li>
-            A ticker the tracker does not follow, or one on the wrong chain, answers <C>404</C> with a search instead of a silent redirect.
-          </li>
-          <li>
-            A lower-case ticker redirects to the upper-case address (<C>/tracker/bsc/aapl</C> goes to <C>/tracker/bsc/AAPL</C>) if the token exists.
-          </li>
-        </List>
+        <Details summary="Unreadable and unknown tokens: the details">
+          <List>
+            <li>A value that could not be read shows a dash, never zero. If the whole tracker cannot be read the page says so.</li>
+            <li>
+              A ticker the tracker does not follow, or one on the wrong chain, answers <C>404</C> with a search instead of a silent redirect.
+            </li>
+            <li>
+              A lower-case ticker redirects to the upper-case address (<C>/tracker/bsc/aapl</C> goes to <C>/tracker/bsc/AAPL</C>) if the token exists.
+            </li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="badge" title="Put the badge on your site">
         <P>
           The page’s “Copy a live badge for your site” button copies this snippet for that token. The options are in the <DocLink to="widget">widget guide</DocLink>.
         </P>
-        <CodeBlock lang="html" code={BADGE} />
+        <Details summary="The badge">
+          <CodeBlock lang="html" code={BADGE} />
+        </Details>
       </Section>
     </DocPage>
   )

@@ -68,7 +68,7 @@ export function Sdk() {
       <Section id="tracker" title="Tracker client">
         <CodeBlock lang="js" code={CLIENT} />
         <P>
-          Rows are the same objects the <DocLink to="api">API reference</DocLink> describes. A price that cannot be read is <C>null</C>, never zero;{' '}
+          Rows are the same objects the <DocLink to="api">API reference</DocLink> describes. A price that cannot be read comes back empty, never zero;{' '}
           <C>isTrusted(row)</C> keeps the rows the tracker itself would chart. <C>tracker.rateLimit</C> holds the limit the last response reported.
         </P>
         <P>

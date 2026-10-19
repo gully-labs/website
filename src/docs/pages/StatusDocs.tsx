@@ -1,6 +1,6 @@
 import { StatusBoard } from '../../components/status/StatusBoard'
 import { CodeBlock } from '../CodeBlock'
-import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
+import { C, Callout, ChainName, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 
 const sections = [
   { id: 'live', title: 'Live status' },
@@ -84,7 +84,7 @@ export function StatusDocs() {
           head={['Component', 'Group', 'Up when']}
           rows={[
             ['Public API', 'platform', 'This server is answering. The detail says how long it has been up'],
-            ['Tracker: Robinhood Chain, BNB Chain, Solana', 'tracker', 'The chain’s token prices were read on chain in the last 10 minutes (the newest price reading, not the hourly pool discovery). 10 to 30 minutes old is degraded; older, or no price read at all, is down'],
+            [<>Tracker: <ChainName name="Robinhood Chain, BNB Chain, Solana" /></>, 'tracker', 'The chain’s token prices were read on chain in the last 10 minutes (the newest price reading, not the hourly pool discovery). 10 to 30 minutes old is degraded; older, or no price read at all, is down'],
             ['DeepCore launch poller', 'deepcore', 'The last good poll is within three poll intervals; within ten is degraded'],
             ['Telegram bot webhook', 'telegram', 'Telegram’s getWebhookInfo shows a webhook registered. A delivery error in the last 10 minutes, or more than 100 updates waiting, is degraded. See the Telegram bot page'],
             ['Telegram bot: News channel gate', 'telegram', 'Telegram’s getChatMember shows the bot is an admin of the News channel. If it is not, the gate cannot check membership and lets everyone through: degraded'],
@@ -111,7 +111,7 @@ export function StatusDocs() {
             <C>off</C> and <C>unknown</C> samples are left out entirely, so a part that is not configured neither helps nor hurts the figure.
           </li>
           <li>
-            <C>uptime24h</C> is the counted samples of the last 24 hours averaged, from 0 to 1. With none counted it is <C>null</C>, shown as “not tracked yet”, never as 0% or 100%.
+            <C>uptime24h</C> is the counted samples of the last 24 hours averaged, from 0 to 1. With none counted it is empty, shown as “not tracked yet”, never as 0% or 100%.
           </li>
           <li>
             Each 30-minute bucket in <C>history</C> uses the same rule for <C>up</C>, and <C>ms</C> is the mean latency of its checks that were timed.

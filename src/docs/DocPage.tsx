@@ -1,6 +1,8 @@
-import { ArrowLeft, ArrowRight, ArrowUpRight, Hash } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronDown, Hash } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { ChainLogo } from '../components/logos/ChainLogo'
+import { TokenLogo } from '../components/logos/TokenLogo'
 import { eyebrow as eyebrowCls } from '../components/ui'
 import { canonical, DOC_PAGES, useDocHref, type DocSlug } from './nav'
 
@@ -75,7 +77,7 @@ function PrevNext({ slug }: { slug: DocSlug }) {
   const next = DOC_PAGES[i + 1]
   const prevHref = useDocHref(prev?.slug ?? '')
   const nextHref = useDocHref(next?.slug ?? '')
-  const cls = 'flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-lg border border-line px-4 py-3 transition-colors hover:border-gold-line hover:bg-surface'
+  const cls = 'flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-card border border-line px-4 py-3 transition-colors hover:border-gold-line hover:bg-surface'
   return (
     <nav aria-label="Pages" className="mt-6 flex flex-wrap gap-3 border-t border-line pt-8">
       {prev ? (
@@ -159,10 +161,55 @@ export function List({ children }: { children: ReactNode }) {
 
 export function Callout({ label, children, tone = 'gold' }: { label: string; children: ReactNode; tone?: 'gold' | 'plain' }) {
   return (
-    <div className={`flex flex-col gap-2 rounded-lg border p-5 ${tone === 'gold' ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line bg-surface'}`}>
+    <div className={`flex flex-col gap-2 rounded-card border p-card ${tone === 'gold' ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line bg-card-token'}`}>
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{label}</span>
       <div className="text-[14.5px] leading-[1.65] text-ink-2">{children}</div>
     </div>
+  )
+}
+
+
+const TICKER = /\b(USDC|USDT|ETH|BNB|POL|AVAX|SOL)\b/g
+
+/** One chain's name with its mark in front. A trailing "(8453)" chain id is dropped from the lookup, not from the text. */
+function OneChain({ name }: { name: string }) {
+  const key = name.replace(/\s*\(.*\)\s*$/, '')
+  return (
+    <span className="inline-flex items-center gap-[6px] whitespace-nowrap">
+      <ChainLogo chain={key} size={20} decorative />
+      {name}
+    </span>
+  )
+}
+
+/** A chain name, or a list of them ("Base, Ethereum, BNB Chain"), each with its mark. */
+export function ChainName({ name }: { name: string }) {
+  const names = name.split(/,\s*/)
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+      {names.map((n) => (
+        <OneChain key={n} name={n} />
+      ))}
+    </span>
+  )
+}
+
+/** Free text that names assets ("USDC (6 decimals), ETH"): each ticker gets its logo. */
+export function AssetText({ text }: { text: string }) {
+  const parts = text.split(TICKER)
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-1">
+      {parts.map((p, i) =>
+        i % 2 ? (
+          <span key={i} className="inline-flex items-center gap-1">
+            <TokenLogo symbol={p} size={16} decorative />
+            {p}
+          </span>
+        ) : (
+          p && <span key={i}>{p}</span>
+        ),
+      )}
+    </span>
   )
 }
 
@@ -170,27 +217,60 @@ export function Callout({ label, children, tone = 'gold' }: { label: string; chi
  * A field table that stacks into cards on phones, so nothing scrolls sideways. `routes` is the endpoint-table
  * layout: path, a wide description, then a narrow mono column for limits and caching.
  */
-export function Fields({ rows, head = ['Field', 'Type', 'Meaning'], variant = 'fields' }: { rows: [string, ReactNode, ReactNode][]; head?: [string, string, string]; variant?: 'fields' | 'routes' }) {
+export function Fields({ rows, head = ['Field', 'Type', 'Meaning'], variant = 'fields', collapsible, chainCol = false, assetCol }: { rows: [ReactNode, ReactNode, ReactNode][]; head?: [string, string, string]; variant?: 'fields' | 'routes'; collapsible?: boolean; chainCol?: boolean; assetCol?: 1 | 2 }) {
   const grid = variant === 'routes' ? 'grid-cols-[minmax(0,1.1fr)_minmax(0,2.2fr)_minmax(0,.9fr)]' : 'grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)_minmax(0,2.2fr)]'
   const mono = 'font-mono text-[12px] break-words text-dim'
   const text = 'text-[14px] leading-[1.6] text-ink-2'
+  // Long tables fold: each row is one line (name, the start of its text) and opens to the whole row.
+  const fold = collapsible ?? rows.length >= 4
+  const first = (f: ReactNode) => (chainCol && typeof f === 'string' ? <ChainName name={f} /> : f)
+  const col = (i: 1 | 2, v: ReactNode) => (assetCol === i && typeof v === 'string' ? <AssetText text={v} /> : v)
   return (
-    <div className="overflow-hidden rounded-lg border border-line">
+    <div className="overflow-hidden rounded-card border border-line">
       <div className={`grid ${grid} gap-4 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] tracking-[1px] text-faint max-[640px]:hidden`}>
         {head.map((h) => (
           <span key={h}>{h.toUpperCase()}</span>
         ))}
       </div>
       <div className="divide-y divide-line">
-        {rows.map(([f, t, m]) => (
-          <div key={f} className={`grid ${grid} gap-4 px-4 py-3 transition-colors hover:bg-surface max-[640px]:grid-cols-1 max-[640px]:gap-1`}>
-            <span className="font-mono text-[13px] break-words text-gold">{f}</span>
-            <span className={variant === 'routes' ? text : mono}>{t}</span>
-            <span className={variant === 'routes' ? mono : text}>{m}</span>
-          </div>
-        ))}
+        {rows.map(([f, t, m], ri) =>
+          fold ? (
+            <details key={ri} className="group">
+              <summary className={`grid ${grid} cursor-pointer list-none items-start gap-4 px-4 py-[10px] transition-colors marker:hidden hover:bg-surface max-[640px]:grid-cols-[minmax(0,1fr)_auto] [&::-webkit-details-marker]:hidden`}>
+                <span className="font-mono text-[13px] break-words text-gold">{first(f)}</span>
+                <span className={`${variant === 'routes' ? text : mono} line-clamp-1 group-open:hidden max-[640px]:hidden`}>{variant === 'routes' ? col(1, t) : col(2, m)}</span>
+                <span className={`${variant === 'routes' ? mono : text} line-clamp-1 group-open:hidden max-[640px]:hidden`}>{variant === 'routes' ? col(2, m) : col(1, t)}</span>
+                <ChevronDown size={14} aria-hidden className="mt-[3px] hidden text-faint transition-transform group-open:rotate-180 max-[640px]:block" />
+              </summary>
+              <div className={`grid ${grid} gap-4 px-4 pb-3 max-[640px]:grid-cols-1 max-[640px]:gap-1`}>
+                <span className="max-[640px]:hidden" />
+                <span className={variant === 'routes' ? text : mono}>{col(1, t)}</span>
+                <span className={variant === 'routes' ? mono : text}>{col(2, m)}</span>
+              </div>
+            </details>
+          ) : (
+            <div key={ri} className={`grid ${grid} gap-4 px-4 py-3 transition-colors hover:bg-surface max-[640px]:grid-cols-1 max-[640px]:gap-1`}>
+              <span className="font-mono text-[13px] break-words text-gold">{first(f)}</span>
+              <span className={variant === 'routes' ? text : mono}>{col(1, t)}</span>
+              <span className={variant === 'routes' ? mono : text}>{col(2, m)}</span>
+            </div>
+          ),
+        )}
       </div>
     </div>
+  )
+}
+
+/** Prose that backs a chart or table: closed by default, one line high. */
+export function Details({ summary, children, open = false }: { summary: string; children: ReactNode; open?: boolean }) {
+  return (
+    <details open={open} className="group rounded-card border border-line bg-card-token">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 font-mono text-[12px] tracking-[.5px] text-muted marker:hidden hover:text-ink [&::-webkit-details-marker]:hidden">
+        {summary}
+        <ChevronDown size={14} aria-hidden className="flex-none text-faint transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="flex flex-col gap-3 px-4 pb-4">{children}</div>
+    </details>
   )
 }
 

@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
 import type { Offer } from '../../pages/developers/api'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { AnalyticsPlansChart } from '../LiveCharts'
-import { apiOrigin } from '../nav'
+import { useApi } from '../useApi'
 
 const sections = [
   { id: 'start', title: 'Sign up' },
@@ -35,19 +34,7 @@ const REFUSED = `// The answer to a tracker call that is not recorded (HTTP 402)
 }`
 
 function useOffer() {
-  const [offer, setOffer] = useState<Offer | null | 'error'>(null)
-  useEffect(() => {
-    let alive = true
-    fetch(`${apiOrigin()}/api/plans`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(
-        (o: Offer) => alive && setOffer(o),
-        () => alive && setOffer('error'),
-      )
-    return () => {
-      alive = false
-    }
-  }, [])
+  const offer = useApi<Offer>('/api/plans', 60000)
   return offer
 }
 

@@ -1,10 +1,11 @@
 import { Layers, ShieldCheck, type LucideIcon } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { WeightsRing } from '../../pages/score/charts'
 import type { Methodology } from '../../pages/score/api'
 import { Callout, DocLink, DocPage, Ext, H3, List, P, Section } from '../DocPage'
-import { apiOrigin, useDocHref, type DocSlug } from '../nav'
+import { useApi } from '../useApi'
+import { useDocHref, type DocSlug } from '../nav'
 
 /* The general roadmap: every track with its status, so nothing planned reads as shipped and nothing live
    reads as planned. Status words are fixed: LIVE (in production), ON REQUEST (quoted per project, people do
@@ -20,19 +21,10 @@ const PILL: Record<Status, [string, string]> = {
 
 /** The Gully Score's live weights (GET /api/score), the roadmap's own live chart: stage 04 in production. */
 function ScoreWeightsLive() {
-  const [m, set] = useState<Methodology | null | 'error'>(null)
-  useEffect(() => {
-    let alive = true
-    fetch(`${apiOrigin()}/api/score`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d: { methodology?: Methodology }) => alive && set(d.methodology ?? 'error'))
-      .catch(() => alive && set('error'))
-    return () => {
-      alive = false
-    }
-  }, [])
+  const raw = useApi<{ methodology?: Methodology }>('/api/score', 300_000)
+  const m: Methodology | null | 'error' = raw === null ? null : raw === 'error' ? 'error' : (raw.methodology ?? 'error')
   return (
-    <div className="flex flex-wrap items-center gap-5 rounded-card border border-line bg-surface p-4" aria-live="polite">
+    <div className="flex flex-wrap items-center gap-5 rounded-card border border-line bg-card-token p-4" aria-live="polite">
       {m === null ? (
         <span className="flex items-center gap-2 text-[13px] text-faint">
           <span aria-hidden className="size-2 rounded-full bg-gold" style={{ animation: 'gl-live-pulse 2.4s ease-out infinite' }} /> Reading the live methodology…
@@ -62,7 +54,7 @@ function Pill({ s }: { s: Status }) {
 function Track({ icon: Icon, title, status, to, hash, children }: { icon: LucideIcon; title: string; status: Status; to: DocSlug; hash?: string; children: ReactNode }) {
   const href = useDocHref(to, hash)
   return (
-    <Link to={href} className="flex min-h-11 min-w-0 items-start gap-3 rounded-[10px] border border-line bg-surface px-4 py-3 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover hover:text-ink">
+    <Link to={href} className="flex min-h-11 min-w-0 items-start gap-3 rounded-card border border-line bg-card-token px-4 py-3 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover hover:text-ink">
       <span aria-hidden className="grid size-9 flex-none place-items-center rounded-[8px] border border-line bg-bg text-gold">
         <Icon size={17} strokeWidth={1.75} />
       </span>

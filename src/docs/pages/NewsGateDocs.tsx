@@ -1,3 +1,4 @@
+import { StatusHistory } from '../ProductCharts'
 import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 
 const sections = [
@@ -23,6 +24,8 @@ export function NewsGateDocs() {
       }
       sections={sections}
     >
+      <StatusHistory groups={['telegram']} title="TELEGRAM BOT AND NEWS GATE, LAST 24 H" />
+
       <Section id="rule" title="The rule">
         <P>
           Menus, commands, Gully AI and the <DocLink to="telegram-mini-app">Mini App</DocLink> need you to follow the channel. If you do not, the bot answers with “Follow Gully Labs News to use this bot” and two buttons: Join the channel, and “✅ I’ve joined”, which checks again straight away. When the check passes, the main menu opens.

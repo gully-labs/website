@@ -1,3 +1,5 @@
+import { GapIndexChart } from '../LiveCharts'
+import { StatusHistory } from '../ProductCharts'
 import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 
 const sections = [
@@ -24,6 +26,11 @@ export function TelegramMiniAppDocs() {
       }
       sections={sections}
     >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-3">
+        <GapIndexChart />
+        <StatusHistory groups={['telegram']} title="TELEGRAM BOT CHECKS, LAST 24 H" />
+      </div>
+
       <Section id="open" title="Opening the app">
         <P>
           The app is served at <Ext href="https://gullylabs.xyz/tg">gullylabs.xyz/tg</Ext> and only works inside Telegram. In a normal browser it shows “Open this inside Telegram” with a link to the bot and to the tracker. Inside Telegram it opens from:

@@ -1,5 +1,7 @@
 import { CodeBlock } from '../CodeBlock'
-import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
+import { GasCostChart } from '../LiveCharts'
+import { StatusHistory } from '../ProductCharts'
+import { AssetText, C, Callout, Details, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 
 const sections = [
   { id: 'what', title: 'What it covers' },
@@ -31,6 +33,9 @@ export function SolanaPayDocs() {
       }
       sections={sections}
     >
+      <GasCostChart />
+      <StatusHistory groups={['payments']} title="GULLY PAY CHECKS, LAST 24 H" />
+
       <Section id="what" title="What it covers">
         <P>
           Solana Pay works in Gully Labs’ own checkout: the quotes made for the pay page and the app’s checkout. It uses the same quotes, ledger and one-signature-one-payment rule as the EVM chains. Merchant stores take the EVM chains for now, so a store does not offer Solana.
@@ -43,10 +48,11 @@ export function SolanaPayDocs() {
       <Section id="assets" title="Assets and prices">
         <Fields
           head={['Asset', 'How it is paid', 'How it is priced']}
+          collapsible={false}
           rows={[
-            ['USDC', 'SPL token, mint EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v, 6 decimals', 'One USDC per dollar of the quote'],
-            ['USDT', 'SPL token, mint Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB, 6 decimals', 'One USDT per dollar of the quote'],
-            ['SOL', 'A plain transfer of the coin, 9 decimals', 'Chainlink’s SOL / USD feed, read on Arbitrum'],
+            [<AssetText key="usdc" text="USDC" />, 'SPL token (mint EPjF…Dt1v), 6 decimals', 'One USDC per dollar of the quote'],
+            [<AssetText key="usdt" text="USDT" />, 'SPL token (mint Es9v…NYB), 6 decimals', 'One USDT per dollar of the quote'],
+            [<AssetText key="sol" text="SOL" />, 'A plain transfer of the coin, 9 decimals', 'Chainlink’s SOL / USD feed, read on Arbitrum'],
           ]}
         />
         <P>
@@ -58,41 +64,47 @@ export function SolanaPayDocs() {
         <P>The QR code on the pay page, and the link behind it, is a Solana Pay transfer request built on the server from the quote’s exact base units, so the amount is never rounded.</P>
         <CodeBlock lang="text" code={URL_TOKEN} caption="USDC or USDT" />
         <CodeBlock lang="text" code={URL_SOL} caption="SOL" />
-        <List>
-          <li>
-            <C>reference</C> is a fresh public key (32 random bytes) made for that one quote. A wallet that follows the spec adds it as a read-only account to the transfer, which is what lets us find the payment on chain.
-          </li>
-          <li>
-            <C>amount</C> is a plain decimal with no exponent. Each open quote in an asset has a different amount, so an exact transfer names its quote; the unique part is in lamports for SOL.
-          </li>
-          <li>A quote lives 20 minutes, and a payment may be mined up to 10 minutes after it runs out.</li>
-        </List>
+        <Details summary="The transfer request: the details">
+          <List>
+            <li>
+              <C>reference</C> is a fresh public key (32 random bytes) made for that one quote. A wallet that follows the spec adds it as a read-only account to the transfer, which is what lets us find the payment on chain.
+            </li>
+            <li>
+              <C>amount</C> is a plain decimal with no exponent. Each open quote in an asset has a different amount, so an exact transfer names its quote; the unique part is in lamports for SOL.
+            </li>
+            <li>A quote lives 20 minutes, and a payment may be mined up to 10 minutes after it runs out.</li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="paying" title="Three ways to pay">
-        <List>
-          <li>
-            <strong className="text-ink">Scan the QR</strong> with a Solana Pay wallet. While the quote can still be paid, the page asks <C>GET /api/solana/pay/find</C> about every five seconds, and hands the first signature it sees to the normal check: “Payment seen on Solana: checking it now.”
-          </li>
-          <li>
-            <strong className="text-ink">Pay with wallet</strong>: connect a Wallet Standard wallet in the browser and sign one transaction that pays the treasury the exact quoted amount and carries the quote’s reference. For USDC and USDT the transaction first creates the treasury’s token account if it is missing, and the payer covers its rent once (about 0.002 SOL). For SOL a small amount is kept back for the network fee. If the wallet does not hold enough, the page says so and nothing is sent.
-          </li>
-          <li>
-            <strong className="text-ink">Paste the signature</strong> of a payment made from any wallet. It is the transaction signature (base58, 87 or 88 characters), not a <C>0x</C> hash. The reference is optional here, because the quote’s exact amount already names it.
-          </li>
-        </List>
+        <Details summary="Three ways to pay: the details">
+          <List>
+            <li>
+              <strong className="text-ink">Scan the QR</strong> with a Solana Pay wallet. While the quote can still be paid, the page asks <C>GET /api/solana/pay/find</C> about every five seconds, and hands the first signature it sees to the normal check: “Payment seen on Solana: checking it now.”
+            </li>
+            <li>
+              <strong className="text-ink">Pay with wallet</strong>: connect a Wallet Standard wallet in the browser and sign one transaction that pays the treasury the exact quoted amount and carries the quote’s reference. For USDC and USDT the transaction first creates the treasury’s token account if it is missing, and the payer covers its rent once (about 0.002 SOL). For SOL a small amount is kept back for the network fee. If the wallet does not hold enough, the page says so and nothing is sent.
+            </li>
+            <li>
+              <strong className="text-ink">Paste the signature</strong> of a payment made from any wallet. It is the transaction signature (base58, 87 or 88 characters), not a <C>0x</C> hash. The reference is optional here, because the quote’s exact amount already names it.
+            </li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="rules" title="When a payment counts">
-        <List>
-          <li>The transaction is finalized, which takes about 15 seconds, and did not fail. Anything less answers “not finalized yet”: check again shortly.</li>
-          <li>
-            SOL: the treasury’s own balance rose by the amount. USDC or USDT: the treasury’s associated token account for that mint rose by the amount, in that mint, under the classic SPL Token program. A transfer to any other account or in any other mint does not count.
-          </li>
-          <li>The amount is at least the quote’s minimum, and a payment from a wallet other than the signed-in one must equal the quoted amount exactly.</li>
-          <li>It falls inside the quote’s life: not made before the checkout was opened (two minutes of clock skew are allowed), and not mined more than 10 minutes after the quote ran out.</li>
-          <li>The signature was never used before for any payment, on any chain.</li>
-        </List>
+        <Details summary="When a payment counts: the details">
+          <List>
+            <li>The transaction is finalized, which takes about 15 seconds, and did not fail. Anything less answers “not finalized yet”: check again shortly.</li>
+            <li>
+              SOL: the treasury’s own balance rose by the amount. USDC or USDT: the treasury’s associated token account for that mint rose by the amount, in that mint, under the classic SPL Token program. A transfer to any other account or in any other mint does not count.
+            </li>
+            <li>The amount is at least the quote’s minimum, and a payment from a wallet other than the signed-in one must equal the quoted amount exactly.</li>
+            <li>It falls inside the quote’s life: not made before the checkout was opened (two minutes of clock skew are allowed), and not mined more than 10 minutes after the quote ran out.</li>
+            <li>The signature was never used before for any payment, on any chain.</li>
+          </List>
+        </Details>
         <P>
           If an amount is short or cannot be matched, nothing is applied, and the message asks you to write to <C>team@gullylabs.xyz</C> with the signature so the difference can be settled by hand.
         </P>

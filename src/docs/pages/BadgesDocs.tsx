@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, P, Section } from '../DocPage'
+import { LiveBadge } from '../DocExtras'
 import { apiOrigin } from '../nav'
 
 const sections = [
@@ -31,7 +32,7 @@ function Seg<T extends string>({ label, value, options, onChange }: { label: str
   return (
     <div role="group" aria-label={label} className="inline-flex overflow-hidden rounded-[6px] border border-line-strong">
       {options.map((o) => (
-        <button key={o} type="button" aria-pressed={value === o} onClick={() => onChange(o)} className={`min-h-[36px] cursor-pointer border-0 px-3 font-mono text-[12px] ${value === o ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}>
+        <button key={o} type="button" aria-pressed={value === o} onClick={() => onChange(o)} className={`min-h-11 cursor-pointer border-0 px-3 font-mono text-[12px] ${value === o ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}>
           {o}
         </button>
       ))}
@@ -41,7 +42,7 @@ function Seg<T extends string>({ label, value, options, onChange }: { label: str
 
 /** A strip on the background a badge theme is made for. */
 function Panel({ theme, children }: { theme: Theme; children: ReactNode }) {
-  return <div className={`flex flex-wrap items-center gap-x-8 gap-y-4 rounded-[12px] border border-line p-5 ${theme === 'dark' ? 'bg-[#0B1118]' : 'bg-[#ECEAE3]'}`}>{children}</div>
+  return <div className={`flex flex-wrap items-center gap-x-8 gap-y-4 rounded-card border p-card ${theme === 'dark' ? 'border-line bg-bg-footer' : 'border-paper-line bg-paper-3'}`}>{children}</div>
 }
 
 export function BadgesDocs() {
@@ -62,6 +63,11 @@ export function BadgesDocs() {
       lead="Small SVG badges you can put on a README, a docs page or a project site. One family: the Gully Labs mark, a label and a value."
       sections={sections}
     >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-3">
+        <LiveBadge theme="dark" />
+        <LiveBadge theme="light" />
+      </div>
+
       <Section id="family" title="One family">
         <P>Every badge has the same three parts: the Gully Labs mark, the product in upper case, and a value in a second field. They are plain SVG images, open to any origin, so they work in a README, in an email or on any site.</P>
         <Fields head={['Badge', 'Says', 'Address']} variant="routes" rows={KINDS.map((x) => [x.name, x.what, <C key={x.id}>{x.path}</C>])} />

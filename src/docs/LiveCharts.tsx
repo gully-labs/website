@@ -96,7 +96,7 @@ function LatencyTile({ path, label, probes }: { path: string; label: string; pro
   const option = useMemo(() => sparklinePreset({ data, labels: good.map((p) => hhmmss(p.at)), color: state === 'down' ? C.error : C.gold, fmt: (v) => `${v} ms` }), [good, data, state])
   const median = data.length ? [...data].sort((a, b) => a - b)[Math.floor(data.length / 2)] : null
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-card-token px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <span className="font-mono text-[12px] text-ink">GET {path}</span>
         <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-2">
@@ -116,10 +116,7 @@ function LatencyTile({ path, label, probes }: { path: string; label: string; pro
       {data.length >= 2 ? (
         <EChart option={option} height={CHART_H.spark} label={`Response time of ${path} from this browser, last ${data.length} checks`} skeleton="line" steps={{ count: data.length }} />
       ) : (
-        <div className="relative h-[44px] overflow-hidden rounded-sm bg-surface-deep">
-          <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.12),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
-          <span className="absolute inset-0 grid place-items-center font-mono text-[11px] text-faint">collecting a series…</span>
-        </div>
+        <GhostChart label="The line draws after two checks" height={64} badge={false} />
       )}
     </div>
   )
@@ -211,7 +208,7 @@ function WidestGaps({ rows, at, failed }: { rows: Row[] | null; at: string | nul
     [top],
   )
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-card border border-line bg-card-token px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">WIDEST TRUSTED GAPS NOW · LIVE FROM /api/tracker</span>
         <span className="font-mono text-[11px] text-dim">{at ? `built ${hhmmss(Date.parse(at))}` : rows ? 'time not tracked yet' : ''}</span>
@@ -282,7 +279,7 @@ export function PayCoverage() {
     }
   }, [chains, assets])
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-card border border-line bg-card-token px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">ACCEPTED NOW · LIVE FROM /api/plans</span>
         <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-2">
@@ -351,7 +348,7 @@ export function StatusRing() {
   )
   const failed = !rows && probes.length > 0 && !probes.some((p) => p.ok)
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-lg border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 items-center gap-4 rounded-card border border-line bg-card-token px-4 py-3">
       <div className="w-[120px] shrink-0">
         <EChart option={option} height={120} label="Tracker rows by status right now" skeleton="ring" error={failed ? 'unreadable' : undefined} />
       </div>
@@ -387,7 +384,7 @@ function useLive<T>(path: string, everyMs = 60_000, accept: (b: unknown) => bool
 /** The frame every docs chart below sits in: a mono caption, a right-hand note, the chart and a footnote. */
 function Frame({ caption, note, children, foot }: { caption: string; note?: ReactNode; children: ReactNode; foot?: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-card-token px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">{caption}</span>
         {note !== undefined && <span className="font-mono text-[11px] text-dim">{note}</span>}
@@ -820,7 +817,7 @@ export function LaunchHealthChart() {
   return (
     <Frame
       caption="NEWEST DEEPCORE LAUNCHES, HEALTH SCORE · LIVE FROM /api/holders/launches"
-      note={readNote(data, failed, data && <LiveDot on={data.state === 'ok'}>{data.state === 'ok' ? 'DeepCore read' : `DeepCore ${data.state}`}{data.asOf ? ` ${hhmmss(Date.parse(data.asOf))}` : ''}</LiveDot>)}
+      note={readNote(data, failed, data && <LiveDot on={!data.state || data.state === 'ok'}>{!data.state || data.state === 'ok' ? 'DeepCore read' : `DeepCore ${data.state}`}{data.asOf ? ` ${hhmmss(Date.parse(data.asOf))}` : ''}</LiveDot>)}
       foot={rest.length ? `Not scored yet: ${rest.map((l) => `${l.symbol ?? l.token.slice(0, 8)} (${l.state === 'checking' ? 'map being built' : l.state === 'unavailable' ? 'holder data unavailable' : 'no score'})`).join(', ')}.` : undefined}
     >
       {!data ? (

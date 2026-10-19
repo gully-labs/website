@@ -4,6 +4,7 @@
 // nothing is estimated or typed in. ECharts loads on demand inside EChart.
 
 import { useEffect, useMemo, useState } from 'react'
+import { ChainLogo } from '../components/logos/ChainLogo'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { EChart } from '../components/charts/EChart'
 import { axisTooltip, C, linePreset, PALETTE, tipHtml } from '../components/charts/chartPresets'
@@ -126,7 +127,7 @@ export function ParentChainBaseFee() {
   }, [readable, reads, n])
 
   return (
-    <div className="flex flex-col gap-3 rounded-[10px] border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-3 rounded-card border border-line bg-card-token px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">BASE FEE PER GAS · LAST {BLOCKS} BLOCKS · LIVE FROM EACH CHAIN’S PUBLIC RPC</span>
         <span className="font-mono text-[11px] text-dim">{checked ? `read ${hhmmss(Math.max(...Object.values(reads).map((r) => r.at)))}` : 'reading…'}</span>
@@ -138,6 +139,7 @@ export function ParentChainBaseFee() {
           return (
             <div key={p.key} className="flex min-w-0 flex-col gap-1 rounded-[8px] border border-line bg-surface-deep px-3 py-2">
               <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
+                <ChainLogo chain={p.name} size={16} decorative />
                 <span className="size-2 rounded-full" style={{ background: p.color }} />
                 {p.name.toUpperCase()}
               </span>

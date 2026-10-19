@@ -1703,6 +1703,50 @@ await step('docs', async () => {
   }
 })
 
+// Design audit 2, group 6 (docs): no developer noise in prose, live charts, logos loaded, 44 px badge buttons.
+await step('docs design audit 2', async () => {
+  const ctx = await newContext({ width: 1440, height: 900 })
+  const page = await ctx.newPage()
+  const pages = ['', 'gully-security', 'solana', 'solana-pay', 'telegram-mini-app', 'news-gate', 'badges', 'holder-map', 'holder-map-integrate', 'roadmap-l3', 'gully-pay', 'api', 'sdk', 'status']
+  for (const slug of pages) {
+    const w = watch(page, `docs da2 /${slug}`)
+    await page.goto(`${BASE}/docs${slug ? '/' + slug : ''}`)
+    await page.locator('#docs-main h1').waitFor()
+    await page.waitForTimeout(1200)
+    // Prose only: code blocks and their folded copies legitimately show null.
+    const prose = await page.evaluate(() => {
+      const root = document.querySelector('#docs-main').cloneNode(true)
+      root.querySelectorAll('pre, figure, code').forEach((e) => e.remove())
+      return root.textContent
+    })
+    check(`docs /${slug}: no undefined, [object Object] or null in the prose`, !/undefined|\[object|\bnull\b/.test(prose), (prose.match(/.{30}(undefined|\[object|\bnull\b).{20}/) ?? [''])[0])
+    check(`docs /${slug}: no text-only "collecting a series"`, !/collecting a series/i.test(prose))
+    if (['gully-security', 'solana-pay', 'telegram-mini-app', 'news-gate', 'holder-map-integrate', 'badges', 'roadmap-l3'].includes(slug)) {
+      const live = await page.locator('#docs-main [data-chart], #docs-main [data-live], #docs-main [data-ghost]').count()
+      check(`docs /${slug}: carries a live chart, live render or ghost`, live > 0, String(live))
+    }
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i, /Failed to load resource/i])
+  }
+  await page.goto(`${BASE}/docs/gully-pay`)
+  await page.locator('#docs-main h1').waitFor()
+  await page.waitForLoadState('networkidle').catch(() => {})
+  const logos = await page.evaluate(async () => {
+    const imgs = [...document.querySelectorAll('#docs-main table img, #docs-main [data-logo] img, #docs-main img')].filter((i) => /\/(chains|tokens)\//.test(i.getAttribute('src') ?? ''))
+    await Promise.all(imgs.map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r }))))
+    return { n: imgs.length, bad: imgs.filter((i) => i.naturalWidth === 0).length }
+  })
+  check('docs /gully-pay: chain and token names carry logos, all loaded', logos.n >= 15 && logos.bad === 0, JSON.stringify(logos))
+  await page.goto(`${BASE}/docs/badges`)
+  await page.locator('#docs-main h1').waitFor()
+  const small = await page.evaluate(() => [...document.querySelectorAll('#docs-main button')].filter((b) => b.getBoundingClientRect().height < 43.5).length)
+  check('docs /badges: every button is 44 px tall', small === 0, String(small))
+  await page.goto(`${BASE}/docs/api`)
+  await page.locator('#docs-main h1').waitFor()
+  const rows = await page.evaluate(() => [...document.querySelectorAll('#docs-main details > summary')].filter((s) => s.parentElement.querySelector('div')).slice(0, 40).map((s) => s.getBoundingClientRect().height))
+  check('docs /api: endpoint rows are collapsed to one line', rows.length > 20 && Math.max(...rows) < 70, `${rows.length} rows, max ${Math.max(...rows)}`)
+  await ctx.close()
+})
+
 /* ------------------------------------------------------------- Gully Score --- */
 
 // One listed score is stored through the module's test hook (the server runs in this process, so it is the same
