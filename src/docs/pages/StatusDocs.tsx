@@ -111,7 +111,7 @@ export function StatusDocs() {
             <C>off</C> and <C>unknown</C> samples are left out entirely, so a part that is not configured neither helps nor hurts the figure.
           </li>
           <li>
-            <C>uptime24h</C> is the counted samples of the last 24 hours averaged, from 0 to 1. With none counted it is <C>null</C>, shown as “not tracked yet”, never as 0% or 100%.
+            <C>uptime24h</C> is the counted samples of the last 24 hours averaged, from 0 to 1. With none counted it is empty, shown as “not tracked yet”, never as 0% or 100%.
           </li>
           <li>
             Each 30-minute bucket in <C>history</C> uses the same rule for <C>up</C>, and <C>ms</C> is the mean latency of its checks that were timed.

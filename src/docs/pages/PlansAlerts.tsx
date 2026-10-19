@@ -252,7 +252,7 @@ export function PlansAlerts() {
         </P>
         <Fields
           head={['Condition', 'Body', 'Fires when']}
-          rows={[['deepcore-launch', '{ type: "deepcore-launch", chainId }', <>A token launches on DeepCore on that chain: <C>56</C> BNB Chain, <C>999</C> HyperEVM, <C>4663</C> Robinhood Chain or <C>8453</C> Base; <C>null</C> for any of them.</>]]}
+          rows={[['deepcore-launch', '{ type: "deepcore-launch", chainId }', <>A token launches on DeepCore on that chain: <C>56</C> BNB Chain, <C>999</C> HyperEVM, <C>4663</C> Robinhood Chain or <C>8453</C> Base; empty for any of them.</>]]}
         />
         <List>
           <li>DeepCore’s public API (<C>GET /v1/launches</C>) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again.</li>

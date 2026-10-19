@@ -136,23 +136,23 @@ export function HolderMapIntegrateDocs() {
             ['state', '"ok" | "unavailable" | "not-found" | "busy" | "error"', <>Only <C>ok</C> carries the fields below. The others carry <C>reason</C> (plain words), <C>chain</C>, <C>token.address</C> and <C>asOf</C>; <C>unavailable</C> adds <C>comingSoon</C>.</>],
             ['kind', 'string', <>What was mapped, for example <C>stock</C> or <C>deepcore-launch</C>.</>],
             ['chain', '{ key, id, name }', 'The chain.'],
-            ['token', '{ address, symbol, name, decimals, supply, url }', <><C>supply</C> is null when the total supply is not known; <C>url</C> is the explorer page.</>],
+            ['token', '{ address, symbol, name, decimals, supply, url }', <><C>supply</C> is empty when the total supply is not known; <C>url</C> is the explorer page.</>],
             ['asOf', 'ISO time', 'When the map was built.'],
-            ['holders', '{ count, shown, graph, sharesOf, partial }', <><C>sharesOf</C> says whether percentages are of <C>total supply</C> or of the <C>listed holders</C>; <C>count</C> may be null.</>],
-            ['nodes[]', 'wallet', <><C>id</C>, <C>short</C>, <C>rank</C>, <C>balance</C>, <C>pct</C>, <C>label</C> (<C>{'{ kind, name }'}</C> or null), <C>contract</C>, <C>cluster</C> (a cluster id or null), <C>flags[]</C> and <C>url</C>. On stock tokens also <C>valueAtFairUsd</C>, <C>premiumUsd</C> and <C>boughtGapPct</C>.</>],
+            ['holders', '{ count, shown, graph, sharesOf, partial }', <><C>sharesOf</C> says whether percentages are of <C>total supply</C> or of the <C>listed holders</C>; <C>count</C> may be empty.</>],
+            ['nodes[]', 'wallet', <><C>id</C>, <C>short</C>, <C>rank</C>, <C>balance</C>, <C>pct</C>, <C>label</C> (<C>{'{ kind, name }'}</C> or empty), <C>contract</C>, <C>cluster</C> (a cluster id or empty), <C>flags[]</C> and <C>url</C>. On stock tokens also <C>valueAtFairUsd</C>, <C>premiumUsd</C> and <C>boughtGapPct</C>.</>],
             ['links[]', 'edge', <><C>source</C>, <C>target</C>, <C>transfers</C>, <C>pct</C> and <C>kind</C> (<C>transfer</C>, <C>funding</C> or <C>via</C>).</>],
             ['clusters[]', 'group', <><C>id</C>, <C>wallets[]</C>, <C>count</C>, <C>pct</C>, <C>hasDeployer</C>.</>],
             ['summary', '{ top10Pct, largestCluster, line, plain[] }', <>The concentration in numbers and in plain sentences.</>],
-            ['forensics', 'object | null', 'Launch checks (deployer share, bundled and sniped buying, funding, liquidity lock). Null for tokens without a complete history.'],
+            ['forensics', 'object | null', 'Launch checks (deployer share, bundled and sniped buying, funding, liquidity lock). Empty for tokens without a complete history.'],
             ['fair', 'object | null', 'Stock tokens: the fair-price overlay.'],
-            ['timeline', 'frames | null', 'Replay frames; null on the free view.'],
+            ['timeline', 'frames | null', 'Replay frames; empty on the free view.'],
             ['recentFlows[]', 'transfers', 'The latest large movements.'],
             ['legend[]', '{ kind, text }', 'The label kinds present on this map.'],
             ['features, tier, locked[]', 'object, string, string[]', <>What this caller’s plan includes: <C>features</C> has <C>replay</C>, <C>csv</C>, <C>alerts</C>, <C>holders</C>, <C>liveMinutes</C> and <C>gated</C>.</>],
           ]}
         />
         <P>
-          Amounts are in token units, shares are percentages (0 to 100, two decimals). A value that could not be read is <C>null</C>, never zero. Fields can be added over time; read the ones you need and ignore the rest.
+          Amounts are in token units, shares are percentages (0 to 100, two decimals). A value that could not be read comes back empty, never zero. Fields can be added over time; read the ones you need and ignore the rest.
         </P>
         <H3>Related routes</H3>
         <List>

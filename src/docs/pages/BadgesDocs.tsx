@@ -31,7 +31,7 @@ function Seg<T extends string>({ label, value, options, onChange }: { label: str
   return (
     <div role="group" aria-label={label} className="inline-flex overflow-hidden rounded-[6px] border border-line-strong">
       {options.map((o) => (
-        <button key={o} type="button" aria-pressed={value === o} onClick={() => onChange(o)} className={`min-h-[36px] cursor-pointer border-0 px-3 font-mono text-[12px] ${value === o ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}>
+        <button key={o} type="button" aria-pressed={value === o} onClick={() => onChange(o)} className={`min-h-11 cursor-pointer border-0 px-3 font-mono text-[12px] ${value === o ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}>
           {o}
         </button>
       ))}
@@ -41,7 +41,7 @@ function Seg<T extends string>({ label, value, options, onChange }: { label: str
 
 /** A strip on the background a badge theme is made for. */
 function Panel({ theme, children }: { theme: Theme; children: ReactNode }) {
-  return <div className={`flex flex-wrap items-center gap-x-8 gap-y-4 rounded-[12px] border border-line p-5 ${theme === 'dark' ? 'bg-[#0B1118]' : 'bg-[#ECEAE3]'}`}>{children}</div>
+  return <div className={`flex flex-wrap items-center gap-x-8 gap-y-4 rounded-card border p-card ${theme === 'dark' ? 'border-line bg-bg-footer' : 'border-paper-line bg-paper-3'}`}>{children}</div>
 }
 
 export function BadgesDocs() {

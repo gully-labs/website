@@ -126,7 +126,7 @@ export function ParentChainBaseFee() {
   }, [readable, reads, n])
 
   return (
-    <div className="flex flex-col gap-3 rounded-[10px] border border-line bg-surface px-4 py-3">
+    <div className="flex flex-col gap-3 rounded-card border border-line bg-card-token px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">BASE FEE PER GAS · LAST {BLOCKS} BLOCKS · LIVE FROM EACH CHAIN’S PUBLIC RPC</span>
         <span className="font-mono text-[11px] text-dim">{checked ? `read ${hhmmss(Math.max(...Object.values(reads).map((r) => r.at)))}` : 'reading…'}</span>

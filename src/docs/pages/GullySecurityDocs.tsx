@@ -80,7 +80,7 @@ function ScanCounter() {
     }
   }, [data])
   return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-4" aria-live="polite">
+    <div className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-card-token p-4" aria-live="polite">
       <span className="font-mono text-[11px] tracking-[1px] text-faint">SCANS RUN, LAST 30 DAYS · LIVE</span>
       {s === 'error' ? (
         <span className="text-[13px] text-error">unreadable right now</span>

@@ -36,7 +36,7 @@ function Card({ slug, title, note, i }: { slug: DocSlug; title: string; note: st
   return (
     <Link
       to={href}
-      className="group flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-5 transition-[border-color,transform] duration-200 hover:-translate-y-[2px] hover:border-gold-line"
+      className="group flex min-w-0 flex-col gap-2 rounded-card border border-line bg-card-token p-5 transition-[border-color,transform] duration-200 hover:-translate-y-[2px] hover:border-gold-line"
       style={{ animation: `gl-rise .5s ${0.1 + i * 0.06}s ease both` }}
     >
       <span className="flex items-center justify-between gap-2 font-display text-[22px] font-bold text-ink uppercase">

@@ -32,7 +32,7 @@ function ScoreWeightsLive() {
     }
   }, [])
   return (
-    <div className="flex flex-wrap items-center gap-5 rounded-card border border-line bg-surface p-4" aria-live="polite">
+    <div className="flex flex-wrap items-center gap-5 rounded-card border border-line bg-card-token p-4" aria-live="polite">
       {m === null ? (
         <span className="flex items-center gap-2 text-[13px] text-faint">
           <span aria-hidden className="size-2 rounded-full bg-gold" style={{ animation: 'gl-live-pulse 2.4s ease-out infinite' }} /> Reading the live methodology…
@@ -62,7 +62,7 @@ function Pill({ s }: { s: Status }) {
 function Track({ icon: Icon, title, status, to, hash, children }: { icon: LucideIcon; title: string; status: Status; to: DocSlug; hash?: string; children: ReactNode }) {
   const href = useDocHref(to, hash)
   return (
-    <Link to={href} className="flex min-h-11 min-w-0 items-start gap-3 rounded-[10px] border border-line bg-surface px-4 py-3 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover hover:text-ink">
+    <Link to={href} className="flex min-h-11 min-w-0 items-start gap-3 rounded-card border border-line bg-card-token px-4 py-3 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover hover:text-ink">
       <span aria-hidden className="grid size-9 flex-none place-items-center rounded-[8px] border border-line bg-bg text-gold">
         <Icon size={17} strokeWidth={1.75} />
       </span>

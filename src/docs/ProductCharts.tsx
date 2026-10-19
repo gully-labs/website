@@ -82,7 +82,7 @@ function Dot({ tone }: { tone: 'up' | 'warn' | 'down' | 'off' }) {
 
 function Panel({ title, aside, children }: { title: string; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-line bg-surface px-4 py-3">
+    <div className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-card-token px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-mono text-[11px] tracking-[1px] text-faint">{title}</span>
         {aside && <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-2">{aside}</span>}
@@ -290,7 +290,7 @@ export function StatusChip({ id, label }: { id: string; label: string }) {
   const { data, failed } = useStatusBody()
   const c = data?.components.find((x) => x.id === id) ?? null
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-line bg-surface px-4 py-3 font-mono text-[12px] text-ink-2">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-card border border-line bg-card-token px-4 py-3 font-mono text-[12px] text-ink-2">
       <span className="text-[11px] tracking-[1px] text-faint">{label}</span>
       {c ? (
         <>

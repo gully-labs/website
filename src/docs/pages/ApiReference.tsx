@@ -77,7 +77,7 @@ export function ApiReference() {
             ['Not found', '404 {"error":"not found"}', <>Any unknown <C>/api/…</C> path answers JSON, never the HTML page.</>],
           ]}
         />
-        <P>Prices are US dollars per token. Any price may be <C>null</C>, meaning it could not be read; it is never replaced with zero.</P>
+        <P>Prices are US dollars per token. Any price may be empty, meaning it could not be read; it is never replaced with zero.</P>
         <P>Live, from your browser: the response time of <C>/api/tracker</C>, measured every 10 seconds while this tab is open, and the rows it returns by status.</P>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-3">
           <LatencySpark path="/api/tracker" />
@@ -123,17 +123,17 @@ export function ApiReference() {
             ['feed', 'string', 'Chainlink feed address.'],
             ['fair', 'number | null', 'Fair price in USD per token.'],
             ['feedPrices', 'string', <><C>tokenized-instrument</C> (the feed prices the token) or <C>underlying-share</C> (it prices the share).</>],
-            ['multiplier', 'number | null', <>Shares per token from <C>uiMultiplier()</C> on BNB Chain; 1 on Robinhood Chain; null when the feed could not be read.</>],
+            ['multiplier', 'number | null', <>Shares per token from <C>uiMultiplier()</C> on BNB Chain; 1 on Robinhood Chain; empty when the feed could not be read.</>],
             ['feedUpdatedAt', 'string | null', 'When the feed last updated.'],
             ['feedError', 'string | null', 'Why the feed could not be read, if it could not.'],
             ['onchain', 'number | null', 'Price in the chosen pool, USD per token.'],
-            ['gapPct', 'number | null', <>(onchain − fair) / fair × 100. Null unless both prices were read, and null on an <C>unverified</C> row (the figure is withheld; see <C>rawGapPct</C>).</>],
+            ['gapPct', 'number | null', <>(onchain − fair) / fair × 100. Empty unless both prices were read, and empty on an <C>unverified</C> row (the figure is withheld; see <C>rawGapPct</C>).</>],
             ['rawGapPct', 'number | null', <>The same gap before the plausibility check. Equal to <C>gapPct</C> on every row except an <C>unverified</C> one, where it keeps the figure that was withheld. Never chart, rank or alert on it.</>],
             ['status', 'string', <>One of <C>premium</C>, <C>discount</C>, <C>drifting</C>, <C>in-line</C>, <C>thin</C>, <C>unverified</C>, <C>no-pool</C>, <C>pool-unreadable</C>, <C>feed-unreadable</C>. Rules in the <DocLink to="methodology" hash="gap">methodology</DocLink>.</>],
             ['trusted', 'boolean', <>Whether the tracker stands behind this row’s gap: true only for <C>premium</C>, <C>discount</C>, <C>drifting</C> and <C>in-line</C> rows whose pool read is fresh (not <C>poolStale</C>). Top movers and gap alerts use trusted rows only.</>],
-            ['untrustedReason', 'string | null', <>Why <C>trusted</C> is false, in a sentence, e.g. <C>The pool holds $4,210, under the $10,000 needed to flag a gap.</C> Null on a trusted row.</>],
-            ['onchainSource', 'string | null', <><C>chain</C> when this cycle’s onchain price was read from the pool contract itself, <C>api</C> when it is DexScreener’s or GeckoTerminal’s reading (a venue the tracker cannot re-read on chain). Null when there is no onchain price.</>],
-            ['onchainAt', 'string | null', <>When that onchain price was read (ISO). For <C>api</C> prices this can be older than <C>generatedAt</C>. Null when there is no onchain price.</>],
+            ['untrustedReason', 'string | null', <>Why <C>trusted</C> is false, in a sentence, e.g. <C>The pool holds $4,210, under the $10,000 needed to flag a gap.</C> Empty on a trusted row.</>],
+            ['onchainSource', 'string | null', <><C>chain</C> when this cycle’s onchain price was read from the pool contract itself, <C>api</C> when it is DexScreener’s or GeckoTerminal’s reading (a venue the tracker cannot re-read on chain). Empty when there is no onchain price.</>],
+            ['onchainAt', 'string | null', <>When that onchain price was read (ISO). For <C>api</C> prices this can be older than <C>generatedAt</C>. Empty when there is no onchain price.</>],
             ['pool', 'Pool | null', 'The pool used, below.'],
             ['poolError', 'string | null', 'Why pools could not be read, if they could not.'],
             ['logo', 'string | null', 'The stock’s logo: the token’s own where it carries the company mark, else the company’s own site icon. An absolute URL on gullylabs.xyz.'],
@@ -184,7 +184,7 @@ export function ApiReference() {
             ['window', 'string, optional', <><C>24h</C> (default) or <C>1h</C>.</>],
             ['limit', 'integer, optional', <>How many rows per ranking, 1 to 50, default 10.</>],
             ['chain', 'string, optional', <>Rank one chain only, e.g. <C>bsc</C>.</>],
-            ['ticker', 'string, optional', <>With <C>chain</C>: also return that token’s own change in <C>stock</C> (null when it has none).</>],
+            ['ticker', 'string, optional', <>With <C>chain</C>: also return that token’s own change in <C>stock</C> (empty when it has none).</>],
           ]}
         />
         <H3>Top level</H3>
@@ -193,7 +193,7 @@ export function ApiReference() {
             ['window', 'string', <><C>1h</C> or <C>24h</C>.</>],
             ['windowSeconds', 'number', '3600 or 86400.'],
             ['toleranceSeconds', 'number', 'How far the earlier snapshot may sit from exactly one window ago: 15 minutes for 1h, 2 hours for 24h. Further than that and the token is left out.'],
-            ['asOf', 'string | null', 'The newest snapshot compared. Null when nothing could be compared.'],
+            ['asOf', 'string | null', 'The newest snapshot compared. Empty when nothing could be compared.'],
             ['from, to', 'string | null', <>The comparison times: <C>to</C> is <C>asOf</C>, <C>from</C> one window earlier. Each row carries its own exact pair.</>],
             ['eligible', 'number', 'Tokens with both points and a trusted status.'],
             ['left', 'object', <>Why the others are out: <C>untrusted</C>, <C>noHistory</C>, <C>staleHistory</C> (latest snapshot over 30 minutes old), <C>tooShort</C>.</>],
@@ -244,7 +244,7 @@ export function ApiReference() {
           head={['Path', 'Answers', 'Cache-Control']}
           variant="routes"
           rows={[
-            ['GET /api/holders/launches', <>The newest DeepCore launches on holder chains (12): <C>{'{ state, asOf, launches[] }'}</C>, each with <C>chainKey</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>path</C>, <C>state</C> (<C>checked</C>, <C>unavailable</C>, or <C>checking</C> while its map is built), <C>health</C> (<C>score</C> 0–100 or null, <C>level</C>, <C>verdict</C>) and <C>riskLine</C>.</>, 'public, max-age=15'],
+            ['GET /api/holders/launches', <>The newest DeepCore launches on holder chains (12): <C>{'{ state, asOf, launches[] }'}</C>, each with <C>chainKey</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>path</C>, <C>state</C> (<C>checked</C>, <C>unavailable</C>, or <C>checking</C> while its map is built), <C>health</C> (<C>score</C> 0–100 or empty, <C>level</C>, <C>verdict</C>) and <C>riskLine</C>.</>, 'public, max-age=15'],
             ['GET /api/holders/top?limit=', <>The most scanned maps today (UTC): <C>{'{ day, items[] }'}</C>, each <C>chain</C>, <C>token</C>, <C>symbol</C>, <C>kind</C>, <C>scans</C> (unique visitors), <C>path</C>. <C>limit</C> 1–20, default 10.</>, 'public, max-age=60'],
             ['GET /api/holders/resolve?q=', <>Search: a ticker, a launch symbol, an EVM address or a Solana mint (64 characters at most, a leading <C>$</C> ignored). <C>{'{ matches[] }'}</C>, each <C>chain</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>name</C>, <C>kind</C>, <C>path</C>. Anything else matches nothing.</>, 'public, max-age=60'],
             ['GET /api/holders/:chain/:token', <>The map, below.</>, <>public, max-age=60 when <C>state</C> is ok; no-store otherwise</>],
@@ -259,13 +259,13 @@ export function ApiReference() {
           rows={[
             ['state', 'string', <><C>ok</C>, <C>not-found</C> (404: the token is neither a DeepCore launch nor a tracked stock), <C>unavailable</C> (200, with <C>reason</C> and <C>needs</C>: the chain’s holder source is not set up on this server), <C>error</C> (502) or <C>busy</C> (429 or 503).</>],
             ['kind', 'string', <><C>deepcore-launch</C> or <C>stock</C>.</>],
-            ['chain, token', 'object', <>Chain <C>key</C>, <C>id</C>, <C>name</C>; token <C>address</C>, <C>symbol</C>, <C>name</C>, <C>decimals</C>, <C>supply</C> (null when unknown) and explorer <C>url</C>.</>],
-            ['holders', 'object', <><C>count</C> (null when unknown), <C>shown</C>, <C>graph</C>, <C>sharesOf</C> (<C>total supply</C> or <C>listed holders</C>), <C>partial</C>.</>],
+            ['chain, token', 'object', <>Chain <C>key</C>, <C>id</C>, <C>name</C>; token <C>address</C>, <C>symbol</C>, <C>name</C>, <C>decimals</C>, <C>supply</C> (empty when unknown) and explorer <C>url</C>.</>],
+            ['holders', 'object', <><C>count</C> (empty when unknown), <C>shown</C>, <C>graph</C>, <C>sharesOf</C> (<C>total supply</C> or <C>listed holders</C>), <C>partial</C>.</>],
             ['nodes', 'Node[]', <>Ranked wallets: <C>id</C>, <C>rank</C>, <C>balance</C>, <C>pct</C>, <C>label</C> (<C>kind</C>: deployer, pool, lock, burn, token, deepcore, router, gully, exchange, known), <C>contract</C>, <C>cluster</C>, <C>flags</C> (sniper, bundled, funded-by-deployer, deployer), <C>url</C>; stocks add <C>valueAtFairUsd</C>, <C>premiumUsd</C>, <C>boughtGapPct</C>.</>],
             ['links, clusters, hidden', 'array', <>Transfers and funding between mapped wallets; clusters (<C>id</C>, <C>wallets</C>, <C>count</C>, <C>pct</C>, <C>hasDeployer</C>), largest first; wallets outside the map that connect two groups.</>],
             ['summary', 'object', <><C>top10Pct</C>, <C>largestCluster</C>, <C>line</C>, <C>plain</C> (sentences).</>],
             ['forensics', 'object | null', <>Launches only: bundled buyers, snipers, deployer share and funding, liquidity lock, <C>riskLine</C>.</>],
-            ['health', 'object', <>Launches only: <C>score</C>, <C>level</C>, <C>verdict</C>, <C>counted</C>, and <C>parts[]</C> with <C>weight</C>, <C>points</C> (null when not known), <C>value</C>, <C>reason</C>.</>],
+            ['health', 'object', <>Launches only: <C>score</C>, <C>level</C>, <C>verdict</C>, <C>counted</C>, and <C>parts[]</C> with <C>weight</C>, <C>points</C> (empty when not known), <C>value</C>, <C>reason</C>.</>],
             ['fair', 'object | null', <>Stocks only: <C>fair</C>, <C>onchain</C>, <C>gapPct</C>, the top 10’s value at fair and premium.</>],
             ['timeline', 'object | null', 'Replay frames (24 at most) on the Pro tier.'],
             ['deployerHistory, crossToken', 'object | null', 'The deployer’s earlier launches and their outcome; the largest cluster’s wallets in other launches.'],
@@ -288,7 +288,7 @@ export function ApiReference() {
           rows={[
             ['GET /api/score', <>The public index: <C>{'{ scores[], chains[], methodology }'}</C>. Each score: <C>chainId</C>, <C>chainKey</C>, <C>address</C>, <C>name</C>, <C>symbol</C>, <C>score</C>, <C>grade</C>, <C>coverage</C>, <C>computedAt</C>, <C>change</C>. Listed contracts only, best first.</>, 'public, max-age=60'],
             ['GET /api/score/methodology', <><C>{'{ version, minCoverage, ttlHours, components[], rules[] }'}</C>: each component’s <C>id</C>, <C>label</C>, <C>weight</C>, <C>source</C> and <C>what</C>.</>, 'public, max-age=300'],
-            ['GET /api/score/:chain/:address', <>One contract: <C>score</C> (null under 40% coverage), <C>grade</C> (Strong, Fair, Weak, Poor), <C>coverage</C>, <C>components[]</C> (each <C>available</C>, <C>score</C>, <C>value</C>, <C>reason</C>, <C>evidence</C>), <C>history</C>, <C>changes</C>, <C>links</C> (page, badge, explorer), <C>stale</C>.</>, 'public, max-age=60'],
+            ['GET /api/score/:chain/:address', <>One contract: <C>score</C> (empty under 40% coverage), <C>grade</C> (Strong, Fair, Weak, Poor), <C>coverage</C>, <C>components[]</C> (each <C>available</C>, <C>score</C>, <C>value</C>, <C>reason</C>, <C>evidence</C>), <C>history</C>, <C>changes</C>, <C>links</C> (page, badge, explorer), <C>stale</C>.</>, 'public, max-age=60'],
             ['GET /score/:chain/:address/badge.svg', 'An embeddable 232 × 48 badge from the stored score; it never computes one. Letters-only chain keys.', 'public, max-age=3600'],
           ]}
         />
@@ -321,7 +321,7 @@ export function ApiReference() {
         <Fields
           rows={[
             ['generatedAt', 'string (ISO)', 'When this answer was built.'],
-            ['totals', 'object', <><C>volumeAllUsd</C>, <C>volume24hUsd</C>, <C>tvlUsd</C>, <C>fees24hUsd</C>, <C>feesAllUsd</C>: each the sum over the venues that publish it, or null when none does. <C>covers</C> names the venues in each total; <C>unread</C> the venues that could not be read.</>],
+            ['totals', 'object', <><C>volumeAllUsd</C>, <C>volume24hUsd</C>, <C>tvlUsd</C>, <C>fees24hUsd</C>, <C>feesAllUsd</C>: each the sum over the venues that publish it, or empty when none does. <C>covers</C> names the venues in each total; <C>unread</C> the venues that could not be read.</>],
             ['daily', '{ t, v }[]', 'Daily volume in USD summed across the venues read; t in Unix seconds.'],
             ['venues', 'Venue[]', <>One per project (<C>cartel-family</C>, <C>deepcore</C>, <C>peddleswap</C>, <C>peddles</C>, <C>peddlequest</C>): <C>state: ok</C> with its figures, <C>daily</C>, <C>counts</C>, <C>notes</C> and <C>source</C> (<C>url</C>, <C>readAt</C>), or <C>state: error</C> with <C>error</C>. A venue that fails is unreadable, never zero.</>],
           ]}
@@ -375,10 +375,10 @@ interface Status {
         />
         <List>
           <li>
-            <C>off</C> means the component is not configured on this server (Telegram without a bot token, say); <C>unknown</C> means it has not been checked yet. Neither counts towards <C>uptime24h</C>, which is null until there is a sample.
+            <C>off</C> means the component is not configured on this server (Telegram without a bot token, say); <C>unknown</C> means it has not been checked yet. Neither counts towards <C>uptime24h</C>, which is empty until there is a sample.
           </li>
           <li>
-            In a <C>history</C> bucket, <C>up</C> is the share of checks that were up (0 to 1) and <C>ms</C> the mean latency; both are null for a bucket with no checks, never 0.
+            In a <C>history</C> bucket, <C>up</C> is the share of checks that were up (0 to 1) and <C>ms</C> the mean latency; both are empty for a bucket with no checks, never 0.
           </li>
         </List>
         <LatencySpark path="/api/status" everyMs={30_000} />
@@ -390,7 +390,7 @@ interface Status {
         </P>
         <Fields
           rows={[
-            ['country', 'string | null', 'Two-letter country code, or null when it could not be determined.'],
+            ['country', 'string | null', 'Two-letter country code, or empty when it could not be determined.'],
             ['allowed', 'boolean', 'False in the blocked regions (US, CU, IR, KP, SY) and when the country is unknown.'],
             ['reason', 'string', <><C>ok</C>, <C>blocked</C>, <C>unknown</C> or <C>local</C> (development).</>],
           ]}
@@ -476,7 +476,7 @@ interface Status {
           head={['Path', 'Answers', 'Limits']}
           variant="routes"
           rows={[
-            ['GET /api/pay/gas', <>What a payment costs in gas now, per chain: <C>{'{ at, cacheSeconds, gas: { approve, pay, transfer }, chains[] }'}</C>. Each chain: <C>gasPriceGwei</C>, <C>coinUsd</C> and <C>priceSource</C> (the chain’s Chainlink feed), <C>l1FeeUsd</C>, <C>payUsd</C>, <C>transferUsd</C>, <C>approveUsd</C>, <C>note</C>; or <C>ok: false</C> with <C>error</C>. USD figures are null when the feed cannot be read.</>, 'public, max-age=60; server cache 3 min'],
+            ['GET /api/pay/gas', <>What a payment costs in gas now, per chain: <C>{'{ at, cacheSeconds, gas: { approve, pay, transfer }, chains[] }'}</C>. Each chain: <C>gasPriceGwei</C>, <C>coinUsd</C> and <C>priceSource</C> (the chain’s Chainlink feed), <C>l1FeeUsd</C>, <C>payUsd</C>, <C>transferUsd</C>, <C>approveUsd</C>, <C>note</C>; or <C>ok: false</C> with <C>error</C>. USD figures are empty when the feed cannot be read.</>, 'public, max-age=60; server cache 3 min'],
             ['GET /api/pay/price?asset=', <>A native coin’s USD price from its chain’s Chainlink feed: <C>{'{ asset, symbol, chain, description, price, roundId, updatedAt, readAt }'}</C>. <C>asset</C> is a coin id such as <C>base-eth</C>.</>, '600 an hour; public, max-age=30'],
             ['GET /api/pay/:id', <>A Gully Labs invoice (<C>inv_…</C>): <C>{'{ invoice }'}</C> with <C>number</C>, <C>title</C>, <C>usd</C>, <C>status</C> (open, paid, expired, cancelled), <C>assets</C>, <C>expiresAt</C>, <C>payment</C>, <C>checkout</C>.</>, '600 an hour'],
             ['POST /api/pay/:id/quote', <>Body <C>{'{ asset }'}</C>. A 20-minute quote: <C>{'{ quote }'}</C> with the exact <C>amount</C>, <C>treasury</C>, <C>token</C>, an EIP-681 or Solana Pay <C>uri</C>, the Chainlink <C>price</C> used and <C>expiresAt</C>.</>, '30 an hour'],

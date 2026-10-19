@@ -75,7 +75,7 @@ function PrevNext({ slug }: { slug: DocSlug }) {
   const next = DOC_PAGES[i + 1]
   const prevHref = useDocHref(prev?.slug ?? '')
   const nextHref = useDocHref(next?.slug ?? '')
-  const cls = 'flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-lg border border-line px-4 py-3 transition-colors hover:border-gold-line hover:bg-surface'
+  const cls = 'flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-card border border-line px-4 py-3 transition-colors hover:border-gold-line hover:bg-surface'
   return (
     <nav aria-label="Pages" className="mt-6 flex flex-wrap gap-3 border-t border-line pt-8">
       {prev ? (
@@ -159,7 +159,7 @@ export function List({ children }: { children: ReactNode }) {
 
 export function Callout({ label, children, tone = 'gold' }: { label: string; children: ReactNode; tone?: 'gold' | 'plain' }) {
   return (
-    <div className={`flex flex-col gap-2 rounded-lg border p-5 ${tone === 'gold' ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line bg-surface'}`}>
+    <div className={`flex flex-col gap-2 rounded-card border p-card ${tone === 'gold' ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line bg-card-token'}`}>
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{label}</span>
       <div className="text-[14.5px] leading-[1.65] text-ink-2">{children}</div>
     </div>
@@ -175,7 +175,7 @@ export function Fields({ rows, head = ['Field', 'Type', 'Meaning'], variant = 'f
   const mono = 'font-mono text-[12px] break-words text-dim'
   const text = 'text-[14px] leading-[1.6] text-ink-2'
   return (
-    <div className="overflow-hidden rounded-lg border border-line">
+    <div className="overflow-hidden rounded-card border border-line">
       <div className={`grid ${grid} gap-4 border-b border-line bg-surface px-4 py-2 font-mono text-[11px] tracking-[1px] text-faint max-[640px]:hidden`}>
         {head.map((h) => (
           <span key={h}>{h.toUpperCase()}</span>

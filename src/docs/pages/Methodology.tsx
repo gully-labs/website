@@ -71,10 +71,10 @@ export function Methodology() {
         <Fields
           head={['Status', 'Rule', 'Meaning']}
           rows={[
-            ['feed-unreadable', 'fair is null', 'The Chainlink feed (or, on BNB Chain, the multiplier) could not be read.'],
+            ['feed-unreadable', 'fair is empty', 'The Chainlink feed (or, on BNB Chain, the multiplier) could not be read.'],
             ['pool-unreadable', 'pool read failed', 'DexScreener could not be read for this chain.'],
-            ['no-pool', 'onchain is null', 'No pool with a usable price was found.'],
-            ['unverified', 'onchain ≥ 5× or ≤ 1/5 of fair; or |gap| ≥ 15% unless the pool holds $1,000,000+ and was read on chain this cycle', <>The figure is implausible for a tokenised stock: far more often a bad print (a misread venue, an old API reading, a decimals slip) than a price. <C>gapPct</C> is withheld (null), the figure stays in <C>rawGapPct</C>, and <C>untrustedReason</C> says why. Never flagged, ranked, alerted on or recorded in the history.</>],
+            ['no-pool', 'onchain is empty', 'No pool with a usable price was found.'],
+            ['unverified', 'onchain ≥ 5× or ≤ 1/5 of fair; or |gap| ≥ 15% unless the pool holds $1,000,000+ and was read on chain this cycle', <>The figure is implausible for a tokenised stock: far more often a bad print (a misread venue, an old API reading, a decimals slip) than a price. <C>gapPct</C> is withheld (empty), the figure stays in <C>rawGapPct</C>, and <C>untrustedReason</C> says why. Never flagged, ranked, alerted on or recorded in the history.</>],
             ['thin', 'liquidity < $10,000', 'The chosen pool is too small to trust. Shown, never flagged.'],
             ['in-line', '|gap| < 1%', 'Within the noise. Robinhood Chain feeds only move on a 0.5% deviation.'],
             ['drifting', '1% ≤ |gap| < 2%', 'Moving away from fair, not yet flagged.'],

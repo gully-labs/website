@@ -144,7 +144,7 @@ function Registry() {
       <p role="status" aria-live="polite" className="m-0 font-mono text-[12px] text-faint">
         {rows.length} of {contracts.length} contracts
       </p>
-      <ul className="m-0 flex list-none flex-col divide-y divide-line overflow-hidden rounded-lg border border-line p-0">
+      <ul className="m-0 flex list-none flex-col divide-y divide-line overflow-hidden rounded-card border border-line p-0">
         {rows.slice(0, shown).map((c) => (
           <Row key={c.id} c={c} />
         ))}
@@ -181,7 +181,7 @@ export function ContractsDocs() {
         <P>
           The Gully Labs treasury is one Safe (2-of-3), at the same address on every chain it is deployed on. It receives plan payments and is the <C>feeAddress</C> of every Gully Pay fee split. Payments to Gully Labs go nowhere else.
         </P>
-        <ul className="m-0 flex list-none flex-col divide-y divide-line overflow-hidden rounded-lg border border-line p-0">
+        <ul className="m-0 flex list-none flex-col divide-y divide-line overflow-hidden rounded-card border border-line p-0">
           {treasury.map((c) => (
             <Row key={c.id} c={c} />
           ))}
