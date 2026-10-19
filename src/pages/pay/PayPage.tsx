@@ -34,7 +34,7 @@ function InvoiceView({ invoice, onPaid }: { invoice: Invoice; onPaid: (i: Invoic
   const open = invoice.status === 'open'
   const live = open && invoice.checkout.enabled
   const pill = invoice.status === 'paid' ? pills.paid : invoice.status === 'expired' ? pills.expired : invoice.status === 'cancelled' ? pills.cancelled : !invoice.checkout.enabled ? pills.closed : phase === 'confirming' ? pills.confirming : pills.waiting
-  const payBy = invoice.linkId ? new Date(invoice.expiresAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : fmtDay(invoice.expiresAt)
+  const payBy = invoice.linkId ? `${new Date(invoice.expiresAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC` : fmtDay(invoice.expiresAt)
 
   return (
     <CheckoutFrame
@@ -53,10 +53,12 @@ function InvoiceView({ invoice, onPaid }: { invoice: Invoice; onPaid: (i: Invoic
             ['ISSUED', fmtDay(invoice.createdAt)],
             [invoice.status === 'expired' ? 'EXPIRED' : 'PAY BY', payBy],
           ]}
-        />
+        >
+          {live && <div id="pay-aside" className="empty:hidden" />}
+        </OrderSummary>
       }
     >
-      <PayPanel title="Pay Gully Labs" sub={`${window.location.host}/pay/${invoice.id}`} pill={pill}>
+      <PayPanel title="Pay Gully Labs" copyLink={`${window.location.host}/pay/${invoice.id}`} pill={pill}>
         {invoice.status === 'paid' && <PaidPanel invoice={invoice} />}
         {invoice.status === 'expired' && <Expired when={fmtDay(invoice.expiresAt)} brand={GULLY_BRAND} fromLink={!!invoice.linkId} />}
         {invoice.status === 'cancelled' && <Cancelled when={fmtDay(invoice.cancelledAt)} brand={GULLY_BRAND} />}
