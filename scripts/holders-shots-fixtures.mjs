@@ -76,5 +76,5 @@ export function busyFixture() {
   }
   for (let i = 5; i < 200; i += 3) links.push({ source: nodes[i].id, target: nodes[(i * 7) % 200].id, transfers: 1 + (i % 4), pct: 0.05, kind: 'transfer' })
   const clusters = ['c1', 'c2', 'c3'].map((id) => ({ id, wallets: ofc(id).map((n) => n.id), count: ofc(id).length, pct: Math.round(ofc(id).reduce((s, n) => s + n.pct, 0) * 100) / 100, hasDeployer: false })).sort((a, b) => b.pct - a.pct)
-  return { ...rebuild(base, nodes, {}), links: links.filter((l) => l.source !== l.target), clusters, coverage: { level: 'top', reason: 'it has a long history', shown: N }, token: { ...base.token, address: '0x0000000000000000000000000000000000b0b05' } }
+  return { ...rebuild(base, nodes, {}), links: links.filter((l) => l.source !== l.target), clusters, coverage: { level: 'top', reason: 'it has a long history', shown: N }, token: { ...base.token, address: '0x000000000000000000000000000000000b0b0b05' } }
 }

@@ -88,7 +88,7 @@ async function launcherWorks(page, label) {
 
 
 /** The bubble map's look and motion (v3): lit fills, a legend, a labelled biggest bubble, the supply strip, drift and a quiet main thread. */
-async function bubbleLook(page, map, label, { kindRe = /^(pool|wallet|contract|lock|burn|exchange|deployer|token|DeepCore|Gully|router|known)/, quiet = false } = {}) {
+async function bubbleLook(page, map, label, { kindRe = /^(pool|wallet|contract|lock|burn|exchange|deployer|token|DeepCore|Gully|router|known)/, quiet = false } = {}) {
   const chart = map.locator('[data-bubble-canvas]')
   await chart.scrollIntoViewIfNeeded()
   await page.waitForFunction(() => document.querySelector('[data-bubble-canvas]')?.getAttribute('data-big'), null, { timeout: 15_000 })
@@ -2011,16 +2011,16 @@ await step('holder map', async () => {
   for (const width of [1440, 390]) {
     const ctx = await newContext({ width, mobile: width < 600 })
     await ctx.route(`${BASE}/api/holders/solana/${SOLANA_TOKEN}`, (route) => json(route, solanaFixture()))
-    await ctx.route(`${BASE}/api/holders/base/0x0000000000000000000000000000000000b0b05`, (route) => json(route, busyFixture()))
+    await ctx.route(`${BASE}/api/holders/base/0x000000000000000000000000000000000b0b0b05`, (route) => json(route, busyFixture()))
     const page = await ctx.newPage()
     const w = watch(page, `bubble map ${width}`)
     await page.goto(BASE + '/holders/solana/' + SOLANA_TOKEN)
     const map = page.locator('[data-holder-map="ok"]')
     await map.waitFor()
-    await bubbleLook(page, map, `solana map ${width}`, { kindRe: /^wallet/ })
+    await bubbleLook(page, map, `solana map ${width}`, { kindRe: /^wallet/ })
     check(`solana map ${width}: it says plainly that links are not drawn on this chain yet`, (await map.locator('[data-no-links]').getByText(/Links between wallets are not drawn on Solana yet/).count()) === 1)
     await noHorizontalScroll(page, `/holders solana ${width}`)
-    await page.goto(BASE + '/holders/base/0x0000000000000000000000000000000000b0b05')
+    await page.goto(BASE + '/holders/base/0x000000000000000000000000000000000b0b0b05')
     await map.waitFor()
     await bubbleLook(page, map, `busy map ${width}`, { quiet: width === 1440 })
     check(`busy map ${width}: 300+ bubbles draw (${await map.locator('[data-bubble-canvas]').getAttribute('data-bodies')})`, Number(await map.locator('[data-bubble-canvas]').getAttribute('data-bodies')) >= 300)

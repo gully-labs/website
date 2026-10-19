@@ -25,7 +25,7 @@ async function ctxFor(width) {
   await ctx.route(`${BASE}/api/geo`, (r) => json(r, { country: 'GB', allowed: true, reason: 'ok' }))
   await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (r) => json(r, holdersFixture(/\/0x[0-9a-f]{40}$/i.test(new URL(r.request().url()).pathname) ? 'deepcore-launch' : 'stock')))
   await ctx.route(`${BASE}/api/holders/solana/${SOLANA_TOKEN}`, (r) => json(r, solanaFixture()))
-  await ctx.route(`${BASE}/api/holders/base/0x0000000000000000000000000000000000b0b05`, (r) => json(r, busyFixture()))
+  await ctx.route(`${BASE}/api/holders/base/0x000000000000000000000000000000000b0b0b05`, (r) => json(r, busyFixture()))
   await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/]+/live`), (r) => json(r, HX.live))
   await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/]+/wallet/`), (r) => json(r, HX.wallet))
   return ctx
@@ -78,7 +78,7 @@ for (const width of [1440, 390]) {
 {
   const ctx = await ctxFor(1440)
   const page = await ctx.newPage()
-  await page.goto(`${BASE}/holders/base/0x0000000000000000000000000000000000b0b05`)
+  await page.goto(`${BASE}/holders/base/0x000000000000000000000000000000000b0b0b05`)
   await page.locator('[data-chart] canvas').first().waitFor()
   await page.waitForTimeout(5200)
   await page.screenshot({ path: path.join(OUT, 'busy-1440.png') })
