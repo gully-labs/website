@@ -181,8 +181,10 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
     // Room for captions under the bubbles and for the overlays at the top and bottom of the box.
     const wideBox = w >= 640
     const padX = wideBox ? 36 : 18
-    const padTop = wideBox ? 70 : 20
-    const padBottom = wideBox ? 132 : 52
+    // A short, wide box (the embed's 340 px strip) has no overlays over the map: keep the margins small.
+    const shortBox = wideBox && h < 420
+    const padTop = shortBox ? 22 : wideBox ? 70 : 20
+    const padBottom = shortBox ? 44 : wideBox ? 132 : 52
     const s = Math.max(0.05, Math.min((w - padX * 2) / Math.max(1, x1 - x0), (h - padTop - padBottom) / Math.max(1, y1 - y0)))
     return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 - (padTop - padBottom) / 2 / s, s }
   }

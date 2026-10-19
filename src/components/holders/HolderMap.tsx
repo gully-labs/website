@@ -17,7 +17,7 @@ import { getJson, holdersCardUrl, holdersCsvUrl, holdersPagePath, holdersPath, I
 import { APP_URL, isLocalHost } from '../../site-host'
 import { useLive } from './live'
 import { AskExplain, CrossTokenCard, DeployerHistoryCard, HealthCard, LivePill } from './parts'
-import { forceLayout, radiusFor } from './layout'
+import { extentOf, forceLayout, radiusFor } from './layout'
 import { fmtPct, norm } from './format'
 import { K } from './theme'
 import { agoText, captionOf, flowText, glyphOf, sideColour, toFlow, type FlowEvent, type MotionMap, type RecentFlow } from './motion'
@@ -300,6 +300,15 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
   // The canvas's bubbles: positions from the layout, sizes from the share now (or at the replay frame).
   // A phone's box is taller than wide, so the (wide) layout is turned on its side there.
   const portrait = !wide && rootWidth > 0 && rootWidth < 600
+  // A wide strip (the embed's 1,400 x 340): stretch the layout sideways to the box's shape so the bubbles fill it.
+  // Only x grows, so no two bubbles can end up closer than the layout left them.
+  const stripH = compact ? 340 : 0
+  const stretch = useMemo(() => {
+    if (!stripH || portrait || rootWidth <= 0 || placed.length < 2) return 1
+    const e = extentOf(placed)
+    const layoutAspect = (e.x1 - e.x0) / Math.max(1, e.y1 - e.y0)
+    return Math.max(1, Math.min(3.2, rootWidth / stripH / layoutAspect))
+  }, [stripH, portrait, rootWidth, placed])
   const bnodes = useMemo<BNode[]>(() => {
     const out: BNode[] = graph.map((n) => {
       const p = pos.get(n.id)
@@ -307,7 +316,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       const infra = isInfra(n)
       return {
         id: n.id,
-        x: (portrait ? p?.y : p?.x) ?? 0,
+        x: (portrait ? p?.y : (p?.x ?? 0) * stretch) ?? 0,
         y: (portrait ? p?.x : p?.y) ?? 0,
         r: radiusFor(pctAt(n), maxPct),
         fitR: p?.r,
@@ -325,12 +334,12 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
     })
     for (const v of vias) {
       const p = pos.get(norm(v.via))
-      out.push({ id: norm(v.via), x: (portrait ? p?.y : p?.x) ?? 0, y: (portrait ? p?.x : p?.y) ?? 0, r: 3, fill: K.night, stroke: K.muted, strokeWidth: 1.2, dashed: true, text: null, textColour: K.bone, glyph: null, caption: null, pulse: false, group: null })
+      out.push({ id: norm(v.via), x: (portrait ? p?.y : (p?.x ?? 0) * stretch) ?? 0, y: (portrait ? p?.x : p?.y) ?? 0, r: 3, fill: K.night, stroke: K.muted, strokeWidth: 1.2, dashed: true, text: null, textColour: K.bone, glyph: null, caption: null, pulse: false, group: null })
     }
     return out
     // pctAt reads frame and live.pcts, listed here
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph, vias, pos, maxPct, frame, live.pcts, colourOf, portrait])
+  }, [graph, vias, pos, maxPct, frame, live.pcts, colourOf, portrait, stretch])
   const blinks = useMemo<BLink[]>(
     () =>
       links.flatMap((l) => {

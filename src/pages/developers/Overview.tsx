@@ -1,4 +1,4 @@
-import { Activity, ArrowUpRight, BellRing, ChartNoAxesCombined, ChartPie, CreditCard, KeyRound, Plus } from 'lucide-react'
+import { Activity, ArrowUpRight, LayoutDashboard, BellRing, ChartNoAxesCombined, ChartPie, CreditCard, KeyRound, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ChannelChips, SecretDialog, TelegramCard } from './Alerts'
 import { EventsMeter } from './Analytics'
@@ -7,6 +7,8 @@ import { alertName, alertRule, alertState, defaultAsset, keyColors, priceText, s
 import { api, type Account, type AnalyticsUsage, type AnalyticsView, type BillingView, type PlanId, type Range, type UsageV2 } from './api'
 import { DoubleRing, GhostCurves, GhostSpark, Meter, Spark } from './charts'
 import { MarketBand } from './services/MarketBand'
+import { ServiceHeader } from './services/ServiceHeader'
+import { docsPage } from './services/links'
 import { usePoll, type Poll } from './poll'
 import { useSubTab } from './subtab'
 import { InfoTip, RefreshChip, SubPanel, SubTabs, type SubTabItem } from './ui'
@@ -178,6 +180,13 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
 
   return (
     <div className="flex flex-col gap-2">
+      <ServiceHeader
+        icon={LayoutDashboard}
+        title="Overview"
+        desc="Your workspace at a glance: API traffic, alerts, Gully Analytics and the plan, read live."
+        status={{ tone: live.length ? 'live' : 'idle', text: live.length ? `${live.length} live key${live.length === 1 ? '' : 's'}` : 'no key yet' }}
+        docs={docsPage('api-keys')}
+      />
       <PendingInvites />
       <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
       {/* Live network data first, so even a brand-new workspace opens on moving charts. */}
@@ -208,7 +217,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         />
         <Kpi
           i={1}
-          label="Rate-limited (429)"
+          label="Calls turned away"
           color={LIMITED_COLOR}
           value={usage ? usage.rangeTotals.limited : null}
           none="none"
@@ -252,7 +261,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
                 {hasLimited && (
                   <li className="flex items-center gap-[6px]">
                     <span className="h-[3px] w-[10px] rounded-[1px]" style={{ background: LIMITED_COLOR }} aria-hidden />
-                    429s
+                    turned away
                   </li>
                 )}
               </ul>
@@ -495,7 +504,7 @@ function AnalyticsCard({ s, go }: { s: Load<AnalyticsView>; go: () => void }) {
               <ChartNoAxesCombined size={16} aria-hidden /> {s.data.trialAvailable ? `Start the ${s.data.offer.analytics.trialDays}-day free trial` : 'Set up Gully Analytics'}
             </button>
           ) : (
-            <span className="text-[13px] text-faint">Self-serve sign-up is not switched on on this server yet.</span>
+            <span className="text-[13px] text-faint">Analytics is not available on this server yet.</span>
           )}
         </div>
       ) : (

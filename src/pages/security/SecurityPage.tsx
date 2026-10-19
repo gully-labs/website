@@ -1,7 +1,7 @@
 import { ArrowUpRight, Bot, CircleDollarSign, FileCheck2, FileCode2, FileText, Gauge, ListChecks, Radar, Rocket, ScanSearch, ShieldAlert, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
 import { useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
-import { LiveScans } from '../../components/security/LiveScans'
+import { ScansChart } from './ScansChart'
 import { ReviewRequestForm } from '../../components/security/ReviewRequestForm'
 import type { SecurityOffer } from '../../components/security/types'
 import { Seo } from '../../components/Seo'
@@ -231,7 +231,7 @@ export function SecurityPage() {
             </div>
           </div>
           <div style={rise(2)}>
-            <LiveScans />
+            <ScansChart />
           </div>
         </div>
       </section>

@@ -4,6 +4,7 @@ import { CodeBlock } from '../../docs/CodeBlock'
 import { DOCS_URL } from '../../site-host'
 import { api, daysLeft, fmtDate, shortAddress, type AnalyticsAccount, type AnalyticsPlan, type AnalyticsSite, type AnalyticsUsage, type AnalyticsView, type Payment, type Quote } from './api'
 import { GhostCurves, Meter } from './charts'
+import { ServiceHeader } from './services/ServiceHeader'
 import { AnalyticsTraffic } from './tabcharts'
 import { BLOCK_TEXT, siteMeta, type SiteUsage } from './helpers'
 import { CopyButton, Dialog } from './Dialog'
@@ -138,7 +139,7 @@ function StartStep({ view, onStarted }: { view: AnalyticsView; onStarted: (s: Se
       </div>
       {!view.configured && (
         <p className="m-0 text-[13px] text-faint" role="status">
-          Self-serve sign-up is not switched on on this server yet. Write to team@gullylabs.xyz for early access.
+          Analytics sign-up is not open on this server yet. Write to team@gullylabs.xyz for early access.
         </p>
       )}
       <GhostCurves height={120} title="Your page views and visitors will draw here">
@@ -619,6 +620,13 @@ export function AnalyticsPanel() {
   }
   return (
     <div className="flex flex-col gap-2">
+      <ServiceHeader
+        icon={ChartNoAxesCombined}
+        title="Gully Analytics"
+        desc="Page views plus wallet connects, chains and transactions, cookie-free."
+        status={!a ? { tone: 'idle', text: view.configured ? 'not started' : 'not open yet' } : a.state === 'lapsed' ? { tone: 'down', text: 'ended' } : { tone: 'live', text: a.state === 'trial' ? 'free trial' : (a.plan?.name ?? 'active') }}
+        docs={`${DOCS_URL}/analytics`}
+      />
       <div className="flex flex-wrap items-center gap-2">
         <InfoTip className="flex-[1_1_240px]" summary="Page views plus wallet connects, chains and transactions, on a dashboard of your own">
           Cookie-free, one script tag with data-web3. Starting creates a Gully Analytics login for this wallet; you add websites here and read them there. Every tracker call counts against the plan&apos;s monthly events: page views, custom events and Web3 events. At the limit the server stops recording until the month turns or you upgrade. Plans are separate from the API plans.{' '}
