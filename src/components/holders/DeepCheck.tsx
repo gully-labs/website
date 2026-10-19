@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ArrowRight, CircleCheck, CircleSlash, Gauge, Loader2, ShieldCheck } from 'lucide-react'
 import { deepConfirm, deepPagePath, deepQuote, PART_NAMES, PART_ORDER, rememberCheck, useDeepOffer, type Coverage, type DeepQuote, type PartKey } from '../../lib/holdersDeep'
@@ -27,10 +27,6 @@ export function DeepCheckCard({ chain, token, symbol }: { chain: string; token: 
   const [quote, setQuote] = useState<DeepQuote | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  useEffect(() => {
-    setQuote(null)
-    setErr(null)
-  }, [chain, token])
 
   if (offer.k === 'loading') return <div className="card card-pad gl-skeleton h-[148px]" aria-busy="true" aria-label="Loading the Deep check" />
   if (offer.k === 'error') return null

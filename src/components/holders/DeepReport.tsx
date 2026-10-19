@@ -191,7 +191,7 @@ function Wallets({ list, ex }: { list: string[]; ex: ReturnType<typeof explorer>
 function Trading({ r, ex }: { r: DeepReport; ex: ReturnType<typeof explorer> }) {
   const t = r.sections.trading
   const [open, setOpen] = useState<number | null>(null)
-  const bundles = t?.bundles ?? []
+  const bundles = useMemo(() => t?.bundles ?? [], [t])
   const option = useMemo(
     () => ({
       grid: { left: 4, right: 12, top: 18, bottom: 4, containLabel: true },
@@ -253,7 +253,7 @@ const ORIGIN: Record<DeepTrace['origin']['type'], string> = { exchange: 'Exchang
 
 function Funding({ r, ex }: { r: DeepReport; ex: ReturnType<typeof explorer> }) {
   const f = r.sections.funding
-  const traces = f?.traces ?? []
+  const traces = useMemo(() => f?.traces ?? [], [f])
   const [kind, setKind] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const groups = useMemo(() => {
@@ -361,7 +361,7 @@ function Funding({ r, ex }: { r: DeepReport; ex: ReturnType<typeof explorer> }) 
 
 function Clusters({ r, ex }: { r: DeepReport; ex: ReturnType<typeof explorer> }) {
   const c = r.sections.clusters
-  const list = c?.combined ?? []
+  const list = useMemo(() => c?.combined ?? [], [c])
   const [sel, setSel] = useState<number | null>(null)
   const option = useMemo(
     () => ({

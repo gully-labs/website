@@ -2,6 +2,7 @@
  * <div data-gully-widget="ticker|badge|table" data-chain="all|robinhood|bsc" data-ticker="NVDA"
  * Holder Map: <div data-gully-widget="holders" data-chain="robinhood|bsc|base|hyperevm|solana"
  *      data-token="0x… or a tracked ticker" data-height="640"></div> frames gullylabs.xyz/embed/holders.
+ *      Add data-badge="true" for the small linked badge instead; data-embed-key, data-theme, data-accent for white-label plans.
  *      data-theme="dark|light" data-limit="5"></div>
  * <script src="https://gullylabs.xyz/widget.js" async></script>
  * Every figure is read from the live tracker API; nothing is typed in. One request per API base per
@@ -479,9 +480,32 @@
       el.textContent = 'Holder Map: set data-chain and data-token.'
       return
     }
+    var base = apiBase(el)
+    if ((el.getAttribute('data-badge') || '').toLowerCase() === 'true' || el.getAttribute('data-badge') === '') {
+      /* Badge mode: the small SVG pill (cached data only), linked to the map. */
+      var a = document.createElement('a')
+      a.href = base + '/holders/' + chain + '/' + token
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      a.title = 'Holder Map by Gully Labs'
+      var im = document.createElement('img')
+      im.src = base + '/api/holders/' + chain + '/' + token + '/badge.svg'
+      im.alt = 'Holder Map by Gully Labs'
+      im.loading = 'lazy'
+      im.style.cssText = 'display:inline-block;max-width:100%;height:auto;border:0'
+      a.appendChild(im)
+      el.appendChild(a)
+      return
+    }
     var h = parseInt(el.getAttribute('data-height') || '', 10)
     var f = document.createElement('iframe')
-    f.src = apiBase(el) + '/embed/holders/' + chain + '/' + token
+    var q = []
+    var ek = el.getAttribute('data-embed-key') || ''
+    if (/^gle_0x[0-9a-fA-F]{40}\.[0-9a-f]{24}$/.test(ek)) q.push('key=' + encodeURIComponent(ek))
+    if (el.getAttribute('data-theme') === 'light') q.push('theme=light')
+    var ac = el.getAttribute('data-accent') || ''
+    if (/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(ac)) q.push('accent=' + encodeURIComponent(ac))
+    f.src = base + '/embed/holders/' + chain + '/' + token + (q.length ? '?' + q.join('&') : '')
     f.title = 'Holder Map by Gully Labs'
     f.loading = 'lazy'
     f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
