@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowUpRight, Loader2, Route } from 'lucide-react'
 import type { TrackerRow } from '../../lib/tracker'
 import { NATIVE_SYMBOL } from './swapConfig'
-import { servable } from '../tracker/StockLogo'
+import { servable } from '../tracker/servable'
 import { TokenLogo } from '../logos/TokenLogo'
 
 /* "DeepCore route": what DeepCore's router would give for the same payment as the LI.FI swap on this card
