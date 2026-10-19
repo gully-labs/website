@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T19:43:50.826Z",
+ "updatedAt": "2026-10-19T20:41:57.629Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -3599,8 +3599,8 @@
    "title": "Gully SDK (gully-labs/sdk README)",
    "url": "https://github.com/gully-labs/sdk/blob/main/README.md#gully-labs-sdk",
    "section": "Gully Labs SDK",
-   "text": "Build on the Gully Labs stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price, refreshed every minute. Package — What it is @gullylabs/tracker — A typed client for the tracker API. No dependencies; runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget — The embeddable widget (ticker, badge, table) with a loader and a React component. @gullylabs/holders — A typed client for the Holder Map API (who holds a token, wallet clusters) and a React component that frames the map.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Build on the Gully Labs stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price, refreshed every minute. Package — What it is @gullylabs/tracker — A typed client for the tracker API. No dependencies; runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget — The embeddable widget (ticker, badge, table) with a loader and a React component. @gullylabs/holders — A typed client for the Holder Map API (who holds a token, wallet clusters) and a React component that frames the map. Not published to npm yet.",
+   "updatedAt": "2026-10-19T20:41:57.629Z"
   },
   {
    "id": "657efa7a3f14",
@@ -3644,8 +3644,26 @@
    "title": "gullylabs.xyz website (gully-labs/website README)",
    "url": "https://github.com/gully-labs/website/blob/main/README.md#what-this-is",
    "section": "What this is",
-   "text": "The source of gullylabs.xyz and the sites that share its code: Host — What it serves gullylabs.xyz — The ledger: volume, value locked and fees across every Gully Labs project, read live from each project's own API gullylabs.xyz/tracker — The stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain against its Chainlink fair price docs.gullylabs.xyz — Methodology, API reference, widget guide, SDK, plans and alerts app.gullylabs.xyz — The Gully Labs App (app dashboard): sign in with a wallet; API keys, usage, alerts, analytics, payments, and every service (tracker, Gully Pay, Chain Kit, Gully AI, DeepCore launches, widgets, Telegram) gullylabs.xyz/widget — The embeddable widget and its builder One React bundle renders the right app for each host. A dependency-free Node server (server/) serves it, answers the public API (/api/tracker, /api/stats, /api/plans) and forwards the blog and analytics hosts to their own containers.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "The source of gullylabs.xyz and the sites that share its code. One React bundle renders the right app for each host, and a dependency-free Node server serves it and answers the API. Host — What it serves gullylabs.xyz — The home ledger (live figures from each project's own API), the stock tracker, Holder Map, Gully Security, Gully Score, Gully AI, Gully Analytics, the Gully Chains waitlist, widget, pricing and status pages docs.gullylabs.xyz — The docs host: methodology, API reference, products, SDK, plans, roadmap and changelog app.gullylabs.xyz — The app host: sign in with a wallet; API keys, usage, alerts, analytics, payments, security and every other service blog and analytics hosts — Self-hosted Ghost and Umami containers; the server forwards these hosts to them",
+   "updatedAt": "2026-10-19T20:41:57.629Z"
+  },
+  {
+   "id": "50478f2afb51",
+   "source": "GitHub README",
+   "title": "gullylabs.xyz website (gully-labs/website README)",
+   "url": "https://github.com/gully-labs/website/blob/main/README.md#products",
+   "section": "Products",
+   "text": "Status follows src/content/features.ts, the single source of truth (also published at gullylabs.xyz/llms.txt). Product — Status Stock tracker (Robinhood Chain, BNB Chain, Solana), API, alerts, widget — Live Holder Map, Launch Health score, Deep check, badges — Live Gully Security (AI scan, monitors, reports, security review) — Live Gully Score — Live Gully Pay (invoices, pay links, merchant checkout, Solana Pay) — Live Gully AI — Live Telegram bot (@GullyLabsBot) and Mini App — Live Gully Analytics (Umami fork) — Live SDK (@gullylabs/tracker, @gullylabs/widget, @gullylabs/holders) — Beta Gully Chains — Waitlist; no chain is running yet Chain Kit — Waitlist; explorer licence being finalised",
+   "updatedAt": "2026-10-19T20:41:57.629Z"
+  },
+  {
+   "id": "91f910ef9131",
+   "source": "GitHub README",
+   "title": "gullylabs.xyz website (gully-labs/website README)",
+   "url": "https://github.com/gully-labs/website/blob/main/README.md#architecture",
+   "section": "Architecture",
+   "text": "The server answers the public API (/api/tracker, /api/stats, /api/plans, /api/status) and the signed-in app API.",
+   "updatedAt": "2026-10-19T20:41:57.629Z"
   },
   {
    "id": "2e2977802d8b",
@@ -3653,8 +3671,8 @@
    "title": "gullylabs.xyz website (gully-labs/website README)",
    "url": "https://github.com/gully-labs/website/blob/main/README.md#stack",
    "section": "Stack",
-   "text": "React 19 · Vite · TypeScript · Tailwind CSS v4 · React Router · ECharts · wagmi + RainbowKit (app dashboard only) · Node (no runtime dependencies) · Docker Compose.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "React 19 · Vite · TypeScript · Tailwind CSS v4 · React Router · ECharts · wagmi + RainbowKit (app host only) · Node (no runtime dependencies) · Docker Compose.",
+   "updatedAt": "2026-10-19T20:41:57.629Z"
   },
   {
    "id": "e2f24f1f3957",
@@ -3662,8 +3680,8 @@
    "title": "gullylabs.xyz website (gully-labs/website README)",
    "url": "https://github.com/gully-labs/website/blob/main/README.md#related",
    "section": "Related",
-   "text": "gully-labs/sdk: @gullylabs/tracker and @gullylabs/widget gully-labs/umami: Gully Analytics gully-labs/blockscout: Chain Kit Information on these sites is not investment advice.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "gully-labs/sdk: @gullylabs/tracker, @gullylabs/widget and @gullylabs/holders gully-labs/umami: Gully Analytics Contact: team@gullylabs.xyz Information on these sites is not investment advice.",
+   "updatedAt": "2026-10-19T20:41:57.629Z"
   },
   {
    "id": "172cdae62148",

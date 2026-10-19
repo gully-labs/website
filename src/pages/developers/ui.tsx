@@ -16,7 +16,7 @@ const ICON = 15
 
 /* ------------------------------------------------------------------ sub-tabs --- */
 
-export type SubTabItem<T extends string> = { id: T; label: string; icon: ReactNode; count?: number | null; dot?: boolean }
+export type SubTabItem<T extends string> = { id: T; label: string; icon: ReactNode; count?: number | null; dot?: boolean; /** A quota indicator (used of allowed): shown even at 0. */ keepZero?: boolean }
 
 /** Sticky tabs under the app header (56px). Arrow keys move between tabs; on a phone the row scrolls sideways
     inside itself, never the page. */
@@ -50,7 +50,7 @@ export function SubTabs<T extends string>({ items, value, onChange, label, idBas
             >
               <span className={on ? 'text-gold' : ''}>{t.icon}</span>
               {t.label}
-              {t.count !== undefined && t.count !== null && <span className={`rounded-full px-[6px] font-mono text-[11px] leading-[18px] ${on ? 'bg-[rgba(217,181,99,.14)] text-gold' : 'bg-surface-deep text-faint'}`}>{t.count}</span>}
+              {t.count !== undefined && t.count !== null && (t.count !== 0 || t.keepZero) && <span className={`rounded-full px-[6px] font-mono text-[11px] leading-[18px] ${on ? 'bg-[rgba(217,181,99,.14)] text-gold' : 'bg-surface-deep text-faint'}`}>{t.count}</span>}
               {t.dot && <span className="size-[6px] rounded-full bg-gold" aria-label="needs attention" />}
               {on && <span className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-gold" style={{ animation: 'gl-fade .2s ease both' }} aria-hidden />}
             </button>
@@ -236,7 +236,7 @@ export function InfoTip({ summary, children, className = '' }: { summary: ReactN
   }, [open])
   return (
     <span ref={box} className={`relative flex min-w-0 items-center gap-1 text-[12px] text-dim ${className}`} data-testid="info-tip">
-      <span className="min-w-0 truncate">{summary}</span>
+      <span className="min-w-0 line-clamp-2 [overflow-wrap:anywhere]">{summary}</span>
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={id} aria-label="More about this" className="-my-[10px] -mr-2 inline-flex size-11 shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:text-gold">
         <Info size={ICON} aria-hidden />
       </button>
@@ -264,11 +264,11 @@ export function KpiTile({ label, icon, children, note, i = 0 }: { label: string;
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-[12px] border border-line bg-surface px-3 py-[10px]" style={{ animation: `gl-rise .45s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }} data-tile={label}>
       <span className="flex items-center gap-[6px] text-[12px] text-dim">
-        {icon && <span className="text-gold">{icon}</span>}
-        <span className="truncate">{label}</span>
+        {icon && <span className="shrink-0 text-gold">{icon}</span>}
+        <span className="min-w-0 [overflow-wrap:anywhere]">{label}</span>
       </span>
       <span className="font-display text-[24px] leading-none font-bold text-ink">{children}</span>
-      {note && <span className="truncate font-mono text-[11px] text-faint">{note}</span>}
+      {note && <span className="font-mono text-[11px] [overflow-wrap:anywhere] text-faint">{note}</span>}
     </div>
   )
 }
