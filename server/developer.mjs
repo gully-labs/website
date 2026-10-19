@@ -53,6 +53,7 @@
 import { accountUsage, ANON_LIMIT_PER_MIN, keyUsage, lastUsed, recentRequests, usageExtras } from './access.mjs'
 import { eventFor, noteTelegramConnect, recordEvent, activityPage, syncTelegram } from './activity.mjs'
 import { handleAlerts } from './alerts.mjs'
+import { handleChainsLaunch } from './chains-launch.mjs'
 import { handleExport } from './exports.mjs'
 import { handlePartnerRoutes } from './holders-partners.mjs'
 import { handleMerchant } from './merchants.mjs'
@@ -291,7 +292,10 @@ export async function handleDeveloper(req, res, url) {
     // Chain Kit requests and the Gully Chains devnet waitlist (store.mjs).
     p === '/api/developer/chain-kit' ||
     p === '/api/developer/chain-kit/request' ||
-    p === '/api/developer/chains-waitlist'
+    p === '/api/developer/chains-waitlist' ||
+    // The chain launch wizard's launched chains (chains-launch.mjs).
+    p === '/api/developer/chains-launch' ||
+    p.startsWith('/api/developer/chains-launch/')
 
   if (accountRoute || v2Route) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -327,6 +331,7 @@ export async function handleDeveloper(req, res, url) {
       if (p === '/api/developer/security' || p.startsWith('/api/developer/security/')) return handleSecurity(req, res, url, ctx)
       if (p === '/api/developer/monitors' || p.startsWith('/api/developer/monitors/')) return handleMonitors(req, res, url, ctx)
       if (p === '/api/developer/partners' || p.startsWith('/api/developer/partners/')) return handlePartnerRoutes(req, res, url, ctx)
+      if (p === '/api/developer/chains-launch' || p.startsWith('/api/developer/chains-launch/')) return handleChainsLaunch(req, res, url, ctx)
       if (p === '/api/developer/chain-kit' || p === '/api/developer/chain-kit/request' || p === '/api/developer/chains-waitlist') return chainKitRoutes(req, res, p, post, ctx)
       if (p === '/api/developer/me' || p === '/api/developer/profile' || p === '/api/developer/company' || p.startsWith('/api/developer/sessions')) return handleProfileRoutes(req, res, url, ctx)
       return handleWorkspaceRoutes(req, res, url, ctx)

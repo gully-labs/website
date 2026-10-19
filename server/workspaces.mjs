@@ -100,6 +100,7 @@ export function categoryOf(pathname) {
   if (p === '/alerts' || p.startsWith('/alerts/')) return 'alerts'
   if (p === '/monitors' || p.startsWith('/monitors/')) return 'alerts' // Gully Security monitoring: same writers as alerts
   if (p === '/partners' || p.startsWith('/partners/')) return 'alerts' // Holder Map partner webhooks: same writers as alerts
+  if (p === '/chains-launch' || p.startsWith('/chains-launch/')) return 'chains' // the chain launch wizard's list of launched chains
   if (p === '/telegram' || p.startsWith('/telegram/')) return 'telegram'
   if (p === '/checkout' || p === '/checkout/verify') return 'billing'
   if (p === '/analytics/checkout' || p === '/analytics/checkout/verify') return 'billing'
@@ -120,10 +121,10 @@ export function categoryOf(pathname) {
 /** The write categories each role holds. */
 export const WRITES = {
   viewer: [],
-  developer: ['keys', 'alerts', 'telegram', 'analytics', 'merchant-dev', 'security'],
+  developer: ['keys', 'alerts', 'telegram', 'analytics', 'merchant-dev', 'security', 'chains'],
   billing: ['billing', 'company', 'merchant', 'merchant-dev'],
-  admin: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'merchant', 'merchant-dev', 'security'],
-  owner: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'owner', 'merchant', 'merchant-dev', 'security'],
+  admin: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'merchant', 'merchant-dev', 'security', 'chains'],
+  owner: ['keys', 'alerts', 'telegram', 'analytics', 'billing', 'company', 'team', 'admin', 'owner', 'merchant', 'merchant-dev', 'security', 'chains'],
 }
 
 /** Whether `role` may make this POST. */

@@ -72,6 +72,10 @@ function describe(e: ActivityEvent): [string, string | null] {
       return ['deleted an alert', null]
     case 'alert.tested':
       return ['sent a test of the alert', t]
+    case 'chain.launched':
+      return [`launched the testnet chain${d.chainId ? ` (id ${s(d.chainId)})` : ''}`, t]
+    case 'chain.removed':
+      return ['removed a launched chain', t]
     case 'telegram.linked':
       return ['linked the Telegram chat', t]
     case 'telegram.unlinked':

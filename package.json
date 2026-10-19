@@ -17,6 +17,7 @@
     "test:movers": "node --test scripts/test-movers.mjs",
     "test:analytics": "node scripts/test-analytics.mjs",
     "test:chains": "node scripts/test-chains.mjs",
+    "test:chains-launch": "node scripts/test-chains-launch.mjs",
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:tg-channel": "node scripts/test-tg-channel.mjs",
     "test:tg-broadcast": "node scripts/test-tg-broadcast.mjs",
