@@ -599,7 +599,7 @@ await step('chains launch wizard', async () => {
     await p.locator('#chain-name').fill('E2E Testnet')
     await p.locator('#chain-id').fill('7100001')
     await p.locator('[data-testid="chain-id-status"][data-state="taken"]').waitFor({ timeout: 10_000 })
-    check(`chains ${tag}: a chain id already used here is flagged taken`, /already uses/.test(await p.getByTestId('chain-id-error').textContent()))
+    check(`chains ${tag}: a chain id already used here is flagged taken`, /already uses/.test(await p.getByTestId('chain-id-status').textContent()))
     await p.locator('#chain-owner').fill(OWNER)
     await p.getByTestId('wizard-next').click()
     check(`chains ${tag}: Continue does not pass a taken id`, (await p.locator('#chain-name').count()) === 1)

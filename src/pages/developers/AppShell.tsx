@@ -299,7 +299,7 @@ function NavList<T extends string>({ items, current, go, compact, dense }: { ite
                 e.preventDefault()
                 go(t.id)
               }}
-              className={`group/row relative flex items-center gap-[10px] rounded-[8px] font-medium transition-colors ${dense ? 'min-h-8 text-[13px]' : 'min-h-11 text-[14px]'} ${compact ? 'justify-center px-0' : 'px-[10px]'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
+              className={`group/row relative flex items-center gap-[10px] rounded-[8px] font-medium transition-colors ${dense ? 'min-h-8 text-[13px] [@media(max-height:820px)]:min-h-[30px]' : 'min-h-11 text-[14px]'} ${compact ? 'justify-center px-0' : 'px-[10px]'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
             >
               {on && <span className="absolute top-[8px] bottom-[8px] left-0 w-[3px] rounded-full bg-gold" aria-hidden />}
               <span className={on ? 'text-gold' : ''}>{t.icon}</span>

@@ -10,7 +10,7 @@ import { usePoll } from '../poll'
 import { useWrite } from '../portal'
 import { Section, ServiceHeader, type Status } from '../services/ServiceHeader'
 import type { ServiceCtx } from '../services/links'
-import { docsPage } from '../services/links'
+import { docsPage, sitePage } from '../services/links'
 import { pillGold, pillSm } from '../styles'
 import { useSubTab } from '../subtab'
 import { SubPanel, SubTabs, type SubTabItem } from '../ui'
@@ -123,6 +123,7 @@ export default function ChainsView({ ctx }: { ctx: ServiceCtx }) {
         desc="Launch an Arbitrum Orbit testnet chain yourself, settling to Arbitrum Sepolia. Your wallet signs; we never hold keys."
         status={status}
         docs={docsPage()}
+        page={{ href: sitePage('/chains') }}
         actions={
           <button type="button" onClick={() => setSub('launch')} disabled={!canLaunch} title={why} className={`${pillGold} min-h-11`} data-testid="launch-cta">
             <Rocket size={15} aria-hidden /> Launch a chain

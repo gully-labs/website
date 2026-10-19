@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -18,6 +19,18 @@ import { handleDeepcoreLaunches } from './server/deepcore.mjs'
 import { handleSolana } from './server/solana-routes.mjs'
 import { handleHolders } from './server/holders.mjs'
 import { handleEcosystem } from './server/ecosystem.mjs'
+
+// The Arbitrum chain SDK (a lazy chunk of the chain launch flow) calls require.resolve at load time for its command-line
+// scripts' file paths. A browser has no require.resolve; the paths are never used there, so they resolve to themselves.
+function sdkBrowserShims(): Plugin {
+  return {
+    name: 'sdk-browser-shims',
+    transform(code, id) {
+      if (!/node_modules[\\/]@arbitrum[\\/]chain-(sdk|actions)[\\/]/.test(id) || !code.includes('require.resolve(')) return null
+      return { code: code.replace(/\brequire\.resolve\(/g, "(function (p) { return p })("), map: null }
+    },
+  }
+}
 
 // In dev there is no serverless runtime, so answer /api/contact locally.
 function mockContactApi(): Plugin {
@@ -154,5 +167,8 @@ function serverModules(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), mockContactApi(), statsApi(), trackerApi(), serverModules()],
+  plugins: [react(), tailwindcss(), mockContactApi(), statsApi(), trackerApi(), serverModules(), sdkBrowserShims()],
+  // The Arbitrum chain SDK's barrel file imports Node built-ins for its command-line scripts; the lazy launch-flow chunk loads
+  // them as inert stand-ins (src/pages/developers/chains/nodeStub.ts). Nothing else in the app imports these modules.
+  resolve: { alias: [{ find: /^node:(path|fs|fs[/]promises|os|child_process)$/, replacement: fileURLToPath(new URL('./src/pages/developers/chains/nodeStub.ts', import.meta.url)) }] },
 })

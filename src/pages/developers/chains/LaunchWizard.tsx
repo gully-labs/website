@@ -350,13 +350,13 @@ export function LaunchWizard({ onLaunched, goChainKit, onDone }: { onLaunched: (
 
   const errors = {
     name: nameError(d.name),
-    chainId: chainIdError(d.chainId) ?? (idCheck.state === 'taken' ? idCheck.reason : null),
+    chainId: chainIdError(d.chainId),
     owner: addressError(d.owner),
   }
   const val = useMemo(() => addressListOf(d.validators, 'validator'), [d.validators])
   const pos = useMemo(() => addressListOf(d.posters, 'batch poster'), [d.posters])
   const show = (f: keyof typeof errors) => (touched.has(f) ? errors[f] : null)
-  const configureOk = !errors.name && !errors.chainId && !errors.owner && idCheck.state !== 'checking'
+  const configureOk = !errors.name && !errors.chainId && !errors.owner && idCheck.state !== 'checking' && idCheck.state !== 'taken'
   const input_: LaunchInput | null = d.type && configureOk && val.list && pos.list ? { name: d.name.trim(), chainId: Number(d.chainId.trim()), type: d.type, owner: d.owner.trim() as Address, validators: val.list, batchPosters: pos.list } : null
 
   const steps: Step[] = [

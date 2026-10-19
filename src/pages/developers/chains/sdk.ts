@@ -1,3 +1,4 @@
+import './shim'
 import { createRollupPrepareDeploymentParamsConfig, createRollupPrepareTransactionReceipt, createRollupPrepareTransactionRequest, prepareChainConfig, prepareNodeConfig } from '@arbitrum/chain-sdk'
 import type { Address, PublicClient, TransactionReceipt } from 'viem'
 import { PARENT } from './chain'

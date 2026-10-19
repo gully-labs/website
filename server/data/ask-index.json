@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T01:23:17.562Z",
+ "updatedAt": "2026-10-19T06:32:08.944Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -2717,8 +2717,8 @@
    "title": "Gully Chains",
    "url": "https://gullylabs.xyz/chains",
    "section": "Your own Arbitrum chain, run by Gully Labs",
-   "text": "We launch and operate an Arbitrum Orbit chain for your project, with the explorer, bridge, faucet and monitoring built in. A testnet is coming. Join the waitlist to be among the first. Join the waitlist Chain Kit explorer Chain Kit: the explorer Read the docs",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "We launch and operate an Arbitrum Orbit chain for your project, with the explorer, bridge, faucet and monitoring built in. A testnet is coming. Join the waitlist to be among the first. Join the waitlist Chain Kit explorer Launch a testnet chain yourself Chain Kit: the explorer Read the docs",
+   "updatedAt": "2026-10-19T06:32:08.944Z"
   },
   {
    "id": "fa3ebb823471",
@@ -2870,8 +2870,8 @@
    "title": "Gully Labs links and contact",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. Stock tracker: https://gullylabs.xyz/tracker. Holder Map: https://gullylabs.xyz/holders. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. Security: https://gullylabs.xyz/security. Gully Chains: https://gullylabs.xyz/#chains. Gully Pay: https://gullylabs.xyz/#pay. All products: https://gullylabs.xyz/#products. Gully AI: https://gullylabs.xyz/ask. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. Stock tracker: https://gullylabs.xyz/tracker. Holder Map: https://gullylabs.xyz/holders. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. Gully Security: https://gullylabs.xyz/security. Gully Chains: https://gullylabs.xyz/chains. Gully Pay: https://gullylabs.xyz/#pay. All products: https://gullylabs.xyz/#products. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
+   "updatedAt": "2026-10-19T06:32:08.944Z"
   },
   {
    "id": "b33b0edf6fb3",
