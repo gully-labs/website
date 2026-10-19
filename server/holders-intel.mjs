@@ -21,6 +21,7 @@ import { DATA_DIR } from './http.mjs'
 import { readLaunches, shapePool } from './deepcore.mjs'
 import { dcGet, decodeTransfer, evmRpc, findStock, flowSide, HOLDER_CHAINS, readHolderMap, readLaunch, short, TRANSFER_TOPIC } from './holders.mjs'
 import { isSolanaAddress } from './solana.mjs'
+import { detectChains } from './holders-any.mjs'
 
 const lower = (a) => String(a ?? '').toLowerCase()
 const isAddr = (a) => typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a)
@@ -391,7 +392,7 @@ export const setMapPeek = (fn) => (peekMap = fn)
 /* ---------------------------------------------------------------- search --- */
 
 /** "$NVDA", "nvda", an address or a Solana mint: the maps that match. */
-export async function resolveHolders(qIn) {
+export async function resolveHolders(qIn, { ip = null } = {}) {
   const q = String(qIn ?? '').trim().replace(/^\$/, '')
   const out = []
   if (/^[A-Za-z.]{1,10}$/.test(q)) {
@@ -408,18 +409,30 @@ export async function resolveHolders(qIn) {
       const s = findStock(ck, q)
       if (s) out.push({ chain: ck, chainName: HOLDER_CHAINS[ck].name, token: s.ticker, symbol: s.ticker, kind: 'stock', path: pagePath(ck, s.ticker) })
     }
-    if (!out.length) {
-      const found = await Promise.all(['robinhood', 'bsc', 'base', 'hyperevm'].map(async (ck) => [ck, await readLaunch(HOLDER_CHAINS[ck].id, lower(q)).catch(() => undefined)]))
-      for (const [ck, l] of found) if (l) out.push({ chain: ck, chainName: HOLDER_CHAINS[ck].name, token: lower(q), symbol: l.launchToken?.symbol ?? null, kind: 'deepcore-launch', path: pagePath(ck, lower(q)) })
-    }
-    return { matches: out }
+    if (out.length) return { matches: out, checked: [] }
+    // No chain given: every supported chain is checked at once (DeepCore's launch list and the token itself).
+    const [found, det] = await Promise.all([Promise.all(['robinhood', 'bsc', 'base', 'hyperevm'].map(async (ck) => [ck, await readLaunch(HOLDER_CHAINS[ck].id, lower(q)).catch(() => undefined)])), detectChains(q, { ip })])
+    return fromChecks(out, det, new Map(found.filter(([, l]) => l)), q)
   }
   if (isSolanaAddress(q)) {
     const s = findStock('solana', q)
-    if (s) out.push({ chain: 'solana', chainName: 'Solana', token: s.ticker, symbol: s.symbol ?? s.ticker, kind: 'stock', path: pagePath('solana', s.ticker) })
-    return { matches: out }
+    if (s) return { matches: [{ chain: 'solana', chainName: 'Solana', token: s.ticker, symbol: s.symbol ?? s.ticker, kind: 'stock', path: pagePath('solana', s.ticker) }], checked: [] }
+    return fromChecks(out, await detectChains(q, { ip }), new Map(), q)
   }
-  return { matches: [] }
+  return { matches: [], checked: [] }
+}
+
+/** The probe results as search matches (a token on several chains gives several, for the picker) and the plain list of what was checked. */
+function fromChecks(out, det, launches, q) {
+  if (det.busy) return { busy: true, matches: [], checked: [] }
+  const address = q.startsWith('0x') ? lower(q) : q
+  const checked = det.results.map((r) => ({ chain: r.chain, chainName: r.chainName, status: launches.has(r.chain) ? 'token' : r.status, reason: launches.has(r.chain) ? null : (r.reason ?? null) }))
+  for (const r of det.results) {
+    const l = launches.get(r.chain)
+    if (l) out.push({ chain: r.chain, chainName: r.chainName, token: address, symbol: l.launchToken?.symbol ?? r.symbol ?? null, kind: 'deepcore-launch', path: pagePath(r.chain, address) })
+    else if (r.status === 'token') out.push({ chain: r.chain, chainName: r.chainName, token: address, symbol: r.symbol ?? null, name: r.name ?? null, kind: 'token', path: pagePath(r.chain, address) })
+  }
+  return { matches: out, checked }
 }
 
 /* ------------------------------------------------------------- Gully AI --- */
@@ -429,7 +442,8 @@ export function holdersFacts(map) {
   if (map.state !== 'ok') return { state: map.state, reason: map.reason ?? null }
   return {
     token: `${map.token.symbol ?? short(map.token.address)} on ${map.chain.name}`,
-    kind: map.kind === 'deepcore-launch' ? 'DeepCore launch' : 'tokenised stock',
+    kind: map.kind === 'deepcore-launch' ? 'DeepCore launch' : map.kind === 'launch' ? `${map.venue ?? 'launchpad'} launch` : map.kind === 'token' ? 'token' : 'tokenised stock',
+    coverage: map.coverage?.level === 'top' ? `top holders only: ${map.coverage.reason}` : 'every holder',
     asOf: map.asOf,
     summary: map.summary.line,
     plain: map.summary.plain,

@@ -23,7 +23,7 @@ export function HoldersPage() {
   const isStock = m?.kind === 'stock'
   const title = `Holder Map: ${symbol ?? 'token'} on ${chainName}`
   const comingSoon = m?.state === 'unavailable' && !!m.comingSoon
-  const description = m?.state === 'ok' ? `${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim() : comingSoon ? `Holder data for ${chainName} is coming soon. DeepCore launches already have live Holder Maps on Gully Labs.` : `Who holds ${symbol ?? 'this token'} on ${chainName}: the biggest wallets, the ones that trade with each other, and what that means, read live.`
+  const description = m?.state === 'ok' ? `${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim() : comingSoon ? `Token maps for ${chainName} are coming soon. DeepCore launches already have live Holder Maps on Gully Labs.` : `Who holds ${symbol ?? 'this token'} on ${chainName}: the biggest wallets, the ones that trade with each other, and what that means, read live.`
 
   return (
     <div className="flex flex-col gap-3 px-[clamp(8px,2cqw,32px)] pt-3 pb-24">
@@ -34,9 +34,15 @@ export function HoldersPage() {
         <Link to="/holders" className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
           ← HOLDER MAP
         </Link>
-        <Link to={isStock && symbol ? `/tracker/${chain}/${symbol}` : '/projects/deepcore'} className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
-          {isStock && symbol ? `${symbol} ON THE TRACKER` : 'DEEPCORE'}
-        </Link>
+        {m?.state === 'ok' && (m.kind === 'token' || m.kind === 'launch') ? (
+          <a href={m.token.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
+            {symbol ? `${symbol} ON THE EXPLORER ↗` : 'EXPLORER ↗'}
+          </a>
+        ) : (
+          <Link to={isStock && symbol ? `/tracker/${chain}/${symbol}` : '/projects/deepcore'} className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
+            {isStock && symbol ? `${symbol} ON THE TRACKER` : 'DEEPCORE'}
+          </Link>
+        )}
       </nav>
       <HolderMap chain={chain} token={token} page tradeHref={isStock && symbol ? `/tracker/${chain}/${symbol}#swap` : undefined} />
       <section aria-labelledby="hm-how" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-4">
@@ -46,7 +52,8 @@ export function HoldersPage() {
         {[
           ['Bubbles', 'One wallet each. The bigger the bubble, the bigger its share. Grey bubbles are pools, locks, burn addresses, exchanges and other contracts, not people.'],
           ['Gold clusters', 'Wallets that sent the token to each other are joined into a cluster. A big cluster can be one holder spread across many wallets.'],
-          ['Launch check', 'For DeepCore launches: wallets that bought together in the first block of trading are marked bundled, and the deployer and the wallets it funded are named. These warnings are always free.'],
+          ['Top holders only', 'A token with a very long history, or on a chain where we cannot read all of it, shows its biggest holders only. The map says so, and why, under its title.'],
+          ['Launch check', 'For DeepCore launches and tokens of launchpads we know: wallets that bought together in the first block of trading are marked bundled, and the deployer and the wallets it funded are named. These warnings are always free.'],
           ['Replay', 'Drag the slider or press play to watch holdings concentrate or spread since launch, rebuilt from the token’s own transfers.'],
         ].map(([t, d]) => (
           <div key={t} className="card card-pad flex flex-col gap-2">

@@ -15,7 +15,7 @@ import path from 'node:path'
 import zlib from 'node:zlib'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { blockedOutbound, bootServer, E2E_LAUNCH_TOKEN, historyFixture, holdersExtraFixtures, holdersFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
+import { blockedOutbound, bootServer, E2E_ANY_TOKEN, E2E_LAUNCH_TOKEN, E2E_NOT_A_TOKEN, historyFixture, holdersExtraFixtures, holdersFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
 import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
 import { auditPage, tokenColors } from './e2e-audit.mjs'
 
@@ -111,6 +111,7 @@ async function newContext({ width = 1440, height = 900, mobile = false, geo = { 
   await ctx.route(new RegExp(`^${BASE}/api/pay/price`), (route) => json(route, { asset: 'base-eth', price: (2500 + Math.random()).toFixed(2), updatedAt: new Date().toISOString() }))
   // Holder Maps (server/holders.mjs reads DeepCore, Blockscout and RPCs): a launch for addresses, a stock for tickers.
   await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (route) => json(route, holdersFixture(/\/0x[0-9a-f]{40}$/i.test(new URL(route.request().url()).pathname) ? 'deepcore-launch' : 'stock')))
+  await ctx.route(`${BASE}/api/holders/base/${E2E_ANY_TOKEN}`, (route) => json(route, holdersFixture('token')))
   const HX = holdersExtraFixtures()
   await ctx.route(new RegExp(`^${BASE}/api/holders/resolve`), (route) => json(route, HX.resolve(new URL(route.request().url()).searchParams.get('q') ?? '')))
   await ctx.route(`${BASE}/api/holders/launches`, (route) => json(route, HX.launches))
@@ -1726,13 +1727,25 @@ await step('holder map', async () => {
     const q = page.getByLabel('Token address or ticker')
     await q.fill('zzz-nothing')
     await page.getByRole('button', { name: 'Map it' }).click()
-    await page.getByText(/^Nothing matches\./).waitFor()
-    check(`holders landing ${width}: no match says so`, true)
+    await page.locator('[data-no-match]').getByText(/not a token address or a ticker we follow/).waitFor()
+    check(`holders landing ${width}: text that is no address or ticker says what to paste`, true)
+    await q.fill(E2E_NOT_A_TOKEN)
+    await page.getByRole('button', { name: 'Map it' }).click()
+    await page.locator('[data-no-match] li').first().waitFor()
+    check(`holders landing ${width}: a valid address that is no token names every chain checked and why`, (await page.locator('[data-no-match] li').count()) === 4 && (await page.locator('[data-no-match]').getByText(/There is no contract at this address on Base/).count()) === 1)
+    check(`holders landing ${width}: the coverage chips name each chain's any-token mode`, (await page.locator('[data-holder-sources] li').filter({ hasText: /any token ·/ }).count()) === 5)
     await q.fill('$NVDA')
     await page.getByRole('button', { name: 'Map it' }).click()
     await page.locator('[data-resolve-matches] a').first().waitFor()
     check(`holders landing ${width}: several matches offer a pick`, (await page.locator('[data-resolve-matches] a').count()) === 2)
-    await q.fill('DTC')
+    await q.fill(E2E_ANY_TOKEN)
+    await page.getByRole('button', { name: 'Map it' }).click()
+    await page.waitForURL(new RegExp(`/holders/base/${E2E_ANY_TOKEN}$`))
+    const anyMap = page.locator('[data-holder-map="ok"]')
+    await anyMap.waitFor()
+    check(`holders landing ${width}: an unlisted token opens a map labelled "top holders only", with no launch score`, (await anyMap.locator('[data-coverage="top"]').getByText(/Top holders only/).count()) === 1 && (await anyMap.locator('[data-risk-line]').count()) === 0 && (await anyMap.locator('[data-health-part]').count()) === 0)
+    await page.goto(BASE + '/holders')
+    await page.getByLabel('Token address or ticker').fill('DTC')
     await page.getByRole('button', { name: 'Map it' }).click()
     await page.waitForURL(new RegExp(`/holders/robinhood/${E2E_LAUNCH_TOKEN}$`))
     check(`holders landing ${width}: one match opens its map`, true)

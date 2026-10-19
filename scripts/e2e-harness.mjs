@@ -90,6 +90,10 @@ export function historyFixture(chain, ticker, days = 7) {
 /* ------------------------------------------------------------- Holder Map fixture --- */
 
 export const E2E_LAUNCH_TOKEN = '0x8d901a1b3f3a57f9c36a71382fa183476c41545b'
+/** A plain ERC-20 nobody listed (kind 'token'), on Base: its map is "top holders only". */
+export const E2E_ANY_TOKEN = '0x4f2a9c1d0e7b3a56c8d94e1f0a2b3c4d5e6f7081'
+/** A valid address that is no token on any chain (the search says which chains were checked). */
+export const E2E_NOT_A_TOKEN = '0x00000000000000000000000000000000000c0de1'
 
 /**
  * A deterministic /api/holders body in the server's shape (server/holders.mjs buildMap, src/lib/holders.ts):
@@ -99,6 +103,7 @@ export const E2E_LAUNCH_TOKEN = '0x8d901a1b3f3a57f9c36a71382fa183476c41545b'
 export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
   const addr = (i) => '0x' + (0xa11ce000 + i * 7919).toString(16).padStart(40, '0')
   const launch = kind === 'deepcore-launch'
+  const stock = kind === 'stock'
   const raw = Array.from({ length: 30 }, (_, i) => 1000 / (i + 1) ** 1.15)
   const total = raw.reduce((a, b) => a + b, 0)
   const labels = { 0: { kind: 'pool', name: 'DeepCore pools (vault)' }, 4: { kind: 'lock', name: 'DeepCore launch lock' }, 9: { kind: 'burn', name: 'Burn (dead address)' }, ...(launch ? { 3: { kind: 'deployer', name: 'Deployer' } } : { 6: { kind: 'exchange', name: 'Binance 8' } }) }
@@ -121,7 +126,7 @@ export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
       cluster: clusterA.includes(i) || (launch && i === 3) ? 'c1' : clusterB.includes(i) ? 'c2' : null,
       flags,
       url: `https://robinhoodchain.blockscout.com/address/${addr(i)}`,
-      ...(launch ? {} : { valueAtFairUsd: Math.round(v * 1_000_000 * 180), premiumUsd: Math.round(v * 1_000_000 * 180 * 0.026), boughtGapPct: i % 3 === 0 ? 1.2 : null }),
+      ...(!stock ? {} : { valueAtFairUsd: Math.round(v * 1_000_000 * 180), premiumUsd: Math.round(v * 1_000_000 * 180 * 0.026), boughtGapPct: i % 3 === 0 ? 1.2 : null }),
     }
   })
   const pair = (a, b, n, k = 'transfer') => ({ source: addr(a), target: addr(b), transfers: n, pct: 0.4, kind: k })
@@ -147,8 +152,9 @@ export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
   return {
     state: 'ok',
     kind,
-    chain: { key: 'robinhood', id: 4663, name: 'Robinhood Chain' },
-    token: { address: launch ? E2E_LAUNCH_TOKEN : '0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec', symbol: launch ? 'DTC' : 'NVDA', name: launch ? null : 'NVIDIA', decimals: 18, supply: launch ? 1_000_000_000 : null, url: 'https://robinhoodchain.blockscout.com/address/x' },
+    chain: kind === 'token' ? { key: 'base', id: 8453, name: 'Base' } : { key: 'robinhood', id: 4663, name: 'Robinhood Chain' },
+    token: { address: launch ? E2E_LAUNCH_TOKEN : stock ? '0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec' : E2E_ANY_TOKEN, symbol: launch ? 'DTC' : stock ? 'NVDA' : 'ANYT', name: launch ? null : stock ? 'NVIDIA' : 'Any Token', decimals: 18, supply: launch ? 1_000_000_000 : null, url: 'https://basescan.org/address/x' },
+    ...(kind === 'token' ? { coverage: { level: 'top', reason: 'it has more than 40,000 transfers, too many to rebuild its full history', shown: 30 } } : {}),
     asOf: new Date(at - 120_000).toISOString(),
     sources: launch ? { holders: 'DeepCore’s log index: all 812 transfers since launch (exact balances)', links: 'Direct transfers between the mapped wallets, since launch' } : { holders: 'Blockscout (top 50 holders)', links: 'Direct transfers between the mapped wallets in the latest 5,000 transfers' },
     holders: { count: launch ? 41 : 18_204, shown: 30, graph: 30, sharesOf: launch ? 'total supply' : 'total supply', partial: null },
@@ -174,7 +180,7 @@ export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
     forensics: launch
       ? { snipers: { wallets: 2, pct: 2.5, blocks: 3 }, deployer: addr(3), launchBlock: 85_689_748, firstTradeBlock: 85_689_760, bundled: { wallets: 3, pct: sum([2, 5, 12]), firstBlockBuyers: 3 }, funded: { wallets: 2, pct: sum([7, 11]), coinChecked: false, coinNote: 'Coin transfers from the deployer are not checked yet.' }, deployerPct: nodes[3].pct, liquidity: { locked: true, locker: addr(4), since: new Date(at - 86_400_000).toISOString() }, buyers: 38, riskLine: `3 wallets bought in the first block of trading and hold ${Math.round(sum([2, 5, 12]))}% now.` }
       : null,
-    fair: launch ? null : { fair: 180, onchain: 184.68, gapPct: 2.6, status: 'premium', top10ValueAtFairUsd: 1_250_000_000, top10PremiumUsd: 32_500_000, buyersAvgGapPct: 1.2, buyers: 4 },
+    fair: !stock ? null : { fair: 180, onchain: 184.68, gapPct: 2.6, status: 'premium', top10ValueAtFairUsd: 1_250_000_000, top10PremiumUsd: 32_500_000, buyersAvgGapPct: 1.2, buyers: 4 },
     timeline: { basis: launch ? 'every transfer since launch' : 'rolled back from today over the latest transfers', frames },
     hidden: [{ via, short: `${via.slice(0, 6)}…${via.slice(-4)}`, url: `https://robinhoodchain.blockscout.com/address/${via}`, connects: [addr(14), addr(20)], transfers: 2 }],
     live: { supported: launch, cursor: launch ? 85_700_000 : null },
@@ -221,12 +227,15 @@ export function holdersExtraFixtures(at = Date.now()) {
       matches:
         /^dtc$/i.test(q) || q.toLowerCase() === E2E_LAUNCH_TOKEN
           ? [{ chain: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', kind: 'deepcore-launch', path }]
-          : /^nvda$/i.test(q)
+          : q.toLowerCase() === E2E_ANY_TOKEN
+            ? [{ chain: 'base', chainName: 'Base', token: E2E_ANY_TOKEN, symbol: 'ANYT', kind: 'token', path: `/holders/base/${E2E_ANY_TOKEN}` }]
+            : /^nvda$/i.test(q)
             ? [
                 { chain: 'robinhood', chainName: 'Robinhood Chain', token: 'NVDA', symbol: 'NVDA', kind: 'stock', path: '/holders/robinhood/NVDA' },
                 { chain: 'bsc', chainName: 'BNB Chain', token: 'NVDA', symbol: 'NVDA', kind: 'stock', path: '/holders/bsc/NVDA' },
               ]
             : [],
+      checked: q.toLowerCase() === E2E_NOT_A_TOKEN ? [['robinhood', 'Robinhood Chain'], ['bsc', 'BNB Chain'], ['base', 'Base'], ['hyperevm', 'HyperEVM']].map(([chain, chainName]) => ({ chain, chainName, status: 'not-token', reason: `There is no contract at this address on ${chainName}.` })) : [],
     }),
     launches: {
       asOf: new Date(at - 20_000).toISOString(),

@@ -129,9 +129,15 @@ export interface HolderFrame {
   top10Pct: number | null
   holders: number | null
 }
+/** deepcore-launch: a DeepCore launch. launch: another launchpad's token (venue says which). stock: a tracked stock token. token: any other token. */
+export type HolderKind = 'deepcore-launch' | 'launch' | 'stock' | 'token'
 export interface HolderMapOk {
   state: 'ok'
-  kind: 'deepcore-launch' | 'stock'
+  kind: HolderKind
+  /** Other launchpads' launches: the launchpad's name. */
+  venue?: string | null
+  /** full: every holder's exact balance. top: the biggest holders only, and why (shown on the map). */
+  coverage?: { level: 'full' | 'top'; reason: string | null; shown: number | null }
   chain: { key: string; id: number | string; name: string }
   token: {
     address: string
@@ -194,10 +200,12 @@ export interface HolderMapOk {
 }
 export interface HolderMapUnavailable {
   state: 'unavailable' | 'not-found' | 'error' | 'busy'
-  kind?: 'deepcore-launch' | 'stock'
+  kind?: HolderKind
   chain?: { key: string; id: number | string; name: string }
   token?: { address: string; symbol?: string | null }
   reason: string
+  /** 0..1 while the token's history is being read; the page asks again soon. */
+  progress?: number
   /** The chain's holder source is not set up yet: the page says "coming soon" and points to live maps. */
   comingSoon?: boolean
   asOf?: string
@@ -223,19 +231,27 @@ export function useHolderMap(chain: string | null, token: string | null): Load<H
   useEffect(() => {
     if (!key || !chain || !token) return
     let alive = true
+    let retry: ReturnType<typeof setTimeout> | undefined
     const tick = () =>
       fetch(holdersPath(chain, token), {
         headers: { accept: 'application/json' },
       })
         .then((r) => r.json().then((b: HolderMap) => (b && typeof b === 'object' && 'state' in b ? b : Promise.reject(new Error(String(r.status))))))
         .then(
-          (data) => alive && setState((s) => (data.state !== 'ok' && s.key === key && s.load.k === 'ok' && s.load.data.state === 'ok' ? s : { key, load: { k: 'ok', data } })),
+          (data) => {
+            if (alive && data.state === 'unavailable' && typeof data.progress === 'number') {
+              clearTimeout(retry)
+              retry = setTimeout(tick, 8_000)
+            }
+            if (alive) setState((s) => (data.state !== 'ok' && s.key === key && s.load.k === 'ok' && s.load.data.state === 'ok' ? s : { key, load: { k: 'ok', data } }))
+          },
           () => alive && setState((s) => (s.key === key && s.load.k === 'ok' ? s : { key, load: { k: 'error' } })),
         )
     tick()
     const id = setInterval(tick, REFRESH_MS)
     return () => {
       alive = false
+      clearTimeout(retry)
       clearInterval(id)
     }
   }, [key, chain, token])
@@ -250,14 +266,22 @@ export interface ResolveMatch {
   chainName: string
   token: string
   symbol: string | null
-  kind: 'deepcore-launch' | 'stock'
+  name?: string | null
+  kind: HolderKind
   path: string
   /** false: this chain's holder data is coming soon (the page says so). */
   available?: boolean
 }
+/** GET /api/holders/resolve?q= for an address: what was checked on each chain, in plain words. */
+export interface ResolveChecked {
+  chain: string
+  chainName: string
+  status: 'token' | 'not-token' | 'unreadable'
+  reason: string | null
+}
 /** GET /api/holders/sources: which chains have maps today. */
 export interface HolderSources {
-  chains: { chain: string; name: string; stocks: boolean; launches: boolean }[]
+  chains: { chain: string; name: string; stocks: boolean; launches: boolean; tokens: boolean; any: 'full' | 'top' | 'none' }[]
 }
 /** GET /api/holders/launches */
 export interface CheckedLaunch {
@@ -286,7 +310,7 @@ export interface TopScanned {
     chain: string
     token: string
     symbol: string | null
-    kind: 'deepcore-launch' | 'stock'
+    kind: HolderKind
     scans: number
     path: string
   }[]
