@@ -92,7 +92,6 @@ npm run test:features     # check features.ts against the code
 
 - [gully-labs/sdk](https://github.com/gully-labs/sdk): `@gullylabs/tracker`, `@gullylabs/widget` and `@gullylabs/holders`
 - [gully-labs/umami](https://github.com/gully-labs/umami/tree/gully/analytics): Gully Analytics
-- [gully-labs/blockscout](https://github.com/gully-labs/blockscout/tree/gully/chain-kit): Chain Kit (waitlist; licence in progress)
 - Contact: [team@gullylabs.xyz](mailto:team@gullylabs.xyz)
 
 Information on these sites is not investment advice.
