@@ -1,5 +1,6 @@
+import { L3Timeline } from '../DocExtras'
 import { ParentChainBaseFee } from '../ParentChainBaseFee'
-import { C, Callout, DocLink, DocPage, Ext, Fields, H3, List, P, Section } from '../DocPage'
+import { C, Callout, Details, DocLink, DocPage, Ext, Fields, H3, List, P, Section } from '../DocPage'
 
 const sections = [
   { id: 'status', title: 'Status' },
@@ -32,6 +33,7 @@ export function RoadmapL3() {
           refuse to start without free disk and RAM. The <DocLink to="changelog">changelog</DocLink> will say when any of this goes live; until then, the waitlist in the{' '}
           <Ext href="https://app.gullylabs.xyz">app dashboard</Ext> is the only thing you can join.
         </Callout>
+        <L3Timeline />
         <Fields
           head={['Stage', 'Chain', 'State']}
           rows={[
@@ -50,24 +52,28 @@ export function RoadmapL3() {
           An Arbitrum chain (the stack formerly branded Orbit): Nitro, deployed with the Arbitrum chain SDK through the parent chain’s <C>RollupCreator</C> and <C>TokenBridgeCreator</C>,
           with the Gully stack attached on day one.
         </P>
-        <List>
-          <li>
-            <strong className="text-ink">Explorer</strong>: Chain Kit, our Blockscout fork, with its Arbitrum profile (<C>CHAIN_TYPE=arbitrum</C>, traces from the node’s <C>debug</C> API).
-          </li>
-          <li>
-            <strong className="text-ink">Payments</strong>: <DocLink to="gully-pay">Gully Pay</DocLink> native on the chain, with USDC and ETH as assets, verified on chain the way it is today.
-          </li>
-          <li>
-            <strong className="text-ink">Interop</strong>: Hyperlane. A Mailbox on the L3, Warp Routes for USDC and ETH from Arbitrum One (and Base) into it, and our own validator and relayer.
-          </li>
-          <li>
-            <strong className="text-ink">Analytics, alerts, Gully AI</strong> read it like any other chain.
-          </li>
-        </List>
-        <P>
-          The chain id for the public chains is not chosen yet: 412346 is the fixed id of the dev node and will not be reused for a public chain. It will be registered in{' '}
-          <C>ethereum-lists/chains</C> and the Hyperlane registry before the devnet opens.
-        </P>
+        <Details summary="What the Gully L3 is: the details">
+          <List>
+            <li>
+              <strong className="text-ink">Explorer</strong>: Chain Kit, our Blockscout fork, with its Arbitrum profile (<C>CHAIN_TYPE=arbitrum</C>, traces from the node’s <C>debug</C> API).
+            </li>
+            <li>
+              <strong className="text-ink">Payments</strong>: <DocLink to="gully-pay">Gully Pay</DocLink> native on the chain, with USDC and ETH as assets, verified on chain the way it is today.
+            </li>
+            <li>
+              <strong className="text-ink">Interop</strong>: Hyperlane. A Mailbox on the L3, Warp Routes for USDC and ETH from Arbitrum One (and Base) into it, and our own validator and relayer.
+            </li>
+            <li>
+              <strong className="text-ink">Analytics, alerts, Gully AI</strong> read it like any other chain.
+            </li>
+          </List>
+        </Details>
+        <Details summary="What the Gully L3 is: more">
+          <P>
+            The chain id for the public chains is not chosen yet: 412346 is the fixed id of the dev node and will not be reused for a public chain. It will be registered in{' '}
+            <C>ethereum-lists/chains</C> and the Hyperlane registry before the devnet opens.
+          </P>
+        </Details>
       </Section>
 
       <Section id="settlement" title="Settlement chain">
@@ -76,14 +82,16 @@ export function RoadmapL3() {
           tooling we forked, the Chain Kit profile, the tracker’s Robinhood Chain coverage and the Arbitrum ecosystem programs are all Arbitrum-shaped, and Base liquidity still
           reaches the L3 through a Base→L3 Warp Route and, later, the aggregators. The public devnet settles to Arbitrum Sepolia.
         </P>
-        <P>
-          The parent’s gas price is one input to what posting a batch costs. These are the base fees on the candidates right now, read from their public RPCs by our server; a
-          chain that cannot be read says so.
-        </P>
         <ParentChainBaseFee />
-        <P>
-          The other input, the parent’s own L1 data component, varies with Ethereum blob prices and is not reported by any public RPC, so the spec asks for a real batch to be measured on each testnet before the decision is final.
-        </P>
+        <Details summary="Settlement chain: more">
+          <P>
+            The parent’s gas price is one input to what posting a batch costs. These are the base fees on the candidates right now, read from their public RPCs by our server; a
+            chain that cannot be read says so.
+          </P>
+          <P>
+            The other input, the parent’s own L1 data component, varies with Ethereum blob prices and is not reported by any public RPC, so the spec asks for a real batch to be measured on each testnet before the decision is final.
+          </P>
+        </Details>
       </Section>
 
       <Section id="da" title="Data availability">
@@ -142,18 +150,20 @@ export function RoadmapL3() {
       </Section>
 
       <Section id="pay" title="Gully Pay on the L3">
-        <List>
-          <li>
-            <strong className="text-ink">Native</strong>: the L3 joins the payment chains with ETH and the Warp Route USDC; verification is the same receipt-and-transfer check as today.
-          </li>
-          <li>
-            <strong className="text-ink">Cross-chain in</strong>: a payer on Arbitrum One or Base sends into the USDC Warp Route with the merchant’s L3 address as recipient. The invoice shows <C>settling</C> until the Mailbox delivers on the L3; both transaction hashes are on the receipt.
-          </li>
-          <li>
-            <strong className="text-ink">Cross-chain out</strong>: merchant payouts to Arbitrum One are Warp transfers paid for in L3 ETH, with the fee quoted before the merchant confirms.
-          </li>
-          <li>Fee splits (the merchant fee proxy) deploy unchanged.</li>
-        </List>
+        <Details summary="Gully Pay on the L3: the details">
+          <List>
+            <li>
+              <strong className="text-ink">Native</strong>: the L3 joins the payment chains with ETH and the Warp Route USDC; verification is the same receipt-and-transfer check as today.
+            </li>
+            <li>
+              <strong className="text-ink">Cross-chain in</strong>: a payer on Arbitrum One or Base sends into the USDC Warp Route with the merchant’s L3 address as recipient. The invoice shows <C>settling</C> until the Mailbox delivers on the L3; both transaction hashes are on the receipt.
+            </li>
+            <li>
+              <strong className="text-ink">Cross-chain out</strong>: merchant payouts to Arbitrum One are Warp transfers paid for in L3 ETH, with the fee quoted before the merchant confirms.
+            </li>
+            <li>Fee splits (the merchant fee proxy) deploy unchanged.</li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="aggregators" title="Swaps and bridges today">
@@ -166,9 +176,11 @@ export function RoadmapL3() {
         <P>
           The light devnet is one Nitro container in dev mode, chain id 412346, with an in-memory parent chain, run only on a machine with 15 GB free. It is for testing Chain Kit’s Arbitrum profile, Stylus contracts, Gully Pay flows and the Hyperlane agents against a chain we control. It has no bridge (its parent is simulated), so the first Hyperlane exercise is a message between it and Arbitrum Sepolia.
         </P>
-        <P>
-          If you want to be told when the public devnet opens, join the Gully Chains waitlist in the <Ext href="https://app.gullylabs.xyz">app dashboard</Ext>. If you want to run the pieces yourself, the compose files and runbooks are in the site repository under <C>ops/devnet</C> and <C>ops/l3</C>.
-        </P>
+        <Details summary="The devnet, and what you can do now: more">
+          <P>
+            If you want to be told when the public devnet opens, join the Gully Chains waitlist in the <Ext href="https://app.gullylabs.xyz">app dashboard</Ext>. If you want to run the pieces yourself, the compose files and runbooks are in the site repository under <C>ops/devnet</C> and <C>ops/l3</C>.
+          </P>
+        </Details>
       </Section>
 
       <Section id="decisions" title="Open decisions">
@@ -186,25 +198,27 @@ export function RoadmapL3() {
 
       <Section id="sources" title="Sources">
         <P>Everything above was read from primary sources on 17 October 2026; the full spec carries each quote and figure with its link.</P>
-        <List>
-          <li>
-            Arbitrum: <Ext href="https://docs.arbitrum.io/launch-arbitrum-chain/arbitrum-chain-sdk-introduction">chain SDK introduction</Ext>,{' '}
-            <Ext href="https://docs.arbitrum.io/launch-arbitrum-chain/deploy/canonical-factory-contracts">canonical factory contracts</Ext>,{' '}
-            <Ext href="https://docs.arbitrum.io/launch-arbitrum-chain/features/common/data-availability/choose-anytrust">choose AnyTrust</Ext>,{' '}
-            <Ext href="https://docs.arbitrum.io/launch-arbitrum-chain/features/common/gas-and-fees/choose-custom-gas-token">custom gas token</Ext>.
-          </li>
-          <li>
-            Hyperlane: <Ext href="https://docs.hyperlane.xyz/docs/guides/chains/deploy-hyperlane">deploy to a new chain</Ext>,{' '}
-            <Ext href="https://docs.hyperlane.xyz/docs/operate/validators/run-validators">run validators</Ext>,{' '}
-            <Ext href="https://docs.hyperlane.xyz/docs/operate/relayer/run-relayer">run a relayer</Ext>,{' '}
-            <Ext href="https://docs.hyperlane.xyz/docs/guides/quickstart/deploy-warp-route">Warp Routes</Ext>,{' '}
-            <Ext href="https://github.com/hyperlane-xyz/hyperlane-registry">registry</Ext>.
-          </li>
-          <li>
-            Aggregators: <Ext href="https://docs.relay.link/resources/supported-chains">Relay supported chains</Ext>,{' '}
-            <Ext href="https://docs.li.fi/introduction/learn-more/getting-integrated-by-lifi">getting integrated by LI.FI</Ext>.
-          </li>
-        </List>
+        <Details summary="Sources: the details">
+          <List>
+            <li>
+              Arbitrum: <Ext href="https://docs.arbitrum.io/launch-arbitrum-chain/arbitrum-chain-sdk-introduction">chain SDK introduction</Ext>,{' '}
+              <Ext href="https://docs.arbitrum.io/launch-arbitrum-chain/deploy/canonical-factory-contracts">canonical factory contracts</Ext>,{' '}
+              <Ext href="https://docs.arbitrum.io/launch-arbitrum-chain/features/common/data-availability/choose-anytrust">choose AnyTrust</Ext>,{' '}
+              <Ext href="https://docs.arbitrum.io/launch-arbitrum-chain/features/common/gas-and-fees/choose-custom-gas-token">custom gas token</Ext>.
+            </li>
+            <li>
+              Hyperlane: <Ext href="https://docs.hyperlane.xyz/docs/guides/chains/deploy-hyperlane">deploy to a new chain</Ext>,{' '}
+              <Ext href="https://docs.hyperlane.xyz/docs/operate/validators/run-validators">run validators</Ext>,{' '}
+              <Ext href="https://docs.hyperlane.xyz/docs/operate/relayer/run-relayer">run a relayer</Ext>,{' '}
+              <Ext href="https://docs.hyperlane.xyz/docs/guides/quickstart/deploy-warp-route">Warp Routes</Ext>,{' '}
+              <Ext href="https://github.com/hyperlane-xyz/hyperlane-registry">registry</Ext>.
+            </li>
+            <li>
+              Aggregators: <Ext href="https://docs.relay.link/resources/supported-chains">Relay supported chains</Ext>,{' '}
+              <Ext href="https://docs.li.fi/introduction/learn-more/getting-integrated-by-lifi">getting integrated by LI.FI</Ext>.
+            </li>
+          </List>
+        </Details>
       </Section>
     </DocPage>
   )

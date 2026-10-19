@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, P, Section } from '../DocPage'
+import { LiveBadge } from '../DocExtras'
 import { apiOrigin } from '../nav'
 
 const sections = [
@@ -62,6 +63,11 @@ export function BadgesDocs() {
       lead="Small SVG badges you can put on a README, a docs page or a project site. One family: the Gully Labs mark, a label and a value."
       sections={sections}
     >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-3">
+        <LiveBadge theme="dark" />
+        <LiveBadge theme="light" />
+      </div>
+
       <Section id="family" title="One family">
         <P>Every badge has the same three parts: the Gully Labs mark, the product in upper case, and a value in a second field. They are plain SVG images, open to any origin, so they work in a README, in an email or on any site.</P>
         <Fields head={['Badge', 'Says', 'Address']} variant="routes" rows={KINDS.map((x) => [x.name, x.what, <C key={x.id}>{x.path}</C>])} />

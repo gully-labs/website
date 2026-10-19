@@ -1,5 +1,5 @@
 import { CodeBlock } from '../CodeBlock'
-import { C, Callout, DocLink, DocPage, Ext, Fields, H3, List, P, Section } from '../DocPage'
+import { C, Callout, Details, DocLink, DocPage, Ext, Fields, H3, List, P, Section } from '../DocPage'
 import { EXAMPLE_HISTORY, EXAMPLE_TRACKER, FETCHED_AT, TRACKER_ROWS_AT_FETCH } from '../examples'
 import { GapIndexChart, LatencySpark, StatusRing } from '../LiveCharts'
 
@@ -171,7 +171,9 @@ export function ApiReference() {
         <P>
           The answer is <C>{'{ chain, ticker, points }'}</C>, where each point is a tuple <C>[unixSeconds, gapPct, onchain, fair]</C>, oldest first. A chain or ticker the tracker does not know returns an empty <C>points</C> array, not an error.
         </P>
-        <CodeBlock lang="json" caption={`EXAMPLE · REAL RESPONSE, ${FETCHED_AT}`} code={EXAMPLE_HISTORY} />
+        <Details summary="Example response">
+          <CodeBlock lang="json" caption={`EXAMPLE · REAL RESPONSE, ${FETCHED_AT}`} code={EXAMPLE_HISTORY} />
+        </Details>
       </Section>
 
       <Section id="movers" title="GET /api/tracker/movers">
@@ -335,44 +337,46 @@ export function ApiReference() {
         <P>
           The health of every Gully Labs service, as the <DocLink to="status">Status page</DocLink> shows it. The server checks each component every 60 seconds and keeps 24 hours of samples. No key; <C>Cache-Control: public, max-age=30</C> and CORS <C>*</C>.
         </P>
-        <CodeBlock
-          lang="js"
-          caption="TypeScript · the answer"
-          code={`type StatusState = 'up' | 'degraded' | 'down' | 'off' | 'unknown'
-
-interface StatusBucket { t: string; up: number | null; ms: number | null }  // one 30-minute bucket
-
-interface StatusComponent {
-  id: string
-  group: 'platform' | 'tracker' | 'deepcore' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders'
-  name: string
-  state: StatusState
-  detail: string
-  checkedAt: string | null
-  latencyMs: number | null
-  uptime24h: number | null
-  history: StatusBucket[]
-}
-
-interface StatusIncident {
-  id: string
-  component: string
-  name: string
-  state: 'down' | 'degraded'
-  startedAt: string
-  endedAt: string | null      // null while it is still open
-  detail: string
-}
-
-interface Status {
-  generatedAt: string
-  overall: 'operational' | 'degraded' | 'major'
-  intervalSeconds: number
-  since: string | null        // the first sample kept
-  components: StatusComponent[]
-  incidents: StatusIncident[]
-}`}
-        />
+        <Details summary="The answer, as TypeScript">
+          <CodeBlock
+            lang="js"
+            caption="TypeScript · the answer"
+            code={`type StatusState = 'up' | 'degraded' | 'down' | 'off' | 'unknown'
+  
+  interface StatusBucket { t: string; up: number | null; ms: number | null }  // one 30-minute bucket
+  
+  interface StatusComponent {
+    id: string
+    group: 'platform' | 'tracker' | 'deepcore' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders'
+    name: string
+    state: StatusState
+    detail: string
+    checkedAt: string | null
+    latencyMs: number | null
+    uptime24h: number | null
+    history: StatusBucket[]
+  }
+  
+  interface StatusIncident {
+    id: string
+    component: string
+    name: string
+    state: 'down' | 'degraded'
+    startedAt: string
+    endedAt: string | null      // null while it is still open
+    detail: string
+  }
+  
+  interface Status {
+    generatedAt: string
+    overall: 'operational' | 'degraded' | 'major'
+    intervalSeconds: number
+    since: string | null        // the first sample kept
+    components: StatusComponent[]
+    incidents: StatusIncident[]
+  }`}
+          />
+        </Details>
         <List>
           <li>
             <C>off</C> means the component is not configured on this server (Telegram without a bot token, say); <C>unknown</C> means it has not been checked yet. Neither counts towards <C>uptime24h</C>, which is empty until there is a sample.
@@ -564,7 +568,9 @@ interface Status {
         <P>
           A real answer from <Ext href="https://gullylabs.xyz/api/tracker">/api/tracker</Ext>, fetched {FETCHED_AT}, trimmed from {TRACKER_ROWS_AT_FETCH} rows to two (one per chain). Your answer will differ: it is live.
         </P>
-        <CodeBlock lang="json" caption={`EXAMPLE · REAL RESPONSE, TRIMMED, ${FETCHED_AT}`} code={EXAMPLE_TRACKER} />
+        <Details summary="Example response, trimmed">
+          <CodeBlock lang="json" caption={`EXAMPLE · REAL RESPONSE, TRIMMED, ${FETCHED_AT}`} code={EXAMPLE_TRACKER} />
+        </Details>
         <Callout label="NOT ADVICE" tone="plain">
           The API reports what Chainlink and the pools say. It is not investment advice.
         </Callout>

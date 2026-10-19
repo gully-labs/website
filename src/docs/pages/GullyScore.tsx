@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { C as CC, barsPreset, itemTooltip, tipHtml } from '../../components/charts/chartPresets'
 import { EChart } from '../../components/charts/EChart'
 import type { Methodology } from '../../pages/score/api'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
-import { apiOrigin } from '../nav'
+import { useApi } from '../useApi'
 
 const sections = [
   { id: 'what', title: 'What it is' },
@@ -54,19 +54,7 @@ const EMBED = `<!-- Badge: an image that links back to the score page -->
 <script src="https://gullylabs.xyz/widget.js" async></script>`
 
 function useMethodology() {
-  const [m, setM] = useState<Methodology | null | 'error'>(null)
-  useEffect(() => {
-    let alive = true
-    fetch(`${apiOrigin()}/api/score/methodology`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(
-        (x: Methodology) => alive && setM(x),
-        () => alive && setM('error'),
-      )
-    return () => {
-      alive = false
-    }
-  }, [])
+  const m = useApi<Methodology>('/api/score/methodology', 300_000)
   return m
 }
 

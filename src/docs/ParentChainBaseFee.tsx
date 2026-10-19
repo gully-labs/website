@@ -4,6 +4,7 @@
 // nothing is estimated or typed in. ECharts loads on demand inside EChart.
 
 import { useEffect, useMemo, useState } from 'react'
+import { ChainLogo } from '../components/logos/ChainLogo'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { EChart } from '../components/charts/EChart'
 import { axisTooltip, C, linePreset, PALETTE, tipHtml } from '../components/charts/chartPresets'
@@ -138,6 +139,7 @@ export function ParentChainBaseFee() {
           return (
             <div key={p.key} className="flex min-w-0 flex-col gap-1 rounded-[8px] border border-line bg-surface-deep px-3 py-2">
               <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
+                <ChainLogo chain={p.name} size={16} decorative />
                 <span className="size-2 rounded-full" style={{ background: p.color }} />
                 {p.name.toUpperCase()}
               </span>

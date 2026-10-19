@@ -1,5 +1,5 @@
 import { StatusBoard } from '../../components/status/StatusBoard'
-import { C, DocLink, DocPage, Ext, List, P, Section } from '../DocPage'
+import { AssetText, C, ChainName, DocLink, DocPage, Ext, List, P, Section } from '../DocPage'
 
 const sections = [
   { id: '2026-10-18', title: '18 October 2026' },
@@ -40,7 +40,7 @@ export function Changelog() {
             Telegram announcements from @GullyLabsBot, with a 🔕 Stop announcements button on every one; alerts are never affected. See the <Ext href="https://gullylabs.xyz/legal/privacy">privacy policy</Ext> for what an announcement records.
           </li>
           <li>
-            <DocLink to="gully-pay">Gully Pay</DocLink> on three more chains: OP Mainnet (USDC, USDT, ETH), Polygon (USDC, POL) and Avalanche (USDC, USDT, AVAX). Every token and Chainlink feed was read on chain first. Request Network's fee proxy was compared byte for byte with Base's: OP Mainnet's matches and will carry the merchant fee inside the payment once the treasury Safe is deployed there; Polygon's and Avalanche's are other builds, so the fee is invoiced there. Each chain opens for Gully Labs' own checkout once the treasury Safe is deployed on it.
+            <DocLink to="gully-pay">Gully Pay</DocLink> on three more chains: <ChainName name="OP Mainnet" /> (<AssetText text="USDC, USDT, ETH" />), <ChainName name="Polygon" /> (<AssetText text="USDC, POL" />) and <ChainName name="Avalanche" /> (<AssetText text="USDC, USDT, AVAX" />). Every token and Chainlink feed was read on chain first. Request Network's fee proxy was compared byte for byte with Base's: OP Mainnet's matches and will carry the merchant fee inside the payment once the treasury Safe is deployed there; Polygon's and Avalanche's are other builds, so the fee is invoiced there. Each chain opens for Gully Labs' own checkout once the treasury Safe is deployed on it.
           </li>
           <li>
             The treasury is a Safe, so each chain is now <DocLink to="gully-pay" hash="chains">offered only where the Safe is deployed</DocLink>; the server checks hourly and the admin panel says what to do. Merchant stores get the in-payment fee on the same condition; elsewhere the fee is invoiced as before. A store's own Safe that is not deployed on a chain yet is read again every hour and switches on by itself once it is.
@@ -60,7 +60,7 @@ export function Changelog() {
             A page for every stock token, such as <Ext href="https://gullylabs.xyz/tracker/robinhood/NVDA">NVDA on Robinhood Chain</Ext>: live price against fair, gap history, the pool, contracts, alerts and an embed snippet.
           </li>
           <li>
-            <DocLink to="plans-alerts">Plans and gap alerts</DocLink>: higher limits, signed webhook alerts and up to a year of history, paid in USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain or Arbitrum (OP Mainnet, Polygon and Avalanche followed on 18 October), straight to the Gully Labs treasury.
+            <DocLink to="plans-alerts">Plans and gap alerts</DocLink>: higher limits, signed webhook alerts and up to a year of history, paid in USDC, USDT or the chain's own coin on <ChainName name="Base, Ethereum, BNB Chain, Arbitrum" /> (<ChainName name="OP Mainnet, Polygon, Avalanche" /> followed on 18 October), straight to the Gully Labs treasury.
           </li>
           <li>
             <Ext href="https://gullylabs.xyz/analytics">Gully Analytics</Ext>: web analytics that also see wallet connects, chains and transactions.

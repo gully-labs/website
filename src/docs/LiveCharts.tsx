@@ -116,10 +116,7 @@ function LatencyTile({ path, label, probes }: { path: string; label: string; pro
       {data.length >= 2 ? (
         <EChart option={option} height={CHART_H.spark} label={`Response time of ${path} from this browser, last ${data.length} checks`} skeleton="line" steps={{ count: data.length }} />
       ) : (
-        <div className="relative h-[44px] overflow-hidden rounded-sm bg-surface-deep">
-          <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.12),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
-          <span className="absolute inset-0 grid place-items-center font-mono text-[11px] text-faint">collecting a series…</span>
-        </div>
+        <GhostChart label="The line draws after two checks" height={64} badge={false} />
       )}
     </div>
   )

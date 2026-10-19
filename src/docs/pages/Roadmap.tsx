@@ -1,10 +1,11 @@
 import { Layers, ShieldCheck, type LucideIcon } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { WeightsRing } from '../../pages/score/charts'
 import type { Methodology } from '../../pages/score/api'
 import { Callout, DocLink, DocPage, Ext, H3, List, P, Section } from '../DocPage'
-import { apiOrigin, useDocHref, type DocSlug } from '../nav'
+import { useApi } from '../useApi'
+import { useDocHref, type DocSlug } from '../nav'
 
 /* The general roadmap: every track with its status, so nothing planned reads as shipped and nothing live
    reads as planned. Status words are fixed: LIVE (in production), ON REQUEST (quoted per project, people do
@@ -20,17 +21,8 @@ const PILL: Record<Status, [string, string]> = {
 
 /** The Gully Score's live weights (GET /api/score), the roadmap's own live chart: stage 04 in production. */
 function ScoreWeightsLive() {
-  const [m, set] = useState<Methodology | null | 'error'>(null)
-  useEffect(() => {
-    let alive = true
-    fetch(`${apiOrigin()}/api/score`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d: { methodology?: Methodology }) => alive && set(d.methodology ?? 'error'))
-      .catch(() => alive && set('error'))
-    return () => {
-      alive = false
-    }
-  }, [])
+  const raw = useApi<{ methodology?: Methodology }>('/api/score', 300_000)
+  const m: Methodology | null | 'error' = raw === null ? null : raw === 'error' ? 'error' : (raw.methodology ?? 'error')
   return (
     <div className="flex flex-wrap items-center gap-5 rounded-card border border-line bg-card-token p-4" aria-live="polite">
       {m === null ? (

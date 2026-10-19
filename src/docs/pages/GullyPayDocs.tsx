@@ -1,5 +1,5 @@
 import { CodeBlock } from '../CodeBlock'
-import { C, Callout, DocLink, DocPage, Fields, List, P, Section } from '../DocPage'
+import { C, Callout, Details, DocLink, DocPage, Fields, List, P, Section } from '../DocPage'
 import { GasCostChart, PayCoverage } from '../LiveCharts'
 
 const sections = [
@@ -150,6 +150,9 @@ export function GullyPayDocs() {
         </P>
         <Fields
           head={['Chain', 'Confirmations', 'Assets']}
+          chainCol
+          assetCol={2}
+          collapsible={false}
           rows={[
             ['Base (8453)', '10', 'USDC (6 decimals), ETH'],
             ['Ethereum (1)', '6', 'USDC, USDT (6 decimals), ETH'],
@@ -176,6 +179,7 @@ export function GullyPayDocs() {
         </P>
         <Fields
           head={['Chain', 'Fee proxy · treasury', 'What the payer sees']}
+          chainCol
           rows={[
             ['Base', 'proxy verified (0x1892…b814) · treasury deployed', 'stablecoins: one approve + one call pays merchant and fee; coins: one transfer'],
             ['Ethereum', 'proxy verified (0x370D…623C) · treasury deployed', 'same as Base'],
@@ -228,32 +232,38 @@ export function GullyPayDocs() {
             ['webhook', 'https URL | null', <>Where its events go (<a href="#webhooks">webhooks</a>).</>],
           ]}
         />
-        <List>
-          <li>An invoice made from a link stays open for an hour. Its quote holds 20 minutes and can be renewed.</li>
-          <li>Each address may start ten checkouts from links an hour.</li>
-          <li>A switched-off, expired or used-up link says so plainly and starts no checkout.</li>
-        </List>
+        <Details summary="Pay links: the details">
+          <List>
+            <li>An invoice made from a link stays open for an hour. Its quote holds 20 minutes and can be renewed.</li>
+            <li>Each address may start ten checkouts from links an hour.</li>
+            <li>A switched-off, expired or used-up link says so plainly and starts no checkout.</li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="checkout" title="The checkout">
-        <List>
-          <li>Title, amount and a status pill: awaiting payment, confirming, paid, expired or cancelled.</li>
-          <li>Assets grouped by chain; the exact amount, large; a wallet QR; copy buttons for the amount, the treasury address and the token contract.</li>
-          <li>A countdown on the quote, and a new quote when it runs out. A payment sent in time can still be checked after.</li>
-          <li><b>Pay with wallet</b> sends the exact transfer from a connected wallet. Or send from anywhere and paste the transaction hash.</li>
-          <li>Live confirmations (<C>n / needed</C>), then a receipt with the explorer link, ready to print or save as PDF.</li>
-        </List>
+        <Details summary="The checkout: the details">
+          <List>
+            <li>Title, amount and a status pill: awaiting payment, confirming, paid, expired or cancelled.</li>
+            <li>Assets grouped by chain; the exact amount, large; a wallet QR; copy buttons for the amount, the treasury address and the token contract.</li>
+            <li>A countdown on the quote, and a new quote when it runs out. A payment sent in time can still be checked after.</li>
+            <li><b>Pay with wallet</b> sends the exact transfer from a connected wallet. Or send from anywhere and paste the transaction hash.</li>
+            <li>Live confirmations (<C>n / needed</C>), then a receipt with the explorer link, ready to print or save as PDF.</li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="no-stuck-funds" title="Funds can’t get stuck">
         <P>
           Stablecoin payments to a store carry Gully Labs’ fee in the same transaction through Request Network’s <C>ERC20FeeProxy</C>, an immutable contract with no owner. It never holds tokens: one call moves the payment from the payer to the recipient and the fee to the treasury, and returns. The only way funds could end up inside it is a transfer sent <b>straight to the proxy’s address</b>, and nobody, Gully Labs included, could get those back. So the server and the checkout make that impossible:
         </P>
-        <List>
-          <li>Every quote, QR code, wallet link, recipient address and split call passes one validator before it leaves the server. A proxy address (on any chain) is never a recipient; a split calls the proxy only through <C>transferFromWithReferenceAndFee</C> with zero value, an allowed stablecoin, the recipient and the treasury as the two legs and an approval for exactly the amount. Anything else answers 500 with no payment details at all.</li>
-          <li>The <b>Pay with wallet</b> button checks the same rules again in the browser, simulates the proxy call with <C>eth_call</C> before your wallet sees it, and refuses to send on any failure. It never sends coin to the proxy and never falls back to a plain transfer to it.</li>
-          <li>An hourly monitor reads every proxy’s balances on every chain. A non-zero balance (a transfer someone sent to the proxy by hand) alerts the Gully Labs team, who cannot recover it either but can warn the payer.</li>
-        </List>
+        <Details summary="Funds can’t get stuck: the details">
+          <List>
+            <li>Every quote, QR code, wallet link, recipient address and split call passes one validator before it leaves the server. A proxy address (on any chain) is never a recipient; a split calls the proxy only through <C>transferFromWithReferenceAndFee</C> with zero value, an allowed stablecoin, the recipient and the treasury as the two legs and an approval for exactly the amount. Anything else answers 500 with no payment details at all.</li>
+            <li>The <b>Pay with wallet</b> button checks the same rules again in the browser, simulates the proxy call with <C>eth_call</C> before your wallet sees it, and refuses to send on any failure. It never sends coin to the proxy and never falls back to a plain transfer to it.</li>
+            <li>An hourly monitor reads every proxy’s balances on every chain. A non-zero balance (a transfer someone sent to the proxy by hand) alerts the Gully Labs team, who cannot recover it either but can warn the payer.</li>
+          </List>
+        </Details>
         <Callout label="NEVER SEND TO THE PROXY" tone="plain">
           Pay with the wallet button or send to the address shown on the quote. Never copy the <C>pay.to</C> contract address of a split into a wallet as a recipient: a plain transfer to it is lost for good, and the server names such a transaction as an unrecoverable mis-send instead of a payment.
         </Callout>
@@ -263,7 +273,9 @@ export function GullyPayDocs() {
         <P>
           Every quote carries an <C>uri</C>: an EIP-681 payment request for the exact amount, built on the server from base units (never floating point). The QR encodes it.
         </P>
-        <CodeBlock lang="bash" code={URIS} />
+        <Details summary="The wallet URIs">
+          <CodeBlock lang="bash" code={URIS} />
+        </Details>
         <Callout label="CHECK BEFORE SENDING" tone="plain">
           Wallet support for EIP-681 varies: some read only the address, some ignore the amount or the chain. The checkout always shows the address, the exact amount and the token contract with copy buttons. Check the amount and the network in the wallet before sending.
         </Callout>
@@ -273,7 +285,9 @@ export function GullyPayDocs() {
         <P>
           Paste this on any site to send buyers to a pay link or an invoice. The link alone opens the checkout in a new tab; the optional script opens it in a popup window. The admin shows the snippet for each link and invoice.
         </P>
-        <CodeBlock lang="html" code={BUTTON} />
+        <Details summary="The button, as HTML">
+          <CodeBlock lang="html" code={BUTTON} />
+        </Details>
         <P>
           The checkout cannot be put in an iframe: its pages send <C>frame-ancestors</C> limited to Gully Labs itself, so wallet prompts and the address bar stay visible to the payer.
         </P>
@@ -290,16 +304,22 @@ export function GullyPayDocs() {
             ['webhook.test', 'The admin pressed Send test event.', 'target, message'],
           ]}
         />
-        <List>
-          <li>https only. No user name or password in the URL. The host must resolve only to public addresses: private, loopback, link-local and reserved ranges are refused, and the request goes to the address that was checked.</li>
-          <li>The signing secret (<C>whsec_…</C>) is shown once, when the endpoint is set. Rotating it shows the new one once; the old one stops at once.</li>
-          <li>Five-second timeout, redirects not followed, the response body is not read.</li>
-        </List>
+        <Details summary="Webhooks: the details">
+          <List>
+            <li>https only. No user name or password in the URL. The host must resolve only to public addresses: private, loopback, link-local and reserved ranges are refused, and the request goes to the address that was checked.</li>
+            <li>The signing secret (<C>whsec_…</C>) is shown once, when the endpoint is set. Rotating it shows the new one once; the old one stops at once.</li>
+            <li>Five-second timeout, redirects not followed, the response body is not read.</li>
+          </List>
+        </Details>
       </Section>
 
       <Section id="payload" title="Event payload">
-        <CodeBlock lang="js" code={SHAPE} />
-        <CodeBlock lang="json" code={EXAMPLE} caption="An invoice.paid event" />
+        <Details summary="Event shape, as TypeScript">
+          <CodeBlock lang="js" code={SHAPE} />
+        </Details>
+        <Details summary="An invoice.paid event">
+          <CodeBlock lang="json" code={EXAMPLE} caption="An invoice.paid event" />
+        </Details>
       </Section>
 
       <Section id="verify" title="Verifying the signature">
@@ -311,8 +331,12 @@ export function GullyPayDocs() {
             ['X-Gully-Signature', 'sha256=<hex>', <>hex(HMAC-SHA256(secret, <C>{'`${timestamp}.${rawBody}`'}</C>))</>],
           ]}
         />
-        <CodeBlock lang="js" code={VERIFY} />
-        <CodeBlock lang="text" code={PY} caption="Python" />
+        <Details summary="Verify in Node">
+          <CodeBlock lang="js" code={VERIFY} />
+        </Details>
+        <Details summary="Verify in Python">
+          <CodeBlock lang="text" code={PY} caption="Python" />
+        </Details>
         <P>
           It is the same scheme as{' '}
           <DocLink to="plans-alerts" hash="verify">
@@ -323,16 +347,18 @@ export function GullyPayDocs() {
       </Section>
 
       <Section id="retries" title="Delivery and retries">
-        <List>
-          <li>The first attempt goes out at once. Any answer other than 2xx, a timeout or a network error is retried after 1, 5, 10, 20 and 30 minutes: six attempts over about an hour. Then the delivery is marked failed.</li>
-          <li>Retries carry the same event <C>id</C> and body; each is signed again with the current secret and timestamp.</li>
-          <li>The queue is stored on disk, so a restart loses nothing: attempts that came due while the server was down go out when it is back.</li>
-          <li>Each link and invoice shows its delivery log in the admin: event, state, attempts, last answer.</li>
-          <li>
-            A finished delivery (failed or delivered) can be <b>redelivered</b> from the admin, for example after your endpoint was down for longer than the retries. The same event goes out again, with the same <C>id</C> and body, as a new delivery with its own six attempts. Your handler should already drop an <C>id</C> it has handled.
-          </li>
-          <li>Events may arrive out of order and, rarely, more than once. Treat <C>invoice.paid</C> as the source of truth for a sale and look the invoice up by id.</li>
-        </List>
+        <Details summary="Delivery and retries: the details">
+          <List>
+            <li>The first attempt goes out at once. Any answer other than 2xx, a timeout or a network error is retried after 1, 5, 10, 20 and 30 minutes: six attempts over about an hour. Then the delivery is marked failed.</li>
+            <li>Retries carry the same event <C>id</C> and body; each is signed again with the current secret and timestamp.</li>
+            <li>The queue is stored on disk, so a restart loses nothing: attempts that came due while the server was down go out when it is back.</li>
+            <li>Each link and invoice shows its delivery log in the admin: event, state, attempts, last answer.</li>
+            <li>
+              A finished delivery (failed or delivered) can be <b>redelivered</b> from the admin, for example after your endpoint was down for longer than the retries. The same event goes out again, with the same <C>id</C> and body, as a new delivery with its own six attempts. Your handler should already drop an <C>id</C> it has handled.
+            </li>
+            <li>Events may arrive out of order and, rarely, more than once. Treat <C>invoice.paid</C> as the source of truth for a sale and look the invoice up by id.</li>
+          </List>
+        </Details>
       </Section>
     </DocPage>
   )

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { axisTooltip, barsPreset, C as COL, tipHtml } from '../../components/charts/chartPresets'
+import { GhostChart } from '../../components/charts/GhostChart'
 import { EChart } from '../../components/charts/EChart'
 import type { SecurityOffer, SecurityStats } from '../../components/security/types'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { LatencySpark } from '../LiveCharts'
+import { StatusHistory } from '../ProductCharts'
 import { apiOrigin, SITE } from '../nav'
 
 const sections = [
@@ -87,9 +89,7 @@ function ScanCounter() {
       ) : !data ? (
         <span className="text-[13px] text-faint">reading…</span>
       ) : data.totals.started === 0 ? (
-        <span className="flex items-center gap-2 text-[13px] text-muted">
-          <span aria-hidden className="size-2 rounded-full bg-gold" style={{ animation: 'gl-live-pulse 2.4s ease-out infinite' }} /> No scans have run yet.
-        </span>
+        <GhostChart label="The first scan draws here" height={56} badge={false} variant="bars" />
       ) : (
         <>
           <AnimatedNumber value={data.totals.started} countUp className="font-display text-[34px] leading-none font-bold text-gold" />
@@ -130,6 +130,8 @@ export function GullySecurityDocs() {
         <ScanCounter />
         <LatencySpark path="/api/security/stats" label="STATS ENDPOINT, FROM YOUR BROWSER" />
       </div>
+
+      <StatusHistory groups={['security']} title="SECURITY SCAN ENGINE AND MONITORS, LAST 24 H" />
 
       <Section id="tiers" title="Tiers">
         <List>
