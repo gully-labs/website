@@ -2100,6 +2100,53 @@ await step('holder map', async () => {
     await noHorizontalScroll(page, `/holders ${width} (phone clip pass)`)
     await ctx.close()
   }
+  // The timeline readout owns a full-width row under the buttons, and the Gully AI button never covers the Map/List toggle (390 and 320).
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, mobile: true })
+    await ctx.route(`${BASE}/api/ask`, (route) => json(route, holdersExtraFixtures().ask))
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/holders/robinhood/' + E2E_LAUNCH_TOKEN)
+    const map = page.locator('[data-holder-map="ok"]')
+    await map.waitFor()
+    const readout = map.locator('[data-replay-readout]')
+    await readout.waitFor()
+    const rb = await readout.boundingBox()
+    const play = await map.locator('[data-replay="on"] button').first().boundingBox()
+    const box = await map.locator('[data-replay="on"]').boundingBox()
+    check(`holder map ${width}: the timeline readout has its own full-width row under the buttons`, !!rb && !!play && !!box && rb.y >= play.y + play.height - 1 && rb.width >= box.width - 28, JSON.stringify({ rb, play, box }))
+    check(`holder map ${width}: the timeline readout is not clipped`, await readout.evaluate((e) => e.scrollWidth <= e.clientWidth + 1))
+    const toggle = map.locator('[data-segmented]').first()
+    await toggle.evaluate((e) => e.scrollIntoView({ block: 'end' }))
+    await page.waitForTimeout(400)
+    const fab = page.getByTestId('ask-fab')
+    await fab.waitFor()
+    const tb = await toggle.boundingBox()
+    const fb = await fab.boundingBox()
+    const hit = !!tb && !!fb && tb.x < fb.x + fb.width && tb.x + tb.width > fb.x && tb.y < fb.y + fb.height && tb.y + tb.height > fb.y
+    check(`holder map ${width}: the Gully AI button does not cover the Map/List toggle`, !!tb && !!fb && !hit, JSON.stringify({ tb, fb }))
+    await ctx.close()
+  }
+  // The /holders landing on a phone: two-line launch summaries, whole tickers, a short search placeholder, a one-line coming-soon chip, token logos in the feed.
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, mobile: true })
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/holders')
+    await page.locator('[data-launch-feed] li').first().waitFor()
+    await page.waitForTimeout(800)
+    const sums = await page.locator('[data-feed-summary]').evaluateAll((els) => els.map((e) => getComputedStyle(e).webkitLineClamp === '2' && e.clientHeight <= 2 * parseFloat(getComputedStyle(e).fontSize) * 1.75))
+    check(`holders landing ${width}: launch summaries are clamped to two lines`, sums.length > 0 && sums.every(Boolean), JSON.stringify(sums))
+    const ticks = await page.locator('[data-feed-ticker]').evaluateAll((els) => els.map((e) => e.scrollWidth <= e.clientWidth + 1 && !/…$/.test(e.textContent ?? '')))
+    check(`holders landing ${width}: tickers are whole`, ticks.length > 0 && ticks.every(Boolean), JSON.stringify(ticks))
+    check(`holders landing ${width}: the search placeholder reads "Address or ticker" and fits`, (await page.getByLabel('Token address or ticker').getAttribute('placeholder')) === 'Address or ticker' && (await page.getByLabel('Token address or ticker').evaluate((e) => e.scrollWidth <= e.clientWidth + 1)))
+    const soon = page.locator('[data-sources-soon]')
+    if (await soon.count()) {
+      const sb = await soon.boundingBox()
+      check(`holders landing ${width}: the coming-soon chip is one line with chain logos`, !!sb && sb.height <= 44 && (await soon.locator('img, svg').count()) >= 2, JSON.stringify(sb))
+    }
+    check(`holders landing ${width}: feed rows without a map show the token logo, not an empty tile`, (await page.locator('[data-feed-logo]').count()) >= 1 && (await page.locator('[data-feed-logo] [data-logo="token"]').count()) >= 1)
+    await noHorizontalScroll(page, `/holders ${width} landing`)
+    await ctx.close()
+  }
   // Deep check: the offer card on a map, a free-quota check started from a quote, the report page and the JPEG card.
   {
     const DEEP_CHECK = 'dc_e2e0000000000001'
