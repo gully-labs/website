@@ -137,7 +137,7 @@ function StartStep({ view, onStarted }: { view: AnalyticsView; onStarted: (s: Se
       </div>
       {!view.configured && (
         <p className="m-0 text-[13px] text-faint" role="status">
-          Self-serve sign-up is not switched on on this server yet. Write to hello@gullylabs.xyz for early access.
+          Self-serve sign-up is not switched on on this server yet. Write to team@gullylabs.xyz for early access.
         </p>
       )}
       <GhostCurves height={120} title="Your page views and visitors will draw here">

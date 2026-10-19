@@ -66,7 +66,7 @@ const notConfigured = { ok: false, status: 503, error: 'Self-serve Gully Analyti
 async function call(method, path, body) {
   if (!umamiConfigured()) return notConfigured
   for (let attempt = 0; attempt < 2; attempt++) {
-    if (!token && !(await login())) return { ...unreachable, error: 'Gully Analytics refused the server’s admin sign-in. Write to hello@gullylabs.xyz.' }
+    if (!token && !(await login())) return { ...unreachable, error: 'Gully Analytics refused the server’s admin sign-in. Write to team@gullylabs.xyz.' }
     const r = await raw(method, path, body, token)
     if (r.status === 401 && attempt === 0) {
       token = null

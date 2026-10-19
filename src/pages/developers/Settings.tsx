@@ -76,7 +76,7 @@ function PrivacyCard() {
         </div>
       </div>
       <p className="m-0 text-[14px] leading-[1.6] text-ink-2">
-        The privacy policy lists what the app, Gully AI, Gully Analytics, the Telegram bot and Gully Pay collect, who else sees it and how long it is kept. To see, export or delete your data, email hello@gullylabs.xyz.
+        The privacy policy lists what the app, Gully AI, Gully Analytics, the Telegram bot and Gully Pay collect, who else sees it and how long it is kept. To see, export or delete your data, email team@gullylabs.xyz.
       </p>
       <ExtLink href={site('/legal/privacy')} className={`${pillSm} self-start`}>
         Privacy policy <ExternalLink size={12} aria-hidden />

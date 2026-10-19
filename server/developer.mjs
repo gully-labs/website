@@ -232,7 +232,7 @@ export async function handleDeveloper(req, res, url) {
     const body = await readJson(req, 24_000)
     const v = await verifySiwe({ message: body?.message, signature: body?.signature, host, secureOrigin: !local })
     if (!v.ok) return json(res, 401, { error: v.error }), true
-    if (getAccount(v.address)?.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact hello@gullylabs.xyz.' }), true
+    if (getAccount(v.address)?.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact team@gullylabs.xyz.' }), true
     touchAccount(v.address)
     const id = createSession(v.address, { userAgent: String(req.headers['user-agent'] ?? '') })
     return json(res, 200, { address: v.address }, { 'Set-Cookie': sessionCookie(req, id, Math.floor(SESSION_TTL_MS / 1000)) }), true
@@ -300,7 +300,7 @@ export async function handleDeveloper(req, res, url) {
     if (!s) return json(res, 401, { error: 'Not signed in.' }), true
     const user = s.address
     const account = getAccount(user)
-    if (!account || account.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact hello@gullylabs.xyz.' }), true
+    if (!account || account.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact team@gullylabs.xyz.' }), true
 
     // The active workspace, re-checked on every request: a removed member falls back to their own.
     let workspace = s.activeWorkspace ?? user

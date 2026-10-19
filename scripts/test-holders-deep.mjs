@@ -467,7 +467,7 @@ try {
     const r = await post(C.sub, { chain: 'base', token: addr(0xe5), expect: { priceUsd: 9 } })
     payInvoice(r.data.payment.invoiceId)
     const f = await waitFor(ANON, r.data.check.id, finished, 10_000)
-    check('an engine crash is retried up to 3 times, then the check is "failed" with a way to reach us (never stuck running)', f.status === 'failed' && n === 3 && /hello@gullylabs\.xyz/.test(f.error ?? ''), `${f?.status} runs ${n}`)
+    check('an engine crash is retried up to 3 times, then the check is "failed" with a way to reach us (never stuck running)', f.status === 'failed' && n === 3 && /team@gullylabs\.xyz/.test(f.error ?? ''), `${f?.status} runs ${n}`)
     routes.setDeepEngineForTest({ deps: makeDeps().deps })
   }
 } catch (e) {

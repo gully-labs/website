@@ -76,7 +76,7 @@ export function PortalReceipt({ id, onBack }: { id: string; onBack: () => void }
             <header className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex flex-col gap-2">
                 <Wordmark height={28} theme="light" />
-                <span className="font-mono text-[12px] text-[#5f6a78]">gullylabs.xyz · hello@gullylabs.xyz</span>
+                <span className="font-mono text-[12px] text-[#5f6a78]">gullylabs.xyz · team@gullylabs.xyz</span>
               </div>
               <div className="flex flex-col items-end gap-1 text-right max-[600px]:items-start max-[600px]:text-left">
                 <h1 className="m-0 font-display text-[34px] leading-none font-extrabold uppercase">Receipt</h1>

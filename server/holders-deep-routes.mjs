@@ -248,7 +248,7 @@ async function runJob(job) {
   } catch (e) {
     console.error(`holders-deep ${job.id}:`, e?.message ?? e)
     if (job.attempts < MAX_ATTEMPTS) Object.assign(job, { state: 'queued', status: 'queued' })
-    else Object.assign(job, { state: 'finished', status: 'failed', error: 'The check could not be completed. Write to hello@gullylabs.xyz with this check id.', completedAt: new Date().toISOString() })
+    else Object.assign(job, { state: 'finished', status: 'failed', error: 'The check could not be completed. Write to team@gullylabs.xyz with this check id.', completedAt: new Date().toISOString() })
   } finally {
     running.delete(job.id)
     save()
