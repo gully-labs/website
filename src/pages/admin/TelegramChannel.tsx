@@ -692,7 +692,7 @@ export function TelegramChannel({ token }: { token: string }) {
               <>
                 posts to{' '}
                 {view.channelUrl ? (
-                  <a href={view.channelUrl} target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">
+                  <a href={view.channelUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-gold hover:underline">
                     {view.channel} ↗
                     <NewTabNote />
                   </a>

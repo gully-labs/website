@@ -1241,6 +1241,7 @@ await step('admin', async () => {
   await page.locator('a#adm-nav-alerts').focus()
   await page.keyboard.press('ArrowRight')
   await page.waitForFunction(() => location.hash === '#workspaces')
+  await page.waitForSelector('a#adm-nav-workspaces[aria-current="true"]', { timeout: 5_000 }).catch(() => {})
   check('admin: "]" and the arrow keys step through the sections', (await page.locator('a#adm-nav-workspaces').getAttribute('aria-current')) === 'true')
   await page.goto(BASE + '/admin#analytics')
   await page.getByRole('heading', { name: 'Gully Analytics' }).first().waitFor({ timeout: 15_000 })

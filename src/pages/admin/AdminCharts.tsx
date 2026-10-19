@@ -134,7 +134,7 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
   const wh = data.webhooks
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-4">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-4">
       <section className={card}>
         <Head title="Revenue" figure={<AnimatedNumber value={sum(data.revenue.usd)} format={NF.usd} />} note={`${sum(data.revenue.payments)} payments in ${d.length} days${data.revenue.unpriced ? ` · ${data.revenue.unpriced} without a USD price` : ''}`} />
         <Toggle
