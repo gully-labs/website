@@ -81,9 +81,7 @@ check('no fee proxy is also our treasury', !proxies.some((c) => c.address === TR
 
 // ---------------------------------------------------------------- the built files
 const built = await build()
-for (const [name, body] of Object.entries(built)) check(`server/data/${name} is up to date (run node scripts/build-discovery.mjs)`, fs.readFileSync(path.join(root, 'server/data', name), 'utf8').replace(/
-/g, '
-') === body)
+for (const [name, body] of Object.entries(built)) check(`server/data/${name} is up to date (run node scripts/build-discovery.mjs)`, fs.readFileSync(path.join(root, 'server/data', name), 'utf8').split(String.fromCharCode(13)).join('') === body)
 const json = JSON.parse(built['contracts.json'])
 check('contracts.json lists every contract', json.contracts.length === contracts.length)
 check('llms.txt starts with an H1 and links the docs and contracts', built['llms.txt'].startsWith('# Gully Labs') && built['llms.txt'].includes('docs.gullylabs.xyz/contracts') && built['llms.txt'].includes('/.well-known/contracts.json'))
