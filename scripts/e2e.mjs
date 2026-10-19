@@ -518,6 +518,9 @@ await step('portal', async () => {
   check('CSV: usage downloads with its header row', csv.startsWith('time,key,'), csv.slice(0, 40))
   check('billing: plan usage rings draw (keys and alerts against the plan)', await drawnIn(page, '[data-testid="plan-usage"]') && (await page.locator('[data-testid="plan-usage"] [data-chart]').count()) === 2)
   check('billing: with no payments the chart is the ghosted "Your payments will draw here"', (await page.getByTestId('ghost-chart').getByText('Your payments will draw here').count()) === 1)
+  await appNav.getByRole('link', { name: 'Products', exact: true }).click()
+  await page.locator('[data-testid="products"]').waitFor()
+  check('products hub: the Chain Kit card chart is the ghost (or a live chart), and every card has a chart or ghost', (await page.locator('[data-product="Chain Kit"] [data-ghost], [data-product="Chain Kit"] [data-chart]').count()) >= 1 && (await page.locator('[data-testid="products"] [data-product]').evaluateAll((cs) => cs.filter((c) => !c.querySelector('[data-ghost], [data-chart], [data-live], svg[role="img"], [role="img"]')).map((c) => c.dataset.product))).length === 0)
   // Overview with a key but no traffic: the requests chart is the ghosted placeholder, not a flat zero.
   await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
   await page.getByTestId('ghost-chart').waitFor({ timeout: 15_000 })
@@ -1877,6 +1880,7 @@ await step('holder map', async () => {
   const row = p2.locator('[data-launch-holders] a', { hasText: 'DTC' })
   await row.waitFor()
   check('DeepCore page: launches link to their Holder Maps', (await row.getAttribute('href')) === `/holders/robinhood/${E2E_LAUNCH_TOKEN}`)
+  check('DeepCore page: each launch row has a token logo and a chain logo', (await row.locator('img').count()) >= 2)
   await w2.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx2.close()
 })
@@ -2243,6 +2247,43 @@ await step('analytics events', async () => {
 // Every logo is one of src/components/brand (data-brand="kit", from the kit's own files): no CSS-typed
 // "GULLY LABS" wordmark, letter tile or hand-drawn SVG wordmark on any surface, the self-contained error
 // pages and the widget included (owner rule, CLAUDE.md "Brand kit everywhere").
+await step('design audit 2 group 8: landing console, live charts', async () => {
+  for (const [width, mobile] of [[1440, false], [390, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    const page = await ctx.newPage()
+    const w = watch(page, `home at ${width}`)
+    await page.goto(BASE + '/')
+    await page.locator('#console-panel').waitFor({ timeout: 15_000 })
+    await page.locator('#products').scrollIntoViewIfNeeded()
+    await page.waitForTimeout(1500)
+    // N13: the console pane holds no fixed minimum height, so there is no empty band under a short demo.
+    const gap = await page.evaluate(() => {
+      const inner = document.getElementById('console-panel')
+      const outer = inner?.parentElement
+      return outer && inner ? outer.getBoundingClientRect().height - inner.getBoundingClientRect().height : 999
+    })
+    check(`home at ${width}: no empty band under the product console (pane is ${Math.round(gap)} px taller than its content)`, gap < 24, String(gap))
+    if (SHOTS) {
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += 600) {
+          window.scrollTo(0, y)
+          await new Promise((r) => setTimeout(r, 120))
+        }
+        window.scrollTo(0, 0)
+      })
+      await page.waitForTimeout(800)
+      await page.screenshot({ path: path.join(SHOTS, `home-${width}.png`), fullPage: true })
+      for (const route of ['/security', '/security/reports', '/pricing']) {
+        await page.goto(BASE + route)
+        await page.waitForTimeout(1800)
+        await page.screenshot({ path: path.join(SHOTS, `${route.slice(1).replace(/\//g, '-')}-${width}.png`), fullPage: true })
+      }
+    }
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+})
+
 await step('brand kit everywhere', async () => {
   const ctx = await newContext({ cookie: cookieOf(api) })
   await ctx.addInitScript((tok) => sessionStorage.setItem('gully-admin-token', tok), admin)

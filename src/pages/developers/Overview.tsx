@@ -1,4 +1,4 @@
-import { Activity, ArrowUpRight, LayoutDashboard, BellRing, ChartNoAxesCombined, ChartPie, CreditCard, KeyRound, Plus } from 'lucide-react'
+import { Activity, ArrowUpRight, Info, LayoutDashboard, BellRing, ChartNoAxesCombined, ChartPie, CreditCard, KeyRound, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ChannelChips, SecretDialog, TelegramCard } from './Alerts'
 import { EventsMeter } from './Analytics'
@@ -180,13 +180,21 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
 
   return (
     <div className="flex flex-col gap-2">
+      <div className="-mb-2">
       <ServiceHeader
         icon={LayoutDashboard}
         title="Overview"
-        desc="Your workspace at a glance: API traffic, alerts, Gully Analytics and the plan, read live."
         status={{ tone: live.length ? 'live' : 'idle', text: live.length ? `${live.length} live key${live.length === 1 ? '' : 's'}` : 'no key yet' }}
         docs={docsPage('api-keys')}
-      />
+      >
+        <span className="inline-flex items-center gap-2" data-testid="you-title">
+          <KitPill tone="warn" className="!h-[18px] !min-h-0 !py-0">YOU</KitPill>
+          <span className="font-mono text-[11px] text-faint">your keys, alerts and traffic only</span>
+          <RefreshChip error={shown ? up.error : null} onRetry={reloadUsage} />
+          <RefreshChip error={alerts.refreshErr} onRetry={alerts.load} />
+        </span>
+      </ServiceHeader>
+      </div>
       <PendingInvites />
       <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
       {/* Live network data first, so even a brand-new workspace opens on moving charts. */}
@@ -194,13 +202,6 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
       <ToolsRow />
 
       {/* ---------------------------------------------------------------- KPIs */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="you-title">
-        <h2 className="m-0 text-[15px] font-semibold text-ink">Your workspace</h2>
-        <KitPill tone="warn" className="!h-[18px] !min-h-0 !py-0">YOU</KitPill>
-        <span className="font-mono text-[11px] text-faint">your keys, alerts and traffic only</span>
-        <RefreshChip error={shown ? up.error : null} onRetry={reloadUsage} />
-        <RefreshChip error={alerts.refreshErr} onRetry={alerts.load} />
-      </div>
       {/* 1, 2 or 4 cards a row by the content width (never 3 + 1). */}
       <div className="@container">
       <section aria-label="Summary" className="grid grid-cols-1 gap-2 @min-[440px]:grid-cols-2 @min-[740px]:grid-cols-4">
@@ -247,8 +248,11 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         {/* ---------------------------------------------------------- requests */}
         <section aria-labelledby="ov-req" className={`${panel} flex-[999_1_520px]`} style={rise(1)}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h2 id="ov-req" className={panelTitle}>
+            <h2 id="ov-req" className={`${panelTitle} flex items-center gap-2`}>
               Requests
+              <span tabIndex={0} role="note" aria-label="Counts requests made with your keys that reached our servers. Answers served from Cloudflare's edge cache never reach us and are not counted. Hours are in your time zone; days are UTC." title="Counts requests made with your keys that reached our servers. Answers served from Cloudflare's edge cache never reach us and are not counted. Hours are in your time zone; days are UTC." className="grid size-5 cursor-help place-items-center text-faint hover:text-gold">
+                <Info size={14} aria-hidden />
+              </span>
             </h2>
             {series.length > 0 && (
               <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0 text-[12px] text-muted">
@@ -311,9 +315,6 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
               </Can>
             </p>
           )}
-          <InfoTip summary="Requests with your keys that reached our servers.">
-            Counts requests made with your keys that reached our servers. Answers served from Cloudflare&apos;s edge cache never reach us and are not counted. Hours are in your time zone; days are UTC.
-          </InfoTip>
         </section>
 
         {/* ------------------------------------------------------------ limits */}
