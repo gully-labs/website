@@ -1547,7 +1547,7 @@ await step('docs design audit 2', async () => {
       root.querySelectorAll('pre, figure, code').forEach((e) => e.remove())
       return root.textContent
     })
-    check(`docs /${slug}: no undefined, [object Object] or null in the prose`, !/undefined|\[object|null/.test(prose), (prose.match(/.{30}(undefined|\[object|null).{20}/) ?? [''])[0])
+    check(`docs /${slug}: no undefined, [object Object] or null in the prose`, !/undefined|\[object|\bnull\b/.test(prose), (prose.match(/.{30}(undefined|\[object|\bnull\b).{20}/) ?? [''])[0])
     check(`docs /${slug}: no text-only "collecting a series"`, !/collecting a series/i.test(prose))
     if (['gully-security', 'solana-pay', 'telegram-mini-app', 'news-gate', 'holder-map-integrate', 'badges', 'roadmap-l3'].includes(slug)) {
       const live = await page.locator('#docs-main [data-chart], #docs-main [data-live], #docs-main [data-ghost]').count()
@@ -1931,7 +1931,7 @@ await step('chain kit waitlist', async () => {
   await page.getByRole('heading', { level: 1 }).waitFor()
   const main = await page.locator('main').innerText()
   check('/chain-kit: shows the waitlist status and wording', /WAITLIST/.test(main) && /join the waitlist/i.test(main) && /finalising the explorer licence before taking orders/i.test(main))
-  check('/chain-kit: no buy, order, request or "available on request" path', !/available on request|talk to us about your chain|request (your|an|a) explorer|buy|order now|checkout|pay now|price[ds]?/i.test(main))
+  check('/chain-kit: no buy, order, request or "available on request" path', !/available on request|talk to us about your chain|request (your|an|a) explorer|buy|order now|checkout|pay now|\bprice[ds]?\b/i.test(main))
   check('/chain-kit: the call to action is a link to the chains waitlist, not a contact or payment form', (await page.locator('main a[href="/chains#waitlist"]').count()) >= 1 && (await page.locator('main').getByRole('button', { name: /start a project|talk to us|request|buy|order/i }).count()) === 0)
   check('/chain-kit: does not mention the Blockscout licence', !/blockscout[’']?s? licen[cs]e|licen[cs]e (from|with|of) blockscout|proprietary|LicenseRef|commercial licen/i.test(main))
   await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
