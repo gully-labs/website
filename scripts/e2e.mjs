@@ -2276,6 +2276,37 @@ await step('ecosystem and partners', async () => {
   }
 })
 
+await step('discovery files and contracts page', async () => {
+  const cj = await fetch(`${BASE}/.well-known/contracts.json`)
+  const reg = await cj.json()
+  check('contracts.json: 200, JSON, open CORS, cache header', cj.status === 200 && /json/.test(cj.headers.get('content-type')) && cj.headers.get('access-control-allow-origin') === '*' && /max-age/.test(cj.headers.get('cache-control') ?? ''))
+  const safe = reg.contracts.find((c) => c.chainId === 8453 && c.address === '0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6')
+  check('contracts.json: the treasury Safe on Base, owned by gully-labs, with its source file', safe?.owner === 'gully-labs' && /CHOICE\.md$/.test(safe.source))
+  check('contracts.json: the Request fee proxy is marked third-party', reg.contracts.some((c) => /ERC20FeeProxy/.test(c.name) && c.owner === 'third-party'))
+  const ll = await (await fetch(`${BASE}/llms.txt`)).text()
+  check('llms.txt: H1, docs and contracts links', ll.startsWith('# Gully Labs') && ll.includes('docs.gullylabs.xyz/contracts') && ll.includes('/llms-full.txt'))
+  const lf = await (await fetch(`${BASE}/llms-full.txt`)).text()
+  check('llms-full.txt: lists the treasury address and a roadmap section', lf.includes('0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6') && lf.includes('## Roadmap (not available yet)'))
+  const home = await (await fetch(`${BASE}/`)).text()
+  check('home page head carries Organization and SoftwareApplication JSON-LD', home.includes('"@type":"Organization"') && home.includes('"@type":"SoftwareApplication"'))
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `docs /contracts ${width}`)
+    await page.goto(`${BASE}/docs/contracts`)
+    await page.getByRole('heading', { level: 1, name: 'Contracts' }).waitFor()
+    await page.locator('[data-contract]').first().waitFor()
+    check(`docs /contracts ${width}: the treasury is listed with a copy button and an explorer link`, (await page.locator('[data-contract="0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6"]').count()) >= 4 && (await page.getByRole('button', { name: /Copy address 0xCaf7/ }).count()) >= 4 && (await page.locator('a[href^="https://basescan.org/address/0xCaf7"]').count()) >= 1)
+    await page.getByLabel('Search contracts').fill('ERC20FeeProxy')
+    await page.getByText(/^\d+ of \d+ contracts$/).first().waitFor()
+    check(`docs /contracts ${width}: the search narrows the list and the proxy shows THIRD PARTY`, (await page.getByText('THIRD PARTY').count()) >= 1 && (await page.locator('[data-contract]').count()) < 40)
+    await noHorizontalScroll(page, `docs /contracts ${width}`)
+    await designAudit(page, `docs /contracts ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+})
+
 const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|cartel|peddle|solana|xstocks|jup\.ag/i.test(u))
 check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()

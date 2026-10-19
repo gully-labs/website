@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T04:57:29.901Z",
+ "updatedAt": "2026-10-19T05:54:21.429Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -2125,6 +2125,51 @@
    "section": "Open source",
    "text": "Blockscout is GPL-3.0, and our deployment layer is GPL-3.0 too: everything we add is public at gully-labs/blockscout. You are never locked in. The product page’s “charts on day one” are illustrations badged as example data. This page charts only what our API actually reports.",
    "updatedAt": "2026-10-18T19:46:28.270Z"
+  },
+  {
+   "id": "f12267559726",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts",
+   "section": null,
+   "text": "Every address Gully Labs uses on chain, in one list, so you can check any of them before you send value. Each one names the file in our repositories it is quoted from. Machine-readable at /.well-known/contracts.json. Every on-chain address Gully Labs uses, per chain: the treasury Safe, the fee address, the third-party Request Network fee proxy and our projects’ contracts, each with its explorer link, Sourcify status and the file it is quoted from.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
+  },
+  {
+   "id": "a3032182b95c",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#treasury",
+   "section": "Treasury and fee address",
+   "text": "The Gully Labs treasury is one Safe (2-of-3), at the same address on every chain it is deployed on. It receives plan payments and is the feeAddress of every Gully Pay fee split. Payments to Gully Labs go nowhere else. Request Network’s ERC20FeeProxy is not ours. Gully Pay calls it to split a stablecoin payment between the merchant and the treasury in one transaction; it holds nothing. It is marked third-party in the list and in the JSON.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
+  },
+  {
+   "id": "19662550c935",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#all",
+   "section": "All contracts",
+   "text": "Sourcify status was checked on. “No verified source” means Sourcify holds no verified source for that address. No audit report is published for any of these contracts, so none is linked.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
+  },
+  {
+   "id": "27e3b56673ae",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#json",
+   "section": "The JSON file",
+   "text": "/.well-known/contracts.json is public, cached for an hour and readable from any origin. It carries one object per address: name, role, chainId, address (checksummed), owner (gully-labs or third-party), explorerUrl, verifiedSource, verification, audit and source.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
+  },
+  {
+   "id": "3f4d3f6e4029",
+   "source": "Docs",
+   "title": "Contracts",
+   "url": "https://docs.gullylabs.xyz/contracts#rules",
+   "section": "What is listed, and what is not",
+   "text": "An address is listed only when it is written in a file in one of our repositories, and the entry names that file. Nothing comes from memory or an explorer. Constructor-time values that a later deployment replaced are left out, and so are token, wrapped-native and Permit2 addresses that other projects own. If an address claims to be Gully Labs and is not listed here, it is not ours.",
+   "updatedAt": "2026-10-19T05:54:21.429Z"
   },
   {
    "id": "1f70f2278c6e",

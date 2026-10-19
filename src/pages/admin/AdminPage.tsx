@@ -12,6 +12,7 @@ import { TelegramChats } from './TelegramChats'
 import { MerchantsAdmin } from './MerchantsAdmin'
 import { SecurityCard } from './SecurityCard'
 import { TelegramChannel } from './TelegramChannel'
+import { NewsGateFunnel } from './NewsGateFunnel'
 import { LaunchRadar } from './LaunchRadar'
 import { TreasurySafe } from './TreasurySafe'
 import { TelegramBroadcasts } from './TelegramBroadcasts'
@@ -1083,6 +1084,7 @@ export function AdminPage() {
             <div id="telegram" className={sectionCls}>
               <TelegramChats token={token} />
               <TelegramChannel token={token} />
+              <NewsGateFunnel token={token} />
               <LaunchRadar token={token} />
               <TelegramBroadcasts token={token} />
             </div>
