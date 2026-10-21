@@ -461,7 +461,9 @@ export const features: Feature[] = [
       "Inputs: deployed address, GitHub repo and commit, uploaded file, or web2 repo (checklist mode).",
       "Chains: Ethereum, Base, Arbitrum, OP Mainnet, BNB Chain, Polygon, Avalanche, Sepolia and Base Sepolia (server/security/chains.mjs).",
       "Price $99 per scan beyond the monthly allowance (SECURITY.scan.priceUsd); free scans a month: Free 1, Pro 3, Business 10; up to 2 active scans; uploads up to 2,000,000 bytes (server/plans.mjs).",
-      "Every report is labelled \"AI review only — static tools unavailable\" and every finding has verifiedByHuman false."
+      "Every report is labelled \"AI review only — static tools unavailable\" and every finding has verifiedByHuman false.",
+      "No refunds: a paid scan that fails gives the workspace a re-run credit, spent after the free quota and before the price; terms at https://gullylabs.xyz/legal/scan-terms.",
+      "Live scanner status (AI review, static tools, queue) at GET /api/security/engine, shown at checkout and on /security; a sample report on a fictional contract at https://gullylabs.xyz/security/sample."
     ],
     url: "https://gullylabs.xyz/security",
     source: [

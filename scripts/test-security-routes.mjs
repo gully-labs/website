@@ -322,6 +322,77 @@ try {
     check('plans: GET /api/plans carries the security offer', (await pub('/api/plans')).data.security.scan.priceUsd === SECURITY.scan.priceUsd)
     check('head tags: /security and /security/reports are pages', seo.pageMeta('gullylabs.xyz', '/security').found && seo.pageMeta('gullylabs.xyz', '/security/reports').found)
   }
+  /* ------------------------------- engine status, sample report, re-run credits --- */
+  {
+    routes.resetSecurityLimitsForTest()
+    engineAdapter.resetStatusCacheForTest()
+    const e = await pub('/api/security/engine')
+    const eng = (id) => e.data?.engines?.find((x) => x.id === id)
+    check('engine: public, no-store, CORS; AI online, static tools offline (no worker), state partial', e.status === 200 && e.headers.get('cache-control') === 'no-store' && e.headers.get('access-control-allow-origin') === '*' && e.data.state === 'partial' && eng('ai')?.status === 'online' && eng('static')?.status === 'offline' && typeof e.data.queue.queued === 'number' && typeof e.data.queue.running === 'boolean' && /static tools are offline/i.test(e.data.text) && !Number.isNaN(Date.parse(e.data.checkedAt)), JSON.stringify(e.data))
+    check('engine: no reasons, URLs or env names leave the server', !/https?:|127\.0\.0\.1|SCANNER|ANTHROPIC|reason/i.test(JSON.stringify(e.data)), JSON.stringify(e.data))
+    const pre = await fetch(`${BASE}/api/security/engine`, { method: 'OPTIONS' })
+    check('engine: OPTIONS is 204 with CORS', pre.status === 204 && pre.headers.get('access-control-allow-origin') === '*')
+    const pe = routes.publicEngine
+    const refusedThenOk = (okAt) => pe({ ai: true, aiHealth: { lastOkAt: okAt, lastFailAt: '2026-10-20T01:00:00.000Z', lastFailCode: 'ai-unavailable' }, worker: { reachable: false } }).engines[0].status
+    check('engine: an AI key the provider refused shows offline until a call works again; a busy provider stays online', refusedThenOk('2026-10-20T00:00:00.000Z') === 'offline' && refusedThenOk(null) === 'offline' && refusedThenOk('2026-10-20T02:00:00.000Z') === 'online' && pe({ ai: true, aiHealth: { lastFailAt: '2026-10-20T01:00:00.000Z', lastFailCode: 'ai-busy' }, worker: { reachable: false } }).engines[0].status === 'online')
+    const none = pe({ ai: false, worker: { reachable: false } })
+    const both = pe({ ai: true, worker: { reachable: true, tools: { slither: '0.10.4', aderyn: null } } })
+    check('engine: offline when neither runs (says nothing is charged); online with both; only installed tools listed', none.state === 'offline' && none.engines.every((x) => x.status === 'offline') && /Nothing is charged/.test(none.text) && both.state === 'online' && JSON.stringify(both.engines[1].tools) === '["slither"]', JSON.stringify({ none, both }))
+    const ov = (await D.call('/api/developer/security')).data
+    check('app overview: the engine state and text come from the same check', ov.engine.state === 'partial' && ov.engine.ai === true && ov.engine.worker === false && typeof ov.engine.text === 'string', JSON.stringify(ov.engine))
+
+    const { validateReport } = await import('../server/security/schema.mjs')
+    const sm = await pub('/api/security/sample')
+    const { sample, ...sampleReport } = sm.data?.report ?? {}
+    const v = validateReport(sampleReport)
+    check('sample: 200, flagged sample, a valid engine report (validateReport passes)', sm.status === 200 && sample === true && v.ok, JSON.stringify(v.errors))
+    check('sample: the mode scans run in today (AI review only, static tools not run), a fictional upload, one finding per severity', sampleReport.mode === 'ai-only' && sampleReport.tools.filter((x) => x.status === 'not-run').length === 3 && sampleReport.target.upload?.name === 'SampleVault.zip' && sampleReport.target.address === null && Object.values(sampleReport.summary.counts).every((n) => n === 1) && sampleReport.findings.every((f) => f.verifiedByHuman === false))
+    const sh = await fetch(`${BASE}/api/security/sample/report.html`)
+    const shText = await sh.text()
+    check('sample: printable HTML carries the SAMPLE banner, noindex', sh.status === 200 && /text\/html/.test(sh.headers.get('content-type')) && shText.includes(routes.SAMPLE_BANNER) && /gs-report/.test(shText) && sh.headers.get('x-robots-tag') === 'noindex')
+    const smTitle = seo.pageMeta('gullylabs.xyz', '/security/sample')
+    const tmTitle = seo.pageMeta('gullylabs.xyz', '/legal/scan-terms')
+    const map = seo.sitemapFor('gullylabs.xyz')
+    check('seo: /security/sample and /legal/scan-terms are real pages, in the sitemap', smTitle.found && /Sample/.test(smTitle.title) && tmTitle.found && /terms/i.test(tmTitle.title) && map.includes('https://gullylabs.xyz/security/sample') && map.includes('https://gullylabs.xyz/legal/scan-terms'), `${smTitle.title} | ${tmTitle.title}`)
+    const short = await fetch(`${BASE}/security/terms`, { redirect: 'manual' })
+    check('/security/terms 301s to /legal/scan-terms', short.status === 301 && short.headers.get('location') === '/legal/scan-terms')
+
+    // Re-run credits: no free scans, so the next scan is paid; it fails, which earns a credit.
+    const freeBefore = { ...SECURITY.scan.freePerMonth }
+    for (const k of Object.keys(SECURITY.scan.freePerMonth)) SECURITY.scan.freePerMonth[k] = 0
+    try {
+      const q0 = (await D.call('/api/developer/security')).data.quota
+      check('credits: (setup) none yet, the next scan costs the price', q0.credits === 0 && q0.nextPriceUsd === SECURITY.scan.priceUsd, JSON.stringify(q0))
+      const paid = await create(D, { kind: 'github', repo: 'acme/missing-paid', commit: 'abcdef1' }, { expect: { priceUsd: SECURITY.scan.priceUsd } })
+      check('credits: (setup) a paid scan waits for payment', paid.status === 202 && paid.data.scan.credit === null, `${paid.status}`)
+      payInvoice(paid.data.payment.invoiceId)
+      const pf = await waitFor(D, paid.data.scan.id, finished)
+      check('credits: the paid scan fails and says it earned a re-run credit', pf?.status === 'failed' && pf.credit?.earned === true && pf.credit.usedForThis === false, JSON.stringify(pf?.credit ?? null))
+      const q1 = (await D.call('/api/developer/security')).data.quota
+      check('credits: the workspace holds one credit; the next scan costs nothing', q1.credits === 1 && q1.nextPriceUsd === 0, JSON.stringify(q1))
+      await D.call(`/api/developer/security/scans/${paid.data.scan.id}`)
+      check('credits: reading the failed scan again does not earn a second credit', (await D.call('/api/developer/security')).data.quota.credits === 1)
+      check('credits: a scan confirmed at the old price is refused (409 price-changed)', (await create(D, { kind: 'github', repo: 'acme/missing-credit', commit: 'abcdef1' }, { expect: { priceUsd: SECURITY.scan.priceUsd } })).data?.code === 'price-changed')
+      const cr = await create(D, { kind: 'github', repo: 'acme/missing-credit', commit: 'abcdef1' }, { expect: { priceUsd: 0 } })
+      check('credits: the next scan starts at once on the credit (201, no invoice)', cr.status === 201 && cr.data.scan.credit?.usedForThis === true && cr.data.scan.payment === null && cr.data.scan.free === false && cr.data.scan.priceUsd === 0, `${cr.status} ${JSON.stringify(cr.data).slice(0, 200)}`)
+      // Read the store directly: a quota read would mirror the scan, and this one fails fast and gives the credit back.
+      const secStore = await import('../server/security-store.mjs')
+      const crJob = secStore.findJob(cr.data.scan.id)
+      check('credits: spent when the scan starts', crJob?.creditUsed === true && (crJob.creditEarned || secStore.creditsOf(crJob.workspace) === 0), JSON.stringify({ used: crJob?.creditUsed, earned: crJob?.creditEarned, credits: crJob && secStore.creditsOf(crJob.workspace) }))
+      const cf = await waitFor(D, cr.data.scan.id, finished)
+      const q2 = (await D.call('/api/developer/security')).data.quota
+      check('credits: a credit scan that fails gives the credit back', cf?.status === 'failed' && cf.credit?.earned === true && q2.credits === 1, `${cf?.status} ${JSON.stringify(q2)}`)
+      const ok = await create(D, { kind: 'address', chain: 'base', address: stubs.ADDR_VERIFIED }, { expect: { priceUsd: 0 } })
+      const okDone = await waitFor(D, ok.data?.scan?.id, finished)
+      const q3 = (await D.call('/api/developer/security')).data.quota
+      check('credits: a credit scan that finishes uses the credit for good', ok.status === 201 && okDone?.status === 'done' && okDone.credit?.usedForThis === true && okDone.credit.earned === false && q3.credits === 0 && q3.nextPriceUsd === SECURITY.scan.priceUsd, `${okDone?.status} ${JSON.stringify(q3)}`)
+      const list = (await D.call('/api/developer/security/scans')).data.scans
+      check('credits: the scan list carries each scan\'s credit state', list.find((x) => x.id === ok.data.scan.id)?.credit?.usedForThis === true && list.find((x) => x.id === paid.data.scan.id)?.credit?.earned === true)
+    } finally {
+      Object.assign(SECURITY.scan.freePerMonth, freeBefore)
+    }
+  }
+
   /* ------------------------------------------- privacy: housekeeping --- */
   {
     // CORS: the published-report JSON is open to any origin like the other public reads; preflights answer 204.

@@ -250,6 +250,10 @@ async function handleRequest(req, res) {
   if (url.pathname === '/gully-pay/merchant-terms' || url.pathname === '/gully-pay/merchant-terms/') {
     return send(res, 301, '', { Location: '/legal/merchant-terms', 'Cache-Control': 'public, max-age=86400' })
   }
+  // The scan terms live with the other legal pages; /security/terms is the short address the scan pages use.
+  if (url.pathname === '/security/terms' || url.pathname === '/security/terms/') {
+    return send(res, 301, '', { Location: '/legal/scan-terms', 'Cache-Control': 'public, max-age=86400' })
+  }
   if (handleDiscovery(req, res, url)) return
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {

@@ -37,7 +37,26 @@ export function setClaudeForTest(fn) {
   impl = fn
 }
 
+/* The outcome of the latest AI calls, for the public engine status (security-routes.mjs GET /api/security/engine):
+   a key that is set but refused (no credit, billing, a disabled key) must not show as online. Codes only, no text. */
+let health = { lastOkAt: null, lastFailAt: null, lastFailCode: null }
+/** { lastOkAt, lastFailAt, lastFailCode } (ISO times, the AiError code). */
+export const aiHealth = () => ({ ...health })
+/** Test hook: forget the outcomes. */
+export const resetAiHealthForTest = () => (health = { lastOkAt: null, lastFailAt: null, lastFailCode: null })
+
 async function post(body) {
+  try {
+    const j = await send(body)
+    health = { ...health, lastOkAt: new Date().toISOString() }
+    return j
+  } catch (e) {
+    health = { ...health, lastFailAt: new Date().toISOString(), lastFailCode: e?.code ?? 'ai-error' }
+    throw e
+  }
+}
+
+async function send(body) {
   if (impl) return impl(body)
   const key = apiKey()
   if (!key) throw new AiError('AI is not configured (ANTHROPIC_API_KEY).', 'ai-absent')

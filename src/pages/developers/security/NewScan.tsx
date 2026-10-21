@@ -2,9 +2,12 @@ import { track } from '../../../lib/track'
 import { ArrowLeft, ArrowRight, CircleDollarSign, FileCheck2, FileCode2, FileUp, GitBranch, Globe, Info, ListChecks, Play, ScanSearch, ShieldAlert, Upload } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
+import { EngineStatus } from '../../../components/security/EngineStatus'
 import { ScanProgress } from '../../../components/security/ScanProgress'
 import { fmtWhen, KIND_LABEL, type InputKind, type ScanInput, type ScanView, type SecurityOverview } from '../../../components/security/types'
+import { SITE_URL, isLocalHost } from '../../../site-host'
 import { api } from '../api'
+import { ExtLink } from '../ExtLink'
 import { ErrorLine } from '../parts'
 import { Can } from '../RoleGate'
 import { input, panel, pillGold, pillLine } from '../styles'
@@ -38,6 +41,7 @@ const KINDS: { id: InputKind; icon: ReactNode; text: string }[] = [
   { id: 'web2', icon: <Globe size={18} aria-hidden />, text: 'A web app or API on GitHub' },
 ]
 
+const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
 const REPO_RE = /^(?:https?:\/\/(?:www\.)?github\.com\/)?[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}?(?:\.git)?\/?$/
 const COMMIT_RE = /^[0-9a-fA-F]{7,40}$/
@@ -88,7 +92,10 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
   const [dup, setDup] = useState(false)
   const q = ov.quota
   const free = q.left > 0
-  const price = free ? 0 : ov.offer.scan.priceUsd
+  // After the free quota, a re-run credit (a paid scan that failed) pays for the scan; the server decides the same.
+  const credits = q.credits ?? 0
+  const viaCredit = !free && credits > 0
+  const price = free || viaCredit ? 0 : ov.offer.scan.priceUsd
   const maxMb = Math.round(ov.offer.scan.maxUploadBytes / 1_000_000)
 
   const target: ScanInput = kind === 'address' ? { kind, chain, address: address.trim() } : kind === 'upload' ? { kind } : { kind, repo: repo.trim(), commit: commit.trim() || null }
@@ -128,7 +135,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
 
   return (
     <div className="flex flex-col gap-4" data-testid="new-scan">
-      <ScanSteps step={step} free={step >= 2 ? free : null} />
+      <ScanSteps step={step} free={step >= 2 ? free || viaCredit : null} />
       {dup && (
         <p className="m-0 rounded-input border border-gold-line px-3 py-2 text-[13px] text-ink-2" role="status" data-testid="duplicate">
           You are already scanning this; here it is. Nothing new was started or charged.
@@ -247,11 +254,14 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
               <span className="text-[13px] text-ink-2">
                 {q.left} of {q.freePerMonth} free scan{q.freePerMonth === 1 ? '' : 's'} left · resets {fmtWhen(q.resetsAt).replace(/,\s*\d{1,2}:\d{2}.*$/, '')}
               </span>
-              <span className="font-display text-[36px] leading-none font-bold" data-testid="price">
-                {free ? 'Free' : `$${price}`}
+              <span className="text-[13px] text-ink-2" data-testid="cost-credits">
+                {credits} re-run credit{credits === 1 ? '' : 's'}
               </span>
-              <span className="text-[12px] text-faint">{free ? 'Uses one free scan.' : 'Paid with Gully Pay in USDC, USDT or the chain’s coin, straight to the treasury. The scan starts once the payment confirms.'}</span>
-              {!free && !ov.checkout.enabled && <span className="text-[12px] text-error">Paid scans cannot be bought yet: checkout is off on this server.</span>}
+              <span className="font-display text-[36px] leading-none font-bold" data-testid="price">
+                {free ? 'Free' : viaCredit ? 'Credit' : `$${price}`}
+              </span>
+              <span className="text-[12px] text-faint">{free ? 'Uses one free scan.' : viaCredit ? 'Uses one re-run credit, earned when a paid scan failed. Nothing to pay.' : 'Paid with Gully Pay in USDC, USDT or the chain’s coin, straight to the treasury. The scan starts once the payment confirms. A paid scan that fails earns a free re-run.'}</span>
+              {!free && !viaCredit && !ov.checkout.enabled && <span className="text-[12px] text-error">Paid scans cannot be bought yet: checkout is off on this server.</span>}
               {q.active >= q.maxActive && <span className="text-[12px] text-error">{q.active} scans are already running; wait for one to finish.</span>}
             </div>
           </div>
@@ -261,11 +271,23 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
               <ArrowLeft size={15} aria-hidden /> Back
             </button>
             <Can cat="security" what="start scans">
-              <button type="button" onClick={confirm} disabled={busy || (kind !== 'address' && !ov.engine.ai && !ov.engine.worker) || (!free && !ov.checkout.enabled)} className={pillGold} data-testid="confirm-scan">
-                <Play size={15} aria-hidden /> {busy ? 'Starting…' : free ? 'Start the free scan' : `Confirm and pay $${price}`}
+              <button type="button" onClick={confirm} disabled={busy || (kind !== 'address' && !ov.engine.ai && !ov.engine.worker) || (!free && !viaCredit && !ov.checkout.enabled)} className={pillGold} data-testid="confirm-scan">
+                <Play size={15} aria-hidden /> {busy ? 'Starting…' : free ? 'Start the free scan' : viaCredit ? 'Start with a re-run credit' : `Confirm and pay $${price}`}
               </button>
             </Can>
           </div>
+          <p className="m-0 text-[12px] text-faint" data-testid="terms-line">
+            Starting a scan accepts the{' '}
+            <ExtLink href={site('/legal/scan-terms')} arrow={false} className="inline-flex min-h-11 items-center text-gold underline-offset-4 hover:underline">
+              scan terms
+            </ExtLink>
+            . See a{' '}
+            <ExtLink href={site('/security/sample')} arrow={false} className="inline-flex min-h-11 items-center text-gold underline-offset-4 hover:underline">
+              sample report
+            </ExtLink>{' '}
+            first.
+          </p>
+          <EngineStatus />
         </section>
       )}
 

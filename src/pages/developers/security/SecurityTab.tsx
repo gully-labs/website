@@ -1,6 +1,6 @@
-import { FileText, Gauge, List, Plus, Radar, ScanSearch, ShieldCheck, Users } from 'lucide-react'
+import { FileText, Gauge, List, Plus, Radar, RotateCcw, ScanSearch, ShieldCheck, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { axisTooltip, barsPreset, C, tipHtml } from '../../../components/charts/chartPresets'
+import { axisTooltip, barsPreset, C, PALETTE, tipHtml } from '../../../components/charts/chartPresets'
 import { GhostChart } from '../../../components/charts/GhostChart'
 import { EChart } from '../../../components/charts/EChart'
 import { ReviewRequestForm } from '../../../components/security/ReviewRequestForm'
@@ -93,7 +93,7 @@ function ScanRows({ scans, open, empty }: { scans: ScanView[]; open: (id: string
             <span className="max-[700px]:hidden">
               <MiniCounts s={s} />
             </span>
-            <span className="font-mono text-[11px] text-faint max-[700px]:hidden">{s.free ? 'free' : `$${s.priceUsd}`}</span>
+            <span className="font-mono text-[11px] text-faint max-[700px]:hidden">{s.credit?.usedForThis ? 'credit' : s.free ? 'free' : `$${s.priceUsd}`}</span>
             <StatusChip s={s.status} />
           </button>
         </li>
@@ -133,7 +133,95 @@ function QuotaPill({ ov }: { ov: SecurityOverview }) {
         ))}
       </span>
       {q.left} of {q.freePerMonth} free scan{q.freePerMonth === 1 ? '' : 's'} left
+      {(q.credits ?? 0) > 0 && (
+        <span className="inline-flex items-center gap-1 text-gold">
+          · <RotateCcw size={12} aria-hidden /> {q.credits} credit{q.credits === 1 ? '' : 's'}
+        </span>
+      )}
     </span>
+  )
+}
+
+/** How the workspace paid for its scans, per month (6 months): free quota, re-run credit or paid. Real counts. */
+function ScansPerMonth({ scans }: { scans: ScanView[] }) {
+  const [now] = useState(() => new Date())
+  const option = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5 + i, 1)).toISOString().slice(0, 7))
+    // An unpaid scan that was cancelled cost nothing: it is not drawn.
+    const counted = scans.filter((s) => s.status !== 'cancelled' || s.free || !!s.credit?.usedForThis || s.payment?.status === 'paid')
+    const by = (pred: (s: ScanView) => boolean) => months.map((m) => counted.filter((s) => s.createdAt.slice(0, 7) === m && pred(s)).length)
+    const series = [
+      { id: 'free', name: 'Free quota', color: C.green, data: by((s) => s.free) },
+      { id: 'credit', name: 'Re-run credit', color: C.gold, data: by((s) => !!s.credit?.usedForThis) },
+      { id: 'paid', name: 'Paid', color: PALETTE[0], data: by((s) => !s.free && !s.credit?.usedForThis) },
+    ]
+    const label = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
+    return {
+      grid: { left: 24, right: 8, top: 8, bottom: 22 },
+      xAxis: { type: 'category', data: months.map(label), axisLabel: { color: C.faint, fontSize: 11 }, axisTick: { show: false }, axisLine: { lineStyle: { color: C.line } } },
+      yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.faint, fontSize: 11 } },
+      tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
+        const i = ps[0]?.dataIndex ?? 0
+        return tipHtml({ title: label(months[i]), rows: series.map((x) => ({ name: x.name, value: String(x.data[i]), color: x.color })) })
+      }, 'shadow'),
+      series: series.map((x) => ({ id: x.id, name: x.name, ...barsPreset({ focus: 'series' }), stack: 'all', barWidth: '45%', itemStyle: { color: x.color, borderRadius: 2 }, data: x.data })),
+    }
+  }, [scans, now])
+  return <EChart option={option} height={110} label={`Scans per month by how they were paid, over 6 months: ${scans.length} scans in all.`} steps={{ count: 6 }} />
+}
+
+/** Free scans left this month, re-run credits and what the next scan costs (GET /api/developer/security quota). */
+function Credits({ ov, scans }: { ov: SecurityOverview; scans: ScanView[] | null }) {
+  const q = ov.quota
+  const credits = q.credits ?? 0
+  const next = q.left > 0 ? 'Free' : credits > 0 ? 'Credit' : `$${ov.offer.scan.priceUsd}`
+  const resets = new Date(q.resetsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  const stat = 'flex min-w-0 flex-col gap-1 rounded-input border border-line px-3 py-2'
+  return (
+    <section className={panel} aria-label="Scan credits" data-testid="scan-credits">
+      <div className="grid grid-cols-4 gap-2 max-[800px]:grid-cols-2">
+        <div className={stat}>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">FREE THIS MONTH</span>
+          <span className="flex items-baseline gap-2">
+            <b className="font-display text-[24px] leading-none text-ink" data-testid="credits-free">
+              {q.left}
+            </b>
+            <span className="text-[12px] text-muted">of {q.freePerMonth}</span>
+          </span>
+          <span className="flex gap-[3px]" aria-hidden>
+            {Array.from({ length: Math.min(q.freePerMonth, 10) }, (_, i) => (
+              <i key={i} className={`h-[5px] flex-1 origin-left rounded-full ${i < q.left ? 'bg-green' : 'bg-line-strong'}`} style={{ animation: `gl-grow-x .5s ${i * 0.06}s cubic-bezier(.2,.8,.2,1) both` }} />
+            ))}
+          </span>
+        </div>
+        <div className={stat}>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">RE-RUN CREDITS</span>
+          <b className={`font-display text-[24px] leading-none ${credits ? 'text-gold' : 'text-ink'}`} data-testid="credits-rerun">
+            {credits}
+          </b>
+          <span className="text-[12px] text-muted">{credits ? 'used before any price' : 'a failed paid scan earns one'}</span>
+        </div>
+        <div className={stat}>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">NEXT SCAN</span>
+          <b className="font-display text-[24px] leading-none text-ink" data-testid="credits-next">
+            {next}
+          </b>
+          <span className="text-[12px] text-muted">{q.plan.name} plan</span>
+        </div>
+        <div className={stat}>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">RESETS</span>
+          <b className="font-display text-[24px] leading-none text-ink">{resets}</b>
+          <span className="text-[12px] text-muted">{q.used} used this month</span>
+        </div>
+      </div>
+      {scans === null ? <Skeleton h={110} /> : scans.length ? <ScansPerMonth scans={scans} /> : <GhostChart variant="bars" height={110} label="How you paid for scans will draw here, per month" />}
+      <span className="text-[12px] text-faint">
+        Scans are not refunded: a paid scan that fails gives a re-run credit instead.{' '}
+        <ExtLink href={site('/legal/scan-terms#s5')} arrow={false} className="inline-flex min-h-11 items-center text-gold underline-offset-4 hover:underline">
+          Scan terms
+        </ExtLink>
+      </span>
+    </section>
   )
 }
 
@@ -226,6 +314,8 @@ export function SecurityTab({ section }: { section: string | null }) {
             }}
           />
         ) : sub === 'scans' ? (
+          <>
+          <Credits ov={o} scans={list.k === 'ok' ? scans : null} />
           <section className={panel} aria-label="Scans">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="m-0 text-[15px] font-semibold">Scans</h2>
@@ -259,6 +349,7 @@ export function SecurityTab({ section }: { section: string | null }) {
               </>
             )}
           </section>
+          </>
         ) : sub === 'new' ? (
           <NewScan key={fresh} ov={o} onOpen={open} />
         ) : sub === 'reports' ? (

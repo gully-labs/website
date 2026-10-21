@@ -24,6 +24,11 @@
 //   GET  /api/security/reports/:id                one published report (404 unless published)
 //   GET  /api/security/reports/:id/report.html    its print-ready HTML (the engine's render of the public snapshot)
 //   GET  /api/security/stats                      real counts of scans run, per day for 30 days (the /security counter)
+//   GET  /api/security/engine                     what can run right now: the AI review and the static tools,
+//                                                 each online or offline as last checked (never assumed), and the
+//                                                 queue (the checkout and /security poll it)
+//   GET  /api/security/sample                     the SAMPLE report on a fictional contract (security/sample.mjs)
+//   GET  /api/security/sample/report.html         its print-ready HTML, marked "Sample"
 //   POST /api/security/review-requests            { tier: 'review'|'audit', name, email, project, scope, … } -> 201
 //                                                 stored, listed in the admin enquiries and Security card, and sent
 //                                                 to TELEGRAM_ADMIN_CHAT_ID when set
@@ -34,6 +39,9 @@
 //
 // Quotas: SECURITY.scan.freePerMonth[plan] free scans per UTC month per workspace (a scan that failed does not
 // count), at most SECURITY.scan.maxActive running at once. Payment: one Gully Pay invoice per paid scan.
+// Re-run credits (the same rule as the Holder Map Deep check): a PAID scan that ends 'failed' gives its workspace
+// one credit for a free re-run, never a refund; credits are spent before the price, after the free quota. A scan
+// started with a credit that fails gives the credit back. The terms page (/legal/scan-terms) says the same.
 // Every engine call goes through security-engine.mjs; the input's shapes through security-contract.mjs.
 
 import fs from 'node:fs'
@@ -41,7 +49,8 @@ import path from 'node:path'
 import { adminCancelInvoice, adminInvoice, createInvoiceRecord, invoicePaidHooks } from './invoices.mjs'
 import { ACTIVE_STATUSES, checkUploadName, MODE_LABELS, normaliseInput, SCAN_CHAINS, scopeLabel, SEVERITIES, TERMINAL_STATUSES, toEngineInput } from './security-contract.mjs'
 import { checkInput, readReport, readScan, renderReportHtml, startScan, status as engineStatus, stopScan, watchScan } from './security-engine.mjs'
-import { findJob, isJobId, jobs, published, publishedJobs, reviews, save } from './security-store.mjs'
+import { addCredits, creditsOf, findJob, isJobId, jobs, published, publishedJobs, reviews, save } from './security-store.mjs'
+import { sampleReport } from './security/sample.mjs'
 import { badgeHeaders, badgeStyleFrom, renderBadge } from './badges.mjs'
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { ASSET_IDS } from './payments.mjs'
@@ -92,7 +101,19 @@ export function quotaOf(workspace) {
   const used = jobs().filter((j) => j.workspace === workspace && j.free && (j.state === 'starting' || j.state === 'started') && j.status !== 'failed' && Date.parse(j.createdAt) >= from).length
   const left = Math.max(0, perMonth - used)
   const active = jobs().filter((j) => j.workspace === workspace && (j.state === 'starting' || (j.state === 'started' && ACTIVE_STATUSES.includes(j.status)))).length
-  return { plan: { id: plan.id, name: plan.name }, freePerMonth: perMonth, used, left, resetsAt: nextMonth(), nextPriceUsd: left > 0 ? 0 : SECURITY.scan.priceUsd, active, maxActive: SECURITY.scan.maxActive }
+  const credits = creditsOf(workspace)
+  return { plan: { id: plan.id, name: plan.name }, freePerMonth: perMonth, used, left, credits, resetsAt: nextMonth(), nextPriceUsd: left > 0 || credits > 0 ? 0 : SECURITY.scan.priceUsd, active, maxActive: SECURITY.scan.maxActive }
+}
+
+/** A scan just ended 'failed': a paid one earns its workspace a re-run credit (once); a credit run gives it back. */
+function settleFailure(job) {
+  if (job.status !== 'failed' || job.creditEarned) return false
+  if ((!job.free && Number(job.priceCents) > 0) || job.creditUsed) {
+    job.creditEarned = true
+    addCredits(job.workspace, 1)
+    return true
+  }
+  return false
 }
 
 /* ----------------------------------------------------------------- views --- */
@@ -116,6 +137,7 @@ function mirror(job, scan) {
     set('counts', scan.counts)
     set('mode', scan.mode)
   }
+  if (settleFailure(job)) changed = true
   if (changed) save()
 }
 
@@ -151,6 +173,7 @@ function jobView(job, scan, { full = false } = {}) {
     upload: job.upload ?? null,
     free: !!job.free,
     priceUsd: usd(job.priceCents ?? '0'),
+    credit: job.creditUsed || job.creditEarned ? { usedForThis: !!job.creditUsed, earned: !!job.creditEarned } : null,
     payment: paymentView(job),
     progress: scan && typeof scan.progress === 'number' ? { pct: Math.round(scan.progress * 100), message: scan.message ?? '' } : null,
     mode: scan?.mode ?? job.mode ?? null,
@@ -341,31 +364,35 @@ async function createJob(req, res, ctx) {
   const q = quotaOf(workspace)
   if (q.active >= q.maxActive) return json(res, 429, { error: `${q.active} scan${q.active === 1 ? ' is' : 's are'} already running in this workspace. Wait for one to finish.`, code: 'too-many-active' }), true
   const free = q.left > 0
-  const priceUsd = free ? 0 : SECURITY.scan.priceUsd
+  // After the free quota, a re-run credit (a paid scan that failed earlier) pays for this one.
+  const viaCredit = !free && q.credits > 0
+  const priceUsd = free || viaCredit ? 0 : SECURITY.scan.priceUsd
   // The price the person confirmed must still be the price: a quota used up meanwhile is not a silent charge.
   if (body.expect && Number(body.expect.priceUsd) !== priceUsd) return json(res, 409, { error: priceUsd ? `Your free scans for this month are used up meanwhile: this scan costs $${priceUsd}. Confirm again.` : 'This scan is free after all. Confirm again.', code: 'price-changed', quota: q }), true
-  if (!free && !treasury()) return json(res, 402, { error: 'Scans beyond the free quota cannot be bought yet: no treasury wallet is configured. Nothing was charged.', code: 'checkout-off' }), true
+  if (!free && !viaCredit && !treasury()) return json(res, 402, { error: 'Scans beyond the free quota cannot be bought yet: no treasury wallet is configured. Nothing was charged.', code: 'checkout-off' }), true
 
   const now = new Date().toISOString()
-  const job = { id: 'sec_' + randomToken(12), workspace, createdBy: user, createdAt: now, input: n.input, upload: upload ? { name: upload.name, size: upload.bytes.length } : null, free, priceCents: String(priceUsd * 100), invoiceId: null, state: free ? 'starting' : 'awaiting_payment', scanId: null, status: null, published: false, indexable: false }
+  const job = { id: 'sec_' + randomToken(12), workspace, createdBy: user, createdAt: now, input: n.input, upload: upload ? { name: upload.name, size: upload.bytes.length } : null, free, priceCents: String(priceUsd * 100), invoiceId: null, state: free || viaCredit ? 'starting' : 'awaiting_payment', scanId: null, status: null, published: false, indexable: false, ...(viaCredit ? { creditUsed: true } : {}) }
+  if (viaCredit) addCredits(workspace, -1)
   if (upload) {
     fs.mkdirSync(UPLOADS, { recursive: true })
     fs.writeFileSync(uploadPath(job), upload.bytes)
   }
-  if (!free) {
+  if (!free && !viaCredit) {
     const inv = createInvoiceRecord({ title: `${SECURITY.scan.name}: ${scopeLabel(job.input, job.upload)}`, note: `Gully Security scan ${job.id}. The scan starts as soon as this invoice is paid.`, usdCents: BigInt(job.priceCents), assets: ASSET_IDS, ttlMs: INVOICE_TTL_MS })
     job.invoiceId = inv.id
   }
   jobs().push(job)
   save()
-  if (!free) return json(res, 202, { scan: jobView(job, null), payment: paymentView(job) }), true
+  if (!free && !viaCredit) return json(res, 202, { scan: jobView(job, null), payment: paymentView(job) }), true
   const ok = await startJob(job)
   if (!ok) {
-    // A free scan that could not start is dropped, so it does not use the quota.
+    // A free (or credit) scan that could not start is dropped, so it uses neither the quota nor the credit.
     jobs().splice(jobs().indexOf(job), 1)
+    if (viaCredit) addCredits(workspace, 1)
     save()
     fs.rm(uploadPath(job), { force: true }, () => {})
-    return json(res, job.startErrorStatus ?? 503, { error: `${job.startError} Nothing was used from your quota.`, code: job.startErrorCode }), true
+    return json(res, job.startErrorStatus ?? 503, { error: `${job.startError} Nothing was used from your ${viaCredit ? 're-run credits' : 'quota'}.`, code: job.startErrorCode }), true
   }
   return json(res, 201, { scan: await viewOf(job, { full: true }) }), true
 }
@@ -402,7 +429,8 @@ export async function handleSecurity(req, res, url, ctx) {
     if (post) return json(res, 405, { error: 'GET only' }), true
     await syncWorkspace(workspace)
     const es = await engineStatus()
-    return json(res, 200, { quota: quotaOf(workspace), offer: SECURITY, chains: SCAN_CHAINS, engine: { installed: true, ai: !!es.ai, worker: !!es.worker?.reachable, tools: es.worker?.reachable ? Object.keys(es.worker.tools ?? {}).filter((k) => es.worker.tools[k]) : [], queue: es.queue ?? null }, checkout: { enabled: !!treasury() }, role: ctx.role, canPublish: ADMIN_ROLES.includes(ctx.role) }), true
+    const pe = publicEngine(es)
+    return json(res, 200, { quota: quotaOf(workspace), offer: SECURITY, chains: SCAN_CHAINS, engine: { installed: true, ai: pe.engines[0].status === 'online', worker: !!es.worker?.reachable, tools: pe.engines[1].tools, queue: es.queue ?? null, state: pe.state, text: pe.text }, checkout: { enabled: !!treasury() }, role: ctx.role, canPublish: ADMIN_ROLES.includes(ctx.role) }), true
   }
 
   if (p === '/scans') {
@@ -561,7 +589,7 @@ export async function handleSecurityPublic(req, res, url) {
   // preflight grants no origin (a foreign page cannot send X-Requested-With).
   if (req.method === 'OPTIONS') {
     if (p === '/api/security/review-requests') return res.writeHead(204, { Allow: 'POST, OPTIONS' }).end(), true
-    if (p === '/api/security/reports' || p === '/api/security/stats' || p.startsWith('/api/security/reports/')) {
+    if (p === '/api/security/reports' || p === '/api/security/stats' || p === '/api/security/engine' || p === '/api/security/sample' || p.startsWith('/api/security/reports/')) {
       return res.writeHead(204, { Allow: 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Max-Age': '86400' }).end(), true
     }
     return false
@@ -609,6 +637,16 @@ export async function handleSecurityPublic(req, res, url) {
 
   if (p === '/api/security/stats') return json(res, 200, statsOf(30), open), true
 
+  // What can run right now (the engine's status is cached 30 s in security-engine.mjs).
+  if (p === '/api/security/engine') return json(res, 200, publicEngine(await engineStatus()), { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }), true
+
+  // The sample report: a fictional contract, built and validated like a real report.
+  if (p === '/api/security/sample') return json(res, 200, { report: { ...sampleReport(), sample: true } }, { 'Cache-Control': 'public, max-age=300', 'Access-Control-Allow-Origin': '*' }), true
+  if (p === '/api/security/sample/report.html') {
+    const html = renderReportHtml(sampleReport(), { standalone: true }).replace('<h1>', `<p class="gs-badge" data-sample="true" style="margin:0 0 12px">${SAMPLE_BANNER}</p><h1>`)
+    return sendHtml(res, html)
+  }
+
   // The embeddable badge, for a published report only: "Gully Security | Scanned <date>".
   const bm = p.match(/^\/api\/security\/reports\/([^/]+)\/badge\.svg$/)
   if (bm) {
@@ -628,6 +666,42 @@ export async function handleSecurityPublic(req, res, url) {
     return json(res, 200, { report: { ...job.snapshot, ...publicView(job) } }, { 'Cache-Control': 'public, max-age=30', 'Access-Control-Allow-Origin': '*', ...(job.indexable ? {} : { 'X-Robots-Tag': 'noindex' }) }), true
   }
   return false
+}
+
+/** The banner every rendering of the sample report carries. */
+export const SAMPLE_BANNER = 'SAMPLE REPORT: a fictional contract written for this page. Not a scan of real code.'
+
+/**
+ * What can run right now, from engineStatus() (security/index.mjs). Each engine is 'online' only when it was
+ * seen working: the AI review needs a key AND no refusal of the account (no credit, billing) since the last call
+ * that worked; the static tools need the scanner worker to answer its health check. No reasons or URLs leave
+ * the server. state: 'online' (both), 'partial' (one) or 'offline' (neither).
+ */
+export function publicEngine(es) {
+  const h = es?.aiHealth ?? {}
+  const refused = h.lastFailCode === 'ai-unavailable' && (!h.lastOkAt || String(h.lastOkAt) < String(h.lastFailAt))
+  const ai = es?.ai && !refused ? 'online' : 'offline'
+  const worker = es?.worker?.reachable ? 'online' : 'offline'
+  const tools = worker === 'online' ? Object.keys(es.worker.tools ?? {}).filter((k) => es.worker.tools[k]) : []
+  const state = ai === 'online' && worker === 'online' ? 'online' : ai === 'online' || worker === 'online' ? 'partial' : 'offline'
+  const text =
+    state === 'online'
+      ? 'Static tools and the AI review run on every scan.'
+      : ai === 'online'
+        ? 'The AI review runs now. The static tools are offline: reports list them as not run.'
+        : worker === 'online'
+          ? 'The static tools run now. The AI review is offline: findings are not triaged.'
+          : 'Scanning is offline right now. Code scans cannot start and a contract scan reads its bytecode only. Nothing is charged for a scan that cannot run.'
+  return {
+    checkedAt: new Date().toISOString(),
+    state,
+    text,
+    engines: [
+      { id: 'ai', name: 'AI review', status: ai, ...(refused ? { note: 'the AI service refused the last request' } : {}) },
+      { id: 'static', name: 'Static tools', status: worker, tools },
+    ],
+    queue: { running: !!es?.queue?.running, queued: Number(es?.queue?.queued) || 0 },
+  }
 }
 
 /** Real counts from the jobs (never invented): per UTC day for `days` days, and totals. */

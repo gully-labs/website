@@ -1,8 +1,9 @@
 import { track } from '../../../lib/track'
-import { ArrowLeft, Ban, Copy, Globe, Lock, Printer, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Ban, Copy, Globe, Lock, Printer, RefreshCw, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { ChainLogo } from '../../../components/logos/ChainLogo'
 import { QuotePay } from '../../../components/pay/QuotePay'
+import { EngineStatus } from '../../../components/security/EngineStatus'
 import { ReportBody } from '../../../components/security/ReportBody'
 import { ScanProgress } from '../../../components/security/ScanProgress'
 import { chainLogoKey, fmtWhen, isActive, KIND_LABEL, STATUS_LABEL, type ScanView } from '../../../components/security/types'
@@ -61,6 +62,7 @@ export function PayStep({ scan, onPaid }: { scan: ScanView; onPaid: () => void }
           Open the invoice page
         </ExtLink>
       </div>
+      <EngineStatus testId="engine-status-pay" />
       <QuotePay assets={plans.offer.assets} label={`AI Security Scan: ${scan.title}`} match="exact" getQuote={quote} verify={verify} trackAs={{ kind: 'scan' }} onPaid={() => {
         track('scan-paid', { tier: 'ai-scan' })
         onPaid()
@@ -183,6 +185,12 @@ export function ScanDetail({ id, canPublish, onBack, backLabel = 'All scans' }: 
       {scan.status !== 'awaiting_payment' && scan.status !== 'done' && (
         <section className={panel} aria-label="Progress">
           <ScanProgress status={scan.status} pct={scan.progress?.pct ?? null} message={scan.progress?.message} startedAt={scan.startedAt} failure={scan.failure} />
+          {scan.status === 'failed' && scan.credit?.earned && (
+            <p className="m-0 flex items-start gap-2 rounded-input border border-gold-line bg-gold/[.05] px-3 py-2 text-[13px] leading-[1.55] text-ink-2" role="status" data-testid="credit-earned">
+              <RotateCcw size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden />
+              {scan.credit.usedForThis ? 'This scan ran on a re-run credit and failed, so the credit is back in your workspace.' : 'This paid scan failed, so your workspace got one re-run credit: your next scan is free.'} Payments are final on chain, so scans are not refunded (scan terms, section 5).
+            </p>
+          )}
         </section>
       )}
       {scan.status === 'done' && (scan.report ? <ReportBody report={scan.report} /> : <ErrorLine onRetry={reload}>The scan is done but its report could not be read from the engine.</ErrorLine>)}

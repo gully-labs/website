@@ -14,7 +14,7 @@ import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import path from 'node:path'
 import { config } from './config.mjs'
-import { aiConfigured } from './claude.mjs'
+import { aiConfigured, aiHealth } from './claude.mjs'
 import { ScanInputError, sameTarget, validateInput } from './inputs.mjs'
 import { runPipeline } from './pipeline.mjs'
 import { TERMINAL_STATUSES } from './schema.mjs'
@@ -189,7 +189,7 @@ export function cancelScan(id, { workspace } = {}) {
 /** What can run right now (for the UI and the health check). */
 export async function engineStatus() {
   const worker = await workerHealth()
-  return { ai: aiConfigured(), worker: { reachable: worker.ok, tools: worker.tools, reason: worker.reason }, explorers: { etherscanKey: !!config.etherscanKey() }, queue: queueStats() }
+  return { ai: aiConfigured(), aiHealth: aiHealth(), worker: { reachable: worker.ok, tools: worker.tools, reason: worker.reason }, explorers: { etherscanKey: !!config.etherscanKey() }, queue: queueStats() }
 }
 
 export function queueStats() {

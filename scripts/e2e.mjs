@@ -467,6 +467,60 @@ await step('privacy page', async () => {
   await ctx.close()
 })
 
+// Gully Security's scan terms (/legal/scan-terms), the sample report (/security/sample) and the live engine status
+// (GET /api/security/engine) on /security, at 1440, 390 and 320.
+await step('security terms, sample and engine status', async () => {
+  const e = await (await fetch(BASE + '/api/security/engine')).json()
+  check('engine status: the public endpoint answers each engine as online or offline, and the queue', ['online', 'partial', 'offline'].includes(e.state) && e.engines.length === 2 && e.engines.every((x) => ['online', 'offline'].includes(x.status)) && typeof e.queue.queued === 'number', JSON.stringify(e))
+  const head = await (await fetch(BASE + '/legal/scan-terms')).text()
+  check('scan terms: the server-rendered title and canonical', head.includes('<title>AI Security Scan terms · Gully Labs</title>') && head.includes('https://gullylabs.xyz/legal/scan-terms'))
+  const sm = await (await fetch(BASE + '/sitemap.xml')).text()
+  check('scan terms and the sample report are in the sitemap', sm.includes('<loc>https://gullylabs.xyz/legal/scan-terms</loc>') && sm.includes('<loc>https://gullylabs.xyz/security/sample</loc>'))
+  const short = await fetch(BASE + '/security/terms', { redirect: 'manual' })
+  check('/security/terms 301s to /legal/scan-terms', short.status === 301 && short.headers.get('location') === '/legal/scan-terms')
+  for (const [width, mobile] of [[1440, false], [390, true], [320, true]]) {
+    const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
+    const page = await ctx.newPage()
+    const w = watch(page, `security terms and sample at ${width}`)
+    await page.goto(BASE + '/legal/scan-terms')
+    await page.getByRole('heading', { level: 1, name: 'Scan terms' }).waitFor()
+    const ids = await page.evaluate(() => [...document.querySelectorAll('article section[id^="s"]')].map((x) => x.id))
+    check(`scan terms at ${width}: ten numbered sections, each linked from the section nav`, ids.join() === Array.from({ length: 10 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 10, ids.join())
+    const es = page.getByTestId('engine-status')
+    await es.locator('[data-engine]').first().waitFor({ timeout: 10_000 })
+    check(`scan terms at ${width}: the live engine status names both engines with a status pill and draws its checks`, (await es.locator('[data-engine]').count()) === 2 && (await es.locator('[data-pill]').count()) >= 3 && (await es.getByTestId('engine-history').locator('i').count()) >= 1 && ['online', 'partial', 'offline'].includes((await es.getAttribute('data-state')) ?? ''))
+    await page.locator('[data-testid="free-scans-chart"] [data-chart], [data-testid="free-scans-chart"] [data-ghost]').first().waitFor({ timeout: 10_000 })
+    check(`scan terms at ${width}: free scans per plan drawn live from the price list`, (await page.locator('[data-testid="free-scans-chart"] [data-live]').count()) >= 1 || (await page.locator('[data-testid="free-scans-chart"] [data-chart]').count()) >= 1)
+    check(`scan terms at ${width}: refunds are re-run credits, and a scan is not an audit`, /re-run credit/.test((await page.locator('#s5').textContent()) ?? '') && /not an audit/.test((await page.locator('#s2').textContent()) ?? ''))
+    check(`scan terms at ${width}: "Draft: review by counsel" is an HTML comment only`, (await page.content()).includes('<!-- Draft: review by counsel') && !(await page.getByText('review by counsel').count()))
+    if (mobile) await noHorizontalScroll(page, `scan terms at ${width}`)
+    await designAudit(page, `scan terms at ${width}`, 'article')
+
+    await page.goto(BASE + '/security/sample')
+    await page.getByTestId('report-body').waitFor({ timeout: 15_000 })
+    check(`sample report at ${width}: labelled SAMPLE, says the contract is fictional`, (await page.getByTestId('sample-badge').textContent()) === 'SAMPLE' && /fictional contract/.test((await page.getByTestId('sample-note').textContent()) ?? ''))
+    check(`sample report at ${width}: the real report viewer, five findings, both charts, the "AI review only" label`, (await page.locator('[data-finding]').count()) === 5 && (await page.locator('[data-testid="severity-charts"] [data-chart]').count()) >= 2 && /AI review only/.test((await page.getByTestId('mode-label').first().textContent()) ?? '') && (await page.locator('[data-tool-status="not-run"]').count()) >= 3)
+    check(`sample report at ${width}: the printable sample opens in a new tab`, (await page.getByTestId('sample-print').getAttribute('href')) === '/api/security/sample/report.html' && (await page.getByTestId('sample-print').getAttribute('target')) === '_blank')
+    if (mobile) await noHorizontalScroll(page, `sample report at ${width}`)
+    await designAudit(page, `sample report at ${width}`, '[data-testid="sample-report"]')
+
+    await page.goto(BASE + '/security')
+    await page.getByTestId('engine-status').locator('[data-engine]').first().waitFor({ timeout: 10_000 })
+    check(`/security at ${width}: the live engine status, and links to the sample report and the scan terms`, (await page.getByTestId('security-sample-link').getAttribute('href')) === '/security/sample' && (await page.getByTestId('security-terms-link').getAttribute('href')) === '/legal/scan-terms')
+    if (mobile) await noHorizontalScroll(page, `/security with engine status at ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  {
+    const ctx = await newContext()
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/')
+    const foot = page.getByRole('contentinfo').getByRole('link', { name: 'Scan terms', exact: true })
+    check('scan terms: linked from the site footer', (await foot.getAttribute('href')) === '/legal/scan-terms')
+    await ctx.close()
+  }
+})
+
 /* ------------------------------------------------------------- portal --- */
 
 await step('portal', async () => {
@@ -1694,6 +1748,9 @@ await step('security', async () => {
     await page.getByTestId('cost').waitFor()
     check('security: step 2 shows the scope, the free quota and "Free"', (await page.getByTestId('price').textContent()) === 'Free' && /on Base/.test((await page.getByTestId('scope-target').textContent()) ?? ''))
     check('security: step 2 says what the engine can run now (AI review only)', /AI review only — static tools unavailable/.test((await page.getByTestId('engine-now').textContent()) ?? ''))
+    await page.locator('[data-testid="new-scan"] [data-testid="engine-status"] [data-engine]').first().waitFor({ timeout: 10_000 })
+    check('security: step 2 shows the live scanner status (AI review online, static tools offline)', (await page.locator('[data-testid="engine-status"] [data-engine="ai"]').getAttribute('data-engine-status')) === 'online' && (await page.locator('[data-testid="engine-status"] [data-engine="static"]').getAttribute('data-engine-status')) === 'offline')
+    check('security: step 2 shows re-run credits and links the scan terms and the sample report', /0 re-run credits/.test((await page.getByTestId('cost-credits').textContent()) ?? '') && (await page.getByTestId('terms-line').getByRole('link').count()) === 2)
     const fold = await page.getByTestId('confirm-scan').boundingBox()
     check('security: step 2 fits above the fold at 1440x900', !!fold && fold.y + fold.height <= 900, JSON.stringify(fold))
     await shot(page, 'security-step2-scope')
@@ -1733,11 +1790,15 @@ await step('security', async () => {
     await page.getByTestId('confirm-scan').click()
     await page.getByTestId('pay-step').waitFor({ timeout: 10_000 })
     check('security: step 3 is Gully Pay for the scan invoice', (await page.getByRole('link', { name: /Open the invoice page/ }).getAttribute('target')) === '_blank')
+    await page.locator('[data-testid="engine-status-pay"] [data-engine]').first().waitFor({ timeout: 10_000 })
+    check('security: the pay step shows the live scanner status before payment', (await page.locator('[data-testid="engine-status-pay"] [data-engine]').count()) === 2)
     await shot(page, 'security-step3-pay')
     await designAudit(page, `app security-step3-pay at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
     await page.getByRole('tab', { name: 'Scans' }).click()
     await page.getByTestId('scan-list').waitFor()
     check('security: the scans list shows both, one awaiting payment', (await page.locator('[data-scan-row]').count()) === 2 && (await page.locator('[data-scan-row] [data-status="awaiting_payment"]').count()) === 1)
+    await page.locator('[data-testid="scan-credits"] [data-chart], [data-testid="scan-credits"] [data-ghost]').first().waitFor({ timeout: 10_000 })
+    check('security: the credits panel shows free scans left, re-run credits and the next price, with the per-month chart', (await page.getByTestId('credits-free').textContent()) === '0' && (await page.getByTestId('credits-rerun').textContent()) === '0' && /^\$\d+$/.test((await page.getByTestId('credits-next').textContent()) ?? '') && (await page.locator('[data-testid="scan-credits"] [data-chart]').count()) === 1)
     await shot(page, 'security-scans')
     await designAudit(page, `app security-scans at ${page.viewportSize().width}`, '[data-testid="security-tab"]')
     await page.getByRole('tab', { name: 'Monitors' }).click()

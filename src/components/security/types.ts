@@ -110,6 +110,8 @@ export interface ScanView {
   upload: { name: string; size?: number } | null
   free: boolean
   priceUsd: number
+  /** A re-run credit paid for this scan (usedForThis), or this paid scan failed and earned one (earned). */
+  credit: { usedForThis: boolean; earned: boolean } | null
   payment: { invoiceId: string; status: 'open' | 'paid' | 'expired' | 'cancelled' | 'unknown'; usd: number; payUrl: string; expiresAt: string | null } | null
   /** pct 0–100 and the engine's step text. */
   progress: { pct: number; message: string } | null
@@ -150,6 +152,8 @@ export interface Quota {
   freePerMonth: number
   used: number
   left: number
+  /** Re-run credits: paid scans that failed, each good for one free scan (spent after the free quota). */
+  credits: number
   resetsAt: string
   nextPriceUsd: number
   active: number
@@ -161,10 +165,15 @@ export interface SecurityOverview {
   offer: SecurityOffer
   chains: ScanChain[]
   /** engineStatus(): the AI review configured, the static-tools worker reachable (and its tools). */
-  engine: { installed: boolean; ai: boolean; worker: boolean; tools: string[]; queue: { running: string | null; queued: number } | null }
+  engine: { installed: boolean; ai: boolean; worker: boolean; tools: string[]; queue: { running: string | null; queued: number } | null; state?: 'online' | 'partial' | 'offline'; text?: string }
   checkout: { enabled: boolean }
   role: string
   canPublish: boolean
+}
+
+/** The sample report (GET /api/security/sample): a Report on a fictional contract, flagged sample. */
+export interface SampleReport extends Report {
+  sample: true
 }
 
 export interface PublicReport extends Report {
