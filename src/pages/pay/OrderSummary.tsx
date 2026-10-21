@@ -38,7 +38,7 @@ export function OrderSummary({
   const accent = accentOf(brand)
   const who = brand.gully ? 'Gully Labs' : storeName(brand)
   return (
-    <section className="flex min-w-0 flex-col gap-6" aria-label="Order summary" style={{ animation: 'gl-rise .5s ease both' }}>
+    <section className="flex min-w-0 flex-col gap-4" aria-label="Order summary" style={{ animation: 'gl-rise .5s ease both' }}>
       <div className="flex flex-col gap-2">
         <span className="font-mono text-[12px] tracking-[1.5px] uppercase" style={{ color: accent.color }}>
           {eyebrow}
@@ -70,10 +70,10 @@ export function OrderSummary({
         <tbody>
           {items.map((i, n) => (
             <tr key={n} className="border-b border-line text-ink-2">
-              <td className="py-[10px] pr-3 break-words text-ink">{i.description}</td>
-              <td className="py-[10px] pr-3 text-right font-mono tabular-nums">{i.quantity}</td>
-              <td className="py-[10px] pr-3 text-right font-mono tabular-nums max-[420px]:hidden">{i.unitUsd}</td>
-              <td className="py-[10px] text-right font-mono tabular-nums text-ink">{i.totalUsd}</td>
+              <td className="py-2 pr-3 break-words text-ink">{i.description}</td>
+              <td className="py-2 pr-3 text-right font-mono tabular-nums">{i.quantity}</td>
+              <td className="py-2 pr-3 text-right font-mono tabular-nums max-[420px]:hidden">{i.unitUsd}</td>
+              <td className="py-2 text-right font-mono tabular-nums text-ink">{i.totalUsd}</td>
             </tr>
           ))}
         </tbody>
@@ -90,13 +90,13 @@ export function OrderSummary({
             </tr>
           )}
           <tr className="text-ink">
-            <td colSpan={3} className="pt-3 pr-3 text-right text-[15px] font-semibold max-[420px]:hidden">
+            <td colSpan={3} className="pt-2 pr-3 text-right text-[15px] font-semibold max-[420px]:hidden">
               {totalLabel}
             </td>
-            <td className="pt-3 pr-3 text-right text-[15px] font-semibold min-[421px]:hidden" colSpan={2}>
+            <td className="pt-2 pr-3 text-right text-[15px] font-semibold min-[421px]:hidden" colSpan={2}>
               {totalLabel}
             </td>
-            <td className="pt-3 text-right font-mono text-[18px] font-medium tabular-nums" data-testid="order-total">
+            <td className="pt-2 text-right font-mono text-[18px] font-medium tabular-nums" data-testid="order-total">
               {total ? (
                 <>
                   {total} <span className="text-[12px] text-faint">USD</span>
@@ -122,16 +122,16 @@ export function OrderSummary({
 
       {children}
 
-      <div className="flex flex-col gap-2 border-t border-line pt-5 text-[13px] leading-[1.6] text-muted">
-        <span>
-          Paid wallet to wallet, straight to {who}: nobody holds it in between, and it is checked on chain. {brand.gully ? '' : 'Questions about an order or a refund go to the store.'}
-        </span>
+      {(!brand.gully || brand.supportEmail) && (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-[13px] leading-[1.6] text-muted">
+        {!brand.gully && <span>Questions about an order or a refund go to {who}.</span>}
         {brand.supportEmail && (
           <a href={`mailto:${brand.supportEmail}`} className="inline-flex min-h-11 w-fit items-center gap-2 text-ink-2 underline-offset-4 hover:text-gold hover:underline" data-testid="store-contact">
             <Mail size={14} aria-hidden /> {brand.supportEmail}
           </a>
         )}
       </div>
+      )}
     </section>
   )
 }

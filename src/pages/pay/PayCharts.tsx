@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Flag } from 'lucide-react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { EChart } from '../../components/charts/EChart'
 import type { ChartEvent } from '../../components/charts/chart-utils'
@@ -7,6 +8,8 @@ import { LiveBreathe } from '../../components/ask/LiveBreathe'
 import { GhostChart } from '../../components/charts/GhostChart'
 import { TokenLogo } from '../../components/logos/TokenLogo'
 import { NF } from '../../components/charts/number-formats'
+import { MiniSpark } from '../../components/charts/MiniSpark'
+import { useInView } from '../../components/charts/useMiniChart'
 import { useLiveSeries } from '../../components/charts/useLiveSeries'
 import type { PayAsset } from './api'
 
@@ -17,7 +20,13 @@ import type { PayAsset } from './api'
    - PriceChart: for a native coin, the chain's Chainlink USD price now (GET /api/pay/price, read every
      30 seconds while the page is open) against the price the quote was made at. Points are only what
      this page has read; nothing is back-filled. A read that fails says "unreadable".
-   - ChainConfirmations: how many confirmations each accepted chain needs, from the pay link's assets. */
+   - ChainConfirmations: how many confirmations each accepted chain needs (the app's Pay view).
+   - BlockTrack: the checkout's live status chart for the chosen chain. The newest blocks land as ticks
+     (GET /api/pay/head, read every 6 s: the server's own RPC read, cached 3 s); below them the chain's
+     required confirmations are cells with a flag at the target, filling as the verify answers count the
+     payer's transaction. Solana has no block feed here: only the cells (it counts on finality).
+   - NetworkFee: what this payment costs in gas now, in USD, from GET /api/pay/gas (read every minute,
+     the server caches it 3 min). Shown only where the server has the figure. */
 
 const fmtUsd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const hhmmss = (t: number) => new Date(t).toISOString().slice(11, 19)
@@ -204,6 +213,144 @@ export function ChainConfirmations({ assets }: { assets: PayAsset[] }) {
       <LiveBreathe>
         <EChart option={option} height={Math.max(90, chains.length * 34)} steps={{ count: chains.length }} label={`Confirmations needed: ${chains.map((c) => `${c[0]} ${c[1]}`).join(', ')}.`} />
       </LiveBreathe>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------- block track --- */
+
+interface Head {
+  block: number
+  timestamp: number | null
+}
+
+const TICKS = 16
+const nf = new Intl.NumberFormat('en-US')
+
+/** Seconds per block, measured from the heads this page has read (first to last); null until two differ. */
+function blockSeconds(heads: Head[]): number | null {
+  const a = heads.find((h) => h.timestamp !== null)
+  const b = [...heads].reverse().find((h) => h.timestamp !== null)
+  if (!a || !b || b.block <= a.block || (b.timestamp as number) <= (a.timestamp as number)) return null
+  return ((b.timestamp as number) - (a.timestamp as number)) / 1000 / (b.block - a.block)
+}
+
+export function BlockTrack(props: BlockTrackProps) {
+  // Keyed by chain: switching network starts a fresh track.
+  return <BlockTrackBody key={props.chainId} {...props} />
+}
+
+type BlockTrackProps = Parameters<typeof BlockTrackBody>[0]
+
+function BlockTrackBody({ chainId, chain, needed, have, state, solana = false }: { chainId: number; chain: string; needed: number; have: number; state: RingState; solana?: boolean }) {
+  const [ref, inView] = useInView<HTMLDivElement>()
+  const [heads, setHeads] = useState<Head[]>([])
+  const off = solana || state === 'done'
+  const live = useLiveSeries(
+    async (signal) => {
+      const r = await fetch(`/api/pay/head?chain=${chainId}`, { signal })
+      const d = (await r.json().catch(() => null)) as { block?: number; timestamp?: number | null; error?: string } | null
+      if (!r.ok) throw new Error(d?.error ?? `The server answered ${r.status}.`)
+      if (!d || !Number.isSafeInteger(d.block)) throw new Error('The block answer was unreadable.')
+      const head = { block: d.block as number, timestamp: typeof d.timestamp === 'number' ? d.timestamp : null }
+      if (!signal.aborted) setHeads((prev) => (prev.at(-1)?.block === head.block ? prev : [...prev, head].slice(-40)))
+      return head
+    },
+    6_000,
+    { enabled: !off },
+  )
+  const head = heads.at(-1)?.block ?? null
+  const secs = blockSeconds(heads)
+  const done = state === 'done'
+  const shown = done ? needed : Math.min(have, needed)
+  const text = done ? 'Confirmed' : state === 'pending' ? 'Confirming' : state === 'checking' ? 'Reading the chain' : 'Waiting for your transaction'
+  const ticks = head === null ? [] : Array.from({ length: TICKS }, (_, i) => head - (TICKS - 1 - i)).filter((b) => b >= 0)
+  const err = !!live.error && head === null
+  const first = heads[0]?.block ?? null // ticks that land after the first read grow in
+  return (
+    <div ref={ref} className="flex min-w-0 flex-col gap-2" data-testid="block-track" data-live={inView ? 'on' : 'paused'} data-chain={chainId} data-ticks={ticks.length} data-confirmations={shown} role="group" aria-label={`Live blocks on ${chain}${head !== null ? `, newest block ${head}` : ''}. ${shown} of ${needed} confirmations. ${text}.`}>
+      <div className="flex items-baseline justify-between gap-3 font-mono text-[11px] text-faint">
+        <span className="tracking-[1px]">{chain.toUpperCase()} BLOCKS</span>
+        <span className="text-right" data-testid="block-height">
+          {solana ? 'counts once finalized, about 15 s' : head !== null ? `#${nf.format(head)}${secs ? ` · a block every ${secs < 10 ? secs.toFixed(1) : Math.round(secs)} s` : ''}` : err ? 'blocks unreadable' : 'reading the chain…'}
+        </span>
+      </div>
+      {!solana && (
+        <div className="flex h-5 items-end gap-[3px]" aria-hidden>
+          {head === null
+            ? Array.from({ length: TICKS }, (_, i) => <i key={i} className={`h-2 flex-1 rounded-[2px] bg-grid ${err ? '' : 'animate-pulse'}`} />)
+            : ticks.map((b, i) => (
+                <i key={b} data-tick={b} className={`relative h-full flex-1 origin-bottom rounded-[2px] ${b === head ? `bg-gold ${off ? '' : 'gl-live-breathe'}` : i > TICKS - 5 ? 'bg-line-strong' : 'bg-grid'}`} style={first !== null && b > first ? { animation: 'gl-grow .35s ease both' } : undefined} />
+              ))}
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-3 font-mono text-[11px] text-dim">
+        <span className={`inline-flex items-center gap-2 ${done ? 'text-green' : ''}`}>
+          {!done && <i aria-hidden className={`size-[6px] rounded-full ${state === 'waiting' ? 'bg-line-strong' : 'animate-blink bg-gold'}`} />}
+          {text}
+        </span>
+        <span>
+          <b className="font-medium text-ink" data-testid="confirm-count">
+            {shown}
+          </b>{' '}
+          / {needed} confirmations
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="flex h-2 min-w-0 flex-1 gap-[2px]" role="progressbar" aria-valuemin={0} aria-valuemax={needed} aria-valuenow={shown} aria-label="Confirmations">
+          {Array.from({ length: needed }, (_, i) => (
+            <i key={i} className={`h-full min-w-[2px] flex-1 rounded-[2px] transition-colors duration-500 ${i < shown ? (done ? 'bg-green' : 'bg-gold') : i === shown && !done && state !== 'waiting' ? 'gl-live-breathe bg-gold' : 'bg-grid'}`} />
+          ))}
+        </span>
+        <span className={`inline-flex shrink-0 items-center gap-1 font-mono text-[11px] ${done ? 'text-green' : 'text-gold'}`} data-testid="confirm-target" title={`${chain} needs ${needed} confirmations before the payment counts`}>
+          <Flag size={12} aria-hidden /> {needed}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------- network fee --- */
+
+interface FeeRead {
+  usd: number
+  gwei: number | null
+}
+
+export function NetworkFee({ chainId, chain, split }: { chainId: number; chain: string; split: boolean }) {
+  return <NetworkFeeBody key={`${chainId}:${split}`} chainId={chainId} chain={chain} split={split} />
+}
+
+function NetworkFeeBody({ chainId, chain, split }: { chainId: number; chain: string; split: boolean }) {
+  const [reads, setReads] = useState<FeeRead[]>([])
+  const live = useLiveSeries(async (signal) => {
+    const r = await fetch('/api/pay/gas', { signal })
+    const d = (await r.json().catch(() => null)) as { chains?: { chainId: number; ok: boolean; gasPriceGwei?: number | null; payUsd?: number | null; transferUsd?: number | null }[] } | null
+    const row = d?.chains?.find((c) => c.chainId === chainId)
+    const usd = row?.ok ? (split ? row.payUsd : row.transferUsd) : null
+    if (!r.ok || typeof usd !== 'number' || !Number.isFinite(usd)) throw new Error('The fee could not be read.')
+    const read = { usd, gwei: row?.gasPriceGwei ?? null }
+    if (!signal.aborted) setReads((prev) => [...prev, read].slice(-30))
+    return read
+  }, 60_000)
+  const now = reads.at(-1)
+  if (!now) return live.loading ? <span className="block h-[44px] animate-pulse rounded-input bg-surface-deep" /> : null
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-4" data-testid="network-fee">
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="font-mono text-[11px] tracking-[1px] text-faint">NETWORK FEE · THIS PAYMENT ON {chain.toUpperCase()}</span>
+        <span className="font-display text-[20px] leading-none font-extrabold text-ink">
+          ≈ <AnimatedNumber value={now.usd} format={{ style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 4 }} />
+        </span>
+        <span className="font-mono text-[11px] text-faint">
+          {now.gwei !== null ? `gas ${now.gwei} gwei · ` : ''}paid to the network, read every minute
+        </span>
+      </span>
+      {reads.length > 1 && (
+        <span className="block w-[96px] shrink-0">
+          <MiniSpark data={reads.map((r) => r.usd)} height={32} label={`Network fee in USD on ${chain}, read every minute`} fmt={(v) => `$${v.toFixed(4)}`} />
+        </span>
+      )}
     </div>
   )
 }

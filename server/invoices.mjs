@@ -9,6 +9,8 @@
 //   GET  /api/pay/:id                              the invoice, its accepted assets and, once paid, the payment
 //   POST /api/pay/:id/quote  { asset }             -> { quote }   20 minutes, exact amount in that asset
 //   POST /api/pay/:id/verify { quoteId, txHash }   -> 200 paid | 202 not confirmed yet | 4xx
+//   GET  /api/pay/head?chain=<EVM chain id>       -> { chainId, block, timestamp, readAt }: the newest block (cached 3 s), for the
+//                                                     checkout's live block track
 //   GET  /api/pay/price?asset=<native asset id>    -> { asset, symbol, chain, chainId, description, price,
 //                                                     roundId, updatedAt, readAt }: the chain's Chainlink USD
 //                                                     price now (readFeed, cached 30 s), for the pay pages' chart
@@ -22,7 +24,8 @@
 import { checkInvoiceTx, createQuote, findQuote, isHash, badHash, ledger, normHash, paymentView, quoteView, recordPayment, save } from './billing.mjs'
 import { checkEndpoint, deliveries, emitInvoiceCancelled, emitInvoicePaid, endpointView, makeEndpoint, newSecret, sendTest } from './pay-webhooks.mjs'
 import { clientIp, json, readJson } from './http.mjs'
-import { assetById, ASSET_IDS, ASSETS, CHAINS, fmtUnits, fmtUsd, parseUsdCents, publicAssets, readFeed } from './payments.mjs'
+import { assetById, ASSET_IDS, ASSETS, CHAINS, fmtUnits, fmtUsd, parseUsdCents, publicAssets, readFeed, rpc, blockTime } from './payments.mjs'
+import { SOLANA_CHAIN_ID } from './solana-pay.mjs'
 import { treasury } from './plans.mjs'
 import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { randomToken } from './store.mjs'
@@ -33,6 +36,8 @@ const MAX_NOTE = 1_000
 const MAX_DAYS = 365
 
 const hits = new Map()
+const headCache = new Map() // chainId -> { at, value }
+const HEAD_CACHE_MS = 3_000
 function allow(bucket, who, max, ms) {
   const k = `${bucket}:${who}`
   const now = Date.now()
@@ -267,6 +272,28 @@ export async function handlePay(req, res, url) {
   if (url.pathname.startsWith('/api/pay/l/')) return (await import('./paylinks.mjs')).handlePayLink(req, res, url)
   // Merchant stores (merchants.mjs): /api/pay/m/* (their invoices, links, logos), paid to the merchant's wallet.
   if (url.pathname.startsWith('/api/pay/m/')) return (await import('./merchants.mjs')).handleMerchantPay(req, res, url)
+  // The newest block of an EVM payment chain, for the checkout's live block track: read-only, cached a few
+  // seconds per chain, and only for chains this server pays on (never Solana: its pages count slots elsewhere).
+  if (url.pathname === '/api/pay/head') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    if (!allow('head', clientIp(req), 1_500, 3_600_000)) return json(res, 429, { error: 'Too many block reads. Try again later.' }), true
+    const id = Number(url.searchParams.get('chain'))
+    const chain = Number.isInteger(id) ? CHAINS[id] : null
+    if (!chain || !(chain.rpcs?.length > 0) || id === SOLANA_CHAIN_ID) return json(res, 400, { error: 'chain must be an EVM payment chain id.' }), true
+    const hit = headCache.get(id)
+    if (hit && Date.now() - hit.at < HEAD_CACHE_MS) return json(res, 200, hit.value, { 'Cache-Control': 'public, max-age=3' }), true
+    try {
+      const hexBlock = await rpc(id, 'eth_blockNumber', [])
+      const block = Number(BigInt(hexBlock))
+      if (!Number.isSafeInteger(block)) throw new Error('unreadable block')
+      const timestamp = await blockTime(id, hexBlock).catch(() => null)
+      const value = { chainId: id, block, timestamp, readAt: new Date().toISOString() }
+      headCache.set(id, { at: Date.now(), value })
+      return json(res, 200, value, { 'Cache-Control': 'public, max-age=3' }), true
+    } catch {
+      return json(res, 502, { error: 'The chain could not be read right now.' }), true
+    }
+  }
   // The live Chainlink price of a native coin, for the pay pages' "price at quote vs now" chart.
   if (url.pathname === '/api/pay/price') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true

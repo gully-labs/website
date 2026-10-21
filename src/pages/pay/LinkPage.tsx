@@ -2,9 +2,11 @@ import { ArrowRight, Loader2 } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { AssetPicker } from '../../components/pay/AssetPicker'
+import { SecuredBy } from '../../components/pay/SecuredBy'
 import { Seo } from '../../components/Seo'
+import { isSolanaChain } from '../../components/solana/constants'
 import { payApi, type PayAsset, type PayLink } from './api'
-import { accentOf, GULLY_BRAND, linkItems, pills, type Brand, type Viewer } from './brand'
+import { accentOf, GULLY_BRAND, linkItems, pills, storeName, type Brand, type Viewer } from './brand'
 import { CheckoutFrame, MobilePayBar, PayPanel } from './CheckoutFrame'
 import { OrderSummary } from './OrderSummary'
 import { LinkClosed, LoadFailed, Missing, Reading, Unavailable } from './PayStates'
@@ -14,10 +16,10 @@ import { LinkClosed, LoadFailed, Missing, Reading, Unavailable } from './PayStat
    (/pay/<invoice>) takes it from there. The server checks the amount, the asset and the link's state.
    The form (LinkForm) is shared with merchant links (src/pages/merchant-pay). */
 
-// Live charts (ECharts loads with them, on demand): the chosen coin's Chainlink price, and the
-// confirmations each accepted chain needs.
+// Live charts (ECharts loads with them, on demand): the first native coin's Chainlink price, and the live blocks
+// of the first chain with the confirmations it needs.
 const PriceChart = lazy(() => import('./PayCharts').then((m) => ({ default: m.PriceChart })))
-const ChainConfirmations = lazy(() => import('./PayCharts').then((m) => ({ default: m.ChainConfirmations })))
+const BlockTrack = lazy(() => import('./PayCharts').then((m) => ({ default: m.BlockTrack })))
 
 type State = { k: 'loading' } | { k: 'missing' } | { k: 'error'; message: string } | { k: 'ok'; link: PayLink }
 
@@ -55,7 +57,7 @@ export function LinkPage() {
  * The link's payer form: the amount (when open), the asset, and Continue; posts to `api` and goes to the invoice.
  * `showFee` (merchant stores): the picker says per chain whether the store's fee rides inside the payment or is invoiced.
  */
-export function LinkForm({ link, api, brand, showFee = false, children }: { link: Pick<PayLink, 'id' | 'amount' | 'assets'>; api: string; brand: Brand; showFee?: boolean; children?: ReactNode }) {
+export function LinkForm({ link, api, brand, showFee = false, treasury = null, children }: { link: Pick<PayLink, 'id' | 'amount' | 'assets'>; api: string; brand: Brand; showFee?: boolean; /** Gully Labs' own links: the treasury the server's checkout config gives, for the seal. */ treasury?: string | null; children?: ReactNode }) {
   const navigate = useNavigate()
   const [asset, setAsset] = useState<string | null>(link.assets.length === 1 ? link.assets[0].id : null)
   const [usd, setUsd] = useState('')
@@ -87,7 +89,7 @@ export function LinkForm({ link, api, brand, showFee = false, children }: { link
   return (
     <form
       id="link-form"
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         go()
@@ -105,7 +107,7 @@ export function LinkForm({ link, api, brand, showFee = false, children }: { link
           </span>
         </label>
       )}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <span className="text-[14px] font-semibold text-ink">Network and token</span>
         <AssetPicker assets={link.assets} value={asset} onChange={setAsset} disabled={busy} showFee={showFee} />
       </div>
@@ -118,6 +120,7 @@ export function LinkForm({ link, api, brand, showFee = false, children }: { link
         {busy ? <Loader2 size={17} className="animate-spin" aria-hidden /> : null}
         Continue to payment <ArrowRight size={17} aria-hidden />
       </button>
+      <SecuredBy merchant={brand.gully ? null : storeName(brand)} treasury={brand.gully ? treasury : null} treasuryHref={brand.gully && treasury && link.assets[0] ? `${link.assets[0].explorer}/address/${treasury}` : null} />
       <span className="text-[12px] leading-[1.5] text-faint">You get your own invoice with the exact amount to send, valid for an hour. The quote in your chosen asset holds for 20 minutes.</span>
       {children}
       <MobilePayBar total={total}>
@@ -129,14 +132,15 @@ export function LinkForm({ link, api, brand, showFee = false, children }: { link
   )
 }
 
-/** The live charts beside a link: the chosen (or first) native coin's price and each chain's confirmations. */
+/** The live charts beside a link: the first native coin's price and the live blocks of the first chain with its confirmation target. */
 export function LinkCharts({ assets }: { assets: PayAsset[] }) {
   const priceAsset = assets.find((a) => a.kind === 'native') ?? null
+  const first = assets[0] ?? null
   return (
-    <div className="flex flex-col gap-5 rounded-card border border-line bg-surface p-5 max-[600px]:p-4">
-      <Suspense fallback={<span className="block h-[150px] animate-pulse rounded-input bg-surface-deep" />}>
+    <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-4">
+      <Suspense fallback={<span className="block h-[110px] animate-pulse rounded-input bg-surface-deep" />}>
         {priceAsset && <PriceChart asset={priceAsset} />}
-        <ChainConfirmations assets={assets} />
+        {first && <BlockTrack chainId={first.chainId} chain={first.chain} needed={first.confirmations} have={0} state="waiting" solana={isSolanaChain(first.chainId)} />}
       </Suspense>
     </div>
   )
@@ -158,7 +162,7 @@ function LinkView({ link, viewer = null }: { link: PayLink; viewer?: Viewer | nu
       <PayPanel title="Pay Gully Labs" copyLink={`${window.location.host}/pay/l/${link.id}`} pill={pill} label="Start a payment">
         {link.state !== 'active' && <LinkClosed state={link.state} text={link.stateText} brand={GULLY_BRAND} viewer={viewer} />}
         {link.state === 'active' && !link.checkout.enabled && <Unavailable brand={GULLY_BRAND} reason={link.checkout.reason} viewer={viewer} />}
-        {live && <LinkForm link={link} api={`/api/pay/l/${link.id}/invoice`} brand={GULLY_BRAND} />}
+        {live && <LinkForm link={link} api={`/api/pay/l/${link.id}/invoice`} brand={GULLY_BRAND} treasury={link.checkout.enabled ? link.checkout.treasury : null} />}
       </PayPanel>
     </CheckoutFrame>
   )

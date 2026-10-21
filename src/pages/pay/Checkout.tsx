@@ -1,9 +1,10 @@
-import { ArrowUpRight, ChevronDown, Clock, Copy, CreditCard, Download, ExternalLink, FileText, Loader2, QrCode as QrIcon, RefreshCw, ShieldCheck, TriangleAlert } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, Clock, Copy, CreditCard, Download, ExternalLink, FileText, Loader2, QrCode as QrIcon, RefreshCw, TriangleAlert } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { GhostChart } from '../../components/charts/GhostChart'
 import { AssetPicker } from '../../components/pay/AssetPicker'
+import { SecuredBy } from '../../components/pay/SecuredBy'
 import { TokenLogo } from '../../components/logos/TokenLogo'
 import { btnOutline } from '../../components/ui'
 import { payApi, type Quote } from './api'
@@ -26,11 +27,11 @@ import { track } from '../../lib/track'
 
 const PayWallet = lazy(() => import('../../components/pay/PayWallet'))
 const SolanaPayWallet = lazy(() => import('../../components/solana/SolanaPayWallet'))
-// The live confirmations ring and the native-coin price chart (ECharts loads with them, on demand).
-const ConfirmRing = lazy(() => import('./PayCharts').then((m) => ({ default: m.ConfirmRing })))
-const ChainConfirmations = lazy(() => import('./PayCharts').then((m) => ({ default: m.ChainConfirmations })))
+// The live block track, the network fee and the native-coin price chart (ECharts loads with them, on demand).
+const BlockTrack = lazy(() => import('./PayCharts').then((m) => ({ default: m.BlockTrack })))
+const NetworkFee = lazy(() => import('./PayCharts').then((m) => ({ default: m.NetworkFee })))
 const PriceChart = lazy(() => import('./PayCharts').then((m) => ({ default: m.PriceChart })))
-const chartWait = <span className="block h-[112px] animate-pulse rounded-input bg-surface-deep" />
+const chartWait = <span className="block h-[88px] animate-pulse rounded-input bg-surface-deep" />
 
 type Check = { s: 'idle' } | { s: 'checking'; hash: string } | { s: 'pending'; hash: string; confirmations: number; needed: number; message: string } | { s: 'error'; message: string; hash?: string } | { s: 'done'; hash: string }
 
@@ -98,7 +99,7 @@ function Row({ k, v, copy, copyLabel }: { k: string; v: string; copy?: string; c
 /** A numbered step of the payment panel. */
 function Step({ n, title, aside, children }: { n: number; title: string; aside?: ReactNode; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3" aria-label={`${n}. ${title}`}>
+    <section className="flex flex-col gap-2" aria-label={`${n}. ${title}`}>
       <header className="flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-2 text-[14px] font-semibold text-ink">
           <span aria-hidden className="grid size-6 place-items-center rounded-full border border-line-strong font-mono text-[11px] text-dim">
@@ -220,9 +221,9 @@ export function PaidPanel({ invoice, brand = GULLY_BRAND, receiptPath = `/pay/${
         </dl>
       )}
       {p && paidAsset && (
-        <div className="grid grid-cols-1 gap-5 rounded-input border border-line bg-bg p-4">
+        <div className="grid grid-cols-1 gap-4 rounded-input border border-line bg-bg p-3">
           <Suspense fallback={chartWait}>
-            <ConfirmRing n={paidAsset.confirmations} needed={paidAsset.confirmations} state="done" chain={p.chain} />
+            <BlockTrack chainId={paidAsset.chainId} chain={p.chain} needed={paidAsset.confirmations} have={paidAsset.confirmations} state="done" solana={isSolanaChain(paidAsset.chainId)} />
             {paidAsset.kind === 'native' && p.price && <PriceChart asset={paidAsset} quoted={{ answer: p.price.answer, updatedAt: p.price.updatedAt, label: 'paid at' }} />}
           </Suspense>
         </div>
@@ -279,7 +280,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
   const [hash, setHash] = useState('')
   const [walletErr, setWalletErr] = useState('')
   const [showWallet, setShowWallet] = useState(false)
-  const [showQr, setShowQr] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches)
+  const [tab, setTab] = useState<'wallet' | 'qr'>('wallet')
   const [check, setCheck] = useState<Check>({ s: 'idle' })
   const now = useNow(!!quote)
   const asideNode = useAside()
@@ -391,6 +392,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
   const payNow = () => {
     if (!quote) return pickerSlot.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     const btn = walletSlot.current?.querySelector('button')
+    if (tab !== 'wallet') setTab('wallet')
     if (showWallet && btn && !btn.disabled) btn.click()
     else setShowWallet(true)
     walletSlot.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -431,11 +433,11 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
   )
 
   const qrBlock = quote && asset && (
-    <div id="pay-qr" className="flex flex-col gap-4 rounded-input border border-line bg-bg p-4" style={{ animation: 'gl-fade .25s ease both' }}>
-      <div className="flex flex-wrap items-start gap-5">
+    <div id="pay-qr" className="flex flex-col gap-3 rounded-input border border-line bg-bg p-3" style={{ animation: 'gl-fade .25s ease both' }}>
+      <div className="flex flex-wrap items-start gap-4">
         <div className="relative mx-auto shrink-0 sm:mx-0">
           <div className={expired ? 'opacity-15 blur-[2px]' : ''} aria-hidden={expired}>
-            <QrCode value={quote.uri} size={176} label={`Wallet payment request: ${quote.amount} ${quote.asset.symbol} on ${quote.asset.chain} to ${who}`} />
+            <QrCode value={quote.uri} size={144} label={`Wallet payment request: ${quote.amount} ${quote.asset.symbol} on ${quote.asset.chain} to ${who}`} />
           </div>
           {expired && (
             <div className="absolute inset-0 flex items-center justify-center p-3">
@@ -458,15 +460,64 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
     </div>
   )
 
+  // The seal: Gully Labs' invoices link the treasury the quote (or the checkout config) gives, on this chain's explorer.
+  const treasuryAddr = brand.gully ? (quote?.treasury ?? (invoice.checkout.enabled ? invoice.checkout.treasury : null)) : null
+  const sealAsset = asset ?? assets[0]
+  const sealSolana = isSolanaChain(sealAsset?.chainId)
+  const seal = <SecuredBy merchant={brand.gully ? null : storeName(brand)} treasury={treasuryAddr} treasuryHref={treasuryAddr && sealAsset ? `${sealAsset.explorer}/${sealSolana ? 'account' : 'address'}/${treasuryAddr}` : null} safe={!sealSolana} />
+
+  const tabBtn = (id: 'wallet' | 'qr', label: string, icon: ReactNode, testId: string) => (
+    <button
+      type="button"
+      role="tab"
+      id={`pay-tab-${id}`}
+      aria-selected={tab === id}
+      aria-controls={`pay-panel-${id}`}
+      tabIndex={tab === id ? 0 : -1}
+      onClick={() => setTab(id)}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          const next = id === 'wallet' ? 'qr' : 'wallet'
+          setTab(next)
+          document.getElementById(`pay-tab-${next}`)?.focus()
+        }
+      }}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] px-3 text-[14px] font-medium transition-colors ${tab === id ? 'bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]' : 'text-muted hover:text-ink'}`}
+      data-testid={testId}
+    >
+      {icon} {label}
+    </button>
+  )
+
+  // The live charts: the chain's block track (ticks, the confirmations filling, the target), the payment's network fee
+  // (tokens) and the coin's price (native). Beside the panel on a wide screen, inside Status on a phone.
+  const liveCharts =
+    quote && asset ? (
+      <div className="flex flex-col gap-4">
+        <Suspense fallback={chartWait}>
+          <BlockTrack
+            chainId={quote.chainId}
+            chain={quote.asset.chain}
+            needed={check.s === 'pending' ? check.needed : quote.confirmations}
+            have={check.s === 'pending' ? check.confirmations : 0}
+            state={check.s === 'done' ? 'done' : check.s === 'pending' ? 'pending' : check.s === 'checking' ? 'checking' : 'waiting'}
+            solana={isSolanaChain(quote.chainId)}
+          />
+          {quote.asset.kind === 'token' && !isSolanaChain(quote.chainId) && <NetworkFee chainId={quote.chainId} chain={quote.asset.chain} split={!!quote.split} />}
+          {quote.asset.kind === 'native' && <PriceChart asset={quote.asset} quoted={quote.price ? { answer: quote.price.answer, updatedAt: quote.price.updatedAt } : null} />}
+        </Suspense>
+      </div>
+    ) : null
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <StatusTrack check={check} hasQuote={!!quote} needed={quote?.confirmations ?? 0} />
 
       <Step n={1} title="Network and token">
         <div ref={pickerSlot}>
           <AssetPicker assets={assets} value={assetId} onChange={load} disabled={busy} />
         </div>
-        {!assetId && !loading && <p className="m-0 text-[13px] text-muted">Choose a chain and an asset to get the exact amount to send.</p>}
+        {!assetId && !loading && <p className="m-0 text-[12.5px] text-muted">Choose a token to get the exact amount to send.</p>}
       </Step>
 
       {loading && (
@@ -474,7 +525,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
           <span className="inline-flex items-center gap-2 font-mono text-[12px] text-muted" role="status">
             <Loader2 size={14} className="animate-spin" aria-hidden /> Getting a quote{asset?.kind === 'native' ? ` from the ${priceSource(asset.chainId)} ${asset.feed?.description} price on ${asset.chain}` : ''}…
           </span>
-          <span className="block h-[200px] animate-pulse rounded-card bg-surface-deep" />
+          <span className="block h-[140px] animate-pulse rounded-card bg-surface-deep" />
         </div>
       )}
       {quoteErr && assetId && (
@@ -493,52 +544,59 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
             title="Amount to send"
             aside={
               expired ? (
-                <span className="inline-flex items-center gap-2 rounded-full border border-[#5a2a24] px-3 py-[5px] font-mono text-[12px] text-error">
-                  <Clock size={13} aria-hidden /> quote ran out
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#5a2a24] px-3 py-[3px] font-mono text-[12px] text-error">
+                    <Clock size={13} aria-hidden /> quote ran out
+                  </span>
+                  <button type="button" onClick={() => load(asset.id)} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-60">
+                    <RefreshCw size={15} aria-hidden /> New quote
+                  </button>
                 </span>
               ) : (
-                <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-[5px] font-mono text-[12px] ${left < 120_000 ? 'border-[#5a2a24] text-error' : 'border-line-strong text-muted'}`} role="timer" aria-label={`Quote valid for ${mmss(left)}`}>
+                <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-[3px] font-mono text-[12px] ${left < 120_000 ? 'border-[#5a2a24] text-error' : 'border-line-strong text-muted'}`} role="timer" aria-label={`Quote valid for ${mmss(left)}`}>
                   <Clock size={13} aria-hidden /> valid {mmss(left)}
                 </span>
               )
             }
           >
-            <div className="flex flex-col gap-3 rounded-input border border-line bg-bg p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="inline-flex min-w-0 items-center gap-2 text-[14px] text-ink-2">
-                  <TokenLogo symbol={quote.asset.symbol} chain={asset.chainKey} address={quote.asset.address} size={20} decorative />
-                  {quote.asset.symbol} on {quote.asset.chain}
-                </span>
-                {expired && (
-                  <button type="button" onClick={() => load(asset.id)} disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-btn bg-gold px-4 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-60">
-                    <RefreshCw size={15} aria-hidden /> New quote
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <span className={`font-display text-[clamp(28px,6vw,38px)] leading-none font-extrabold break-all ${expired ? 'text-faint line-through' : 'text-ink'}`} data-testid="quote-amount">
-                  {quote.amount} <span className={expired ? '' : 'text-gold'}>{quote.asset.symbol}</span>
+            <div className="flex flex-col gap-2 rounded-input border border-line bg-bg p-3">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <span className={`inline-flex min-w-0 items-center gap-3 font-display text-[clamp(26px,6vw,34px)] leading-none font-extrabold break-all ${expired ? 'text-faint line-through' : 'text-ink'}`} data-testid="quote-amount">
+                  <TokenLogo symbol={quote.asset.symbol} chain={asset.chainKey} address={quote.asset.address} size={24} decorative />
+                  <span>
+                    {quote.amount} <span className={expired ? '' : 'text-gold'}>{quote.asset.symbol}</span>
+                  </span>
                 </span>
                 {!expired && <CopyChip text={quote.amount} label="Copy amount" size="md" />}
               </div>
               <span className="font-mono text-[12px] leading-[1.5] text-dim">
-                = {quote.usd} USD · {quote.asset.kind === 'native' && quote.price ? `1 ${quote.asset.symbol} = ${Number(quote.price.answer).toLocaleString('en-US', { maximumFractionDigits: 2 })} USD (${priceSource(quote.chainId)}), rounded up` : 'stablecoin, 1:1, plus a tag in the last digits'}
+                = {quote.usd} USD on {quote.asset.chain} · {quote.asset.kind === 'native' && quote.price ? `1 ${quote.asset.symbol} = ${Number(quote.price.answer).toLocaleString('en-US', { maximumFractionDigits: 2 })} USD (${priceSource(quote.chainId)}), rounded up` : 'stablecoin, 1:1, plus a tag in the last digits'}
               </span>
             </div>
           </Step>
 
           <Step n={3} title="Pay">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-              {wallet}
-              <button type="button" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr} aria-controls="pay-qr" className={`${btnOutline} inline-flex min-h-12 items-center justify-center gap-2 px-5 text-[15px]`} data-testid="scan-qr">
-                <QrIcon size={16} aria-hidden /> {showQr ? 'Hide QR' : 'Scan QR'}
-              </button>
+            <div role="tablist" aria-label="How to pay" className="grid grid-cols-2 gap-1 rounded-btn border border-line bg-bg p-1">
+              {tabBtn('wallet', 'Wallet', <CreditCard size={15} aria-hidden />, 'tab-wallet')}
+              {tabBtn('qr', 'QR & manual', <QrIcon size={15} aria-hidden />, 'scan-qr')}
             </div>
-            <span className="text-[12px] leading-[1.5] text-faint">
-              {quote.split
-                ? `Sends exactly ${quote.amount} ${quote.asset.symbol} in one transaction through Request Network's fee contract: ${units(quote.split.merchantRaw, quote.asset.decimals)} to the merchant and ${units(quote.split.feeRaw, quote.asset.decimals)} Gully Pay fee. Your wallet first asks to allow exactly that amount if it has not already.`
-                : `Sends exactly ${quote.amount} ${quote.asset.symbol} from the wallet you connect, after switching it to ${quote.asset.chain}.`}
-            </span>
+
+            <div id="pay-panel-wallet" role="tabpanel" aria-labelledby="pay-tab-wallet" hidden={tab !== 'wallet'} className="flex flex-col gap-3">
+              {wallet}
+              {tab === 'wallet' && seal}
+              <span className="text-[12px] leading-[1.5] text-faint">
+                {quote.split
+                  ? `Sends exactly ${quote.amount} ${quote.asset.symbol} in one transaction through Request Network's fee contract: ${units(quote.split.merchantRaw, quote.asset.decimals)} to the merchant and ${units(quote.split.feeRaw, quote.asset.decimals)} Gully Pay fee. Your wallet first asks to allow exactly that amount if it has not already.`
+                  : `Sends exactly ${quote.amount} ${quote.asset.symbol} from the wallet you connect, after switching it to ${quote.asset.chain}.`}
+              </span>
+            </div>
+            {tab === 'qr' && (
+              <div id="pay-panel-qr" role="tabpanel" aria-labelledby="pay-tab-qr" className="flex flex-col gap-3">
+                {qrBlock}
+                {seal}
+              </div>
+            )}
+
             {isSolanaChain(quote.chainId) && (
               <SolanaReferenceWatch
                 quoteId={quote.id}
@@ -555,8 +613,6 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
                 {walletErr}
               </p>
             )}
-
-            {showQr && !asideNode && qrBlock}
 
             <details className="group rounded-input border border-line bg-bg">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 text-[13px] text-ink-2 [&::-webkit-details-marker]:hidden">
@@ -578,18 +634,7 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
           </Step>
 
           <Step n={4} title="Status">
-            <div className={`grid grid-cols-1 gap-5 rounded-input border border-line bg-bg p-4 ${quote.asset.kind === 'native' && !asideNode ? 'md:grid-cols-[minmax(0,240px)_minmax(0,1fr)]' : ''}`}>
-              <Suspense fallback={chartWait}>
-                <ConfirmRing
-                  n={check.s === 'pending' ? check.confirmations : 0}
-                  needed={check.s === 'pending' ? check.needed : quote.confirmations}
-                  state={check.s === 'done' ? 'done' : check.s === 'pending' ? 'pending' : check.s === 'checking' ? 'checking' : 'waiting'}
-                  chain={quote.asset.chain}
-                />
-                {quote.asset.kind === 'native' && !asideNode && <PriceChart asset={quote.asset} quoted={quote.price ? { answer: quote.price.answer, updatedAt: quote.price.updatedAt } : null} />}
-              </Suspense>
-            </div>
-            {check.s === 'pending' && <ConfirmBar n={check.confirmations} needed={check.needed} />}
+            {!asideNode && <div className="rounded-input border border-line bg-bg p-3">{liveCharts}</div>}
             {(check.s === 'checking' || check.s === 'pending') && (
               <div className="flex flex-col gap-3 rounded-input border border-line bg-bg px-4 py-3" role="status" aria-live="polite">
                 <span className="inline-flex flex-wrap items-center gap-2 font-mono text-[12px] text-muted">
@@ -625,29 +670,19 @@ export function Checkout({ invoice, initialAsset, onPaid, onPhase, api = `/api/p
         </>
       )}
 
+      {!quote && !loading && seal}
+
       {asideNode &&
         createPortal(
           <div className="flex flex-col gap-4 rounded-card border border-line bg-card-token p-card" data-testid="pay-aside-content">
-            <Suspense fallback={chartWait}>
-              {quote && asset ? (
-                quote.asset.kind === 'native' ? (
-                  <PriceChart asset={quote.asset} quoted={quote.price ? { answer: quote.price.answer, updatedAt: quote.price.updatedAt } : null} />
-                ) : (
-                  <ChainConfirmations assets={assets} />
-                )
-              ) : (
-                <GhostChart variant="line" height={150} label="The live price draws here once you pick a token" />
-              )}
-            </Suspense>
-            {showQr && qrBlock}
+            {liveCharts ?? (
+              <Suspense fallback={chartWait}>
+                <GhostChart variant="line" height={150} label="The live blocks and price draw here once you pick a token" />
+              </Suspense>
+            )}
           </div>,
           asideNode,
         )}
-
-      <p className="m-0 flex items-start gap-2 border-t border-line pt-4 text-[12.5px] leading-[1.6] text-faint">
-        <ShieldCheck size={15} className="mt-[2px] shrink-0 text-gold" aria-hidden />
-        Your transfer goes straight to {brand.gully ? 'the Gully Labs treasury wallet' : `${storeName(brand)}'s wallet`}; nobody holds it in between. The server reads it from a public node of its chain and marks this invoice paid once it has enough confirmations. Each transaction counts once.
-      </p>
 
       {check.s !== 'done' && (
         <MobilePayBar total={quote ? `${quote.amount} ${quote.asset.symbol}` : `${invoice.usd} USD`}>
