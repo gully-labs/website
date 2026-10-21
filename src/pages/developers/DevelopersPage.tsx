@@ -21,7 +21,10 @@ const WalletSignIn = lazy(loadWallet)
 type Session = { state: 'loading' } | { state: 'out' } | { state: 'blocked'; message: string } | { state: 'error'; message: string } | { state: 'in'; account: Account; me: Me | null }
 
 /** The workspace's account (/account) and who is signed in (/me, portal v2) together. */
-function readSession(): Promise<Session> {
+async function readSession(): Promise<Session> {
+  // Signed out: stop here, so /account and /me never answer 401 into the console.
+  const probe = await api<{ signedIn: boolean }>('/api/developer/session')
+  if (probe.ok && !probe.data.signedIn) return { state: 'out' }
   return Promise.all([api<Account>('/api/developer/account'), api<Me>('/api/developer/me')]).then(([r, m]) => {
     if (r.ok) return { state: 'in', account: r.data, me: m.ok ? m.data : null }
     if (r.status === 401) return { state: 'out' }

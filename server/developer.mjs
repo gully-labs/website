@@ -240,6 +240,13 @@ export async function handleDeveloper(req, res, url) {
     return json(res, 200, { address: v.address }, { 'Set-Cookie': sessionCookie(req, id, Math.floor(SESSION_TTL_MS / 1000)) }), true
   }
 
+  // Whether this browser has a session, always 200: the app asks this first so a signed-out visit
+  // never logs 401s from /account and /me in the console.
+  if (p === '/api/developer/session') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, { signedIn: Boolean(currentSession(req)) }, { 'Cache-Control': 'no-store' }), true
+  }
+
   if (p === '/api/developer/logout') {
     if (!post) return json(res, 405, { error: 'POST only' }), true
     if (!sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true

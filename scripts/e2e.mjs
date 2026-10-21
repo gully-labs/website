@@ -577,8 +577,8 @@ await step('terms of service', async () => {
   await page.getByTestId('connect-wallet').waitFor()
   const note = page.getByTestId('signin-terms')
   check('app sign-in: says connecting accepts the Terms and the Privacy policy, both linked in a new tab', (await note.locator('a[href="https://gullylabs.xyz/legal/terms"][target="_blank"]').count()) === 1 && (await note.locator('a[href="https://gullylabs.xyz/legal/privacy"][target="_blank"]').count()) === 1)
-  // Signed out, the app asks who is signed in and gets 401s: expected, not page errors.
-  await w.verify([/401 \/api\/developer\/(account|me)\b/, /status of 401 \(Unauthorized\)/])
+  // Signed out, the app asks /api/developer/session (always 200) first: no 401s in the console (D4-12).
+  await w.verify()
   await ctx.close()
 })
 
