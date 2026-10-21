@@ -10,7 +10,8 @@ const sections = [
 ]
 
 const INSTALL = `npm install @gullylabs/tracker
-npm install @gullylabs/widget`
+npm install @gullylabs/widget
+npm install @gullylabs/holders`
 
 const CLIENT = `import { createTrackerClient, isTrusted } from '@gullylabs/tracker'
 
@@ -47,7 +48,7 @@ export function Sdk() {
       eyebrow="BUILD · SDK"
       title="SDK"
       description="The Gully Labs SDK: a typed TypeScript client for the stock token tracker API, and the embeddable widget with a React component."
-      lead="Two small MIT packages: a typed client for the tracker API, and the widget with a loader and a React component. Both are optional; the API and the widget work without them."
+      lead="Three small MIT packages: a typed client for the tracker API, the widget with a loader and a React component, and a Holder Map client with its own component. All are optional; the API and the widget work without them."
       sections={sections}
     >
       <Section id="packages" title="Packages">
@@ -60,6 +61,9 @@ export function Sdk() {
           </li>
           <li>
             <C>@gullylabs/widget</C>: loads <C>widget.js</C> once and mounts widgets, with <C>@gullylabs/widget/react</C> for React.
+          </li>
+          <li>
+            <C>@gullylabs/holders</C>: a typed Holder Map client and a React component that frames the map. See <DocLink to="holder-map-integrate">Integrate the Holder Map</DocLink>.
           </li>
         </List>
         <CodeBlock lang="bash" code={INSTALL} />
