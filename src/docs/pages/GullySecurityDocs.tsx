@@ -31,6 +31,7 @@ type Scan = {
   duplicate: boolean                                     // you were already scanning this target
   free: boolean
   priceUsd: number
+  credit: { usedForThis, earned } | null                 // a re-run credit paid for it, or (failed and paid) it earned one
   payment: { invoiceId, status, usd, payUrl } | null   // set when the scan is beyond the free quota
   published: boolean
   publicUrl: string | null         // /security/reports/<id> while published
@@ -184,6 +185,9 @@ export function GullySecurityDocs() {
         <P>
           A paid scan gets a Gully Pay invoice, payable in the app or at its <C>/pay/…</C> page in USDC, USDT or the chain&apos;s own coin, straight to the Gully Labs treasury. The scan starts by itself once the payment is confirmed. If the price changes between your confirmation and the request (say a teammate used the last free scan), the app asks you to confirm again.
         </P>
+        <P>
+          Scans are not refunded. A paid scan that fails gives the workspace a <b>re-run credit</b>, used automatically after the month&apos;s free scans and before any price; a credit scan that fails gives the credit back. The app shows free scans left, credits and the next price on the Scans tab, and the scanner&apos;s live status (AI review, static tools, queue) at checkout. The full rules are in the <Ext href={`${SITE}/legal/scan-terms`}>scan terms</Ext>.
+        </P>
       </Section>
 
       <Section id="report" title="Reading a report">
@@ -198,6 +202,9 @@ export function GullySecurityDocs() {
           <li>Dismissed tool findings with the reason, the limitations of the scan and the disclaimer, verbatim.</li>
           <li>Export PDF opens the print-ready report in a new tab: print it or save it as PDF.</li>
         </List>
+        <P>
+          See a <Ext href={`${SITE}/security/sample`}>sample report</Ext> on a fictional contract, in the mode scans run in today.
+        </P>
       </Section>
 
       <Section id="publish" title="Publishing a report">
@@ -216,13 +223,15 @@ export function GullySecurityDocs() {
         <Fields
           head={['Endpoint', 'Who', 'What']}
           rows={[
-            ['GET /api/developer/security', 'members', 'Free scans left, the offer, chains, engine state.'],
+            ['GET /api/developer/security', 'members', 'Free scans left, re-run credits, the offer, chains, engine state.'],
             ['GET /api/developer/security/scans', 'members', 'The workspace’s scans, newest first.'],
             ['POST /api/developer/security/scans', 'developer, admin, owner', '{ input, upload?, expect: { priceUsd } } → 201 started or 202 with an invoice.'],
             ['GET …/scans/:id, …/scans/:id/events', 'members', 'One scan with its report; live progress as Server-Sent Events.'],
             ['POST …/scans/:id/cancel', 'developer, admin, owner', 'Cancels before payment (and the invoice) or while running.'],
             ['POST …/scans/:id/publish', 'admin, owner', '{ published, indexable? }'],
             ['GET /api/security/reports[/:id]', 'anyone', 'Published reports only.'],
+            ['GET /api/security/engine', 'anyone', 'What can run now: the AI review and the static tools, each online or offline, and the queue.'],
+            ['GET /api/security/sample', 'anyone', 'The sample report (a fictional contract), in the real report shape.'],
             ['POST /api/security/review-requests', 'anyone', 'A request for a Security Review (audits are not offered yet).'],
           ]}
         />

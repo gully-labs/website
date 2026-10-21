@@ -43,7 +43,7 @@ function chunkFor(path: string): Chunk | null {
   if (path === '/analytics' || path === '/chain-kit') return 'products'
   if (path === '/chains') return 'chains'
   if (path === '/security') return 'security'
-  if (path.startsWith('/security/reports')) return 'securityReports'
+  if (path.startsWith('/security/reports') || path === '/security/sample') return 'securityReports'
   const named: Record<string, Chunk> = { '/widget': 'widget', '/services': 'services', '/about': 'about', '/pricing': 'pricing', '/ask': 'ask', '/app': 'developers', '/developers': 'developers', '/links': 'links' }
   return named[path] ?? null
 }

@@ -2,6 +2,7 @@ import { ArrowUpRight, Bot, CircleDollarSign, FileCheck2, FileCode2, FileText, G
 import { useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
 import { ScansChart } from './ScansChart'
+import { EngineStatus } from '../../components/security/EngineStatus'
 import { ReviewRequestForm } from '../../components/security/ReviewRequestForm'
 import type { SecurityOffer } from '../../components/security/types'
 import { Seo } from '../../components/Seo'
@@ -228,6 +229,17 @@ export function SecurityPage() {
               <Link to="/security/reports" className="inline-flex min-h-11 items-center gap-2 px-2 font-mono text-[13px] text-muted hover:text-ink">
                 <FileText aria-hidden size={16} /> Published reports
               </Link>
+            </div>
+            <div className="flex max-w-[640px] flex-col gap-2" style={rise(4)}>
+              <EngineStatus />
+              <span className="flex flex-wrap gap-x-4 font-mono text-[13px]">
+                <Link to="/security/sample" className="inline-flex min-h-11 items-center gap-2 text-gold underline-offset-4 hover:underline" data-testid="security-sample-link">
+                  <FileCheck2 aria-hidden size={15} /> See a sample report
+                </Link>
+                <Link to="/legal/scan-terms" className="inline-flex min-h-11 items-center gap-2 text-muted hover:text-ink" data-testid="security-terms-link">
+                  <ListChecks aria-hidden size={15} /> Scan terms
+                </Link>
+              </span>
             </div>
           </div>
           <div style={rise(2)}>

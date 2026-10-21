@@ -400,6 +400,7 @@ function siteChunks() {
 const LEGAL_PAGES = [
   { file: 'src/pages/legal/MerchantTerms.tsx', url: '/legal/merchant-terms', title: 'Gully Pay merchant terms' },
   { file: 'src/pages/legal/Privacy.tsx', url: '/legal/privacy', title: 'Privacy policy', table: { name: 'RETENTION', section: 11 } },
+  { file: 'src/pages/legal/ScanTerms.tsx', url: '/legal/scan-terms', title: 'AI Security Scan terms' },
 ]
 
 /** The legal pages: the header's prose, then each numbered <S n={k} title="…"> at #s<k>. */

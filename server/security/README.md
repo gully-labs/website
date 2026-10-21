@@ -19,7 +19,7 @@ the point-in-time disclaimer verbatim. Every finding has `verifiedByHuman: false
 | `getReport(id, { workspace? })` | report JSON (`ScanReport`) or `null` |
 | `getReportHtml(id, { workspace? })` | static HTML (print-ready) or `null` |
 | `scanEvents` | `EventEmitter`: `update` on every change, plus `queued` / `progress` / `done` / `failed` / `cancelled`. Payload `{ id, workspace, status, progress, message }`; `done` adds `{ counts, mode }`. |
-| `engineStatus()` | `{ ai, worker: { reachable, tools, reason }, explorers: { etherscanKey }, queue }` |
+| `engineStatus()` | `{ ai, aiHealth: { lastOkAt, lastFailAt, lastFailCode }, worker: { reachable, tools, reason }, explorers: { etherscanKey }, queue }` |
 | `startSecurity()` | loads the queue, requeues interrupted scans, prunes old ones, starts the runner. Call once at server start. |
 | `renderReportHtml(report, { logoUrl, standalone, inlineCss })`, `REPORT_CSS` | the HTML render and its stylesheet |
 

@@ -1,12 +1,13 @@
 // Gully Security's own records (the product UI's side; the scan engine keeps its scans itself).
 //
 // DATA_DIR/security.json (atomic writes):
-//   { jobs: [Job], reviews: [Review] }
+//   { jobs: [Job], reviews: [Review], credits: { [workspace]: n } }
 // Job: one scan a workspace asked for. Its id (sec_…) is the stable id every page and URL uses; the engine's
 // scan id stays server-side. { id, workspace, createdBy, createdAt, input, upload: { name, size } | null,
 //   free, priceCents, invoiceId, state: 'awaiting_payment' | 'started' | 'cancelled', scanId, startedAt,
 //   status (the engine's, mirrored), statusAt, completedAt, counts (findings per severity, once done),
-//   published, publishedAt, publishedBy, indexable, cancelledAt, startError }
+//   published, publishedAt, publishedBy, indexable, cancelledAt, startError, creditUsed, creditEarned }
+// Credits: free re-runs a workspace holds because a paid scan failed (security-routes.mjs settleFailure).
 // Review: a request for a human Security Review or an Audit (the /security form and the app).
 //   { id, tier, name, email, company, project, scope, repo, chain, address, timeline, budget, status, note,
 //     createdAt, updatedAt, source, workspace }
@@ -27,6 +28,7 @@ try {
 if (!db || typeof db !== 'object' || Array.isArray(db)) db = {}
 db.jobs = Array.isArray(db.jobs) ? db.jobs : []
 db.reviews = Array.isArray(db.reviews) ? db.reviews : []
+if (!db.credits || typeof db.credits !== 'object' || Array.isArray(db.credits)) db.credits = {}
 
 export function save() {
   try {
@@ -40,6 +42,15 @@ export function save() {
 
 export const jobs = () => db.jobs
 export const reviews = () => db.reviews
+
+/** Re-run credits a workspace holds (spent before the price, see security-routes.mjs). */
+export const creditsOf = (workspace) => Math.max(0, Number(db.credits[workspace]) || 0)
+/** Adds (or, with a negative n, spends) credits. The caller saves. */
+export function addCredits(workspace, n) {
+  const next = creditsOf(workspace) + n
+  if (next > 0) db.credits[workspace] = next
+  else delete db.credits[workspace]
+}
 
 const JOB_RE = /^sec_[A-Za-z0-9_-]{16}$/
 export const isJobId = (id) => JOB_RE.test(String(id ?? ''))

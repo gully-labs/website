@@ -5,7 +5,7 @@ import { ChainLogo } from '../../components/logos/ChainLogo'
 import { ScansChart } from './ScansChart'
 import { ModeBadge, ReportBody } from '../../components/security/ReportBody'
 import { SeverityCharts } from '../../components/security/SeverityCharts'
-import { chainLogoKey, fmtWhen, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, type PublicReport, type PublicReportListItem } from '../../components/security/types'
+import { chainLogoKey, fmtWhen, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, type PublicReport, type PublicReportListItem, type SampleReport } from '../../components/security/types'
 import { Seo } from '../../components/Seo'
 import { btnGold, eyebrow } from '../../components/ui'
 import { SCAN_APP_URL, usePublic } from './shared'
@@ -70,6 +70,9 @@ export function ReportsIndex() {
             </span>
             <span className="heading-4">No published reports yet</span>
             <span className="max-w-[460px] text-[14px] text-muted">When an owner publishes a scan report from the app, it appears here.</span>
+            <Link to="/security/sample" className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-gold underline-offset-4 hover:underline" data-testid="sample-link">
+              <FileText size={15} aria-hidden /> See a sample report
+            </Link>
           </div>
         )}
         {s.k === 'ok' && s.data.reports.length > 0 && (
@@ -168,6 +171,79 @@ export function PublicReportPage() {
           {NOT_AUDIT}
         </p>
         <ReportBody report={r} />
+      </article>
+    </>
+  )
+}
+
+const SAMPLE_NOTE = 'Sample report. SampleVault.sol is a fictional contract written for this page: it is not deployed anywhere and is no one’s code. The report was built by the scan engine’s own report builder, in the mode scans run in today (AI review only, static tools listed as not run), so it shows exactly what a scan delivers, no more.'
+
+/** /security/sample: what a scan report looks like, on a fictional contract (GET /api/security/sample). */
+export function SampleReportPage() {
+  const [s, retry] = usePublic<{ report: SampleReport }>('/api/security/sample')
+  return (
+    <>
+      <Seo title="Sample AI Security Scan report" description="What an AI Security Scan report looks like, on a fictional contract: findings by severity with file and line, a draft proof of concept, the tools that ran and the limits. A sample, not a scan of real code." />
+      <article className="flex flex-col gap-4 px-page pt-10 pb-16 print:p-0" data-testid="sample-report">
+        <div className="flex flex-wrap items-center gap-3 print:hidden">
+          <Link to="/security" className="inline-flex min-h-11 items-center gap-2 font-mono text-[12px] text-muted hover:text-ink">
+            <ArrowLeft size={14} aria-hidden /> Gully Security
+          </Link>
+          <a href="/api/security/sample/report.html" target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-4 text-[13px] text-ink-2 hover:border-gold hover:text-ink" data-testid="sample-print">
+            <Printer size={15} aria-hidden /> Printable sample (PDF) <ArrowUpRight size={14} aria-hidden />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        </div>
+        {s.k === 'loading' && <div role="status" aria-label="Loading the sample report" className="h-[300px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-card bg-surface" />}
+        {s.k === 'error' && (
+          <p className="m-0 text-[14px] text-error">
+            The sample could not be read: {s.message}{' '}
+            <button type="button" onClick={retry} className="inline-flex min-h-11 items-center underline underline-offset-4">
+              Retry
+            </button>
+          </p>
+        )}
+        {s.k === 'ok' && (
+          <>
+            <header className="card card-pad grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-center gap-6 max-[860px]:grid-cols-1">
+              <div className="flex min-w-0 flex-col gap-3">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className={eyebrow}>AI SECURITY SCAN REPORT</span>
+                  <span className="rounded-full border border-gold px-[10px] py-[2px] font-mono text-[11px] tracking-[1px] text-gold" data-testid="sample-badge">
+                    SAMPLE
+                  </span>
+                </span>
+                <ModeBadge label={s.data.report.label} mode={s.data.report.mode} />
+                <h1 className="m-0 font-display text-h3 font-extrabold break-words text-ink">
+                  <span className="font-mono">SampleVault.sol</span> <span className="text-gold">· sample</span>
+                </h1>
+                <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 font-mono text-[12px]">
+                  <dt className="text-faint">Input</dt>
+                  <dd className="m-0 text-ink-2">{KIND_LABEL.upload} (fictional)</dd>
+                  <dt className="text-faint">Scanned</dt>
+                  <dd className="m-0 text-ink-2">{fmtWhen(s.data.report.completedAt)}</dd>
+                  <dt className="text-faint">Report</dt>
+                  <dd className="m-0 text-ink-2">{s.data.report.id}</dd>
+                </dl>
+                <span className="flex flex-wrap gap-3 print:hidden">
+                  <a href={SCAN_APP_URL} target="_blank" rel="noopener noreferrer" className={`${btnGold} inline-flex items-center gap-2 px-5 py-3 text-[15px]`}>
+                    <ScanSearch size={16} aria-hidden /> Scan your code <ArrowUpRight size={15} aria-hidden />
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                  <Link to="/legal/scan-terms" className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-muted hover:text-ink">
+                    <FileText size={15} aria-hidden /> Scan terms
+                  </Link>
+                </span>
+              </div>
+              <SeverityCharts counts={s.data.report.summary.counts} />
+            </header>
+            <p className="m-0 flex items-start gap-2 rounded-tile border border-gold-line bg-gold/[.05] px-4 py-3 text-[13px] leading-[1.6] text-ink-2" data-testid="sample-note">
+              <Info size={15} className="mt-[3px] shrink-0 text-gold" aria-hidden />
+              {SAMPLE_NOTE}
+            </p>
+            <ReportBody report={s.data.report} />
+          </>
+        )}
       </article>
     </>
   )
