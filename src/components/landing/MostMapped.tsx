@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { ScanSearch } from 'lucide-react'
+import { GhostChart } from '../charts/GhostChart'
 import { useLiveSeries } from '../charts/useLiveSeries'
 import { ChainLogo } from '../logos/ChainLogo'
 import { TokenLogo } from '../logos/TokenLogo'
@@ -9,7 +10,7 @@ import type { TopScanned } from '../../lib/holders'
 /* "Most mapped today" on the home page: the five Holder Maps people opened most, from the same endpoint the
    /holders landing lists (GET /api/holders/top), polled every 60 s. Each row has the token's logo, its chain,
    the scans and the map's health badge image (GET /api/holders/:chain/:token/badge.svg, cached data only).
-   Nothing yet today: five ghost rows say so, with the link to the search. */
+   Nothing yet today: a ghost bar chart says so, with the link to the search. */
 
 const ROWS = 5
 
@@ -45,14 +46,11 @@ export function MostMapped() {
         </div>
         {data === undefined && !error && <div role="status" aria-label="Reading the most mapped tokens" className="h-[220px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[10px] bg-surface-deep" />}
         {(empty || (data === undefined && !!error)) && (
-          <div data-most-mapped-ghost className="flex flex-col gap-1">
-            {Array.from({ length: ROWS }, (_, i) => (
-              <div key={i} aria-hidden className="flex h-11 items-center gap-3 rounded-[8px] border border-line px-3">
-                <span className="size-6 flex-none animate-[gl-skeleton_2s_ease-in-out_infinite] rounded-full bg-surface-deep" style={{ animationDelay: `${i * 120}ms` }} />
-                <span className="h-2.5 w-20 animate-[gl-skeleton_2s_ease-in-out_infinite] rounded bg-surface-deep" style={{ animationDelay: `${i * 120}ms` }} />
-              </div>
-            ))}
-            <p className="m-0 text-[13px] text-muted">{empty ? 'No maps opened yet today. Paste a token above and be the first.' : 'The list could not be read just now; it retries every minute.'}</p>
+          // A ghost chart, not shimmering rows (which read as "still loading"): compact, and it says why it is empty (D4-6).
+          <div data-most-mapped-ghost>
+            <GhostChart variant="bars" height={132} badge={false} label="Today's most mapped tokens will rank here" testId="most-mapped-empty">
+              <span className="font-mono text-[12px] leading-[1.45] text-muted">{empty ? 'No maps opened yet today. Paste a token above and be the first.' : 'The list could not be read just now; it retries every minute.'}</span>
+            </GhostChart>
           </div>
         )}
         {items.length > 0 && (

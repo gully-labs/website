@@ -84,7 +84,7 @@ export function Partners() {
           <p className="m-0 max-w-[620px] text-[18px] leading-[1.6] text-muted">
             For launchpads, wallets, explorers and chains: show who holds a token, check every new launch, and get the setup in a few lines. Everything here exists in code today; what does not yet says so.
           </p>
-          <Segmented<Audience> label="I run a" value={who} onChange={setWho} options={audiences.map((a) => ({ id: a.id, label: a.label.toUpperCase() }))} className="max-w-full overflow-x-auto" />
+          <Segmented<Audience> label="I run a" value={who} onChange={setWho} options={audiences.map((a) => ({ id: a.id, label: a.label.toUpperCase() }))} className="max-w-full overflow-x-auto max-[479px]:gap-0.5 max-[479px]:[&>button]:px-2" />
           <motion.p key={who} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease }} className="m-0 text-[15px] text-ink-2" aria-live="polite">
             {aud.blurb}
           </motion.p>

@@ -40,16 +40,22 @@ export function HoldersPage() {
           <a href={m.token.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
             {symbol ? `${symbol} ON THE EXPLORER ↗` : 'EXPLORER ↗'}
           </a>
-        ) : (
-          <Link to={isStock && symbol ? `/tracker/${chain}/${symbol}` : '/projects/deepcore'} className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
-            {isStock && symbol ? `${symbol} ON THE TRACKER` : 'DEEPCORE'}
+        ) : isStock && symbol ? (
+          <Link to={`/tracker/${chain}/${symbol}`} className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
+            {`${symbol} ON THE TRACKER`}
           </Link>
+        ) : (
+          // While the map loads, or when it cannot be read, name the chain (it used to say DEEPCORE for any token, D4-1).
+          <span data-testid="hm-crumb-chain" className="inline-flex min-h-11 items-center text-muted">
+            {chainName.toUpperCase()}
+          </span>
         )}
       </nav>
       <HolderMap chain={chain} token={token} page tradeHref={isStock && symbol ? `/tracker/${chain}/${symbol}#swap` : undefined} />
       {m?.state === 'ok' && m.chain && m.token && <DeepCheckCard key={`${m.chain.key}:${m.token.address}`} chain={m.chain.key} token={m.token.address} symbol={symbol} />}
       {m?.state === 'ok' && m.chain && m.token && <BadgeBlock chain={m.chain.key} token={m.token.address} />}
-      <section aria-labelledby="hm-how" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-4">
+      {/* Five guide cards: one row of five on wide screens, so none sits alone on a row (D4-2). */}
+      <section aria-labelledby="hm-how" data-testid="hm-guide" className="grid grid-cols-1 gap-3 min-[640px]:grid-cols-2 min-[1024px]:grid-cols-3 min-[1280px]:grid-cols-5">
         <h2 id="hm-how" className="sr-only">
           How to read the Holder Map
         </h2>
@@ -62,7 +68,7 @@ export function HoldersPage() {
         ].map(([t, d]) => (
           <div key={t} className="card card-pad flex flex-col gap-2">
             <h3 className="heading-4">{t}</h3>
-            <p className="m-0 text-[14px] leading-[1.6] text-muted">{d}</p>
+            <p className="m-0 text-[13px] leading-[1.55] text-muted">{d}</p>
           </div>
         ))}
       </section>

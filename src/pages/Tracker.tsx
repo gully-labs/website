@@ -173,7 +173,9 @@ export function Tracker() {
         )}
 
         {data && (
-          <div key={`${data.generatedAt}-${chain}`} className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line" style={rise(5)}>
+          <div key={`${data.generatedAt}-${chain}`} data-testid="tracker-kpis" className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line [&>*:last-child]:col-span-2 min-[640px]:grid-cols-4 min-[1000px]:grid-cols-7 min-[1000px]:[&>*:last-child]:col-span-1" style={rise(5)}>
+            {/* Seven figures: one row of seven from 1000 px; below, 4 or 2 columns with the last one spanning the
+                leftover cells, so no empty grey cell is left at the end (D4-9). */}
             <Kpi label="STOCKS" value={rows.length} nf={NF.int} note={`${trusted.length} trusted pools`} />
             <Kpi label="TYPICAL GAP" value={median} nf={NF.fixed2} suffix="%" note="median" />
             <Kpi label="OFF BY 2%+" value={flagged} nf={NF.int} tone={flagged ? C.gold : undefined} note="flagged now" />

@@ -57,7 +57,7 @@ export function HolderSearchHero() {
             spellCheck={false}
             autoComplete="off"
           />
-          <button type="submit" disabled={s.k === 'busy'} className="m-1 min-h-9 flex-none rounded-btn bg-gold px-3 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-60">
+          <button type="submit" disabled={s.k === 'busy'} className="m-1 min-h-9 flex-none rounded-btn bg-gold px-3 text-[14px] font-semibold text-bg hover:bg-gold-hover disabled:opacity-60 max-[699px]:m-0.5 max-[699px]:min-h-11 max-[699px]:px-4">
             {s.k === 'busy' ? '…' : 'Map it'}
           </button>
         </form>

@@ -163,6 +163,8 @@
 @keyframes gl-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes gl-draw-loop { 0% { stroke-dashoffset: 1; opacity: 1; } 35% { stroke-dashoffset: 0; opacity: 1; } 80% { stroke-dashoffset: 0; opacity: 1; } 92% { opacity: 0; } 100% { stroke-dashoffset: 1; opacity: 0; } }
 @keyframes gl-fade-loop { 0% { opacity: 0; } 35% { opacity: 1; } 80% { opacity: 1; } 92% { opacity: 0; } 100% { opacity: 0; } }
+/* A clip rect that sweeps open over the loop's first third and rests open (MiniSpark loop lines). */
+@keyframes gl-reveal-loop { 0% { transform: scaleX(0); } 35% { transform: scaleX(1); } 100% { transform: scaleX(1); } }
 @keyframes gl-breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
 @keyframes gl-scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 @keyframes gl-count-flash { 0% { color: var(--color-gold-hover); } 100% { color: inherit; } }
@@ -413,6 +415,7 @@ h1, h2, h3, h4, .heading-1, .heading-2, .heading-3, .heading-4, .font-display { 
   /* Loops: drawn once, resting fully visible. */
   @keyframes gl-draw-loop { from { opacity: 1; stroke-dashoffset: 0; } to { opacity: 1; stroke-dashoffset: 0; } }
   @keyframes gl-fade-loop { from { opacity: 1; } to { opacity: 1; } }
+  @keyframes gl-reveal-loop { from { transform: none; } to { transform: none; } }
   @keyframes gl-float { from { transform: none; } to { transform: none; } }
   @keyframes gl-glow { from { opacity: 0.5; } to { opacity: 0.5; } }
   @keyframes gl-blink { from { opacity: 1; } to { opacity: 1; } }

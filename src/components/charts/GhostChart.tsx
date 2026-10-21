@@ -57,8 +57,15 @@ export function GhostChart({ label, height, variant = 'line', colors = [C.gold, 
             </linearGradient>
           </defs>
           <path d={`${GHOST_A} L 440 96 L 0 96 Z`} fill={`url(#g${id})`} style={{ animation: 'gl-fade 1.2s .3s ease both' }} />
-          <path d={GHOST_A} pathLength={1} fill="none" stroke={colors[0]} strokeOpacity={0.5} strokeWidth={2} vectorEffect="non-scaling-stroke" style={{ strokeDasharray: 1, animation: `gl-draw 1.6s ${EASE} both` }} />
-          <path d={GHOST_B} pathLength={1} fill="none" stroke={colors[1]} strokeOpacity={0.4} strokeWidth={1.5} vectorEffect="non-scaling-stroke" style={{ strokeDasharray: 1, animation: `gl-draw 1.6s .25s ${EASE} both` }} />
+          {/* Revealed by a growing clip rect: a pathLength dash on a non-scaling stroke draws only part of the line in Chrome (D4-7). */}
+          <clipPath id={`c${id}a`}>
+            <rect x={-4} y={-20} width={448} height={136} style={{ transformBox: 'view-box', transformOrigin: '0 0', animation: `gl-grow-x 1.6s ${EASE} both` }} />
+          </clipPath>
+          <clipPath id={`c${id}b`}>
+            <rect x={-4} y={-20} width={448} height={136} style={{ transformBox: 'view-box', transformOrigin: '0 0', animation: `gl-grow-x 1.6s .25s ${EASE} both` }} />
+          </clipPath>
+          <path d={GHOST_A} clipPath={`url(#c${id}a)`} fill="none" stroke={colors[0]} strokeOpacity={0.5} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+          <path d={GHOST_B} clipPath={`url(#c${id}b)`} fill="none" stroke={colors[1]} strokeOpacity={0.4} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         </svg>
       )}
       {variant === 'bars' && (

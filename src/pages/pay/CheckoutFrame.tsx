@@ -201,7 +201,8 @@ function CopyLink({ path }: { path: string }) {
           setTimeout(() => setDone(false), 1600)
         })
       }
-      className={`inline-flex w-fit items-center gap-1 font-mono text-[11px] transition-colors ${done ? 'text-green' : 'text-faint hover:text-ink'}`}
+      // A 44 px hit area round the small label, without growing the header row (D4-15).
+      className={`relative inline-flex w-fit items-center gap-1 font-mono text-[11px] transition-colors before:absolute before:-inset-x-2 before:-inset-y-[15px] before:content-[''] ${done ? 'text-green' : 'text-faint hover:text-ink'}`}
       aria-label={done ? 'Link copied' : 'Copy link'}
       data-testid="copy-link"
     >
