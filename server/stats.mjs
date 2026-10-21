@@ -280,6 +280,22 @@ async function deepcore() {
   }
 }
 
+/** Each chain's daily TVL summed by day. A chain without a point for a day counts at its last known value
+    (the APIs skip days), and a day before a chain's first point counts it as nothing. */
+export function summedTvl(perChain) {
+  const chains = perChain.map((list) => {
+    const m = new Map()
+    for (const p of list ?? []) {
+      const v = num(p?.v)
+      if (v !== null && Number.isFinite(p?.t)) m.set(dayKey(p.t), v)
+    }
+    return m
+  })
+  const days = [...new Set(chains.flatMap((m) => [...m.keys()]))].sort((a, b) => a - b)
+  const last = chains.map(() => 0)
+  return days.map((t) => ({ t, v: chains.reduce((a, m, i) => (m.has(t) ? (last[i] = m.get(t)) : last[i]) + a, 0) }))
+}
+
 async function peddleswap() {
   const hosts = ['https://api.peddleswap.xyz', 'https://api-base.peddleswap.xyz', 'https://api-arc.peddleswap.xyz']
   const results = await Promise.allSettled(hosts.map((h) => getJson(`${h}/v1/stats/overview`)))
@@ -294,7 +310,7 @@ async function peddleswap() {
   const daily = seriesOf(byDay)
   const own = { name: 'PeddleSwap API', url: ok.map((o) => `${o.host}/v1/stats/overview`).join(' + ') }
   const tvlUsd = sumKnown(ok.map(({ j }) => num(j.tvlUsd)))
-  const built = await buildSeries({ volume: { own: daily, ownSource: own, llama: 'peddleswap' }, fees: { llama: 'peddleswap' }, tvl: { llama: 'peddleswap', now: tvlUsd, ownSource: own } })
+  const built = await buildSeries({ volume: { own: daily, ownSource: own, llama: 'peddleswap' }, fees: { llama: 'peddleswap' }, tvl: { own: summedTvl(ok.map(({ j }) => j.tvlSeries)), llama: 'peddleswap', now: tvlUsd, ownSource: own } })
   return {
     ...seriesFields(built),
     volume24hUsd: sumKnown(ok.map(({ j }) => num(j.volumeUsd24h))),

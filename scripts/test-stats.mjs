@@ -54,7 +54,7 @@ globalThis.fetch = async (input) => {
   }
   if (u.hostname.endsWith('peddleswap.xyz')) {
     if (u.hostname !== 'api.peddleswap.xyz') throw new TypeError('fetch failed')
-    return json({ volumeUsd24h: 0, tvlUsd: 0, fees24hUsd: 0, counts: { pools: 0, activeLocks: 0 }, volumeSeries: Array.from({ length: 30 }, (_, i) => ({ t: (dayN(29 - i)) * 1000, v: 0 })) })
+    return json({ volumeUsd24h: 0, tvlUsd: 0, fees24hUsd: 0, counts: { pools: 0, activeLocks: 0 }, volumeSeries: Array.from({ length: 30 }, (_, i) => ({ t: (dayN(29 - i)) * 1000, v: 0 })), tvlSeries: Array.from({ length: 5 }, (_, i) => ({ t: (dayN(5 - i)) * 1000, v: 0 })) })
   }
   if (u.hostname === 'api.peddles.xyz') {
     if (u.pathname.endsWith('/analytics/platform')) return json({ data: { chains: [{ chainId: 4663, tvlUsd: 72_000, volume24hUsd: 0 }], poolCount: 4, totalUsers: 9, launches24h: 0 } })
@@ -161,6 +161,16 @@ test('an unknown DefiLlama slug degrades quietly with a note; the venue stays ok
   assert.equal(ps.state, 'ok')
   assert.deepEqual(ps.series.fees, [])
   assert.ok(ps.notes.some((n) => /DefiLlama has no fees history for peddleswap/.test(n)))
+  assert.ok(ps.series.tvl.length >= 5, 'TVL comes from the venue API when DefiLlama has none')
+  assert.equal(ps.sources.tvl?.name, 'PeddleSwap API')
+  assert.deepEqual(W.findIssues({ venues: [ps] }), [], 'so the watchdog sees no empty series')
+})
+
+test('summedTvl: chains summed per day, a skipped day carries the last value, nothing before a first point', () => {
+  const d = (n) => (20_000 + n) * 86400
+  const a = [{ t: d(1) * 1000, v: 10 }, { t: d(3) * 1000, v: 30 }]
+  const b = [{ t: d(2), v: 5 }, { t: d(3), v: 'x' }]
+  assert.deepEqual(S.summedTvl([a, b, undefined]), [{ t: d(1), v: 10 }, { t: d(2), v: 15 }, { t: d(3), v: 35 }])
 })
 
 test('DefiLlama down: venues stay readable on their own APIs, series fall back to what they publish', async () => {
