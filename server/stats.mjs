@@ -423,8 +423,9 @@ export function peddlesFrom({ api, feesNative, dex, fees, snap, notes = [], sour
     volume24hUsd = sum('volume24hUsd')
     feesAllUsd = sum('feesAllUsd')
     fees24hUsd = sum('fees24hUsd')
-    const tvls = snap.chains.map((c) => c.tvlUsd)
-    tvlUsd = tvls.every((x) => x !== null && x !== undefined) ? tvls.reduce((a, b) => a + b, 0) : apiTvl
+    // Value locked stays Peddles' own figure: launch pools hold mostly the launched token, and valuing that side at
+    // its own thin pool price would overstate it. The chain scan's paired-asset side is on the project page.
+    tvlUsd = apiTvl
     sources.unshift(`on chain: ${chainList(snap.chains)}`)
     const dv = divergence(volumeAllUsd, dex?.totalAllTime ?? null)
     const df = divergence(feesAllUsd, fees?.totalAllTime ?? null)

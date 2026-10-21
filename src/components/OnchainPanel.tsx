@@ -70,7 +70,7 @@ function tilesOf(venue: Venue, chains: OnchainChain[]): Tile[] {
     ]
   const fees = { swap: s((c) => c.feesBy.swap), opening: s((c) => c.feesBy.opening), launch: s((c) => c.feesBy.launch), terminal: s((c) => c.feesBy.terminal) }
   const burned = s((c) => c.pedlBurned)
-  const tvls = chains.map((c) => c.tvlUsd)
+  const tvls = chains.map((c) => c.tvlQuoteUsd)
   return [
     { label: 'LAUNCHES', value: s((c) => c.launches), usd: false, sub: `${s((c) => c.launches24h)} in the last 24h`, from: ['PeddlesFeeHook'] },
     { label: 'SWAPS', value: s((c) => c.swaps), usd: false, sub: `${s((c) => c.swaps24h)} in the last 24h${s((c) => c.unpricedSwaps) ? ` · ${s((c) => c.unpricedSwaps)} not valued (no price feed)` : ''}`, from: ['PoolManager'] },
@@ -78,7 +78,7 @@ function tilesOf(venue: Venue, chains: OnchainChain[]): Tile[] {
     { label: 'FEES ALL-TIME', value: s((c) => c.feesAllUsd), usd: true, sub: `swaps ${fmtUsd(fees.swap)} · opening ${fmtUsd(fees.opening)} · launches ${fmtUsd(fees.launch)} · Terminal and bot ${fmtUsd(fees.terminal)}`, from: ['PeddlesFeeHook', 'PeddlesStockLaunchpad', 'PeddlesLaunchOrchestratorV20', 'PeddlesFeeForwarder'] },
     { label: 'PAID TO CREATORS', value: s((c) => c.creatorsPaidUsd), usd: true, from: ['PeddlesFeeHook'] },
     { label: 'PAID TO HOLDERS', value: s((c) => c.holdersPaidUsd), usd: true, sub: 'holders of each launched token', from: ['PeddlesFeeHook'] },
-    ...(tvls.every((x) => x !== null) ? [{ label: 'VALUE LOCKED', value: tvls.reduce((a, b) => a + (b ?? 0), 0), usd: true, sub: 'launch pools, both sides at pool price', from: ['PoolManager'] }] : []),
+    ...(tvls.every((x) => x !== null) ? [{ label: 'PAIRED ASSETS IN POOLS', value: tvls.reduce((a, b) => a + (b ?? 0), 0), usd: true, sub: 'the ETH, BNB, USDC or stock side of every launch pool; launched tokens not valued', from: ['PoolManager'] }] : []),
     { label: 'NFT COLLECTIONS', value: s((c) => c.collections), usd: false, from: ['PeddlesNFTFactory'] },
     ...(burned > 0 ? [{ label: 'PEDL BURNED', value: burned, usd: false, sub: `${fmtUsd(s((c) => c.buybackUsd))} of ETH spent on buybacks`, from: ['PeddlesFlywheel'] }] : []),
   ]

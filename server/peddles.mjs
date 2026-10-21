@@ -698,7 +698,8 @@ export async function scanChain(st, chain, { rpc, price, budget = 60, deadline =
   return { ranges, events, caughtUp: st.cursor >= head }
 }
 
-/** Value locked in a chain's Peddles pools now: both legs, the launched token at its own pool price. */
+/** Value in a chain's Peddles pools now: `quoteUsd` is the paired asset's side (shown), `usd` adds the launched
+    token at its own pool price (kept for reference, not shown: it values thin supply at the last trade). */
 export async function chainTvl(st, chain, price) {
   let usd = 0
   let quoteUsd = 0

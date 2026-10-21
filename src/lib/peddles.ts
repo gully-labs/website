@@ -35,6 +35,8 @@ export interface OnchainChain {
   questFeesUsd: number
   questUnpriced: number
   tvlUsd: number | null
+  /** The paired side (ETH, BNB, USDC, stock) of every launch pool, in USD. */
+  tvlQuoteUsd: number | null
   error: string | null
   daily: { t: number; v: number; fees: number; swaps: number; qf: number }[]
 }

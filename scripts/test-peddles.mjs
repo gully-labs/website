@@ -250,7 +250,7 @@ test('once every chain is caught up, ours is shown; more than 10% off DefiLlama 
   const nowSec = 1_790_000_000
   const close = peddlesFrom({ api: null, feesNative: null, dex: llamaDex, fees: llamaFees, snap: snapOf([summary({ volumeAllUsd: 6382.02, feesAllUsd: 421.98, tvlUsd: 5000 })]), nowSec })
   assert.equal(close.volumeAllUsd, 6382.02)
-  assert.equal(close.tvlUsd, 5000)
+  assert.equal(close.tvlUsd, null, 'value locked is Peddles’ own figure, not the launch-token side at pool price')
   assert.equal(close.onchain.live, true)
   assert.equal(close.onchain.divergence, null)
   assert.match(close.sourceNote, /^on chain · Base/)
