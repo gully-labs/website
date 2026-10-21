@@ -1,3 +1,4 @@
+import { LivePulse } from '../../components/tracker/LivePulse'
 import type { AlertChannels, Offer } from '../../pages/developers/api'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { PlanLimits } from '../../components/charts/PlanLimits'
@@ -54,7 +55,7 @@ type LaunchDelivery = {
     id: string
     name: string | null
     kind: 'deepcore-launch'
-    target: { deepcoreChainId: 56 | 999 | 4663 | 8453 | null }   // null = every chain
+    target: { deepcoreChainId: 56 | 999 | 4663 | 8453 | null }   // empty = every chain
     condition: { type: 'deepcore-launch'; chainId: number | null }
   }
   events: Array<{                    // oldest launch first; up to 20 in one delivery
@@ -70,7 +71,7 @@ type LaunchDelivery = {
       poolId: string | null
       kind: 'CL' | 'Bin' | null
       quote: string | null           // the symbol it is paired with
-      locked: boolean | null         // true: DeepCore's indexer has a lock record; null: unknown
+      locked: boolean | null         // true: DeepCore's indexer has a lock record; empty: unknown
       lockId: string | null
     }>
     links: { token: string; launch: string; swap: string }   // pages on deepcore.fun
@@ -142,12 +143,14 @@ export function PlansAlerts() {
             <P>
               Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history.
             </P>
-            <PlanLimits
-              tiers={[
-                { name: 'No key', perMin: offer.anonymous.perMin, historyDays: offer.anonymous.historyDays, alerts: null, maxKeys: null },
-                ...offer.plans.map((p) => ({ name: p.name, perMin: p.perMin, historyDays: p.historyDays, alerts: p.alerts, maxKeys: p.maxKeys })),
-              ]}
-            />
+            <LivePulse source="/api/plans" every="60 s">
+              <PlanLimits
+                tiers={[
+                  { name: 'No key', perMin: offer.anonymous.perMin, historyDays: offer.anonymous.historyDays, alerts: null, maxKeys: null },
+                  ...offer.plans.map((p) => ({ name: p.name, perMin: p.perMin, historyDays: p.historyDays, alerts: p.alerts, maxKeys: p.maxKeys })),
+                ]}
+              />
+            </LivePulse>
             {!offer.checkout.enabled && <Callout label="NOT ON SALE YET">{offer.checkout.reason}</Callout>}
           </>
         )}

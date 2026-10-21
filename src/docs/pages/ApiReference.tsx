@@ -74,7 +74,7 @@ export function ApiReference() {
             ['Format', 'JSON', 'UTF-8. Times are ISO 8601 in UTC, except history points (Unix seconds) and gap-index points (Unix milliseconds).'],
             ['CORS', 'Access-Control-Allow-Origin: *', <>On <C>/api/tracker*</C>, <C>/api/holders/*</C>, <C>/api/score*</C>, <C>/api/status</C>, <C>/api/plans</C>, <C>/api/alerts/channels</C> and the Security list and stats: call them from any browser origin. The routes behind our own pages (stats, geo, DeepCore, Solana, Gully AI, Gully Pay) send no CORS header.</>],
             ['Auth', 'Optional', <>Send <C>Authorization: Bearer &lt;key&gt;</C> on the tracker and Holder Map for a higher limit. See <DocLink to="api-keys">API keys</DocLink>.</>],
-            ['Not found', '404 {"error":"not found"}', <>Any unknown <C>/api/…</C> path answers JSON, never the HTML page.</>],
+            ['Not found', '404, with a short JSON message', <>Any unknown <C>/api/…</C> path answers JSON, never the HTML page.</>],
           ]}
         />
         <P>Prices are US dollars per token. Any price may be empty, meaning it could not be read; it is never replaced with zero.</P>
@@ -363,7 +363,7 @@ export function ApiReference() {
     name: string
     state: 'down' | 'degraded'
     startedAt: string
-    endedAt: string | null      // null while it is still open
+    endedAt: string | null      // empty while it is still open
     detail: string
   }
   
@@ -494,7 +494,7 @@ export function ApiReference() {
           ]}
         />
         <P>
-          Errors are JSON <C>{'{ error }'}</C>: <C>400</C> bad asset, amount or hash; <C>403</C> missing header; <C>404</C> unknown id; <C>409</C> not open, wrong chain or already used; <C>423</C> paused store; <C>429</C> over a limit; <C>502</C> / <C>503</C> chain or price feed unreadable, or no treasury configured. Live gas per chain is drawn on the <DocLink to="gully-pay" hash="gas">Gully Pay</DocLink> page.
+          Errors come back as JSON with a short message: <C>400</C> bad asset, amount or hash; <C>403</C> missing header; <C>404</C> unknown id; <C>409</C> not open, wrong chain or already used; <C>423</C> paused store; <C>429</C> over a limit; <C>502</C> / <C>503</C> chain or price feed unreadable, or no treasury configured. Live gas per chain is drawn on the <DocLink to="gully-pay" hash="gas">Gully Pay</DocLink> page.
         </P>
       </Section>
 
@@ -549,9 +549,9 @@ export function ApiReference() {
         <Fields
           head={['Status', 'When', 'What to do']}
           rows={[
-            ['400', 'history: chain or ticker malformed', <>Check the parameters. Body: <C>{'{"error":"chain and ticker"}'}</C>.</>],
+            ['400', 'history: chain or ticker malformed', 'Check the parameters. The reply is a short JSON message saying both chain and ticker are needed.'],
             ['400', 'movers: window, limit, chain or ticker malformed', <>Use <C>window=1h</C> or <C>24h</C>, a <C>limit</C> from 1 to 50, and a <C>ticker</C> only with a <C>chain</C>.</>],
-            ['404', 'an unknown /api/ path', <>Body: <C>{'{"error":"not found"}'}</C>. Check the path.</>],
+            ['404', 'an unknown /api/ path', 'The reply is a short JSON message saying not found. Check the path.'],
             ['405', 'a method other than GET or OPTIONS', 'Use GET.'],
             ['401', 'unknown or revoked API key', 'Check the key, or request one at app.gullylabs.xyz.'],
             ['403', 'history: days beyond what your plan includes',<>Ask for fewer days, or move to a plan with more history. The body names your limit in <C>historyDays</C>.</>],

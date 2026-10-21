@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
 import type { ChartEvent } from '../charts/chart-utils'
@@ -31,15 +31,29 @@ const id = (r: TrackerRow) => `${r.chain}:${r.ticker}`
    below. The ±in-line band is shaded so noise reads as noise; thin pools are drawn hollow because
    their price is not trustworthy. Bars grow from the axis, and on every refresh they grow or shrink
    to their new gap. Click a bar or a name to open its history. */
-export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: TrackerRow[]; inLinePct: number; selected: string | null; onSelect: (id: string) => void }) {
+export function GapBars({ rows, inLinePct, selected, onSelect, fill = false }: { rows: TrackerRow[]; inLinePct: number; selected: string | null; onSelect: (id: string) => void; fill?: boolean }) {
   const [hover, setHover] = useState<string | null>(null)
   const [all, setAll] = useState(false)
   const chart = useRef<EChartsType | null>(null)
   const multi = new Set(rows.map((r) => r.chain)).size > 1
   const touch = useTouchRows()
-  const ROW = touch ? ROW_TOUCH : ROW_WIDE
-  const TOP_N = touch ? 10 : 16
   const withGap = rows.filter((r) => r.gapPct !== null)
+  // fill: the card is stretched by its neighbour (the detail card beside it), so the rows use the height
+  // they are given instead of leaving a blank: more rows if they fit, then taller rows up to 40 px.
+  const area = useRef<HTMLDivElement>(null)
+  const [room, setRoom] = useState(0)
+  useEffect(() => {
+    const el = area.current
+    if (!fill || !el) return
+    const ro = new ResizeObserver(() => setRoom(el.clientHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [fill])
+  const baseRow = touch ? ROW_TOUCH : ROW_WIDE
+  const fitRows = fill && room > 0 ? Math.floor((room - TOP - BOTTOM) / baseRow) : 0
+  const TOP_N = fill && fitRows > 0 ? Math.max(touch ? 10 : 16, fitRows) : touch ? 10 : 16
+  const nShown = all ? withGap.length : Math.min(TOP_N, withGap.length)
+  const ROW = fill && room > 0 && nShown > 0 ? Math.min(40, Math.max(baseRow, Math.floor((room - TOP - BOTTOM) / nShown))) : baseRow
 
   // The widest gaps first so the chart stays compact; "show all" lists every stock.
   const shown = all ? withGap : [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0)).slice(0, TOP_N)
@@ -131,8 +145,8 @@ export function GapBars({ rows, inLinePct, selected, onSelect }: { rows: Tracker
   const height = TOP + ranked.length * ROW + BOTTOM
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-[104px_1fr] gap-2">
+    <div className={`flex flex-col gap-2 ${fill ? 'min-h-0 flex-1' : ''}`}>
+      <div ref={area} className={`grid grid-cols-[104px_1fr] gap-2 ${fill ? 'min-h-0 flex-1 content-start overflow-hidden' : ''}`}>
         <ul className="m-0 flex list-none flex-col p-0" style={{ paddingTop: TOP }} aria-label="Gap to fair price, by token">
           {ranked.map((r) => {
             const rid = id(r)

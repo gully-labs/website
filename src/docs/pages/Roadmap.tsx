@@ -1,3 +1,4 @@
+import { LivePulse } from '../../components/tracker/LivePulse'
 import { Layers, ShieldCheck, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
@@ -208,7 +209,9 @@ export function Roadmap() {
           <li>A score is information, not an endorsement and not investment advice. Identity checks, if we ever do them, are shown as identity only, never as a safety signal.</li>
         </List>
         <P>The weights below are read live from the public API in your browser, so this page and the score agree.</P>
-        <ScoreWeightsLive />
+        <LivePulse source="/api/score" every="5 min">
+          <ScoreWeightsLive />
+        </LivePulse>
       </Section>
 
       <Section id="today" title="What you can buy today">

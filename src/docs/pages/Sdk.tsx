@@ -16,7 +16,7 @@ const CLIENT = `import { createTrackerClient, isTrusted } from '@gullylabs/track
 
 const tracker = createTrackerClient({ apiKey: process.env.GULLY_API_KEY }) // key optional
 
-const nvda = await tracker.getStock('robinhood', 'NVDA')       // one row, or null
+const nvda = await tracker.getStock('robinhood', 'NVDA')       // one row, or nothing
 const widest = await tracker.widestGaps(5)                     // trusted gaps, largest first
 const flagged = await tracker.getRows({ status: ['premium', 'discount'] })
 const history = await tracker.getHistory('robinhood', 'NVDA')  // { time, gapPct, onchain, fair }[]

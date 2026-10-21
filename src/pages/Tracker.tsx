@@ -190,7 +190,7 @@ export function Tracker() {
         <>
           <section className="grid grid-cols-[1fr_1fr_1fr] gap-4 px-page pb-4 max-[1199px]:grid-cols-2 max-[759px]:grid-cols-1">
             <Card i={0} title="Gap to fair price" sub="widest gaps · click a bar for its history" className="row-span-2 max-[1199px]:row-span-1">
-              <GapBars rows={rows} inLinePct={data.rules.inLinePct} selected={pick} onSelect={select} />
+              <GapBars rows={rows} inLinePct={data.rules.inLinePct} selected={pick} onSelect={select} fill />
             </Card>
 
             <section id="tracker-detail" className={`${card} col-span-2 scroll-mt-24 max-[1199px]:col-span-1`} style={rise(1)}>

@@ -103,10 +103,11 @@
   },
   "EWY": {
     "ticker": "EWY",
-    "file": "/tokens/logos/EWY.ico",
-    "from": "https://www.ishares.com/blk-one02-c-assets/ishares-favicon.ico",
+    "file": "/tokens/logos/EWY.png",
+    "from": "https://www.ishares.com/blk-one-c-assets/images/media-bin/web/global/logos/logo-ishares.svg",
     "site": "ishares.com",
-    "declaredSize": 32,
+    "size": 256,
+    "note": "the 'i' of the issuer's own vector wordmark, drawn at 256 px; the site's favicon is only 32 px (scripts/hires-company-logos.mjs finds nothing larger)",
     "fetchedAt": "2026-10-16T19:38:11.151Z"
   },
   "NBIS": {
@@ -145,10 +146,11 @@
   },
   "SLV": {
     "ticker": "SLV",
-    "file": "/tokens/logos/SLV.ico",
-    "from": "https://www.ishares.com/blk-one02-c-assets/ishares-favicon.ico",
+    "file": "/tokens/logos/SLV.png",
+    "from": "https://www.ishares.com/blk-one-c-assets/images/media-bin/web/global/logos/logo-ishares.svg",
     "site": "ishares.com",
-    "declaredSize": 32,
+    "size": 256,
+    "note": "the 'i' of the issuer's own vector wordmark, drawn at 256 px; the site's favicon is only 32 px (scripts/hires-company-logos.mjs finds nothing larger)",
     "fetchedAt": "2026-10-16T19:38:13.160Z"
   },
   "CRCL": {

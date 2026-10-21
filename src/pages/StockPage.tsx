@@ -13,6 +13,7 @@ import { servable } from '../components/tracker/servable'
 import { StatusBadge } from '../components/tracker/TrackerTable'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF } from '../components/charts/number-formats'
+import { GhostSpark } from '../components/charts/GhostChart'
 import { PoolDepth } from '../components/tracker/PoolDepth'
 import { xPost } from '../lib/share'
 import { track } from '../lib/track'
@@ -167,7 +168,14 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             <div key={m.k} className="flex min-w-0 flex-col gap-1 bg-surface px-5 py-4">
               <dt className="font-mono text-[11px] tracking-[1px] text-faint">{m.k}</dt>
               <dd className="m-0 font-display text-[30px] leading-none font-bold" style={{ color: m.c }}>
-                {m.v}
+                {m.v === '—' ? (
+                  <span data-testid="kpi-ghost" className="flex h-[30px] items-center">
+                    <GhostSpark w="100%" h={26} />
+                    <span className="sr-only">no value</span>
+                  </span>
+                ) : (
+                  m.v
+                )}
               </dd>
               <span className="text-[12px] text-dim">{m.n}</span>
             </div>

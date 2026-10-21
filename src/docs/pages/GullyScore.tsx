@@ -1,3 +1,4 @@
+import { LivePulse } from '../../components/tracker/LivePulse'
 import { useMemo } from 'react'
 import { C as CC, barsPreset, itemTooltip, tipHtml } from '../../components/charts/chartPresets'
 import { EChart } from '../../components/charts/EChart'
@@ -31,7 +32,7 @@ type MonitorDelivery = {
         | 'safe-owner-added' | 'safe-owner-removed' | 'safe-threshold-changed'
         | 'outflow' | 'native-outflow'
     text: string                   // the plain-language line, e.g. "⚠️ Owner of Vault changed from 0x12…ab to 0x98…cd · Base · <link>"
-    txHash: string | null          // null for changes found by reading the contract (no transaction to point at)
+    txHash: string | null          // empty for changes found by reading the contract (no transaction to point at)
     link: string                   // the transaction, or the contract, on the explorer
     blockNumber: number | null
     privileged: boolean            // true for owner, admin, role, code, pause and Safe signer changes
@@ -100,7 +101,9 @@ export function GullyScore() {
         {m === 'error' && <Callout label="UNAVAILABLE">The weights could not be read just now. They are always at /api/score/methodology.</Callout>}
         {m && m !== 'error' && (
           <>
-            <Weights m={m} />
+            <LivePulse source="/api/score/methodology" every="5 min">
+              <Weights m={m} />
+            </LivePulse>
             <Fields head={['Part', 'Weight', 'What it asks, and where the answer comes from']} rows={m.components.map((c) => [c.label, String(c.weight), `${c.what} Source: ${c.source}.`])} />
           </>
         )}

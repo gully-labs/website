@@ -8,6 +8,7 @@ import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
 import { Seo } from '../components/Seo'
 import { SocialIcon } from '../components/SocialIcon'
+import { MoversEmpty } from '../components/tracker/MoversRow'
 import type { SocialLabel } from '../content/site'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPp, stockPath, UP, useMovers } from '../lib/tracker'
 
@@ -142,8 +143,8 @@ function LiveMovers() {
     }
   }, [list])
   if (st.k === 'loading') return <div aria-hidden className="h-[180px] gl-skeleton rounded-[12px] bg-surface" />
-  if (st.k === 'error') return <p className="m-0 font-mono text-[12px] text-faint">The live movers could not be read just now; they retry every minute.</p>
-  if (!list.length) return <p className="m-0 gl-skeleton font-mono text-[12px] text-faint">{st.data.note ?? 'Not tracked yet: the tracker needs 24h of snapshots.'}</p>
+  if (st.k === 'error') return <p className="m-0 font-mono text-[12px] text-muted">The live movers could not be read just now; they retry every minute.</p>
+  if (!list.length) return <MoversEmpty height={180} note={st.data.note ?? 'Not tracked yet: the tracker needs 24h of snapshots.'} />
   const rows = [...list].reverse()
   return (
     <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-surface/85 p-3">

@@ -23,7 +23,7 @@ type ActivityPage = {
     target: string | null        // what it acted on: a key, a wallet, an alert…
     detail: object | null        // a few plain fields; never a secret
   }>
-  nextCursor: string | null      // null on the last page
+  nextCursor: string | null      // empty on the last page
 }`
 
 const CSV = `# Signed in to the portal (the session cookie), in your active workspace:

@@ -1,3 +1,4 @@
+import { LivePulse } from '../../components/tracker/LivePulse'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, List, P, Section } from '../DocPage'
 import { PlanLimitsLive } from '../LiveCharts'
@@ -74,7 +75,9 @@ export function ApiKeys() {
         </P>
         <P>The data refreshes about every two minutes, so polling more often than once a minute returns the same answer.</P>
         <P>What a key gets on each plan, read live from <C>GET /api/plans</C>:</P>
-        <PlanLimitsLive />
+        <LivePulse source="/api/plans" every="2 min">
+          <PlanLimitsLive />
+        </LivePulse>
       </Section>
 
       <Section id="safety" title="Keeping it safe">
