@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-21T01:30:05.761Z",
+ "updatedAt": "2026-10-21T02:58:24.977Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -1340,8 +1340,8 @@
    "title": "Gully Security",
    "url": "https://docs.gullylabs.xyz/gully-security#quota",
    "section": "Free scans and payment",
-   "text": "A paid scan gets a Gully Pay invoice, payable in the app or at its /pay/… page in USDC, USDT or the chain's own coin, straight to the Gully Labs treasury. The scan starts by itself once the payment is confirmed. If the price changes between your confirmation and the request (say a teammate used the last free scan), the app asks you to confirm again.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "A paid scan gets a Gully Pay invoice, payable in the app or at its /pay/… page in USDC, USDT or the chain's own coin, straight to the Gully Labs treasury. The scan starts by itself once the payment is confirmed. If the price changes between your confirmation and the request (say a teammate used the last free scan), the app asks you to confirm again. Scans are not refunded. A paid scan that fails gives the workspace a re-run credit, used automatically after the month's free scans and before any price; a credit scan that fails gives the credit back. The app shows free scans left, credits and the next price on the Scans tab, and the scanner's live status (AI review, static tools, queue) at checkout. The full rules are in the scan terms.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "6af621b16344",
@@ -1349,8 +1349,8 @@
    "title": "Gully Security",
    "url": "https://docs.gullylabs.xyz/gully-security#report",
    "section": "Reading a report",
-   "text": "The report's mode, shown as its label: static+ai (static tools plus AI triage), ai-only (“AI review only — static tools unavailable”), static-only, bytecode-only (source not verified) or checklist (web2). Findings by severity (critical, high, medium, low, info; severity is likelihood × impact) as a donut and bars; click one to filter the list. Each finding expands to its description, code location (file and line, with the snippet when the engine gives one), recommendation and status. A proof of concept where the engine could write one, labelled “Draft, not executed” unless the scanner ran it. Every finding is marked not verified by a human. The PoC code is visible to your workspace only. Every tool that ran, and every tool that did not, with the reason. Dismissed tool findings with the reason, the limitations of the scan and the disclaimer, verbatim. Export PDF opens the print-ready report in a new tab: print it or save it as PDF.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "The report's mode, shown as its label: static+ai (static tools plus AI triage), ai-only (“AI review only — static tools unavailable”), static-only, bytecode-only (source not verified) or checklist (web2). Findings by severity (critical, high, medium, low, info; severity is likelihood × impact) as a donut and bars; click one to filter the list. Each finding expands to its description, code location (file and line, with the snippet when the engine gives one), recommendation and status. A proof of concept where the engine could write one, labelled “Draft, not executed” unless the scanner ran it. Every finding is marked not verified by a human. The PoC code is visible to your workspace only. Every tool that ran, and every tool that did not, with the reason. Dismissed tool findings with the reason, the limitations of the scan and the disclaimer, verbatim. Export PDF opens the print-ready report in a new tab: print it or save it as PDF. See a sample report on a fictional contract, in the mode scans run in today.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "07ca2bbec5a3",
@@ -1376,8 +1376,8 @@
    "title": "Gully Security",
    "url": "https://docs.gullylabs.xyz/gully-security#api",
    "section": "API",
-   "text": "GET /api/developer/security (members): Free scans left, the offer, chains, engine state. GET /api/developer/security/scans (members): The workspace’s scans, newest first. POST /api/developer/security/scans (developer, admin, owner): { input, upload?, expect: { priceUsd } } → 201 started or 202 with an invoice. GET …/scans/:id, …/scans/:id/events (members): One scan with its report; live progress as Server-Sent Events. POST …/scans/:id/cancel (developer, admin, owner): Cancels before payment (and the invoice) or while running. POST …/scans/:id/publish (admin, owner): { published, indexable? } GET /api/security/reports[/:id] (anyone): Published reports only. POST /api/security/review-requests (anyone): A request for a Security Review (audits are not offered yet).",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "GET /api/developer/security (members): Free scans left, re-run credits, the offer, chains, engine state. GET /api/developer/security/scans (members): The workspace’s scans, newest first. POST /api/developer/security/scans (developer, admin, owner): { input, upload?, expect: { priceUsd } } → 201 started or 202 with an invoice. GET …/scans/:id, …/scans/:id/events (members): One scan with its report; live progress as Server-Sent Events. POST …/scans/:id/cancel (developer, admin, owner): Cancels before payment (and the invoice) or while running. POST …/scans/:id/publish (admin, owner): { published, indexable? } GET /api/security/reports[/:id] (anyone): Published reports only. GET /api/security/engine (anyone): What can run now: the AI review and the static tools, each online or offline, and the queue. GET /api/security/sample (anyone): The sample report (a fictional contract), in the real report shape. POST /api/security/review-requests (anyone): A request for a Security Review (audits are not offered yet).",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "f0c85b58d605",
@@ -2600,8 +2600,8 @@
    "title": "Gully Security",
    "url": "https://gullylabs.xyz/security",
    "section": "Find the bugs before they ship",
-   "text": "Run the AI Security Scan on a contract or a codebase from the app: an AI review only for now, labelled as such on every report. Check any contract’s Gully Score and watch your own with monitors. When you need people to read the code, ask us to quote a Security Review. A scan is not an audit, and we do not offer audits yet. Start a scan (opens in a new tab) Request a review Published reports",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Run the AI Security Scan on a contract or a codebase from the app: an AI review only for now, labelled as such on every report. Check any contract’s Gully Score and watch your own with monitors. When you need people to read the code, ask us to quote a Security Review. A scan is not an audit, and we do not offer audits yet. Start a scan (opens in a new tab) Request a review Published reports See a sample report Scan terms",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "b830372f99e2",
@@ -3059,8 +3059,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy",
    "section": null,
-   "text": "We collect as little as we can to run what you use, we don’t sell it, and we don’t use it for advertising. This page says what we collect, why, who else sees it and how long we keep it, product by product. It covers gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app at app.gullylabs.xyz, blog.gullylabs.xyz, analytics.gullylabs.xyz, the payment pages, Gully AI, and the @GullyLabsBot Telegram bot and its Mini App.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "We collect as little as we can to run what you use, we don’t sell it, and we don’t use it for advertising. This page says what we collect, why, who else sees it and how long we keep it, product by product. It covers gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app at app.gullylabs.xyz, blog.gullylabs.xyz, analytics.gullylabs.xyz, the payment pages at pay.gullylabs.xyz, the API at api.gullylabs.xyz, the widgets and badges at embed.gullylabs.xyz, Gully AI, and the @GullyLabsBot Telegram bot and its Mini App. Using the services is also governed by our Terms of Service.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "9b3d57c3fe89",
@@ -3077,8 +3077,17 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s2",
    "section": "What we collect",
-   "text": "Signing in with your wallet. The app signs you in with Sign-In with Ethereum: you sign a message, and no password or email is needed. We keep your wallet address, when you first and last signed in, and whether the account is blocked. Each sign-in creates a session that stores a hash of a random session id (never the id itself), when it was created, last used and expires, your browser’s user agent and which workspace you have open. We don’t store your IP address with your account or sessions. Workspaces and teams. A workspace’s name, its members’ wallet addresses and roles, who invited whom and when, and invites (an invite link is kept only as a hash). If you add them: a display name, an email address, notification choices, and company details (name, postal address, tax ID) for invoices. To show your ENS or Basename we look your address up through public Ethereum and Base nodes and keep the answer for 24 hours. An activity log records who changed what in the workspace (for example a key created or a plan paid), without IP addresses. API keys and usage. We keep a hash of each key (never the key itself), its prefix and name, and count requests per key: per hour by result and endpoint, per day, and the last 50 requests (time, method, path, status and response time). Anonymous requests are limited per IP address in memory only; we don’t store those IPs. Contact and waitlists. When you write to us through the contact form: your name, email, message, the kind of project and budget you pick. When you join a waitlist: your email and which list.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Signing in with your wallet. The app signs you in with Sign-In with Ethereum: you sign a message, and no password or email is needed. We keep your wallet address, when you first and last signed in, and whether the account is blocked. Each sign-in creates a session that stores a hash of a random session id (never the id itself), when it was created, last used and expires, your browser’s user agent and which workspace you have open. We don’t store your IP address with your account or sessions. Workspaces and teams. A workspace’s name, its members’ wallet addresses and roles, who invited whom and when, and invites (an invite link is kept only as a hash). If you add them: a display name, an email address, notification choices, and company details (name, postal address, tax ID) for invoices. To show your ENS or Basename we look your address up through public Ethereum and Base nodes and keep the answer for 24 hours. An activity log records who changed what in the workspace (for example a key created or a plan paid), without IP addresses. API keys and usage. We keep a hash of each key (never the key itself), its prefix and name, and count requests per key: per hour by result and endpoint, per day, and the last 50 requests (time, method, path, status and response time). Anonymous requests are limited per IP address in memory only; we don’t store those IPs.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "a56f8e5a73ad",
+   "source": "Legal",
+   "title": "Privacy policy",
+   "url": "https://gullylabs.xyz/legal/privacy#s2",
+   "section": "What we collect",
+   "text": "endpoint, per day, and the last 50 requests (time, method, path, status and response time). Anonymous requests are limited per IP address in memory only; we don’t store those IPs. Contact and waitlists. When you write to us through the contact form: your name, email, message, the kind of project and budget you pick. When you join the Gully Chains waitlist: the contact you give (an email or a Telegram @username), your project’s name, the answers you choose (use case, scale, gas token, data availability, account abstraction, DeepCore) and any notes. The Chain Kit and devnet waitlists in the app keep your email, your wallet and workspace, and for Chain Kit the chain you name. A project or launchpad submitted for the ecosystem page keeps its website, contact, chains, factory address and note. Each of these also goes to our operators’ Telegram chat as a short message with the details, and once a day the chat gets a count of what is new. Operators can export the lists as CSV files. If the contact you give is a Telegram @username and that account has started @GullyLabsBot, the bot sends you one short thank-you; we don’t send emails. Chains you launch. The app’s chain launch flow (testnet only) keeps the chain’s name, chain id, type and gas token, its owner, validator and batch-poster addresses, the deployment transaction and contract addresses, and which wallet recorded it. It never receives a private key or seed phrase and refuses any request that looks like one.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "7a1f389c2ad3",
@@ -3086,8 +3095,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s3",
    "section": "Gully Analytics",
-   "text": "Gully Analytics is our own, self-hosted fork of the open-source Umami analytics, at analytics.gullylabs.xyz. We use it on our own sites, and customers can use it on theirs. It sets no cookies. A visit is grouped by a hash of the site, your IP address, your browser and a salt that changes every month, so we can’t follow you from month to month. Your IP address is used to work out your country, region and city and is then dropped; it isn’t stored. We also record the page, referrer, browser, operating system, device type, screen size and language. On pages where you connect a wallet (the app and payment pages), it records wallet connects and disconnects, chain switches and transactions you send, with the chain and wallet type. By default the wallet address is stored only as a short hash (the first 16 characters of its SHA-256). That is pseudonymous, not anonymous: anyone who knows your address can compute the same hash. To opt out in a browser, set the local storage value umami.disabled to 1 for the site. If you sign up for Gully Analytics, we also keep your wallet address, your sites, your plan and trial dates, and monthly event counts. Your Umami password is never stored by us.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Gully Analytics is our own, self-hosted fork of the open-source Umami analytics, at analytics.gullylabs.xyz. We use it on our own sites, and customers can use it on theirs. It sets no cookies. A visit is grouped by a hash of the site, your IP address, your browser and a salt that changes every month, so we can’t follow you from month to month. Your IP address is used to work out your country, region and city and is then dropped; it isn’t stored. We also record the page, referrer, browser, operating system, device type, screen size and language. The payment pages (pay.gullylabs.xyz) and the widgets and frames (embed.gullylabs.xyz) load no analytics at all. In the app, where you connect a wallet, it records wallet connects and disconnects, chain switches and transactions you send, with the chain and wallet type. By default the wallet address is stored only as a short hash (the first 16 characters of its SHA-256). That is pseudonymous, not anonymous: anyone who knows your address can compute the same hash. To opt out in a browser, set the local storage value umami.disabled to 1 for the site. If you sign up for Gully Analytics, we also keep your wallet address, your sites, your plan and trial dates, and monthly event counts. Your Umami password is never stored by us.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "df2b99fd858e",
@@ -3104,8 +3113,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s5",
    "section": "Telegram",
-   "text": "Using @GullyLabsBot requires following the Gully Labs News channel; the bot checks this with Telegram and remembers the answer for up to 30 minutes, in memory only. If you link a chat to your wallet for alerts, we keep the chat id and type, the chat’s title (for a private chat, your first and last name and @username as Telegram gives them), your Telegram user id and when you linked it. Link codes are kept only as hashes and expire after 10 minutes. You can unlink at any time with /stop or in the bot’s settings. Bot records. For every chat that uses the bot we keep when it was first and last seen, its language, whether it is linked to a wallet, whether it follows the News channel, whether it has blocked the bot or switched announcements off, and how it found the bot. No names and no message text are kept in these records.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Using @GullyLabsBot requires following the Gully Labs News channel; the bot checks this with Telegram and remembers the answer for up to 30 minutes, in memory only. If you link a chat to your wallet for alerts, we keep the chat id and type, the chat’s title (for a private chat, your first and last name and @username as Telegram gives them), your Telegram user id and when you linked it. Link codes are kept only as hashes and expire after 10 minutes. You can unlink at any time with /stop or in the bot’s settings. Bot records. For every chat that uses the bot we keep when it was first and last seen, its language, your Telegram @username (lower-cased, so a thank-you can reach you when you give it on a form), whether it is linked to a wallet, whether it follows the News channel, whether it has blocked the bot or switched announcements off, and how it found the bot. No other names and no message text are kept in these records.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "5651f2e2fe5a",
@@ -3113,8 +3122,17 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s5",
    "section": "Telegram",
-   "text": "the News channel, whether it has blocked the bot or switched announcements off, and how it found the bot. No names and no message text are kept in these records. Announcements. The bot sometimes sends news to chats chosen by those records (for example, linked chats, chats with alerts, followers of the News channel, a language, or chats active recently). For each announcement we keep, per recipient chat, whether it was delivered (with Telegram’s message id or error). Its buttons go through a link made for that recipient, so when you open one we record that this recipient opened it, once; we don’t record when, your IP address or your browser. Our operators see delivery and opens with chat ids shortened to their last 4 digits. Every announcement has a 🔕 Stop announcements button, and Settings switches them off and on again; that never affects your alerts. The Mini App checks Telegram’s signed launch data to know who you are and stores nothing: no cookie and no session.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "News channel, whether it has blocked the bot or switched announcements off, and how it found the bot. No other names and no message text are kept in these records. Writing to the team (/contact). When you write to us through the bot, each message (and any photo or file with it) is passed on to our operators’ Telegram chat with your name, @username and Telegram user id, and our replies come back through the bot. The text is not stored on our server: it stays in the two Telegram chats. Our server keeps only which operator message belongs to which chat (the newest 5,000, for 30 days), whether a conversation is open (it closes after 24 hours without messages) and the user ids we stopped relaying for. Inline lookups. When you type “@GullyLabsBot” and a token in any chat, the token is looked up like any Holder Map lookup; your Telegram user id is used only to limit lookups per minute, in memory. Launch radar posts in the News channel are built from Holder Maps we already made, which are public chain data.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "3f5a9be1c9a5",
+   "source": "Legal",
+   "title": "Privacy policy",
+   "url": "https://gullylabs.xyz/legal/privacy#s5",
+   "section": "Telegram",
+   "text": "is used only to limit lookups per minute, in memory. Launch radar posts in the News channel are built from Holder Maps we already made, which are public chain data. Announcements. The bot sometimes sends news to chats chosen by those records (for example, linked chats, chats with alerts, followers of the News channel, a language, or chats active recently). For each announcement we keep, per recipient chat, whether it was delivered (with Telegram’s message id or error). Its buttons go through a link made for that recipient, so when you open one we record that this recipient opened it, once; we don’t record when, your IP address or your browser. Our operators see delivery and opens with chat ids shortened to their last 4 digits. Every announcement has a 🔕 Stop announcements button, and Settings switches them off and on again; that never affects your alerts. The Mini App checks Telegram’s signed launch data to know who you are and stores nothing: no cookie and no session.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "c342657a65f0",
@@ -3149,8 +3167,17 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s7",
    "section": "Holder Map and Gully Score",
-   "text": "Holder Map. Looking up a map needs no account. To show the maps opened most today we count one view per visitor per token per day, using a hash of the IP address made with a random key that is held in memory only and replaced every day; the counts are reset each UTC day. New maps are limited per IP address for a minute, in memory only. To build a map we send the token’s address (never anything about you) to DeepCore, Blockscout, Moralis, Solana nodes and public blockchain nodes. Holder alerts are kept like other alerts, until you delete them. Gully Score. Looking up a score needs no account and we don’t record who looked. We keep each contract’s latest score and its history. The contract address is sent to Sourcify, Etherscan and public blockchain nodes to read its evidence. Lookups are limited per IP address in memory only.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Holder Map. Looking up a map needs no account. To show the maps opened most today we count one view per visitor per token per day, using a hash of the IP address made with a random key that is held in memory only and replaced every day; the counts are reset each UTC day. New maps are limited per IP address for a minute, in memory only. To build a map we send the token’s address (never anything about you) to DeepCore, Blockscout, Moralis, Solana nodes and public blockchain nodes. Holder alerts are kept like other alerts, until you delete them. Deep checks. For a Deep check we keep the chain and token, its price, its status, the Gully Pay invoice that paid for it and the report, under an id that is hard to guess; anyone with the report’s link can read it. To count free checks, re-run credits and duplicates, a check is tied to your workspace when you are signed in, and otherwise to a shortened SHA-256 hash of your IP address. That hash is not salted, so it is pseudonymous: anyone who knows the address can compute it. Your browser remembers the ids of the last 20 checks you started. A check reads the same public sources as the map, plus block explorers.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "3a37e34a3ef6",
+   "source": "Legal",
+   "title": "Privacy policy",
+   "url": "https://gullylabs.xyz/legal/privacy#s7",
+   "section": "Holder Map and Gully Score",
+   "text": "the address can compute it. Your browser remembers the ids of the last 20 checks you started. A check reads the same public sources as the map, plus block explorers. Partner launches and webhooks. When a launchpad sends us its new launches with its API key, we keep each launch’s chain, token and transaction, the map’s result, the workspace’s webhook address, its signing secret and its threshold, and a log of deliveries. Badges and the map frame on embed.gullylabs.xyz are drawn from maps we already hold, set no cookies and record nothing about who views them. Gully Score. Looking up a score needs no account and we don’t record who looked. We keep each contract’s latest score and its history. The contract address is sent to Sourcify, Etherscan and public blockchain nodes to read its evidence. Lookups are limited per IP address in memory only.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "95e1e3de80ae",
@@ -3167,8 +3194,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s9",
    "section": "Cookies and browser storage",
-   "text": "One cookie of ours: the app’s sign-in cookie (__Host-gl_dev), only after you sign in. It is HttpOnly, sent only to the app over HTTPS, and lasts 30 days or until you sign out. No advertising or cross-site tracking cookies, and Gully Analytics uses none. Browser storage remembers choices on your device only: the app’s sidebar, invites you declined, that you accepted the swap risk notice, recent Gully AI questions in the app, and requests you already sent (Chain Kit, devnet waitlist). The blog (Ghost) runs on our server and handles its own visitors; its member sign-up is switched off.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "One cookie of ours: the app’s sign-in cookie (__Host-gl_dev), only after you sign in. It is HttpOnly, sent only to the app over HTTPS, and lasts 30 days or until you sign out. The payment pages, the API and embed.gullylabs.xyz set no cookies. No advertising or cross-site tracking cookies, and Gully Analytics uses none. Browser storage remembers choices on your device only: the app’s sidebar, invites you declined, that you accepted the swap risk notice, recent Gully AI questions in the app, and requests you already sent (Chain Kit, devnet waitlist), that you closed the announcement bar or the install card, the Deep checks you started, and chart and tab choices. Installing the site or app as a web app adds a service worker that keeps copies of our own page files on your device, so pages open faster and offline. It never stores API answers, payment pages, embeds or anything about your account. Removing the app or clearing the site’s data deletes them. The blog (Ghost) runs on our server and handles its own visitors; its member sign-up is switched off.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "ffa8b19d500c",
@@ -3176,8 +3203,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s10",
    "section": "Who else sees data",
-   "text": "We don’t sell personal data or share it for advertising. These services see some of it because they carry or power what you use: Cloudflare carries all traffic to our sites, so it sees your IP address and requests, and tells our server your country. Its Web Analytics beacon runs on our pages. Anthropic and, when switched on, Voyage AI: Gully AI questions, as above. Anthropic also reviews the code of Gully Security scans. Etherscan, Blockscout, Sourcify, GitHub and the npm registry: the contract, repository or dependency list a Gully Security scan or a Gully Score reads, as above. DeepCore, Blockscout and Moralis: token addresses for the Holder Map, as above. Telegram: everything you send to or receive from the bot. Blockchain node providers (public RPC endpoints): we read transactions, balances and ENS names through them, which can include your address. Your wallet talks to its own nodes. Wallet and swap services you choose to use: WalletConnect when you connect a wallet that way, LI.FI in the swap widget, and Jupiter for Solana swaps (it receives your public key). Addresses you give us: alert and store webhooks are sent to the URLs you set. We may disclose data when the law requires it, to protect our users or services from fraud or abuse, or to a buyer if Gully Labs is sold, under this policy.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "We don’t sell personal data or share it for advertising. These services see some of it because they carry or power what you use: Cloudflare carries all traffic to our sites, so it sees your IP address and requests, and tells our server your country. Its Web Analytics beacon runs on our pages. Anthropic and, when switched on, Voyage AI: Gully AI questions, as above. Anthropic also reviews the code of Gully Security scans. Etherscan, Blockscout, Sourcify, GitHub and the npm registry: the contract, repository or dependency list a Gully Security scan or a Gully Score reads, as above. DeepCore, Blockscout and Moralis: token addresses for the Holder Map, as above. Telegram: everything you send to or receive from the bot. Blockchain node providers (public RPC endpoints): we read transactions, balances and ENS names through them, which can include your address. Your wallet talks to its own nodes. Wallet and swap services you choose to use: WalletConnect when you connect a wallet that way, LI.FI in the swap widget, and Jupiter for Solana swaps (it receives your public key). Addresses you give us: alert, store and partner launch webhooks are sent to the URLs you set. Where we publish: our pages link to Gully Labs on X, YouTube, TikTok, Facebook, Medium, GitHub and Telegram. They are plain links: nothing from those platforms loads on our pages, and their own policies apply once you visit them. We may disclose data when the law requires it, to protect our users or services from fraud or abuse, or to a buyer if Gully Labs is sold, under this policy.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "b7fba52836e6",
@@ -3194,8 +3221,8 @@
    "title": "Privacy policy",
    "url": "https://gullylabs.xyz/legal/privacy#s11",
    "section": "How long we keep it",
-   "text": "once if a free scan cannot start or you cancel an unpaid scan; a paid scan left unpaid for 24 hours has its uploaded code deleted and its invoice cancelled. Published scan reports: Public until unpublished; after that the copy stays on our server, not shown, and is not deleted automatically. Security Review requests: The newest 5,000 requests. Security monitors: Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries. Gully Score results and history: Not deleted automatically (who looked a score up is not recorded). Holder Map view counts: Reset every UTC day; the key that hashes visitors is never written down. Telegram announcements: deliveries and opened links: The newest 200 announcements. Telegram bot records (first and last seen, language, opt-out): Not deleted automatically today. Backups of all of the above: 7 days. Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data: Not deleted automatically today; ask us and we delete what the law lets us.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "once if a free scan cannot start or you cancel an unpaid scan; a paid scan left unpaid for 24 hours has its uploaded code deleted and its invoice cancelled. Published scan reports: Public until unpublished; after that the copy stays on our server, not shown, and is not deleted automatically. Security Review requests: The newest 5,000 requests. Gully Chains waitlist: The newest 5,000 sign-ups. Ecosystem and launchpad submissions: The newest 1,000 submissions. Holder Map Deep checks and their reports: Cancelled checks are deleted after 30 days; others are not deleted automatically. Partner launches and webhook deliveries: The newest 1,000 launches and the newest 500 deliveries. Telegram /contact relay (which operator message belongs to which chat): 30 days, the newest 5,000; the messages themselves stay in Telegram. Chains launched from the app (testnet): Until you remove them. Security monitors: Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries. Gully Score results and history: Not deleted automatically (who looked a score up is not recorded). Holder Map view counts: Reset every UTC day; the key that hashes visitors is never written down. Telegram announcements: deliveries and opened links: The newest 200 announcements. Telegram bot records (first and last seen, language, opt-out): Not deleted automatically today. Backups of all of the above: 7 days. Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data: Not deleted automatically today; ask us and we delete what the law lets us.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "3032bbf70e8e",
@@ -3223,6 +3250,303 @@
    "section": "Changes and contact",
    "text": "When we change this policy we update the version date at the top, and for a material change we say so on the site. Our server and our providers may process data in countries other than yours. Questions, requests or complaints: team@gullylabs.xyz.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
+  },
+  {
+   "id": "b76373937d8e",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms",
+   "section": null,
+   "text": "These terms cover the AI Security Scan (“a scan”) that Gully Labs (“we”) runs from the Gully Labs App. You accept them when you start a scan. The short version: a scan is automated software, not an audit; it can miss things; a paid scan that fails gives you a free re-run, not a refund; and we delete your code within 180 days.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "d4fb0de80652",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s1",
+   "section": "What a scan is",
+   "text": "A scan is an automated, point-in-time review of the code you name: a verified contract at an address on a chain, a public GitHub repository at a commit, a file you upload, or a web2 codebase (a checklist review). Software runs it from start to finish. Depending on what is running on our servers it uses static-analysis tools, an AI review by Anthropic’s Claude models, or both. The report names the mode, every tool that ran and every tool that did not, with the reason. The status above is read live from the scanner. Today the static-analysis worker is not deployed, so scans are an AI review only, and every report’s label says so. See a sample report to know exactly what you get.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "91b4ad34402f",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s2",
+   "section": "What it is not",
+   "text": "It is not an audit and not a security review by people. No person at Gully Labs reads your code for a scan, and no finding is verified by a human. It can miss issues: business logic, economic and cross-contract attacks, upgrade and key-management risks, and anything off-chain. It can report false positives. A draft proof of concept is marked “draft, not executed” unless our worker ran it. It is no guarantee that code is safe, and no endorsement. A report with no findings is not evidence that the code is safe. If you need people on your code, ask us for a Security Review, quoted per project under its own agreement.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "f80479a2bd48",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s3",
+   "section": "Prices and free scans",
+   "text": "Each workspace gets free scans every calendar month (UTC), by plan. After that a scan costs. Unused free scans do not roll over. A scan that failed does not use a free scan. FREE SCANS A MONTH, BY PLAN · LIVE FROM THE PRICE LIST The checkout shows the price before you confirm. If it changed meanwhile (your free scans ran out in another tab), the scan is not started and you are asked to confirm again. Nothing is charged silently. A paid scan is paid with a Gully Pay invoice in crypto (USDC, USDT or the chain’s coin), straight to the Gully Labs treasury. The scan starts when the payment confirms. An unpaid invoice expires after 7 days. Prices exclude any taxes you owe where you are.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "a12cc2b26392",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s4",
+   "section": "How long it takes",
+   "text": "Most scans finish in minutes. The server runs one scan at a time, so a scan can wait in the queue; you see its place and its progress live. A scan is stopped if it runs for more than 30 minutes. A workspace can have at most scans running or waiting at once. These are targets, not promises: a busy queue, a slow block explorer or an outside service being down can delay a scan.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "2bfe25e6ee4b",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s5",
+   "section": "Refunds and re-run credits",
+   "text": "Payments on a blockchain are final, so we do not refund scans. Instead: A paid scan that fails (it ends “failed” for any reason, ours or the input’s) gives your workspace one re-run credit. A credit pays for one scan in full. Credits are used automatically after your free scans for the month and before any price. The checkout says when a scan uses one. A scan paid with a credit that fails again gives the credit back. Credits belong to the workspace, have no cash value and cannot be transferred. They do not expire today; if that changes we will say so here with at least 30 days’ notice. A scan you cancel before paying costs nothing. Once a paid scan has started, cancelling it does not earn a credit. A scan that finishes is delivered, whatever it finds. If you think a scan went wrong in a way these rules do not cover, write to us: we decide case by case.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "d979031d9713",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s6",
+   "section": "Your code",
+   "text": "Repositories must be public. An upload can be a.zip of Solidity files or a single.sol file of up to MB. To review the code, the files in scope are sent to Anthropic (Claude), after common secret patterns are replaced. That check works by pattern and can miss a secret: do not upload secrets. The code, the fetched sources, the tools’ output and the report are deleted within a day of the scan being 180 days old. Code uploaded for a scan you leave unpaid for 24 hours is deleted and its invoice cancelled. Your reports are private to your workspace unless an owner or admin publishes one. The privacy policy says in full what is stored, who sees it and for how long.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "56860ef29af5",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s7",
+   "section": "Your part",
+   "text": "Scan only code you own or have the right to have reviewed. Contracts verified on a public explorer and public repositories are fine to scan. Do not use scans or reports to attack anyone’s contracts or users, or to help others do so. Do not try to steer the AI with instructions hidden in the code. The scan flags such comments, removes them before review and lists them in the report. Do not try to get around the free-scan limits, for example with many workspaces.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "116ca891e49e",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s8",
+   "section": "Publishing a report",
+   "text": "A workspace owner or admin can publish a finished report at a public link, and take it down again at any time. A published report shows the target and the findings; draft proof-of-concept code and the workspace are left out. It is labelled as an automated scan, not an audit. Do not present a scan report, published or not, as an audit or as an endorsement by Gully Labs.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "4bda162a61f2",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s9",
+   "section": "Disclaimer and liability",
+   "text": "Scans and reports are provided “as is”, without any warranty, express or implied, including fitness for a purpose and that they find every issue. You decide what to do with a report, and you remain responsible for your code and for deploying it. To the extent the law allows, Gully Labs is not liable for any loss of funds, profits, data or reputation, or for any indirect or consequential loss, arising from a scan, a report or an issue a scan did not find. Our total liability for any claim about a scan is limited to the amount you paid for that scan. Nothing in these terms limits liability that cannot be limited by law.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "984ed78b5e01",
+   "source": "Legal",
+   "title": "AI Security Scan terms",
+   "url": "https://gullylabs.xyz/legal/scan-terms#s10",
+   "section": "Changes and contact",
+   "text": "We may change these terms; the version above changes with them, and a change applies to scans started after it is published. Questions: team@gullylabs.xyz.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "1283b7ef06da",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms",
+   "section": null,
+   "text": "These terms are an agreement between Gully Labs (“Gully Labs”, “we”, “us”) and you, the person or business using our sites and services. By using them, connecting a wallet to them or paying for one of them, you accept these terms. If you don’t accept them, please don’t use the services.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "643a470b35ff",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s1",
+   "section": "These terms",
+   "text": "These terms cover every Gully Labs service. Some services have their own terms as well, and those win where they are more specific: the Gully Pay merchant terms for businesses that run a store, and the security scan terms for AI Security Scans. How we handle personal data is in the privacy policy. If you use the services for a company, you accept these terms for it and confirm you may do so; “you” then means the company too.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "2580c1ac799b",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s2",
+   "section": "The services",
+   "text": "“Services” means everything Gully Labs runs, today: the sites gullylabs.xyz, docs.gullylabs.xyz and blog.gullylabs.xyz, the stock token tracker and its stock pages, Gully AI, the Holder Map and Gully Score; the Gully Labs App at app.gullylabs.xyz: wallet sign-in, workspaces and teams, API keys, plans, alerts, Gully Analytics (analytics.gullylabs.xyz), Gully Security and the Gully Chains launch flow; the public API at api.gullylabs.xyz, and the widgets, embeds and badges at embed.gullylabs.xyz; Gully Pay checkouts, pay links, invoices and receipts at pay.gullylabs.xyz; the @GullyLabsBot Telegram bot and its Mini App, and the Gully Labs News channel; our SDKs and open-source code, which come with their own licences (Section 14). Some services are marked beta, testnet or waitlist. They may change, break, lose data or stop without notice. We may add, change or end any service; where you paid for a period that has not run out, Section 7 says what happens.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "41e15bac7318",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s3",
+   "section": "Eligibility and sanctions",
+   "text": "You must be at least 18 and able to enter into a binding contract. You may not use the services if you, or anyone you act for, are the target of sanctions (including the lists kept by the US Treasury’s OFAC, the UN, the EU and the UK), or are in a country or region under comprehensive sanctions, such as Cuba, Iran, North Korea, Syria and the occupied regions of Ukraine. You must not use a VPN or anything else to get around a restriction based on where you are. Some features are not offered in some places. For example, the in-page stock token swap is not shown in the United States, and the issuers of stock tokens set their own rules about who may hold them. You are responsible for following the laws that apply to you, including tax law, when you use the services.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "90a08c45a28f",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s4",
+   "section": "Wallets and accounts",
+   "text": "4.1 Self-custody. You sign in with your own wallet (Sign-In with Ethereum): you sign a message, which sends no transaction and costs no gas. We never receive, generate or store your private keys, seed phrase or funds, and we can never move, freeze or recover your assets. If you lose access to your wallet, we cannot restore it. Never share a seed phrase with anyone, including anyone claiming to be us. 4.2 Your account and workspace. Your wallet address is your account. You are responsible for everything done through your account and workspace, by you and by the members you invite, and for their roles. Tell us at at once if you think someone else is using it. 4.3 API keys and secrets. API keys, webhook signing secrets and similar values are shown once. Keep them private; anything done with your key counts as done by you. Revoke a key in the app if it leaks.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "eb5def01b2ad",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s5",
+   "section": "Information, not advice",
+   "text": "The tracker, the stock pages, the ledger and venue figures, the Holder Map, Deep checks, Gully Score, security scans, Gully AI’s answers and every other figure or signal we show are information only. They are not investment, financial, legal or tax advice, and not a recommendation to buy, sell, hold or launch anything. Data comes from blockchains, public nodes, explorers, price feeds, venue APIs and other third parties. It can be late, incomplete or wrong, and a source can stop answering. Signals such as linked wallets, snipers, concentration or a low score are measured facts or estimates, not a judgement of anyone’s intent. Gully AI is an AI system and can be wrong. Check anything important against the sources it cites. Crypto assets and tokenised stocks are risky and can lose all their value. Decide for yourself, and get professional advice where you need it.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "9823a817b06c",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s6",
+   "section": "Swaps and third-party protocols",
+   "text": "Where we show a swap, it is a window onto third-party protocols (for example LI.FI routes and, for Solana, Jupiter). Your wallet signs and sends the transaction to those protocols; Gully Labs does not execute, route, hold or settle it, and is not your broker or exchange. Quotes, prices, slippage, fees and outcomes are theirs, and the token issuer’s own terms apply to the token. Read the risk notice before you swap.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "138f5b02336f",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s7",
+   "section": "Plans and payments",
+   "text": "7.1 Prices. Prices for plans, AI Security Scans, Holder Map Deep checks and other paid services are shown on the pricing page and at checkout, which is the price you pay. We may change prices; a change never affects a period you have already paid for. 7.2 Paying in crypto. You pay with a wallet, in the asset and on the chain the checkout quotes, straight to the Gully Labs treasury wallet. A payment counts when it meets the checkout’s rules: the exact quoted amount (for a plan paid in a stablecoin from your signed-in wallet, at least the price), in the quoted asset and chain, within the quote’s time, with the chain’s confirmations. Sending a different amount, a different asset, to another address or on another chain may mean the payment cannot be matched. 7.3 Plans. A plan runs for 30 days from the payment that confirms (or from the end of the same plan if it is still running). It does not renew by itself: nothing is ever taken from your wallet without you sending it.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "9f3b61939e8c",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s7",
+   "section": "Plans and payments",
+   "text": "(or from the end of the same plan if it is still running). It does not renew by itself: nothing is ever taken from your wallet without you sending it. 7.4 Final, and refunds. Blockchain payments are final and cannot be charged back. Payments are not refundable, except where these terms, the product’s own terms or the law say otherwise. A paid Holder Map Deep check that fails gives you a credit for one free re-run instead of an on-chain refund. If you think you paid by mistake or were charged wrongly, write to and we will look at it in good faith. 7.5 Taxes. Prices exclude taxes. You are responsible for any taxes on what you buy, except Gully Labs’ own income taxes.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "9afb355ab717",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s8",
+   "section": "Gully Pay",
+   "text": "Gully Pay is non-custodial: a payer’s wallet pays the merchant’s own wallet directly. If you run a store, the merchant terms apply. If you pay a store, your purchase is with that store, not with Gully Labs: questions about the order, delivery or a refund go to the store, whose support contact is on its checkout. We cannot reverse, refund or hold a payment for either side.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "d0cb24bef8b0",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s9",
+   "section": "Security scans and Deep checks",
+   "text": "Automated, not an audit. An AI Security Scan is an automated review by tools and an AI model. It can miss vulnerabilities and can report problems that are not real. It is not a manual audit and not a guarantee that code is safe. A Security Review by people is a separate service, quoted and agreed separately. The security scan terms add the details. Only what you may scan. Upload or point a scan only at code you own or have permission to have reviewed, and don’t upload secrets. Deep checks. A Holder Map Deep check is a bounded, automated investigation of one token’s holders from public chain data. It works within fixed limits, says what it could not read, and can end partial. Its findings carry a confidence and a source; they are signals, not verdicts about any person. Results can’t be bought. Paying for a scan or a check buys the work, never a better result, score or report. Publishing. A report you publish, or a Deep check link you share, can be read by anyone with it. You are responsible for what you choose to publish.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "bbd7c03dafe5",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s10",
+   "section": "API, widgets and badges",
+   "text": "Limits. The API, widgets and badges are limited per IP address without a key and per key by plan, as the pricing page shows. Don’t get around them: no rotating keys, IP addresses or accounts to exceed a limit, and no scraping of the sites beyond what the API offers. Embedding. You may embed our widgets, the Holder Map frame and our badges on your own pages as our docs describe. Keep the “by Gully Labs” attribution and the link back, don’t change what a widget or badge says, and don’t present our data or scores as your own or as our endorsement of your project. Partner webhooks. If you register a launch webhook, you are responsible for the endpoint and for checking each delivery’s signature. Deliveries can be late, repeated or missing. Changes. We may change, version or retire API endpoints. We try to give notice in the docs’ changelog before we break something on purpose.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "fa181364439c",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s11",
+   "section": "Gully Chains testnet",
+   "text": "Gully Chains is in testnet and waitlist stages. The chain launch flow in the app deploys only to a testnet (Arbitrum Sepolia), signed by your own wallet; we record the chain’s addresses and configuration, never a key. Testnet chains, tokens and balances have no monetary value, can be reset, paused or removed at any time, and must not be sold or promised as having value. Joining a waitlist is interest, not an order: a mainnet chain, Chain Kit or any hosted service needs a separate written agreement and price. The software these chains run (such as Arbitrum Nitro) comes under its own licences.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "b22fa7a20316",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s12",
+   "section": "Telegram",
+   "text": "The @GullyLabsBot bot, its Mini App and the Gully Labs News channel run on Telegram, so Telegram’s own terms apply too. Using the bot requires following the News channel. Announcements can be switched off with 🔕 Stop announcements or in the bot’s settings. Messages you send through the bot’s contact relay (/contact) go to the Gully Labs team’s Telegram chat; be respectful, and don’t send secrets. We may stop relaying for anyone who abuses it.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "308d3e2daa9b",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s13",
+   "section": "Acceptable use",
+   "text": "You will not, and will not help anyone else to: use the services for anything illegal, for fraud, market manipulation, phishing or scams, or to launder money or hide where funds come from; break, probe, overload or get around the security, rate limits, quotas, payments or access controls of the services, or access accounts or data that are not yours (responsible disclosure to is welcome); run automated traffic that degrades the services for others, or resell or offer the services to others as your own, except as the API and embed terms allow; upload malware or code you have no right to share, or try to make Gully AI or a scan reveal secrets or act against its instructions; harass, threaten or impersonate anyone, including Gully Labs or its team; use our names, logos or badges in a way that suggests we endorse you when we don’t.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "742fe8aa01b6",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s14",
+   "section": "Your content, our rights",
+   "text": "14.1 Your content. You keep your rights in what you upload or send (code for a scan, a store’s logo, messages). You give us the permission we need to host, process and show it to run the services for you, as the privacy policy describes, and you confirm you have the rights to give it. 14.2 Our rights. The services, the sites’ design and copy, our data compilations, the Gully Labs names and logos and our brand kit belong to Gully Labs. These terms give you the right to use the services, not ownership of them. 14.3 Open source. Our SDKs on npm and the code in our public repositories come under the licence in each package or repository, which governs that code instead of these terms. 14.4 Feedback. If you send ideas or feedback, we may use them freely without paying you or owing you anything.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "27167391c762",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s15",
+   "section": "Third-party services",
+   "text": "The services depend on, link to or let you use things run by others: blockchains and their nodes, wallets, explorers, price feeds, swap protocols, token issuers, Telegram, Cloudflare, AI providers and the platforms where we publish (X, YouTube, TikTok, Facebook, Medium, GitHub). We don’t control them and are not responsible for them; their own terms and policies apply when you use them.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "dd20488702ba",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s16",
+   "section": "Disclaimers",
+   "text": "The services are provided “as is” and “as available”. We don’t promise they will always be available, secure, timely, accurate or free of errors, or that any data, score, scan or answer is complete or correct. Blockchains can fork, congest, reorganise or fail; tokens can be frozen or changed by their issuers; smart contracts can have bugs. To the maximum extent the law allows, we disclaim all warranties and conditions, express or implied, including merchantability, fitness for a particular purpose, title and non-infringement.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "a4045003db2e",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s17",
+   "section": "Limitation of liability",
+   "text": "17.1 Cap. To the maximum extent the law allows, Gully Labs’ total liability for all claims arising out of or relating to the services or these terms is limited to the greater of the amount you paid Gully Labs for the service concerned in the 12 months before the claim, and 100 US dollars. 17.2 Excluded damages. We are not liable for lost profits, revenue, data, goodwill or trading opportunities, or for indirect, consequential, special, exemplary or punitive damages, even if told they were possible. We are not liable for losses from your trading or investment decisions, from transactions you sign, from funds sent to a wrong address, from a third-party protocol, token or chain, or from lost wallet keys. 17.3 Where the law says otherwise. Nothing in these terms limits liability that the law does not allow to be limited, such as for fraud, or rights you have as a consumer that cannot be waived.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "98e07418f933",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s18",
+   "section": "Indemnity",
+   "text": "You will defend and indemnify Gully Labs against claims by others, and the resulting losses, costs and reasonable legal fees, arising from your breach of these terms, your misuse of the services, content you upload or publish, or your violation of law or of someone else’s rights.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "db2625468692",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s19",
+   "section": "Suspension and termination",
+   "text": "You may stop using the services at any time; to have your account’s off-chain data deleted, write to. We may suspend or end your access, block an API key, a workspace or a Telegram user, or unpublish content, with or without notice, if you breach these terms, if your use puts the services or others at risk, or if the law or a sanctions rule requires it. Where practical we tell you first. Sections 5, 7.4, 9, 14 and 16 to 20 survive the end of these terms.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
+  },
+  {
+   "id": "24b477311b2f",
+   "source": "Legal",
+   "title": "Terms of Service",
+   "url": "https://gullylabs.xyz/legal/terms#s20",
+   "section": "Changes, law and contact",
+   "text": "Changes. We may update these terms. The version date at the top changes, and for a material change we say so on the site or in the app before it takes effect. Using the services after that accepts the new version. Governing law. Whole agreement. These terms, with the product terms and policies they name, are the whole agreement between us about the services. If a part is invalid, the rest stays in force; not enforcing a part is not a waiver of it. You may not transfer these terms without our consent; we may transfer them with the business they relate to. Contact. Questions, notices and requests:, or /contact in @GullyLabsBot.",
+   "updatedAt": "2026-10-21T02:58:24.977Z"
   },
   {
    "id": "239ecf073c48",
@@ -4167,8 +4491,8 @@
    "title": "AI Security Scan (Gully Security)",
    "url": "https://gullylabs.xyz/security",
    "section": "AI Security Scan",
-   "text": "AI Security Scan is part of Gully Security. Status: live now. A self-serve automated scan of a deployed contract, a Solidity repository, an upload or a web2 codebase. It is an AI review only until the static-tools worker runs, and is never called an audit. Inputs: deployed address, GitHub repo and commit, uploaded file, or web2 repo (checklist mode). Chains: Ethereum, Base, Arbitrum, OP Mainnet, BNB Chain, Polygon, Avalanche, Sepolia and Base Sepolia (server/security/chains.mjs). Price $99 per scan beyond the monthly allowance (SECURITY.scan.priceUsd); free scans a month: Free 1, Pro 3, Business 10; up to 2 active scans; uploads up to 2,000,000 bytes (server/plans.mjs). Every report is labelled \"AI review only — static tools unavailable\" and every finding has verifiedByHuman false.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "text": "AI Security Scan is part of Gully Security. Status: live now. A self-serve automated scan of a deployed contract, a Solidity repository, an upload or a web2 codebase. It is an AI review only until the static-tools worker runs, and is never called an audit. Inputs: deployed address, GitHub repo and commit, uploaded file, or web2 repo (checklist mode). Chains: Ethereum, Base, Arbitrum, OP Mainnet, BNB Chain, Polygon, Avalanche, Sepolia and Base Sepolia (server/security/chains.mjs). Price $99 per scan beyond the monthly allowance (SECURITY.scan.priceUsd); free scans a month: Free 1, Pro 3, Business 10; up to 2 active scans; uploads up to 2,000,000 bytes (server/plans.mjs). Every report is labelled \"AI review only — static tools unavailable\" and every finding has verifiedByHuman false. No refunds: a paid scan that fails gives the workspace a re-run credit, spent after the free quota and before the price; terms at https://gullylabs.xyz/legal/scan-terms. Live scanner status (AI review, static tools, queue) at GET /api/security/engine, shown at checkout and on /security; a sample report on a fictional contract at https://gullylabs.xyz/security/sample.",
+   "updatedAt": "2026-10-21T02:58:24.977Z",
    "feature": "security-ai-scan",
    "status": "live"
   },
