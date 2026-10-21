@@ -1,6 +1,7 @@
 import { Lockup, Mascot } from '../../components/brand'
 import { Check, Copy, ExternalLink, ShieldCheck, Store } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { SecuredBy } from '../../components/pay/SecuredBy'
 import { copyWithToast } from '../../components/ui/toast'
 import { Outlet } from 'react-router'
 import { accentOf, storeName, type Brand } from './brand'
@@ -8,7 +9,8 @@ import { accentOf, storeName, type Brand } from './brand'
 /* The standalone checkout (every /pay page): no site header, nav or footer. A slim top bar with the
    store's logo and name (or the Gully Labs kit lockup on our own invoices) and a non-custodial badge; the
    order summary on the left and the payment panel on the right at desktop width, one column on a phone
-   with a sticky Pay bar; "Powered by Gully Pay" with the kit mark at the foot.
+   with a sticky Pay bar; "Secured by Gully Pay" with the shield and the kit mark at the foot. The logo
+   (the lockup, or the store's) is 36 px tall, 40 px from 1440 up; the header also carries the small seal.
 
    Branding: the store's uploaded logo, else a neutral store glyph (never a letter tile). A store that has
    not set a name is "Store" with its owner's short address. The accent is only used where it keeps
@@ -86,17 +88,30 @@ const hostOf = (url: string) => {
   }
 }
 
+/** The logo height: 36 px, 40 px on a wide screen. */
+function useLogoSize() {
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1440px)').matches)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1440px)')
+    const sync = () => setWide(mq.matches)
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+  return wide ? 40 : 36
+}
+
 function TopBar({ brand }: { brand: Brand }) {
+  const logo = useLogoSize()
   return (
     <header className="border-b border-line bg-bg">
-      <div className="mx-auto flex min-h-16 w-full max-w-[1120px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex min-h-16 w-full max-w-[1120px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
         {brand.gully ? (
           <a href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-btn" aria-label="Gully Labs (opens in a new tab)">
-            <GullyLockup height={34} />
+            <GullyLockup height={logo} />
           </a>
         ) : (
           <div className="flex min-w-0 items-center gap-3">
-            <StoreMark brand={brand} size={40} />
+            <StoreMark brand={brand} size={logo} />
             <span className="flex min-w-0 flex-col leading-tight">
               <span className="flex min-w-0 items-center gap-2">
                 <b className="truncate text-[16px] font-semibold text-ink" data-testid="store-name">
@@ -116,8 +131,11 @@ function TopBar({ brand }: { brand: Brand }) {
             </span>
           </div>
         )}
-        <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-success-line bg-success-bg px-3 py-[6px] text-[12px] font-medium text-green" title="Your transfer goes straight to the recipient's wallet; nobody holds it in between.">
-          <ShieldCheck size={14} aria-hidden /> Non-custodial
+        <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <SecuredBy variant="small" />
+          <span className="inline-flex items-center gap-2 rounded-full border border-success-line bg-success-bg px-3 py-[6px] text-[12px] font-medium text-green max-[559px]:hidden" title="Your transfer goes straight to the recipient's wallet; nobody holds it in between.">
+            <ShieldCheck size={14} aria-hidden /> Non-custodial
+          </span>
         </span>
       </div>
     </header>
@@ -127,9 +145,9 @@ function TopBar({ brand }: { brand: Brand }) {
 function Foot({ brand }: { brand: Brand }) {
   return (
     <footer className="mt-auto border-t border-line">
-      <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-5 text-[12px] text-faint sm:px-6">
-        <a href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 font-mono tracking-[1px] text-faint hover:text-ink" aria-label="Powered by Gully Pay (opens in a new tab)">
-          POWERED BY <GullyMark size={20} /> <span className="text-gold">GULLY PAY</span>
+      <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4 text-[12px] text-faint max-lg:pb-24 sm:px-6">
+        <a href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 font-mono tracking-[1px] text-faint hover:text-ink" aria-label="Secured by Gully Pay (opens in a new tab)">
+          SECURED BY <ShieldCheck size={15} className="text-gold" aria-hidden /> <GullyMark size={20} /> <span className="text-gold">GULLY PAY</span>
         </a>
         <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-5">
           <a href="/legal/merchant-terms" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
@@ -159,7 +177,7 @@ export function CheckoutFrame({ brand, summary, children, bar = false, single = 
   return (
     <div className="flex min-h-[100svh] flex-col" style={{ borderTop: `3px solid ${accent.color}` }}>
       <TopBar brand={brand} />
-      <main id="main" tabIndex={-1} className={`mx-auto grid w-full max-w-[1120px] items-start gap-8 px-4 py-8 outline-none sm:px-6 lg:gap-12 lg:py-12 ${single ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)]'} ${bar ? 'pb-28 lg:pb-12' : ''}`} aria-live="polite">
+      <main id="main" tabIndex={-1} className={`mx-auto grid w-full max-w-[1120px] items-start gap-6 px-4 py-6 outline-none sm:px-6 lg:gap-10 lg:py-8 ${single ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)]'} ${bar ? 'pb-28 lg:pb-8' : ''}`} aria-live="polite">
         {summary}
         {children}
       </main>
@@ -194,7 +212,7 @@ function CopyLink({ path }: { path: string }) {
 export function PayPanel({ title, copyLink, pill, children, label = 'Payment' }: { title: string; copyLink?: string; pill?: { text: string; cls: string }; children: ReactNode; label?: string }) {
   return (
     <section className="flex min-w-0 flex-col overflow-hidden rounded-card border border-line bg-surface lg:sticky lg:top-6" aria-label={label} style={{ animation: 'gl-rise .5s .07s ease both' }}>
-      <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-3 max-[600px]:px-4">
+      <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
         <span className="flex min-w-0 flex-col leading-[1.25]">
           <b className="truncate text-[15px] font-semibold text-ink">{title}</b>
           {copyLink && <CopyLink path={copyLink} />}
@@ -205,7 +223,7 @@ export function PayPanel({ title, copyLink, pill, children, label = 'Payment' }:
           </span>
         )}
       </header>
-      <div className="flex flex-col gap-5 p-5 max-[600px]:p-4">{children}</div>
+      <div className="flex flex-col gap-4 p-4 sm:p-5">{children}</div>
     </section>
   )
 }

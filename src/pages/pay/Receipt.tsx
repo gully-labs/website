@@ -3,6 +3,8 @@ import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { GULLY_BRAND, pills, storeName, type Brand } from './brand'
 import { TokenLogo } from '../../components/logos/TokenLogo'
+import { SecuredBy } from '../../components/pay/SecuredBy'
+import { isSolanaChain } from '../../components/solana/constants'
 import { CheckoutFrame, GullyLockup, GullyMark, PayPanel } from './CheckoutFrame'
 import { Notice } from './PayStates'
 import { fmtDay, fmtTime, useInvoice, type Invoice } from './invoice'
@@ -16,7 +18,7 @@ import type { OrderItem } from './OrderSummary'
 
 // Live charts on screen only (the printed receipt stays black on white): the confirmations the payment had, and for
 // a coin payment its Chainlink price now against the price it was paid at (PayCharts.tsx, ECharts on demand).
-const ConfirmRing = lazy(() => import('./PayCharts').then((m) => ({ default: m.ConfirmRing })))
+const BlockTrack = lazy(() => import('./PayCharts').then((m) => ({ default: m.BlockTrack })))
 const PriceChart = lazy(() => import('./PayCharts').then((m) => ({ default: m.PriceChart })))
 
 type ReceiptInvoice = Invoice & {
@@ -129,7 +131,7 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
                     <b className="text-[20px] font-semibold">{who}</b>
                   </span>
                 ) : (
-                  <GullyLockup height={34} light />
+                  <GullyLockup height={36} light />
                 )}
                 <span className="font-mono text-[12px] text-[#5f6a78]">
                   {store ? [store.website?.replace(/^https?:\/\//, '').replace(/\/$/, ''), store.supportEmail].filter(Boolean).join(' · ') : 'gullylabs.xyz · team@gullylabs.xyz'}
@@ -219,7 +221,7 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
                 data-testid="receipt-live"
               >
                 <Suspense fallback={<span className="h-[150px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-input bg-surface" />}>
-                  <ConfirmRing n={paidAsset.confirmations} needed={paidAsset.confirmations} state="done" chain={p.chain} />
+                  <BlockTrack chainId={paidAsset.chainId} chain={p.chain} needed={paidAsset.confirmations} have={paidAsset.confirmations} state="done" solana={isSolanaChain(paidAsset.chainId)} />
                   {paidAsset.kind === 'native' && p.price && (
                     <PriceChart
                       asset={paidAsset}
@@ -239,8 +241,9 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
               invoice, and had the chain’s required confirmations. Anyone can check it on the chain’s explorer with the transaction hash above.{' '}
               {store ? `${who} is the seller; questions about the order go to it.` : ''} It is not a tax invoice.
             </p>
+            <SecuredBy light merchant={store ? who : null} treasury={store ? null : (p.to ?? null)} treasuryHref={!store && p.to && paidAsset ? `${paidAsset.explorer}/${isSolanaChain(paidAsset.chainId) ? 'account' : 'address'}/${p.to}` : null} safe={!isSolanaChain(p.chainId)} className="print:break-inside-avoid" />
             <p className="m-0 inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-[#5f6a78]">
-              {store ? 'VIA' : 'POWERED BY'} <GullyMark size={18} /> GULLY PAY · GULLYLABS.XYZ
+              SECURED BY <GullyMark size={18} /> GULLY PAY · GULLYLABS.XYZ
             </p>
           </article>
         }

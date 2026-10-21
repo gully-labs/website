@@ -994,10 +994,11 @@ const shotFull = async (page, name) => {
   await page.screenshot({ path: path.join(SHOTS, `${name}-${page.viewportSize().width}.png`), fullPage: true })
 }
 
-/** The standalone checkout frame: no site header, nav or footer; the kit's "Powered by Gully Pay" mark; noindex. */
+/** The standalone checkout frame: no site header, nav or footer; the kit's "Secured by Gully Pay" mark; noindex. */
 async function checkStandalone(page, label) {
   check(`${label}: no site nav, Launch app or site footer`, (await page.getByRole('link', { name: /Launch app/ }).count()) === 0 && (await page.getByText('© 2026 GULLY LABS').count()) === 0 && (await page.getByRole('navigation', { name: 'Main' }).count()) === 0)
-  check(`${label}: Powered by Gully Pay with the kit mark`, (await page.locator('footer img[src="/brand/gully-mark-96.png"]').count()) === 1 && (await page.getByRole('link', { name: /Powered by Gully Pay/ }).count()) === 1)
+  check(`${label}: the footer says SECURED BY GULLY PAY with the shield and the kit mark`, (await page.locator('footer img[src="/brand/gully-mark-96.png"]').count()) === 1 && (await page.getByRole('link', { name: /Secured by Gully Pay/ }).count()) === 1 && /SECURED BY/.test((await page.locator('footer').first().textContent()) ?? '') && !/POWERED BY/.test((await page.locator('footer').first().textContent()) ?? '') && (await page.locator('footer a svg.lucide-shield-check').count()) === 1)
+  check(`${label}: the header carries the small Secured by Gully Pay seal`, (await page.locator('header').first().getByTestId('secured-by-small').count()) === 1)
   check(`${label}: non-custodial badge and legal links in a new tab`, (await page.getByText('Non-custodial').count()) >= 1 && (await page.locator('nav[aria-label="Legal"] a[target="_blank"]').count()) >= 2)
   check(`${label}: noindex`, (await page.locator('meta[name="robots"][content="noindex"]').count()) === 1)
 }
@@ -1016,9 +1017,13 @@ await step('pay', async () => {
   await page.getByTestId('order-total').waitFor()
   await checkStandalone(page, 'pay')
   check('pay: the kit lockup heads our own invoice', (await page.locator('header [data-brand="kit"]').count()) === 1)
+  const lockupH = await page.locator('header [data-brand="kit"]').first().evaluate((el) => el.getBoundingClientRect().height)
+  check('pay: the header logo is at least 32 px tall (40 at 1440)', lockupH >= 32 && Math.round(lockupH) === 40, `${lockupH}px`)
   check('pay: the title is "Pay Gully Labs"', (await page.title()) === 'Pay Gully Labs', await page.title())
   check('pay: the order summary lists the line and total in normal type', /\b25(\.00)?\b/.test(await page.getByTestId('order-total').textContent()) && (await page.getByTestId('order-items').getByRole('row').count()) >= 2, `${await page.getByTestId('order-total').textContent()} / ${await page.getByTestId('order-items').getByRole('row').count()} rows`)
   await page.getByRole('radiogroup', { name: 'Pay with' }).getByRole('radio', { name: 'USDC on Base' }).click()
+  await page.getByTestId('quote-amount').waitFor({ timeout: 10_000 })
+  await page.getByTestId('scan-qr').click()
   await page.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
   check('pay: a quote shows its wallet QR code', true)
   check('pay: the quote counts down', (await page.getByRole('timer').count()) > 0)
@@ -1042,12 +1047,26 @@ await step('pay', async () => {
   const p3 = await ctx3.newPage()
   const w3 = watch(p3, 'pay page (every chain)')
   await p3.goto(`${BASE}/pay/${invAll.data.invoice.id}`)
-  const picker = p3.getByRole('radiogroup', { name: 'Pay with' })
-  await picker.getByRole('radio', { name: 'USDT on BNB Chain' }).waitFor({ timeout: 10_000 })
-  check('pay: the picker lists every offered asset (USDC on Base, USDT on Ethereum, BNB on BNB Chain, ETH on Arbitrum…)', (await picker.getByRole('radio').count()) === PLANS.assets.length && (await picker.getByRole('radio', { name: 'USDC on Base' }).count()) === 1 && (await picker.getByRole('radio', { name: 'USDT on Ethereum' }).count()) === 1 && (await picker.getByRole('radio', { name: 'BNB on BNB Chain' }).count()) === 1 && (await picker.getByRole('radio', { name: 'ETH on Arbitrum' }).count()) === 1)
-  check('pay: the picker offers nothing on OP Mainnet, Polygon or Avalanche (treasury not deployed there)', (await picker.getByRole('radio', { name: / on (OP Mainnet|Polygon|Avalanche)$/ }).count()) === 0)
-  check(`pay: the picker shows ${OFFERED.length} chain groups with their marks (real logo files, no letter tiles)`, (await picker.locator('img[src^="/chains/"]').count()) >= OFFERED.length && (await picker.locator('img[src="/chains/arbitrum.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/ethereum.svg"]').count()) >= 1 && (await picker.locator('img[src^="/chains/optimism"], img[src^="/chains/polygon"], img[src^="/chains/avalanche"]').count()) === 0)
-  await picker.getByRole('radio', { name: 'USDT on BNB Chain' }).click()
+  const picker = p3.getByTestId('asset-picker')
+  const chains = picker.getByRole('radiogroup', { name: 'Network' })
+  const tokens = picker.getByRole('radiogroup', { name: 'Pay with' })
+  await chains.getByRole('radio', { name: 'BNB Chain network' }).waitFor({ timeout: 10_000 })
+  const perChain = (name) => PLANS.assets.filter((a) => a.chain === name).length
+  check(`pay: the picker is one row of ${OFFERED.length} chain chips with their marks, and the first chain's tokens only (${perChain(OFFERED[0])})`, (await chains.getByRole('radio').count()) === OFFERED.length && (await chains.locator('img[src^="/chains/"]').count()) >= OFFERED.length && (await tokens.getByRole('radio').count()) === perChain(OFFERED[0]))
+  check('pay: the picker offers no chain chip for OP Mainnet, Polygon or Avalanche (treasury not deployed there)', (await chains.getByRole('radio', { name: /^(OP Mainnet|Polygon|Avalanche) network$/ }).count()) === 0)
+  check('pay: the chain chips carry the real chain logo files, no letter tiles', (await picker.locator('img[src="/chains/arbitrum.svg"]').count()) >= 1 && (await picker.locator('img[src="/chains/ethereum.svg"]').count()) >= 1 && (await picker.locator('img[src^="/chains/optimism"], img[src^="/chains/polygon"], img[src^="/chains/avalanche"]').count()) === 0)
+  // Every offered asset is reachable: its chain chip, then its token chip (the quote request is made by the token chip only).
+  let reachable = 0
+  for (const a of PLANS.assets) {
+    await chains.getByRole('radio', { name: `${a.chain} network` }).click()
+    if ((await tokens.getByRole('radio', { name: `${a.symbol} on ${a.chain}` }).count()) === 1 && (await tokens.getByRole('radio').count()) === perChain(a.chain)) reachable++
+  }
+  check(`pay: every offered asset (USDC on Base, USDT on Ethereum, BNB on BNB Chain, ETH on Arbitrum…) shows under its chain chip, ${PLANS.assets.length} of ${PLANS.assets.length}`, reachable === PLANS.assets.length, `${reachable}`)
+  await chains.getByRole('radio', { name: 'BNB Chain network' }).click()
+  await tokens.getByRole('radio', { name: 'USDT on BNB Chain' }).click()
+  await p3.getByTestId('quote-amount').waitFor({ timeout: 10_000 })
+  check('pay: a QR waits behind its tab: no code until "QR & manual" is chosen', (await p3.getByRole('img', { name: /^Wallet payment request:/ }).count()) === 0)
+  await p3.getByTestId('scan-qr').click()
   await p3.getByRole('img', { name: /^Wallet payment request: .* USDT on BNB Chain/ }).waitFor({ timeout: 10_000 })
   check('pay: a USDT on BNB Chain quote shows its QR and says 15 confirmations', (await p3.getByText(/counts after 15 confirmations/).count()) > 0)
   await w3.verify()
@@ -1066,6 +1085,12 @@ await step('pay', async () => {
     check(`pay paid at ${width}: receipt, download and explorer`, (await p.getByTestId('receipt').count()) === 1 && /\/receipt\?print=1$/.test(await p.getByTestId('download-receipt').getAttribute('href')))
     if (width === 390) await noHorizontalScroll(p, 'paid invoice')
     await shotFull(p, 'gully-invoice-paid')
+    await p.goto(`${BASE}/pay/${invId}/receipt`)
+    await p.getByTestId('receipt-page').waitFor()
+    const rseal = p.getByTestId('receipt-page').getByTestId('secured-by')
+    check(`pay receipt at ${width}: carries the Secured by Gully Pay seal, linking the treasury on the explorer`, (await rseal.count()) === 1 && (await rseal.getByTestId('seal-treasury-link').getAttribute('href')) === `${usdc.explorer}/address/${real.invoice.checkout.treasury}`)
+    if (width === 390) await noHorizontalScroll(p, 'pay receipt')
+    await shotFull(p, 'gully-receipt')
     await ww.verify()
     await c.close()
   }
@@ -1083,6 +1108,104 @@ await step('pay', async () => {
   check('pay link: continue makes an invoice and opens its checkout', true)
   await w2.verify()
   await ctx2.close()
+})
+
+/* ------------------------------------------- pay: checkout v3 (compact picker, live charts, seal) --- */
+
+// One open invoice taking every offered asset, at 1440, 390 and 320: the picker is one chip row plus the chosen
+// chain's tokens, the quote request is exactly the old one, the live block track ticks and fills, the network fee is
+// read from /api/pay/gas, the "Secured by Gully Pay" seal links the treasury from the checkout config, the QR waits
+// behind its tab, nothing scrolls sideways and the page's last line clears the floating buttons.
+await step('pay checkout v3', async () => {
+  const usdt = PLANS.assets.find((a) => a.symbol === 'USDT' && a.chain === 'Ethereum')
+  const eth = PLANS.assets.find((a) => a.kind === 'native' && a.chain === 'Ethereum')
+  const inv = await adminCall('/api/admin/invoices', { title: 'E2E: checkout v3', usd: '40' })
+  check('v3: the admin API creates an invoice taking every offered asset', inv.status === 201 && !!usdt && !!eth)
+  const invId = inv.data.invoice.id
+  const treasury = inv.data.invoice.checkout.treasury
+  const gas = await (await fetch(`${BASE}/api/pay/gas`)).json()
+  const gasRow = gas.chains.find((c) => c.chainId === usdt.chainId)
+  for (const width of [1440, 390, 320]) {
+    const ctx = await newContext(width === 1440 ? {} : { width, height: 844, mobile: true })
+    const page = await ctx.newPage()
+    const quotes = []
+    page.on('request', (r) => {
+      if (r.method() === 'POST' && /\/api\/pay\/inv_[^/]+\/quote$/.test(r.url())) quotes.push(r.postDataJSON())
+    })
+    const w = watch(page, `checkout v3 at ${width}`)
+    await page.goto(`${BASE}/pay/${invId}`)
+    const picker = page.getByTestId('asset-picker')
+    await picker.waitFor()
+    const pickerH = (await picker.boundingBox()).height
+    check(`v3 at ${width}: the picker is compact (${Math.round(pickerH)} px, at most ${width === 1440 ? 160 : 200})`, pickerH <= (width === 1440 ? 160 : 200))
+    const logoH = await page.locator('header [data-brand="kit"]').first().evaluate((el) => el.getBoundingClientRect().height)
+    check(`v3 at ${width}: the logo is at least 32 px tall (${logoH} px)`, logoH >= 32)
+    check(`v3 at ${width}: before a quote the seal already stands on the page`, (await page.getByTestId('secured-by').count()) === 1)
+    // A chain chip only changes which tokens show: no quote is asked for.
+    await picker.getByRole('radio', { name: 'Ethereum network' }).click()
+    check(`v3 at ${width}: the Ethereum chip shows its tokens only and asks for no quote`, (await picker.getByRole('radio', { name: 'USDT on Ethereum' }).count()) === 1 && (await picker.getByRole('radio', { name: 'USDC on Base' }).count()) === 0 && quotes.length === 0 && (await picker.getByRole('radio', { name: 'Ethereum network' }).getAttribute('aria-checked')) === 'true')
+    await picker.getByRole('radio', { name: 'USDT on Ethereum' }).click()
+    await page.getByTestId('quote-amount').waitFor({ timeout: 10_000 })
+    check(`v3 at ${width}: the token chip's quote request is the old one: POST { asset: "${usdt.id}" }, once`, quotes.length === 1 && JSON.stringify(quotes[0]) === JSON.stringify({ asset: usdt.id }), JSON.stringify(quotes))
+    check(`v3 at ${width}: the token chip is checked and tagged "stable"`, (await picker.getByRole('radio', { name: 'USDT on Ethereum' }).getAttribute('aria-checked')) === 'true' && /stable/.test((await picker.getByRole('radio', { name: 'USDT on Ethereum' }).textContent()) ?? ''))
+    // The live block track: ticks, data-live, the confirmations target from the quote.
+    const track = page.getByTestId('block-track')
+    await track.locator('[data-tick]').first().waitFor({ timeout: 15_000 })
+    check(`v3 at ${width}: the block track is live and has ticks`, ['on', 'paused'].includes((await track.getAttribute('data-live')) ?? '') && Number(await track.getAttribute('data-ticks')) > 0 && (await track.locator('[data-tick]').count()) > 0 && (await track.getAttribute('data-chain')) === String(usdt.chainId))
+    check(`v3 at ${width}: the track marks the ${usdt.confirmations}-confirmation target of Ethereum`, (await track.getByTestId('confirm-target').textContent())?.trim() === String(usdt.confirmations) && (await track.getByRole('progressbar').locator('i').count()) === usdt.confirmations)
+    // The network fee, only where /api/pay/gas has the figure.
+    if (gasRow?.ok && typeof gasRow.transferUsd === 'number') {
+      await page.getByTestId('network-fee').waitFor({ timeout: 15_000 })
+      check(`v3 at ${width}: the network fee for this payment is shown from /api/pay/gas`, (await page.getByTestId('network-fee').getByRole('img', { name: /^\$\d/ }).count()) === 1)
+    }
+    // The seal under the Pay button: the treasury link comes from the checkout config, on this chain's explorer.
+    const seal = page.getByTestId('secured-by')
+    check(`v3 at ${width}: the seal says non-custodial, links the treasury "verified 2-of-3 Safe" on the explorer and says confirmed on chain`, (await seal.count()) === 1 && /Non-custodial/.test((await seal.textContent()) ?? '') && (await seal.getByTestId('seal-treasury-link').getAttribute('href')) === `${usdt.explorer}/address/${treasury}` && /verified 2-of-3 Safe/.test((await seal.getByTestId('seal-treasury-link').textContent()) ?? '') && /Confirmed on chain/.test((await seal.textContent()) ?? ''))
+    const btn = await page.getByTestId('pay-with-wallet').boundingBox()
+    const sealBox = await seal.boundingBox()
+    check(`v3 at ${width}: the seal sits directly under the Pay button`, sealBox.y >= btn.y + btn.height - 1 && sealBox.y - (btn.y + btn.height) <= 40, `${Math.round(sealBox.y - (btn.y + btn.height))} px`)
+    check(`v3 at ${width}: the non-custodial line appears once on the page (in the seal; the header keeps its pill)`, ((await page.locator('main').textContent()) ?? '').match(/straight to the Gully Labs treasury/g)?.length === 1 && !/Paid wallet to wallet/.test((await page.locator('main').textContent()) ?? ''))
+    check(`v3 at ${width}: the footer says SECURED BY GULLY PAY`, /SECURED BY/.test((await page.locator('footer').textContent()) ?? ''))
+    await shotFull(page, 'checkout-v3-open')
+    // The QR waits behind its tab; the warning and the copy buttons come with it.
+    check(`v3 at ${width}: no QR until its tab is chosen`, (await page.getByRole('img', { name: /^Wallet payment request:/ }).count()) === 0 && (await page.getByTestId('scan-qr').getAttribute('aria-selected')) === 'false')
+    await page.getByTestId('scan-qr').click()
+    await page.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
+    await shotFull(page, 'checkout-v3-qr')
+    check(`v3 at ${width}: the QR tab shows the code, both copy buttons and the warning`, (await page.getByRole('button', { name: 'Copy Address' }).count()) === 1 && (await page.getByRole('button', { name: 'Copy Contract' }).count()) === 1 && (await page.getByText(/Check the amount, the network and the address in your wallet/).count()) === 1 && (await page.getByTestId('secured-by').count()) === 1)
+    if (width !== 1440) await noHorizontalScroll(page, 'v3 checkout')
+    await page.getByTestId('tab-wallet').click()
+    check(`v3 at ${width}: back on the Wallet tab the QR is gone again`, (await page.getByRole('img', { name: /^Wallet payment request:/ }).count()) === 0 && (await page.getByTestId('pay-with-wallet').isVisible()))
+    if (width === 1440) {
+      const h = await page.evaluate(() => document.documentElement.scrollHeight)
+      check(`v3 at 1440: the whole open invoice is about 1.5 viewports or less (${h} px of 900)`, h <= 1400, `${h}px`)
+    } else {
+      // The last line of the page clears the floating buttons (72 px) when scrolled to the end.
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+      await page.waitForTimeout(200)
+      const gap = await page.evaluate(() => {
+        const last = [...document.querySelectorAll('footer a, footer nav a')].reduce((m, a) => Math.max(m, a.getBoundingClientRect().bottom), 0)
+        return window.innerHeight - last
+      })
+      check(`v3 at ${width}: the last footer line clears the Gully AI and Pay buttons by 72 px (${Math.round(gap)} px)`, gap >= 72)
+    }
+    // The coin: its price chart (left column at 1440, in Status on a phone), then the confirmations filling from the verify answer.
+    await picker.getByRole('radio', { name: 'Ethereum network' }).click()
+    await picker.getByRole('radio', { name: 'ETH on Ethereum' }).click()
+    await page.getByText(/ETH PRICE · CHAINLINK ON ETHEREUM/).first().waitFor({ timeout: 15_000 })
+    check(`v3 at ${width}: a coin shows the live price chart (existing PayCharts) and no network fee row`, (await page.getByText(/ETH PRICE · CHAINLINK ON ETHEREUM/).count()) === 1 && (await page.getByTestId('network-fee').count()) === 0)
+    if (width === 1440) {
+      await ctx.route(new RegExp(`/api/pay/${invId}/verify$`), (route) => json(route, { error: 'Waiting for confirmations.', confirmations: 2, needed: eth.confirmations }, 202))
+      await page.locator('details summary').click()
+      await page.locator('details input').fill('0x' + 'ab'.repeat(32))
+      await page.getByRole('button', { name: 'Check payment' }).click()
+      await page.waitForFunction(() => document.querySelector('[data-testid="block-track"]')?.getAttribute('data-confirmations') === '2', null, { timeout: 15_000 })
+      check('v3 at 1440: after a payment is seen the same track shows 2 confirmations filled and the target still marked', (await page.getByTestId('block-track').getByRole('progressbar').getAttribute('aria-valuenow')) === '2' && (await page.getByTestId('confirm-target').textContent())?.trim() === String(eth.confirmations) && (await page.getByTestId('status-track').getAttribute('data-step')) === '2')
+      await shotFull(page, 'checkout-v3-confirming')
+    }
+    await w.verify()
+    await ctx.close()
+  }
 })
 
 /* ------------------------------------------------------- merchant: Safe deployment --- */
@@ -1286,11 +1409,10 @@ await step('merchant checkout', async () => {
       await p.waitForURL(/\/pay\/m\/mi_/)
       await p.getByTestId('quote-amount').waitFor({ timeout: 10_000 })
       check(`store invoice at ${width}: the quote names the amount, the timer runs, Pay with wallet is primary`, (await p.getByRole('timer').count()) > 0 && (await p.getByTestId('pay-with-wallet').count()) === 1)
-      if (width === 390) {
-        check('store invoice at 390: the QR waits behind "Scan QR"', (await p.getByRole('img', { name: /^Wallet payment request:/ }).count()) === 0)
-        await p.getByTestId('scan-qr').click()
-        await noHorizontalScroll(p, 'store invoice')
-      }
+      check(`store invoice at ${width}: the QR waits behind its "QR & manual" tab`, (await p.getByRole('img', { name: /^Wallet payment request:/ }).count()) === 0)
+      await shotFull(p, 'merchant-invoice-open')
+      await p.getByTestId('scan-qr').click()
+      if (width === 390) await noHorizontalScroll(p, 'store invoice')
       await p.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
       check(`store invoice at ${width}: the QR names the store`, /to Acme Coffee$/.test(await p.getByRole('img', { name: /^Wallet payment request:/ }).getAttribute('aria-label')))
       check(`store invoice at ${width}: status waiting`, (await p.getByTestId('status-track').getAttribute('data-step')) === '0')
@@ -1305,8 +1427,8 @@ await step('merchant checkout', async () => {
       }
       check(`store invoice at ${width}: the header has a copy-link button, not a raw URL`, (await p.getByTestId('copy-link').count()) === 1 && !/\/pay\/m\/mi_/.test((await p.getByRole('region', { name: 'Payment' }).locator('header').first().textContent()) ?? ''))
       if (width === 1440) {
-        await p.getByTestId('pay-aside-content').locator('[data-live]').first().waitFor({ timeout: 10_000 }).catch(() => {})
-        check('store invoice at 1440: the left column holds a live chart and the QR', (await p.getByTestId('pay-aside-content').locator('[data-live]').count()) > 0 && (await p.getByTestId('pay-aside-content').getByRole('img', { name: /^Wallet payment request:/ }).count()) === 1)
+        await p.getByTestId('block-track').waitFor({ timeout: 10_000 })
+        check('store invoice at 1440: the live block track is on the page and its seal names the store, with no Gully treasury link', (await p.getByTestId('block-track').getAttribute('data-live')) !== null && /Acme Coffee/.test((await p.getByTestId('secured-by').first().textContent()) ?? '') && (await p.getByTestId('seal-treasury').count()) === 0)
       }
       await shotFull(p, 'merchant-invoice-quote')
       if (width === 1440) {
@@ -1407,10 +1529,11 @@ await step('merchant checkout', async () => {
         await p.waitForURL(/\/receipt$/)
         await p.getByTestId('receipt-page').waitFor()
         check('store receipt: names the store, the lines and PAID IN FULL', (await p.getByText('PAID IN FULL').count()) === 1 && (await p.getByTestId('receipt-page').getByText('Acme Coffee').count()) >= 1 && (await p.getByTestId('receipt-page').getByText('Descaler, 500 ml').count()) === 1)
-        // P1-7: a live chart on the receipt (screen only): the confirmations ring draws from the invoice API.
+        // P1-7: a live chart on the receipt (screen only): the block track with the confirmations it had, done and green.
         const live = p.getByTestId('receipt-live')
         await live.scrollIntoViewIfNeeded()
-        check('store receipt: a live chart draws on screen', await live.locator('[data-chart]').first().waitFor({ timeout: 15_000 }).then(() => p.waitForFunction(() => !!document.querySelector('[data-testid="receipt-live"] [data-chart] svg'), null, { timeout: 15_000 })).then(() => true, () => false))
+        check('store receipt: a live block track shows on screen, all its confirmations filled', await live.getByTestId('block-track').waitFor({ timeout: 15_000 }).then(() => true, () => false) && Number(await live.getByTestId('block-track').getAttribute('data-confirmations')) > 0)
+        check('store receipt: carries the Secured by Gully Pay seal saying the funds go to the store, with no Gully treasury link', (await p.getByTestId('receipt-page').getByTestId('secured-by').count()) === 1 && /Acme Coffee/.test((await p.getByTestId('secured-by').textContent()) ?? '') && (await p.getByTestId('seal-treasury').count()) === 0)
         await shotFull(p, 'merchant-receipt')
       }
       await ww.verify()
