@@ -17,6 +17,10 @@ export const socialLinks = [
   { label: 'Telegram', href: 'https://t.me/GullyLabsNews', name: 'Gully Labs News on Telegram' },
   // The bot is a product, the channel is the community: listed separately (CLAUDE.md, Telegram rule).
   { label: 'TelegramBot', href: 'https://t.me/GullyLabsBot', name: '@GullyLabsBot on Telegram' },
+  { label: 'YouTube', href: 'https://www.youtube.com/@Gully_Labs', name: 'Gully Labs on YouTube' },
+  { label: 'TikTok', href: 'https://www.tiktok.com/@gully_labs', name: 'Gully Labs on TikTok' },
+  { label: 'Facebook', href: 'https://www.facebook.com/gullylabsllc', name: 'Gully Labs on Facebook' },
+  { label: 'Medium', href: 'https://medium.com/@labsgully', name: 'Gully Labs on Medium' },
 ] as const
 
 export type SocialLabel = (typeof socialLinks)[number]['label']

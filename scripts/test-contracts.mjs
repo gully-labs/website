@@ -119,7 +119,7 @@ const ld = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/
 const org = ld.find((x) => x['@type'] === 'Organization')
 const app = ld.find((x) => x['@type'] === 'SoftwareApplication')
 check('home head has Organization JSON-LD', !!org && org.name === 'Gully Labs' && org.url === 'https://gullylabs.xyz' && /gully-mark-512\.png$/.test(org.logo))
-check('Organization sameAs: X, GitHub, Telegram', ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews'].every((u) => org?.sameAs.includes(u)))
+check('Organization sameAs: X, GitHub, Telegram, YouTube, TikTok, Facebook, Medium', ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://www.youtube.com/@Gully_Labs', 'https://www.tiktok.com/@gully_labs', 'https://www.facebook.com/gullylabsllc', 'https://medium.com/@labsgully'].every((u) => org?.sameAs.includes(u)))
 check('home head has SoftwareApplication JSON-LD', !!app && app.name === 'Gully Labs' && !!app.applicationCategory && !!app.description)
 check('logo file exists in the brand kit copy', fs.existsSync(path.join(root, 'public/brand/gully-mark-512.png')))
 const tracker = renderHead('<html><head></head></html>', pageMeta('gullylabs.xyz', '/tracker'))

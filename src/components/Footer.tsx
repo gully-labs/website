@@ -63,7 +63,7 @@ export function Footer() {
             Start a project
             <ArrowUpRight aria-hidden size={14} strokeWidth={2} className="transition-transform group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
           </button>
-          <nav aria-label="Social" className="-ml-[10px] flex items-center">
+          <nav aria-label="Social" className="-ml-[10px] flex flex-wrap items-center">
             {socialLinks.map((s) => (
               <a key={s.label} href={s.href} {...newTab} aria-label={s.name} title={s.name} className="grid size-11 place-items-center rounded-sm text-faint transition-colors hover:text-gold min-[700px]:size-9">
                 <SocialIcon name={s.label} size={16} />

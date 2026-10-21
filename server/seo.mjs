@@ -167,7 +167,7 @@ const ORG = {
   name: 'Gully Labs',
   url: SITE,
   logo: `${SITE}/brand/gully-mark-512.png`,
-  sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://t.me/GullyLabsBot'],
+  sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://t.me/GullyLabsBot', 'https://www.youtube.com/@Gully_Labs', 'https://www.tiktok.com/@gully_labs', 'https://www.facebook.com/gullylabsllc', 'https://medium.com/@labsgully'],
 }
 /** The product as software: the web app and its public API, free to start (plans are listed on /pricing). */
 const APP_LD = {

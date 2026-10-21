@@ -367,7 +367,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
             ))}
           </div>
         </div>
-        <div className="mt-6 flex gap-2">
+        <div className="mt-6 flex flex-wrap gap-2">
           {socialLinks.map((s) => (
             <a key={s.label} href={s.href} {...newTab} aria-label={`${s.name} (opens in a new tab)`} className="inline-flex size-11 items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-ink">
               <SocialIcon name={s.label} />
