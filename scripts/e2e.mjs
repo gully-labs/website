@@ -217,7 +217,14 @@ async function noHorizontalScroll(page, label) {
   check(`${label}: no horizontal scroll at ${w[1]} px`, w[0] <= w[1], `scrollWidth ${w[0]}${w[2] ? ` · widest: <${w[2].tag} class="${w[2].cls}"> "${w[2].text}" right ${w[2].right}` : ''}`)
 }
 
+// E2E_SHARD=<i>/<n> runs the i-th of n contiguous slices of the steps (1-based), for a machine short on memory
+// or time. Steps run in file order, so a slice keeps the state its own steps build up.
+const SHARD = /^(\d+)\/(\d+)$/.exec(process.env.E2E_SHARD ?? '')
+const STEP_COUNT = (fs.readFileSync(new URL(import.meta.url), 'utf8').match(/^await step\(/gm) ?? []).length
+let stepIndex = 0
 const step = async (name, fn) => {
+  const idx = stepIndex++
+  if (SHARD && Math.floor((idx * Number(SHARD[2])) / STEP_COUNT) !== Number(SHARD[1]) - 1) return
   // E2E_ONLY=<text> runs only the steps whose name contains it (a quick run of one area).
   if (process.env.E2E_ONLY && !name.includes(process.env.E2E_ONLY)) return
   try {
@@ -570,7 +577,8 @@ await step('terms of service', async () => {
   await page.getByTestId('connect-wallet').waitFor()
   const note = page.getByTestId('signin-terms')
   check('app sign-in: says connecting accepts the Terms and the Privacy policy, both linked in a new tab', (await note.locator('a[href="https://gullylabs.xyz/legal/terms"][target="_blank"]').count()) === 1 && (await note.locator('a[href="https://gullylabs.xyz/legal/privacy"][target="_blank"]').count()) === 1)
-  await w.verify()
+  // Signed out, the app asks who is signed in and gets 401s: expected, not page errors.
+  await w.verify([/401 \/api\/developer\/(account|me)\b/, /status of 401 \(Unauthorized\)/])
   await ctx.close()
 })
 

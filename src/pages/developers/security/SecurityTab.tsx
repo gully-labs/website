@@ -49,7 +49,7 @@ function ScansPerDay({ scans }: { scans: ScanView[] }) {
       { id: 'failed', name: 'Failed or cancelled', color: C.error, data: by((s) => s.status === 'failed' || s.status === 'cancelled' || s.status === 'unknown') },
     ]
     return {
-      grid: { left: 24, right: 8, top: 8, bottom: 22 },
+      grid: { left: 24, right: 8, top: 6, bottom: 20 },
       xAxis: { type: 'category', data: days.map((d) => d.slice(5)), axisLabel: { color: C.faint, fontSize: 11, interval: 3 }, axisTick: { show: false }, axisLine: { lineStyle: { color: C.line } } },
       yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.faint, fontSize: 11 } },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
@@ -59,7 +59,7 @@ function ScansPerDay({ scans }: { scans: ScanView[] }) {
       series: series.map((s) => ({ id: s.id, name: s.name, ...barsPreset({ focus: 'series' }), stack: 'all', barWidth: '55%', itemStyle: { color: s.color, borderRadius: 2 }, data: s.data })),
     }
   }, [scans, now])
-  return <EChart option={option} height={120} label={`Scans per day in this workspace over 14 days: ${scans.length} in all.`} steps={{ count: 14 }} />
+  return <EChart option={option} height={96} label={`Scans per day in this workspace over 14 days: ${scans.length} in all.`} steps={{ count: 14 }} />
 }
 
 function MiniCounts({ s }: { s: ScanView }) {
@@ -157,7 +157,7 @@ function ScansPerMonth({ scans }: { scans: ScanView[] }) {
     ]
     const label = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
     return {
-      grid: { left: 24, right: 8, top: 8, bottom: 22 },
+      grid: { left: 24, right: 8, top: 6, bottom: 20 },
       xAxis: { type: 'category', data: months.map(label), axisLabel: { color: C.faint, fontSize: 11 }, axisTick: { show: false }, axisLine: { lineStyle: { color: C.line } } },
       yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.faint, fontSize: 11 } },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
@@ -167,61 +167,60 @@ function ScansPerMonth({ scans }: { scans: ScanView[] }) {
       series: series.map((x) => ({ id: x.id, name: x.name, ...barsPreset({ focus: 'series' }), stack: 'all', barWidth: '45%', itemStyle: { color: x.color, borderRadius: 2 }, data: x.data })),
     }
   }, [scans, now])
-  return <EChart option={option} height={110} label={`Scans per month by how they were paid, over 6 months: ${scans.length} scans in all.`} steps={{ count: 6 }} />
+  return <EChart option={option} height={76} label={`Scans per month by how they were paid, over 6 months: ${scans.length} scans in all.`} steps={{ count: 6 }} />
 }
 
-/** Free scans left this month, re-run credits and what the next scan costs (GET /api/developer/security quota). */
+/** Free scans left this month, re-run credits and what the next scan costs (GET /api/developer/security quota), with
+    how scans were paid per month: one compact strip at the top of the Scans panel, so the tab still fits one screen. */
 function Credits({ ov, scans }: { ov: SecurityOverview; scans: ScanView[] | null }) {
   const q = ov.quota
   const credits = q.credits ?? 0
   const next = q.left > 0 ? 'Free' : credits > 0 ? 'Credit' : `$${ov.offer.scan.priceUsd}`
   const resets = new Date(q.resetsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-  const stat = 'flex min-w-0 flex-col gap-1 rounded-input border border-line px-3 py-2'
+  const stat = 'flex min-w-0 flex-col justify-center gap-1 rounded-input border border-line px-3 py-1.5'
+  const label = 'font-mono text-[11px] leading-none tracking-[1px] text-faint'
+  const value = 'font-display text-[20px] leading-none'
   return (
-    <section className={panel} aria-label="Scan credits" data-testid="scan-credits">
-      <div className="grid grid-cols-4 gap-2 max-[800px]:grid-cols-2">
-        <div className={stat}>
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">FREE THIS MONTH</span>
-          <span className="flex items-baseline gap-2">
-            <b className="font-display text-[24px] leading-none text-ink" data-testid="credits-free">
-              {q.left}
-            </b>
-            <span className="text-[12px] text-muted">of {q.freePerMonth}</span>
-          </span>
-          <span className="flex gap-[3px]" aria-hidden>
-            {Array.from({ length: Math.min(q.freePerMonth, 10) }, (_, i) => (
-              <i key={i} className={`h-[5px] flex-1 origin-left rounded-full ${i < q.left ? 'bg-green' : 'bg-line-strong'}`} style={{ animation: `gl-grow-x .5s ${i * 0.06}s cubic-bezier(.2,.8,.2,1) both` }} />
-            ))}
-          </span>
-        </div>
-        <div className={stat}>
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">RE-RUN CREDITS</span>
-          <b className={`font-display text-[24px] leading-none ${credits ? 'text-gold' : 'text-ink'}`} data-testid="credits-rerun">
-            {credits}
+    <div aria-label="Scan credits" role="group" data-testid="scan-credits" className="grid grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.6fr)] gap-2 max-[1100px]:grid-cols-4 max-[600px]:grid-cols-2">
+      <div className={stat}>
+        <span className={label}>FREE THIS MONTH</span>
+        <span className="flex items-baseline gap-1.5">
+          <b className={`${value} text-ink`} data-testid="credits-free">
+            {q.left}
           </b>
-          <span className="text-[12px] text-muted">{credits ? 'used before any price' : 'a failed paid scan earns one'}</span>
-        </div>
-        <div className={stat}>
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">NEXT SCAN</span>
-          <b className="font-display text-[24px] leading-none text-ink" data-testid="credits-next">
-            {next}
-          </b>
-          <span className="text-[12px] text-muted">{q.plan.name} plan</span>
-        </div>
-        <div className={stat}>
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">RESETS</span>
-          <b className="font-display text-[24px] leading-none text-ink">{resets}</b>
-          <span className="text-[12px] text-muted">{q.used} used this month</span>
-        </div>
+          <span className="text-[12px] text-muted">of {q.freePerMonth}</span>
+        </span>
+        <span className="flex gap-[3px]" aria-hidden>
+          {Array.from({ length: Math.min(q.freePerMonth, 10) }, (_, i) => (
+            <i key={i} className={`h-[4px] flex-1 origin-left rounded-full ${i < q.left ? 'bg-green' : 'bg-line-strong'}`} style={{ animation: `gl-grow-x .5s ${i * 0.06}s cubic-bezier(.2,.8,.2,1) both` }} />
+          ))}
+        </span>
       </div>
-      {scans === null ? <Skeleton h={110} /> : scans.length ? <ScansPerMonth scans={scans} /> : <GhostChart variant="bars" height={110} label="How you paid for scans will draw here, per month" />}
-      <span className="text-[12px] text-faint">
-        Scans are not refunded: a paid scan that fails gives a re-run credit instead.{' '}
-        <ExtLink href={site('/legal/scan-terms#s5')} arrow={false} className="inline-flex min-h-11 items-center text-gold underline-offset-4 hover:underline">
-          Scan terms
+      <div className={stat}>
+        <span className={label}>RE-RUN CREDITS</span>
+        <b className={`${value} ${credits ? 'text-gold' : 'text-ink'}`} data-testid="credits-rerun">
+          {credits}
+        </b>
+        <ExtLink href={site('/legal/scan-terms#s5')} arrow={false} className="text-[12px] leading-none text-muted underline-offset-4 hover:text-gold hover:underline" title="Scans are not refunded: a paid scan that fails gives a re-run credit instead.">
+          {credits ? 'used before any price' : 'failed paid scan earns one'}
         </ExtLink>
-      </span>
-    </section>
+      </div>
+      <div className={stat}>
+        <span className={label}>NEXT SCAN</span>
+        <b className={`${value} text-ink`} data-testid="credits-next">
+          {next}
+        </b>
+        <span className="text-[12px] leading-none text-muted">{q.plan.name} plan</span>
+      </div>
+      <div className={stat}>
+        <span className={label}>RESETS</span>
+        <b className={`${value} text-ink`}>{resets}</b>
+        <span className="text-[12px] leading-none text-muted">{q.used} used this month</span>
+      </div>
+      <div className="min-w-0 max-[1100px]:col-span-4 max-[600px]:col-span-2">
+        {scans === null ? <Skeleton h={76} /> : scans.length ? <ScansPerMonth scans={scans} /> : <GhostChart variant="bars" height={76} badge={false} label="Scans per month will draw here" />}
+      </div>
+    </div>
   )
 }
 
@@ -314,19 +313,18 @@ export function SecurityTab({ section }: { section: string | null }) {
             }}
           />
         ) : sub === 'scans' ? (
-          <>
-          <Credits ov={o} scans={list.k === 'ok' ? scans : null} />
           <section className={panel} aria-label="Scans">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="m-0 text-[15px] font-semibold">Scans</h2>
               <span className={mono}>{list.k === 'ok' ? `${scans.length} in this workspace · live` : 'reading…'}</span>
             </div>
+            <Credits ov={o} scans={list.k === 'ok' ? scans : null} />
             {list.k === 'error' && <ErrorLine onRetry={reloadList}>The scans could not be read: {list.message}</ErrorLine>}
             {list.k === 'loading' ? (
               <Skeleton h={160} />
             ) : (
               <>
-                {scans.length > 0 ? <ScansPerDay scans={scans} /> : <GhostChart variant="bars" height={120} label="Your scans will draw here, per day" />}
+                {scans.length > 0 ? <ScansPerDay scans={scans} /> : <GhostChart variant="bars" height={96} label="Your scans will draw here, per day" />}
                 <ScanRows
                   scans={scans.slice(0, 50)}
                   open={open}
@@ -349,7 +347,6 @@ export function SecurityTab({ section }: { section: string | null }) {
               </>
             )}
           </section>
-          </>
         ) : sub === 'new' ? (
           <NewScan key={fresh} ov={o} onOpen={open} />
         ) : sub === 'reports' ? (
