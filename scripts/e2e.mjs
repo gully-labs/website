@@ -16,7 +16,7 @@ import zlib from 'node:zlib'
 import { chromium } from 'playwright'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { blockedOutbound, bootServer, E2E_ANY_TOKEN, E2E_LAUNCH_TOKEN, E2E_NOT_A_TOKEN, historyFixture, holdersExtraFixtures, holdersFixture, ROOT, SAFE_FIXTURE, seedTrackerHistory, signedInitData, statsFixture, telegramSdkStub, trackerFixture, TREASURY_DEPLOYED_CHAINS, TREASURY_UNDEPLOYED_CHAINS } from './e2e-harness.mjs'
-import { makeChecker, makeClient, guardTestRun } from './test-helpers.mjs'
+import { makeChecker, makeClient, guardTestRun, hostRequest } from './test-helpers.mjs'
 import { auditPage, tokenColors } from './e2e-audit.mjs'
 import { clippedIn } from './holders-clip.mjs'
 import { busyFixture, solanaFixture, SOLANA_TOKEN } from './holders-shots-fixtures.mjs'
@@ -3372,6 +3372,91 @@ await step('discovery files and contracts page', async () => {
     await designAudit(page, `docs /contracts ${width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
+  }
+})
+
+/* ------------------------------------------------------ service hosts --- */
+
+// pay., api. and embed. (server/hosts.mjs) are simulated with Chromium's --host-resolver-rules (names mapped to
+// 127.0.0.1, the e2e port kept) and with Host headers for what a browser cannot send. One more browser, closed at the end.
+await step('service hosts', async () => {
+  const HOSTS = ['pay', 'api', 'embed'].map((h) => `${h}.gullylabs.xyz`)
+  const hb = await chromium.launch({ headless: !process.env.E2E_HEADED, args: [`--host-resolver-rules=${HOSTS.map((h) => `MAP ${h} 127.0.0.1`).join(', ')}`] })
+  try {
+    const at = (h, p = '/') => `http://${h}:${PORT}${p}`
+    const hreq = (h, p, opts) => hostRequest(BASE, h, p, opts)
+    const inv = await adminCall('/api/admin/invoices', { title: 'E2E: hosts', usd: '12', assets: ['base-usdc'] })
+    const invId = inv.data?.invoice?.id
+    const lnk = await adminCall('/api/admin/paylinks', { title: 'E2E hosts link', amount: { type: 'fixed', usd: '7' }, assets: ['base-usdc'] })
+    const linkId = lnk.data?.link?.id
+    check('hosts: invoice and pay link exist', /^inv_/.test(invId ?? '') && /^pl_/.test(linkId ?? ''))
+    check('hosts: the invoice and pay link carry pay. URLs (admin API)', inv.data?.invoice?.url === `https://pay.gullylabs.xyz/pay/${invId}` && lnk.data?.link?.url === `https://pay.gullylabs.xyz/pay/l/${linkId}`, `${inv.data?.invoice?.url} ${lnk.data?.link?.url}`)
+
+    // Pay pages on pay.
+    const ctx = await hb.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' })
+    // The production CSP upgrades subresources to https; these simulated hosts speak plain http, so only that one directive is dropped.
+    await ctx.route(`http://*.gullylabs.xyz:${PORT}/**`, async (route) => {
+      const u = new URL(route.request().url())
+      const r = await route.fetch({ url: `http://127.0.0.1:${PORT}${u.pathname}${u.search}`, headers: { ...route.request().headers(), host: u.host }, maxRedirects: 0 })
+      const headers = { ...r.headers() }
+      if (headers['content-security-policy']) headers['content-security-policy'] = headers['content-security-policy'].replace(/;?s*upgrade-insecure-requests/, '')
+      await route.fulfill({ response: r, headers })
+    })
+    const page = await ctx.newPage()
+    const resp = await page.goto(at('pay.gullylabs.xyz', `/pay/${invId}`))
+    await page.getByTestId('order-total').waitFor({ timeout: 30_000 })
+    const hdr = resp.headers()
+    check('hosts: the invoice renders on pay.', /\b12(\.00)?\b/.test(await page.getByTestId('order-total').textContent()))
+    check("hosts: pay. CSP is strict (script-src 'self', frame-ancestors 'none') and the page sets no cookie", /script-src 'self'(;|$)/.test(hdr['content-security-policy'] ?? '') && /frame-ancestors 'none'/.test(hdr['content-security-policy'] ?? '') && !hdr['set-cookie'] && (await ctx.cookies()).length === 0, hdr['content-security-policy'])
+    check('hosts: pay. page loads no analytics script and has a pay. canonical in the served HTML', (await page.locator('script[src*="analytics"]').count()) === 0 && (await resp.text()).includes(`<link rel="canonical" href="https://pay.gullylabs.xyz/pay/${invId}" />`))
+    check('hosts: the pay page does not touch main-site storage', (await page.evaluate(() => Object.keys(localStorage).filter((k) => /gully|session|auth|dev/i.test(k)).length)) === 0)
+    check('hosts: checkout footer links name the main site (not pay. paths)', (await page.locator('a[href$="/legal/merchant-terms"]').first().getAttribute('href')) === 'https://gullylabs.xyz/legal/merchant-terms')
+    const lp = await ctx.newPage()
+    await lp.goto(at('pay.gullylabs.xyz', `/pay/l/${linkId}`))
+    await lp.getByTestId('link-continue').waitFor({ timeout: 30_000 })
+    check('hosts: the pay link page renders on pay.', true)
+
+    // The old address answers 301 to pay., which serves the same page.
+    const old = await hreq('gullylabs.xyz', `/pay/${invId}`)
+    check('hosts: the old gullylabs.xyz/pay/<id> link is a 301 to pay.', old.status === 301 && old.headers.location === `https://pay.gullylabs.xyz/pay/${invId}`, `${old.status} ${old.headers.location}`)
+    const followed = new URL(old.headers.location)
+    const again = await page.goto(at(followed.host, followed.pathname + followed.search))
+    await page.getByTestId('order-total').waitFor({ timeout: 30_000 })
+    check('hosts: following the redirect lands on the same invoice page', again.status() === 200 && (await page.getByTestId('order-total').count()) === 1)
+
+    // A non-pay route on pay. leaves for the main site.
+    const away = await hreq('pay.gullylabs.xyz', '/tracker?x=1')
+    check('hosts: pay. /tracker is a 301 to the main site', away.status === 301 && away.headers.location === 'https://gullylabs.xyz/tracker?x=1', away.headers.location)
+
+    // API on api. (in the browser) and still on the main host.
+    const apiPage = await ctx.newPage()
+    await apiPage.goto(at('api.gullylabs.xyz', '/healthz'))
+    const viaApi = await apiPage.evaluate(async () => (await fetch('/api/plans')).json().then((b) => Object.keys(b).length > 0))
+    check('hosts: GET /api/plans works in the browser on api.', viaApi)
+    const apiHdr = await hreq('api.gullylabs.xyz', '/api/plans')
+    const mainHdr = await hreq('gullylabs.xyz', '/api/plans')
+    check('hosts: the API answers on api. and on the main host (no redirect), the latter naming api. as canonical', apiHdr.status === 200 && mainHdr.status === 200 && !mainHdr.headers.location && /rel="canonical"/.test(mainHdr.headers.link ?? '') && /api\.gullylabs\.xyz/.test(mainHdr.headers.link ?? ''), mainHdr.headers.link)
+    check('hosts: api. refuses what is not API', (await hreq('api.gullylabs.xyz', '/tracker')).status === 404)
+
+    // The embed on embed.: no Set-Cookie, framable from anywhere, widget.js served.
+    const holder = '0x' + '1'.repeat(40)
+    const ep = await ctx.newPage()
+    const er = await ep.goto(at('embed.gullylabs.xyz', `/embed/holders/base/${holder}`))
+    const eh = er.headers()
+    check('hosts: the embed page loads on embed. with frame-ancestors *, and no Set-Cookie', er.status() === 200 && /frame-ancestors \*/.test(eh['content-security-policy'] ?? '') && !eh['set-cookie'])
+    const ew = await hreq('embed.gullylabs.xyz', '/widget.js')
+    check('hosts: widget.js on embed. (no Set-Cookie, open CORS) and on the main host (old snippets)', ew.status === 200 && !ew.headers['set-cookie'] && ew.headers['access-control-allow-origin'] === '*' && (await hreq('gullylabs.xyz', '/widget.js')).status === 200)
+    check('hosts: embed. never serves pay or site pages', (await hreq('embed.gullylabs.xyz', `/pay/${invId}`)).status === 301 && (await hreq('embed.gullylabs.xyz', '/pricing')).status === 301)
+
+    // Another site embedding the widget from embed.
+    const hostPage = await ctx.newPage()
+    await hostPage.route(`http://pay.gullylabs.xyz:${PORT}/third-party.html`, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: `<!doctype html><div data-gully-widget="holders" data-chain="base" data-token="${holder}"></div><script src="http://embed.gullylabs.xyz:${PORT}/widget.js"></script>` }))
+    await hostPage.goto(at('pay.gullylabs.xyz', '/third-party.html'))
+    await hostPage.locator('iframe').first().waitFor({ timeout: 15_000 })
+    check('hosts: widget.js loaded from embed. builds the Holder Map iframe', (await hostPage.locator('iframe[title="Holder Map by Gully Labs"]').count()) === 1)
+    await ctx.close()
+  } finally {
+    await hb.close()
   }
 })
 

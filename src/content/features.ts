@@ -193,7 +193,7 @@ export const features: Feature[] = [
     summary: "Puts live tracker data on any web page from one script tag: a ticker, a one-stock badge, a table of the widest gaps, or a Holder Map frame.",
     facts: [
       "Kinds via data-gully-widget: ticker, badge, table and holders.",
-      "Themes: dark and light (data-theme); the script is public/widget.js, served from gullylabs.xyz/widget.js.",
+      "Themes: dark and light (data-theme); the script is public/widget.js, served from embed.gullylabs.xyz/widget.js (gullylabs.xyz/widget.js still works).",
       "One request per API base per minute, however many widgets are on the page.",
       "A widget builder is at /widget."
     ],
@@ -1201,7 +1201,7 @@ export const features: Feature[] = [
       "Package @gullylabs/widget, version 0.1.0",
       "Widget types are ticker, badge and table",
       "Drawn in its own shadow root so it does not clash with page styles",
-      "Script-tag install via https://gullylabs.xyz/widget.js and a data-gully-widget attribute",
+      "Script-tag install via https://embed.gullylabs.xyz/widget.js and a data-gully-widget attribute",
       "React component GullyWidget is exported from @gullylabs/widget/react",
       "Badge shows a 24-hour gap chart for one stock; table and ticker take a limit option",
       "Supports a light theme option"
@@ -1227,7 +1227,7 @@ export const features: Feature[] = [
       "Chains supported: robinhood, bsc, base, hyperevm, solana",
       "cardUrl() builds a 1200 x 630 share card image URL",
       "getCsv needs a plan that includes CSV export",
-      "React HolderMap component frames gullylabs.xyz/embed/holders/:chain/:token; height is 360 to 2000, default 760",
+      "React HolderMap component frames embed.gullylabs.xyz/embed/holders/:chain/:token; height is 360 to 2000, default 760",
       "A 'Powered by Gully Labs' credit always shows in the frame"
     ],
     url: "https://gullylabs.xyz/holders",

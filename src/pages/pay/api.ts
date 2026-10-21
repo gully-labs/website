@@ -1,3 +1,4 @@
+import { isLocalHost, PAY_URL } from '../../site-host'
 import type { PayAsset, Payment, Quote as BaseQuote, Result } from '../developers/api'
 
 /* Types and a small fetch helper for the public Gully Pay pages (/pay/<invoice>, /pay/l/<link>).
@@ -42,5 +43,5 @@ export async function payApi<T = unknown>(path: string, opts: { method?: 'GET' |
   }
 }
 
-/** The public origin of the main site (the admin host links to it). */
-export const siteOrigin = () => `${window.location.protocol}//${window.location.host.replace(/^admin\./, '')}`
+/** The origin payers open links on: pay.gullylabs.xyz in production (the admin host links to it), this origin in development. */
+export const siteOrigin = () => (isLocalHost() ? window.location.origin : PAY_URL)

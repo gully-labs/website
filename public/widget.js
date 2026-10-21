@@ -1,10 +1,10 @@
 /*! Gully Labs tracker widget v2 \u00b7 https://docs.gullylabs.xyz/widget
  * <div data-gully-widget="ticker|badge|table" data-chain="all|robinhood|bsc" data-ticker="NVDA"
  * Holder Map: <div data-gully-widget="holders" data-chain="robinhood|bsc|base|hyperevm|solana"
- *      data-token="0x… or a tracked ticker" data-height="640"></div> frames gullylabs.xyz/embed/holders.
+ *      data-token="0x… or a tracked ticker" data-height="640"></div> frames embed.gullylabs.xyz/embed/holders.
  *      Add data-badge="true" for the small linked badge instead; data-embed-key, data-theme, data-accent for white-label plans.
  *      data-theme="dark|light" data-limit="5"></div>
- * <script src="https://gullylabs.xyz/widget.js" async></script>
+ * <script src="https://embed.gullylabs.xyz/widget.js" async></script>
  * Every figure is read from the live tracker API; nothing is typed in. One request per API base per
  * minute, however many widgets are on the page (badges add one history read each, every 5 minutes).
  * Errors stay inside the widget. Logos come from the API's `logo` / `chainLogo` fields; when a host
@@ -505,7 +505,8 @@
     if (el.getAttribute('data-theme') === 'light') q.push('theme=light')
     var ac = el.getAttribute('data-accent') || ''
     if (/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(ac)) q.push('accent=' + encodeURIComponent(ac))
-    f.src = base + '/embed/holders/' + chain + '/' + token + (q.length ? '?' + q.join('&') : '')
+    /* The map frames from the embed host unless the page points data-api elsewhere; widget.js itself keeps working from gullylabs.xyz too. */
+    f.src = (base === DEFAULT_API ? 'https://embed.gullylabs.xyz' : base) + '/embed/holders/' + chain + '/' + token + (q.length ? '?' + q.join('&') : '')
     f.title = 'Holder Map by Gully Labs'
     f.loading = 'lazy'
     f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
@@ -585,7 +586,7 @@
 
 /*! Gully Score widget (additive; the tracker widget above is unchanged) · https://docs.gullylabs.xyz/gully-score#embed
  * <div data-gully-score data-chain="base" data-address="0x…" data-theme="dark|light"></div>
- * <script src="https://gullylabs.xyz/widget.js" async></script>
+ * <script src="https://embed.gullylabs.xyz/widget.js" async></script>
  * Reads GET /api/score/:chain/:address (one request per contract per 5 minutes, however many widgets show it) and
  * draws the score ring, the date it was read and a link to the score page with every part and its evidence.
  * A score that could not be given says so; nothing is ever drawn as 0. Errors stay inside the widget. */

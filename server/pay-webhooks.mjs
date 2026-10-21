@@ -35,10 +35,10 @@ import { ledger, paymentView, save as saveLedger } from './billing.mjs'
 import { DATA_DIR } from './http.mjs'
 import { fmtUsd } from './payments.mjs'
 import { randomToken } from './store.mjs'
+import { payBase } from './hosts.mjs'
 
 const FILE = path.join(DATA_DIR, 'pay-webhooks.json')
 const USER_AGENT = 'GullyLabs-Pay/1 (+https://docs.gullylabs.xyz/gully-pay)'
-const SITE = (process.env.GULLY_SITE_URL ?? 'https://gullylabs.xyz').replace(/\/+$/, '')
 export const MAX_ATTEMPTS = 6
 const DEFAULT_DELAYS = [60_000, 5 * 60_000, 10 * 60_000, 20 * 60_000, 30 * 60_000]
 const KEEP_FINISHED = 1_000
@@ -125,12 +125,12 @@ function targetsFor(inv) {
 
 function invoiceBrief(inv) {
   const status = inv.paymentId ? 'paid' : inv.cancelledAt ? 'cancelled' : Date.parse(inv.expiresAt) <= Date.now() ? 'expired' : 'open'
-  return { id: inv.id, number: inv.number, title: inv.title, usd: fmtUsd(inv.usdCents), usdCents: inv.usdCents, status, url: `${SITE}/pay/${inv.id}`, linkId: inv.linkId ?? null, createdAt: inv.createdAt, expiresAt: inv.expiresAt, paidAt: inv.paidAt ?? null, cancelledAt: inv.cancelledAt ?? null }
+  return { id: inv.id, number: inv.number, title: inv.title, usd: fmtUsd(inv.usdCents), usdCents: inv.usdCents, status, url: `${payBase()}/pay/${inv.id}`, linkId: inv.linkId ?? null, createdAt: inv.createdAt, expiresAt: inv.expiresAt, paidAt: inv.paidAt ?? null, cancelledAt: inv.cancelledAt ?? null }
 }
 
 function linkBrief(id) {
   const l = findLink(id)
-  return l ? { id: l.id, title: l.title, url: `${SITE}/pay/l/${l.id}` } : null
+  return l ? { id: l.id, title: l.title, url: `${payBase()}/pay/l/${l.id}` } : null
 }
 
 /** The body of an invoice.paid event. `confirmations` is what the chain showed when it was accepted. */

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type JSX } from 'react'
 import { useTracker, type TrackerRow } from '../../lib/tracker'
-import { SITE_URL } from '../../site-host'
+import { API_URL } from '../../site-host'
 import { track } from '../../lib/track'
 
 /* An API playground that calls the real endpoints on this origin, without a key, exactly as a visitor's
@@ -23,7 +23,7 @@ const MAX_LINES = 70
 
 const client = (keyed: boolean) => `import { createTrackerClient } from '@gullylabs/tracker'\n\nconst tracker = createTrackerClient(${keyed ? '{ apiKey: process.env.GULLY_API_KEY }' : ''})`
 const plainFetch = (path: string, keyed: boolean, name: string) =>
-  `// Not wrapped by the SDK yet: plain fetch\nconst res = await fetch('${SITE_URL}${path}'${keyed ? ',\n  { headers: { Authorization: `Bearer ${process.env.GULLY_API_KEY}` } }' : ''})\nconst ${name} = await res.json()`
+  `// Not wrapped by the SDK yet: plain fetch\nconst res = await fetch('${API_URL}${path}'${keyed ? ',\n  { headers: { Authorization: `Bearer ${process.env.GULLY_API_KEY}` } }' : ''})\nconst ${name} = await res.json()`
 
 function endpoints(row: TrackerRow | null): Endpoint[] {
   const chain = row?.chain ?? 'robinhood'
@@ -44,7 +44,7 @@ function endpoints(row: TrackerRow | null): Endpoint[] {
 
 function snippet(e: Endpoint, lang: Lang, auth: Auth): string {
   const keyed = auth === 'key' && e.metered
-  const url = `${SITE_URL}${e.path}`
+  const url = `${API_URL}${e.path}`
   if (lang === 'curl') return `curl '${url}'${keyed ? ` \\\n  -H "Authorization: Bearer $GULLY_API_KEY"` : ''}`
   if (lang === 'Python') return `import os, requests\n\nr = requests.get(\n    "${url}"${keyed ? `,\n    headers={"Authorization": f"Bearer {os.environ['GULLY_API_KEY']}"}` : ''},\n)\nprint(r.status_code, r.headers.get("x-ratelimit-remaining"))\nprint(r.json())`
   return e.ts(keyed)

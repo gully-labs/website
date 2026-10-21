@@ -92,6 +92,9 @@ export function BadgesDocs() {
       </div>
 
       <Section id="family" title="One family">
+        <P>
+          Badges are served from <C>embed.gullylabs.xyz</C> (<C>/badges/…</C>, <C>/score/:chain/:address/badge.svg</C>, <C>/api/holders/:chain/:token/badge.svg</C>). The same addresses on <C>gullylabs.xyz</C> still work, so badges you already pasted keep showing.
+        </P>
         <P>Every badge has the same three parts: the Gully Labs mark, the product in upper case, and a value in a second field. They are plain SVG images, open to any origin, so they work in a README, in an email or on any site.</P>
         <BadgeTable />
         <P>
@@ -101,7 +104,7 @@ export function BadgesDocs() {
 
       <Section id="gallery" title="Every kind, size and theme">
         <P>
-          These are live badges, served by <Ext href="https://gullylabs.xyz/badges/example/score.svg">/badges/example/&lt;kind&gt;.svg</Ext> with fixed example values. The tones: green for a healthy value, gold for a middle one, a solid gold field for a warning, grey when there is nothing to rate.
+          These are live badges, served by <Ext href="https://embed.gullylabs.xyz/badges/example/score.svg">/badges/example/&lt;kind&gt;.svg</Ext> with fixed example values. The tones: green for a healthy value, gold for a middle one, a solid gold field for a warning, grey when there is nothing to rate.
         </P>
         <div className="flex flex-col gap-6">
           {KINDS.map((x) => (

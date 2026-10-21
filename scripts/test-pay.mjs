@@ -429,9 +429,9 @@ try {
   check('quote requests on the pay page are rate-limited per address', limited)
 
   const { pageMeta } = await import('../server/seo.mjs')
-  const meta = pageMeta('gullylabs.xyz', `/pay/${inv.id}`)
-  const receiptMeta = pageMeta('gullylabs.xyz', `/pay/${inv.id}/receipt`)
-  check('/pay/<id> and its receipt are pages (not 404s) that are never indexed', meta.found && meta.noindex && !meta.canonical && receiptMeta.found && receiptMeta.noindex && receiptMeta.title.startsWith('Receipt'))
+  const meta = pageMeta('pay.gullylabs.xyz', `/pay/${inv.id}`)
+  const receiptMeta = pageMeta('pay.gullylabs.xyz', `/pay/${inv.id}/receipt`)
+  check('/pay/<id> and its receipt are pages (not 404s) that are never indexed, canonical on pay.', meta.found && meta.noindex && meta.canonical === `https://pay.gullylabs.xyz/pay/${inv.id}` && receiptMeta.found && receiptMeta.noindex && receiptMeta.title.startsWith('Receipt'))
 } catch (e) {
   check(`no exception (${e?.stack ?? e})`, false)
 }

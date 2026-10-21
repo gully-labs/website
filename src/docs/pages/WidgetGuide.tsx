@@ -43,8 +43,11 @@ export function WidgetGuide() {
       sections={sections}
     >
       <Section id="quick-start" title="Quick start">
+        <P>
+          Scripts, frames and badges are served from <C>embed.gullylabs.xyz</C>. Snippets you already pasted that load <C>https://gullylabs.xyz/widget.js</C> or frame <C>https://gullylabs.xyz/embed/…</C> keep working: both hosts serve the same files.
+        </P>
         <P>Add an element where the widget should appear, and the script once per page:</P>
-        <CodeBlock lang="html" code={'<div data-gully-widget="ticker"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>'} />
+        <CodeBlock lang="html" code={'<div data-gully-widget="ticker"></div>\n<script src="https://embed.gullylabs.xyz/widget.js" async></script>'} />
         <P>
           Prefer to click? The <Ext href="https://gullylabs.xyz/widget">widget builder</Ext> sets every option with a live preview and writes the snippet for you.
         </P>
@@ -125,7 +128,7 @@ export function WidgetGuide() {
         <P>
           Show who holds a DeepCore launch or a tracked stock token: bubbles sized by share, connected wallets, launch checks and a replay. The same script frames the Holder Map from gullylabs.xyz:
         </P>
-        <CodeBlock lang="html" code={'<div data-gully-widget="holders" data-chain="robinhood" data-token="0x8d901a1b3f3a57f9c36a71382fa183476c41545b"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>'} />
+        <CodeBlock lang="html" code={'<div data-gully-widget="holders" data-chain="robinhood" data-token="0x8d901a1b3f3a57f9c36a71382fa183476c41545b"></div>\n<script src="https://embed.gullylabs.xyz/widget.js" async></script>'} />
         <List>
           <li>
             <C>data-chain</C>: robinhood, bsc, base, hyperevm or solana. <C>data-token</C>: the token address, or a ticker the tracker follows (NVDA). <C>data-height</C>: 360 to 2000 pixels (default 760).

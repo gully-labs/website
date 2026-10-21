@@ -8,7 +8,7 @@ import { isFeeProxy } from '../../../../server/fee-proxy-guard.mjs'
 import { api } from '../api'
 import { chip, input, pillGold, pillSm } from '../styles'
 import { InfoTip } from '../ui'
-import { KIND_TEXT, payOrigin, type MerchantView, type MerchantWallet } from './api'
+import { KIND_TEXT, siteOrigin, type MerchantView, type MerchantWallet } from './api'
 import { Confirm, Field, Section } from './parts'
 import { ExtLink } from '../ExtLink'
 import { pillClass } from '../../../components/ui/pill'
@@ -394,7 +394,7 @@ export function WalletForm({ view, onChange }: { view: MerchantView; onChange: (
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-[3px] size-4 shrink-0 accent-[#d9b563]" required />
           <span>
             I agree to the{' '}
-            <ExtLink href={`${payOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
+            <ExtLink href={`${siteOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
               Gully Pay merchant terms ↗
             </ExtLink>{' '}
             for this workspace: a fee per payment only, payments go straight to our wallet, and refunds and taxes are ours.
@@ -403,7 +403,7 @@ export function WalletForm({ view, onChange }: { view: MerchantView; onChange: (
       ) : (
         <span className="font-mono text-[11px] text-faint lg:col-span-2">
           Merchant terms {view.terms.accepted?.version} accepted {new Date(view.terms.accepted!.acceptedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
-          <ExtLink href={`${payOrigin()}${view.terms.path}`} className="underline underline-offset-4 hover:text-gold">
+          <ExtLink href={`${siteOrigin()}${view.terms.path}`} className="underline underline-offset-4 hover:text-gold">
             read them ↗
           </ExtLink>
         </span>

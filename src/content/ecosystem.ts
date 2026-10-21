@@ -91,14 +91,14 @@ export const snippets: Snippet[] = [
     label: 'Holder Map',
     lang: 'html',
     caption: 'HTML · the map on your token page',
-    code: '<div data-gully-widget="holders" data-chain="base" data-token="0x…"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>',
+    code: '<div data-gully-widget="holders" data-chain="base" data-token="0x…"></div>\n<script src="https://embed.gullylabs.xyz/widget.js" async></script>',
   },
   {
     id: 'badge',
     label: 'Health badge',
     lang: 'html',
     caption: 'HTML · the badge, and the live widget',
-    code: '<a href="https://gullylabs.xyz/score/base/0x…" target="_blank" rel="noopener noreferrer">\n  <img src="https://gullylabs.xyz/score/base/0x…/badge.svg" alt="Gully Score" width="260" height="48">\n</a>\n\n<div data-gully-score data-chain="base" data-address="0x…"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>',
+    code: '<a href="https://gullylabs.xyz/score/base/0x…" target="_blank" rel="noopener noreferrer">\n  <img src="https://embed.gullylabs.xyz/score/base/0x…/badge.svg" alt="Gully Score" width="260" height="48">\n</a>\n\n<div data-gully-score data-chain="base" data-address="0x…"></div>\n<script src="https://embed.gullylabs.xyz/widget.js" async></script>',
   },
   {
     id: 'sdk',
@@ -119,7 +119,7 @@ export const snippets: Snippet[] = [
     label: 'Gully Pay',
     lang: 'html',
     caption: 'HTML · a pay link as a popup button',
-    code: '<a href="https://gullylabs.xyz/pay/l/…" target="_blank" rel="noopener" data-gully-pay="popup">Pay with crypto</a>\n<script src="https://gullylabs.xyz/pay-button.js" async></script>',
+    code: '<a href="https://pay.gullylabs.xyz/pay/l/…" target="_blank" rel="noopener" data-gully-pay="popup">Pay with crypto</a>\n<script src="https://pay.gullylabs.xyz/pay-button.js" async></script>',
   },
 ]
 

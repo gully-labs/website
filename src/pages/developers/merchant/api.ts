@@ -1,4 +1,4 @@
-import { isLocalHost, SITE_URL } from '../../../site-host'
+import { isLocalHost, PAY_URL, SITE_URL } from '../../../site-host'
 import type { PayAsset, Payment } from '../api'
 
 /* Types for the Merchant tab: GET /api/developer/merchant and /stats (server/merchants.mjs). Every
@@ -156,8 +156,10 @@ export interface MerchantStats {
   updatedAt: string
 }
 
-/** Where payers open checkouts: this host locally, the main site everywhere else (never the portal host). */
-export const payOrigin = () => (isLocalHost() ? window.location.origin : SITE_URL)
+/** Where payers open checkouts: this host locally, pay.gullylabs.xyz everywhere else (never the portal host). */
+export const payOrigin = () => (isLocalHost() ? window.location.origin : PAY_URL)
+/** The main site (the merchant terms and other site pages live there, not on the pay host). */
+export const siteOrigin = () => (isLocalHost() ? window.location.origin : SITE_URL)
 
 export const usd = (n: number | null | undefined) => (n == null ? '—' : n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }))
 

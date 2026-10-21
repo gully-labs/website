@@ -29,7 +29,7 @@ const EVENT = `{
   "data": {
     "store": { "name": "Acme Coffee" },
     "invoice": { "id": "mi_…", "number": "INV-0001", "title": "Espresso machine", "usd": "4,900", "usdCents": "490000",
-                 "status": "paid", "url": "https://gullylabs.xyz/pay/m/mi_…", "linkId": null,
+                 "status": "paid", "url": "https://pay.gullylabs.xyz/pay/m/mi_…", "linkId": null,
                  "customer": { "name": "Jane Roe", "email": "jane@example.com" }, "dueAt": "…", "paidAt": "…" },
     "link": null,                     // { id, title, url } when it came from one of your links
     "payment": { "chainId": 8453, "chain": "Base", "asset": "base-usdc", "symbol": "USDC", "amount": "4900.003161",

@@ -1,5 +1,5 @@
 /* Gully Pay "Pay with crypto" button (optional). Paste next to a link like
-     <a href="https://gullylabs.xyz/pay/l/…" target="_blank" rel="noopener" data-gully-pay="popup">Pay with crypto</a>
+     <a href="https://pay.gullylabs.xyz/pay/l/…" target="_blank" rel="noopener" data-gully-pay="popup">Pay with crypto</a>
    and the click opens the checkout in a popup window; data-gully-pay="tab" (or no script at all) opens a
    new tab. The checkout cannot be put in an iframe. No cookies, no tracking, nothing else on the page. */
 ;(function () {

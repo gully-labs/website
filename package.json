@@ -37,6 +37,7 @@
     "test:safe-deploy": "node scripts/test-safe-deploy.mjs",
     "test:solana": "node scripts/test-solana.mjs",
     "test:app-host": "node scripts/test-app-host.mjs",
+    "test:hosts": "node scripts/test-hosts.mjs",
     "test:og": "node scripts/test-og.mjs",
     "test:security": "node scripts/test-security-engine.mjs",
     "test:security-routes": "node scripts/test-security-routes.mjs",

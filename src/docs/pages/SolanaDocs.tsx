@@ -13,7 +13,7 @@ const sections = [
   { id: 'rpc', title: 'The RPC proxy' },
 ]
 
-const CURL = `curl -s https://gullylabs.xyz/api/tracker | jq '.rows[] | select(.chain == "solana") | {ticker, symbol, gapPct, status, fairSource}'`
+const CURL = `curl -s https://api.gullylabs.xyz/api/tracker | jq '.rows[] | select(.chain == "solana") | {ticker, symbol, gapPct, status, fairSource}'`
 
 export function SolanaDocs() {
   return (

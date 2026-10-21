@@ -103,7 +103,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
   const alerts = `${isLocalHost() ? '/app' : `${APP_URL}/`}?alert=${row.chain}:${row.ticker}#alerts`
   // The app is another host in production: it opens in a new tab there (the local /app route stays in place).
   const alertsExt = /^https?:/.test(alerts)
-  const embed = `<div data-gully-widget="badge" data-ticker="${row.ticker}" data-chain="${row.chain}"></div>\n<script src="https://gullylabs.xyz/widget.js" async></script>`
+  const embed = `<div data-gully-widget="badge" data-ticker="${row.ticker}" data-chain="${row.chain}"></div>\n<script src="https://embed.gullylabs.xyz/widget.js" async></script>`
   const [copiedEmbed, setCopiedEmbed] = useState(false)
 
   return (

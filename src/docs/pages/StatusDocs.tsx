@@ -51,7 +51,7 @@ interface StatusBody {
   incidents: StatusIncident[]
 }`
 
-const CURL = `curl -s https://gullylabs.xyz/api/status | jq '{overall, components: [.components[] | {id, state, uptime24h}]}'`
+const CURL = `curl -s https://api.gullylabs.xyz/api/status | jq '{overall, components: [.components[] | {id, state, uptime24h}]}'`
 
 export function StatusDocs() {
   return (

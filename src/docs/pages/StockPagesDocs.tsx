@@ -13,7 +13,7 @@ const sections = [
 ]
 
 const BADGE = `<div data-gully-widget="badge" data-ticker="NVDA" data-chain="robinhood"></div>
-<script src="https://gullylabs.xyz/widget.js" async></script>`
+<script src="https://embed.gullylabs.xyz/widget.js" async></script>`
 
 export function StockPagesDocs() {
   return (

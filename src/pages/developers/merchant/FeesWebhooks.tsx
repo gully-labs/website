@@ -6,7 +6,7 @@ import { copyWithToast, toastError, toastSuccess } from '../../../components/ui/
 import { api } from '../api'
 import { input, mono, pillGold, pillLine, pillSm } from '../styles'
 import { KpiRow, KpiTile } from '../ui'
-import { fmtDay, fmtWhen, payOrigin, usd, type MerchantView } from './api'
+import { fmtDay, fmtWhen, payOrigin, siteOrigin, usd, type MerchantView } from './api'
 import { Field, Section, StatusPill } from './parts'
 import { EmptyLine } from '../parts'
 import { ExtLink } from '../ExtLink'
@@ -25,7 +25,7 @@ export function FeesSection({ view }: { view: MerchantView }) {
       info={
         <>
           A {f.ratePct}% transaction fee, nothing monthly. Your first {usd(f.freeUsd)} of lifetime volume is free. When a customer pays a stablecoin from a connected wallet, the fee is taken in the same transaction through Request Network’s open-source fee contract; everything else goes on a statement every Monday (00:00 UTC) once you owe {usd(f.minStatementUsd)} or more; unpaid {f.pauseAfterDays} days after issue, checkout pauses until paid.{' '}
-          <ExtLink href={`${payOrigin()}${view.terms.path}#s5`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
+          <ExtLink href={`${siteOrigin()}${view.terms.path}#s5`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
             Fee terms ↗
           </ExtLink>
         </>

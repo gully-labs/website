@@ -29,6 +29,7 @@ import { SOLANA_CHAIN_ID } from './solana-pay.mjs'
 import { treasury } from './plans.mjs'
 import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { randomToken } from './store.mjs'
+import { payUrl } from './hosts.mjs'
 
 const ID_RE = /^inv_[A-Za-z0-9_-]{22}$/
 const MAX_TITLE = 120
@@ -92,7 +93,7 @@ export function publicInvoice(inv, { treasuryOverride } = {}) {
   }
 }
 
-const adminView = (inv) => ({ ...guardOr(() => publicInvoice(inv), (e) => ({ ...publicInvoice(inv, { treasuryOverride: null }), checkout: refusedCheckout(e) })), path: `/pay/${inv.id}`, webhook: endpointView(inv.webhook) })
+const adminView = (inv) => ({ ...guardOr(() => publicInvoice(inv), (e) => ({ ...publicInvoice(inv, { treasuryOverride: null }), checkout: refusedCheckout(e) })), path: `/pay/${inv.id}`, url: payUrl(`/pay/${inv.id}`), webhook: endpointView(inv.webhook) })
 
 /**
  * A new open invoice (admin or pay link). `usdCents` is a BigInt already checked by the caller.

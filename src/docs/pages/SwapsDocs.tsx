@@ -43,10 +43,10 @@ const ROBINHOOD = CHAIN('robinhood', 'Robinhood Chain')
 const BNB = CHAIN('bsc', 'BNB Chain')
 const SOLANA = CHAIN('solana', 'Solana')
 
-const GEO = `curl https://gullylabs.xyz/api/geo
+const GEO = `curl https://api.gullylabs.xyz/api/geo
 # { "country": "DE", "allowed": true, "reason": "ok" }`
 
-const JUP = `curl "https://gullylabs.xyz/api/solana/jupiter/quote?ticker=AAPL&side=buy&with=USDC&amount=25"
+const JUP = `curl "https://api.gullylabs.xyz/api/solana/jupiter/quote?ticker=AAPL&side=buy&with=USDC&amount=25"
 # { "quote": { "id", "side", "inSymbol", "outSymbol", "inAmount", "outAmount", "minOut",
 #   "priceImpactPct", "route": [{ "label", "percent" }], "platformFee", "feeNote",
 #   "slippageBps", "expiresAt" } }`

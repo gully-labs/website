@@ -8,6 +8,7 @@ import { btnGold, btnOutline } from '../ui'
 import { StatusPill, type PillTone } from '../ui/StatusPill'
 import { copyWithToast } from '../ui/toast'
 import { useCountUp } from './count'
+import { payHref } from '../../site-host'
 import { K } from './theme'
 
 /* The Deep check screens: the live status of a check that is waiting, queued or running, and its report (funding
@@ -62,7 +63,7 @@ export function DeepStatusPanel({ check, onChange }: { check: DeepCheck; onChang
             {pay.expiresAt && <> The invoice is open until {when(pay.expiresAt)}; an unpaid check is cancelled then.</>}
           </p>
           <span className="flex flex-wrap items-center gap-2">
-            <a href={pay.payUrl} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`} data-deep-pay>
+            <a href={payHref(pay.payUrl)} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`} data-deep-pay>
               <Receipt className="icon-md" aria-hidden /> Open the invoice · ${pay.usd}
             </a>
             <button

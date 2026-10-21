@@ -8,7 +8,7 @@ import { ScanProgress } from '../../../components/security/ScanProgress'
 import { chainLogoKey, fmtWhen, isActive, KIND_LABEL, STATUS_LABEL, type ScanView } from '../../../components/security/types'
 import { copyWithToast, toastError, toastSuccess } from '../../../components/ui/toast'
 import { usePlans } from '../../../lib/plans'
-import { SITE_URL, isLocalHost } from '../../../site-host'
+import { SITE_URL, isLocalHost, payHref } from '../../../site-host'
 import { api, type Quote } from '../api'
 import { ErrorLine, Skeleton } from '../parts'
 import { Can } from '../RoleGate'
@@ -57,7 +57,7 @@ export function PayStep({ scan, onPaid }: { scan: ScanView; onPaid: () => void }
         <span className="text-[14px] text-ink-2">
           {scan.title}: <b className="text-ink">${p.usd}</b> by Gully Pay. The scan starts by itself once the payment is confirmed on chain.
         </span>
-        <ExtLink href={site(p.payUrl)} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-gold underline-offset-4 hover:underline">
+        <ExtLink href={payHref(p.payUrl)} className="inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-gold underline-offset-4 hover:underline">
           Open the invoice page
         </ExtLink>
       </div>

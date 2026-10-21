@@ -24,6 +24,7 @@ import { assetById, ASSET_IDS, fmtUsd, parseUsdCents, publicAssets } from './pay
 import { treasury } from './plans.mjs'
 import { guardOr, guardRecipient, refusedCheckout } from './pay-guard.mjs'
 import { randomToken } from './store.mjs'
+import { payUrl } from './hosts.mjs'
 
 export const LINK_ID_RE = /^pl_[A-Za-z0-9_-]{16}$/
 const MAX_TITLE = 120
@@ -100,6 +101,7 @@ function adminLinkView(l) {
     createdAt: l.createdAt,
     updatedAt: l.updatedAt,
     path: `/pay/l/${l.id}`,
+    url: payUrl(`/pay/l/${l.id}`),
     stats: { invoices: inv.length, paid: paid.length, open: inv.filter((i) => invoiceStatus(i) === 'open').length, paidUsd: fmtUsd(paid.reduce((a, i) => a + BigInt(i.usdCents), 0n)) },
   }
 }
@@ -304,5 +306,6 @@ export async function handlePayLink(req, res, url) {
   if (!allow('invoice', ip, LINK_INVOICES_PER_HOUR, 3_600_000)) return json(res, 429, { error: 'Too many checkouts started from this address in the last hour. Try again later.' }), true
   const r = invoiceFromLink(l, body)
   if (!r.ok) return json(res, r.status, { error: r.error }), true
-  return json(res, 201, { invoice: publicInvoice(r.invoice), path: `/pay/${r.invoice.id}${r.asset ? `?asset=${encodeURIComponent(r.asset)}` : ''}` }), true
+  const payPath = `/pay/${r.invoice.id}${r.asset ? `?asset=${encodeURIComponent(r.asset)}` : ''}`
+  return json(res, 201, { invoice: publicInvoice(r.invoice), path: payPath, url: payUrl(payPath) }), true
 }

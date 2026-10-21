@@ -17,7 +17,7 @@ const sections = [
   { id: 'telegram', title: 'Telegram' },
 ]
 
-const HISTORY = `curl "https://gullylabs.xyz/api/tracker/history?chain=robinhood&ticker=NVDA&days=90" \\
+const HISTORY = `curl "https://api.gullylabs.xyz/api/tracker/history?chain=robinhood&ticker=NVDA&days=90" \\
   -H "Authorization: Bearer $GULLY_API_KEY"`
 
 const SHAPE = `// The body of every delivery (JSON). Types, not sample values.
@@ -195,7 +195,7 @@ export function PlansAlerts() {
         </Details>
         <Callout label="NO CUSTODY">The payment goes straight to the treasury wallet in your own transfer. We hold no balance and no card, and nothing leaves your wallet unless you sign it.</Callout>
         <P>
-          Other Gully Labs work (Gully Analytics, services) is billed with an invoice link of the form <C>gullylabs.xyz/pay/…</C>. It takes the same assets and checks; since nobody signs in there, a payment matches an invoice only by the exact quoted amount. Once paid, the page links the transaction and a printable receipt.
+          Other Gully Labs work (Gully Analytics, services) is billed with an invoice link of the form <C>pay.gullylabs.xyz/pay/…</C>. It takes the same assets and checks; since nobody signs in there, a payment matches an invoice only by the exact quoted amount. Once paid, the page links the transaction and a printable receipt.
         </P>
       </Section>
 
