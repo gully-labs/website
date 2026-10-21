@@ -130,9 +130,11 @@ async function bubbleLook(page, map, label, { kindRe = /^(pool|wallet|contract|l
 }
 
 /** A context with every off-localhost request routed: Gully's own hosts to fixtures, the rest aborted. */
-async function newContext({ width = 1440, height = 900, mobile = false, geo = { country: 'GB', allowed: true, reason: 'ok' }, cookie = null } = {}) {
+async function newContext({ width = 1440, height = 900, mobile = false, geo = { country: 'GB', allowed: true, reason: 'ok' }, cookie = null, announce = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, ...(mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}), permissions: ['clipboard-read', 'clipboard-write'], serviceWorkers: 'block' })
   if (cookie) await ctx.addCookies([{ name: 'gl_dev', value: cookie, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }])
+  // The Holder Map announcement bar is dismissed in every context except the ones that test it (announce: true).
+  if (!announce) await ctx.addInitScript(() => { try { localStorage.setItem('gl-announce-holder-map', '1') } catch { /* no storage */ } })
   await ctx.addInitScript(() => {
     window.__csp = []
     document.addEventListener('securitypolicyviolation', (e) => window.__csp.push(`${e.violatedDirective} ${e.blockedURI}`))
@@ -421,6 +423,25 @@ await step('Gully AI', async () => {
   check('Gully AI: the server-rendered title says Gully AI', (await (await fetch(BASE + '/ask')).text()).includes('<title>Gully AI · Gully Labs</title>'))
   await w.verify()
   await ctx.close()
+})
+
+await step('Gully AI and Gully Score layout (DA3 D26, D27, D32)', async () => {
+  for (const width of [1440, 320]) {
+    const ctx = await newContext(width === 320 ? { width: 320, height: 800, mobile: true } : {})
+    const page = await ctx.newPage()
+    const w = watch(page, `ask layout at ${width}`)
+    await page.goto(BASE + '/ask')
+    await page.getByRole('heading', { level: 1 }).waitFor()
+    const x = await page.evaluate(() => ({ h1: document.querySelector('main h1').getBoundingClientRect().left, foot: Math.max(24, Math.min(64, window.innerWidth * 0.045)) }))
+    check(`/ask at ${width}: content starts on the site gutter`, Math.abs(x.h1 - x.foot) <= 2, JSON.stringify(x))
+    const hint = await page.evaluate(() => { const link = [...document.querySelectorAll('main a')].find((a) => a.textContent === 'privacy'); const p = link?.parentElement; const r = link?.getBoundingClientRect(); return { inSentence: !!p && /Questions are kept 90 days/.test(p.textContent), h: r ? r.height : 0 } })
+    check(`/ask at ${width}: the privacy link stays inside its sentence`, hint.inSentence, JSON.stringify(hint))
+    await page.waitForTimeout(800)
+    check(`/ask at ${width}: the live gap bars breathe (not static)`, (await page.locator('[data-live-breathe] .gl-live-breathe').count()) > 0)
+    if (width === 320) await noHorizontalScroll(page, '/ask')
+    await w.verify()
+    await ctx.close()
+  }
 })
 
 await step('privacy page', async () => {
@@ -915,6 +936,28 @@ await step('app services', async () => {
     await noHorizontalScroll(mp, `app #${id}`)
     await shot(mp, `app-390-${id}`)
   }
+  // Design audit 3 (D1, D4, D9, D10, D28): narrow screens read in full, nothing clipped, no empty-count badges.
+  for (const w of [390, 320]) {
+    await mp.setViewportSize({ width: w, height: 760 })
+    for (const id of ['deepcore', 'overview', 'keys', 'tracker', 'pay', 'chain-kit']) {
+      await mp.goto(`${BASE}/app#${id}`)
+      await mp.locator(id === 'overview' ? 'main[data-page="overview"]' : id === 'keys' ? 'main[data-page="keys"]' : `[data-service="${id}"] [data-testid="service-header"]`).first().waitFor({ timeout: 15_000 })
+      await mp.waitForTimeout(700)
+      await noHorizontalScroll(mp, `app #${id} at ${w}`)
+      const crumb = await mp.locator('[data-testid="breadcrumb"] [aria-current="page"]').evaluate((e) => [e.scrollWidth, e.clientWidth, e.textContent])
+      check(`app #${id} at ${w}: the breadcrumb shows the page name in full`, crumb[0] <= crumb[1] + 1, JSON.stringify(crumb))
+      const clipped = await mp.evaluate(() => [...document.querySelectorAll('[data-kpi] > span, [data-tile] > span')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent))
+      check(`app #${id} at ${w}: no stat label or note is clipped`, clipped.length === 0, JSON.stringify(clipped))
+      const tip = await mp.locator('[data-testid="info-tip"] > span:first-child').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).textOverflow === 'ellipsis').length)
+      check(`app #${id} at ${w}: the hint line wraps instead of ending in an ellipsis`, tip === 0)
+      if (id === 'tracker') {
+        const small = await mp.locator('[data-service="tracker"] tbody tr').first().locator('button, a').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width < 43.5 || e.getBoundingClientRect().height < 43.5).map((e) => e.getAttribute('aria-label') || e.textContent))
+        check(`app #tracker at ${w}: row Alert and Page buttons are 44 px targets`, small.length === 0, JSON.stringify(small))
+      }
+      const zero = await mp.locator('[data-testid="sub-tabs"] [role="tab"] > span.font-mono').evaluateAll((els) => els.filter((e) => e.textContent.trim() === '0').length)
+      check(`app #${id} at ${w}: no tab badge reads 0`, zero === 0)
+    }
+  }
   await mw.verify([/li\.quest|lifi|wagmi|ERR_BLOCKED_BY_CLIENT/i])
   await m.close()
 
@@ -1275,6 +1318,15 @@ await step('merchant checkout', async () => {
       await p.getByRole('img', { name: /^Wallet payment request:/ }).waitFor({ timeout: 10_000 })
       check(`store invoice at ${width}: the QR names the store`, /to Acme Coffee$/.test(await p.getByRole('img', { name: /^Wallet payment request:/ }).getAttribute('aria-label')))
       check(`store invoice at ${width}: status waiting`, (await p.getByTestId('status-track').getAttribute('data-step')) === '0')
+      if (width === 390) {
+        // DA3 D14: at 320 every step label of the status track wraps whole (none clipped, none overlapping its neighbour).
+        await p.setViewportSize({ width: 320, height: 844 })
+        await p.waitForTimeout(200)
+        const track = await p.getByTestId('status-track').locator('li').evaluateAll((lis) => lis.map((li) => { const t = li.querySelector('span:last-child > span:last-child'); const r = li.getBoundingClientRect(); return { clipped: t.scrollWidth > t.clientWidth + 1, l: r.left, r: r.right } }))
+        check('status track at 320: no label is clipped and the four steps do not overlap', track.length === 4 && track.every((x, i) => !x.clipped && (i === 0 || x.l >= track[i - 1].r - 0.5)), JSON.stringify(track))
+        await noHorizontalScroll(p, 'status track at 320')
+        await p.setViewportSize({ width: 390, height: 844 })
+      }
       check(`store invoice at ${width}: the header has a copy-link button, not a raw URL`, (await p.getByTestId('copy-link').count()) === 1 && !/\/pay\/m\/mi_/.test((await p.getByRole('region', { name: 'Payment' }).locator('header').first().textContent()) ?? ''))
       if (width === 1440) {
         await p.getByTestId('pay-aside-content').locator('[data-live]').first().waitFor({ timeout: 10_000 }).catch(() => {})
@@ -1765,6 +1817,37 @@ await step('docs', async () => {
   }
 })
 
+// Design audit 3, group 1 (D2, D18, D23, D24): docs header, code captions, badge table, footer taps and the Telegram link.
+await step('docs design audit 3 g1', async () => {
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, height: 844, mobile: true })
+    const page = await ctx.newPage()
+    await page.goto(`${BASE}/docs/badges`)
+    await page.locator('#docs-main h1').waitFor()
+    const hdr = await page.evaluate(() => {
+      const hd = document.querySelector('header')
+      const ask = [...hd.querySelectorAll('button')].find((b) => /gully ai/i.test(b.textContent + (b.getAttribute('aria-label') ?? '')))
+      const logo = [...hd.querySelectorAll('a img, a svg')].filter((e) => e.getBoundingClientRect().width > 0)
+      const a = ask?.getBoundingClientRect()
+      const hit = logo.some((e) => { const r = e.getBoundingClientRect(); return a && r.right > a.left && r.left < a.right })
+      return { hit, noScroll: document.documentElement.scrollWidth <= innerWidth, marks: logo.length }
+    })
+    check(`docs header at ${width}: the logo does not sit under the Gully AI button`, !hdr.hit && hdr.noScroll && hdr.marks > 0, JSON.stringify(hdr))
+    const tbl = await page.evaluate(() => [...document.querySelectorAll('[data-testid="badge-table"] span')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent.slice(0, 30)))
+    check(`docs badges at ${width}: no clipped Says or Address cell`, tbl.length === 0, tbl.join(' | '))
+    await page.goto(`${BASE}/docs/api`)
+    await page.locator('#docs-main h1').waitFor()
+    const caps = await page.evaluate(() => [...document.querySelectorAll('#docs-main figure > div > span')].filter((e) => e.scrollWidth > e.clientWidth + 1 || getComputedStyle(e).textOverflow === 'ellipsis').map((e) => e.textContent.slice(0, 40)))
+    check(`docs api at ${width}: no truncated code caption`, caps.length === 0, caps.join(' | '))
+    await page.goto(`${BASE}/`)
+    const foot = await page.evaluate(() => [...document.querySelectorAll('footer nav a, footer nav button')].map((e) => { const r = e.getBoundingClientRect(); return [e.textContent.trim().slice(0, 20), Math.round(r.width), Math.round(r.height)] }).filter(([, w, h]) => w < 44 || h < 44))
+    check(`footer at ${width}: every link is a 44 px tap`, foot.length === 0, JSON.stringify(foot))
+    const tg = page.locator('footer a[href="https://t.me/GullyLabsBot?start=contact"]')
+    check(`footer at ${width}: Chat on Telegram link`, (await tg.count()) === 1 && /Chat on Telegram/.test(await tg.innerText()))
+    await ctx.close()
+  }
+})
+
 // Design audit 2, group 6 (docs): no developer noise in prose, live charts, logos loaded, 44 px badge buttons.
 await step('docs design audit 2', async () => {
   const ctx = await newContext({ width: 1440, height: 900 })
@@ -1886,6 +1969,14 @@ await step('gully score', async () => {
     check(`score page at ${width}: the badge loads`, await badge.evaluate((img) => (img.complete ? img.naturalWidth : new Promise((r) => (img.onload = () => r(img.naturalWidth))))).then((n) => n > 0 && n === badgeW), `badge ${badgeW}`)
     check(`score page at ${width}: methodology says informational, nobody can pay`, (await page.getByText(/not an endorsement and not investment advice/).count()) > 0)
     if (mobile) await noHorizontalScroll(page, 'score page')
+    if (mobile) {
+      // DA3 D27: at 320 the address is one middle-truncated line, never wrapped mid-string.
+      await page.setViewportSize({ width: 320, height: 844 })
+      const code = await page.evaluate(() => [...document.querySelectorAll('main code')].filter((c) => c.getClientRects().length).map((c) => ({ t: c.textContent, h: c.getBoundingClientRect().height })))
+      check('score page at 320: the address is one line (middle-truncated), not wrapped mid-string', code.length === 1 && code[0].h < 24, JSON.stringify(code))
+      await noHorizontalScroll(page, 'score page at 320')
+      await page.setViewportSize({ width: 390, height: 844 })
+    }
     await page.waitForTimeout(1200)
     await shot(page, 'score-page')
     await w.verify()
@@ -2045,6 +2136,53 @@ await step('holder map', async () => {
     const seg = await map.locator('[data-segmented]').first().boundingBox()
     check(`holder map ${width}: the Map/List control sits fully inside the screen`, !!seg && seg.x >= 0 && seg.x + seg.width <= width, JSON.stringify(seg))
     await noHorizontalScroll(page, `/holders ${width} (phone clip pass)`)
+    await ctx.close()
+  }
+  // The timeline readout owns a full-width row under the buttons, and the Gully AI button never covers the Map/List toggle (390 and 320).
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, mobile: true })
+    await ctx.route(`${BASE}/api/ask`, (route) => json(route, holdersExtraFixtures().ask))
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/holders/robinhood/' + E2E_LAUNCH_TOKEN)
+    const map = page.locator('[data-holder-map="ok"]')
+    await map.waitFor()
+    const readout = map.locator('[data-replay-readout]')
+    await readout.waitFor()
+    const rb = await readout.boundingBox()
+    const play = await map.locator('[data-replay="on"] button').first().boundingBox()
+    const box = await map.locator('[data-replay="on"]').boundingBox()
+    check(`holder map ${width}: the timeline readout has its own full-width row under the buttons`, !!rb && !!play && !!box && rb.y >= play.y + play.height - 1 && rb.width >= box.width - 28, JSON.stringify({ rb, play, box }))
+    check(`holder map ${width}: the timeline readout is not clipped`, await readout.evaluate((e) => e.scrollWidth <= e.clientWidth + 1))
+    const toggle = map.locator('[data-segmented]').first()
+    await toggle.evaluate((e) => e.scrollIntoView({ block: 'end' }))
+    await page.waitForTimeout(400)
+    const fab = page.getByTestId('ask-fab')
+    await fab.waitFor()
+    const tb = await toggle.boundingBox()
+    const fb = await fab.boundingBox()
+    const hit = !!tb && !!fb && tb.x < fb.x + fb.width && tb.x + tb.width > fb.x && tb.y < fb.y + fb.height && tb.y + tb.height > fb.y
+    check(`holder map ${width}: the Gully AI button does not cover the Map/List toggle`, !!tb && !!fb && !hit, JSON.stringify({ tb, fb }))
+    await ctx.close()
+  }
+  // The /holders landing on a phone: two-line launch summaries, whole tickers, a short search placeholder, a one-line coming-soon chip, token logos in the feed.
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, mobile: true })
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/holders')
+    await page.locator('[data-launch-feed] li').first().waitFor()
+    await page.waitForTimeout(800)
+    const sums = await page.locator('[data-feed-summary]').evaluateAll((els) => els.map((e) => getComputedStyle(e).webkitLineClamp === '2' && e.clientHeight <= 2 * parseFloat(getComputedStyle(e).fontSize) * 1.75))
+    check(`holders landing ${width}: launch summaries are clamped to two lines`, sums.length > 0 && sums.every(Boolean), JSON.stringify(sums))
+    const ticks = await page.locator('[data-feed-ticker]').evaluateAll((els) => els.map((e) => e.scrollWidth <= e.clientWidth + 1 && !/…$/.test(e.textContent ?? '')))
+    check(`holders landing ${width}: tickers are whole`, ticks.length > 0 && ticks.every(Boolean), JSON.stringify(ticks))
+    check(`holders landing ${width}: the search placeholder reads "Address or ticker" and fits`, (await page.getByLabel('Token address or ticker').getAttribute('placeholder')) === 'Address or ticker' && (await page.getByLabel('Token address or ticker').evaluate((e) => e.scrollWidth <= e.clientWidth + 1)))
+    const soon = page.locator('[data-sources-soon]')
+    if (await soon.count()) {
+      const sb = await soon.boundingBox()
+      check(`holders landing ${width}: the coming-soon chip is one line with chain logos`, !!sb && sb.height <= 44 && (await soon.locator('img, svg').count()) >= 2, JSON.stringify(sb))
+    }
+    check(`holders landing ${width}: feed rows without a map show the token logo, not an empty tile`, (await page.locator('[data-feed-logo]').count()) >= 1 && (await page.locator('[data-feed-logo] [data-logo="token"]').count()) >= 1)
+    await noHorizontalScroll(page, `/holders ${width} landing`)
     await ctx.close()
   }
   // Deep check: the offer card on a map, a free-quota check started from a quote, the report page and the JPEG card.
@@ -2757,6 +2895,79 @@ await step('no Cartel Family anywhere', async () => {
   await ctx.close()
 })
 
+/* ------------------------------------------------------------- live ledger chart --- */
+
+await step('ledger chart', async () => {
+  const stamp = (page) => page.locator('#ledger').getByText(/^read \d\d:\d\d UTC$/).first().innerText()
+  const open = async (fixture, { clock = false } = {}) => {
+    const ctx = await newContext()
+    const page = await ctx.newPage()
+    const w = watch(page, 'ledger chart')
+    let n = 0
+    await page.route(`${BASE}/api/stats`, (route) => json(route, fixture(n++)))
+    if (clock) await page.clock.install()
+    await page.goto(BASE + '/')
+    await page.locator('#ledger').scrollIntoViewIfNeeded()
+    await page.getByTestId('ledger-chart').waitFor()
+    return { ctx, page, w, polls: () => n }
+  }
+  const at = Date.now()
+
+  // Trading in the window: the chart opens on Volume, is live, the tabs switch, and the choice sticks.
+  {
+    const { ctx, page, w } = await open((i) => statsFixture(at, { step: i }))
+    const root = page.getByTestId('ledger-chart')
+    check('ledger chart: opens on Volume when the window has trades', (await root.getAttribute('data-metric')) === 'volume' && (await page.getByRole('tab', { name: 'Volume' }).getAttribute('aria-selected')) === 'true')
+    check('ledger chart: three tabs (Value locked, Volume, Fees)', (await page.locator('#ledger').getByRole('tablist', { name: 'Metric' }).getByRole('tab').allInnerTexts()).join('|') === 'Value locked|Volume|Fees')
+    check('ledger chart: live mode is set on the chart box', (await page.locator('#ledger [data-live]').count()) > 0, await page.locator('#ledger [data-live]').count())
+    check('ledger chart: no ghost while there is data', (await page.getByTestId('ledger-ghost').count()) === 0)
+    check('ledger chart: venue toggles carry their logos', (await page.locator('#ledger').getByRole('group', { name: 'Venues in the chart' }).getByRole('button', { name: /DeepCore/ }).locator('img, [role=img]').count()) > 0)
+    check('ledger chart: the source is named under the chart', /DefiLlama|deepcore/i.test(await page.getByTestId('ledger-sources').innerText()), await page.getByTestId('ledger-sources').innerText())
+    await page.getByRole('tab', { name: 'Value locked' }).click()
+    check('ledger chart: the Value locked tab switches', (await root.getAttribute('data-metric')) === 'tvl' && (await page.getByRole('tab', { name: 'Value locked' }).getAttribute('aria-selected')) === 'true')
+    await page.getByRole('tab', { name: 'Fees' }).click()
+    check('ledger chart: the Fees tab switches', (await root.getAttribute('data-metric')) === 'fees')
+    await page.getByRole('tab', { name: 'Value locked' }).click()
+    await page.reload()
+    await page.locator('#ledger').scrollIntoViewIfNeeded()
+    await page.getByTestId('ledger-chart').waitFor()
+    check('ledger chart: an explicit choice sticks for the session', (await page.getByTestId('ledger-chart').getAttribute('data-metric')) === 'tvl' && (await page.getByTestId('ledger-chart').getAttribute('data-auto')) === 'false')
+    check('ledger chart: no "no series" chip once series exist', (await page.locator('#ledger').getByText('no series').count()) === 0)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+
+  // Production today: every volume day is zero. Value locked is the default, Volume shows the ghost and the honest line, no axis.
+  {
+    const { ctx, page, w } = await open((i) => statsFixture(at, { quiet: true, step: i }))
+    const root = page.getByTestId('ledger-chart')
+    check('ledger chart: all-zero volume opens on Value locked', (await root.getAttribute('data-metric')) === 'tvl' && (await root.getAttribute('data-auto')) === 'true')
+    check('ledger chart: value locked is drawn (no ghost)', (await page.getByTestId('ledger-ghost').count()) === 0 && (await page.locator('#ledger [role=tabpanel] [data-chart]').count()) > 0)
+    await page.getByRole('tab', { name: 'Volume' }).click()
+    const ghost = page.getByTestId('ledger-ghost')
+    await ghost.waitFor({ timeout: 10_000 })
+    const text = await ghost.innerText()
+    check('ledger chart: all-zero volume shows the ghost and the last-trade line', /No trades in the last 7 days · last trade [A-Z][a-z]{2} \d{1,2}, \d{4}/.test(text), text)
+    check('ledger chart: no fake axis on an empty window', !/\$\d/.test(await page.locator('#ledger [role=tabpanel]').innerText()) && (await page.locator('#ledger [role=tabpanel] [data-chart]').count()) === 0)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+
+  // Polling: the page asks again after a minute and the read stamp moves on.
+  {
+    const { ctx, page, w, polls } = await open((i) => statsFixture(at, { step: i }), { clock: true })
+    const first = await stamp(page)
+    const before = polls()
+    await page.clock.fastForward(61_000)
+    await page.waitForTimeout(500)
+    const second = await stamp(page)
+    check('ledger chart: polls /api/stats again after a minute', polls() > before, `${before} -> ${polls()}`)
+    check('ledger chart: the read stamp updates with polling', first !== second, `${first} -> ${second}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+})
+
 /* ------------------------------------------------------------- ecosystem and partners --- */
 
 await step('ecosystem and partners', async () => {
@@ -2955,6 +3166,302 @@ await step('service hosts', async () => {
     await ctx.close()
   } finally {
     await hb.close()
+  }
+})
+
+await step('design audit 3 group 3: narrow-width fixes (D5 D6 D7 D10 D15 D16 D19 D21 + Telegram)', async () => {
+  for (const width of [320, 390]) {
+    const ctx = await newContext({ width, mobile: true })
+    const page = await ctx.newPage()
+    const w = watch(page, `da3-g3 ${width}`)
+    const visit = async (route) => {
+      await page.goto(BASE + route)
+      await page.locator('h1').first().waitFor()
+      await page.waitForTimeout(900)
+    }
+    // Every element of `sel` shows all its text (nothing cut by overflow) at this width.
+    const unclipped = (sel) => page.evaluate((q) => [...document.querySelectorAll(q)].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => `${e.tagName} "${(e.textContent || '').trim().slice(0, 30)}"`).slice(0, 4), sel)
+    await visit('/analytics')
+    await noHorizontalScroll(page, 'da3-g3 /analytics')
+    const srcBtn = page.locator('a[href*="gully-labs/umami"]')
+    check(`da3-g3 analytics ${width}: the Source button stays inside the viewport`, (await srcBtn.count()) === 1 && (await srcBtn.evaluate((e) => e.getBoundingClientRect().right <= window.innerWidth && e.scrollWidth <= e.clientWidth + 1)))
+    check(`da3-g3 ${width}: no link to the private gully-labs/blockscout repo anywhere on Chain Kit`, await (async () => { await visit('/chain-kit').catch(() => {}); return (await page.locator('a[href*="gully-labs/blockscout"]').count()) === 0 })())
+    for (const route of ['/services', '/pricing', '/partners', '/ecosystem', '/about', '/status', '/']) {
+      await visit(route)
+      await noHorizontalScroll(page, `da3-g3 ${route}`)
+      const cut = await unclipped('h1, h2, h3, [data-project] dd, [data-project] dt, section[aria-label="Services"] li, section[aria-label="Services"] span, dl dd, dl dt')
+      check(`da3-g3 ${route} at ${width}: no clipped headings, figures or chips`, cut.length === 0, cut.join(' | '))
+    }
+    await visit('/services')
+    const h2s = await page.locator('section[aria-label="Services"] h2').evaluateAll((els) => els.map((e) => e.scrollWidth <= e.clientWidth + 1))
+    check(`da3-g3 services ${width}: the card headings fit`, h2s.length === 4 && h2s.every(Boolean))
+    check(`da3-g3 services ${width}: venue and chain chips carry logos`, (await page.locator('[aria-label="Venues and chains"] img').count()) >= 4)
+    await visit('/pricing')
+    const h1 = await page.locator('h1').first().evaluate((e) => e.scrollWidth <= e.clientWidth + 1 && e.getBoundingClientRect().right <= window.innerWidth)
+    check(`da3-g3 pricing ${width}: the title stays inside the gutter`, h1)
+    await visit('/partners')
+    const notLive = page.locator('[data-benefit="chainkit"]')
+    check(`da3-g3 partners ${width}: the not-live Chain Kit card is dashed and not dimmed`, (await notLive.evaluate((e) => getComputedStyle(e).borderStyle === 'dashed' && Number(getComputedStyle(e).opacity) === 1)) && (await notLive.getByText('NOT LIVE YET').count()) === 1)
+    check(`da3-g3 partners ${width}: Chain Kit card says Built on Blockscout with its logo`, (await notLive.getByText('Built on Blockscout').count()) === 1 && (await notLive.locator('img').count()) >= 1)
+    const tgP = page.locator('a[href="https://t.me/GullyLabsBot?start=partners"]')
+    check(`da3-g3 partners ${width}: a Chat on Telegram button`, (await tgP.count()) === 1 && (await tgP.evaluate((e) => e.getBoundingClientRect().height >= 44)))
+    check(`da3-g3 partners ${width}: chain chips carry logos`, (await page.locator('[aria-label="Chains on the Holder Map"] img').count()) >= 3)
+    await visit('/about')
+    check(`da3-g3 about ${width}: venue names are logo chips`, (await page.locator('section[aria-label="Gully Labs in numbers"] img').count()) >= 3)
+    await visit('/status')
+    check(`da3-g3 status ${width}: chains are logo chips`, (await page.locator('[aria-label="Chains the Holder Map covers"] img').count()) >= 3)
+    for (const route of ['/', '/ecosystem']) {
+      await visit(route)
+      check(`da3-g3 ${route} at ${width}: no red "unreadable" text in a figure`, (await page.locator('dd .text-error').count()) === 0)
+    }
+    if (width === 390) {
+      await visit('/')
+      await page.getByRole('button', { name: /start a project|contact|get in touch/i }).first().click().catch(() => {})
+      const tgC = page.locator('a[href="https://t.me/GullyLabsBot?start=contact"]')
+      await tgC.first().waitFor({ timeout: 5000 }).catch(() => {})
+      check('da3-g3 contact modal: a Chat on Telegram button next to the form', (await tgC.count()) === 1)
+      await visit('/')
+    }
+    // D15: headings balance their lines.
+    const bal = await page.evaluate(() => getComputedStyle(document.querySelector('h1')).textWrap)
+    check(`da3-g3 ${width}: headings use text-wrap: balance`, bal === 'balance', bal)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+})
+
+// Holder Map discovery: the header link, the hero search, the ⌘K hit, the Holders chips, Most mapped today, the announcement bar and the SEO.
+await step('holder map discovery', async () => {
+  const HX = holdersExtraFixtures()
+  const SHOTS_HD = process.env.HD_SHOTS || null
+  if (SHOTS_HD) fs.mkdirSync(SHOTS_HD, { recursive: true })
+  const hdShot = (page, name, opts = {}) => SHOTS_HD && page.screenshot({ path: path.join(SHOTS_HD, name), ...opts })
+  const SCORE_ADDR = '0x' + 'cd'.repeat(20)
+  {
+    // A scored contract of its own, so this step does not depend on the Gully Score step having run.
+    const gs = await import('../server/gully-score.mjs')
+    const nowIso = new Date().toISOString()
+    gs.putScoreForTest({ chainId: 8453, chainKey: 'base', chainName: 'Base', address: SCORE_ADDR, name: 'E2E Vault', symbol: null, score: 74, grade: 'Fair', coverage: { weight: 75, components: 6, of: 9 }, computedAt: nowIso, methodVersion: 1, components: gs.COMPONENTS.map((c) => ({ ...c, evidence: [], available: false, score: null, value: 'Not available', reason: 'Not read in this test.' })), history: [{ at: nowIso, score: 74 }], changes: [] })
+  }
+  // 1. The header link: visible at 1440 and 1024 on one line, and in the mobile menu.
+  for (const width of [1440, 1024]) {
+    const ctx = await newContext({ width, height: 900, announce: true })
+    const page = await ctx.newPage()
+    const w = watch(page, `header ${width}`)
+    await page.goto(BASE + '/')
+    const link = page.locator('header nav[aria-label="Main"] a[href="/holders"]')
+    await link.waitFor()
+    check(`header ${width}: a top-level "Holder Map" link with a NEW dot`, (await link.isVisible()) && (await link.locator('[data-new-dot]').count()) === 1 && /Holder Map/.test(await link.innerText()))
+    const heights = await page.evaluate(() => [...document.querySelectorAll('header nav a, header nav button')].filter((el) => el.getBoundingClientRect().width > 0).map((el) => Math.round(el.getBoundingClientRect().height)))
+    check(`header ${width}: nothing in the header wraps`, heights.every((h) => h <= 44), heights.join(','))
+    const hb = await page.locator('header').evaluate((h) => Math.round(h.getBoundingClientRect().height))
+    check(`header ${width}: the header stays one row (${hb} px)`, hb <= 66, String(hb))
+    await noHorizontalScroll(page, `home header ${width}`)
+    if (width === 1440) await hdShot(page, 'home-1440.png', { fullPage: false })
+    if (width === 1440) await hdShot(page, 'header-1440.png', { clip: { x: 0, y: 0, width: 1440, height: 130 } })
+    if (width === 1024) await hdShot(page, 'header-1024.png', { clip: { x: 0, y: 0, width: 1024, height: 130 } })
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, height: 800, mobile: true, announce: true })
+    const page = await ctx.newPage()
+    const w = watch(page, `home ${width}`)
+    await page.goto(BASE + '/')
+    // 6. The announcement bar: compact, in flow above the header, dismissible, remembered.
+    const bar = page.locator('[data-announcement]')
+    await bar.waitFor()
+    const bb = await bar.boundingBox()
+    const hdr = await page.locator('header').boundingBox()
+    check(`announcement ${width}: slim (${Math.round(bb.height)} px) and above the header, not covering it`, bb.height <= 48 && hdr.y >= bb.y + bb.height - 1)
+    check(`announcement ${width}: the dismiss button is a 44 px tap target`, ((await page.getByRole('button', { name: 'Dismiss the announcement' }).boundingBox()).height ?? 0) >= 43.5)
+    await noHorizontalScroll(page, `home with the announcement ${width}`)
+    // 2. The hero search.
+    const q = page.locator('#hero-hq')
+    await q.waitFor()
+    const qb = await q.boundingBox()
+    check(`hero search ${width}: the box is on the first screen and 44 px tall`, qb.y + qb.height < 800 && qb.height >= 43.5, JSON.stringify(qb))
+    if (width === 390) {
+      await hdShot(page, 'home-390.png', { fullPage: false })
+      await page.getByRole('button', { name: 'Menu' }).click()
+      const mob = page.locator('nav[aria-label="Mobile"] a[href="/holders"]:has([data-new-dot])')
+      await mob.waitFor()
+      check('mobile menu: the "Holder Map" link with its NEW dot', (await mob.isVisible()) && (await mob.locator('[data-new-dot]').count()) === 1)
+      await hdShot(page, 'menu-390.png', { fullPage: false })
+      await page.getByRole('button', { name: 'Close' }).click()
+    }
+    await q.fill(E2E_ANY_TOKEN)
+    await q.press('Enter')
+    await page.waitForURL(new RegExp(`/holders/base/${E2E_ANY_TOKEN}$`))
+    check(`hero search ${width}: Enter on a pasted address opens its map`, true)
+    await page.goto(BASE + '/')
+    await page.locator('#hero-hq').fill('$NVDA')
+    await page.locator('[data-hero-holder-search]').getByRole('button', { name: 'Map it' }).click()
+    await page.locator('[data-hero-holder-search] [data-resolve-matches] a').first().waitFor()
+    check(`hero search ${width}: a ticker on two chains offers the chain picker`, (await page.locator('[data-hero-holder-search] [data-resolve-matches] a').count()) === 2)
+    await noHorizontalScroll(page, `home hero search ${width}`)
+    // 6. Dismissal is remembered.
+    await page.getByRole('button', { name: 'Dismiss the announcement' }).click()
+    check(`announcement ${width}: dismissing removes the bar`, (await page.locator('[data-announcement]').count()) === 0)
+    await page.reload()
+    await page.locator('#hero-hq').waitFor()
+    check(`announcement ${width}: and it stays dismissed after a reload (localStorage)`, (await page.locator('[data-announcement]').count()) === 0 && (await page.evaluate(() => localStorage.getItem('gl-announce-holder-map'))) === '1')
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  {
+    // 6. After 2026-11-02 the bar is gone by itself, with nothing stored.
+    const ctx = await newContext({ width: 1440, announce: true })
+    await ctx.addInitScript(() => {
+      const real = Date.now
+      const shift = Date.parse('2026-11-04T10:00:00Z') - real()
+      Date.now = () => real() + shift
+    })
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/')
+    await page.locator('#hero-hq').waitFor()
+    check('announcement: expired after 2026-11-02 (the constant), nothing stored', (await page.locator('[data-announcement]').count()) === 0)
+    await ctx.close()
+    const c2 = await newContext({ width: 1440, announce: true })
+    await c2.addInitScript(() => {
+      Object.defineProperty(window, 'localStorage', {
+        get() {
+          throw new Error('blocked')
+        },
+      })
+    })
+    const p2 = await c2.newPage()
+    await p2.goto(BASE + '/')
+    await p2.locator('[data-announcement]').waitFor()
+    await p2.getByRole('button', { name: 'Dismiss the announcement' }).click()
+    check('announcement: blocked storage does not break it (try/catch), it still hides for the visit', (await p2.locator('[data-announcement]').count()) === 0)
+    await c2.close()
+  }
+  // 5. Most mapped today on the home page, 1440 and 390; and its ghost.
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `most mapped ${width}`)
+    await page.goto(BASE + '/')
+    const list = page.locator('[data-most-mapped-list] li')
+    await list.first().waitFor({ timeout: 20_000 })
+    check(`most mapped ${width}: the live list renders the endpoint's rows`, (await list.count()) === HX.top.items.length)
+    await page.locator('[data-most-mapped-list] img[src*="badge.svg"]').first().waitFor({ state: 'attached' })
+    check(`most mapped ${width}: each row has a token logo and a health badge image`, (await page.locator('[data-most-mapped-list] li [data-logo], [data-most-mapped-list] li svg').count()) >= HX.top.items.length && (await page.locator('[data-most-mapped-list] img[src*="/badge.svg"]').count()) === HX.top.items.length)
+    await page.locator('[data-most-mapped]').scrollIntoViewIfNeeded()
+    await noHorizontalScroll(page, `home most mapped ${width}`)
+    await page.waitForTimeout(800)
+    await hdShot(page, `most-mapped-${width}.png`, { fullPage: false })
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  {
+    const ctx = await newContext({ width: 390, mobile: true })
+    await ctx.route(new RegExp(`^${BASE}/api/holders/top`), (route) => json(route, { day: '2026-10-19', items: [] }))
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/')
+    await page.locator('[data-most-mapped-ghost]').waitFor({ timeout: 20_000 })
+    check('most mapped: nothing today shows the ghost rows and says so', (await page.locator('[data-most-mapped-ghost]').innerText()).includes('No maps opened yet today') && (await page.locator('[data-most-mapped-list]').count()) === 0)
+    await noHorizontalScroll(page, 'home most mapped ghost 390')
+    await ctx.close()
+  }
+  // 3. ⌘K: an address or a ticker puts "Open Holder Map for …" first.
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `launcher ${width}`)
+    await page.goto(BASE + '/pricing')
+    await page.getByTestId('ask-fab').waitFor({ timeout: 10_000 })
+    await page.getByTestId('ask-fab').click()
+    const dlg = page.getByRole('dialog', { name: 'Gully AI' })
+    await dlg.waitFor()
+    const box = dlg.locator('textarea')
+    await box.fill('how do gap alerts work?')
+    await page.waitForTimeout(600)
+    check(`launcher ${width}: an ordinary question shows no Holder Map hit`, (await dlg.locator('[data-holder-hit]').count()) === 0)
+    await box.fill(E2E_ANY_TOKEN)
+    const hit = dlg.locator('[data-holder-hit] a').first()
+    await hit.waitFor()
+    check(`launcher ${width}: a pasted address offers "Open Holder Map for …" above the question form`, /Open Holder Map for/.test(await hit.innerText()) && (await dlg.evaluate((d) => !!(d.querySelector('[data-holder-hit]').compareDocumentPosition(d.querySelector('form')) & Node.DOCUMENT_POSITION_FOLLOWING))))
+    await box.fill('$DTC')
+    await dlg.locator('[data-holder-hit] a').first().waitFor()
+    check(`launcher ${width}: a ticker does too`, /\$DTC/.test(await dlg.locator('[data-holder-hit] a').first().innerText()))
+    await dlg.locator('[data-holder-hit] a').first().click()
+    await page.waitForURL(new RegExp(`/holders/robinhood/${E2E_LAUNCH_TOKEN}$`))
+    check(`launcher ${width}: clicking it opens the map and closes the panel`, (await page.getByRole('dialog', { name: 'Gully AI' }).count()) === 0)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // 4. Holders chips: tracker rows, the stock page, DeepCore launch rows, the score page, the Ecosystem launchpads.
+  for (const width of [1440, 390]) {
+    const mobile = width < 600
+    const ctx = await newContext({ width, mobile })
+    await ctx.route(`${BASE}/api/ecosystem`, (route) => json(route, { chains: [], launchpads: [{ id: 'deepcore', name: 'DeepCore', url: 'https://deepcore.fun', chains: ['Robinhood Chain'] }] }))
+    const page = await ctx.newPage()
+    const w = watch(page, `holders chips ${width}`)
+    const tall = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).every((e) => e.getBoundingClientRect().height >= 43.5))
+    await page.goto(BASE + '/tracker')
+    const visibleChip = page.locator('[data-holders-chip]:visible').first()
+    await visibleChip.waitFor({ timeout: 15_000 })
+    const th = await visibleChip.getAttribute('href')
+    check(`tracker ${width}: a visible row has a Holders chip to /holders/<chain>/<ticker>`, /^\/holders\/(robinhood|bsc|solana)\/[A-Za-z0-9]+$/.test(th ?? ''), th)
+    if (mobile) check('tracker 390: the chip is a 44 px tap target', await tall(page.locator('[data-holders-chip]:visible')))
+    await noHorizontalScroll(page, `tracker chips ${width}`)
+    await page.goto(BASE + '/tracker/robinhood/NVDA')
+    const sc = page.locator('main section').first().locator('[data-holders-chip]')
+    await sc.waitFor()
+    check(`stock page ${width}: the header has a Holders chip to /holders/robinhood/NVDA`, (await sc.getAttribute('href')) === '/holders/robinhood/NVDA' && (!mobile || (await tall(sc))))
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.waitForTimeout(1200)
+    await hdShot(page, `stock-${width}.png`, { fullPage: false })
+    await noHorizontalScroll(page, `stock page chips ${width}`)
+    await page.goto(BASE + '/projects/deepcore')
+    const lc = page.locator('[data-launch-holders] [data-holders-chip]').first()
+    await lc.waitFor({ timeout: 15_000 })
+    check(`DeepCore launch rows ${width}: each row ends in a Holders chip and links to its map`, (await page.locator('[data-launch-holders] li a[href^="/holders/"]').count()) >= 1 && (await page.locator('[data-launch-holders] [data-holders-chip]').count()) === (await page.locator('[data-launch-holders] li').count()))
+    await page.goto(`${BASE}/score/base/${SCORE_ADDR}`)
+    await page.getByRole('heading', { level: 1, name: 'E2E Vault' }).waitFor()
+    const sh = page.locator('main [data-holders-chip]').first()
+    await sh.waitFor()
+    check(`score page ${width}: the header has a Holders chip to the token's map`, (await sh.getAttribute('href')) === `/holders/base/${SCORE_ADDR}` && (!mobile || (await tall(sh))))
+    await noHorizontalScroll(page, `score page chips ${width}`)
+    await page.goto(BASE + '/ecosystem')
+    const ec = page.locator('[data-launchpad] [data-holders-chip]').first()
+    await ec.waitFor({ timeout: 15_000 })
+    check(`ecosystem ${width}: a launchpad card has a Holders chip`, (await ec.getAttribute('href')) === '/holders' && (await tall(ec)))
+    await noHorizontalScroll(page, `ecosystem chips ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // 7. SEO: server-rendered titles and descriptions, the card as og:image, and the sitemap section.
+  {
+    const holders = await import(new URL('../server/holders.mjs', import.meta.url).href)
+    const intel = await import(new URL('../server/holders-intel.mjs', import.meta.url).href)
+    const { sitemapFor } = await import(new URL('../server/seo.mjs', import.meta.url).href)
+    holders.seedHolderMapForTest('robinhood', E2E_LAUNCH_TOKEN, holdersFixture('deepcore-launch'))
+    const sym = holdersFixture('deepcore-launch').token?.symbol
+    const meta = (h, n) => h.match(new RegExp(`<meta (?:property|name)="${n}" content="([^"]*)"`))?.[1] ?? ''
+    const a = await (await fetch(`${BASE}/holders/robinhood/${E2E_LAUNCH_TOKEN}`)).text()
+    const title = a.match(/<title>([^<]*)<\/title>/)?.[1] ?? ''
+    check(`seo: a launch's map title names its symbol and chain (${title})`, sym ? title.startsWith(`Who holds $${sym.toUpperCase()} on Robinhood Chain · Holder Map`) : /^Who holds .* on Robinhood Chain · Holder Map/.test(title), title)
+    check('seo: description says who holds it, og:image is the map card.png', /Who holds/.test(meta(a, 'description')) && meta(a, 'og:image') === `https://gullylabs.xyz/api/holders/robinhood/${E2E_LAUNCH_TOKEN}/card.png`, meta(a, 'og:image'))
+    const b = await (await fetch(`${BASE}/holders/robinhood/NVDA`)).text()
+    check('seo: a ticker page reads "Who holds $NVDA on Robinhood Chain · Holder Map"', /<title>Who holds \$NVDA on Robinhood Chain · Holder Map/.test(b))
+    const c = await (await fetch(`${BASE}/holders/solana/${'7'.repeat(43)}`)).text()
+    check('seo: an unknown mint still gets a proper title and canonical', /<title>Who holds this token on Solana · Holder Map/.test(c) && c.includes(`rel="canonical" href="https://gullylabs.xyz/holders/solana/${'7'.repeat(43)}"`))
+    // The sitemap lists the top mapped tokens: valid ones only, at most 200, no stock map without holder data.
+    intel.resetScansForTest()
+    const addr = (i) => '0x' + i.toString(16).padStart(40, '0')
+    for (let i = 1; i <= 230; i++) intel.recordScan('base', addr(i), `T${i}`, 'token', `10.0.${i >> 8}.${i & 255}`)
+    intel.recordScan('base', 'not-an-address', 'BAD', 'token', '10.9.9.9')
+    intel.recordScan('robinhood', 'NVDA', 'NVDA', 'stock', '10.9.9.8')
+    const sm = sitemapFor('gullylabs.xyz')
+    const locs = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
+    const held = locs.filter((u) => /\/holders\/base\/0x[0-9a-f]{40}$/.test(u))
+    check(`sitemap: the most-mapped tokens are listed, capped at 200 (${held.length})`, held.length === 200 && new Set(locs).size === locs.length)
+    check('sitemap: invalid tokens and a stock map without holder data are not listed', !sm.includes('not-an-address') && !locs.includes('https://gullylabs.xyz/holders/robinhood/NVDA'))
+    intel.resetScansForTest()
+    check('sitemap: with no scans there is no such section', !/\/holders\/base\/0x/.test(sitemapFor('gullylabs.xyz')))
   }
 })
 

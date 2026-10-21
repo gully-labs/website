@@ -19,6 +19,7 @@ import { handleDeepcoreLaunches } from './server/deepcore.mjs'
 import { handleSolana } from './server/solana-routes.mjs'
 import { handleHolders } from './server/holders.mjs'
 import { handleEcosystem } from './server/ecosystem.mjs'
+import { buildPrecacheList, generateSw, versionStamp } from './server/pwa-build.mjs'
 
 // The Arbitrum chain SDK (a lazy chunk of the chain launch flow) calls require.resolve at load time for its command-line
 // scripts' file paths. A browser has no require.resolve; the paths are never used there, so they resolve to themselves.
@@ -28,6 +29,22 @@ function sdkBrowserShims(): Plugin {
     transform(code, id) {
       if (!/node_modules[\\/]@arbitrum[\\/]chain-(sdk|actions)[\\/]/.test(id) || !code.includes('require.resolve(')) return null
       return { code: code.replace(/\brequire\.resolve\(/g, "(function (p) { return p })("), map: null }
+    },
+  }
+}
+
+// The service worker (server/pwa.mjs holds its rules): emitted as dist/sw.js with the app shell's precache list and a
+// version stamp. Runs after Vite's own html step so index.html is final.
+function pwaServiceWorker(): Plugin {
+  return {
+    name: 'pwa-service-worker',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      const precache = buildPrecacheList(bundle as Record<string, unknown>)
+      const html = bundle['index.html']
+      const indexHtml = html && html.type === 'asset' ? String(html.source) : ''
+      this.emitFile({ type: 'asset', fileName: 'sw.js', source: generateSw({ precache, version: versionStamp(precache, indexHtml) }) })
     },
   }
 }
@@ -167,7 +184,7 @@ function serverModules(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), mockContactApi(), statsApi(), trackerApi(), serverModules(), sdkBrowserShims()],
+  plugins: [react(), tailwindcss(), mockContactApi(), statsApi(), trackerApi(), serverModules(), sdkBrowserShims(), pwaServiceWorker()],
   // The Arbitrum chain SDK's barrel file imports Node built-ins for its command-line scripts; the lazy launch-flow chunk loads
   // them as inert stand-ins (src/pages/developers/chains/nodeStub.ts). Nothing else in the app imports these modules.
   resolve: { alias: [{ find: /^node:(path|fs|fs[/]promises|os|child_process)$/, replacement: fileURLToPath(new URL('./src/pages/developers/chains/nodeStub.ts', import.meta.url)) }] },

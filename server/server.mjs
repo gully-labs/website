@@ -4,6 +4,7 @@
 import http from 'node:http'
 import { handleIndexNowKey } from './indexnow.mjs'
 import { readStats } from './stats.mjs'
+import { startStatsWatchdog } from './stats-watchdog.mjs'
 import { onSnapshot, readGapIndex, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts, startHolderAlerts } from './alerts.mjs'
@@ -31,6 +32,7 @@ import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { API_URL, APP_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isPayHost, MAIN_URL, PAY_URL } from './hosts.mjs'
+import { handleManifest } from './pwa.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
 import { handleFeeHistory } from './fee-history.mjs'
@@ -255,6 +257,8 @@ async function handleRequest(req, res) {
     if (!map) return send(res, 404, '', { 'Cache-Control': 'public, max-age=3600' })
     return send(res, 200, map, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   }
+  // The web app manifest, one per host (pwa.mjs): the site's, the app's, none for admin and docs.
+  if (handleManifest(req, res, url, host)) return
   if (isAdmin) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
 
   if (url.pathname.startsWith('/api/admin/')) {
@@ -526,6 +530,8 @@ function startLoops() {
   startFeeProxyMonitor()
   // Daily intake digest to the operators' Telegram chat at INTAKE_DIGEST_TIME (UTC, default 09:00; intake-notify.mjs).
   startIntakeDigest()
+  // Every 15 min: are the home ledger's venue feeds and series sane? One Telegram admin alert per venue per day (stats-watchdog.mjs).
+  if (process.env.STATS_WATCHDOG !== 'off' && process.env.TRACKER_LOOP !== 'off') startStatsWatchdog()
   // Gully Security's scan queue (server/security): requeues interrupted scans and starts the runner.
   startSecurityEngine()
   startDeepRunner() // Holder Map Deep checks interrupted by a restart run again

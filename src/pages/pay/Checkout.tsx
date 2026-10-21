@@ -123,7 +123,7 @@ export function StatusTrack({ check, hasQuote, needed }: { check: Check; hasQuot
   const text = check.s === 'done' ? 'Paid.' : check.s === 'pending' ? `${check.message} Checking every few seconds.` : check.s === 'checking' ? 'Reading the transaction on chain…' : hasQuote ? 'Send the amount from your wallet; this page notices on its own.' : 'Pick a network and token to get the exact amount.'
   return (
     <div className="flex flex-col gap-2" role="status" aria-live="polite" data-testid="status-track" data-step={idx}>
-      <ol className="m-0 grid list-none grid-cols-4 gap-[6px] p-0" aria-label="Payment status">
+      <ol className="m-0 grid list-none grid-cols-4 gap-[6px] p-0 max-[420px]:gap-[4px]" aria-label="Payment status">
         {steps.map((l, i) => {
           const on = i <= idx && (hasQuote || i === 0)
           const live = i === idx && check.s !== 'done'
@@ -132,9 +132,9 @@ export function StatusTrack({ check, hasQuote, needed }: { check: Check; hasQuot
               <span className={`relative h-1 overflow-hidden rounded-full ${i < idx || check.s === 'done' ? 'bg-green' : 'bg-grid'}`}>
                 {live && hasQuote && <span className="absolute inset-y-0 left-0 rounded-full bg-gold transition-[width] duration-500" style={{ width: i === 2 && check.s === 'pending' ? `${Math.min(100, Math.round((have / Math.max(1, check.needed)) * 100))}%` : '50%' }} />}
               </span>
-              <span className={`inline-flex min-w-0 items-center gap-1 text-[11.5px] leading-tight ${on ? 'text-ink' : 'text-faint'}`}>
-                {live && hasQuote && <i aria-hidden className="size-[6px] shrink-0 animate-blink rounded-full bg-gold" />}
-                <span className="truncate">{l}</span>
+              <span className={`inline-flex min-w-0 items-start gap-1 text-[11.5px] leading-tight max-[420px]:text-[11px] ${on ? 'text-ink' : 'text-faint'}`}>
+                {live && hasQuote && <i aria-hidden className="size-[6px] shrink-0 animate-blink rounded-full bg-gold max-[420px]:mt-[3px]" />}
+                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{l}</span>
               </span>
             </li>
           )

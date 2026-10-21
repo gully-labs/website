@@ -83,17 +83,17 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
       {s.k === 'error' && <ErrorLine>The launch list could not be read just now. It retries every minute.</ErrorLine>}
       {d?.state === 'unreadable' && <ErrorLine>DeepCore’s launch list has not been read yet{d.error ? `: ${d.error}` : ''}.</ErrorLine>}
 
-      <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-stretch gap-4 max-[1100px]:grid-cols-[minmax(0,1fr)]">
         <Section title="Launches per day" sub="the latest launches, by chain">
           {!d ? <Skeleton h={180} /> : perDay.length ? <StackedDays height={180} days={perDay} kinds={kinds} label={`DeepCore launches per day by chain, ${d.launches.length} latest.`} /> : <GhostChart height={180} variant="bars" label="Launches will draw here as they land" />}
         </Section>
         <Section title="DeepCore volume" sub="daily, USD · live ledger">
           {stats.k === 'loading' ? (
-            <Skeleton h={120} />
+            <Skeleton h={180} />
           ) : daily.length >= 2 ? (
-            <KeySpark values={daily.map((p) => p.v)} labels={daily.map((p) => new Date(p.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))} color="#d9b563" width={420} height={120} label={`DeepCore daily volume over ${daily.length} days`} />
+            <div className="min-w-0 [&>span]:!w-full"><KeySpark values={daily.map((p) => p.v)} labels={daily.map((p) => new Date(p.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))} color="#d9b563" width={420} height={180} label={`DeepCore daily volume over ${daily.length} days`} /></div>
           ) : (
-            <GhostChart height={120} label={venue ? 'Volume will draw here' : 'DeepCore’s figures are unreadable right now'} badge={venue ? undefined : false} />
+            <GhostChart height={180} label={venue ? 'Volume will draw here' : 'DeepCore’s figures are unreadable right now'} badge={venue ? undefined : false} />
           )}
         </Section>
       </div>
@@ -117,11 +117,11 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
         {!d ? (
           <Skeleton h={200} />
         ) : list.length ? (
-          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-2 p-0" data-testid="deepcore-launches">
+          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] max-[359px]:grid-cols-1 gap-2 p-0" data-testid="deepcore-launches">
             {list.slice(0, 24).map((l, i) => {
               const locked = l.legs.some((g) => g.locked === true)
               return (
-                <li key={l.key} className="flex items-center gap-3 rounded-[10px] border border-line px-3 py-2" style={{ animation: `gl-rise .35s ${Math.min(i * 0.03, 0.4)}s ease both` }}>
+                <li key={l.key} className="flex min-w-0 items-center gap-3 rounded-[10px] border border-line px-3 py-2" style={{ animation: `gl-rise .35s ${Math.min(i * 0.03, 0.4)}s ease both` }}>
                   <span className="relative inline-flex shrink-0" title={l.chainName}>
                     <TokenLogo symbol={l.symbol ?? 'token'} chain={l.chainKey ?? CHAIN_KEY[l.chainId]} address={l.token} size={24} decorative />
                     <ChainLogo chain={l.chainKey ?? CHAIN_KEY[l.chainId] ?? l.chainName} size={12} decorative className="absolute -right-[3px] -bottom-[3px] ring-1 ring-surface" />

@@ -53,11 +53,14 @@
     "test:holders-deep": "node scripts/test-holders-deep.mjs",
     "test:launchpads": "node --test scripts/test-launchpads.mjs",
     "test:status": "node --test scripts/test-status.mjs",
+    "test:stats": "node --test scripts/test-stats.mjs",
     "test:token-logos": "node --test scripts/test-token-logos.mjs",
     "test:chart-kit": "node --test scripts/test-chart-kit.mjs",
     "test:ecosystem": "node scripts/test-ecosystem.mjs",
     "test:intake-notify": "node scripts/test-intake-notify.mjs",
-    "test:contracts": "node scripts/test-contracts.mjs"
+    "test:contracts": "node scripts/test-contracts.mjs",
+    "test:pwa-unit": "node --test scripts/test-pwa-unit.mjs",
+    "test:pwa": "node scripts/test-pwa.mjs"
   },
   "dependencies": {
     "@arbitrum/chain-sdk": "0.28.0",

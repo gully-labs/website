@@ -325,7 +325,7 @@ export function ApiReference() {
             ['generatedAt', 'string (ISO)', 'When this answer was built.'],
             ['totals', 'object', <><C>volumeAllUsd</C>, <C>volume24hUsd</C>, <C>tvlUsd</C>, <C>fees24hUsd</C>, <C>feesAllUsd</C>: each the sum over the venues that publish it, or empty when none does. <C>covers</C> names the venues in each total; <C>unread</C> the venues that could not be read.</>],
             ['daily', '{ t, v }[]', 'Daily volume in USD summed across the venues read; t in Unix seconds.'],
-            ['venues', 'Venue[]', <>One per project (<C>deepcore</C>, <C>peddleswap</C>, <C>peddles</C>, <C>peddlequest</C>): <C>state: ok</C> with its figures, <C>daily</C>, <C>counts</C>, <C>notes</C> and <C>source</C> (<C>url</C>, <C>readAt</C>), or <C>state: error</C> with <C>error</C>. A venue that fails is unreadable, never zero.</>],
+            ['venues', 'Venue[]', <>One per project (<C>deepcore</C>, <C>peddleswap</C>, <C>peddles</C>, <C>peddlequest</C>): <C>state: ok</C> with its figures, <C>daily</C>, <C>series</C> (<C>{'{ volume, fees, tvl }'}</C>, each <C>{'{ t, v }[]'}</C> in USD, the last 120 days), <C>sources</C> (who supplied each series: the venue's own API, or DefiLlama with <C>fallback: true</C>), <C>lastActivity</C> (when the last day with non-zero volume was, or absent when none is known), <C>counts</C>, <C>notes</C> and <C>source</C> (<C>url</C>, <C>readAt</C>), or <C>state: error</C> with <C>error</C>. A venue that fails is unreadable, never zero.</>],
           ]}
         />
         <P>
@@ -515,7 +515,7 @@ export function ApiReference() {
             ['/api/holders/…', 'public, max-age=15 to 300', 'Per route in the Holder Map table; maps are built at most every five minutes.'],
             ['/api/score, /api/score/…', 'public, max-age=60 (methodology 300, badge 3600)', 'Scores are recomputed at most every six hours.'],
             ['/api/status', 'public, max-age=30', 'Checks run every 60 seconds.'],
-            ['/api/stats', 'public, max-age=30', 'Each project is read at most once a minute.'],
+            ['/api/stats', 'public, max-age=30', 'Each project is read at most once every 45 seconds; DefiLlama history is cached for ten minutes.'],
             ['/api/plans, /api/alerts/channels', 'public, max-age=60', ''],
             ['/api/pay/gas', 'public, max-age=60', 'Read from the chains at most every three minutes.'],
             ['/api/chain/fee-history', 'public, max-age=20', 'Base fee per gas over the last 128 blocks on Arbitrum One, Base and Arbitrum Sepolia ({ blocks, chains[]: key, name, role, gwei[], newest, error }), for the Gully L3 roadmap chart. Read at most every 20 seconds.'],

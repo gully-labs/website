@@ -250,7 +250,7 @@ writeFileSync(
 )
 
 // Error pages: between the HTML markers.
-for (const f of ['1xxx.html', '5xx.html']) {
+for (const f of ['1xxx.html', '5xx.html', 'offline.html']) {
   const p = join(root, 'public', 'errors', f)
   const html = readFileSync(p, 'utf8')
   const s = html.indexOf('<!-- kit-wordmark:start -->')

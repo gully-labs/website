@@ -21,6 +21,7 @@ import { APP_URL, isLocalHost } from '../site-host'
 import { eyebrow } from '../components/ui'
 import { StockSwap } from '../components/swap/StockSwap'
 import { HolderMap } from '../components/holders/HolderMap'
+import { HoldersChip } from '../components/holders/HoldersChip'
 import { TokenLogo } from '../components/logos/TokenLogo'
 import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
 
@@ -142,6 +143,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
                 Open the pool on DexScreener <NewTabMark size={15} className="flex-none" />
               </a>
             )}
+            <HoldersChip chain={row.chain} token={row.ticker} symbol={row.ticker} className="!h-11 px-4 text-[14px]" />
             <a href={xPost(gapPost(row), shareUrl)} {...newTab} aria-label={`Post ${row.ticker}'s gap on X (opens in a new tab)`} className="inline-flex size-11 items-center justify-center rounded-btn border border-gold-line text-gold hover:border-gold hover:text-gold">
               <SocialIcon name="X" size={14} />
               <NewTabMark size={11} className="flex-none" />

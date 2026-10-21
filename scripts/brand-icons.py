@@ -40,7 +40,15 @@ for rel, size in OUT.items():
     p.parent.mkdir(parents=True, exist_ok=True)
     down(size).save(p, "PNG", optimize=True)
 
+# Maskable app icon (PWA manifests): Android crops it to a circle or squircle, so the master is downscaled into
+# the central 80% (the maskable safe zone) over a canvas of the master's own corner colour. Still a downscale.
+MASK = 512
+inner = down(round(MASK * 0.8))
+canvas = Image.new("RGBA", (MASK, MASK), src.getpixel((0, 0)))
+canvas.paste(inner, ((MASK - inner.width) // 2, (MASK - inner.height) // 2), inner)
+canvas.save(root / "public" / "icon-maskable-512.png", "PNG", optimize=True)
+
 # favicon.ico: 16, 32 and 48 px frames.
 ico = root / "public" / "favicon.ico"
 down(48).save(ico, format="ICO", sizes=[(16, 16), (32, 32), (48, 48)])
-print(f"icons: {len(OUT)} PNGs and favicon.ico from {master.name}")
+print(f"icons: {len(OUT) + 1} PNGs and favicon.ico from {master.name}")

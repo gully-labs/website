@@ -1,38 +1,14 @@
-import { useEffect, useState } from 'react'
 import { fetchStats, type Stats } from '../lib/stats'
+import { useLiveSeries } from '../components/charts/useLiveSeries'
 
 export type StatsState = { k: 'loading' } | { k: 'error' } | { k: 'ok'; data: Stats }
 
-let shared: Promise<Stats> | null = null
-const FRESH_MS = 60_000
-let sharedAt = 0
+/** How often /api/stats is read again, and what the pages say ("refreshes every minute"). */
+export const STATS_EVERY_MS = 60_000
 
-function load(): Promise<Stats> {
-  if (shared && Date.now() - sharedAt < FRESH_MS) return shared
-  sharedAt = Date.now()
-  shared = fetchStats()
-  shared.catch(() => {
-    shared = null
-  })
-  return shared
-}
-
-/** One read shared by every surface on the page, refreshed every minute. On a failed refresh the last good read stays. */
+/** /api/stats, read now and then every minute (the chart kit's useLiveSeries: paused in a hidden tab, refreshed
+    at once on return, one request at a time). On a failed refresh the last good read stays on screen. */
 export function useStats(): StatsState {
-  const [state, setState] = useState<StatsState>({ k: 'loading' })
-  useEffect(() => {
-    let alive = true
-    const tick = () =>
-      load().then(
-        (data) => alive && setState({ k: 'ok', data }),
-        () => alive && setState((s) => (s.k === 'ok' ? s : { k: 'error' })),
-      )
-    tick()
-    const id = setInterval(tick, FRESH_MS)
-    return () => {
-      alive = false
-      clearInterval(id)
-    }
-  }, [])
-  return state
+  const { data, loading } = useLiveSeries<Stats>((signal) => fetchStats(signal), STATS_EVERY_MS)
+  return data ? { k: 'ok', data } : loading ? { k: 'loading' } : { k: 'error' }
 }

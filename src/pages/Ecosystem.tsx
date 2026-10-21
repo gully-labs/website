@@ -13,8 +13,11 @@ import { Segmented } from '../components/ui/Segmented'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
 import { projects, type Project } from '../content/projects'
 import { integrationKinds, integrations, type Integration, type IntegrationKind } from '../content/ecosystem'
-import { fetchStats, fmtDate, fmtTime, fmtUsd, sourceHost, type Stats, type Venue, type VenueOk } from '../lib/stats'
+import { fmtDate, fmtTime, fmtUsd, sourceHost, type Venue, type VenueOk } from '../lib/stats'
 import { getJson } from '../lib/holders'
+import { METRIC_LABEL, sparkPoints } from '../lib/ledgerSeries'
+import { useStats } from '../hooks/useStats'
+import { HoldersChip } from '../components/holders/HoldersChip'
 
 /* /ecosystem: three honest lists.
    - Our projects: every project on the site is Gully Labs' own, one card each with the figures its own API
@@ -31,21 +34,6 @@ const COLS: { id: Col; label: string }[] = [
   { id: 'tvl', label: 'TVL' },
   { id: 'fees', label: 'FEES' },
 ]
-
-function useStats() {
-  const [s, setS] = useState<{ k: 'loading' } | { k: 'error' } | { k: 'ok'; data: Stats }>({ k: 'loading' })
-  useEffect(() => {
-    let alive = true
-    const go = () => fetchStats().then((data) => alive && setS({ k: 'ok', data }), () => alive && setS((p) => (p.k === 'ok' ? p : { k: 'error' })))
-    go()
-    const id = setInterval(go, 60_000)
-    return () => {
-      alive = false
-      clearInterval(id)
-    }
-  }, [])
-  return s
-}
 
 /** A venue's figure for a column and what it is (all-time, 30 days or 24 hours); null when it publishes none. */
 function figure(v: VenueOk, c: Col): { n: number | null; note: string } {
@@ -64,7 +52,9 @@ const fromLlama = (v: VenueOk) => v.notes.some((n) => /defillama/i.test(n) && !/
 
 function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | undefined; loading: boolean; col: Col }) {
   const ok = venue?.state === 'ok' ? venue : null
-  const pts = (ok?.daily ?? []).slice(-30)
+  // The series is the one for the sorted column (volume, TVL or fees), from the venue's API or DefiLlama.
+  const spark = ok ? sparkPoints(ok, col) : null
+  const pts = (spark?.points ?? []).slice(-30)
   return (
     <motion.article
       initial={{ opacity: 0, y: 14 }}
@@ -79,10 +69,10 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
       <div className="flex items-center gap-3">
         <VenueLogo venue={p.key} name={p.name} size={40} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <h3 className="m-0 truncate font-display text-[22px] leading-none font-bold uppercase">{p.name}</h3>
+          <h3 className="m-0 break-words font-display text-[22px] leading-none font-bold uppercase">{p.name}</h3>
           <span className="font-mono text-[11px] tracking-[1px] text-faint">{p.tag.toUpperCase()}</span>
         </div>
-        <span className="rounded-full border border-line-strong px-2.5 py-0.5 font-mono text-[11px] text-ink-2">{p.status}</span>
+        <span className={`flex-none rounded-full border px-2.5 py-0.5 font-mono text-[11px] ${!loading && !ok ? 'border-error-line text-error' : 'border-line-strong text-ink-2'}`}>{!loading && !ok ? 'UNREADABLE' : p.status}</span>
       </div>
       <p className="m-0 text-[14px] leading-[1.55] text-muted">{p.tagline}. {p.description}</p>
       <div className="flex flex-wrap items-center gap-2" aria-label={`${p.name} chains`}>
@@ -99,11 +89,11 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
           return (
             <div key={c.id} className="flex min-w-0 flex-col gap-1">
               <dt className={`font-mono text-[11px] tracking-[1px] ${col === c.id ? 'text-gold' : 'text-faint'}`}>{c.label}</dt>
-              <dd className="m-0 truncate font-mono text-[14px] whitespace-nowrap">
+              <dd className="m-0 font-mono text-[14px] leading-[1.3] break-words">
                 {loading ? (
                   <span className="text-dim">…</span>
                 ) : !ok ? (
-                  <span className="text-error">unreadable</span>
+                  <span className="text-dim" title="This venue could not be read">—</span>
                 ) : f && f.n !== null ? (
                   <>
                     <AnimatedNumber value={f.n} format={NF.compactUsd} countUp />
@@ -120,7 +110,7 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
         })}
       </dl>
       {pts.length >= 2 ? (
-        <MiniSpark data={pts.map((d) => d.v)} xs={pts.map((d) => d.t)} labels={pts.map((d) => new Date(d.t * (d.t > 1e11 ? 1 : 1000)).toISOString().slice(0, 10))} label={`${p.name} daily volume, last ${pts.length} days`} fmt={fmtUsd} color={p.accent} height={44} />
+        <MiniSpark data={pts.map((d) => d.v)} xs={pts.map((d) => d.t)} labels={pts.map((d) => new Date(d.t * (d.t > 1e11 ? 1 : 1000)).toISOString().slice(0, 10))} label={`${p.name} daily ${METRIC_LABEL[spark?.metric ?? 'volume'].toLowerCase()}, last ${pts.length} days`} fmt={fmtUsd} color={p.accent} height={44} />
       ) : (
         <span className="flex h-11 items-center font-mono text-[11px] text-faint">{loading ? 'reading…' : ok ? 'no daily series published' : 'daily series unreadable'}</span>
       )}
@@ -348,12 +338,15 @@ export function Ecosystem() {
                     </span>
                   ))}
                 </div>
-                {l.url && (
-                  <a href={l.url} target="_blank" rel="noopener noreferrer" className={`${btnOutline} mt-auto inline-flex min-h-11 w-fit items-center gap-1 px-4 text-[13px]`}>
-                    Visit
-                    <ArrowUpRight size={14} aria-hidden />
-                  </a>
-                )}
+                <div className="mt-auto flex flex-wrap items-center gap-2">
+                  {l.url && (
+                    <a href={l.url} target="_blank" rel="noopener noreferrer" className={`${btnOutline} inline-flex min-h-11 w-fit items-center gap-1 px-4 text-[13px]`}>
+                      Visit
+                      <ArrowUpRight size={14} aria-hidden />
+                    </a>
+                  )}
+                  <HoldersChip symbol={l.name} className="!h-11 px-3 text-[13px]" />
+                </div>
               </motion.li>
             ))}
             <motion.li

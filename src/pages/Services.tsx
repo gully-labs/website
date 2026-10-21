@@ -3,6 +3,7 @@ import { HeroLedger } from '../components/landing/HeroLedger'
 import { useStats } from '../hooks/useStats'
 import { useContact } from '../components/ContactContext'
 import { Seo } from '../components/Seo'
+import { ChainChip, VenueChip } from '../components/ProjectRows'
 import { btnGold, eyebrow, SectionHeading } from '../components/ui'
 import { projects } from '../content/projects'
 import { processSteps, services } from '../content/services'
@@ -28,7 +29,7 @@ export function Services() {
             SERVICES · THE SAME TEAM, ON YOUR PROJECT
           </span>
           <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
-            Build with the team behind <span className="text-gold whitespace-nowrap">the projects</span>
+            Build with the team behind <span className="text-gold">the projects</span>
           </h1>
         </div>
         <div className="flex flex-col gap-5" style={rise(2)}>
@@ -53,7 +54,7 @@ export function Services() {
           {services.map((s, i) => (
             <div
               key={s.n}
-              className="gl-row-sweep relative grid grid-cols-[72px_1.2fr_1.6fr_160px_140px] items-center gap-6 border-b border-line px-7 py-7 transition-colors last:border-b-0 hover:bg-surface-hover max-[959px]:grid-cols-[72px_1fr] max-[959px]:gap-y-3"
+              className="gl-row-sweep relative grid grid-cols-[72px_1.2fr_1.6fr_160px_140px] items-center gap-6 border-b border-line px-7 py-7 transition-colors last:border-b-0 hover:bg-surface-hover max-[959px]:grid-cols-[72px_minmax(0,1fr)] max-[959px]:gap-y-3 max-[479px]:grid-cols-[48px_minmax(0,1fr)] max-[479px]:gap-x-4 max-[479px]:px-4"
               style={{ ...rise(i + 2), ['--sweep-delay' as string]: `${1 + i * 1.3}s` }}
             >
               <span className="flex flex-col items-start gap-3">
@@ -62,19 +63,19 @@ export function Services() {
                 </span>
                 <span className="font-mono text-[13px] text-gold">{s.n}</span>
               </span>
-              <h2 className="m-0 font-display text-h3 font-extrabold uppercase">{s.name}</h2>
-              <div className="flex flex-col gap-3 max-[959px]:col-start-2">
-                <span className="text-[16px] leading-[1.55] text-muted">{s.description}</span>
+              <h2 className="m-0 min-w-0 font-display text-h3 font-extrabold break-words uppercase max-[479px]:text-[22px]">{s.name}</h2>
+              <div className="flex min-w-0 flex-col gap-3 max-[959px]:col-start-2">
+                <span className="text-[16px] leading-[1.55] break-words text-muted">{s.description}</span>
                 <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
                   {s.items.map((it) => (
-                    <li key={it} className="whitespace-nowrap rounded-full border border-line-strong px-3 py-[5px] font-mono text-[12px] text-ink-2">
+                    <li key={it} className="rounded-full border border-line-strong px-3 py-[5px] font-mono text-[12px] text-ink-2">
                       {it}
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="flex flex-col gap-1 max-[959px]:col-start-2">
-                <span className="font-display text-[30px] leading-none font-bold">{s.time}</span>
+              <div className="flex min-w-0 flex-col gap-1 max-[959px]:col-start-2">
+                <span className="font-display text-[30px] break-words leading-none font-bold">{s.time}</span>
                 {/* The column header says it on wide screens; repeat it only where the header is hidden. */}
                 <span className="font-mono text-[11px] tracking-[.5px] text-faint min-[960px]:hidden">TYPICAL TIMELINE</span>
               </div>
@@ -117,6 +118,14 @@ export function Services() {
         <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-start gap-6 max-[1099px]:grid-cols-1">
           <div className="flex min-w-0 flex-col gap-3">
             <HeroLedger data={st.k === 'ok' ? st.data : null} state={st.k} />
+            <div className="flex flex-wrap gap-2" aria-label="Venues and chains">
+              {projects.map((p) => (
+                <VenueChip key={p.key} venue={p.key} name={p.name} />
+              ))}
+              {[...new Set(projects.flatMap((p) => p.chains))].map((c) => (
+                <ChainChip key={c} chain={c} />
+              ))}
+            </div>
             <span className="font-mono text-[11px] text-faint">The venues this team built, read live from each one's own API: daily volume, stacked by venue.</span>
           </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-4">

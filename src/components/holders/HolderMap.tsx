@@ -57,6 +57,9 @@ const flagText = (f: string) => FLAG_TEXT[f] ?? f
 const fmtUsd = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 const fmtUnits = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 4 }))
 const PCT = { maximumFractionDigits: 2 } as const
+/** A holder's label for a narrow row: the parenthetical detail ("Burn (dead address)") is dropped. */
+const shortLabel = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').replace(/^DeepCore launch lock$/, 'Launch lock')
+
 const VIEWS: SegOption<'map' | 'list'>[] = [
   { id: 'map', label: 'Map' },
   { id: 'list', label: 'List' },
@@ -565,7 +568,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
   }
 
   const controls = (
-    <div className={`flex flex-wrap items-center gap-2 ${wide ? 'pointer-events-auto' : ''}`} data-map-controls>
+    <div className={`flex flex-wrap items-center gap-2 ${wide ? 'pointer-events-auto' : 'max-[600px]:pr-16'}`} data-map-controls>
       <form onSubmit={search} role="search" className="flex min-w-0 flex-[1_1_220px] items-center gap-2 rounded-btn border border-line-strong px-3" style={{ background: alpha(K.night, 0.92) }}>
         <Search size={14} aria-hidden className="flex-none text-dim" />
         <label className="sr-only" htmlFor={`hm-search-${m.token.address}`}>
@@ -1082,10 +1085,10 @@ function Replay({
           {playing ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
         </button>
         <Segmented label="Replay speed" value={speed === 4 ? '4' : '1'} options={SPEEDS} onChange={(v) => setSpeed(v === '4' ? 4 : 1)} />
-        <span className="min-w-[190px] flex-1 font-mono text-[12px] text-muted" aria-live="polite">
+        {skip}
+        <span className="basis-full font-mono text-[12px] text-muted" aria-live="polite" data-replay-readout>
           {frameAt ? `${when} · top 10 held ${fmtPct(frameAt.top10Pct)}${frameAt.holders !== null ? ` · ${frameAt.holders} holders` : ''}` : `Now · top 10 hold ${fmtPct(m.summary.top10Pct)}`}
         </span>
-        {skip}
       </div>
       <label className="flex items-center gap-3 font-mono text-[11px] text-dim">
         <span className="flex-none">{intro ? 'Launch' : 'Replay'}</span>
@@ -1366,7 +1369,7 @@ function RankedList({ m, selected, onSelect, srOnly = false }: { m: HolderMapOk;
                 background: isInfra(n) || n.label?.kind === 'deployer' ? KIND_HUE[kindKeyOf(n) as KindKey] : n.cluster ? K.gold : K.muted,
               }}
             />
-            <span className="min-w-0 flex-1 break-words text-ink">{n.label?.name ?? n.short}</span>
+            <span className="min-w-0 flex-1 break-words text-ink">{n.label ? shortLabel(n.label.name) : n.short}</span>
             {n.flags.includes('bundled') && <span className="flex-none text-[11px] text-error">BUNDLED</span>}
             <span className="w-16 flex-none text-right text-gold-hover">{fmtPct(n.pct)}</span>
           </button>

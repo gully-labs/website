@@ -259,12 +259,23 @@ export function launchesFixture(at = Date.now()) {
   return { state: 'ok', asOf: new Date(at).toISOString(), launches: [{ chainId: 4663, chainKey: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', createdAt: new Date(at - 7 * 86_400_000).toISOString(), locked: true, links: { token: 'https://deepcore.fun/tokens/x', launch: 'https://deepcore.fun/app/launch/v2/x', swap: 'https://deepcore.fun/app/swap' } }] }
 }
 
-/** /api/stats in the server's shape (server/stats.mjs, src/lib/stats.ts): three venues read, one unreadable. */
-export function statsFixture(at = Date.now()) {
+/** /api/stats in the server's shape (server/stats.mjs, src/lib/stats.ts): three venues read, one unreadable.
+    Each venue carries daily series for volume, fees and value locked with a named source. `quiet` is production on
+    2026-10-19: no venue has traded for weeks, so every volume day is zero (the last trade was 12 days back) while
+    value locked is real. `step` moves the read stamp on (a later poll). */
+export function statsFixture(at = Date.now(), { quiet = false, step = 0 } = {}) {
   const day0 = Math.floor(at / 86_400_000) * 86400
-  const daily = (base) => Array.from({ length: 30 }, (_, i) => ({ t: day0 - (29 - i) * 86400, v: base + ((i * 53) % 400) }))
-  const iso = new Date(at).toISOString()
-  const venue = (key, base, extra = {}) => ({ key, state: 'ok', volumeAllUsd: base * 90, volumeAllSince: '2026-01-01', volume30dUsd: base * 30, volume24hUsd: base, tvlUsd: base * 4, fees24hUsd: base / 100, feesAllUsd: base, daily: daily(base), counts: {}, notes: [], source: { url: `https://${key}.example/api`, readAt: iso }, ...extra })
+  const daily = (base) => Array.from({ length: 30 }, (_, i) => ({ t: day0 - (29 - i) * 86400, v: quiet ? 0 : base + ((i * 53) % 400) }))
+  const level = (base, n = 40) => Array.from({ length: n }, (_, i) => ({ t: day0 - (n - 1 - i) * 86400, v: Math.round(base * (0.92 + (i / (n - 1)) * 0.08)) }))
+  const iso = new Date(at + step * 300_000).toISOString()
+  const own = (name) => ({ name, url: `https://${name.toLowerCase().replace(/\W+/g, '')}.example/api`, fallback: false })
+  const llama = { name: 'DefiLlama', url: 'https://api.llama.fi', fallback: true }
+  const venue = (key, base, extra = {}) => ({
+    key, state: 'ok', volumeAllUsd: base * 90, volumeAllSince: '2026-01-01', volume30dUsd: quiet ? 0 : base * 30, volume24hUsd: quiet ? 0 : base, tvlUsd: base * 4, fees24hUsd: base / 100, feesAllUsd: base,
+    daily: daily(base), series: { volume: daily(base), fees: daily(base).map((p) => ({ t: p.t, v: p.v / 100 })), tvl: level(base * 4) },
+    sources: { volume: key === 'peddles' ? llama : own(key), fees: llama, tvl: llama }, lastActivity: quiet ? new Date((day0 - 12 * 86400) * 1000).toISOString() : new Date(day0 * 1000).toISOString(),
+    counts: {}, notes: [], source: { url: `https://${key}.example/api`, readAt: iso }, ...extra,
+  })
   const venues = [venue('deepcore', 900), venue('peddleswap', 400), venue('peddles', 650), { key: 'peddlequest', state: 'error', error: 'e2e: unreadable on purpose' }]
   const ok = venues.filter((v) => v.state === 'ok')
   const sum = (k) => ok.reduce((a, v) => a + v[k], 0)
@@ -275,6 +286,7 @@ export function statsFixture(at = Date.now()) {
     generatedAt: iso,
     totals: { volumeAllUsd: sum('volumeAllUsd'), volume24hUsd: sum('volume24hUsd'), tvlUsd: sum('tvlUsd'), fees24hUsd: sum('fees24hUsd'), feesAllUsd: sum('feesAllUsd'), covers: { volumeAllUsd: keys, volume24hUsd: keys, tvlUsd: keys, fees24hUsd: keys, feesAllUsd: keys }, unread: ['peddlequest'] },
     daily: [...byDay.entries()].sort((a, b) => a[0] - b[0]).map(([t, v]) => ({ t, v })),
+    lastActivity: ok.map((v) => v.lastActivity).sort().at(-1),
     venues,
   }
 }

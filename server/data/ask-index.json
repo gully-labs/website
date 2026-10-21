@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T23:02:04.311Z",
+ "updatedAt": "2026-10-21T01:09:07.000Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -143,8 +143,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#basics",
    "section": "Basics",
-   "text": "Base URL (https://api.gullylabs.xyz): Every endpoint lives under /api, except /healthz and the Score badge. The same paths still answer on https://gullylabs.xyz (no redirect, POSTs included) with a Link: <https://api.gullylabs.xyz/api/…>; rel=\"canonical\" header, so moving is a change of host only. Methods (GET, OPTIONS): The data endpoints are read-only; anything else answers 405. The few POST routes (checkout, Gully AI, review requests, Solana) are listed with their section. Format (JSON): UTF-8. Times are ISO 8601 in UTC, except history points (Unix seconds) and gap-index points (Unix milliseconds). CORS (Access-Control-Allow-Origin: *): On /api/tracker*, /api/holders/*, /api/score*, /api/status, /api/plans, /api/alerts/channels and the Security list and stats: call them from any browser origin. The routes behind our own pages (stats, geo, DeepCore, Solana, Gully AI, Gully Pay) send no CORS header. Auth (Optional): Send Authorization: Bearer <key> on the tracker and Holder Map for a higher limit. See API keys. Not found (404 {\"error\":\"not found\"}): Any unknown /api/… path answers JSON, never the HTML page. Prices are US dollars per token. Any price may be empty, meaning it could not be read; it is never replaced with zero. Live, from your browser: the response time of /api/tracker, measured every 10 seconds while this tab is open, and the rows it returns by status.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "text": "Base URL (https://gullylabs.xyz): Every endpoint lives under /api, except /healthz and the Score badge. Methods (GET, OPTIONS): The data endpoints are read-only; anything else answers 405. The few POST routes (checkout, Gully AI, review requests, Solana) are listed with their section. Format (JSON): UTF-8. Times are ISO 8601 in UTC, except history points (Unix seconds) and gap-index points (Unix milliseconds). CORS (Access-Control-Allow-Origin: *): On /api/tracker*, /api/holders/*, /api/score*, /api/status, /api/plans, /api/alerts/channels and the Security list and stats: call them from any browser origin. The routes behind our own pages (stats, geo, DeepCore, Solana, Gully AI, Gully Pay) send no CORS header. Auth (Optional): Send Authorization: Bearer <key> on the tracker and Holder Map for a higher limit. See API keys. Not found (404 {\"error\":\"not found\"}): Any unknown /api/… path answers JSON, never the HTML page. Prices are US dollars per token. Any price may be empty, meaning it could not be read; it is never replaced with zero. Live, from your browser: the response time of /api/tracker, measured every 10 seconds while this tab is open, and the rows it returns by status.",
+   "updatedAt": "2026-10-19T07:56:51.355Z"
   },
   {
    "id": "3a4c7040af79",
@@ -260,8 +260,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#stats",
    "section": "GET /api/stats",
-   "text": "The live totals on the Gully Labs home page: volume, TVL and fees across our projects, each read from that project’s own public API (and DefiLlama where noted) and added up in USD. No parameters, no key; cached on the server for a minute. No CORS header: read it from a server, not a browser on another site. generatedAt (string (ISO)): When this answer was built. totals (object): volumeAllUsd, volume24hUsd, tvlUsd, fees24hUsd, feesAllUsd: each the sum over the venues that publish it, or empty when none does. covers names the venues in each total; unread the venues that could not be read. daily ({ t, v }[]): Daily volume in USD summed across the venues read; t in Unix seconds. venues (Venue[]): One per project (deepcore, peddleswap, peddles, peddlequest): state: ok with its figures, daily, counts, notes and source (url, readAt), or state: error with error. A venue that fails is unreadable, never zero. Cache-Control: public, max-age=30. 502 only if the whole answer could not be built.",
-   "updatedAt": "2026-10-19T16:28:48.805Z"
+   "text": "The live totals on the Gully Labs home page: volume, TVL and fees across our projects, each read from that project’s own public API (and DefiLlama where noted) and added up in USD. No parameters, no key; cached on the server for a minute. No CORS header: read it from a server, not a browser on another site. generatedAt (string (ISO)): When this answer was built. totals (object): volumeAllUsd, volume24hUsd, tvlUsd, fees24hUsd, feesAllUsd: each the sum over the venues that publish it, or empty when none does. covers names the venues in each total; unread the venues that could not be read. daily ({ t, v }[]): Daily volume in USD summed across the venues read; t in Unix seconds. venues (Venue[]): One per project (deepcore, peddleswap, peddles, peddlequest): state: ok with its figures, daily, series ({ volume, fees, tvl }, each { t, v }[] in USD, the last 120 days), sources (who supplied each series: the venue's own API, or DefiLlama with fallback: true), lastActivity (when the last day with non-zero volume was, or absent when none is known), counts, notes and source (url, readAt), or state: error with error. A venue that fails is unreadable, never zero. Cache-Control: public, max-age=30. 502 only if the whole answer could not be built.",
+   "updatedAt": "2026-10-19T23:00:40.805Z"
   },
   {
    "id": "1ad89c4b87c3",
@@ -350,8 +350,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#caching",
    "section": "Caching",
-   "text": "/api/tracker (public, max-age=30, s-maxage=60, stale-while-revalidate=300): The data itself refreshes about every two minutes. /api/tracker/history (public, max-age=60, s-maxage=120, stale-while-revalidate=600): A new point is added every five minutes. /api/tracker/movers (public, max-age=30, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute per window. Counted by the same rate limit. /api/tracker/gap-index (public, max-age=60, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute. /api/holders/… (public, max-age=15 to 300): Per route in the Holder Map table; maps are built at most every five minutes. /api/score, /api/score/… (public, max-age=60 (methodology 300, badge 3600)): Scores are recomputed at most every six hours. /api/status (public, max-age=30): Checks run every 60 seconds. /api/stats (public, max-age=30): Each project is read at most once a minute. /api/plans, /api/alerts/channels (public, max-age=60): /api/pay/gas (public, max-age=60): Read from the chains at most every three minutes. /api/chain/fee-history (public, max-age=20): Base fee per gas over the last 128 blocks on Arbitrum One, Base and Arbitrum Sepolia ({ blocks, chains[]: key, name, role, gwei[], newest, error }), for the Gully L3 roadmap chart. Read at most every 20 seconds. /api/geo, /api/ask, /api/pay/:id … (private / no-store): Per visitor or per payment: never cached. Answers are cacheable at the edge, so polling more than once a minute gains nothing. A sensible client polls every one to two minutes and keeps its last good answer when a request fails.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "/api/tracker (public, max-age=30, s-maxage=60, stale-while-revalidate=300): The data itself refreshes about every two minutes. /api/tracker/history (public, max-age=60, s-maxage=120, stale-while-revalidate=600): A new point is added every five minutes. /api/tracker/movers (public, max-age=30, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute per window. Counted by the same rate limit. /api/tracker/gap-index (public, max-age=60, s-maxage=60, stale-while-revalidate=300): Computed at most once a minute. /api/holders/… (public, max-age=15 to 300): Per route in the Holder Map table; maps are built at most every five minutes. /api/score, /api/score/… (public, max-age=60 (methodology 300, badge 3600)): Scores are recomputed at most every six hours. /api/status (public, max-age=30): Checks run every 60 seconds. /api/stats (public, max-age=30): Each project is read at most once every 45 seconds; DefiLlama history is cached for ten minutes. /api/plans, /api/alerts/channels (public, max-age=60): /api/pay/gas (public, max-age=60): Read from the chains at most every three minutes. /api/chain/fee-history (public, max-age=20): Base fee per gas over the last 128 blocks on Arbitrum One, Base and Arbitrum Sepolia ({ blocks, chains[]: key, name, role, gwei[], newest, error }), for the Gully L3 roadmap chart. Read at most every 20 seconds. /api/geo, /api/ask, /api/pay/:id … (private / no-store): Per visitor or per payment: never cached. Answers are cacheable at the edge, so polling more than once a minute gains nothing. A sensible client polls every one to two minutes and keeps its last good answer when a request fails.",
+   "updatedAt": "2026-10-19T23:00:40.805Z"
   },
   {
    "id": "b6495844f160",
@@ -395,8 +395,8 @@
    "title": "Widget guide",
    "url": "https://docs.gullylabs.xyz/widget#quick-start",
    "section": "Quick start",
-   "text": "Scripts, frames and badges are served from embed.gullylabs.xyz. Snippets you already pasted that load https://gullylabs.xyz/widget.js or frame https://gullylabs.xyz/embed/… keep working: both hosts serve the same files. Add an element where the widget should appear, and the script once per page: Prefer to click? The widget builder sets every option with a live preview and writes the snippet for you.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "text": "Add an element where the widget should appear, and the script once per page: Prefer to click? The widget builder sets every option with a live preview and writes the snippet for you.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
   },
   {
    "id": "83fa5b62171d",
@@ -485,8 +485,8 @@
    "title": "SDK",
    "url": "https://docs.gullylabs.xyz/sdk#packages",
    "section": "Packages",
-   "text": "The public API now has its own host, api.gullylabs.xyz (same /api/… paths). The packages still default to https://gullylabs.xyz, which keeps serving the API without redirects, so nothing needs to change. Calls made without the packages can use the new host today, and the widget script now loads from embed.gullylabs.xyz (the old script address still works). @gullylabs/tracker: a typed client with no dependencies. Runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget: loads widget.js once and mounts widgets, with @gullylabs/widget/react for React. Source: github.com/gully-labs/sdk.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "text": "@gullylabs/tracker: a typed client with no dependencies. Runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget: loads widget.js once and mounts widgets, with @gullylabs/widget/react for React. Source: github.com/gully-labs/sdk.",
+   "updatedAt": "2026-10-17T16:09:52.545Z"
   },
   {
    "id": "4392c5b4a649",
@@ -701,8 +701,8 @@
    "title": "Badges",
    "url": "https://docs.gullylabs.xyz/badges#family",
    "section": "One family",
-   "text": "Badges are served from embed.gullylabs.xyz (/badges/…, /score/:chain/:address/badge.svg, /api/holders/:chain/:token/badge.svg). The same addresses on gullylabs.xyz still work, so badges you already pasted keep showing. Every badge has the same three parts: the Gully Labs mark, the product in upper case, and a value in a second field. They are plain SVG images, open to any origin, so they work in a README, in an email or on any site. Add ?size=S|M|L (20, 28 or 36 px tall, M by default) and ?theme=dark|light (dark by default). The Gully Score, Holder Map and Gully Security badges link back to their page; they are cached and never start a computation, a map build or a scan.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "text": "Every badge has the same three parts: the Gully Labs mark, the product in upper case, and a value in a second field. They are plain SVG images, open to any origin, so they work in a README, in an email or on any site. Add ?size=S|M|L (20, 28 or 36 px tall, M by default) and ?theme=dark|light (dark by default). The Gully Score, Holder Map and Gully Security badges link back to their page; they are cached and never start a computation, a map build or a scan.",
+   "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
    "id": "85d392a1c4df",
@@ -908,8 +908,8 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#embed",
    "section": "The embed",
-   "text": "Scripts, frames and badges are served from embed.gullylabs.xyz. Snippets you already pasted that load https://gullylabs.xyz/widget.js or frame https://gullylabs.xyz/embed/… keep working: both hosts serve the same files. The JSON API is at https://api.gullylabs.xyz/api/holders/…, the same paths as before; gullylabs.xyz/api/… still answers too (it names the API host in a Link: rel=\"canonical\" header), so only the host in your URL changes. data-gully-widget (holders): Selects the Holder Map (the same script also draws the tracker widgets). data-chain (robinhood | bsc | base | hyperevm | solana): Required. Anything else shows “Holder Map: set data-chain and data-token.” data-token (address, or a ticker): Required: 1 to 64 letters and digits. The token address, or a ticker the tracker follows (data-ticker is accepted as an alias). data-height (360 to 2000): Pixels. Default 760; a value outside the range falls back to the default. data-badge (true): Draws the small badge (/api/holders/:chain/:token/badge.svg) linked to the map, instead of the frame. It uses cached data only. data-embed-key (gle_0x…): White-label plans only: your signed embed key (GET /api/developer/partners/embed-key, signed in). Public by design; it unlocks only this option, never the API. data-theme (light | dark): White-label plans only. Default dark. data-accent (#rgb | #rrggbb): White-label plans only. Anything that is not a hex colour is ignored. data-api (URL): Origin to frame. Default https://gullylabs.xyz; only for testing against another deployment. The script adds one lazy-loaded iframe, full width of its element, with rounded corners and a dark background. Size the element to size the map.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "text": "data-gully-widget (holders): Selects the Holder Map (the same script also draws the tracker widgets). data-chain (robinhood | bsc | base | hyperevm | solana): Required. Anything else shows “Holder Map: set data-chain and data-token.” data-token (address, or a ticker): Required: 1 to 64 letters and digits. The token address, or a ticker the tracker follows (data-ticker is accepted as an alias). data-height (360 to 2000): Pixels. Default 760; a value outside the range falls back to the default. data-badge (true): Draws the small badge (/api/holders/:chain/:token/badge.svg) linked to the map, instead of the frame. It uses cached data only. data-embed-key (gle_0x…): White-label plans only: your signed embed key (GET /api/developer/partners/embed-key, signed in). Public by design; it unlocks only this option, never the API. data-theme (light | dark): White-label plans only. Default dark. data-accent (#rgb | #rrggbb): White-label plans only. Anything that is not a hex colour is ignored. data-api (URL): Origin to frame. Default https://gullylabs.xyz; only for testing against another deployment. The script adds one lazy-loaded iframe, full width of its element, with rounded corners and a dark background. Size the element to size the map. The map reads its own data inside the frame. Your page makes no requests for it and the script sends no key.",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "cbf9f58a97b3",
@@ -917,8 +917,8 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#embed",
    "section": "The embed",
-   "text": "for testing against another deployment. The script adds one lazy-loaded iframe, full width of its element, with rounded corners and a dark background. Size the element to size the map. The map reads its own data inside the frame. Your page makes no requests for it and the script sends no key. Trades and shares open gullylabs.xyz in a new tab. A “Powered by Gully Labs” credit shows unless the embed carries a valid embed key of a workspace on a white-label plan (Business). The server decides on every load from the live plan: a downgraded plan or a rotated key brings the credit back, and a theme or accent in the URL alone does nothing. If your site sends a Content Security Policy, allow the script and the frame: script-src https://gullylabs.xyz; frame-src https://gullylabs.xyz;",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "text": "background. Size the element to size the map. The map reads its own data inside the frame. Your page makes no requests for it and the script sends no key. Trades and shares open gullylabs.xyz in a new tab. A “Powered by Gully Labs” credit shows unless the embed carries a valid embed key of a workspace on a white-label plan (Business). The server decides on every load from the live plan: a downgraded plan or a rotated key brings the credit back, and a theme or accent in the URL alone does nothing. If your site sends a Content Security Policy, allow the script and the frame: script-src https://gullylabs.xyz; frame-src https://gullylabs.xyz;",
+   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "7e7ebfcf2833",
@@ -926,8 +926,8 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#frame",
    "section": "Framing it yourself",
-   "text": "The script only builds this iframe. If you prefer to write it yourself, the address is https://embed.gullylabs.xyz/embed/holders/:chain/:token, and it may be framed from any origin: Use the same chain keys and token rules as above. The page has no site chrome, so it fits a panel on a token page; give the frame at least 360 px of height.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "text": "The script only builds this iframe. If you prefer to write it yourself, the address is https://gullylabs.xyz/embed/holders/:chain/:token, and it may be framed from any origin: Use the same chain keys and token rules as above. The page has no site chrome, so it fits a panel on a token page; give the frame at least 360 px of height.",
+   "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
    "id": "3d1922c2a640",
@@ -2856,6 +2856,15 @@
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
+   "id": "ae4d58ada9d1",
+   "source": "Site",
+   "title": "Gully Labs partners",
+   "url": "https://gullylabs.xyz/partners",
+   "section": "Get listed, get mapped",
+   "text": "Chat on Telegram (opens in a new tab)",
+   "updatedAt": "2026-10-19T23:00:40.805Z"
+  },
+  {
    "id": "7af5757e090a",
    "source": "Site",
    "title": "DeepCore, a Gully Labs project",
@@ -2924,8 +2933,8 @@
    "title": "Gully Labs links and contact",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. Stock tracker: https://gullylabs.xyz/tracker. Holder Map: https://gullylabs.xyz/holders. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. Gully Security: https://gullylabs.xyz/security. Gully Chains: https://gullylabs.xyz/chains. Gully Pay: https://gullylabs.xyz/#pay. All products: https://gullylabs.xyz/#products. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
-   "updatedAt": "2026-10-19T04:57:29.901Z"
+   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. YouTube: https://www.youtube.com/@Gully_Labs. TikTok: https://www.tiktok.com/@gully_labs. Facebook: https://www.facebook.com/gullylabsllc. Medium: https://medium.com/@labsgully. Stock tracker: https://gullylabs.xyz/tracker. Holder Map: https://gullylabs.xyz/holders. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. Gully Security: https://gullylabs.xyz/security. Gully Chains: https://gullylabs.xyz/chains. Gully Pay: https://gullylabs.xyz/#pay. All products: https://gullylabs.xyz/#products. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
+   "updatedAt": "2026-10-21T01:09:07.000Z"
   },
   {
    "id": "b33b0edf6fb3",
@@ -3600,7 +3609,7 @@
    "url": "https://github.com/gully-labs/sdk/blob/main/README.md#gully-labs-sdk",
    "section": "Gully Labs SDK",
    "text": "Build on the Gully Labs stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price, refreshed every minute. Package — What it is @gullylabs/tracker — A typed client for the tracker API. No dependencies; runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget — The embeddable widget (ticker, badge, table) with a loader and a React component. @gullylabs/holders — A typed client for the Holder Map API (who holds a token, wallet clusters) and a React component that frames the map. Not published to npm yet.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "updatedAt": "2026-10-19T21:53:13.391Z"
   },
   {
    "id": "657efa7a3f14",
@@ -3645,7 +3654,7 @@
    "url": "https://github.com/gully-labs/website/blob/main/README.md#what-this-is",
    "section": "What this is",
    "text": "The source of gullylabs.xyz and the sites that share its code. One React bundle renders the right app for each host, and a dependency-free Node server serves it and answers the API. Host — What it serves gullylabs.xyz — The home ledger (live figures from each project's own API), the stock tracker, Holder Map, Gully Security, Gully Score, Gully AI, Gully Analytics, the Gully Chains waitlist, widget, pricing and status pages docs.gullylabs.xyz — The docs host: methodology, API reference, products, SDK, plans, roadmap and changelog app.gullylabs.xyz — The app host: sign in with a wallet; API keys, usage, alerts, analytics, payments, security and every other service blog and analytics hosts — Self-hosted Ghost and Umami containers; the server forwards these hosts to them",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "updatedAt": "2026-10-19T21:53:13.391Z"
   },
   {
    "id": "50478f2afb51",
@@ -3654,7 +3663,7 @@
    "url": "https://github.com/gully-labs/website/blob/main/README.md#products",
    "section": "Products",
    "text": "Status follows src/content/features.ts, the single source of truth (also published at gullylabs.xyz/llms.txt). Product — Status Stock tracker (Robinhood Chain, BNB Chain, Solana), API, alerts, widget — Live Holder Map, Launch Health score, Deep check, badges — Live Gully Security (AI scan, monitors, reports, security review) — Live Gully Score — Live Gully Pay (invoices, pay links, merchant checkout, Solana Pay) — Live Gully AI — Live Telegram bot (@GullyLabsBot) and Mini App — Live Gully Analytics (Umami fork) — Live SDK (@gullylabs/tracker, @gullylabs/widget, @gullylabs/holders) — Beta Gully Chains — Waitlist; no chain is running yet Chain Kit — Waitlist; explorer licence being finalised",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "updatedAt": "2026-10-19T21:53:13.391Z"
   },
   {
    "id": "91f910ef9131",
@@ -3663,7 +3672,7 @@
    "url": "https://github.com/gully-labs/website/blob/main/README.md#architecture",
    "section": "Architecture",
    "text": "The server answers the public API (/api/tracker, /api/stats, /api/plans, /api/status) and the signed-in app API.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "updatedAt": "2026-10-19T21:53:13.391Z"
   },
   {
    "id": "2e2977802d8b",
@@ -3672,7 +3681,7 @@
    "url": "https://github.com/gully-labs/website/blob/main/README.md#stack",
    "section": "Stack",
    "text": "React 19 · Vite · TypeScript · Tailwind CSS v4 · React Router · ECharts · wagmi + RainbowKit (app host only) · Node (no runtime dependencies) · Docker Compose.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "updatedAt": "2026-10-19T21:53:13.391Z"
   },
   {
    "id": "e2f24f1f3957",
@@ -3681,7 +3690,7 @@
    "url": "https://github.com/gully-labs/website/blob/main/README.md#related",
    "section": "Related",
    "text": "gully-labs/sdk: @gullylabs/tracker, @gullylabs/widget and @gullylabs/holders gully-labs/umami: Gully Analytics Contact: team@gullylabs.xyz Information on these sites is not investment advice.",
-   "updatedAt": "2026-10-19T23:02:04.311Z"
+   "updatedAt": "2026-10-19T21:53:13.391Z"
   },
   {
    "id": "172cdae62148",
@@ -4620,8 +4629,8 @@
    "title": "Embeddable tracker widget (SDK)",
    "url": "https://gullylabs.xyz/tracker",
    "section": "Embeddable tracker widget",
-   "text": "Embeddable tracker widget is part of SDK. Status: in beta (usable, and still changing). @gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component. Package @gullylabs/widget, version 0.1.0 Widget types are ticker, badge and table Drawn in its own shadow root so it does not clash with page styles Script-tag install via https://embed.gullylabs.xyz/widget.js and a data-gully-widget attribute React component GullyWidget is exported from @gullylabs/widget/react Badge shows a 24-hour gap chart for one stock; table and ticker take a limit option Supports a light theme option",
-   "updatedAt": "2026-10-19T23:02:04.311Z",
+   "text": "Embeddable tracker widget is part of SDK. Status: in beta (usable, and still changing). @gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component. Package @gullylabs/widget, version 0.1.0 Widget types are ticker, badge and table Drawn in its own shadow root so it does not clash with page styles Script-tag install via https://gullylabs.xyz/widget.js and a data-gully-widget attribute React component GullyWidget is exported from @gullylabs/widget/react Badge shows a 24-hour gap chart for one stock; table and ticker take a limit option Supports a light theme option",
+   "updatedAt": "2026-10-19T01:11:03.920Z",
    "feature": "sdk-widget",
    "status": "beta"
   },

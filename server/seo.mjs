@@ -11,6 +11,7 @@ import { publicChains } from './payments.mjs'
 // Guarded: holders.mjs exports holdersAvailable(chain, kind), read at call time (env keys), so stock pages come back
 // on their own once a chain's key is set. Without it every stock chain counts as unavailable (DeepCore launches only).
 import * as holdersModule from './holders.mjs'
+import { topScans } from './holders-intel.mjs'
 
 const SITE = 'https://gullylabs.xyz'
 const DOCS = 'https://docs.gullylabs.xyz'
@@ -67,6 +68,39 @@ for (const key of Object.keys(CHAIN_NAMES)) {
   // Its Holder Map (pageMeta answers these paths itself; listed for the sitemap only while that chain has holder data).
   for (const s of stocks) HOLDER_PAGES[`/holders/${key}/${s.ticker}`] = key
 }
+
+/** The Holder Map pages worth listing: the most-scanned maps of the day (holders-intel's cached scan counts), at most
+    200, valid tokens only (a real address for the chain, or a tracked ticker), and no stock map on a chain without
+    holder data (the archive-RPC rule). Never throws: no scans, no section. */
+export function topHolderPaths(max = 200) {
+  const out = []
+  try {
+    for (const it of topScans(Math.min(200, max) * 2).items) {
+      const ok = it.chain === 'solana' ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(it.token) : /^0x[0-9a-fA-F]{40}$/.test(it.token)
+      const p = `/holders/${it.chain}/${it.token}`
+      const stock = HOLDER_PAGES[`/holders/${it.chain}/${String(it.token).toUpperCase()}`] !== undefined
+      if (!CHAIN_NAMES_ALL[it.chain] || !(ok || stock) || (stock && !holdersAvailableFor(it.chain)) || HOLDER_PAGES[p] !== undefined || out.includes(p)) continue
+      out.push(p)
+      if (out.length >= max) break
+    }
+  } catch {
+    /* no scan data yet */
+  }
+  return out
+}
+
+/** A token's ticker for a Holder Map page's title: a ticker in the URL, else the cached map's or the scan list's symbol. */
+function holderSymbol(chain, token) {
+  if (!/^0x/.test(token) && token.length <= 12) return token.toUpperCase()
+  try {
+    const sym = holdersModule.peekHolderMap?.(chain, token)?.token?.symbol ?? topScans(200).items.find((i) => i.chain === chain && i.token.toLowerCase() === token.toLowerCase())?.symbol
+    return typeof sym === 'string' && /^[\w.\-$]{1,24}$/.test(sym) ? sym.replace(/^\$/, '').toUpperCase() : null
+  } catch {
+    return null
+  }
+}
+
+const CHAIN_NAMES_ALL = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }
 
 /** Whether the Holder Map has data for a stock chain right now (false until holders.mjs says so). */
 export function holdersAvailableFor(chainKey) {
@@ -133,7 +167,7 @@ const ORG = {
   name: 'Gully Labs',
   url: SITE,
   logo: `${SITE}/brand/gully-mark-512.png`,
-  sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://t.me/GullyLabsBot'],
+  sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://t.me/GullyLabsBot', 'https://www.youtube.com/@Gully_Labs', 'https://www.tiktok.com/@gully_labs', 'https://www.facebook.com/gullylabsllc', 'https://medium.com/@labsgully'],
 }
 /** The product as software: the web app and its public API, free to start (plans are listed on /pricing). */
 const APP_LD = {
@@ -201,11 +235,12 @@ export function pageMeta(host, pathname) {
   // Holder Maps (holders.mjs): a page per DeepCore launch or tracked stock token; the share image is the map's own card.
   const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana)\/([A-Za-z0-9]{1,64})$/)
   if (hm) {
-    const chainName = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }[hm[2]]
-    const what = /^0x/.test(hm[3]) || hm[3].length > 12 ? 'this token' : hm[3].toUpperCase()
+    const chainName = CHAIN_NAMES_ALL[hm[2]]
+    const sym = holderSymbol(hm[2], hm[3])
+    const what = sym ? `$${sym}` : 'this token'
     return {
-      title: `Holder Map: ${what} on ${chainName} · Gully Labs`,
-      description: `Who holds ${what} on ${chainName}: the biggest wallets, the ones that trade with each other, launch checks and a replay of how holdings changed, read live.`,
+      title: `Who holds ${what} on ${chainName} · Holder Map · Gully Labs`,
+      description: `Who holds ${what} on ${chainName}: the biggest wallets as bubbles, the ones that trade with each other, launch checks and a replay of how holdings changed, read live on Gully Labs.`,
       canonical: hm[1] ? null : `${SITE}/holders/${hm[2]}/${hm[3]}`,
       found: true,
       // A stock token's map on a chain without holder data would be an empty page: kept out of the index.
@@ -283,7 +318,7 @@ export function sitemapFor(host) {
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
   else if (isAppHost(host)) urls = [[`${APP}/`, '0.6', 'monthly']]
   else
-    urls = [...Object.keys(MAIN), ...Object.entries(HOLDER_PAGES).filter(([, chain]) => holdersAvailableFor(chain)).map(([p]) => p), ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)].map((p) => [
+    urls = [...Object.keys(MAIN), ...Object.entries(HOLDER_PAGES).filter(([, chain]) => holdersAvailableFor(chain)).map(([p]) => p), ...topHolderPaths(), ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)].map((p) => [
       SITE + (p === '/' ? '/' : p),
       p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
       p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p === '/score' || p === '/ecosystem' || p.startsWith('/projects/') ? 'daily' : 'monthly',

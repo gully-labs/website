@@ -78,6 +78,7 @@ const adminOffer = () => guardOr(() => publicPlans(), (e) => ({ ...publicPlans({
 const PROXY_ACCOUNT = "That address is Request Network's fee proxy contract, not a wallet."
 import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { readStats } from './stats.mjs'
+import { statsWatchdogHealth } from './stats-watchdog.mjs'
 import { umamiConfigured } from './umami.mjs'
 import { linkedChat, telegramStats } from './telegram.mjs'
 import { handleChannelAdmin } from './telegram-channel.mjs'
@@ -248,7 +249,7 @@ function embeddingsPart() {
 async function healthNow() {
   const now = Date.now()
   const engine = await enginePart()
-  return { at: new Date(now).toISOString(), holders: holderSources(), monitors: monitorPart(now), deepcore: deepcorePart(now), bot: botPart(now), engine, embeddings: embeddingsPart() }
+  return { at: new Date(now).toISOString(), holders: holderSources(), monitors: monitorPart(now), deepcore: deepcorePart(now), bot: botPart(now), engine, embeddings: embeddingsPart(), stats: safe(() => statsWatchdogHealth(), null) }
 }
 
 /** One history point per minute: what each sparkline draws (null = not known, never 0). */

@@ -236,7 +236,7 @@ export function Fields({ rows, head = ['Field', 'Type', 'Meaning'], variant = 'f
         {rows.map(([f, t, m], ri) =>
           fold ? (
             <details key={ri} className="group">
-              <summary className={`grid ${grid} cursor-pointer list-none items-start gap-4 px-4 py-[10px] transition-colors marker:hidden hover:bg-surface max-[640px]:grid-cols-[minmax(0,1fr)_auto] [&::-webkit-details-marker]:hidden`}>
+              <summary className={`grid ${grid} cursor-pointer list-none min-h-11 items-start gap-4 px-4 py-3 transition-colors marker:hidden hover:bg-surface max-[640px]:grid-cols-[minmax(0,1fr)_auto] [&::-webkit-details-marker]:hidden`}>
                 <span className="font-mono text-[13px] break-words text-gold">{first(f)}</span>
                 <span className={`${variant === 'routes' ? text : mono} line-clamp-1 group-open:hidden max-[640px]:hidden`}>{variant === 'routes' ? col(1, t) : col(2, m)}</span>
                 <span className={`${variant === 'routes' ? mono : text} line-clamp-1 group-open:hidden max-[640px]:hidden`}>{variant === 'routes' ? col(2, m) : col(1, t)}</span>

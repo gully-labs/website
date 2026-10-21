@@ -4,6 +4,7 @@ import { AppWindow, Send, Sparkles } from 'lucide-react'
 import { askStatus } from '../components/ask/askApi'
 import { useContact } from '../components/ContactContext'
 import { HeroLedger } from '../components/landing/HeroLedger'
+import { HolderSearchHero } from '../components/landing/HolderSearchHero'
 import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
 import { projects } from '../content/projects'
@@ -67,6 +68,7 @@ export function Home() {
           <p className="m-0 max-w-[480px] text-[16px] leading-[1.5] text-muted">
             Gully Labs ships onchain venues and the tools around them: a stock token tracker with swaps and alerts, analytics that see the wallet, branded block explorers, a free API, and crypto billing. Try each one below.
           </p>
+          <HolderSearchHero />
           <div className="flex flex-wrap gap-3 max-[479px]:flex-col">
             <Link to="/tracker" className={`${btnGold} inline-flex min-h-11 items-center justify-center gap-2 px-5`}>
               <AppWindow aria-hidden size={16} /> Launch app

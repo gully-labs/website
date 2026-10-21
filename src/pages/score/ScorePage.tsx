@@ -1,6 +1,8 @@
 import { ArrowLeft, BadgeCheck, CalendarClock, CircleSlash, Code2, Copy, GitBranch, History, KeyRound, ListChecks, Lock, Scale, ShieldCheck, Timer, Users, type LucideIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
+import { HoldersChip } from '../../components/holders/HoldersChip'
+import { HOLDER_CHAIN_KEYS } from '../../lib/holders'
 import { NewTabMark } from '../../components/LayoutLinks'
 import { newTab } from '../../components/LayoutNav'
 import { TokenLogo } from '../../components/logos/TokenLogo'
@@ -127,12 +129,16 @@ export function ScorePage() {
                 <span className="min-w-0">{title}</span>
               </h1>
               <div className="flex flex-wrap items-center gap-3 font-mono text-[12px] text-ink-2" style={rise(3)}>
-                <code title={addr} className="break-all">
+                <code title={addr} className="break-all max-[600px]:hidden">
                   {addr}
+                </code>
+                <code title={addr} aria-hidden className="hidden max-[600px]:inline">
+                  {addr.length > 20 ? `${addr.slice(0, 10)}…${addr.slice(-8)}` : addr}
                 </code>
                 <button type="button" onClick={() => void copyWithToast(addr, 'Address')} aria-label="Copy the address" className="inline-flex size-11 items-center justify-center rounded-btn border border-line-strong text-muted hover:border-gold hover:text-gold min-[860px]:size-8">
                   <Copy aria-hidden size={13} />
                 </button>
+                {r && HOLDER_CHAIN_KEYS.includes(r.chainKey) && <HoldersChip chain={r.chainKey} token={r.address} symbol={r.symbol ?? title} className="max-[859px]:!h-11" />}
                 {r?.links.explorer && (
                   <a href={r.links.explorer} {...newTab} className="inline-flex min-h-11 items-center gap-1 text-gold underline-offset-4 hover:underline">
                     Explorer <NewTabMark size={12} className="flex-none text-gold" />

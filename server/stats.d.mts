@@ -11,6 +11,7 @@ export interface StatsDocument {
     unread: string[]
   }
   daily: { t: number; v: number }[]
+  lastActivity: string | null
   venues: unknown[]
 }
 export const VENUES: { key: string; read: () => Promise<unknown> }[]
@@ -24,3 +25,16 @@ export function deepcoreExtras(items: unknown[]): {
   lockedUsd: number | null
   unpricedLocks: number
 }
+export function resetStatsForTest(o?: { documentOnly?: boolean }): void
+export interface SeriesSource {
+  name: string
+  url: string | null
+  fallback: boolean
+}
+export function buildSeries(spec: Record<string, unknown>): Promise<{
+  series: { volume: { t: number; v: number }[]; fees: { t: number; v: number }[]; tvl: { t: number; v: number }[] }
+  sources: { volume: SeriesSource | null; fees: SeriesSource | null; tvl: SeriesSource | null }
+  lastActivity: string | null
+  notes: string[]
+  llama: Record<string, unknown>
+}>

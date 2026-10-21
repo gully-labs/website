@@ -7,7 +7,8 @@ import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { MiniBars } from '../components/charts/MiniBars'
 import { NF } from '../components/charts/number-formats'
 import { Segmented } from '../components/ui/Segmented'
-import { eyebrow } from '../components/ui'
+import { eyebrow, btnOutline } from '../components/ui'
+import { ChainChip, IntegrationChip } from '../components/ProjectRows'
 import { audiences, benefits, FALLBACK_CHAINS, snippets, type Audience, type Chain } from '../content/ecosystem'
 import { DOCS_URL } from '../site-host'
 import { getJson, type CheckedLaunches, type HolderSources } from '../lib/holders'
@@ -19,7 +20,7 @@ import { ListLaunchpadForm, MapTokenForm } from './ecosystem/Forms'
    the Holder Map has checked, per chain (GET /api/holders/launches). White-label says what it is today. */
 
 const ease = [0.2, 0.8, 0.2, 1] as const
-const STATUS_STYLE = { Live: 'border-success-line text-green', 'On request': 'border-gold-line text-gold', 'Not live yet': 'border-line-strong text-faint' } as const
+const STATUS_STYLE = { Live: 'border-success-line text-green', 'On request': 'border-gold-line text-gold', 'Not live yet': 'border-dashed border-line-strong text-ink-2' } as const
 
 function usePoll<T>(path: string, ms: number) {
   const [d, setD] = useState<T | null>(null)
@@ -115,6 +116,11 @@ export function Partners() {
               </div>
             ))}
           </dl>
+          <div className="flex flex-wrap gap-2" aria-label="Chains on the Holder Map">
+            {chains.map((c) => (
+              <ChainChip key={c.key} chain={c.key} name={c.name} />
+            ))}
+          </div>
           <MiniBars
             bars={byChain}
             orientation="rows"
@@ -137,7 +143,7 @@ export function Partners() {
                 layout
                 transition={{ layout: { duration: 0.35, ease } }}
                 key={b.id}
-                className={`card flex min-w-0 flex-col gap-2 p-4 transition-opacity ${mine ? '' : 'opacity-60'}`}
+                className={`card flex min-w-0 flex-col gap-2 p-4 transition-colors ${b.status === 'Not live yet' ? 'border-dashed border-line-strong' : ''} ${mine ? 'border-gold-line' : ''}`}
                 data-benefit={b.id}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -145,6 +151,11 @@ export function Partners() {
                   <span className={`flex-none rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[1px] ${STATUS_STYLE[b.status]}`}>{b.status.toUpperCase()}</span>
                 </div>
                 <p className="m-0 text-[13px] leading-[1.55] text-muted">{b.text}</p>
+                {b.id === 'chainkit' && (
+                  <span className="flex flex-wrap gap-2">
+                    <IntegrationChip id="blockscout" name="Built on Blockscout" />
+                  </span>
+                )}
                 {b.docs && (
                   <a href={b.docs.href} target="_blank" rel="noopener noreferrer" className="mt-auto inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-gold hover:text-gold-hover">
                     {b.docs.label}
@@ -180,9 +191,16 @@ export function Partners() {
       </section>
 
       <section aria-labelledby="pt-forms" className="flex flex-col gap-5">
-        <h2 id="pt-forms" className="heading-2">
-          Get listed, get mapped
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="pt-forms" className="heading-2">
+            Get listed, get mapped
+          </h2>
+          <a href="https://t.me/GullyLabsBot?start=partners" target="_blank" rel="noopener noreferrer" className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 py-2.5 text-[15px]`}>
+            Chat on Telegram
+            <ArrowUpRight size={15} aria-hidden />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-5">
           <ListLaunchpadForm chains={chains} />
           <MapTokenForm chains={chains} />

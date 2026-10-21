@@ -94,8 +94,8 @@ function Kpi({ label, value, note, spark, color, i, unreadable, delta, none }: {
         )}
         {spark && !unreadable && (spark.some((v) => v > 0) ? <Spark values={spark} color={color} /> : <GhostSpark color={color} />)}
       </span>
-      <span className={`truncate font-mono text-[11px] ${unreadable ? 'text-error' : 'text-muted'}`}>{unreadable ? 'unreadable right now' : note}</span>
-      {delta && !unreadable && <span className="truncate">{delta}</span>}
+      <span className={`font-mono text-[11px] [overflow-wrap:anywhere] ${unreadable ? 'text-error' : 'text-muted'}`}>{unreadable ? 'unreadable right now' : note}</span>
+      {delta && !unreadable && <span>{delta}</span>}
     </div>
   )
 }
@@ -244,7 +244,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
       <SubTabs items={tabs} value={sub} onChange={setSub} label="Overview sections" idBase="ov" />
       <SubPanel idBase="ov" value={sub}>
       {sub === 'requests' && (
-      <div className="flex flex-wrap items-start gap-2">
+      <div className="flex flex-wrap items-stretch gap-2">
         {/* ---------------------------------------------------------- requests */}
         <section aria-labelledby="ov-req" className={`${panel} flex-[999_1_520px]`} style={rise(1)}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -365,7 +365,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         </GhostCurves>
       )}
       {sub === 'answers' && !!account.keys.length && (
-        <div className="flex flex-wrap items-start gap-2">
+        <div className="flex flex-wrap items-stretch gap-2">
           <section aria-labelledby="ov-status" className={`${panel} min-h-[250px] flex-[1_1_380px]`} style={rise(2)} data-testid="status-donut">
             <h2 id="ov-status" className={panelTitle}>
               Answers by status · {range}

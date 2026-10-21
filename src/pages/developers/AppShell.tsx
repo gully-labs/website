@@ -5,6 +5,7 @@ import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
 import { AskLauncher } from '../../components/ask/AskLauncher'
+import { PwaCards } from '../../components/pwa/PwaCards'
 import { healthOfStatus, useAppStatus, type Health } from './services/health'
 import { StatusDialog } from './services/StatusDialog'
 import { Avatar } from './Avatar'
@@ -245,9 +246,9 @@ function PlanPill({ account }: { account: Account }) {
   const paid = account.plan.id !== 'free'
   const soon = left !== null && left <= 7
   return (
-    <span className="flex min-h-[30px] items-center gap-2 rounded-full border border-line px-[10px] text-[13px] whitespace-nowrap" title={account.plan.expiresAt ? `Runs until ${new Date(account.plan.expiresAt).toLocaleString()}` : undefined} data-testid="plan-pill">
+    <span className="flex min-h-[30px] shrink-0 items-center gap-2 rounded-full border border-line px-[10px] text-[13px] whitespace-nowrap max-[419px]:px-[9px]" title={account.plan.expiresAt ? `Runs until ${new Date(account.plan.expiresAt).toLocaleString()}` : undefined} data-testid="plan-pill">
       <span className="size-2 rounded-full" style={{ background: !paid ? '#8a94a1' : soon ? '#ff8a7a' : '#d9b563' }} aria-hidden />
-      {account.plan.name} plan
+      <span className="max-[419px]:sr-only">{account.plan.name} plan</span>
       {left !== null && <span className={`${soon ? 'text-error' : 'text-muted'} max-[520px]:hidden`}>· {left === 0 ? 'ends today' : `${left} day${left === 1 ? '' : 's'} left`}</span>}
     </span>
   )
@@ -618,7 +619,7 @@ export function AppShell<T extends string>({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-md print:hidden">
-          <div className="flex min-h-14 items-center gap-3 px-6 max-[480px]:px-4">
+          <div className="flex min-h-14 items-center gap-3 px-6 max-[480px]:gap-2 max-[480px]:px-4">
             {narrow && (
               <>
                 <button ref={menuBtn} type="button" onClick={() => setSheet(true)} className="-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-[10px] text-ink hover:bg-surface-hover" aria-label="Open menu" aria-haspopup="dialog" aria-expanded={sheet} data-testid="menu-button">
@@ -635,7 +636,7 @@ export function AppShell<T extends string>({
                 <li className="text-faint max-[520px]:hidden" aria-hidden>
                   /
                 </li>
-                <li className="min-w-0 truncate font-semibold text-ink" aria-current="page">
+                <li className="min-w-0 flex-1 truncate font-semibold text-ink max-[359px]:leading-tight max-[359px]:whitespace-normal max-[359px]:[overflow-wrap:anywhere]" aria-current="page">
                   {pageLabel}
                 </li>
               </ol>
@@ -656,6 +657,8 @@ export function AppShell<T extends string>({
       <div className={`pointer-events-none fixed right-5 z-40 max-[600px]:right-4 print:hidden ${narrow ? 'bottom-[calc(76px+env(safe-area-inset-bottom))]' : 'bottom-5'}`} data-testid="corner-dock">
         <AskLauncher variant="floating" hideButton={current === ('ai' as T)} />
       </div>
+
+      <PwaCards kind="app" lift={narrow} />
 
       <StatusDialog open={statusOpen} onClose={() => setStatusOpen(false)} />
 

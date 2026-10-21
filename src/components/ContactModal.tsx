@@ -226,6 +226,10 @@ export function ContactModal({ open, onClose, form, setForm, sent, setSent }: Pr
                   {sending ? 'Sending…' : 'Send enquiry'}
                 </button>
                 <span className="text-center text-[13px] text-faint">We reply within two business days.</span>
+                <a href="https://t.me/GullyLabsBot?start=contact" target="_blank" rel="noopener noreferrer" className={`${btnOutline} inline-flex min-h-11 items-center justify-center gap-2 px-[22px] py-[12px] text-[15px]`}>
+                  Chat on Telegram instead
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
               </form>
             ) : (
               <div role="status" className="flex flex-col items-start gap-5 py-3">

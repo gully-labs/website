@@ -3,7 +3,7 @@ import { useContext, useEffect, useId, useMemo, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useNavigate, useResolvedPath } from 'react-router'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
-import { Wordmark } from '../components/brand'
+import { Mascot, Wordmark } from '../components/brand'
 import { AskLauncher } from '../components/ask/AskLauncher'
 import { track } from '../lib/track'
 import { apiOrigin, DOC_KEYWORDS, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
@@ -251,8 +251,12 @@ export function DocsLayout() {
               <span className="flex max-[479px]:hidden">
                 <Wordmark height={24} decorative />
               </span>
-              <span className="hidden max-[479px]:flex">
+              <span className="hidden max-[479px]:flex max-[359px]:hidden">
                 <Wordmark height={20} decorative />
+              </span>
+              {/* Under 360px the wordmark would sit under the Gully AI button: the round mark stands in. */}
+              <span className="hidden max-[359px]:flex" data-testid="docs-header-mark">
+                <Mascot size={32} decorative />
               </span>
               {/* Below 440px the header has no room for the pill beside the menu, Ask and site buttons. */}
               <span className="shrink-0 rounded-full border border-gold-line px-[9px] py-[2px] font-mono text-[11px] tracking-[1px] text-gold max-[439px]:hidden">DOCS</span>
