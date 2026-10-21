@@ -250,6 +250,9 @@ async function handleRequest(req, res) {
   if (url.pathname === '/gully-pay/merchant-terms' || url.pathname === '/gully-pay/merchant-terms/') {
     return send(res, 301, '', { Location: '/legal/merchant-terms', 'Cache-Control': 'public, max-age=86400' })
   }
+  // The short addresses people type for the policies.
+  const shortLegal = { '/terms': '/legal/terms', '/privacy': '/legal/privacy' }[url.pathname.replace(/(.)\/+$/, '$1')]
+  if (shortLegal) return send(res, 301, '', { Location: shortLegal, 'Cache-Control': 'public, max-age=86400' })
   if (handleDiscovery(req, res, url)) return
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {

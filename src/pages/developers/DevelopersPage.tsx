@@ -95,6 +95,17 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Wallet size={18} aria-hidden />}
           {busy ? 'Opening wallets…' : 'Connect wallet'}
         </button>
+        <p className="m-0 text-[12px] leading-[1.5] text-faint" data-testid="signin-terms">
+          By connecting a wallet you agree to the{' '}
+          <ExtLink href={`${SITE_URL}/legal/terms`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
+            Terms of Service
+          </ExtLink>{' '}
+          and the{' '}
+          <ExtLink href={`${SITE_URL}/legal/privacy`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
+            Privacy policy
+          </ExtLink>
+          .
+        </p>
         {error && (
           <p className="m-0 flex items-start gap-2 text-[14px] text-error" role="alert">
             <AlertTriangle size={16} className="mt-[2px] shrink-0" aria-hidden /> {error}

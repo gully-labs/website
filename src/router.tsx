@@ -62,6 +62,9 @@ const mainRoutes = [
       // The Gully Pay merchant terms (the checkout's footer links here).
       { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
       { path: '/legal/privacy', lazy: () => import('./pages/legal/Privacy').then((m) => ({ Component: m.PrivacyPage })) },
+      { path: '/legal/terms', lazy: () => import('./pages/legal/Terms').then((m) => ({ Component: m.TermsPage })) },
+      { path: '/terms', element: <Navigate to="/legal/terms" replace /> },
+      { path: '/privacy', element: <Navigate to="/legal/privacy" replace /> },
       { path: '/gully-pay/merchant-terms', element: <Navigate to="/legal/merchant-terms" replace /> },
       // A path no page owns: a branded 404 with ways back (the server answers it with status 404).
       { path: '*', element: <NotFoundRoute /> },

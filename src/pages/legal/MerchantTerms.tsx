@@ -242,6 +242,10 @@ export function MerchantTermsPage() {
               . Changes made: shortened and reorganised; adapted to a non-custodial crypto payment service (custody, onchain finality, refunds, prohibited businesses, fee statements and checkout pauses, webhooks added); subscription, support, confidentiality, machine-learning and government-use clauses removed. Common Paper does not endorse these terms. These merchant terms are also available under CC BY 4.0.
             </p>
             <p className="m-0">
+              <Link to="/legal/terms" className="inline-flex min-h-11 items-center hover:text-gold">
+                Terms of Service
+              </Link>{' '}
+              ·{' '}
               Questions: <a href="mailto:team@gullylabs.xyz" className="inline-flex min-h-11 items-center text-gold underline decoration-gold-line underline-offset-2">team@gullylabs.xyz</a> ·{' '}
               <a href="https://docs.gullylabs.xyz/gully-pay-merchants" target="_blank" rel="noopener noreferrer" className="hover:text-gold">
                 Gully Pay for merchants docs

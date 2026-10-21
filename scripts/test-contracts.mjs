@@ -16,7 +16,7 @@ import ts from 'typescript'
 import { keccak_256 } from '../server/vendor/noble.mjs'
 import { build } from './build-discovery.mjs'
 import { handleDiscovery } from '../server/discovery.mjs'
-import { pageMeta, renderHead } from '../server/seo.mjs'
+import { pageMeta, renderHead, sitemapFor } from '../server/seo.mjs'
 import { makeChecker } from './test-helpers.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -126,6 +126,11 @@ const tracker = renderHead('<html><head></head></html>', pageMeta('gullylabs.xyz
 check('other pages do not carry Organization JSON-LD', !tracker.includes('"Organization","name":"Gully Labs","url":"https://gullylabs.xyz","logo"'))
 const docsMeta = pageMeta('docs.gullylabs.xyz', '/contracts')
 check('docs /contracts has SEO meta', docsMeta.found === true && docsMeta.canonical === 'https://docs.gullylabs.xyz/contracts')
+
+// ---------------------------------------------------------------- the legal pages
+const terms = pageMeta('gullylabs.xyz', '/legal/terms')
+check('/legal/terms has its own title and canonical, and is indexable', terms.found === true && terms.title === 'Terms of Service · Gully Labs' && terms.canonical === 'https://gullylabs.xyz/legal/terms' && !terms.noindex)
+check('/legal/terms, /legal/privacy and /legal/merchant-terms are in the sitemap', ['terms', 'privacy', 'merchant-terms'].every((x) => sitemapFor('gullylabs.xyz').includes(`<loc>https://gullylabs.xyz/legal/${x}</loc>`)))
 
 console.log(`\n${t.passed} passed, ${t.failed} failed`)
 process.exit(t.failed ? 1 : 0)

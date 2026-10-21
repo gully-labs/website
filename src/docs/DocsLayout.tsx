@@ -302,6 +302,7 @@ export function DocsLayout() {
           <nav aria-label="Gully Labs" className="flex flex-wrap items-center gap-x-5">
             {[
               { label: 'Status', href: `${SITE}/status`, icon: HeartPulse },
+              { label: 'Terms', href: `${SITE}/legal/terms`, icon: FileCheck },
               { label: 'Privacy', href: `${SITE}/legal/privacy`, icon: Lock },
               { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
               { label: 'gullylabs.xyz', href: SITE, icon: Home },
