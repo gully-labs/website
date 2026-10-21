@@ -82,6 +82,7 @@ try {
     check('pay. invoice page: 200 with the app shell', page.status === 200 && page.text.includes('<div id="root">'), String(page.status))
     check('pay. page: canonical is the pay host, noindex stays', page.text.includes(`<link rel="canonical" href="${PAY_URL}${INV}" />`) && /<meta name="robots" content="noindex"/.test(page.text), page.text.slice(0, 200))
     check('pay. page: no analytics beacon in the HTML', !page.text.includes('analytics.gullylabs.xyz'))
+    check('pay. page: Cache-Control no-transform, so Cloudflare injects no beacon the CSP would refuse (D4-11)', /no-transform/.test(page.headers['cache-control'] ?? ''), page.headers['cache-control'])
     const csp = page.headers['content-security-policy'] ?? ''
     check("pay. CSP: script-src 'self' only (no analytics, no Cloudflare insights)", /script-src 'self'(;|$)/.test(csp) && !/cloudflareinsights|analytics\.gullylabs/.test(csp), csp)
     check("pay. CSP: frame-ancestors 'none', object-src 'none', X-Frame-Options DENY", /frame-ancestors 'none'/.test(csp) && /object-src 'none'/.test(csp) && page.headers['x-frame-options'] === 'DENY')
@@ -149,6 +150,7 @@ try {
     const csp = e.headers['content-security-policy'] ?? ''
     check('embed. iframe page: 200, frame-ancestors *, no X-Frame-Options, no Set-Cookie', e.status === 200 && /frame-ancestors \*/.test(csp) && !e.headers['x-frame-options'] && !e.headers['set-cookie'], `${e.status} ${csp}`)
     check("embed. iframe page: script-src 'self' only, no analytics beacon, noindex", /script-src 'self'(;|$)/.test(csp) && !e.text.includes('analytics.gullylabs.xyz') && /noindex/.test(e.text))
+    check('embed. iframe page: Cache-Control no-transform (no Cloudflare beacon injected)', /no-transform/.test(e.headers['cache-control'] ?? ''), e.headers['cache-control'])
     const old = await get(MAIN, '/embed/holders/base/0x' + '1'.repeat(40))
     check('main embed page still frames from anywhere', old.status === 200 && /frame-ancestors \*/.test(old.headers['content-security-policy'] ?? ''))
     const pre = await get(EMBED, '/widget.js', { method: 'OPTIONS' })

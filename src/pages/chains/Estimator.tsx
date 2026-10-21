@@ -67,7 +67,7 @@ export function Estimator({ cfg }: { cfg: ChainsConfig }) {
             value={profit}
             onChange={(e) => (setManual(true), setProfit(Number(e.target.value)))}
             aria-label="Monthly sequencer profit in US dollars"
-            className="h-9 w-full cursor-pointer accent-gold"
+            className="h-9 w-full cursor-pointer accent-gold max-[699px]:h-11"
           />
         </label>
         <p className="m-0 flex flex-wrap items-baseline gap-2 text-[14px] text-muted">

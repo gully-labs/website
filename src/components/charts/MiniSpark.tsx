@@ -86,7 +86,9 @@ export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLo
   const path = (r: number[]) => r.map((i, k) => `${k ? 'L' : 'M'}${X(i).toFixed(2)},${Y(data[i]!).toFixed(2)}`).join(' ')
   const lastIdx = runs[runs.length - 1][runs[runs.length - 1].length - 1]
   const play = seen ? 'running' : 'paused'
-  const drawAnim = loop ? `gl-draw-loop 7s ${delay}s ease-in-out infinite` : `gl-draw 1.2s ${delay}s cubic-bezier(.2,.8,.2,1) both`
+  // The line is revealed left to right by a growing clip rect, not by a pathLength dash: Chrome lays a pathLength
+  // dash out against the unscaled path when the stroke is non-scaling, which left lines half drawn (D4-7).
+  const revealAnim = loop ? `gl-reveal-loop 7s ${delay}s ease-in-out infinite` : `gl-grow-x 1.2s ${delay}s cubic-bezier(.2,.8,.2,1) both`
   const fadeAnim = loop ? `gl-fade-loop 7s ${delay}s ease-in-out infinite` : `gl-fade .9s ${delay + 0.35}s ease both`
   const at = cursor.at
   const atV = at === null ? null : data[at]
@@ -125,6 +127,9 @@ export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLo
             <stop offset="0" stopColor={color} stopOpacity={0.22} />
             <stop offset="1" stopColor={color} stopOpacity={0} />
           </linearGradient>
+          <clipPath id={`c${gid}`}>
+            <rect x={-4} y={-20} width={108} height={140} style={{ transformBox: 'view-box', transformOrigin: '0 0', animation: revealAnim, animationPlayState: play }} />
+          </clipPath>
         </defs>
         {zero && lo < 0 && hi > 0 && <line x1={0} x2={100} y1={Y(0)} y2={Y(0)} stroke={C.lineStrong} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />}
         {area && (
@@ -136,11 +141,11 @@ export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLo
               ))}
           </g>
         )}
-        {runs.map((r) =>
-          r.length > 1 ? (
-            <path key={`l${r[0]}`} d={path(r)} fill="none" stroke={color} strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray={1} style={{ animation: drawAnim, animationPlayState: play }} />
-          ) : null,
-        )}
+        <g clipPath={`url(#c${gid})`} data-spark-line style={loop ? { animation: fadeAnim, animationPlayState: play } : undefined}>
+          {runs.map((r) =>
+            r.length > 1 ? <path key={`l${r[0]}`} d={path(r)} fill="none" stroke={color} strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" /> : null,
+          )}
+        </g>
         {at !== null && <line x1={X(at)} x2={X(at)} y1={0} y2={100} stroke={C.lineHover} strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />}
       </svg>
       {/* Lone points (a reading between two unknowns) and the dots are HTML, so they stay round however the box stretches. */}

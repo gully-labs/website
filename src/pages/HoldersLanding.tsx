@@ -8,6 +8,7 @@ import { useLiveSeries } from '../components/charts/useLiveSeries'
 import { EChart } from '../components/charts/EChart'
 import { axisTooltip, barsPreset, itemTooltip, tipHtml } from '../components/charts/chartPresets'
 import { ChartSkeleton } from '../components/charts/ChartSkeleton'
+import { GhostChart } from '../components/charts/GhostChart'
 import { ScoreRing } from '../components/holders/parts'
 import { K } from '../components/holders/theme'
 import type { MapPreview } from '../components/holders/MiniMap'
@@ -162,8 +163,8 @@ function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
               <ChainLogo key={c.chain} chain={c.chain} size={16} />
             ))}
           </span>
-          <span className="sr-only">{soon.map((c) => c.name).join(', ')}</span>
-          coming soon
+          {/* One or two chains are named, not only shown as logos (D4-17); more stay logos so the chip keeps one line. */}
+          {soon.length <= 2 ? `${soon.map((c) => c.name).join(', ')} · coming soon` : <><span className="sr-only">{soon.map((c) => c.name).join(', ')}</span>coming soon</>}
         </li>
       )}
     </ul>
@@ -407,7 +408,13 @@ function TopList({ s }: { s: ReturnType<typeof usePoll<TopScanned>> }) {
   if (s.k === 'error') return <p className="m-0 text-[14px] text-muted">Could not be read just now.</p>
   const items = s.data.items
   const max = Math.max(1, ...items.map((x) => x.scans))
-  if (!items.length) return <p className="m-0 text-[14px] text-muted">No maps opened yet today. Search one above.</p>
+  // Nothing yet today: a ghost bar chart at the chart's height, not one line of text in a tall empty card (D4-16).
+  if (!items.length)
+    return (
+      <GhostChart variant="bars" height={200} badge={false} label="Today's most scanned maps will rank here" testId="most-scanned-empty">
+        <span className="font-mono text-[12px] leading-[1.45] text-muted">No maps opened yet today. Search one above.</span>
+      </GhostChart>
+    )
   const barOption = {
     grid: { left: 4, right: 4, top: 12, bottom: 22 },
     xAxis: { type: 'category', data: items.slice(0, 10).map((x) => x.symbol ?? x.token.slice(0, 5)), axisLabel: { color: K.muted, fontSize: 11, interval: 0, hideOverlap: true }, axisLine: { show: false }, axisTick: { show: false } },

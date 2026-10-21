@@ -165,7 +165,7 @@ function IntegrationTile({ i, n }: { i: Integration; n: number }) {
         <span className="text-[13px] leading-[1.5] text-muted">{i.use}</span>
       </a>
       <div className="flex flex-col px-3.5 pb-2.5">
-        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="inline-flex min-h-8 w-fit items-center gap-1 rounded-btn font-mono text-[11px] text-faint transition-colors hover:text-gold">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="relative inline-flex min-h-8 w-fit items-center gap-1 rounded-btn font-mono text-[11px] text-faint transition-colors before:absolute before:-inset-x-2 before:-inset-y-1.5 before:content-[''] hover:text-gold">
           <Code2 size={13} aria-hidden />
           In code
         </button>
@@ -250,7 +250,8 @@ export function Ecosystem() {
             The live figures could not be read just now. The projects are listed without numbers; this page retries every minute.
           </p>
         )}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-4">
+        {/* Four projects: 2 x 2, or one row of four when each card still gets ~310 px (no orphan card, D4-3). */}
+        <div data-testid="eco-projects" className="grid grid-cols-1 gap-4 min-[640px]:grid-cols-2 min-[1360px]:grid-cols-4">
           {rows.map(({ p, venue }) => (
             <ProjectCard key={p.slug} p={p} venue={venue} loading={stats.k === 'loading'} col={col} />
           ))}
@@ -273,12 +274,12 @@ export function Ecosystem() {
             className="max-w-full overflow-x-auto"
           />
         </div>
-        <details className="group w-fit max-w-full rounded-input border border-line px-3 py-2 text-[13px] text-muted open:border-line-strong">
-          <summary className="inline-flex min-h-6 cursor-pointer list-none items-center gap-1.5 font-mono text-[12px] text-ink-2 marker:hidden hover:text-gold [&::-webkit-details-marker]:hidden">
+        <details className="group w-fit max-w-full rounded-input border border-line px-3 py-2 text-[13px] text-muted open:border-line-strong max-[699px]:py-0">
+          <summary className="inline-flex min-h-6 max-[699px]:min-h-11 cursor-pointer list-none items-center gap-1.5 font-mono text-[12px] text-ink-2 marker:hidden hover:text-gold [&::-webkit-details-marker]:hidden">
             <Info size={14} aria-hidden />
             How we verified this
           </summary>
-          <p className="m-0 mt-2 max-w-[640px] leading-[1.55]">
+          <p className="m-0 mt-2 max-w-[640px] leading-[1.55] max-[699px]:mb-3">
             Every entry is a call in code we ship; open “In code” on a tile to see the file that makes it. Plans are not listed. Each logo is the company’s own mark, used only to name the service; it does not mean they endorse us.
           </p>
         </details>

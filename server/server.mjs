@@ -475,7 +475,10 @@ async function handleRequest(req, res) {
     fs.readFile(INDEX, 'utf8', (e, html) => {
       if (e) return send(res, 500, '')
       const meta = pageMeta(host, url.pathname)
-      res.writeHead(meta.found ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
+      // pay. and embed.: no-transform tells Cloudflare not to inject its Web Analytics beacon, which their CSP
+      // refuses (a console error on every checkout and every embedded map, D4-11).
+      const bareHost = isPayHost(host) || isEmbedHost(host)
+      res.writeHead(meta.found ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': bareHost ? 'no-cache, no-transform' : 'no-cache' })
       // pay. and embed. carry no analytics beacon (their CSP would refuse it anyway).
       const page = renderHead(html, meta)
       res.end(req.method === 'HEAD' ? undefined : isPayHost(host) || isEmbedHost(host) ? page.replace(/\s*<script defer src="https:\/\/analytics\.gullylabs\.xyz[^>]*><\/script>/, '') : page)

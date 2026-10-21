@@ -18,7 +18,8 @@ import { eyebrow, h2 } from './links'
    unseen. /#tracker, /#alerts … open their tab (the Layout scrolls to the anchors at the console's top);
    choosing a tab rewrites the hash in place, without a jump. */
 
-const TrackerDemo = lazy(() => import('../demos/TrackerDemo'))
+const loadTrackerDemo = () => import('../demos/TrackerDemo')
+const TrackerDemo = lazy(loadTrackerDemo)
 const HolderPane = lazy(() => import('./HolderPane'))
 const AlertsDemo = lazy(() => import('../demos/AlertsDemo'))
 const AnalyticsDemo = lazy(() => import('../demos/AnalyticsDemo'))
@@ -261,6 +262,18 @@ export function ProductConsole({ plans }: { plans: PlansState }) {
   const box = useRef<HTMLDivElement>(null)
   const near = useNearViewport(box)
   const btns = useRef<Record<string, HTMLButtonElement | null>>({})
+
+  // The default demo's chunk is fetched once the page is idle, so the console is ready when it scrolls in
+  // instead of holding a blank skeleton for seconds (D4-5). The other tabs still load on demand.
+  useEffect(() => {
+    const go = () => void loadTrackerDemo().catch(() => undefined)
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(go, { timeout: 3000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const t = window.setTimeout(go, 1500)
+    return () => window.clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     let alive = true

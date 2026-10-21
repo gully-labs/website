@@ -3872,6 +3872,104 @@ await step('holder map discovery', async () => {
   }
 })
 
+/* --------------------------------------------------------- design audit 4 --- */
+
+// The gaps fixed from gully-session-tools/design-audit-4/REPORT.md (D4-1 .. D4-18).
+await step('design audit 4', async () => {
+  const sameTop = (els) => new Set(els.map((r) => Math.round(r.top))).size === 1
+  // D4-8: at 1024 and 1100 the header's Launch app (with its menu button) stays on the screen.
+  for (const width of [1024, 1100, 1280]) {
+    const ctx = await newContext({ width, height: 800 })
+    const page = await ctx.newPage()
+    const w = watch(page, `da4 header ${width}`)
+    await page.goto(BASE + '/')
+    await page.locator('header nav[aria-label="Main"]').waitFor()
+    const r = await page.evaluate(() => {
+      const bar = document.querySelector('header > div')
+      const shown = [...bar.querySelectorAll('a, button')].filter((e) => e.getBoundingClientRect().width > 0)
+      return { right: Math.round(Math.max(...shown.map((e) => e.getBoundingClientRect().right))), vw: document.documentElement.clientWidth, launch: shown.some((e) => /Launch app/.test(e.textContent)) }
+    })
+    check(`da4 header ${width}: Launch app is shown and nothing in the bar runs off the screen (right ${r.right} of ${r.vw})`, r.launch && r.right <= r.vw, JSON.stringify(r))
+    // D4-7: no chart line is drawn with a pathLength dash on a non-scaling stroke (Chrome drew those lines only in part).
+    if (width === 1280) {
+      const bad = await page.evaluate(() => document.querySelectorAll('path[vector-effect="non-scaling-stroke"][pathLength]').length)
+      check('da4 charts: no sparkline or ghost line uses a pathLength dash on a non-scaling stroke', bad === 0, String(bad))
+    }
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  {
+    const ctx = await newContext({ width: 1440, height: 900 })
+    const page = await ctx.newPage()
+    const w = watch(page, 'da4 1440')
+    // D4-3: the four projects on /ecosystem sit on one row at 1440 (no orphan card).
+    await page.goto(BASE + '/ecosystem')
+    const eco = page.getByTestId('eco-projects')
+    await eco.waitFor()
+    const cards = await eco.evaluate((g) => [...g.children].map((c) => c.getBoundingClientRect().toJSON()))
+    check(`da4 /ecosystem 1440: the ${cards.length} project cards share one row`, cards.length === 4 && sameTop(cards), JSON.stringify(cards.map((c) => Math.round(c.top))))
+    // D4-1, D4-2: a token map that cannot be read names its chain in the breadcrumb (not DEEPCORE); the five guide cards share one row.
+    w.expect(/\/api\/holders\//)
+    await page.goto(BASE + '/holders/base/0x00000000000000000000000000000000000dead1')
+    await page.getByTestId('hm-guide').waitFor()
+    const crumb = await page.locator('nav[aria-label="Breadcrumb"]').innerText()
+    check('da4 holder page: the breadcrumb never says DEEPCORE for a token that is not a DeepCore launch', !/DEEPCORE/.test(crumb), crumb)
+    const guide = await page.getByTestId('hm-guide').evaluate((g) => [...g.children].filter((c) => c.tagName !== 'H2').map((c) => c.getBoundingClientRect().toJSON()))
+    check('da4 holder page 1440: the five guide cards share one row', guide.length === 5 && sameTop(guide), JSON.stringify(guide.map((c) => Math.round(c.top))))
+    // D4-14: /status has a compact hero.
+    await page.goto(BASE + '/status')
+    const h1 = await page.locator('h1').first().evaluate((e) => parseFloat(getComputedStyle(e).fontSize))
+    check(`da4 /status 1440: the hero is compact (h1 ${h1} px, at most 48)`, h1 <= 48, String(h1))
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // D4-9: the seven tracker figures fill their grid at every width (no empty grey cell after the last one).
+  for (const width of [1440, 1024, 390]) {
+    const ctx = await newContext({ width, height: 900, mobile: width < 500 })
+    await ctx.route('**/api/tracker', (route) => json(route, TRACKER))
+    const page = await ctx.newPage()
+    const w = watch(page, `da4 /tracker ${width}`)
+    await page.goto(BASE + '/tracker')
+    const k = page.getByTestId('tracker-kpis')
+    await k.waitFor({ timeout: 20_000 })
+    const r = await k.evaluate((g) => {
+      const box = g.getBoundingClientRect()
+      const kids = [...g.children].map((c) => c.getBoundingClientRect())
+      const last = kids[kids.length - 1]
+      const row = kids.filter((c) => Math.round(c.top) === Math.round(last.top))
+      return { n: kids.length, filled: Math.round(row.reduce((s, c) => s + c.width, 0) + row.length - 1) >= Math.round(box.width) - 4 }
+    })
+    check(`da4 /tracker ${width}: the ${r.n} figures leave no empty cell`, r.n === 7 && r.filled, JSON.stringify(r))
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  // Phone tap targets and fits (D4-10 on /chains and /ecosystem, D4-18 on /partners, the hero search).
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, height: 844, mobile: true })
+    const page = await ctx.newPage()
+    const w = watch(page, `da4 phone ${width}`)
+    await page.goto(BASE + '/')
+    const mapIt = page.locator('[data-hero-holder-search] button[type="submit"]')
+    await mapIt.waitFor()
+    check(`da4 home ${width}: "Map it" is a 44 px target`, ((await mapIt.boundingBox())?.height ?? 0) >= 43.5)
+    await page.goto(BASE + '/chains')
+    await page.getByTestId('chains-diagram').waitFor()
+    const layers = await page.locator('[data-testid="chains-diagram"] button').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => Math.round(e.getBoundingClientRect().height)))
+    check(`da4 /chains ${width}: every diagram button is at least 44 px tall`, layers.length > 0 && layers.every((h) => h >= 44), layers.join(','))
+    await page.goto(BASE + '/ecosystem')
+    const sum = page.locator('details summary').first()
+    await sum.waitFor()
+    check(`da4 /ecosystem ${width}: "How we verified this" is a 44 px target`, ((await sum.boundingBox())?.height ?? 0) >= 43.5)
+    await page.goto(BASE + '/partners')
+    const seg = page.locator('[role="group"][aria-label="I run a"]')
+    await seg.waitFor()
+    if (width === 390) check('da4 /partners 390: the audience switch fits without scrolling', await seg.evaluate((e) => e.scrollWidth <= e.clientWidth + 1))
+    await noHorizontalScroll(page, `da4 /partners ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+})
+
 const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag/i.test(u))
 check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()

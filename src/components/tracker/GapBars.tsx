@@ -53,7 +53,8 @@ export function GapBars({ rows, inLinePct, selected, onSelect, fill = false }: {
   const fitRows = fill && room > 0 ? Math.floor((room - TOP - BOTTOM) / baseRow) : 0
   const TOP_N = fill && fitRows > 0 ? Math.max(touch ? 10 : 16, fitRows) : touch ? 10 : 16
   const nShown = all ? withGap.length : Math.min(TOP_N, withGap.length)
-  const ROW = fill && room > 0 && nShown > 0 ? Math.min(40, Math.max(baseRow, Math.floor((room - TOP - BOTTOM) / nShown))) : baseRow
+  // The 40 px cap never undercuts the 44 px touch row (it used to clamp phone rows to 40, D4-10).
+  const ROW = fill && room > 0 && nShown > 0 ? Math.min(Math.max(40, baseRow), Math.max(baseRow, Math.floor((room - TOP - BOTTOM) / nShown))) : baseRow
 
   // The widest gaps first so the chart stays compact; "show all" lists every stock.
   const shown = all ? withGap : [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0)).slice(0, TOP_N)

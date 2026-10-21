@@ -56,9 +56,10 @@ function useMenuValue() {
 type Guard = (id: string) => (e: ReactMouseEvent) => void
 
 const trigger =
-  'group relative inline-flex min-h-11 items-center gap-[6px] rounded-btn px-3 text-[14px] whitespace-nowrap transition-colors hover:text-ink data-[state=open]:text-ink'
+  // Below 1280 the items drop their icons and padding so the bar and Launch app fit 1024 px (D4-8).
+  'group relative inline-flex min-h-11 items-center gap-[6px] rounded-btn px-3 text-[14px] whitespace-nowrap transition-colors hover:text-ink data-[state=open]:text-ink max-[1279px]:px-2'
 // A short gold bar under the item for the section you are in.
-const activeBar = 'after:absolute after:inset-x-3 after:bottom-[6px] after:h-[2px] after:rounded-full after:bg-gold'
+const activeBar = 'after:absolute after:inset-x-3 after:bottom-[6px] after:h-[2px] after:rounded-full after:bg-gold max-[1279px]:after:inset-x-2'
 const panel =
   'gl-menu-panel absolute top-[calc(100%+8px)] z-50 rounded-card border border-line-strong bg-surface-deep p-2 shadow-[0_18px_48px_rgba(0,0,0,.55)]'
 
@@ -90,7 +91,7 @@ function MenuGroup({ g, pathname, hash, wide, guard }: { g: NavGroup; pathname: 
   return (
     <NavigationMenu.Item value={g.id} className="relative">
       <NavigationMenu.Trigger onClick={guard(g.id)} data-menu-trigger={g.id} className={`${trigger} ${active ? `text-ink ${activeBar}` : 'text-muted'}`}>
-        <g.icon aria-hidden size={16} strokeWidth={1.75} className={`flex-none transition-colors ${active ? 'text-gold' : 'text-faint group-hover:text-gold group-data-[state=open]:text-gold'}`} />
+        <g.icon aria-hidden size={16} strokeWidth={1.75} className={`flex-none transition-colors max-[1279px]:hidden ${active ? 'text-gold' : 'text-faint group-hover:text-gold group-data-[state=open]:text-gold'}`} />
         {g.label}
         <ChevronDown aria-hidden size={14} strokeWidth={2} className="gl-chevron text-faint" />
       </NavigationMenu.Trigger>
@@ -127,7 +128,7 @@ function PlainLink({ e, pathname, hash }: { e: NavEntry; pathname: string; hash:
     <NavigationMenu.Item>
       <NavigationMenu.Link asChild active={on}>
         <EntryLink e={e} className={`${trigger} ${on ? `text-ink ${activeBar}` : 'text-muted'}`}>
-          <e.icon aria-hidden size={16} strokeWidth={1.75} className={`flex-none transition-colors ${on ? 'text-gold' : 'text-faint group-hover:text-gold'}`} />
+          <e.icon aria-hidden size={16} strokeWidth={1.75} className={`flex-none transition-colors max-[1279px]:hidden ${on ? 'text-gold' : 'text-faint group-hover:text-gold'}`} />
           {e.label}
           {e.newDot && <NewDot />}
         </EntryLink>

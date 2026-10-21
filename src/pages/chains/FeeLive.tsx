@@ -34,11 +34,19 @@ export function FeeLive() {
   const { data, loading, error, refresh } = useLiveSeries(read, EVERY_MS)
   const readable = useMemo(() => CHAINS.filter((c) => (data?.[c.key]?.gwei.length ?? 0) >= 2), [data])
   const n = readable.length ? Math.max(...readable.map((c) => data![c.key].gwei.length)) : 0
+  const axisDigits = useMemo(() => {
+    const all = readable.flatMap((c) => data![c.key].gwei)
+    if (!all.length) return 2
+    const hi = Math.max(...all)
+    const span = hi - Math.min(...all)
+    return span > 0 ? Math.min(6, Math.max(digits(hi), Math.ceil(-Math.log10(span / 5)))) : digits(hi)
+  }, [readable, data])
   const option = useMemo(
     () => ({
       grid: { left: 4, right: 12, top: 10, bottom: 4, containLabel: true },
       xAxis: { type: 'category', boundaryGap: false, data: Array.from({ length: n }, (_, i) => String(i - (n - 1))), axisLabel: { formatter: (v: string) => (v === '0' ? 'now' : v), interval: Math.max(0, Math.floor(n / 4) - 1) } },
-      yAxis: { type: 'value', scale: true, axisLabel: { formatter: (v: number) => v.toFixed(digits(v)) } },
+      // Enough decimals for the tick step, so a narrow range never repeats a label (0.020, 0.020, ...; D4-13).
+      yAxis: { type: 'value', scale: true, axisLabel: { formatter: (v: number) => v.toFixed(axisDigits) } },
       tooltip: axisTooltip((ps: { seriesName: string; dataIndex: number; value: number | null; color: string }[]) => {
         const ago = n - 1 - (ps[0]?.dataIndex ?? 0)
         return tipHtml({ title: ago === 0 ? 'latest block' : `${ago} blocks ago`, rows: ps.filter((s) => typeof s.value === 'number').map((s) => ({ name: s.seriesName, value: `${(s.value as number).toFixed(digits(s.value as number))} gwei`, color: s.color })) })
@@ -48,7 +56,7 @@ export function FeeLive() {
         return { id: c.key, name: c.name, ...(k === 0 ? areaPreset({ color: c.color, width: 1.75, smooth: 0, fill: 0.2 }) : linePreset({ color: c.color, width: 1.5, smooth: 0 })), data: [...Array<null>(n - g.length).fill(null), ...g] }
       }),
     }),
-    [readable, data, n],
+    [readable, data, n, axisDigits],
   )
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-card-token p-5 max-[600px]:p-4" data-testid="chains-fee">

@@ -22,16 +22,17 @@ export function StatusPage() {
   return (
     <>
       <Seo title="Status" description="Live status of Gully Labs: the API, tracker freshness per chain, the DeepCore poller, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents." />
-      <section className="relative overflow-hidden px-page pt-[72px] pb-10">
+      {/* A compact hero (D4-14): the live board starts within the first screen, as on /chains. */}
+      <section className="relative overflow-hidden px-page pt-10 pb-8 max-[599px]:pt-8">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.12),transparent_62%)]" />
-        <div className="relative flex max-w-[860px] flex-col gap-5">
+        <div className="relative flex max-w-[860px] flex-col gap-4">
           <span className={eyebrow} style={rise(0)}>
             STATUS
           </span>
-          <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
+          <h1 className="m-0 font-display text-h2 font-extrabold uppercase" style={rise(1)}>
             System <span className="text-gold">status</span>
           </h1>
-          <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
+          <p className="m-0 max-w-[680px] text-[16px] leading-[1.6] text-muted" style={rise(2)}>
             Every part of the stack we can check from our own server, checked once a minute: the API, how fresh the tracker is on each chain, the DeepCore launch poller, the Telegram bot, the payment RPCs, Gully AI, the security scan engine, contract monitors and the Holder Map sources. Not configured means the
             feature is switched off on this server, not broken.
           </p>

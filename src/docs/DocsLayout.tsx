@@ -246,7 +246,7 @@ export function DocsLayout() {
             >
               {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
             </button>
-            <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline" aria-label="Gully Labs Docs, home">
+            <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline max-[359px]:min-w-11 max-[359px]:justify-center" aria-label="Gully Labs Docs, home">
               {/* A smaller wordmark on narrow phones, so the menu, Gully AI and site buttons fit at 390 px. */}
               <span className="flex max-[479px]:hidden">
                 <Wordmark height={24} decorative />
