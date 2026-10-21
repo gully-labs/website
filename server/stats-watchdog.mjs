@@ -7,7 +7,8 @@
 //          all-time totals moved, i.e. the series is stale and the page would draw a flat line over a live venue.
 //
 // One Telegram admin alert per venue per UTC day (intake-notify.mjs notifyAdminAlert), at most MAX_PER_DAY in all,
-// and a failed send is not retried for an hour. The latest verdict is kept for the admin Health card
+// and a failed send is not retried for an hour. A problem is alerted when it is new or changes; the same problem
+// still there is repeated at most once every REPEAT_MS (a venue with no TVL source would otherwise ping daily). The latest verdict is kept for the admin Health card
 // (statsWatchdogHealth). State (previous totals, who was alerted today) lives in DATA_DIR/stats-watchdog.json so a
 // restart neither repeats an alert nor forgets the totals it compares against.
 
@@ -20,6 +21,7 @@ import { readStats } from './stats.mjs'
 export const WATCHDOG_EVERY_MS = 15 * 60_000
 export const MAX_PER_DAY = 6
 const RETRY_MS = 3_600_000
+export const REPEAT_MS = 7 * 86_400_000
 const FLAT_DAYS = 3
 // Series a venue is expected to draw. PeddleQuest is quests, not trading: no volume.
 const EXPECT = { deepcore: ['volume', 'tvl'], peddleswap: ['volume', 'tvl'], peddles: ['volume', 'tvl'], peddlequest: ['tvl', 'fees'] }
@@ -88,9 +90,14 @@ export async function watchdogTick({ now = Date.now(), doc } = {}) {
   for (const v of d.venues ?? []) if (v.state === 'ok') totals[v.key] = { volumeAllUsd: v.volumeAllUsd ?? null, feesAllUsd: v.feesAllUsd ?? null }
   const alertedToday = st.alertDay === day ? { ...(st.alerted ?? {}) } : {}
   const tried = { ...(st.tried ?? {}) }
+  // What was last alerted per venue ({ sig, at }); a venue that is fine again is forgotten, so a relapse alerts.
+  const known = {}
+  for (const [k, x] of Object.entries(st.known ?? {})) if (issues.some((i) => i.venue === k)) known[k] = x
   const alerted = []
   for (const venue of [...new Set(issues.map((i) => i.venue))]) {
     if (alertedToday[venue]) continue
+    const sig = issues.filter((x) => x.venue === venue).map((x) => `${x.kind}: ${x.detail}`).join(' | ')
+    if (known[venue]?.sig === sig && now - known[venue].at < REPEAT_MS) continue
     if (Object.keys(alertedToday).length >= MAX_PER_DAY) break
     if (now - (tried[venue] ?? 0) < RETRY_MS) continue
     tried[venue] = now
@@ -101,16 +108,17 @@ export async function watchdogTick({ now = Date.now(), doc } = {}) {
       fields: [
         ['Problem', mine.map((x) => `${x.kind}: ${x.detail}`).join(' | ')],
         ['Effect', 'the home page chart shows an empty or stale series for this venue'],
-        ['Next alert', 'tomorrow at the earliest, if it is still wrong'],
+        ['Next alert', 'when this changes, or in 7 days if it is still the same'],
       ],
       adminUrl: 'https://admin.gullylabs.xyz/#health',
     })
     if (r.sent) {
       alertedToday[venue] = now
+      known[venue] = { sig, at: now }
       alerted.push(venue)
     }
   }
-  writeState({ totals, alertDay: day, alerted: alertedToday, tried })
+  writeState({ totals, alertDay: day, alerted: alertedToday, tried, known })
   last = { at: new Date(now).toISOString(), issues, alerted: Object.keys(alertedToday) }
   return { issues, alerted }
 }

@@ -269,12 +269,21 @@ test('watchdog: ONE alert per venue per day, however many passes', async () => {
   assert.equal(sent.length, 1, 'five more passes the same day: still one')
   assert.equal(W.statsWatchdogHealth().issues.length, 1, 'the Health card still shows it')
   r = await W.watchdogTick({ now: NOW + 86_400_000, doc: bad })
-  assert.equal(sent.length, 2, 'the next UTC day, one more')
+  assert.equal(sent.length, 1, 'the next UTC day, the same problem: no repeat')
+  assert.match(sent[0], /when this changes, or in 7 days/)
+  const worse = docOf({ key: 'peddles', state: 'error', error: 'HTTP 503' }, good('deepcore'))
+  await W.watchdogTick({ now: NOW + 86_400_000 + 60_000, doc: worse })
+  assert.equal(sent.length, 2, 'the problem changed: one more')
+  await W.watchdogTick({ now: NOW + 8 * 86_400_000 + 60_000, doc: worse })
+  assert.equal(sent.length, 3, 'still the same after 7 days: a reminder')
+  await W.watchdogTick({ now: NOW + 9 * 86_400_000, doc: docOf(good('peddles'), good('deepcore')) })
+  await W.watchdogTick({ now: NOW + 9 * 86_400_000 + 60_000, doc: worse })
+  assert.equal(sent.length, 4, 'fine, then broken again: a relapse alerts at once')
 })
 
 test('watchdog: another venue is its own alert; the daily total is capped; a failed send waits an hour', async () => {
   sent.length = 0
-  const day = NOW + 3 * 86_400_000
+  const day = NOW + 13 * 86_400_000
   const many = docOf(...['deepcore', 'peddleswap', 'peddles', 'peddlequest', 'x1', 'x2', 'x3', 'x4'].map((key) => ({ key, state: 'error', error: 'down' })))
   await W.watchdogTick({ now: day, doc: many })
   assert.equal(sent.length, W.MAX_PER_DAY, `capped at ${W.MAX_PER_DAY}`)
@@ -283,8 +292,8 @@ test('watchdog: another venue is its own alert; the daily total is capped; a fai
 
   sent.length = 0
   sendOk = false
-  const day2 = NOW + 5 * 86_400_000
-  const one = docOf({ key: 'peddles', state: 'error', error: 'down' })
+  const day2 = NOW + 15 * 86_400_000
+  const one = docOf({ key: 'peddles', state: 'error', error: 'down, a new reason' })
   const origErr = console.error
   console.error = () => undefined
   try {
@@ -304,7 +313,7 @@ test('watchdog: another venue is its own alert; the daily total is capped; a fai
 
 test('watchdog: totals are remembered only for venues that read fine, and a flat series with moving totals is caught on the next pass', async () => {
   sent.length = 0
-  const day = NOW + 9 * 86_400_000
+  const day = NOW + 20 * 86_400_000
   const flatDoc = (all) => docOf(good('peddles', { series: { volume: pts([0, 0, 0, 0]), tvl: pts([1, 2]), fees: pts([1, 2]) }, volume24hUsd: 0, volumeAllUsd: all }))
   await W.watchdogTick({ now: day, doc: flatDoc(100) })
   assert.equal(sent.length, 0, 'first sight of a flat series with nothing to compare against: quiet')
