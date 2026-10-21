@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router'
 import { ChartBox } from '../charts/ChartSkeleton'
+import { GhostChart } from '../charts/GhostChart'
 import { stockPath, useTracker } from '../../lib/tracker'
 import { GapBars } from './GapBars'
 
@@ -13,7 +14,12 @@ export function LiveTopGaps({ count = 8 }: { count?: number }) {
     .filter((r) => r.gapPct !== null && r.status !== 'thin')
     .sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0))
     .slice(0, count)
-  if (!rows.length) return <p className="m-0 animate-[gl-skeleton_2s_ease-in-out_infinite] font-mono text-[12px] text-faint">Not tracked yet: no trusted pool has a gap right now.</p>
+  if (!rows.length)
+    return (
+      <GhostChart variant="bars" height={count * 24 + 30} badge={false} label="The widest gaps will draw here" testId="top-gaps-empty">
+        <span className="font-mono text-[12px] leading-[1.45] text-muted">Not tracked yet: no trusted pool has a gap right now.</span>
+      </GhostChart>
+    )
   return (
     <GapBars
       rows={rows}

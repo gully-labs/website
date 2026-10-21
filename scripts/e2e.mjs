@@ -2391,7 +2391,7 @@ await step('da3-g6 empty states, fills, logos and prose', async () => {
   }
   const ratio = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05) }
   // D17: the movers' "needs 24h" note sits on a ghost chart in muted ink, not faint text on a shimmer.
-  for (const [url, width, mobile] of [['/tracker', 1440, false], ['/tracker', 390, true], ['/links', 390, true], ['/links', 320, true]]) {
+  for (const [url, width, mobile] of [['/tracker', 1440, false], ['/tracker', 390, true], ['/links', 390, true], ['/links', 320, true], ['/this-page-does-not-exist', 390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
     await ctx.route('**/api/tracker/movers*', (route) => json(route, EMPTY_MOVERS))
     const page = await ctx.newPage()
@@ -2409,6 +2409,26 @@ await step('da3-g6 empty states, fills, logos and prose', async () => {
     })
     check(`da3-g6 ${url} ${width}: the movers note is on a ghost chart at 4.5:1 or better, not on a shimmer`, r.hasSvg && !r.shimmer && r.size >= 11 && ratio(r.color, [21, 29, 40]) >= 4.5 && /Needs 24h of snapshots/.test(r.text), JSON.stringify(r))
     await noHorizontalScroll(page, `da3-g6 ${url} ${width}`)
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i, ...(url === '/this-page-does-not-exist' ? [/404/] : [])])
+    await ctx.close()
+  }
+  // D17, the same pattern on /ask: with no trusted gap, the widest-gaps chart is a ghost with a 4.5:1 note.
+  for (const width of [390, 320]) {
+    const ctx = await newContext({ width, height: 844, mobile: true })
+    await ctx.route('**/api/tracker', (route) => json(route, { rows: [], rules: { inLinePct: 1 } }))
+    const page = await ctx.newPage()
+    const w = watch(page, `da3-g6 /ask ${width}`)
+    await page.goto(BASE + '/ask')
+    const ghost = page.getByTestId('top-gaps-empty').first()
+    await ghost.waitFor({ timeout: 15_000 })
+    await ghost.scrollIntoViewIfNeeded()
+    const r = await ghost.evaluate((g) => {
+      const n = g.querySelector('span.font-mono')
+      const cs = getComputedStyle(n)
+      return { color: (cs.color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number), size: parseFloat(cs.fontSize), svg: !!g.querySelector('svg'), shimmer: !!n.closest('.gl-skeleton') }
+    })
+    check(`da3-g6 /ask ${width}: no trusted gap draws a ghost chart with a 4.5:1 note`, r.svg && !r.shimmer && r.size >= 11 && ratio(r.color, [21, 29, 40]) >= 4.5, JSON.stringify(r))
+    await noHorizontalScroll(page, `da3-g6 /ask ${width}`)
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
@@ -2420,7 +2440,7 @@ await step('da3-g6 empty states, fills, logos and prose', async () => {
     const w = watch(page, 'da3-g6 stock page')
     await page.goto(BASE + '/tracker/robinhood/NVDA')
     await page.getByTestId('kpi-ghost').first().waitFor({ timeout: 15_000 })
-    const k = await page.evaluate(() => [...document.querySelectorAll('[data-testid="kpi-ghost"]')].map((g) => ({ svg: !!g.querySelector('svg'), caption: g.closest('div')?.querySelector('span:last-child')?.textContent ?? '', dash: /—/.test(g.textContent ?? '') })))
+    const k = await page.evaluate(() => [...document.querySelectorAll('[data-testid="kpi-ghost"]')].map((g) => ({ svg: !!g.querySelector('svg'), caption: g.closest('dd')?.parentElement?.lastElementChild?.textContent ?? '', dash: /—/.test(g.textContent ?? '') })))
     check('da3-g6 stock page 390: the empty GAP stat cells draw a ghost sparkline with their caption', k.length >= 2 && k.every((c) => c.svg && /snapshots|trusted/.test(c.caption) && !c.dash), JSON.stringify(k))
     await noHorizontalScroll(page, 'da3-g6 stock page')
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
@@ -2502,26 +2522,27 @@ await step('da3-g6 empty states, fills, logos and prose', async () => {
     check('da3-g6 token logos: SLV and EWY are 128+ px PNGs', dims['/tokens/logos/SLV.png'][0] >= 128 && dims['/tokens/logos/EWY.png'][0] >= 128, JSON.stringify(dims))
     await ctx.close()
   }
-  // D32: the live charts on these docs pages are alive at phone widths: on screen they are marked live and animate.
-  for (const width of [390, 320]) {
-    const ctx = await newContext({ width, height: 844, mobile: true })
+  // D32: the live charts on these docs pages are alive at phone widths: a live strip with a pulsing dot sits on the
+  // chart (the desktop header's dot is hidden on phones), is on while on screen, fits the width and animates.
+  for (const width of [1440, 390, 320]) {
+    const ctx = await newContext({ width, height: 844, mobile: width < 600 })
     const page = await ctx.newPage()
     for (const slug of ['widget', 'api-keys', 'plans-alerts', 'gully-score', 'swaps', 'roadmap']) {
       const w = watch(page, `da3-g6 docs /${slug} ${width}`)
       await page.goto(`${BASE}/docs/${slug}`)
       await page.getByRole('heading', { level: 1 }).first().waitFor()
-      await page.waitForTimeout(800)
-      const box = page.locator('[data-live]').first()
+      const box = page.getByTestId('live-pulse').first()
       await box.waitFor({ state: 'attached', timeout: 15_000 })
       await box.scrollIntoViewIfNeeded()
-      await page.waitForTimeout(1500)
+      await page.waitForTimeout(1200)
       const s = await page.evaluate(() => {
-        const el = document.querySelector('[data-live]')
+        const el = document.querySelector('[data-testid="live-pulse"]')
         const r = el.getBoundingClientRect()
         const running = el.getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length
-        return { live: el.getAttribute('data-live'), w: Math.round(r.width), vw: window.innerWidth, running, marks: el.querySelectorAll('.gl-live-mark, .gl-live-ring').length }
+        const strip = el.firstElementChild
+        return { live: el.getAttribute('data-live'), w: Math.round(r.width), vw: window.innerWidth, running, clipped: strip.scrollWidth > strip.clientWidth + 1, text: strip.textContent, chart: !!el.querySelector('[data-chart], svg, canvas, [role="img"]') }
       })
-      check(`da3-g6 docs /${slug} ${width}: the live chart is on, inside the screen and animating`, s.live === 'on' && s.w <= s.vw && s.w > 100 && (s.running > 0 || s.marks > 0), JSON.stringify(s))
+      check(`da3-g6 docs /${slug} ${width}: the live chart shows its pulse, on screen, unclipped and animating`, s.live === 'on' && s.w <= s.vw && s.running > 0 && !s.clipped && /^LIVE/.test(s.text) && s.chart, JSON.stringify(s))
       await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     }
     await ctx.close()

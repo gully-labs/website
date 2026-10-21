@@ -1,3 +1,4 @@
+import { LivePulse } from '../../components/tracker/LivePulse'
 import type { AlertChannels, Offer } from '../../pages/developers/api'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
 import { PlanLimits } from '../../components/charts/PlanLimits'
@@ -142,12 +143,14 @@ export function PlansAlerts() {
             <P>
               Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history.
             </P>
-            <PlanLimits
-              tiers={[
-                { name: 'No key', perMin: offer.anonymous.perMin, historyDays: offer.anonymous.historyDays, alerts: null, maxKeys: null },
-                ...offer.plans.map((p) => ({ name: p.name, perMin: p.perMin, historyDays: p.historyDays, alerts: p.alerts, maxKeys: p.maxKeys })),
-              ]}
-            />
+            <LivePulse source="/api/plans" every="60 s">
+              <PlanLimits
+                tiers={[
+                  { name: 'No key', perMin: offer.anonymous.perMin, historyDays: offer.anonymous.historyDays, alerts: null, maxKeys: null },
+                  ...offer.plans.map((p) => ({ name: p.name, perMin: p.perMin, historyDays: p.historyDays, alerts: p.alerts, maxKeys: p.maxKeys })),
+                ]}
+              />
+            </LivePulse>
             {!offer.checkout.enabled && <Callout label="NOT ON SALE YET">{offer.checkout.reason}</Callout>}
           </>
         )}

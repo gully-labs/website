@@ -1,3 +1,4 @@
+import { LivePulse } from '../../components/tracker/LivePulse'
 import { feeText, jupiterFeeText } from '../../components/swap/swapConfig'
 import type { ReactNode } from 'react'
 import { ChainLogo } from '../../components/logos/ChainLogo'
@@ -72,7 +73,9 @@ export function SwapsDocs() {
         <P>
           How deep each token’s deepest pool is right now, from the tracker (the same pool its onchain price is read from). A shallow pool means more price impact on a swap. A token whose pool could not be read is counted, never drawn as zero.
         </P>
-        <PoolDepth />
+        <LivePulse source="/api/tracker" every="60 s">
+          <PoolDepth />
+        </LivePulse>
       </Section>
 
       <Section id="gates" title="Before a swap is shown">
