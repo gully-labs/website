@@ -151,6 +151,9 @@ function Foot({ brand }: { brand: Brand }) {
           SECURED BY <ShieldCheck size={15} className="text-gold" aria-hidden /> <GullyMark size={20} /> <span className="text-gold">GULLY PAY</span>
         </a>
         <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-5">
+          <a href={`${SITE_URL}/legal/terms`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
+            Terms <ExternalLink size={11} aria-hidden />
+          <span className="sr-only"> (opens in a new tab)</span></a>
           <a href={`${SITE_URL}/legal/merchant-terms`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 underline-offset-4 hover:text-ink hover:underline">
             Merchant terms <ExternalLink size={11} aria-hidden />
           <span className="sr-only"> (opens in a new tab)</span></a>

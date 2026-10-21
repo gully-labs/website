@@ -521,6 +521,59 @@ await step('security terms, sample and engine status', async () => {
   }
 })
 
+await step('terms of service', async () => {
+  for (const width of [1440, 390, 320]) {
+    const ctx = await newContext({ width, height: 900, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `terms ${width}`)
+    await page.goto(BASE + '/legal/terms')
+    await page.getByRole('heading', { level: 1, name: 'Terms of Service' }).waitFor()
+    if (width === 1440) {
+      const ids = await page.evaluate(() => [...document.querySelectorAll('article section[id^="s"]')].map((x) => x.id))
+      check('terms: twenty numbered sections, s1 to s20, each linked from the section nav', ids.join() === Array.from({ length: 20 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 20, ids.join())
+      const glance = await page.getByTestId('terms-glance').locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')))
+      check('terms: six at-a-glance cards, each linking to its section', glance.length === 6 && glance.every((h) => /^#s\d+$/.test(h)), glance.join())
+      check('terms: "Draft: review by counsel" is an HTML comment only, never on screen', (await page.content()).includes('<!-- Draft: review by counsel') && !(await page.getByText('review by counsel').count()))
+      check('terms: links the privacy policy, the merchant terms and the security scan terms', (await page.locator('a[href="/legal/privacy"]').count()) > 0 && (await page.locator('a[href="/legal/merchant-terms"]').count()) > 0 && (await page.locator('a[href="/legal/scan-terms"]').count()) > 0)
+      check('terms: contact is team@gullylabs.xyz', (await page.locator('a[href="mailto:team@gullylabs.xyz"]').count()) > 0)
+      const head = await (await fetch(BASE + '/legal/terms')).text()
+      check('terms: the server-rendered title and canonical', head.includes('<title>Terms of Service · Gully Labs</title>') && head.includes('https://gullylabs.xyz/legal/terms'))
+      check('terms: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/legal/terms</loc>'))
+      for (const [from, to] of [['/terms', '/legal/terms'], ['/privacy', '/legal/privacy'], ['/terms/', '/legal/terms']]) {
+        const r = await fetch(BASE + from, { redirect: 'manual' })
+        check(`${from}: a permanent redirect to ${to}`, r.status === 301 && r.headers.get('location') === to, `${r.status} ${r.headers.get('location')}`)
+      }
+      await designAudit(page, 'terms 1440')
+    }
+    const small = await page.locator('article nav a, [data-testid="terms-glance"] a').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => e.textContent.trim().slice(0, 24)))
+    check(`terms ${width}: section links and glance cards are 44 px taps`, small.length === 0, small.join(' | '))
+    await noHorizontalScroll(page, `terms ${width}`)
+    await w.verify()
+    await ctx.close()
+  }
+  // Wired in: the site footer (in place), the privacy policy's version, the app's sign-in card.
+  const ctx = await newContext()
+  const page = await ctx.newPage()
+  const w = watch(page, 'terms links')
+  await page.goto(BASE + '/')
+  const foot = page.getByRole('contentinfo').getByRole('link', { name: 'Terms', exact: true })
+  check('terms: linked from the site footer', (await foot.getAttribute('href')) === '/legal/terms')
+  await foot.click()
+  await page.getByRole('heading', { level: 1, name: 'Terms of Service' }).waitFor()
+  check('terms: the footer link opens the page in place', page.url().endsWith('/legal/terms'))
+  await page.goto(BASE + '/legal/privacy')
+  await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
+  check('privacy: version 2026-10-20, and it links the terms', (await page.getByText('Version 2026-10-20').count()) === 1 && (await page.locator('article a[href="/legal/terms"]').count()) > 0)
+  check('privacy: covers the Deep check, the /contact relay and the service hosts', (await page.getByText('Deep checks.', { exact: false }).count()) > 0 && (await page.getByText('Writing to the team (/contact).', { exact: false }).count()) > 0 && (await page.getByText('embed.gullylabs.xyz set no cookies', { exact: false }).count()) > 0)
+  check('privacy: the retention table lists the Gully Chains waitlist', await page.getByRole('table').getByRole('rowheader', { name: 'Gully Chains waitlist' }).isVisible())
+  await page.goto(BASE + '/app')
+  await page.getByTestId('connect-wallet').waitFor()
+  const note = page.getByTestId('signin-terms')
+  check('app sign-in: says connecting accepts the Terms and the Privacy policy, both linked in a new tab', (await note.locator('a[href="https://gullylabs.xyz/legal/terms"][target="_blank"]').count()) === 1 && (await note.locator('a[href="https://gullylabs.xyz/legal/privacy"][target="_blank"]').count()) === 1)
+  await w.verify()
+  await ctx.close()
+})
+
 /* ------------------------------------------------------------- portal --- */
 
 await step('portal', async () => {
@@ -2173,7 +2226,7 @@ await step('gully score', async () => {
 /* ------------------------------------------------------------- 404s and mobile pages --- */
 
 await step('404s', async () => {
-  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200], ['/links', 200], ['/status', 200], ['/docs/status', 200], ['/docs/gully-ai', 200], ['/docs/telegram', 200], ['/docs/chain-kit', 200], ['/docs/swaps', 200], ['/docs/solana', 200]]) {
+  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200], ['/legal/terms', 200], ['/links', 200], ['/status', 200], ['/docs/status', 200], ['/docs/gully-ai', 200], ['/docs/telegram', 200], ['/docs/chain-kit', 200], ['/docs/swaps', 200], ['/docs/solana', 200]]) {
     const r = await fetch(BASE + p)
     const html = await r.text()
     check(`HTTP ${want} for ${p}`, r.status === want && (want === 404 ? /noindex/.test(html) : !/Not found ·/.test(html)), `${r.status}`)
@@ -3473,6 +3526,7 @@ await step('service hosts', async () => {
     check('hosts: pay. page loads no analytics script and has a pay. canonical in the served HTML', (await page.locator('script[src*="analytics"]').count()) === 0 && (await resp.text()).includes(`<link rel="canonical" href="https://pay.gullylabs.xyz/pay/${invId}" />`))
     check('hosts: the pay page does not touch main-site storage', (await page.evaluate(() => Object.keys(localStorage).filter((k) => /gully|session|auth|dev/i.test(k)).length)) === 0)
     check('hosts: checkout footer links name the main site (not pay. paths)', (await page.locator('a[href$="/legal/merchant-terms"]').first().getAttribute('href')) === 'https://gullylabs.xyz/legal/merchant-terms')
+    check('hosts: the checkout footer links the Terms of Service on the main site', (await page.locator('footer a[href="https://gullylabs.xyz/legal/terms"]').count()) === 1)
     const lp = await ctx.newPage()
     await lp.goto(at('pay.gullylabs.xyz', `/pay/l/${linkId}`))
     await lp.getByTestId('link-continue').waitFor({ timeout: 30_000 })

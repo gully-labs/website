@@ -193,6 +193,7 @@ try {
   const has = (pred) => local.chunks.some(pred)
   check('sources: the privacy policy, by numbered section (#s4 is Gully AI)', has((c) => c.source === 'Legal' && c.url === 'https://gullylabs.xyz/legal/privacy#s4' && c.section === 'Gully AI' && /90 days/.test(c.text)))
   check('sources: the privacy retention table is indexed as prose', has((c) => c.url === 'https://gullylabs.xyz/legal/privacy#s11' && /Sign-in sessions: 30 days/.test(c.text)))
+  check('sources: the terms of service, by numbered section (#s5 is Information, not advice)', has((c) => c.source === 'Legal' && c.url === 'https://gullylabs.xyz/legal/terms#s5' && c.section === 'Information, not advice' && /not investment/.test(c.text)))
   check('sources: the merchant terms, by numbered section', has((c) => c.source === 'Legal' && /\/legal\/merchant-terms#s5$/.test(c.url) && c.section))
   check('sources: contracts/CHOICE.md and TESTNET-RESULTS.md at their GitHub section anchors', has((c) => c.source === 'Gully Pay contracts' && /contracts\/CHOICE\.md#[a-z0-9-]+$/.test(c.url)) && has((c) => /contracts\/TESTNET-RESULTS\.md#/.test(c.url)))
   check('sources: no 32-byte hex (keys, hashes) and no full addresses in the contract notes and roadmap', local.chunks.filter((c) => c.source === 'Gully Pay contracts' || c.source === 'Roadmap').every((c) => !/0x[0-9a-fA-F]{64}/.test(c.text) && !/0x[0-9a-fA-F]{40}/.test(c.text) && !/private[ _-]?key\s*[=:]/i.test(c.text)))

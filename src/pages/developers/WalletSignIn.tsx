@@ -1,5 +1,5 @@
 import '@rainbow-me/rainbowkit/styles.css'
-import { createAuthenticationAdapter, RainbowKitAuthenticationProvider, RainbowKitProvider, useConnectModal, type AuthenticationStatus } from '@rainbow-me/rainbowkit'
+import { createAuthenticationAdapter, RainbowKitAuthenticationProvider, RainbowKitProvider, useConnectModal, type AuthenticationStatus, type DisclaimerComponent } from '@rainbow-me/rainbowkit'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { createSiweMessage } from 'viem/siwe'
@@ -83,6 +83,13 @@ const adapter = createAuthenticationAdapter<string>({
   },
 })
 
+/** The line under the wallet list: connecting accepts the terms (src/pages/legal/Terms.tsx). */
+const Disclaimer: DisclaimerComponent = ({ Text, Link }) => (
+  <Text>
+    By connecting a wallet you agree to the <Link href="https://gullylabs.xyz/legal/terms">Terms of Service</Link> and the <Link href="https://gullylabs.xyz/legal/privacy">Privacy policy</Link>.
+  </Text>
+)
+
 /**
  * Opens the wallet modal each time `trigger` changes; after the wallet signs the SIWE message the
  * server sets the session cookie and `onSignedIn` runs. `onClose` runs if the modal is dismissed.
@@ -104,7 +111,7 @@ export default function WalletSignIn({ trigger, signedOut, onSignedIn, onClose, 
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitAuthenticationProvider adapter={adapter} status={status}>
-          <RainbowKitProvider theme={theme} modalSize="compact" appInfo={{ appName: 'Gully Labs App', learnMoreUrl: 'https://docs.gullylabs.xyz/api-keys' }}>
+          <RainbowKitProvider theme={theme} modalSize="compact" appInfo={{ appName: 'Gully Labs App', learnMoreUrl: 'https://docs.gullylabs.xyz/api-keys', disclaimer: Disclaimer }}>
             <Opener trigger={trigger} status={status} onClose={onClose} />
             <SignOutSync signedOut={signedOut} />
           </RainbowKitProvider>

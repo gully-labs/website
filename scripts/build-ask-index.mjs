@@ -3,7 +3,7 @@
 //     (Gully Pay, Gully Pay for merchants and the L3 roadmap page included);
 //   - the site's copy: src/content/*.ts and the Products, Pricing, Services and About pages, at https://gullylabs.xyz/...;
 //   - the changelog (a docs page, labelled "Changelog");
-//   - the legal pages (merchant terms, privacy policy), one chunk run per numbered section, at /legal/<page>#s<n>;
+//   - the legal pages (merchant terms, privacy policy, terms of service), one chunk run per numbered section, at /legal/<page>#s<n>;
 //   - the Gully Pay contract notes (contracts/CHOICE.md, contracts/TESTNET-RESULTS.md) and the L3 spec
 //     (ops/l3/SPEC.md, labelled "Roadmap"), capped in length, hashes and addresses shortened, at their GitHub
 //     section anchors in the public gully-labs/website repo;
@@ -401,6 +401,7 @@ const LEGAL_PAGES = [
   { file: 'src/pages/legal/MerchantTerms.tsx', url: '/legal/merchant-terms', title: 'Gully Pay merchant terms' },
   { file: 'src/pages/legal/Privacy.tsx', url: '/legal/privacy', title: 'Privacy policy', table: { name: 'RETENTION', section: 11 } },
   { file: 'src/pages/legal/ScanTerms.tsx', url: '/legal/scan-terms', title: 'AI Security Scan terms' },
+  { file: 'src/pages/legal/Terms.tsx', url: '/legal/terms', title: 'Terms of Service' },
 ]
 
 /** The legal pages: the header's prose, then each numbered <S n={k} title="…"> at #s<k>. */
