@@ -58,14 +58,14 @@ export function Footer() {
           <button
             type="button"
             onClick={() => (track('cta-click', { cta: 'start-project', from: 'footer' }), openContact())}
-            className="group inline-flex min-h-11 min-w-11 items-center gap-1 bg-transparent p-0 text-[13px] font-medium text-gold transition-colors hover:text-ink min-[700px]:min-h-8"
+            className="group inline-flex min-h-11 min-w-11 items-center gap-1 bg-transparent p-0 text-[13px] font-medium text-gold transition-colors hover:text-ink"
           >
             Start a project
             <ArrowUpRight aria-hidden size={14} strokeWidth={2} className="transition-transform group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
           </button>
-          <nav aria-label="Social" className="-ml-[10px] flex flex-wrap items-center">
+          <nav aria-label="Social" className="-ml-[14px] flex flex-wrap items-center">
             {socialLinks.map((s) => (
-              <a key={s.label} href={s.href} {...newTab} aria-label={s.name} title={s.name} className="grid size-11 place-items-center rounded-sm text-faint transition-colors hover:text-gold min-[700px]:size-9">
+              <a key={s.label} href={s.href} {...newTab} aria-label={s.name} title={s.name} className="grid size-11 place-items-center rounded-sm text-faint transition-colors hover:text-gold">
                 <SocialIcon name={s.label} size={16} />
               </a>
             ))}

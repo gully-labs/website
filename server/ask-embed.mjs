@@ -30,6 +30,11 @@ import { DATA_DIR } from './http.mjs'
 
 const FILE = () => path.join(process.env.DATA_DIR ?? DATA_DIR, 'ask-embeddings.json')
 const BATCH = 96
+// A 429 (a Voyage account without a payment method allows 3 requests and 10K tokens a minute) shrinks the batch
+// and waits (Retry-After, else 20 s doubling to 2 min), so a first sync still finishes, just slowly.
+const RATE_BATCHES = [96, 16, 4]
+const RATE_TRIES = 40
+const rateWaitMs = (retryAfter, n) => Number(process.env.ASK_EMBED_RETRY_MS) >= 0 && process.env.ASK_EMBED_RETRY_MS !== undefined ? Number(process.env.ASK_EMBED_RETRY_MS) : retryAfter > 0 ? retryAfter * 1000 : Math.min(20_000 * 2 ** n, 120_000)
 const QUERY_TIMEOUT_MS = 2_500
 const DOC_TIMEOUT_MS = 30_000
 const BACKOFF_MS = 60_000
@@ -110,7 +115,7 @@ async function embed(inputs, inputType, timeoutMs) {
     signal: AbortSignal.timeout(timeoutMs),
   })
   const j = await r.json().catch(() => null)
-  if (!r.ok || !Array.isArray(j?.data)) throw new Error(`embeddings HTTP ${r.status}`)
+  if (!r.ok || !Array.isArray(j?.data)) throw Object.assign(new Error(`embeddings HTTP ${r.status}`), { status: r.status, retryAfter: Number(r.headers.get('retry-after')) || 0 })
   const out = new Array(inputs.length).fill(null)
   for (const d of j.data) {
     if (Number.isInteger(d?.index) && Array.isArray(d.embedding) && d.embedding.length === embedDim()) out[d.index] = Float32Array.from(d.embedding)
@@ -155,14 +160,26 @@ export function syncEmbeddings(chunks) {
       const want = list.map((c) => ({ h: hashOf(embedText(c)), text: embedText(c) }))
       const todo = [...new Map(want.filter((w) => !s.vectors.has(w.h)).map((w) => [w.h, w])).values()]
       try {
-        for (let i = 0; i < todo.length; i += BATCH) {
-          const part = todo.slice(i, i + BATCH)
-          const vecs = await embed(
-            part.map((w) => w.text.slice(0, 8_000)),
-            'document',
-            DOC_TIMEOUT_MS,
-          )
-          part.forEach((w, j) => s.vectors.set(w.h, vecs[j]))
+        let size = 0
+        let limited = 0
+        for (let i = 0; i < todo.length; ) {
+          const part = todo.slice(i, i + RATE_BATCHES[size])
+          try {
+            const vecs = await embed(
+              part.map((w) => w.text.slice(0, 8_000)),
+              'document',
+              DOC_TIMEOUT_MS,
+            )
+            part.forEach((w, j) => s.vectors.set(w.h, vecs[j]))
+            i += part.length
+          } catch (e) {
+            if (e?.status !== 429 || ++limited > RATE_TRIES) throw e
+            if (limited === 1) console.error(`ask embeddings: rate-limited, embedding ${todo.length - i} chunks in smaller batches`)
+            size = Math.min(size + 1, RATE_BATCHES.length - 1)
+            // Keep what is done, so a restart mid-sync does not start over.
+            save(new Set(want.map((w) => w.h)))
+            await new Promise((r) => setTimeout(r, rateWaitMs(e.retryAfter, Math.min(limited - 1, 3))))
+          }
         }
         state.lastError = null
         state.lastErrorAt = 0

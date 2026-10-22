@@ -233,6 +233,22 @@ const summary = (over = {}) => ({ ...P.chainSummary(P.emptyChainState(chain), ch
 const llamaDex = { url: 'https://api.llama.fi/summary/dexs/peddles', totalAllTime: 6372.78, total7d: 1000, total24h: 10, points: [{ t: 1_790_000_000 - (1_790_000_000 % 86400) - 86400, v: 111 }] }
 const llamaFees = { url: 'https://api.llama.fi/summary/fees/peddles', totalAllTime: 427.72, total24h: 1 }
 
+test('the chain’s own log nodes go first, the app-wide GULLY_RPC list after them, without repeats', () => {
+  const bsc = P.CHAINS.find((c) => c.id === 56)
+  const was = process.env.GULLY_RPC_56
+  process.env.GULLY_RPC_56 = 'https://lb.drpc.org/x,https://bsc-rpc.publicnode.com'
+  try {
+    const urls = P.rpcUrls(bsc)
+    assert.equal(urls[0], bsc.rpcs[0])
+    assert.ok(urls.includes('https://lb.drpc.org/x'))
+    assert.ok(urls.indexOf('https://lb.drpc.org/x') > urls.indexOf(bsc.rpcs.at(-1)))
+    assert.equal(urls.length, new Set(urls).size)
+  } finally {
+    if (was === undefined) delete process.env.GULLY_RPC_56
+    else process.env.GULLY_RPC_56 = was
+  }
+})
+
 test('while the scan is incomplete, all-time figures and the daily history are DefiLlama’s, named as such', () => {
   const nowSec = 1_790_000_000
   const snap = snapOf([summary({ caughtUp: false, progress: 0.4, coveredUntil: null, volumeAllUsd: 50 })])

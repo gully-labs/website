@@ -32,15 +32,15 @@ export function AnnouncementBar() {
     }
   }
   return (
-    <div role="region" aria-label="Announcement" data-announcement className="flex min-h-9 items-center justify-center gap-1 border-b border-gold-line bg-[rgba(217,181,99,.08)] pr-1 pl-4 text-[13px] max-[599px]:min-h-11 max-[599px]:text-[12px]">
-      <Link to="/holders" className="flex min-h-9 min-w-0 flex-1 items-center justify-center gap-2 text-ink max-[599px]:min-h-11">
+    <div role="region" aria-label="Announcement" data-announcement className="flex min-h-11 items-center justify-center gap-1 border-b border-gold-line bg-[rgba(217,181,99,.08)] pr-1 pl-4 text-[13px] max-[599px]:text-[12px]">
+      <Link to="/holders" className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 text-ink">
         <span className="flex-none rounded-full bg-gold px-[7px] py-[1px] font-mono text-[11px] font-semibold tracking-[.5px] text-bg uppercase">New</span>
         <span className="truncate">
           Holder Map for any token<span className="max-[419px]:hidden"> on 5 chains</span>
         </span>
         <ArrowRight aria-hidden size={14} className="flex-none text-gold" />
       </Link>
-      <button type="button" onClick={dismiss} aria-label="Dismiss the announcement" className="grid size-9 flex-none place-items-center rounded-btn text-muted hover:text-ink max-[599px]:size-11">
+      <button type="button" onClick={dismiss} aria-label="Dismiss the announcement" className="grid size-11 flex-none place-items-center rounded-btn text-muted hover:text-ink">
         <X aria-hidden size={14} />
       </button>
     </div>

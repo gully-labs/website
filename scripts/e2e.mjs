@@ -114,16 +114,17 @@ async function bubbleLook(page, map, label, { kindRe = /^(pool|wallet|contract|l
   check(`${label}: the supply strip renders as an animated stacked bar (${widths.length} segments)`, widths.length >= 2 && widths.filter((w) => w > 2).length >= 2, JSON.stringify(widths))
   check(`${label}: the biggest-holders list shows logos and kinds`, (await strip.locator('[data-holder-leaders] li').count()) >= 5 && (await strip.locator('[data-holder-leaders] li').first().textContent()).length > 5)
   await chart.scrollIntoViewIfNeeded()
-  await page.evaluate(() => {
-    window.__long = []
-    new PerformanceObserver((l) => l.getEntries().forEach((e) => window.__long.push(Math.round(e.duration)))).observe({ entryTypes: ['longtask'] })
-  })
-  const a = await page.evaluate(() => document.querySelector('[data-bubble-canvas] canvas').toDataURL().length + ':' + document.querySelector('[data-bubble-canvas] canvas').toDataURL().slice(-400))
+  const a = await page.evaluate(() => document.querySelector('[data-bubble-canvas] canvas').toDataURL())
   await page.waitForTimeout(2000)
-  const b = await page.evaluate(() => document.querySelector('[data-bubble-canvas] canvas').toDataURL().length + ':' + document.querySelector('[data-bubble-canvas] canvas').toDataURL().slice(-400))
+  const b = await page.evaluate(() => document.querySelector('[data-bubble-canvas] canvas').toDataURL())
   check(`${label}: the map animates (pixels change over 2 s)`, a !== b)
   if (quiet) {
-    await page.waitForTimeout(1500)
+    // Observed only after the pixel reads: a full-canvas toDataURL is itself a 50+ ms task on a busy machine.
+    await page.evaluate(() => {
+      window.__long = []
+      new PerformanceObserver((l) => l.getEntries().forEach((e) => window.__long.push(Math.round(e.duration)))).observe({ entryTypes: ['longtask'] })
+    })
+    await page.waitForTimeout(2500)
     const long = await page.evaluate(() => window.__long)
     check(`${label}: no long task over 50 ms while idle (${long.length} seen, frame ${await chart.getAttribute('data-frame-ms')} ms)`, long.every((d) => d <= 50) && Number(await chart.getAttribute('data-frame-ms')) < 16, JSON.stringify(long))
   }
@@ -1010,6 +1011,8 @@ await step('app services', async () => {
   for (const width of [1440, 1280, 1024]) {
     await sp.setViewportSize({ width, height: 840 })
     await sp.waitForTimeout(400)
+    // The KPI cards rise in with a staggered animation (up to 0.65 s); measure their rows once it has played.
+    await sp.evaluate(() => Promise.all([...document.querySelectorAll('[data-kpi]')].flatMap((el) => el.getAnimations()).map((a) => a.finished)))
     const k = await perRow('[data-kpi]')
     const b = await perRow('[data-testid="mk-grid"] > section')
     check(`overview at ${width}: KPI cards with no orphan`, k.length > 0 && k.every((n) => n === k[0]), JSON.stringify(k))
@@ -3297,7 +3300,7 @@ await step('no Cartel Family anywhere', async () => {
   // The removed project's URL answers 404 from the server, then the page sends the visitor home: expected.
   w.expect(/\/projects\/cartel-family$/)
   await page.goto(BASE + '/projects/cartel-family')
-  await page.waitForTimeout(400)
+  await page.waitForURL((u) => u.pathname === '/', { timeout: 10_000 }).catch(() => {})
   check('/projects/cartel-family no longer renders a project page', new URL(page.url()).pathname === '/' && !/cartel/i.test(await page.locator('body').innerText()), page.url())
   for (const file of ['/llms.txt', '/.well-known/contracts.json', '/sitemap.xml', '/api/stats']) {
     const r = await fetch(BASE + file)
@@ -3671,6 +3674,14 @@ await step('holder map discovery', async () => {
     check(`header ${width}: nothing in the header wraps`, heights.every((h) => h <= 44), heights.join(','))
     const hb = await page.locator('header').evaluate((h) => Math.round(h.getBoundingClientRect().height))
     check(`header ${width}: the header stays one row (${hb} px)`, hb <= 66, String(hb))
+    const small = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-announcement] button, footer nav[aria-label="Social"] a, footer button')]
+        .filter((el) => el.tagName === 'A' || el.closest('[data-announcement]') || el.textContent.trim() === 'Start a project')
+        .map((el) => el.getBoundingClientRect())
+        .filter((r) => r.width > 0 && (r.height < 43.5 || r.width < 43.5))
+        .map((r) => `${Math.round(r.width)}x${Math.round(r.height)}`),
+    )
+    check(`home ${width}: announcement dismiss, footer socials and footer "Start a project" are 44 px taps (D5-7)`, small.length === 0, small.join(','))
     await noHorizontalScroll(page, `home header ${width}`)
     if (width === 1440) await hdShot(page, 'home-1440.png', { fullPage: false })
     if (width === 1440) await hdShot(page, 'header-1440.png', { clip: { x: 0, y: 0, width: 1440, height: 130 } })

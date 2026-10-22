@@ -49,12 +49,18 @@ function fakeVec(text) {
 }
 const embedCalls = [] // { inputType, n, auth }
 let embedDown = false
+let embedLimited = 0 // the next N document calls of more than 16 inputs answer 429
 const embedStub = http.createServer((req, res) => {
   let raw = ''
   req.on('data', (c) => (raw += c))
   req.on('end', () => {
     const body = raw ? JSON.parse(raw) : {}
     embedCalls.push({ inputType: body.input_type, n: body.input?.length ?? 0, auth: req.headers.authorization, dim: body.output_dimension, model: body.model })
+    if (embedLimited > 0 && body.input_type === 'document' && body.input.length > 16) {
+      embedLimited--
+      res.writeHead(429, { 'content-type': 'application/json', 'retry-after': '1' })
+      return res.end('{"detail":"rate limited"}')
+    }
     res.writeHead(embedDown ? 500 : 200, { 'content-type': 'application/json' })
     res.end(embedDown ? '{"detail":"down"}' : JSON.stringify({ object: 'list', data: body.input.map((x, index) => ({ object: 'embedding', embedding: fakeVec(x), index })), model: body.model, usage: { total_tokens: 1 } }))
   })
@@ -516,6 +522,17 @@ try {
   const d2 = await ask.retrieve('another question entirely')
   check('embeddings down: falls back to BM25 cleanly, then leaves the API alone for a minute', d1.mode === 'bm25' && d2.mode === 'bm25' && embedCalls.length === callsAfterFail && embed.embedStatus().lastError?.includes('500'), JSON.stringify(embed.embedStatus()))
   embedDown = false
+  // A free Voyage account: big batches answer 429; the sync drops to small batches, waits and still finishes.
+  process.env.ASK_EMBED_RETRY_MS = '0'
+  embedLimited = 1
+  embed.resetEmbeddingsForTest()
+  fs.rmSync(path.join(tmp, 'ask-embeddings.json'), { force: true })
+  const rl0 = embedCalls.length
+  const rl = await ask.syncEmbeddingsNow()
+  const rlCalls = embedCalls.slice(rl0)
+  check('embeddings rate-limited (429): the sync shrinks its batches, retries and still embeds every chunk', rl.ready === rl.total && rl.total > 150 && rl.lastError === null && rlCalls[0].n === 96 && rlCalls.some((c) => c.n <= 16) && embedLimited === 0, JSON.stringify({ rl, sizes: rlCalls.slice(0, 4).map((c) => c.n) }))
+  delete process.env.ASK_EMBED_RETRY_MS
+  embedLimited = 0
   // The key "appears" on a running server: a question (or the 10-minute check) starts the sync by itself,
   // at most once a minute, and hybrid comes on once the vectors are there. No index rebuild.
   embed.resetEmbeddingsForTest()

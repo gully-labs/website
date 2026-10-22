@@ -89,7 +89,8 @@ const robinhoodStocks = loadTable('robinhood-stocks.json').stocks
 const bscStocks = loadTable('bsc-stocks.json').stocks
 
 /* One entry per chain. `contracts` is every contract Peddles' docs list for that chain (verified at runtime);
-   `reads` are the ones whose events are read. `rpcs` are public defaults, replaced by GULLY_RPC_<chainId>. */
+   `reads` are the ones whose events are read. `rpcs` are the public nodes checked to serve this chain's old log
+   ranges; GULLY_RPC_<chainId> (the app-wide list, paid dRPC first) is appended after them as a fallback. */
 export const CHAINS = [
   {
     id: 8453,
@@ -250,7 +251,9 @@ const urlSpan = new Map()
 
 export function rpcUrls(chain) {
   const env = String(process.env[`GULLY_RPC_${chain.id}`] ?? '').split(',').map((s) => s.trim()).filter(Boolean)
-  const all = env.length ? env : chain.rpcs
+  // The backfill is thousands of eth_getLogs: the nodes picked for it go first, so it neither spends the paid dRPC
+  // balance nor depends on it (an app-wide list without them, BNB Chain's, left the scan with no node serving logs).
+  const all = [...new Set([...chain.rpcs, ...env])]
   const now = Date.now()
   return [...all.filter((u) => (cooling.get(u)?.until ?? 0) <= now), ...all.filter((u) => (cooling.get(u)?.until ?? 0) > now).sort((a, b) => cooling.get(a).until - cooling.get(b).until)]
 }
@@ -275,7 +278,7 @@ async function post(url, method, params, ms = 15_000) {
     /* not JSON */
   }
   const msg = j?.error ? String(j.error.message ?? 'RPC error') : !res.ok ? `HTTP ${res.status}` : !j ? 'not a JSON-RPC answer' : null
-  if (msg) throw Object.assign(new Error(msg), { nodeFault: !res.ok || /rate|too many|quota|api ?key|unauthori[sz]ed|forbidden|capacity|upgrade/i.test(msg), rangeFault: RANGE_ERR.test(msg) })
+  if (msg) throw Object.assign(new Error(msg), { nodeFault: !res.ok || /rate|too many|quota|balance|api ?key|unauthori[sz]ed|forbidden|capacity|upgrade|busy/i.test(msg), rangeFault: RANGE_ERR.test(msg) })
   return j.result
 }
 
