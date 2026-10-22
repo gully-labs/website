@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-21T23:48:05.022Z",
+ "updatedAt": "2026-10-22T00:47:24.677Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -476,8 +476,8 @@
    "title": "SDK",
    "url": "https://docs.gullylabs.xyz/sdk",
    "section": null,
-   "text": "Two small MIT packages: a typed client for the tracker API, and the widget with a loader and a React component. Both are optional; the API and the widget work without them. The Gully Labs SDK: a typed TypeScript client for the stock token tracker API, and the embeddable widget with a React component.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "Three small MIT packages: a typed client for the tracker API, the widget with a loader and a React component, and a Holder Map client with its own component. All are optional; the API and the widget work without them. The Gully Labs SDK: a typed TypeScript client for the stock token tracker API, and the embeddable widget with a React component.",
+   "updatedAt": "2026-10-22T00:47:24.677Z"
   },
   {
    "id": "5d034a178334",
@@ -485,8 +485,8 @@
    "title": "SDK",
    "url": "https://docs.gullylabs.xyz/sdk#packages",
    "section": "Packages",
-   "text": "The public API now has its own host, api.gullylabs.xyz (same /api/… paths). The packages still default to https://gullylabs.xyz, which keeps serving the API without redirects, so nothing needs to change. Calls made without the packages can use the new host today, and the widget script now loads from embed.gullylabs.xyz (the old script address still works). @gullylabs/tracker: a typed client with no dependencies. Runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget: loads widget.js once and mounts widgets, with @gullylabs/widget/react for React. Source: github.com/gully-labs/sdk.",
-   "updatedAt": "2026-10-21T01:30:05.761Z"
+   "text": "The public API now has its own host, api.gullylabs.xyz (same /api/… paths). The packages still default to https://gullylabs.xyz, which keeps serving the API without redirects, so nothing needs to change. Calls made without the packages can use the new host today, and the widget script now loads from embed.gullylabs.xyz (the old script address still works). @gullylabs/tracker: a typed client with no dependencies. Runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget: loads widget.js once and mounts widgets, with @gullylabs/widget/react for React. @gullylabs/holders: a typed Holder Map client and a React component that frames the map. See Integrate the Holder Map. Source: github.com/gully-labs/sdk.",
+   "updatedAt": "2026-10-22T00:47:24.677Z"
   },
   {
    "id": "4392c5b4a649",
@@ -971,8 +971,8 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#sdk",
    "section": "The SDK",
-   "text": "A typed client and a React component are coming in @gullylabs/holders: createHoldersClient() with getMap() and cardUrl(), and a <HolderMap chain token height /> component that frames the embed above. It is not published yet; until then use the embed or the API directly. The tracker client and widget are in the SDK today.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "npm install @gullylabs/holders gives you a typed client and a React component: createHoldersClient() with getMap() and cardUrl(), and a <HolderMap chain token height /> component that frames the embed above. The tracker client and widget are in the same SDK.",
+   "updatedAt": "2026-10-22T00:47:24.677Z"
   },
   {
    "id": "d3386bc1a4a6",
