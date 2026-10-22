@@ -42,6 +42,23 @@ export interface VenueOk {
   counts: Record<string, number | null | undefined>
   notes: string[]
   source: { url: string; readAt: string }
+  /** Where the daily series and figures come from, one line, for the venue chip's hover ("on chain · Base, …"). */
+  sourceNote?: string
+  /** A venue with no trading at all (PeddleQuest): no bars, and the legend says why. */
+  noVolume?: boolean
+  volume7dUsd?: number | null
+  /** Venues read straight from their contracts (server/peddles.mjs). `live` once every chain is scanned to head. */
+  onchain?: OnchainSummary
+}
+
+export interface OnchainSummary {
+  live: boolean
+  /** Share of the history scanned, 0 to 1, averaged over the chains. */
+  progress: number
+  label: string
+  readAt: string
+  divergence?: string | null
+  chains: { chainId: number; name: string; caughtUp: boolean; progress: number }[]
 }
 
 export interface VenueError {

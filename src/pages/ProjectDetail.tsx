@@ -10,6 +10,7 @@ import { ChainLogo } from '../components/logos/ChainLogo'
 import { chainMark } from '../components/logos/registry'
 import { fmtTime, fmtUsd, metricsOf, sourceHost } from '../lib/stats'
 import { LaunchHolders } from '../components/holders/LaunchHolders'
+import { OnchainPanel } from '../components/OnchainPanel'
 
 const cardTitle = 'm-0 font-display text-[28px] font-bold uppercase'
 
@@ -125,7 +126,7 @@ export function ProjectDetail() {
           <div className="flex flex-col gap-1">
             <h2 className={cardTitle}>Volume</h2>
             <span className="font-mono text-[12px] text-faint">
-              {series.length > 1 ? `Daily, last ${series.length} days · read from ${sourceHost(venue!.state === 'ok' ? venue!.source.url : '')}` : 'Daily'}
+              {series.length > 1 ? `Daily, last ${series.length} days · ${venue?.state === 'ok' && venue.sourceNote ? venue.sourceNote : `read from ${sourceHost(venue?.state === 'ok' ? venue.source.url : '')}`}` : 'Daily'}
             </span>
           </div>
           <div className="min-h-[220px]">
@@ -154,6 +155,8 @@ export function ProjectDetail() {
           </ul>
         </div>
       </div>
+
+      {(p.key === 'peddles' || p.key === 'peddlequest') && <OnchainPanel venue={p.key} accent={p.accent} />}
 
       {p.key === 'deepcore' && (
         <section aria-labelledby="dc-holders" className="flex flex-col gap-4 rounded-card border border-line bg-surface p-7">

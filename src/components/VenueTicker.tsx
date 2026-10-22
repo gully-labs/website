@@ -57,7 +57,7 @@ export function VenueTicker({ data, state }: { data: Stats | null; state: 'loadi
               {series.length > 1 ? (
                 <MiniSpark data={series} label={`${p.name} daily volume`} color={p.accent} delay={0.2 + i * 0.9} height={28} loop interactive={false} />
               ) : (
-                <span className="block pt-2 text-right font-mono text-[11px] text-faint">{state === 'ok' ? 'no series' : ''}</span>
+                <span className="block pt-2 text-right font-mono text-[11px] text-faint">{state === 'ok' && ok ? (ok.noVolume ? 'no volume' : 'no daily figures yet') : ''}</span>
               )}
             </span>
             <span className="text-right">

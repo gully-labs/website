@@ -5,6 +5,7 @@ import http from 'node:http'
 import { handleIndexNowKey } from './indexnow.mjs'
 import { readStats } from './stats.mjs'
 import { startStatsWatchdog } from './stats-watchdog.mjs'
+import { handlePeddlesOnchain, startPeddlesLoop } from './peddles.mjs'
 import { onSnapshot, readGapIndex, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts, startHolderAlerts } from './alerts.mjs'
@@ -437,6 +438,13 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(publicPlans()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
   }
+  if (url.pathname === '/api/peddles/onchain') {
+    if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+    return handlePeddlesOnchain().then(
+      (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=20' }),
+      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json' }),
+    )
+  }
   if (url.pathname === '/api/stats') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readStats().then(
@@ -527,6 +535,8 @@ function startLoops() {
   loopsStarted = true
   // TRACKER_LOOP=off (tests) skips the five-minute upstream reads; the API still answers on demand.
   if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
+  // Peddles and PeddleQuest read on chain: backfill once, then every 30 s (peddles.mjs). PEDDLES_LOOP=off skips it.
+  startPeddlesLoop()
   startDeepcore()
   // Holder Map alerts: each watched token's map is re-read every ten minutes (alerts.mjs).
   startHolderAlerts()

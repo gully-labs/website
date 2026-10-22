@@ -41,6 +41,16 @@ const savePicked = (m: Metric) => {
   }
 }
 
+/** A venue read straight from its contracts: a small green dot that pulses, with its meaning for screen readers. */
+function LivePulse() {
+  return (
+    <>
+      <span aria-hidden className="size-[6px] flex-none rounded-full bg-green" style={{ animation: 'gl-pulse-ring 1.8s infinite' }} />
+      <span className="sr-only">, read live on chain</span>
+    </>
+  )
+}
+
 export function LedgerChart({ data, state }: { data: Stats | null; state: State }) {
   const [hidden, setHidden] = useState<Record<string, boolean>>({})
   const [pickedMetric, setPickedMetric] = useState<Metric | null>(readPicked)
@@ -55,6 +65,13 @@ export function LedgerChart({ data, state }: { data: Stats | null; state: State 
   }, [])
 
   const ok = okOnly(data)
+  // Swaps read on chain since the previous read (polled every minute): shown on the LIVE marker while today's mark
+  // grows to take them in. Kept from the previous render (React's "state from the previous render" pattern).
+  const swapsNow = ok.reduce((a, v) => a + (v.onchain?.live ? (v.counts.swaps ?? 0) : 0), 0)
+  const [seen, setSeen] = useState<{ gen: string | null; swaps: number; fresh: number }>({ gen: null, swaps: 0, fresh: 0 })
+  const gen = data?.generatedAt ?? null
+  if (gen !== seen.gen && swapsNow) setSeen({ gen, swaps: swapsNow, fresh: seen.gen && swapsNow > seen.swaps ? swapsNow - seen.swaps : 0 })
+  const fresh = seen.fresh
   const range: Range = pickedRange ?? 7
   const auto = autoMetric(ok, range)
   const metric: Metric = pickedMetric ?? auto
@@ -76,7 +93,7 @@ export function LedgerChart({ data, state }: { data: Stats | null; state: State 
   const flows = metric !== 'tvl'
   const totalWord = flows ? 'day total' : 'total locked'
 
-  const key = `${metric}|${D}|${days[0]}|${shown.map((p) => p.key).join()}|${JSON.stringify(grid)}|${isToday}|${reduced}|${armed}`
+  const key = `${metric}|${D}|${days[0]}|${shown.map((p) => p.key).join()}|${JSON.stringify(grid)}|${isToday}|${reduced}|${armed}|${fresh}`
   const option = useMemo(
     () => ({
       animationDuration: 650,
@@ -143,7 +160,7 @@ export function LedgerChart({ data, state }: { data: Stats | null; state: State 
           color: C.green,
           rippleEffect: { brushType: 'stroke', scale: 3.2, period: 2.2 },
           animationDelay: shown.length * 160 + 300,
-          label: { show: true, position: 'top', distance: 8, formatter: isToday ? 'LIVE' : 'LATEST', color: C.green, fontFamily: MONO, fontSize: 11, fontWeight: 600 },
+          label: { show: true, position: 'top', distance: 8, formatter: isToday ? (fresh ? `LIVE · +${fresh} swap${fresh === 1 ? '' : 's'}` : 'LIVE') : 'LATEST', color: C.green, fontFamily: MONO, fontSize: 11, fontWeight: 600 },
           data: D && armed ? [[D - 1, totals[D - 1]]] : [],
         },
       ],
@@ -260,6 +277,7 @@ export function LedgerChart({ data, state }: { data: Stats | null; state: State 
               aria-pressed={on}
               disabled={state !== 'ok'}
               onClick={() => setHidden((h) => ({ ...h, [p.key]: !h[p.key] }))}
+              title={v?.sourceNote ? `${p.name}: ${v.sourceNote}` : undefined}
               className="group inline-flex min-h-11 items-center bg-transparent p-0 text-[12px] disabled:cursor-default"
             >
               {/* The button is 44 px tall for touch; the pill inside is the visible chip. */}
@@ -268,6 +286,7 @@ export function LedgerChart({ data, state }: { data: Stats | null; state: State 
                   <VenueLogo venue={p.key} name={p.name} size={16} decorative />
                 </span>
                 {p.name}
+                {v?.onchain?.live && <LivePulse />}
               </span>
             </button>
           )

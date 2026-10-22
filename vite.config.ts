@@ -3,6 +3,7 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { readStats } from './server/stats.mjs'
+import { handlePeddlesOnchain } from './server/peddles.mjs'
 import { readGapIndex, readHistory, readMovers, readTracker } from './server/tracker.mjs'
 import { handleGas } from './server/gas.mjs'
 import { shapeMovers } from './server/movers.mjs'
@@ -148,6 +149,11 @@ function serverModules(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://localhost')
+        if (url.pathname === '/api/peddles/onchain') {
+          res.setHeader('Content-Type', 'application/json')
+          handlePeddlesOnchain().then((b: unknown) => res.end(JSON.stringify(b)), next)
+          return
+        }
         if (url.pathname === '/api/plans') {
           res.setHeader('Content-Type', 'application/json')
           return res.end(JSON.stringify(publicPlans()))
