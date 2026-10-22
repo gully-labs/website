@@ -342,7 +342,7 @@ function onchainOf(snap) {
   const chains = snap.chains.map(({ daily: _daily, ...c }) => c)
   const live = snap.chains.every((c) => c.started && c.caughtUp)
   const progress = snap.chains.reduce((a, c) => a + c.progress, 0) / snap.chains.length
-  return { live, progress, chains, readAt: snap.at, label: `on chain · ${chainList(snap.chains)}` }
+  return { live, progress, chains, readAt: snap.at, label: `on chain Â· ${chainList(snap.chains)}` }
 }
 
 async function peddles() {
@@ -521,7 +521,7 @@ async function peddlequest() {
     noVolume: true,
     counts: { quests: oc.live ? sum('quests') : null, questRewardsUsd: oc.live ? sum('questRewardsUsd') : null },
     onchain: { ...oc, divergence: divergenceNote, llamaFeesAllUsd: fees.totalAllTime },
-    sourceNote: oc.live ? `value locked from DefiLlama · quests and fees ${oc.label}` : 'value locked and fees from DefiLlama',
+    sourceNote: oc.live ? `value locked from DefiLlama Â· quests and fees ${oc.label}` : 'value locked and fees from DefiLlama',
     notes,
     source: { url: `${oc.live ? `on chain: ${chainList(snap.chains)} + ` : ''}${tvl.url} + ${fees.url}`, readAt: tvl.at ?? new Date().toISOString() },
   }

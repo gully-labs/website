@@ -230,7 +230,7 @@ test('a node that refuses the range makes the scan ask for smaller ranges', asyn
 
 const snapOf = (chains) => ({ at: new Date().toISOString(), chains, contracts: {} })
 const summary = (over = {}) => ({ ...P.chainSummary(P.emptyChainState(chain), chain, 0), started: true, caughtUp: true, progress: 1, coveredUntil: new Date().toISOString(), ...over })
-const llamaDex = { url: 'https://api.llama.fi/summary/dexs/peddles', totalAllTime: 6372.78, total7d: 1000, total24h: 10, daily: [{ t: 1_790_000_000 - (1_790_000_000 % 86400) - 86400, v: 111 }] }
+const llamaDex = { url: 'https://api.llama.fi/summary/dexs/peddles', totalAllTime: 6372.78, total7d: 1000, total24h: 10, points: [{ t: 1_790_000_000 - (1_790_000_000 % 86400) - 86400, v: 111 }] }
 const llamaFees = { url: 'https://api.llama.fi/summary/fees/peddles', totalAllTime: 427.72, total24h: 1 }
 
 test('while the scan is incomplete, all-time figures and the daily history are DefiLlama’s, named as such', () => {

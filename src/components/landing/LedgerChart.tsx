@@ -160,7 +160,7 @@ export function LedgerChart({ data, state }: { data: Stats | null; state: State 
           color: C.green,
           rippleEffect: { brushType: 'stroke', scale: 3.2, period: 2.2 },
           animationDelay: shown.length * 160 + 300,
-          label: { show: true, position: 'top', distance: 8, formatter: isToday ? (fresh ? `LIVE · +${fresh} swap${fresh === 1 ? '' : 's'}` : 'LIVE') : 'LATEST', color: C.green, fontFamily: MONO, fontSize: 11, fontWeight: 600 },
+          label: { show: true, position: 'top', distance: 8, formatter: isToday ? (fresh ? `LIVE Â· +${fresh} swap${fresh === 1 ? '' : 's'}` : 'LIVE') : 'LATEST', color: C.green, fontFamily: MONO, fontSize: 11, fontWeight: 600 },
           data: D && armed ? [[D - 1, totals[D - 1]]] : [],
         },
       ],
