@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-21T02:58:24.977Z",
+ "updatedAt": "2026-10-21T23:48:05.022Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -3932,8 +3932,8 @@
    "title": "Gully SDK (gully-labs/sdk README)",
    "url": "https://github.com/gully-labs/sdk/blob/main/README.md#gully-labs-sdk",
    "section": "Gully Labs SDK",
-   "text": "Build on the Gully Labs stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price, refreshed every minute. Package — What it is @gullylabs/tracker — A typed client for the tracker API. No dependencies; runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget — The embeddable widget (ticker, badge, table) with a loader and a React component. @gullylabs/holders — A typed client for the Holder Map API (who holds a token, wallet clusters) and a React component that frames the map. Not published to npm yet.",
-   "updatedAt": "2026-10-19T21:53:13.391Z"
+   "text": "Build on the Gully Labs stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price, refreshed every minute. Package — What it is @gullylabs/tracker — A typed client for the tracker API. No dependencies; runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget — The embeddable widget (ticker, badge, table) with a loader and a React component. @gullylabs/holders — A typed client for the Holder Map API (who holds a token, wallet clusters) and a React component that frames the map.",
+   "updatedAt": "2026-10-21T23:48:05.022Z"
   },
   {
    "id": "657efa7a3f14",
