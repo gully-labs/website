@@ -83,8 +83,8 @@ function FindingItem({ f, open, onToggle }: { f: Finding; open: boolean; onToggl
       <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle} className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left">
         <SevBadge s={f.severity} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14px] font-medium text-ink print:whitespace-normal print:text-[#000]">{f.title}</span>
-          <span className="block truncate font-mono text-[11px] text-faint">
+          <span className="block text-[14px] font-medium text-ink max-[640px]:break-words min-[641px]:truncate print:whitespace-normal print:text-[#000]">{f.title}</span>
+          <span className="block font-mono text-[11px] text-faint max-[640px]:break-words min-[641px]:truncate">
             {f.id} · {locationText(f.locations[0])} · {f.confidence} confidence · {f.triage}
           </span>
         </span>
@@ -167,12 +167,12 @@ export function FindingsList({ findings, sev, setSev }: { findings: Finding[]; s
         <label className="relative min-w-[180px] flex-[1_1_200px]">
           <span className="sr-only">Search findings</span>
           <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-faint" aria-hidden />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title, text or file" className="h-10 w-full rounded-input border border-line-strong bg-bg pr-3 pl-8 text-[13px] text-ink outline-none focus:border-gold" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title, text or file" className="h-11 w-full rounded-input border border-line-strong bg-bg pr-3 pl-8 text-[13px] text-ink outline-none focus:border-gold" />
         </label>
         {categories.length > 1 && (
           <label className="flex items-center gap-2 text-[12px] text-dim">
             Category
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-10 rounded-input border border-line-strong bg-bg px-2 text-[13px] text-ink outline-none focus:border-gold">
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-11 rounded-input border border-line-strong bg-bg px-2 text-[13px] text-ink outline-none focus:border-gold">
               <option value="all">all</option>
               {categories.map((s) => (
                 <option key={s} value={s}>
@@ -182,7 +182,7 @@ export function FindingsList({ findings, sev, setSev }: { findings: Finding[]; s
             </select>
           </label>
         )}
-        <button type="button" onClick={() => setOpen(allOpen ? {} : Object.fromEntries(shown.map((f) => [f.id, true])))} className="inline-flex min-h-10 items-center rounded-full px-3 font-mono text-[12px] text-muted hover:text-ink">
+        <button type="button" onClick={() => setOpen(allOpen ? {} : Object.fromEntries(shown.map((f) => [f.id, true])))} className="inline-flex min-h-11 items-center rounded-full px-3 font-mono text-[12px] text-muted hover:text-ink">
           {allOpen ? 'Collapse all' : 'Expand all'}
         </button>
       </div>
@@ -228,7 +228,7 @@ export function ReportBody({ report }: { report: Report }) {
           </dl>
           {report.scope && (
             <details className="text-[12px] text-muted">
-              <summary className="cursor-pointer">
+              <summary className="flex min-h-11 cursor-pointer items-center">
                 {report.scope.inScopeFiles} file{report.scope.inScopeFiles === 1 ? '' : 's'} in scope · {report.scope.totalNsloc} nSLOC
               </summary>
               <ul className="m-0 mt-2 flex list-none flex-col gap-[2px] p-0 font-mono text-[11px]">

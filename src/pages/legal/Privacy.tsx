@@ -1,3 +1,4 @@
+import { Ban, Clock, Cookie, Eye, KeyRound, UserCheck, type LucideIcon } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Seo } from '../../components/Seo'
@@ -118,6 +119,36 @@ function RetentionChart() {
   )
 }
 
+/** The policy at a glance: six facts a reader should leave with, each restated in its section (same look as the terms). */
+const GLANCE: { icon: LucideIcon; t: string; d: string; s: number }[] = [
+  { icon: Ban, t: 'Not sold, no ads', d: 'We do not sell your data or use it for advertising.', s: 1 },
+  { icon: KeyRound, t: 'Wallet sign-in', d: 'No password or email is needed to sign in.', s: 2 },
+  { icon: Eye, t: 'Who else sees it', d: 'The outside services involved are listed.', s: 10 },
+  { icon: Clock, t: 'Fixed retention', d: 'A table and chart show how long each kind is kept.', s: 11 },
+  { icon: Cookie, t: 'Browser storage', d: 'What your browser keeps is listed.', s: 9 },
+  { icon: UserCheck, t: 'Your choices', d: 'Ask us and we delete what the law lets us.', s: 13 },
+]
+
+function Glance() {
+  return (
+    <ul aria-label="The privacy policy at a glance" data-testid="privacy-glance" className="m-0 grid list-none grid-cols-3 gap-2 p-0 max-[900px]:grid-cols-2 max-[480px]:grid-cols-1">
+      {GLANCE.map(({ icon: Icon, t, d, s }, i) => (
+        <li key={t} style={{ animation: `gl-rise .5s ${(0.1 + i * 0.06).toFixed(2)}s cubic-bezier(.2,.8,.2,1) both` }}>
+          <a href={`#s${s}`} className="flex h-full min-h-11 items-start gap-3 rounded-card border border-line bg-surface px-3 py-3 transition-colors hover:border-gold-line">
+            <span className="grid size-8 flex-none place-items-center rounded-[8px] border border-gold-line bg-[rgba(217,181,99,.06)] text-gold">
+              <Icon size={16} aria-hidden />
+            </span>
+            <span className="flex min-w-0 flex-col gap-[2px]">
+              <span className="text-[14px] leading-[1.3] font-semibold text-ink">{t}</span>
+              <span className="text-[13px] leading-[1.45] text-dim">{d}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function PrivacyPage() {
   return (
     <>
@@ -136,6 +167,7 @@ export function PrivacyPage() {
               </Link>
               .
             </P>
+            <Glance />
             <nav aria-label="Sections" className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[12px]">
               {SECTIONS.map((t, i) => (
                 <a key={t} href={`#s${i + 1}`} className="inline-flex min-h-11 items-center text-dim hover:text-gold">

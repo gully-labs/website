@@ -201,7 +201,7 @@ function Credits({ ov, scans }: { ov: SecurityOverview; scans: ScanView[] | null
         <b className={`${value} ${credits ? 'text-gold' : 'text-ink'}`} data-testid="credits-rerun">
           {credits}
         </b>
-        <ExtLink href={site('/legal/scan-terms#s5')} arrow={false} className="text-[12px] leading-none text-muted underline-offset-4 hover:text-gold hover:underline" title="Scans are not refunded: a paid scan that fails gives a re-run credit instead.">
+        <ExtLink href={site('/legal/scan-terms#s5')} arrow={false} className="relative text-[12px] leading-[1.25] text-muted underline-offset-4 before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:text-gold hover:underline" title="Scans are not refunded: a paid scan that fails gives a re-run credit instead.">
           {credits ? 'used before any price' : 'failed paid scan earns one'}
         </ExtLink>
       </div>
