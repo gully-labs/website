@@ -15,7 +15,7 @@ import { Wordmark } from './brand'
 
 const colLabel = 'm-0 mb-1 font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase'
 const colLink = 'inline-flex min-h-11 min-w-11 items-center gap-[6px] bg-transparent p-0 text-left text-[13px] text-dim transition-colors hover:text-gold min-[700px]:min-h-8'
-const legalLink = 'inline-flex min-h-11 min-w-11 items-center hover:text-gold min-[700px]:min-h-8'
+const legalLink = 'inline-flex min-h-11 min-w-11 items-center hover:text-gold min-[700px]:min-h-8 min-[700px]:min-w-0'
 
 function Column({ id, label, items, wide, extra }: { id: string; label: string; items: NavEntry[]; wide?: boolean; extra?: ReactNode }) {
   return (

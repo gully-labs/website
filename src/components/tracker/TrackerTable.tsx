@@ -119,7 +119,7 @@ export function TrackerTable({ rows, selected, onSelect, now }: { rows: TrackerR
       </div>
 
       {/* Desktop table */}
-      <div className="overflow-x-auto rounded-card border border-line bg-surface max-[859px]:hidden">
+      <div className="relative overflow-x-auto rounded-card border border-line bg-surface max-[859px]:hidden">
         <table className="w-full border-collapse text-[14px]">
           <thead className="bg-surface-deep">
             <tr className="border-b border-line">
