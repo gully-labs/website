@@ -59,3 +59,73 @@ export function hostPolicy(host, pathname) {
   if (isApiHost(host)) return pathname.startsWith('/api/') && !API_DENIED.test(pathname) ? 'allow' : 'deny'
   return 'allow'
 }
+
+/* HolderMaps (added 2026-10-24): the Holder Map on its own domain. Same bundle, same server; the host decides.
+   holdermaps.xyz            the Holder Map app at the root, with short paths:
+                               /                     the Holder Map home (the main site's /holders)
+                               /<chain>/<token>      one token's map      (/holders/<chain>/<token>)
+                               /deep/<id>            a Deep check report  (/holders/deep/<id>)
+                             plus the /api/* the pages call (same origin), static files and the head files
+                             (robots.txt, sitemap.xml, manifest). /holders/... there 301s to the short path;
+                             any other page 301s to the same path on gullylabs.xyz.
+   www.holdermaps.xyz        301 to holdermaps.xyz, path and query kept.
+   The main site keeps /holders/* working. HOLDERMAPS_PRIMARY=1 (set it once holdermaps.xyz resolves to this
+   server) makes holdermaps.xyz the Holder Map's home everywhere: gullylabs.xyz/holders* answers 301 there and the
+   links the server writes (alerts, Telegram, Gully AI, partners, share cards) name holdermaps.xyz. The API
+   (/api/holders/*), the embed (/embed/holders/*), widget.js and the badges stay where they are: the SDK and
+   integrators' snippets call those, and they never move. */
+export const HOLDERMAPS_HOST = 'holdermaps.xyz'
+export const HOLDERMAPS_URL = `https://${HOLDERMAPS_HOST}`
+export const HOLDER_CHAIN_KEYS = ['robinhood', 'bsc', 'base', 'hyperevm', 'solana']
+
+/** holdermaps.xyz and www.holdermaps.xyz. */
+export const isHolderMapsHost = (host) => /^(www\.)?holdermaps\.xyz$/.test(String(host ?? '').split(':')[0].toLowerCase())
+/** HOLDERMAPS_PRIMARY: holdermaps.xyz is the Holder Map's canonical home (read per call, so tests can flip it). */
+export const holderMapsPrimary = () => /^(1|true|on|yes)$/i.test(String(process.env.HOLDERMAPS_PRIMARY ?? ''))
+
+const HOLDER_TOKEN = '[A-Za-z0-9]{1,64}'
+const HOLDER_CHAINS_RE = HOLDER_CHAIN_KEYS.join('|')
+const INTERNAL_HOLDER = new RegExp(`^/holders(?:/deep/(hd_[A-Za-z0-9_-]{1,64})|/(${HOLDER_CHAINS_RE})/(${HOLDER_TOKEN}))?/?$`)
+const SHORT_HOLDER = new RegExp(`^(?:/|/deep/(hd_[A-Za-z0-9_-]{1,64})|/(${HOLDER_CHAINS_RE})/(${HOLDER_TOKEN}))/?$`)
+
+/** The holdermaps.xyz path for a main-site Holder Map path (/holders, /holders/<chain>/<token>, /holders/deep/<id>),
+    or null when the path is not a Holder Map page. */
+export function holderShortPath(pathname) {
+  const m = INTERNAL_HOLDER.exec(pathname)
+  if (!m) return null
+  return m[1] ? `/deep/${m[1]}` : m[2] ? `/${m[2]}/${m[3]}` : '/'
+}
+
+/** The main-site path for a holdermaps.xyz page path, or null when it is not one of its pages. */
+export function holderInternalPath(pathname) {
+  const m = SHORT_HOLDER.exec(pathname)
+  if (!m) return null
+  return m[1] ? `/holders/deep/${m[1]}` : m[2] ? `/holders/${m[2]}/${m[3]}` : '/holders'
+}
+
+/** The public address of a token's Holder Map, for links the server writes (holdermaps.xyz once it is primary). */
+export function holderPageUrl(chain, token) {
+  const c = encodeURIComponent(chain)
+  const t = encodeURIComponent(token)
+  return holderMapsPrimary() ? `${HOLDERMAPS_URL}/${c}/${t}` : `${MAIN_URL}/holders/${c}/${t}`
+}
+/** The Holder Map's home page, for links the server writes. */
+export const holderHomeUrl = () => (holderMapsPrimary() ? `${HOLDERMAPS_URL}/` : `${MAIN_URL}/holders`)
+
+/**
+ * Where a request on holdermaps.xyz goes: { kind: 'allow' }, { kind: 'deny' } (JSON 404) or
+ * { kind: 'redirect', location } (301). Static files and every /api/ path the main host serves (minus the
+ * session-only dashboard, admin and Telegram routes) answer here, so the pages call their API on the same origin.
+ */
+export function holderMapsRoute(host, pathname, search = '') {
+  const h = String(host ?? '').split(':')[0].toLowerCase()
+  if (h.startsWith('www.')) return { kind: 'redirect', location: `https://${h.slice(4)}${pathname}${search}` }
+  if (pathname === '/healthz' || pathname === '/robots.txt' || pathname === '/sitemap.xml') return { kind: 'allow' }
+  if (pathname.startsWith('/api/')) return API_DENIED.test(pathname) ? { kind: 'deny' } : { kind: 'allow' }
+  if (pathname.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(pathname)) return { kind: 'allow' }
+  if (holderInternalPath(pathname)) return { kind: 'allow' }
+  // The old long form on this host: the short path.
+  const short = holderShortPath(pathname)
+  if (short) return { kind: 'redirect', location: `${short}${search}` }
+  return { kind: 'redirect', location: `${MAIN_URL}${pathname}${search}` }
+}

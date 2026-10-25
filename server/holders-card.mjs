@@ -11,6 +11,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadFonts, loadResvg, SvgContext } from './og.mjs'
 import { encodeJpeg } from './holders-jpeg.mjs'
+import { holderMapsPrimary } from './hosts.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const W = 1200
@@ -261,7 +262,7 @@ export function renderHolderStatusCardSvg(body = {}) {
   ctx.fillStyle = K.dim
   ctx.fillText('Information only, not advice', X, 566)
   ctx.fillStyle = K.gold
-  ctx.fillText('gullylabs.xyz/holders', X, 592)
+  ctx.fillText(holderMapsPrimary() ? 'holdermaps.xyz' : 'gullylabs.xyz/holders', X, 592)
   return ctx.toSvg()
 }
 

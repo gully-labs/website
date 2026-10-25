@@ -4,6 +4,7 @@ import { DeepCheckCard } from '../components/holders/DeepCheck'
 import { BadgeBlock } from '../components/holders/BadgeBlock'
 import { HolderMap } from '../components/holders/HolderMap'
 import { useHolderMap } from '../lib/holders'
+import { holderHref } from '../site-host'
 
 /* /holders/:chain/:token: one token's Holder Map, full width and first on the screen, with a short guide to
    reading it below. The map itself (and every figure on it) comes from GET /api/holders (server/holders.mjs). */
@@ -33,7 +34,7 @@ export function HoldersPage() {
       {/* The map comes first: a one-line breadcrumb, then the map (its title is the page's h1; the
           explainer sits behind its (i) button). */}
       <nav aria-label="Breadcrumb" className="flex flex-wrap gap-x-4 font-mono text-[12px]">
-        <Link to="/holders" className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
+        <Link to={holderHref('/holders')} className="inline-flex min-h-11 items-center text-muted transition-colors hover:text-ink">
           ← HOLDER MAP
         </Link>
         {m?.state === 'ok' && (m.kind === 'token' || m.kind === 'launch') ? (

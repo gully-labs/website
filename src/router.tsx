@@ -6,12 +6,16 @@ import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, Chains
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
-import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isEmbedHost, isLocalHost, isPayHost } from './site-host'
+import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isEmbedHost, isHolderMapsHost, isLocalHost, isPayHost } from './site-host'
+import { installHolderMapsLinks } from './lib/holderMapsLinks'
+import { HolderMapsTokenPage, MainHolderPage, ToShortHolderPath } from './pages/HolderMapsRoutes'
 import { installDelegatedTracking } from './lib/track'
 import { HolderMapOpened } from './lib/routeEvents'
 
 // Gully Analytics events for pages whose own files do not send them (link clicks on /links; src/lib/track.ts).
 installDelegatedTracking()
+// holdermaps.xyz: links to the rest of Gully Labs leave for gullylabs.xyz directly (src/lib/holderMapsLinks.ts).
+installHolderMapsLinks()
 
 // Gully Pay's checkout pages (pay.gullylabs.xyz; also /pay on the main host in development).
 const payChildren = [
@@ -36,9 +40,9 @@ const mainRoutes = [
       { path: '/about', element: <AboutRoute /> },
       { path: '/tracker', element: <TrackerRoute /> },
       { path: '/tracker/:chain/:ticker', element: <StockRoute /> },
-      { path: '/holders', element: <HoldersLandingRoute /> },
-      { path: '/holders/deep/:id', element: <HoldersDeepRoute /> },
-      { path: '/holders/:chain/:token', element: <HolderMapOpened from="holders-page"><HoldersRoute /></HolderMapOpened> },
+      { path: '/holders', element: <MainHolderPage><HoldersLandingRoute /></MainHolderPage> },
+      { path: '/holders/deep/:id', element: <MainHolderPage><HoldersDeepRoute /></MainHolderPage> },
+      { path: '/holders/:chain/:token', element: <MainHolderPage><HolderMapOpened from="holders-page"><HoldersRoute /></HolderMapOpened></MainHolderPage> },
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
@@ -107,7 +111,23 @@ const appRoutes = [
 const payRoutes = [{ element: <CheckoutRoot />, children: payChildren }, { path: '*', element: <ToSite /> }]
 const embedRoutes = [{ path: '/embed/holders/:chain/:token', element: <HolderMapOpened from="embed"><EmbedHoldersRoute /></HolderMapOpened> }, { path: '*', element: <ToSite /> }]
 
-const routes = isPayHost() ? payRoutes : isEmbedHost() ? embedRoutes : isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isAppHost() ? appRoutes : mainRoutes
+// holdermaps.xyz (server/hosts.mjs): the Holder Map at the root with short paths, in the site's own layout. Its header
+// and footer link the rest of Gully Labs, which lives on gullylabs.xyz (ToSite, and src/lib/holderMapsLinks.ts).
+const holderMapsRoutes = [
+  {
+    element: <Layout />,
+    children: [
+      { path: '/', element: <HoldersLandingRoute /> },
+      { path: '/deep/:id', element: <HoldersDeepRoute /> },
+      { path: '/:chain/:token', element: <HolderMapsTokenPage /> },
+      { path: '/holders/*', element: <ToShortHolderPath /> },
+      { path: '/holders', element: <ToShortHolderPath /> },
+      { path: '*', element: <ToSite /> },
+    ],
+  },
+]
+
+const routes = isHolderMapsHost() ? holderMapsRoutes : isPayHost() ? payRoutes : isEmbedHost() ? embedRoutes : isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isAppHost() ? appRoutes : mainRoutes
 
 // One error boundary over every host's routes: a page left open across a deploy reloads onto the new
 // build instead of showing React Router's default error screen.

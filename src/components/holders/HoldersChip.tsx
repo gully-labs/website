@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { ScanSearch } from 'lucide-react'
 import { holdersPagePath } from '../../lib/holders'
+import { holderHref } from '../../site-host'
 
 /* A small "Holders" chip that opens a token's Holder Map (/holders/<chain>/<token>, or /holders
    when no token is named, as on a launchpad's card). Wherever a token appears
@@ -9,7 +10,7 @@ import { holdersPagePath } from '../../lib/holders'
 export function HoldersChip({ chain, token, symbol, iconOnly = false, className = '' }: { chain?: string; token?: string; symbol?: string | null; iconOnly?: boolean; className?: string }) {
   return (
     <Link
-      to={chain && token ? holdersPagePath(chain, token) : '/holders'}
+      to={holderHref(chain && token ? holdersPagePath(chain, token) : '/holders')}
       data-holders-chip
       aria-label={`Holder Map of ${symbol ?? 'this token'}`}
       title="Who holds it? Open the Holder Map"

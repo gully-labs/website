@@ -20,6 +20,7 @@ import { isSolanaAddress } from './solana.mjs'
 import { esc, SITE } from './telegram-ui.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
+import { holderHomeUrl, holderPageUrl } from './hosts.mjs'
 
 export const INLINE_WORK_PER_MIN = 12 // the Holder Map's PER_IP_PER_MIN
 export const INLINE_MAX_RESULTS = 5
@@ -53,7 +54,7 @@ export function buildTime() {
   return buildStamp
 }
 export const cardUrl = (chain, token) => `${SITE}/api/holders/${chain}/${encodeURIComponent(token)}/card.jpg?v=${buildTime()}`
-const mapUrl = (chain, token) => `${SITE}/holders/${chain}/${encodeURIComponent(token)}`
+const mapUrl = (chain, token) => holderPageUrl(chain, token)
 
 /* ------------------------------------------------------------ the query --- */
 
@@ -197,7 +198,7 @@ export async function onInlineQuery(iq, deps) {
   }
   const label = c.kind === 'ticker' ? `$${c.q.toUpperCase()}` : `${c.q.slice(0, 6)}…${c.q.slice(-4)}`
   if (!matches.length) {
-    await answer([missResult(label, `${SITE}/holders?q=${encodeURIComponent(c.q)}`, null, null, bot)], CACHE_MISS_S)
+    await answer([missResult(label, `${holderHomeUrl()}?q=${encodeURIComponent(c.q)}`, null, null, bot)], CACHE_MISS_S)
     return { kind: 'miss', work: worked }
   }
   const results = []

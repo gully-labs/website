@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router'
 import { Mascot } from '../components/brand'
 import { HolderMap } from '../components/holders/HolderMap'
 import { holdersPagePath } from '../lib/holders'
+import { holderAbsUrl } from '../site-host'
 
 /* /embed/holders/:chain/:token: the Holder Map for other sites (widget.js data-gully-widget="holders" frames
    it). No site chrome; trades and shares open gullylabs.xyz in a new tab. The credit shows unless the server
@@ -29,7 +30,7 @@ export function EmbedHolders() {
       live = false
     }
   }, [key, sp])
-  const page = `https://gullylabs.xyz${holdersPagePath(chain, token)}`
+  const page = holderAbsUrl(holdersPagePath(chain, token))
   const white = cfg?.whiteLabel === true
   const theme = white ? cfg?.theme : null
   const style = theme ? ({ ...(theme.accent ? { '--color-gold': theme.accent, '--color-gold-hover': theme.accent } : {}), colorScheme: theme.mode } as React.CSSProperties) : undefined

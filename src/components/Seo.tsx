@@ -1,5 +1,13 @@
 import { useEffect } from 'react'
 import { SITE_URL } from '../content/site'
+import { holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isHolderMapsHost } from '../site-host'
+
+/** A page's canonical address: holdermaps.xyz for the Holder Map's pages once it is their home, else this site. */
+function canonicalFor(path: string) {
+  if (isHolderMapsHost()) return `${HOLDERMAPS_URL}${path}`
+  const short = holderMapsPrimary() ? holderShortPath(path) : null
+  return short ? `${HOLDERMAPS_URL}${short}` : `${SITE_URL}${path}`
+}
 
 function setMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`)
@@ -20,8 +28,9 @@ export function Seo({ title, description, noindex = false, bare = false }: { tit
     return () => document.head.querySelector('meta[name="robots"]')?.remove()
   }, [noindex])
   useEffect(() => {
-    // `bare`: the title as given (the checkout is "Pay <store>", not a Gully Labs page).
-    const full = bare ? title : `${title} · Gully Labs`
+    // `bare`: the title as given (the checkout is "Pay <store>", not a Gully Labs page). On holdermaps.xyz every
+    // page is a HolderMaps page.
+    const full = bare ? title : isHolderMapsHost() ? `${title.replace(/ · Holder Map$/, '')} · HolderMaps` : `${title} · Gully Labs`
     document.title = full
     setMeta('name', 'description', description)
     setMeta('property', 'og:title', full)
@@ -39,7 +48,7 @@ export function Seo({ title, description, noindex = false, bare = false }: { tit
       document.head.querySelector('meta[property="og:url"]')?.remove()
       return
     }
-    const url = `${SITE_URL}${location.pathname.replace(/\/+$/, '') || '/'}`
+    const url = canonicalFor(location.pathname.replace(/\/+$/, '') || '/')
     if (!link) {
       link = document.createElement('link')
       link.rel = 'canonical'

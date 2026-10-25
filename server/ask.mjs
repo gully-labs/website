@@ -52,7 +52,7 @@ import { clientIp, DATA_DIR, json } from './http.mjs'
 import { capPerPage, cosine, expandQuery, makeIndex, rerank, rrf } from './ask-index.mjs'
 import { embedConfigured, embedQuery, embedStatus, syncEmbeddings, vectorFor } from './ask-embed.mjs'
 import { readRemote, remoteChunks, startRemoteLoop } from './ask-remote.mjs'
-import { APP_URL } from './hosts.mjs'
+import { APP_URL, holderPageUrl } from './hosts.mjs'
 import { CHAIN_LIST, CHAINS as PAY_CHAINS, confirmationsFor, FEE_PROXIES, publicAssets, publicChains } from './payments.mjs'
 import { planOf, publicPlans, SECURITY } from './plans.mjs'
 import { readStats } from './stats.mjs'
@@ -412,7 +412,7 @@ async function holders(input) {
     top10Pct: map.summary.top10Pct,
     top: map.nodes.slice(0, 10).map((n) => ({ address: n.id, label: n.label?.name ?? null, pct: n.pct })),
     ...facts,
-    page: `${SITE}/holders/${chain}/${encodeURIComponent(map.token.address)}`,
+    page: holderPageUrl(chain, map.token.address),
     framing: 'Information only, not investment advice. A large holder can be an exchange, a pool, a lock or a burn address; the Launch Health score describes checks on the holder data, it is not a rating of the token.',
   }
 }
@@ -870,7 +870,7 @@ const LIVE_SOURCES = {
   deepcore_pool: () => ({ label: 'DeepCore pool', url: 'https://api.deepcore.fun/v1/launches' }),
   get_alert_channels: () => ({ label: 'Alert channels', url: `${DOCS}/plans-alerts#telegram` }),
   get_pay_chains: () => ({ label: 'Gully Pay config', url: `${SITE}/api/plans` }),
-  get_holders: (r) => ({ label: `Holder Map · ${r.out.symbol ?? 'token'}`, url: r.out.page ?? `${SITE}/holders/${encodeURIComponent(r.out.chain)}/${encodeURIComponent(r.out.token)}` }),
+  get_holders: (r) => ({ label: `Holder Map · ${r.out.symbol ?? 'token'}`, url: r.out.page ?? holderPageUrl(r.out.chain, r.out.token) }),
   get_security_offer: () => ({ label: 'Gully Security offer', url: `${SITE}/security` }),
   get_gully_score: (r) => ({ label: `Gully Score · ${r.out.symbol ?? r.out.name ?? 'contract'}`, url: r.out.page ?? `${SITE}/score` }),
   get_published_reports: () => ({ label: 'Published scan reports', url: `${SITE}/api/security/reports` }),

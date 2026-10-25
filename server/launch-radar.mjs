@@ -22,6 +22,7 @@ import { channelHooks, validatePost } from './telegram-channel.mjs'
 import { peekHolderMap } from './holders.mjs'
 import { readLaunchFeed } from './holders-intel.mjs'
 import { esc, SITE } from './telegram-ui.mjs'
+import { holderHomeUrl, holderPageUrl } from './hosts.mjs'
 
 export const RADAR_MIN_ITEMS = 2
 const PER_LIST = 3
@@ -79,7 +80,7 @@ export function pickRadar(facts) {
 
 const pct = (n) => `${n.toFixed(n >= 10 ? 0 : 1).replace(/\.0$/, '')}%`
 const short = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`
-const name = (f) => `<a href="${SITE}/holders/${f.chainKey}/${encodeURIComponent(f.token)}">${f.symbol ? `$${esc(f.symbol)}` : short(f.token)}</a>`
+const name = (f) => `<a href="${holderPageUrl(f.chainKey, f.token)}">${f.symbol ? `$${esc(f.symbol)}` : short(f.token)}</a>`
 
 function cleanLine(f, n) {
   const bits = [`health ${f.score}/100`]
@@ -112,7 +113,7 @@ export async function buildRadar(t = channelHooks.now()) {
   const n = picks.clean.length + picks.concentrated.length
   if (n < RADAR_MIN_ITEMS) return { ok: false, skip: `Only ${facts.length} launches have a built map right now; the radar needs at least ${RADAR_MIN_ITEMS} to rank.` }
   const buttons = [
-    { text: 'Open Holder Map', url: `${SITE}/holders` },
+    { text: 'Open Holder Map', url: holderHomeUrl() },
     { text: 'Check any token in the bot', url: 'https://t.me/GullyLabsBot' },
   ]
   let text = radarText(picks, day)

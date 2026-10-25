@@ -47,9 +47,12 @@ import crypto from 'node:crypto'
 import { findKey, randomToken } from './store.mjs'
 import { HOLDER_MAP, planOf } from './plans.mjs'
 import { recordEvent } from './activity.mjs'
+import { holderMapsPrimary, holderPageUrl } from './hosts.mjs'
 
 const FILE = path.join(DATA_DIR, 'holders-partners.json')
 const SITE = (process.env.GULLY_SITE_URL ?? 'https://gullylabs.xyz').replace(/\/+$/, '')
+/** A token's Holder Map page: holdermaps.xyz once it is primary (hosts.mjs), else this site's /holders page. */
+const holderPage = (chain, token) => (holderMapsPrimary() ? holderPageUrl(chain, token) : `${SITE}/holders/${chain}/${token}`)
 const USER_AGENT = 'GullyLabs-HolderMap/1 (+https://docs.gullylabs.xyz/holder-map)'
 export const MAX_ATTEMPTS = 6
 const DEFAULT_DELAYS = [60_000, 5 * 60_000, 10 * 60_000, 20 * 60_000, 30 * 60_000]
@@ -133,7 +136,7 @@ async function tokenExists(chain, token) {
 export function signalsOf(map, { deployerPct = THRESHOLDS.deployerPct } = {}) {
   if (map?.state !== 'ok' || !map.forensics) return []
   const f = map.forensics
-  const page = `${SITE}/holders/${map.chain.key}/${map.token.address}`
+  const page = holderPage(map.chain.key, map.token.address)
   const source = { name: 'Gully Labs Holder Map', url: page, data: 'DeepCore launch history and token transfers' }
   const out = []
   const pct = (n) => (n === null || n === undefined ? '?' : `${Number(n).toFixed(n >= 10 ? 0 : 1)}%`)
@@ -306,7 +309,7 @@ function flaggedEvent(job, map, signals) {
       txHash: job.txHash ?? null,
       health: map.health && map.health.score !== null ? { score: map.health.score, level: map.health.level } : null,
       signals,
-      page: `${SITE}/holders/${map.chain.key}/${map.token.address}`,
+      page: holderPage(map.chain.key, map.token.address),
       builtAt: map.asOf ?? null,
     },
   }
@@ -615,13 +618,13 @@ export async function holderBadgeData(chainIn, token) {
     const valid = chain && (chain === 'solana' ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(token) : /^0x[0-9a-fA-F]{40}$/.test(token))
     if (!valid) return { state: 'unknown' }
     const map = peekHolderMap(chain, token)
-    if (map?.state !== 'ok') return { state: 'unknown', chain, token, page: `${SITE}/holders/${chain}/${token}` }
+    if (map?.state !== 'ok') return { state: 'unknown', chain, token, page: holderPage(chain, token) }
     const f = map.forensics
     return {
       state: 'ok',
       chain,
       token,
-      page: `${SITE}/holders/${chain}/${token}`,
+      page: holderPage(chain, token),
       symbol: map.token?.symbol ?? null,
       health: typeof map.health?.score === 'number' ? { score: map.health.score, level: map.health.level } : null,
       flags: f ? { bundledWallets: f.bundled?.wallets ?? 0, snipers: f.snipers?.wallets ?? 0, signals: signalsOf(map).map((x) => x.id) } : null,

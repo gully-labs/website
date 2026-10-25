@@ -1,6 +1,7 @@
 /* Every lazily loaded page's chunk, in one place: LazyRoutes renders them, and prefetchPath() starts
    fetching a page's chunk when a visitor shows intent (pointer over or focus on a link to it), so the
    page is usually in the cache before the click and the route skeleton barely shows. */
+import { holderInternalPath, isHolderMapsHost } from '../site-host'
 
 export const chunks = {
   tracker: () => import('./Tracker'),
@@ -52,7 +53,10 @@ const started = new Set<Chunk>()
 
 /** Starts loading the chunk behind a path (once); errors are left for the real navigation to handle. */
 export function prefetchPath(path: string) {
-  const c = chunkFor(path.replace(/\/+$/, '') || '/')
+  // holdermaps.xyz names the Holder Map pages by short paths (/, /<chain>/<token>, /deep/<id>).
+  const own = isHolderMapsHost() ? holderInternalPath(path) : path
+  if (!own) return
+  const c = chunkFor(own.replace(/\/+$/, '') || '/')
   if (!c || started.has(c)) return
   started.add(c)
   chunks[c]().catch(() => started.delete(c))

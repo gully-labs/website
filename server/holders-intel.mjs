@@ -22,6 +22,7 @@ import { readLaunches, shapePool } from './deepcore.mjs'
 import { dcGet, decodeTransfer, evmRpc, findStock, flowSide, HOLDER_CHAINS, readHolderMap, readLaunch, short, TRANSFER_TOPIC } from './holders.mjs'
 import { isSolanaAddress } from './solana.mjs'
 import { detectChains } from './holders-any.mjs'
+import { holderPageUrl } from './hosts.mjs'
 
 const lower = (a) => String(a ?? '').toLowerCase()
 const isAddr = (a) => typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a)
@@ -457,6 +458,6 @@ export function holdersFacts(map) {
     otherLaunchesOfCluster: map.crossToken?.line ?? null,
     fairPrice: map.fair,
     sources: map.sources,
-    page: `https://gullylabs.xyz/holders/${map.chain.key}/${map.token.address}`,
+    page: holderPageUrl(map.chain.key, map.token.address),
   }
 }

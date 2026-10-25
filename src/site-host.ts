@@ -37,3 +37,50 @@ export const isLocalHost = () => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host(
 
 /** A Gully Pay page for a /pay/... path: the pay host in production, this origin in development. */
 export const payHref = (path: string) => (isLocalHost() ? path : `${PAY_URL}${path}`)
+
+/* HolderMaps: the Holder Map on its own domain (server/hosts.mjs holds the routing and the same path rules).
+   holdermaps.xyz/                   the Holder Map home   (/holders on the main site)
+   holdermaps.xyz/<chain>/<token>    one token's map       (/holders/<chain>/<token>)
+   holdermaps.xyz/deep/<id>          a Deep check report   (/holders/deep/<id>)
+   Every other page belongs to the main site. Until the server says holdermaps.xyz is the Holder Map's home
+   (a <meta name="holdermaps-primary"> tag, from HOLDERMAPS_PRIMARY), the main site keeps its /holders pages. */
+export const HOLDERMAPS_HOST = 'holdermaps.xyz'
+export const HOLDERMAPS_URL = `https://${HOLDERMAPS_HOST}`
+export const isHolderMapsHost = () => /^(www\.)?holdermaps\.xyz$/.test(host())
+/** holdermaps.xyz is the Holder Map's canonical home: on that host, or when the server marked the page so. */
+export const holderMapsPrimary = () => isHolderMapsHost() || (typeof document !== 'undefined' && !!document.querySelector('meta[name="holdermaps-primary"]'))
+
+const HOLDER_CHAIN_RE = '(robinhood|bsc|base|hyperevm|solana)'
+const INTERNAL_HOLDER = new RegExp(`^/holders(?:/deep/(hd_[A-Za-z0-9_-]{1,64})|/${HOLDER_CHAIN_RE}/([A-Za-z0-9]{1,64}))?/?$`)
+const SHORT_HOLDER = new RegExp(`^(?:/|/deep/(hd_[A-Za-z0-9_-]{1,64})|/${HOLDER_CHAIN_RE}/([A-Za-z0-9]{1,64}))/?$`)
+
+/** The holdermaps.xyz path for a main-site Holder Map path, or null when it is not one. */
+export function holderShortPath(path: string): string | null {
+  const m = INTERNAL_HOLDER.exec(path)
+  if (!m) return null
+  return m[1] ? `/deep/${m[1]}` : m[2] ? `/${m[2]}/${m[3]}` : '/'
+}
+/** The main-site path for a holdermaps.xyz page path, or null when it is not one of its pages. */
+export function holderInternalPath(path: string): string | null {
+  const m = SHORT_HOLDER.exec(path)
+  if (!m) return null
+  return m[1] ? `/holders/deep/${m[1]}` : m[2] ? `/holders/${m[2]}/${m[3]}` : '/holders'
+}
+
+/** Where a link to a main-site Holder Map path (/holders...) points from this page: the short path on holdermaps.xyz,
+    the holdermaps.xyz address once it is primary, else the path as given. Query and hash are kept. */
+export function holderHref(path: string): string {
+  const at = path.search(/[?#]/)
+  const [p, rest] = at < 0 ? [path, ''] : [path.slice(0, at), path.slice(at)]
+  const short = holderShortPath(p)
+  if (!short) return path
+  if (isHolderMapsHost()) return short + rest
+  return holderMapsPrimary() ? HOLDERMAPS_URL + short + rest : path
+}
+/** The shareable address of a Holder Map path (/holders...), for copy boxes and badges. */
+export function holderAbsUrl(path: string): string {
+  const short = holderShortPath(path)
+  return short && holderMapsPrimary() ? HOLDERMAPS_URL + short : SITE_URL + path
+}
+/** A main-site page's address from any host (on holdermaps.xyz the site's own pages live on gullylabs.xyz). */
+export const siteHref = (path: string) => (isHolderMapsHost() ? SITE_URL + path : path)

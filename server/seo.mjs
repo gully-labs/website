@@ -4,7 +4,7 @@
 // The <Seo> component keeps matching titles in the browser; keep the two in step.
 
 import fs from 'node:fs'
-import { APP_HOST, APP_URL, isApiHost, isAppHost, isEmbedHost, isPayHost, PAY_URL } from './hosts.mjs'
+import { APP_HOST, APP_URL, holderInternalPath, holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, PAY_URL } from './hosts.mjs'
 import { published, publishedJobs } from './security-store.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
@@ -203,9 +203,24 @@ const isLocal = (host) => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)
 /** Pay pages are noindex, but name their own host as canonical (links are shared on pay.gullylabs.xyz). */
 const payCanonical = (host, p) => (isLocal(host) ? null : `${PAY_URL}${p}`)
 
+/* holdermaps.xyz (hosts.mjs): the Holder Map's own domain. Its pages are the main site's Holder Map pages under short
+   paths, named HolderMaps, with holdermaps.xyz canonicals. */
+const HOLDERMAPS_HOME = ['Holder Map: who really holds a token · HolderMaps', 'See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part. By Gully Labs.']
+/** A main-site Holder Map title, named for holdermaps.xyz. */
+export const holderMapsTitle = (t) => String(t).replace(/ · Holder Map · Gully Labs$/, ' · HolderMaps').replace(/ · Gully Labs$/, ' · HolderMaps')
+
+function holderMapsMeta(p) {
+  const internal = holderInternalPath(p)
+  if (!internal) return { title: 'Not found · HolderMaps', description: HOLDERMAPS_HOME[1], canonical: null, found: false }
+  const m = pageMeta('gullylabs.xyz', internal)
+  if (internal === '/holders') return { ...m, title: HOLDERMAPS_HOME[0], description: HOLDERMAPS_HOME[1], canonical: `${HOLDERMAPS_URL}/`, ld: null }
+  return { ...m, title: holderMapsTitle(m.title), canonical: m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null }
+}
+
 /** Head tags for one request. `found: false` means no page owns the path (served as a 404). */
 export function pageMeta(host, pathname) {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'
+  if (isHolderMapsHost(host)) return holderMapsMeta(p)
   // Development on localhost: the app also routes the portal, the admin and the docs (under /docs) there.
   if (isLocal(host)) {
     if (p === '/developers' || p === '/app') return { ...pageMeta(APP_HOST, '/'), canonical: null, noindex: true }
@@ -244,7 +259,7 @@ export function pageMeta(host, pathname) {
     return {
       title: `Who holds ${what} on ${chainName} · Holder Map · Gully Labs`,
       description: `Who holds ${what} on ${chainName}: the biggest wallets as bubbles, the ones that trade with each other, launch checks and a replay of how holdings changed, read live on Gully Labs.`,
-      canonical: hm[1] ? null : `${SITE}/holders/${hm[2]}/${hm[3]}`,
+      canonical: hm[1] ? null : holderMapsPrimary() ? `${HOLDERMAPS_URL}/${hm[2]}/${hm[3]}` : `${SITE}/holders/${hm[2]}/${hm[3]}`,
       found: true,
       // A stock token's map on a chain without holder data would be an empty page: kept out of the index.
       noindex: !!hm[1] || (HOLDER_PAGES[`/holders/${hm[2]}/${hm[3].toUpperCase()}`] !== undefined && !holdersAvailableFor(hm[2])),
@@ -308,7 +323,7 @@ export function robotsFor(host) {
   // The service hosts hold no pages worth indexing: checkout links, API JSON and iframes.
   if (isPayHost(host) || isApiHost(host) || isEmbedHost(host)) return 'User-agent: *\nDisallow: /\n'
   if (host.startsWith('admin.')) return 'User-agent: *\nDisallow: /\n'
-  const base = host.startsWith('docs.') ? DOCS : isAppHost(host) ? APP : SITE
+  const base = host.startsWith('docs.') ? DOCS : isAppHost(host) ? APP : isHolderMapsHost(host) ? HOLDERMAPS_URL : SITE
   return `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml\n`
 }
 
@@ -318,16 +333,20 @@ export function sitemapFor(host) {
   if (host.startsWith('admin.') || isPayHost(host) || isApiHost(host) || isEmbedHost(host)) return null
   const today = new Date().toISOString().slice(0, 10)
   let urls
+  const holderPaths = () => ['/holders', ...Object.entries(HOLDER_PAGES).filter(([, chain]) => holdersAvailableFor(chain)).map(([p]) => p), ...topHolderPaths()]
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
   else if (isAppHost(host)) urls = [[`${APP}/`, '0.6', 'monthly']]
+  // holdermaps.xyz lists the Holder Map pages under their short paths.
+  else if (isHolderMapsHost(host)) urls = holderPaths().map((p) => [HOLDERMAPS_URL + holderShortPath(p), p === '/holders' ? '1.0' : '0.7', p === '/holders' ? 'daily' : 'monthly'])
   else
-    urls = [...Object.keys(MAIN), ...Object.entries(HOLDER_PAGES).filter(([, chain]) => holdersAvailableFor(chain)).map(([p]) => p), ...topHolderPaths(), ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)].map((p) => [
+    // Once holdermaps.xyz is primary the main site's Holder Map pages are redirects there, so they are not listed here.
+    urls = [...Object.keys(MAIN).filter((p) => !(holderMapsPrimary() && p === '/holders')), ...(holderMapsPrimary() ? [] : holderPaths().slice(1)), ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)].map((p) => [
       SITE + (p === '/' ? '/' : p),
       p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
       p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p === '/score' || p === '/ecosystem' || p.startsWith('/projects/') ? 'daily' : 'monthly',
     ])
   // Listed Gully Score pages (a watched contract that allows listing, or one with a published report).
-  if (!host.startsWith('docs.') && !isAppHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])
+  if (!host.startsWith('docs.') && !isAppHost(host) && !isHolderMapsHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])
   const rows = urls.map(([u, pr, f]) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</urlset>\n`
 }

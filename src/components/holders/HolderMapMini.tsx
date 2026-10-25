@@ -7,6 +7,7 @@ import { ScoreRing } from './parts'
 import { fmtPct } from './format'
 import { K } from './theme'
 import { previewOf, type MotionMap } from './motion'
+import { holderAbsUrl, holderHref } from '../../site-host'
 
 /* A compact Holder Map for other views (the app's Holder Map page, side columns): the animated mini map
    (biggest bubbles, the latest real transfers streaming between them), the launch-health ring, and a
@@ -30,11 +31,11 @@ export function HolderMapMini({ chain, token, external = false }: { chain: strin
     )
   const path = holdersPagePath(m.chain.key, m.token.address)
   const open = external ? (
-    <a href={`https://gullylabs.xyz${path}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-mono text-[12px] text-gold hover:underline">
+    <a href={holderAbsUrl(path)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-mono text-[12px] text-gold hover:underline">
       Open the full map ↗
     </a>
   ) : (
-    <Link to={path} className="inline-flex min-h-11 items-center font-mono text-[12px] text-gold hover:underline">
+    <Link to={holderHref(path)} className="inline-flex min-h-11 items-center font-mono text-[12px] text-gold hover:underline">
       Open the full map →
     </Link>
   )

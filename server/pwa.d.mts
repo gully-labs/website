@@ -13,6 +13,7 @@ export interface Manifest {
 }
 export const SITE_MANIFEST: Manifest
 export const APP_MANIFEST: Manifest
+export const HOLDERMAPS_MANIFEST: Manifest
 export function manifestFor(host: string): Manifest | null
 export function handleManifest(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse, url: URL, host: string): boolean
 export interface SwRules {

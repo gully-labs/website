@@ -3506,7 +3506,7 @@ await step('discovery files and contracts page', async () => {
 // pay., api. and embed. (server/hosts.mjs) are simulated with Chromium's --host-resolver-rules (names mapped to
 // 127.0.0.1, the e2e port kept) and with Host headers for what a browser cannot send. One more browser, closed at the end.
 await step('service hosts', async () => {
-  const HOSTS = ['pay', 'api', 'embed'].map((h) => `${h}.gullylabs.xyz`)
+  const HOSTS = [...['pay', 'api', 'embed'].map((h) => `${h}.gullylabs.xyz`), 'holdermaps.xyz', 'www.holdermaps.xyz']
   const hb = await chromium.launch({ headless: !process.env.E2E_HEADED, args: [`--host-resolver-rules=${HOSTS.map((h) => `MAP ${h} 127.0.0.1`).join(', ')}`] })
   try {
     const at = (h, p = '/') => `http://${h}:${PORT}${p}`
@@ -3582,6 +3582,54 @@ await step('service hosts', async () => {
     await hostPage.locator('iframe').first().waitFor({ timeout: 15_000 })
     check('hosts: widget.js loaded from embed. builds the Holder Map iframe', (await hostPage.locator('iframe[title="Holder Map by Gully Labs"]').count()) === 1)
     await ctx.close()
+
+    // holdermaps.xyz: the Holder Map app at the root, short paths, its API on the same origin, the rest of the site on gullylabs.xyz.
+    const hm = await hb.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' })
+    // Nothing leaves this machine: third-party https is refused; the simulated host is proxied as above.
+    await hm.route(/^https:\/\//, (route) => route.abort())
+    await hm.route(`http://holdermaps.xyz:${PORT}/**`, async (route) => {
+      const u = new URL(route.request().url())
+      const r = await route.fetch({ url: `http://127.0.0.1:${PORT}${u.pathname}${u.search}`, headers: { ...route.request().headers(), host: u.host }, maxRedirects: 0 })
+      const headers = { ...r.headers() }
+      if (headers['content-security-policy']) headers['content-security-policy'] = headers['content-security-policy'].replace(/;?s*upgrade-insecure-requests/, '')
+      await route.fulfill({ response: r, headers })
+    })
+    const hp = await hm.newPage()
+    const cspErrors = []
+    hp.on('console', (m) => m.type() === 'error' && /Content Security Policy/i.test(m.text()) && cspErrors.push(m.text()))
+    // A click that leaves for gullylabs.xyz lands here instead of the internet.
+    await hp.route('https://gullylabs.xyz/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>left for gullylabs.xyz</title><p>main site</p>' }))
+    const home = await hp.goto(at('holdermaps.xyz', '/'))
+    await hp.getByRole('heading', { level: 1, name: 'Who really holds it?' }).waitFor({ timeout: 30_000 })
+    check('holdermaps: / renders the Holder Map home (200)', home.status() === 200)
+    check('holdermaps: the title says HolderMaps and the canonical is holdermaps.xyz/', /HolderMaps/.test(await hp.title()) && (await hp.locator('link[rel="canonical"]').getAttribute('href')) === 'https://holdermaps.xyz/', await hp.title())
+    check('holdermaps: the header logo goes to gullylabs.xyz', (await hp.locator('header a[aria-label="Gully Labs home"]').first().getAttribute('href')) === 'https://gullylabs.xyz/')
+    // A token map by its short path: the page calls /api/holders on this origin.
+    const apiCalls = []
+    hp.on('request', (rq) => rq.url().includes('/api/holders/') && apiCalls.push(new URL(rq.url()).host))
+    await hp.goto(at('holdermaps.xyz', `/base/${holder}`))
+    await hp.getByRole('link', { name: '← HOLDER MAP' }).waitFor({ timeout: 30_000 })
+    await hp.waitForTimeout(1500)
+    check('holdermaps: a token map renders at /<chain>/<token>, canonical on holdermaps.xyz, titled HolderMaps', (await hp.locator('link[rel="canonical"]').getAttribute('href')) === `https://holdermaps.xyz/base/${holder}` && / · HolderMaps$/.test(await hp.title()), await hp.title())
+    check('holdermaps: the map reads its API on the same origin', apiCalls.length > 0 && apiCalls.every((h) => h === `holdermaps.xyz:${PORT}`), apiCalls.join(','))
+    const back = hp.getByRole('link', { name: '← HOLDER MAP' })
+    check('holdermaps: the breadcrumb links the short home path', (await back.getAttribute('href')) === '/')
+    await back.click()
+    await hp.getByRole('heading', { level: 1, name: 'Who really holds it?' }).waitFor({ timeout: 15_000 })
+    check('holdermaps: the breadcrumb navigates in the app to /', new URL(hp.url()).pathname === '/')
+    // The old long address on this host: the server 301s to the short path, which the browser follows.
+    await hp.goto(at('holdermaps.xyz', `/holders/base/${holder}`))
+    check('holdermaps: /holders/<chain>/<token> lands on /<chain>/<token>', new URL(hp.url()).pathname === `/base/${holder}`, hp.url())
+    // A link to a site page leaves for gullylabs.xyz directly.
+    await hp.goto(at('holdermaps.xyz', '/'))
+    await hp.getByRole('heading', { level: 1, name: 'Who really holds it?' }).waitFor({ timeout: 30_000 })
+    await Promise.all([hp.waitForURL('https://gullylabs.xyz/**', { timeout: 15_000 }), hp.locator('footer a[href="/legal/terms"]').first().click()])
+    check('holdermaps: a site link (Terms) goes to https://gullylabs.xyz/legal/terms', hp.url() === 'https://gullylabs.xyz/legal/terms', hp.url())
+    check('holdermaps: no CSP violations on its pages', cspErrors.length === 0, cspErrors.slice(0, 2).join(' | '))
+    const www = await hreq('www.holdermaps.xyz', `/base/${holder}`)
+    check('holdermaps: www. is a 301 to the apex', www.status === 301 && www.headers.location === `https://holdermaps.xyz/base/${holder}`)
+    check('holdermaps: gullylabs.xyz/holders keeps working while holdermaps.xyz is not primary', (await hreq('gullylabs.xyz', `/holders/base/${holder}`)).status === 200)
+    await hm.close()
   } finally {
     await hb.close()
   }

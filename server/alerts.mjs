@@ -57,6 +57,7 @@ import { DEEPCORE_CHAINS, deepcoreAlertChains } from './deepcore.mjs'
 import { chainKeyOf, findStock, HOLDER_CHAINS, readHolderMap } from './holders.mjs'
 import { holderMapFeatures } from './plans.mjs'
 import { isSolanaAddress } from './solana.mjs'
+import { holderPageUrl } from './hosts.mjs'
 
 const FILE = path.join(DATA_DIR, 'alerts.json')
 export const COOLDOWN_MS = 30 * 60_000
@@ -478,7 +479,7 @@ export function stepHolderAlert(alert, map, at = Date.now()) {
     line: reason === 'above' ? c.above : (c.dropPts ?? c.sellPct),
     soldPct: reason === 'drop' && high > 0 ? Math.round((1 - v / high) * 1000) / 10 : null,
     clusterWallets: map.summary?.largestCluster?.wallets ?? null,
-    pageUrl: `${SITE}/holders/${c.chain}/${encodeURIComponent(c.token)}`,
+    pageUrl: holderPageUrl(c.chain, c.token),
     snapshotAt: map.asOf ?? new Date(at).toISOString(),
   }
 }

@@ -30,6 +30,7 @@
 // A trailing "!" opens the route as a new message instead of editing (used on Gully AI answers, so an
 // answer is never overwritten by the next screen).
 
+import { holderHomeUrl, holderPageUrl } from './hosts.mjs'
 export const SITE = 'https://gullylabs.xyz'
 export const PORTAL = 'https://app.gullylabs.xyz'
 export const PORTAL_ALERTS = `${PORTAL}/#alerts`
@@ -106,7 +107,7 @@ export const appBtn = (url) => ({ text: '📱 Open app', web_app: { url } })
 /** Holder Map chain keys (server/holders.mjs) to names, for holder alerts. */
 export const HOLDER_CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }
 /** The site's Holder Map page for a token. */
-export const holdersPageUrl = (chain, token) => `${SITE}/holders/${encodeURIComponent(chain)}/${encodeURIComponent(token)}`
+export const holdersPageUrl = (chain, token) => holderPageUrl(chain, token)
 /**
  * "👥 Holders": a placeholder that telegram.mjs (keyboardFor) turns into a web_app button opening the Mini
  * App's holder screen in private chats, or a link to the site's Holder Map in groups. It carries no
@@ -228,7 +229,7 @@ export function holderMapView(stockChains = []) {
       names.length ? `Maps are ready for every new DeepCore launch and for stock tokens on ${esc(names.join(', '))}.` : 'Maps are ready for every new DeepCore launch. Stock tokens follow soon.',
       'Open a launch below and tap 👥 Holders, or browse every map on the site.',
     ].join('\n'),
-    keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], [ubtn('👥 Open Holder Map ↗', HOLDERS_URL)], nav('m')],
+    keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], [ubtn('👥 Open Holder Map ↗', holderHomeUrl())], nav('m')],
   }
 }
 

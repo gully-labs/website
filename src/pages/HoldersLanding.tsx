@@ -16,6 +16,7 @@ import { eyebrow } from '../components/ui'
 import { type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveChecked, type TopScanned } from '../lib/holders'
 import { useHolderSearch } from '../lib/holderResolve'
 import { ageText } from '../lib/tracker'
+import { holderHref } from '../site-host'
 
 /* /holders: the Holder Map's front door. A search for any token: an address on Robinhood Chain, BNB Chain, Base,
    HyperEVM or Solana (every supported chain is checked at once), a DeepCore launch or a tracked stock ticker
@@ -201,7 +202,7 @@ function SearchBox() {
           <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Pick a token" data-resolve-matches>
             {s.matches.map((m) => (
               <li key={`${m.chain}:${m.token}`}>
-                <Link to={m.path} className="flex min-h-11 items-center gap-3 rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
+                <Link to={holderHref(m.path)} className="flex min-h-11 items-center gap-3 rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
                   <span className="font-semibold text-ink">{m.symbol ?? `${m.token.slice(0, 6)}…${m.token.slice(-4)}`}</span>
                   <span className="font-mono text-[12px] text-faint">{m.chainName}</span>
                   <span className="ml-auto font-mono text-[11px] text-dim">
@@ -362,7 +363,7 @@ function FeedRow({ l, i, now }: { l: CheckedLaunch & { preview?: MapPreview | nu
   const preview = l.state === 'checked' && l.preview?.nodes?.length ? l.preview : null
   return (
     <li className="animate-[gl-rise_.5s_ease_both] motion-reduce:animate-[gl-fade_.3s_ease_both]" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}>
-      <Link to={l.path} className="flex min-h-[60px] items-center gap-2.5 rounded-[10px] border border-line px-2 py-2 transition-colors hover:border-gold min-[420px]:gap-3 min-[420px]:px-3" style={{ background: K.night }}>
+      <Link to={holderHref(l.path)} className="flex min-h-[60px] items-center gap-2.5 rounded-[10px] border border-line px-2 py-2 transition-colors hover:border-gold min-[420px]:gap-3 min-[420px]:px-3" style={{ background: K.night }}>
         {preview ? (
           <Suspense fallback={<span className="h-[56px] w-[76px] flex-none animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[8px]" style={{ background: K.night }} />}>
             <MiniMap preview={preview} label={`Holder Map of ${l.symbol ?? 'this launch'} in miniature: ${preview.nodes.length} biggest holders and its latest transfers`} />
@@ -431,7 +432,7 @@ function TopList({ s }: { s: ReturnType<typeof usePoll<TopScanned>> }) {
       <ol className="m-0 flex list-none flex-col gap-1 p-0" data-top-scanned>
         {items.map((x, i) => (
           <li key={`${x.chain}:${x.token}`}>
-            <Link to={x.path} className="relative flex min-h-11 items-center gap-3 overflow-hidden rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
+            <Link to={holderHref(x.path)} className="relative flex min-h-11 items-center gap-3 overflow-hidden rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
               <span aria-hidden className="absolute inset-y-0 left-0 origin-left animate-[gl-grow-x_.8s_ease_both] bg-gold/10 motion-reduce:animate-[gl-fade_.3s_ease_both]" style={{ width: `${(x.scans / max) * 100}%`, animationDelay: `${Math.min(i, 10) * 40}ms` }} />
               <span className="relative w-5 font-mono text-[12px] text-faint">{i + 1}</span>
               <ChainLogo chain={x.chain} size={16} decorative className="relative" />

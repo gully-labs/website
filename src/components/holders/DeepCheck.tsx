@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ArrowRight, CircleCheck, CircleSlash, Gauge, Loader2, ShieldCheck } from 'lucide-react'
 import { deepConfirm, deepPagePath, deepQuote, PART_NAMES, PART_ORDER, rememberCheck, useDeepOffer, type Coverage, type DeepQuote, type PartKey } from '../../lib/holdersDeep'
-import { APP_URL, isLocalHost } from '../../site-host'
+import { APP_URL, holderHref, isLocalHost } from '../../site-host'
 import { btnGold, btnOutline } from '../ui'
 import { StatusPill } from '../ui/StatusPill'
 
@@ -62,7 +62,10 @@ export function DeepCheckCard({ chain, token, symbol }: { chain: string; token: 
     }
     if (!r.ok || !r.data.check) return setErr(r.data.error ?? 'Could not start the check. Nothing was charged.')
     rememberCheck(r.data.check.id)
-    nav(deepPagePath(r.data.check.id))
+    // On holdermaps.xyz the report lives at /deep/<id>; an absolute address (another host) is a full navigation.
+    const to = holderHref(deepPagePath(r.data.check.id))
+    if (/^https?:/.test(to)) window.location.assign(to)
+    else nav(to)
   }
 
   return (

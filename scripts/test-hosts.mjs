@@ -43,9 +43,10 @@ delete process.env.TELEGRAM_BOT_TOKEN
 delete process.env.GULLY_TREASURY_ADDRESS
 delete process.env.ANTHROPIC_API_KEY
 delete process.env.GULLY_PAY_URL
+delete process.env.HOLDERMAPS_PRIMARY
 
 await import('../server/server.mjs')
-const { hostPolicy, payUrl, PAY_URL, API_URL, EMBED_URL, STATUS_URL, isPayHost } = await import('../server/hosts.mjs')
+const { hostPolicy, payUrl, PAY_URL, API_URL, EMBED_URL, STATUS_URL, isPayHost, holderMapsRoute, holderShortPath, holderInternalPath, holderPageUrl, holderHomeUrl, isHolderMapsHost, HOLDERMAPS_URL } = await import('../server/hosts.mjs')
 await new Promise((r) => setTimeout(r, 300))
 
 const t = makeChecker()
@@ -160,6 +161,81 @@ try {
     check('embed. /pricing: 301 to the main site', (await get(EMBED, '/pricing')).headers.location === `https://${MAIN}/pricing`)
     check('embed. /pay/..: 301 to the main site (which sends it on to pay.)', (await get(EMBED, INV)).headers.location === `https://${MAIN}${INV}`)
     check('embed. /api/pay: not served', (await get(EMBED, '/api/pay/gas')).status === 404)
+  }
+
+  /* ------------------------------------------------------- holdermaps.xyz --- */
+  {
+    const HM = 'holdermaps.xyz'
+    const TOKEN = '0x' + '1'.repeat(40)
+    const DEEP = 'hd_' + 'd'.repeat(16)
+    const r = (p, h = HM) => holderMapsRoute(h, p.split('?')[0], p.includes('?') ? p.slice(p.indexOf('?')) : '')
+    // The routing table.
+    check('holdermaps: the hosts it answers', isHolderMapsHost(HM) && isHolderMapsHost('www.holdermaps.xyz') && isHolderMapsHost('holdermaps.xyz:443') && !isHolderMapsHost(MAIN) && !isHolderMapsHost('holdermaps.xyz.evil.test') && HOLDERMAPS_URL === 'https://holdermaps.xyz')
+    check('holdermaps: short paths <-> the main site paths', holderShortPath('/holders') === '/' && holderShortPath('/holders/') === '/' && holderShortPath(`/holders/base/${TOKEN}`) === `/base/${TOKEN}` && holderShortPath(`/holders/deep/${DEEP}`) === `/deep/${DEEP}` && holderShortPath('/holders/nope/x') === null && holderShortPath('/pricing') === null && holderInternalPath('/') === '/holders' && holderInternalPath(`/solana/${'7'.repeat(43)}`) === `/holders/solana/${'7'.repeat(43)}` && holderInternalPath(`/deep/${DEEP}`) === `/holders/deep/${DEEP}` && holderInternalPath('/legal/terms') === null && holderInternalPath('/pricing') === null)
+    check('holdermaps policy: its pages, its API and static files are served', ['/', `/base/${TOKEN}`, '/robinhood/TSLA', `/deep/${DEEP}`, '/api/holders/base/x', '/api/holders/deep', '/api/plans', '/api/logo/base/0x1.png', '/api/pay/inv_x', '/assets/index-abcdef12.js', '/brand/gully-mark-512.png', '/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/healthz'].every((p) => r(p).kind === 'allow'))
+    check('holdermaps policy: the session-only dashboard, admin and Telegram APIs are refused', ['/api/admin/x', '/api/developer/account', '/api/tg/me', '/api/telegram/x'].every((p) => r(p).kind === 'deny'))
+    const rl = r(`/holders/base/${TOKEN}?x=1`)
+    check('holdermaps policy: /holders/... is a 301 to the short path, query kept', rl.kind === 'redirect' && rl.location === `/base/${TOKEN}?x=1` && r('/holders').location === '/' && r(`/holders/deep/${DEEP}`).location === `/deep/${DEEP}`, JSON.stringify(rl))
+    check('holdermaps policy: any other page (and an unknown chain) goes to the same path on gullylabs.xyz', r('/pricing?a=1').location === `https://${MAIN}/pricing?a=1` && r('/legal/terms').location === `https://${MAIN}/legal/terms` && r('/tracker/robinhood/TSLA').location === `https://${MAIN}/tracker/robinhood/TSLA` && r('/embed/holders/base/x').location === `https://${MAIN}/embed/holders/base/x`)
+    check('holdermaps policy: www. is a 301 to the apex, path and query kept', r(`/base/${TOKEN}?q=1`, 'www.holdermaps.xyz').location === `https://holdermaps.xyz/base/${TOKEN}?q=1`)
+    check('holdermaps: the main host policy is unchanged (holdermaps. is not a service host)', hostPolicy(HM, '/') === 'allow' && hostPolicy(MAIN, '/holders') === 'allow')
+
+    // Over HTTP, as Cloudflare sends it.
+    const home = await get(HM, '/')
+    check('holdermaps /: 200, the app shell, titled HolderMaps, canonical holdermaps.xyz/', home.status === 200 && home.text.includes('<div id="root">') && /<title>[^<]*HolderMaps[^<]*<\/title>/.test(home.text) && home.text.includes('<link rel="canonical" href="https://holdermaps.xyz/" />') && home.text.includes('<meta property="og:title" content="Holder Map: who really holds a token · HolderMaps" />'), home.text.slice(0, 400))
+    check('holdermaps /: indexable (no noindex) and keeps the analytics beacon and the site CSP', !/noindex/.test(home.text) && !/noindex/.test(home.headers['x-robots-tag'] ?? '') && home.text.includes('analytics.gullylabs.xyz') && /analytics\.gullylabs\.xyz/.test(home.headers['content-security-policy'] ?? '') && /connect-src 'self' https: wss:/.test(home.headers['content-security-policy'] ?? ''))
+    check('holdermaps /: no cookie, HSTS, framed only by itself', !home.headers['set-cookie'] && /max-age=31536000/.test(home.headers['strict-transport-security'] ?? '') && /frame-ancestors 'self'/.test(home.headers['content-security-policy'] ?? ''))
+    check('holdermaps /: no holdermaps-primary tag while HOLDERMAPS_PRIMARY is unset', !home.text.includes('holdermaps-primary'))
+    const map = await get(HM, `/base/${TOKEN}`)
+    check('holdermaps /<chain>/<token>: 200, HolderMaps title, holdermaps.xyz canonical, the map card as share image', map.status === 200 && /<title>Who holds [^<]+ on Base · HolderMaps<\/title>/.test(map.text) && map.text.includes(`<link rel="canonical" href="https://holdermaps.xyz/base/${TOKEN}" />`) && map.text.includes(`/api/holders/base/${TOKEN}/card.png`), map.text.match(/<title>[^<]*<\/title>/)?.[0])
+    const deep = await get(HM, `/deep/${DEEP}`)
+    check('holdermaps /deep/<id>: 200, noindex, no canonical (private by link)', deep.status === 200 && /<meta name="robots" content="noindex"/.test(deep.text) && !/rel="canonical"/.test(deep.text) && /HolderMaps/.test(deep.text.match(/<title>[^<]*<\/title>/)?.[0] ?? ''))
+    const long = await get(HM, `/holders/base/${TOKEN}?ref=x`)
+    check('holdermaps /holders/<chain>/<token>: 301 to the short path', long.status === 301 && long.headers.location === `/base/${TOKEN}?ref=x`, `${long.status} ${long.headers.location}`)
+    const www = await get('www.holdermaps.xyz', `/base/${TOKEN}`)
+    check('www.holdermaps.xyz: 301 to holdermaps.xyz', www.status === 301 && www.headers.location === `https://holdermaps.xyz/base/${TOKEN}`, www.headers.location)
+    const away = await get(HM, '/pricing?plan=pro')
+    check('holdermaps /pricing: 301 to gullylabs.xyz/pricing', away.status === 301 && away.headers.location === `https://${MAIN}/pricing?plan=pro`, away.headers.location)
+    check('holdermaps POST to a non-page: JSON 404, never a redirect', (await get(HM, '/pricing', { method: 'POST', body: {} })).status === 404)
+    const plans = await get(HM, '/api/plans')
+    check('holdermaps /api/plans: served on the same origin (200 JSON)', plans.status === 200 && /json/.test(plans.headers['content-type'] ?? ''), String(plans.status))
+    const hapi = await get(HM, '/api/holders/sources')
+    check('holdermaps /api/holders/*: served on the same origin (no redirect)', hapi.status !== 301 && hapi.status !== 404, String(hapi.status))
+    check('holdermaps /api/admin and /api/developer: 404', (await get(HM, '/api/admin/x')).status === 404 && (await get(HM, '/api/developer/account')).status === 404)
+    check('holdermaps serves the hashed assets', (await get(HM, '/assets/index-abcdef12.js')).status === 200)
+    const robots = await get(HM, '/robots.txt')
+    check('holdermaps robots.txt: allows crawling and names its own sitemap', robots.status === 200 && /Allow: \//.test(robots.text) && robots.text.includes('Sitemap: https://holdermaps.xyz/sitemap.xml'), robots.text)
+    const sm = await get(HM, '/sitemap.xml')
+    check('holdermaps sitemap.xml: its own pages under short paths, nothing on gullylabs.xyz', sm.status === 200 && sm.text.includes('<loc>https://holdermaps.xyz/</loc>') && !sm.text.includes('gullylabs.xyz') && !sm.text.includes('/holders'), sm.text.slice(0, 300))
+    const man = await get(HM, '/manifest.webmanifest')
+    check('holdermaps manifest: installs as HolderMaps', man.status === 200 && man.data?.name === 'HolderMaps', man.text.slice(0, 120))
+    // The main site keeps its Holder Map while holdermaps.xyz is not primary.
+    const mainMap = await get(MAIN, `/holders/base/${TOKEN}`)
+    check('main /holders/<chain>/<token>: still served (200), canonical on gullylabs.xyz while not primary', mainMap.status === 200 && mainMap.text.includes(`<link rel="canonical" href="https://${MAIN}/holders/base/${TOKEN}" />`))
+    check('main sitemap: still lists /holders while not primary', (await get(MAIN, '/sitemap.xml')).text.includes(`<loc>https://${MAIN}/holders</loc>`))
+    check('links the server writes: gullylabs.xyz/holders while not primary', holderPageUrl('base', TOKEN) === `https://${MAIN}/holders/base/${TOKEN}` && holderHomeUrl() === `https://${MAIN}/holders`)
+
+    // HOLDERMAPS_PRIMARY=1: holdermaps.xyz is the Holder Map's home.
+    process.env.HOLDERMAPS_PRIMARY = '1'
+    try {
+      for (const [p, to] of [[`/holders/base/${TOKEN}?a=1`, `/base/${TOKEN}?a=1`], ['/holders', '/'], ['/holders/', '/'], [`/holders/deep/${DEEP}`, `/deep/${DEEP}`], ['/holders/robinhood/TSLA', '/robinhood/TSLA']]) {
+        const x = await get(MAIN, p)
+        check(`primary: main GET ${p.slice(0, 30)} is a 301 to holdermaps.xyz${to.slice(0, 20)}`, x.status === 301 && x.headers.location === `https://holdermaps.xyz${to}`, `${x.status} ${x.headers.location}`)
+      }
+      check('primary: HEAD is redirected too, POST is not', (await get(MAIN, '/holders', { method: 'HEAD' })).status === 301 && (await get(MAIN, '/holders', { method: 'POST', body: {} })).status !== 301)
+      check('primary: the API, the embed, widget.js and badges stay on the main host (SDK and snippets)', (await get(MAIN, '/api/holders/sources')).status !== 301 && (await get(MAIN, `/embed/holders/base/${TOKEN}`)).status === 200 && (await get(MAIN, '/widget.js')).status === 200 && (await get(EMBED, `/embed/holders/base/${TOKEN}`)).status === 200 && (await get(MAIN, `/api/holders/base/${TOKEN}/badge.svg`)).status !== 301)
+      check('primary: an unknown chain under /holders is not redirected', (await get(MAIN, '/holders/nope/x')).status !== 301)
+      check('primary: localhost keeps /holders by path (development)', (await get(`localhost:${PORT}`, '/holders')).status === 200)
+      const hp = await get(HM, `/base/${TOKEN}`)
+      check('primary: pages carry the holdermaps-primary tag (the browser follows it)', hp.text.includes('<meta name="holdermaps-primary" content="1" />') && (await get(MAIN, '/')).text.includes('holdermaps-primary'))
+      const msm = (await get(MAIN, '/sitemap.xml')).text
+      check('primary: the main sitemap no longer lists Holder Map pages', !msm.includes('/holders') && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))
+      check('primary: links the server writes name holdermaps.xyz', holderPageUrl('base', TOKEN) === `https://holdermaps.xyz/base/${TOKEN}` && holderHomeUrl() === 'https://holdermaps.xyz/')
+      const { holdersPageUrl } = await import('../server/telegram-ui.mjs')
+      check('primary: Telegram map buttons name holdermaps.xyz', holdersPageUrl('robinhood', 'TSLA') === 'https://holdermaps.xyz/robinhood/TSLA')
+    } finally {
+      delete process.env.HOLDERMAPS_PRIMARY
+    }
   }
 
   /* ------------------------------------------------------ generated links --- */

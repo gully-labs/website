@@ -15,7 +15,7 @@ import { feeText, jupiterFeeText } from '../swap/swapConfig'
 import { xPost } from '../../lib/share'
 import { ageText } from '../../lib/tracker'
 import { getJson, holdersCardUrl, holdersCsvUrl, holdersPagePath, holdersPath, INFRA_KINDS, useHolderMap, type HealthPartId, type HolderFrame, type HolderLabelKind, type HolderMapOk, type HolderNode, type WalletDetail } from '../../lib/holders'
-import { APP_URL, isLocalHost } from '../../site-host'
+import { APP_URL, holderAbsUrl, holderHref, isLocalHost } from '../../site-host'
 import { useLive } from './live'
 import { AskExplain, CrossTokenCard, DeployerHistoryCard, HealthCard, LivePill } from './parts'
 import { extentOf, forceLayout, radiusFor } from './layout'
@@ -219,12 +219,12 @@ function MapEmpty({ title, text, action }: { title: string; text: string; action
       <ChartEmpty height={140} label="Bubbles will draw here once holder data can be read" testId="holder-map-ghost" />
       {action &&
         (action.external ? (
-          <a href={`https://gullylabs.xyz${action.href}`} {...newTab} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-btn border border-line-strong px-4 font-mono text-[13px] text-ink transition-colors hover:border-gold">
+          <a href={holderAbsUrl(action.href)} {...newTab} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-btn border border-line-strong px-4 font-mono text-[13px] text-ink transition-colors hover:border-gold">
             {action.label} <ExternalLink aria-hidden size={14} />
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         ) : (
-          <Link to={action.href} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-btn border border-line-strong px-4 font-mono text-[13px] text-ink transition-colors hover:border-gold">
+          <Link to={holderHref(action.href)} className="inline-flex min-h-11 w-fit items-center gap-2 rounded-btn border border-line-strong px-4 font-mono text-[13px] text-ink transition-colors hover:border-gold">
             <Search aria-hidden size={14} /> {action.label} →
           </Link>
         ))}
@@ -555,7 +555,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
 
   const alertHref = `${isLocalHost() ? '/app' : APP_URL}/?alert=${encodeURIComponent(`holders:${m.chain.key}:${m.token.address}`)}#alerts`
   const label = `Holder Map of ${m.token.symbol ?? 'this token'} on ${m.chain.name}: ${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim()
-  const pageUrl = `https://gullylabs.xyz${holdersPagePath(m.chain.key, m.token.address)}`
+  const pageUrl = holderAbsUrl(holdersPagePath(m.chain.key, m.token.address))
   const frameAt = frame !== null ? frames[frame] : null
   const Title = page ? 'h1' : 'h3'
   const top10Pct = live.top10Pct ?? m.summary.top10Pct

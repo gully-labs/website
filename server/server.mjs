@@ -32,7 +32,7 @@ import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
-import { API_URL, APP_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isPayHost, MAIN_URL, PAY_URL } from './hosts.mjs'
+import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, MAIN_URL, PAY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
@@ -213,6 +213,21 @@ async function handleRequest(req, res) {
   if (policy === 'redirect') {
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
     return send(res, 301, '', { Location: MAIN_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
+  }
+  // holdermaps.xyz (hosts.mjs): the Holder Map at the root with short paths, its API on the same origin; www. and
+  // /holders/... 301 to the short address, any other page 301s to gullylabs.xyz.
+  if (isHolderMapsHost(host)) {
+    const hm = holderMapsRoute(host, url.pathname, url.search)
+    if (hm.kind === 'redirect') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+      return send(res, 301, '', { Location: hm.location, 'Cache-Control': 'public, max-age=3600' })
+    }
+    if (hm.kind === 'deny') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+  } else if (holderMapsPrimary() && !isLocal && !isAdmin && !host.startsWith('docs.') && (req.method === 'GET' || req.method === 'HEAD')) {
+    // Once holdermaps.xyz is the Holder Map's home (HOLDERMAPS_PRIMARY), the main site's Holder Map pages move there
+    // for good. Only the pages: /api/holders/*, /embed/holders/*, widget.js and the badges stay put.
+    const short = holderShortPath(url.pathname)
+    if (short) return send(res, 301, '', { Location: HOLDERMAPS_URL + short + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
   // embed.: widget.js, the iframe pages and badges are read by other sites: open CORS for GET, and this host sets no cookies.
   if (isEmbedHost(host)) {
@@ -488,7 +503,8 @@ async function handleRequest(req, res) {
       const bareHost = isPayHost(host) || isEmbedHost(host)
       res.writeHead(meta.found ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': bareHost ? 'no-cache, no-transform' : 'no-cache' })
       // pay. and embed. carry no analytics beacon (their CSP would refuse it anyway).
-      const page = renderHead(html, meta)
+      // The browser learns that holdermaps.xyz is the Holder Map's home from this tag (src/site-host.ts holderMapsPrimary).
+      const page = renderHead(holderMapsPrimary() ? html.replace('</head>', '  <meta name="holdermaps-primary" content="1" />\n  </head>') : html, meta)
       res.end(req.method === 'HEAD' ? undefined : isPayHost(host) || isEmbedHost(host) ? page.replace(/\s*<script defer src="https:\/\/analytics\.gullylabs\.xyz[^>]*><\/script>/, '') : page)
     })
   })

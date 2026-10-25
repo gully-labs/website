@@ -5,6 +5,7 @@ import { ChainLogo } from '../logos/ChainLogo'
 import { TokenLogo } from '../logos/TokenLogo'
 import { ageText } from '../../lib/tracker'
 import { holdersPagePath } from '../../lib/holders'
+import { holderAbsUrl, holderHref } from '../../site-host'
 
 /* The latest DeepCore launches (GET /api/deepcore/launches, the poller's cache in deepcore.mjs), each with
    a link to its Holder Map. On the site the links stay in the tab; in the app (another host) they open the
@@ -94,12 +95,12 @@ export function LaunchHolders({ external = false, limit = 8 }: { external?: bool
           return (
             <li key={`${l.chainId}:${l.token}`}>
               {external ? (
-                <a href={`https://gullylabs.xyz${path}`} target="_blank" rel="noopener noreferrer" className={cls}>
+                <a href={holderAbsUrl(path)} target="_blank" rel="noopener noreferrer" className={cls}>
                   {body}
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>
               ) : (
-                <Link to={path} className={cls}>
+                <Link to={holderHref(path)} className={cls}>
                   {body}
                 </Link>
               )}

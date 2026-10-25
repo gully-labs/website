@@ -1,15 +1,14 @@
 import { Copy, Tag } from 'lucide-react'
 import { copyWithToast } from '../ui/toast'
 import { btnOutline } from '../ui'
-import { EMBED_URL } from '../../site-host'
+import { EMBED_URL, holderAbsUrl } from '../../site-host'
 
 /* The token's live Holder Map badge (GET /api/holders/:chain/:token/badge.svg, cached map data only) with copy
    buttons for an HTML and a Markdown embed that link back to the map page. */
 
-const SITE = 'https://gullylabs.xyz'
 
 export function BadgeBlock({ chain, token }: { chain: string; token: string }) {
-  const page = `${SITE}/holders/${chain}/${token}`
+  const page = holderAbsUrl(`/holders/${chain}/${token}`)
   const img = `${EMBED_URL}/api/holders/${chain}/${token}/badge.svg`
   const html = `<a href="${page}"><img src="${img}" alt="Holder Map by Gully Labs" height="24"></a>`
   const md = `[![Holder Map by Gully Labs](${img})](${page})`

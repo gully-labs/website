@@ -7,6 +7,7 @@ import { isActive, useDeepCheck } from '../lib/holdersDeep'
 import { useEffect } from 'react'
 import { rememberCheck } from '../lib/holdersDeep'
 import { StatusPill } from '../components/ui/StatusPill'
+import { holderHref } from '../site-host'
 
 /* /holders/deep/:id: one Deep check. While it waits for payment, is queued or runs it shows the live status (and
    links to its Gully Pay invoice); when it ends, the report. The id is unguessable and is the shareable link, so
@@ -22,7 +23,7 @@ export function HoldersDeepPage() {
   const report = check?.report ?? null
   const symbol = report?.token.symbol ?? null
   const chainName = check?.chain.name ?? ''
-  const mapHref = check ? holdersPagePath(check.chain.key, check.token) : '/holders'
+  const mapHref = holderHref(check ? holdersPagePath(check.chain.key, check.token) : '/holders')
   return (
     <div className="flex flex-col gap-3 px-[clamp(8px,2cqw,32px)] pt-3 pb-24">
       <Seo title={`Deep check${symbol ? `: ${symbol}` : ''} · Holder Map`} description="A Holder Map Deep check report: funding trace, shared-funder clusters, deployer record, snipers and bundles." noindex />

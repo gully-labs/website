@@ -45,6 +45,7 @@ import { clientIp, DATA_DIR, json } from './http.mjs'
 import { CHAINS, rpc as payRpc } from './payments.mjs'
 import { chainOf, decodeString, listedContracts, monitorChains, monitorFacts, onMonitorEvents, readControl, SEL, short } from './sec-monitor.mjs'
 import { readLaunches } from './deepcore.mjs'
+import { holderPageUrl } from './hosts.mjs'
 
 const FILE = () => path.join(DATA_DIR, 'gully-score.json')
 export const METHOD_VERSION = 1
@@ -237,7 +238,7 @@ async function holderMap(chainId, address) {
     const r = await getJson(`${holdersBase()}/api/holders/${key}/${address}`, { timeout: 15_000 })
     if (!r.body || typeof r.body !== 'object' || r.status === 404) return { error: 'The Holder Map is not running on this server yet, so holder data is not available.' }
     if (r.body.state !== 'ok') return { error: r.body.reason || r.body.error || 'The Holder Map has no holder data for this token.' }
-    return { health: r.body.health ?? null, top10Pct: r.body.summary?.top10Pct ?? null, line: r.body.summary?.line ?? null, page: `${SITE}/holders/${key}/${address}` }
+    return { health: r.body.health ?? null, top10Pct: r.body.summary?.top10Pct ?? null, line: r.body.summary?.line ?? null, page: holderPageUrl(key, address) }
   } catch {
     return { error: 'The Holder Map could not be reached from this server, so holder data is not available.' }
   }

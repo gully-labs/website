@@ -11,6 +11,7 @@ import { Wordmark } from './brand'
 import { btnGold } from './ui'
 import { useContact } from './ContactContext'
 import { track } from '../lib/track'
+import { siteHref } from '../site-host'
 import './Layout.css'
 
 /* The site header: logo, three grouped menus (Products, App & API, Company) with three plain links (Projects, Pricing, Gully AI)
@@ -300,7 +301,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
   return createPortal(
     <div ref={ref} role="dialog" aria-modal="true" aria-label="Site menu" className="gl-sheet fixed inset-0 z-[70] flex flex-col bg-bg font-sans text-ink">
       <div className="flex min-h-16 items-center justify-between gap-4 border-b border-line px-page py-2">
-        <Link to="/" onClick={pick} className="inline-flex min-h-11 items-center rounded-btn text-ink" aria-label="Gully Labs home">
+        <Link to={siteHref('/')} onClick={pick} className="inline-flex min-h-11 items-center rounded-btn text-ink" aria-label="Gully Labs home">
           {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}
           <Wordmark height={28} className="max-[419px]:!h-6 max-[419px]:!w-[115.64px]" />
         </Link>
@@ -409,7 +410,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-[10px]">
       <div className="flex min-h-16 items-center gap-3 px-page py-2 min-[1024px]:gap-6">
-        <Link to="/" className="inline-flex min-h-11 flex-none items-center rounded-btn text-ink" aria-label="Gully Labs home">
+        <Link to={siteHref('/')} className="inline-flex min-h-11 flex-none items-center rounded-btn text-ink" aria-label="Gully Labs home">
           {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}
           <Wordmark height={28} className="max-[419px]:!h-6 max-[419px]:!w-[115.64px]" />
         </Link>

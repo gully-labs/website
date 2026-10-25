@@ -6,6 +6,7 @@ import { ChainLogo } from '../logos/ChainLogo'
 import { TokenLogo } from '../logos/TokenLogo'
 import { servable } from '../tracker/servable'
 import type { TopScanned } from '../../lib/holders'
+import { holderHref } from '../../site-host'
 
 /* "Most mapped today" on the home page: the five Holder Maps people opened most, from the same endpoint the
    /holders landing lists (GET /api/holders/top), polled every 60 s. Each row has the token's logo, its chain,
@@ -59,7 +60,7 @@ export function MostMapped() {
               const own = x.kind !== 'stock' && servable(x.chain, x.token)
               return (
                 <li key={`${x.chain}:${x.token}`}>
-                  <Link to={x.path} className="relative flex min-h-11 items-center gap-3 overflow-hidden rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
+                  <Link to={holderHref(x.path)} className="relative flex min-h-11 items-center gap-3 overflow-hidden rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
                     <span aria-hidden className="absolute inset-y-0 left-0 origin-left animate-[gl-grow-x_.8s_ease_both] bg-gold/10 motion-reduce:animate-none" style={{ width: `${(x.scans / max) * 100}%`, animationDelay: `${i * 40}ms` }} />
                     <span className="relative w-4 font-mono text-[12px] text-faint">{i + 1}</span>
                     <TokenLogo symbol={x.symbol ?? 'token'} chain={own ? x.chain : null} address={own ? x.token : null} size={24} decorative className="relative" />

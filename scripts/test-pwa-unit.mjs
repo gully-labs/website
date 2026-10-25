@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import vm from 'node:vm'
-import { APP_MANIFEST, dismissedRecently, installCardMode, isIosSafari, manifestFor, routeFor, SITE_MANIFEST, SW_RULES, swEligible } from '../server/pwa.mjs'
+import { APP_MANIFEST, dismissedRecently, HOLDERMAPS_MANIFEST, installCardMode, isIosSafari, manifestFor, routeFor, SITE_MANIFEST, SW_RULES, swEligible } from '../server/pwa.mjs'
 import { buildPrecacheList, generateSw, versionStamp } from '../server/pwa-build.mjs'
 
 const ORIGIN = 'https://gullylabs.xyz'
@@ -17,6 +17,10 @@ test('manifests: site and app, kit colours, three icons including a maskable one
   assert.equal(manifestFor('app.gullylabs.xyz'), APP_MANIFEST)
   assert.equal(manifestFor('app.gullylabs.xyz:443'), APP_MANIFEST)
   assert.equal(manifestFor('localhost:9361'), SITE_MANIFEST)
+  // holdermaps.xyz installs as HolderMaps (its own name; same icons and scope).
+  assert.equal(manifestFor('holdermaps.xyz'), HOLDERMAPS_MANIFEST)
+  assert.equal(manifestFor('www.holdermaps.xyz'), HOLDERMAPS_MANIFEST)
+  assert.equal(HOLDERMAPS_MANIFEST.name, 'HolderMaps')
   for (const h of ['admin.gullylabs.xyz', 'docs.gullylabs.xyz', 'blog.gullylabs.xyz', 'analytics.gullylabs.xyz']) assert.equal(manifestFor(h), null, h)
   assert.equal(SITE_MANIFEST.name, 'Gully Labs')
   assert.equal(APP_MANIFEST.name, 'Gully Labs App')
