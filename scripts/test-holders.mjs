@@ -974,12 +974,12 @@ test('chain detection: a pasted address is probed on every chain at once; a toke
     const { resolveHolders } = await import('../server/holders-intel.mjs')
     const r = await resolveHolders(X, { ip: '198.51.100.1' })
     assert.deepEqual(r.matches.map((m) => [m.chain, m.kind]), [['robinhood', 'token'], ['bsc', 'token']], 'a token on two chains: the picker')
-    assert.deepEqual(r.checked.map((c) => [c.chain, c.status]), [['robinhood', 'token'], ['bsc', 'token'], ['base', 'not-token'], ['hyperevm', 'unreadable']])
+    assert.deepEqual(r.checked.map((c) => [c.chain, c.status]), [['robinhood', 'token'], ['bsc', 'token'], ['base', 'not-token'], ['hyperevm', 'unreadable'], ['gully', 'unreadable']])
     assert.match(r.matches[0].path, /^\/holders\/robinhood\/0x/)
     // A contract that is not a token: no match, and every chain is named with its reason.
     const n = await resolveHolders(CONTRACT, { ip: '198.51.100.1' })
     assert.equal(n.matches.length, 0)
-    assert.equal(n.checked.length, 4)
+    assert.equal(n.checked.length, 5)
     assert.match(n.checked.find((c) => c.chain === 'robinhood').reason, /does not answer like an ERC-20/)
     assert.match(n.checked.find((c) => c.chain === 'hyperevm').reason, /did not answer/)
   } finally {
@@ -1115,4 +1115,12 @@ test('bubble palette: every hue is legible on the stage, its text reads on it, a
   assert.notEqual(P.clusterHue(8), P.clusterHue(1), 'hues repeat lighter past the palette')
   assert.equal(P.bandOf(86), 0)
   assert.equal(P.bandOf(0.05), 3)
+})
+
+test('Gully Chain Testnet: the launchpad curve, LP locker and routers are labelled, never counted as wallets', () => {
+  const m = H.staticLabels({ chainKey: 'gully', token: '0x' + '11'.repeat(20) })
+  assert.equal(m.get('0x3378b659f6dda7f13d87599b383b3995f82d0974')?.kind, 'pool')
+  assert.equal(m.get('0xbab80bf7ca383461e573dc503c70083c0415d58b')?.kind, 'lock')
+  assert.equal(m.get('0x1283a251e34296675cc5130a2b02871384c0436a')?.kind, 'router')
+  assert.equal(H.staticLabels({ chainKey: 'base', token: '0x' + '11'.repeat(20) }).has('0x3378b659f6dda7f13d87599b383b3995f82d0974'), false, 'only on Gully Chain')
 })

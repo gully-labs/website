@@ -44,7 +44,7 @@ import path from 'node:path'
 import { checkWebhookForm, postWebhook, resolvePublic } from './alerts.mjs'
 import { DATA_DIR, json, readJson } from './http.mjs'
 import { planOf } from './plans.mjs'
-import { CHAINS, CHAIN_LIST, fmtUnits, rpc as payRpc } from './payments.mjs'
+import { CHAINS, CHAIN_LIST, fmtUnits, READ_CHAINS, rpc as payRpc } from './payments.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { linkedChat, sendAccountTelegram, telegramEnabled } from './telegram.mjs'
 import { monitorAlertKeyboard } from './telegram-ui.mjs'
@@ -214,6 +214,13 @@ export function chainOf(x) {
   const s = String(x ?? '').toLowerCase()
   const c = CHAIN_LIST.find((k) => k.key === s || String(k.id) === s)
   return c ?? null
+}
+/** The chains a Gully Score can be read on: the monitored chains plus the read-only ones (payments.mjs READ_CHAINS,
+    Gully Chain Testnet). Monitoring itself stays on monitorChains(). */
+export const scoreChainList = () => [...monitorChains(), ...Object.values(READ_CHAINS).map((c) => ({ id: c.id, key: c.key, name: c.name, explorer: c.explorer }))]
+export function scoreChainOf(x) {
+  const s = String(x ?? '').toLowerCase()
+  return chainOf(s) ?? Object.values(READ_CHAINS).find((k) => k.key === s || String(k.id) === s) ?? null
 }
 const txLink = (chainId, h) => `${CHAINS[chainId].explorer}/tx/${h}`
 const addrLink = (chainId, a) => `${CHAINS[chainId].explorer}/address/${a}`

@@ -13,6 +13,10 @@ export const CHAINS = {
   43114: { key: 'avalanche', name: 'Avalanche C-Chain', explorer: 'https://snowscan.xyz', blockscout: null },
   11155111: { key: 'sepolia', name: 'Sepolia', explorer: 'https://sepolia.etherscan.io', blockscout: 'https://eth-sepolia.blockscout.com' },
   84532: { key: 'base-sepolia', name: 'Base Sepolia', explorer: 'https://sepolia.basescan.org', blockscout: 'https://base-sepolia.blockscout.com' },
+  // Our own L3 testnet. Its explorer has no verification API and Etherscan V2 does not cover it, so source is read
+  // from Sourcify only (it does not list the chain today, so in practice every scan runs in bytecode-only mode).
+  // Bytecode and proxy slots come over its RPC (payments.mjs READ_CHAINS, GULLY_RPC_485590 overrides).
+  485590: { key: 'gully', name: 'Gully Chain Testnet', explorer: 'https://testnet-explorer.gullychain.xyz', blockscout: null, etherscan: false, testnet: true },
 }
 
 const BY_KEY = Object.fromEntries(Object.entries(CHAINS).map(([id, c]) => [c.key, Number(id)]))

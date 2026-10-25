@@ -143,6 +143,17 @@ const TESTNETS = {
 const TESTNET_IDS = process.env.NODE_ENV === 'production' ? [] : [...new Set(String(process.env.GULLY_TESTNET_CHAINS ?? '').split(',').map((s) => Number(s.trim())))].filter((id) => TESTNETS[id])
 for (const id of TESTNET_IDS) CHAINS[id] = TESTNETS[id].chain
 
+/**
+ * READ ONLY: chains our servers read from (Gully Score, Gully Security scans, monitoring reads) but where NO payment
+ * is ever offered or priced. They are deliberately not in CHAINS, CHAIN_LIST or ASSETS, so nothing in checkout,
+ * invoices or plans can see them; rpc() and rpcsFor() serve them for reads. GULLY_RPC_<chainId> overrides the RPCs.
+ */
+export const READ_CHAINS = {
+  485590: { id: 485590, key: 'gully', name: 'Gully Chain Testnet', testnet: true, readOnly: true, explorer: 'https://testnet-explorer.gullychain.xyz', explorerName: 'Gully Chain Explorer', confirmations: 1, rpcs: ['https://testnet-rpc.gullychain.xyz'] },
+}
+/** A chain's definition for reads: a payment chain (CHAINS) or a read-only one (READ_CHAINS); null when unknown. */
+export const chainInfo = (chainId) => CHAINS[chainId] ?? READ_CHAINS[chainId] ?? null
+
 /** The EVM chains in display order (object keys that are numbers would sort by id). Testnets only when enabled. */
 export const CHAIN_LIST = [8453, 1, 56, 42161, 10, 137, 43114, ...TESTNET_IDS].map((id) => CHAINS[id])
 /** Whether Gully Labs' own treasury may be paid on a chain (treasury-chains.mjs). Solana has its own treasury. */
@@ -191,7 +202,7 @@ export function confirmationsFor(chainId) {
 /** RPC URLs for a chain, tried in order. */
 export function rpcsFor(chainId) {
   const env = String(process.env[`GULLY_RPC_${chainId}`] ?? (chainId === 8453 ? (process.env.GULLY_BASE_RPC ?? '') : '')).trim()
-  return env ? env.split(',').map((s) => s.trim()).filter(Boolean) : CHAINS[chainId].rpcs
+  return env ? env.split(',').map((s) => s.trim()).filter(Boolean) : (chainInfo(chainId)?.rpcs ?? [])
 }
 
 export const txUrl = (chainId, hash) => `${CHAINS[chainId].explorer}/tx/${hash}`

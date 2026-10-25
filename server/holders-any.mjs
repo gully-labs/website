@@ -183,7 +183,7 @@ export async function probeToken(chainKey, address) {
 }
 
 /** The EVM chains a pasted 0x address is checked on, in display order. */
-export const EVM_CHAINS = ['robinhood', 'bsc', 'base', 'hyperevm']
+export const EVM_CHAINS = ['robinhood', 'bsc', 'base', 'hyperevm', 'gully']
 
 /**
  * A pasted address with no chain: the probe on every supported chain at once.

@@ -67,6 +67,7 @@ export const LOGO_CHAINS = {
   base: { evm: true, deepcore: 8453, dexscreener: 'base', coingecko: 'base', trustwallet: 'base' },
   hyperevm: { evm: true, deepcore: 999, dexscreener: 'hyperevm', coingecko: 'hyperevm', trustwallet: 'hyperevm' },
   solana: { evm: false, deepcore: null, dexscreener: 'solana', coingecko: 'solana', trustwallet: 'solana' },
+  gully: { evm: true, deepcore: null, dexscreener: null, coingecko: null, trustwallet: null },
   ethereum: { evm: true, deepcore: null, dexscreener: 'ethereum', coingecko: 'ethereum', trustwallet: 'ethereum' },
   arbitrum: { evm: true, deepcore: null, dexscreener: 'arbitrum', coingecko: 'arbitrum-one', trustwallet: 'arbitrum' },
   optimism: { evm: true, deepcore: null, dexscreener: 'optimism', coingecko: 'optimistic-ethereum', trustwallet: 'optimism' },
