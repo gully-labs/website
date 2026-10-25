@@ -74,6 +74,7 @@ export function parseEtherscanSource(sourceCode, contractName) {
 async function fromEtherscan(chainId, address) {
   const key = config.etherscanKey()
   if (!key) return { skipped: 'ETHERSCAN_API_KEY not set' }
+  if (CHAINS[chainId]?.etherscan === false) return { skipped: 'Etherscan does not cover this chain' }
   const u = new URL(config.etherscanBase())
   u.search = new URLSearchParams({ chainid: String(chainId), module: 'contract', action: 'getsourcecode', address, apikey: key }).toString()
   const r = await fetchCapped(u.href, { maxBytes: 20 * 1024 * 1024, what: 'Etherscan' })
@@ -155,14 +156,14 @@ async function rpc(chainId, method, params) {
   if (rpcImpl) return rpcImpl(chainId, method, params)
   try {
     const pay = await import('../payments.mjs')
-    if (pay.CHAINS?.[chainId]) return await pay.rpc(chainId, method, params)
+    if (pay.CHAINS?.[chainId] || pay.READ_CHAINS?.[chainId]) return await pay.rpc(chainId, method, params)
   } catch (e) {
     if (e?.code !== 'ERR_MODULE_NOT_FOUND') {
       /* fall through to the explorers' RPC */
     }
   }
   const key = config.etherscanKey()
-  if (key && method === 'eth_getCode') {
+  if (key && method === 'eth_getCode' && CHAINS[chainId]?.etherscan !== false) {
     const u = new URL(config.etherscanBase())
     u.search = new URLSearchParams({ chainid: String(chainId), module: 'proxy', action: 'eth_getCode', address: params[0], tag: 'latest', apikey: key }).toString()
     const r = await fetchCapped(u.href, { maxBytes: 1024 * 1024, what: 'Etherscan RPC' })

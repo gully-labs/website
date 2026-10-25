@@ -23,6 +23,7 @@ const CHAINS: Record<string, Mark> = {
   optimism: { src: '/chains/optimism.svg', name: 'OP Mainnet', disc: null, inset: 0 },
   polygon: { src: '/chains/polygon.svg', name: 'Polygon', disc: null, inset: 0 },
   avalanche: { src: '/chains/avalanche.svg', name: 'Avalanche', disc: null, inset: 0 },
+  gully: { src: '/brand/gully-mark-96.png', name: 'Gully Chain Testnet', disc: null, inset: 0 }, // our own L3 testnet: the brand kit's mark
 }
 
 /** Other keys and display names the site and the API use for the same chain. */
@@ -49,6 +50,9 @@ const CHAIN_ALIAS: Record<string, string> = {
   'op sepolia': 'optimism',
   'arbitrum-sepolia': 'arbitrum',
   'arbitrum sepolia': 'arbitrum',
+  'gully chain': 'gully',
+  'gully chain testnet': 'gully',
+  'gully-testnet': 'gully',
 }
 
 export function chainMark(key: string | null | undefined): Mark | null {

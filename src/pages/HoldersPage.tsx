@@ -15,6 +15,7 @@ const CHAIN_NAMES: Record<string, string> = {
   base: 'Base',
   hyperevm: 'HyperEVM',
   solana: 'Solana',
+  gully: 'Gully Chain Testnet',
 }
 
 export function HoldersPage() {

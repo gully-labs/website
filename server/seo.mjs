@@ -103,7 +103,7 @@ function holderSymbol(chain, token) {
   }
 }
 
-const CHAIN_NAMES_ALL = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }
+const CHAIN_NAMES_ALL = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana', gully: 'Gully Chain Testnet' }
 
 /** Whether the Holder Map has data for a stock chain right now (false until holders.mjs says so). */
 export function holdersAvailableFor(chainKey) {
@@ -268,7 +268,7 @@ export function pageMeta(host, pathname) {
   // A Holder Map Deep check's report (holders-deep-routes.mjs): a real page for whoever holds the unguessable link, never indexed.
   if (/^\/holders\/deep\/hd_[\w-]{16}$/.test(p)) return { title: 'Deep check · Holder Map · Gully Labs', description: 'A Holder Map Deep check report: funding trace, shared-funder clusters, deployer record, snipers and bundles.', canonical: null, found: true, noindex: true, image: `${SITE}/social/og-holders.png` }
   // Holder Maps (holders.mjs): a page per DeepCore launch or tracked stock token; the share image is the map's own card.
-  const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana)\/([A-Za-z0-9]{1,64})$/)
+  const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana|gully)\/([A-Za-z0-9]{1,64})$/)
   if (hm) {
     const chainName = CHAIN_NAMES_ALL[hm[2]]
     const sym = holderSymbol(hm[2], hm[3])

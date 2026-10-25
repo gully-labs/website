@@ -15,8 +15,9 @@ export { DISCLAIMER, INPUT_KINDS, MODE_LABELS, SCAN_STATUSES, SEVERITIES, TERMIN
 /** Statuses in which the engine is still working (in pipeline order). */
 export const ACTIVE_STATUSES = ['queued', 'fetching', 'analysing', 'triaging', 'reporting']
 
-/** Mainnet chains a deployed contract can be scanned on (engine chains.mjs); `logo` is the site's mark key. */
-export const SCAN_CHAINS = [1, 8453, 42161, 10, 137, 56, 43114].map((id) => ({ key: CHAINS[id].key, chainId: id, name: CHAINS[id].name, logo: { bnb: 'bsc' }[CHAINS[id].key] ?? CHAINS[id].key }))
+/** Chains a deployed contract can be scanned on (engine chains.mjs): the mainnets, then Gully Chain Testnet (our own
+    L3; no verification service covers it, so its scans read bytecode only). `logo` is the site's mark key. */
+export const SCAN_CHAINS = [1, 8453, 42161, 10, 137, 56, 43114, 485590].map((id) => ({ key: CHAINS[id].key, chainId: id, name: CHAINS[id].name, logo: { bnb: 'bsc' }[CHAINS[id].key] ?? CHAINS[id].key }))
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
 const COMMIT_RE = /^[0-9a-f]{7,40}$/

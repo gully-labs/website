@@ -76,7 +76,7 @@ export function hostPolicy(host, pathname) {
    integrators' snippets call those, and they never move. */
 export const HOLDERMAPS_HOST = 'holdermaps.xyz'
 export const HOLDERMAPS_URL = `https://${HOLDERMAPS_HOST}`
-export const HOLDER_CHAIN_KEYS = ['robinhood', 'bsc', 'base', 'hyperevm', 'solana']
+export const HOLDER_CHAIN_KEYS = ['robinhood', 'bsc', 'base', 'hyperevm', 'solana', 'gully']
 
 /** holdermaps.xyz and www.holdermaps.xyz. */
 export const isHolderMapsHost = (host) => /^(www\.)?holdermaps\.xyz$/.test(String(host ?? '').split(':')[0].toLowerCase())

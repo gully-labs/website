@@ -972,7 +972,8 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
     // The explorer's contract creations, chain by chain.
     if (deps.explorerKey?.()) {
       for (const [ck, ch] of Object.entries(deps.chains)) {
-        if (ck === 'solana') continue
+        // Solana is not read yet; a testnet (Gully Chain Testnet) has no explorer API that lists contract creations.
+        if (ck === 'solana' || ch.testnet) continue
         const row = {
           chain: ck,
           name: ch.name,
@@ -1029,7 +1030,7 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
         }
       }
     } else {
-      sec.chains = Object.entries(deps.chains).map(([ck, ch]) => ({
+      sec.chains = Object.entries(deps.chains).filter(([, ch]) => !ch.testnet).map(([ck, ch]) => ({
         chain: ck,
         name: ch.name,
         state: 'unavailable',

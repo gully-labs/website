@@ -34,7 +34,7 @@ the point-in-time disclaimer verbatim. Every finding has `verifiedByHuman: false
 { kind: 'web2',    repo, commit }  |  { kind: 'web2', filename: 'api.zip', data }   // checklist mode for JS/TS backends
 ```
 
-Chains: ethereum, base, arbitrum, optimism, bnb, polygon, avalanche, sepolia, base-sepolia (`chains.mjs`).
+Chains: ethereum, base, arbitrum, optimism, bnb, polygon, avalanche, sepolia, base-sepolia, gully (Gully Chain Testnet, 485590: no verification service covers it, so its scans run bytecode-only) (`chains.mjs`).
 
 ### Scan states
 

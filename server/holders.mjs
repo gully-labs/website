@@ -4,7 +4,7 @@
 //   GET /api/holders/:chain/:token/card.png the same map as a share card (1200 x 630, holders-card.mjs)
 //   GET /api/holders/:chain/:token/card.jpg the same card as a JPEG (Telegram inline photo results must be JPEG)
 //
-// Any ERC-20 on Robinhood Chain, BNB Chain, Base and HyperEVM and any SPL token on Solana can be mapped
+// Any ERC-20 on Robinhood Chain, BNB Chain, Base, HyperEVM and Gully Chain Testnet and any SPL token on Solana can be mapped
 // (kind 'token'), next to DeepCore launches ('deepcore-launch'), other launchpads' tokens (knownLaunch in
 // holders-launchpads.mjs: 'launch') and the tracker's stock tokens ('stock'). So the endpoint cannot be used to
 // hammer upstreams (holders-any.mjs): an address is first confirmed to be a token (ERC-20 decimals() and
@@ -96,6 +96,10 @@ export const HOLDER_CHAINS = {
   base: { id: 8453, name: 'Base', explorer: 'https://basescan.org', holders: 'blockscout', moralis: 'base', rpcs: ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'], span: 10_000 },
   hyperevm: { id: 999, name: 'HyperEVM', explorer: 'https://hyperevmscan.io', holders: 'blockscout', rpcs: ['https://rpc.hyperliquid.xyz/evm'], span: 1_000 },
   solana: { id: 'solana', name: 'Solana', explorer: 'https://solscan.io', holders: 'solana-rpc', rpcs: [], span: 0 },
+  // Gully Chain Testnet (our own L3). No holder API indexes it, so maps come only from our own Transfer-log index
+  // (holders-logs.mjs). Its public RPC is our own archive node, so it counts as an owner RPC (`ownArchive`):
+  // GULLY_RPC_485590 still overrides it. The explorer is our own (address and token pages; no verification API).
+  gully: { id: 485590, name: 'Gully Chain Testnet', explorer: 'https://testnet-explorer.gullychain.xyz', holders: 'own-rpc', testnet: true, ownArchive: true, rpcs: ['https://testnet-rpc.gullychain.xyz'], span: 10_000 },
 }
 const CHAIN_BY_ID = Object.fromEntries(Object.entries(HOLDER_CHAINS).map(([k, c]) => [c.id, k]))
 export const chainKeyOf = (x) => {
@@ -311,10 +315,13 @@ async function rpcPost(url, body) {
 }
 /** The chain's RPC URLs in failover order (GULLY_RPC_<chainId> first; cooling ones last). */
 export const rpcUrlList = (chainKey) => rpcUrls(chainKey)
-/** The URLs the owner configured (GULLY_RPC_<chainId>, comma-separated): the only ones probed for archive use. */
+/** The URLs the owner configured (GULLY_RPC_<chainId>, comma-separated): the only ones probed for archive use.
+    A chain we run ourselves (`ownArchive`, Gully Chain) counts its default RPCs as configured when the env is unset. */
 export const rpcEnvUrls = (chainKey) => {
   const c = HOLDER_CHAINS[chainKey]
-  return c ? String(process.env[`GULLY_RPC_${c.id}`] ?? '').split(',').map((u) => u.trim()).filter(Boolean) : []
+  if (!c) return []
+  const env = String(process.env[`GULLY_RPC_${c.id}`] ?? '').split(',').map((u) => u.trim()).filter(Boolean)
+  return env.length || !c.ownArchive ? env : [...c.rpcs]
 }
 /** One call on one URL; a JSON-RPC error is thrown with the node's own message. */
 export async function rpcAt(url, method, params) {
@@ -579,6 +586,34 @@ const INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'g
 /** Uniswap v4 PoolManagers hold the tokens of v4 pools (Peddles and others): pools, not wallets. */
 const UNIV4_POOL_MANAGERS = { 4663: '0x8366a39CC670B4001A1121B8F6A443A643e40951', 8453: '0x498581fF718922c3f8e6A244956aF099B2652b2b', 56: '0x28e2Ea090877bF75740558f6BFB36A5ffeE9e9dF' }
 
+/** Gully Chain Testnet's own infrastructure (gully-ops/l3; the same addresses as Gully Street's config): the
+    launchpad's bonding curve holds a launch's unsold supply, the LP locker holds graduated liquidity. */
+export const GULLY_CHAIN_LABELS = {
+  485590: [
+    ['0x3378b659f6ddA7F13D87599B383b3995f82D0974', 'pool', 'Gully launchpad (bonding curve)'],
+    ['0xBAb80bf7CA383461e573Dc503c70083c0415d58B', 'lock', 'Gully LP locker'],
+    ['0x1283a251E34296675CC5130A2B02871384c0436a', 'router', 'Gully Swap router'],
+    ['0xf49b65b9912fd017fDb91D21eE9bC9992F8cF05c', 'router', 'Gully Swap (v3 router)'],
+    ['0x90aDCE86fce80E9fACD436efBb4C8A25D3d38f75', 'pool', 'Gully Swap positions'],
+  ],
+}
+/** The v3 factory whose pools are labelled as pools on Gully Chain (factory() of a holder contract). */
+const GULLY_V3_FACTORY = { 485590: '0x1787a3ba8c8d7a2439cfa2efafc683ecac623950' }
+
+/**
+ * Gully Swap pools among a Gully Chain token's holder contracts: a contract whose factory() is Gully Swap's v3
+ * factory is a pool, not a wallet. Bounded (at most 20 contracts, one batch). Mutates `labels`.
+ */
+export async function labelGullyPools(chainKey, contractAddrs, labels) {
+  const factory = GULLY_V3_FACTORY[HOLDER_CHAINS[chainKey]?.id]
+  const cands = factory ? contractAddrs.filter((a) => !labels.has(a)).slice(0, 20) : []
+  if (!cands.length) return
+  const res = await evmBatch(chainKey, cands.map((a) => ['eth_call', [{ to: a, data: '0xc45a0155' }, 'latest']]))
+  cands.forEach((a, i) => {
+    if (typeof res[i] === 'string' && res[i].length === 66 && `0x${res[i].slice(26)}`.toLowerCase() === factory) labels.set(a, { kind: 'pool', name: 'Gully Swap pool' })
+  })
+}
+
 /** Fixed labels for a chain and token: Map address -> { kind, name }. */
 export function staticLabels({ chainKey, token, venue, launch, trackerPool }) {
   const m = new Map()
@@ -599,6 +634,7 @@ export function staticLabels({ chainKey, token, venue, launch, trackerPool }) {
     put(g?.launchFee?.guard, 'deepcore', 'DeepCore launch guard')
   }
   put(UNIV4_POOL_MANAGERS[HOLDER_CHAINS[chainKey]?.id], 'pool', 'Uniswap v4 PoolManager (pools)')
+  for (const [a, kind, name] of GULLY_CHAIN_LABELS[HOLDER_CHAINS[chainKey]?.id] ?? []) put(a, kind, name)
   const reg = FEE_PROXY_REGISTRY[HOLDER_CHAINS[chainKey]?.id]
   for (const a of [...(reg?.erc20 ?? []), ...(reg?.native ?? [])]) put(a, 'gully', 'Gully Pay fee proxy')
   if (isAddr(trackerPool?.pair)) put(trackerPool.pair, 'pool', `Trading pool${trackerPool.dex ? ` (${trackerPool.dex})` : ''}`)
@@ -1202,6 +1238,8 @@ async function buildOne(chainKey, tier, { stock, token, launch: dcLaunch = null,
     if (holders) for (const h of holders) if (h.contract === undefined && codes.has(h.address)) h.contract = codes.get(h.address)
     holders ??= prelim.map((a) => ({ address: a, raw: 0n, contract: codes.get(a) }))
     if (history?.complete) holders = holders.map((h) => ({ ...h, contract: codes.get(h.address) }))
+    // Gully Chain: Gully Swap pools are pools, not wallets.
+    await labelGullyPools(chainKey, [...codes].filter(([, isContract]) => isContract).map(([a]) => a), labels)
     // Moralis names entities itself.
     for (const h of holders) if (h.name && !labels.has(h.address)) labels.set(h.address, { kind: EXCHANGE_RE.test(h.name) || EXCHANGE_RE.test(h.entity ?? '') ? 'exchange' : 'known', name: String(h.name).slice(0, 48) })
   }

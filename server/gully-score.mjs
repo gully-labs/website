@@ -42,8 +42,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { badgeHeaders, badgeStyleFrom, renderBadge } from './badges.mjs'
 import { clientIp, DATA_DIR, json } from './http.mjs'
-import { CHAINS, rpc as payRpc } from './payments.mjs'
-import { chainOf, decodeString, listedContracts, monitorChains, monitorFacts, onMonitorEvents, readControl, SEL, short } from './sec-monitor.mjs'
+import { chainInfo, rpc as payRpc } from './payments.mjs'
+import { scoreChainOf as chainOf, scoreChainList, decodeString, listedContracts, monitorFacts, onMonitorEvents, readControl, SEL, short } from './sec-monitor.mjs'
 import { readLaunches } from './deepcore.mjs'
 import { holderPageUrl } from './hosts.mjs'
 
@@ -232,8 +232,8 @@ async function delayOf(chainId, addr) {
 }
 
 async function holderMap(chainId, address) {
-  const key = { 8453: 'base', 56: 'bsc' }[chainId]
-  if (!key) return { error: `The Holder Map does not cover ${CHAINS[chainId]?.name ?? 'this chain'} yet.` }
+  const key = { 8453: 'base', 56: 'bsc', 485590: 'gully' }[chainId]
+  if (!key) return { error: `The Holder Map does not cover ${chainInfo(chainId)?.name ?? 'this chain'} yet.` }
   try {
     const r = await getJson(`${holdersBase()}/api/holders/${key}/${address}`, { timeout: 15_000 })
     if (!r.body || typeof r.body !== 'object' || r.status === 404) return { error: 'The Holder Map is not running on this server yet, so holder data is not available.' }
@@ -295,7 +295,7 @@ export function computeScore(chainId, address, { now = Date.now() } = {}) {
 }
 
 async function doCompute(chainId, address, now) {
-  const chain = CHAINS[chainId]
+  const chain = chainInfo(chainId)
   let code
   try {
     code = await rpc(chainId, 'eth_getCode', [address, 'latest'])
@@ -305,10 +305,13 @@ async function doCompute(chainId, address, now) {
   if (!okHex(code) || code.length <= 2) return { error: `There is no contract at this address on ${chain.name}.`, status: 404 }
 
   const explorer = (a) => `${chain.explorer}/address/${a}`
-  const [ctl, src] = await Promise.all([readControl(chainId, address).catch(() => null), sourcify(chainId, address, now)])
+  // A read-only chain (Gully Chain Testnet) has no verification service: neither Sourcify nor Etherscan covers it,
+  // so the score is built from on-chain reads only and the code counts as not verified (said so, with the reason).
+  const noVerifier = !!chain.readOnly
+  const [ctl, src] = await Promise.all([readControl(chainId, address).catch(() => null), noVerifier ? { verified: false, noService: true } : sourcify(chainId, address, now)])
   // Sourcify first. Etherscan V2 (only with ETHERSCAN_API_KEY) is asked only for what Sourcify did not give: a
   // verified source, or the deployment block for the age.
-  const esc = src.verified && src.deployment?.blockNumber ? null : await etherscan(chainId, address, now)
+  const esc = noVerifier || (src.verified && src.deployment?.blockNumber) ? null : await etherscan(chainId, address, now)
   const srcMatch = sourcifyMatch(src.match)
   const nameOut = await tryCall(chainId, address, SEL.name).catch(() => null)
   const symOut = await tryCall(chainId, address, SEL.symbol).catch(() => null)
@@ -316,7 +319,8 @@ async function doCompute(chainId, address, now) {
   const parts = []
 
   // verified
-  if (src.verified) parts.push(ok('verified', srcMatch === 'full' ? 100 : 85, srcMatch === 'full' ? 'Full match (Sourcify)' : 'Partial match (Sourcify)', `The source code is verified on Sourcify: ${srcMatch === 'full' ? 'a full match, so the compiled code and its metadata match the deployed code exactly' : 'a partial match, so the compiled code matches the deployed code but its metadata (comments, file names) differs'}.`, [{ label: `Sourcify: ${srcMatch} match`, url: sourcifyContractUrl(chainId, address) }], { provider: 'sourcify', match: srcMatch }))
+  if (src.noService) parts.push(ok('verified', 0, 'Not verified', `${chain.name} has no source verification service yet, so nobody can check what this contract does from its code. Everything else here is read from the chain.`, [{ label: chain.explorerName ?? 'Explorer', url: explorer(address) }]))
+  else if (src.verified) parts.push(ok('verified', srcMatch === 'full' ? 100 : 85, srcMatch === 'full' ? 'Full match (Sourcify)' : 'Partial match (Sourcify)', `The source code is verified on Sourcify: ${srcMatch === 'full' ? 'a full match, so the compiled code and its metadata match the deployed code exactly' : 'a partial match, so the compiled code matches the deployed code but its metadata (comments, file names) differs'}.`, [{ label: `Sourcify: ${srcMatch} match`, url: sourcifyContractUrl(chainId, address) }], { provider: 'sourcify', match: srcMatch }))
   else if (esc?.verified) parts.push(ok('verified', 100, 'Verified (Etherscan)', 'The source code is published on Etherscan; Sourcify has no match for it.', [{ label: chain.explorerName ?? 'Explorer', url: `${explorer(address)}#code` }], { provider: 'etherscan', match: null }))
   else if (src.verified === false && (!esc || esc.verified === false)) parts.push(ok('verified', 0, 'Not verified', 'No published source code matches this contract, so nobody can check what it does from its code.', [{ label: 'Sourcify lookup', url: `https://sourcify.dev/#/lookup/${address}` }]))
   else parts.push(na('verified', `${src.error ?? 'The verification service could not be read'}; checked again later.`))
@@ -485,9 +489,9 @@ export function publicView(r) {
   if (!r) return null
   return {
     ...r,
-    chain: { id: r.chainId, key: r.chainKey, name: r.chainName, explorer: CHAINS[r.chainId]?.explorer ?? null },
+    chain: { id: r.chainId, key: r.chainKey, name: r.chainName, explorer: chainInfo(r.chainId)?.explorer ?? null },
     listed: isListed(r.chainId, r.address),
-    links: { page: `${SITE}/score/${r.chainKey}/${r.address}`, badge: `${SITE}/score/${r.chainKey}/${r.address}/badge.svg`, explorer: `${CHAINS[r.chainId]?.explorer}/address/${r.address}` },
+    links: { page: `${SITE}/score/${r.chainKey}/${r.address}`, badge: `${SITE}/score/${r.chainKey}/${r.address}/badge.svg`, explorer: `${chainInfo(r.chainId)?.explorer}/address/${r.address}` },
     methodology: methodology(),
   }
 }
@@ -600,7 +604,7 @@ async function scoreForIp(ip, chain, address) {
  */
 export async function readScoreFor(chainIn, addressIn, caller = 'ask') {
   const chain = chainOf(String(chainIn ?? '').toLowerCase())
-  if (!chain) return { error: `Unknown chain. Scores cover ${monitorChains().map((c) => c.key).join(', ')}.`, status: 404 }
+  if (!chain) return { error: `Unknown chain. Scores cover ${scoreChainList().map((c) => c.key).join(', ')}.`, status: 404 }
   const address = String(addressIn ?? '').trim().toLowerCase()
   if (!ADDR_RE.test(address) || address === ZERO) return { error: 'Not a contract address.', status: 400 }
   const r = await scoreForIp(`ask:${caller}`, chain, address)
@@ -609,21 +613,21 @@ export async function readScoreFor(chainIn, addressIn, caller = 'ask') {
 }
 
 /** The chains a score can be looked up on (key and name). */
-export const scoreChains = () => monitorChains().map(({ id, key, name }) => ({ id, key, name }))
+export const scoreChains = () => scoreChainList().map(({ id, key, name }) => ({ id, key, name }))
 
 /** /api/score*, and /score/:chain/:address/badge.svg. Returns true when answered. */
 export async function handleScore(req, res, url) {
   const p = url.pathname
   if (req.method === 'OPTIONS') return res.writeHead(204, { ...CORS, 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Max-Age': '86400' }), res.end(), true
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }, CORS), true
-  if (p === '/api/score') return json(res, 200, { scores: scoreIndex(), chains: monitorChains().map(({ id, key, name }) => ({ id, key, name })), methodology: methodology() }, { ...CORS, 'Cache-Control': 'public, max-age=60' }), true
+  if (p === '/api/score') return json(res, 200, { scores: scoreIndex(), chains: scoreChainList().map(({ id, key, name }) => ({ id, key, name })), methodology: methodology() }, { ...CORS, 'Cache-Control': 'public, max-age=60' }), true
   if (p === '/api/score/methodology') return json(res, 200, methodology(), { ...CORS, 'Cache-Control': 'public, max-age=300' }), true
   const badge = p.match(/^\/score\/([a-z]+)\/(0x[0-9a-fA-F]{40})\/badge\.svg$/)
   const api = p.match(/^\/api\/score\/([a-z0-9]+)\/(0x[0-9a-fA-F]{40})$/)
   const m = badge ?? api
   if (!m) return false
   const chain = chainOf(m[1])
-  if (!chain) return json(res, 404, { error: `Unknown chain. Scores cover ${monitorChains().map((c) => c.key).join(', ')}.` }, CORS), true
+  if (!chain) return json(res, 404, { error: `Unknown chain. Scores cover ${scoreChainList().map((c) => c.key).join(', ')}.` }, CORS), true
   const address = m[2].toLowerCase()
   if (!ADDR_RE.test(address) || address === ZERO) return json(res, 400, { error: 'Not a contract address.' }, CORS), true
   if (badge) {
