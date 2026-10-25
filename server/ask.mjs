@@ -52,7 +52,7 @@ import { clientIp, DATA_DIR, json } from './http.mjs'
 import { capPerPage, cosine, expandQuery, makeIndex, rerank, rrf } from './ask-index.mjs'
 import { embedConfigured, embedQuery, embedStatus, syncEmbeddings, vectorFor } from './ask-embed.mjs'
 import { readRemote, remoteChunks, startRemoteLoop } from './ask-remote.mjs'
-import { APP_URL, holderPageUrl } from './hosts.mjs'
+import { APP_URL, currentPageUrl, holderPageUrl, securityReportUrl, securityUrl } from './hosts.mjs'
 import { CHAIN_LIST, CHAINS as PAY_CHAINS, confirmationsFor, FEE_PROXIES, publicAssets, publicChains } from './payments.mjs'
 import { planOf, publicPlans, SECURITY } from './plans.mjs'
 import { readStats } from './stats.mjs'
@@ -449,9 +449,9 @@ async function securityOffer() {
     },
     score: { name: 'Gully Score', status: 'live', what: 'A 0 to 100 score for any contract from public evidence, every weight and source shown; nobody can pay to change it.', page: `${SITE}/score` },
     monitors: { status: 'live', what: 'Alerts on privileged changes and large outflows of the contracts a workspace watches, by Telegram or signed webhook.', contractsPerPlan: Object.fromEntries(plans.map((p) => [p.name, p.monitors])), start: `${APP_URL}/#security-monitors` },
-    review: { name: SECURITY.review.name, status: SECURITY.review.available ? 'quoted on request' : 'not offered', what: 'People read the code in scope, check findings by hand and write up what they find.', request: `${SITE}/security#request` },
+    review: { name: SECURITY.review.name, status: SECURITY.review.available ? 'quoted on request' : 'not offered', what: 'People read the code in scope, check findings by hand and write up what they find.', request: securityUrl('/security#request') },
     audit: { name: SECURITY.audit.name, status: SECURITY.audit.available ? 'quoted on request' : 'not offered yet', note: 'Gully Labs has not audited any project and has published no audit reports.' },
-    page: `${SITE}/security`,
+    page: securityUrl('/security'),
     docs: `${DOCS}/gully-security`,
   }
 }
@@ -485,9 +485,9 @@ async function publishedReports(input) {
   const all = publishedJobs()
   return {
     total: all.length,
-    reports: all.slice(0, limit).map((j) => ({ title: `AI Security Scan: ${scopeLabel(j.input, j.upload)}`, publishedAt: j.publishedAt ?? null, mode: j.snapshot?.label ?? j.snapshot?.mode ?? null, findings: j.counts ?? j.snapshot?.summary?.counts ?? null, page: `${SITE}/security/reports/${j.id}` })),
+    reports: all.slice(0, limit).map((j) => ({ title: `AI Security Scan: ${scopeLabel(j.input, j.upload)}`, publishedAt: j.publishedAt ?? null, mode: j.snapshot?.label ?? j.snapshot?.mode ?? null, findings: j.counts ?? j.snapshot?.summary?.counts ?? null, page: securityReportUrl(j.id) })),
     note: all.length ? 'Each report is an automated scan, not an audit; its label says whether static tools ran.' : 'No scan report has been published yet.',
-    page: `${SITE}/security/reports`,
+    page: securityUrl('/security/reports'),
   }
 }
 
@@ -693,7 +693,7 @@ export function sourceBlock(results, id) {
   const tag = `src-${id}`
   const clean = (s) => String(s ?? '').split(id).join('')
   return results
-    .map((r, i) => `<${tag} n="${i + 1}" title="${clean(r.chunk.title).replace(/"/g, "'")}" url="${clean(r.chunk.url)}" from="${clean(r.chunk.source)}">\n${clean(r.chunk.text)}\n</${tag}>`)
+    .map((r, i) => `<${tag} n="${i + 1}" title="${clean(r.chunk.title).replace(/"/g, "'")}" url="${clean(currentPageUrl(r.chunk.url))}" from="${clean(r.chunk.source)}">\n${clean(r.chunk.text)}\n</${tag}>`)
     .join('\n')
 }
 
@@ -793,7 +793,7 @@ async function searchDocs(input, results) {
   if (!fresh.length) return { sources: [], note: 'Nothing new matched that search.' }
   const out = fresh.map((r) => {
     results.push(r)
-    return { n: results.length, title: r.chunk.title, section: r.chunk.section, url: r.chunk.url, text: r.chunk.text.slice(0, 1_400) }
+    return { n: results.length, title: r.chunk.title, section: r.chunk.section, url: currentPageUrl(r.chunk.url), text: r.chunk.text.slice(0, 1_400) }
   })
   return { sources: out, note: 'Cite these by their n like the other sources.' }
 }
@@ -871,7 +871,7 @@ const LIVE_SOURCES = {
   get_alert_channels: () => ({ label: 'Alert channels', url: `${DOCS}/plans-alerts#telegram` }),
   get_pay_chains: () => ({ label: 'Gully Pay config', url: `${SITE}/api/plans` }),
   get_holders: (r) => ({ label: `Holder Map · ${r.out.symbol ?? 'token'}`, url: r.out.page ?? holderPageUrl(r.out.chain, r.out.token) }),
-  get_security_offer: () => ({ label: 'Gully Security offer', url: `${SITE}/security` }),
+  get_security_offer: () => ({ label: 'Gully Security offer', url: securityUrl('/security') }),
   get_gully_score: (r) => ({ label: `Gully Score · ${r.out.symbol ?? r.out.name ?? 'contract'}`, url: r.out.page ?? `${SITE}/score` }),
   get_published_reports: () => ({ label: 'Published scan reports', url: `${SITE}/api/security/reports` }),
   get_status: () => ({ label: 'Status', url: `${SITE}/status` }),
@@ -901,7 +901,7 @@ export function mapCitations(text, results, runs = []) {
     if (!used.includes(n)) used.push(n)
     return m
   })
-  const citations = used.sort((a, b) => a - b).map((n) => ({ n, title: results[n - 1].chunk.title, url: results[n - 1].chunk.url, source: results[n - 1].chunk.source }))
+  const citations = used.sort((a, b) => a - b).map((n) => ({ n, title: results[n - 1].chunk.title, url: currentPageUrl(results[n - 1].chunk.url), source: results[n - 1].chunk.source }))
   const live = usedLive
     .sort((a, b) => a - b)
     .map((n) => {

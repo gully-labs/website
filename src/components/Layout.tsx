@@ -13,7 +13,7 @@ import { AskLauncher } from './ask/AskLauncher'
 import { PwaCards } from './pwa/PwaCards'
 import { scrollToAnchor } from '../lib/anchors'
 import { prefetchPath } from '../pages/routeChunks'
-import { isHolderMapsHost } from '../site-host'
+import { isHolderMapsHost, isSecurityHost } from '../site-host'
 
 // The contact modal (and the animation library it uses) loads the first time it is opened, so the
 // landing never downloads it.
@@ -99,7 +99,7 @@ export function Layout() {
           >
             Skip to content
           </a>
-          {!pathname.startsWith('/holders') && !isHolderMapsHost() && <AnnouncementBar />}
+          {!pathname.startsWith('/holders') && !isHolderMapsHost() && !isSecurityHost() && <AnnouncementBar />}
           <Header />
           <main id="main" key={pathname} tabIndex={-1} className="animate-[gl-fade_.25s_ease-out_both] outline-none">
             <Outlet />

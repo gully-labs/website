@@ -27,6 +27,12 @@ fs.writeFileSync(
 )
 fs.writeFileSync(path.join(dist, 'assets', 'index-abcdef12.js'), 'console.log(1)')
 fs.writeFileSync(path.join(dist, 'widget.js'), '/* widget */')
+// Two published scan reports for gullysecurity.xyz: one its owner let search engines index, one private (noindex).
+const SEC_PUB = 'sec_' + 'p'.repeat(16)
+const SEC_PRIV = 'sec_' + 'q'.repeat(16)
+const SEC_ADDR = '0x' + '5'.repeat(40)
+const secJob = (id, indexable, publishedAt) => ({ id, workspace: 'ws_test', createdAt: publishedAt, input: { kind: 'address', chain: 'base', address: SEC_ADDR }, upload: null, free: true, priceCents: '0', invoiceId: null, state: 'started', status: 'done', completedAt: publishedAt, counts: { critical: 0, high: 1, medium: 0, low: 0, info: 2 }, published: true, publishedAt, indexable, snapshot: { mode: 'ai', label: 'AI review only', summary: { counts: { critical: 0, high: 1, medium: 0, low: 0, info: 2 } } } })
+fs.writeFileSync(path.join(tmp, 'security.json'), JSON.stringify({ jobs: [secJob(SEC_PUB, true, '2026-10-20T00:00:00.000Z'), secJob(SEC_PRIV, false, '2026-10-19T00:00:00.000Z')], reviews: [], credits: {} }))
 
 Object.assign(process.env, {
   PORT: String(PORT),
@@ -44,9 +50,10 @@ delete process.env.GULLY_TREASURY_ADDRESS
 delete process.env.ANTHROPIC_API_KEY
 delete process.env.GULLY_PAY_URL
 delete process.env.HOLDERMAPS_PRIMARY
+delete process.env.SECURITY_PRIMARY
 
 await import('../server/server.mjs')
-const { hostPolicy, payUrl, PAY_URL, API_URL, EMBED_URL, STATUS_URL, isPayHost, holderMapsRoute, holderShortPath, holderInternalPath, holderPageUrl, holderHomeUrl, isHolderMapsHost, HOLDERMAPS_URL } = await import('../server/hosts.mjs')
+const { hostPolicy, payUrl, PAY_URL, API_URL, EMBED_URL, STATUS_URL, isPayHost, holderMapsRoute, holderShortPath, holderInternalPath, holderPageUrl, holderHomeUrl, isHolderMapsHost, HOLDERMAPS_URL, securityRoute, securityShortPath, securityInternalPath, securityUrl, securityReportUrl, currentPageUrl, isSecurityHost, SECURITY_URL } = await import('../server/hosts.mjs')
 await new Promise((r) => setTimeout(r, 300))
 
 const t = makeChecker()
@@ -235,6 +242,109 @@ try {
       check('primary: Telegram map buttons name holdermaps.xyz', holdersPageUrl('robinhood', 'TSLA') === 'https://holdermaps.xyz/robinhood/TSLA')
     } finally {
       delete process.env.HOLDERMAPS_PRIMARY
+    }
+  }
+
+  /* ---------------------------------------------------- gullysecurity.xyz --- */
+  {
+    const SEC = 'gullysecurity.xyz'
+    const r = (p, h = SEC) => securityRoute(h, p.split('?')[0], p.includes('?') ? p.slice(p.indexOf('?')) : '')
+    // The routing table.
+    check('security: the hosts it answers', isSecurityHost(SEC) && isSecurityHost('www.gullysecurity.xyz') && isSecurityHost('gullysecurity.xyz:443') && !isSecurityHost(MAIN) && !isSecurityHost('gullysecurity.xyz.evil.test') && !isSecurityHost('holdermaps.xyz') && SECURITY_URL === 'https://gullysecurity.xyz')
+    check(
+      'security: short paths <-> the main site paths',
+      securityShortPath('/security') === '/' && securityShortPath('/security/') === '/' && securityShortPath('/security/reports') === '/reports' && securityShortPath(`/security/reports/${SEC_PUB}`) === `/reports/${SEC_PUB}` && securityShortPath('/security/sample') === '/sample' && securityShortPath('/security/terms') === '/terms' && securityShortPath('/security/nope') === null && securityShortPath('/legal/scan-terms') === null && securityShortPath('/score') === null &&
+        securityInternalPath('/') === '/security' && securityInternalPath('/reports') === '/security/reports' && securityInternalPath(`/reports/${SEC_PUB}`) === `/security/reports/${SEC_PUB}` && securityInternalPath('/sample') === '/security/sample' && securityInternalPath('/terms') === '/legal/scan-terms' && securityInternalPath('/reports/x') === null && securityInternalPath('/pricing') === null && securityInternalPath('/legal/terms') === null,
+    )
+    check('security policy: its pages, its API and static files are served', ['/', '/reports', `/reports/${SEC_PUB}`, '/sample', '/terms', '/api/security/reports', '/api/security/stats', '/api/security/engine', '/api/security/sample', '/api/security/review-requests', `/api/security/reports/${SEC_PUB}/badge.svg`, '/api/plans', '/api/score/base/0x1', '/assets/index-abcdef12.js', '/brand/gully-mark-512.png', '/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/healthz'].every((p) => r(p).kind === 'allow'))
+    check('security policy: the session-only dashboard (incl. its scan checkout), admin and Telegram APIs are refused', ['/api/admin/security', '/api/developer/security/scans', '/api/developer/account', '/api/tg/me', '/api/telegram/x'].every((p) => r(p).kind === 'deny'))
+    const rl = r(`/security/reports/${SEC_PUB}?x=1`)
+    check('security policy: /security/... is a 301 to the short path, query kept', rl.kind === 'redirect' && rl.location === `/reports/${SEC_PUB}?x=1` && r('/security').location === '/' && r('/security/sample').location === '/sample' && r('/security/terms').location === '/terms' && r('/security/reports/').location === '/reports', JSON.stringify(rl))
+    check('security policy: any other page goes to the same path on gullylabs.xyz', r('/pricing?a=1').location === `https://${MAIN}/pricing?a=1` && r('/legal/scan-terms').location === `https://${MAIN}/legal/scan-terms` && r('/score/base/0x1').location === `https://${MAIN}/score/base/0x1` && r(`/pay/inv_${'a'.repeat(22)}`).location === `https://${MAIN}/pay/inv_${'a'.repeat(22)}` && r('/holders').location === `https://${MAIN}/holders`)
+    check('security policy: www. is a 301 to the apex, path and query kept', r('/reports?q=1', 'www.gullysecurity.xyz').location === 'https://gullysecurity.xyz/reports?q=1')
+    check('security: the main host policy is unchanged (gullysecurity. is not a service host)', hostPolicy(SEC, '/') === 'allow' && hostPolicy(MAIN, '/security') === 'allow')
+
+    // Over HTTP, as Cloudflare sends it.
+    const home = await get(SEC, '/')
+    check('security /: 200, the app shell, titled Gully Security, canonical gullysecurity.xyz/', home.status === 200 && home.text.includes('<div id="root">') && home.text.includes('<title>AI Security Scan and Security Review · Gully Security</title>') && home.text.includes('<link rel="canonical" href="https://gullysecurity.xyz/" />') && home.text.includes('og-security.png'), home.text.slice(0, 400))
+    check('security /: indexable (no noindex), keeps the analytics beacon and the site CSP', !/noindex/.test(home.text) && !/noindex/.test(home.headers['x-robots-tag'] ?? '') && home.text.includes('analytics.gullylabs.xyz') && /analytics\.gullylabs\.xyz/.test(home.headers['content-security-policy'] ?? '') && /connect-src 'self' https: wss:/.test(home.headers['content-security-policy'] ?? ''))
+    check('security /: no cookie, HSTS, framed only by itself, no security-primary tag while unset', !home.headers['set-cookie'] && /max-age=31536000/.test(home.headers['strict-transport-security'] ?? '') && /frame-ancestors 'self'/.test(home.headers['content-security-policy'] ?? '') && !home.text.includes('security-primary'))
+    for (const [p, title] of [['/reports', 'Published security scan reports · Gully Security'], ['/sample', 'Sample AI Security Scan report · Gully Security']]) {
+      const x = await get(SEC, p)
+      check(`security ${p}: 200, "${title}", canonical gullysecurity.xyz${p}`, x.status === 200 && x.text.includes(`<title>${title}</title>`) && x.text.includes(`<link rel="canonical" href="https://gullysecurity.xyz${p}" />`) && !/noindex/.test(x.text), x.text.match(/<title>[^<]*<\/title>/)?.[0])
+    }
+    const pub = await get(SEC, `/reports/${SEC_PUB}`)
+    check('security /reports/<id> (indexable): 200, Gully Security title, gullysecurity.xyz canonical, indexed', pub.status === 200 && /<title>Security scan report: [^<]+ · Gully Security<\/title>/.test(pub.text) && pub.text.includes(`<link rel="canonical" href="https://gullysecurity.xyz/reports/${SEC_PUB}" />`) && !/noindex/.test(pub.text), pub.text.match(/<title>[^<]*<\/title>/)?.[0])
+    const priv = await get(SEC, `/reports/${SEC_PRIV}`)
+    check('security /reports/<id> (private): 200 but noindex', priv.status === 200 && /<meta name="robots" content="noindex"/.test(priv.text))
+    const gone = await get(SEC, `/reports/sec_${'z'.repeat(16)}`)
+    check('security /reports/<unknown>: 404, noindex, "Report not found · Gully Security"', gone.status === 404 && /noindex/.test(gone.text) && gone.text.includes('Report not found · Gully Security'))
+    const terms = await get(SEC, '/terms')
+    check('security /terms: 200, the scan terms (not the site terms), canonical on gullylabs.xyz/legal/scan-terms', terms.status === 200 && terms.text.includes('<title>AI Security Scan terms · Gully Security</title>') && terms.text.includes(`<link rel="canonical" href="https://${MAIN}/legal/scan-terms" />`), `${terms.status} ${terms.headers.location ?? ''} ${terms.text.match(/<title>[^<]*<\/title>/)?.[0]}`)
+    const long = await get(SEC, `/security/reports/${SEC_PUB}?ref=x`)
+    check('security /security/reports/<id>: 301 to the short path', long.status === 301 && long.headers.location === `/reports/${SEC_PUB}?ref=x`, `${long.status} ${long.headers.location}`)
+    const longTerms = await get(SEC, '/security/terms')
+    check('security /security/terms: 301 to /terms (this host)', longTerms.status === 301 && longTerms.headers.location === '/terms', longTerms.headers.location)
+    const www = await get('www.gullysecurity.xyz', '/reports')
+    check('www.gullysecurity.xyz: 301 to gullysecurity.xyz', www.status === 301 && www.headers.location === 'https://gullysecurity.xyz/reports', www.headers.location)
+    const away = await get(SEC, '/pricing?plan=pro')
+    check('security /pricing: 301 to gullylabs.xyz/pricing', away.status === 301 && away.headers.location === `https://${MAIN}/pricing?plan=pro`, away.headers.location)
+    check('security POST to a non-page: JSON 404, never a redirect', (await get(SEC, '/pricing', { method: 'POST', body: {} })).status === 404 && (await get(SEC, '/security', { method: 'POST', body: {} })).status === 404)
+    const list = await get(SEC, '/api/security/reports')
+    check('security /api/security/reports: served on the same origin (200 JSON), both published reports listed', list.status === 200 && list.data?.reports?.length === 2, String(list.status))
+    check('security /api/security/sample and /api/plans: served on the same origin', (await get(SEC, '/api/security/sample')).status === 200 && (await get(SEC, '/api/plans')).status === 200)
+    const form = await get(SEC, '/api/security/review-requests', { method: 'POST', body: {}, headers: { 'x-requested-with': 'gully' } })
+    check('security POST /api/security/review-requests: reaches the form handler (validation 400, not a redirect or 404)', form.status === 400, `${form.status} ${form.text.slice(0, 120)}`)
+    check('security /api/admin, /api/developer (scan checkout) and /api/tg: 404', (await get(SEC, '/api/admin/security')).status === 404 && (await get(SEC, '/api/developer/security/scans')).status === 404 && (await get(SEC, '/api/tg/me')).status === 404)
+    check('security serves the hashed assets', (await get(SEC, '/assets/index-abcdef12.js')).status === 200)
+    const robots = await get(SEC, '/robots.txt')
+    check('security robots.txt: allows crawling and names its own sitemap', robots.status === 200 && /Allow: \//.test(robots.text) && robots.text.includes('Sitemap: https://gullysecurity.xyz/sitemap.xml'), robots.text)
+    const sm = await get(SEC, '/sitemap.xml')
+    check('security sitemap.xml: its pages and the indexable report under short paths, nothing private, nothing on gullylabs.xyz', sm.status === 200 && ['/', '/reports', '/sample', `/reports/${SEC_PUB}`].every((p) => sm.text.includes(`<loc>https://gullysecurity.xyz${p}</loc>`)) && !sm.text.includes(SEC_PRIV) && !sm.text.includes('gullylabs.xyz') && !sm.text.includes('/security'), sm.text.slice(0, 400))
+    const man = await get(SEC, '/manifest.webmanifest')
+    check('security manifest: installs as Gully Security', man.status === 200 && man.data?.name === 'Gully Security', man.text.slice(0, 120))
+    // The main site keeps its Security pages while gullysecurity.xyz is not primary.
+    const mainSec = await get(MAIN, '/security')
+    check('main /security: still served (200), canonical on gullylabs.xyz while not primary', mainSec.status === 200 && mainSec.text.includes(`<link rel="canonical" href="https://${MAIN}/security" />`))
+    check('main /security/reports/<id>: canonical on gullylabs.xyz while not primary', (await get(MAIN, `/security/reports/${SEC_PUB}`)).text.includes(`<link rel="canonical" href="https://${MAIN}/security/reports/${SEC_PUB}" />`))
+    const mainSm = (await get(MAIN, '/sitemap.xml')).text
+    check('main sitemap: still lists /security and the indexable report while not primary', mainSm.includes(`<loc>https://${MAIN}/security</loc>`) && mainSm.includes(`<loc>https://${MAIN}/security/reports/${SEC_PUB}</loc>`) && !mainSm.includes(SEC_PRIV))
+    check('links the server writes: gullylabs.xyz/security while not primary', securityUrl('/security') === `https://${MAIN}/security` && securityUrl('/security#request') === `https://${MAIN}/security#request` && securityReportUrl(SEC_PUB) === `https://${MAIN}/security/reports/${SEC_PUB}` && currentPageUrl(`https://${MAIN}/security/reports`) === `https://${MAIN}/security/reports`)
+    const badge = await get(MAIN, `/api/security/reports/${SEC_PUB}/badge.svg`)
+    check('report badge: links gullylabs.xyz/security/reports/<id> while not primary', badge.status === 200 && badge.text.includes(`https://${MAIN}/security/reports/${SEC_PUB}`))
+
+    // SECURITY_PRIMARY=1: gullysecurity.xyz is Gully Security's home.
+    process.env.SECURITY_PRIMARY = '1'
+    try {
+      for (const [p, to] of [['/security?a=1', '/?a=1'], ['/security/', '/'], ['/security/reports', '/reports'], [`/security/reports/${SEC_PUB}`, `/reports/${SEC_PUB}`], ['/security/sample', '/sample'], ['/security/terms', '/terms']]) {
+        const x = await get(MAIN, p)
+        check(`primary: main GET ${p.slice(0, 32)} is a 301 to gullysecurity.xyz${to.slice(0, 24)}`, x.status === 301 && x.headers.location === `https://gullysecurity.xyz${to}`, `${x.status} ${x.headers.location}`)
+      }
+      check('primary: HEAD is redirected too, POST is not', (await get(MAIN, '/security', { method: 'HEAD' })).status === 301 && (await get(MAIN, '/security', { method: 'POST', body: {} })).status !== 301)
+      check('primary: an unknown /security/ path and the main legal page are not redirected', (await get(MAIN, '/security/nope')).status !== 301 && (await get(MAIN, '/legal/scan-terms')).status === 200)
+      check(
+        'primary: the API, the scan checkout, the review form, badges and Gully Pay stay where they are',
+        (await get(MAIN, '/api/security/reports')).status === 200 && (await get(MAIN, '/api/security/engine')).status !== 301 && (await get(MAIN, `/api/security/reports/${SEC_PUB}/badge.svg`)).status === 200 && (await get(MAIN, '/api/developer/security/scans')).status !== 301 && (await get(MAIN, '/api/security/review-requests', { method: 'POST', body: {}, headers: { 'x-requested-with': 'gully' } })).status === 400 && (await get(PAY, INV)).status !== 301 && (await get(API, '/api/security/reports')).status === 200,
+      )
+      check('primary: localhost, docs. and app. keep their /security behaviour (development, other hosts)', (await get(`localhost:${PORT}`, '/security')).status === 200 && (await get('docs.gullylabs.xyz', '/security')).headers.location !== 'https://gullysecurity.xyz/')
+      const sp = await get(SEC, '/reports')
+      check('primary: pages carry the security-primary tag (the browser follows it)', sp.text.includes('<meta name="security-primary" content="1" />') && (await get(MAIN, '/')).text.includes('security-primary'))
+      const msm = (await get(MAIN, '/sitemap.xml')).text
+      check('primary: the main sitemap no longer lists Security pages (but keeps the legal scan terms)', !msm.includes('/security') && msm.includes(`<loc>https://${MAIN}/legal/scan-terms</loc>`) && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))
+      check(
+        'primary: links the server writes name gullysecurity.xyz',
+        securityUrl('/security') === 'https://gullysecurity.xyz/' && securityUrl('/security#request') === 'https://gullysecurity.xyz/#request' && securityUrl('/security/reports') === 'https://gullysecurity.xyz/reports' && securityReportUrl(SEC_PUB) === `https://gullysecurity.xyz/reports/${SEC_PUB}` &&
+          currentPageUrl(`https://${MAIN}/security/reports`) === 'https://gullysecurity.xyz/reports' && currentPageUrl(`https://${MAIN}/#security`) === `https://${MAIN}/#security` && currentPageUrl(`https://${MAIN}/legal/scan-terms`) === `https://${MAIN}/legal/scan-terms` && currentPageUrl('https://docs.gullylabs.xyz/gully-security') === 'https://docs.gullylabs.xyz/gully-security',
+      )
+      const { securityView } = await import('../server/telegram-ui.mjs')
+      check('primary: the Telegram Security menu button names gullysecurity.xyz', JSON.stringify(securityView(false).keyboard).includes('"url":"https://gullysecurity.xyz/"'))
+      const { publishedReportFor } = await import('../server/security/reports.mjs')
+      check('primary: the Gully Score review link (published report) names gullysecurity.xyz', publishedReportFor(8453, SEC_ADDR)?.url === `https://gullysecurity.xyz/reports/${SEC_PUB}`, publishedReportFor(8453, SEC_ADDR)?.url)
+      const pb = await get(MAIN, `/api/security/reports/${SEC_PUB}/badge.svg`)
+      check('primary: the report badge (served where it was) links gullysecurity.xyz', pb.status === 200 && pb.text.includes(`https://gullysecurity.xyz/reports/${SEC_PUB}`))
+      check('primary: holdermaps.xyz is untouched by SECURITY_PRIMARY', (await get('holdermaps.xyz', '/security')).headers.location === `https://${MAIN}/security`)
+    } finally {
+      delete process.env.SECURITY_PRIMARY
     }
   }
 

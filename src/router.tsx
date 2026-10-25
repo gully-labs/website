@@ -6,9 +6,11 @@ import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, Chains
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
-import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isEmbedHost, isHolderMapsHost, isLocalHost, isPayHost } from './site-host'
+import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isEmbedHost, isHolderMapsHost, isLocalHost, isPayHost, isSecurityHost } from './site-host'
 import { installHolderMapsLinks } from './lib/holderMapsLinks'
+import { installSecurityLinks } from './lib/securityLinks'
 import { HolderMapsTokenPage, MainHolderPage, ToShortHolderPath } from './pages/HolderMapsRoutes'
+import { MainSecurityPage, ToShortSecurityPath } from './pages/SecurityRoutes'
 import { installDelegatedTracking } from './lib/track'
 import { HolderMapOpened } from './lib/routeEvents'
 
@@ -16,6 +18,8 @@ import { HolderMapOpened } from './lib/routeEvents'
 installDelegatedTracking()
 // holdermaps.xyz: links to the rest of Gully Labs leave for gullylabs.xyz directly (src/lib/holderMapsLinks.ts).
 installHolderMapsLinks()
+// gullysecurity.xyz: the same for Gully Security's domain (src/lib/securityLinks.ts).
+installSecurityLinks()
 
 // Gully Pay's checkout pages (pay.gullylabs.xyz; also /pay on the main host in development).
 const payChildren = [
@@ -53,12 +57,13 @@ const mainRoutes = [
       { path: '/ecosystem', lazy: () => import('./pages/Ecosystem').then((m) => ({ Component: m.Ecosystem })) },
       { path: '/partners', lazy: () => import('./pages/Partners').then((m) => ({ Component: m.Partners })) },
       // Gully Security: the product page, the published reports and one report (noindex unless its owner opts in).
-      { path: '/security', element: <SecurityRoute /> },
-      { path: '/security/reports', element: <SecurityReportsRoute /> },
-      { path: '/security/reports/:id', element: <SecurityReportRoute /> },
+      // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), MainSecurityPage leaves for it.
+      { path: '/security', element: <MainSecurityPage><SecurityRoute /></MainSecurityPage> },
+      { path: '/security/reports', element: <MainSecurityPage><SecurityReportsRoute /></MainSecurityPage> },
+      { path: '/security/reports/:id', element: <MainSecurityPage><SecurityReportRoute /></MainSecurityPage> },
       // A sample report on a fictional contract, and the scan terms (also at /security/terms).
-      { path: '/security/sample', element: <SecuritySampleRoute /> },
-      { path: '/security/terms', element: <Navigate to="/legal/scan-terms" replace /> },
+      { path: '/security/sample', element: <MainSecurityPage><SecuritySampleRoute /></MainSecurityPage> },
+      { path: '/security/terms', element: <MainSecurityPage><Navigate to="/legal/scan-terms" replace /></MainSecurityPage> },
       // Public status: every check, 24 h of uptime and the incident history (GET /api/status).
       { path: '/status', lazy: () => import('./pages/Status').then((m) => ({ Component: m.StatusPage })) },
       // The link hub for bios and KOL posts.
@@ -127,7 +132,25 @@ const holderMapsRoutes = [
   },
 ]
 
-const routes = isHolderMapsHost() ? holderMapsRoutes : isPayHost() ? payRoutes : isEmbedHost() ? embedRoutes : isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isAppHost() ? appRoutes : mainRoutes
+// gullysecurity.xyz (server/hosts.mjs): Gully Security at the root with short paths, in the site's own layout. Its
+// header and footer link the rest of Gully Labs, which lives on gullylabs.xyz (ToSite, and src/lib/securityLinks.ts).
+const securityRoutes = [
+  {
+    element: <Layout />,
+    children: [
+      { path: '/', element: <SecurityRoute /> },
+      { path: '/reports', element: <SecurityReportsRoute /> },
+      { path: '/reports/:id', element: <SecurityReportRoute /> },
+      { path: '/sample', element: <SecuritySampleRoute /> },
+      { path: '/terms', lazy: () => import('./pages/legal/ScanTerms').then((m) => ({ Component: m.ScanTermsPage })) },
+      { path: '/security/*', element: <ToShortSecurityPath /> },
+      { path: '/security', element: <ToShortSecurityPath /> },
+      { path: '*', element: <ToSite /> },
+    ],
+  },
+]
+
+const routes = isHolderMapsHost() ? holderMapsRoutes : isSecurityHost() ? securityRoutes : isPayHost() ? payRoutes : isEmbedHost() ? embedRoutes : isAdminHost() ? adminRoutes : isDocsHost() ? docsRoutes : isAppHost() ? appRoutes : mainRoutes
 
 // One error boundary over every host's routes: a page left open across a deploy reloads onto the new
 // build instead of showing React Router's default error screen.

@@ -8,6 +8,7 @@ import { axisTooltip, barsPreset, C, PALETTE, tipHtml } from '../../components/c
 import { EngineStatus } from '../../components/security/EngineStatus'
 import { usePlans } from '../../lib/plans'
 import { SCAN_APP_URL } from '../security/shared'
+import { securityHref } from '../../site-host'
 
 /* /legal/scan-terms (also /security/terms): the terms for the AI Security Scan, in plain words. Every rule here is
    what the code does today, checked on 2026-10-20 against server/security-routes.mjs (quota, price check, invoice,
@@ -103,7 +104,7 @@ export function ScanTermsPage() {
             <EngineStatus />
             <P>
               The status above is read live from the scanner. Today the static-analysis worker is not deployed, so scans are an AI review only, and every report’s label says so. See a{' '}
-              <Link to="/security/sample" className={a}>
+              <Link to={securityHref('/security/sample')} className={a}>
                 sample report
               </Link>{' '}
               to know exactly what you get.
@@ -119,7 +120,7 @@ export function ScanTermsPage() {
             </L>
             <P>
               If you need people on your code, ask us for a{' '}
-              <Link to="/security#request" className={a}>
+              <Link to={securityHref('/security#request')} className={a}>
                 Security Review
               </Link>
               , quoted per project under its own agreement.
@@ -212,10 +213,10 @@ export function ScanTermsPage() {
               <a href={SCAN_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-gold hover:underline">
                 Start a scan in the app ↗<span className="sr-only"> (opens in a new tab)</span>
               </a>
-              <Link to="/security/sample" className="inline-flex min-h-11 items-center hover:text-gold">
+              <Link to={securityHref('/security/sample')} className="inline-flex min-h-11 items-center hover:text-gold">
                 Sample report
               </Link>
-              <Link to="/security" className="inline-flex min-h-11 items-center hover:text-gold">
+              <Link to={securityHref('/security')} className="inline-flex min-h-11 items-center hover:text-gold">
                 Gully Security
               </Link>
               <Link to="/legal/privacy" className="inline-flex min-h-11 items-center hover:text-gold">

@@ -129,3 +129,87 @@ export function holderMapsRoute(host, pathname, search = '') {
   if (short) return { kind: 'redirect', location: `${short}${search}` }
   return { kind: 'redirect', location: `${MAIN_URL}${pathname}${search}` }
 }
+
+/* Gully Security (added 2026-10-24): the Security product on its own domain, the same way as holdermaps.xyz above.
+   gullysecurity.xyz          the Security pages at the root, with short paths:
+                                /                    the Security home        (the main site's /security)
+                                /reports             published scan reports   (/security/reports)
+                                /reports/<id>        one published report     (/security/reports/<id>; noindex unless
+                                                                               its owner opted in)
+                                /sample              the sample report        (/security/sample)
+                                /terms               the AI Security Scan terms (/legal/scan-terms; /security/terms)
+                              plus the /api/* the pages call (same origin), static files and the head files (robots.txt,
+                              sitemap.xml, manifest). /security/... there 301s to the short path; any other page 301s
+                              to the same path on gullylabs.xyz. Monitoring has no page of its own: it is a section of
+                              the home (/#monitoring) and the monitors themselves live in the app.
+   www.gullysecurity.xyz      301 to gullysecurity.xyz, path and query kept.
+   The main site keeps /security/* working. SECURITY_PRIMARY=1 (set it once gullysecurity.xyz resolves to this server)
+   makes gullysecurity.xyz Security's home everywhere: gullylabs.xyz/security* (GET/HEAD) answers 301 there and the
+   links the server writes (Telegram, Gully AI, Gully Score, badges, the reports API) name gullysecurity.xyz. The API
+   (/api/security/*, /api/developer/security/*, the review form's POST), the report badges, Gully Pay invoices for paid
+   scans (/pay/<id> on pay.gullylabs.xyz) and the scan engine never move: the app, the SDK and other sites call them. */
+export const SECURITY_HOST = 'gullysecurity.xyz'
+export const SECURITY_URL = `https://${SECURITY_HOST}`
+
+/** gullysecurity.xyz and www.gullysecurity.xyz. */
+export const isSecurityHost = (host) => /^(www\.)?gullysecurity\.xyz$/.test(String(host ?? '').split(':')[0].toLowerCase())
+/** SECURITY_PRIMARY: gullysecurity.xyz is Gully Security's canonical home (read per call, so tests can flip it). */
+export const securityPrimary = () => /^(1|true|on|yes)$/i.test(String(process.env.SECURITY_PRIMARY ?? ''))
+
+const REPORT_ID = 'sec_[A-Za-z0-9_-]{1,64}'
+const INTERNAL_SECURITY = new RegExp(`^/security(?:/(reports)(?:/(${REPORT_ID}))?|/(sample)|/(terms))?/?$`)
+const SHORT_SECURITY = new RegExp(`^(?:/|/(reports)(?:/(${REPORT_ID}))?|/(sample)|/(terms))/?$`)
+
+/** The gullysecurity.xyz path for a main-site Security path (/security, /security/reports[/<id>], /security/sample,
+    /security/terms), or null when the path is not a Security page. */
+export function securityShortPath(pathname) {
+  const m = INTERNAL_SECURITY.exec(pathname)
+  if (!m) return null
+  return m[2] ? `/reports/${m[2]}` : m[1] ? '/reports' : m[3] ? '/sample' : m[4] ? '/terms' : '/'
+}
+
+/** The main-site path for a gullysecurity.xyz page path, or null when it is not one of its pages. /terms is the scan
+    terms page, which lives with the other legal pages on the main site. */
+export function securityInternalPath(pathname) {
+  const m = SHORT_SECURITY.exec(pathname)
+  if (!m) return null
+  return m[2] ? `/security/reports/${m[2]}` : m[1] ? '/security/reports' : m[3] ? '/security/sample' : m[4] ? '/legal/scan-terms' : '/security'
+}
+
+/** The public address of a main-site Security path (/security..., hash kept), for links the server writes:
+    gullysecurity.xyz once it is primary, else gullylabs.xyz. */
+export function securityUrl(path = '/security') {
+  const at = path.search(/[?#]/)
+  const [p, rest] = at < 0 ? [path, ''] : [path.slice(0, at), path.slice(at)]
+  const short = securityPrimary() ? securityShortPath(p) : null
+  return short ? `${SECURITY_URL}${short}${rest}` : `${MAIN_URL}${path}`
+}
+/** A published report's public page. */
+export const securityReportUrl = (id) => securityUrl(`/security/reports/${encodeURIComponent(id)}`)
+
+/**
+ * Where a request on gullysecurity.xyz goes: { kind: 'allow' }, { kind: 'deny' } (JSON 404) or
+ * { kind: 'redirect', location } (301). Static files and every /api/ path the main host serves (minus the
+ * session-only dashboard, admin and Telegram routes) answer here, so the pages call their API on the same origin.
+ */
+export function securityRoute(host, pathname, search = '') {
+  const h = String(host ?? '').split(':')[0].toLowerCase()
+  if (h.startsWith('www.')) return { kind: 'redirect', location: `https://${h.slice(4)}${pathname}${search}` }
+  if (pathname === '/healthz' || pathname === '/robots.txt' || pathname === '/sitemap.xml') return { kind: 'allow' }
+  if (pathname.startsWith('/api/')) return API_DENIED.test(pathname) ? { kind: 'deny' } : { kind: 'allow' }
+  if (pathname.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(pathname)) return { kind: 'allow' }
+  if (securityInternalPath(pathname)) return { kind: 'allow' }
+  // The old long form on this host: the short path.
+  const short = securityShortPath(pathname)
+  if (short) return { kind: 'redirect', location: `${short}${search}` }
+  return { kind: 'redirect', location: `${MAIN_URL}${pathname}${search}` }
+}
+/** An absolute gullylabs.xyz address as the server should write it now: a Security page moves to gullysecurity.xyz once
+    it is primary (Gully AI's indexed sources name gullylabs.xyz/security...); anything else is returned unchanged. */
+export function currentPageUrl(url) {
+  const s = String(url ?? '')
+  if (!securityPrimary() || !s.startsWith(`${MAIN_URL}/security`)) return s
+  const rest = s.slice(MAIN_URL.length)
+  const at = rest.search(/[?#]/)
+  return securityShortPath(at < 0 ? rest : rest.slice(0, at)) ? securityUrl(rest) : s
+}

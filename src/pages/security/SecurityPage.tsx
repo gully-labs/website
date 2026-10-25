@@ -9,7 +9,7 @@ import { Seo } from '../../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../../components/ui'
 import { usePlans } from '../../lib/plans'
 import type { Plan } from '../developers/api'
-import { isLocalHost, APP_URL } from '../../site-host'
+import { isLocalHost, APP_URL, securityHref } from '../../site-host'
 import { SCAN_APP_URL } from './shared'
 
 /* /security: the Gully Security product page. Two tiers today and one planned, named honestly: the
@@ -226,17 +226,17 @@ export function SecurityPage() {
               <a href="#request" className={`${btnOutline} inline-flex items-center gap-2 px-[26px] py-4 text-[16px]`}>
                 <Users aria-hidden size={18} strokeWidth={1.75} /> Request a review
               </a>
-              <Link to="/security/reports" className="inline-flex min-h-11 items-center gap-2 px-2 font-mono text-[13px] text-muted hover:text-ink">
+              <Link to={securityHref('/security/reports')} className="inline-flex min-h-11 items-center gap-2 px-2 font-mono text-[13px] text-muted hover:text-ink">
                 <FileText aria-hidden size={16} /> Published reports
               </Link>
             </div>
             <div className="flex max-w-[640px] flex-col gap-2" style={rise(4)}>
               <EngineStatus />
               <span className="flex flex-wrap gap-x-4 font-mono text-[13px]">
-                <Link to="/security/sample" className="inline-flex min-h-11 items-center gap-2 text-gold underline-offset-4 hover:underline" data-testid="security-sample-link">
+                <Link to={securityHref('/security/sample')} className="inline-flex min-h-11 items-center gap-2 text-gold underline-offset-4 hover:underline" data-testid="security-sample-link">
                   <FileCheck2 aria-hidden size={15} /> See a sample report
                 </Link>
-                <Link to="/legal/scan-terms" className="inline-flex min-h-11 items-center gap-2 text-muted hover:text-ink" data-testid="security-terms-link">
+                <Link to={securityHref('/legal/scan-terms')} className="inline-flex min-h-11 items-center gap-2 text-muted hover:text-ink" data-testid="security-terms-link">
                   <ListChecks aria-hidden size={15} /> Scan terms
                 </Link>
               </span>

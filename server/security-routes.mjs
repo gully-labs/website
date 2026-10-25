@@ -57,6 +57,7 @@ import { ASSET_IDS } from './payments.mjs'
 import { planOf, SECURITY, treasury } from './plans.mjs'
 import { addEnquiry, randomToken } from './store.mjs'
 import { notifyIntake } from './intake-notify.mjs'
+import { securityReportUrl } from './hosts.mjs'
 
 const UPLOADS = path.join(DATA_DIR, 'security-uploads')
 const INVOICE_TTL_MS = 7 * 86_400_000
@@ -655,7 +656,7 @@ export async function handleSecurityPublic(req, res, url) {
     const at = new Date(job.publishedAt ?? job.completedAt ?? Date.now())
     const date = at.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
     res.writeHead(200, badgeHeaders(300))
-    return res.end(req.method === 'HEAD' ? undefined : renderBadge({ kind: 'security', label: 'Gully Security', value: `Scanned ${date}`, title: `Gully Security: report published ${date}`, href: `https://gullylabs.xyz/security/reports/${job.id}`, ...badgeStyleFrom(url.searchParams) })), true
+    return res.end(req.method === 'HEAD' ? undefined : renderBadge({ kind: 'security', label: 'Gully Security', value: `Scanned ${date}`, title: `Gully Security: report published ${date}`, href: securityReportUrl(job.id), ...badgeStyleFrom(url.searchParams) })), true
   }
 
   const m = p.match(/^\/api\/security\/reports\/([^/]+?)(\/report\.html)?$/)

@@ -5,8 +5,8 @@
 import { CHAINS } from './chains.mjs'
 import { publishedJobs } from '../security-store.mjs'
 import { scopeLabel } from '../security-contract.mjs'
+import { securityReportUrl } from '../hosts.mjs'
 
-const SITE = 'https://gullylabs.xyz'
 const SEVERITIES = ['critical', 'high', 'medium', 'low', 'info']
 
 /**
@@ -22,7 +22,8 @@ export function publishedReportFor(chainId, address) {
   if (!job) return null
   const counts = job.snapshot.summary?.counts ?? job.counts ?? {}
   return {
-    url: `${SITE}/security/reports/${job.id}`,
+    // gullysecurity.xyz once it is Security's home (SECURITY_PRIMARY, hosts.mjs), else gullylabs.xyz/security.
+    url: securityReportUrl(job.id),
     title: `AI Security Scan: ${scopeLabel(job.input)}`,
     publishedAt: job.publishedAt,
     status: 'published',

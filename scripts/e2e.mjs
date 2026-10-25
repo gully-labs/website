@@ -3506,7 +3506,7 @@ await step('discovery files and contracts page', async () => {
 // pay., api. and embed. (server/hosts.mjs) are simulated with Chromium's --host-resolver-rules (names mapped to
 // 127.0.0.1, the e2e port kept) and with Host headers for what a browser cannot send. One more browser, closed at the end.
 await step('service hosts', async () => {
-  const HOSTS = [...['pay', 'api', 'embed'].map((h) => `${h}.gullylabs.xyz`), 'holdermaps.xyz', 'www.holdermaps.xyz']
+  const HOSTS = [...['pay', 'api', 'embed'].map((h) => `${h}.gullylabs.xyz`), 'holdermaps.xyz', 'www.holdermaps.xyz', 'gullysecurity.xyz', 'www.gullysecurity.xyz']
   const hb = await chromium.launch({ headless: !process.env.E2E_HEADED, args: [`--host-resolver-rules=${HOSTS.map((h) => `MAP ${h} 127.0.0.1`).join(', ')}`] })
   try {
     const at = (h, p = '/') => `http://${h}:${PORT}${p}`
@@ -3630,6 +3630,64 @@ await step('service hosts', async () => {
     check('holdermaps: www. is a 301 to the apex', www.status === 301 && www.headers.location === `https://holdermaps.xyz/base/${holder}`)
     check('holdermaps: gullylabs.xyz/holders keeps working while holdermaps.xyz is not primary', (await hreq('gullylabs.xyz', `/holders/base/${holder}`)).status === 200)
     await hm.close()
+
+    // gullysecurity.xyz: Gully Security at the root, short paths, its API on the same origin, the rest of the site on gullylabs.xyz.
+    const sc = await hb.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' })
+    await sc.route(/^https:\/\//, (route) => route.abort())
+    await sc.route(`http://gullysecurity.xyz:${PORT}/**`, async (route) => {
+      const u = new URL(route.request().url())
+      const r = await route.fetch({ url: `http://127.0.0.1:${PORT}${u.pathname}${u.search}`, headers: { ...route.request().headers(), host: u.host }, maxRedirects: 0 })
+      const headers = { ...r.headers() }
+      if (headers['content-security-policy']) headers['content-security-policy'] = headers['content-security-policy'].replace(/;?s*upgrade-insecure-requests/, '')
+      await route.fulfill({ response: r, headers })
+    })
+    const sp = await sc.newPage()
+    const secCsp = []
+    sp.on('console', (m) => m.type() === 'error' && /Content Security Policy/i.test(m.text()) && secCsp.push(m.text()))
+    const secApi = []
+    sp.on('request', (rq) => rq.url().includes('/api/security/') && secApi.push(new URL(rq.url()).host))
+    await sp.route('https://gullylabs.xyz/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>left for gullylabs.xyz</title><p>main site</p>' }))
+    const secHome = await sp.goto(at('gullysecurity.xyz', '/'))
+    await sp.getByRole('heading', { level: 1, name: /Find the bugs/i }).waitFor({ timeout: 30_000 })
+    await sp.waitForTimeout(1500)
+    check('security host: / renders the Security home (200)', secHome.status() === 200)
+    check('security host: titled Gully Security, canonical gullysecurity.xyz/', / · Gully Security$/.test(await sp.title()) && (await sp.locator('link[rel="canonical"]').getAttribute('href')) === 'https://gullysecurity.xyz/', await sp.title())
+    check('security host: the header logo goes to gullylabs.xyz', (await sp.locator('header a[aria-label="Gully Labs home"]').first().getAttribute('href')) === 'https://gullylabs.xyz/')
+    check('security host: the page reads /api/security on the same origin', secApi.length > 0 && secApi.every((h) => h === `gullysecurity.xyz:${PORT}`), secApi.join(','))
+    check('security host: in-page links use the short paths (/reports, /sample, /terms)', (await sp.getByTestId('security-sample-link').getAttribute('href')) === '/sample' && (await sp.getByTestId('security-terms-link').getAttribute('href')) === '/terms' && (await sp.locator('a[href="/reports"]').count()) > 0)
+    // The reports list by its short path, then one report (the one the security step published, when it ran).
+    await sp.locator('a[href="/reports"]').first().click()
+    await sp.getByRole('heading', { level: 1, name: /Scan reports/i }).waitFor({ timeout: 15_000 })
+    check('security host: /reports navigates in the app, canonical gullysecurity.xyz/reports', new URL(sp.url()).pathname === '/reports' && (await sp.locator('link[rel="canonical"]').getAttribute('href')) === 'https://gullysecurity.xyz/reports' && / · Gully Security$/.test(await sp.title()), await sp.title())
+    const pubList = (await hreq('gullysecurity.xyz', '/api/security/reports')).data?.reports ?? []
+    if (pubList.length) {
+      const rid = pubList[0].id
+      await sp.locator(`a[href="/reports/${rid}"]`).first().waitFor({ timeout: 15_000 })
+      check('security host: the list links each report by its short path', (await sp.locator(`a[href="/reports/${rid}"]`).count()) > 0)
+      const rep = await hreq('gullysecurity.xyz', `/reports/${rid}`)
+      check('security host: a private report renders at /reports/<id>, noindex, titled Gully Security', rep.status === 200 && /noindex/.test(rep.text) && /· Gully Security<\/title>/.test(rep.text), `${rep.status}`)
+    }
+    // The old long address on this host: the server 301s to the short path, which the browser follows.
+    await sp.goto(at('gullysecurity.xyz', '/security/sample'))
+    check('security host: /security/sample lands on /sample', new URL(sp.url()).pathname === '/sample', sp.url())
+    // (A followed redirect skips the test proxy above, so the production CSP upgrades its assets to https: load /sample directly.)
+    await sp.goto(at('gullysecurity.xyz', '/sample'))
+    await sp.getByTestId('report-body').waitFor({ timeout: 15_000 })
+    check('security host: /sample renders the sample report, canonical gullysecurity.xyz/sample', (await sp.getByTestId('sample-badge').textContent()) === 'SAMPLE' && (await sp.locator('link[rel="canonical"]').getAttribute('href')) === 'https://gullysecurity.xyz/sample')
+    // /terms is the scan terms page here, not the site terms.
+    await sp.goto(at('gullysecurity.xyz', '/terms'))
+    await sp.getByRole('heading', { level: 1, name: 'Scan terms' }).waitFor({ timeout: 15_000 })
+    check('security host: /terms renders the scan terms, canonical on gullylabs.xyz/legal/scan-terms', new URL(sp.url()).pathname === '/terms' && (await sp.locator('link[rel="canonical"]').getAttribute('href')) === 'https://gullylabs.xyz/legal/scan-terms')
+    // A link to a site page leaves for gullylabs.xyz directly.
+    await sp.goto(at('gullysecurity.xyz', '/'))
+    await sp.getByRole('heading', { level: 1, name: /Find the bugs/i }).waitFor({ timeout: 30_000 })
+    await Promise.all([sp.waitForURL('https://gullylabs.xyz/**', { timeout: 15_000 }), sp.locator('footer a[href="/legal/terms"]').first().click()])
+    check('security host: a site link (Terms) goes to https://gullylabs.xyz/legal/terms', sp.url() === 'https://gullylabs.xyz/legal/terms', sp.url())
+    check('security host: no CSP violations on its pages', secCsp.length === 0, secCsp.slice(0, 2).join(' | '))
+    const secWww = await hreq('www.gullysecurity.xyz', '/reports')
+    check('security host: www. is a 301 to the apex', secWww.status === 301 && secWww.headers.location === 'https://gullysecurity.xyz/reports')
+    check('security host: gullylabs.xyz/security keeps working while gullysecurity.xyz is not primary', (await hreq('gullylabs.xyz', '/security')).status === 200)
+    await sc.close()
   } finally {
     await hb.close()
   }

@@ -9,6 +9,7 @@ import { chainLogoKey, fmtWhen, KIND_LABEL, SEV_COLOR, SEV_LABEL, SEVERITIES, ty
 import { Seo } from '../../components/Seo'
 import { btnGold, eyebrow } from '../../components/ui'
 import { SCAN_APP_URL, usePublic } from './shared'
+import { securityHref } from '../../site-host'
 
 /* The public report pages:
    /security/reports       every report its owner published, newest first (GET /api/security/reports)
@@ -36,7 +37,7 @@ export function ReportsIndex() {
       <section className="px-page pt-[56px] pb-16 max-[600px]:pt-10">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-3">
-            <Link to="/security" className="inline-flex min-h-11 w-fit items-center gap-2 font-mono text-[12px] text-muted hover:text-ink">
+            <Link to={securityHref('/security')} className="inline-flex min-h-11 w-fit items-center gap-2 font-mono text-[12px] text-muted hover:text-ink">
               <ArrowLeft size={14} aria-hidden /> Gully Security
             </Link>
             <span className={eyebrow}>PUBLISHED REPORTS</span>
@@ -70,7 +71,7 @@ export function ReportsIndex() {
             </span>
             <span className="heading-4">No published reports yet</span>
             <span className="max-w-[460px] text-[14px] text-muted">When an owner publishes a scan report from the app, it appears here.</span>
-            <Link to="/security/sample" className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-gold underline-offset-4 hover:underline" data-testid="sample-link">
+            <Link to={securityHref('/security/sample')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-gold underline-offset-4 hover:underline" data-testid="sample-link">
               <FileText size={15} aria-hidden /> See a sample report
             </Link>
           </div>
@@ -82,7 +83,7 @@ export function ReportsIndex() {
               const total = SEVERITIES.reduce((a, k) => a + (counts[k] ?? 0), 0)
               return (
                 <li key={r.id} style={{ animation: `gl-rise .45s ${Math.min(i, 8) * 0.05}s ease both` }}>
-                  <Link to={r.url} className="flex h-full flex-col gap-3 rounded-card border border-line bg-surface p-5 transition-colors hover:border-gold">
+                  <Link to={securityHref(r.url)} className="flex h-full flex-col gap-3 rounded-card border border-line bg-surface p-5 transition-colors hover:border-gold">
                     <span className="font-mono text-[11px] tracking-[1px] text-faint">
                       {KIND_LABEL[r.input.kind].toUpperCase()} · {fmtWhen(r.publishedAt)}
                     </span>
@@ -122,7 +123,7 @@ export function PublicReportPage() {
               Retry
             </button>
           )}
-          <Link to="/security/reports" className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-muted hover:text-ink">
+          <Link to={securityHref('/security/reports')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-muted hover:text-ink">
             <FileText size={15} aria-hidden /> Published reports
           </Link>
         </div>
@@ -138,7 +139,7 @@ export function PublicReportPage() {
           <span className="font-mono text-[11px] text-[#333]">gullylabs.xyz{r.url}</span>
         </div>
         <div className="flex flex-wrap items-center gap-3 print:hidden">
-          <Link to="/security/reports" className="inline-flex min-h-11 items-center gap-2 font-mono text-[12px] text-muted hover:text-ink">
+          <Link to={securityHref('/security/reports')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[12px] text-muted hover:text-ink">
             <ArrowLeft size={14} aria-hidden /> Published reports
           </Link>
           <a href={`/api/security/reports/${r.id}/report.html`} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-4 text-[13px] text-ink-2 hover:border-gold hover:text-ink" data-testid="print">
@@ -186,7 +187,7 @@ export function SampleReportPage() {
       <Seo title="Sample AI Security Scan report" description="What an AI Security Scan report looks like, on a fictional contract: findings by severity with file and line, a draft proof of concept, the tools that ran and the limits. A sample, not a scan of real code." />
       <article className="flex flex-col gap-4 px-page pt-10 pb-16 print:p-0" data-testid="sample-report">
         <div className="flex flex-wrap items-center gap-3 print:hidden">
-          <Link to="/security" className="inline-flex min-h-11 items-center gap-2 font-mono text-[12px] text-muted hover:text-ink">
+          <Link to={securityHref('/security')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[12px] text-muted hover:text-ink">
             <ArrowLeft size={14} aria-hidden /> Gully Security
           </Link>
           <a href="/api/security/sample/report.html" target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-4 text-[13px] text-ink-2 hover:border-gold hover:text-ink" data-testid="sample-print">
@@ -230,7 +231,7 @@ export function SampleReportPage() {
                     <ScanSearch size={16} aria-hidden /> Scan your code <ArrowUpRight size={15} aria-hidden />
                     <span className="sr-only"> (opens in a new tab)</span>
                   </a>
-                  <Link to="/legal/scan-terms" className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-muted hover:text-ink">
+                  <Link to={securityHref('/legal/scan-terms')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-muted hover:text-ink">
                     <FileText size={15} aria-hidden /> Scan terms
                   </Link>
                 </span>

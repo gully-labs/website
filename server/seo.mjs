@@ -4,7 +4,7 @@
 // The <Seo> component keeps matching titles in the browser; keep the two in step.
 
 import fs from 'node:fs'
-import { APP_HOST, APP_URL, holderInternalPath, holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, PAY_URL } from './hosts.mjs'
+import { APP_HOST, APP_URL, holderInternalPath, holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, PAY_URL, securityInternalPath, securityPrimary, securityShortPath, SECURITY_URL } from './hosts.mjs'
 import { published, publishedJobs } from './security-store.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
@@ -217,10 +217,27 @@ function holderMapsMeta(p) {
   return { ...m, title: holderMapsTitle(m.title), canonical: m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null }
 }
 
+/* gullysecurity.xyz (hosts.mjs): Gully Security's own domain. Its pages are the main site's Security pages under short
+   paths, named Gully Security, with gullysecurity.xyz canonicals. /terms is the scan terms page, whose canonical stays
+   with the other legal pages on gullylabs.xyz. A report stays noindex unless its owner opted in. */
+export const SECURITY_HOME_TITLE = 'AI Security Scan and Security Review · Gully Security'
+/** A main-site Security title, named for gullysecurity.xyz. */
+export const securityTitle = (t) => String(t).replace(/ · Gully Labs$/, ' · Gully Security')
+
+function securityMeta(p) {
+  const internal = securityInternalPath(p)
+  if (!internal) return { title: 'Not found · Gully Security', description: MAIN['/security'][1], canonical: null, found: false }
+  const m = pageMeta('gullylabs.xyz', internal)
+  if (internal === '/security') return { ...m, title: SECURITY_HOME_TITLE, canonical: `${SECURITY_URL}/` }
+  if (internal === '/legal/scan-terms') return { ...m, title: securityTitle(m.title), image: `${SITE}/social/og-security.png` }
+  return { ...m, title: securityTitle(m.title), canonical: m.canonical ? SECURITY_URL + securityShortPath(new URL(m.canonical).pathname) : null }
+}
+
 /** Head tags for one request. `found: false` means no page owns the path (served as a 404). */
 export function pageMeta(host, pathname) {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'
   if (isHolderMapsHost(host)) return holderMapsMeta(p)
+  if (isSecurityHost(host)) return securityMeta(p)
   // Development on localhost: the app also routes the portal, the admin and the docs (under /docs) there.
   if (isLocal(host)) {
     if (p === '/developers' || p === '/app') return { ...pageMeta(APP_HOST, '/'), canonical: null, noindex: true }
@@ -271,7 +288,7 @@ export function pageMeta(host, pathname) {
   if (sr) {
     const j = published(sr[1])
     if (!j) return { title: 'Report not found · Gully Labs', description: MAIN['/security/reports'][1], canonical: null, found: false }
-    return { title: `Security scan report: ${reportTitle(j)} · Gully Labs`, description: 'An AI Security Scan report published by its owner: findings by severity, the tools that ran and the limits of an automated scan. Not an audit.', canonical: `${SITE}${p}`, found: true, noindex: !j.indexable, image: `${SITE}/social/og-security.png` }
+    return { title: `Security scan report: ${reportTitle(j)} · Gully Labs`, description: 'An AI Security Scan report published by its owner: findings by severity, the tools that ran and the limits of an automated scan. Not an audit.', canonical: securityPrimary() ? SECURITY_URL + securityShortPath(p) : `${SITE}${p}`, found: true, noindex: !j.indexable, image: `${SITE}/social/og-security.png` }
   }
   // Gully Score pages (gully-score.mjs): one per contract; listed ones are indexed, the rest are noindex.
   const sm = scorePageMeta(p)
@@ -280,7 +297,9 @@ export function pageMeta(host, pathname) {
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   const og = p === '/' || p.startsWith('/legal/') || p === '/ecosystem' || p === '/partners' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/security') ? 'security' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
-  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null }
+  // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
+  const secShort = securityPrimary() && p.startsWith('/security') ? securityShortPath(p) : null
+  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null }
 }
 
 /** A report's subject in a title: the contract or the repository. */
@@ -323,7 +342,7 @@ export function robotsFor(host) {
   // The service hosts hold no pages worth indexing: checkout links, API JSON and iframes.
   if (isPayHost(host) || isApiHost(host) || isEmbedHost(host)) return 'User-agent: *\nDisallow: /\n'
   if (host.startsWith('admin.')) return 'User-agent: *\nDisallow: /\n'
-  const base = host.startsWith('docs.') ? DOCS : isAppHost(host) ? APP : isHolderMapsHost(host) ? HOLDERMAPS_URL : SITE
+  const base = host.startsWith('docs.') ? DOCS : isAppHost(host) ? APP : isHolderMapsHost(host) ? HOLDERMAPS_URL : isSecurityHost(host) ? SECURITY_URL : SITE
   return `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml\n`
 }
 
@@ -333,20 +352,23 @@ export function sitemapFor(host) {
   if (host.startsWith('admin.') || isPayHost(host) || isApiHost(host) || isEmbedHost(host)) return null
   const today = new Date().toISOString().slice(0, 10)
   let urls
+  const securityPaths = () => ['/security', '/security/reports', '/security/sample', ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)]
   const holderPaths = () => ['/holders', ...Object.entries(HOLDER_PAGES).filter(([, chain]) => holdersAvailableFor(chain)).map(([p]) => p), ...topHolderPaths()]
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
   else if (isAppHost(host)) urls = [[`${APP}/`, '0.6', 'monthly']]
   // holdermaps.xyz lists the Holder Map pages under their short paths.
   else if (isHolderMapsHost(host)) urls = holderPaths().map((p) => [HOLDERMAPS_URL + holderShortPath(p), p === '/holders' ? '1.0' : '0.7', p === '/holders' ? 'daily' : 'monthly'])
+  // gullysecurity.xyz lists the Security pages and the reports their owners let search engines index, under short paths.
+  else if (isSecurityHost(host)) urls = securityPaths().map((p) => [SECURITY_URL + securityShortPath(p), p === '/security' ? '1.0' : '0.7', p === '/security' || p === '/security/reports' ? 'daily' : 'monthly'])
   else
-    // Once holdermaps.xyz is primary the main site's Holder Map pages are redirects there, so they are not listed here.
-    urls = [...Object.keys(MAIN).filter((p) => !(holderMapsPrimary() && p === '/holders')), ...(holderMapsPrimary() ? [] : holderPaths().slice(1)), ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)].map((p) => [
+    // Once holdermaps.xyz (or gullysecurity.xyz) is primary the main site's pages for it are redirects there, so they are not listed here.
+    urls = [...Object.keys(MAIN).filter((p) => !(holderMapsPrimary() && p === '/holders') && !(securityPrimary() && securityShortPath(p))), ...(holderMapsPrimary() ? [] : holderPaths().slice(1)), ...(securityPrimary() ? [] : securityPaths().filter((p) => p.startsWith('/security/reports/')))].map((p) => [
       SITE + (p === '/' ? '/' : p),
       p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
       p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p === '/score' || p === '/ecosystem' || p.startsWith('/projects/') ? 'daily' : 'monthly',
     ])
   // Listed Gully Score pages (a watched contract that allows listing, or one with a published report).
-  if (!host.startsWith('docs.') && !isAppHost(host) && !isHolderMapsHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])
+  if (!host.startsWith('docs.') && !isAppHost(host) && !isHolderMapsHost(host) && !isSecurityHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])
   const rows = urls.map(([u, pr, f]) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</urlset>\n`
 }

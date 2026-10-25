@@ -30,7 +30,7 @@
 // A trailing "!" opens the route as a new message instead of editing (used on Gully AI answers, so an
 // answer is never overwritten by the next screen).
 
-import { holderHomeUrl, holderPageUrl } from './hosts.mjs'
+import { holderHomeUrl, holderPageUrl, securityUrl } from './hosts.mjs'
 export const SITE = 'https://gullylabs.xyz'
 export const PORTAL = 'https://app.gullylabs.xyz'
 export const PORTAL_ALERTS = `${PORTAL}/#alerts`
@@ -214,6 +214,8 @@ export function helpView(linked) {
 
 /* --------------------------------------- Holder Map, Security, Score, More --- */
 
+/** Gully Security's home: gullylabs.xyz/security, or gullysecurity.xyz once it is primary (read per call). */
+export const securityHomeUrl = () => securityUrl('/security')
 export const SECURITY_URL = `${SITE}/security`
 export const SCORE_URL = `${SITE}/score`
 export const HOLDERS_URL = `${SITE}/holders`
@@ -244,7 +246,7 @@ export const securityView = (linked) => ({
     'Look up a score: type <code>/score 0x…</code> with the contract address.',
   ].join('\n'),
   keyboard: [
-    [ubtn('🛡 Gully Security ↗', SECURITY_URL), ubtn('🏅 Gully Score ↗', SCORE_URL)],
+    [ubtn('🛡 Gully Security ↗', securityHomeUrl()), ubtn('🏅 Gully Score ↗', SCORE_URL)],
     [linked ? btn('📡 My monitors', 'mon') : ubtn('📡 Set up monitors ↗', `${PORTAL}/#security`), ubtn('🔍 Scan a contract ↗', `${PORTAL}/#security`)],
     nav('m'),
   ],

@@ -1,13 +1,20 @@
 import { useEffect } from 'react'
 import { SITE_URL } from '../content/site'
-import { holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isHolderMapsHost } from '../site-host'
+import { holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isHolderMapsHost, isSecurityHost, securityInternalPath, securityPrimary, securityShortPath, SECURITY_URL } from '../site-host'
 
-/** A page's canonical address: holdermaps.xyz for the Holder Map's pages once it is their home, else this site. */
+/** A page's canonical address: holdermaps.xyz for the Holder Map's pages once it is their home, gullysecurity.xyz for
+    Gully Security's likewise (its /terms names the legal page on gullylabs.xyz, as server/seo.mjs does), else this site. */
 function canonicalFor(path: string) {
   if (isHolderMapsHost()) return `${HOLDERMAPS_URL}${path}`
-  const short = holderMapsPrimary() ? holderShortPath(path) : null
-  return short ? `${HOLDERMAPS_URL}${short}` : `${SITE_URL}${path}`
+  if (isSecurityHost()) return securityInternalPath(path) === '/legal/scan-terms' ? `${SITE_URL}/legal/scan-terms` : `${SECURITY_URL}${path}`
+  const holder = holderMapsPrimary() ? holderShortPath(path) : null
+  if (holder) return `${HOLDERMAPS_URL}${holder}`
+  const security = securityPrimary() ? securityShortPath(path) : null
+  return security ? `${SECURITY_URL}${security}` : `${SITE_URL}${path}`
 }
+
+/** The browser title on gullysecurity.xyz (server/seo.mjs SECURITY_HOME_TITLE for the home). */
+const securityTitle = (title: string) => (title === 'Gully Security' ? 'AI Security Scan and Security Review · Gully Security' : `${title} · Gully Security`)
 
 function setMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`)
@@ -29,8 +36,8 @@ export function Seo({ title, description, noindex = false, bare = false }: { tit
   }, [noindex])
   useEffect(() => {
     // `bare`: the title as given (the checkout is "Pay <store>", not a Gully Labs page). On holdermaps.xyz every
-    // page is a HolderMaps page.
-    const full = bare ? title : isHolderMapsHost() ? `${title.replace(/ · Holder Map$/, '')} · HolderMaps` : `${title} · Gully Labs`
+    // page is a HolderMaps page, and on gullysecurity.xyz a Gully Security page.
+    const full = bare ? title : isHolderMapsHost() ? `${title.replace(/ · Holder Map$/, '')} · HolderMaps` : isSecurityHost() ? securityTitle(title) : `${title} · Gully Labs`
     document.title = full
     setMeta('name', 'description', description)
     setMeta('property', 'og:title', full)

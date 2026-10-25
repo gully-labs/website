@@ -32,7 +32,7 @@ import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
-import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, MAIN_URL, PAY_URL } from './hosts.mjs'
+import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, PAY_URL, securityPrimary, securityRoute, securityShortPath, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
@@ -229,6 +229,22 @@ async function handleRequest(req, res) {
     const short = holderShortPath(url.pathname)
     if (short) return send(res, 301, '', { Location: HOLDERMAPS_URL + short + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
+  // gullysecurity.xyz (hosts.mjs): the Security pages at the root with short paths, their API on the same origin; www.
+  // and /security/... 301 to the short address, any other page 301s to gullylabs.xyz.
+  const isSecurity = isSecurityHost(host)
+  if (isSecurity) {
+    const sr = securityRoute(host, url.pathname, url.search)
+    if (sr.kind === 'redirect') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+      return send(res, 301, '', { Location: sr.location, 'Cache-Control': 'public, max-age=3600' })
+    }
+    if (sr.kind === 'deny') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+  } else if (securityPrimary() && !isLocal && !isAdmin && !host.startsWith('docs.') && !isHolderMapsHost(host) && (req.method === 'GET' || req.method === 'HEAD')) {
+    // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), the main site's Security pages move there for
+    // good. Only the pages: /api/security/*, /api/developer/security/*, the report badges and Gully Pay stay put.
+    const short = securityShortPath(url.pathname)
+    if (short) return send(res, 301, '', { Location: SECURITY_URL + short + url.search, 'Cache-Control': 'public, max-age=3600' })
+  }
   // embed.: widget.js, the iframe pages and badges are read by other sites: open CORS for GET, and this host sets no cookies.
   if (isEmbedHost(host)) {
     for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v)
@@ -271,7 +287,8 @@ async function handleRequest(req, res) {
     return send(res, 301, '', { Location: '/legal/scan-terms', 'Cache-Control': 'public, max-age=86400' })
   }
   // The short addresses people type for the policies.
-  const shortLegal = { '/terms': '/legal/terms', '/privacy': '/legal/privacy' }[url.pathname.replace(/(.)\/+$/, '$1')]
+  // (Not on gullysecurity.xyz, where /terms is the scan terms page.)
+  const shortLegal = isSecurity ? null : { '/terms': '/legal/terms', '/privacy': '/legal/privacy' }[url.pathname.replace(/(.)\/+$/, '$1')]
   if (shortLegal) return send(res, 301, '', { Location: shortLegal, 'Cache-Control': 'public, max-age=86400' })
   if (handleDiscovery(req, res, url)) return
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
@@ -504,7 +521,9 @@ async function handleRequest(req, res) {
       res.writeHead(meta.found ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': bareHost ? 'no-cache, no-transform' : 'no-cache' })
       // pay. and embed. carry no analytics beacon (their CSP would refuse it anyway).
       // The browser learns that holdermaps.xyz is the Holder Map's home from this tag (src/site-host.ts holderMapsPrimary).
-      const page = renderHead(holderMapsPrimary() ? html.replace('</head>', '  <meta name="holdermaps-primary" content="1" />\n  </head>') : html, meta)
+      // Likewise gullysecurity.xyz for Gully Security (src/site-host.ts securityPrimary).
+      const flags = [holderMapsPrimary() && '  <meta name="holdermaps-primary" content="1" />\n', securityPrimary() && '  <meta name="security-primary" content="1" />\n'].filter(Boolean).join('')
+      const page = renderHead(flags ? html.replace('</head>', `${flags}  </head>`) : html, meta)
       res.end(req.method === 'HEAD' ? undefined : isPayHost(host) || isEmbedHost(host) ? page.replace(/\s*<script defer src="https:\/\/analytics\.gullylabs\.xyz[^>]*><\/script>/, '') : page)
     })
   })

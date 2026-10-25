@@ -83,4 +83,48 @@ export function holderAbsUrl(path: string): string {
   return short && holderMapsPrimary() ? HOLDERMAPS_URL + short : SITE_URL + path
 }
 /** A main-site page's address from any host (on holdermaps.xyz the site's own pages live on gullylabs.xyz). */
-export const siteHref = (path: string) => (isHolderMapsHost() ? SITE_URL + path : path)
+export const siteHref = (path: string) => (isHolderMapsHost() || isSecurityHost() ? SITE_URL + path : path)
+
+/* Gully Security on its own domain (server/hosts.mjs holds the routing and the same path rules).
+   gullysecurity.xyz/                 the Security home        (/security on the main site)
+   gullysecurity.xyz/reports          published reports        (/security/reports)
+   gullysecurity.xyz/reports/<id>     one published report     (/security/reports/<id>)
+   gullysecurity.xyz/sample           the sample report        (/security/sample)
+   gullysecurity.xyz/terms            the scan terms           (/legal/scan-terms, also /security/terms)
+   Every other page belongs to the main site. Until the server says gullysecurity.xyz is Security's home (a
+   <meta name="security-primary"> tag, from SECURITY_PRIMARY), the main site keeps its /security pages. */
+export const SECURITY_HOST = 'gullysecurity.xyz'
+export const SECURITY_URL = `https://${SECURITY_HOST}`
+export const isSecurityHost = () => /^(www\.)?gullysecurity\.xyz$/.test(host())
+/** gullysecurity.xyz is Security's canonical home: on that host, or when the server marked the page so. */
+export const securityPrimary = () => isSecurityHost() || (typeof document !== 'undefined' && !!document.querySelector('meta[name="security-primary"]'))
+
+const REPORT_ID = 'sec_[A-Za-z0-9_-]{1,64}'
+const INTERNAL_SECURITY = new RegExp(`^/security(?:/(reports)(?:/(${REPORT_ID}))?|/(sample)|/(terms))?/?$`)
+const SHORT_SECURITY = new RegExp(`^(?:/|/(reports)(?:/(${REPORT_ID}))?|/(sample)|/(terms))/?$`)
+
+/** The gullysecurity.xyz path for a main-site Security path, or null when it is not one. */
+export function securityShortPath(path: string): string | null {
+  const m = INTERNAL_SECURITY.exec(path)
+  if (!m) return null
+  return m[2] ? `/reports/${m[2]}` : m[1] ? '/reports' : m[3] ? '/sample' : m[4] ? '/terms' : '/'
+}
+/** The main-site path for a gullysecurity.xyz page path, or null when it is not one of its pages. */
+export function securityInternalPath(path: string): string | null {
+  const m = SHORT_SECURITY.exec(path)
+  if (!m) return null
+  return m[2] ? `/security/reports/${m[2]}` : m[1] ? '/security/reports' : m[3] ? '/security/sample' : m[4] ? '/legal/scan-terms' : '/security'
+}
+
+/** Where a link to a main-site Security path (/security..., or the scan terms) points from this page: the short path
+    on gullysecurity.xyz, the gullysecurity.xyz address once it is primary, else the path as given. Query and hash kept. */
+export function securityHref(path: string): string {
+  const at = path.search(/[?#]/)
+  const [p, rest] = at < 0 ? [path, ''] : [path.slice(0, at), path.slice(at)]
+  if (p === '/legal/scan-terms') return isSecurityHost() ? `/terms${rest}` : path
+  const short = securityShortPath(p)
+  if (!short) return path
+  if (isSecurityHost()) return short + rest
+  return securityPrimary() ? SECURITY_URL + short + rest : path
+}
+

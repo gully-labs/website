@@ -5,6 +5,7 @@
 //   gullylabs.xyz        "Gully Labs"      installs the site
 //   app.gullylabs.xyz    "Gully Labs App"  installs the app dashboard
 //   holdermaps.xyz       "HolderMaps"      installs the Holder Map (its own domain, server/hosts.mjs)
+//   gullysecurity.xyz    "Gully Security"  installs Gully Security (its own domain, server/hosts.mjs)
 //
 // Caching rules (the whole service worker, in one place):
 //   - Only same-origin GET requests without an Authorization header are ever looked at.
@@ -53,11 +54,19 @@ export const HOLDERMAPS_MANIFEST = {
   description: 'HolderMaps by Gully Labs: who really holds a token, the biggest wallets and the ones that trade with each other, read live.',
 }
 
+export const SECURITY_MANIFEST = {
+  ...SITE_MANIFEST,
+  name: 'Gully Security',
+  short_name: 'Gully Security',
+  description: 'Gully Security by Gully Labs: the AI Security Scan of a contract or codebase, published scan reports, the Gully Score and contract monitors.',
+}
+
 /** The manifest this host serves, or null when none applies (admin, docs, blog, analytics are not installable). */
 export function manifestFor(host) {
   const h = String(host || '').split(':')[0].toLowerCase()
   if (/^(admin|docs|blog|analytics)\./.test(h)) return null
   if (/^(www\.)?holdermaps\.xyz$/.test(h)) return HOLDERMAPS_MANIFEST
+  if (/^(www\.)?gullysecurity\.xyz$/.test(h)) return SECURITY_MANIFEST
   return h.startsWith('app.') ? APP_MANIFEST : SITE_MANIFEST
 }
 
