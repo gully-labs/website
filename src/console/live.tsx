@@ -9,7 +9,7 @@ import { consoleToast } from './toast'
 
 export const GULLY_CHAIN_ID = 485590
 export const GULLY_RPC = 'https://testnet-rpc.gullychain.xyz'
-export const NAMES: Record<string, string> = { deepcore: 'DeepCore', peddleswap: 'PeddleSwap', peddles: 'Peddles', peddlequest: 'PeddleQuest' }
+export const NAMES: Record<string, string> = { deepcore: 'DeepCore', peddleswap: 'PeddleSwap', peddles: 'Peddles', peddlequest: 'PeddleQuest', gullychain: 'Gully Chain' }
 
 export interface Block {
   number: number
@@ -31,9 +31,69 @@ export interface Live {
   rpcMs: number[]
   /** Gully Studio: Frog Hop's latest season on the GullyArcade contract (Gully Chain testnet), and its player counts read so far. */
   arcade: { season: number; players: number; history: number[] } | null
+  /** Gully Pay's and Gully RPC's own public status, read by our server (GET /api/products/status). */
+  products: ProductsStatus | null
+  /** Gully IPFS: pinned CIDs, repo size and gateway health (GET /api/ipfs/stats). */
+  ipfs: IpfsStats | null
+  /** Everything live across Gully (GET /api/hub): surface probes, Gully Quests, x402 networks, the RPC gateway, the status page. */
+  hub: HubBody | null
+}
+export interface HubService {
+  key: string
+  group: 'chain' | 'labs'
+  name: string
+  url: string
+  up: boolean
+  ms: number | null
+  history: { t: string; ms: number | null }[]
+}
+export interface HubQuest {
+  id: string
+  title: string
+  state: string
+  kind: string | null
+  completions: number
+  max: number
+  spotsLeft: number | null
+  rewardEth: number | null
+  endsAt: string | null
+}
+export interface HubBody {
+  generatedAt: string
+  services: HubService[]
+  chain: { chainId: number; head: number; at: string | null; source: string } | null
+  quests: {
+    source: 'indexer' | 'chain'
+    registry: string
+    total: number
+    active: number | null
+    completions: number | null
+    completions24h: number | null
+    poolEth: number | null
+    paidEth: number | null
+    hourly: number[]
+    quests: HubQuest[]
+    recent: { questId: string; title: string | null; who: string; at: string | null; rewardEth: number | null }[]
+  } | null
+  x402: { networks: { id: string; name: string; chainId: number | null; testnet: boolean }[]; assets: string[]; schemes: string[]; gullyChain: boolean } | null
+  gateway: { networks: { alias: string; chainId: number | null; state: string; blockTimeMs: number | null }[]; ok: number; total: number; gullyChain: boolean } | null
+  statusPage: { overall: 'ok' | 'warn' | 'bad' | null; services: { name: string; state: string }[]; up: number; total: number } | null
+}
+type Hist = { t: string; v: number | null }[]
+export interface ProductsStatus {
+  pay: { up: number; total: number; status: string | null; history: Hist } | null
+  rpc: { served: number; total: number; gullyChain: boolean; history: Hist } | null
+}
+export interface IpfsStats {
+  source: string
+  gatewayUp: boolean | null
+  gatewayMs: number | null
+  pinned: number | null
+  repoBytes: number | null
+  history: { t: string; pinned: number | null; repoBytes: number | null; up: boolean; ms: number | null }[]
 }
 
-const empty: Live = { stats: null, statsState: 'loading', status: null, payChains: null, chain: null, chainState: 'loading', rpcMs: [], arcade: null }
+const empty: Live = { stats: null, statsState: 'loading', status: null, payChains: null, chain: null, chainState: 'loading', rpcMs: [], arcade: null, products: null, ipfs: null, hub: null }
 const Ctx = createContext<Live>(empty)
 export const useLive = () => useContext(Ctx)
 
@@ -125,6 +185,27 @@ export function LiveProvider({ children }: { children: ReactNode }) {
         /* the arcade figure stays as last read */
       }
       try {
+        const r = await fetch('/api/products/status', { cache: 'no-store' })
+        if (r.ok) set({ products: (await r.json()) as ProductsStatus })
+      } catch {
+        /* stays as last read */
+      }
+      try {
+        const r = await fetch('/api/hub', { cache: 'no-store' })
+        if (r.ok) {
+          const h = (await r.json()) as HubBody
+          if (Array.isArray(h?.services)) set({ hub: h })
+        }
+      } catch {
+        /* stays as last read */
+      }
+      try {
+        const r = await fetch('/api/ipfs/stats', { cache: 'no-store' })
+        if (r.ok) set({ ipfs: (await r.json()) as IpfsStats })
+      } catch {
+        /* stays as last read */
+      }
+      try {
         const st = (await (await fetch(STATUS_URL, { cache: 'no-store' })).json()) as StatusBody
         if (Array.isArray(st?.components)) set({ status: st })
       } catch {
@@ -154,13 +235,19 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={live}>{children}</Ctx.Provider>
 }
 
+/** The Gully Chain testnet head: this browser's own RPC read, else the indexer's (via /api/hub) when the RPC cannot be read. */
+export const chainHead = (l: Live): number | null => l.chain?.head ?? l.hub?.chain?.head ?? null
+export const chainHeadSource = (l: Live) => (l.chain ? 'testnet RPC' : l.hub?.chain ? 'indexer' : null)
+
 /* ---------- derived series ---------- */
 export type Metric = 'tvl' | 'volume' | 'fees'
 export const okVenues = (s: Stats) => s.venues.filter((v): v is VenueOk => v.state === 'ok')
+/** Venues with dollar figures: Gully Chain testnet reports test ETH only, so it is never drawn in a dollar chart. */
+const usdVenues = (s: Stats) => okVenues(s).filter((v) => !v.noUsd)
 
 /** Per-venue series of a metric over the last `days`, on one day axis (null where a venue has no point). */
 export function venueSeries(stats: Stats, metric: Metric, days = 30) {
-  const ok = okVenues(stats)
+  const ok = usdVenues(stats)
   const all = new Set<number>()
   ok.forEach((v) => (v.series?.[metric] || []).forEach((p) => all.add(p.t)))
   const axis = [...all].sort((a, b) => a - b).slice(-days)
@@ -198,15 +285,28 @@ function seed(): TapeItem[] {
   }
   return [
     { icon: 'blocks', k: 'Gully Chain', text: `testnet · chain ${GULLY_CHAIN_ID} · reading the newest blocks` },
-    { icon: 'coins', k: 'Venues', text: 'DeepCore, PeddleSwap, Peddles, PeddleQuest · reading value locked' },
+    { icon: 'coins', k: 'Venues', text: 'DeepCore, PeddleSwap, Peddles, PeddleQuest, Gully Chain · reading value locked' },
+    { icon: 'activity', k: 'Gully Quests', text: 'reading quests on chain 485590' },
     { icon: 'server', k: 'Gully RPC', text: 'measuring testnet latency' },
     { icon: 'wallet', k: 'Gully Pay', text: 'reading payment chains' },
   ]
 }
 export function tapeItems(l: Live): TapeItem[] {
   const items: TapeItem[] = []
-  if (l.stats) for (const v of l.stats.venues) items.push(v.state === 'ok' ? { icon: 'coins', k: NAMES[v.key] || v.key, text: 'value locked', v: fmtUsd(v.tvlUsd) } : { icon: 'activity', k: NAMES[v.key] || v.key, text: 'could not be read' })
+  if (l.stats)
+    for (const v of l.stats.venues)
+      items.push(
+        v.state !== 'ok'
+          ? { icon: 'activity', k: NAMES[v.key] || v.key, text: 'could not be read' }
+          : v.noUsd
+            ? { icon: 'coins', k: NAMES[v.key] || v.key, text: 'launches on testnet', v: v.counts?.launches == null ? '—' : String(v.counts.launches) }
+            : { icon: 'coins', k: NAMES[v.key] || v.key, text: 'value locked', v: fmtUsd(v.tvlUsd) },
+      )
+  const q = l.hub?.quests
+  if (q) items.push({ icon: 'activity', k: 'Gully Quests', text: `${q.active ?? q.total} live quests · completions`, v: q.completions == null ? '—' : String(q.completions) })
+  if (l.hub?.x402) items.push({ icon: 'wallet', k: 'Gully Pay x402', text: 'networks', v: String(l.hub.x402.networks.length) })
   for (const b of (l.chain?.blocks ?? []).slice(-6).reverse()) items.push({ icon: 'blocks', k: 'Gully Chain', text: `block ${b.number.toLocaleString('en-US')}`, v: `${b.txs} tx` })
+  if (!l.chain && l.hub?.chain) items.push({ icon: 'blocks', k: 'Gully Chain', text: 'latest block · indexer', v: l.hub.chain.head.toLocaleString('en-US') })
   if (l.stats?.totals?.feesAllUsd != null) items.push({ icon: 'wallet', k: 'Fees', text: 'all-time across venues', v: fmtUsd(l.stats.totals.feesAllUsd) })
   if (l.rpcMs.length) items.push({ icon: 'server', k: 'Gully RPC', text: 'testnet latency', v: `${l.rpcMs[l.rpcMs.length - 1]} ms` })
   if (!items.length) return seed()

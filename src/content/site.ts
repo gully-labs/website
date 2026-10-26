@@ -55,16 +55,16 @@ export const productsNav: NavGroup = {
   icon: LayoutGrid,
   items: [
     { label: 'Stock tracker', desc: 'Stock tokens against their fair price', to: '/tracker', icon: Activity, match: ['/tracker'] },
-    { label: 'Holder Map', desc: 'Who really holds a token, checked live', to: '/holders', icon: ScanSearch, match: ['/holders'], badge: 'New' },
+    { label: 'HolderMaps', desc: 'Who really holds a token, checked live', href: 'https://holdermaps.xyz/', newTab: true, icon: ScanSearch },
     { label: 'Swap', desc: 'Swap any stock token from its page', to: '/tracker/robinhood/NVDA#swap', icon: ArrowLeftRight },
     { label: 'Alerts', desc: 'Gap alerts by Telegram or webhook', to: '/#alerts', icon: BellRing },
     { label: 'Gully Analytics', desc: 'Web analytics that see the wallet', to: '/analytics', icon: ChartNoAxesCombined, match: ['/analytics'] },
-    { label: 'Chain Kit', desc: 'Branded block explorers', to: '/chain-kit', icon: Boxes, match: ['/chain-kit'], badge: 'Waitlist' },
-    { label: 'Gully Security', desc: 'AI Security Scan and code reviews', to: '/security', icon: ShieldCheck, match: ['/security'] },
+    { label: 'Gully Chain', desc: 'The L3, DeepCore and Chain Kit', href: 'https://gullychain.xyz/', newTab: true, icon: Boxes },
+    { label: 'Gully Security', desc: 'AI Security Scan and code reviews', href: 'https://gullysecurity.xyz/', newTab: true, icon: ShieldCheck },
     scoreNavEntry,
-    { label: 'Gully Chains', desc: 'Your own Arbitrum chain, run by us', to: '/chains', icon: Network, match: ['/chains'], badge: 'Waitlist' },
-    { label: 'Gully Pay', desc: 'Crypto billing and pay links', to: '/#pay', icon: CircleDollarSign },
-    { label: 'All products', desc: 'Try each one live on the home page', to: '/#products', icon: LayoutGrid },
+    { label: 'Gully RPC', desc: 'One RPC key for every Gully chain', href: 'https://gullyrpc.xyz/', newTab: true, icon: Network },
+    { label: 'Gully Pay', desc: 'x402, checkout and merchants', href: 'https://gullypay.xyz/', newTab: true, icon: CircleDollarSign },
+    { label: 'All products', desc: 'Every Gully product, each on its own domain', to: '/products', icon: LayoutGrid },
   ],
 }
 
@@ -105,7 +105,7 @@ export const navLinks: NavEntry[] = [
   { label: 'Projects', desc: 'The venues we run', to: '/#projects', icon: FlaskConical, match: ['/projects'] },
   { label: 'Pricing', desc: 'API, alerts and analytics plans', to: '/pricing', icon: Tag, match: ['/pricing'] },
   { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources (⌘K)', to: '/ask', icon: Sparkles, match: ['/ask'] },
-  { label: 'Holder Map', desc: 'Who really holds any token, on five chains', to: '/holders', icon: ScanSearch, match: ['/holders'], newDot: true },
+  { label: 'Holder Map', desc: 'Who really holds any token, on six chains with Gully Chain', to: '/holders', icon: ScanSearch, match: ['/holders'], newDot: true },
 ]
 
 /** The "Launch app" split button: the main part opens the tracker, its menu lists the apps. */

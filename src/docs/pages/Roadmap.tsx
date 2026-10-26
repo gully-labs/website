@@ -1,11 +1,11 @@
 import { LivePulse } from '../../components/tracker/LivePulse'
 import { Layers, ShieldCheck, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router'
 import { WeightsRing } from '../../pages/score/charts'
 import type { Methodology } from '../../pages/score/api'
 import { Callout, DocLink, DocPage, Ext, H3, List, P, Section } from '../DocPage'
 import { useApi } from '../useApi'
+import { SmartLink } from '../../components/SmartLink'
 import { useDocHref, type DocSlug } from '../nav'
 
 /* The general roadmap: every track with its status, so nothing planned reads as shipped and nothing live
@@ -52,10 +52,10 @@ function Pill({ s }: { s: Status }) {
   return <span className={`inline-flex items-center rounded-full border px-[8px] py-[2px] font-mono text-[11px] tracking-[.5px] whitespace-nowrap ${cls}`}>{label}</span>
 }
 
-function Track({ icon: Icon, title, status, to, hash, children }: { icon: LucideIcon; title: string; status: Status; to: DocSlug; hash?: string; children: ReactNode }) {
+function Track({ icon: Icon, title, status, to, hash, href: away, children }: { icon: LucideIcon; title: string; status: Status; to: DocSlug; hash?: string; href?: string; children: ReactNode }) {
   const href = useDocHref(to, hash)
   return (
-    <Link to={href} className="flex min-h-11 min-w-0 items-start gap-3 rounded-card border border-line bg-card-token px-4 py-3 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover hover:text-ink">
+    <SmartLink href={away ?? href} arrow={false} className="flex min-h-11 min-w-0 items-start gap-3 rounded-card border border-line bg-card-token px-4 py-3 text-ink no-underline transition-colors hover:border-gold-line hover:bg-surface-hover hover:text-ink">
       <span aria-hidden className="grid size-9 flex-none place-items-center rounded-[8px] border border-line bg-bg text-gold">
         <Icon size={17} strokeWidth={1.75} />
       </span>
@@ -65,7 +65,7 @@ function Track({ icon: Icon, title, status, to, hash, children }: { icon: Lucide
         </span>
         <span className="text-[14px] leading-[1.55] text-muted">{children}</span>
       </span>
-    </Link>
+    </SmartLink>
   )
 }
 
@@ -100,7 +100,7 @@ export function Roadmap() {
     >
       <Section id="status" title="Status">
         <div className="flex flex-col gap-2">
-          <Track icon={Layers} title="Gully L3" status="planned" to="roadmap-l3">
+          <Track icon={Layers} title="Gully Chain" status="live" to="roadmap" href="https://docs.gullychain.xyz/">
             An Arbitrum chain settling to Arbitrum One, with Chain Kit, Gully Pay and Hyperlane. Spec written, devnet prepared, nothing running.
           </Track>
           <Track icon={ShieldCheck} title="Gully Security" status="live" to="roadmap" hash="security">

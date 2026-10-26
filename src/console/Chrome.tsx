@@ -2,7 +2,7 @@
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Activity, BookOpen, Box, ChartLine, CircleDollarSign, LayoutGrid, Menu, MessageCircle, Network, Play, Rocket, ScanSearch, Send, Sparkles, Tag, X, Zap, ArrowUpRight, type LucideProps } from 'lucide-react'
+import { Activity, BookOpen, Box, ChartCandlestick, ChartLine, FileText, Gauge, LayoutGrid, Lock, Menu, MessageCircle, Play, Rocket, Send, Sparkles, Tag, X, Zap, ArrowUpRight, type LucideProps } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { Arrow, ic, LivePill, PRODUCTS } from './ui'
@@ -59,10 +59,11 @@ export function ConsoleHeader() {
     { label: 'Docs', icon: BookOpen, href: DOCS_URL },
     { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
   ]
+  // Gully Labs' own pages. The products live on their own domains (the Products list below, and /products).
   const pages: Item[] = [
     { label: 'All products', icon: LayoutGrid, to: '/products' },
-    { label: 'Holder Map', icon: ScanSearch, to: '/holders' },
-    { label: 'Gully Chains', icon: Network, to: '/chains' },
+    { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
+    { label: 'Gully Score', icon: Gauge, to: '/score' },
     { label: 'Pricing', icon: Tag, to: '/pricing' },
     { label: 'Gully AI', icon: Sparkles, to: '/ask' },
     { label: 'Status', icon: Activity, to: '/status' },
@@ -118,8 +119,9 @@ export function ConsoleHeader() {
               {PRODUCTS.map((p) => (
                 <li key={p.key}>
                   <a href={p.url} target="_blank" rel="noopener noreferrer">
-                    {ic(ArrowUpRight)}
+                    {ic(p.icon)}
                     <span className="lbl">{p.name}</span>
+                    {ic(ArrowUpRight, 'ic ext')}
                   </a>
                 </li>
               ))}
@@ -143,10 +145,12 @@ export function ConsoleFooter() {
   ]
   const more: Item[] = [
     { label: 'Products', icon: LayoutGrid, to: '/products' },
-    { label: 'Pricing', icon: CircleDollarSign, to: '/pricing' },
-    { label: 'Holder Map', icon: ScanSearch, to: '/holders' },
-    { label: 'Chains', icon: Network, to: '/chains' },
+    { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
+    { label: 'Gully Score', icon: Gauge, to: '/score' },
+    { label: 'Pricing', icon: Tag, to: '/pricing' },
     { label: 'Gully AI', icon: Sparkles, to: '/ask' },
+    { label: 'Terms', icon: FileText, to: '/legal/terms' },
+    { label: 'Privacy', icon: Lock, to: '/legal/privacy' },
   ]
   return (
     <footer>
@@ -164,24 +168,34 @@ export function ConsoleFooter() {
             ))}
           </ul>
         </nav>
+        <nav aria-label="Gully products" className="fprods">
+          <span className="lab">Products</span>
+          <ul>
+            {PRODUCTS.map((p) => (
+              <li key={p.key}>
+                <a href={p.url} target="_blank" rel="noopener noreferrer">
+                  {ic(p.icon)}
+                  {p.name}
+                  <span className="sr">(opens {p.url.replace('https://', '')} in a new tab)</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        {!home && (
+          <nav aria-label="Site pages" className="more">
+            <ul>
+              {more.map((it) => (
+                <li key={it.label}>
+                  <NavLink it={it} />
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
         <p className="copy2">
           © 2026 Gully Labs · Figures are read live from each product's own API and the Gully Chain testnet; a venue that cannot be read is shown as unreadable, never as zero.
         </p>
-        {!home && <nav aria-label="Site pages" className="more">
-          <ul>
-            {more.map((it) => (
-              <li key={it.label}>
-                <NavLink it={it} />
-              </li>
-            ))}
-            <li>
-              <Link to="/legal/terms">Terms</Link>
-            </li>
-            <li>
-              <Link to="/legal/privacy">Privacy</Link>
-            </li>
-          </ul>
-        </nav>}
       </div>
     </footer>
   )

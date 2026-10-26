@@ -2,8 +2,8 @@
    live numbers and sparklines, ticker, stat tiles, product cards, stepper, trust band, toasts. */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Activity, ArrowUpRight, Blocks, Check, Coins, KeyRound, LayoutGrid, Rocket, Server, Wallet, X, Zap, type LucideProps } from 'lucide-react'
-import { ProductLogo as KitProductLogo } from '../components/ProductLogo'
+import { Activity, ArrowUpRight, Blocks, Check, CircleDollarSign, Coins, Gamepad2, HardDrive, KeyRound, LayoutGrid, Network, Rocket, ScanSearch, Server, ShieldCheck, Wallet, X, Zap, type LucideProps } from 'lucide-react'
+import { MarkLogo, ProductLogo as KitProductLogo } from '../components/ProductLogo'
 import { countUp, fmtInt, fmtTime, spark } from './charts'
 import { dismissToast, toastStore, type ToastIcon } from './toast'
 import { tapeItems, useLive, type TapeItem } from './live'
@@ -192,21 +192,33 @@ export const BUILD_STEPS: Step[] = [
 ]
 
 /* ---------- products ---------- */
-export type ProductKey = 'chain' | 'pay' | 'rpc' | 'holders' | 'security' | 'studio'
+export type ProductKey = 'chain' | 'pay' | 'rpc' | 'ipfs' | 'holders' | 'security' | 'studio'
 export interface ProductDef {
   key: ProductKey
   name: string
+  /** The product's own domain (its home page). */
   url: string
+  /** Where its signed-in app lives, when it has one (the Gully Labs App hands off there). */
+  app?: string
+  /** The product's own docs, when it has them on its domain. */
+  docs?: string
+  /** Lucide icon for menus. */
+  icon: Icon
   blurb: string
 }
+/* The products: six on their own domains since 2026-10-26 (Gully Labs is the hub that points to them), plus Gully IPFS,
+   a Gully Labs service documented at docs.gullylabs.xyz/ipfs. */
 export const PRODUCTS: ProductDef[] = [
-  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', blurb: 'An L3 chain for launches and trading, with DeepCore built in.' },
-  { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
-  { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', blurb: 'Node control plane and RPC gateway for every Gully chain.' },
-  { key: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz', blurb: 'Who really holds a token: bubble maps, clusters and deep checks.' },
-  { key: 'security', name: 'Gully Security', url: 'https://gullysecurity.xyz', blurb: 'AI security scans, monitors and the Gully Score for any contract.' },
-  { key: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz', blurb: 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.' },
+  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', app: 'https://app.gullychain.xyz', docs: 'https://docs.gullychain.xyz', icon: Network, blurb: 'An L3 chain for launches and trading, with DeepCore built in.' },
+  { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', docs: 'https://gullypay.xyz/docs', icon: CircleDollarSign, blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
+  { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', app: 'https://app.gullyrpc.xyz', docs: 'https://gullyrpc.xyz/docs/', icon: Server, blurb: 'Node control plane and RPC gateway for every Gully chain.' },
+  // A Gully Labs service (no own domain or kit): grouped with Gully RPC as infrastructure.
+  { key: 'ipfs', name: 'Gully IPFS', url: 'https://docs.gullylabs.xyz/ipfs', icon: HardDrive, blurb: 'Our IPFS node and read-only gateway for Gully content: token art, metadata and .gully sites.' },
+  { key: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz', icon: ScanSearch, blurb: 'Who really holds a token: bubble maps, clusters and deep checks.' },
+  { key: 'security', name: 'Gully Security', url: 'https://gullysecurity.xyz', icon: ShieldCheck, blurb: 'AI security scans, monitors and reports for any contract.' },
+  { key: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz', icon: Gamepad2, blurb: 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.' },
 ]
+export const productByKey = (k: ProductKey) => PRODUCTS.find((p) => p.key === k) as ProductDef
 
 /** The product's kit logo in the shared slot (src/components/ProductLogo.tsx). */
 export function ProductLogo({ p }: { p: ProductDef }) {
@@ -237,6 +249,50 @@ export function ProductCard({ p, f, href }: { p: ProductDef; f: ProductFigure; h
   )
 }
 
+/** The eighth card beside the seven products: Gully Labs' own status page, with its live count of services up. */
+export function StatusCard({ href = '/status' }: { href?: string }) {
+  const { status } = useLive()
+  const on = status ? status.components.filter((c) => c.state !== 'off') : []
+  const up = status ? on.filter((c) => c.state === 'up').length : null
+  const api = status?.components.find((c) => c.id === 'api')
+  const body = (
+    <>
+      <span className="go">{ic(ArrowUpRight)}</span>
+      <span className="logo">
+        <MarkLogo label="Gully Status" />
+      </span>
+      <p>Every Gully Labs service checked each minute: 24 h uptime and incidents.</p>
+      <div className="v">
+        <Count value={up} fmt={(v) => `${v}/${on.length}`} />
+        <small>services up · Gully Labs</small>
+      </div>
+      <Spark values={(api?.history ?? []).map((h) => (h.up == null ? null : Math.round(h.up * 1000) / 10))} color={C_STATUS} />
+    </>
+  )
+  return ext(href) ? (
+    <a className="prod card" href={href} target="_blank" rel="noopener noreferrer">
+      {body}
+    </a>
+  ) : (
+    <Link className="prod card" to={href}>
+      {body}
+    </Link>
+  )
+}
+const C_STATUS = '#3DDC97'
+
+/** The products grid: every product card (live figure, opens its own domain) and the status card. */
+export function ProductGrid({ figs, hrefOf, statusHref }: { figs: Record<ProductKey, ProductFigure>; hrefOf?: (p: ProductDef) => string; statusHref?: string }) {
+  return (
+    <div className="prods" data-testid="product-grid">
+      {PRODUCTS.map((p) => (
+        <ProductCard key={p.key} p={p} f={figs[p.key]} href={hrefOf?.(p)} />
+      ))}
+      <StatusCard href={statusHref} />
+    </div>
+  )
+}
+
 /* ---------- trust band ---------- */
 export function TrustBand({ mascot = true }: { mascot?: boolean }) {
   const { stats, status, chainState, rpcMs } = useLive()
@@ -247,9 +303,8 @@ export function TrustBand({ mascot = true }: { mascot?: boolean }) {
     <div className="wrap" style={{ position: 'relative' }}>
       <div className="trust card">
         <div className="badges">
-          <a href="https://gullylabs.xyz" aria-label="Powered by Gully Labs">
-            <img src="/brand/badges/powered-by-gully-labs-dark.png" srcSet="/brand/badges/powered-by-gully-labs-dark.png 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x" width={190} height={48} alt="Powered by Gully Labs" />
-          </a>
+          {/* No "Powered by Gully Labs" here: this IS Gully Labs (owner rule 2026-10-26, rule 4). The badge sits in the
+              footers of the app, the docs, the blog and the products' own sites. */}
           <a href="https://gullysecurity.xyz" target="_blank" rel="noopener noreferrer" aria-label="Secured by Gully Labs (opens in a new tab)">
             <img src="/brand/badges/secured-by-gully-labs-dark.png" srcSet="/brand/badges/secured-by-gully-labs-dark.png 1x, /brand/badges/secured-by-gully-labs-dark-2x.png 2x, /brand/badges/secured-by-gully-labs-dark-3x.png 3x" width={190} height={48} alt="Secured by Gully Labs" />
           </a>

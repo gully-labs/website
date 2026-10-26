@@ -9,6 +9,7 @@ import { Dashboard } from './Dashboard'
 import { InviteLanding } from './Invite'
 import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, restoreFocusSoon, type Portal } from './portal'
 import { mono, pillGold, pillLine } from './styles'
+import { BadgeFooterRow } from '../../components/PoweredByBadge'
 
 /* The Gully Labs App, the app dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
    free tier is and a "Connect wallet" button. Signing in is Sign-In with Ethereum: the wallet signs a
@@ -298,6 +299,12 @@ export function DevelopersPage() {
             )}
           </div>
         </section>
+      )}
+      {/* Signed out (and while loading or on an error) the page has no app shell: its own footer row with the badge. */}
+      {session.state !== 'in' && (
+        <footer className="border-t border-line px-6 py-4 max-[480px]:px-4">
+          <BadgeFooterRow />
+        </footer>
       )}
       {session.state === 'in' && (
         <PortalContext.Provider value={portal}>

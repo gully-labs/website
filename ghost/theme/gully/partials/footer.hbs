@@ -1,14 +1,16 @@
-{{!-- The footer, matching gullylabs.xyz (src/components/Footer.tsx): wordmark, "Start a project", the four
-      columns (Products, App and API, Company, Social) and the legal line. No platform credit, by design. --}}
+{{!-- The footer: the kit's full logo (flask + wordmark + tagline), the tagline as text, "Start a project", the four
+      columns (Products, App and API, Company, Social), the legal line and the kit's "Powered by Gully Labs" badge.
+      No Ghost credit, by design. --}}
 <footer class="gl-footer">
     <div class="gl-footer-main gl-page">
         <div class="gl-footer-brand">
-            <a class="gl-wordmark gl-wordmark--footer" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">
-                {{> "brand/wordmark"}}<span class="gl-sr">Gully Labs home (opens in a new tab)</span>
+            <a class="gl-footer-logo" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">
+                {{> "brand/logo"}}<span class="gl-sr"> Gully Labs home (opens in a new tab)</span>
             </a>
+            <p class="gl-footer-tagline">You Think It, We Ship It.</p>
             <p class="gl-footer-about">A blockchain development company building and releasing Web3 projects. This is our blog: releases and write-ups.</p>
-            <a class="gl-btn gl-btn--gold" href="https://gullylabs.xyz/#services" target="_blank" rel="noopener noreferrer">
-                <span>Start a project</span>{{> "icons/arrow-up-right"}}<span class="gl-sr"> (opens in a new tab)</span>
+            <a class="gl-btn gl-btn--primary" href="https://gullylabs.xyz/#services" target="_blank" rel="noopener noreferrer">
+                {{> "icons/rocket"}}<span>Start a project</span>{{> "btn-arrow" ext=true}}
             </a>
         </div>
         <div class="gl-footer-cols">
@@ -34,8 +36,11 @@
         </div>
     </div>
     <div class="gl-footer-legal gl-page">
-        <span class="gl-footer-copy">© {{date format="YYYY"}} GULLY LABS</span>
-        <nav class="gl-footer-secondary" aria-label="More from the blog" data-gl-ext-scan>{{navigation type="secondary"}}</nav>
+        <div class="gl-footer-legal-left">
+            <span class="gl-footer-copy">© {{date format="YYYY"}} Gully Labs</span>
+            {{> "brand/badge"}}
+            <nav class="gl-footer-secondary" aria-label="More from the blog" data-gl-ext-scan>{{navigation type="secondary"}}</nav>
+        </div>
         <p class="gl-footer-disclaimer">Information only, not investment advice. Prices and gaps are read live and can be late or wrong; stock tokens are issued by third parties whose own terms apply, and may not be available where you live.</p>
     </div>
 </footer>

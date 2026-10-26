@@ -2,9 +2,11 @@
 import { Link } from 'react-router'
 import { ArrowRight, Zap } from 'lucide-react'
 import { Seo } from '../../components/Seo'
+import { MarkLogo } from '../../components/ProductLogo'
 import { productFigures } from '../../console/figures'
 import { useLive } from '../../console/live'
-import { Btn, BUILD_STEPS, ic, PRODUCTS, ProductCard, ProductLogo, SectionHead, Stepper } from '../../console/ui'
+import { Btn, BUILD_STEPS, ic, PRODUCTS, ProductGrid, ProductLogo, SectionHead, Stepper } from '../../console/ui'
+import { LabsBoard, NetworkChips } from '../../console/Suite'
 import { APP_URL } from '../../site-host'
 import { NetworkCard } from '../Home'
 
@@ -13,18 +15,18 @@ export function ProductsIndex() {
   const figs = productFigures(live)
   return (
     <div className="lcp">
-      <Seo title="Products" description="Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio: six Gully Labs products, each with one live figure." />
+      <Seo title="Products" description="Gully Chain, Gully Pay, Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio: the Gully Labs products, each with one live figure from the product itself, and every Gully surface checked each minute." />
       <section className="hero">
         <div className="wrap">
           <div className="copy rise">
             <span className="lab cy">Gully Labs · products</span>
             <h1>
-              Six products,
+              Seven products,
               <br />
               <span className="grad">one lab.</span>
             </h1>
             <p className="promise">
-              A chain, payments, RPC, holder maps, security and games. <b>Every product has a free tier</b>, supports Gully Chain and bills through Gully Pay.
+              A chain, payments, RPC, IPFS, holder maps, security and games. <b>Every product has a free tier</b>, supports Gully Chain and bills through Gully Pay.
             </p>
             <ul className="plist">
               {PRODUCTS.map((p) => (
@@ -35,6 +37,12 @@ export function ProductsIndex() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link to="/status" aria-label="Gully Labs status">
+                  <MarkLogo label="Gully Status" decorative />
+                  {ic(ArrowRight)}
+                </Link>
+              </li>
             </ul>
           </div>
           <NetworkCard />
@@ -45,10 +53,20 @@ export function ProductsIndex() {
           <SectionHead label="Open a product" title="Each one on its own domain" id="prods-h">
             Cards open the product itself; the names above open its page here.
           </SectionHead>
-          <div className="prods">
-            {PRODUCTS.map((p) => (
-              <ProductCard key={p.key} p={p} f={figs[p.key]} />
-            ))}
+          <ProductGrid figs={figs} />
+        </div>
+      </section>
+      <section aria-labelledby="across-h">
+        <div className="wrap">
+          <SectionHead label="Live now" title="Every Gully surface, checked each minute" id="across-h">
+            Response times from our server, the networks Gully Pay settles on and the networks Gully RPC serves, Gully Chain in each.
+          </SectionHead>
+          <div className="livegrid">
+            <LabsBoard />
+            <div className="card netrow" style={{ gridTemplateColumns: 'minmax(0,1fr)', alignSelf: 'start' }}>
+              <NetworkChips kind="x402" />
+              <NetworkChips kind="gateway" />
+            </div>
           </div>
         </div>
       </section>

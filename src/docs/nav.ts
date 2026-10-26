@@ -15,8 +15,6 @@ export const DOC_PAGES = [
   { slug: 'holder-map', title: 'Holder Map', group: 'Products' },
   { slug: 'holder-map-integrate', title: 'Integrate the Holder Map', group: 'Products' },
   { slug: 'analytics', title: 'Gully Analytics', group: 'Products' },
-  { slug: 'gully-pay', title: 'Gully Pay', group: 'Products' },
-  { slug: 'gully-pay-merchants', title: 'Gully Pay for merchants', group: 'Products' },
   { slug: 'gully-security', title: 'Gully Security', group: 'Products' },
   { slug: 'gully-score', title: 'Gully Score', group: 'Products' },
   { slug: 'gully-ai', title: 'Gully AI', group: 'Products' },
@@ -27,11 +25,10 @@ export const DOC_PAGES = [
   { slug: 'swaps', title: 'Swaps', group: 'Products' },
   { slug: 'solana', title: 'Solana', group: 'Products' },
   { slug: 'solana-pay', title: 'Solana Pay', group: 'Products' },
-  { slug: 'chain-kit', title: 'Chain Kit', group: 'Products' },
+  { slug: 'ipfs', title: 'Gully IPFS', group: 'Products' },
   { slug: 'contracts', title: 'Contracts', group: 'More' },
   { slug: 'status', title: 'Status', group: 'More' },
   { slug: 'roadmap', title: 'Roadmap', group: 'More' },
-  { slug: 'roadmap-l3', title: 'Roadmap: Gully L3', group: 'More' },
   { slug: 'changelog', title: 'Changelog', group: 'More' },
 ] as const
 
@@ -51,8 +48,6 @@ export const DOC_KEYWORDS: Partial<Record<DocSlug, string[]>> = {
   'holder-map': ['holders', 'clusters', 'bubbles', 'whales', 'deepcore', 'health score'],
   'holder-map-integrate': ['launchpad', 'embed', 'iframe', 'bubblemaps', 'partner', 'integration', 'card', 'og image'],
   analytics: ['umami', 'web3', 'wallets', 'funnel', 'events'],
-  'gully-pay': ['payments', 'checkout', 'usdc', 'usdt', 'eth', 'bnb', 'crypto', 'invoice'],
-  'gully-pay-merchants': ['store', 'merchant', 'pay link', 'webhook', 'fees', 'invoice'],
   'gully-security': ['scan', 'audit', 'contract', 'monitor', 'vulnerability'],
   'gully-score': ['score', 'rating', 'token score'],
   'gully-ai': ['ask', 'assistant', 'chat', 'ai', 'claude', 'citations', 'search', 'cmd k'],
@@ -63,15 +58,29 @@ export const DOC_KEYWORDS: Partial<Record<DocSlug, string[]>> = {
   swaps: ['swap', 'trade', 'buy', 'sell', 'li.fi', 'lifi', 'jupiter', 'geo', 'fees'],
   solana: ['sol', 'xstocks', 'spl', 'solana pay', 'jupiter', 'backed'],
   'solana-pay': ['qr', 'reference', 'sol', 'usdc', 'usdt', 'transfer request', 'spl token', 'finalized', 'wallet'],
-  'chain-kit': ['explorer', 'blockscout', 'rollup', 'block explorer', 'chain'],
+  ipfs: ['ipfs', 'kubo', 'gateway', 'cid', 'pin', 'contenthash', 'nft', 'metadata'],
   contracts: ['address', 'addresses', 'treasury', 'safe', 'fee address', 'fee proxy', 'sourcify', 'verified', 'explorer', 'deployment'],
   status: ['uptime', 'incidents', 'health', 'outage', 'down', 'monitoring'],
   roadmap: ['plans', 'upcoming', 'future'],
-  'roadmap-l3': ['l3', 'gully chain', 'rollup', 'devnet'],
   changelog: ['changes', 'release', 'updates', 'new'],
 }
 
 export const SITE = 'https://gullylabs.xyz'
+
+/** Docs of the products on their own domains (2026-10-26): the old slugs here 301 there (server/hosts.mjs movedDocsUrl). */
+export const PRODUCT_DOCS: { name: string; href: string; note: string }[] = [
+  { name: 'Gully Chain', href: 'https://docs.gullychain.xyz/', note: 'The L3, DeepCore launchpad, bridging, names, account abstraction and the network details.' },
+  { name: 'Gully Pay', href: 'https://gullypay.xyz/docs', note: 'x402, checkout, merchant stores, webhooks and glUSD.' },
+  { name: 'Gully RPC', href: 'https://gullyrpc.xyz/docs/', note: 'Endpoints, API keys, served networks and limits.' },
+  { name: 'Gully Security', href: 'https://gullysecurity.xyz/', note: 'AI security scans, monitors and published reports.' },
+]
+export type MovedDocSlug = 'gully-pay' | 'gully-pay-merchants' | 'chain-kit' | 'roadmap-l3'
+export const MOVED_DOCS: Record<MovedDocSlug, string> = {
+  'gully-pay': 'https://gullypay.xyz/docs',
+  'gully-pay-merchants': 'https://gullypay.xyz/docs',
+  'chain-kit': 'https://docs.gullychain.xyz/',
+  'roadmap-l3': 'https://docs.gullychain.xyz/network/',
+}
 
 /** The docs' own base path: '/' on docs.gullylabs.xyz, '/docs' when mounted under the main host. */
 export const DocsBase = createContext('/')

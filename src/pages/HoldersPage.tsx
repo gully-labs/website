@@ -53,6 +53,13 @@ export function HoldersPage() {
           </span>
         )}
       </nav>
+      {/* Exactly one h1 in every state: the drawn map titles itself with one (HolderMap `page`); while it loads, or when
+          it cannot be drawn, the page's own title is the h1, for readers and crawlers alike. */}
+      {m?.state !== 'ok' && (
+        <h1 data-testid="hm-page-h1" className="sr-only">
+          {title}
+        </h1>
+      )}
       <HolderMap chain={chain} token={token} page tradeHref={isStock && symbol ? `/tracker/${chain}/${symbol}#swap` : undefined} />
       {m?.state === 'ok' && m.chain && m.token && <DeepCheckCard key={`${m.chain.key}:${m.token.address}`} chain={m.chain.key} token={m.token.address} symbol={symbol} />}
       {m?.state === 'ok' && m.chain && m.token && <BadgeBlock chain={m.chain.key} token={m.token.address} />}

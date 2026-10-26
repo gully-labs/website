@@ -23,6 +23,7 @@ const LAB_NIGHT = '#06050D'
 const ICONS = [
   { src: '/brand/icon/app-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
   { src: '/brand/icon/app-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+  { src: '/brand/icon/app-icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
 ]
 
 export const SITE_MANIFEST = {
@@ -50,7 +51,14 @@ export const HOLDERMAPS_MANIFEST = {
   ...SITE_MANIFEST,
   name: 'HolderMaps',
   short_name: 'HolderMaps',
-  description: 'HolderMaps by Gully Labs: who really holds a token, the biggest wallets and the ones that trade with each other, read live.',
+  // The HolderMaps brand kit (public/brand/holdermaps, byte-exact): ink #0A0A0A and its own app icons.
+  background_color: '#0A0A0A',
+  theme_color: '#0A0A0A',
+  icons: [
+    { src: '/brand/holdermaps/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: '/brand/holdermaps/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+  ],
+  description: 'HolderMaps by Gully Labs: who really holds a token on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana, the biggest wallets and the ones that trade with each other, read live.',
 }
 
 export const SECURITY_MANIFEST = {

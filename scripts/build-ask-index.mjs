@@ -1,6 +1,6 @@
 // Builds the local part of the Gully Ask corpus into server/data/ask-index.json:
 //   - the docs pages (src/docs/pages/*.tsx), one document per <Section>, at https://docs.gullylabs.xyz/<path>#<id>
-//     (Gully Pay, Gully Pay for merchants and the L3 roadmap page included);
+//     (Gully Pay, Chain Kit and the L3 roadmap moved to their products' own docs on 2026-10-26 and are not here);
 //   - the site's copy: src/content/*.ts and the Products, Pricing, Services and About pages, at https://gullylabs.xyz/...;
 //   - the changelog (a docs page, labelled "Changelog");
 //   - the legal pages (merchant terms, privacy policy, terms of service), one chunk run per numbered section, at /legal/<page>#s<n>;
@@ -266,7 +266,7 @@ function docsChunks() {
 /* ------------------------------------------------------------------ site --- */
 
 const SITE_PAGES = [
-  { file: 'src/pages/Products.tsx', jsx: false, consts: { ANALYTICS: { url: '/analytics', title: 'Gully Analytics' }, CHAIN_KIT: { url: '/chain-kit', title: 'Chain Kit' } } },
+  { file: 'src/pages/Products.tsx', jsx: false, consts: { ANALYTICS: { url: '/analytics', title: 'Gully Analytics' } } },
   { file: 'src/pages/Pricing.tsx', url: '/pricing', title: 'API pricing', consts: { FAQ: { section: 'Questions' } } },
   { file: 'src/pages/Services.tsx', url: '/services', title: 'Services' },
   { file: 'src/pages/About.tsx', url: '/about', title: 'About Gully Labs' },

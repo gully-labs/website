@@ -139,7 +139,7 @@ function StartStep({ view, onStarted }: { view: AnalyticsView; onStarted: (s: Se
       </div>
       {!view.configured && (
         <p className="m-0 text-[13px] text-faint" role="status">
-          Analytics sign-up is not open on this server yet. Write to team@gullylabs.xyz for early access.
+          Gully Analytics is not switched on for this server yet. Write to team@gullylabs.xyz and we turn it on for your workspace.
         </p>
       )}
       <GhostCurves height={120} title="Your page views and visitors will draw here">

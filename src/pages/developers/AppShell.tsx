@@ -13,6 +13,7 @@ import { Menu, menuItem } from './Menu'
 import { declinedInvites, restoreFocus, usePortal } from './portal'
 import { ExtLink } from './ExtLink'
 import { StatusPill as KitPill, type PillTone } from '../../components/ui/StatusPill'
+import { BadgeFooterRow } from '../../components/PoweredByBadge'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
@@ -647,7 +648,13 @@ export function AppShell<T extends string>({
           </div>
         </header>
 
-        <div className={`flex min-w-0 flex-1 flex-col ${narrow ? 'pb-[calc(64px+env(safe-area-inset-bottom))]' : ''}`}>{children}</div>
+        <div className={`flex min-w-0 flex-1 flex-col ${narrow ? 'pb-[calc(64px+env(safe-area-inset-bottom))]' : ''}`}>
+          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+          {/* The app's footer row: the "Powered by Gully Labs" badge (owner rule 2026-10-26). */}
+          <footer className="border-t border-line px-6 py-4 max-[480px]:px-4 print:hidden">
+            <BadgeFooterRow />
+          </footer>
+        </div>
       </div>
 
       {narrow && <TabBar items={items} current={current} go={pick} more={() => setSheet(true)} sheetOpen={sheet} />}

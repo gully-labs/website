@@ -9,6 +9,8 @@ import { NF } from '../../components/charts/number-formats'
 import { Seo } from '../../components/Seo'
 import { LiveTopGaps } from '../../components/tracker/LiveTopGaps'
 import { eyebrow, h1 } from '../../components/ui'
+import { GullyAiLogo, GullyAiScope } from '../../brand/GullyAiBrand'
+import { PRODUCT_BRANDS } from '../../brand/products'
 
 /* /ask on the main site: Gully AI on its own page, with what it can read beside it: the size of its
    index (GET /api/ask/status) and the tracker's widest gaps right now, live, which it can also quote.
@@ -31,12 +33,14 @@ export function AskPage() {
   const st = status === 'loading' ? null : status
   return (
     <>
-      <Seo title="Gully AI" description="Ask Gully AI about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources." />
-      <section className="px-page pt-[72px] pb-24 max-[600px]:pt-10">
+      <Seo title="Gully AI: ask about Gully Labs" description="Ask Gully AI about Gully Labs: its products, the tracker and API, plans and docs. Every answer cites its sources and quotes live figures where they matter." />
+      {/* Gully AI's own kit (src/brand/products.ts): its logo and palette for the whole page body. */}
+      <GullyAiScope as="section" className="bg-bg px-page pt-[72px] pb-24 max-[600px]:pt-10" data-testid="ask-page">
         <div className="grid w-full grid-cols-[minmax(0,1fr)_400px] items-start gap-10 max-[1099px]:max-w-[760px] max-[1099px]:grid-cols-1">
           <div className="flex min-w-0 flex-col gap-8">
             <header className="flex flex-col gap-4">
-              <span className={eyebrow}>GULLY AI</span>
+              <GullyAiLogo height={56} className="-ml-2" />
+              <span className={eyebrow}>GULLY AI · BY GULLY LABS</span>
               <h1 className={h1}>
                 Ask about <span className="text-gold">Gully Labs</span>
               </h1>
@@ -45,6 +49,7 @@ export function AskPage() {
             <AskPanel variant="page" />
           </div>
           <aside aria-label="What Gully AI reads" className="flex min-w-0 flex-col gap-4 min-[1100px]:sticky min-[1100px]:top-24">
+            <img src={PRODUCT_BRANDS.gullyai.mascot.src} width={128} height={126} alt="" aria-hidden decoding="async" className="mx-auto block max-[1099px]:hidden" />
             <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5">
               <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
                 <Database aria-hidden size={14} className="text-gold" /> ITS INDEX
@@ -86,7 +91,7 @@ export function AskPage() {
             </div>
           </aside>
         </div>
-      </section>
+      </GullyAiScope>
     </>
   )
 }

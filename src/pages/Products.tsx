@@ -1,31 +1,29 @@
-import { Boxes, ChartNoAxesCombined, Cpu, Eye, Fingerprint, GitBranch, Layers, Link2, Palette, Rocket, ServerCog, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
+import { ChartNoAxesCombined, Eye, Fingerprint, GitBranch, Link2, Rocket, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
 import { AnalyticsPlanCards } from '../components/AnalyticsPlans'
 import { ANALYTICS_SIGNUP, usePlans } from '../lib/plans'
 import { useContact } from '../components/ContactContext'
 import { Seo } from '../components/Seo'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
-import { AnalyticsExample, ChainKitExample } from '../components/charts/ProductExamples'
+import { AnalyticsExample } from '../components/charts/ProductExamples'
 import { useMemo } from 'react'
 import { projects } from '../content/projects'
 import { useStats } from '../hooks/useStats'
 import { fmtDay, fmtUsd, type VenueOk } from '../lib/stats'
-import { CHAIN_NAME, STATUS_LABEL, useTracker, type TrackerStatus } from '../lib/tracker'
 import { track } from '../lib/track'
 import { BlinkDot } from '../components/ui'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
-import { ChainLogo } from '../components/logos/ChainLogo'
 import { VenueLogo } from '../components/logos/VenueLogo'
 import { EChart } from '../components/charts/EChart'
 import { ChartBox } from '../components/charts/ChartSkeleton'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { NF } from '../components/charts/number-formats'
-import { axisTooltip, barsPreset, C, CHART_H, linePreset, tipHtml } from '../components/charts/chartPresets'
+import { axisTooltip, C, CHART_H, linePreset, tipHtml } from '../components/charts/chartPresets'
 
-/* Product pages for the two open-source-based products. Copy states what exists today; nothing
+/* The Gully Analytics product page (Chain Kit moved to Gully Chain, gullychain.xyz, on 2026-10-26). Copy states what exists today; nothing
    numeric about customers or usage is claimed. The "What it draws" charts are illustrations with
    example data, badged EXAMPLE DATA on screen and in their accessible labels. Each page also carries
-   one LIVE chart read from our own API (Analytics: GET /api/stats, Chain Kit: GET /api/tracker),
+   one LIVE chart read from our own API (GET /api/stats),
    badged LIVE; a figure that could not be read is said to be so, never drawn as 0. */
 
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` })
@@ -90,41 +88,6 @@ const ANALYTICS: Product = {
     node: <VenueVolumeLive />,
   },
   figure: { title: 'What the Web3 tab draws', body: 'The charts below use made-up example figures to show the views; your dashboard draws your own site.', node: <AnalyticsExample /> },
-}
-
-const CHAIN_KIT: Product = {
-  seo: {
-    title: 'Chain Kit',
-    description: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.',
-  },
-  eyebrow: 'PRODUCT · CHAIN KIT',
-  title: ['An explorer for', 'your chain'],
-  lead: 'A new chain needs a block explorer on day one. Chain Kit is Blockscout, set up for your chain, in your brand, and run by the team that builds on these chains every day. Chain Kit: join the waitlist. We’re finalising the explorer licence before taking orders.',
-  status: 'Waitlist',
-  cta: 'Join the waitlist',
-  ctaType: 'Infrastructure',
-  ctaHref: '/chains#waitlist',
-  source: null, // gully-labs/blockscout is private
-  features: [
-    { icon: Boxes, title: 'Full explorer', body: 'Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts, from Blockscout.' },
-    { icon: Palette, title: 'Your brand', body: 'Your name, logos, colours and links across the explorer, configured rather than forked, so upgrades stay simple.' },
-    { icon: Layers, title: 'Rollups included', body: 'Profiles for Arbitrum Nitro and Orbit chains like Robinhood Chain, and for chains like Arc with a stablecoin as gas.' },
-    { icon: ServerCog, title: 'Operated for you', body: 'Provisioning, TLS, backups, upgrades and monitoring, with a runbook for every common failure.' },
-    { icon: Cpu, title: 'Sized honestly', body: 'A busy rollup needs terabytes; a young chain needs far less. We size the server and the RPC to your chain before anything is promised.' },
-    { icon: GitBranch, title: 'No lock-in', body: 'Your chain, your data and your domain stay yours. You are never locked in.' },
-  ],
-  how: [
-    { title: 'Join the waitlist', body: 'Tell us your chain id, RPC, settlement layer and how much history you need.' },
-    { title: 'We size and deploy', body: 'A dedicated server, your branding and the indexer, on a domain of your choice.' },
-    { title: 'Launch and run', body: 'We keep it indexed, upgraded and backed up while you build the chain.' },
-  ],
-  licence: 'Built on Blockscout.',
-  live: {
-    title: 'Chains we read right now',
-    body: 'Gully Labs already reads these chains around the clock for the Stock tracker. Each bar is the stock tokens on that chain and how they read this minute.',
-    node: <ChainsLive />,
-  },
-  figure: { title: 'Charts on day one', body: 'Blockscout charts your chain from its first block. The figures below are made-up examples of what it draws.', node: <ChainKitExample /> },
 }
 
 function ProductPage({ p }: { p: Product }) {
@@ -366,93 +329,4 @@ function VenueVolumeLive() {
   )
 }
 
-type ReadKind = 'trusted' | 'caution' | 'unreadable'
-const KIND: Record<ReadKind, { label: string; color: string }> = {
-  trusted: { label: 'Read and trusted', color: C.green },
-  caution: { label: 'Thin pool or unverified', color: C.gold },
-  unreadable: { label: 'No pool or unreadable', color: C.error },
-}
-const KINDS = Object.keys(KIND) as ReadKind[]
-const kindOf = (s: TrackerStatus): ReadKind =>
-  s === 'thin' || s === 'unverified' ? 'caution' : s === 'no-pool' || s === 'pool-unreadable' || s === 'feed-unreadable' ? 'unreadable' : 'trusted'
-
-/** Per chain, the stock tokens the Stock tracker reads this minute (GET /api/tracker), split by how they read. */
-function ChainsLive() {
-  const st = useTracker()
-  const model = useMemo(() => {
-    if (st.k !== 'ok') return null
-    const chains = st.data.chains.map((c) => {
-      const rows = st.data.rows.filter((r) => r.chain === c.key)
-      const counts: Record<ReadKind, number> = { trusted: 0, caution: 0, unreadable: 0 }
-      const statuses: Partial<Record<TrackerStatus, number>> = {}
-      for (const r of rows) {
-        counts[kindOf(r.status)]++
-        statuses[r.status] = (statuses[r.status] ?? 0) + 1
-      }
-      return { key: c.key, name: CHAIN_NAME[c.key] ?? c.name, total: rows.length, counts, statuses, poolsAsOf: c.poolsAsOf, stale: c.poolsStale }
-    })
-    return { chains, total: st.data.rows.length, at: st.data.generatedAt }
-  }, [st])
-  const option = useMemo(() => {
-    if (!model) return {}
-    return {
-      grid: { left: 8, right: 16, top: 8, bottom: 4, containLabel: true },
-      xAxis: { type: 'value', minInterval: 1, axisLabel: { color: C.faint, fontSize: 11 }, splitLine: { lineStyle: { color: C.grid } } },
-      yAxis: { type: 'category', data: model.chains.map((c) => c.name), inverse: true, axisLabel: { color: C.muted, fontSize: 12 }, axisTick: { show: false } },
-      tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
-        const c = model.chains[ps[0]?.dataIndex ?? -1]
-        if (!c) return ''
-        return tipHtml({
-          title: `${c.name} · ${c.total} tokens`,
-          rows: (Object.entries(c.statuses) as [TrackerStatus, number][]).map(([s, n]) => ({ name: STATUS_LABEL[s], value: String(n), color: KIND[kindOf(s)].color })),
-          note: c.poolsAsOf ? `Pools read at ${clock(c.poolsAsOf)}${c.stale ? ' (last good read)' : ''}` : 'Pools not read yet',
-        })
-      }, 'shadow'),
-      series: KINDS.map((k) => ({
-        id: k,
-        name: KIND[k].label,
-        ...barsPreset({ horizontal: true, radius: 0, focus: 'series' }),
-        stack: 'rows',
-        barMaxWidth: 26,
-        color: KIND[k].color,
-        data: model.chains.map((c) => c.counts[k]),
-      })),
-    }
-  }, [model])
-  const sub = model ? `Updated ${clock(model.at)} · GET /api/tracker` : 'GET /api/tracker · refreshed every minute'
-  const height = Math.max(CHART_H.sm, (model?.chains.length ?? 3) * 48 + 32)
-  return (
-    <LiveFrame title="Stock tokens read, per chain" sub={sub}>
-      {model && model.chains.length ? (
-        <>
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <AnimatedNumber value={model.total} className="font-display text-[32px] leading-none font-extrabold" />
-            <span className="font-mono text-[12px] text-faint">stock tokens on {model.chains.length} chains, re-read every minute</span>
-          </div>
-          <EChart option={option} height={height} label={`Live: stock tokens read per chain, ${model.chains.map((c) => `${c.name} ${c.total}`).join(', ')}`} steps={{ count: model.chains.length }} />
-          <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-mono text-[12px] text-muted">
-            {model.chains.map((c) => (
-              <li key={c.key} className="flex items-center gap-1.5 text-ink-2">
-                <ChainLogo chain={c.key} size={16} decorative />
-                {c.name}
-              </li>
-            ))}
-          </ul>
-          <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-mono text-[12px] text-muted">
-            {KINDS.map((k) => (
-              <li key={k} className="flex items-center gap-1.5">
-                <span aria-hidden className="size-2 rounded-full" style={{ background: KIND[k].color }} />
-                {KIND[k].label}
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : (
-        <ChartBox height={CHART_H.sm} state={st.k === 'loading' ? 'loading' : 'error'} message="The Stock tracker could not be read just now. Retrying every minute." />
-      )}
-    </LiveFrame>
-  )
-}
-
 export const Analytics = () => <ProductPage p={ANALYTICS} />
-export const ChainKit = () => <ProductPage p={CHAIN_KIT} />

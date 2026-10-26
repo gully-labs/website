@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Link } from 'react-router'
 import { Search } from 'lucide-react'
 import { useHolderSearch } from '../../lib/holderResolve'
+import { holderHref } from '../../site-host'
+import { SmartLink } from '../SmartLink'
 import type { MapPreview } from '../holders/MiniMap'
 
 /* The home hero's Holder Map search: paste any token address or a ticker, Enter opens its map. It shares the
@@ -72,10 +73,10 @@ export function HolderSearchHero() {
         </div>
       </div>
       <p className="m-0 text-[13px] leading-[1.4] text-muted">
-        Paste any token address or ticker → see who really holds it. <span className="max-[419px]:hidden">Five chains, no sign-up. </span>
-        <Link to="/holders" className="text-gold">
+        Paste any token address or ticker → see who really holds it. <span className="max-[419px]:hidden">Six chains, Gully Chain included, no sign-up. </span>
+        <SmartLink href={holderHref('/holders')} arrow={false} className="text-gold">
           Holder Map →
-        </Link>
+        </SmartLink>
       </p>
       <div aria-live="polite">
         {s.k === 'none' && <p className="m-0 text-[13px] leading-[1.5] text-muted">{s.address ? 'No token at that address on the chains we cover.' : 'Not an address or a ticker we follow. Try 0x…, a Solana mint or NVDA.'}</p>}
@@ -85,10 +86,10 @@ export function HolderSearchHero() {
           <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Pick a chain" data-resolve-matches>
             {s.matches.map((m) => (
               <li key={`${m.chain}:${m.token}`}>
-                <Link to={m.path} className="flex min-h-11 items-center gap-3 rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
+                <SmartLink href={holderHref(m.path)} arrow={false} className="flex min-h-11 items-center gap-3 rounded-[8px] border border-line px-3 text-[14px] hover:border-gold">
                   <span className="font-semibold text-ink">{m.symbol ?? `${m.token.slice(0, 6)}…${m.token.slice(-4)}`}</span>
                   <span className="font-mono text-[12px] text-faint">{m.chainName}</span>
-                </Link>
+                </SmartLink>
               </li>
             ))}
           </ul>

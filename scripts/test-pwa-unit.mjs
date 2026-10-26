@@ -115,7 +115,7 @@ const bundle = () => ({
 
 test('precache list: the shell files, the entry, its static imports, css and the latin fonts; never lazy chunks', () => {
   const list = buildPrecacheList(bundle())
-  assert.deepEqual(list.slice(0, 3), ['/index.html', '/errors/offline.html', '/icon-192.png'])
+  assert.deepEqual(list.slice(0, 3), ['/index.html', '/errors/offline.html', '/brand/icon/app-icon-192.png'])
   assert.ok(list.includes('/assets/index-AAAAAAAA.js'))
   assert.ok(list.includes('/assets/vendor-BBBBBBBB.js'))
   assert.ok(list.includes('/assets/index-DDDDDDDD.css'))
@@ -133,7 +133,7 @@ test('precache list: an unhashed file never enters it, and an empty bundle still
   b['assets/index-AAAAAAAA.js'].imports.push('assets/plain.js')
   b['assets/plain.js'] = chunk('assets/plain.js')
   assert.ok(!buildPrecacheList(b).includes('/assets/plain.js'))
-  assert.deepEqual(buildPrecacheList({}), ['/index.html', '/errors/offline.html', '/icon-192.png'])
+  assert.deepEqual(buildPrecacheList({}), ['/index.html', '/errors/offline.html', '/brand/icon/app-icon-192.png'])
 })
 
 test('version stamp: changes when the list or the shell html changes, stable otherwise', () => {

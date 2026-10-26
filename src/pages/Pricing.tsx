@@ -1,6 +1,6 @@
+import { SmartLink } from '../components/SmartLink'
 import { ConsoleTabs } from '../console/Tabs'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
 import { ArrowRight, BellRing, Boxes, Building2, ChartNoAxesCombined, Check, ChevronDown, CircleHelp, Handshake, Fuel, History, KeyRound, Layers, Network, Send, ShieldCheck, Zap, type LucideIcon } from 'lucide-react'
 import { useContact } from '../components/ContactContext'
 import { NewTabMark } from '../components/LayoutLinks'
@@ -88,11 +88,11 @@ const PLAN_ICON: Record<string, LucideIcon> = { free: KeyRound, pro: Zap, busine
 
 const USD0 = { ...NF.usd, minimumFractionDigits: 0, maximumFractionDigits: 0 }
 
-/** Chain Kit (waitlist) and services have no list price: one short block so /pricing covers every product. */
+/** Gully Chain (its own domain, open to everyone) and services have no list price here: one short block so /pricing covers every product. */
 function OnRequest() {
   const { openContact } = useContact()
   const items = [
-    { icon: Boxes, name: 'Chain Kit', body: 'A branded Blockscout explorer for your chain, run by us. Join the waitlist: we’re finalising the explorer licence before taking orders.', to: '/chain-kit', type: 'Infrastructure' as const, waitlist: true },
+    { icon: Boxes, name: 'Gully Chain', body: 'The L3 for launches and trading, with DeepCore built in, your own chain and Chain Kit explorers. Open to everyone on gullychain.xyz, with its own pricing.', to: 'https://gullychain.xyz', type: 'Infrastructure' as const, waitlist: true },
     { icon: Layers, name: 'Services', body: 'Smart contracts, dApps, infrastructure and security testing. Quoted per project after a first call.', to: '/services', type: 'Other' as const, waitlist: false },
   ]
   return (
@@ -105,22 +105,23 @@ function OnRequest() {
                 <it.icon aria-hidden size={20} strokeWidth={1.75} />
               </span>
               <h3 className="m-0 font-display text-h4 font-bold">{it.name}</h3>
-              <span className="ml-auto rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">{it.waitlist ? 'WAITLIST' : 'ON REQUEST'}</span>
+              <span className="ml-auto rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">{it.waitlist ? 'OPEN' : 'ON REQUEST'}</span>
             </span>
             <p className="m-0 text-[15px] leading-[1.55] text-muted">{it.body}</p>
             <div className="mt-auto flex flex-wrap gap-3">
               {it.waitlist ? (
-                <a href="/chains#waitlist" onClick={() => track('cta-click', { cta: 'chain-kit-waitlist', page: '/pricing' })} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
-                  <Send aria-hidden size={16} /> Join the waitlist
+                <a href="https://app.gullychain.xyz" target="_blank" rel="noopener noreferrer" onClick={() => track('cta-click', { cta: 'gully-chain-open', page: '/pricing' })} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+                  <Send aria-hidden size={16} /> Open Gully Chain
+                  <span className="sr-only"> (opens in a new tab)</span>
                 </a>
               ) : (
                 <button type="button" onClick={() => (track('cta-click', { cta: 'start-project', page: '/pricing' }), openContact(it.type))} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
                   <Send aria-hidden size={16} /> Start a project
                 </button>
               )}
-              <Link to={it.to} onClick={() => track('cta-click', { cta: `pricing-${it.name}`, page: '/pricing' })} className="inline-flex min-h-11 items-center gap-1 text-[15px] text-gold hover:text-gold-hover">
+              <SmartLink href={it.to} arrow={false} onClick={() => track('cta-click', { cta: `pricing-${it.name}`, page: '/pricing' })} className="inline-flex min-h-11 items-center gap-1 text-[15px] text-gold hover:text-gold-hover">
                 {it.name} <ArrowRight aria-hidden size={15} />
-              </Link>
+              </SmartLink>
             </div>
           </div>
         ))}

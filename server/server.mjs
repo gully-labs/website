@@ -32,8 +32,12 @@ import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
-import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
+import { handleIpfs } from './ipfs.mjs'
+import { handleHub } from './hub.mjs'
+import { handleProductStatus } from './product-status.mjs'
+import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
+import { brandRootIcon } from './product-brand.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
 import { handleFeeHistory } from './fee-history.mjs'
@@ -203,11 +207,21 @@ async function handleRequest(req, res) {
   const isAdmin = host.startsWith('admin.')
   // The blog is self-hosted Ghost in its own container; every path on its host goes there.
   if (handleIndexNowKey(req, res, url)) return
+  // www.gullylabs.xyz (and www. of any host not handled below): 301 to the bare host, path and query kept. holdermaps.xyz
+  // and gullysecurity.xyz handle their own www. in hosts.mjs.
+  if (host.startsWith('www.') && !isHolderMapsHost(host) && !isSecurityHost(host) && (req.method === 'GET' || req.method === 'HEAD')) {
+    return send(res, 301, '', { Location: `https://${host.slice(4)}${url.pathname}${url.search}`, 'Cache-Control': 'public, max-age=3600' })
+  }
   if (host.startsWith('blog.')) return handleBlog(req, res, url)
   // Gully Analytics (Umami fork) in its own container; every path on its host goes there.
   if (host.startsWith('analytics.')) return handleAnalytics(req, res)
   // Security headers for everything this server answers itself (the blog and analytics set their own).
   for (const [k, v] of Object.entries(securityHeaders(host, url.pathname))) res.setHeader(k, v)
+  // /pay alone (no checkout id) was Gully Pay's product page: gullypay.xyz, in one hop from every host. Without this the
+  // main host sent it to pay.gullylabs.xyz/pay, whose host policy sent it back to gullylabs.xyz/pay (a loop).
+  if (!isLocal && /^\/pay\/?$/.test(url.pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
+    return send(res, 301, '', { Location: movedPageUrl('/pay'), 'Cache-Control': 'public, max-age=3600' })
+  }
   // Service hosts (hosts.mjs): pay. and embed. answer only their own pages and APIs, api. only /api/*.
   const policy = hostPolicy(host, url.pathname)
   if (policy === 'redirect') {
@@ -257,7 +271,7 @@ async function handleRequest(req, res) {
   if (isPayHost(host)) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
   if (policy === 'deny') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
   // The pay pages moved to pay.gullylabs.xyz: old /pay/ links 301 there (GET and HEAD only, path and query kept).
-  if (!isLocal && !isPayHost(host) && (url.pathname === '/pay' || url.pathname.startsWith('/pay/')) && (req.method === 'GET' || req.method === 'HEAD')) {
+  if (!isLocal && !isPayHost(host) && /^\/pay\/./.test(url.pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
     return send(res, 301, '', { Location: PAY_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
   // The public API stays served on every host (POSTs and existing integrations cannot follow a redirect);
@@ -265,6 +279,12 @@ async function handleRequest(req, res) {
   if (!isLocal && !isApiHost(host) && url.pathname.startsWith('/api/')) res.setHeader('Link', `<${API_URL}${url.pathname}>; rel="canonical"`)
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
+  }
+  // Products on their own domains (hosts.mjs movedPageUrl / movedDocsUrl): their old pages here, and their docs pages
+  // on docs.gullylabs.xyz, answer 301 to the product's own domain (GET/HEAD; the APIs, embeds and badges never move).
+  if (!isLocal && !isAdmin && (req.method === 'GET' || req.method === 'HEAD')) {
+    const moved = host.startsWith('docs.') ? movedDocsUrl(url.pathname) : isHolderMapsHost(host) || isSecurity ? null : movedPageUrl(url.pathname)
+    if (moved) return send(res, 301, '', { Location: moved, 'Cache-Control': 'public, max-age=3600' })
   }
   // The Gully Labs App (the app dashboard) lives on app.gullylabs.xyz (hosts.mjs). Elsewhere /app and the
   // retired /developers path answer 301 to https://app.gullylabs.xyz/; on that host any other page belongs
@@ -275,6 +295,9 @@ async function handleRequest(req, res) {
     return send(res, 301, '', { Location: `${APP_URL}/`, 'Cache-Control': 'public, max-age=3600' })
   }
   if (isApp && isPage && url.pathname !== '/') {
+    // A dashboard page by path (/keys, /billing/plans, /dashboard): that page of the app, not a gullylabs.xyz 404.
+    const tab = appTabUrl(url.pathname)
+    if (tab) return send(res, 301, '', { Location: tab, 'Cache-Control': 'public, max-age=3600' })
     return send(res, 301, '', { Location: 'https://gullylabs.xyz' + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
   // The docs live on their own host; /docs on the main site moves there, path kept.
@@ -320,6 +343,15 @@ async function handleRequest(req, res) {
   // Tracked links in bot broadcasts (telegram-broadcast.mjs): count one open, redirect to the broadcast's own button URL.
   if (url.pathname.startsWith('/r/')) return void handleBroadcastRedirect(req, res, url)
   // Which alert delivery channels this server offers (the pricing page and the docs read it). Public.
+  // The products on their own domains: Gully Pay's and Gully RPC's own public status, for the hub's cards (product-status.mjs).
+  if (url.pathname === '/api/products/status') return void (await handleProductStatus(req, res, url, send))
+  // What is live across Gully (hub.mjs): every public surface probed, Gully Quests, x402 networks, the RPC gateway, the status page.
+  if (url.pathname === '/api/hub') return void (await handleHub(req, res, url, send))
+  // Gully IPFS (ipfs.mjs): repo size, pinned CIDs and gateway health, read from the node over the docker network. Public.
+  if (url.pathname.startsWith('/api/ipfs/')) {
+    if (await handleIpfs(req, res, url, send)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
   if (url.pathname === '/api/alerts/channels') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
@@ -505,7 +537,10 @@ async function handleRequest(req, res) {
   if (url.pathname === '/healthz') return send(res, 200, 'ok')
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, '')
 
-  const file = path.join(ROOT, decodeURIComponent(url.pathname))
+  // holdermaps.xyz: the icons a browser asks for by itself (/favicon.ico, /apple-touch-icon.png…) are HolderMaps'
+  // own (product-brand.mjs), not the Gully Labs ones at those paths.
+  const brandIcon = isHolderMapsHost(host) ? brandRootIcon('holdermaps', url.pathname) : null
+  const file = path.join(ROOT, decodeURIComponent(brandIcon ?? url.pathname))
   if (!file.startsWith(ROOT)) return send(res, 400, '')
 
   fs.stat(file, (err, stat) => {

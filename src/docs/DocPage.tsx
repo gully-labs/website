@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { TokenLogo } from '../components/logos/TokenLogo'
 import { eyebrow as eyebrowCls } from '../components/ui'
-import { canonical, DOC_PAGES, useDocHref, type DocSlug } from './nav'
+import { canonical, DOC_PAGES, MOVED_DOCS, useDocHref, type DocSlug, type MovedDocSlug } from './nav'
 
 export interface DocSection {
   id: string
@@ -274,9 +274,12 @@ export function Details({ summary, children, open = false }: { summary: string; 
   )
 }
 
-/** A link to another docs page that works under both mounts. */
-export function DocLink({ to, hash, children }: { to: DocSlug; hash?: string; children: ReactNode }) {
-  const href = useDocHref(to, hash)
+/** A link to another docs page that works under both mounts. A page that moved to a product's own docs
+    (nav.ts MOVED_DOCS) links there instead, in a new tab. */
+export function DocLink({ to, hash, children }: { to: DocSlug | MovedDocSlug; hash?: string; children: ReactNode }) {
+  const moved = (MOVED_DOCS as Record<string, string | undefined>)[to]
+  const href = useDocHref((moved ? '' : to) as DocSlug, hash)
+  if (moved) return <Ext href={moved}>{children}</Ext>
   return (
     <Link to={href} className="text-gold underline decoration-gold-line underline-offset-[3px] transition-colors hover:decoration-gold">
       {children}

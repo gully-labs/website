@@ -14,6 +14,9 @@ import '@fontsource/poppins/600.css'
 import '@fontsource/poppins/700.css'
 import './index.css'
 import { ToastRoot } from './components/ui/ToastRoot'
+import { applyDocumentBrand } from './brand/products'
+import { isHolderMapsHost } from './site-host'
+import { installExternalLinks } from './lib/externalLinks'
 import { reloadForNewBuild } from './lib/staleBuild'
 import { initPwa } from './pwa/pwa'
 import { router } from './router'
@@ -22,6 +25,12 @@ import { router } from './router'
 window.addEventListener('vite:preloadError', (e) => {
   if (reloadForNewBuild()) e.preventDefault()
 })
+
+// holdermaps.xyz is HolderMaps' own app: the whole page takes its kit palette (src/index.css [data-product-brand]).
+applyDocumentBrand(isHolderMapsHost() ? 'holdermaps' : null)
+
+// Owner rule: every link to another origin opens in a new tab (src/lib/externalLinks.ts), on every host.
+installExternalLinks()
 
 // The service worker, the install prompt and update detection (src/pwa/pwa.ts).
 initPwa()
