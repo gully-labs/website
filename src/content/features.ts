@@ -1921,5 +1921,56 @@ export const features: Feature[] = [
       "peddles-quest:src/modules/quest/pq-wizard/steps/EligibilityStep.tsx",
       "peddles-quest:CLAUDE.md"
     ]
+  },
+  {
+    id: "gully-labs-live-board",
+    product: "Gully Labs",
+    name: "Live board and product launcher",
+    status: "live",
+    summary: "Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve.",
+    facts: [
+      "GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs).",
+      "New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.gullychain.xyz), Gully Safe (safe.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals.",
+      "A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that.",
+      "The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz)."
+    ],
+    url: "https://gullylabs.xyz/products",
+    source: [
+      "website:server/hub.mjs",
+      "website:src/console/Launcher.tsx"
+    ]
+  },
+  {
+    id: "gully-safe-multisig",
+    product: "Gully Chains",
+    name: "Gully Safe multisig",
+    status: "building",
+    summary: "Safe{Wallet} multisig wallets for Gully Chain at safe.gullychain.xyz, run on Gully infrastructure.",
+    facts: [
+      "Runs Safe's own reference stack (safe-global/safe-infrastructure, MIT backend releases, GPL-3.0 web app) on the gully box.",
+      "Gully Chain is registered in the Safe config service with its RPC, explorer and the canonical Safe 1.4.1 addresses.",
+      "The site shows Gully Safe as coming until safe.gullychain.xyz answers 200 (server/hub.mjs)."
+    ],
+    url: "https://safe.gullychain.xyz",
+    source: [
+      "gully-ops:l3/safe/README.md",
+      "website:server/hub.mjs"
+    ]
+  },
+  {
+    id: "gully-ai-api",
+    product: "Gully AI",
+    name: "Gully AI API",
+    status: "building",
+    summary: "An OpenAI-compatible API for the gully-ai model at ai.gullylabs.xyz/v1, documented at gullyai.xyz/docs; it goes live when the GPU server arrives.",
+    facts: [
+      "Base URL https://ai.gullylabs.xyz/v1, model gully-ai, with chat completions, streaming, /v1/models and /v1/usage.",
+      "The site shows the API as coming until ai.gullylabs.xyz/healthz answers 200 (server/hub.mjs)."
+    ],
+    url: "https://gullyai.xyz",
+    source: [
+      "gully-ops:sites/gullyai.xyz/index.html",
+      "website:server/hub.mjs"
+    ]
   }
 ]

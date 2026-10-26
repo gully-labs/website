@@ -21,7 +21,7 @@ import { BadgeFooterRow } from '../../components/PoweredByBadge'
    every page in one
    full-height list under folding group headings (Workspace, Services, Developer, Account; 34px rows with
    16px icons, the fold remembered), and the wallet menu. All 19 pages fit at 800px tall, so it has no inner
-   scrollbar. From 1280px it is open (232px); from 860px to 1279px it starts as an icon rail (64px, each row
+   scrollbar. From 1280px it is open (212px); from 860px to 1279px it starts as an icon rail (64px, each row
    with a tooltip); the chevron toggles it at any width and the choice is remembered. Under 860px there is
    no sidebar: a bottom tab bar holds Overview, Tracker, Keys and Alerts, and "More" (or the header's Menu
    button) opens every page as a bottom sheet (a modal dialog: focus moves in, Tab stays in, Escape closes).
@@ -302,7 +302,7 @@ function NavList<T extends string>({ items, current, go, compact, dense }: { ite
                 e.preventDefault()
                 go(t.id)
               }}
-              className={`group/row relative flex items-center gap-[10px] rounded-[8px] font-medium transition-colors ${dense ? 'min-h-8 text-[13px] [@media(max-height:820px)]:min-h-[30px]' : 'min-h-11 text-[14px]'} ${compact ? 'justify-center px-0' : 'px-[10px]'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
+              className={`group/row relative flex items-center gap-[10px] rounded-[8px] font-medium transition-colors ${dense ? 'min-h-[30px] text-[13px] [@media(max-height:820px)]:min-h-7' : 'min-h-11 text-[14px]'} ${compact ? 'justify-center px-0' : 'px-[10px]'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
             >
               {on && <span className="absolute top-[8px] bottom-[8px] left-0 w-[3px] rounded-full bg-gold" aria-hidden />}
               <span className={on ? 'text-gold' : ''}>{t.icon}</span>
@@ -595,7 +595,7 @@ export function AppShell<T extends string>({
   return (
     <div className="flex min-h-dvh" data-testid="app-shell" data-sidebar={narrow ? 'sheet' : compact ? 'icons' : 'open'}>
       {!narrow && (
-        <aside aria-label="App" className={`sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-[6px] border-r border-line bg-bg-alt py-[6px] transition-[width] duration-200 print:hidden ${compact ? 'w-16 px-2' : 'w-[232px] px-3'}`} data-testid="app-sidebar">
+        <aside aria-label="App" className={`sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-[6px] border-r border-line bg-bg-alt py-[6px] transition-[width] duration-200 print:hidden ${compact ? 'w-16 px-2' : 'w-[212px] px-[10px]'}`} data-testid="app-sidebar">
           {/* The Gully mark (home), the workspace switcher and the collapse button share one row, so every page
               still fits the full-height list as the app grows (19 pages fit at 800 px). */}
           <div className={`flex items-center gap-1 ${compact ? 'flex-col' : ''}`}>

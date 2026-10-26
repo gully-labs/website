@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, CircleHelp, LayoutGrid, Play, Send, Zap } from 'lucide-react'
+import { Activity, LayoutGrid, Send, Zap } from 'lucide-react'
 import { Seo } from '../components/Seo'
-import { bars, C, fmtPct, fmtTime, fmtUsd, lineChart, type LineChart } from '../console/charts'
-import { productFigures } from '../console/figures'
-import { chainHead, coversOf, NAMES, summed, totalOf, useLive, venueSeries, type Metric } from '../console/live'
-import { Arrow, Btn, BUILD_STEPS, Count, ic, ProductGrid, SectionHead, Stepper, Ticker, Tile, TrustBand } from '../console/ui'
-import { ChainSuite, QuestsPanel } from '../console/Suite'
+import { bars, fmtTime, fmtUsd, lineChart, type LineChart } from '../console/charts'
+import { chainHead, coversOf, totalOf, useLive, venueSeries, type Metric } from '../console/live'
+import { Btn, Count, ic, SectionHead, Ticker, TrustBand } from '../console/ui'
+import { HubBoard, LaunchGrid, WhatsNew } from '../console/Launcher'
 import { APP_URL } from '../site-host'
 
-/* The landing, Direction A "Lab console" (owner pick, 2026-10-25): hero copy beside the live network chart
-   card (value locked / volume / fees by venue, Gully Chain txs per block, live ticker), five stat tiles,
-   six product cards, the three-step stepper and the trust band. Every figure is read live. */
+/* The landing, Direction A "Lab console" (owner pick, 2026-10-25), compact refresh (2026-10-26): one hero (copy beside
+   the live network chart card: value locked / volume / fees by venue, Gully Chain txs per block, live ticker), one
+   compact card per product with its live state, the live board beside what is new, and the trust band. Every figure
+   is read live (GET /api/stats, /api/hub and the Gully Chain RPC). */
 
 const TITLES: Record<Metric, string> = { tvl: 'Value locked by venue, 30 days', volume: 'Daily volume by venue, 30 days', fees: 'Daily fees by venue, 30 days' }
 
@@ -28,7 +28,7 @@ export function NetworkCard() {
 
   useEffect(() => {
     if (!vs || !plot.current) return
-    if (!chart.current) chart.current = lineChart(plot.current, { series: vs.series, labels: vs.labels, title: TITLES[metric], stacked: true, unit: 'USD', legendEl: legend.current, tableEl: tbl.current })
+    if (!chart.current) chart.current = lineChart(plot.current, { series: vs.series, labels: vs.labels, title: TITLES[metric], height: 180, stacked: true, unit: 'USD', legendEl: legend.current, tableEl: tbl.current })
     else chart.current.update(vs.series, vs.labels, TITLES[metric])
   }, [vs, metric])
   useEffect(
@@ -94,37 +94,13 @@ export function NetworkCard() {
   )
 }
 
-function StatTiles() {
-  const live = useLive()
-  const { stats, chain, status } = live
-  const ok = stats ? stats.venues.filter((v) => v.state === 'ok') : []
-  const api = status?.components.find((c) => c.id === 'api')
-  const blocks = chain?.blocks ?? []
-  return (
-    <div className="stats">
-      <Tile label="Value locked" value={stats?.totals.tvlUsd} fmt={fmtUsd} spark={stats ? summed(stats, 'tvl') : []} color={C.s[0]} sub={stats ? `${coversOf(stats, 'tvl').length} venues · 30-day line` : 'across our venues'} />
-      <Tile label="Volume · all-time" value={stats?.totals.volumeAllUsd} fmt={fmtUsd} spark={stats ? summed(stats, 'volume') : []} color={C.s[1]} sub={stats ? coversOf(stats, 'volume').map((k) => NAMES[k] ?? k).join(', ') || 'no venue publishes it' : 'venues that publish it'} />
-      <Tile label="Fees · all-time" value={stats?.totals.feesAllUsd} fmt={fmtUsd} spark={stats ? summed(stats, 'fees') : []} color={C.s[2]} sub="USD, venue APIs + DefiLlama" />
-      <Tile label="Gully Chain blocks" value={chainHead(live)} spark={blocks.map((b) => b.txs)} color={C.cyan} sub={chain ? `testnet · chain 485590 · ${blocks[blocks.length - 1]?.txs ?? 0} tx in the newest block` : 'testnet · chain 485590'} />
-      <Tile
-        label="Public API uptime · 24h"
-        value={api ? Math.round((api.uptime24h ?? 0) * 1000) / 10 : null}
-        fmt={fmtPct}
-        small={stats ? `${ok.length} of ${stats.venues.length} venues ok` : undefined}
-        spark={api ? api.history.map((h) => h.up) : []}
-        color={C.s[3]}
-        sub={api && status ? `${api.history.length} checks · overall ${status.overall} · status page` : 'reading status API…'}
-      />
-    </div>
-  )
-}
-
 export function Home() {
-  const live = useLive()
-  const figs = productFigures(live)
   return (
     <div className="lcp">
-      <Seo title="You Think It, We Ship It." description="Gully Labs builds and runs Web3 products: Gully Chain with Gully Street and Gully Quests, Gully Pay (x402), Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio. Every figure on this page is read live." />
+      <Seo
+        title="You Think It, We Ship It."
+        description="Gully Labs builds and runs Web3 products, all on Gully Chain: Gully Street (social, multi-wallet, copy trading, Quests), Gully Bridge, Gully Safe, Gully Pay (x402), Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio and Gully IPFS. Every figure on this page is read live."
+      />
       <section className="hero" id="network">
         <div className="wrap">
           <div className="copy rise">
@@ -135,21 +111,14 @@ export function Home() {
               <span className="grad">We Ship It.</span>
             </h1>
             <p className="promise">
-              One lab, seven live products: an L3 chain, crypto payments, RPC infrastructure, IPFS storage, holder maps, security scans and games. <b>Every number on this page is read live</b> from our own APIs and the Gully Chain testnet.
+              An L3 chain and the products around it: payments, RPC, bridge, multisig, holder maps, security, AI and games. <b>Every number here is read live.</b>
             </p>
-            <div className="what card" role="note">
-              {ic(CircleHelp)}
-              <p>
-                <b>New here?</b> Gully makes building and paying on chain simple: pick a product, get a key, ship. Three steps, no jargon.
-              </p>
-            </div>
-            <div className="ctas">
-              <a className="btn pri" href="#build">
-                {ic(Play)}Start here
-                <Arrow />
-              </a>
+            <div className="heroctas">
+              <Btn icon={Zap} href={APP_URL} arrow>
+                Open the app
+              </Btn>
               <a className="btn sec" href="#products">
-                {ic(LayoutGrid)}See the products
+                {ic(LayoutGrid)}Products
               </a>
               <Btn kind="ter" icon={Send} href="https://t.me/GullyLabsBot?start=contact">
                 Talk to us
@@ -160,51 +129,27 @@ export function Home() {
         </div>
       </section>
 
-      <section className="statsec" aria-label="Live figures">
-        <div className="wrap">
-          <StatTiles />
-        </div>
-      </section>
-
       <section id="products" aria-labelledby="products-h">
         <div className="wrap">
-          <SectionHead label="Products" title="Seven products, one lab" id="products-h">
-            Each card shows one live figure from the product itself. Open any of them to use it today.
+          <SectionHead label="Products" title="Everything we run, live" id="products-h">
+            One card per product, each with its live state. Every one supports Gully Chain.
           </SectionHead>
-          <ProductGrid figs={figs} />
+          <LaunchGrid />
         </div>
       </section>
 
       <section id="live" aria-labelledby="live-h">
         <div className="wrap">
-          <SectionHead label="Live on Gully Chain" title="Testnet 485590, open to everyone" id="live-h">
-            Gully Street, the explorer, faucet, bridge and docs, checked every minute, and Gully Quests read on chain.
-          </SectionHead>
-          <div className="livegrid">
-            <ChainSuite />
-            <QuestsPanel />
+          <SectionHead label="Live today" title="The board and what is new" id="live-h" />
+          <div className="newsgrid">
+            <HubBoard />
+            <WhatsNew />
           </div>
         </div>
       </section>
 
-      <section id="build" aria-labelledby="build-h">
-        <div className="wrap">
-          <SectionHead label="Build with Gully" title="Three steps, no jargon" id="build-h">
-            Builders and first-timers take the same road. Each step is one page in the app.
-          </SectionHead>
-          <Stepper
-            steps={BUILD_STEPS}
-            cta={
-              <Btn size="sm" icon={Zap} href={APP_URL} arrow>
-                Open the app
-              </Btn>
-            }
-          />
-        </div>
-      </section>
-
       <section style={{ paddingTop: 0 }} aria-label="Trust">
-        <TrustBand />
+        <TrustBand mascot={false} />
       </section>
     </div>
   )

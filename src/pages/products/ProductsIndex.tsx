@@ -1,32 +1,29 @@
-/* /products: the six Gully products, each with one live figure, plus the network chart and the stepper. */
+/* /products (compact refresh, 2026-10-26): one hero (the kit logos, each opening its product page here, beside the
+   live board), one compact card per product with its live state, then every Gully surface checked each minute and
+   the networks Gully Pay and Gully RPC serve. Every figure is read live. */
 import { Link } from 'react-router'
-import { ArrowRight, Zap } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { Seo } from '../../components/Seo'
 import { MarkLogo } from '../../components/ProductLogo'
-import { productFigures } from '../../console/figures'
-import { useLive } from '../../console/live'
-import { Btn, BUILD_STEPS, ic, PRODUCTS, ProductGrid, ProductLogo, SectionHead, Stepper } from '../../console/ui'
-import { LabsBoard, NetworkChips } from '../../console/Suite'
-import { APP_URL } from '../../site-host'
-import { NetworkCard } from '../Home'
+import { ic, PRODUCTS, ProductLogo, SectionHead } from '../../console/ui'
+import { LabsBoard, QuestsPanel } from '../../console/Suite'
+import { HubBoard, LaunchGrid } from '../../console/Launcher'
 
 export function ProductsIndex() {
-  const live = useLive()
-  const figs = productFigures(live)
   return (
     <div className="lcp">
-      <Seo title="Products" description="Gully Chain, Gully Pay, Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio: the Gully Labs products, each with one live figure from the product itself, and every Gully surface checked each minute." />
+      <Seo title="Products" description="Every Gully Labs product with its live state: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS and the status page. Each supports Gully Chain." />
       <section className="hero">
         <div className="wrap">
           <div className="copy rise">
             <span className="lab cy">Gully Labs · products</span>
             <h1>
-              Seven products,
+              Every product,
               <br />
               <span className="grad">one lab.</span>
             </h1>
             <p className="promise">
-              A chain, payments, RPC, IPFS, holder maps, security and games. <b>Every product has a free tier</b>, supports Gully Chain and bills through Gully Pay.
+              <b>Every product has a free tier</b>, supports Gully Chain and bills through Gully Pay. The logos open each product&apos;s page here.
             </p>
             <ul className="plist">
               {PRODUCTS.map((p) => (
@@ -45,42 +42,22 @@ export function ProductsIndex() {
               </li>
             </ul>
           </div>
-          <NetworkCard />
+          <HubBoard />
         </div>
       </section>
       <section aria-labelledby="prods-h">
         <div className="wrap">
-          <SectionHead label="Open a product" title="Each one on its own domain" id="prods-h">
-            Cards open the product itself; the names above open its page here.
-          </SectionHead>
-          <ProductGrid figs={figs} />
+          <SectionHead label="Open a product" title="Each one on its own domain" id="prods-h" />
+          <LaunchGrid />
         </div>
       </section>
       <section aria-labelledby="across-h">
         <div className="wrap">
-          <SectionHead label="Live now" title="Every Gully surface, checked each minute" id="across-h">
-            Response times from our server, the networks Gully Pay settles on and the networks Gully RPC serves, Gully Chain in each.
-          </SectionHead>
+          <SectionHead label="Live now" title="Every Gully surface, checked each minute" id="across-h" />
           <div className="livegrid">
             <LabsBoard />
-            <div className="card netrow" style={{ gridTemplateColumns: 'minmax(0,1fr)', alignSelf: 'start' }}>
-              <NetworkChips kind="x402" />
-              <NetworkChips kind="gateway" />
-            </div>
+            <QuestsPanel />
           </div>
-        </div>
-      </section>
-      <section aria-labelledby="build-h">
-        <div className="wrap">
-          <SectionHead label="Build with Gully" title="Three steps, no jargon" id="build-h" />
-          <Stepper
-            steps={BUILD_STEPS}
-            cta={
-              <Btn size="sm" icon={Zap} href={APP_URL} arrow>
-                Open the app
-              </Btn>
-            }
-          />
         </div>
       </section>
     </div>
