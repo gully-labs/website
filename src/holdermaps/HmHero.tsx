@@ -14,7 +14,7 @@ const HOUR = 3_600_000
 export function HmStage({ launches, scans, now }: { launches: CheckedLaunch[] | null; scans: number[] | null; now: number }) {
   const { status } = useLive()
   const src = (status?.components ?? []).filter((c) => c.group === 'holders')
-  const up = src.length ? Math.round(Math.min(...src.map((c) => c.uptime24h ?? 0)) * 1000) / 10 : null
+  const up = src.some((c) => c.uptime24h != null) ? Math.round(Math.min(...src.filter((c) => c.uptime24h != null).map((c) => c.uptime24h as number)) * 1000) / 10 : null
   const upLine = (src[0]?.history ?? []).map((_, i) => (src.every((c) => c.history[i]?.up == null) ? null : Math.round(Math.min(...src.map((c) => c.history[i]?.up ?? 1)) * 1000) / 10))
   const end = Math.floor(now / HOUR) * HOUR
   const perHour = launches ? Array.from({ length: 12 }, (_, i) => end - (11 - i) * HOUR).map((h) => launches.filter((l) => { const t = Date.parse(l.createdAt); return t >= h && t < h + HOUR }).length) : []

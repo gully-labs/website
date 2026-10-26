@@ -28,8 +28,8 @@ export const PRODUCT_LOGOS: Record<KitLogoKey, LogoFile> = {
   chain: { name: 'Gully Chain', src: '/brand/products/gullychain-lockup-transparent.png', src2x: '/brand/products/gullychain-lockup-transparent-2x.png', w: 1556, h: 300, display: 31 },
   pay: { name: 'Gully Pay', src: '/brand/products/gullypay-logo-ondark.svg', w: 895.23, h: 230.4, display: 34 },
   rpc: { name: 'Gully RPC', src: '/brand/products/gullyrpc-logo-transparent.png', w: 860, h: 247, display: 39 },
-  // The HolderMaps kit (2026-10-26) has a transparent lockup: public/brand/holdermaps, byte-exact.
-  holders: { name: 'HolderMaps', src: '/brand/holdermaps/holdermaps-logo-on-dark.svg', w: 1486, h: 306, display: 36 },
+  // The HolderMaps kit (2026-10-26) transparent lockup, PNG (the kit SVG's globe image has no source): public/brand/holdermaps, byte-exact.
+  holders: { name: 'HolderMaps', src: '/brand/holdermaps/holdermaps-logo-on-dark-sm.png', src2x: '/brand/holdermaps/holdermaps-logo-on-dark.png', w: 744, h: 154, display: 36 },
   security: { name: 'Gully Security', src: '/brand/products/gullysecurity-logo-primary.svg', w: 627, h: 104, display: 31 },
   studio: { name: 'Gully Studio', src: '/brand/products/gullystudio-logo-transparent.png', w: 2070, h: 593, display: 50 },
 }
@@ -47,7 +47,7 @@ export function ProductLogo({ product, scale = 1, className = '', decorative = f
   const w = Math.round(((h * f.w) / f.h) * 100) / 100
   return (
     <span
-      className={`flex min-w-0 items-center justify-start max-[640px]:[--pl:0.875] ${className}`}
+      className={`flex w-full min-w-0 items-center justify-start max-[640px]:[--pl:0.875] ${className}`}
       style={{ height: `calc(${PRODUCT_LOGO_SLOT * scale}px * var(--pl, 1))`, containerType: 'inline-size' }}
       data-product-logo={product}
     >

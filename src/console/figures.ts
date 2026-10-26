@@ -8,11 +8,11 @@ export function productFigures(l: Live): Record<ProductKey, ProductFigure> {
   const gaps = blocks.slice(1).map((b, i) => b.time - blocks[i].time)
   const sec = (l.status?.components ?? []).filter((c) => /^(security|monitors)$/.test(c.id))
   const holders = (l.status?.components ?? []).filter((c) => c.group === 'holders')
-  const hUp = holders.length ? Math.round(Math.min(...holders.map((c) => c.uptime24h ?? 0)) * 1000) / 10 : null
+  const hUp = holders.some((c) => c.uptime24h != null) ? Math.round(Math.min(...holders.filter((c) => c.uptime24h != null).map((c) => c.uptime24h as number)) * 1000) / 10 : null
   const pay = l.products?.pay ?? null
   const rpc = l.products?.rpc ?? null
   const ipfs = l.ipfs
-  const secUp = sec.length ? Math.round(Math.min(...sec.map((c) => c.uptime24h ?? 0)) * 1000) / 10 : null
+  const secUp = sec.some((c) => c.uptime24h != null) ? Math.round(Math.min(...sec.filter((c) => c.uptime24h != null).map((c) => c.uptime24h as number)) * 1000) / 10 : null
   return {
     chain: { value: l.chain?.head, label: 'latest block · testnet', spark: gaps, color: C.s[0] },
     // Gully Pay's own status (gullypay.xyz/api/status): services operational, one point a minute.

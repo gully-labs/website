@@ -38,7 +38,7 @@ interface PageDef {
 }
 
 const statusOf = (l: Live, test: (id: string, group: string) => boolean) => (l.status?.components ?? []).filter((c) => test(c.id, c.group))
-const minUptime = (cs: { uptime24h: number | null }[]) => (cs.length ? Math.round(Math.min(...cs.map((c) => c.uptime24h ?? 0)) * 1000) / 10 : null)
+const minUptime = (cs: { uptime24h: number | null }[]) => (cs.some((c) => c.uptime24h != null) ? Math.round(Math.min(...cs.filter((c) => c.uptime24h != null).map((c) => c.uptime24h as number)) * 1000) / 10 : null)
 const histUp = (cs: { history: { t: string; up: number | null }[] }[]) => (cs[0]?.history ?? []).map((_, i) => (cs.every((c) => c.history[i]?.up == null) ? null : Math.round(Math.min(...cs.map((c) => c.history[i]?.up ?? 1)) * 1000) / 10))
 const histLabels = (cs: { history: { t: string }[] }[]) => (cs[0]?.history ?? []).map((h) => new Date(h.t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
 

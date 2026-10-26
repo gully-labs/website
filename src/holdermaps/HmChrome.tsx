@@ -66,7 +66,8 @@ export function HmHeader() {
       <header className="hm-nav">
         <div className="hm-wrap">
           <Link className="hm-brand" to="/" aria-label="HolderMaps home">
-            <img src="/brand/holdermaps/holdermaps-logo-on-dark.svg" width={194} height={40} alt="HolderMaps" decoding="async" fetchPriority="high" />
+            {/* The kit PNG lockup: the kit SVG's globe <image> has no source, so the SVG renders without the emblem. */}
+            <img src="/brand/holdermaps/holdermaps-logo-on-dark-sm.png" srcSet="/brand/holdermaps/holdermaps-logo-on-dark-sm.png 1x, /brand/holdermaps/holdermaps-logo-on-dark.png 2x" width={193} height={40} alt="HolderMaps" decoding="async" fetchPriority="high" />
           </Link>
           <nav aria-label="Main">
             <ul>
