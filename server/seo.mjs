@@ -4,7 +4,7 @@
 // The <Seo> component keeps matching titles in the browser; keep the two in step.
 
 import fs from 'node:fs'
-import { APP_HOST, APP_URL, holderInternalPath, holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, PAY_URL, securityInternalPath, securityPrimary, securityShortPath, SECURITY_URL } from './hosts.mjs'
+import { APP_HOST, APP_URL, holderInternalPath, holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, movedDocsUrl, movedPageUrl, PAY_URL, securityInternalPath, securityPrimary, securityShortPath, SECURITY_URL } from './hosts.mjs'
 import { published, publishedJobs } from './security-store.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
@@ -40,8 +40,6 @@ const MAIN = {
   '/security': ['Gully Security: AI Security Scan and Security Review · Gully Labs', 'Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price.'],
   '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
   '/security/sample': ['Sample AI Security Scan report · Gully Labs', 'What an AI Security Scan report looks like, on a fictional contract: findings by severity with file and line, a draft proof of concept, the tools that ran and the limits. A sample, not a scan of real code.'],
-  '/chain-kit': ['Chain Kit: a branded block explorer for your chain, waitlist · Gully Labs', 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. Join the waitlist.'],
-  '/chains': ['Gully Chains: your own Arbitrum chain, run by Gully Labs · Gully Labs', 'Your own Arbitrum Orbit chain, launched and run by Gully Labs, with an explorer, bridge, faucet, account abstraction and monitoring. A testnet is coming: join the waitlist.'],
   '/holders': ['Holder Map: who really holds a token · Gully Labs', 'See who holds any DeepCore launch: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part. Tokenised stocks follow chain by chain.'],
   '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
@@ -145,7 +143,7 @@ function pricingDescription() {
 }
 
 const DOCS_PAGES = {
-  '/': ['Gully Labs docs', 'Docs for Gully Labs: the stock token tracker on Robinhood Chain, BNB Chain and Solana, its public API, the widget and API keys, plus Gully Pay, the Holder Map, Gully AI, the Telegram bot, swaps and status.'],
+  '/': ['Gully Labs docs', 'Docs for Gully Labs: the stock token tracker on Robinhood Chain, BNB Chain and Solana, its public API, the widget and API keys, plus the Holder Map, Gully Score, Gully AI, the Telegram bot, swaps and status. Gully Chain, Gully Pay, Gully RPC and Gully Security have their own docs on their own domains.'],
   '/methodology': ['Methodology · Gully Labs docs', 'How fair prices, onchain prices, gaps and staleness are read and computed for every tokenised stock.'],
   '/api': ['API reference · Gully Labs docs', 'The public tracker API: endpoints, fields, rate limits and errors. Free to call with no key.'],
   '/widget': ['Widget guide · Gully Labs docs', 'Embed the live tracker with one script tag: ticker, badge and table, with every option.'],
@@ -366,15 +364,16 @@ export function sitemapFor(host) {
   let urls
   const securityPaths = () => ['/security', '/security/reports', '/security/sample', ...publishedJobs().filter((j) => j.indexable).map((j) => `/security/reports/${j.id}`)]
   const holderPaths = () => ['/holders', ...Object.entries(HOLDER_PAGES).filter(([, chain]) => holdersAvailableFor(chain)).map(([p]) => p), ...topHolderPaths()]
-  if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
+  if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).filter((p) => !movedDocsUrl(p)).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
   else if (isAppHost(host)) urls = [[`${APP}/`, '0.6', 'monthly']]
   // holdermaps.xyz lists the Holder Map pages under their short paths.
   else if (isHolderMapsHost(host)) urls = holderPaths().map((p) => [HOLDERMAPS_URL + holderShortPath(p), p === '/holders' ? '1.0' : '0.7', p === '/holders' ? 'daily' : 'monthly'])
   // gullysecurity.xyz lists the Security pages and the reports their owners let search engines index, under short paths.
   else if (isSecurityHost(host)) urls = securityPaths().map((p) => [SECURITY_URL + securityShortPath(p), p === '/security' ? '1.0' : '0.7', p === '/security' || p === '/security/reports' ? 'daily' : 'monthly'])
   else
-    // Once holdermaps.xyz (or gullysecurity.xyz) is primary the main site's pages for it are redirects there, so they are not listed here.
-    urls = [...Object.keys(MAIN).filter((p) => !(holderMapsPrimary() && p === '/holders') && !(securityPrimary() && securityShortPath(p))), ...(holderMapsPrimary() ? [] : holderPaths().slice(1)), ...(securityPrimary() ? [] : securityPaths().filter((p) => p.startsWith('/security/reports/')))].map((p) => [
+    // Once holdermaps.xyz (or gullysecurity.xyz) is primary the main site's pages for it are redirects there, so they are not
+    // listed here; nor are the pages of products that moved to their own domains (hosts.mjs movedPageUrl).
+    urls = [...Object.keys(MAIN).filter((p) => !movedPageUrl(p) && !(holderMapsPrimary() && p === '/holders') && !(securityPrimary() && securityShortPath(p))), ...(holderMapsPrimary() ? [] : holderPaths().slice(1)), ...(securityPrimary() ? [] : securityPaths().filter((p) => p.startsWith('/security/reports/')))].map((p) => [
       SITE + (p === '/' ? '/' : p),
       p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
       p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p === '/score' || p === '/ecosystem' || p.startsWith('/projects/') ? 'daily' : 'monthly',

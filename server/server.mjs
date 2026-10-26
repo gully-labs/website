@@ -32,7 +32,7 @@ import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
-import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
+import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
@@ -265,6 +265,12 @@ async function handleRequest(req, res) {
   if (!isLocal && !isApiHost(host) && url.pathname.startsWith('/api/')) res.setHeader('Link', `<${API_URL}${url.pathname}>; rel="canonical"`)
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
     return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
+  }
+  // Products on their own domains (hosts.mjs movedPageUrl / movedDocsUrl): their old pages here, and their docs pages
+  // on docs.gullylabs.xyz, answer 301 to the product's own domain (GET/HEAD; the APIs, embeds and badges never move).
+  if (!isLocal && !isAdmin && (req.method === 'GET' || req.method === 'HEAD')) {
+    const moved = host.startsWith('docs.') ? movedDocsUrl(url.pathname) : isHolderMapsHost(host) || isSecurity ? null : movedPageUrl(url.pathname)
+    if (moved) return send(res, 301, '', { Location: moved, 'Cache-Control': 'public, max-age=3600' })
   }
   // The Gully Labs App (the app dashboard) lives on app.gullylabs.xyz (hosts.mjs). Elsewhere /app and the
   // retired /developers path answer 301 to https://app.gullylabs.xyz/; on that host any other page belongs

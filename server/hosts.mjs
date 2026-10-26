@@ -215,3 +215,58 @@ export function currentPageUrl(url) {
   const at = rest.search(/[?#]/)
   return securityShortPath(at < 0 ? rest : rest.slice(0, at)) ? securityUrl(rest) : s
 }
+
+/* Products on their own domains (2026-10-26). Gully Labs (gullylabs.xyz, app.gullylabs.xyz) is the parent brand and
+   the hub; these products moved out and are no longer full features here. Their old main-site and docs pages answer
+   301 (GET/HEAD) to the equivalent page on the product's own domain, deep path kept where one exists there.
+     Gully Chain     gullychain.xyz (site), app.gullychain.xyz (launch flow, launchpad), docs.gullychain.xyz
+     Gully Pay       gullypay.xyz (x402, checkout, merchants, glUSD; developer docs at /docs)
+     Gully RPC       gullyrpc.xyz, app.gullyrpc.xyz (keys, portal)
+     Gully Studio    gullystudio.xyz
+   Gully Security (gullysecurity.xyz) and HolderMaps (holdermaps.xyz) keep their own switches above (SECURITY_PRIMARY,
+   HOLDERMAPS_PRIMARY). What never moves: pay.gullylabs.xyz (Gully Labs' own checkout: plans, paid scans, live
+   invoices), /legal/*, every /api/* path, /embed/*, widget.js and the badges: other sites and the SDK call them. */
+export const CHAIN_URL = 'https://gullychain.xyz'
+export const CHAIN_APP_URL = 'https://app.gullychain.xyz'
+export const CHAIN_DOCS_URL = 'https://docs.gullychain.xyz'
+export const GULLYPAY_URL = 'https://gullypay.xyz'
+export const RPC_URL = 'https://gullyrpc.xyz'
+export const STUDIO_URL = 'https://gullystudio.xyz'
+
+// Pages gullypay.xyz and gullyrpc.xyz serve under the same name (checked 2026-10-26).
+const GULLYPAY_PAGES = new Set(['docs', 'x402', 'glusd', 'overview', 'verticals', 'status', 'security', 'extension', 'about'])
+const RPC_PAGES = new Set(['docs', 'status'])
+
+/** The new home of a moved main-site page (gullylabs.xyz), or null when the path still belongs to Gully Labs. */
+export function movedPageUrl(pathname) {
+  const p = String(pathname ?? '').replace(/(.)\/+$/, '$1')
+  // Gully Chain: the L3 offer, its launch flow and Chain Kit.
+  if (p === '/chains/launch') return `${CHAIN_APP_URL}/`
+  if (/^\/(chains|chain-kit|gully-chain|gully-chains|l3)(\/|$)/.test(p)) return `${CHAIN_URL}/`
+  // Gully Pay: the product pages (Gully Labs' checkout on pay.gullylabs.xyz and the merchant terms stay).
+  if (p === '/gully-pay/merchant-terms') return null
+  const pay = /^\/(?:gully-pay|gullypay)(?:\/([a-z0-9-]+))?(\/|$)/.exec(p)
+  if (pay) return `${GULLYPAY_URL}/${pay[1] && GULLYPAY_PAGES.has(pay[1]) ? pay[1] : ''}`
+  if (p === '/x402' || p === '/glusd') return `${GULLYPAY_URL}${p}`
+  // Gully RPC.
+  const rpc = /^\/(?:rpc|gully-rpc)(?:\/([a-z0-9-]+))?(\/|$)/.exec(p)
+  if (rpc) return `${RPC_URL}/${rpc[1] && RPC_PAGES.has(rpc[1]) ? `${rpc[1]}/` : ''}`
+  // Gully Studio.
+  if (/^\/(studio|gully-studio|games)(\/|$)/.test(p)) return `${STUDIO_URL}/`
+  return null
+}
+
+/** The new home of a moved docs page (docs.gullylabs.xyz/<slug>), or null when the page stays. Gully Security's
+    docs move with SECURITY_PRIMARY, like its pages. */
+export function movedDocsUrl(pathname) {
+  const p = String(pathname ?? '').replace(/(.)\/+$/, '$1')
+  const map = {
+    '/gully-pay': `${GULLYPAY_URL}/docs`,
+    '/gully-pay-merchants': `${GULLYPAY_URL}/docs`,
+    '/chain-kit': `${CHAIN_DOCS_URL}/`,
+    '/roadmap-l3': `${CHAIN_DOCS_URL}/network/`,
+  }
+  if (map[p]) return map[p]
+  if (p === '/gully-security' && securityPrimary()) return `${SECURITY_URL}/`
+  return null
+}
