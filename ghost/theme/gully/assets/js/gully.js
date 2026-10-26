@@ -180,6 +180,19 @@
         });
     }
 
+    /* Retired Gully hosts that Ghost's own navigation (admin > Settings > Navigation) may still name: developers.
+       has no DNS since 2026-10-17; the developer docs live on docs.gullylabs.xyz. Rewritten before the scan below. */
+    var RETIRED = { 'developers.gullylabs.xyz': 'https://docs.gullylabs.xyz/' };
+    Array.prototype.forEach.call(document.querySelectorAll('a[href]'), function (a) {
+        var u;
+        try {
+            u = new URL(a.getAttribute('href'), location.href);
+        } catch (err) {
+            return;
+        }
+        if (RETIRED[u.hostname]) a.setAttribute('href', RETIRED[u.hostname]);
+    });
+
     /* ------------------------------------------------- 3. links to other Gully sites --- */
     var GULLY = /(^|\.)gullylabs\.xyz$|^github\.com$|^x\.com$|^t\.me$/;
     Array.prototype.forEach.call(document.querySelectorAll('[data-gl-ext-scan] a[href]'), function (a) {

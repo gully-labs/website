@@ -105,7 +105,7 @@ export const navLinks: NavEntry[] = [
   { label: 'Projects', desc: 'The venues we run', to: '/#projects', icon: FlaskConical, match: ['/projects'] },
   { label: 'Pricing', desc: 'API, alerts and analytics plans', to: '/pricing', icon: Tag, match: ['/pricing'] },
   { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources (⌘K)', to: '/ask', icon: Sparkles, match: ['/ask'] },
-  { label: 'Holder Map', desc: 'Who really holds any token, on five chains', to: '/holders', icon: ScanSearch, match: ['/holders'], newDot: true },
+  { label: 'Holder Map', desc: 'Who really holds any token, on six chains with Gully Chain', to: '/holders', icon: ScanSearch, match: ['/holders'], newDot: true },
 ]
 
 /** The "Launch app" split button: the main part opens the tracker, its menu lists the apps. */

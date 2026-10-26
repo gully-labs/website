@@ -8,6 +8,7 @@ import { Mascot, Wordmark } from '../components/brand'
 import { AskLauncher } from '../components/ask/AskLauncher'
 import { track } from '../lib/track'
 import { apiOrigin, DOC_KEYWORDS, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
+import { PoweredByBadge } from '../components/PoweredByBadge'
 
 type Health = 'checking' | 'live' | 'down'
 
@@ -333,6 +334,7 @@ export function DocsLayout() {
               </a>
             ))}
           </nav>
+          <PoweredByBadge />
         </div>
       </footer>
     </DocsBase.Provider>

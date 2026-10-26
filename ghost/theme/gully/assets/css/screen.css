@@ -684,8 +684,9 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
     font-family: var(--gl-font-mono); font-size: 12px; line-height: 1.6; color: var(--gl-dim);
 }
 .gl-footer-legal-left { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
-.gl-powered { display: inline-flex; border-radius: 12px; }
-.gl-powered img { width: 190px; height: 48px; }
+.gl-powered { display: inline-flex; flex: none; border-radius: 8px; }
+.gl-powered img { width: auto; height: 30px; }
+@media (max-width: 599px) { .gl-powered img { height: 26px; } }
 .gl-footer-copy { flex: none; }
 .gl-footer-disclaimer { max-width: 760px; }
 .gl-footer-secondary .gl-blognav-list { flex-wrap: wrap; }
