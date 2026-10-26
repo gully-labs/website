@@ -73,7 +73,7 @@ export const benefits: Benefit[] = [
   { id: 'webhooks', title: 'Launch webhooks', text: 'A signed webhook (and optional Telegram message) for every new DeepCore launch on a chain you choose.', status: 'Live', docs: { label: 'Plans and alerts docs', href: `${DOCS}/plans-alerts` }, for: ['launchpads', 'wallets'] },
   { id: 'whitelabel', title: 'White-label', text: 'The embedded map without the “Powered by Gully Labs” credit, on the Business plan. Add your embed key to the widget; the server checks your plan on every load.', status: 'Live', docs: { label: 'API keys docs', href: `${DOCS}/api-keys` }, for: ['launchpads', 'wallets', 'explorers'] },
   { id: 'pay', title: 'Gully Pay', text: 'Non-custodial crypto checkout: invoices, pay links and signed webhooks, paid to your own wallets. A transaction fee only.', status: 'Live', docs: { label: 'Gully Pay docs', href: `${DOCS}/gully-pay-merchants` }, for: ['chains', 'wallets', 'launchpads'] },
-  { id: 'chainkit', title: 'Chain Kit', text: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. Join the waitlist.', status: 'Not live yet', docs: { label: 'Chain Kit docs', href: `${DOCS}/chain-kit` }, for: ['chains', 'explorers'] },
+  { id: 'chainkit', title: 'Gully Chain', text: 'The Gully L3 with DeepCore built in, your own chain run by us, and Chain Kit block explorers. Open to everyone.', status: 'Live', docs: { label: 'Gully Chain docs', href: 'https://docs.gullychain.xyz/' }, for: ['chains', 'explorers'] },
 ]
 
 export interface Snippet {

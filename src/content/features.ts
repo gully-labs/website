@@ -325,13 +325,12 @@ export const features: Feature[] = [
       "A pay link is a fixed USD amount or an open amount between a minimum and maximum; a link makes at most LINK_INVOICES_PER_HOUR (10) invoices per IP per hour.",
       "Gully Labs never holds funds; a chainId:hash can be used once only."
     ],
-    url: "https://docs.gullylabs.xyz/gully-pay",
+    url: "https://gullypay.xyz/docs",
     source: [
       "website:server/payments.mjs",
       "website:server/paylinks.mjs",
       "website:server/invoices.mjs",
-      "website:server/treasury-chains.mjs",
-      "website:src/docs/pages/GullyPayDocs.tsx"
+      "website:server/treasury-chains.mjs"
     ]
   },
   {
@@ -361,10 +360,9 @@ export const features: Feature[] = [
       "Events: invoice.paid, invoice.expired, invoice.cancelled and webhook.test.",
       "Signed with HMAC-SHA256 in X-Gully-Signature with X-Gully-Timestamp, using the endpoint's own whsec_ secret."
     ],
-    url: "https://docs.gullylabs.xyz/gully-pay",
+    url: "https://gullypay.xyz/docs",
     source: [
-      "website:server/pay-webhooks.mjs",
-      "website:src/docs/pages/GullyPayDocs.tsx"
+      "website:server/pay-webhooks.mjs"
     ]
   },
   {
@@ -377,7 +375,7 @@ export const features: Feature[] = [
       "Add data-gully-pay=\"popup\" to a link to a pay URL; \"tab\" or no script opens a new tab.",
       "The checkout cannot be put in an iframe; the script sets no cookies."
     ],
-    url: "https://docs.gullylabs.xyz/gully-pay",
+    url: "https://gullypay.xyz/docs",
     source: [
       "website:public/pay-button.js",
       "website:src/pages/pay/PayPage.tsx"
@@ -393,7 +391,7 @@ export const features: Feature[] = [
       "GET /api/pay/gas; costs assume 106k gas for a fee-proxy payment and 65k for a plain ERC-20 transfer, including the L1 data fee on OP Stack chains and Arbitrum.",
       "A chain that cannot be read says unavailable."
     ],
-    url: "https://docs.gullylabs.xyz/gully-pay",
+    url: "https://gullypay.xyz/docs",
     source: [
       "website:server/gas.mjs"
     ]
@@ -410,11 +408,11 @@ export const features: Feature[] = [
       "Merchants get pay links, invoices, signed webhooks, CSV export and a branded profile.",
       "Supports USDC, USDT and each chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon and Avalanche."
     ],
-    url: "https://docs.gullylabs.xyz/gully-pay-merchants",
+    url: "https://gullypay.xyz/docs",
     source: [
       "website:server/merchants.mjs",
       "website:server/merchant-fees.mjs",
-      "website:src/docs/pages/GullyPayMerchantsDocs.tsx",
+      "website:src/pages/legal/MerchantTerms.tsx",
       "website:src/pages/merchant-pay/MerchantPay.tsx"
     ]
   },
@@ -429,7 +427,7 @@ export const features: Feature[] = [
       "Split calls use only USDC or USDT, with the fee strictly between 0 and the amount.",
       "An hourly monitor reads every known proxy's balance and raises an admin alert on a non-zero balance (server/fee-proxy-monitor.mjs)."
     ],
-    url: "https://docs.gullylabs.xyz/gully-pay-merchants",
+    url: "https://gullypay.xyz/docs",
     source: [
       "website:server/fee-proxy-guard.mjs",
       "website:server/fee-proxy-monitor.mjs",
@@ -446,7 +444,7 @@ export const features: Feature[] = [
       "The server works out the factory call and never holds a key or sends a transaction.",
       "Uses Safe's CREATE2 proxy factory so the address matches across chains."
     ],
-    url: "https://docs.gullylabs.xyz/gully-pay-merchants",
+    url: "https://gullypay.xyz/docs",
     source: [
       "website:server/safe-deploy.mjs"
     ]
@@ -820,28 +818,27 @@ export const features: Feature[] = [
     product: "Chain Kit",
     name: "Chain Kit managed explorer",
     status: "building",
-    summary: "A branded Blockscout block explorer for your EVM chain, to be deployed and run by Gully Labs. Waitlist: licensing in progress; Chain Kit is not available to order yet.",
+    summary: "A branded Blockscout block explorer for your EVM chain, deployed and run by Gully Labs, now part of Gully Chain (gullychain.xyz). Licensing in progress; not available to order yet.",
     facts: [
-      "Chain Kit is on a waitlist: join the waitlist from the app (POST /api/developer/chain-kit/request records interest, flagged waitlist, and takes no order or payment) or at gullylabs.xyz/chains.",
+      "Chain Kit moved to Gully Chain (gullychain.xyz) on 2026-10-26; POST /api/developer/chain-kit/request still records interest for older clients.",
       "Gully Labs is finalising the explorer licence before taking orders.",
       "Rollup profiles cover Arbitrum Nitro and Orbit chains."
     ],
-    url: "https://gullylabs.xyz/chain-kit",
+    url: "https://gullychain.xyz/",
     source: [
       "website:server/developer.mjs",
-      "website:src/docs/pages/ChainKitDocs.tsx",
       "website:src/pages/developers/Products.tsx"
     ]
   },
   {
     id: "chains-devnet-waitlist",
     product: "Gully Chains",
-    name: "Gully Chains waitlist",
+    name: "Gully Chains sign-up (no waitlist)",
     status: "live",
-    summary: "A waitlist in the app for Gully Chains devnet news. No chain is running yet.",
+    summary: "Gully Chain is open to everyone on gullychain.xyz. The old waitlist endpoints still answer for older clients and gate nothing.",
     facts: [
-      "POST /api/developer/chains-waitlist saves an email against the wallet.",
-      "POST /api/chains/waitlist is the public form on /chains; the app waitlist remains."
+      "POST /api/developer/chains-waitlist and POST /api/chains/waitlist still save an email, for backward compatibility only.",
+      "The app's Gully Chain page hands off to app.gullychain.xyz."
     ],
     url: "https://gullylabs.xyz/",
     source: [
@@ -861,9 +858,9 @@ export const features: Feature[] = [
       "Recommended: Rollup data availability and ETH as gas token; Hyperlane Warp Routes for USDC and ETH.",
       "There is no public RPC, explorer, faucet, bridge or Hyperlane deployment."
     ],
-    url: "https://docs.gullylabs.xyz/roadmap-l3",
+    url: "https://docs.gullychain.xyz/network/",
     source: [
-      "website:src/docs/pages/RoadmapL3.tsx",
+      "website:src/docs/pages/Roadmap.tsx",
       "website:ops/l3/SPEC.md",
       "website:ops/devnet/README.md"
     ]
@@ -1030,22 +1027,19 @@ export const features: Feature[] = [
   {
     id: "chains-offer",
     product: "Gully Chains",
-    name: "Gully Chains offer and waitlist",
+    name: "Gully Chains offer (moved to gullychain.xyz)",
     status: "live",
-    summary: "A public page with the managed-chain offer, its prices read from config, and a waitlist form. No Gully Chains network is running yet; a testnet is coming.",
+    summary: "The managed-chain offer moved to Gully Chain's own site on 2026-10-26: gullylabs.xyz/chains answers 301 to gullychain.xyz. The plans config is still served here for older clients.",
     facts: [
-      "Testnet: free for freeDays 30, then a monthly price that is not set (monthlyUsd null, shown as TBA) (CHAINS.testnet in server/chains-plans.mjs).",
-      "Managed mainnet: from $3,500 a month (fromUsdPerMonth) plus 5% of the sequencer's profit (sequencerProfitPct), with data availability at cost.",
-      "Add-on prices are null (TBA) for the paymaster, pay gas in USDC, Gully Pay on your chain, Hyperlane setup and DeepCore; prices before launch may change.",
-      "Stack: Arbitrum Orbit (Nitro), settlement to Arbitrum, Hyperlane, Chain Kit explorer, Gully Bridge, faucet and RPC.",
-      "GET /api/chains/plans serves the config; POST /api/chains/waitlist takes the form with a per-IP rate limit and a honeypot."
+      "gullylabs.xyz/chains, /chains/launch and /chain-kit answer 301 to gullychain.xyz and app.gullychain.xyz (server/hosts.mjs movedPageUrl).",
+      "GET /api/chains/plans still serves the config from server/chains-plans.mjs.",
+      "Sign-up is open on gullychain.xyz; there is no waitlist. The old POST /api/chains/waitlist still answers but gates nothing."
     ],
-    url: "https://gullylabs.xyz/chains",
+    url: "https://gullychain.xyz/",
     source: [
       "website:server/chains-plans.mjs",
       "website:server/chains-waitlist.mjs",
-      "website:src/pages/Chains.tsx",
-      "website:src/pages/chains/Estimator.tsx"
+      "website:server/hosts.mjs"
     ]
   },
   {
@@ -1053,16 +1047,15 @@ export const features: Feature[] = [
     product: "Gully Chains",
     name: "Included services on the testnet",
     status: "testnet",
-    summary: "The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.",
+    summary: "The Chain Kit explorer is planned. The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.",
     facts: [
       "SERVICES in server/chains-plans.mjs gives insight, pay and hyperlane the status testnet; chainkit (the explorer, bridge and faucet) is planned and on a waitlist.",
       "Chain Kit (waitlist) and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons.",
       "The page says nothing about Gully Chains is live yet."
     ],
-    url: "https://gullylabs.xyz/chains",
+    url: "https://gullychain.xyz/",
     source: [
-      "website:server/chains-plans.mjs",
-      "website:src/pages/Chains.tsx"
+      "website:server/chains-plans.mjs"
     ]
   },
   {
@@ -1273,7 +1266,7 @@ export const features: Feature[] = [
       "Chain Kit is on a waitlist and cannot be ordered yet: Gully Labs is finalising the explorer licence first",
       "Service level targets in the README are marked 'to be set by Gully Labs'"
     ],
-    url: "https://gullylabs.xyz/chain-kit",
+    url: "https://gullychain.xyz/",
     source: [
       "gully-blockscout:gully/README.md",
       "gully-blockscout:gully/compose/docker-compose.yml",
@@ -1442,7 +1435,7 @@ export const features: Feature[] = [
       "Wizard lets the user set chain parameters, then add batch posters or validators after deployment",
       "Fee and data-availability defaults (Rollup vs AnyTrust) are not yet chosen by Gully Labs; default chain name is 'My Arbitrum L3 Chain'"
     ],
-    url: "https://gullylabs.xyz/chain-kit",
+    url: "https://gullychain.xyz/",
     source: [
       "gully-chains-launch:README.md",
       "gully-chains-launch:GULLY.md",
@@ -1461,7 +1454,7 @@ export const features: Feature[] = [
       "Upstream test setup covers Orbit chains, a custom fee token and CCTP",
       "Not affiliated with or endorsed by Offchain Labs or the Arbitrum Foundation"
     ],
-    url: "https://gullylabs.xyz/chain-kit",
+    url: "https://gullychain.xyz/",
     source: [
       "gully-bridge:README.md",
       "gully-bridge:package.json",

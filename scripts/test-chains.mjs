@@ -50,9 +50,8 @@ try {
   check('every service and add-on in the config is in the answer', plans.data?.services?.length === SERVICES.length && plans.data?.addons?.length === CHAINS.addons.length)
   check('the price note says prices may change', /may change/i.test(plans.data?.note ?? ''))
   check('the services are marked included or add-on, and the not-yet-built ones carry a status', SERVICES.every((s) => s.kind === 'included' || s.kind === 'addon') && SERVICES.find((s) => s.id === 'aa')?.status === 'with-testnet' && SERVICES.find((s) => s.id === 'paymaster')?.status === 'with-testnet' && SERVICES.find((s) => s.id === 'usdc-gas')?.status === 'planned' && SERVICES.find((s) => s.id === 'deepcore')?.status === 'planned')
-  const source = ['src/pages/Chains.tsx', 'src/pages/chains/Estimator.tsx', 'src/pages/chains/Waitlist.tsx'].map((f) => fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')), '..', f), 'utf8')).join('\n')
-  check('no price or rate is typed into the page source (3,500 / 3500 / 5%)', !/3,?500|\b5\s?%/.test(source))
-  check('the page names no competitor', !/\b(conduit|caldera|alchemy|altlayer|raas|gelato|zksync|optimism stack|op stack|polygon cdk)\b/i.test(source + JSON.stringify(plans.data)))
+  // The /chains page moved to gullychain.xyz (2026-10-26); the config the API serves still names no competitor.
+  check('the plans answer names no competitor', !/(conduit|caldera|alchemy|altlayer|raas|gelato|zksync|optimism stack|op stack|polygon cdk)/i.test(JSON.stringify(plans.data)))
 
   /* ---- validation ---- */
   const ok = await post(good(1), '10.1.0.1')
@@ -127,10 +126,10 @@ try {
 
   /* ---- SEO ---- */
   const { pageMeta, sitemapFor } = await import('../server/seo.mjs')
-  const m = pageMeta('gullylabs.xyz', '/chains')
-  check('/chains has SEO meta, found, and a canonical URL', m.found && /Gully Chains/.test(m.title) && m.canonical === 'https://gullylabs.xyz/chains')
-  check('the meta description does not claim a chain is live', /testnet is coming/i.test(m.description) && !/\b(is|are) live\b/i.test(m.description))
-  check('/chains is in the sitemap', sitemapFor('gullylabs.xyz').includes('<loc>https://gullylabs.xyz/chains</loc>'))
+  // Gully Chain moved to gullychain.xyz (2026-10-26): /chains is a 301 there and leaves the sitemap; the hub page stays.
+  const m = pageMeta('gullylabs.xyz', '/products/chain')
+  check('/products/chain (the Gully Chain hand-off) has SEO meta and a canonical URL', m.found && /Gully Chain/.test(m.title) && m.canonical === 'https://gullylabs.xyz/products/chain')
+  check('/chains is not in the sitemap (it moved to gullychain.xyz)', !sitemapFor('gullylabs.xyz').includes('<loc>https://gullylabs.xyz/chains</loc>'))
   check('the choices list is in the answer', Object.keys(WAITLIST_CHOICES).every((k) => plans.data?.choices?.[k]?.length === WAITLIST_CHOICES[k].length))
 } catch (e) {
   check(`no exception (${e?.stack ?? e})`, false)

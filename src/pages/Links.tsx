@@ -57,18 +57,19 @@ function groups(pay: PayCfg | null): Group[] {
     {
       title: 'Products',
       items: [
-        { label: 'Holder Map', desc: 'Who really holds a DeepCore launch: clusters, bundled buys, a health score', href: utm('https://gullylabs.xyz/holders'), icon: Orbit },
-        { label: 'Gully Security', desc: 'AI Security Scan of a contract or codebase; reviews quoted on request', href: utm('https://gullylabs.xyz/security'), icon: ShieldCheck },
+        { label: 'Holder Map', desc: 'Who really holds a DeepCore launch: clusters, bundled buys, a health score', href: utm('https://holdermaps.xyz/'), icon: Orbit },
+        { label: 'Gully Security', desc: 'AI Security Scan of a contract or codebase; reviews quoted on request', href: utm('https://gullysecurity.xyz/'), icon: ShieldCheck },
         { label: 'Gully Score', desc: 'A 0 to 100 contract score from public evidence, every weight shown', href: utm('https://gullylabs.xyz/score'), icon: Gauge },
         { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources', href: utm('https://gullylabs.xyz/ask'), icon: Sparkles },
         { label: 'Gully Analytics', desc: 'Web analytics that see the wallet', href: utm('https://gullylabs.xyz/analytics'), icon: ChartNoAxesCombined },
         {
           label: 'Gully Pay',
           desc: pay ? `Crypto checkout and pay links: ${pay.feePct}% after the first $${pay.freeUsd.toLocaleString('en-US')}, non-custodial` : 'Crypto checkout and pay links, non-custodial',
-          href: utm('https://docs.gullylabs.xyz/gully-pay-merchants'),
+          href: utm('https://gullypay.xyz/'),
           icon: CircleDollarSign,
         },
-        { label: 'Chain Kit', desc: 'Branded block explorers · waitlist', href: utm('https://gullylabs.xyz/chain-kit'), icon: Boxes },
+        { label: 'Gully Chain', desc: 'The L3 with DeepCore built in: launch, trade, run your own chain', href: utm('https://gullychain.xyz/'), icon: Boxes },
+        { label: 'Gully RPC', desc: 'One RPC key for every Gully chain', href: utm('https://gullyrpc.xyz/'), icon: Boxes },
         { label: 'Pricing', desc: 'API, alerts and analytics plans', href: utm('https://gullylabs.xyz/pricing'), icon: Tag },
       ],
     },

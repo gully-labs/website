@@ -45,6 +45,10 @@ Object.assign(process.env, {
   TRACKER_SKIP_APIS: '1',
   DEEPCORE_LOOP: 'off',
   ASK_REMOTE: 'off',
+  IPFS_API: 'http://127.0.0.1:9',
+  IPFS_GATEWAY: 'http://127.0.0.1:9',
+  GULLYPAY_STATUS_URL: 'http://127.0.0.1:9',
+  GULLYRPC_STATUS_URL: 'http://127.0.0.1:9',
 })
 delete process.env.TELEGRAM_BOT_TOKEN
 delete process.env.GULLY_TREASURY_ADDRESS
@@ -362,6 +366,57 @@ try {
     } finally {
       delete process.env.SECURITY_PRIMARY
     }
+  }
+
+  /* ------------------------------------ products on their own domains (2026-10-26) --- */
+  {
+    const { movedPageUrl, movedDocsUrl } = await import('../server/hosts.mjs')
+    const moves = [
+      ['/chains', 'https://gullychain.xyz/'],
+      ['/chains/', 'https://gullychain.xyz/'],
+      ['/chains/launch', 'https://app.gullychain.xyz/'],
+      ['/chain-kit', 'https://gullychain.xyz/'],
+      ['/gully-pay', 'https://gullypay.xyz/'],
+      ['/gully-pay/docs', 'https://gullypay.xyz/docs'],
+      ['/gully-pay/x402', 'https://gullypay.xyz/x402'],
+      ['/gully-pay/nope', 'https://gullypay.xyz/'],
+      ['/x402', 'https://gullypay.xyz/x402'],
+      ['/glusd', 'https://gullypay.xyz/glusd'],
+      ['/rpc', 'https://gullyrpc.xyz/'],
+      ['/rpc/docs', 'https://gullyrpc.xyz/docs/'],
+      ['/rpc/status', 'https://gullyrpc.xyz/status/'],
+      ['/studio', 'https://gullystudio.xyz/'],
+      ['/games', 'https://gullystudio.xyz/'],
+    ]
+    check('moved: every old product path maps to its own domain', moves.every(([p, u]) => movedPageUrl(p) === u), JSON.stringify(moves.filter(([p, u]) => movedPageUrl(p) !== u).map(([p]) => [p, movedPageUrl(p)])))
+    const stay = ['/', '/products', '/products/chain', '/products/ipfs', '/pricing', '/tracker', '/score', '/ask', '/status', '/holders', '/security', '/pay/inv_x', '/gully-pay/merchant-terms', '/legal/merchant-terms', '/api/holders/base/0x1', '/api/security/reports/sec_x/badge.svg', '/embed/holders/base/0x1', '/widget.js', '/rpcfoo', '/chainsaw']
+    check('moved: what stays with Gully Labs is not redirected (APIs, embeds, badges, checkout, legal, hub pages)', stay.every((p) => movedPageUrl(p) === null), JSON.stringify(stay.filter((p) => movedPageUrl(p) !== null)))
+    check('moved docs: Gully Pay, Chain Kit and the L3 roadmap go to the products\' docs; the rest stays', movedDocsUrl('/gully-pay') === 'https://gullypay.xyz/docs' && movedDocsUrl('/gully-pay-merchants') === 'https://gullypay.xyz/docs' && movedDocsUrl('/chain-kit') === 'https://docs.gullychain.xyz/' && movedDocsUrl('/roadmap-l3') === 'https://docs.gullychain.xyz/network/' && movedDocsUrl('/gully-security') === null && movedDocsUrl('/holder-map') === null && movedDocsUrl('/badges') === null && movedDocsUrl('/ipfs') === null)
+    for (const [p, u] of [['/chains?ref=x', 'https://gullychain.xyz/'], ['/gully-pay/x402', 'https://gullypay.xyz/x402'], ['/rpc', 'https://gullyrpc.xyz/']]) {
+      const r = await get(MAIN, p)
+      check(`main ${p}: 301 to ${u}`, r.status === 301 && r.headers.location === u, `${r.status} ${r.headers.location}`)
+    }
+    const app = await get('app.gullylabs.xyz', '/chain-kit')
+    check('app. /chain-kit: 301 straight to gullychain.xyz', app.status === 301 && app.headers.location === 'https://gullychain.xyz/', `${app.status} ${app.headers.location}`)
+    const post = await get(MAIN, '/chains', { method: 'POST' })
+    check('main POST /chains: not redirected', post.status !== 301, String(post.status))
+    const docs = await get('docs.gullylabs.xyz', '/gully-pay-merchants')
+    check('docs /gully-pay-merchants: 301 to gullypay.xyz/docs', docs.status === 301 && docs.headers.location === 'https://gullypay.xyz/docs', `${docs.status} ${docs.headers.location}`)
+    const docsStay = await get('docs.gullylabs.xyz', '/holder-map')
+    check('docs /holder-map: still served', docsStay.status === 200, String(docsStay.status))
+    const badge = await get(MAIN, `/api/security/reports/${SEC_PUB}/badge.svg`)
+    check('the report badge still answers on gullylabs.xyz (never moves)', badge.status === 200 && /svg/.test(badge.headers['content-type'] ?? ''), `${badge.status} ${badge.headers['content-type']}`)
+    const holdersApi = await get(MAIN, '/api/holders/base/0x1')
+    check('/api/holders/* is not redirected', holdersApi.status !== 301, String(holdersApi.status))
+    const map = await get(MAIN, '/sitemap.xml')
+    check('main sitemap: no moved product page, the hub and Gully IPFS listed', !/gullylabs\.xyz\/(chains|chain-kit)</.test(map.text) && map.text.includes('<loc>https://gullylabs.xyz/products/ipfs</loc>'))
+    const dmap = await get('docs.gullylabs.xyz', '/sitemap.xml')
+    check('docs sitemap: no moved docs page', !/docs\.gullylabs\.xyz\/(gully-pay|gully-pay-merchants|chain-kit|roadmap-l3)</.test(dmap.text))
+    const ipfs = await get(MAIN, '/api/ipfs/stats')
+    const ij = JSON.parse(ipfs.text || '{}')
+    check('/api/ipfs/stats: 200 JSON with nulls when the node cannot be reached, open CORS', ipfs.status === 200 && 'pinned' in ij && 'gatewayUp' in ij && ipfs.headers['access-control-allow-origin'] === '*', ipfs.text.slice(0, 200))
+    const rpcApi = await get(MAIN, '/api/v0/repo/stat')
+    check('the Kubo RPC is never reachable through this server', rpcApi.status !== 200 || !/RepoSize/.test(rpcApi.text))
   }
 
   /* ------------------------------------------------------ generated links --- */
