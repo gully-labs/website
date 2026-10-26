@@ -216,7 +216,7 @@ try {
   const tg = ix.search('how do Telegram alerts work', { k: 3 })
   check('"how do Telegram alerts work" ranks the Telegram or Plans & alerts docs in the top two', tg.slice(0, 2).some((r) => TG_DOCS.test(r.chunk.url)), tg.map((r) => r.chunk.url).join(' '))
   const ck = (await ask.retrieve('Chain Kit price', { k: 4 })).results
-  check('"Chain Kit price" finds pricing or Chain Kit in the top four (the L3 roadmap cost table is a fair match too)', ck.some((r) => /\/(chain-kit|pricing)(#|$)/.test(r.chunk.url)), ck.map((r) => r.chunk.url).join(' '))
+  check('"Chain Kit price" finds pricing or Chain Kit in the top four (the L3 spec Chain Kit section is a fair match too: the Chain Kit docs moved to gullychain.xyz)', ck.some((r) => /\/(chain-kit|pricing)(#|$)|SPEC\.md#[0-9]*-?explorer-chain-kit/.test(r.chunk.url)), ck.map((r) => r.chunk.url).join(' '))
   check('a query of stopwords finds nothing', ix.search('how do I the and').length === 0)
   const md = markdownSections('<!-- x -->\n<p align="center"><a href="x"><img src="b.svg"></a></p>\n[![CI](https://x/badge.svg)](https://x)\n# Title\n\nSome **bold** text with a [link](https://e.com).\n\n```js\nconst code = 1\n```\n\n| A | B |\n|---|---|\n| one | two |\n')
   check('markdown: badges, images, HTML and code are stripped; links keep their text', md.length === 1 && md[0].heading === 'Title' && md[0].paras.join(' ') === 'Some bold text with a link. A — B one — two', JSON.stringify(md))
