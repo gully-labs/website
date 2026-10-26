@@ -69,7 +69,7 @@ function EntryBody({ e, active }: { e: NavEntry; active?: boolean }) {
     <>
       <span
         aria-hidden
-        className={`grid size-9 flex-none place-items-center rounded-tile border transition-colors ${active ? 'border-gold-line bg-[rgba(217,181,99,.08)] text-gold' : 'border-line bg-bg text-faint group-hover:text-gold group-focus-visible:text-gold'}`}
+        className={`grid size-9 flex-none place-items-center rounded-tile border transition-colors ${active ? 'border-gold-line bg-[rgba(0,210,255,.08)] text-gold' : 'border-line bg-bg text-faint group-hover:text-gold group-focus-visible:text-gold'}`}
       >
         <e.icon size={17} strokeWidth={1.75} />
       </span>
@@ -85,7 +85,7 @@ function EntryBody({ e, active }: { e: NavEntry; active?: boolean }) {
   )
 }
 
-const panelItem = 'group flex min-h-11 w-full items-start gap-3 rounded-tile p-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover data-[active]:bg-[rgba(217,181,99,.05)]'
+const panelItem = 'group flex min-h-11 w-full items-start gap-3 rounded-tile p-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover data-[active]:bg-[rgba(0,210,255,.05)]'
 
 function MenuGroup({ g, pathname, hash, wide, guard }: { g: NavGroup; pathname: string; hash: string; wide?: boolean; guard: Guard }) {
   const active = groupActive(g, pathname, hash)
@@ -159,7 +159,7 @@ function LaunchApp({ compact }: { compact?: boolean }) {
               onClick={menu.guard('apps')}
               data-menu-trigger="apps"
               aria-label="More apps"
-              className={`${btnGold} inline-flex min-h-11 w-11 items-center justify-center rounded-l-none border-l border-[rgba(13,20,28,.25)] data-[state=open]:bg-gold-hover`}
+              className={`${btnGold} inline-flex min-h-11 w-11 items-center justify-center rounded-l-none border-l border-[rgba(6,5,13,.25)] data-[state=open]:bg-gold-hover`}
             >
               <ChevronDown aria-hidden size={16} strokeWidth={2.25} className="gl-chevron" />
             </NavigationMenu.Trigger>
@@ -408,7 +408,7 @@ export function Header() {
   const focusMenuButton = useCallback(() => requestAnimationFrame(() => menuButton.current?.focus()), [])
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-[10px]">
+    <header className="sticky top-0 z-50 border-b border-line bg-[rgba(6,5,13,.86)] backdrop-blur-[10px]">
       <div className="flex min-h-16 items-center gap-3 px-page py-2 min-[1024px]:gap-6">
         <Link to={siteHref('/')} className="inline-flex min-h-11 flex-none items-center rounded-btn text-ink" aria-label="Gully Labs home">
           {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}

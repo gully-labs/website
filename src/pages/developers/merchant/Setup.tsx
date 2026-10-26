@@ -53,7 +53,7 @@ export function ProfileForm({ view, onChange }: { view: MerchantView; onChange: 
   const p = view.profile
   const [name, setName] = useState(p.name ?? '')
   const [logo, setLogo] = useState(p.logoSource ?? '')
-  const [accent, setAccent] = useState(p.accent ?? '#d9b563')
+  const [accent, setAccent] = useState(p.accent ?? '#00d2ff')
   const [email, setEmail] = useState(p.supportEmail ?? '')
   const [site, setSite] = useState(p.website ?? '')
   const [busy, setBusy] = useState(false)
@@ -88,7 +88,7 @@ export function ProfileForm({ view, onChange }: { view: MerchantView; onChange: 
         </Field>
         <Field label="Accent colour">
           <span className="flex items-center gap-2">
-            <input type="color" value={hexOk(accent) ? accent : '#d9b563'} onChange={(e) => setAccent(e.target.value)} className="h-11 w-14 cursor-pointer rounded-input border border-line-strong bg-bg p-1" aria-label="Pick the accent colour" />
+            <input type="color" value={hexOk(accent) ? accent : '#00d2ff'} onChange={(e) => setAccent(e.target.value)} className="h-11 w-14 cursor-pointer rounded-input border border-line-strong bg-bg p-1" aria-label="Pick the accent colour" />
             <input className={input} value={accent} onChange={(e) => setAccent(e.target.value)} maxLength={7} aria-label="Accent colour, hex" />
           </span>
         </Field>
@@ -107,7 +107,7 @@ export function ProfileForm({ view, onChange }: { view: MerchantView; onChange: 
       {/* Live preview of the checkout header. */}
       <div className="flex flex-col gap-2" aria-label="Checkout preview">
         <span className="text-[12px] text-dim">Checkout preview</span>
-        <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-bg p-3" style={{ borderTop: `3px solid ${hexOk(accent) ? accent : '#d9b563'}` }}>
+        <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-bg p-3" style={{ borderTop: `3px solid ${hexOk(accent) ? accent : '#00d2ff'}` }}>
           <span className="flex items-center gap-3">
             {/* The checkout's own marks: the logo, else the neutral store glyph (never a letter tile). */}
             {view.profile.logoUrl ? (
@@ -390,8 +390,8 @@ export function WalletForm({ view, onChange }: { view: MerchantView; onChange: (
         {splitOff.length ? `On ${splitOff.join(', ')} and for coin payments, the fee is invoiced on your weekly statement.` : ''}
       </InfoTip>
       {needTerms ? (
-        <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-input border border-gold-line bg-[rgba(217,181,99,.06)] px-3 py-2 text-[13px] leading-[1.5] text-ink-2 lg:col-span-2">
-          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-[3px] size-4 shrink-0 accent-[#d9b563]" required />
+        <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-input border border-gold-line bg-[rgba(0,210,255,.06)] px-3 py-2 text-[13px] leading-[1.5] text-ink-2 lg:col-span-2">
+          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-[3px] size-4 shrink-0 accent-[#00d2ff]" required />
           <span>
             I agree to the{' '}
             <ExtLink href={`${siteOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">

@@ -18,7 +18,7 @@ import { LineChart } from './LineChart'
    poller come first; every other part follows in one compact list. Nothing is guessed: a part the server
    could not read says "Not checked yet", one not set up on the server "Not configured". */
 
-const STATE_COLOR: Record<StatusState, string> = { up: '#74c27b', degraded: '#d9b563', down: '#ff8a7a', off: '#949daa', unknown: '#949daa' }
+const STATE_COLOR: Record<StatusState, string> = { up: '#3ddc97', degraded: '#00d2ff', down: '#ff8a7a', off: '#8f94b0', unknown: '#8f94b0' }
 const STATE_TEXT: Record<StatusState, string> = { up: 'text-green', degraded: 'text-gold', down: 'text-error', off: 'text-faint', unknown: 'text-faint' }
 const dot = (s: StatusState) => <span className="size-2 shrink-0 rounded-full" style={{ background: STATE_COLOR[s] }} aria-hidden />
 

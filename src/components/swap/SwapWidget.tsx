@@ -30,19 +30,19 @@ if (typeof window !== 'undefined') {
 const font = "'Hanken Grotesk', sans-serif"
 
 const theme: WidgetConfig['theme'] = {
-  container: { border: 'none', borderRadius: 0, boxShadow: 'none', maxWidth: '100%', minWidth: 0, background: '#151D28' },
+  container: { border: 'none', borderRadius: 0, boxShadow: 'none', maxWidth: '100%', minWidth: 0, background: '#0b0a16' },
   shape: { borderRadius: 10, borderRadiusSecondary: 6 },
   typography: { fontFamily: font },
   colorSchemes: {
     dark: {
       palette: {
-        primary: { main: '#D9B563', contrastText: '#0D141C' },
-        secondary: { main: '#F2D58A' },
-        success: { main: '#74C27B' },
+        primary: { main: '#00d2ff', contrastText: '#06050d' },
+        secondary: { main: '#66e4ff' },
+        success: { main: '#3ddc97' },
         error: { main: '#FF8A7A' },
-        background: { default: '#0D141C', paper: '#151D28' },
-        text: { primary: '#F4F2EC', secondary: '#AEB5BE' },
-        grey: { 200: '#F4F2EC', 300: '#D1D3D5', 700: '#3A4656', 800: '#1F2935' },
+        background: { default: '#06050d', paper: '#0b0a16' },
+        text: { primary: '#ffffff', secondary: '#a3a8c3' },
+        grey: { 200: '#ffffff', 300: '#d6d8e6', 700: '#34305a', 800: '#181630' },
       },
     },
   },

@@ -32,7 +32,7 @@ import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
-import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, PAY_URL, securityPrimary, securityRoute, securityShortPath, SECURITY_URL } from './hosts.mjs'
+import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
@@ -232,6 +232,9 @@ async function handleRequest(req, res) {
   // gullysecurity.xyz (hosts.mjs): the Security pages at the root with short paths, their API on the same origin; www.
   // and /security/... 301 to the short address, any other page 301s to gullylabs.xyz.
   const isSecurity = isSecurityHost(host)
+  // SECURITY_PRIMARY=1 (2026-10-25): Gully Security is its own app (gully-labs/gully-security) on gullysecurity.xyz.
+  // This server stops answering that host (421: the request reached the wrong server; DNS points at the new app).
+  if (isSecurity && securityPrimary()) return send(res, 421, 'gullysecurity.xyz is served by the Gully Security app, not by gully-web.', { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' })
   if (isSecurity) {
     const sr = securityRoute(host, url.pathname, url.search)
     if (sr.kind === 'redirect') {
@@ -242,8 +245,8 @@ async function handleRequest(req, res) {
   } else if (securityPrimary() && !isLocal && !isAdmin && !host.startsWith('docs.') && !isHolderMapsHost(host) && (req.method === 'GET' || req.method === 'HEAD')) {
     // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), the main site's Security pages move there for
     // good. Only the pages: /api/security/*, /api/developer/security/*, the report badges and Gully Pay stay put.
-    const short = securityShortPath(url.pathname)
-    if (short) return send(res, 301, '', { Location: SECURITY_URL + short + url.search, 'Cache-Control': 'public, max-age=3600' })
+    // Path preserved: the standalone app answers the old /security/* paths itself.
+    if (url.pathname === '/security' || url.pathname.startsWith('/security/')) return send(res, 301, '', { Location: SECURITY_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
   // embed.: widget.js, the iframe pages and badges are read by other sites: open CORS for GET, and this host sets no cookies.
   if (isEmbedHost(host)) {
@@ -332,6 +335,9 @@ async function handleRequest(req, res) {
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
   // The Gully Score (gully-score.mjs): the public index, one contract's score, and its embeddable badge.
+  // Once Security is its own app (SECURITY_PRIMARY), /api/score* is answered by it: GET/HEAD are proxied (old clients
+  // keep working without following a cross-origin redirect), anything else is a 308 to the same path there.
+  if (securityPrimary() && !isLocal && (url.pathname === '/api/score' || url.pathname.startsWith('/api/score/'))) return void (await proxyScore(req, res, url))
   if (url.pathname === '/api/score' || url.pathname.startsWith('/api/score/') || (url.pathname.startsWith('/score/') && url.pathname.endsWith('/badge.svg'))) {
     if (await handleScore(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
@@ -638,4 +644,22 @@ if (TLS_PORT) {
       socket.on('error', () => socket.destroy())
     })
     .listen(Number(TLS_PORT), () => console.log(`gully-web public listener on :${TLS_PORT}`))
+}
+
+
+/** The Gully Security app's origin for /api/score while clients migrate (SECURITY_API_ORIGIN overrides it in tests). */
+const securityApiOrigin = () => String(process.env.SECURITY_API_ORIGIN || SECURITY_URL).replace(/\/$/, '')
+async function proxyScore(req, res, url) {
+  const target = securityApiOrigin() + url.pathname + url.search
+  if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 308, '', { Location: target, 'Cache-Control': 'no-store' })
+  try {
+    const up = await fetch(target, { method: req.method, headers: { accept: req.headers.accept || 'application/json', 'x-forwarded-for': String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '') }, signal: AbortSignal.timeout(15_000), redirect: 'manual' })
+    const headers = { 'Content-Type': up.headers.get('content-type') || 'application/json', 'Cache-Control': up.headers.get('cache-control') || 'no-store', 'Access-Control-Allow-Origin': '*' }
+    const loc = up.headers.get('location')
+    if (loc) headers.Location = new URL(loc, target).toString()
+    const body = req.method === 'HEAD' ? '' : Buffer.from(await up.arrayBuffer())
+    return send(res, up.status, body, headers)
+  } catch {
+    return send(res, 502, JSON.stringify({ error: 'Gully Security could not be reached' }), { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' })
+  }
 }

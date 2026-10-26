@@ -167,7 +167,7 @@ export function Tracker() {
         )}
         {st.k === 'error' && <p className="m-0 font-mono text-[13px] text-error">The tracker could not be read just now. It retries every minute.</p>}
         {data?.chains.some((c) => c.poolsStale) && (
-          <p className="m-0 rounded-input border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-2 font-mono text-[12px] text-ink-2">
+          <p className="m-0 rounded-input border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-2 font-mono text-[12px] text-ink-2">
             Pool prices for {data.chains.filter((c) => c.poolsStale).map((c) => `${c.name} are from ${ageText(c.poolsAsOf, now)}`).join('; ')}: the price source is briefly limiting requests. Fair prices are live.
           </p>
         )}

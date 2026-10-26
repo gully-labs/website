@@ -110,7 +110,7 @@ export const contrast = (a: string, b: string) => {
 export const buttonText = (btn: string | undefined, text: string | undefined) => {
   if (!btn || !HEX.test(btn)) return text
   if (text && HEX.test(text) && contrast(btn, text) >= 4.5) return text
-  return contrast(btn, '#0d141c') >= contrast(btn, '#f4f2ec') ? '#0d141c' : '#f4f2ec'
+  return contrast(btn, '#06050d') >= contrast(btn, '#ffffff') ? '#06050d' : '#ffffff'
 }
 
 /** Telegram's theme params as our colour tokens (CSS custom properties). Unknown or missing ones keep the brand's. */

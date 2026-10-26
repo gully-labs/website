@@ -65,7 +65,7 @@ export function ServiceHeader({ icon: Icon, logo, title, eyebrow, desc, status, 
     <header className="flex flex-col gap-4" data-testid="service-header" style={accent ? { borderTop: `3px solid ${accent}` } : undefined}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         {logo ?? (
-          <span className="grid size-10 shrink-0 place-items-center rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] text-gold" aria-hidden>
+          <span className="grid size-10 shrink-0 place-items-center rounded-[10px] border border-gold-line bg-[rgba(0,210,255,.06)] text-gold" aria-hidden>
             <Icon size={18} />
           </span>
         )}

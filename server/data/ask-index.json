@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T00:47:24.677Z",
+ "updatedAt": "2026-10-26T05:05:03.721Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -2519,17 +2519,8 @@
    "title": "API pricing",
    "url": "https://gullylabs.xyz/pricing",
    "section": "Questions",
-   "text": "Paid in USDC, USDT or the chain's own coin , checked on chain, no custody. Plans & alerts docs",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
-  },
-  {
-   "id": "7ecec8552521",
-   "source": "Site",
-   "title": "API pricing",
-   "url": "https://gullylabs.xyz/pricing",
-   "section": "Questions",
    "text": "Q: How do I pay? A: In USDC, USDT or the chain's own coin on (live value). Pick a plan in the app dashboard, then a chain and an asset; it gives a quote with the exact amount and the Gully Labs treasury address, valid for 20 minutes. Pay with one click from a connected wallet, or send it from any wallet or exchange and paste the transaction hash. Q: What do I pay in? A: Prices are in US dollars. (live value) Stablecoins are counted one to one with the dollar. The chains' own coins(live value) are priced by the Chainlink USD feed on the same chain when you ask for the quote, rounded up; if that feed has not updated for two hours, no quote is given in that coin. Q: Do you hold my funds? A: No. Your coin or stablecoin goes straight to the Gully Labs treasury wallet in one transfer, the same as paying any address. There is no deposit, balance or card on file, and nothing is ever taken from your wallet without you signing it. Q: How is a payment checked? A: The server reads the transaction from a public node of its chain: it must have succeeded, paid the treasury at least the plan’s price in the quoted asset, and have enough blocks on top ((live value)). Each transaction counts once, on any chain. The plan starts the moment it is confirmed. Q: Which chains collect the merchant fee in one transaction?",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "updatedAt": "2026-10-26T05:05:03.721Z"
   },
   {
    "id": "4c508aaaaedc",
@@ -2699,17 +2690,8 @@
    "title": "Gully Labs home",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Gully Labs ships onchain venues and the tools around them: a stock token tracker with swaps and alerts, wallet-aware analytics, branded block explorers, a free API and crypto billing. Every venue's figures are read live.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "fd905ed462f7",
-   "source": "Site",
-   "title": "Gully Labs home",
-   "url": "https://gullylabs.xyz/",
-   "section": "Built here. Measured live.",
-   "text": "Gully Labs ships onchain venues and the tools around them: a stock token tracker with swaps and alerts, analytics that see the wallet, branded block explorers, a free API, and crypto billing. Try each one below. Launch app Start a project Ask Gully AI",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Gully Labs builds and runs Web3 products: Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio. Every figure on this page is read live. Gully network · live Gully Chain · txs / block",
+   "updatedAt": "2026-10-26T05:05:03.721Z"
   },
   {
    "id": "33b5b79c35a2",

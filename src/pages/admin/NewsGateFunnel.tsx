@@ -155,7 +155,7 @@ export function NewsGateFunnel({ token }: { token: string }) {
           </p>
         )}
         {draft && (
-          <div className="flex flex-col gap-3 rounded-lg border border-gold-line bg-[rgba(217,181,99,.05)] p-4" role="group" aria-label="Confirm the Start here post">
+          <div className="flex flex-col gap-3 rounded-lg border border-gold-line bg-[rgba(0,210,255,.05)] p-4" role="group" aria-label="Confirm the Start here post">
             <span className="font-mono text-[11px] tracking-[1px] text-gold">PREVIEW: THIS GOES TO THE PUBLIC CHANNEL</span>
             <div className="text-[14px] leading-[1.6] whitespace-pre-wrap text-ink-2">{renderTg(draft.text)}</div>
             <div className="flex flex-wrap gap-2">

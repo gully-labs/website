@@ -120,8 +120,8 @@ function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; 
           z: 3,
           markArea: {
             silent: true,
-            itemStyle: { color: 'rgba(217,181,99,.07)' },
-            label: { show: true, position: 'insideTopLeft', color: 'rgba(217,181,99,.65)', fontSize: 11, formatter: `±${inLinePct}% in line` },
+            itemStyle: { color: 'rgba(0,210,255,.07)' },
+            label: { show: true, position: 'insideTopLeft', color: 'rgba(0,210,255,.65)', fontSize: 11, formatter: `±${inLinePct}% in line` },
             data: [[{ yAxis: -inLinePct }, { yAxis: inLinePct }]],
           },
           markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: C.lineHover, width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },

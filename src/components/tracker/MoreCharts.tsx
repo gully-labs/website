@@ -136,7 +136,7 @@ export function LiquidityScatter({ rows, inLinePct, onSelect }: { rows: TrackerR
           emphasis: { focus: 'self', scale: 1.35, label: { show: true, position: 'top', color: C.ink, fontSize: 11, formatter: (p: ChartEvent) => pts[p.dataIndex]?.ticker ?? '' } },
           blur: { itemStyle: { opacity: 0.25 } },
           markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: C.lineHover, width: 1, type: 'solid' }, data: [{ yAxis: 0 }], animation: false },
-          markArea: { silent: true, itemStyle: { color: 'rgba(217,181,99,.05)' }, label: { show: false }, data: [[{ yAxis: -inLinePct }, { yAxis: inLinePct }]] },
+          markArea: { silent: true, itemStyle: { color: 'rgba(0,210,255,.05)' }, label: { show: false }, data: [[{ yAxis: -inLinePct }, { yAxis: inLinePct }]] },
         },
       ],
     }

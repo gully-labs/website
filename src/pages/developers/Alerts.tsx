@@ -63,7 +63,7 @@ function DirectionControl({ value, onChange, pct }: { value: GapDirection; onCha
 const fieldLabel = 'flex flex-col gap-2 text-[14px] text-ink-2'
 /** A compact row action (36px on desktop, 44px touch targets on narrow screens). */
 const rowBtn = 'inline-flex min-h-11 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-50 max-[859px]:min-h-11'
-const TG_BLUE = '#5aa9e6'
+const TG_BLUE = '#248bff'
 
 /**
  * The per-alert channel chips. Telegram is a toggle (aria-pressed): on when the alert sends there; it
@@ -89,7 +89,7 @@ export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram
           aria-label={`Telegram for ${alertName(a)}: ${on ? 'on' : 'off'}. ${why}`}
           onClick={() => act(a, 'telegram', { on: !on })}
           className="inline-flex min-h-11 items-center gap-[6px] rounded-full border px-3 text-[12px] transition-colors disabled:cursor-not-allowed max-[480px]:px-[10px]"
-          style={{ borderColor: broken ? 'var(--color-error-line)' : on ? TG_BLUE : '#2a3542', color: broken ? '#ff8a7a' : on ? '#5aa9e6' : '#8a94a1', opacity: disabled && !on ? 0.6 : 1 }}
+          style={{ borderColor: broken ? 'var(--color-error-line)' : on ? TG_BLUE : '#242140', color: broken ? '#ff8a7a' : on ? '#248bff' : '#9398b5', opacity: disabled && !on ? 0.6 : 1 }}
         >
           {on && <Check size={12} aria-hidden />}
           Telegram{broken ? ': no chat' : ''}
@@ -272,7 +272,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
         </label>
         {view.telegram.enabled && view.telegram.linked ? (
           <label className="flex min-h-11 items-center gap-3 text-[14px] text-ink-2">
-            <input type="checkbox" className="size-4 accent-[#d9b563]" checked={toTelegram} onChange={(e) => setToTelegram(e.target.checked)} />
+            <input type="checkbox" className="size-4 accent-[#00d2ff]" checked={toTelegram} onChange={(e) => setToTelegram(e.target.checked)} />
             <span>
               Also send to Telegram <span className="text-faint">({view.telegram.linked.chatTitle})</span>
             </span>
@@ -367,7 +367,7 @@ function AlertRow({ a, i, act, busy, telegram }: { a: GapAlert; i: number; act: 
                     <td className="px-3 py-2 whitespace-nowrap text-dim" title={new Date(d.at).toLocaleString()}>
                       {ago(d.at)}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: d.ok ? '#74c27b' : '#ff8a7a' }} title={d.error ?? undefined}>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: d.ok ? '#3ddc97' : '#ff8a7a' }} title={d.error ?? undefined}>
                       {d.status ?? 'no answer'}
                     </td>
                     <td className="max-w-[260px] truncate px-3 py-2 text-ink-2">
@@ -447,9 +447,9 @@ export function TelegramCard({ info, reload, compact = false, from = 'alerts' }:
           : 'One-time code, no chat id to copy. Works in groups.'
 
   return (
-    <div className="flex flex-col gap-3 rounded-[12px] border p-3" style={{ background: chat ? '#162a22' : '#111923', borderColor: chat ? '#2f6b35' : live ? '#554c34' : '#1f2935' }}>
+    <div className="flex flex-col gap-3 rounded-[12px] border p-3" style={{ background: chat ? '#0d2a22' : '#0a0914', borderColor: chat ? '#1f6b4f' : live ? '#0c4a5c' : '#181630' }}>
       <div className="flex flex-wrap items-center gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ background: info.enabled ? TG_BLUE : '#2a3542' }}>
+        <span className="grid size-9 shrink-0 place-items-center rounded-full" style={{ background: info.enabled ? TG_BLUE : '#242140' }}>
           <Send size={17} color="#fff" aria-hidden />
         </span>
         <span className="flex min-w-0 flex-[1_1_160px] flex-col">
@@ -493,7 +493,7 @@ export function SecretDialog({ secret, onClose }: { secret: Secret; onClose: () 
     <Dialog open={!!secret} onClose={onClose} title={secret?.title ?? ''} dismissable={false}>
       {secret ? (
         <div className="flex flex-col gap-4">
-          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
+          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
             <AlertTriangle size={18} className="mt-[2px] shrink-0 text-gold" aria-hidden />
             Copy it now; it is not shown again. Check the X-Gully-Signature header of every delivery with it. Lost it? Make a new one.
           </p>
@@ -664,7 +664,7 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
               Gap alerts
             </h2>
             {!view.alerts.length ? (
-              <GhostChart height={150} label="Your alerts will list here" colors={['#d9b563', '#74c27b']}>
+              <GhostChart height={150} label="Your alerts will list here" colors={['#00d2ff', '#3ddc97']}>
                 <BellRing size={20} className="text-gold" aria-hidden />
                 <span className="max-w-[440px] text-[13px] text-muted">Get a webhook{view.telegram.enabled ? ' or a Telegram message' : ''} when a stock token&apos;s gap to its fair price crosses your line.</span>
               </GhostChart>

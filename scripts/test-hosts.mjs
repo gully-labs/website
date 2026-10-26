@@ -1,3 +1,4 @@
+import http from 'node:http'
 // Host routing for the service hosts (pay., api., embed.; status. is a separate service and not routed here).
 //
 //   npm run test:hosts        (no build needed)
@@ -236,7 +237,7 @@ try {
       const hp = await get(HM, `/base/${TOKEN}`)
       check('primary: pages carry the holdermaps-primary tag (the browser follows it)', hp.text.includes('<meta name="holdermaps-primary" content="1" />') && (await get(MAIN, '/')).text.includes('holdermaps-primary'))
       const msm = (await get(MAIN, '/sitemap.xml')).text
-      check('primary: the main sitemap no longer lists Holder Map pages', !msm.includes('/holders') && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))
+      check('primary: the main sitemap no longer lists Holder Map pages', !msm.includes(`${MAIN}/holders`) && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))
       check('primary: links the server writes name holdermaps.xyz', holderPageUrl('base', TOKEN) === `https://holdermaps.xyz/base/${TOKEN}` && holderHomeUrl() === 'https://holdermaps.xyz/')
       const { holdersPageUrl } = await import('../server/telegram-ui.mjs')
       check('primary: Telegram map buttons name holdermaps.xyz', holdersPageUrl('robinhood', 'TSLA') === 'https://holdermaps.xyz/robinhood/TSLA')
@@ -316,21 +317,36 @@ try {
     // SECURITY_PRIMARY=1: gullysecurity.xyz is Gully Security's home.
     process.env.SECURITY_PRIMARY = '1'
     try {
-      for (const [p, to] of [['/security?a=1', '/?a=1'], ['/security/', '/'], ['/security/reports', '/reports'], [`/security/reports/${SEC_PUB}`, `/reports/${SEC_PUB}`], ['/security/sample', '/sample'], ['/security/terms', '/terms']]) {
+      // Gully Security is its own app now: the old paths move there as they are (it answers /security/* itself).
+      for (const p of ['/security?a=1', '/security/', '/security/reports', `/security/reports/${SEC_PUB}`, '/security/sample', '/security/terms', '/security/nope']) {
         const x = await get(MAIN, p)
-        check(`primary: main GET ${p.slice(0, 32)} is a 301 to gullysecurity.xyz${to.slice(0, 24)}`, x.status === 301 && x.headers.location === `https://gullysecurity.xyz${to}`, `${x.status} ${x.headers.location}`)
+        check(`primary: main GET ${p.slice(0, 32)} is a 301 to gullysecurity.xyz, path kept`, x.status === 301 && x.headers.location === `https://gullysecurity.xyz${p}`, `${x.status} ${x.headers.location}`)
       }
       check('primary: HEAD is redirected too, POST is not', (await get(MAIN, '/security', { method: 'HEAD' })).status === 301 && (await get(MAIN, '/security', { method: 'POST', body: {} })).status !== 301)
-      check('primary: an unknown /security/ path and the main legal page are not redirected', (await get(MAIN, '/security/nope')).status !== 301 && (await get(MAIN, '/legal/scan-terms')).status === 200)
+      check('primary: the main legal page and /securityx are not redirected', (await get(MAIN, '/securityx')).status !== 301 && (await get(MAIN, '/legal/scan-terms')).status === 200)
       check(
         'primary: the API, the scan checkout, the review form, badges and Gully Pay stay where they are',
         (await get(MAIN, '/api/security/reports')).status === 200 && (await get(MAIN, '/api/security/engine')).status !== 301 && (await get(MAIN, `/api/security/reports/${SEC_PUB}/badge.svg`)).status === 200 && (await get(MAIN, '/api/developer/security/scans')).status !== 301 && (await get(MAIN, '/api/security/review-requests', { method: 'POST', body: {}, headers: { 'x-requested-with': 'gully' } })).status === 400 && (await get(PAY, INV)).status !== 301 && (await get(API, '/api/security/reports')).status === 200,
       )
       check('primary: localhost, docs. and app. keep their /security behaviour (development, other hosts)', (await get(`localhost:${PORT}`, '/security')).status === 200 && (await get('docs.gullylabs.xyz', '/security')).headers.location !== 'https://gullysecurity.xyz/')
       const sp = await get(SEC, '/reports')
-      check('primary: pages carry the security-primary tag (the browser follows it)', sp.text.includes('<meta name="security-primary" content="1" />') && (await get(MAIN, '/')).text.includes('security-primary'))
+      check('primary: gully-web no longer serves gullysecurity.xyz (421, the standalone app does)', sp.status === 421 && (await get(`www.${SEC}`, '/')).status === 421 && (await get(SEC, '/api/security/reports')).status === 421, `${sp.status}`)
+      check('primary: main pages carry the security-primary tag (the browser follows it)', (await get(MAIN, '/')).text.includes('<meta name="security-primary" content="1" />'))
+      // /api/score* is answered by the Security app until clients migrate: GET proxied, POST a 308.
+      const stub = http.createServer((q, r) => { r.writeHead(200, { 'Content-Type': 'application/json' }); r.end(JSON.stringify({ proxied: q.url })) })
+      await new Promise((ok) => stub.listen(0, '127.0.0.1', ok))
+      process.env.SECURITY_API_ORIGIN = `http://127.0.0.1:${stub.address().port}`
+      try {
+        const sc = await get(MAIN, '/api/score/base/0xabc?x=1')
+        check('primary: GET /api/score/... is proxied to the Security app, path and query kept', sc.status === 200 && sc.text.includes('/api/score/base/0xabc?x=1') && sc.headers['access-control-allow-origin'] === '*', `${sc.status} ${sc.text.slice(0, 80)}`)
+        const sp2 = await get(MAIN, '/api/score', { method: 'POST', body: {} })
+        check('primary: a non-GET /api/score is a 308 to the Security app', sp2.status === 308 && sp2.headers.location === `${process.env.SECURITY_API_ORIGIN}/api/score`, `${sp2.status} ${sp2.headers.location}`)
+      } finally {
+        delete process.env.SECURITY_API_ORIGIN
+        stub.close()
+      }
       const msm = (await get(MAIN, '/sitemap.xml')).text
-      check('primary: the main sitemap no longer lists Security pages (but keeps the legal scan terms)', !msm.includes('/security') && msm.includes(`<loc>https://${MAIN}/legal/scan-terms</loc>`) && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))
+      check('primary: the main sitemap no longer lists Security pages (but keeps the legal scan terms)', !msm.includes(`${MAIN}/security`) && msm.includes(`<loc>https://${MAIN}/legal/scan-terms</loc>`) && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))
       check(
         'primary: links the server writes name gullysecurity.xyz',
         securityUrl('/security') === 'https://gullysecurity.xyz/' && securityUrl('/security#request') === 'https://gullysecurity.xyz/#request' && securityUrl('/security/reports') === 'https://gullysecurity.xyz/reports' && securityReportUrl(SEC_PUB) === `https://gullysecurity.xyz/reports/${SEC_PUB}` &&

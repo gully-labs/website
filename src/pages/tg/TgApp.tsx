@@ -93,7 +93,7 @@ export function TgApp() {
   return (
     <div style={vars as React.CSSProperties} className="min-h-[100svh] bg-bg font-sans text-ink">
       <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 pt-3 pb-[calc(24px+env(safe-area-inset-bottom))]">
-        {wa === undefined ? <Boot /> : !wa || !initData ? <OutsideTelegram /> : <Signed wa={wa} initData={initData} ink={vars['--color-ink'] ?? '#f4f2ec'} />}
+        {wa === undefined ? <Boot /> : !wa || !initData ? <OutsideTelegram /> : <Signed wa={wa} initData={initData} ink={vars['--color-ink'] ?? '#ffffff'} />}
       </main>
     </div>
   )

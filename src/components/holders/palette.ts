@@ -7,11 +7,11 @@ import type { HolderLabelKind } from '../../lib/holders'
    deployer) each has a family of its own. Red is kept for sells and bundled buys, so no cluster uses it. */
 
 /** Cluster hues, largest cluster first. Every one has >= 3:1 against the stage and >= 4.5:1 text on its fill. */
-export const CLUSTER_HUES = [C.gold, '#2fb59d', '#c98bdb', '#a3cf4a', '#e58fb3', '#5fd0d6', '#8f9bf0'] as const
+export const CLUSTER_HUES = [C.gold, '#2fb59d', '#9578e8', '#a3cf4a', '#e58fb3', '#5fd0d6', '#8f9bf0'] as const
 /** People in no cluster. */
 export const WALLET_HUE = '#74849b'
 /** Size bands for maps without links (Solana, top-holders-only): biggest to smallest. */
-export const BAND_HUES = ['#5aa9e6', '#2fb59d', '#8296b6', '#74849b'] as const
+export const BAND_HUES = ['#248bff', '#2fb59d', '#8296b6', '#74849b'] as const
 export const BAND_STEPS = [5, 1, 0.2] as const
 
 export type KindKey = HolderLabelKind | 'contract'

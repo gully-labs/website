@@ -19,7 +19,7 @@ export function QrCode({ value, size = 200, label }: { value: string; size?: num
   return (
     <svg role="img" aria-label={label} viewBox={`0 0 ${n} ${n}`} width={size} height={size} shapeRendering="crispEdges" className="block h-auto max-w-full rounded-[10px]">
       <rect width={n} height={n} fill="#fff" />
-      <path d={d} fill="#0d141c" />
+      <path d={d} fill="#06050d" />
     </svg>
   )
 }

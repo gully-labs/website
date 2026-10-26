@@ -9,7 +9,7 @@ import { toastHostReady } from './toast'
    focus to it. Its own motion is CSS transitions, which the global reduced-motion rule softens. */
 
 const base =
-  'group pointer-events-auto relative flex w-full font-sans items-start gap-3 overflow-hidden rounded-[10px] border border-line-strong bg-surface py-3 pr-12 pl-4 text-ink shadow-[0_16px_40px_rgba(0,0,0,.5)] before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-gold'
+  'group pointer-events-auto relative flex w-full font-sans items-start gap-3 overflow-hidden rounded-[22px] border border-line-strong bg-surface py-[14px] pr-12 pl-4 text-ink shadow-[0_16px_40px_rgba(0,0,0,.5)] after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[3px] after:rounded-full after:bg-gold after:origin-left after:animate-[pb_6s_linear_forwards]'
 
 export default function ToastHost() {
   // Children's effects run first, so the Toaster is subscribed by the time this flushes the queue.

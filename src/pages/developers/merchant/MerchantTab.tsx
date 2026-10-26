@@ -122,7 +122,7 @@ export function MerchantTab() {
         </div>
       )}
       {!f.paused && f.outstandingUsd > 0 && (
-        <button type="button" onClick={() => setSub('fees')} className="m-0 rounded-[12px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-2 text-left text-[13px] text-ink-2" role="status">
+        <button type="button" onClick={() => setSub('fees')} className="m-0 rounded-[12px] border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-2 text-left text-[13px] text-ink-2" role="status">
           A fee statement of {usd(f.outstandingUsd)} is open. Pay it within {f.pauseAfterDays} days of issue to keep checkout running. <span className="text-gold">Open Fees</span>
         </button>
       )}

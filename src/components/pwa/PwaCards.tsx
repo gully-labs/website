@@ -23,7 +23,7 @@ export function PwaCards({ kind, lift = false }: { kind: 'site' | 'app'; lift?: 
   // Above the dock: its button is 44 px tall at 20 px (16 on phones); in the app the dock sits above the tab bar.
   const place = `pointer-events-auto fixed right-5 z-40 w-[min(360px,calc(100vw-32px))] max-[600px]:right-4 print:hidden ${lift ? 'bottom-[calc(132px+env(safe-area-inset-bottom))]' : 'bottom-[76px]'}`
   const card = 'flex items-center gap-3 rounded-card border border-gold-line bg-surface-deep p-3 shadow-[0_10px_28px_rgba(0,0,0,.45)] animate-[gl-fade_.3s_ease_both]'
-  const btn = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-btn bg-gold px-3 text-[13px] font-semibold text-[#0d141c] transition-colors hover:bg-gold-hover'
+  const btn = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-btn bg-gold px-3 text-[13px] font-semibold text-[#06050d] transition-colors hover:bg-gold-hover'
   const close = 'inline-flex size-9 shrink-0 items-center justify-center rounded-btn text-faint transition-colors hover:text-ink'
 
   if (update) {

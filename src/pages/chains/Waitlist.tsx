@@ -50,7 +50,7 @@ function Segmented({ label, name, value, onChange, options }: { label: string; n
       <span className={fieldLabel}>{label}</span>
       <div className="flex flex-wrap gap-2">
         {options.map(([v, l]) => (
-          <label key={v} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-gold ${value === v ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`}>
+          <label key={v} className={`inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-[14px] transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-gold ${value === v ? 'border-gold bg-[rgba(0,210,255,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`}>
             <input type="radio" name={name} value={v} checked={value === v} onChange={() => onChange(v)} className="sr-only" />
             {l}
           </label>

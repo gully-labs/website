@@ -314,8 +314,8 @@ function SessionsCard() {
               height={110}
               label={`Sign-ins per day over the last 30 days: ${list.length} live sessions.`}
               kinds={[
-                { id: 'in', name: 'signed in', color: '#d9b563' },
-                { id: 'seen', name: 'last seen', color: '#5aa9e6' },
+                { id: 'in', name: 'signed in', color: '#00d2ff' },
+                { id: 'seen', name: 'last seen', color: '#248bff' },
               ]}
               days={Array.from({ length: 30 }, (_, i) => {
                 const d = new Date()

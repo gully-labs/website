@@ -131,7 +131,7 @@ export function LedgerChart({ data, state }: { data: Stats | null; state: State 
               return `<div style="display:flex;gap:14px;justify-content:space-between"><span><span style="color:${p.accent}">■</span> ${esc(p.name)}</span><b style="font-weight:500;color:${v === null ? C.faint : C.ink}">${v === null ? 'no reading' : fmtUsd(v)}</b></div>`
             })
             .join('')
-          return `<div style="color:#949daa;margin-bottom:4px">${fmtDay(t)}${i === D - 1 && isToday ? ' · today, so far' : ''}</div>${rows || '<div style="color:#8a94a1">every venue hidden</div>'}<div style="display:flex;gap:14px;justify-content:space-between;border-top:1px solid #2a3542;margin-top:4px;padding-top:4px"><span>${totalWord}</span><b style="font-weight:600;color:#d9b563">${fmtUsd(totals[i])}</b></div>`
+          return `<div style="color:#8f94b0;margin-bottom:4px">${fmtDay(t)}${i === D - 1 && isToday ? ' · today, so far' : ''}</div>${rows || '<div style="color:#9398b5">every venue hidden</div>'}<div style="display:flex;gap:14px;justify-content:space-between;border-top:1px solid #242140;margin-top:4px;padding-top:4px"><span>${totalWord}</span><b style="font-weight:600;color:#00d2ff">${fmtUsd(totals[i])}</b></div>`
         },
       },
       series: [

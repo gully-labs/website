@@ -195,7 +195,7 @@ function Skeleton({ error, onRetry }: { error: string | null; onRetry: () => voi
   return (
     <div className="flex flex-col gap-3" aria-busy={!error}>
       <div className="relative h-[140px] overflow-hidden rounded-card border border-line bg-card-token">
-        <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.10),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
+        <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(0,210,255,.10),transparent)]" style={{ animation: 'gl-scan 1.6s linear infinite' }} />
         <span className="absolute inset-0 grid place-items-center px-4 text-center font-mono text-[12px] text-faint" role={error ? 'alert' : 'status'}>
           {error ?? 'Reading the live status…'}
         </span>

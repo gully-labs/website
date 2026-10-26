@@ -91,7 +91,7 @@ export default function DeepcoreView({ ctx }: { ctx: ServiceCtx }) {
           {stats.k === 'loading' ? (
             <Skeleton h={180} />
           ) : daily.length >= 2 ? (
-            <div className="min-w-0 [&>span]:!w-full"><KeySpark values={daily.map((p) => p.v)} labels={daily.map((p) => new Date(p.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))} color="#d9b563" width={420} height={180} label={`DeepCore daily volume over ${daily.length} days`} /></div>
+            <div className="min-w-0 [&>span]:!w-full"><KeySpark values={daily.map((p) => p.v)} labels={daily.map((p) => new Date(p.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))} color="#00d2ff" width={420} height={180} label={`DeepCore daily volume over ${daily.length} days`} /></div>
           ) : (
             <GhostChart height={180} label={venue ? 'Volume will draw here' : 'DeepCore’s figures are unreadable right now'} badge={venue ? undefined : false} />
           )}

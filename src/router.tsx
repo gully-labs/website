@@ -53,6 +53,9 @@ const mainRoutes = [
       { path: '/chain-kit', element: <ChainKitRoute /> },
       { path: '/chains', element: <ChainsRoute /> },
       { path: '/ask', element: <AskRoute /> },
+      // The six products (lab console): the list and one compact page each; each links out to its own domain.
+      { path: '/products', lazy: () => import('./pages/products/ProductsIndex').then((m) => ({ Component: m.ProductsIndex })) },
+      { path: '/products/:key', lazy: () => import('./pages/products/ProductPage').then((m) => ({ Component: m.ProductPage })) },
       // Our own projects with live numbers, what the code integrates with, and the partner page with its two forms.
       { path: '/ecosystem', lazy: () => import('./pages/Ecosystem').then((m) => ({ Component: m.Ecosystem })) },
       { path: '/partners', lazy: () => import('./pages/Partners').then((m) => ({ Component: m.Partners })) },

@@ -165,7 +165,7 @@ export function MiniSpark({ data: target, label, xs, labels, fmt = (v) => v.toLo
           {atV !== null && <i aria-hidden className="pointer-events-none absolute -m-[3.5px] block size-[7px] rounded-full border-[1.5px] border-bg" style={{ left: `${X(at)}%`, top: `${Y(atV)}%`, background: color }} />}
           <span
             aria-live="polite"
-            className="pointer-events-none absolute bottom-full z-10 mb-1 rounded-input border border-line-strong bg-surface-deep px-2 py-1 font-mono text-[11px] whitespace-nowrap text-ink shadow-[0_8px_24px_rgba(13,20,28,.6)]"
+            className="pointer-events-none absolute bottom-full z-10 mb-1 rounded-input border border-line-strong bg-surface-deep px-2 py-1 font-mono text-[11px] whitespace-nowrap text-ink shadow-[0_8px_24px_rgba(6,5,13,.6)]"
             style={{ left: `${X(at)}%`, transform: `translateX(${X(at) > 70 ? '-100%' : X(at) < 30 ? '0' : '-50%'})` }}
           >
             {labels?.[at] && <span className="mr-2 text-faint">{labels[at]}</span>}

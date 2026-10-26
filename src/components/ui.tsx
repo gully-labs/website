@@ -2,20 +2,20 @@ import type { ReactNode } from 'react'
 
 /** Primary gold CTA. Size (padding, font-size) is added per use. */
 export const btnGold =
-  'rounded-btn bg-gold font-semibold text-bg transition-colors duration-150 hover:bg-gold-hover hover:text-bg'
+  'gl-btn rounded-full bg-gold font-semibold text-bg transition-[background-color,box-shadow,transform] duration-150 hover:shadow-[0_0_0_4px_rgba(0,210,255,.2)] active:scale-[.98]'
 
 /** Secondary outline button. */
 export const btnOutline =
-  'whitespace-nowrap rounded-btn border border-line-strong bg-transparent font-medium text-ink transition-colors duration-150 hover:border-gold hover:text-ink'
+  'gl-btn whitespace-nowrap rounded-full border border-line-strong bg-transparent font-semibold text-ink transition-[border-color,transform] duration-150 hover:border-chart-blue hover:text-ink active:scale-[.98]'
 
-export const eyebrow = 'font-mono text-[13px] tracking-[1.5px] text-gold'
+export const eyebrow = 'font-sans text-[12px] font-semibold uppercase tracking-[.08em] text-gold'
 
 /* The heading scale (index.css --text-h1 to --text-h4): page title, section title, sub-section title,
    card title. Every page uses these, so a page's headings step down the same way everywhere. */
-export const h1 = 'm-0 font-display text-h1 font-extrabold uppercase'
-export const h2 = 'm-0 font-display text-h2 font-extrabold uppercase'
-export const h3 = 'm-0 font-display text-h3 font-extrabold uppercase'
-export const h4 = 'm-0 font-display text-h4 font-bold uppercase'
+export const h1 = 'm-0 font-display text-h1 font-bold tracking-[-.02em]'
+export const h2 = 'm-0 font-display text-h2 font-bold tracking-[-.02em]'
+export const h3 = 'm-0 font-display text-h3 font-bold tracking-[-.02em]'
+export const h4 = 'm-0 font-display text-h4 font-bold'
 
 /** The one line a chart or list shows when it has nothing to draw yet. */
 export const emptyNote = 'm-0 py-6 font-mono text-[12px] leading-[1.5] text-faint'

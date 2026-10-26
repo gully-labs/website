@@ -108,24 +108,24 @@ function Chart({ row, range }: { row: TrackerRow; range: Range }) {
       <svg aria-hidden viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block h-[300px] w-full">
         <defs>
           <linearGradient id="td-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#d9b563" stopOpacity=".26" />
-            <stop offset="1" stopColor="#d9b563" stopOpacity="0" />
+            <stop offset="0" stopColor="#00d2ff" stopOpacity=".26" />
+            <stop offset="1" stopColor="#00d2ff" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <g stroke="#1c2531">
+        <g stroke="#121024">
           <line x1="0" y1="65" x2={W} y2="65" />
           <line x1="0" y1="130" x2={W} y2="130" />
           <line x1="0" y1="195" x2={W} y2="195" />
         </g>
         {breaks.size === 0 && <path d={area} fill="url(#td-area)" style={{ d: `path('${area}')`, ...anim } as React.CSSProperties} />}
-        <path d={path(3)} fill="none" stroke="#949daa" strokeWidth={1.5} strokeDasharray="4 4" vectorEffect="non-scaling-stroke" style={{ d: `path('${path(3)}')`, ...anim } as React.CSSProperties} />
-        <path d={line} fill="none" stroke="#d9b563" strokeWidth={2.2} vectorEffect="non-scaling-stroke" style={{ d: `path('${line}')`, ...anim } as React.CSSProperties} />
+        <path d={path(3)} fill="none" stroke="#8f94b0" strokeWidth={1.5} strokeDasharray="4 4" vectorEffect="non-scaling-stroke" style={{ d: `path('${path(3)}')`, ...anim } as React.CSSProperties} />
+        <path d={line} fill="none" stroke="#00d2ff" strokeWidth={2.2} vectorEffect="non-scaling-stroke" style={{ d: `path('${line}')`, ...anim } as React.CSSProperties} />
         {/* A reading with no neighbour on either side (a gap in the recordings) is drawn as a dot. */}
-        {pts.map((p, i) => ((i === 0 || breaks.has(i)) && (i === N - 1 || breaks.has(i + 1)) ? <circle key={p[0]} cx={X(p[0])} cy={Y(p[2])} r="2.5" fill="#d9b563" /> : null))}
+        {pts.map((p, i) => ((i === 0 || breaks.has(i)) && (i === N - 1 || breaks.has(i + 1)) ? <circle key={p[0]} cx={X(p[0])} cy={Y(p[2])} r="2.5" fill="#00d2ff" /> : null))}
         {tip && (
           <>
-            <line x1={X(tip[0])} y1="0" x2={X(tip[0])} y2={H} stroke="#3a4656" vectorEffect="non-scaling-stroke" />
-            <circle cx={X(tip[0])} cy={Y(tip[2])} r="4" fill="#d9b563" stroke="#151d28" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+            <line x1={X(tip[0])} y1="0" x2={X(tip[0])} y2={H} stroke="#34305a" vectorEffect="non-scaling-stroke" />
+            <circle cx={X(tip[0])} cy={Y(tip[2])} r="4" fill="#00d2ff" stroke="#0b0a16" strokeWidth="2" vectorEffect="non-scaling-stroke" />
           </>
         )}
       </svg>
@@ -229,7 +229,7 @@ export default function TrackerDemo(): JSX.Element {
           <span className="font-mono text-[16px]">{row.onchain === null ? <span className="text-faint">price unreadable</span> : fmtPrice(row.onchain)}</span>
           <span
             className="rounded-[4px] px-2 py-[2px] font-mono text-[12px] transition-colors duration-300"
-            style={{ color: c ?? '#aeb5be', background: c ? `${c}26` : '#1c2531' }}
+            style={{ color: c ?? '#a3a8c3', background: c ? `${c}26` : '#121024' }}
           >
             {row.gapPct === null ? STATUS_LABEL[row.status] : `gap ${fmtGap(row.gapPct)} · ${STATUS_LABEL[row.status].toLowerCase()}`}
           </span>

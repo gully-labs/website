@@ -383,7 +383,7 @@ export function LaunchWizard({ onLaunched, goChainKit, onDone }: { onLaunched: (
               {TYPES.map((t) => {
                 const on = d.type === t.id
                 return (
-                  <button key={t.id} type="button" role="radio" aria-checked={on} onClick={() => edit('type', { type: t.id })} data-type={t.id} className={`flex min-h-11 flex-col gap-2 rounded-card border p-3 text-left transition-colors ${on ? 'border-gold bg-[rgba(217,181,99,.06)]' : 'border-line-strong hover:border-line-hover'}`}>
+                  <button key={t.id} type="button" role="radio" aria-checked={on} onClick={() => edit('type', { type: t.id })} data-type={t.id} className={`flex min-h-11 flex-col gap-2 rounded-card border p-3 text-left transition-colors ${on ? 'border-gold bg-[rgba(0,210,255,.06)]' : 'border-line-strong hover:border-line-hover'}`}>
                     <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
                       <span className={`grid size-5 place-items-center rounded-full border ${on ? 'border-gold bg-gold text-bg' : 'border-line-strong'}`}>{on && <Check size={12} strokeWidth={3} aria-hidden style={{ animation: 'gl-check-pop .35s cubic-bezier(.2,1.4,.4,1) both' }} />}</span>
                       {t.title}

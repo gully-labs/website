@@ -114,7 +114,7 @@ export function ScorePage() {
     <>
       <Seo title={r ? `${title} Gully Score on ${r.chainName}` : 'Gully Score'} description={r ? `${title} on ${r.chainName} scores ${r.score ?? 'N/A'} on the Gully Score, from public evidence only.` : 'A contract’s Gully Score, from public evidence only.'} noindex={!!r && !r.listed} />
       <section className="relative overflow-clip px-page pt-[56px] pb-10 max-[600px]:pt-8">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.12),transparent_62%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.12),transparent_62%)]" />
         <div className="relative flex flex-col gap-6">
           <Link to="/score" className="inline-flex min-h-11 w-fit items-center gap-2 font-mono text-[12px] text-dim hover:text-ink" style={rise(0)}>
             <ArrowLeft aria-hidden size={14} /> All scores

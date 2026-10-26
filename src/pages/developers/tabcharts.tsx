@@ -18,8 +18,8 @@ import { AlertTimeline, LiveMarker, QuotaRing, StackedDays, type DayStack } from
      PlanUsage         keys and alerts in use against the plan, and what the workspace has paid in USD */
 
 const fmt = (n: number) => n.toLocaleString('en-US')
-const OK = '#74c27b'
-const ERR = '#f2704a'
+const OK = '#3ddc97'
+const ERR = '#ff6b81'
 
 /** The last `n` local days as empty stacks, oldest first, with a lookup by day. */
 function emptyDays(n: number) {

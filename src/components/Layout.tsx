@@ -1,19 +1,18 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigationType, useSearchParams } from 'react-router'
 import type { ServiceType } from '../content/services'
-import { ClosingCta } from './ClosingCta'
 import { ContactContext } from './ContactContext'
 import { emptyForm, type ContactForm } from './contactForm'
-import { AnnouncementBar } from './AnnouncementBar'
-import { Footer } from './Footer'
-import { Header } from './Header'
+import { ConsoleFooter, ConsoleHeader } from '../console/Chrome'
+import { LiveProvider } from '../console/live'
+import { ConsoleToasts } from '../console/ui'
+import '../console/console.css'
 import { scrollBehavior } from './LayoutNav'
 import { BackToTop } from './LayoutScroll'
 import { AskLauncher } from './ask/AskLauncher'
 import { PwaCards } from './pwa/PwaCards'
 import { scrollToAnchor } from '../lib/anchors'
 import { prefetchPath } from '../pages/routeChunks'
-import { isHolderMapsHost, isSecurityHost } from '../site-host'
 
 // The contact modal (and the animation library it uses) loads the first time it is opened, so the
 // landing never downloads it.
@@ -92,26 +91,28 @@ export function Layout() {
 
   return (
     <ContactContext.Provider value={api}>
-        <div className="min-h-screen overflow-x-clip bg-bg font-sans text-ink [container-type:inline-size]">
+      <LiveProvider>
+        <div className="lc min-h-screen overflow-x-clip bg-bg font-sans text-ink [container-type:inline-size]">
           <a
             href="#main"
             className="sr-only z-60 rounded-btn bg-gold px-4 py-2 text-bg focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
           >
             Skip to content
           </a>
-          {!pathname.startsWith('/holders') && !isHolderMapsHost() && !isSecurityHost() && <AnnouncementBar />}
-          <Header />
+          <ConsoleHeader />
           <main id="main" key={pathname} tabIndex={-1} className="animate-[gl-fade_.25s_ease-out_both] outline-none">
             <Outlet />
           </main>
-          <ClosingCta />
-          <Footer />
+          <div className="lcp">
+            <ConsoleFooter />
+          </div>
+          <ConsoleToasts />
           {/* The bottom-right dock: Back to top, then Gully AI (also ⌘K / Ctrl+K). Toasts stack above it (offset
               76 px, 72 px on phones); the site has no cookie bar or bottom bar for it to cover. On /ask the
               chat is the page, so only the shortcut stays. */}
           <div className="pointer-events-none fixed right-5 bottom-5 z-40 flex items-center gap-2 max-[600px]:right-4 max-[600px]:bottom-4 print:hidden" data-testid="corner-dock">
             <BackToTop />
-            <AskLauncher variant="floating" hideButton={pathname === '/ask'} />
+            <AskLauncher variant="floating" hideButton={pathname === '/ask' || pathname === '/'} />
           </div>
           <PwaCards kind="site" />
           {everOpened && (
@@ -120,6 +121,7 @@ export function Layout() {
             </Suspense>
           )}
         </div>
-      </ContactContext.Provider>
+      </LiveProvider>
+    </ContactContext.Provider>
   )
 }

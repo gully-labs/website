@@ -35,7 +35,7 @@ export type RingState = 'waiting' | 'checking' | 'pending' | 'done'
 
 export function ConfirmRing({ n, needed, state, chain }: { n: number; needed: number; state: RingState; chain: string }) {
   const have = state === 'done' ? needed : Math.min(n, needed)
-  const color = state === 'done' ? '#74c27b' : C.gold
+  const color = state === 'done' ? '#3ddc97' : C.gold
   const option = useMemo(
     () => ({
       tooltip: { show: false },
@@ -133,7 +133,7 @@ function PriceChartBody({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'symbo
           title: isQuote ? `Chainlink price the quote used · ${hhmmss(t)} UTC` : `Read at ${hhmmss(t)} UTC`,
           rows: [
             { name: `${asset.symbol} / USD`, value: fmtUsd(v), color: C.gold },
-            ...(q && !isQuote ? [{ name: 'vs quote', value: `${v >= q ? '+' : ''}${(((v - q) / q) * 100).toFixed(3)}%`, valueColor: v >= q ? '#74c27b' : C.error }] : []),
+            ...(q && !isQuote ? [{ name: 'vs quote', value: `${v >= q ? '+' : ''}${(((v - q) / q) * 100).toFixed(3)}%`, valueColor: v >= q ? '#3ddc97' : C.error }] : []),
           ],
         })
       }),

@@ -135,7 +135,7 @@ function Glance() {
       {GLANCE.map(({ icon: Icon, t, d, s }, i) => (
         <li key={t} style={{ animation: `gl-rise .5s ${(0.1 + i * 0.06).toFixed(2)}s cubic-bezier(.2,.8,.2,1) both` }}>
           <a href={`#s${s}`} className="flex h-full min-h-11 items-start gap-3 rounded-card border border-line bg-surface px-3 py-3 transition-colors hover:border-gold-line">
-            <span className="grid size-8 flex-none place-items-center rounded-[8px] border border-gold-line bg-[rgba(217,181,99,.06)] text-gold">
+            <span className="grid size-8 flex-none place-items-center rounded-[8px] border border-gold-line bg-[rgba(0,210,255,.06)] text-gold">
               <Icon size={16} aria-hidden />
             </span>
             <span className="flex min-w-0 flex-col gap-[2px]">

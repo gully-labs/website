@@ -161,7 +161,7 @@ export function List({ children }: { children: ReactNode }) {
 
 export function Callout({ label, children, tone = 'gold' }: { label: string; children: ReactNode; tone?: 'gold' | 'plain' }) {
   return (
-    <div className={`flex flex-col gap-2 rounded-card border p-card ${tone === 'gold' ? 'border-gold-line bg-[rgba(217,181,99,.06)]' : 'border-line bg-card-token'}`}>
+    <div className={`flex flex-col gap-2 rounded-card border p-card ${tone === 'gold' ? 'border-gold-line bg-[rgba(0,210,255,.06)]' : 'border-line bg-card-token'}`}>
       <span className="font-mono text-[11px] tracking-[1px] text-gold">{label}</span>
       <div className="text-[14.5px] leading-[1.65] text-ink-2">{children}</div>
     </div>

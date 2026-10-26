@@ -233,7 +233,7 @@ export function DocsLayout() {
       <a href="#docs-main" className="absolute top-2 left-2 z-50 inline-flex min-h-11 -translate-y-20 items-center rounded-sm bg-gold px-3 text-[14px] font-semibold text-bg focus:translate-y-0">
         Skip to content
       </a>
-      <header className="sticky top-0 z-40 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-line bg-[rgba(6,5,13,.86)] backdrop-blur-md">
         <div className="mx-auto flex h-[64px] max-w-[1440px] items-center justify-between gap-4 px-6 max-[600px]:gap-2 max-[600px]:px-4">
           <div className="flex min-w-0 items-center gap-3 max-[600px]:gap-2">
             <button

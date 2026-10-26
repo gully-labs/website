@@ -56,7 +56,7 @@ export function DoubleRing({ outer, inner, size = 132, children, label }: { oute
         ],
       }
     }
-    return { tooltip: { show: false }, series: [ring('outer', outer, C.gold, ['74%', '94%']), ring('inner', inner, '#5aa9e6', ['50%', '66%'])] }
+    return { tooltip: { show: false }, series: [ring('outer', outer, C.gold, ['74%', '94%']), ring('inner', inner, '#248bff', ['50%', '66%'])] }
   }, [outer, inner])
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
@@ -125,7 +125,7 @@ export function GhostSpark({ color, w = 80, h = 28 }: { color: string; w?: numbe
 }
 
 /** A ghosted chart area: two curves drawing in, a scan line, and the label in the middle. */
-export function GhostCurves({ height, title, children, colors = ['#d9b563', '#5aa9e6'] }: { height: number; title: string; children?: ReactNode; colors?: [string, string] }) {
+export function GhostCurves({ height, title, children, colors = ['#00d2ff', '#248bff'] }: { height: number; title: string; children?: ReactNode; colors?: [string, string] }) {
   const [c0, c1] = colors
   const option = useMemo(() => ({ ...ghostAxes(Math.round(height * 0.3)), series: [ghostLine('a', GHOST_A, c0, { fill: 0.16 }), ghostLine('b', GHOST_B, c1)] }), [height, c0, c1])
   return (
@@ -133,7 +133,7 @@ export function GhostCurves({ height, title, children, colors = ['#d9b563', '#5a
       <div className="absolute inset-0" aria-hidden>
         <EChart option={option} height={height} skeleton="line" label="Shape only, not your data" />
       </div>
-      <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.07),transparent)]" style={{ animation: 'gl-scan 4.5s linear infinite' }} />
+      <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(0,210,255,.07),transparent)]" style={{ animation: 'gl-scan 4.5s linear infinite' }} />
       <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
         <span className="rounded-full border border-line-strong bg-surface px-2 py-[2px] font-mono text-[11px] tracking-[1px] text-faint">SHAPE ONLY · NOT YOUR DATA</span>
         <b className="text-[15px] font-semibold text-ink">{title}</b>

@@ -44,7 +44,7 @@ export function AnimatedNumber({ value, format = NF.int, prefix, suffix, fallbac
   const prev = useRef(value)
   useEffect(() => {
     const el = box.current
-    if (prev.current !== value && reduced && el?.animate && known) el.animate([{ color: '#f2d58a' }, { color: getComputedStyle(el).color }], { duration: 200, easing: 'linear' })
+    if (prev.current !== value && reduced && el?.animate && known) el.animate([{ color: '#66e4ff' }, { color: getComputedStyle(el).color }], { duration: 200, easing: 'linear' })
     prev.current = value
   }, [value, reduced, known])
 

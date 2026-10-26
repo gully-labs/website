@@ -14,7 +14,7 @@ export const panel = 'flex min-w-0 flex-col gap-3 rounded-card border border-lin
 /** The one page title of every app page (ServiceHeader): 20 px, never 18/22/24/30. */
 export const pageTitle = 'm-0 text-[20px] leading-tight font-semibold text-ink'
 export const panelTitle = 'm-0 text-[15px] leading-tight font-semibold text-ink'
-/** Small grey label above a value (the design's 11–12px #949daa). */
+/** Small grey label above a value (the design's 11–12px #8f94b0). */
 export const label = 'text-[12px] text-dim'
 export const mono = 'font-mono text-[11px] text-faint'
 
@@ -31,7 +31,7 @@ export const chip = (on: boolean, monoFont = false) =>
   `inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-3 text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${monoFont ? 'font-mono text-[12px]' : ''} ${on ? 'border-gold bg-gold text-bg' : 'border-line-strong bg-transparent text-ink-2 hover:border-gold hover:text-ink'}`
 
 /** Series colours for API keys, in account order; 429s are always the error red. */
-export const KEY_COLORS = ['#d9b563', '#5aa9e6', '#74c27b', '#c98bdb', '#26ab94', '#f2704a', '#aeb5be']
+export const KEY_COLORS = ['#00d2ff', '#248bff', '#3ddc97', '#9578e8', '#20a0c4', '#ff6b81', '#a3a8c3']
 export const LIMITED_COLOR = '#ff8a7a'
-export const BLUE = '#5aa9e6'
+export const BLUE = '#248bff'
 export const keyColor = (i: number) => KEY_COLORS[Math.max(0, i) % KEY_COLORS.length]

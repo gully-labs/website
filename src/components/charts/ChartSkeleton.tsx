@@ -20,8 +20,8 @@ export function ChartSkeleton({ variant = 'bars', className = '' }: { variant?: 
       )}
       {variant === 'line' && (
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="size-full" style={pulse(0)}>
-          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12 L100,40 L0,40 Z" fill="#1f2935" />
-          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12" fill="none" stroke="#2a3542" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12 L100,40 L0,40 Z" fill="#181630" />
+          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12" fill="none" stroke="#242140" strokeWidth={2} vectorEffect="non-scaling-stroke" />
         </svg>
       )}
       {variant === 'ring' && (

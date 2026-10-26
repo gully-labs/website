@@ -7,8 +7,8 @@ export type Launch = { key: string; chainId: number; chainKey?: string; chainNam
 export type Launches = { state: 'ok' | 'stale' | 'unreadable'; launches: Launch[]; asOf: string | null; chains: { chainId: number; name: string; status: 'ok' | 'unreadable'; total: number | null }[]; error: string | null; pollSeconds: number }
 export type LaunchesLoad = { k: 'loading' } | { k: 'error' } | { k: 'ok'; data: Launches }
 
-export const DEEPCORE_COLORS: Record<number, string> = { 4663: '#d9b563', 56: '#f2d58a', 8453: '#5aa9e6', 999: '#26ab94' }
-export const deepcoreColor = (id: number) => DEEPCORE_COLORS[id] ?? '#aeb5be'
+export const DEEPCORE_COLORS: Record<number, string> = { 4663: '#00d2ff', 56: '#66e4ff', 8453: '#248bff', 999: '#20a0c4' }
+export const deepcoreColor = (id: number) => DEEPCORE_COLORS[id] ?? '#a3a8c3'
 
 /** The launch list, re-read every `everyMs` (a minute by default); a failed re-read keeps the last good one. */
 export function useLaunches(everyMs = 60_000): LaunchesLoad {

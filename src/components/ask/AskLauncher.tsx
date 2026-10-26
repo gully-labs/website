@@ -114,7 +114,7 @@ export function AskLauncher({ variant = 'header', hideButton = false }: { varian
             aria-keyshortcuts="Meta+K Control+K"
             title={`Gully AI · ${shortcut}`}
             data-testid="ask-launcher"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-[rgba(217,181,99,.08)] px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-[rgba(217,181,99,.14)]"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-[rgba(0,210,255,.08)] px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-[rgba(0,210,255,.14)]"
           >
             <Sparkles size={16} aria-hidden />
             <span className="max-[520px]:sr-only">Gully AI</span>
@@ -124,7 +124,7 @@ export function AskLauncher({ variant = 'header', hideButton = false }: { varian
       {open &&
         createPortal(
           <div className="fixed inset-0 z-[80]" role="presentation">
-            <div aria-hidden className="absolute inset-0 bg-[rgba(13,20,28,.62)]" style={{ animation: 'gl-fade .2s ease both' }} onClick={() => setOpen(false)} />
+            <div aria-hidden className="absolute inset-0 bg-[rgba(6,5,13,.62)]" style={{ animation: 'gl-fade .2s ease both' }} onClick={() => setOpen(false)} />
             <div
               ref={dialog}
               role="dialog"
