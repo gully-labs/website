@@ -1,4 +1,4 @@
-import { AlertTriangle, BookOpen, ChartNoAxesCombined, KeyRound, Loader2, ShieldCheck, Wallet } from 'lucide-react'
+import { AlertTriangle, BookOpen, ChartNoAxesCombined, Loader2, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
@@ -10,6 +10,7 @@ import { InviteLanding } from './Invite'
 import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, restoreFocusSoon, type Portal } from './portal'
 import { mono, pillGold, pillLine } from './styles'
 import { BadgeFooterRow } from '../../components/PoweredByBadge'
+import { AppLauncher } from '../../console/Launcher'
 
 /* The Gully Labs App, the app dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
    free tier is and a "Connect wallet" button. Signing in is Sign-In with Ethereum: the wallet signs a
@@ -56,33 +57,32 @@ function useTiers(): Tiers {
 function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolean; error: string | null }) {
   const tiers = useTiers()
   return (
-    <section className="relative flex min-h-[calc(100vh-200px)] items-center justify-center overflow-hidden px-4 py-16">
-      <div aria-hidden className="pointer-events-none absolute top-[-200px] left-1/2 size-[640px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.12),transparent_62%)]" />
-      <div className="relative flex w-full max-w-[460px] animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-5 rounded-card border border-line bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-5">
+    <section className="relative mx-auto grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)] items-start gap-4 overflow-x-clip px-4 py-5 min-[1000px]:grid-cols-[380px_minmax(0,1fr)] min-[1000px]:px-6">
+      <div aria-hidden className="pointer-events-none absolute top-[-220px] left-[10%] size-[520px] rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.10),transparent_62%)]" />
+      <div className="relative flex w-full animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-4 rounded-card border border-line bg-surface p-5 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-4 min-[1000px]:sticky min-[1000px]:top-4">
         <div className="flex items-center gap-[10px]">
-          <Mascot size={24} decorative />
-          <Wordmark height={20} />
+          <Mascot size={22} decorative />
+          <Wordmark height={18} />
           <span className="font-semibold text-muted">App</span>
-          <span className="ml-auto font-mono text-[11px] tracking-[1px] text-faint">TRACKER API · ANALYTICS</span>
         </div>
         <div className="flex flex-col gap-2">
-          <h1 className="m-0 font-display text-[34px] leading-[.95] font-bold uppercase">
+          <h1 className="m-0 font-display text-[26px] leading-[1] font-bold uppercase">
             Sign in with <span className="text-gold">your wallet</span>
           </h1>
-          <p className="m-0 text-[14px] leading-[1.6] text-muted">Your address is your account: no email, no password. Create API keys instantly, set gap alerts, run Gully Analytics and pay for a plan, all from one app.</p>
+          <p className="m-0 text-[13px] leading-[1.55] text-muted">Your address is your account: no email, no password. API keys, alerts, analytics and billing in one app; every Gully product one tap away.</p>
         </div>
         {tiers ? (
           <dl className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-line bg-line">
             <div className="flex flex-col gap-1 bg-surface-deep px-4 py-3">
               <dt className="text-[11px] text-dim">No key</dt>
-              <dd className="m-0 font-display text-[28px] leading-none font-bold">
+              <dd className="m-0 font-display text-[24px] leading-none font-bold">
                 {tiers.anon.toLocaleString('en-US')}
                 <span className="ml-1 font-mono text-[11px] font-normal text-faint">/min per IP</span>
               </dd>
             </div>
             <div className="flex flex-col gap-1 bg-surface-deep px-4 py-3">
               <dt className="text-[11px] text-dim">Free key · up to {tiers.keys}</dt>
-              <dd className="m-0 font-display text-[28px] leading-none font-bold text-gold">
+              <dd className="m-0 font-display text-[24px] leading-none font-bold text-gold">
                 {tiers.free.toLocaleString('en-US')}
                 <span className="ml-1 font-mono text-[11px] font-normal text-faint">/min per key</span>
               </dd>
@@ -115,24 +115,6 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
             <AlertTriangle size={16} className="mt-[2px] shrink-0" aria-hidden /> {error}
           </p>
         )}
-        <ol className="m-0 grid list-none grid-cols-3 gap-2 p-0 max-[420px]:grid-cols-1">
-          {[
-            { icon: Wallet, t: 'Connect', d: 'Any browser wallet or Coinbase Wallet.' },
-            { icon: ShieldCheck, t: 'Sign', d: 'A message, not a transaction. Free, expires in 10 min.' },
-            { icon: KeyRound, t: 'Build', d: 'Keys, alerts and analytics. Keys are shown once and stored hashed.' },
-          ].map((s, i) => {
-            const Icon = s.icon
-            return (
-              <li key={s.t} className="flex flex-col gap-1 rounded-[10px] border border-line px-3 py-2">
-                <span className="flex items-center gap-2 text-[13px] font-semibold">
-                  <span className="font-mono text-[11px] text-gold">{i + 1}</span>
-                  <Icon size={14} className="text-gold" aria-hidden /> {s.t}
-                </span>
-                <span className="text-[12px] leading-[1.45] text-dim">{s.d}</span>
-              </li>
-            )
-          })}
-        </ol>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
           <ExtLink href={`${DOCS_URL}/api`} className="inline-flex min-h-11 items-center gap-2 text-[13px] text-muted hover:text-ink">
             <BookOpen size={15} aria-hidden /> Read the docs
@@ -141,6 +123,10 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
             No code? Embed the widget
           </ExtLink>
         </div>
+      </div>
+      <div className="relative flex min-w-0 flex-col gap-2" aria-label="Gully products, live" role="region">
+        <span className={mono}>GULLY PRODUCTS · LIVE</span>
+        <AppLauncher cols={3} />
       </div>
     </section>
   )

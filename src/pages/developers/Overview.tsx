@@ -2,7 +2,8 @@ import { Activity, ArrowUpRight, Info, LayoutDashboard, BellRing, ChartNoAxesCom
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ChannelChips, SecretDialog, TelegramCard } from './Alerts'
 import { EventsMeter } from './Analytics'
-import { GetStarted, ToolsRow } from './GetStarted'
+import { GetStarted } from './GetStarted'
+import { AppLauncher } from '../../console/Launcher'
 import { alertName, alertRule, alertState, defaultAsset, keyColors, priceText, siteMeta, useAlertActions, useAlertsView } from './helpers'
 import { api, type Account, type AnalyticsUsage, type AnalyticsView, type BillingView, type PlanId, type Range, type UsageV2 } from './api'
 import { DoubleRing, GhostCurves, GhostSpark, Meter, Spark } from './charts'
@@ -198,8 +199,8 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
       <PendingInvites />
       <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
       {/* Live network data first, so even a brand-new workspace opens on moving charts. */}
+      <AppLauncher />
       <MarketBand onPick={() => go('tracker')} />
-      <ToolsRow />
 
       {/* ---------------------------------------------------------------- KPIs */}
       {/* 1, 2 or 4 cards a row by the content width (never 3 + 1). */}

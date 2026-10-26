@@ -5,11 +5,11 @@
    - NetworkChips: Gully Pay's x402 networks or Gully RPC's gateway networks, Gully Chain included;
    - LabsBoard: every other Gully Labs surface and the status page's own reading.
    A source that cannot be read says so ("not reachable", "reading"); nothing is drawn as zero that was not read. */
-import { ArrowUpRight, Blocks, BookOpen, Code2, Coins, Copy, Droplets, Gamepad2, Globe, Repeat, Rocket, ScrollText, Search, Server, Share2, Tag, Trophy, Users } from 'lucide-react'
+import { ArrowUpRight, Blocks, BookOpen, Code2, Coins, Copy, Droplets, Gamepad2, Globe, Repeat, Rocket, ScrollText, Search, Server, Share2, Tag, Trophy, Users, Vault } from 'lucide-react'
 import type { ComponentType } from 'react'
 import type { LucideProps } from 'lucide-react'
 import { C, fmtInt } from './charts'
-import { useLive, type HubService } from './live'
+import { hubState, useLive, type HubService } from './live'
 import { Btn, Count, ic, Spark } from './ui'
 
 type Icon = ComponentType<LucideProps>
@@ -27,7 +27,7 @@ export const STREET_FEATURES: { label: string; path: string; icon: Icon }[] = [
   { label: 'Referrals', path: '/referrals', icon: Users },
 ]
 
-const SURF_IC: Record<string, Icon> = { 'chain-site': Globe, street: Rocket, explorer: Search, faucet: Droplets, bridge: Share2, docs: BookOpen, devportal: Code2, 'rpc-public': Server, indexer: Blocks }
+const SURF_IC: Record<string, Icon> = { copy: Copy, safe: Vault, 'chain-site': Globe, street: Rocket, explorer: Search, faucet: Droplets, bridge: Share2, docs: BookOpen, devportal: Code2, 'rpc-public': Server, indexer: Blocks }
 const SURF_LINE: Record<string, string> = {
   'chain-site': 'The chain, its network details and the launch flow.',
   explorer: 'Blocks, transactions, tokens and verified contracts.',
@@ -37,6 +37,8 @@ const SURF_LINE: Record<string, string> = {
   devportal: 'SDKs, contract addresses and examples for builders.',
   'rpc-public': 'The free, rate-limited RPC. Keys at Gully RPC.',
   indexer: 'Tokens, trades, names and quests as JSON.',
+  copy: 'The engine behind copy trading in Gully Street.',
+  safe: 'Multisig wallets on Gully Chain.',
 }
 /** A sparkline once there are two readings; before that a small pulsing note (history builds one point a minute). */
 function Trend({ values, color, h }: { values: (number | null)[]; color: string; h: number }) {
@@ -59,10 +61,11 @@ function State({ s }: { s: HubService | undefined }) {
         reading
       </span>
     )
+  const st = hubState(s)
   return (
-    <span className={`pill sm ${s.up ? 'live' : 'down'}`}>
+    <span className={`pill sm ${st === 'up' ? 'live' : st === 'coming' ? 'soon' : 'down'}`}>
       <span className="dot" />
-      {s.up ? 'up' : 'down'}
+      {st}
     </span>
   )
 }
@@ -124,6 +127,8 @@ const CHAIN_ORDER: { k: string; name: string; url: string }[] = [
   { k: 'docs', name: 'Docs', url: 'https://docs.gullychain.xyz' },
   { k: 'devportal', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { k: 'rpc-public', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz' },
+  { k: 'copy', name: 'Copy trading', url: 'https://copy.gullychain.xyz' },
+  { k: 'safe', name: 'Gully Safe', url: 'https://safe.gullychain.xyz' },
 ]
 
 /** Every Gully Chain surface, live: Gully Street with its features, then explorer, faucet, bridge, docs, developer portal, public RPC. */
@@ -131,7 +136,7 @@ export function ChainSuite() {
   const { hub } = useLive()
   const by = (k: string) => hub?.services.find((s) => s.key === k)
   const up = hub ? hub.services.filter((s) => s.group === 'chain' && s.up).length : null
-  const all = hub ? hub.services.filter((s) => s.group === 'chain').length : null
+  const all = hub ? hub.services.filter((s) => s.group === 'chain' && hubState(s) !== 'coming').length : null
   return (
     <div className="suite" data-testid="chain-suite">
       <div className="suiteh">
@@ -262,12 +267,17 @@ export function NetworkChips({ kind }: { kind: 'x402' | 'gateway' }) {
 const LABS: { k: string; name: string; url: string }[] = [
   { k: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz' },
   { k: 'x402', name: 'x402 facilitator', url: 'https://gullypay.xyz/x402/status' },
+  { k: 'pay-admin', name: 'Gully Pay admin', url: 'https://admin.gullypay.xyz' },
   { k: 'rpc-site', name: 'Gully RPC', url: 'https://gullyrpc.xyz' },
   { k: 'rpc-app', name: 'Gully RPC app', url: 'https://app.gullyrpc.xyz' },
   { k: 'rpc-gateway', name: 'RPC gateway', url: 'https://rpc.gullyrpc.xyz' },
   { k: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz' },
   { k: 'security', name: 'Gully Security', url: 'https://gullysecurity.xyz' },
+  { k: 'gullyai', name: 'Gully AI', url: 'https://gullyai.xyz' },
+  { k: 'ai-api', name: 'Gully AI API', url: 'https://gullyai.xyz/docs/' },
   { k: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz' },
+  { k: 'studio-dev', name: 'Studio dev portal', url: 'https://dev.gullystudio.xyz' },
+  { k: 'studio-docs', name: 'Studio docs', url: 'https://docs.gullystudio.xyz' },
   { k: 'ipfs', name: 'Gully IPFS gateway', url: 'https://ipfs.gullylabs.xyz' },
   { k: 'status', name: 'Status page', url: 'https://status.gullylabs.xyz' },
 ]
@@ -292,7 +302,7 @@ export function LabsBoard() {
                 <span className="rn">{r.name}</span>
                 <span className="ru">{host(r.url)}</span>
                 <State s={s} />
-                <span className="rm num">{s?.up && s.ms != null ? `${s.ms} ms` : '—'}</span>
+                <span className="rm num">{s?.up && s.ms != null ? `${s.ms} ms` : hubState(s) === 'coming' ? 'soon' : '—'}</span>
                 <span className="rs">
                   <Trend values={(s?.history ?? []).map((h) => h.ms)} color={s && !s.up ? C.down : C.s[1]} h={20} />
                 </span>

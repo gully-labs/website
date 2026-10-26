@@ -2,10 +2,12 @@
 // because most of these hosts do not open CORS to gullylabs.xyz (2026-10-26).
 //
 //   GET /api/hub   public, cached 60 s:
-//     services   every public Gully surface probed once a minute: up, response time and the last hour's times.
-//                Gully Chain: site, Gully Street app, explorer, faucet, bridge, docs, developer portal, public RPC,
-//                indexer. Gully Labs: Gully Pay, Gully RPC (site, app, gateway), HolderMaps, Gully Security,
-//                Gully Studio, Gully IPFS and the status page.
+//     services   every public Gully surface probed once a minute: up, state (up | down | coming), response time and
+//                the last hour's times. Gully Chain: site, Gully Street app and its feed, explorer, faucet, bridge,
+//                docs, developer portal, public RPC, indexer, copy trading, Gully Safe (coming until it answers 200).
+//                Gully Labs: Gully Pay (and its admin), Gully RPC (site, app, gateway), HolderMaps, Gully Security,
+//                Gully AI (site; the API is coming until the GPU box is up), Gully Studio (and its portals),
+//                Gully IPFS and the status page.
 //     chain      Gully Chain testnet head from its indexer (the browser reads the RPC itself; this is the fallback).
 //     quests     Gully Quests (on chain, QuestRegistry 0xE3E5…13Bb): the indexer's /quests/stats and /quests, else
 //                questCount() over RPC.
@@ -31,7 +33,8 @@ const X402 = () => env('GULLYPAY_X402_URL', 'https://gullypay.xyz/x402/status')
 const GATEWAY = () => env('GULLYRPC_GATEWAY_URL', 'https://rpc.gullyrpc.xyz')
 const STATUS_PAGE = () => env('GULLY_STATUS_PAGE_URL', 'https://status.gullylabs.xyz')
 
-/** Every surface the hub shows, in display order. `probe` is the URL checked; `url` is where a person goes. */
+/** Every surface the hub shows, in display order. `probe` is the URL checked; `url` is where a person goes. `soon`
+    marks a surface still being set up: it reads "coming" (never "down") until it answers 200, and only 200 counts as up. */
 export const SURFACES = [
   { key: 'chain-site', group: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz' },
   { key: 'street', group: 'chain', name: 'Gully Street app', url: 'https://app.gullychain.xyz' },
@@ -42,6 +45,10 @@ export const SURFACES = [
   { key: 'devportal', group: 'chain', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { key: 'rpc-public', group: 'chain', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz', rpc: true },
   { key: 'indexer', group: 'chain', name: 'Indexer', url: 'https://indexer.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/head' },
+  // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Safe is being deployed.
+  { key: 'social', group: 'chain', name: 'Gully Street feed', url: 'https://app.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/feed?limit=1' },
+  { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://copy.gullychain.xyz' },
+  { key: 'safe', group: 'chain', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', soon: true },
   { key: 'pay', group: 'labs', name: 'Gully Pay', url: 'https://gullypay.xyz', probe: 'https://gullypay.xyz/api/status' },
   { key: 'x402', group: 'labs', name: 'Gully Pay x402', url: 'https://gullypay.xyz/x402/status' },
   { key: 'rpc-site', group: 'labs', name: 'Gully RPC', url: 'https://gullyrpc.xyz', probe: 'https://gullyrpc.xyz/status.json' },
@@ -49,7 +56,13 @@ export const SURFACES = [
   { key: 'rpc-gateway', group: 'labs', name: 'Gully RPC gateway', url: 'https://rpc.gullyrpc.xyz' },
   { key: 'holders', group: 'labs', name: 'HolderMaps', url: 'https://holdermaps.xyz' },
   { key: 'security', group: 'labs', name: 'Gully Security', url: 'https://gullysecurity.xyz' },
+  { key: 'pay-admin', group: 'labs', name: 'Gully Pay admin', url: 'https://admin.gullypay.xyz', soon: true },
+  { key: 'gullyai', group: 'labs', name: 'Gully AI', url: 'https://gullyai.xyz' },
+  // The model goes live when the GPU box arrives: until the gateway answers 200 it is "coming", not down.
+  { key: 'ai-api', group: 'labs', name: 'Gully AI API', url: 'https://gullyai.xyz/docs/', probe: 'https://ai.gullylabs.xyz/healthz', soon: true },
   { key: 'studio', group: 'labs', name: 'Gully Studio', url: 'https://gullystudio.xyz' },
+  { key: 'studio-dev', group: 'labs', name: 'Gully Studio dev portal', url: 'https://dev.gullystudio.xyz', soon: true },
+  { key: 'studio-docs', group: 'labs', name: 'Gully Studio docs', url: 'https://docs.gullystudio.xyz', soon: true },
   // The gateway serves only pinned content: the inline empty-directory CID answers without the network.
   { key: 'ipfs', group: 'labs', name: 'Gully IPFS', url: 'https://ipfs.gullylabs.xyz', probe: 'https://ipfs.gullylabs.xyz/ipfs/bafyaabakaieac' },
   { key: 'status', group: 'labs', name: 'Status page', url: 'https://status.gullylabs.xyz' },
@@ -219,7 +232,11 @@ async function statusPage() {
 async function read() {
   const at = new Date().toISOString()
   const [probes, head, q, x, g, sp] = await Promise.all([Promise.all(SURFACES.map((s) => probe(s))), getJson(`${INDEXER()}/head`), quests(), getJson(X402()), getJson(`${GATEWAY()}/`), statusPage()])
-  const services = SURFACES.map((s, i) => ({ key: s.key, group: s.group, name: s.name, url: s.url, up: probes[i].up, ms: probes[i].ms, history: remember(s.key, at, probes[i].ms) }))
+  const services = SURFACES.map((s, i) => {
+    const p = probes[i]
+    const up = s.soon ? p.code === 200 : p.up
+    return { key: s.key, group: s.group, name: s.name, url: s.url, up, state: up ? 'up' : s.soon ? 'coming' : 'down', code: p.code, ms: up ? p.ms : null, history: remember(s.key, at, up ? p.ms : null) }
+  })
   const block = Number(head?.block)
   return {
     generatedAt: at,

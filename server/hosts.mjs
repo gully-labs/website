@@ -16,7 +16,7 @@ export const isAppHost = (host) => host.startsWith('app.')
    src/pages/developers/Dashboard.tsx TABS plus services/nav.ts SERVICE_TABS and HANDOFF_TABS (scripts/test-hosts.mjs
    checks they agree). A typed or old path for one of them (app.gullylabs.xyz/keys, /billing/plans) answers 301 to that
    page instead of leaving for gullylabs.xyz, where no such page exists. */
-export const APP_TABS = ['overview', 'products', 'keys', 'alerts', 'analytics', 'billing', 'merchant', 'scans', 'team', 'activity', 'settings', 'tracker', 'ai', 'score', 'widgets', 'telegram', 'chain', 'pay', 'rpc', 'holders', 'security', 'studio']
+export const APP_TABS = ['overview', 'products', 'keys', 'alerts', 'analytics', 'billing', 'merchant', 'scans', 'team', 'activity', 'settings', 'tracker', 'ai', 'score', 'widgets', 'telegram', 'chain', 'pay', 'rpc', 'ipfs', 'holders', 'security', 'studio']
 // Paths people use for the dashboard home.
 const APP_HOME_PATHS = new Set(['dashboard', 'home', 'app', 'developers'])
 // Tabs whose bare path is also a public gullylabs.xyz page (the tracker, Gully Score, Analytics, the products hub, the

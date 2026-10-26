@@ -2,7 +2,7 @@
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Activity, BookOpen, Box, ChartCandlestick, ChartLine, FileText, Gauge, LayoutGrid, Lock, Menu, MessageCircle, Play, Rocket, Send, Sparkles, Tag, X, Zap, ArrowUpRight, type LucideProps } from 'lucide-react'
+import { Activity, BookOpen, Box, ChartCandlestick, ChartLine, FileText, Gauge, LayoutGrid, Lock, Menu, MessageCircle, Send, Sparkles, Tag, X, Zap, ArrowUpRight, type LucideProps } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { Arrow, ic, LivePill, PRODUCTS } from './ui'
@@ -54,8 +54,7 @@ export function ConsoleHeader() {
   }, [open])
   const items: Item[] = [
     { label: 'Products', icon: LayoutGrid, to: home ? '/#products' : '/products' },
-    { label: 'Live', icon: ChartLine, to: '/#network' },
-    { label: 'Build', icon: Rocket, to: '/#build' },
+    { label: 'Live', icon: ChartLine, to: '/#live' },
     { label: 'Docs', icon: BookOpen, href: DOCS_URL },
     { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
   ]
@@ -87,12 +86,6 @@ export function ConsoleHeader() {
         </nav>
         <div className="navr">
           <LivePill />
-          <a className="btn ter sm" href={DOCS_URL} target="_blank" rel="noopener noreferrer">
-            {ic(BookOpen)}Docs
-          </a>
-          <Link className="btn sec sm" to="/#build">
-            {ic(Play)}Start here
-          </Link>
           <a className="btn pri sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app">
             {ic(Zap)}
             <span className="lbl">Launch app</span>

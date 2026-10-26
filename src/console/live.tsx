@@ -44,9 +44,14 @@ export interface HubService {
   name: string
   url: string
   up: boolean
+  /** 'coming' is a surface still being set up that has not answered 200 yet (never shown as down). Older answers lack it. */
+  state?: 'up' | 'down' | 'coming'
+  code?: number | null
   ms: number | null
   history: { t: string; ms: number | null }[]
 }
+/** A surface's state, for answers from before `state` existed too. */
+export const hubState = (s: HubService | undefined): 'up' | 'down' | 'coming' | 'reading' => (!s ? 'reading' : (s.state ?? (s.up ? 'up' : 'down')))
 export interface HubQuest {
   id: string
   title: string

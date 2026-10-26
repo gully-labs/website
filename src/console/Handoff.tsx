@@ -8,8 +8,7 @@ import './console.css'
 import { productFigures } from './figures'
 import { LiveProvider, useLive } from './live'
 import { LabsBoard, ProductLive, QuestsPanel } from './Suite'
-import { Btn, Count, ProductGrid, ProductLogo, productByKey, Spark, type ProductKey } from './ui'
-import { isLocalHost, SITE_URL } from '../site-host'
+import { Btn, Count, ProductLogo, productByKey, Spark, type ProductKey } from './ui'
 
 export interface HandoffCopy {
   /** One line: what the product does, and that it moved. */
@@ -72,25 +71,15 @@ export function ProductHandoff({ k, copy }: { k: ProductKey; copy: HandoffCopy }
   )
 }
 
-function Cards() {
-  const figs = productFigures(useLive())
-  return (
-    <div data-testid="product-hub">
-      <ProductGrid figs={figs} hrefOf={(p) => p.app ?? p.url} statusHref={isLocalHost() ? '/status' : `${SITE_URL}/status`} />
-      <div className="livegrid" style={{ marginTop: 10 }}>
-        <LabsBoard />
-        <QuestsPanel />
-      </div>
-    </div>
-  )
-}
-
-/** The seven products as cards, each opening its own domain, then every Gully surface live and Gully Quests (the app's product hub). */
+/** Every Gully surface live and Gully Quests (the app's Products tab; the launcher grid itself sits on Overview). */
 export function ProductHub() {
   return (
     <LiveProvider>
       <div className="lc">
-        <Cards />
+        <div className="livegrid" data-testid="product-hub">
+          <LabsBoard />
+          <QuestsPanel />
+        </div>
       </div>
     </LiveProvider>
   )

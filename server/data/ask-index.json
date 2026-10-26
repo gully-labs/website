@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-26T14:29:49.608Z",
+ "updatedAt": "2026-10-26T22:38:57.233Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -2321,8 +2321,8 @@
    "title": "Gully Labs home",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Gully Labs builds and runs Web3 products: Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio. Every figure on this page is read live. Gully network · live Gully Chain · txs / block",
-   "updatedAt": "2026-10-26T05:05:03.721Z"
+   "text": "Gully Labs builds and runs Web3 products, all on Gully Chain: Gully Street (social, multi-wallet, copy trading, Quests), Gully Bridge, Gully Safe, Gully Pay (x402), Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio and Gully IPFS. Every figure on this page is read live. Gully network · live Gully Chain · txs / block",
+   "updatedAt": "2026-10-26T22:38:57.233Z"
   },
   {
    "id": "33b5b79c35a2",
@@ -4957,6 +4957,39 @@
    "updatedAt": "2026-10-19T01:11:03.920Z",
    "feature": "peddlequest-verification-sybil",
    "status": "live"
+  },
+  {
+   "id": "04845cb60ae1",
+   "source": "Features",
+   "title": "Live board and product launcher (Gully Labs)",
+   "url": "https://gullylabs.xyz/products",
+   "section": "Live board and product launcher",
+   "text": "Live board and product launcher is part of Gully Labs. Status: live now. Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve. GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs). New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.gullychain.xyz), Gully Safe (safe.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals. A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that. The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz).",
+   "updatedAt": "2026-10-26T22:38:57.233Z",
+   "feature": "gully-labs-live-board",
+   "status": "live"
+  },
+  {
+   "id": "e65a2c8a399a",
+   "source": "Roadmap",
+   "title": "Roadmap: Gully Safe multisig (Gully Chains), not available yet",
+   "url": "https://gullylabs.xyz/chain-kit",
+   "section": "Gully Safe multisig (building)",
+   "text": "Gully Safe multisig (Gully Chains) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Safe{Wallet} multisig wallets for Gully Chain at safe.gullychain.xyz, run on Gully infrastructure. Runs Safe's own reference stack (safe-global/safe-infrastructure, MIT backend releases, GPL-3.0 web app) on the gully box. Gully Chain is registered in the Safe config service with its RPC, explorer and the canonical Safe 1.4.1 addresses. The site shows Gully Safe as coming until safe.gullychain.xyz answers 200 (server/hub.mjs).",
+   "updatedAt": "2026-10-26T22:38:57.233Z",
+   "feature": "gully-safe-multisig",
+   "status": "building"
+  },
+  {
+   "id": "2378a3a08ddd",
+   "source": "Roadmap",
+   "title": "Roadmap: Gully AI API (Gully AI), not available yet",
+   "url": "https://docs.gullylabs.xyz/gully-ai",
+   "section": "Gully AI API (building)",
+   "text": "Gully AI API (Gully AI) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. An OpenAI-compatible API for the gully-ai model at ai.gullylabs.xyz/v1, documented at gullyai.xyz/docs; it goes live when the GPU server arrives. Base URL https://ai.gullylabs.xyz/v1, model gully-ai, with chat completions, streaming, /v1/models and /v1/usage. The site shows the API as coming until ai.gullylabs.xyz/healthz answers 200 (server/hub.mjs).",
+   "updatedAt": "2026-10-26T22:38:57.233Z",
+   "feature": "gully-ai-api",
+   "status": "building"
   }
  ]
 }

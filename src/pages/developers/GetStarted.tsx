@@ -1,9 +1,8 @@
-import { AppWindow, BellRing, BookOpen, ChartNoAxesCombined, Code2, KeyRound, MessageCircleQuestion, Send, Terminal } from 'lucide-react'
+import { BellRing, ChartNoAxesCombined, KeyRound, Send, Terminal } from 'lucide-react'
 import { Stepper } from './ui'
 import type { ReactNode } from 'react'
-import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
+import { isLocalHost, SITE_URL } from '../../site-host'
 import type { Account, AlertsView, AnalyticsView } from './api'
-import { rise } from './styles'
 import { ExtLink } from './ExtLink'
 
 /* The Overview's "Get started" checklist and "Tools" row. Every tick comes from account data the console
@@ -136,24 +135,3 @@ const STEP_ICON: Record<string, ReactNode> = {
   analytics: <ChartNoAxesCombined size={13} aria-hidden />,
 }
 
-/* ------------------------------------------------------------------ tools --- */
-
-export function ToolsRow() {
-  const tools: { href: string; icon: ReactNode; title: string; note: ReactNode }[] = [
-    { href: site('/widget'), icon: <AppWindow size={16} aria-hidden />, title: 'Widget builder', note: 'live fair prices, no key' },
-    { href: `${DOCS_URL}/sdk`, icon: <Code2 size={16} aria-hidden />, title: 'SDK', note: 'typed TypeScript client' },
-    { href: `${DOCS_URL}/api`, icon: <BookOpen size={16} aria-hidden />, title: 'API docs', note: 'every endpoint and field' },
-    { href: site('/ask'), icon: <MessageCircleQuestion size={16} aria-hidden />, title: 'Gully AI', note: 'questions about the data and docs' },
-  ]
-  return (
-    <nav aria-label="Tools" className="flex flex-wrap items-center gap-2" style={rise(6)} data-testid="tools-row">
-      {tools.map((t) => (
-        <ExtLink key={t.title} href={t.href} className="group inline-flex min-h-11 min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 text-[13px] transition-colors hover:border-gold-line max-[600px]:min-h-11">
-          <span className="text-gold">{t.icon}</span>
-          <span className="font-semibold text-ink">{t.title}</span>
-          <span className="truncate text-[12px] text-dim max-[1535px]:hidden">{t.note}</span>
-        </ExtLink>
-      ))}
-    </nav>
-  )
-}
