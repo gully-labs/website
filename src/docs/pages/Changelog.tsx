@@ -22,7 +22,7 @@ export function Changelog() {
       <Section id="2026-10-18" title="18 October 2026">
         <List>
           <li>
-            <DocLink to="chain-kit">Chain Kit</DocLink> is on a waitlist: we are finalising the explorer licence before taking orders. Join from the app or <Ext href="https://gullylabs.xyz/chains#waitlist">gullylabs.xyz/chains</Ext>.
+            Chain Kit, the branded explorer for your chain, moved with Gully Chain: it is open to everyone at <Ext href="https://gullychain.xyz">gullychain.xyz</Ext>, documented on <Ext href="https://docs.gullychain.xyz/">docs.gullychain.xyz</Ext>.
           </li>
           <li>
             <DocLink to="gully-security">Gully Security</DocLink> is live: the <Ext href="https://gullylabs.xyz/security">AI Security Scan</Ext> of a deployed contract, a GitHub repository at a commit, an upload or a web2 codebase, run from the app, with free scans each month by plan. For now it is an AI review only: our static-tools worker is not running yet, so no Slither, Aderyn or fuzzing runs, and every report is labelled “AI review only”. Reports can be published at a stable link (<Ext href="https://gullylabs.xyz/security/reports">published reports</Ext>). A human Security Review is quoted on request. A full audit is not offered.

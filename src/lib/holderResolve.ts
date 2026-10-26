@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import type { ResolveChecked, ResolveMatch } from './holders'
+import { holderHref } from '../site-host'
 
 /* The Holder Map's token search, shared by /holders and the home hero: GET /api/holders/resolve finds a ticker
    or an address on every chain we cover. One match opens its map; several offer a pick; none explains why. */
@@ -29,6 +30,13 @@ export function useHolderSearch() {
   const nav = useNavigate()
   const [q, setQ] = useState('')
   const [s, setS] = useState<ResolveState>({ k: 'idle' })
+  // A match's path is the main-site form (/holders/<chain>/<token>): on holdermaps.xyz it opens the short path, and
+  // on the main site once holdermaps.xyz is primary it leaves for that domain (holderHref).
+  const open = (path: string) => {
+    const to = holderHref(path)
+    if (/^https?:\/\//.test(to)) window.location.assign(to)
+    else nav(to)
+  }
   const go = async (e: { preventDefault(): void }) => {
     e.preventDefault()
     const v = q.trim().replace(/^\$/, '')
@@ -37,7 +45,7 @@ export function useHolderSearch() {
     const r = await resolveToken(v)
     if (r.k !== 'ok') return setS({ k: r.k })
     if (!r.matches.length) return setS({ k: 'none', checked: r.checked, address: isTokenAddress(v) })
-    if (r.matches.length === 1) return nav(r.matches[0].path)
+    if (r.matches.length === 1) return open(r.matches[0].path)
     setS({ k: 'many', matches: r.matches })
   }
   const change = (v: string) => {

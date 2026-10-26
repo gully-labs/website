@@ -11,6 +11,27 @@ export const APP_URL = `https://${APP_HOST}`
 
 /** app.* (the dashboard). */
 export const isAppHost = (host) => host.startsWith('app.')
+
+/* The dashboard is one page at app.gullylabs.xyz/; its pages are hashes (#keys, #settings/profile). The ids are
+   src/pages/developers/Dashboard.tsx TABS plus services/nav.ts SERVICE_TABS and HANDOFF_TABS (scripts/test-hosts.mjs
+   checks they agree). A typed or old path for one of them (app.gullylabs.xyz/keys, /billing/plans) answers 301 to that
+   page instead of leaving for gullylabs.xyz, where no such page exists. */
+export const APP_TABS = ['overview', 'products', 'keys', 'alerts', 'analytics', 'billing', 'merchant', 'scans', 'team', 'activity', 'settings', 'tracker', 'ai', 'score', 'widgets', 'telegram', 'chain', 'pay', 'rpc', 'holders', 'security', 'studio']
+// Paths people use for the dashboard home.
+const APP_HOME_PATHS = new Set(['dashboard', 'home', 'app', 'developers'])
+// Tabs whose bare path is also a public gullylabs.xyz page (the tracker, Gully Score, Analytics, the products hub, the
+// Holder Map, Security): those paths keep going to that page on the main site.
+const MAIN_SITE_PAGES = new Set(['tracker', 'score', 'analytics', 'products', 'holders', 'security'])
+/** The app address for a path on app.gullylabs.xyz that names a dashboard page (/keys, /settings/profile, /dashboard),
+    or null when the path is not one. */
+export function appTabUrl(pathname) {
+  const m = /^\/([a-z0-9-]+)(?:\/([a-z0-9-]+))?\/?$/.exec(String(pathname ?? '').toLowerCase())
+  if (!m) return null
+  if (APP_HOME_PATHS.has(m[1]) && !m[2]) return `${APP_URL}/`
+  if (!APP_TABS.includes(m[1]) || (MAIN_SITE_PAGES.has(m[1]) && !m[2])) return null
+  if (m[1] === 'overview' && !m[2]) return `${APP_URL}/`
+  return `${APP_URL}/#${m[1]}${m[2] ? `/${m[2]}` : ''}`
+}
 /** Production hosts whose SIWE domain the dashboard accepts. */
 export const SIGN_IN_HOSTS = [APP_HOST]
 
@@ -243,6 +264,10 @@ export function movedPageUrl(pathname) {
   // Gully Chain: the L3 offer, its launch flow and Chain Kit.
   if (p === '/chains/launch') return `${CHAIN_APP_URL}/`
   if (/^\/(chains|chain-kit|gully-chain|gully-chains|l3)(\/|$)/.test(p)) return `${CHAIN_URL}/`
+  // /pay alone is not a checkout (those are /pay/<id>, /pay/l/<id>, /pay/m/<id> on pay.gullylabs.xyz): it was Gully
+  // Pay's old product page, which lives on gullypay.xyz now. (server.mjs answers it before the /pay/* hand-off to pay.,
+  // on every host, so it resolves in one hop.)
+  if (p === '/pay') return `${GULLYPAY_URL}/`
   // Gully Pay: the product pages (Gully Labs' checkout on pay.gullylabs.xyz and the merchant terms stay).
   if (p === '/gully-pay/merchant-terms') return null
   const pay = /^\/(?:gully-pay|gullypay)(?:\/([a-z0-9-]+))?(\/|$)/.exec(p)

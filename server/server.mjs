@@ -34,7 +34,7 @@ import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { handleIpfs } from './ipfs.mjs'
 import { handleProductStatus } from './product-status.mjs'
-import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
+import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
@@ -205,11 +205,21 @@ async function handleRequest(req, res) {
   const isAdmin = host.startsWith('admin.')
   // The blog is self-hosted Ghost in its own container; every path on its host goes there.
   if (handleIndexNowKey(req, res, url)) return
+  // www.gullylabs.xyz (and www. of any host not handled below): 301 to the bare host, path and query kept. holdermaps.xyz
+  // and gullysecurity.xyz handle their own www. in hosts.mjs.
+  if (host.startsWith('www.') && !isHolderMapsHost(host) && !isSecurityHost(host) && (req.method === 'GET' || req.method === 'HEAD')) {
+    return send(res, 301, '', { Location: `https://${host.slice(4)}${url.pathname}${url.search}`, 'Cache-Control': 'public, max-age=3600' })
+  }
   if (host.startsWith('blog.')) return handleBlog(req, res, url)
   // Gully Analytics (Umami fork) in its own container; every path on its host goes there.
   if (host.startsWith('analytics.')) return handleAnalytics(req, res)
   // Security headers for everything this server answers itself (the blog and analytics set their own).
   for (const [k, v] of Object.entries(securityHeaders(host, url.pathname))) res.setHeader(k, v)
+  // /pay alone (no checkout id) was Gully Pay's product page: gullypay.xyz, in one hop from every host. Without this the
+  // main host sent it to pay.gullylabs.xyz/pay, whose host policy sent it back to gullylabs.xyz/pay (a loop).
+  if (!isLocal && /^\/pay\/?$/.test(url.pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
+    return send(res, 301, '', { Location: movedPageUrl('/pay'), 'Cache-Control': 'public, max-age=3600' })
+  }
   // Service hosts (hosts.mjs): pay. and embed. answer only their own pages and APIs, api. only /api/*.
   const policy = hostPolicy(host, url.pathname)
   if (policy === 'redirect') {
@@ -259,7 +269,7 @@ async function handleRequest(req, res) {
   if (isPayHost(host)) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
   if (policy === 'deny') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
   // The pay pages moved to pay.gullylabs.xyz: old /pay/ links 301 there (GET and HEAD only, path and query kept).
-  if (!isLocal && !isPayHost(host) && (url.pathname === '/pay' || url.pathname.startsWith('/pay/')) && (req.method === 'GET' || req.method === 'HEAD')) {
+  if (!isLocal && !isPayHost(host) && /^\/pay\/./.test(url.pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
     return send(res, 301, '', { Location: PAY_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
   // The public API stays served on every host (POSTs and existing integrations cannot follow a redirect);
@@ -283,6 +293,9 @@ async function handleRequest(req, res) {
     return send(res, 301, '', { Location: `${APP_URL}/`, 'Cache-Control': 'public, max-age=3600' })
   }
   if (isApp && isPage && url.pathname !== '/') {
+    // A dashboard page by path (/keys, /billing/plans, /dashboard): that page of the app, not a gullylabs.xyz 404.
+    const tab = appTabUrl(url.pathname)
+    if (tab) return send(res, 301, '', { Location: tab, 'Cache-Control': 'public, max-age=3600' })
     return send(res, 301, '', { Location: 'https://gullylabs.xyz' + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
   }
   // The docs live on their own host; /docs on the main site moves there, path kept.

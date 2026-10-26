@@ -301,9 +301,8 @@ export function TrustBand({ mascot = true }: { mascot?: boolean }) {
     <div className="wrap" style={{ position: 'relative' }}>
       <div className="trust card">
         <div className="badges">
-          <a href="https://gullylabs.xyz" aria-label="Powered by Gully Labs">
-            <img src="/brand/badges/powered-by-gully-labs-dark.png" srcSet="/brand/badges/powered-by-gully-labs-dark.png 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x" width={190} height={48} alt="Powered by Gully Labs" />
-          </a>
+          {/* No "Powered by Gully Labs" here: this IS Gully Labs (owner rule 2026-10-26, rule 4). The badge sits in the
+              footers of the app, the docs, the blog and the products' own sites. */}
           <a href="https://gullysecurity.xyz" target="_blank" rel="noopener noreferrer" aria-label="Secured by Gully Labs (opens in a new tab)">
             <img src="/brand/badges/secured-by-gully-labs-dark.png" srcSet="/brand/badges/secured-by-gully-labs-dark.png 1x, /brand/badges/secured-by-gully-labs-dark-2x.png 2x, /brand/badges/secured-by-gully-labs-dark-3x.png 3x" width={190} height={48} alt="Secured by Gully Labs" />
           </a>
