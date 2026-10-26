@@ -23,6 +23,7 @@ const LAB_NIGHT = '#06050D'
 const ICONS = [
   { src: '/brand/icon/app-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
   { src: '/brand/icon/app-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+  { src: '/brand/icon/app-icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
 ]
 
 export const SITE_MANIFEST = {
