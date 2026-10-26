@@ -27,6 +27,7 @@ COPY server/security ./security
 COPY ghost/theme/gully/assets/js/banner.js ./og/banner.cjs
 COPY --from=build /app/node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-800-normal.woff /app/node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-ext-800-normal.woff ./og/fonts/
 COPY --from=build /app/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff /app/node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-500-normal.woff ./og/fonts/
+COPY --from=build /app/node_modules/@fontsource/poppins/files/poppins-latin-800-normal.woff /app/node_modules/@fontsource/poppins/files/poppins-latin-ext-800-normal.woff ./og/fonts/
 COPY --from=build /app/node_modules/@resvg/resvg-wasm/package.json /app/node_modules/@resvg/resvg-wasm/index.js /app/node_modules/@resvg/resvg-wasm/index_bg.wasm ./node_modules/@resvg/resvg-wasm/
 # From the build stage: `npm run build` regenerates data/ask-index.json (Gully Ask) before the bundle.
 COPY --from=build /app/server/data ./data

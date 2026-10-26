@@ -52,6 +52,9 @@ const FONT_FILES = [
   ['@fontsource/barlow-condensed', 'barlow-condensed-latin-ext-800-normal.woff'],
   ['@fontsource/ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff'],
   ['@fontsource/ibm-plex-mono', 'ibm-plex-mono-latin-ext-500-normal.woff'],
+  // Poppins 800: the HolderMaps kit's display face, for its share cards (holders-card.mjs).
+  ['@fontsource/poppins', 'poppins-latin-800-normal.woff'],
+  ['@fontsource/poppins', 'poppins-latin-ext-800-normal.woff'],
 ]
 const fontPath = (pkg, file) => firstFile(path.join(HERE, 'og', 'fonts', file), path.join(HERE, '..', 'node_modules', pkg, 'files', file))
 const bannerPath = () => firstFile(env('OG_BANNER_JS'), path.join(HERE, 'og', 'banner.cjs'), path.join(HERE, '..', 'ghost', 'theme', 'gully', 'assets', 'js', 'banner.js'))

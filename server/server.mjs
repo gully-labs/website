@@ -232,6 +232,9 @@ async function handleRequest(req, res) {
   // /holders/... 301 to the short address, any other page 301s to gullylabs.xyz.
   if (isHolderMapsHost(host)) {
     const hm = holderMapsRoute(host, url.pathname, url.search)
+    // A path that is no page on gullylabs.xyz either (a mistyped token address, an unknown chain, a dead link) is
+    // HolderMaps' own 404 here, with its mascot, rather than a hop to the main site's 404 (redesign 2026-10-26).
+    if (hm.kind === 'redirect' && hm.location.startsWith(MAIN_URL) && (req.method === 'GET' || req.method === 'HEAD') && !mainSitePage(url.pathname)) hm.kind = 'allow'
     if (hm.kind === 'redirect') {
       if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
       return send(res, 301, '', { Location: hm.location, 'Cache-Control': 'public, max-age=3600' })
@@ -568,6 +571,15 @@ async function handleRequest(req, res) {
       res.end(req.method === 'HEAD' ? undefined : isPayHost(host) || isEmbedHost(host) ? page.replace(/\s*<script defer src="https:\/\/analytics\.gullylabs\.xyz[^>]*><\/script>/, '') : page)
     })
   })
+}
+
+/** Whether gullylabs.xyz answers a path with a page (or moves it somewhere that does): holdermaps.xyz sends those
+    there and answers every other path with its own 404. */
+function mainSitePage(pathname) {
+  if (pageMeta(MAIN_URL.replace('https://', ''), pathname).found) return true
+  if (movedPageUrl(pathname)) return true
+  // Hosts and hand-offs the main site answers before any page: the app, admin, docs, Telegram, checkouts, the embed.
+  return /^\/(admin|app|developers|docs|tg|pay|embed|blog|status|holders|security)(\/|$)/.test(pathname)
 }
 
 // Keep every build's hashed files for 30 days in the data volume, so a page left open across a deploy

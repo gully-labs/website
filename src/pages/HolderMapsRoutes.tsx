@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
 import { HolderMapOpened } from '../lib/routeEvents'
 import { holderInternalPath, holderMapsPrimary, holderShortPath, HOLDERMAPS_URL } from '../site-host'
-import { GoTo, ToSite } from './GoTo'
-import { HoldersRoute } from './LazyRoutes'
+import { GoTo } from './GoTo'
+import { HmNotFoundRoute, HmTokenRoute } from './LazyRoutes'
 
 /* The route elements for the Holder Map on its own domain, holdermaps.xyz (server/hosts.mjs, src/site-host.ts). */
 
@@ -21,14 +21,16 @@ export function ToShortHolderPath() {
   return <Navigate to={(holderShortPath(pathname) ?? '/') + search + hash} replace />
 }
 
-/** holdermaps.xyz/<chain>/<token>: a token's map when the chain is one the Holder Map covers, else a main-site page. */
+/** holdermaps.xyz/<chain>/<token>: HolderMaps' token page when the chain is one the Holder Map covers, else its 404
+    (the server answers such a path 404 too; a path that is a gullylabs.xyz page never reaches the app here, the server
+    301s it there). */
 export function HolderMapsTokenPage() {
   const { pathname } = useLocation()
   return holderInternalPath(pathname) ? (
     <HolderMapOpened from="holders-page">
-      <HoldersRoute />
+      <HmTokenRoute />
     </HolderMapOpened>
   ) : (
-    <ToSite />
+    <HmNotFoundRoute />
   )
 }

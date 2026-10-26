@@ -1489,7 +1489,9 @@ export async function handleHolders(req, res, url, access = null) {
     return true
   }
   const status = body.status ?? STATUS[body.state] ?? 200
-  if (body.state === 'ok' && body.kind !== 'token') recordScan(chainKey, body.token.address, body.token.symbol, body.kind, clientIp(req))
+  // ?peek=1: a page showing a map it did not open (holdermaps.xyz's "map of the moment") reads it without counting a
+  // scan, so the most-scanned list only counts people who opened the map.
+  if (body.state === 'ok' && body.kind !== 'token' && url.searchParams.get('peek') !== '1') recordScan(chainKey, body.token.address, body.token.symbol, body.kind, clientIp(req))
   const out = { ...body, features: { replay: features.replay, csv: features.csv, alerts: features.alerts, holders: features.holders, liveMinutes: features.liveMinutes ?? null, gated: features.gated } }
   delete out.status
   json(res, status, out, { 'Cache-Control': body.state === 'ok' ? (features.gated ? 'private, max-age=60' : 'public, max-age=60') : 'no-store', 'Access-Control-Allow-Origin': '*' })

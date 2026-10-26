@@ -223,6 +223,9 @@ export const HOLDER_CHAIN_KEYS = ['robinhood', 'bsc', 'base', 'hyperevm', 'solan
 export const holdersPagePath = (chain: string, token: string) => `/holders/${encodeURIComponent(chain)}/${encodeURIComponent(token)}`
 
 const REFRESH_MS = 300_000
+/** The last map each token answered with in this tab: a second reader of the same map (HolderMaps' page and the map
+    inside it) starts from it instead of a loading state, then re-reads as usual. */
+const lastMap = new Map<string, HolderMap>()
 
 /** One token's map, re-read every five minutes (the server caches as long); a failed re-read keeps the last good map. */
 export function useHolderMap(chain: string | null, token: string | null): Load<HolderMap> {
@@ -230,7 +233,10 @@ export function useHolderMap(chain: string | null, token: string | null): Load<H
   const [state, setState] = useState<{
     key: string | null
     load: Load<HolderMap>
-  }>({ key: null, load: { k: 'loading' } })
+  }>(() => {
+    const hit = key ? lastMap.get(key) : undefined
+    return hit ? { key, load: { k: 'ok', data: hit } } : { key: null, load: { k: 'loading' } }
+  })
   useEffect(() => {
     if (!key || !chain || !token) return
     let alive = true
@@ -245,6 +251,11 @@ export function useHolderMap(chain: string | null, token: string | null): Load<H
             if (alive && data.state === 'unavailable' && typeof data.progress === 'number') {
               clearTimeout(retry)
               retry = setTimeout(tick, 8_000)
+            }
+            if (alive && data.state === 'ok') {
+              lastMap.delete(key)
+              lastMap.set(key, data)
+              if (lastMap.size > 12) lastMap.delete(lastMap.keys().next().value as string)
             }
             if (alive) setState((s) => (data.state !== 'ok' && s.key === key && s.load.k === 'ok' && s.load.data.state === 'ok' ? s : { key, load: { k: 'ok', data } }))
           },

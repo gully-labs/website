@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, DevelopersRoute, EmbedHoldersRoute, HoldersDeepRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, SecuritySampleRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, DevelopersRoute, EmbedHoldersRoute, HmLandingRoute, HmNotFoundRoute, HoldersDeepRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, SecuritySampleRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
@@ -139,12 +139,13 @@ const holderMapsRoutes = [
   {
     element: <Layout />,
     children: [
-      { path: '/', element: <HoldersLandingRoute /> },
+      { path: '/', element: <HmLandingRoute /> },
       { path: '/deep/:id', element: <HoldersDeepRoute /> },
       { path: '/:chain/:token', element: <HolderMapsTokenPage /> },
       { path: '/holders/*', element: <ToShortHolderPath /> },
       { path: '/holders', element: <ToShortHolderPath /> },
-      { path: '*', element: <ToSite /> },
+      // The server 301s every gullylabs.xyz page to gullylabs.xyz, so a path that reaches the app here is a 404.
+      { path: '*', element: <HmNotFoundRoute /> },
     ],
   },
 ]

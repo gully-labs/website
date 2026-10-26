@@ -10,6 +10,10 @@ export const chunks = {
   holdersLanding: () => import('./HoldersLanding'),
   holdersDeep: () => import('./HoldersDeepPage'),
   embedHolders: () => import('./EmbedHolders'),
+  // holdermaps.xyz's own pages (src/holdermaps): the HolderMaps landing, token page and 404.
+  hmLanding: () => import('../holdermaps/HmLanding'),
+  hmToken: () => import('../holdermaps/HmToken'),
+  hmNotFound: () => import('../holdermaps/HmNotFound'),
   widget: () => import('./widget/WidgetPage'),
   developers: () => import('./developers/DevelopersPage'),
   services: () => import('./Services'),
@@ -55,7 +59,9 @@ export function prefetchPath(path: string) {
   // gullysecurity.xyz names the Security pages by short paths (/, /reports, /reports/<id>, /sample, /terms).
   const own = isHolderMapsHost() ? holderInternalPath(path) : isSecurityHost() ? securityInternalPath(path) : path
   if (!own) return
-  const c = chunkFor(own.replace(/\/+$/, '') || '/')
+  const p = own.replace(/\/+$/, '') || '/'
+  // On holdermaps.xyz the landing and the token page are HolderMaps' own (src/holdermaps).
+  const c = isHolderMapsHost() && p === '/holders' ? 'hmLanding' : isHolderMapsHost() && /^\/holders\/(?!deep\/)[^/]+\/[^/]+$/.test(p) ? 'hmToken' : chunkFor(p)
   if (!c || started.has(c)) return
   started.add(c)
   chunks[c]().catch(() => started.delete(c))

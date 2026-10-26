@@ -17,6 +17,9 @@ const Analytics = lazy(() => chunks.products().then((m) => ({ default: m.Analyti
 const Stock = lazy(() => chunks.stock().then((m) => ({ default: m.StockPage })))
 const Holders = lazy(() => chunks.holders().then((m) => ({ default: m.HoldersPage })))
 const HoldersDeep = lazy(() => chunks.holdersDeep().then((m) => ({ default: m.HoldersDeepPage })))
+const HmLanding = lazy(() => chunks.hmLanding().then((m) => ({ default: m.HmLanding })))
+const HmToken = lazy(() => chunks.hmToken().then((m) => ({ default: m.HmTokenPage })))
+const HmNotFound = lazy(() => chunks.hmNotFound().then((m) => ({ default: m.HmNotFound })))
 const HoldersHome = lazy(() => chunks.holdersLanding().then((m) => ({ default: m.HoldersLanding })))
 const EmbedHoldersPage = lazy(() => chunks.embedHolders().then((m) => ({ default: m.EmbedHolders })))
 const Tracker = lazy(() => chunks.tracker().then((m) => ({ default: m.Tracker })))
@@ -59,6 +62,10 @@ export const StockRoute = () => page(<Stock />)
 export const HoldersRoute = () => page(<Holders />)
 export const HoldersDeepRoute = () => page(<HoldersDeep />)
 export const HoldersLandingRoute = () => page(<HoldersHome />)
+// holdermaps.xyz (src/holdermaps): HolderMaps' own landing, token page and 404.
+export const HmLandingRoute = () => page(<HmLanding />)
+export const HmTokenRoute = () => page(<HmToken />)
+export const HmNotFoundRoute = () => page(<HmNotFound />)
 // The embed has no site chrome: a plain outline while its chunk loads.
 export const EmbedHoldersRoute = () => <Suspense fallback={<div role="status" aria-label="Loading" className="min-h-[100svh] bg-kit-lab-night" />}><EmbedHoldersPage /></Suspense>
 export const PricingRoute = () => page(<Pricing />)

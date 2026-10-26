@@ -1,8 +1,9 @@
 // The Holder Map's share card: GET /api/holders/:chain/:token/card.png, 1200 x 630.
 //
 // Drawn the way the blog's share images are (og.mjs): calls on og.mjs's SvgContext record an SVG in the
-// card fonts (Barlow Condensed 800, IBM Plex Mono 500, measured from the font files), the HolderMaps kit lockup
-// is embedded from public/brand/holdermaps (the Holder Map is the HolderMaps product, on every host), and resvg
+// card fonts (the kit's Poppins 800 for display, IBM Plex Mono 500, measured from the font files), the HolderMaps kit
+// lockup and mascot are embedded from public/brand/holdermaps (the Holder Map is the HolderMaps product, on every
+// host; the mascot web copies come from scripts/hm-mascots.py), and resvg
 // (WebAssembly) turns it into a PNG. Every figure on the card is the map's own (summary, forensics, asOf); bubbles are
 // the mapped wallets sized by share, laid out deterministically so the same map gives the same picture.
 
@@ -31,6 +32,39 @@ function logoUri() {
   logo = p ? `data:image/png;base64,${fs.readFileSync(p).toString('base64')}` : null
   return logo
 }
+/** The kit mascot's web copies (public/brand/holdermaps/mascot, scripts/hm-mascots.py): pose -> [w, h] of the sm and
+    lg PNGs. The art is opaque on its dark scene; a radial mask fades its edges into the card, as on the site. */
+const MASCOT = { point: { sm: [162, 235], lg: [325, 470] }, map: { sm: [170, 235], lg: [340, 470] }, backpack: { sm: [172, 232], lg: [345, 465] }, hologram: { sm: [185, 235], lg: [370, 470] } }
+const mascots = {}
+function mascotUri(pose, size) {
+  const k = `${pose}-${size}`
+  if (mascots[k] !== undefined) return mascots[k]
+  const rel = ['brand', 'holdermaps', 'mascot', `${k}.png`]
+  const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, ...rel), path.join(HERE, 'dist', ...rel), path.join(HERE, '..', 'public', ...rel))
+  mascots[k] = p ? `data:image/png;base64,${fs.readFileSync(p).toString('base64')}` : null
+  return mascots[k]
+}
+/** The mascot `w` px wide with its top left at (x, y); nothing when the file is missing. */
+export function drawMascot(ctx, pose, x, y, w) {
+  const size = w > MASCOT[pose].sm[0] ? 'lg' : 'sm'
+  const uri = mascotUri(pose, size)
+  if (!uri) return
+  const [mw, mh] = MASCOT[pose][size]
+  const h = Math.round((w * mh) / mw)
+  const id = `hmm${ctx.ids++}`
+  ctx.defs.push(`<radialGradient id="${id}g" cx="0.5" cy="0.47" r="0.5"><stop offset="0.6" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="${id}m" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${id}g)"/></mask>`)
+  ctx.out.push(`<image x="${x}" y="${y}" width="${w}" height="${h}" href="${uri}" mask="url(#${id}m)"/>`)
+}
+/** The largest Poppins size (at most `max`) at which `text` fits `w` px. */
+function fitFont(ctx, text, w, max, min = 28) {
+  for (let size = max; size > min; size -= 2) {
+    ctx.font = `800 ${size}px "Poppins"`
+    if (ctx.measureText(text).width <= w) return size
+  }
+  ctx.font = `800 ${min}px "Poppins"`
+  return min
+}
+
 /** The lockup top left of the text column, 300 px wide. */
 function drawLogo(ctx, x, y) {
   const m = logoUri()
@@ -170,34 +204,37 @@ export function renderHolderCardSvg(map) {
   ctx.font = '500 16px "IBM Plex Mono"'
   ctx.fillStyle = K.gold
   ctx.fillText('HOLDER MAP', X, 118)
-  ctx.font = '800 72px "Barlow Condensed"'
   ctx.fillStyle = K.bone
   const title = String(map.token?.symbol ?? map.token?.address?.slice(0, 10) ?? 'Token').slice(0, 14)
-  ctx.fillText(title, X, 192)
+  fitFont(ctx, title, TW, 64)
+  ctx.fillText(title, X, 188)
   ctx.font = '500 18px "IBM Plex Mono"'
   ctx.fillStyle = K.muted
   ctx.fillText(`${map.kind === 'deepcore-launch' ? 'DeepCore launch' : map.kind === 'launch' ? `${map.venue ?? 'Launchpad'} launch` : map.kind === 'token' ? 'Token' : 'Stock token'} · ${map.chain?.name ?? ''}`, X, 226)
-  ctx.font = '800 34px "Barlow Condensed"'
+  ctx.font = '800 27px "Poppins"'
   ctx.fillStyle = K.pale
-  let y = 284
+  let y = 278
   for (const line of wrap(ctx, map.summary?.line ?? '', TW, 3)) {
     ctx.fillText(line, X, y)
-    y += 38
+    y += 36
   }
-  ctx.font = '500 18px "IBM Plex Mono"'
+  // The pointing mascot bottom right; the words below the summary keep clear of it.
+  drawMascot(ctx, 'point', W - 152, 418, 132)
+  ctx.font = '500 17px "IBM Plex Mono"'
   ctx.fillStyle = K.bone
-  y += 10
+  y += 8
   const extra = map.forensics?.riskLine ?? map.summary?.plain?.find((p) => /premium|discount/.test(p)) ?? map.summary?.plain?.[1] ?? ''
-  for (const line of wrap(ctx, extra, TW, 4)) {
+  for (const line of wrap(ctx, extra, TW - 150, 4)) {
     ctx.fillText(line, X, y)
-    y += 26
+    y += 25
   }
   ctx.font = '500 15px "IBM Plex Mono"'
   ctx.fillStyle = K.dim
   const asOf = map.asOf ? new Date(map.asOf).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : ''
-  ctx.fillText(`As of ${asOf} · information only, not advice`, X, 566)
+  ctx.fillText(`As of ${asOf}`, X, 566)
+  ctx.fillText('Information only, not advice', X, 590)
   ctx.fillStyle = K.gold
-  ctx.fillText('holdermaps.xyz', X, 592)
+  ctx.fillText('holdermaps.xyz', X, 614)
   return ctx.toSvg()
 }
 
@@ -233,10 +270,8 @@ export function renderHolderStatusCardSvg(body = {}) {
     ctx.strokeStyle = K.slate
     ctx.stroke()
   }
-  ctx.beginPath()
-  ctx.arc(300, 300, 10, 0, Math.PI * 2)
-  ctx.fillStyle = K.gold
-  ctx.fill()
+  // The mascot in the middle of the rings: pointing (no token there), backpack (coming soon), hologram (not ready).
+  drawMascot(ctx, body.state === 'not-found' ? 'point' : body.comingSoon ? 'backpack' : 'hologram', 175, 130, 250)
 
   const X = 640
   const TW = W - X - 50
@@ -244,16 +279,16 @@ export function renderHolderStatusCardSvg(body = {}) {
   ctx.font = '500 16px "IBM Plex Mono"'
   ctx.fillStyle = K.gold
   ctx.fillText('HOLDER MAP', X, 118)
-  ctx.font = '800 72px "Barlow Condensed"'
   ctx.fillStyle = K.bone
   const title = String(body.token?.symbol ?? (body.token?.address ? `${String(body.token.address).slice(0, 6)}…${String(body.token.address).slice(-4)}` : 'Holder Map')).slice(0, 14)
-  ctx.fillText(title, X, 192)
+  fitFont(ctx, title, TW, 64)
+  ctx.fillText(title, X, 188)
   ctx.font = '500 18px "IBM Plex Mono"'
   ctx.fillStyle = K.muted
   if (body.chain?.name) ctx.fillText(body.chain.name, X, 226)
-  ctx.font = '800 44px "Barlow Condensed"'
   ctx.fillStyle = K.pale
   const head = body.state === 'not-found' ? 'NO MAP FOR THIS TOKEN' : body.comingSoon ? 'MAP COMING SOON' : 'MAP NOT READY YET'
+  fitFont(ctx, head, TW, 36)
   ctx.fillText(head, X, 300)
   ctx.font = '500 18px "IBM Plex Mono"'
   ctx.fillStyle = K.bone

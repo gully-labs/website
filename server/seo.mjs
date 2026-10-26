@@ -254,7 +254,26 @@ function holderMapsMeta(p) {
   // kit OG). The per-token bubble card (/api/holders/<chain>/<token>/card.png, now in the HolderMaps kit too) stays
   // the share image of the gullylabs.xyz/holders pages.
   const description = String(m.description).replace(/ on Gully Labs\.$/, ' on HolderMaps.')
-  return { ...m, title: holderMapsTitle(m.title), description, canonical: m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null, image: HM_OG, brand: HOLDERMAPS_BRAND }
+  const canonical = m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null
+  return { ...m, title: holderMapsTitle(m.title), description, canonical, image: HM_OG, brand: HOLDERMAPS_BRAND, ld: canonical ? holderMapsTokenLd(p, canonical, holderMapsTitle(m.title), description) : null }
+}
+
+/** A token map's JSON-LD on holdermaps.xyz: the page itself and its breadcrumb (HolderMaps > chain > token). */
+function holderMapsTokenLd(p, url, title, description) {
+  const [, chain] = p.split('/')
+  const name = title.replace(/ · HolderMaps$/, '')
+  return [
+    { '@context': 'https://schema.org', '@type': 'WebPage', name, url, description, isPartOf: { '@type': 'WebSite', name: 'HolderMaps', url: `${HOLDERMAPS_URL}/` }, publisher: { '@type': 'Organization', name: 'Gully Labs', url: 'https://gullylabs.xyz' } },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'HolderMaps', item: `${HOLDERMAPS_URL}/` },
+        { '@type': 'ListItem', position: 2, name: CHAIN_NAMES_ALL[chain] ?? chain },
+        { '@type': 'ListItem', position: 3, name, item: url },
+      ],
+    },
+  ]
 }
 
 /* gullysecurity.xyz (hosts.mjs): Gully Security's own domain. Its pages are the main site's Security pages under short
