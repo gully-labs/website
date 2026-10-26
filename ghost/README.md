@@ -49,7 +49,7 @@ scripts/
 - **Mobile:** a Menu button opens a full-height sheet with the same groups as accordions.
 - **Footer:** the kit's full logo (232x93, with its 2x file), the tagline, Products / App & API / Company /
   Social columns, Start a project, the "Information only, not investment advice" line, Ghost's secondary
-  navigation and the kit's "Powered by Gully Labs" badge (190x48, 1x/2x/3x). No "Powered by Ghost".
+  navigation and the kit's "Powered by Gully Labs" badge (30 px high, 26 px on phones, right of the copyright; 1x/2x/3x). No "Powered by Ghost".
 - **Home, kept short:** masthead (site title, description, tagline), 01 the lead story (newest featured
   post, else the newest post), 02 the five latest posts in a hairline grid with the archive tile (two rows
   at 1024+) and topic chips, 03 "From the Stock tracker" links. `posts_per_page` is 6, so page 2 exists (and the
@@ -200,6 +200,9 @@ Ghost admin (Settings):
    - Primary (the blog sections bar): e.g. `Home` → `/`, `Releases` → `/tag/releases/`,
      `Engineering` → `/tag/engineering/`, `Tracker` → `/tag/tracker/`. Labels pick the icons (see above).
      Links to gullylabs.xyz, docs. etc. are allowed here and open in a new tab automatically.
+     The live blog's primary navigation still has a `Developers` item pointing at `https://developers.gullylabs.xyz/`,
+     a host retired on 2026-10-17 (no DNS): change it to `https://docs.gullylabs.xyz/` (the theme rewrites it in the
+     browser meanwhile, assets/js/gully.js).
    - Secondary (footer line): e.g. `RSS` → `/rss/`.
 7. **Code injection** (Code injection): **clear both Site header and Site footer.** They currently hold
    the brand fonts, colours and the "first posts are on the way" intro that were added for Source; the

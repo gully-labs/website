@@ -50,8 +50,10 @@ export const isHolderMapsHost = () => /^(www\.)?holdermaps\.xyz$/.test(host())
 /** holdermaps.xyz is the Holder Map's canonical home: on that host, or when the server marked the page so. */
 export const holderMapsPrimary = () => isHolderMapsHost() || (typeof document !== 'undefined' && !!document.querySelector('meta[name="holdermaps-primary"]'))
 
-// The same chains as server/hosts.mjs HOLDER_CHAIN_KEYS (Gully Chain included).
-const HOLDER_CHAIN_RE = '(robinhood|bsc|base|hyperevm|solana|gully)'
+// The chains the Holder Map covers: the same list as server/hosts.mjs HOLDER_CHAIN_KEYS and server/holders.mjs
+// HOLDER_CHAINS, Gully Chain (485590) included (scripts/test-hosts.mjs checks the three agree).
+export const HOLDER_CHAIN_KEYS = ['robinhood', 'bsc', 'base', 'hyperevm', 'solana', 'gully'] as const
+const HOLDER_CHAIN_RE = `(${HOLDER_CHAIN_KEYS.join('|')})`
 const INTERNAL_HOLDER = new RegExp(`^/holders(?:/deep/(hd_[A-Za-z0-9_-]{1,64})|/${HOLDER_CHAIN_RE}/([A-Za-z0-9]{1,64}))?/?$`)
 const SHORT_HOLDER = new RegExp(`^(?:/|/deep/(hd_[A-Za-z0-9_-]{1,64})|/${HOLDER_CHAIN_RE}/([A-Za-z0-9]{1,64}))/?$`)
 

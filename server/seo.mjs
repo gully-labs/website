@@ -399,6 +399,17 @@ export function robotsFor(host) {
   return `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml\n`
 }
 
+/** A sitemap <loc>: an absolute http(s) URL with no "null" or "undefined" left in it by a missing path. */
+export function validSitemapUrl(u) {
+  if (typeof u !== 'string' || /(null|undefined)(\/|$)/.test(u)) return false
+  try {
+    const url = new URL(u)
+    return (url.protocol === 'https:' || url.protocol === 'http:') && /^[a-z0-9.-]+$/i.test(url.hostname) && !/(null|undefined)$/.test(url.hostname)
+  } catch {
+    return false
+  }
+}
+
 /** sitemap.xml per host: each host lists only its own pages, as the protocol requires. */
 export function sitemapFor(host) {
   // The admin host has no public pages (robots.txt disallows everything there).
@@ -410,9 +421,11 @@ export function sitemapFor(host) {
   if (host.startsWith('docs.')) urls = Object.keys(DOCS_PAGES).filter((p) => !movedDocsUrl(p)).map((p) => [DOCS + (p === '/' ? '/' : p), p === '/' ? '1.0' : '0.7', 'weekly'])
   else if (isAppHost(host)) urls = [[`${APP}/`, '0.6', 'monthly']]
   // holdermaps.xyz lists the Holder Map pages under their short paths.
-  else if (isHolderMapsHost(host)) urls = holderPaths().map((p) => [HOLDERMAPS_URL + holderShortPath(p), p === '/holders' ? '1.0' : '0.7', p === '/holders' ? 'daily' : 'monthly'])
+  // A page with no short path there (a ticker the short form cannot carry, like BRK.B) is left out, not written as
+  // "https://holdermaps.xyznull".
+  else if (isHolderMapsHost(host)) urls = holderPaths().flatMap((p) => { const short = holderShortPath(p); return short ? [[HOLDERMAPS_URL + short, p === '/holders' ? '1.0' : '0.7', p === '/holders' ? 'daily' : 'monthly']] : [] })
   // gullysecurity.xyz lists the Security pages and the reports their owners let search engines index, under short paths.
-  else if (isSecurityHost(host)) urls = securityPaths().map((p) => [SECURITY_URL + securityShortPath(p), p === '/security' ? '1.0' : '0.7', p === '/security' || p === '/security/reports' ? 'daily' : 'monthly'])
+  else if (isSecurityHost(host)) urls = securityPaths().filter((p) => securityShortPath(p)).map((p) => [SECURITY_URL + securityShortPath(p), p === '/security' ? '1.0' : '0.7', p === '/security' || p === '/security/reports' ? 'daily' : 'monthly'])
   else
     // Once holdermaps.xyz (or gullysecurity.xyz) is primary the main site's pages for it are redirects there, so they are not
     // listed here; nor are the pages of products that moved to their own domains (hosts.mjs movedPageUrl).
@@ -423,6 +436,8 @@ export function sitemapFor(host) {
     ])
   // Listed Gully Score pages (a watched contract that allows listing, or one with a published report).
   if (!host.startsWith('docs.') && !isAppHost(host) && !isHolderMapsHost(host) && !isSecurityHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])
+  // Every <loc> is a real absolute address: nothing built from a missing (null/undefined) path gets listed.
+  urls = urls.filter(([u]) => validSitemapUrl(u))
   const rows = urls.map(([u, pr, f]) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</urlset>\n`
 }
