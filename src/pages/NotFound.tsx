@@ -4,7 +4,7 @@ import { MoversRow } from '../components/tracker/MoversRow'
 import { StockSearch } from '../components/tracker/StockSearch'
 import { productFigures } from '../console/figures'
 import { useLive } from '../console/live'
-import { Btn, PRODUCTS, ProductCard, SectionHead } from '../console/ui'
+import { Btn, ProductGrid, SectionHead } from '../console/ui'
 import { CHAIN_NAME } from '../lib/tracker'
 import { DOCS_URL } from '../site-host'
 import { NetworkCard } from './Home'
@@ -66,14 +66,10 @@ export function NotFound({ ticker, chain }: { ticker?: string; chain?: string })
             </div>
           ) : (
             <>
-              <SectionHead label="Products" title="Six products, one lab">
+              <SectionHead label="Products" title="Seven products, one lab">
                 Each card opens the product on its own domain.
               </SectionHead>
-              <div className="prods">
-                {PRODUCTS.map((p) => (
-                  <ProductCard key={p.key} p={p} f={figs[p.key]} />
-                ))}
-              </div>
+              <ProductGrid figs={figs} />
             </>
           )}
         </div>

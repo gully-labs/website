@@ -4,7 +4,7 @@ import { Seo } from '../components/Seo'
 import { bars, C, fmtPct, fmtTime, fmtUsd, lineChart, type LineChart } from '../console/charts'
 import { productFigures } from '../console/figures'
 import { coversOf, NAMES, summed, totalOf, useLive, venueSeries, type Metric } from '../console/live'
-import { Arrow, Btn, BUILD_STEPS, Count, ic, PRODUCTS, ProductCard, SectionHead, Stepper, Ticker, Tile, TrustBand } from '../console/ui'
+import { Arrow, Btn, BUILD_STEPS, Count, ic, ProductGrid, SectionHead, Stepper, Ticker, Tile, TrustBand } from '../console/ui'
 import { APP_URL } from '../site-host'
 
 /* The landing, Direction A "Lab console" (owner pick, 2026-10-25): hero copy beside the live network chart
@@ -166,14 +166,10 @@ export function Home() {
 
       <section id="products" aria-labelledby="products-h">
         <div className="wrap">
-          <SectionHead label="Products" title="Six products, one lab" id="products-h">
+          <SectionHead label="Products" title="Seven products, one lab" id="products-h">
             Each card shows one live figure from the product itself. Open any of them to use it today.
           </SectionHead>
-          <div className="prods">
-            {PRODUCTS.map((p) => (
-              <ProductCard key={p.key} p={p} f={figs[p.key]} />
-            ))}
-          </div>
+          <ProductGrid figs={figs} />
         </div>
       </section>
 

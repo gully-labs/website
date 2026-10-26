@@ -2,9 +2,10 @@
 import { Link } from 'react-router'
 import { ArrowRight, Zap } from 'lucide-react'
 import { Seo } from '../../components/Seo'
+import { MarkLogo } from '../../components/ProductLogo'
 import { productFigures } from '../../console/figures'
 import { useLive } from '../../console/live'
-import { Btn, BUILD_STEPS, ic, PRODUCTS, ProductCard, ProductLogo, SectionHead, Stepper } from '../../console/ui'
+import { Btn, BUILD_STEPS, ic, PRODUCTS, ProductGrid, ProductLogo, SectionHead, Stepper } from '../../console/ui'
 import { APP_URL } from '../../site-host'
 import { NetworkCard } from '../Home'
 
@@ -13,18 +14,18 @@ export function ProductsIndex() {
   const figs = productFigures(live)
   return (
     <div className="lcp">
-      <Seo title="Products" description="Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio: six Gully Labs products, each with one live figure." />
+      <Seo title="Products" description="Gully Chain, Gully Pay, Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio: the Gully Labs products, each with one live figure from the product itself." />
       <section className="hero">
         <div className="wrap">
           <div className="copy rise">
             <span className="lab cy">Gully Labs · products</span>
             <h1>
-              Six products,
+              Seven products,
               <br />
               <span className="grad">one lab.</span>
             </h1>
             <p className="promise">
-              A chain, payments, RPC, holder maps, security and games. <b>Every product has a free tier</b>, supports Gully Chain and bills through Gully Pay.
+              A chain, payments, RPC, IPFS, holder maps, security and games. <b>Every product has a free tier</b>, supports Gully Chain and bills through Gully Pay.
             </p>
             <ul className="plist">
               {PRODUCTS.map((p) => (
@@ -35,6 +36,12 @@ export function ProductsIndex() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link to="/status" aria-label="Gully Labs status">
+                  <MarkLogo label="Gully Status" decorative />
+                  {ic(ArrowRight)}
+                </Link>
+              </li>
             </ul>
           </div>
           <NetworkCard />
@@ -45,11 +52,7 @@ export function ProductsIndex() {
           <SectionHead label="Open a product" title="Each one on its own domain" id="prods-h">
             Cards open the product itself; the names above open its page here.
           </SectionHead>
-          <div className="prods">
-            {PRODUCTS.map((p) => (
-              <ProductCard key={p.key} p={p} f={figs[p.key]} />
-            ))}
-          </div>
+          <ProductGrid figs={figs} />
         </div>
       </section>
       <section aria-labelledby="build-h">

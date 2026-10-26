@@ -7,7 +7,8 @@ import { ArrowUpRight, BookOpen } from 'lucide-react'
 import './console.css'
 import { productFigures } from './figures'
 import { LiveProvider, useLive } from './live'
-import { Btn, Count, ProductCard, ProductLogo, PRODUCTS, productByKey, Spark, type ProductKey } from './ui'
+import { Btn, Count, ProductGrid, ProductLogo, productByKey, Spark, type ProductKey } from './ui'
+import { isLocalHost, SITE_URL } from '../site-host'
 
 export interface HandoffCopy {
   /** One line: what the product does, and that it moved. */
@@ -70,10 +71,8 @@ export function ProductHandoff({ k, copy }: { k: ProductKey; copy: HandoffCopy }
 function Cards() {
   const figs = productFigures(useLive())
   return (
-    <div className="prods" data-testid="product-hub">
-      {PRODUCTS.map((p) => (
-        <ProductCard key={p.key} p={p} f={figs[p.key]} href={p.app ?? p.url} />
-      ))}
+    <div data-testid="product-hub">
+      <ProductGrid figs={figs} hrefOf={(p) => p.app ?? p.url} statusHref={isLocalHost() ? '/status' : `${SITE_URL}/status`} />
     </div>
   )
 }

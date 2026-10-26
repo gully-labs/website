@@ -14,6 +14,7 @@ import '@fontsource/poppins/600.css'
 import '@fontsource/poppins/700.css'
 import './index.css'
 import { ToastRoot } from './components/ui/ToastRoot'
+import { installExternalLinks } from './lib/externalLinks'
 import { reloadForNewBuild } from './lib/staleBuild'
 import { initPwa } from './pwa/pwa'
 import { router } from './router'
@@ -22,6 +23,9 @@ import { router } from './router'
 window.addEventListener('vite:preloadError', (e) => {
   if (reloadForNewBuild()) e.preventDefault()
 })
+
+// Owner rule: every link to another origin opens in a new tab (src/lib/externalLinks.ts), on every host.
+installExternalLinks()
 
 // The service worker, the install prompt and update detection (src/pwa/pwa.ts).
 initPwa()

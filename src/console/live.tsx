@@ -31,9 +31,26 @@ export interface Live {
   rpcMs: number[]
   /** Gully Studio: Frog Hop's latest season on the GullyArcade contract (Gully Chain testnet), and its player counts read so far. */
   arcade: { season: number; players: number; history: number[] } | null
+  /** Gully Pay's and Gully RPC's own public status, read by our server (GET /api/products/status). */
+  products: ProductsStatus | null
+  /** Gully IPFS: pinned CIDs, repo size and gateway health (GET /api/ipfs/stats). */
+  ipfs: IpfsStats | null
+}
+type Hist = { t: string; v: number | null }[]
+export interface ProductsStatus {
+  pay: { up: number; total: number; status: string | null; history: Hist } | null
+  rpc: { served: number; total: number; gullyChain: boolean; history: Hist } | null
+}
+export interface IpfsStats {
+  source: string
+  gatewayUp: boolean | null
+  gatewayMs: number | null
+  pinned: number | null
+  repoBytes: number | null
+  history: { t: string; pinned: number | null; repoBytes: number | null; up: boolean; ms: number | null }[]
 }
 
-const empty: Live = { stats: null, statsState: 'loading', status: null, payChains: null, chain: null, chainState: 'loading', rpcMs: [], arcade: null }
+const empty: Live = { stats: null, statsState: 'loading', status: null, payChains: null, chain: null, chainState: 'loading', rpcMs: [], arcade: null, products: null, ipfs: null }
 const Ctx = createContext<Live>(empty)
 export const useLive = () => useContext(Ctx)
 
@@ -123,6 +140,18 @@ export function LiveProvider({ children }: { children: ReactNode }) {
         set((l) => ({ arcade: a ? { ...a, history: [...(l.arcade?.history ?? []), a.players].slice(-20) } : l.arcade }))
       } catch {
         /* the arcade figure stays as last read */
+      }
+      try {
+        const r = await fetch('/api/products/status', { cache: 'no-store' })
+        if (r.ok) set({ products: (await r.json()) as ProductsStatus })
+      } catch {
+        /* stays as last read */
+      }
+      try {
+        const r = await fetch('/api/ipfs/stats', { cache: 'no-store' })
+        if (r.ok) set({ ipfs: (await r.json()) as IpfsStats })
+      } catch {
+        /* stays as last read */
       }
       try {
         const st = (await (await fetch(STATUS_URL, { cache: 'no-store' })).json()) as StatusBody

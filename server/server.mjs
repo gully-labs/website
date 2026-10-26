@@ -32,6 +32,8 @@ import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
+import { handleIpfs } from './ipfs.mjs'
+import { handleProductStatus } from './product-status.mjs'
 import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
 import { handlePay } from './invoices.mjs'
@@ -326,6 +328,13 @@ async function handleRequest(req, res) {
   // Tracked links in bot broadcasts (telegram-broadcast.mjs): count one open, redirect to the broadcast's own button URL.
   if (url.pathname.startsWith('/r/')) return void handleBroadcastRedirect(req, res, url)
   // Which alert delivery channels this server offers (the pricing page and the docs read it). Public.
+  // The products on their own domains: Gully Pay's and Gully RPC's own public status, for the hub's cards (product-status.mjs).
+  if (url.pathname === '/api/products/status') return void (await handleProductStatus(req, res, url, send))
+  // Gully IPFS (ipfs.mjs): repo size, pinned CIDs and gateway health, read from the node over the docker network. Public.
+  if (url.pathname.startsWith('/api/ipfs/')) {
+    if (await handleIpfs(req, res, url, send)) return
+    return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
+  }
   if (url.pathname === '/api/alerts/channels') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })

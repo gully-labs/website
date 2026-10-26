@@ -149,8 +149,7 @@
 
 /* product grid */
 .lc .prods{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-@media (min-width:700px){.lc .prods{grid-template-columns:repeat(3,1fr)}}
-@media (min-width:1100px){.lc .prods{grid-template-columns:repeat(6,1fr)}}
+@media (min-width:700px){.lc .prods{grid-template-columns:repeat(4,1fr)}}
 .lc .prod{display:flex;flex-direction:column;gap:10px;padding:14px;text-decoration:none;min-width:0;transition:border-color .15s,background .15s;position:relative}
 .lc .prod:hover{border-color:var(--gl-line-2);background:var(--gl-hover)}
 .lc .prod .logo{height:34px;display:flex;align-items:center}
@@ -292,7 +291,7 @@
 /* product pages and lists */
 .lc .plogo{display:flex;align-items:center;height:40px}
 .lc .plogo{height:auto}
-.lc .plist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:520px}
+.lc .plist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:520px}
 .lc .plist a{display:flex;align-items:center;justify-content:space-between;gap:8px;height:48px;padding:0 12px;border:1px solid var(--gl-line);border-radius:14px;background:var(--gl-surface);color:var(--gl-text-muted);text-decoration:none;transition:border-color .15s,background .15s}
 .lc .plist a:hover{border-color:var(--gl-line-2);background:var(--gl-hover);color:var(--gl-cyan)}
 .lc .plist img{height:24px;width:auto;max-width:calc(100% - 24px);display:block}

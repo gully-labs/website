@@ -29,7 +29,7 @@ const PROJECTS = {
 const KIT_OG = 'https://gullylabs.xyz/brand/social/og-image-1200x630.png'
 const MAIN = {
   '/': ['You Think It, We Ship It. · Gully Labs', 'Gully Labs builds and runs Web3 products: Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio. Every figure on this page is read live.'],
-  '/products': ['Products · Gully Labs', 'Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio: six Gully Labs products, each with one live figure.'],
+  '/products': ['Products · Gully Labs', 'Gully Chain, Gully Pay, Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio: the Gully Labs products, each with one live figure from the product itself.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
   // The chain list is filled in per request from what checkout offers now (pricingDescription below).
   '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin from your own wallet, with no custody.'],
@@ -58,6 +58,7 @@ const PRODUCT_PAGES = {
   chain: ['Gully Chain', 'An L3 chain for launches and trading, with DeepCore built in. Testnet chain 485590 is live.'],
   pay: ['Gully Pay', 'x402 payments, checkout and a merchant OS, settled on chain. Every Gully product bills through Gully Pay.'],
   rpc: ['Gully RPC', 'The node control plane and RPC gateway for every Gully chain, Gully Chain testnet included.'],
+  ipfs: ['Gully IPFS', 'Our IPFS node and read-only gateway for Gully content: DeepCore token images and metadata, NFT art and .gully sites.'],
   holders: ['HolderMaps', 'Who really holds a token: bubble maps, clusters and deep checks, Gully Chain tokens included.'],
   security: ['Gully Security', 'AI security scans, monitors and the Gully Score for any contract.'],
   studio: ['Gully Studio', 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.'],

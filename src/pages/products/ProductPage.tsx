@@ -3,7 +3,7 @@
    domain. Every figure is read live; nothing here is typed in. */
 import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { ArrowUpRight, BookOpen, Code2, KeyRound, LayoutGrid, Link2, Map as MapIcon, Gamepad2, Network, Rocket, ScanSearch, ShieldCheck, Wallet, Zap } from 'lucide-react'
+import { ArrowUpRight, BookOpen, Code2, KeyRound, LayoutGrid, Link2, Map as MapIcon, Gamepad2, HardDrive, Network, Pin, Rocket, ScanSearch, ShieldCheck, Wallet, Zap } from 'lucide-react'
 import { Seo } from '../../components/Seo'
 import { BlockBars, ChartCard, type ChartTab } from '../../console/ChartCard'
 import { C, fmtInt, fmtPct, fmtUsd, type Series } from '../../console/charts'
@@ -99,7 +99,7 @@ function defFor(key: ProductKey, l: Live): PageDef {
         chartLabel: 'Fees and volume · live',
         tabs: [venueTab('fees', 'Fees', 'Daily fees by venue, 30 days', s?.totals.feesAllUsd, 'fees, all-time across our venues'), venueTab('volume', 'Volume', 'Daily volume by venue, 30 days', s?.totals.volumeAllUsd, 'volume, all-time across our venues')],
         tiles: [
-          { label: 'Payment chains', value: l.payChains, spark: s ? summed(s, 'fees').slice(-14) : [], color: C.s[1], sub: 'live from /api/plans' },
+          { label: 'Gully Pay services', value: l.products?.pay?.up ?? null, fmt: l.products?.pay ? (v) => `${v}/${l.products!.pay!.total}` : undefined, spark: (l.products?.pay?.history ?? []).map((h) => h.v), color: C.s[1], sub: l.products?.pay ? `operational · gullypay.xyz/api/status` : 'reading gullypay.xyz status' },
           { label: 'Checkout uptime · 24h', value: minUptime(pay), fmt: fmtPct, spark: histUp(pay), color: C.s[0], sub: `${pay.length} payment checks` },
           { label: 'Fees · all-time', value: s?.totals.feesAllUsd, fmt: fmtUsd, spark: s ? summed(s, 'fees') : [], color: C.s[2], sub: 'USD, venue APIs + DefiLlama' },
           { label: 'Gully Chain block', value: l.chain?.head, spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'settlement chain 485590 (testnet)' },
@@ -121,7 +121,8 @@ function defFor(key: ProductKey, l: Live): PageDef {
           { id: 'ms', label: 'Latency', title: 'Gully Chain RPC latency from this browser', series: one('Latency', C.s[1], l.rpcMs), labels: l.rpcMs.map((_, i) => `read ${i + 1}`), fmt: ms, head: lastMs == null ? '—' : <><Count value={lastMs} /> ms</>, sub: 'latest read, every 8 s' },
           { id: 'api', label: 'API checks', title: 'Public API latency, 30-minute buckets', series: one('API', C.s[0], (api[0]?.history ?? []).map((h) => h.ms)), labels: histLabels(api), fmt: ms, head: <Count value={minUptime(api)} fmt={fmtPct} />, sub: 'public API uptime, 24 h' },
         ],
-        tiles: chainTiles.slice(0, 1).concat([
+        tiles: ([] as TileDef[]).concat([
+          { label: 'Networks served', value: l.products?.rpc?.served ?? null, fmt: l.products?.rpc ? (v) => `${v}/${l.products!.rpc!.total}` : undefined, spark: (l.products?.rpc?.history ?? []).map((h) => h.v), color: C.s[0], sub: 'live or beta · gullyrpc.xyz/status.json' },
           { label: 'Latency · now', value: lastMs, fmt: (v) => `${Math.round(v)} ms`, spark: l.rpcMs, color: C.s[1], sub: 'eth_blockNumber + blocks' },
           { label: 'Latency · average', value: l.rpcMs.length ? l.rpcMs.reduce((a, b) => a + b, 0) / l.rpcMs.length : null, fmt: (v) => `${Math.round(v)} ms`, spark: l.rpcMs, color: C.s[2], sub: `${l.rpcMs.length} reads this visit` },
           { label: 'API uptime · 24h', value: minUptime(api), fmt: fmtPct, spark: histUp(api), color: C.s[3], sub: 'status checks every minute' },
@@ -176,6 +177,34 @@ function defFor(key: ProductKey, l: Live): PageDef {
           { icon: Zap, title: 'Turn on monitors', body: <>Alerts on risky changes <b>by Telegram or webhook</b>.</> },
         ],
       }
+    case 'ipfs': {
+      const ip = l.ipfs
+      const h = ip?.history ?? []
+      const labels = h.map((x) => new Date(x.t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
+      const gb = (v: number | null) => (v == null ? '—' : `${(v / 1e9).toFixed(2)} GB`)
+      return {
+        label: 'Gully IPFS · Gully Labs service',
+        h1: <>Gully content, <span className="grad">pinned for good.</span></>,
+        promise: <>Our own IPFS node with a read-only gateway at <b>ipfs.gullylabs.xyz/ipfs/&lt;CID&gt;</b>. It serves only what we pin: token art, metadata, NFT art and .gully sites.</>,
+        chartLabel: 'Gully IPFS node · live',
+        tabs: [
+          { id: 'pins', label: 'Pinned', title: 'CIDs pinned on the Gully IPFS node', series: one('Pinned', C.s[0], h.map((x) => x.pinned)), labels, fmt: int, head: <Count value={ip?.pinned} />, sub: ip?.pinned != null ? 'recursive pins, read from the node' : 'node not readable from this server yet' },
+          { id: 'gw', label: 'Gateway', title: 'Gateway response time', series: one('Gateway', C.s[1], h.map((x) => x.ms)), labels, fmt: ms, head: ip?.gatewayMs == null ? '—' : `${ip.gatewayMs} ms`, sub: ip?.gatewayUp ? 'gateway answering' : 'gateway not reachable yet' },
+        ],
+        tiles: [
+          { label: 'CIDs pinned', value: ip?.pinned ?? null, spark: h.map((x) => x.pinned), color: C.s[0], sub: 'GET /api/ipfs/stats' },
+          { label: 'Repo size', value: ip?.repoBytes ?? null, fmt: (v) => gb(v), spark: h.map((x) => x.repoBytes), color: C.s[2], sub: 'pinned content is never collected' },
+          { label: 'Gateway', value: ip?.gatewayMs ?? null, fmt: (v) => `${Math.round(v)} ms`, spark: h.map((x) => x.ms), color: C.s[1], sub: ip?.gatewayUp ? 'answering' : 'not reachable yet' },
+          chainTiles[0],
+        ],
+        stepsTitle: 'Serve a file from Gully IPFS',
+        steps: [
+          { icon: Pin, title: 'We pin it', body: <>Gully content only: <b>token images, metadata, NFT art</b>, docs snapshots.</> },
+          { icon: HardDrive, title: 'Link the CID', body: <>Use <b>ipfs.gullylabs.xyz/ipfs/&lt;CID&gt;</b>, or any IPFS gateway.</> },
+          { icon: Network, title: 'Name it', body: <>Point a <b>.gully name</b>&apos;s contenthash at the CID for a site on IPFS.</> },
+        ],
+      }
+    }
     case 'studio':
       return {
         label: 'Gully Studio · game studio',
