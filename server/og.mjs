@@ -26,7 +26,7 @@ import zlib from 'node:zlib'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { DATA_DIR } from './http.mjs'
-import { KIT } from './brand.mjs'
+import { KIT_FILES, kitDataUri } from './brand.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const W = 1200
@@ -349,21 +349,15 @@ export class SvgContext {
   fillRect(x, y, w, h) {
     this.out.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" ${this.paintAttrs(this.st.fillStyle, 'fill')}/>`)
   }
-  /** The brand kit's wordmark (server/brand.mjs) at (x, y), scaled by s: banner.js's drawWordmark calls this instead of Path2D. */
+  /** The Gully Labs kit's horizontal wordmark (brand-kit logo/gully-labs-wordmark-horizontal*.png, embedded) in the
+      box the retired outlined wordmark used: 848 x 176 units at (x, y), scaled by s, centred vertically. */
   kitWordmark(x, y, s, theme = 'dark') {
-    const w = KIT.wordmark
-    const id = `kw${this.ids++}`
-    const stops = (list) => list.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('')
-    const lg = w.labsGradient
-    const bg = w.barGradient
-    this.defs.push(
-      `<linearGradient id="${id}-labs" gradientUnits="userSpaceOnUse" x1="${lg.x1}" y1="${lg.y1}" x2="${lg.x2}" y2="${lg.y2}">${stops(lg[theme])}</linearGradient>`,
-      `<linearGradient id="${id}-bar" gradientUnits="userSpaceOnUse" x1="${bg.x1}" y1="${bg.y1}" x2="${bg.x2}" y2="${bg.y2}">${stops(bg[theme])}</linearGradient>`,
-    )
-    this.out.push(
-      `<g transform="translate(${r2(x)} ${r2(y)}) scale(${Math.round(s * 100000) / 100000})"><path fill="${w.fill[theme]}" d="${w.gully}"/><path fill="url(#${id}-labs)" d="${w.labs}"/>` +
-        `<rect x="${w.bar.x}" y="${w.bar.y}" width="${w.bar.width}" height="${w.bar.height}" fill="url(#${id}-bar)"/></g>`,
-    )
+    const f = KIT_FILES.wordmark
+    const href = kitDataUri(theme === 'light' ? 'wordmarkOnLight' : 'wordmark')
+    if (!href) return
+    const w = 848 * s
+    const h = (w * f.height) / f.width
+    this.out.push(`<image x="${r2(x)}" y="${r2(y + (176 * s - h) / 2)}" width="${r2(w)}" height="${r2(h)}" href="${href}"/>`)
   }
   strokeRect(x, y, w, h) {
     this.out.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" ${this.strokeAttrs()}/>`)

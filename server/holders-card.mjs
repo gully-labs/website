@@ -23,7 +23,8 @@ const firstFile = (...c) => c.find((p) => p && fs.existsSync(p)) ?? null
 let mascot
 function mascotUri() {
   if (mascot !== undefined) return mascot
-  const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand', 'gullylabs-mascot-bust.png'), path.join(HERE, 'dist', 'brand', 'gullylabs-mascot-bust.png'), path.join(HERE, '..', 'public', 'brand', 'gullylabs-mascot-bust.png'))
+  // The Gully Labs kit icon (brand-kit icon/gully-labs-icon.png, 343 x 372), drawn at its own ratio below.
+  const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand', 'icon', 'gully-labs-icon.png'), path.join(HERE, 'dist', 'brand', 'icon', 'gully-labs-icon.png'), path.join(HERE, '..', 'public', 'brand', 'icon', 'gully-labs-icon.png'))
   mascot = p ? `data:image/png;base64,${fs.readFileSync(p).toString('base64')}` : null
   return mascot
 }
@@ -159,7 +160,7 @@ export function renderHolderCardSvg(map) {
   const TW = W - X - 50
   ctx.kitWordmark(X, 52, 0.2, 'dark')
   const m = mascotUri()
-  if (m) ctx.out.push(`<image x="${W - 50 - 88}" y="34" width="88" height="84" href="${m}"/>`)
+  if (m) ctx.out.push(`<image x="${W - 50 - 77}" y="34" width="77" height="84" href="${m}"/>`)
   ctx.font = '500 16px "IBM Plex Mono"'
   ctx.fillStyle = K.gold
   ctx.fillText('HOLDER MAP', X, 118)
@@ -235,7 +236,7 @@ export function renderHolderStatusCardSvg(body = {}) {
   const TW = W - X - 50
   ctx.kitWordmark(X, 52, 0.2, 'dark')
   const m = mascotUri()
-  if (m) ctx.out.push(`<image x="${W - 50 - 88}" y="34" width="88" height="84" href="${m}"/>`)
+  if (m) ctx.out.push(`<image x="${W - 50 - 77}" y="34" width="77" height="84" href="${m}"/>`)
   ctx.font = '500 16px "IBM Plex Mono"'
   ctx.fillStyle = K.gold
   ctx.fillText('HOLDER MAP', X, 118)

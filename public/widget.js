@@ -172,7 +172,7 @@
     return (
       '<div class="f"><span class="lv"><span class="dot' + (stale || !d ? ' st' : '') + '"></span>' + esc(when) + '</span>' +
       /* The Gully Labs mark from the brand kit (public/brand, cut from the kit's icon master) beside the credit. */
-      '<a href="' + TRACKER + '" target="_blank" rel="noopener noreferrer"><img src="https://gullylabs.xyz/brand/gully-mark-96.png" alt="" width="16" height="16" loading="lazy" decoding="async">Gully Labs Stock tracker \u2197</a></div>'
+      '<a href="' + TRACKER + '" target="_blank" rel="noopener noreferrer"><img src="https://gullylabs.xyz/brand/icon/favicon-32.png" alt="" width="16" height="16" loading="lazy" decoding="async">Gully Labs Stock tracker \u2197</a></div>'
     )
   }
 
@@ -666,7 +666,7 @@
       if (!w.box.firstChild) {
         w.box.innerHTML =
           '<a class="w" target="_blank" rel="noopener noreferrer"><span class="r"><svg viewBox="0 0 64 64" aria-hidden="true"><circle class="bg" cx="32" cy="32" r="26"/><circle class="fg" cx="32" cy="32" r="26"/></svg><b></b></span>' +
-          '<span class="t"><span class="h"><img alt="" src="' + esc(w.base) + '/brand/kit/mark-64.png" width="18" height="18">GULLY SCORE</span><span class="n"></span><span class="d"></span></span></a>'
+          '<span class="t"><span class="h"><img alt="" src="' + esc(w.base) + '/brand/icon/favicon-48.png" width="18" height="18">GULLY SCORE</span><span class="n"></span><span class="d"></span></span></a>'
       }
       var a = w.box.querySelector('a')
       a.href = page
