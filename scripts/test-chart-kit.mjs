@@ -259,7 +259,7 @@ test('index.css: live loops keep running (slow and small) under reduced motion, 
   assert.match(css, /--card-bg:\s*var\(--color-surface\)/)
   assert.match(css, /--card-pad:\s*20px/)
   assert.match(css, /--radius-lg:\s*12px/)
-  assert.match(css, /--color-surface:\s*#151d28/)
+  assert.match(css, /--color-surface:\s*#0b0a16/)
 })
 
 test('GhostChart: the caption sits in a masked band, not on the curves', () => {

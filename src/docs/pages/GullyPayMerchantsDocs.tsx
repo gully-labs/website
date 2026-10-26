@@ -65,7 +65,7 @@ export function FeeCurve() {
       legend: { top: 0, left: 0, textStyle: { color: C.muted, fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const i = ps[0]?.dataIndex ?? 0
-        return tipHtml({ title: `${usd(xs[i])} lifetime volume`, rows: [{ name: 'Fees in all', value: usd(fee[i]), color: C.gold }, { name: 'Effective rate', value: `${eff[i]}%`, color: '#5aa9e6' }], note: xs[i] <= cfg.freeUsd ? 'Inside the free allowance.' : undefined })
+        return tipHtml({ title: `${usd(xs[i])} lifetime volume`, rows: [{ name: 'Fees in all', value: usd(fee[i]), color: C.gold }, { name: 'Effective rate', value: `${eff[i]}%`, color: '#248bff' }], note: xs[i] <= cfg.freeUsd ? 'Inside the free allowance.' : undefined })
       }),
       xAxis: { type: 'category', boundaryGap: false, data: xs.map((v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)), axisLabel: { color: C.faint, fontSize: 11, hideOverlap: true }, axisLine: { lineStyle: { color: C.line } } },
       yAxis: [
@@ -74,7 +74,7 @@ export function FeeCurve() {
       ],
       series: [
         { id: 'fee', name: 'Fees in all', ...areaPreset({ color: C.gold }), data: fee, markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 11, formatter: 'free allowance', position: 'insideEndTop' }, data: [{ xAxis: xs.findIndex((v) => v >= cfg.freeUsd) }] } },
-        { id: 'eff', name: 'Effective rate', ...linePreset({ color: '#5aa9e6', dashed: true }), yAxisIndex: 1, data: eff },
+        { id: 'eff', name: 'Effective rate', ...linePreset({ color: '#248bff', dashed: true }), yAxisIndex: 1, data: eff },
       ],
     }
   }, [cfg])

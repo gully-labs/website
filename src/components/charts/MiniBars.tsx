@@ -145,7 +145,7 @@ export function MiniBars({ bars, label, orientation = 'columns', fmt = (v) => v.
       {at !== null && (
         <span
           aria-live="polite"
-          className="pointer-events-none absolute bottom-full z-10 mb-1 rounded-input border border-line-strong bg-surface-deep px-2 py-1 font-mono text-[11px] whitespace-nowrap text-ink shadow-[0_8px_24px_rgba(13,20,28,.6)]"
+          className="pointer-events-none absolute bottom-full z-10 mb-1 rounded-input border border-line-strong bg-surface-deep px-2 py-1 font-mono text-[11px] whitespace-nowrap text-ink shadow-[0_8px_24px_rgba(6,5,13,.6)]"
           style={{ left: `${((at + 0.5) / bars.length) * 100}%`, transform: `translateX(${at / bars.length > 0.7 ? '-100%' : at / bars.length < 0.3 ? '0' : '-50%'})` }}
         >
           <span className="mr-2 text-faint">{bars[at].label}</span>

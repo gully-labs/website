@@ -281,7 +281,7 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
   const txUrl = hash && p ? `${p.chain.explorer}/tx/${hash}` : null
   const busy = phase === 'switching' || phase === 'confirm'
   return (
-    <section aria-label={heading} className="flex flex-col gap-3 rounded-[12px] border border-gold-line bg-[rgba(217,181,99,.04)] p-4" style={{ animation: 'gl-rise .3s ease both' }} data-testid="safe-deploy">
+    <section aria-label={heading} className="flex flex-col gap-3 rounded-[12px] border border-gold-line bg-[rgba(0,210,255,.04)] p-4" style={{ animation: 'gl-rise .3s ease both' }} data-testid="safe-deploy">
       <div className="flex flex-wrap items-center gap-3">
         <ChainLogo chain={chain.key ?? chain.name} size={32} decorative />
         <div className="flex min-w-0 flex-[1_1_200px] flex-col">
@@ -384,7 +384,7 @@ function Inner({ chain, plan, status, onVerified, onAccount, planKey = '', onClo
           {p.warnings && p.warnings.length > 0 && (
             <ul className="m-0 flex list-none flex-col gap-1 p-0">
               {p.warnings.map((w) => (
-                <li key={w} className="flex items-start gap-2 rounded-input border border-gold-line bg-[rgba(217,181,99,.06)] px-3 py-2 text-[12.5px] leading-[1.5] text-ink-2">
+                <li key={w} className="flex items-start gap-2 rounded-input border border-gold-line bg-[rgba(0,210,255,.06)] px-3 py-2 text-[12.5px] leading-[1.5] text-ink-2">
                   <AlertTriangle size={14} className="mt-[2px] shrink-0 text-gold" aria-hidden /> {w}
                 </li>
               ))}

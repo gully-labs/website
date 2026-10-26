@@ -120,7 +120,7 @@ export function SupplyStrip({ m, pctAt, selected, onSelect, compact }: { m: Hold
                       <TokenLogo symbol={m.token.symbol} chain={m.chain.key} address={m.token.address} size={24} decorative />
                     ) : (
                       <Sphere hue={hue} size={24}>
-                        <Icon size={12} strokeWidth={2.2} color="#0d141c" aria-hidden />
+                        <Icon size={12} strokeWidth={2.2} color="#06050d" aria-hidden />
                       </Sphere>
                     )}
                     <span className="flex min-w-0 flex-1 flex-col leading-[1.2]">

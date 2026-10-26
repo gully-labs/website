@@ -1,6 +1,7 @@
-import { useEffect, type ReactNode } from 'react'
+import { ConsoleTabs } from '../console/Tabs'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ArrowRight, Check, Clock, Layers, Plus, Rocket, Send, Sparkles, Timer } from 'lucide-react'
+import { ArrowRight, Check, CircleHelp, Clock, Layers, Plus, Rocket, Send, Sparkles, Tag, Timer } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { ChartBox } from '../components/charts/ChartSkeleton'
 import { NewTabMark } from '../components/LayoutLinks'
@@ -8,7 +9,7 @@ import { newTab } from '../components/LayoutNav'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { IntegrationLogo } from '../components/logos/IntegrationLogo'
 import { VenueLogo } from '../components/logos/VenueLogo'
-import { BlinkDot, btnGold, btnOutline, eyebrow, h2, h3, h4 } from '../components/ui'
+import { BlinkDot, btnGold, btnOutline, eyebrow, h2, h4 } from '../components/ui'
 import { track } from '../lib/track'
 import { APP_URL, DOCS_URL, isLocalHost } from '../site-host'
 import { Diagram } from './chains/Diagram'
@@ -26,19 +27,6 @@ import { Waitlist } from './chains/Waitlist'
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` })
 const pill = 'rounded-full border px-3 py-[3px] font-mono text-[11px] tracking-[1px]'
 
-function Section({ id, label, title, children }: { id: string; label: string; title: string; children: ReactNode }) {
-  return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-24 border-t border-line px-page py-7 max-[600px]:py-6">
-      <div className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <span className={eyebrow}>{label}</span>
-        <h2 id={`${id}-title`} className={h3}>
-          {title}
-        </h2>
-      </div>
-      {children}
-    </section>
-  )
-}
 
 /* The marks the offer is built with, as a row of small tiles (each is a real logo file). */
 function Built() {
@@ -187,17 +175,19 @@ export function Chains() {
   // Arriving on /chains#waitlist (from Chain Kit): scroll to the form once the offer has loaded.
   const loaded = state.k === 'ok'
   useEffect(() => {
-    if (loaded && location.hash === '#waitlist') document.getElementById('waitlist')?.scrollIntoView({ block: 'start' })
+    if (loaded && location.hash === '#waitlist') document.getElementById('chain-tabs')?.scrollIntoView({ block: 'start' })
   }, [loaded])
+  const [tab, setTab] = useState('stack')
   const goForm = () => {
     track('cta-click', { cta: 'chains-join-waitlist', page: '/chains' })
-    document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setTab('waitlist')
+    requestAnimationFrame(() => document.getElementById('chain-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
   return (
     <>
       <Seo title="Gully Chains: your own Arbitrum chain" description="Your own Arbitrum Orbit chain, launched and run by Gully Labs, with an explorer, bridge, faucet, account abstraction and monitoring. A testnet is coming: join the waitlist." />
       <section className="relative overflow-hidden px-page pt-8 pb-6 max-[600px]:pt-6">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[560px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.14),transparent_62%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[560px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.14),transparent_62%)]" />
         <div className="relative grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start gap-x-10 gap-y-6 max-[1000px]:grid-cols-1">
           <div className="flex flex-col gap-4">
             <span className="flex flex-wrap items-center gap-3" style={rise(0)}>
@@ -246,34 +236,58 @@ export function Chains() {
         </section>
       )}
       {state.k === 'ok' && (
-        <>
-          <Section id="stack" label="YOUR CHAIN" title="Built on proven parts, with services included">
-            <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4 max-[1000px]:grid-cols-1">
-              <Diagram cfg={state.cfg} />
-              <FeeLive />
-            </div>
-          </Section>
-          <Section id="pricing" label="PRICING" title="Simple, before launch">
-            <Pricing cfg={state.cfg} />
-          </Section>
-          <Process />
-          <Section id="waitlist" label="WAITLIST" title="Join the waitlist">
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-start gap-4 max-[1000px]:grid-cols-1">
-              <div className="flex flex-col gap-4">
-                <p className="m-0 flex items-start gap-3 text-[14px] leading-[1.6] text-muted">
-                  <Sparkles aria-hidden size={18} className="mt-[2px] flex-none text-gold" />
-                  No chain is running yet. Tell us about your project and we will write when the testnet opens.
-                </p>
-                <Momentum />
-                <Talk where="form" />
-              </div>
-              <Waitlist cfg={state.cfg} />
-            </div>
-          </Section>
-          <Section id="faq" label="FAQ" title="Questions">
-            <Faq cfg={state.cfg} />
-          </Section>
-        </>
+        <section className="border-t border-line px-page py-6">
+          <ConsoleTabs
+            id="chain-tabs"
+            label="Gully Chains"
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              {
+                id: 'stack',
+                label: 'Your chain',
+                icon: Layers,
+                content: (
+                  <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4 max-[1000px]:grid-cols-1">
+                    <Diagram cfg={state.cfg} />
+                    <FeeLive />
+                  </div>
+                ),
+              },
+              {
+                id: 'pricing',
+                label: 'Pricing',
+                icon: Tag,
+                content: (
+                  <div className="flex flex-col gap-4">
+                    <Pricing cfg={state.cfg} />
+                    <Process />
+                  </div>
+                ),
+              },
+              {
+                id: 'waitlist',
+                label: 'Join the waitlist',
+                icon: Rocket,
+                content: (
+                  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-start gap-4 max-[1000px]:grid-cols-1">
+                    <div className="flex flex-col gap-4">
+                      <p className="m-0 flex items-start gap-3 text-[14px] leading-[1.6] text-muted">
+                        <Sparkles aria-hidden size={18} className="mt-[2px] flex-none text-gold" />
+                        No chain is running yet. Tell us about your project and we will write when the testnet opens.
+                      </p>
+                      <Momentum />
+                    </div>
+                    <div id="waitlist" className="scroll-mt-24">
+                      <Waitlist cfg={state.cfg} />
+                    </div>
+                  </div>
+                ),
+              },
+              { id: 'faq', label: 'Questions', icon: CircleHelp, content: <Faq cfg={state.cfg} /> },
+            ]}
+          />
+        </section>
       )}
 
       <section className="border-t border-line px-page py-5">

@@ -19,10 +19,10 @@
 /* ------------------------------------------------------------------ manifests --- */
 
 // Kit tokens (public/brand/tokens/tokens.json): lab-night for the background and the browser chrome.
-const LAB_NIGHT = '#0D141C'
+const LAB_NIGHT = '#06050D'
 const ICONS = [
-  { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-  { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+  { src: '/brand/icon/app-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+  { src: '/brand/icon/app-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
   { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
 ]
 

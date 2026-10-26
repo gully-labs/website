@@ -44,11 +44,11 @@ export function SecuredBy({ variant = 'full', merchant = null, treasury = null, 
     )
   }
   const link = !merchant && treasury ? treasuryHref : null
-  const tone = light ? 'border-[#dde2e8] bg-[#f6f8fa] text-[#2a3542]' : 'border-line bg-bg text-ink-2'
-  const faint = light ? 'text-[#5f6a78]' : 'text-faint'
+  const tone = light ? 'border-[#dde2e8] bg-[#f6f8fa] text-[#242140]' : 'border-line bg-bg text-ink-2'
+  const faint = light ? 'text-[#6b7090]' : 'text-faint'
   return (
     <aside className={`flex flex-col gap-2 rounded-input border px-3 py-3 ${tone} ${className}`} aria-label="Secured by Gully Pay" data-testid="secured-by">
-      <span className={`inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] ${light ? 'text-[#2f6b35]' : 'text-green'}`}>
+      <span className={`inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] ${light ? 'text-[#1f6b4f]' : 'text-green'}`}>
         <ShieldCheck size={15} aria-hidden />
         <Mark size={18} />
         SECURED BY GULLY PAY

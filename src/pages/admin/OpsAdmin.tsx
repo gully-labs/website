@@ -424,7 +424,7 @@ interface KitView {
 
 const KIT_SERIES: DaySeries[] = [
   { key: 'request', label: 'Chain Kit waitlist', color: C.gold },
-  { key: 'waitlist', label: 'Devnet waitlist', color: '#5aa9e6' },
+  { key: 'waitlist', label: 'Devnet waitlist', color: '#248bff' },
 ]
 
 export function ChainKitAdmin({ token }: { token: string }) {

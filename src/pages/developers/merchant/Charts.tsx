@@ -23,7 +23,7 @@ import { Section } from './parts'
 
 const RANGES = ['30d', '90d', '365d'] as const
 type Range = (typeof RANGES)[number]
-const CHAIN_COLOR: Record<string, string> = { Base: '#5aa9e6', Ethereum: '#c98bdb', 'BNB Chain': '#d9b563', Arbitrum: '#26ab94', 'OP Mainnet': '#ff8a7a', Polygon: '#c98bdb', Avalanche: '#ff8a7a' }
+const CHAIN_COLOR: Record<string, string> = { Base: '#248bff', Ethereum: '#9578e8', 'BNB Chain': '#00d2ff', Arbitrum: '#20a0c4', 'OP Mainnet': '#ff8a7a', Polygon: '#9578e8', Avalanche: '#ff8a7a' }
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 export function PaymentsDashboard({ refreshKey, children }: { refreshKey: number; children?: React.ReactNode }) {

@@ -31,7 +31,7 @@ export function SubTabs<T extends string>({ items, value, onChange, label, idBas
     ;(e.currentTarget.querySelector(`[data-sub="${items[next].id}"]`) as HTMLElement | null)?.focus()
   }
   return (
-    <div className="sticky top-14 z-20 -mx-6 border-b border-line bg-[rgba(13,20,28,.92)] px-6 backdrop-blur-md max-[480px]:-mx-4 max-[480px]:px-4 print:static" data-testid="sub-tabs">
+    <div className="sticky top-14 z-20 -mx-6 border-b border-line bg-[rgba(6,5,13,.92)] px-6 backdrop-blur-md max-[480px]:-mx-4 max-[480px]:px-4 print:static" data-testid="sub-tabs">
       <div role="tablist" aria-label={label} onKeyDown={onKey} className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
         {items.map((t) => {
           const on = t.id === value
@@ -50,7 +50,7 @@ export function SubTabs<T extends string>({ items, value, onChange, label, idBas
             >
               <span className={on ? 'text-gold' : ''}>{t.icon}</span>
               {t.label}
-              {t.count !== undefined && t.count !== null && (t.count !== 0 || t.keepZero) && <span className={`rounded-full px-[6px] font-mono text-[11px] leading-[18px] ${on ? 'bg-[rgba(217,181,99,.14)] text-gold' : 'bg-surface-deep text-faint'}`}>{t.count}</span>}
+              {t.count !== undefined && t.count !== null && (t.count !== 0 || t.keepZero) && <span className={`rounded-full px-[6px] font-mono text-[11px] leading-[18px] ${on ? 'bg-[rgba(0,210,255,.14)] text-gold' : 'bg-surface-deep text-faint'}`}>{t.count}</span>}
               {t.dot && <span className="size-[6px] rounded-full bg-gold" aria-label="needs attention" />}
               {on && <span className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-gold" style={{ animation: 'gl-fade .2s ease both' }} aria-hidden />}
             </button>
@@ -156,7 +156,7 @@ export function Stepper({ title, steps, children, testId = 'stepper', foldWhenDo
               <button type="button" onClick={() => setPicked(s.id)} aria-current={on ? 'step' : undefined} className="group flex min-h-11 min-w-0 flex-1 flex-col items-center gap-[6px] rounded-[10px] px-1 py-1 text-center">
                 <span className="flex w-full items-center">
                   <span className={`h-[2px] flex-1 rounded-full ${i === 0 ? 'opacity-0' : steps[i - 1].done ? 'bg-gold' : 'bg-line-strong'}`} aria-hidden />
-                  <span className={`relative grid size-7 shrink-0 place-items-center rounded-full border font-mono text-[12px] transition-colors ${s.done ? 'border-gold bg-gold text-bg' : on ? 'border-gold text-gold shadow-[0_0_0_4px_rgba(217,181,99,.12)]' : 'border-line-strong text-faint group-hover:border-line-hover'}`}>
+                  <span className={`relative grid size-7 shrink-0 place-items-center rounded-full border font-mono text-[12px] transition-colors ${s.done ? 'border-gold bg-gold text-bg' : on ? 'border-gold text-gold shadow-[0_0_0_4px_rgba(0,210,255,.12)]' : 'border-line-strong text-faint group-hover:border-line-hover'}`}>
                     {s.done ? <Check key="c" size={14} strokeWidth={3} style={{ animation: 'gl-check-pop .45s cubic-bezier(.2,1.4,.4,1) both' }} aria-hidden /> : (s.icon ?? i + 1)}
                   </span>
                   <span className={`h-[2px] flex-1 rounded-full ${i === steps.length - 1 ? 'opacity-0' : s.done ? 'bg-gold' : 'bg-line-strong'}`} aria-hidden />

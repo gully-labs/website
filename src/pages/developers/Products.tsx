@@ -149,7 +149,7 @@ function TrackerCard({ account, usage, go }: { account: Account; usage: Load<Usa
         <Stat label="Requests · 7d" value={total} unknown={usage.k === 'loading' ? '…' : usage.k === 'error' ? 'not available right now' : 'not tracked yet'} />
         <Stat label="Limit / min / key" value={account.limits.keyPerMin} />
       </div>
-      {usage.k === 'loading' ? <Skeleton h={44} /> : usage.k === 'ok' && usage.data.countingSince ? <KeySpark values={spark} labels={labels} color="#d9b563" width={300} height={44} label={`Requests over 7 days: ${fmt(total ?? 0)}`} /> : usage.k === 'error' ? <LiveMarker text="Usage: not available right now" height={44} /> : <LiveMarker text={live.length ? 'Waiting for your keys’ first request' : 'Create a key: its traffic charts here'} height={44} />}
+      {usage.k === 'loading' ? <Skeleton h={44} /> : usage.k === 'ok' && usage.data.countingSince ? <KeySpark values={spark} labels={labels} color="#00d2ff" width={300} height={44} label={`Requests over 7 days: ${fmt(total ?? 0)}`} /> : usage.k === 'error' ? <LiveMarker text="Usage: not available right now" height={44} /> : <LiveMarker text={live.length ? 'Waiting for your keys’ first request' : 'Create a key: its traffic charts here'} height={44} />}
     </Card>
   )
 }
@@ -185,7 +185,7 @@ function AlertsCard({ s, go }: { s: Load<AlertsView>; go: (t: Tab) => void }) {
             <Stat label="DeepCore launch" value={launch} />
             <Stat label="Fired · 14d" value={fired} />
           </div>
-          {fired ? <StackedDays height={64} days={days} kinds={[{ id: 'fired', name: 'fired', color: '#5aa9e6' }]} label={`Alerts fired per day over 14 days: ${fired}.`} /> : <LiveMarker text={v.alerts.length ? 'Watching: firings chart here as they happen' : 'No alerts yet: set one on a gap or a DeepCore launch'} height={64} />}
+          {fired ? <StackedDays height={64} days={days} kinds={[{ id: 'fired', name: 'fired', color: '#248bff' }]} label={`Alerts fired per day over 14 days: ${fired}.`} /> : <LiveMarker text={v.alerts.length ? 'Watching: firings chart here as they happen' : 'No alerts yet: set one on a gap or a DeepCore launch'} height={64} />}
         </>
       )}
     </Card>
@@ -209,7 +209,7 @@ function AnalyticsCard({ s, go }: { s: Load<AnalyticsView>; go: (t: Tab) => void
         <LiveMarker text={s.data.configured ? 'Web3-aware analytics: start a trial and your events ring fills here' : 'Analytics is not available on this server yet'} height={64} />
       ) : a.plan ? (
         <div className="flex items-center gap-3">
-          <QuotaRing caption="Events this month" quota={a.plan.eventsPerMonth} size={88} slices={a.sites.length ? a.sites.map((x, i) => ({ name: x.domain, value: x.eventsThisMonth, color: ['#d9b563', '#5aa9e6', '#74c27b', '#c98bdb', '#26ab94'][i % 5] })) : [{ name: 'events', value: a.eventsThisMonth, color: '#d9b563' }]} />
+          <QuotaRing caption="Events this month" quota={a.plan.eventsPerMonth} size={88} slices={a.sites.length ? a.sites.map((x, i) => ({ name: x.domain, value: x.eventsThisMonth, color: ['#00d2ff', '#248bff', '#3ddc97', '#9578e8', '#20a0c4'][i % 5] })) : [{ name: 'events', value: a.eventsThisMonth, color: '#00d2ff' }]} />
           <div className="flex flex-col gap-2">
             <Stat label="Websites" value={a.sites.length} />
             <span className={mono}>{a.plan.sites} on the plan</span>
@@ -249,7 +249,7 @@ function PayCard({ s, go }: { s: Load<BillingView>; go: (t: Tab) => void }) {
             )}
           </div>
           {known.length ? (
-            <StackedDays height={64} days={[...known].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { usd: usdOf(p.usd) ?? 0 } }))} kinds={[{ id: 'usd', name: 'USD', color: '#74c27b' }]} label={`Payments over time: ${known.length} with a USD value${partial ? ' (partial)' : ''}.`} />
+            <StackedDays height={64} days={[...known].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { usd: usdOf(p.usd) ?? 0 } }))} kinds={[{ id: 'usd', name: 'USD', color: '#3ddc97' }]} label={`Payments over time: ${known.length} with a USD value${partial ? ' (partial)' : ''}.`} />
           ) : (
             <LiveMarker text={v.payments.length ? 'USD values not recorded for these payments' : 'Pay for a plan from your wallet: payments chart here'} height={64} />
           )}
@@ -277,8 +277,8 @@ export type ChainKitState = {
 }
 
 const CK_KINDS = [
-  { id: 'requests', name: 'Chain Kit waitlist', color: '#d9b563' },
-  { id: 'waitlist', name: 'testnet waitlist', color: '#5aa9e6' },
+  { id: 'requests', name: 'Chain Kit waitlist', color: '#00d2ff' },
+  { id: 'waitlist', name: 'testnet waitlist', color: '#248bff' },
 ]
 
 /** Requests and waitlist sign-ups per day for 30 days, from every account (live, server state). */
@@ -558,7 +558,7 @@ function WidgetCard({ go }: { go: (t: Tab) => void }) {
   return (
     <Card icon={<AppWindow size={16} aria-hidden />} title="Widget builder and SDK" badge={up === null ? null : up ? pill('API online', 'green') : pill('API unreachable', 'red')}>
       <span className="text-[12px] text-dim">Live fair prices on any page with two lines of HTML, no key; or the typed SDK.</span>
-      {up === false ? <LiveMarker text="The API did not answer the health check" height={48} /> : <MiniSpark data={ms} label={`API answer time in milliseconds, last ${ms.length} checks`} fmt={(v) => `${v} ms`} height={48} color="#74c27b" />}
+      {up === false ? <LiveMarker text="The API did not answer the health check" height={48} /> : <MiniSpark data={ms} label={`API answer time in milliseconds, last ${ms.length} checks`} fmt={(v) => `${v} ms`} height={48} color="#3ddc97" />}
       <span className="font-mono text-[11px] text-faint">{up === null ? 'Checking the API…' : up ? `Answer time, checked every 20 s${ms.length ? ` · now ${ms[ms.length - 1]} ms` : ''}` : ''}</span>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => go('widgets')} className={`${pillSm} min-h-11`}>

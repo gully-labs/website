@@ -176,13 +176,13 @@ export function LinksPage() {
       <Seo title="Links" description="Every Gully Labs link in one place: the site, the app, the stock tracker, the Holder Map, Gully Security, Gully Score, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the roadmap, the Telegram bot and the news channel." />
       <section className="relative isolate overflow-hidden bg-kit-lab-night">
         {/* The kit's background treatment: night gradient, 1 px bone grid (drifting), gold glow (pulsing). */}
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_40%,#1D2836_0%,#111923_50%,#0B1118_100%)]" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_40%,#15132a_0%,#0a0914_50%,#08070f_100%)]" />
         <div
           aria-hidden
           className="absolute inset-0 -z-10 animate-[gl-grid-drift_24s_linear_infinite] bg-[linear-gradient(rgba(244,242,236,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(244,242,236,.035)_1px,transparent_1px)] bg-[size:64px_64px]"
         />
         <div aria-hidden className="absolute top-[-60px] left-1/2 -z-10 size-[460px] -translate-x-1/2">
-          <div className="size-full animate-[gl-glow_6s_ease-in-out_infinite] rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.16)_0%,rgba(217,181,99,0)_65%)]" />
+          <div className="size-full animate-[gl-glow_6s_ease-in-out_infinite] rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.16)_0%,rgba(0,210,255,0)_65%)]" />
         </div>
 
         <div className="mx-auto flex w-full max-w-[560px] flex-col gap-8 px-4 pt-14 pb-20 max-[600px]:pt-10">

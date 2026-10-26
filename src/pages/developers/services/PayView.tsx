@@ -93,7 +93,7 @@ export default function PayView({ ctx }: { ctx: ServiceCtx }) {
           {!v ? (
             <Skeleton h={170} />
           ) : days.length ? (
-            <StackedDays height={170} days={days} kinds={[{ id: 'usd', name: 'USD', color: '#74c27b' }]} label={`Payments over time: ${known.length}${missing ? `, plus ${missing} with no USD value (not charted)` : ''}.`} />
+            <StackedDays height={170} days={days} kinds={[{ id: 'usd', name: 'USD', color: '#3ddc97' }]} label={`Payments over time: ${known.length}${missing ? `, plus ${missing} with no USD value (not charted)` : ''}.`} />
           ) : v.payments.length ? (
             <GhostChart height={170} variant="bars" label="No USD values to chart yet" badge={false}><span className="text-[12px] text-muted">{v.payments.length} payment{v.payments.length === 1 ? '' : 's'} without a recorded USD value (see Billing)</span></GhostChart>
           ) : (

@@ -143,8 +143,10 @@ export function holderMapsRoute(host, pathname, search = '') {
                               to the same path on gullylabs.xyz. Monitoring has no page of its own: it is a section of
                               the home (/#monitoring) and the monitors themselves live in the app.
    www.gullysecurity.xyz      301 to gullysecurity.xyz, path and query kept.
-   The main site keeps /security/* working. SECURITY_PRIMARY=1 (set it once gullysecurity.xyz resolves to this server)
-   makes gullysecurity.xyz Security's home everywhere: gullylabs.xyz/security* (GET/HEAD) answers 301 there and the
+   The main site keeps /security/* working. Gully Security is now its own app (gully-labs/gully-security, 2026-10-25).
+   SECURITY_PRIMARY=1 (set it once that app's container is live on gullysecurity.xyz) hands over: this server answers the
+   gullysecurity.xyz host with 421, /api/score* is proxied there (GET/HEAD; other methods 308) until clients migrate,
+   gullylabs.xyz/security* (GET/HEAD) answers 301 there with the path kept (the app answers /security/*), and the
    links the server writes (Telegram, Gully AI, Gully Score, badges, the reports API) name gullysecurity.xyz. The API
    (/api/security/*, /api/developer/security/*, the review form's POST), the report badges, Gully Pay invoices for paid
    scans (/pay/<id> on pay.gullylabs.xyz) and the scan engine never move: the app, the SDK and other sites call them. */

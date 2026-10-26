@@ -17,8 +17,8 @@ export const KIT = {
       height: 12
     },
     fill: {
-      dark: "#F4F2EC",
-      light: "#0D141C"
+      dark: "#ffffff",
+      light: "#06050d"
     },
     labsGradient: {
       x1: 0,
@@ -32,7 +32,7 @@ export const KIT = {
         ],
         [
           0.38,
-          "#D9B563"
+          "#00d2ff"
         ],
         [
           0.7,
@@ -40,13 +40,13 @@ export const KIT = {
         ],
         [
           1,
-          "#3C553B"
+          "#1a5fe6"
         ]
       ],
       light: [
         [
           0,
-          "#D9B563"
+          "#00d2ff"
         ],
         [
           0.38,
@@ -70,7 +70,7 @@ export const KIT = {
       dark: [
         [
           0,
-          "#2A3542"
+          "#242140"
         ],
         [
           0.4,
@@ -78,11 +78,11 @@ export const KIT = {
         ],
         [
           0.85,
-          "#D9B563"
+          "#00d2ff"
         ],
         [
           1,
-          "#F2D58A"
+          "#66e4ff"
         ]
       ],
       light: [
@@ -100,7 +100,7 @@ export const KIT = {
         ],
         [
           1,
-          "#D9B563"
+          "#00d2ff"
         ]
       ]
     }

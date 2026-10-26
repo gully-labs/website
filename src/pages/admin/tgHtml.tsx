@@ -4,7 +4,7 @@ import { NewTabNote } from './newTab'
 /* Telegram HTML (the sanitized subset the server sends: b, i, u, s, a, code, pre, blockquote, tg-spoiler) as React
    elements for the admin previews (channel posts, bot broadcasts). Never innerHTML. */
 
-export const LINK_BLUE = '#5aa9e6' // chart palette blue: Telegram-style links in the preview
+export const LINK_BLUE = '#248bff' // chart palette blue: Telegram-style links in the preview
 
 const decode = (s: string) =>
   s

@@ -247,7 +247,7 @@ function PlanPill({ account }: { account: Account }) {
   const soon = left !== null && left <= 7
   return (
     <span className="flex min-h-[30px] shrink-0 items-center gap-2 rounded-full border border-line px-[10px] text-[13px] whitespace-nowrap max-[419px]:px-[9px]" title={account.plan.expiresAt ? `Runs until ${new Date(account.plan.expiresAt).toLocaleString()}` : undefined} data-testid="plan-pill">
-      <span className="size-2 rounded-full" style={{ background: !paid ? '#8a94a1' : soon ? '#ff8a7a' : '#d9b563' }} aria-hidden />
+      <span className="size-2 rounded-full" style={{ background: !paid ? '#9398b5' : soon ? '#ff8a7a' : '#00d2ff' }} aria-hidden />
       <span className="max-[419px]:sr-only">{account.plan.name} plan</span>
       {left !== null && <span className={`${soon ? 'text-error' : 'text-muted'} max-[520px]:hidden`}>· {left === 0 ? 'ends today' : `${left} day${left === 1 ? '' : 's'} left`}</span>}
     </span>
@@ -505,7 +505,7 @@ function TabBar<T extends string>({ items, current, go, more, sheetOpen }: { ite
   const cell = (on: boolean) => `relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-[11px] font-medium transition-colors ${on ? 'text-gold' : 'text-dim hover:text-ink'}`
   const bar = <span className="absolute top-0 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-gold" style={{ animation: 'gl-fade .25s ease both' }} aria-hidden />
   return (
-    <nav aria-label="App sections" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-[rgba(13,20,28,.94)] pb-[env(safe-area-inset-bottom)] backdrop-blur-md print:hidden" data-testid="tab-bar">
+    <nav aria-label="App sections" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-[rgba(6,5,13,.94)] pb-[env(safe-area-inset-bottom)] backdrop-blur-md print:hidden" data-testid="tab-bar">
       {tabs.map((t) => {
         const on = current === t.id
         return (
@@ -618,7 +618,7 @@ export function AppShell<T extends string>({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-line bg-[rgba(13,20,28,.86)] backdrop-blur-md print:hidden">
+        <header className="sticky top-0 z-30 border-b border-line bg-[rgba(6,5,13,.86)] backdrop-blur-md print:hidden">
           <div className="flex min-h-14 items-center gap-3 px-6 max-[480px]:gap-2 max-[480px]:px-4">
             {narrow && (
               <>

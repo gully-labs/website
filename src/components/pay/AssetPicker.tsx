@@ -89,7 +89,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false, showFee
                 data-chain={g.chainKey}
                 disabled={disabled}
                 onClick={() => setTap({ chainId: g.chainId, at: value })}
-                className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-btn border px-3 text-[13px] whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-gold bg-[rgba(217,181,99,.08)] text-ink' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
+                className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-btn border px-3 text-[13px] whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-gold bg-[rgba(0,210,255,.08)] text-ink' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
               >
                 <ChainMark chainKey={g.chainKey} name={g.chain} size={20} />
                 {g.chain}
@@ -111,7 +111,7 @@ export function AssetPicker({ assets, value, onChange, disabled = false, showFee
               data-asset={a.id}
               disabled={disabled}
               onClick={() => onChange(a.id)}
-              className={`inline-flex min-h-11 items-center justify-center gap-[6px] rounded-btn border px-[10px] font-mono text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-gold bg-[rgba(217,181,99,.08)] text-gold' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
+              className={`inline-flex min-h-11 items-center justify-center gap-[6px] rounded-btn border px-[10px] font-mono text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-gold bg-[rgba(0,210,255,.08)] text-gold' : 'border-line-strong text-ink-2 hover:border-gold hover:text-ink'}`}
             >
               <TokenLogo symbol={a.symbol} chain={a.chainKey} address={a.address} size={20} decorative />
               {a.symbol}

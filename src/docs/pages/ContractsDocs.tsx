@@ -103,7 +103,7 @@ function Registry() {
     const n = q.trim().toLowerCase()
     return contracts.filter((c) => (project === 'all' || c.project === project) && (chain === 'all' || String(c.chainId) === chain) && (!n || c.name.toLowerCase().includes(n) || c.address.toLowerCase().includes(n) || c.role.toLowerCase().includes(n)))
   }, [project, chain, q])
-  const chip = (active: boolean) => `min-h-11 rounded-full border px-3 font-mono text-[11.5px] transition-colors ${active ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-muted hover:text-ink'}`
+  const chip = (active: boolean) => `min-h-11 rounded-full border px-3 font-mono text-[11.5px] transition-colors ${active ? 'border-gold bg-[rgba(0,210,255,.1)] text-gold' : 'border-line-strong text-muted hover:text-ink'}`
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-2" aria-label="Contracts per project">

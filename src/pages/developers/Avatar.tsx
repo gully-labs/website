@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PALETTE } from '../../components/charts/chartPresets'
 
-const BGS = ['#111923', '#1a2330', '#1f2935', '#1d2836']
+const BGS = ['#0a0914', '#110f22', '#181630', '#15132a']
 
 /* A wallet's picture: its ENS / Basename avatar when the server found one, otherwise a blockie (a
    symmetric 5×5 pattern and brand-palette colours picked by the address), drawn as inline SVG so it needs no

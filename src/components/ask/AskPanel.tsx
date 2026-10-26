@@ -362,7 +362,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
                           aria-label={r === 'up' ? 'Useful' : 'Not useful'}
                           data-testid={`ask-rate-${r}`}
                           onClick={() => rate(e.id, e.a?.id, r)}
-                          className={`grid size-11 place-items-center rounded-btn border transition-colors ${e.rating === r ? 'border-gold bg-[rgba(217,181,99,.12)] text-gold' : 'border-line text-faint hover:border-line-hover hover:text-ink'}`}
+                          className={`grid size-11 place-items-center rounded-btn border transition-colors ${e.rating === r ? 'border-gold bg-[rgba(0,210,255,.12)] text-gold' : 'border-line text-faint hover:border-line-hover hover:text-ink'}`}
                         >
                           {r === 'up' ? <ThumbsUp size={16} aria-hidden /> : <ThumbsDown size={16} aria-hidden />}
                         </button>

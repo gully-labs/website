@@ -123,7 +123,7 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
             <HBars
               rowH={22}
               minH={MINI}
-              rows={widest.slice(0, 3).map((r) => ({ name: `${r.ticker} · ${CHAIN_SHORT[r.chain] ?? r.chain}`, value: +Math.abs(r.gapPct ?? 0).toFixed(2), color: (r.gapPct ?? 0) >= 0 ? '#26ab94' : '#f2704a', note: `${fmtGap(r.gapPct)} vs fair price` }))}
+              rows={widest.slice(0, 3).map((r) => ({ name: `${r.ticker} · ${CHAIN_SHORT[r.chain] ?? r.chain}`, value: +Math.abs(r.gapPct ?? 0).toFixed(2), color: (r.gapPct ?? 0) >= 0 ? '#20a0c4' : '#ff6b81', note: `${fmtGap(r.gapPct)} vs fair price` }))}
               unit="%"
               label={`Widest gaps now: ${widest.slice(0, 3).map((r) => `${r.ticker} ${fmtGap(r.gapPct)}`).join(', ')}.`}
             />
@@ -174,7 +174,7 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
           figure={down ? <span className="font-mono text-[12px] text-error">unreachable</span> : <AnimatedNumber value={lastMs} suffix=" ms" className="font-display text-[20px] leading-none font-bold text-green" />}
         >
           {okPings.length >= 2 ? (
-            <LineChart points={okPings.map((p) => [p.t, p.ms])} color="#74c27b" fmt={(v) => `${Math.round(v)} ms`} label={`API round trip from this browser, last ${okPings.length} checks, now ${lastMs ?? 'unknown'} ms.`} height={MINI} />
+            <LineChart points={okPings.map((p) => [p.t, p.ms])} color="#3ddc97" fmt={(v) => `${Math.round(v)} ms`} label={`API round trip from this browser, last ${okPings.length} checks, now ${lastMs ?? 'unknown'} ms.`} height={MINI} />
           ) : (
             <LiveMarker text={down ? 'GET /healthz did not answer' : 'Measuring the round trip…'} height={MINI} />
           )}

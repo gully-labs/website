@@ -56,7 +56,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
   const tiers = useTiers()
   return (
     <section className="relative flex min-h-[calc(100vh-200px)] items-center justify-center overflow-hidden px-4 py-16">
-      <div aria-hidden className="pointer-events-none absolute top-[-200px] left-1/2 size-[640px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.12),transparent_62%)]" />
+      <div aria-hidden className="pointer-events-none absolute top-[-200px] left-1/2 size-[640px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.12),transparent_62%)]" />
       <div className="relative flex w-full max-w-[460px] animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-5 rounded-card border border-line bg-surface p-6 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-5">
         <div className="flex items-center gap-[10px]">
           <Mascot size={24} decorative />
@@ -89,7 +89,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           </dl>
         ) : null}
         {window.location.hash === '#analytics' && (
-          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
+          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
             <ChartNoAxesCombined size={18} className="mt-[3px] shrink-0 text-gold" aria-hidden />
             Here for Gully Analytics? Connect your wallet: the Analytics tab of the app starts the free trial.
           </p>

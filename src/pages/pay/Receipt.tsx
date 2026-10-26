@@ -30,10 +30,10 @@ type ReceiptInvoice = Invoice & {
 function Row({ k, v, mono = false, href, icon }: { k: string; v: string; mono?: boolean; href?: string | null; icon?: ReactNode }) {
   return (
     <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-4 border-b border-[#dde2e8] py-[10px] last:border-b-0 max-[600px]:grid-cols-1 max-[600px]:gap-1 print:break-inside-avoid">
-      <dt className="font-mono text-[11px] tracking-[1px] text-[#5f6a78]">{k}</dt>
-      <dd className={`m-0 break-all text-[#0d141c] ${mono ? 'font-mono text-[13px]' : 'text-[15px]'}`}>
+      <dt className="font-mono text-[11px] tracking-[1px] text-[#6b7090]">{k}</dt>
+      <dd className={`m-0 break-all text-[#06050d] ${mono ? 'font-mono text-[13px]' : 'text-[15px]'}`}>
         {href ? (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-[#949daa] underline-offset-2 print:no-underline">
+          <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-[#8f94b0] underline-offset-2 print:no-underline">
             {v}
             <span aria-hidden className="print:hidden">
               {' '}
@@ -104,17 +104,17 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
   }
 
   return (
-    <div className="min-h-screen bg-[#fff] px-4 py-10 text-[#0d141c] print:min-h-0 print:p-0">
+    <div className="min-h-screen bg-[#fff] px-4 py-10 text-[#06050d] print:min-h-0 print:p-0">
       <div className="mx-auto flex max-w-[760px] flex-col gap-8">
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <Link to={back(id ?? '')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-[#2a3542] hover:underline">
+          <Link to={back(id ?? '')} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-[#242140] hover:underline">
             <ArrowLeft size={14} aria-hidden /> Back to the invoice
           </Link>
           {
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-[#0d141c] px-4 text-[14px] font-semibold hover:bg-[#0d141c] hover:text-[#fff]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-[#06050d] px-4 text-[14px] font-semibold hover:bg-[#06050d] hover:text-[#fff]"
             >
               <Printer size={15} aria-hidden /> Print or save as PDF
             </button>
@@ -133,28 +133,28 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
                 ) : (
                   <GullyLockup height={36} light />
                 )}
-                <span className="font-mono text-[12px] text-[#5f6a78]">
+                <span className="font-mono text-[12px] text-[#6b7090]">
                   {store ? [store.website?.replace(/^https?:\/\//, '').replace(/\/$/, ''), store.supportEmail].filter(Boolean).join(' · ') : 'gullylabs.xyz · team@gullylabs.xyz'}
                 </span>
               </div>
               <div className="flex flex-col items-end gap-1 text-right max-[600px]:items-start max-[600px]:text-left">
                 <h1 className="m-0 font-display text-[34px] leading-none font-extrabold uppercase">Receipt</h1>
-                <span className="font-mono text-[12px] text-[#5f6a78]">
+                <span className="font-mono text-[12px] text-[#6b7090]">
                   {inv.number}
                   {p.id ? ` · ${p.id}` : ''}
                 </span>
               </div>
             </header>
 
-            <div className="flex flex-wrap items-end justify-between gap-4 border-y border-[#0d141c] py-5">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-y border-[#06050d] py-5">
               <div className="flex min-w-0 flex-col gap-1">
-                <span className="font-mono text-[11px] tracking-[1px] text-[#5f6a78]">FOR</span>
+                <span className="font-mono text-[11px] tracking-[1px] text-[#6b7090]">FOR</span>
                 <span className="text-[20px] font-semibold break-words">{inv.title}</span>
-                {inv.customer?.name && <span className="text-[14px] text-[#2a3542]">Billed to {inv.customer.name}</span>}
-                {inv.note && <span className="text-[14px] whitespace-pre-line text-[#2a3542]">{inv.note}</span>}
+                {inv.customer?.name && <span className="text-[14px] text-[#242140]">Billed to {inv.customer.name}</span>}
+                {inv.note && <span className="text-[14px] whitespace-pre-line text-[#242140]">{inv.note}</span>}
               </div>
               <div className="flex flex-col items-end gap-1 max-[600px]:items-start">
-                <span className="rounded-full border-2 border-[#2f6b35] px-3 py-[2px] font-mono text-[12px] font-semibold tracking-[1px] text-[#2f6b35]">PAID IN FULL</span>
+                <span className="rounded-full border-2 border-[#1f6b4f] px-3 py-[2px] font-mono text-[12px] font-semibold tracking-[1px] text-[#1f6b4f]">PAID IN FULL</span>
                 <span className="font-display text-[36px] leading-none font-extrabold">{inv.usd} USD</span>
               </div>
             </div>
@@ -163,7 +163,7 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
               <table className="w-full border-collapse text-[14px]">
                 <caption className="sr-only">Line items</caption>
                 <thead>
-                  <tr className="border-b border-[#dde2e8] text-left font-mono text-[11px] tracking-[1px] text-[#5f6a78]">
+                  <tr className="border-b border-[#dde2e8] text-left font-mono text-[11px] tracking-[1px] text-[#6b7090]">
                     <th scope="col" className="py-2 pr-3 font-normal">
                       ITEM
                     </th>
@@ -236,13 +236,13 @@ export function Receipt({ api = '/api/pay', back = (id: string) => `/pay/${id}` 
               </section>
             )}
 
-            <p className="m-0 text-[12px] leading-[1.6] text-[#5f6a78]">
+            <p className="m-0 text-[12px] leading-[1.6] text-[#6b7090]">
               This receipt records a payment checked on chain by Gully Pay: the transaction succeeded, paid {store ? `${who}'s wallet` : 'the Gully Labs treasury'} exactly the amount quoted for this
               invoice, and had the chain’s required confirmations. Anyone can check it on the chain’s explorer with the transaction hash above.{' '}
               {store ? `${who} is the seller; questions about the order go to it.` : ''} It is not a tax invoice.
             </p>
             <SecuredBy light merchant={store ? who : null} treasury={store ? null : (p.to ?? null)} treasuryHref={!store && p.to && paidAsset ? `${paidAsset.explorer}/${isSolanaChain(paidAsset.chainId) ? 'account' : 'address'}/${p.to}` : null} safe={!isSolanaChain(p.chainId)} className="print:break-inside-avoid" />
-            <p className="m-0 inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-[#5f6a78]">
+            <p className="m-0 inline-flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-[#6b7090]">
               SECURED BY <GullyMark size={18} /> GULLY PAY · GULLYLABS.XYZ
             </p>
           </article>

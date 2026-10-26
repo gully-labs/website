@@ -377,7 +377,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
       <Dialog open={dialog?.kind === 'secret'} onClose={close} title={dialog?.kind === 'secret' && dialog.rotated ? 'Your new secret' : 'Your new key'} dismissable={false}>
         {dialog?.kind === 'secret' ? (
           <div className="flex flex-col gap-4">
-            <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
+            <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
               <AlertTriangle size={18} className="mt-[2px] shrink-0 text-gold" aria-hidden />
               Copy it now. This is the only time the full key is shown: we store only a hash, so it cannot be shown again. Lost it? Rotate the key.
             </p>
@@ -488,7 +488,7 @@ function Requests({ account }: { account: Account }) {
     p.reload().then(() => setBusy(false))
   }
   const colors = keyColors(account.keys)
-  const colorOfId = (id: string) => colors[id] ?? '#8a94a1'
+  const colorOfId = (id: string) => colors[id] ?? '#9398b5'
   return (
     <section id="requests" className={`${panel} scroll-mt-24`} style={rise(1)} aria-labelledby="req-title">
       <div className="flex flex-wrap items-center justify-between gap-3">

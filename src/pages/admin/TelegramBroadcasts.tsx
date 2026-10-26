@@ -503,7 +503,7 @@ function Composer({ token, ov, reload }: { token: string; ov: Overview; reload: 
         </fieldset>
 
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
-          <input type="checkbox" checked={d.urgent} onChange={(e) => set({ urgent: e.target.checked })} className="size-5 accent-[#d9b563]" />
+          <input type="checkbox" checked={d.urgent} onChange={(e) => set({ urgent: e.target.checked })} className="size-5 accent-[#00d2ff]" />
           Urgent (skip the one-broadcast-a-day limit)
         </label>
         {blockedByDay && <span className="text-[13px] text-gold">One broadcast a day: the next can go from {when(ov.nextAllowedAt)}, or tick Urgent.</span>}
@@ -547,7 +547,7 @@ function Composer({ token, ov, reload }: { token: string; ov: Overview; reload: 
           </div>
           {!ov.enabled && <span className="text-[13px] text-error">TELEGRAM_BOT_TOKEN is not set: broadcasts are off.</span>}
           {confirm && (
-            <div role="alertdialog" aria-labelledby="tgb-confirm" className="flex flex-col gap-3 rounded-input border border-gold bg-[rgba(217,181,99,.08)] p-4">
+            <div role="alertdialog" aria-labelledby="tgb-confirm" className="flex flex-col gap-3 rounded-input border border-gold bg-[rgba(0,210,255,.08)] p-4">
               <p id="tgb-confirm" className="m-0 text-[15px] text-ink">
                 {confirm.action === 'send' ? 'Send this now to' : `Schedule this for ${when(scheduleIso)} to`} <b className="text-gold">{confirm.count.toLocaleString('en-US')} people</b> ({segLabel(d.segment)})?
               </p>

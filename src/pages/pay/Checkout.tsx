@@ -167,9 +167,9 @@ export function ConfirmBar({ n, needed, done = false }: { n: number; needed: num
 export function AnimatedCheck({ size = 56 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 56 56" fill="none" aria-hidden className="shrink-0">
-      <circle cx="28" cy="28" r="25" stroke="#2f6b35" strokeWidth="2" pathLength={1} strokeDasharray={1} style={{ animation: 'gl-draw .6s ease both' }} />
-      <circle cx="28" cy="28" r="25" fill="rgba(116,194,123,.10)" style={{ animation: 'gl-fade .4s ease both' }} />
-      <path d="M17 29l7.5 7.5L39.5 21" stroke="#74c27b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} style={{ animation: 'gl-draw .5s .35s ease both' }} />
+      <circle cx="28" cy="28" r="25" stroke="#1f6b4f" strokeWidth="2" pathLength={1} strokeDasharray={1} style={{ animation: 'gl-draw .6s ease both' }} />
+      <circle cx="28" cy="28" r="25" fill="rgba(61,220,151,.10)" style={{ animation: 'gl-fade .4s ease both' }} />
+      <path d="M17 29l7.5 7.5L39.5 21" stroke="#3ddc97" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} style={{ animation: 'gl-draw .5s .35s ease both' }} />
     </svg>
   )
 }

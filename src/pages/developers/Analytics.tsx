@@ -43,7 +43,7 @@ function PasswordDialog({ secret, loginUrl, onClose }: { secret: Secret; loginUr
     <Dialog open={!!secret} onClose={onClose} title={secret?.first ? 'Your Gully Analytics login' : 'Your new password'} dismissable={false}>
       {secret ? (
         <div className="flex flex-col gap-4">
-          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
+          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
             <AlertTriangle size={18} className="mt-[2px] shrink-0 text-gold" aria-hidden />
             Copy the password now. It is shown this once and we do not keep it. Lost it? Reset it from this tab.
           </p>
@@ -391,7 +391,7 @@ function Checkout({ plan, view, account, onPaid, onCancel }: { plan: AnalyticsPl
           Back to plans
         </button>
       </div>
-      {switching && account.plan && <p className="m-0 rounded-[10px] border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3 text-[14px] text-ink-2">You are on {account.plan.name} until {fmtDate(account.expiresAt)}. A different plan starts today; the days left on {account.plan.name} are not carried over.</p>}
+      {switching && account.plan && <p className="m-0 rounded-[10px] border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-3 text-[14px] text-ink-2">You are on {account.plan.name} until {fmtDate(account.expiresAt)}. A different plan starts today; the days left on {account.plan.name} are not carried over.</p>}
       <PayFlow
         offer={view.offer}
         usd={plan.priceUsdc}

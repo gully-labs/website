@@ -30,7 +30,7 @@ export function EmptyChart({ height, title, children }: { height: number; title:
         <span className="font-mono text-[12px] text-faint">{title}</span>
       </span>
       {children && <span className="max-w-[320px] text-[12px] leading-[1.5] text-dim">{children}</span>}
-      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.5),transparent)]" style={{ animation: 'gl-scan 3.2s linear infinite' }} />
+      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(0,210,255,.5),transparent)]" style={{ animation: 'gl-scan 3.2s linear infinite' }} />
     </div>
   )
 }
@@ -109,10 +109,10 @@ export function RequestsChart({ usage, series, height = 260 }: { usage: UsageV2;
 /* -------------------------------------------------------- status donut --- */
 
 const STATUS = [
-  { k: 'ok', name: '2xx–3xx OK', color: '#74c27b' },
-  { k: 'client', name: '4xx client', color: '#d9b563' },
+  { k: 'ok', name: '2xx–3xx OK', color: '#3ddc97' },
+  { k: 'client', name: '4xx client', color: '#00d2ff' },
   { k: 'limited', name: '429 limited', color: LIMITED_COLOR },
-  { k: 'server', name: '5xx server', color: '#c98bdb' },
+  { k: 'server', name: '5xx server', color: '#9578e8' },
 ] as const
 
 export function StatusDonut({ byStatus, height = 180 }: { byStatus: UsageV2['byStatus']; height?: number }) {
@@ -222,7 +222,7 @@ export function AlertTimeline({ alerts, nameOf }: { alerts: GapAlert[]; nameOf: 
       })
     const tip = (p: { data: { d: GapAlert['deliveries'][number]; value: [number, number] } }) => {
       const d = p.data.d
-      return tipHtml({ title: new Date(d.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }), rows: [{ name: names[p.data.value[1]] ?? '', value: d.test ? 'test' : d.ok ? 'delivered' : 'failed', valueColor: d.ok ? '#74c27b' : LIMITED_COLOR }, { name: 'channel', value: `${d.channel}${d.status ? ` · ${d.status}` : ''}` }], note: d.error ?? (d.events.length ? d.events.map((e) => e.split(':')[1] ?? e).join(', ') : undefined) })
+      return tipHtml({ title: new Date(d.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }), rows: [{ name: names[p.data.value[1]] ?? '', value: d.test ? 'test' : d.ok ? 'delivered' : 'failed', valueColor: d.ok ? '#3ddc97' : LIMITED_COLOR }, { name: 'channel', value: `${d.channel}${d.status ? ` · ${d.status}` : ''}` }], note: d.error ?? (d.events.length ? d.events.map((e) => e.split(':')[1] ?? e).join(', ') : undefined) })
     }
     const scatter = (id: string, name: string, color: string, data: unknown[], hollow = false) => ({
       id,
@@ -242,7 +242,7 @@ export function AlertTimeline({ alerts, nameOf }: { alerts: GapAlert[]; nameOf: 
       xAxis: { type: 'time', axisLabel: { hideOverlap: true }, splitLine: { show: true, lineStyle: { color: C.grid } } },
       yAxis: { type: 'category', data: names, inverse: true, axisLabel: { color: C.muted, width: 120, overflow: 'truncate' }, splitLine: { show: true, lineStyle: { color: C.grid } } },
       tooltip: itemTooltip(tip),
-      series: [scatter('ok', 'delivered', '#74c27b', pts((d) => !d.test && d.ok)), scatter('fail', 'failed', LIMITED_COLOR, pts((d) => !d.test && !d.ok)), scatter('test', 'test', C.dim, pts((d) => d.test), true)],
+      series: [scatter('ok', 'delivered', '#3ddc97', pts((d) => !d.test && d.ok)), scatter('fail', 'failed', LIMITED_COLOR, pts((d) => !d.test && !d.ok)), scatter('test', 'test', C.dim, pts((d) => d.test), true)],
     }
   }, [withLog, nameOf])
   if (!withLog.length) return <EmptyChart height={140} title="No deliveries yet: firings and tests appear here as they happen" />
@@ -366,7 +366,7 @@ export function LiveMarker({ text, height = 64 }: { text: string; height?: numbe
         <span className="size-[7px] rounded-full bg-gold" />
       </span>
       <span className="font-mono text-[11px] text-faint">{text}</span>
-      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(217,181,99,.5),transparent)]" style={{ animation: 'gl-scan 3.2s linear infinite' }} />
+      <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(0,210,255,.5),transparent)]" style={{ animation: 'gl-scan 3.2s linear infinite' }} />
     </div>
   )
 }

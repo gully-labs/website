@@ -9,11 +9,11 @@ import { useReducedMotion } from '../charts/chart-utils'
 
 const NAMES = ['Your Chain', 'Nova L2', 'Orbit Testnet']
 const ACCENTS: [string, string][] = [
-  ['#d9b563', 'Gold'],
-  ['#5aa9e6', 'Blue'],
-  ['#74c27b', 'Green'],
-  ['#f2704a', 'Orange'],
-  ['#c98bdb', 'Violet'],
+  ['#00d2ff', 'Gold'],
+  ['#248bff', 'Blue'],
+  ['#3ddc97', 'Green'],
+  ['#ff6b81', 'Orange'],
+  ['#9578e8', 'Violet'],
 ]
 const METHODS = ['Transfer', 'Swap', 'Mint', 'Approve', 'Deposit']
 const START_HEIGHT = 4_812_000
@@ -209,7 +209,7 @@ export default function ChainKitDemo(): JSX.Element {
             </form>
             {res && (
               <div role="status" className="flex items-center gap-2.5 rounded-[8px] border px-3 py-2.5 text-[12px]" style={{ borderColor: t.line, background: t.surface }}>
-                <span className="flex-none rounded-[4px] px-2 py-0.5 font-semibold" style={res.ok ? { background: ac, color: '#0d141c' } : { border: `1px solid ${t.line}`, color: t.muted }}>
+                <span className="flex-none rounded-[4px] px-2 py-0.5 font-semibold" style={res.ok ? { background: ac, color: '#06050d' } : { border: `1px solid ${t.line}`, color: t.muted }}>
                   {res.kind}
                 </span>
                 <span className="truncate font-mono">{res.text}</span>

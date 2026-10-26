@@ -250,15 +250,15 @@ export const ageText = (iso: string | null, now: number) => {
 /** The page of one stock token on one chain. */
 export const stockPath = (r: { chain: string; ticker: string }) => `/tracker/${r.chain}/${r.ticker}`
 
-export const UP = '#26ab94'
-export const DOWN = '#f2704a'
+export const UP = '#20a0c4'
+export const DOWN = '#ff6b81'
 
 /** The colour of a gap figure in text: teal above, vermilion below, but neutral (undefined, the text
     colour) while the stock is in line, so a -0.08% next to an "In line" pill never reads as an alarm;
     faint for a thin pool, whose price is not trusted. */
 export function gapColor(r: { gapPct: number | null; status: TrackerStatus }): string | undefined {
   if (r.gapPct === null || r.status === 'in-line' || Math.round(r.gapPct * 100) === 0) return undefined
-  if (r.status === 'thin') return '#8a94a1'
+  if (r.status === 'thin') return '#9398b5'
   return r.gapPct > 0 ? UP : DOWN
 }
 

@@ -3,7 +3,7 @@
 
 /** An option in a pick-one group (radio label or button): 44 px, round, gold when chosen. */
 export const chip = (on: boolean) =>
-  `inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 text-[14px] transition-colors ${on ? 'border-gold bg-[rgba(217,181,99,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`
+  `inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 text-[14px] transition-colors ${on ? 'border-gold bg-[rgba(0,210,255,.1)] text-gold' : 'border-line-strong text-ink-2 hover:border-line-hover'}`
 
 /** A status pill: 24 px high, mono 11, with the border and text colour passed in. */
 export const pillCls = (tone: string) => `inline-flex min-h-6 items-center gap-1 rounded-full border px-[10px] font-mono text-[11px] ${tone}`

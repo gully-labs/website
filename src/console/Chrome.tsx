@@ -1,0 +1,188 @@
+/* Site header and footer in the lab-console language: one line from 1024 to 1920 px (labels drop to icons
+   below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
+import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router'
+import { Activity, BookOpen, Box, ChartLine, CircleDollarSign, LayoutGrid, Menu, MessageCircle, Network, Play, Rocket, ScanSearch, Send, Sparkles, Tag, X, Zap, ArrowUpRight, type LucideProps } from 'lucide-react'
+import type { ComponentType } from 'react'
+import { APP_URL, DOCS_URL } from '../site-host'
+import { Arrow, ic, LivePill, PRODUCTS } from './ui'
+
+type Icon = ComponentType<LucideProps>
+const BLOG_URL = 'https://blog.gullylabs.xyz'
+interface Item {
+  label: string
+  icon: Icon
+  to?: string
+  href?: string
+}
+
+function NavLink({ it, className, onClick }: { it: Item; className?: string; onClick?: () => void }) {
+  const { pathname, hash } = useLocation()
+  const body = (
+    <>
+      {ic(it.icon)}
+      <span className="lbl">{it.label}</span>
+    </>
+  )
+  if (it.href)
+    return (
+      <a className={className} href={it.href} target="_blank" rel="noopener noreferrer" onClick={onClick}>
+        {body}
+      </a>
+    )
+  const [path, h] = (it.to ?? '/').split('#')
+  const current = path === pathname && (!h || `#${h}` === hash) && !(path === '/' && !h)
+  return (
+    <Link className={className} to={it.to ?? '/'} aria-current={current ? 'page' : undefined} onClick={onClick}>
+      {body}
+    </Link>
+  )
+}
+
+export function ConsoleHeader() {
+  const { pathname } = useLocation()
+  const home = pathname === '/'
+  // The sheet belongs to the page it was opened on: navigating closes it.
+  const [openOn, setOpenOn] = useState<string | null>(null)
+  const open = openOn === pathname
+  const setOpen = (v: boolean) => setOpenOn(v ? pathname : null)
+  useEffect(() => {
+    if (!open) return
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('keydown', k)
+    return () => document.removeEventListener('keydown', k)
+  }, [open])
+  const items: Item[] = [
+    { label: 'Products', icon: LayoutGrid, to: home ? '/#products' : '/products' },
+    { label: 'Live', icon: ChartLine, to: '/#network' },
+    { label: 'Build', icon: Rocket, to: '/#build' },
+    { label: 'Docs', icon: BookOpen, href: DOCS_URL },
+    { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
+  ]
+  const pages: Item[] = [
+    { label: 'All products', icon: LayoutGrid, to: '/products' },
+    { label: 'Holder Map', icon: ScanSearch, to: '/holders' },
+    { label: 'Gully Chains', icon: Network, to: '/chains' },
+    { label: 'Pricing', icon: Tag, to: '/pricing' },
+    { label: 'Gully AI', icon: Sparkles, to: '/ask' },
+    { label: 'Status', icon: Activity, to: '/status' },
+  ]
+  return (
+    <>
+    <header className="nav">
+      <div className="wrap">
+        <Link className="brand" to="/" aria-label="Gully Labs home">
+          <img src="/brand/icon/gully-labs-icon.png" width={30} height={33} alt="" />
+          <img src="/brand/logo/gully-labs-wordmark-horizontal.png" width={170} height={17} alt="Gully Labs" />
+        </Link>
+        <nav aria-label="Main">
+          <ul>
+            {items.map((it) => (
+              <li key={it.label}>
+                <NavLink it={it} />
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="navr">
+          <LivePill />
+          <a className="btn ter sm" href={DOCS_URL} target="_blank" rel="noopener noreferrer">
+            {ic(BookOpen)}Docs
+          </a>
+          <Link className="btn sec sm" to="/#build">
+            {ic(Play)}Start here
+          </Link>
+          <a className="btn pri sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app">
+            {ic(Zap)}
+            <span className="lbl">Launch app</span>
+            <Arrow />
+          </a>
+          <button type="button" className="btn ter sm menu-btn" aria-expanded={open} aria-controls="lc-sheet" aria-label={open ? 'Close menu' : 'Open menu'} onClick={() => setOpen(!open)}>
+            {ic(open ? X : Menu)}
+          </button>
+        </div>
+      </div>
+    </header>
+      {open && (
+        <div id="lc-sheet" className="sheet">
+          <div className="wrap">
+            <ul className="sheet-list">
+              {[...items, ...pages].map((it) => (
+                <li key={`${it.label}${it.to ?? it.href}`}>
+                  <NavLink it={it} onClick={() => setOpen(false)} />
+                </li>
+              ))}
+            </ul>
+            <span className="lab">Products</span>
+            <ul className="sheet-list">
+              {PRODUCTS.map((p) => (
+                <li key={p.key}>
+                  <a href={p.url} target="_blank" rel="noopener noreferrer">
+                    {ic(ArrowUpRight)}
+                    <span className="lbl">{p.name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+export function ConsoleFooter() {
+  const home = useLocation().pathname === '/'
+  const links: Item[] = [
+    { label: 'Docs', icon: BookOpen, href: DOCS_URL },
+    { label: 'App', icon: Zap, href: APP_URL },
+    { label: 'Status', icon: Activity, to: '/status' },
+    { label: 'X', icon: ArrowUpRight, href: 'https://x.com/Gully_Labs' },
+    { label: 'Telegram', icon: Send, href: 'https://t.me/GullyLabsNews' },
+    { label: 'GitHub', icon: Box, href: 'https://github.com/gully-labs' },
+  ]
+  const more: Item[] = [
+    { label: 'Products', icon: LayoutGrid, to: '/products' },
+    { label: 'Pricing', icon: CircleDollarSign, to: '/pricing' },
+    { label: 'Holder Map', icon: ScanSearch, to: '/holders' },
+    { label: 'Chains', icon: Network, to: '/chains' },
+    { label: 'Gully AI', icon: Sparkles, to: '/ask' },
+  ]
+  return (
+    <footer>
+      <div className="wrap">
+        <div>
+          <img src="/brand/logo/gully-labs-logo.png" srcSet="/brand/logo/gully-labs-logo.png 1x, /brand/logo/gully-labs-logo-2x.png 2x" width={160} height={64} alt="Gully Labs — You Think It, We Ship It." />
+          <span className="tagline">You Think It, We Ship It.</span>
+        </div>
+        <nav aria-label="Footer">
+          <ul>
+            {links.map((it) => (
+              <li key={it.label}>
+                <NavLink it={it} />
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <p className="copy2">
+          © 2026 Gully Labs · Figures are read live from each product's own API and the Gully Chain testnet; a venue that cannot be read is shown as unreadable, never as zero.
+        </p>
+        {!home && <nav aria-label="Site pages" className="more">
+          <ul>
+            {more.map((it) => (
+              <li key={it.label}>
+                <NavLink it={it} />
+              </li>
+            ))}
+            <li>
+              <Link to="/legal/terms">Terms</Link>
+            </li>
+            <li>
+              <Link to="/legal/privacy">Privacy</Link>
+            </li>
+          </ul>
+        </nav>}
+      </div>
+    </footer>
+  )
+}

@@ -19,44 +19,44 @@
    is frog-green lifted to text contrast. Error has no kit colour and stays as it was. */
 @theme {
   --color-*: initial;
-  --color-bg: #0d141c;
-  --color-bg-alt: #111923;
-  --color-bg-footer: #0b1118;
-  --color-surface: #151d28;
-  --color-surface-deep: #111923;
-  --color-surface-hover: #1a2330;
-  --color-line: #1f2935;
-  --color-line-strong: #2a3542;
-  --color-line-hover: #3a4656;
-  --color-grid: #1c2531;
-  --color-axis: #5f6a78;
-  --color-ink: #f4f2ec;
-  --color-ink-2: #d1d3d5;
-  --color-muted: #aeb5be;
-  --color-dim: #949daa;
-  /* dim and faint are the kit's text-dim (#7d8794) lifted: at its own value it is 4.0:1 on a hairline fill
-     (#1f2935), and 11 px labels need AA (4.5:1) on every surface, the selected console row (#1c2531) and
+  --color-bg: #06050d;
+  --color-bg-alt: #0a0914;
+  --color-bg-footer: #08070f;
+  --color-surface: #0b0a16;
+  --color-surface-deep: #0a0914;
+  --color-surface-hover: #110f22;
+  --color-line: #181630;
+  --color-line-strong: #242140;
+  --color-line-hover: #34305a;
+  --color-grid: #121024;
+  --color-axis: #6b7090;
+  --color-ink: #ffffff;
+  --color-ink-2: #d6d8e6;
+  --color-muted: #a3a8c3;
+  --color-dim: #8f94b0;
+  /* dim and faint are the kit's text-dim (#8389a6) lifted: at its own value it is 4.0:1 on a hairline fill
+     (#181630), and 11 px labels need AA (4.5:1) on every surface, the selected console row (#121024) and
      hairline fills included. faint is 4.8:1 at worst, dim 5.4:1. */
-  --color-faint: #8a94a1;
-  --color-gold: #d9b563;
-  --color-gold-hover: #f2d58a;
-  --color-gold-line: #554c34;
-  --color-green: #74c27b;
-  --color-success-bg: #162a22;
-  --color-success-line: #2f6b35;
-  --color-bar: #3c553b;
-  --color-mascot-bg: #1d2836;
+  --color-faint: #9398b5;
+  --color-gold: #00d2ff;
+  --color-gold-hover: #66e4ff;
+  --color-gold-line: #0c4a5c;
+  --color-green: #3ddc97;
+  --color-success-bg: #0d2a22;
+  --color-success-line: #1f6b4f;
+  --color-bar: #1a5fe6;
+  --color-mascot-bg: #15132a;
   /* The brand kit's palette by name (public/brand/tokens/tokens.json), for brand surfaces. */
-  --color-kit-lab-night: #0d141c;
-  --color-kit-midnight: #151d28;
-  --color-kit-slate: #2a3542;
-  --color-kit-bone: #f4f2ec;
-  --color-kit-lab-gold: #d9b563;
-  --color-kit-pale-gold: #f2d58a;
-  --color-kit-frog-green: #2f6b35;
-  --color-kit-moss: #3c553b;
-  --color-kit-text-muted: #aeb5be;
-  --color-kit-text-dim: #7d8794;
+  --color-kit-lab-night: #06050d;
+  --color-kit-midnight: #0b0a16;
+  --color-kit-slate: #242140;
+  --color-kit-bone: #ffffff;
+  --color-kit-lab-gold: #00d2ff;
+  --color-kit-pale-gold: #66e4ff;
+  --color-kit-frog-green: #1f6b4f;
+  --color-kit-moss: #1a5fe6;
+  --color-kit-text-muted: #a3a8c3;
+  --color-kit-text-dim: #8389a6;
   /* Light-mode previews (the widget's and Chain Kit explorer's light theme, as a customer's light page shows
      them). Ink, muted and faint on paper are kit colours: lab-night, slate, axis (5.5:1 on white). */
   --color-paper: #ffffff;
@@ -79,33 +79,33 @@
   /* Chart series colours after gold (components/charts/chartTheme.ts PALETTE): blue, teal (up / premium),
      violet, orange (down / discount), lime. Charts use them in this order; they are the only colours a
      chart may use besides the page palette above (scripts/test-chart-kit.mjs checks). */
-  --color-chart-blue: #5aa9e6;
-  --color-chart-teal: #26ab94;
-  --color-chart-violet: #c98bdb;
-  --color-chart-orange: #f2704a;
-  --color-chart-lime: #9bc53d;
+  --color-chart-blue: #248bff;
+  --color-chart-teal: #20a0c4;
+  --color-chart-violet: #9578e8;
+  --color-chart-orange: #ff6b81;
+  --color-chart-lime: #c02cff;
   --color-error: #ff8a7a;
   /* The hairline round an error notice (the error colour at a dark tint). */
   --color-error-line: #5a2a24;
 
-  --font-display: 'Barlow Condensed', 'Barlow Condensed Fallback', sans-serif;
-  --font-sans: 'Hanken Grotesk', sans-serif;
+  --font-display: 'Poppins', system-ui, sans-serif;
+  --font-sans: 'Poppins', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
   /* One heading scale (design review P2-19): page title, section title, sub-section, card title.
      Use the h1 to h4 strings in components/ui.tsx rather than ad-hoc sizes. */
-  --text-h1: clamp(44px, 5.6cqw, 84px);
-  --text-h1--line-height: 0.9;
-  --text-h2: clamp(34px, 3.2cqw, 48px);
-  --text-h2--line-height: 0.95;
-  --text-h3: clamp(24px, 2cqw, 30px);
-  --text-h3--line-height: 1;
-  --text-h4: 22px;
-  --text-h4--line-height: 1.1;
+  --text-h1: clamp(34px, 3.6cqw, 54px);
+  --text-h1--line-height: 1.08;
+  --text-h2: clamp(24px, 2.3cqw, 32px);
+  --text-h2--line-height: 1.1;
+  --text-h3: clamp(19px, 1.5cqw, 22px);
+  --text-h3--line-height: 1.15;
+  --text-h4: 17px;
+  --text-h4--line-height: 1.2;
   /* The mono eyebrow over a heading (and the small mono section title on dense pages: Status, Score). */
-  --text-eyebrow: 13px;
+  --text-eyebrow: 12px;
   --text-eyebrow--line-height: 1.3;
-  --text-eyebrow--letter-spacing: 1.5px;
+  --text-eyebrow--letter-spacing: 0.08em;
 
   /* The radius scale (design audit X6, 2026-10-18), from the kit handoff (public/brand/tokens/tokens.json:
      button 6, card 16): sm 6 (buttons, inputs, segmented controls), md 8 (icon tiles, inner panels),
@@ -122,7 +122,7 @@
   --radius-input: var(--radius-sm);
   --radius-tile: var(--radius-md);
   --radius-card: var(--radius-lg);
-  --radius-btn: 4px;
+  --radius-btn: 999px;
   --radius-panel: 10px;
   --radius-modal: 14px;
 
@@ -170,7 +170,7 @@
 @keyframes gl-count-flash { 0% { color: var(--color-gold-hover); } 100% { color: inherit; } }
 @keyframes gl-pop { from { opacity: 0; transform: translate(-50%, -50%) scale(.2); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes gl-marquee { to { transform: translateX(-50%); } }
-@keyframes gl-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(116,194,123,.55); } 70% { box-shadow: 0 0 0 7px rgba(116,194,123,0); } 100% { box-shadow: 0 0 0 0 rgba(116,194,123,0); } }
+@keyframes gl-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(61,220,151,.55); } 70% { box-shadow: 0 0 0 7px rgba(61,220,151,0); } 100% { box-shadow: 0 0 0 0 rgba(61,220,151,0); } }
 @keyframes gl-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes gl-check-pop { 0% { opacity: 0; transform: scale(.2) rotate(-25deg); } 100% { opacity: 1; transform: none; } }
 @keyframes gl-blink {
@@ -258,24 +258,24 @@ h1, h2, h3, h4, .heading-1, .heading-2, .heading-3, .heading-4, .font-display { 
 @utility heading-1 {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 800;
-  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-size: var(--text-h1);
   line-height: var(--text-h1--line-height);
 }
 @utility heading-2 {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 800;
-  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-size: var(--text-h2);
   line-height: var(--text-h2--line-height);
 }
 @utility heading-3 {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 800;
-  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-size: var(--text-h3);
   line-height: var(--text-h3--line-height);
 }
@@ -283,13 +283,14 @@ h1, h2, h3, h4, .heading-1, .heading-2, .heading-3, .heading-4, .font-display { 
   margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
-  text-transform: uppercase;
+  letter-spacing: -0.02em;
   font-size: var(--text-h4);
   line-height: var(--text-h4--line-height);
 }
 /* Gold by default; add a text colour utility (text-faint) for a quiet section label. */
 @utility eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: var(--text-eyebrow);
   line-height: var(--text-eyebrow--line-height);
   letter-spacing: var(--text-eyebrow--letter-spacing);
@@ -322,10 +323,10 @@ h1, h2, h3, h4, .heading-1, .heading-2, .heading-3, .heading-4, .font-display { 
 /* The one loading placeholder: a soft pulse (stilled to a steady tint under reduced motion, below). */
 .gl-skeleton { animation: gl-skeleton 1.4s ease-in-out infinite; }
 
-.gl-row-sweep::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(217,181,99,.07), transparent); transform: translateX(-100%); animation: gl-scan 6s var(--sweep-delay, 0s) ease-in-out infinite; }
+.gl-row-sweep::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(0,210,255,.07), transparent); transform: translateX(-100%); animation: gl-scan 6s var(--sweep-delay, 0s) ease-in-out infinite; }
 
 @layer base {
-  /* The one card token set (design audit N31): radius 12, fill #151d28, padding 20. The card and card-pad
+  /* The one card token set (design audit N31): radius 12, fill #0b0a16, padding 20. The card and card-pad
      utilities, the ghost chart and the chart kit read these; a page that builds its own card uses them
      (style={{ borderRadius: 'var(--card-radius)' }} or the p-card / bg-card-token / rounded-card classes). */
   :root {
@@ -441,3 +442,15 @@ h1, h2, h3, h4, .heading-1, .heading-2, .heading-3, .heading-4, .font-display { 
   @keyframes gl-sweep { from { transform: translateX(-100%); } to { transform: translateX(-100%); } }
   @keyframes gl-shimmer { from { background-position: 200% 0; } to { background-position: 200% 0; } }
 }
+
+/* Gully Labs kit (2026-10-25): headings are Poppins in sentence case (the lab-console language), so the old
+   condensed uppercase display headings keep their case as written. */
+h1.uppercase, h2.uppercase, h3.uppercase, h4.uppercase { text-transform: none; letter-spacing: -0.02em; }
+@layer base { h1, h2, h3 { letter-spacing: -0.02em; } }
+
+/* The signature button's cyan shine sweep on every legacy gold / outline button (components/ui.tsx). */
+.gl-btn { position: relative; overflow: hidden; isolation: isolate; }
+.gl-btn::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.35) 50%, transparent 65%); transform: translateX(-120%); pointer-events: none; }
+.gl-btn:hover::after { transform: translateX(120%); transition: transform .7s ease; }
+@media (prefers-reduced-motion: reduce) { .gl-btn::after { display: none; } }
+@keyframes pb { from { transform: scaleX(1); } to { transform: scaleX(0); } }

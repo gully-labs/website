@@ -129,7 +129,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect, fill = false }: {
               label: { show: true, position: g >= 0 ? 'right' : 'left', distance: 6, color: c, fontSize: 11, formatter: () => fmtGap(r.gapPct) },
             }
           }),
-          markArea: { silent: true, itemStyle: { color: 'rgba(217,181,99,.06)' }, label: { show: false }, data: [[{ xAxis: -inLinePct }, { xAxis: inLinePct }]] },
+          markArea: { silent: true, itemStyle: { color: 'rgba(0,210,255,.06)' }, label: { show: false }, data: [[{ xAxis: -inLinePct }, { xAxis: inLinePct }]] },
         },
       ],
     }
@@ -204,7 +204,7 @@ export function GapBars({ rows, inLinePct, selected, onSelect, fill = false }: {
           <i className="inline-block size-[10px] rounded-bar border border-dashed border-muted" /> thin pool, not trusted
         </span>
         <span className="inline-flex items-center gap-2">
-          <i className="inline-block h-[10px] w-4 bg-[rgba(217,181,99,.18)]" /> ±{inLinePct}% in line
+          <i className="inline-block h-[10px] w-4 bg-[rgba(0,210,255,.18)]" /> ±{inLinePct}% in line
         </span>
       </div>
     </div>

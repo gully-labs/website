@@ -100,7 +100,7 @@ export function ContactModal({ open, onClose, form, setForm, sent, setSent }: Pr
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
-          className="fixed inset-0 z-100 flex items-center justify-center bg-[rgba(13,20,28,.78)] p-5 backdrop-blur-[6px]"
+          className="fixed inset-0 z-100 flex items-center justify-center bg-[rgba(6,5,13,.78)] p-5 backdrop-blur-[6px]"
         >
           <motion.div
             ref={panelRef}

@@ -94,7 +94,8 @@ function Flow({ lit, onPick }: { lit: number; onPick: (k: number) => void }) {
             type="button"
             onClick={() => onPick(k)}
             aria-pressed={lit === k}
-            className={`flex min-w-0 flex-none items-center gap-2 rounded-btn border px-3 py-2 text-left max-[600px]:gap-1 max-[600px]:px-2 max-[600px]:[&:not([aria-pressed=true])_b]:hidden transition-[border-color,background-color,box-shadow] duration-300 ${lit === k ? 'border-gold bg-[rgba(217,181,99,.1)] shadow-[0_0_18px_rgba(217,181,99,.18)]' : 'border-line bg-surface-deep'}`}
+            aria-label={n.name}
+            className={`flex min-w-0 flex-none items-center gap-2 rounded-btn border px-3 py-2 text-left max-[600px]:gap-1 max-[600px]:px-2 max-[600px]:[&:not([aria-pressed=true])_b]:hidden transition-[border-color,background-color,box-shadow] duration-300 ${lit === k ? 'border-gold bg-[rgba(0,210,255,.1)] shadow-[0_0_18px_rgba(0,210,255,.18)]' : 'border-line bg-surface-deep'}`}
           >
             {n.mark}
             <span className="flex min-w-0 flex-col">
@@ -129,7 +130,7 @@ function ServiceChips({ services }: { services: ChainsService[] }) {
             aria-pressed={k === sel}
             onClick={() => setSel(k)}
             title={s.name}
-            className={`inline-flex min-h-9 items-center gap-2 rounded-full max-[699px]:min-h-11 border px-3 text-[13px] transition-[border-color,background-color,transform] duration-200 hover:-translate-y-px ${k === sel ? 'border-gold bg-[rgba(217,181,99,.1)] text-ink' : s.kind === 'included' ? 'border-gold-line text-ink-2 hover:border-gold' : 'border-line-strong text-muted hover:border-gold'}`}
+            className={`inline-flex min-h-9 items-center gap-2 rounded-full max-[699px]:min-h-11 border px-3 text-[13px] transition-[border-color,background-color,transform] duration-200 hover:-translate-y-px ${k === sel ? 'border-gold bg-[rgba(0,210,255,.1)] text-ink' : s.kind === 'included' ? 'border-gold-line text-ink-2 hover:border-gold' : 'border-line-strong text-muted hover:border-gold'}`}
           >
             {serviceMark(s.id)}
             {SHORT[s.id] ?? s.name}
@@ -172,7 +173,7 @@ export function Diagram({ cfg }: { cfg: ChainsConfig }) {
               type="button"
               aria-pressed={k === layer}
               onClick={() => pickLayer(k)}
-              className={`inline-flex min-h-10 items-center gap-2 rounded-btn max-[699px]:min-h-11 border px-3 text-[13px] transition-[border-color,background-color,transform] duration-300 ${k === layer ? '-translate-y-px border-gold bg-[rgba(217,181,99,.1)] text-ink' : 'border-line text-muted hover:border-line-hover'}`}
+              className={`inline-flex min-h-10 items-center gap-2 rounded-btn max-[699px]:min-h-11 border px-3 text-[13px] transition-[border-color,background-color,transform] duration-300 ${k === layer ? '-translate-y-px border-gold bg-[rgba(0,210,255,.1)] text-ink' : 'border-line text-muted hover:border-line-hover'}`}
             >
               {stackMark(s.id, s.name)}
               {s.name}

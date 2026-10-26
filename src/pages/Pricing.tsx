@@ -1,6 +1,7 @@
+import { ConsoleTabs } from '../console/Tabs'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowRight, BellRing, Boxes, Building2, Check, ChevronDown, Fuel, History, KeyRound, Layers, Network, Send, ShieldCheck, Zap, type LucideIcon } from 'lucide-react'
+import { ArrowRight, BellRing, Boxes, Building2, ChartNoAxesCombined, Check, ChevronDown, CircleHelp, Handshake, Fuel, History, KeyRound, Layers, Network, Send, ShieldCheck, Zap, type LucideIcon } from 'lucide-react'
 import { useContact } from '../components/ContactContext'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
@@ -82,16 +83,6 @@ const FAQ = (o: Offer | null, tg: AlertChannels['telegram'] | null): { q: string
   { q: 'What does Free include?', a: 'Keys, usage charts and the request log, as today, with the limits shown above. Calling the API without any key keeps working too, at the anonymous limit.' },
 ]
 
-function SectionHead({ id, eyebrow: label, title }: { id: string; eyebrow: string; title: string }) {
-  return (
-    <div className="mb-8 flex flex-col gap-3">
-      <span className={eyebrow}>{label}</span>
-      <h2 id={id} className="m-0 font-display text-h2 font-extrabold uppercase">
-        {title}
-      </h2>
-    </div>
-  )
-}
 
 const PLAN_ICON: Record<string, LucideIcon> = { free: KeyRound, pro: Zap, business: Building2 }
 
@@ -105,8 +96,7 @@ function OnRequest() {
     { icon: Layers, name: 'Services', body: 'Smart contracts, dApps, infrastructure and security testing. Quoted per project after a first call.', to: '/services', type: 'Other' as const, waitlist: false },
   ]
   return (
-    <section id="on-request" className="scroll-mt-24 border-t border-line px-page pt-16 pb-16" aria-labelledby="on-request-title">
-      <SectionHead id="on-request-title" eyebrow="CHAIN KIT & SERVICES" title="On request" />
+    <div id="on-request">
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-4">
         {items.map((it) => (
           <div key={it.name} className="flex flex-col gap-4 rounded-card border border-line bg-surface p-7">
@@ -114,7 +104,7 @@ function OnRequest() {
               <span className="flex size-11 items-center justify-center rounded-btn border border-gold-line text-gold">
                 <it.icon aria-hidden size={20} strokeWidth={1.75} />
               </span>
-              <h3 className="m-0 font-display text-h4 font-bold uppercase">{it.name}</h3>
+              <h3 className="m-0 font-display text-h4 font-bold">{it.name}</h3>
               <span className="ml-auto rounded-full border border-gold-line px-3 py-[3px] font-mono text-[11px] tracking-[1px] text-gold">{it.waitlist ? 'WAITLIST' : 'ON REQUEST'}</span>
             </span>
             <p className="m-0 text-[15px] leading-[1.55] text-muted">{it.body}</p>
@@ -135,7 +125,7 @@ function OnRequest() {
           </div>
         ))}
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -213,27 +203,35 @@ export function Pricing() {
   const [state, retry] = usePlans()
   const offer = state.k === 'ok' ? state.offer : null
   const tg = useTelegramChannel()
+  const [tab, setTab] = useState('api')
   return (
     <>
       <Seo title="Pricing" description={`Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain's own coin on ${chainListToday(offer)}, with no custody.`} />
 
-      <section className="relative overflow-hidden px-page pt-[72px] pb-12">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(217,181,99,.14),transparent_62%)]" />
-        <div className="relative flex max-w-[860px] flex-col gap-6">
+      <section className="relative overflow-hidden px-page pt-8 pb-6">
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.14),transparent_62%)]" />
+        <div className="relative flex max-w-[860px] flex-col gap-4">
           <span className={eyebrow} style={rise(0)}>
             PRICING
           </span>
-          <h1 className="m-0 font-display text-h1 font-extrabold uppercase" style={rise(1)}>
+          <h1 className="m-0 font-display text-h1 font-bold" style={rise(1)}>
             Tracker API and <span className="text-gold">Gully Analytics</span>
           </h1>
-          <p className="m-0 max-w-[680px] text-[18px] leading-[1.6] text-muted" style={rise(2)}>
+          <p className="m-0 max-w-[680px] text-[16px] leading-[1.6] text-muted" style={rise(2)}>
             Two products, priced separately. The tracker API stays free and open; paid plans raise the per-key limit, add gap alerts by webhook and keep a longer gap history. Gully Analytics starts with a free trial. You pay in ETH, BNB, USDC or USDT from your own wallet, straight to ours: no card, no custody, nothing that renews behind your back.
           </p>
         </div>
       </section>
 
-      <section id="api" className="scroll-mt-24 px-page pb-16" aria-live="polite" aria-labelledby="api-title">
-        <SectionHead id="api-title" eyebrow="TRACKER API" title="More calls, alerts and history" />
+      <section className="border-t border-line px-page py-6" aria-live="polite">
+        <ConsoleTabs
+          id="plans"
+          label="Pricing"
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { id: 'api', label: 'Tracker API', icon: Zap, content: <div className="flex flex-col gap-5">
+        
         {state.k === 'loading' && <PlanSkeleton />}
         {state.k === 'error' && (
           <div className="flex flex-wrap items-center gap-4 rounded-card border border-error-line bg-error/6 px-6 py-5 text-[15px] text-error" role="alert">
@@ -255,7 +253,7 @@ export function Pricing() {
                 const featured = p.id === 'pro'
                 return (
                   <div key={p.id} className={`relative flex flex-col gap-6 overflow-hidden rounded-card border bg-surface p-7 ${featured ? 'border-gold-line' : 'border-line'}`} style={rise(3 + i)}>
-                    {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(217,181,99,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
+                    {featured && <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_30%,rgba(0,210,255,.06)_50%,transparent_70%)] bg-[length:200%_100%]" />}
                     <div className="relative flex flex-col gap-2">
                       <span className="flex items-center gap-3 font-mono text-[12px] tracking-[1.5px] text-faint">
                         <span className={`flex size-9 items-center justify-center rounded-btn border ${featured ? 'border-gold text-gold' : 'border-line-strong text-gold'}`}>
@@ -306,19 +304,16 @@ export function Pricing() {
             <p className="m-0 font-mono text-[12px] leading-[1.7] text-faint">
               Without a key: {offer.anonymous.perMin} requests a minute per IP address and {offer.anonymous.historyDays} days of history. Prices in US dollars, paid in USDC, USDT or the chain's own coin on {chainListToday(offer)}. Limits protect our servers; answers served from the edge cache do not count against them.
             </p>
-            <GasCost offer={offer} />
           </div>
         )}
-      </section>
-
-      <section id="analytics" className="scroll-mt-24 border-t border-line px-page pt-16 pb-16" aria-live="polite" aria-labelledby="analytics-title">
-        <SectionHead id="analytics-title" eyebrow="GULLY ANALYTICS" title="Web analytics that see the wallet" />
+      </div> },
+            { id: 'analytics', label: 'Gully Analytics', icon: ChartNoAxesCombined, content: <div className="flex flex-col gap-5">
+        
         <AnalyticsPlanCards state={state} retry={retry} delay={3} />
-      </section>
-
-      <OnRequest />
-
-      <section className="px-page pb-24">
+      </div> },
+            { id: 'gas', label: 'Gas costs', icon: Fuel, content: offer ? <GasCost offer={offer} /> : <PlanSkeleton /> },
+            { id: 'on-request', label: 'On request', icon: Handshake, content: <OnRequest /> },
+            { id: 'faq', label: 'Questions', icon: CircleHelp, content: <div>
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-10 rounded-card border border-line bg-surface-deep p-8 max-[900px]:grid-cols-1 max-[600px]:p-5">
           <div className="flex flex-col gap-4">
             <h2 className="m-0 font-display text-h2 font-bold uppercase">Questions</h2>
@@ -341,6 +336,9 @@ export function Pricing() {
             ))}
           </div>
         </div>
+      </div> },
+          ]}
+        />
       </section>
     </>
   )

@@ -138,9 +138,9 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
           {!view ? (
             <Skeleton h={180} />
           ) : sent || failed ? (
-            <StackedDays height={180} days={days} kinds={[{ id: 'ok', name: 'delivered', color: '#74c27b' }, { id: 'failed', name: 'failed', color: '#ff8a7a' }]} label={`Telegram deliveries over 14 days: ${sent} delivered, ${failed} failed.`} />
+            <StackedDays height={180} days={days} kinds={[{ id: 'ok', name: 'delivered', color: '#3ddc97' }, { id: 'failed', name: 'failed', color: '#ff8a7a' }]} label={`Telegram deliveries over 14 days: ${sent} delivered, ${failed} failed.`} />
           ) : (
-            <GhostChart height={180} variant="bars" colors={['#74c27b', '#ff8a7a']} label={onTg.length ? 'Your deliveries will draw here' : 'Telegram deliveries will draw here'} />
+            <GhostChart height={180} variant="bars" colors={['#3ddc97', '#ff8a7a']} label={onTg.length ? 'Your deliveries will draw here' : 'Telegram deliveries will draw here'} />
           )}
           {view && onTg.length > 0 && (
             <ul className="m-0 flex list-none flex-col gap-1 p-0">

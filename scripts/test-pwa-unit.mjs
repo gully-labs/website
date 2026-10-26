@@ -33,8 +33,8 @@ test('manifests: site and app, kit colours, three icons including a maskable one
     assert.equal(m.display, 'standalone')
     assert.equal(m.start_url, '/')
     assert.equal(m.scope, '/')
-    assert.equal(m.background_color, '#0D141C')
-    assert.equal(m.theme_color, '#0D141C')
+    assert.equal(m.background_color, '#06050D')
+    assert.equal(m.theme_color, '#06050D')
     assert.deepEqual(m.icons.map((i) => `${i.sizes}:${i.purpose}`), ['192x192:any', '512x512:any', '512x512:maskable'])
   }
 })

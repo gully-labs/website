@@ -153,7 +153,7 @@ export function WebhooksSection({ view, reload }: { view: MerchantView; reload: 
         )}
       </form>
       {secret && (
-        <div className="flex flex-wrap items-center gap-3 rounded-input border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-3" role="status">
+        <div className="flex flex-wrap items-center gap-3 rounded-input border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-3" role="status">
           <span className="text-[13px] text-ink-2">Signing secret, shown once:</span>
           <code className="min-w-0 flex-1 font-mono text-[12px] break-all text-ink">{secret}</code>
           <button type="button" className={pillSm} onClick={() => copyWithToast(secret, 'Secret')}>

@@ -27,7 +27,7 @@ function Contact({ brand }: { brand: Brand }) {
 export function OwnerFixes({ viewer }: { viewer: Viewer | null | undefined }) {
   if (!viewer?.fixes.length) return null
   return (
-    <div className="flex flex-col gap-3 rounded-input border border-gold-line bg-[rgba(217,181,99,.06)] px-4 py-4 text-[14px] leading-[1.55] text-ink-2" data-testid="owner-fixes">
+    <div className="flex flex-col gap-3 rounded-input border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-4 text-[14px] leading-[1.55] text-ink-2" data-testid="owner-fixes">
       <span className="inline-flex items-center gap-2 font-semibold text-ink">
         <Wrench size={15} className="text-gold" aria-hidden /> You run this store ({viewer.role}). Payers see the message above; to open the checkout:
       </span>

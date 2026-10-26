@@ -25,8 +25,11 @@ const PROJECTS = {
   peddlequest: ['PeddleQuest', 'Quest on-chain, earn the proof.'],
 }
 
+/** The Gully Labs kit's share image (brand-kit social/og-image-1200x630.png), absolute (owner OG rule, 2026-10-25). */
+const KIT_OG = 'https://gullylabs.xyz/brand/social/og-image-1200x630.png'
 const MAIN = {
-  '/': ['Gully Labs · Web3 projects and blockchain development', 'Every project Gully Labs ships reports its own volume, value locked and fees. This page reads each one live and adds them up.'],
+  '/': ['You Think It, We Ship It. · Gully Labs', 'Gully Labs builds and runs Web3 products: Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio. Every figure on this page is read live.'],
+  '/products': ['Products · Gully Labs', 'Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio: six Gully Labs products, each with one live figure.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
   // The chain list is filled in per request from what checkout offers now (pricingDescription below).
   '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin from your own wallet, with no custody.'],
@@ -52,6 +55,16 @@ const MAIN = {
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
+// The six product pages (src/pages/products, lab console). Each product lives on its own domain; these pages link out.
+const PRODUCT_PAGES = {
+  chain: ['Gully Chain', 'An L3 chain for launches and trading, with DeepCore built in. Testnet chain 485590 is live.'],
+  pay: ['Gully Pay', 'x402 payments, checkout and a merchant OS, settled on chain. Every Gully product bills through Gully Pay.'],
+  rpc: ['Gully RPC', 'The node control plane and RPC gateway for every Gully chain, Gully Chain testnet included.'],
+  holders: ['HolderMaps', 'Who really holds a token: bubble maps, clusters and deep checks, Gully Chain tokens included.'],
+  security: ['Gully Security', 'AI security scans, monitors and the Gully Score for any contract.'],
+  studio: ['Gully Studio', 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.'],
+}
+for (const [key, [name, text]] of Object.entries(PRODUCT_PAGES)) MAIN[`/products/${key}`] = [`${name} · Gully Labs`, `${text} Live figures on this page.`]
 
 // One page per tracked stock token, from the same tables the tracker reads (server/data next to this file).
 const HOLDER_PAGES = {}
@@ -296,10 +309,9 @@ export function pageMeta(host, pathname) {
   const m = MAIN[p]
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
-  const og = p === '/' || p.startsWith('/legal/') || p === '/ecosystem' || p === '/partners' ? 'home' : p === '/ask' ? 'ask' : p.startsWith('/security') ? 'security' : p.startsWith('/projects/') ? `project-${p.slice(10)}` : p.slice(1)
   // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
   const secShort = securityPrimary() && p.startsWith('/security') ? securityShortPath(p) : null
-  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-${og}.png`, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null }
+  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: p.startsWith('/security') ? `${SITE}/social/og-security.png` : KIT_OG, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null }
 }
 
 /** A report's subject in a title: the contract or the repository. */
