@@ -125,7 +125,7 @@ const helpers = {
   excerpt(o) { const w = (this.custom_excerpt || this.excerpt || '').split(' '); const n = +(o.hash.words || 50); return w.slice(0, n).join(' ') + (w.length > n ? '…' : '') },
   meta_title() { return ROOT.post ? `${ROOT.post.title} | ${site.title}` : site.title },
   ghost_head: () => S(`<style>:root{--ghost-accent-color:${site.accent_color}}</style>`),
-  ghost_foot: () => S('<div class="preview-ribbon" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:6px 10px;border:1px solid #554c34;border-radius:6px;background:#151d28;color:#d9b563;font:500 11px/1.4 \'IBM Plex Mono\',monospace;letter-spacing:1px">PREVIEW · SAMPLE CONTENT</div>'),
+  ghost_foot: () => S('<div class="preview-ribbon" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:6px 10px;border:1px solid #262445;border-radius:999px;background:#0b0a16;color:#00d2ff;font:500 11px/1.4 \'IBM Plex Mono\',monospace;letter-spacing:1px">PREVIEW · SAMPLE CONTENT</div>'),
   body_class: () => `${CTX[0]}-template`,
   post_class() { return ['post', this.featured ? 'featured' : '', ...(this.tags || []).map((t) => `tag-${t.slug}`)].filter(Boolean).join(' ') },
   content() { return S(this.html || '') },

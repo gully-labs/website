@@ -2,13 +2,13 @@
 {{#match pages ">" 1}}
 <nav class="gl-pagination gl-page" aria-label="Pages">
     {{#if prev}}
-        <a class="gl-btn gl-btn--outline" href="{{page_url prev}}" rel="prev">{{> "icons/arrow-left"}}<span>Newer posts</span></a>
+        <a class="gl-btn gl-btn--ghost" href="{{page_url prev}}" rel="prev"><span class="gl-btn-arrow gl-btn-arrow--back">{{> "icons/arrow-left"}}</span><span>Newer posts</span></a>
     {{else}}
         <span class="gl-pagination-spacer"></span>
     {{/if}}
     <span class="gl-pagination-count">Page {{page}} of {{pages}}</span>
     {{#if next}}
-        <a class="gl-btn gl-btn--outline" href="{{page_url next}}" rel="next"><span>Older posts</span>{{> "icons/arrow-right"}}</a>
+        <a class="gl-btn gl-btn--ghost" href="{{page_url next}}" rel="next">{{> "icons/history"}}<span>Older posts</span>{{> "btn-arrow"}}</a>
     {{else}}
         <span class="gl-pagination-spacer"></span>
     {{/if}}

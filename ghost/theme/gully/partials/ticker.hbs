@@ -1,0 +1,27 @@
+{{!-- The live Gully stats ticker, on every page under the header: all-time and 24 h volume, value locked and fees
+      across every Gully Labs project, read by assets/js/gully.js from https://gullylabs.xyz/api/stats (CORS open,
+      30 s cache) and refreshed every 60 s; the numbers count up on change, the strip scrolls continuously and a
+      sparkline draws the last 30 days of volume. Without JavaScript, or while loading, it shows the labels only.
+      Reduced motion: the strip does not scroll (it wraps and fades) and numbers set without counting. --}}
+<section class="gl-ticker" aria-label="Live Gully Labs stats" data-gl-ticker data-src="https://gullylabs.xyz/api/stats">
+    <div class="gl-ticker-inner gl-page">
+        <a class="gl-ticker-live" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">
+            <span class="gl-ticker-dot" aria-hidden="true"></span><span class="gl-ticker-livetext">Live</span><span class="gl-sr"> stats, gullylabs.xyz (opens in a new tab)</span>
+        </a>
+        <div class="gl-ticker-track">
+            <ul class="gl-ticker-list" role="list" data-gl-ticker-list>
+                <li class="gl-ticker-item"><span class="gl-ticker-label">{{> "icons/activity"}}All-time volume</span><span class="gl-ticker-value" data-stat="volumeAllUsd">—</span></li>
+                <li class="gl-ticker-item"><span class="gl-ticker-label">{{> "icons/zap"}}24h volume</span><span class="gl-ticker-value" data-stat="volume24hUsd">—</span></li>
+                <li class="gl-ticker-item"><span class="gl-ticker-label">{{> "icons/layers"}}Value locked</span><span class="gl-ticker-value" data-stat="tvlUsd">—</span></li>
+                <li class="gl-ticker-item"><span class="gl-ticker-label">{{> "icons/circle-dollar-sign"}}24h fees</span><span class="gl-ticker-value" data-stat="fees24hUsd">—</span></li>
+                <li class="gl-ticker-item"><span class="gl-ticker-label">{{> "icons/history"}}All-time fees</span><span class="gl-ticker-value" data-stat="feesAllUsd">—</span></li>
+            </ul>
+        </div>
+        <svg class="gl-ticker-spark" width="120" height="28" viewBox="0 0 120 28" aria-hidden="true" focusable="false" data-gl-spark>
+            <defs><linearGradient id="gl-spark-grad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#00D2FF"/><stop offset=".33" stop-color="#248BFF"/><stop offset=".66" stop-color="#7B3BFF"/><stop offset="1" stop-color="#C02CFF"/></linearGradient></defs>
+            <path class="gl-spark-fill" d="" fill="url(#gl-spark-grad)" opacity=".18"/>
+            <path class="gl-spark-line" d="" fill="none" stroke="url(#gl-spark-grad)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+        <span class="gl-ticker-updated" data-gl-ticker-updated></span>
+    </div>
+</section>
