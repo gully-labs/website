@@ -168,6 +168,7 @@ const DOCS_PAGES = {
   '/swaps': ['Swaps · Gully Labs docs', 'How swaps work on Gully Labs stock pages: LI.FI on Robinhood Chain and BNB Chain, Jupiter on Solana, the region check (GET /api/geo), the Jupiter proxy, fees, and why your wallet signs everything.'],
   '/solana': ['Solana · Gully Labs docs', 'Gully Labs on Solana: xStocks in the tracker, fair prices from Chainlink or the issuer’s quote, the Holder Map on Solana, Solana Pay in Gully Pay, and Jupiter swaps on stock pages.'],
   '/contracts': ['Contracts · Gully Labs docs', 'Every on-chain address Gully Labs uses, per chain: the treasury Safe, the fee address, the third-party Request Network fee proxy and our projects’ contracts, each with its explorer link, Sourcify status and the file it is quoted from. Also at /.well-known/contracts.json.'],
+  '/ipfs': ['Gully IPFS · Gully Labs docs', 'Gully IPFS: our Kubo node and read-only gateway at ipfs.gullylabs.xyz. It serves only Gully-pinned content: token art, metadata, NFT art and .gully sites.'],
   '/status': ['Status · Gully Labs docs', 'The Gully Labs status page and GET /api/status: what each check means, how 24-hour uptime is computed, how incidents open and close, and the JSON shape.'],
   '/telegram-mini-app': ['Telegram Mini App · Gully Labs docs', 'The Gully Labs Telegram Mini App at gullylabs.xyz/tg: how it opens, its screens, how each request is signed with Telegram’s initData, the /api/tg routes, rate limits and errors.'],
   '/news-gate': ['News gate · Gully Labs docs', 'Why the Gully Labs Telegram bot and Mini App ask you to follow @GullyLabsNews, how membership is checked and cached, and everything that stays open without it: alerts, Mute, pausing, deleting and unlinking.'],
@@ -221,12 +222,25 @@ const HOLDERMAPS_HOME = ['Holder Map: who really holds a token · HolderMaps', '
 /** A main-site Holder Map title, named for holdermaps.xyz. */
 export const holderMapsTitle = (t) => String(t).replace(/ · Holder Map · Gully Labs$/, ' · HolderMaps').replace(/ · Gully Labs$/, ' · HolderMaps')
 
+/** HolderMaps' own head (its brand kit, public/brand/holdermaps): site name, theme colour, icons and share images. */
+const HM_KIT = '/brand/holdermaps'
+export const HOLDERMAPS_BRAND = {
+  siteName: 'HolderMaps',
+  themeColor: '#0A0A0A',
+  icons: { 16: `${HM_KIT}/icon-16.png`, 32: `${HM_KIT}/icon-32.png`, 48: `${HM_KIT}/icon-48.png`, 180: `${HM_KIT}/icon-180.png` },
+  twitterImage: `${HOLDERMAPS_URL}${HM_KIT}/twitter-card-1200x600.png`,
+}
+const HM_OG = `${HOLDERMAPS_URL}${HM_KIT}/og-image-1200x630.png`
+const HM_LD = { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'HolderMaps', url: `${HOLDERMAPS_URL}/`, applicationCategory: 'FinanceApplication', operatingSystem: 'Web', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, publisher: { '@type': 'Organization', name: 'Gully Labs', url: 'https://gullylabs.xyz' } }
+
 function holderMapsMeta(p) {
   const internal = holderInternalPath(p)
-  if (!internal) return { title: 'Not found · HolderMaps', description: HOLDERMAPS_HOME[1], canonical: null, found: false }
+  if (!internal) return { title: 'Not found · HolderMaps', description: HOLDERMAPS_HOME[1], canonical: null, found: false, image: HM_OG, brand: HOLDERMAPS_BRAND }
   const m = pageMeta('gullylabs.xyz', internal)
-  if (internal === '/holders') return { ...m, title: HOLDERMAPS_HOME[0], description: HOLDERMAPS_HOME[1], canonical: `${HOLDERMAPS_URL}/`, ld: null }
-  return { ...m, title: holderMapsTitle(m.title), canonical: m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null }
+  if (internal === '/holders') return { ...m, title: HOLDERMAPS_HOME[0], description: HOLDERMAPS_HOME[1], canonical: `${HOLDERMAPS_URL}/`, ld: HM_LD, image: HM_OG, brand: HOLDERMAPS_BRAND }
+  // A token's map keeps its own share card (its bubbles); other pages use the kit's share image.
+  const image = /\/card\.png$/.test(m.image ?? '') ? m.image : HM_OG
+  return { ...m, title: holderMapsTitle(m.title), canonical: m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null, image, brand: HOLDERMAPS_BRAND }
 }
 
 /* gullysecurity.xyz (hosts.mjs): Gully Security's own domain. Its pages are the main site's Security pages under short
@@ -344,6 +358,16 @@ export function renderHead(source, meta) {
     html = html.replace(/\s*<link rel="canonical"[^>]*>/, '').replace(/\s*<meta property="og:url"[^>]*>/, '')
   }
   if (!meta.found || meta.noindex) swap(/<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex" />')
+  // A product with its own kit on its own domain (holdermaps.xyz): its site name, theme colour, icons and Twitter card.
+  if (meta.brand) {
+    const b = meta.brand
+    swap(/<meta property="og:site_name"[^>]*>/, `<meta property="og:site_name" content="${esc(b.siteName)}" />`)
+    swap(/<meta property="og:image:alt"[^>]*>/, `<meta property="og:image:alt" content="${esc(b.siteName)}" />`)
+    swap(/<meta name="theme-color"[^>]*>/, `<meta name="theme-color" content="${esc(b.themeColor)}" />`)
+    for (const size of [16, 32, 48]) swap(new RegExp(`<link rel="icon" type="image/png" sizes="${size}x${size}"[^>]*>`), `<link rel="icon" type="image/png" sizes="${size}x${size}" href="${esc(b.icons[size])}" />`)
+    swap(/<link rel="apple-touch-icon"[^>]*>/, `<link rel="apple-touch-icon" sizes="180x180" href="${esc(b.icons[180])}" />`)
+    if (b.twitterImage && !/\/card\.png$/.test(meta.image ?? '')) swap(/<meta name="twitter:image"[^>]*>/, `<meta name="twitter:image" content="${esc(b.twitterImage)}" />`)
+  }
   for (const ld of [meta.ld ?? []].flat()) html = html.replace('</head>', `    <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n  </head>`)
   return html
 }

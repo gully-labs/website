@@ -4,6 +4,8 @@ import type { ServiceType } from '../content/services'
 import { ContactContext } from './ContactContext'
 import { emptyForm, type ContactForm } from './contactForm'
 import { ConsoleFooter, ConsoleHeader } from '../console/Chrome'
+import { HmFooter, HmHeader } from '../holdermaps/HmChrome'
+import { isHolderMapsHost } from '../site-host'
 import { LiveProvider } from '../console/live'
 import { ConsoleToasts } from '../console/ui'
 import '../console/console.css'
@@ -88,24 +90,30 @@ export function Layout() {
   }, [searchParams, setSearchParams])
 
   const api = useMemo(() => ({ openContact }), [openContact])
+  const hm = isHolderMapsHost()
 
   return (
     <ContactContext.Provider value={api}>
       <LiveProvider>
-        <div className="lc min-h-screen overflow-x-clip bg-bg font-sans text-ink [container-type:inline-size]">
+        {/* holdermaps.xyz wears the HolderMaps kit: its own header, footer and colours (src/holdermaps). */}
+        <div className={`lc ${hm ? 'hm ' : ''}min-h-screen overflow-x-clip bg-bg font-sans text-ink [container-type:inline-size]`}>
           <a
             href="#main"
             className="sr-only z-60 rounded-btn bg-gold px-4 py-2 text-bg focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
           >
             Skip to content
           </a>
-          <ConsoleHeader />
+          {hm ? <HmHeader /> : <ConsoleHeader />}
           <main id="main" key={pathname} tabIndex={-1} className="animate-[gl-fade_.25s_ease-out_both] outline-none">
             <Outlet />
           </main>
-          <div className="lcp">
-            <ConsoleFooter />
-          </div>
+          {hm ? (
+            <HmFooter />
+          ) : (
+            <div className="lcp">
+              <ConsoleFooter />
+            </div>
+          )}
           <ConsoleToasts />
           {/* The bottom-right dock: Back to top, then Gully AI (also ⌘K / Ctrl+K). Toasts stack above it (offset
               76 px, 72 px on phones); the site has no cookie bar or bottom bar for it to cover. On /ask the

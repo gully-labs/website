@@ -1,0 +1,110 @@
+/* HolderMaps brand kit tokens (brand-kit/CLAUDE_INTEGRATION_PROMPT.md section 6), used on holdermaps.xyz only.
+   .hm re-points the site's colour tokens inside the HolderMaps chrome so shared components take the kit colours. */
+.hm {
+  --hm-ink: #0a0a0a;
+  --hm-carbon: #161616;
+  --hm-yellow: #ffd52e;
+  --hm-yellow-hi: #ffe03a;
+  --hm-yellow-lo: #fdb813;
+  --hm-white: #ffffff;
+  --hm-grad: linear-gradient(180deg, #ffe03a 0%, #fdb813 100%);
+  --hm-line: #262626;
+  --hm-muted: #b3b3b3;
+  --hm-font: 'Poppins', system-ui, sans-serif;
+  /* the site's Tailwind tokens, re-pointed to the kit */
+  --color-bg: #0a0a0a;
+  --color-bg-alt: #0f0f0f;
+  --color-bg-footer: #0a0a0a;
+  --color-surface: #161616;
+  --color-surface-deep: #111111;
+  --color-surface-hover: #1d1d1d;
+  --color-line: #262626;
+  --color-line-strong: #333333;
+  --color-line-hover: #4a4a4a;
+  --color-grid: #1c1c1c;
+  --color-muted: #b3b3b3;
+  --color-dim: #9a9a9a;
+  --color-faint: #a0a0a0;
+  --color-gold: #ffd52e;
+  --color-gold-hover: #ffe03a;
+  --color-gold-line: #5c4a0c;
+  /* the console tokens (live pill, sparks, cards) */
+  --gl-bg: #0a0a0a;
+  --gl-surface: #161616;
+  --gl-cyan: #ffd52e;
+  --gl-blue: #fdb813;
+  --gl-line: #262626;
+  --gl-line-2: #333333;
+  --gl-hover: #1d1d1d;
+  --gl-grid: #1c1c1c;
+  --gl-text-muted: #b3b3b3;
+  background: var(--hm-ink);
+  font-family: var(--hm-font);
+}
+.hm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+.hm-ic { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round }
+.hm-wrap { width: 100%; max-width: 1360px; margin: 0 auto; padding: 0 16px }
+@media (min-width: 900px) { .hm-wrap { padding: 0 28px } }
+
+/* header: one line 1024-1920 (labels drop to icons below 1280), a Menu sheet below 1024 */
+.hm-nav { position: sticky; top: 0; z-index: 20; background: rgba(10, 10, 10, .86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--hm-line) }
+.hm-nav .hm-wrap { display: flex; align-items: center; justify-content: space-between; gap: 14px; height: 64px; min-width: 0 }
+.hm-brand { display: inline-flex; align-items: center; flex: none; line-height: 0 }
+.hm-brand img { display: block; height: 40px; width: auto }
+@media (max-width: 639px) { .hm-nav .hm-brand img { height: 32px } }
+.hm-nav ul { list-style: none; margin: 0; padding: 0; display: none; gap: 2px; min-width: 0 }
+@media (min-width: 1024px) { .hm-nav ul { display: flex } }
+.hm-nav ul a, .hm-sheet a { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 11px; border-radius: 999px; text-decoration: none; color: var(--hm-muted); font-weight: 600; font-size: 14px; white-space: nowrap; transition: color .15s, background .15s }
+.hm-nav ul a:hover, .hm-sheet a:hover { color: #fff; background: var(--hm-carbon) }
+.hm-nav ul a:hover .hm-ic, .hm-sheet a:hover .hm-ic { color: var(--hm-yellow) }
+.hm-ext { width: 13px; height: 13px; opacity: .7 }
+@media (max-width: 1279px) { .hm-nav ul a { padding: 0 9px } .hm-nav ul a .lbl, .hm-nav ul a .hm-ext { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0) } }
+.hm-navr { display: flex; align-items: center; gap: 10px; flex: none }
+.hm-btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px 0 14px; border-radius: 999px; background: var(--hm-grad); color: var(--hm-ink); font-weight: 800; font-size: 14.5px; text-decoration: none; white-space: nowrap; transition: transform .12s, box-shadow .15s }
+.hm-btn:hover { box-shadow: 0 0 0 4px rgba(255, 213, 46, .22) }
+.hm-btn:active { transform: scale(.98) }
+.hm-btn::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .45) 50%, transparent 65%); transform: translateX(-120%) }
+.hm-btn:hover::after { transform: translateX(120%); transition: transform .7s ease }
+@media (max-width: 479px) { .hm-btn .lbl { display: none } .hm-btn { padding: 0 12px } }
+.hm-menu { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 40px; border-radius: 999px; border: 1px solid var(--hm-line); background: transparent; color: #fff; cursor: pointer }
+@media (min-width: 1024px) { .hm-menu { display: none } }
+.hm-sheet { position: fixed; top: 64px; left: 0; right: 0; z-index: 19; background: var(--hm-ink); border-bottom: 1px solid var(--hm-line); padding: 10px 16px 16px; max-height: calc(100svh - 64px); overflow: auto; font-family: var(--hm-font) }
+.hm-sheet ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 4px }
+.hm-sheet a { width: 100%; height: 44px }
+.hm :focus-visible { outline-color: var(--hm-yellow) }
+
+/* footer: links with icons, then the copyright and the Powered by Gully Labs badge on one baseline */
+.hm-foot { border-top: 1px solid var(--hm-line); background: var(--hm-carbon); padding: 22px 0 24px; font-family: var(--hm-font) }
+.hm-foot-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px }
+.hm-foot-top .hm-brand img { height: 24px }
+.hm-foot ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 2px 14px }
+.hm-foot ul a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; color: var(--hm-muted); text-decoration: none; font-size: 13.5px; font-weight: 500 }
+.hm-foot ul a:hover { color: #fff }
+.hm-foot ul .hm-ic { width: 16px; height: 16px }
+.hm-foot-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--hm-line) }
+.hm-foot-bottom p { margin: 0; font-size: 12.5px; color: var(--hm-muted); flex: 1 1 320px }
+.hm-badge { display: inline-flex; line-height: 0; flex: none }
+.hm-badge img { display: block; height: 30px; width: auto }
+@media (max-width: 639px) { .hm-badge img { height: 26px } }
+
+/* landing hero: the animated mascot beside the live figures */
+.hm-hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; align-items: center }
+@media (max-width: 959px) { .hm-hero { grid-template-columns: minmax(0, 1fr) } }
+.hm-h1 { margin: 0; font-weight: 900; font-size: clamp(38px, 5.4vw, 68px); line-height: 1; letter-spacing: -.02em; color: #fff }
+.hm-h1 em { font-style: normal; background: var(--hm-grad); -webkit-background-clip: text; background-clip: text; color: transparent }
+.hm-stage { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 150px; align-items: end; gap: 12px; padding: 16px; border: 1px solid var(--hm-line); border-radius: 20px; background: radial-gradient(120% 90% at 85% 100%, rgba(255, 213, 46, .14), transparent 60%), var(--hm-carbon); overflow: hidden; min-width: 0 }
+@media (max-width: 479px) { .hm-stage { grid-template-columns: minmax(0, 1fr) 96px } }
+.hm-mascot { width: 100%; height: auto; display: block; mix-blend-mode: lighten; transform-origin: 50% 100%; animation: hm-bob 3.6s ease-in-out infinite }
+.hm-mascot-wrap { position: relative; align-self: end }
+.hm-mascot-wrap::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: -4px; height: 10px; border-radius: 50%; background: rgba(255, 213, 46, .28); filter: blur(6px); animation: hm-shadow 3.6s ease-in-out infinite }
+@keyframes hm-bob { 0%, 100% { transform: translateY(0) rotate(-1.5deg) } 50% { transform: translateY(-10px) rotate(1.5deg) } }
+@keyframes hm-shadow { 0%, 100% { transform: scaleX(1); opacity: .9 } 50% { transform: scaleX(.78); opacity: .5 } }
+.hm-figs { display: flex; flex-direction: column; gap: 12px; min-width: 0 }
+.hm-fig { border: 1px solid var(--hm-line); border-radius: 14px; background: var(--hm-ink); padding: 12px 14px; min-width: 0 }
+.hm-fig .k { display: block; font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--hm-muted) }
+.hm-fig .v { display: block; font-weight: 800; font-size: 28px; letter-spacing: -.02em; line-height: 1.1; color: #fff; font-variant-numeric: tabular-nums }
+.hm-fig .s { display: block; font-size: 12px; color: var(--hm-muted) }
+.hm-live { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--hm-yellow) }
+.hm-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--hm-yellow); animation: hm-pulse 2s ease-out infinite }
+@keyframes hm-pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 213, 46, .55) } 100% { box-shadow: 0 0 0 9px rgba(255, 213, 46, 0) } }
+@media (prefers-reduced-motion: reduce) { .hm-mascot, .hm-mascot-wrap::after, .hm-live i { animation: none } }

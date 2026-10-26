@@ -7,7 +7,6 @@
    height and the logo sits left aligned and vertically centred in it; below 640 px everything scales by 0.875.
 
    Known kit gaps (owner to supply, not hand-cut here):
-   - HolderMaps has no transparent logo: HolderMaps_Logo.png is the only master and has a dark backdrop.
    - Gully Studio's kit has no logo without the "WEB3 GAMING STUDIO & AD NETWORK" tagline. */
 export type KitLogoKey = 'chain' | 'pay' | 'rpc' | 'holders' | 'security' | 'studio'
 /** 'ipfs' is Gully IPFS, a Gully Labs service with no kit of its own: the Gully Labs mark plus its name, set in the
@@ -29,7 +28,8 @@ export const PRODUCT_LOGOS: Record<KitLogoKey, LogoFile> = {
   chain: { name: 'Gully Chain', src: '/brand/products/gullychain-lockup-transparent.png', src2x: '/brand/products/gullychain-lockup-transparent-2x.png', w: 1556, h: 300, display: 31 },
   pay: { name: 'Gully Pay', src: '/brand/products/gullypay-logo-ondark.svg', w: 895.23, h: 230.4, display: 34 },
   rpc: { name: 'Gully RPC', src: '/brand/products/gullyrpc-logo-transparent.png', w: 860, h: 247, display: 39 },
-  holders: { name: 'HolderMaps', src: '/brand/products/HolderMaps_Logo.png', w: 1435, h: 265, display: 30 },
+  // The HolderMaps kit (2026-10-26) has a transparent lockup: public/brand/holdermaps, byte-exact.
+  holders: { name: 'HolderMaps', src: '/brand/holdermaps/holdermaps-logo-on-dark.svg', w: 1486, h: 306, display: 36 },
   security: { name: 'Gully Security', src: '/brand/products/gullysecurity-logo-primary.svg', w: 627, h: 104, display: 31 },
   studio: { name: 'Gully Studio', src: '/brand/products/gullystudio-logo-transparent.png', w: 2070, h: 593, display: 50 },
 }

@@ -50,6 +50,13 @@ export const HOLDERMAPS_MANIFEST = {
   ...SITE_MANIFEST,
   name: 'HolderMaps',
   short_name: 'HolderMaps',
+  // The HolderMaps brand kit (public/brand/holdermaps, byte-exact): ink #0A0A0A and its own app icons.
+  background_color: '#0A0A0A',
+  theme_color: '#0A0A0A',
+  icons: [
+    { src: '/brand/holdermaps/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: '/brand/holdermaps/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+  ],
   description: 'HolderMaps by Gully Labs: who really holds a token, the biggest wallets and the ones that trade with each other, read live.',
 }
 

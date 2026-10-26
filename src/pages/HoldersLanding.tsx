@@ -17,6 +17,8 @@ import { type CheckedLaunch, type CheckedLaunches, type HolderSources, type Reso
 import { useHolderSearch } from '../lib/holderResolve'
 import { ageText } from '../lib/tracker'
 import { holderHref } from '../site-host'
+import { HmStage } from '../holdermaps/HmHero'
+import '../holdermaps/hm.css'
 
 /* /holders: the Holder Map's front door. A search for any token: an address on Robinhood Chain, BNB Chain, Base,
    HyperEVM, Gully Chain Testnet or Solana (every supported chain is checked at once), a DeepCore launch or a tracked stock ticker
@@ -82,18 +84,23 @@ export function HoldersLanding() {
         title="Holder Map: who really holds a token"
         description="See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part."
       />
-      <section className="flex flex-col gap-4">
-        <span className={eyebrow}>HOLDER MAP · GULLY LABS</span>
-        <h1 className="heading-1">Who really holds it?</h1>
-        <p className="m-0 max-w-[720px] text-[18px] leading-[1.6] text-muted">
-          Paste any token address, on any chain we cover, or a ticker. See the biggest wallets as bubbles and the ones that trade with each other in gold. New DeepCore launches also get a plain check: bundled buys, snipers, the deployer’s share and record.
-        </p>
-        <SearchBox />
-        <Sources s={sources} />
+      <section id="map" className="hm-hero scroll-mt-20">
+        <div className="flex min-w-0 flex-col gap-4">
+          <span className={eyebrow}>HOLDERMAPS · BY GULLY LABS</span>
+          <h1 className="hm-h1">
+            Who <em>really</em> holds it?
+          </h1>
+          <p className="m-0 max-w-[640px] text-[18px] leading-[1.6] text-muted">
+            Paste any token address, on any chain we cover, or a ticker. The biggest wallets show as bubbles and the ones that trade with each other cluster together. New DeepCore launches also get a plain check: bundled buys, snipers, the deployer’s share and record.
+          </p>
+          <SearchBox />
+          <Sources s={sources} />
+        </div>
+        <HmStage launches={feed.k === 'ok' ? feed.data.launches : null} scans={top.k === 'ok' ? top.data.items.slice(0, 12).map((x) => x.scans) : null} now={now} />
       </section>
 
       <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-start gap-5 max-[959px]:grid-cols-1">
-        <section aria-labelledby="hl-feed" className="card card-pad flex min-w-0 flex-col gap-4">
+        <section id="launches" aria-labelledby="hl-feed" className="card card-pad flex min-w-0 scroll-mt-20 flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="hl-feed" className="heading-4 text-ink">
               New launches, checked
@@ -110,7 +117,7 @@ export function HoldersLanding() {
           <Feed s={feed} now={now} />
         </section>
 
-        <section aria-labelledby="hl-top" className="card card-pad flex min-w-0 flex-col gap-4">
+        <section id="top" aria-labelledby="hl-top" className="card card-pad flex min-w-0 scroll-mt-20 flex-col gap-4">
           <h2 id="hl-top" className="heading-4">
             Most scanned today
           </h2>
