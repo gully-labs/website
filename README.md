@@ -1,18 +1,17 @@
 <!-- gully-header:start -->
-<a href="https://gullylabs.xyz"><img src="https://gullylabs.xyz/social/og-home.png" alt="Gully Labs" width="100%"></a>
+<a href="https://gullylabs.xyz"><img src="https://gullychain.xyz/brand/gully-labs/website.svg" alt="Gully Labs · Gully Labs Website" width="100%"></a>
 
 <p align="center">
-  <a href="https://gullylabs.xyz"><img src="https://img.shields.io/badge/gullylabs.xyz-D9B563?style=for-the-badge&labelColor=0D141C&logo=googlechrome&logoColor=D9B563" alt="Website"></a>
-  <a href="https://x.com/Gully_Labs"><img src="https://img.shields.io/badge/@Gully__Labs-0D141C?style=for-the-badge&labelColor=0D141C&logo=x&logoColor=white" alt="X"></a>
-  <a href="https://t.me/GullyLabsNews"><img src="https://img.shields.io/badge/Telegram-0D141C?style=for-the-badge&labelColor=0D141C&logo=telegram&logoColor=26A5E4" alt="Telegram"></a>
-  <a href="https://docs.gullylabs.xyz"><img src="https://img.shields.io/badge/Docs-0D141C?style=for-the-badge&labelColor=0D141C&logo=readthedocs&logoColor=D9B563" alt="Docs"></a>
-  <a href="https://blog.gullylabs.xyz"><img src="https://img.shields.io/badge/Blog-0D141C?style=for-the-badge&labelColor=0D141C&logo=ghost&logoColor=D9B563" alt="Blog"></a>
-  <a href="https://github.com/gully-labs"><img src="https://img.shields.io/badge/GitHub-0D141C?style=for-the-badge&labelColor=0D141C&logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="https://gullylabs.xyz"><img src="https://img.shields.io/badge/gullylabs.xyz-00D2FF?style=for-the-badge&labelColor=06050D&logo=googlechrome&logoColor=06050D" alt="Website"></a>
+  <a href="https://docs.gullylabs.xyz"><img src="https://img.shields.io/badge/Docs-0B0A16?style=for-the-badge&labelColor=06050D&logo=readthedocs&logoColor=00D2FF" alt="Docs"></a>
+  <a href="https://x.com/Gully_Labs"><img src="https://img.shields.io/badge/@Gully__Labs-0B0A16?style=for-the-badge&labelColor=06050D&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://t.me/GullyLabsNews"><img src="https://img.shields.io/badge/Telegram-0B0A16?style=for-the-badge&labelColor=06050D&logo=telegram&logoColor=26A5E4" alt="Telegram"></a>
+  <a href="https://github.com/gully-labs"><img src="https://img.shields.io/badge/GitHub-0B0A16?style=for-the-badge&labelColor=06050D&logo=github&logoColor=white" alt="GitHub"></a>
 </p>
 
-<p align="center"><b>The source of gullylabs.xyz: the ledger, the stock token tracker, the docs and the app dashboard.</b></p>
+<p align="center"><b>Gully Labs Website: The source of gullylabs.xyz: the ledger, the stock token tracker, the docs and the developer portal.</b></p>
 
-<p align="center"><sub>Part of <a href="https://gullylabs.xyz">Gully Labs</a>, a blockchain development company that builds, launches and runs its own Web3 projects.</sub></p>
+<p align="center"><sub>Built by <a href="https://gullylabs.xyz">Gully Labs</a>. You Think It, We Ship It.</sub></p>
 
 ---
 <!-- gully-header:end -->
