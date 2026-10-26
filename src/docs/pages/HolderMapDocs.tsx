@@ -24,12 +24,12 @@ export function HolderMapDocs() {
       eyebrow="PRODUCTS · HOLDER MAP"
       title="Holder Map"
       description="How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules."
-      lead="Who really holds a token: the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every DeepCore launch. Any token on Robinhood Chain, BNB Chain, Base, HyperEVM and Solana can be mapped."
+      lead="Who really holds a token: the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every DeepCore launch. Any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain Testnet and Solana can be mapped."
       sections={sections}
     >
       <Section id="what" title="What it shows">
         <P>
-          The Holder Map covers any ERC-20 token on Robinhood Chain, BNB Chain, Base and HyperEVM and any SPL token on Solana, plus DeepCore launches and the stock tokens the tracker follows. Paste an address at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext>: it is first checked to be a token
+          The Holder Map covers any ERC-20 token on Robinhood Chain, BNB Chain, Base, HyperEVM and Gully Chain Testnet and any SPL token on Solana, plus DeepCore launches, Gully Launchpad launches and the stock tokens the tracker follows. Paste an address at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext>: it is first checked to be a token
           (an ERC-20 that answers decimals and total supply, or a Solana mint), and with no chain given every supported chain is checked at once (a token on several chains gives a picker). Launch checks and the health score are for DeepCore launches and launchpads we know; a plain token gets holders, clusters and concentration.
         </P>
         <List>
@@ -55,6 +55,7 @@ export function HolderMapDocs() {
           rows={[
             ['DeepCore launches (BNB Chain, HyperEVM, Robinhood Chain, Base)', 'DeepCore’s own log index: every transfer since the launch, so balances are exact', 'Every transfer between mapped wallets since the launch'],
             ['Any ERC-20 and stock tokens (Robinhood Chain, BNB Chain, Base, HyperEVM)', 'Our own Transfer-log index on an archive node (exact balances); past its caps or without one: Blockscout, then Moralis (top holders, labelled)', 'Every transfer since the token was deployed; for top-holders maps, the latest transfers'],
+            ['Any ERC-20 on Gully Chain Testnet (Gully Launchpad launches included)', 'Our own Transfer-log index on the chain’s archive node (exact balances); past its caps, our Gully Chain indexer (top holders). The launchpad curve, LP locker, routers and Gully Swap pools are labelled; wallets with a .gully name are shown by it', 'Every transfer since the token was deployed'],
             ['Any SPL token and stock tokens on Solana', 'Every token account of the mint where the RPC allows it, else the 20 largest token accounts, merged by owner (labelled)', 'Not read on Solana yet'],
           ]}
         />

@@ -56,6 +56,13 @@ globalThis.fetch = async (input) => {
     if (u.hostname !== 'api.peddleswap.xyz') throw new TypeError('fetch failed')
     return json({ volumeUsd24h: 0, tvlUsd: 0, fees24hUsd: 0, counts: { pools: 0, activeLocks: 0 }, volumeSeries: Array.from({ length: 30 }, (_, i) => ({ t: (dayN(29 - i)) * 1000, v: 0 })), tvlSeries: Array.from({ length: 5 }, (_, i) => ({ t: (dayN(5 - i)) * 1000, v: 0 })) })
   }
+  if (u.hostname === 'indexer.gullychain.xyz') {
+    const row = (a, vol) => ({ address: a, symbol: 'T', source: 'launchpad', creator: '0x' + '12'.repeat(20), createdAt: dayN(1), createdBlock: '74', win: { h24: { vol, buys: 1, sells: 1, makers: 1 } }, liquidityEth: 0.5, mcapEth: 2, holders: 3, txns: 4, progressPct: 10, graduated: false, pool: null, pools: [] })
+    if (u.pathname === '/head') return json({ chainId: 485590, block: 207, timestamp: dayN(0) })
+    if (u.pathname === '/tokens') return json({ tokens: [row('0x' + 'a1'.repeat(20), 0.25), row('0x' + 'a2'.repeat(20), 0.75)] })
+    if (u.pathname.endsWith('/candles')) return json({ candles: [{ t: dayN(20), v: 1 }, { t: dayN(19), v: 0.5 }, { t: dayN(0), v: 0 }] })
+    return json({ error: 'not found' }, 404)
+  }
   if (u.hostname === 'api.peddles.xyz') {
     if (u.pathname.endsWith('/analytics/platform')) return json({ data: { chains: [{ chainId: 4663, tvlUsd: 72_000, volume24hUsd: 0 }], poolCount: 4, totalUsers: 9, launches24h: 0 } })
     return json({ data: { creatorFees: { total: { symbol: 'ETH', currentRaw: '1000000000000000', decimals: 18 } }, allTime: { volume: { since: '2026-09-01' } } } })
@@ -82,7 +89,7 @@ const iso = (t) => new Date(t * 1000).toISOString()
 test('every venue carries series for volume, fees and value locked, with a source per series', async () => {
   S.resetStatsForTest()
   const doc = await S.readStats()
-  assert.equal(doc.venues.length, 4)
+  assert.equal(doc.venues.length, 5)
   assert.ok(!doc.venues.some((v) => /cartel/i.test(v.key)), 'Cartel Family never comes back')
   for (const v of doc.venues) {
     assert.equal(v.state, 'ok', `${v.key} read`)
@@ -91,6 +98,27 @@ test('every venue carries series for volume, fees and value locked, with a sourc
     assert.deepEqual(v.daily, v.series.volume, 'daily stays for older readers')
     for (const m of ['volume', 'fees', 'tvl']) for (const p of v.series[m]) assert.ok(Number.isFinite(p.t) && Number.isFinite(p.v))
   }
+})
+
+test('Gully Chain Testnet: test-ETH figures only, never in the dollar totals or the stacked chart', async () => {
+  const doc = await S.readStats()
+  const g = venue(doc, 'gullychain')
+  assert.equal(g.state, 'ok')
+  assert.equal(g.testnet, true)
+  assert.equal(g.noUsd, true)
+  for (const f of ['volumeAllUsd', 'volume24hUsd', 'tvlUsd', 'fees24hUsd', 'feesAllUsd']) assert.equal(g[f], null, f)
+  assert.deepEqual(g.daily, [])
+  assert.equal(g.native.symbol, 'ETH')
+  assert.equal(g.native.testnet, true)
+  assert.equal(g.native.volume24h, 1)
+  assert.equal(g.native.volumeAll, 3)
+  assert.deepEqual(g.native.daily, [{ t: dayN(20), v: 2 }, { t: dayN(19), v: 1 }, { t: dayN(0), v: 0 }])
+  assert.equal(g.lastActivity, iso(dayN(19) + 86399), 'the end of its last day with volume')
+  assert.equal(g.counts.launches, 2)
+  assert.equal(g.counts.holders, 6)
+  assert.match(g.sourceNote, /block 207/)
+  for (const f of Object.keys(doc.totals.covers)) assert.ok(!doc.totals.covers[f].includes('gullychain'), `${f} never covered by the testnet`)
+  assert.ok(g.notes.some((n) => /test ETH/.test(n)))
 })
 
 test('Peddles has no daily series of its own: DefiLlama fills volume, fees and TVL, named as the fallback', async () => {

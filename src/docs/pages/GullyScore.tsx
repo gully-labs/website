@@ -108,12 +108,13 @@ export function GullyScore() {
           </>
         )}
         <List>
-          <li>Code verified: a full Sourcify match scores 100, a partial match 85, no published source 0.</li>
+          <li>Code verified: a full Sourcify match scores 100, a partial match 85, no published source 0. On Gully Chain Testnet, which no verification service covers yet, a token issued by the Gully Launchpad runs the launchpad’s known LaunchToken code and scores 85.</li>
           <li>Who controls it: nobody (ownership given up) or a Safe needing two or more signatures 100, a timelock 80, an unrecognised contract 50, a Safe any one signer can use 40, a single wallet 15.</li>
           <li>Delay on changes: two days or more 100, one day 90, six hours 60, anything shorter 40, none 0.</li>
           <li>Can the code change: fixed code 100, upgradeable 30.</li>
+          <li>Token behaviour (tokens only): 100, less 40 when it can mint new tokens (not counted when a launchpad fixes the supply), 30 for blacklist functions, 15 for fee or tax setters, 10 for adjustable limits, 10 for a trading switch, 10 for DELEGATECALL; a simulated transfer from a real holder (eth_call with a state override, nothing is sent) takes 3 per percent of fee on transfer (up to 50), and 60 when the transfer reverts or returns false.</li>
           <li>Recent privileged changes: 100 less 25 for each change in the last 30 days.</li>
-          <li>Liquidity locked: the share of the launch pools with a lock record, for DeepCore launches.</li>
+          <li>Liquidity locked: the share of the launch pools with a lock record, for DeepCore launches. For Gully Launchpad launches on Gully Chain: 100 while the token is on the bonding curve (the launchpad holds the liquidity) or once the graduated LP position sits in the GullyLPLocker, 0 when it sits anywhere else. The part also names the creator, with their .gully name and how many tokens they have launched and graduated.</li>
           <li>Holder spread: the Holder Map’s Launch Health, or from the top-10 share (20% or less is 100, 90% or more is 0).</li>
           <li>Gully Security review: 100 less 40 per critical, 20 per high, 5 per medium and 1 per low finding (unresolved ones when the report says).</li>
           <li>Age: a year or more 100, six months 85, three months 70, a month 50, a week 30, younger 10.</li>

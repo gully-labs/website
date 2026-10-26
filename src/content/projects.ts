@@ -111,6 +111,24 @@ export const projects: Project[] = [
     chains: ['Base', 'Robinhood', 'BNB Chain', 'Arc'],
     built: ['On-chain quest verification and escrow', 'XP, crates and soulbound badges', 'Quest wizard and sybil rules for projects'],
   },
+  {
+    slug: 'gullychain',
+    key: 'gullychain',
+    name: 'Gully Chain',
+    tag: 'L3 chain',
+    status: 'Beta',
+    tagline: 'Our own chain, with a launchpad built in',
+    description: 'Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and glUSD. Figures are in test ETH and read from our own indexer.',
+    logo: '/brand/gully-mark-512.png',
+    bg: '#0f0f10',
+    accent: '#d9b563',
+    fit: 'contain',
+    pad: '40px 96px',
+    padSm: '20px 40px',
+    url: 'https://gullychain.xyz/',
+    chains: ['Gully Chain Testnet'],
+    built: ['Gully Launchpad: bonding curve, graduation into a Gully Swap pool with the LP locked in GullyLPLocker', 'Gully Swap (Uniswap v3) and the GullySwapRouter', '.gully names, glUSD and bridged USDC, served through Gully RPC and indexed by our own indexer'],
+  },
 ]
 
 /** Slots for projects still in development. */

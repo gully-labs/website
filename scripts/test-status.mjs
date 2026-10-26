@@ -13,7 +13,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-status-'))
 process.env.DATA_DIR = tmp
 process.env.STATUS_LOOP = 'off'
 
-const { trackerComponents } = await import('../server/status.mjs')
+const { trackerComponents, gullyChainComponents } = await import('../server/status.mjs')
 const tracker = await import('../server/tracker.mjs')
 
 const NOW = Date.parse('2026-10-18T12:00:00Z')
@@ -77,3 +77,14 @@ test('notePriceReads keeps the newest onchainAt per chain and the last read coun
 })
 
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }))
+
+test('Gully Chain Testnet: RPC and indexer heads; the indexer is degraded past 20 blocks behind and down when unreadable', () => {
+  const up = gullyChainComponents({ rpc: { block: 207, ms: 120 }, indexer: { block: 207, at: null } })
+  assert.deepEqual(up.map((c) => [c.id, c.group, c.state]), [['gullychain-rpc', 'chains', 'up'], ['gullychain-indexer', 'chains', 'up']])
+  assert.match(up[1].detail, /chain head/)
+  const lag = gullyChainComponents({ rpc: { block: 250, ms: 90 }, indexer: { block: 207, at: null } })
+  assert.equal(lag[1].state, 'degraded')
+  assert.match(lag[1].detail, /43 blocks behind/)
+  const down = gullyChainComponents({ rpc: { error: 'timed out' }, indexer: { error: 'fetch failed' } })
+  assert.deepEqual(down.map((c) => c.state), ['down', 'down'])
+})

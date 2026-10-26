@@ -65,9 +65,11 @@ const hex = (n) => '0x' + BigInt(n).toString(16)
 const pad = (a) => '0x' + String(a).toLowerCase().replace(/^0x/, '').padStart(64, '0')
 const word = (v) => BigInt(v).toString(16).padStart(64, '0')
 const addr = (n) => '0x' + n.toString(16).padStart(40, '0')
-const [A, C, D, E, F, G, H, EOA, SAFE, TL, IMPL, S1, S2, S3] = [0xa, 0xc, 0xd, 0xe, 0xf, 0x9, 0x8, 0xe0a, 0x5afe, 0x71, 0x1001, 0x51, 0x52, 0x53].map((n) => addr(n + 0x10000))
+const [A, C, D, E, F, G, H, EOA, SAFE, TL, IMPL, S1, S2, S3, L] = [0xa, 0xc, 0xd, 0xe, 0xf, 0x9, 0x8, 0xe0a, 0x5afe, 0x71, 0x1001, 0x51, 0x52, 0x53, 0x1a] .map((n) => addr(n + 0x10000))
 const NOW = Date.now()
 const DAY = 86_400_000
+// L: a Gully Launchpad token on Gully Chain Testnet (indexer row; the chain stub answers its balance and the transfer probe).
+const launchRow = { address: L, symbol: 'LABRAT', name: 'Lab Rat', source: 'launchpad', launchpad: '0x3378b659f6dda7f13d87599b383b3995f82d0974', launchpadVersion: '2.0.0', creator: EOA, createdAt: Math.floor((NOW - 3 * DAY) / 1000), createdBlock: '74', progressPct: 2.88, complete: false, graduated: false, pool: null, totalSupply: '1000' }
 const st = {
   head: 5_000_000,
   code: new Map([A, C, D, F, G, H, SAFE, TL].map((x) => [x, '0x6080'])),
@@ -88,6 +90,10 @@ const st = {
 }
 // E is a minimal clone (EIP-1167) of IMPL.
 st.code.set(E, '0x363d3d373d3d3d363d73' + IMPL.slice(2) + '5af43d82803e903d91602b57fd5bf3')
+// L: an ERC-20 dispatcher (transfer, balanceOf) with a mint function; the probe call (to EOA, state override) is a 5% fee.
+st.code.set(L, '0x' + ['a9059cbb', '70a08231', '40c10f19'].map((s) => `63${s}14`).join(''))
+st.calls.set(`${L}:0x70a08231`, '0x' + word(1000n * 10n ** 18n))
+st.calls.set(`${EOA}:0x00000000`, '0x' + word(0) + word(1) + word(1) + word(32) + word((100n * 10n ** 18n * 95n) / 100n))
 async function stub(chainId, method, params) {
   switch (method) {
     case 'eth_blockNumber':
@@ -150,6 +156,13 @@ score.setScoreFetchForTest(async (url) => {
     const a = u.pathname.split('/').pop().toLowerCase()
     return holders[a] ? j(holders[a]) : new Response('<!doctype html><title>Not found</title>', { status: 404, headers: { 'content-type': 'text/html' } })
   }
+  if (u.hostname === 'indexer.gullychain.xyz') {
+    if (u.pathname === `/tokens/${L}`) return j({ token: launchRow, curve: {}, graduation: null, pools: [] })
+    if (u.pathname === '/tokens') return j({ tokens: [launchRow, { ...launchRow, address: addr(0x1234), symbol: 'TWO', graduated: true }] })
+    if (u.pathname === `/tokens/${L}/holders`) return j({ holders: [{ address: EOA, balance: '100', pct: 10, tag: null }], holderCount: 1, totalSupply: '1000' })
+    if (u.pathname === '/names') return j({ names: { [EOA]: 'gullytester.gully' } })
+    return j({ error: 'not found' }, 404)
+  }
   if (u.hostname === 'api.etherscan.io') {
     const a = (u.searchParams.get('address') ?? u.searchParams.get('contractaddresses') ?? '').toLowerCase()
     etherscanHits.push(a)
@@ -173,10 +186,11 @@ try {
     { id: 'verified', available: true, score: 100 },
     { id: 'control', available: true, score: 15 },
     { id: 'timelock', available: false, score: null },
+    { id: 'upgradeability', available: true, score: 30 },
     { id: 'age', available: true, score: 50 },
   ])
-  check('combine: the weighted mean of the available parts', cb.score === Math.round((15 * 100 + 20 * 15 + 5 * 50) / 40) && cb.coverage === 40 && cb.available === 3, JSON.stringify(cb))
-  check('combine: a missing part is left out, not counted as 0', score.combine([{ id: 'verified', available: true, score: 100 }, { id: 'control', available: true, score: 100 }, { id: 'review', available: false, score: null }, { id: 'changes', available: false, score: null }, { id: 'upgradeability', available: true, score: 100 }]).score === 100)
+  check('combine: the weighted mean of the available parts', cb.score === Math.round((W.verified * 100 + W.control * 15 + W.upgradeability * 30 + W.age * 50) / (W.verified + W.control + W.upgradeability + W.age)) && cb.coverage === W.verified + W.control + W.upgradeability + W.age && cb.available === 4, JSON.stringify(cb))
+  check('combine: a missing part is left out, not counted as 0', score.combine([{ id: 'verified', available: true, score: 100 }, { id: 'control', available: true, score: 100 }, { id: 'review', available: false, score: null }, { id: 'changes', available: false, score: null }, { id: 'timelock', available: true, score: 100 }, { id: 'upgradeability', available: true, score: 100 }]).score === 100)
   check(`combine: under ${score.MIN_COVERAGE} weight points there is no score`, score.combine([{ id: 'verified', available: true, score: 100 }, { id: 'age', available: true, score: 100 }, { id: 'timelock', available: true, score: 100 }]).score === null)
   check('review points: 100 less 40/20/5/1, unresolved when stated', score.reviewPoints({ severities: { critical: 0, high: 1, medium: 2, low: 3 } }) === 67 && score.reviewPoints({ severities: { critical: 2, high: 5 }, unresolved: { critical: 0, high: 1 } }) === 80 && score.reviewPoints({ severities: { critical: 3 } }) === 0)
   check('holder spread points: 20% → 100, 55% → 50, 90% → 0', score.spreadPoints(20) === 100 && score.spreadPoints(55) === 50 && score.spreadPoints(90) === 0 && score.spreadPoints(5) === 100)
@@ -194,7 +208,8 @@ try {
   check('A: Holder Map answers 404 → not available, said plainly', !part(a, 'holders').available && /not running on this server/.test(part(a, 'holders').reason), part(a, 'holders').reason)
   check('A: no report → review not available', !part(a, 'review').available)
   const expectA = Math.round((W.verified * 100 + W.control * 15 + W.timelock * 0 + W.upgradeability * 30 + W.age * 100) / (W.verified + W.control + W.timelock + W.upgradeability + W.age))
-  check(`A: score = weighted mean of the 5 available parts (${expectA})`, a.score === expectA && a.coverage.weight === 60 && a.coverage.components === 5, `${a.score} ${JSON.stringify(a.coverage)}`)
+  check(`A: score = weighted mean of the 5 available parts (${expectA})`, a.score === expectA && a.coverage.weight === W.verified + W.control + W.timelock + W.upgradeability + W.age && a.coverage.components === 5, `${a.score} ${JSON.stringify(a.coverage)}`)
+  check('A: not a token (no transfer/balanceOf) → behaviour not available, said plainly', !part(a, 'behaviour').available && /Not a token/.test(part(a, 'behaviour').reason))
   check('A: name from the chain, grade in words', a.name === 'Vault' && a.grade === score.grade(expectA))
   check('every part carries its weight, source, value and reason', a.components.every((c) => typeof c.weight === 'number' && c.source && c.value && c.reason))
 
@@ -211,6 +226,16 @@ try {
     const r = await fetch(`${BASE}/api/score/gully/${H}`)
     const j = await r.json()
     check('GET /api/score/gully/:address answers with CORS and the testnet explorer', r.status === 200 && r.headers.get('access-control-allow-origin') === '*' && j.chain?.key === 'gully' && /testnet-explorer\.gullychain\.xyz/.test(j.links?.explorer ?? ''), `${r.status} ${JSON.stringify(j).slice(0, 200)}`)
+
+    // A Gully Launchpad token: known code, the curve holds the liquidity, the creator's record, a simulated 5% fee.
+    const gl = await get(485590, L)
+    check('Gully Launchpad token: counts as known code (85) and names the launchpad version', part(gl, 'verified').score === 85 && /Gully Launchpad token \(v2\.0\.0\)/.test(part(gl, 'verified').value) && part(gl, 'verified').evidence[0].url.endsWith('/address/0x3378b659f6dda7f13d87599b383b3995f82d0974'), JSON.stringify(part(gl, 'verified')))
+    check('Gully Launchpad token: on the curve → liquidity 100, with the creator’s .gully name and record', part(gl, 'liquidity').score === 100 && /On the curve, 2\.88%/.test(part(gl, 'liquidity').value) && /gullytester\.gully/.test(part(gl, 'liquidity').reason) && /launched 2 tokens here, 1 graduated/.test(part(gl, 'liquidity').reason), part(gl, 'liquidity').reason)
+    check('Gully Launchpad token: behaviour from the code and a simulated transfer (5% fee → 85; the launchpad’s fixed-supply mint costs nothing)', part(gl, 'behaviour').score === 85 && part(gl, 'behaviour').value === '5% fee on transfer' && part(gl, 'behaviour').simulation?.feePct === 5 && part(gl, 'behaviour').evidence.some((e) => e.url.endsWith(`/address/${EOA}`)), JSON.stringify(part(gl, 'behaviour')))
+    check('Gully Launchpad token: age from the launch record (3 days → 10)', part(gl, 'age').available && part(gl, 'age').score === 10, JSON.stringify(part(gl, 'age')))
+    check('Gully Launchpad token: the result carries the launch block with the creator’s record', gl.launch?.venue === 'gully-launchpad' && gl.launch.creator?.name === 'gullytester.gully' && gl.launch.creator.launches === 2 && gl.launch.curve.progressPct === 2.88, JSON.stringify(gl.launch))
+    check('Gully Launchpad token: a score exists (enough coverage for the app to use it)', typeof gl.score === 'number' && gl.coverage.weight >= score.MIN_COVERAGE, JSON.stringify(gl.coverage))
+    check('a non-launch on Gully Chain: liquidity not available, said plainly', !part(gc, 'liquidity').available && /not launched there/.test(part(gc, 'liquidity').reason), part(gc, 'liquidity').reason)
   }
 
   /* ------------------------------------------------------ other setups --- */
@@ -307,7 +332,7 @@ try {
   const keys = idx.data.scores.map((r) => r.address)
   check('index: lists the watched-and-listed contract and the one with a published report', keys.includes(D) && keys.includes(A), keys.join())
   check('index: leaves out unlisted and merely looked-up contracts', !keys.includes(E) && !keys.includes(C) && !keys.includes(G))
-  check('index: best first, with the methodology', idx.data.scores[0].score >= idx.data.scores[idx.data.scores.length - 1].score && idx.data.methodology.components.length === 9 && idx.data.methodology.rules.some((x) => /Nothing paid goes in/.test(x)))
+  check('index: best first, with the methodology', idx.data.scores[0].score >= idx.data.scores[idx.data.scores.length - 1].score && idx.data.methodology.components.length === 10 && idx.data.methodology.rules.some((x) => /Nothing paid goes in/.test(x)))
   check('methodology says informational, not advice', (await anon.call('/api/score/methodology')).data.rules.some((x) => /not an endorsement and not investment advice/.test(x)))
 
   const sm = await hostRequest(BASE, 'gullylabs.xyz', '/sitemap.xml')

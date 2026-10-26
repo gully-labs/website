@@ -15,6 +15,7 @@
 
 // Under the page's 60 s poll, so every poll lands on a fresh read and the "read HH:MM" stamp moves each time.
 import { divergence, mergeDaily, onchainSnapshot } from './peddles.mjs'
+import { GULLY_CHAIN, ledgerFigures as gullyLedger } from './gully-chain.mjs'
 
 const CACHE_MS = 45_000
 const TIMEOUT_MS = 15_000
@@ -527,11 +528,43 @@ async function peddlequest() {
   }
 }
 
+async function gullychain() {
+  // Our own L3 testnet, read from its indexer (server/gully-chain.mjs): launches, graduations, holders and trades.
+  // Every amount is in TEST ETH, which has no dollar value, so every USD field is null and nothing here enters the
+  // totals or the stacked daily chart; the venue carries its own `native` figures and daily series instead.
+  const f = await gullyLedger()
+  const n = f.native
+  return {
+    volume24hUsd: null,
+    volumeAllUsd: null,
+    volumeAllSince: n.volumeAllSince,
+    tvlUsd: null,
+    fees24hUsd: null,
+    feesAllUsd: null,
+    daily: [],
+    series: { volume: [], fees: [], tvl: [] },
+    sources: { volume: { name: 'Gully Chain indexer (test ETH, not charted in dollars)', url: `${GULLY_CHAIN.indexer}/tokens`, fallback: false }, fees: null, tvl: null },
+    lastActivity: f.lastActivity,
+    native: { symbol: n.symbol, testnet: true, volume24h: n.volume24h, volumeAll: n.volumeAll, liquidity: n.liquidity, mcap: n.mcap, daily: n.daily },
+    testnet: true,
+    noUsd: true,
+    counts: f.counts,
+    chains: [{ chainId: GULLY_CHAIN.id, name: GULLY_CHAIN.name, testnet: true }],
+    notes: [
+      'Gully Chain Testnet: every figure is in test ETH, which has no dollar value, so nothing here is added to the totals or drawn in the dollar charts.',
+      `${f.counts.launches} launchpad token${f.counts.launches === 1 ? '' : 's'} (${f.counts.graduated} graduated), ${f.counts.holders} holder balances and ${f.counts.swaps} trades, read from our own indexer at block ${f.head.block}.`,
+    ],
+    sourceNote: `Gully Chain indexer · block ${f.head.block}`,
+    source: { url: `${GULLY_CHAIN.indexer}/tokens + ${GULLY_CHAIN.indexer}/head`, readAt: f.readAt },
+  }
+}
+
 export const VENUES = [
   { key: 'deepcore', read: deepcore },
   { key: 'peddleswap', read: peddleswap },
   { key: 'peddles', read: peddles },
   { key: 'peddlequest', read: peddlequest },
+  { key: 'gullychain', read: gullychain },
 ]
 
 let cache = null

@@ -208,7 +208,7 @@ export function HolderMapIntegrateDocs() {
         <P>What we need from you:</P>
         <Details summary="Get your launchpad listed: the details">
           <List>
-            <li>Your name, website and the chains you launch on (Robinhood Chain, BNB Chain, Base and HyperEVM are supported).</li>
+            <li>Your name, website and the chains you launch on (Robinhood Chain, BNB Chain, Base, HyperEVM and Gully Chain Testnet are supported).</li>
             <li>
               Either a token endpoint that answers whether an address is one of your launches and names its creator (and ideally the creation block), or your factory or hook contract address per chain with the signature of the event it emits at creation and where the token and creator sit in it.
             </li>

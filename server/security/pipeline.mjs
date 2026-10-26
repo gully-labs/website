@@ -8,6 +8,7 @@ import { config } from './config.mjs'
 import { CHAINS } from './chains.mjs'
 import { aiConfigured } from './claude.mjs'
 import { bytecodeNotes, notesToFindings } from './bytecode.mjs'
+import { isGullyChain, launchStatus, tokenBehaviour } from '../gully-chain.mjs'
 import { fetchAddress, fetchGithubFiles, resolveGithub, uploadFiles } from './fetchers.mjs'
 import { buildReport, renderReportHtml, targetText } from './report.mjs'
 import { MODE_LABELS, validateReport } from './schema.mjs'
@@ -245,13 +246,17 @@ export async function runPipeline(scan, dir, ctx) {
   const limitations = ['Automated scan: business logic, economic and cross-protocol attacks need manual review by people.']
   for (const a of src.meta?.attempts ?? []) if (/^error/.test(a.outcome)) limitations.push(`${a.provider}: ${a.outcome}`)
 
-  /* Unverified contract: bytecode notes only. */
+  /* Unverified contract: bytecode notes only (plus, for a token, a simulated transfer and its launchpad record). */
   if (src.target.type === 'address' && !src.target.verified) {
     ctx.progress(0.6, 'Source not verified: reading bytecode', 'analysing')
     const notes = bytecodeNotes(src.meta?.bytecode ?? '')
-    const findings = finalizeFindings(notesToFindings(notes, { proxyImplementation: src.target.proxy?.implementation }).map((f) => ({ ...f, _refs: [] })))
+    const t0 = Date.now()
+    const live = await tokenFindings(src.target, src.meta?.bytecode ?? '')
+    check()
+    const findings = finalizeFindings([...notesToFindings(notes, { proxyImplementation: src.target.proxy?.implementation }), ...live.findings].map((f) => ({ ...f, _refs: [] })))
     const tools = [
-      { name: 'bytecode-notes', version: '1', status: 'ran', reason: null, durationMs: 0, findings: findings.length },
+      { name: 'bytecode-notes', version: '1', status: 'ran', reason: null, durationMs: 0, findings: findings.length - live.findings.length },
+      { name: 'transfer-simulation', version: '1', status: live.ran ? 'ran' : 'not-run', reason: live.ran ? null : live.reason, durationMs: Date.now() - t0, findings: live.findings.length },
       ...[...CONTRACT_TOOLS, 'ai-review'].map((n) => ({ name: n, version: null, status: 'not-run', reason: 'source not verified', durationMs: null, findings: 0 })),
     ]
     if (notes.solc) limitations.push(`Metadata says it was compiled with solc ${notes.solc}.`)
@@ -336,6 +341,37 @@ export async function runPipeline(scan, dir, ctx) {
     dependencies: dep?.dependencies ?? null,
     limitations,
   })
+}
+
+/**
+ * Live token checks for an address scan: a simulated transfer from a real holder (server/gully-chain.mjs, eth_call with
+ * a state override; nothing is sent) and, on Gully Chain, the Gully Launchpad record (curve, graduation, LP lock, creator).
+ * Observations, never a verdict on intent. Resolves { ran, reason, findings }.
+ */
+async function tokenFindings(target, bytecode) {
+  const out = []
+  const add = (title, description, explanation, recommendation, category, severity = { likelihood: 'low', impact: 'none' }) =>
+    out.push({ title, ...severity, confidence: 'medium', category, triage: 'engine-note', sources: [{ tool: 'transfer-simulation', detector: null }], locations: [], description, explanation, recommendation, poc: null })
+  let beh
+  let launch = null
+  try {
+    launch = isGullyChain(target.chainId) ? await launchStatus(target.address) : null
+    beh = await tokenBehaviour({ chainId: target.chainId, address: target.address, code: bytecode, fixedSupply: !!launch })
+  } catch (e) {
+    return { ran: false, reason: `token checks failed: ${String(e?.message ?? e).slice(0, 80)}`, findings: out }
+  }
+  if (!beh.token) return { ran: false, reason: 'not a token (no transfer and balanceOf)', findings: out }
+  const sim = beh.simulation
+  if (sim?.ok === true && sim.feePct > 0) add(`Fee on transfer: ${sim.feePct}%`, `A simulated transfer of ${sim.sent} raw units from the holder ${beh.holder} arrived ${sim.feePct}% short (${sim.received} received).`, 'The token keeps part of every transfer. Trades and payments in it receive less than was sent.', 'State the fee to users; check who can change it and whether it can be raised.', 'token-controls', { likelihood: 'high', impact: sim.feePct >= 10 ? 'high' : 'medium' })
+  else if (sim?.ok === true) add('Transfer simulation: arrived in full', `A simulated transfer of ${sim.sent} raw units from the holder ${beh.holder} arrived in full.`, 'No fee on transfer was taken for this holder at this moment; fees that depend on the sender, the recipient or a later switch are not ruled out.', 'None.', 'token-controls')
+  else if (sim?.ok === false) add(sim.reverted ? 'Transfer simulation reverted' : 'Transfer simulation returned false', `A simulated transfer from the holder ${beh.holder} ${sim.reverted ? 'reverted' : 'returned false'}.`, 'A real holder could not move the token: a blacklist, a pause, a trading lock or a rule against contracts sending (the probe runs as the holder’s code) can cause this.', 'Check on chain whether transfers are open and whether this holder is blocked.', 'token-controls', { likelihood: 'high', impact: 'high' })
+  else add('Transfer not simulated', sim?.error ?? 'No holder was known.', 'Without a holder with a balance, or on a node without state overrides, the transfer could not be simulated.', 'Run the scan again once the token has holders.', 'token-controls')
+  if (launch) {
+    const lp = launch.lp
+    const lock = !launch.curve.graduated ? `still on the bonding curve (${launch.curve.progressPct}% to graduation): the launchpad contract holds the liquidity until then` : lp?.locked === true ? `graduated; the LP position (NFT #${lp.tokenId}) is held by the GullyLPLocker ${lp.locker}` : lp?.locked === false ? `graduated, but the LP position (NFT #${lp.tokenId}) is held by ${lp.owner}, not the locker` : 'graduated; the LP position could not be read'
+    add(`Gully Launchpad token (v${launch.version})`, `Launched by ${launch.creator ?? 'an unknown creator'} on the Gully Launchpad v${launch.version} (${launch.launchpad}); ${lock}.`, 'Every launch runs the launchpad’s LaunchToken code (fixed supply, no owner); graduated liquidity is locked for good when its position sits in the GullyLPLocker.', lp?.locked === false ? 'The liquidity could be removed by whoever holds the position; treat it as unlocked.' : 'None.', 'launchpad', lp?.locked === false ? { likelihood: 'high', impact: 'high' } : { likelihood: 'low', impact: 'none' })
+  }
+  return { ran: true, reason: null, findings: out }
 }
 
 function aiBlock(ai, summaryModel) {

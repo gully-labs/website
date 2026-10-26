@@ -66,7 +66,9 @@ beforeEach(() => {
 
 test('constants: the topic is the seven-field PoolRegistered and every chain id matches HOLDER_CHAINS', () => {
   assert.equal(L.POOL_REGISTERED_TOPIC, '0xebfb244f562bae7d4ca6f8de1634c1681f434c280488827a5e5e402cba3dbe26')
-  assert.deepEqual(L.LAUNCHPADS.map((l) => l.id), ['peddles', 'peddleswap'])
+  assert.deepEqual(L.LAUNCHPADS.map((l) => l.id), ['peddles', 'peddleswap', 'gully-launchpad'])
+  assert.equal(reg('gully-launchpad').api.fields.chainId, undefined, 'a single-chain API carries no chainId')
+  assert.deepEqual(Object.keys(reg('gully-launchpad').chains), ['gully'])
   for (const lp of L.LAUNCHPADS) for (const [k, c] of Object.entries(lp.chains)) assert.equal(c.chainId, H.HOLDER_CHAINS[k].id, `${lp.id} ${k}`)
   for (const c of Object.values(reg('peddles').chains)) {
     assert.match(c.factory, /^0x[0-9a-f]{40}$/)
@@ -236,14 +238,15 @@ const FAKE_EVENT = {
 
 test('listLaunchpads: public metadata only, in registry order', () => {
   const l = L.listLaunchpads()
-  assert.deepEqual(l.map((x) => x.id), ['peddles', 'peddleswap'])
+  assert.deepEqual(l.map((x) => x.id), ['peddles', 'peddleswap', 'gully-launchpad'])
+  assert.deepEqual(l[2].chains, [{ key: 'gully', id: 485590, name: 'Gully Chain Testnet' }])
   assert.deepEqual(Object.keys(l[0]).sort(), ['chains', 'id', 'name', 'url'])
   assert.deepEqual(l[0].chains.map((c) => c.key), ['robinhood', 'base', 'bsc'])
   assert.deepEqual(l[1].chains, [{ key: 'robinhood', id: 4663, name: 'Robinhood Chain' }, { key: 'base', id: 8453, name: 'Base' }])
   assert.equal(JSON.stringify(l).includes('factory'), false)
   assert.equal(JSON.stringify(l).includes('0xfe05'), false)
   L.setLaunchpadsForTest([FAKE_API, FAKE_EVENT])
-  assert.deepEqual(L.listLaunchpads().slice(2).map((x) => [x.id, x.chains[0].key]), [['fakeapi', 'hyperevm'], ['fakefactory', 'hyperevm']])
+  assert.deepEqual(L.listLaunchpads().slice(3).map((x) => [x.id, x.chains[0].key]), [['fakeapi', 'hyperevm'], ['fakefactory', 'hyperevm']])
   L.setLaunchpadsForTest()
 })
 
