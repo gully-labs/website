@@ -43,7 +43,7 @@ export function ProductLogo({ product, scale = 1, className = '', decorative = f
   const w = Math.round(((h * f.w) / f.h) * 100) / 100
   return (
     <span
-      className={`flex min-w-0 items-center justify-start max-[640px]:[--pl:0.875] ${className}`}
+      className={`flex w-full min-w-0 items-center justify-start max-[640px]:[--pl:0.875] ${className}`}
       style={{ height: `calc(${PRODUCT_LOGO_SLOT * scale}px * var(--pl, 1))`, containerType: 'inline-size' }}
       data-product-logo={product}
     >
