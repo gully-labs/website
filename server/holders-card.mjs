@@ -16,7 +16,7 @@ import { holderMapsPrimary } from './hosts.mjs'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const W = 1200
 const H = 630
-const K = { night: '#0d141c', midnight: '#151d28', slate: '#2a3542', bone: '#f4f2ec', gold: '#d9b563', pale: '#f2d58a', muted: '#aeb5be', dim: '#7d8794', moss: '#3c553b' }
+const K = { night: '#06050d', midnight: '#0b0a16', slate: '#1a1830', bone: '#ffffff', gold: '#00d2ff', pale: '#248bff', muted: '#a3a8c3', dim: '#7d8794', moss: '#7b3bff' } // the 2026 Gully Labs kit palette under the card's old names
 const INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
 
 const firstFile = (...c) => c.find((p) => p && fs.existsSync(p)) ?? null
