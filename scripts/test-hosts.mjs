@@ -24,10 +24,15 @@ const dist = path.join(tmp, 'dist')
 fs.mkdirSync(path.join(dist, 'assets'), { recursive: true })
 fs.writeFileSync(
   path.join(dist, 'index.html'),
-  '<!doctype html><html><head><title>Gully Labs</title><meta name="description" content="x" />\n    <script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="x"></script>\n<link rel="canonical" href="https://gullylabs.xyz/" /></head><body><div id="root"></div></body></html>',
+  '<!doctype html><html><head><meta name="theme-color" content="#06050D" />\n<!-- Icons: the Gully Labs brand kit (public/brand/icon), unchanged. -->\n<link rel="icon" type="image/png" sizes="16x16" href="/brand/icon/favicon-16.png" />\n<link rel="icon" type="image/png" sizes="32x32" href="/brand/icon/favicon-32.png" />\n<link rel="apple-touch-icon" sizes="180x180" href="/brand/icon/app-icon-180.png" />\n<title>Gully Labs</title><meta name="description" content="x" />\n<meta property="og:site_name" content="Gully Labs" />\n<meta property="og:image" content="https://gullylabs.xyz/brand/social/og-image-1200x630.png" />\n<meta property="og:image:alt" content="Gully Labs logo with mascot" />\n    <script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="x"></script>\n<link rel="canonical" href="https://gullylabs.xyz/" /></head><body><div id="root"></div></body></html>',
 )
 fs.writeFileSync(path.join(dist, 'assets', 'index-abcdef12.js'), 'console.log(1)')
 fs.writeFileSync(path.join(dist, 'widget.js'), '/* widget */')
+// Root icons: the site's, and HolderMaps' own (holdermaps.xyz answers /favicon.ico with its own file).
+fs.writeFileSync(path.join(dist, 'favicon.ico'), 'GULLY-ICO')
+fs.mkdirSync(path.join(dist, 'brand', 'holdermaps'), { recursive: true })
+fs.writeFileSync(path.join(dist, 'brand', 'holdermaps', 'favicon.ico'), 'HOLDERMAPS-ICO')
+fs.writeFileSync(path.join(dist, 'brand', 'holdermaps', 'icon-180.png'), 'HOLDERMAPS-180')
 // Two published scan reports for gullysecurity.xyz: one its owner let search engines index, one private (noindex).
 const SEC_PUB = 'sec_' + 'p'.repeat(16)
 const SEC_PRIV = 'sec_' + 'q'.repeat(16)
@@ -194,12 +199,23 @@ try {
 
     // Over HTTP, as Cloudflare sends it.
     const home = await get(HM, '/')
-    check('holdermaps /: 200, the app shell, titled HolderMaps, canonical holdermaps.xyz/', home.status === 200 && home.text.includes('<div id="root">') && /<title>[^<]*HolderMaps[^<]*<\/title>/.test(home.text) && home.text.includes('<link rel="canonical" href="https://holdermaps.xyz/" />') && home.text.includes('<meta property="og:title" content="Holder Map: who really holds a token · HolderMaps" />'), home.text.slice(0, 400))
+    check('holdermaps /: 200, the app shell, titled HolderMaps, canonical holdermaps.xyz/', home.status === 200 && home.text.includes('<div id="root">') && /<title>[^<]*HolderMaps[^<]*<\/title>/.test(home.text) && home.text.includes('<link rel="canonical" href="https://holdermaps.xyz/" />') && home.text.includes('<meta property="og:title" content="Who really holds a token? Holder bubble maps · HolderMaps" />'), home.text.slice(0, 400))
+    // Branding (its brand kit, server/product-brand.mjs): HolderMaps' own colour, icons, site name, share image and JSON-LD.
+    check('holdermaps /: theme-color is the HolderMaps kit ink, not lab-night', home.text.includes('<meta name="theme-color" content="#0A0A0A" />') && !home.text.includes('#06050D'))
+    check('holdermaps /: favicons and apple-touch icon are HolderMaps\' own', home.text.includes('href="/brand/holdermaps/icon-16.png"') && home.text.includes('href="/brand/holdermaps/icon-32.png"') && home.text.includes('href="/brand/holdermaps/icon-180.png"') && !home.text.includes('/brand/icon/'))
+    check('holdermaps /: og:site_name HolderMaps, its own OG image (absolute, holdermaps.xyz) and alt text', home.text.includes('<meta property="og:site_name" content="HolderMaps" />') && home.text.includes('<meta property="og:image" content="https://holdermaps.xyz/brand/holdermaps/og-image-1200x630.png" />') && home.text.includes('<meta name="twitter:image" content="https://holdermaps.xyz/brand/holdermaps/twitter-card-1200x600.png" />') && /og:image:alt" content="HolderMaps/.test(home.text) && !home.text.includes('gullylabs.xyz/brand/social'))
+    const ld = home.text.match(/<script type="application\/ld\+json">([^<]*)<\/script>/)
+    check('holdermaps /: JSON-LD names HolderMaps as a WebApplication on holdermaps.xyz', !!ld && JSON.parse(ld[1])['@type'] === 'WebApplication' && JSON.parse(ld[1]).name === 'HolderMaps' && JSON.parse(ld[1]).url === 'https://holdermaps.xyz/')
+    const desc = home.text.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? ''
+    check('holdermaps /: description is 140-160 characters and names Gully Chain', desc.length >= 140 && desc.length <= 160 && desc.includes('Gully Chain'), `${desc.length}: ${desc}`)
+    const title = home.text.match(/<title>([^<]*)<\/title>/)?.[1] ?? ''
+    check('holdermaps /: title at most 60 characters', title.length <= 60, `${title.length}: ${title}`)
+    check('holdermaps /favicon.ico: HolderMaps\' own icon; gullylabs.xyz keeps its own', (await get(HM, '/favicon.ico')).text === 'HOLDERMAPS-ICO' && (await get(MAIN, '/favicon.ico')).text === 'GULLY-ICO' && (await get(HM, '/apple-touch-icon.png')).text === 'HOLDERMAPS-180')
     check('holdermaps /: indexable (no noindex) and keeps the analytics beacon and the site CSP', !/noindex/.test(home.text) && !/noindex/.test(home.headers['x-robots-tag'] ?? '') && home.text.includes('analytics.gullylabs.xyz') && /analytics\.gullylabs\.xyz/.test(home.headers['content-security-policy'] ?? '') && /connect-src 'self' https: wss:/.test(home.headers['content-security-policy'] ?? ''))
     check('holdermaps /: no cookie, HSTS, framed only by itself', !home.headers['set-cookie'] && /max-age=31536000/.test(home.headers['strict-transport-security'] ?? '') && /frame-ancestors 'self'/.test(home.headers['content-security-policy'] ?? ''))
     check('holdermaps /: no holdermaps-primary tag while HOLDERMAPS_PRIMARY is unset', !home.text.includes('holdermaps-primary'))
     const map = await get(HM, `/base/${TOKEN}`)
-    check('holdermaps /<chain>/<token>: 200, HolderMaps title, holdermaps.xyz canonical, the map card as share image', map.status === 200 && /<title>Who holds [^<]+ on Base · HolderMaps<\/title>/.test(map.text) && map.text.includes(`<link rel="canonical" href="https://holdermaps.xyz/base/${TOKEN}" />`) && map.text.includes(`/api/holders/base/${TOKEN}/card.png`), map.text.match(/<title>[^<]*<\/title>/)?.[0])
+    check('holdermaps /<chain>/<token>: 200, HolderMaps title, holdermaps.xyz canonical, the kit share image', map.status === 200 && /<title>Who holds [^<]+ on Base · HolderMaps<\/title>/.test(map.text) && map.text.includes(`<link rel="canonical" href="https://holdermaps.xyz/base/${TOKEN}" />`) && map.text.includes('<meta property="og:image" content="https://holdermaps.xyz/brand/holdermaps/og-image-1200x630.png" />') && !map.text.includes('gullylabs.xyz/brand/social') && map.text.includes('<meta name="theme-color" content="#0A0A0A" />') && map.text.includes('on HolderMaps.'), map.text.match(/<title>[^<]*<\/title>/)?.[0])
     const deep = await get(HM, `/deep/${DEEP}`)
     check('holdermaps /deep/<id>: 200, noindex, no canonical (private by link)', deep.status === 200 && /<meta name="robots" content="noindex"/.test(deep.text) && !/rel="canonical"/.test(deep.text) && /HolderMaps/.test(deep.text.match(/<title>[^<]*<\/title>/)?.[0] ?? ''))
     const long = await get(HM, `/holders/base/${TOKEN}?ref=x`)
@@ -220,7 +236,15 @@ try {
     const sm = await get(HM, '/sitemap.xml')
     check('holdermaps sitemap.xml: its own pages under short paths, nothing on gullylabs.xyz', sm.status === 200 && sm.text.includes('<loc>https://holdermaps.xyz/</loc>') && !sm.text.includes('gullylabs.xyz') && !sm.text.includes('/holders'), sm.text.slice(0, 300))
     const man = await get(HM, '/manifest.webmanifest')
-    check('holdermaps manifest: installs as HolderMaps', man.status === 200 && man.data?.name === 'HolderMaps', man.text.slice(0, 120))
+    check('holdermaps manifest: installs as HolderMaps, with its own icons and colours', man.status === 200 && man.data?.name === 'HolderMaps' && man.data.theme_color === '#0A0A0A' && man.data.background_color === '#0A0A0A' && man.data.icons.length === 2 && man.data.icons.every((i) => i.src.startsWith('/brand/holdermaps/')), man.text.slice(0, 120))
+    // The main site's head keeps the Gully Labs brand.
+    const mainHome = await get(MAIN, '/')
+    check('main /: still Gully Labs theme-color, icons and site name', mainHome.text.includes('<meta name="theme-color" content="#06050D" />') && mainHome.text.includes('href="/brand/icon/favicon-16.png"') && mainHome.text.includes('<meta property="og:site_name" content="Gully Labs" />'))
+    // Gully AI: its own share image and theme colour on /ask; the site's tab icon and site name are kept.
+    const ask = await get(MAIN, '/ask')
+    check('main /ask: Gully AI share image and theme colour, Gully Labs icons and site name', ask.text.includes('<meta property="og:image" content="https://gullylabs.xyz/brand/gullyai/og-1200x630.png" />') && ask.text.includes('<meta name="theme-color" content="#000406" />') && ask.text.includes('href="/brand/icon/favicon-16.png"') && ask.text.includes('<meta property="og:site_name" content="Gully Labs" />') && /og:image:alt" content="Gully AI/.test(ask.text))
+    const docsAi = await get('docs.gullylabs.xyz', '/gully-ai')
+    check('docs /gully-ai: Gully AI share image', docsAi.text.includes('<meta property="og:image" content="https://gullylabs.xyz/brand/gullyai/og-1200x630.png" />'))
     // The main site keeps its Holder Map while holdermaps.xyz is not primary.
     const mainMap = await get(MAIN, `/holders/base/${TOKEN}`)
     check('main /holders/<chain>/<token>: still served (200), canonical on gullylabs.xyz while not primary', mainMap.status === 200 && mainMap.text.includes(`<link rel="canonical" href="https://${MAIN}/holders/base/${TOKEN}" />`))

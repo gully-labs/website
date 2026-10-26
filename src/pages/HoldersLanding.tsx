@@ -16,7 +16,7 @@ import { eyebrow } from '../components/ui'
 import { type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveChecked, type TopScanned } from '../lib/holders'
 import { useHolderSearch } from '../lib/holderResolve'
 import { ageText } from '../lib/tracker'
-import { holderHref } from '../site-host'
+import { holderHref, isHolderMapsHost } from '../site-host'
 import { HmStage } from '../holdermaps/HmHero'
 import '../holdermaps/hm.css'
 
@@ -80,9 +80,14 @@ export function HoldersLanding() {
   const sources = usePoll<HolderSources>('/api/holders/sources', 0)
   return (
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
+      {/* On holdermaps.xyz the same title and description as the server writes (server/seo.mjs HOLDERMAPS_HOME). */}
       <Seo
-        title="Holder Map: who really holds a token"
-        description="See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part."
+        title={isHolderMapsHost() ? 'Who really holds a token? Holder bubble maps' : 'Holder Map: who really holds a token'}
+        description={
+          isHolderMapsHost()
+            ? 'Map any token’s holders on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: top wallets, linked clusters and launch health, read live.'
+            : 'See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part.'
+        }
       />
       <section id="map" className="hm-hero scroll-mt-20">
         <div className="flex min-w-0 flex-col gap-4">

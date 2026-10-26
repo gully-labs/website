@@ -144,6 +144,61 @@
 
 }
 
+/* Product brands (src/brand/products.ts, server/product-brand.mjs). holdermaps.xyz sets [data-product-brand] on <html>
+   so the page behind the layout (overscroll, the body) is the HolderMaps kit ink; its palette proper is
+   src/holdermaps/hm.css (.hm on the layout). Gully AI sets it on its own surfaces (the /ask page, the ⌘K panel, the
+   docs page, the app's AI view): inside that scope the page tokens above and the console tokens (src/console/console.css
+   --gl-*) take its kit colours, sampled from its logo; the rest are tints between those samples. Contrast: dim and
+   faint are >= 4.5:1 on every surface of their scope. */
+:root[data-product-brand='holdermaps'] {
+  --color-bg: #0a0a0a;
+}
+:root[data-product-brand='gullyai'],
+[data-product-brand='gullyai'] {
+  --color-bg: #000406;
+  --color-bg-alt: #02080b;
+  --color-bg-footer: #02080b;
+  --color-surface: #071216;
+  --color-surface-deep: #040c0f;
+  --color-surface-hover: #0b1b20;
+  --color-line: #0f2329;
+  --color-line-strong: #173840;
+  --color-line-hover: #22505b;
+  --color-grid: #0a171b;
+  --color-axis: #6f9499;
+  --color-ink: #ffffff;
+  --color-ink-2: #d4e6e8;
+  --color-muted: #a6c8cc;
+  --color-dim: #8fb3b8;
+  --color-faint: #94b8bd;
+  --color-gold: #00f5f3;
+  --color-gold-hover: #7dfbf9;
+  --color-gold-line: #00585a;
+  --color-bar: #00e3fc;
+  --color-mascot-bg: #0b1b20;
+  --gl-bg: #000406;
+  --gl-surface: #071216;
+  --gl-cyan: #00f5f3;
+  --gl-blue: #00e3fc;
+  --gl-text: #ffffff;
+  --gl-text-muted: #a6c8cc;
+  --gl-ink: #000406;
+  --gl-gradient: linear-gradient(90deg, #00e3fc 0%, #00f5f3 100%);
+  --gl-line: #0f2329;
+  --gl-line-2: #173840;
+  --gl-hover: #0b1b20;
+  --gl-dim: #8fb3b8;
+  --brand-glow: 0 245 243;
+  --brand-nav: rgba(0, 4, 6, .86);
+}
+[data-product-brand] { color-scheme: dark; }
+html[data-product-brand] body { background: var(--color-bg); }
+[data-product-brand='gullyai'] .lc .nav { background: var(--brand-nav); }
+[data-product-brand='gullyai'] .lc .btn.pri:hover { box-shadow: 0 0 0 4px rgb(var(--brand-glow) / .22); }
+[data-product-brand='gullyai'] .lc .btn.sec { color: var(--gl-ink); }
+[data-product-brand='gullyai'] .lc .pill.live .dot { animation-name: brand-breathe; }
+@keyframes brand-breathe { 0%, 100% { box-shadow: 0 0 0 0 rgb(var(--brand-glow) / .45); } 50% { box-shadow: 0 0 0 5px rgb(var(--brand-glow) / 0); } }
+
 @keyframes gl-float {
   0%, 100% { transform: translateY(0) rotate(-1deg); }
   50% { transform: translateY(-14px) rotate(1deg); }

@@ -10,7 +10,7 @@
    not draw today. A chart built by hand (a plain `option` object passed to EChart) inherits all of it. */
 
 /** Brand colours (src/index.css) for chart code, which cannot read CSS variables in canvas mode. */
-export const C = {
+const GULLY = {
   bg: '#06050d',
   gold: '#00d2ff',
   goldHover: '#66e4ff',
@@ -34,7 +34,27 @@ export const C = {
   violet: '#9578e8',
   orange: '#ff6b81',
   lime: '#c02cff',
-} as const
+}
+
+/* holdermaps.xyz draws in the HolderMaps kit colours (the same values as src/holdermaps/hm.css). The series hues after
+   gold stay: they are data colours, not brand. */
+const HOLDERMAPS: Partial<typeof GULLY> = {
+  bg: '#0a0a0a',
+  gold: '#ffd52e',
+  goldHover: '#ffe03a',
+  muted: '#b3b3b3',
+  dim: '#9a9a9a',
+  faint: '#a0a0a0',
+  grid: '#1c1c1c',
+  line: '#262626',
+  lineStrong: '#333333',
+  lineHover: '#4a4a4a',
+  surface: '#161616',
+  surfaceDeep: '#111111',
+}
+const onHolderMaps = typeof location !== 'undefined' && /^(www\.)?holdermaps\.xyz$/.test(location.hostname)
+
+export const C: Readonly<typeof GULLY> = { ...GULLY, ...(onHolderMaps ? HOLDERMAPS : {}) }
 
 /** Categorical series colours, in order (the theme's palette). */
 export const PALETTE = [C.gold, C.blue, C.teal, C.violet, C.orange, C.lime, C.goldHover, C.faint] as const

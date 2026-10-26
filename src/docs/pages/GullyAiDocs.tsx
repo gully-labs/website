@@ -1,6 +1,7 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, Details, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { AskStatusPanel, StatusHistory } from '../ProductCharts'
+import { GullyAiBanner } from '../../brand/GullyAiBrand'
 
 const sections = [
   { id: 'what', title: 'What it answers' },
@@ -31,6 +32,7 @@ export function GullyAiDocs() {
       sections={sections}
     >
       <Section id="what" title="What it answers">
+        <GullyAiBanner>Answers from our own docs and live data, with every source linked.</GullyAiBanner>
         <P>
           Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the roadmap, DeepCore,
           the Telegram bot, privacy and the services we offer.
