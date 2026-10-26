@@ -1,11 +1,12 @@
 /*
- * Gully Labs blog theme: interface behaviour. No dependencies, no network.
+ * Gully Labs blog theme: interface behaviour. No dependencies; the only network call is the stats ticker (7).
  *   1. Header menus (disclosure buttons; keyboard: Enter/Space/ArrowDown open, arrows move, Escape closes)
  *   2. Mobile sheet with accordions (focus trap, Escape, closes at desktop width)
  *   3. Links to other Gully sites in Ghost's navigation: new tab, rel, marker
  *   4. Reading progress hairline on posts
- *   5. Copy link and code blocks (with a toast)
+ *   5. Copy link and code blocks, with toasts (bottom-right stack, Lucide icon, cyan progress bar) on each real event
  *   6. Content helpers: responsive embeds, scrollable tables
+ *   7. Live Gully stats ticker (gullylabs.xyz/api/stats): count-up numbers, continuous scroll, 30-day sparkline
  *   0. (first) Retires the old Ghost admin code-injection intro, so an empty blog shows the theme's one empty state
  */
 (function () {
@@ -232,16 +233,42 @@
     }
 
     /* ------------------------------------------------------------ 5. copy + toast --- */
-    var toast = document.querySelector('.gl-toast');
-    var toastTimer = 0;
-    function say(msg) {
-        if (!toast) return;
-        toast.textContent = msg;
-        toast.classList.add('is-on');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(function () {
-            toast.classList.remove('is-on');
-        }, 2200);
+    /* Toasts: one element per event, stacked bottom right (newest at the bottom), a Lucide icon, a cyan progress bar
+       that runs the toast's life (3.2 s; hover pauses it), click to dismiss. Only real events call say(). */
+    var toasts = document.querySelector('[data-gl-toasts]');
+    var ICON = {
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+        copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'
+    };
+    function say(msg, kind, icon) {
+        if (!toasts) return;
+        var el = document.createElement('div');
+        el.className = 'gl-toast gl-toast--' + (kind || 'info');
+        el.innerHTML = '<svg class="gl-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' +
+            (ICON[icon || (kind === 'ok' ? 'check' : kind === 'error' ? 'x' : 'info')] || ICON.info) + '</svg>' +
+            '<span class="gl-toast-text"></span><span class="gl-toast-bar" aria-hidden="true"></span>';
+        el.querySelector('.gl-toast-text').textContent = msg;
+        toasts.appendChild(el);
+        while (toasts.children.length > 4) toasts.removeChild(toasts.firstChild);
+        var gone = false;
+        var remove = function () {
+            if (gone) return;
+            gone = true;
+            el.classList.add('is-leaving');
+            setTimeout(function () {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }, 220);
+        };
+        el.addEventListener('click', remove);
+        el.querySelector('.gl-toast-bar').addEventListener('animationend', remove);
+        /* No animation events with reduced motion (the bar is static): a plain timer then. */
+        setTimeout(remove, 6000);
+        requestAnimationFrame(function () {
+            el.classList.add('is-on');
+        });
     }
     function copy(text) {
         if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
@@ -262,13 +289,26 @@
             else reject(new Error('copy failed'));
         });
     }
+    /* Subscribe: any Ghost members form (a signup card, a Portal-less embed) gets a toast when Ghost marks it
+       success or error after the request. The theme itself has no opt-in; this covers forms in content. */
+    Array.prototype.forEach.call(document.querySelectorAll('form[data-members-form]'), function (form) {
+        if (!window.MutationObserver) return;
+        var last = '';
+        new MutationObserver(function () {
+            var now = form.classList.contains('success') ? 'success' : form.classList.contains('error') ? 'error' : '';
+            if (now === last) return;
+            last = now;
+            if (now === 'success') say('Subscribed. Check your inbox to confirm.', 'ok', 'check');
+            else if (now === 'error') say('Could not subscribe. Try again in a moment.', 'error');
+        }).observe(form, {attributes: true, attributeFilter: ['class']});
+    });
     document.addEventListener('click', function (e) {
         var btn = e.target.closest && e.target.closest('[data-gl-copy]');
         if (!btn) return;
         copy(btn.getAttribute('data-gl-copy')).then(function () {
-            say('Link copied');
+            say(btn.getAttribute('data-gl-copy-msg') || 'Link copied', 'ok', 'link');
         }, function () {
-            say('Could not copy. Copy the address bar instead.');
+            say('Could not copy. Copy the address bar instead.', 'error');
         });
     });
 
@@ -290,9 +330,9 @@
         head.lastChild.setAttribute('aria-label', 'Copy code' + (lang ? ' (' + lang + ')' : ''));
         head.lastChild.addEventListener('click', function () {
             copy((code || pre).innerText).then(function () {
-                say('Code copied');
+                say('Code copied', 'ok', 'copy');
             }, function () {
-                say('Could not copy the code');
+                say('Could not copy the code', 'error');
             });
         });
     });
@@ -316,4 +356,105 @@
         table.parentNode.insertBefore(wrap, table);
         wrap.appendChild(table);
     });
+
+    /* ------------------------------------------------------------- 7. live stats ticker --- */
+    /* Reads gullylabs.xyz/api/stats (CORS open, cached 30 s there) every 60 s while the tab is visible. Numbers count
+       up from the last value; the strip scrolls continuously (CSS, the list is cloned once the values are in); the
+       sparkline is the last 30 days of volume. Reduced motion: values set directly, no scroll. Failures keep the
+       last values (or the dashes) and the dot turns dim; nothing is toasted, it is not the reader's action. */
+    var ticker = document.querySelector('[data-gl-ticker]');
+    var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (ticker && window.fetch) {
+        var list = ticker.querySelector('[data-gl-ticker-list]');
+        var track = list.parentNode;
+        var spark = ticker.querySelector('[data-gl-spark]');
+        var updated = ticker.querySelector('[data-gl-ticker-updated]');
+        var values = {};
+        var cloned = false;
+        var pill = document.querySelector('[data-gl-livepill]');
+        var usd = function (n) {
+            if (!isFinite(n)) return '—';
+            var abs = Math.abs(n);
+            var unit = abs >= 1e9 ? [1e9, 'B'] : abs >= 1e6 ? [1e6, 'M'] : abs >= 1e3 ? [1e3, 'K'] : [1, ''];
+            var v = n / unit[0];
+            var digits = unit[1] ? (v < 10 ? 2 : v < 100 ? 1 : 0) : 0;
+            return '$' + v.toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + unit[1];
+        };
+        var setValue = function (el, to) {
+            var key = el.getAttribute('data-stat');
+            var from = values[key];
+            values[key] = to;
+            if (REDUCED.matches || from === undefined || from === to) {
+                el.textContent = usd(to);
+                return;
+            }
+            var start = performance.now();
+            var step = function (now) {
+                var k = Math.min(1, (now - start) / 900);
+                var e = 1 - Math.pow(1 - k, 3);
+                el.textContent = usd(from + (to - from) * e);
+                if (k < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        };
+        var drawSpark = function (daily) {
+            if (!spark || !daily || daily.length < 2) return;
+            var pts = daily.slice(-30).map(function (d) { return Math.max(0, +d.v || 0); });
+            var max = Math.max.apply(null, pts) || 1;
+            var w = 120, h = 28, pad = 2;
+            var line = pts.map(function (v, i) {
+                var x = pad + (i / (pts.length - 1)) * (w - pad * 2);
+                var y = h - pad - (v / max) * (h - pad * 2);
+                return (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+            }).join(' ');
+            spark.querySelector('.gl-spark-line').setAttribute('d', line);
+            spark.querySelector('.gl-spark-fill').setAttribute('d', line + ' L' + (w - pad) + ' ' + (h - pad) + ' L' + pad + ' ' + (h - pad) + ' Z');
+            spark.classList.add('is-drawn');
+        };
+        var apply = function (data) {
+            var t = data && data.totals;
+            if (!t) throw new Error('no totals');
+            Array.prototype.forEach.call(list.querySelectorAll('[data-stat]'), function (el) {
+                var v = t[el.getAttribute('data-stat')];
+                if (typeof v === 'number') setValue(el, v);
+            });
+            drawSpark(data.daily);
+            ticker.classList.add('is-live');
+            ticker.classList.remove('is-stale');
+            var d = data.generatedAt ? new Date(data.generatedAt) : new Date();
+            if (updated) updated.textContent = 'as of ' + d.toUTCString().slice(17, 22) + ' UTC';
+            if (pill) {
+                pill.classList.add('is-live');
+                var pt = pill.querySelector('[data-gl-live-time]');
+                if (pt) pt.textContent = '· ' + d.toTimeString().slice(0, 8);
+            }
+            if (!cloned && !REDUCED.matches) {
+                /* A second copy of the list makes the scroll seamless: when the first scrolls out, the clone is in place. */
+                var copyList = list.cloneNode(true);
+                copyList.setAttribute('aria-hidden', 'true');
+                copyList.removeAttribute('data-gl-ticker-list');
+                track.appendChild(copyList);
+                track.classList.add('is-scrolling');
+                cloned = true;
+            }
+        };
+        var load = function () {
+            if (document.hidden) return;
+            fetch(ticker.getAttribute('data-src'), {mode: 'cors', credentials: 'omit', cache: 'default'})
+                .then(function (r) {
+                    if (!r.ok) throw new Error(String(r.status));
+                    return r.json();
+                })
+                .then(apply)
+                .catch(function () {
+                    ticker.classList.add('is-stale');
+                    if (pill) pill.classList.remove('is-live');
+                });
+        };
+        load();
+        setInterval(load, 60000);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) load();
+        });
+    }
 })();

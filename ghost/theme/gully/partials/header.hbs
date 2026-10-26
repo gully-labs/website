@@ -1,8 +1,8 @@
 {{!--
-    The header, matching gullylabs.xyz (src/components/Header.tsx): the brand kit's wordmark (partials/brand/wordmark.hbs; to the site,
-    new tab) and "Blog" (this blog), the Products and App & API menus, Projects and Pricing, and the
-    gold "Launch app" button. Below it, a hairline bar with the blog's own sections ({{navigation}}
-    from Ghost admin), and search. No sign-in, subscribe or account buttons: the blog has no email opt-in.
+    The header, one line at every width from 1024 to 1920: the brand kit's compact lockup (icon + horizontal wordmark,
+    to gullylabs.xyz, new tab) and "Blog" (this blog), the Products and App & API menus, Projects and Pricing, and the
+    signature "Launch app" button, plus (wider screens) the live pill and a ghost "Docs" pill, as on gullylabs.xyz. Below it, a hairline bar with the blog's own sections ({{navigation}} from Ghost
+    admin, each with a Lucide icon) and search. No sign-in, subscribe or account buttons: the blog has no email opt-in.
 
     Menus are disclosure buttons (aria-expanded + aria-controls, not role="menu"): click, Enter or
     Space opens; Escape closes and returns focus; arrow keys move between items (assets/js/gully.js).
@@ -12,7 +12,7 @@
     <div class="gl-bar gl-page">
         <div class="gl-brand">
             <a class="gl-wordmark" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">
-                {{> "brand/wordmark"}}<span class="gl-sr">Gully Labs home (opens in a new tab)</span>
+                {{> "brand/lockup"}}<span class="gl-sr">Gully Labs home (opens in a new tab)</span>
             </a>
             <span class="gl-brand-sep" aria-hidden="true">/</span>
             <a class="gl-brand-blog" href="{{@site.url}}">Blog</a>
@@ -50,10 +50,18 @@
         </nav>
 
         <div class="gl-actions">
-            <a class="gl-btn gl-btn--gold gl-launch" href="https://gullylabs.xyz/tracker" target="_blank" rel="noopener noreferrer">
-                {{> "icons/activity"}}<span>Launch app</span>{{> "ext-mark"}}
+            {{!-- Live pill, as on gullylabs.xyz: the time of the last stats read (set by the ticker in assets/js/gully.js).
+                  Static dot: the ticker strip below is the page's one continuously animated element. 1280 px and up. --}}
+            <a class="gl-livepill" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" data-gl-livepill>
+                <span class="gl-livepill-dot" aria-hidden="true"></span><span>Live</span><span class="gl-livepill-time" data-gl-live-time></span><span class="gl-sr"> stats on gullylabs.xyz (opens in a new tab)</span>
             </a>
-            <button type="button" class="gl-btn gl-btn--outline gl-menu-button" aria-expanded="false" aria-haspopup="dialog" aria-controls="gl-sheet" data-gl-sheet-open>
+            <a class="gl-btn gl-btn--ghost gl-docs" href="https://docs.gullylabs.xyz" target="_blank" rel="noopener noreferrer">
+                {{> "icons/book-open"}}<span>Docs</span><span class="gl-sr"> (opens in a new tab)</span>
+            </a>
+            <a class="gl-btn gl-btn--primary gl-launch" href="https://app.gullylabs.xyz" target="_blank" rel="noopener noreferrer">
+                {{> "icons/rocket"}}<span>Launch app</span>{{> "btn-arrow" ext=true}}
+            </a>
+            <button type="button" class="gl-btn gl-btn--ghost gl-menu-button" aria-expanded="false" aria-haspopup="dialog" aria-controls="gl-sheet" data-gl-sheet-open>
                 {{> "icons/menu"}}<span>Menu</span>
             </button>
         </div>
@@ -65,6 +73,7 @@
                 {{navigation}}
             </nav>
             <div class="gl-subbar-actions">
+                <button type="button" class="gl-iconbtn" data-gl-copy="{{@site.url}}/rss/" data-gl-copy-msg="RSS feed link copied: add it to your reader" aria-label="Copy the RSS feed link to follow the blog">{{> "icons/rss"}}<span class="gl-subbar-label">Follow</span></button>
                 <button type="button" class="gl-iconbtn" data-ghost-search aria-label="Search the blog">{{> "icons/search"}}<span class="gl-subbar-label">Search</span></button>
             </div>
         </div>

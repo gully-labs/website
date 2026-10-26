@@ -4,51 +4,63 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{meta_title}}</title>
-    <meta name="theme-color" content="#0d141c">
-
-    {{!-- The brand kit icon set, served by the main site (cut from the kit master by scripts/brand-from-kit.mjs, never
-          upscaled). After {{ghost_head}}, so these win over the icon Ghost prints from its own settings. No web app
-          manifest: gullylabs.xyz/manifest.json is for the main site (start_url "/" there) and a cross-origin manifest
-          is fetched with CORS, which that host does not send. --}}
+    <meta name="theme-color" content="#06050D">
 
     {{!-- Brand fonts, self-hosted in the theme. Declared here (not in the stylesheet) so the preload
           URLs and the @font-face URLs are the same cache-busted {{asset}} URLs: one download each. --}}
-    <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/hanken-grotesk-latin-400-normal.woff2"}}" crossorigin>
-    <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/barlow-condensed-latin-800-normal.woff2"}}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/poppins-latin-500-normal.woff2"}}" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/poppins-latin-700-normal.woff2"}}" crossorigin>
     <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/ibm-plex-mono-latin-400-normal.woff2"}}" crossorigin>
     {{> "fonts"}}
 
     <link rel="stylesheet" href="{{asset "css/screen.css"}}">
 
-    {{!-- Per-post share image, rendered by the main site from the post's own banner (server/og.mjs):
-          a still frame of the same seeded art, the title, the primary tag and the wordmark. Only for
-          posts without a feature image (and without their own social image): a feature image is the
-          author's real content and stays the share image. Before {{ghost_head}} because crawlers take
-          the first og:image / twitter:image. See ghost/README.md, "Share images". --}}
-    {{#is "post"}}
+    {{!-- Share image (owner rule: every brand uses its own kit OG image). Every page that has no image of its own
+          gets the Gully Labs kit's og-image-1200x630.png at an absolute blog.gullylabs.xyz URL, before {{ghost_head}}
+          because crawlers take the first og:image / twitter:image. A post's feature image (or its own social image)
+          is the author's real content and stays its share image: Ghost prints those. Theme setting "Generated post
+          share images" (off by default): posts without an image use the main site's generated still
+          (https://gullylabs.xyz/og/blog/<slug>.png, server/og.mjs) instead of the kit image. --}}
+    {{#is "post, page"}}
         {{#post}}
             {{#unless feature_image}}
                 {{#unless og_image}}
+                    {{#if @custom.generated_post_share_images}}
                     <meta property="og:image" content="https://gullylabs.xyz/og/blog/{{slug}}.png">
+                    <meta property="og:image:alt" content="{{title}}">
+                    {{else}}
+                    <meta property="og:image" content="{{@site.url}}{{asset "brand/social/og-image-1200x630.png"}}">
+                    <meta property="og:image:alt" content="Gully Labs logo with mascot">
+                    {{/if}}
                     <meta property="og:image:width" content="1200">
                     <meta property="og:image:height" content="630">
-                    <meta property="og:image:alt" content="{{title}}">
                 {{/unless}}
                 {{#unless twitter_image}}
+                    <meta name="twitter:card" content="summary_large_image">
+                    {{#if @custom.generated_post_share_images}}
                     <meta name="twitter:image" content="https://gullylabs.xyz/og/blog/{{slug}}.png">
                     <meta name="twitter:image:alt" content="{{title}}">
+                    {{else}}
+                    <meta name="twitter:image" content="{{@site.url}}{{asset "brand/social/og-image-1200x630.png"}}">
+                    <meta name="twitter:image:alt" content="Gully Labs logo with mascot">
+                    {{/if}}
                 {{/unless}}
             {{/unless}}
         {{/post}}
+    {{else}}
+        <meta property="og:site_name" content="Gully Labs">
+        <meta property="og:image" content="{{@site.url}}{{asset "brand/social/og-image-1200x630.png"}}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:image:alt" content="Gully Labs logo with mascot">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:image" content="{{@site.url}}{{asset "brand/social/og-image-1200x630.png"}}">
+        <meta name="twitter:image:alt" content="Gully Labs logo with mascot">
     {{/is}}
 
     <script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="78f29233-9f70-4c45-a440-35d1457d2207" data-domains="blog.gullylabs.xyz" data-web3="true"></script>
     {{ghost_head}}
-    <link rel="icon" href="https://gullylabs.xyz/favicon.ico" sizes="16x16 32x32 48x48">
-    <link rel="icon" type="image/png" sizes="32x32" href="https://gullylabs.xyz/favicon-32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="https://gullylabs.xyz/favicon-16.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="https://gullylabs.xyz/icon-512.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://gullylabs.xyz/apple-touch-icon.png">
+    {{> "brand/head"}}
 </head>
 <body class="{{body_class}}{{#if @custom.animated_banners}} gl-animate{{/if}}">
 
@@ -56,6 +68,7 @@
 
 <div class="gl-viewport">
     {{> "header"}}
+    {{> "ticker"}}
 
     {{{body}}}
 
@@ -64,7 +77,8 @@
 
 {{> "mobile-sheet"}}
 
-<div class="gl-toast" role="status" aria-live="polite"></div>
+{{!-- Toasts stack here (bottom right), one per real event: link copied, code copied, copy failed. assets/js/gully.js --}}
+<div class="gl-toasts" role="status" aria-live="polite" data-gl-toasts></div>
 
 <script src="{{asset "js/lib/reframe.min.js"}}" defer></script>
 <script src="{{asset "js/banner.js"}}" defer></script>

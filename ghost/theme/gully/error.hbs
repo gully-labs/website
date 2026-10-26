@@ -4,9 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{meta_title}}</title>
-    <meta name="theme-color" content="#0d141c">
+    <meta name="theme-color" content="#06050D">
     {{> "fonts"}}
     <link rel="stylesheet" href="{{asset "css/screen.css"}}">
+    {{> "brand/head"}}
 </head>
 <body class="error-template">
     {{!-- Server errors (5xx and the rest) render without the default layout, so Ghost can show this
@@ -16,7 +17,7 @@
             <div class="gl-bar gl-page">
                 <div class="gl-brand">
                     <a class="gl-wordmark" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer">
-                        {{> "brand/wordmark"}}<span class="gl-sr">Gully Labs home (opens in a new tab)</span>
+                        {{> "brand/lockup"}}<span class="gl-sr">Gully Labs home (opens in a new tab)</span>
                     </a>
                     <span class="gl-brand-sep" aria-hidden="true">/</span>
                     <a class="gl-brand-blog" href="{{@site.url}}">Blog</a>
@@ -30,9 +31,9 @@
                     <h1 class="gl-error-title">{{#if message}}{{message}}{{else}}We could not load this page{{/if}}</h1>
                     <p class="gl-error-sub">Please try again in a moment. If it keeps happening, tell us on X or Telegram.</p>
                     <div class="gl-empty-actions">
-                        <a class="gl-btn gl-btn--gold" href="{{@site.url}}">{{> "icons/newspaper"}}<span>Blog home</span></a>
-                        <a class="gl-btn gl-btn--outline" href="https://x.com/Gully_Labs" target="_blank" rel="noopener noreferrer">{{> "icons/brand-x"}}<span>@Gully_Labs</span>{{> "ext-mark"}}</a>
-                        <a class="gl-btn gl-btn--outline" href="https://t.me/GullyLabsBot" target="_blank" rel="noopener noreferrer">{{> "icons/brand-telegram"}}<span>Telegram</span>{{> "ext-mark"}}</a>
+                        <a class="gl-btn gl-btn--primary" href="{{@site.url}}">{{> "icons/newspaper"}}<span>Blog home</span>{{> "btn-arrow"}}</a>
+                        <a class="gl-btn gl-btn--ghost" href="https://x.com/Gully_Labs" target="_blank" rel="noopener noreferrer">{{> "icons/brand-x"}}<span>@Gully_Labs</span>{{> "btn-arrow" ext=true}}</a>
+                        <a class="gl-btn gl-btn--ghost" href="https://t.me/GullyLabsBot" target="_blank" rel="noopener noreferrer">{{> "icons/brand-telegram"}}<span>Telegram</span>{{> "btn-arrow" ext=true}}</a>
                     </div>
                     {{#if errorDetails}}
                         <details class="gl-error-details">
@@ -49,7 +50,7 @@
         </main>
         <footer class="gl-footer">
             <div class="gl-footer-legal gl-page">
-                <span class="gl-footer-copy">© GULLY LABS</span>
+                <span class="gl-footer-copy">© Gully Labs · You Think It, We Ship It.</span>
                 <p class="gl-footer-disclaimer">Information only, not investment advice.</p>
             </div>
         </footer>
