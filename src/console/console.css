@@ -320,3 +320,22 @@
 @media (prefers-reduced-motion:reduce){.lc .ctabs-panel{animation:none}}
 .lc .trust .facts a{text-decoration:underline;text-underline-offset:2px}
 .lc .chainrow .bars:empty{height:56px;border-radius:4px;background:repeating-linear-gradient(90deg,var(--gl-line-2) 0 11px,transparent 11px 14px);animation:breathe-a 2.4s ease-in-out infinite}
+
+/* products on their own domains (2026-10-26): footer product list, menu marks, hand-off cards */
+.lcp footer .fprods{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px}
+.lcp footer .fprods .lab{margin-right:4px}
+.lcp footer .fprods .ic{color:var(--gl-cyan)}
+.lc .sheet-list a .ic.ext{width:14px;height:14px;margin-left:auto;opacity:.7}
+.lc .handoff{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:18px;align-items:center}
+@media (min-width:860px){.lc .handoff{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;padding:22px 24px}}
+.lc .handoff .hlogo{height:40px;display:flex;align-items:center}
+.lc .handoff .hlogo img{height:40px;width:auto;max-width:100%;display:block}
+.lc .handoff h2{font-size:clamp(20px,2vw,26px);margin:10px 0 6px}
+.lc .handoff p{color:var(--gl-text-muted);font-size:14.5px;line-height:1.55;margin:0}
+.lc .handoff p b{color:#fff;font-weight:600}
+.lc .handoff .ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.lc .handoff .hfig{border:1px solid var(--gl-line);border-radius:14px;background:var(--gl-bg);padding:12px 14px;min-width:0}
+.lc .handoff .hfig .v{font-weight:700;font-size:26px;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+.lc .handoff .hfig small{display:block;font-size:12px;color:var(--gl-text-muted);margin-top:4px}
+.lc .handoff .hfig svg.spk{height:56px}
+.lc .handoff .legacy{grid-column:1/-1;border-top:1px solid var(--gl-line);padding-top:12px;font-size:13px;color:var(--gl-text-muted);display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}

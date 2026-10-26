@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
 import { Home } from './pages/Home'
-import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, ChainKitRoute, ChainsRoute, DevelopersRoute, EmbedHoldersRoute, HoldersDeepRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, SecuritySampleRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
+import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, DevelopersRoute, EmbedHoldersRoute, HoldersDeepRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, SecuritySampleRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
@@ -20,6 +20,19 @@ installDelegatedTracking()
 installHolderMapsLinks()
 // gullysecurity.xyz: the same for Gully Security's domain (src/lib/securityLinks.ts).
 installSecurityLinks()
+
+// Old paths of the products that moved to their own domains, and the hand-off page each one opens in development.
+const MOVED_PATHS = [
+  ['/chains/*', 'chain'],
+  ['/chains', 'chain'],
+  ['/chain-kit', 'chain'],
+  ['/gully-pay/*', 'pay'],
+  ['/gully-pay', 'pay'],
+  ['/rpc/*', 'rpc'],
+  ['/rpc', 'rpc'],
+  ['/studio/*', 'studio'],
+  ['/studio', 'studio'],
+] as const
 
 // Gully Pay's checkout pages (pay.gullylabs.xyz; also /pay on the main host in development).
 const payChildren = [
@@ -50,8 +63,9 @@ const mainRoutes = [
       { path: '/widget', element: <WidgetRoute /> },
       { path: '/pricing', element: <PricingRoute /> },
       { path: '/analytics', element: <AnalyticsRoute /> },
-      { path: '/chain-kit', element: <ChainKitRoute /> },
-      { path: '/chains', element: <ChainsRoute /> },
+      // Products on their own domains (server/hosts.mjs movedPageUrl): in production the server answers these paths
+      // with a 301 to the product's domain first; here (development) they open the product's hand-off page.
+      ...MOVED_PATHS.map(([path, key]) => ({ path, element: <Navigate to={`/products/${key}`} replace /> })),
       { path: '/ask', element: <AskRoute /> },
       // The six products (lab console): the list and one compact page each; each links out to its own domain.
       { path: '/products', lazy: () => import('./pages/products/ProductsIndex').then((m) => ({ Component: m.ProductsIndex })) },

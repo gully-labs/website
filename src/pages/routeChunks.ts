@@ -16,7 +16,6 @@ export const chunks = {
   about: () => import('./About'),
   project: () => import('./ProjectDetail'),
   pricing: () => import('./Pricing'),
-  chains: () => import('./Chains'),
   products: () => import('./Products'),
   ask: () => import('./ask/AskPage'),
   security: () => import('./security/SecurityPage'),
@@ -41,8 +40,7 @@ function chunkFor(path: string): Chunk | null {
   if (/^\/holders\/[^/]+\/[^/]+$/.test(path)) return 'holders'
   if (path === '/holders') return 'holdersLanding'
   if (path.startsWith('/projects/')) return 'project'
-  if (path === '/analytics' || path === '/chain-kit') return 'products'
-  if (path === '/chains') return 'chains'
+  if (path === '/analytics') return 'products'
   if (path === '/security') return 'security'
   if (path.startsWith('/security/reports') || path === '/security/sample') return 'securityReports'
   const named: Record<string, Chunk> = { '/widget': 'widget', '/services': 'services', '/about': 'about', '/pricing': 'pricing', '/ask': 'ask', '/app': 'developers', '/developers': 'developers', '/links': 'links' }

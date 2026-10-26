@@ -12,7 +12,7 @@ import { usePoll } from './poll'
 import { useSubTab } from './subtab'
 import { InfoTip, RefreshChip, SubPanel, SubTabs, Unknown } from './ui'
 import { ExtLink } from './ExtLink'
-import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
+import { isLocalHost, SITE_URL } from '../../site-host'
 import { ServiceHeader } from './services/ServiceHeader'
 import { docsPage } from './services/links'
 import { api, daysLeft, fmtDate, shortAddress, type Account, type BillingView, type Payment, type Plan, type PlanId, type Quote, usdOf } from './api'
@@ -406,7 +406,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
   )
 }
 
-/** Merchants are self-serve: pay links, invoices, a checkout and webhooks from the Merchant tab. */
+/** Taking payments yourself is Gully Pay's job now (gullypay.xyz, since 2026-10-26): a pointer there. */
 function SelfServePay() {
   return (
     <section className={`${panel} flex-row flex-wrap items-center gap-2 p-3`} style={rise(2)} aria-labelledby="pay-self">
@@ -415,12 +415,12 @@ function SelfServePay() {
         <h2 id="pay-self" className="m-0 text-[14px] font-semibold text-ink">
           Take crypto payments yourself
         </h2>
-        <span className="text-[13px] text-muted">Pay links, invoices, a hosted checkout and signed webhooks: set up your store in the Merchant tab, self-serve.</span>
+        <span className="text-[13px] text-muted">x402, pay links, invoices, a hosted checkout and signed webhooks: Gully Pay runs on its own platform at gullypay.xyz.</span>
       </span>
-      <a href="#merchant" className={`${pillGold} min-h-11`}>
-        <Store size={15} aria-hidden /> Open Merchant
-      </a>
-      <ExtLink href={`${DOCS_URL}/gully-pay`} className={`${pillSm} min-h-11`}>
+      <ExtLink href="https://gullypay.xyz" className={`${pillGold} min-h-11`}>
+        <Store size={15} aria-hidden /> Open Gully Pay
+      </ExtLink>
+      <ExtLink href="https://gullypay.xyz/docs" className={`${pillSm} min-h-11`}>
         <BookOpen size={14} aria-hidden /> How it works
       </ExtLink>
     </section>

@@ -1,25 +1,23 @@
-import { AppWindow, ArrowRight, BellRing, Bot, Boxes, ChartNoAxesCombined, Check, Code2, CreditCard, Gauge, KeyRound, Loader2, Network, Send, ShieldCheck, Store } from 'lucide-react'
+import { AppWindow, ArrowRight, BellRing, Bot, ChartNoAxesCombined, Code2, CreditCard, Gauge, KeyRound, Loader2, Send, ShieldCheck } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { GhostChart } from '../../components/charts/GhostChart'
 import { MiniBars } from '../../components/charts/MiniBars'
 import { MiniSpark } from '../../components/charts/MiniSpark'
 import { NF } from '../../components/charts/number-formats'
-import { toastError, toastSuccess } from '../../components/ui/toast'
-import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
+import { toastError } from '../../components/ui/toast'
+import { DOCS_URL, securityPrimary } from '../../site-host'
+import { ProductHub } from '../../console/Handoff'
 import { api, daysLeft, fmtDate, type Account, type AlertsView, type AnalyticsView, type BillingView, type Usage } from './api'
 import { ExtLink } from './ExtLink'
 import { firings, group } from './usage'
-import { usePortal } from './portal'
 import { Skeleton } from './parts'
 import { input, mono, panel, pillGold, pillSm } from './styles'
 import { usePoll } from './poll'
-import { InfoTip, RefreshChip, Unknown } from './ui'
+import { RefreshChip, Unknown } from './ui'
 import { KeySpark, QuotaRing, StackedDays } from './vcharts'
 import type { Load } from './services/useLoad'
 import type { ServiceTab } from './services/nav'
-import { ChainLogo } from '../../components/logos/ChainLogo'
-import { ageText } from '../../lib/tracker'
 import type { ScanView } from '../../components/security/types'
 import { bandColor, useJson, type ScoreIndex } from '../score/api'
 import { StatusPill as KitPill } from '../../components/ui/StatusPill'
@@ -30,18 +28,16 @@ import { StatusPill as KitPill } from '../../components/ui/StatusPill'
      Tracker API      /account (keys) + /usage?range=7d (requests sparkline)
      Alerts           /alerts (gap and DeepCore launch alerts, Telegram, firings from the delivery logs)
      Gully Analytics  /analytics (trial or plan, the events ring)
-     Gully Pay        /billing (plan, payments to Gully); merchant stores in the Merchant tab (#merchant)
-     Chain Kit        "Request your explorer": server state (GET /api/developer/chain-kit, POST …/chain-kit/request),
-                      also saved as an enquiry for the admin; requests and sign-ups per day chart under it
-     Gully Chains     the testnet waitlist: server state (POST /api/developer/chains-waitlist)
+     Gully Pay        /billing (plan, payments to Gully)
      Gully AI         /api/ask/status, and an inline question (POST /api/ask); recent questions stay in this browser
-     Holder Map       the latest DeepCore launches (/api/deepcore/launches), each linking to its map
+     Gully Security   the workspace's scans, until SECURITY_PRIMARY hands Security to its own app
+   Above them, the six Gully products on their own domains (Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully
+   Security, Gully Studio), each a card with one live figure that opens the product (console/Handoff.tsx).
      Widget and SDK   links, with the API's live health
    Every read is polled with backoff and keeps its last good answer (a failed refresh shows a retry chip);
    a first read that does not answer in time reads as "not available right now", never as 0. Cards are
    compact (12px padding, 8px gaps) so the whole hub fits one screen at 1440×900. */
 
-const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
 const fmt = (n: number) => n.toLocaleString('en-US')
 type Tab = 'keys' | 'alerts' | 'analytics' | 'billing' | 'security' | ServiceTab
 const store = {
@@ -117,18 +113,17 @@ export function Products({ account, go }: { account: Account; go: (t: Tab) => vo
 
   return (
     <div className="flex flex-col gap-2">
+    <h2 className="m-0 font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase">Gully products · each on its own domain</h2>
+    <ProductHub />
+    <h2 className="m-0 mt-2 font-mono text-[11px] font-normal tracking-[1px] text-faint uppercase">In this workspace</h2>
     {failed && <RefreshChip error={failed.refreshErr} onRetry={() => [usage, alerts, ga, bill].forEach((x) => x.refreshErr && x.retry())} className="self-start" />}
     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] items-stretch gap-2" data-testid="products">
       <TrackerCard account={account} usage={usage} go={go} />
       <AlertsCard s={alerts} go={go} />
       <AnalyticsCard s={ga} go={go} />
       <PayCard s={bill} go={go} />
-      <MerchantCard />
-      <ChainKitCard />
-      <ChainsCard />
       <AiCard go={go} />
-      <HolderMapCard />
-      <SecurityCard go={go} />
+      {!securityPrimary() && <SecurityCard go={go} />}
       <ScoreCard go={go} />
       <WidgetCard go={go} />
     </div>
@@ -259,129 +254,6 @@ function PayCard({ s, go }: { s: Load<BillingView>; go: (t: Tab) => void }) {
   )
 }
 
-function MerchantCard() {
-  return (
-    <Card id="merchant" icon={<Store size={16} aria-hidden />} title="Merchant checkout" badge={pill('live', 'green')} foot={<a href="#merchant" className={`${pillSm} min-h-11`}>Open your store <ArrowRight size={14} aria-hidden /></a>}>
-      <InfoTip summary="Pay links, invoices and a checkout, self-serve">Take crypto payments yourself: pay links, invoices and a “Pay with crypto” button with signed webhooks, run from this workspace.</InfoTip>
-      <LiveMarker text="Payments through your store will draw here" height={56} />
-    </Card>
-  )
-}
-
-/** GET /api/developer/chain-kit: this workspace's Chain Kit request, your testnet waitlist row, everyone's counts per day. */
-export type ChainKitState = {
-  request: { at: string; chain: string | null; email: string; status: string } | null
-  waitlist: { joined: boolean; at: string | null }
-  stats: { requests: number; waitlist: number; daily: { day: string; requests: number; waitlist: number }[] }
-  already?: boolean
-}
-
-const CK_KINDS = [
-  { id: 'requests', name: 'Chain Kit waitlist', color: '#00d2ff' },
-  { id: 'waitlist', name: 'testnet waitlist', color: '#248bff' },
-]
-
-/** Requests and waitlist sign-ups per day for 30 days, from every account (live, server state). */
-function ChainKitDays({ s, height = 64 }: { s: ChainKitState | null; height?: number }) {
-  if (!s) return <Skeleton h={height} />
-  const { requests, waitlist, daily } = s.stats
-  if (!requests && !waitlist) return <LiveMarker text="No waitlist sign-ups in the last 30 days yet: each one charts here" height={height} />
-  return <StackedDays height={height} days={daily.map((d) => ({ label: d.day.slice(5), values: { requests: d.requests, waitlist: d.waitlist } }))} kinds={CK_KINDS} label={`Last 30 days: ${requests} Chain Kit waitlist sign-ups and ${waitlist} testnet waitlist sign-ups in total.`} />
-}
-
-export function ChainKitCard() {
-  const { me } = usePortal()
-  const ws = me?.active
-  const ck = usePoll<ChainKitState>('/api/developer/chain-kit', 60_000)
-  const [fresh, setFresh] = useState<ChainKitState | null>(null)
-  const state = fresh ?? ck.data
-  const done = state?.request ?? null
-  const [email, setEmail] = useState(me?.profile.email ?? '')
-  const [chain, setChain] = useState('')
-  const [busy, setBusy] = useState(false)
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!ws) return
-    setBusy(true)
-    const r = await api<ChainKitState>('/api/developer/chain-kit/request', { method: 'POST', body: { email: email.trim(), chain: chain.trim() } })
-    setBusy(false)
-    if (!r.ok) return toastError('Could not join the waitlist', { detail: r.status === 400 ? 'Check the email address.' : r.error })
-    setFresh(r.data)
-    void ck.reload()
-    toastSuccess('You are on the Chain Kit waitlist', { detail: 'Gully Labs will write to you when orders open.' })
-  }
-  return (
-    <Card icon={<Boxes size={16} aria-hidden />} title="Chain Kit" badge={done ? pill('on the waitlist', 'green') : pill('waitlist')} foot={<ExtLink href={site('/chain-kit')} className={`${pillSm} min-h-11`}>What Chain Kit is</ExtLink>}>
-      <span className="text-[12px] text-dim">An explorer for your chain, run for you. Join the waitlist: we’re finalising the explorer licence before taking orders.</span>
-      {!state && !ck.error && !ck.timedOut ? (
-        <Skeleton h={44} />
-      ) : done ? (
-        <p className="m-0 flex items-center gap-2 rounded-[10px] border border-success-line px-3 py-2 text-[13px] text-ink-2" data-testid="chainkit-requested">
-          <Check size={15} className="text-green" aria-hidden /> On the waitlist since {fmtDate(done.at)} for {ws?.name}{done.chain ? ` (${done.chain})` : ''}. We write when orders open.
-        </p>
-      ) : (
-        <form onSubmit={submit} className="flex flex-col gap-2">
-          <input className={`${input} h-11 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email to reach you" aria-label="Email" name="chainkit-email" />
-          <input className={`${input} h-11 text-[14px]`} value={chain} onChange={(e) => setChain(e.target.value)} placeholder="Your chain (name, chain id, RPC)" aria-label="Your chain" maxLength={200} name="chainkit-chain" />
-          <button type="submit" disabled={busy || !ws} className={`${pillGold} min-h-11`}>
-            {busy && <Loader2 size={15} className="animate-spin" aria-hidden />} Join the waitlist
-          </button>
-        </form>
-      )}
-      <ChainKitDays s={state} />
-      {ck.error && <RefreshChip error={ck.error} onRetry={() => void ck.reload()} />}
-    </Card>
-  )
-}
-
-function ChainsCard() {
-  const { me } = usePortal()
-  const ck = usePoll<ChainKitState>('/api/developer/chain-kit', 60_000)
-  const [fresh, setFresh] = useState<ChainKitState | null>(null)
-  const state = fresh ?? ck.data
-  const done = state?.waitlist.joined ? state.waitlist.at : null
-  const [email, setEmail] = useState(me?.profile.email ?? '')
-  const [busy, setBusy] = useState(false)
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    setBusy(true)
-    const r = await api<ChainKitState>('/api/developer/chains-waitlist', { method: 'POST', body: { email: email.trim() } })
-    setBusy(false)
-    if (!r.ok) return toastError('Could not join the waitlist', { detail: r.error })
-    setFresh(r.data)
-    void ck.reload()
-    toastSuccess(r.data.already ? 'Already on the testnet waitlist' : 'You are on the testnet waitlist', { detail: email.trim() })
-  }
-  return (
-    <Card icon={<Network size={16} aria-hidden />} title="Gully Chains" badge={done ? pill('on the waitlist', 'green') : pill('soon', 'gold')}>
-      <span className="text-[12px] text-dim">App chains, launched for you. The testnet opens to the waitlist first.</span>
-      {state ? (
-        <span className="font-mono text-[11px] text-faint">
-          <AnimatedNumber value={state.stats.waitlist} countUp /> on the testnet waitlist · Gully testnet: in development
-        </span>
-      ) : (
-        <LiveMarker text="Gully testnet: in development" height={40} />
-      )}
-      {state ? <MiniBars bars={state.stats.daily.slice(-14).map((d) => ({ label: d.day.slice(5), value: d.waitlist }))} label={`Testnet waitlist sign-ups per day, last 14 days: ${state.stats.waitlist} in all.`} height={48} emptyLabel="Waitlist sign-ups will draw here" /> : null}
-      {!state && !ck.error && !ck.timedOut ? (
-        <Skeleton h={44} />
-      ) : done ? (
-        <p className="m-0 flex items-center gap-2 text-[13px] text-ink-2" data-testid="devnet-joined">
-          <Check size={15} className="text-green" aria-hidden /> Joined {fmtDate(done)}. We email you when it opens.
-        </p>
-      ) : (
-        <form onSubmit={submit} className="flex gap-2 max-[420px]:flex-col">
-          <input className={`${input} h-11 text-[14px]`} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" aria-label="Email for the testnet waitlist" name="devnet-email" />
-          <button type="submit" disabled={busy} className={`${pillGold} min-h-11 shrink-0`}>
-            Join the waitlist
-          </button>
-        </form>
-      )}
-      {ck.error && <RefreshChip error={ck.error} onRetry={() => void ck.reload()} />}
-    </Card>
-  )
-}
-
 type Asked = { q: string; a: string; at: string }
 
 function AiCard({ go }: { go: (t: Tab) => void }) {
@@ -439,55 +311,8 @@ function AiCard({ go }: { go: (t: Tab) => void }) {
   )
 }
 
-type LaunchesView = { launches: { chainKey: string; chainName: string; token: string; symbol: string | null; createdAt: string; path: string; health?: { score: number | null } | null }[] }
 
 /** Holder Map: the newest checked launches as a health-score chart and a short list (GET /api/holders/launches, every 30 s). */
-function HolderMapCard() {
-  const s = useCard<LaunchesView>('/api/holders/launches', 30_000)
-  const list = s.k === 'ok' ? s.data.launches : null
-  const scored = (list ?? []).filter((l) => typeof l.health?.score === 'number').slice(0, 12)
-  const [now] = useState(() => Date.now())
-  return (
-    <Card
-      icon={<Network size={16} aria-hidden />}
-      title="Holder Map"
-      badge={pill('Live', 'green')}
-      foot={
-        <ExtLink href={`${DOCS_URL}/widget`} className={`${pillSm} min-h-11`}>
-          <AppWindow size={14} aria-hidden /> Embed it
-        </ExtLink>
-      }
-    >
-      <p className="m-0 text-[13px] leading-[1.55] text-muted">Who holds a DeepCore launch or a stock token: bundled buys, the deployer, connected wallets and a replay. Cluster alerts arrive in the Alerts tab.</p>
-      {s.k === 'error' ? (
-        <LiveMarker text="Launch checks: not readable right now" />
-      ) : !list ? (
-        <Skeleton h={64} />
-      ) : (
-        <>
-          <MiniBars bars={scored.map((l) => ({ label: l.symbol ?? l.token.slice(0, 6), value: l.health?.score ?? null }))} label={`Health scores of the newest checked launches: ${scored.map((l) => `${l.symbol ?? 'token'} ${l.health?.score}`).join(', ')}`} height={56} emptyLabel="Launch health scores will draw here" />
-          <ul className="m-0 flex list-none flex-col gap-1 p-0" data-launch-holders>
-            {list.slice(0, 4).map((l) => {
-              const local = isLocalHost()
-              return (
-                <li key={`${l.chainKey}:${l.token}`}>
-                  <a href={local ? l.path : site(l.path)} {...(local ? {} : { target: '_blank', rel: 'noopener noreferrer' })} className="flex min-h-11 items-center gap-2 rounded-[8px] border border-line px-3 text-[14px] transition-colors hover:border-gold">
-                    <ChainLogo chain={l.chainKey} size={16} decorative />
-                    <span className="flex-none font-semibold whitespace-nowrap text-ink">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
-                    <span className="min-w-0 flex-1 truncate text-right font-mono text-[11px] text-faint">{ageText(l.createdAt, now)}</span>
-                    <ArrowRight size={14} aria-hidden className="flex-none text-gold" />
-                    {!local && <span className="sr-only"> (opens in a new tab)</span>}
-                  </a>
-                </li>
-              )
-            })}
-          </ul>
-        </>
-      )}
-    </Card>
-  )
-}
-
 /** Gully Security: the workspace's scans, per day for the last week (GET /api/developer/security/scans). */
 function SecurityCard({ go }: { go: (t: Tab) => void }) {
   const s = useCard<{ scans: ScanView[] }>('/api/developer/security/scans', 60_000)
