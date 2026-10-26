@@ -2,6 +2,14 @@
 // in development, so every path here is RELATIVE. Each page is its own chunk; the marketing site never
 // loads them.
 import type { RouteObject } from 'react-router'
+import { useEffect } from 'react'
+import { MOVED_DOCS } from './nav'
+
+/** A docs page that moved to a product's own domain: go there (replacing this history entry). */
+function LeaveFor({ url }: { url: string }) {
+  useEffect(() => window.location.replace(url), [url])
+  return <p className="px-6 py-24 font-mono text-[13px] text-faint">This page moved to <a href={url}>{url.replace('https://', '')}</a>.</p>
+}
 
 export const docsRoutes: RouteObject[] = [
   {
@@ -21,8 +29,6 @@ export const docsRoutes: RouteObject[] = [
       { path: 'holder-map', lazy: () => import('./pages/HolderMapDocs').then((m) => ({ Component: m.HolderMapDocs })) },
       { path: 'holder-map-integrate', lazy: () => import('./pages/HolderMapIntegrateDocs').then((m) => ({ Component: m.HolderMapIntegrateDocs })) },
       { path: 'analytics', lazy: () => import('./pages/AnalyticsDocs').then((m) => ({ Component: m.AnalyticsDocs })) },
-      { path: 'gully-pay', lazy: () => import('./pages/GullyPayDocs').then((m) => ({ Component: m.GullyPayDocs })) },
-      { path: 'gully-pay-merchants', lazy: () => import('./pages/GullyPayMerchantsDocs').then((m) => ({ Component: m.GullyPayMerchantsDocs })) },
       { path: 'gully-security', lazy: () => import('./pages/GullySecurityDocs').then((m) => ({ Component: m.GullySecurityDocs })) },
       { path: 'gully-score', lazy: () => import('./pages/GullyScore').then((m) => ({ Component: m.GullyScore })) },
       { path: 'gully-ai', lazy: () => import('./pages/GullyAiDocs').then((m) => ({ Component: m.GullyAiDocs })) },
@@ -33,11 +39,12 @@ export const docsRoutes: RouteObject[] = [
       { path: 'swaps', lazy: () => import('./pages/SwapsDocs').then((m) => ({ Component: m.SwapsDocs })) },
       { path: 'solana', lazy: () => import('./pages/SolanaDocs').then((m) => ({ Component: m.SolanaDocs })) },
       { path: 'solana-pay', lazy: () => import('./pages/SolanaPayDocs').then((m) => ({ Component: m.SolanaPayDocs })) },
-      { path: 'chain-kit', lazy: () => import('./pages/ChainKitDocs').then((m) => ({ Component: m.ChainKitDocs })) },
+      { path: 'ipfs', lazy: () => import('./pages/IpfsDocs').then((m) => ({ Component: m.IpfsDocs })) },
       { path: 'contracts', lazy: () => import('./pages/ContractsDocs').then((m) => ({ Component: m.ContractsDocs })) },
       { path: 'status', lazy: () => import('./pages/StatusDocs').then((m) => ({ Component: m.StatusDocs })) },
       { path: 'roadmap', lazy: () => import('./pages/Roadmap').then((m) => ({ Component: m.Roadmap })) },
-      { path: 'roadmap-l3', lazy: () => import('./pages/RoadmapL3').then((m) => ({ Component: m.RoadmapL3 })) },
+      // Moved to the products' own docs: in production the server 301s these first; here they leave the same way.
+      ...Object.entries(MOVED_DOCS).map(([path, url]) => ({ path, element: <LeaveFor url={url} /> })),
       { path: 'changelog', lazy: () => import('./pages/Changelog').then((m) => ({ Component: m.Changelog })) },
       { path: '*', lazy: () => import('./pages/NotFound').then((m) => ({ Component: m.NotFound })) },
     ],

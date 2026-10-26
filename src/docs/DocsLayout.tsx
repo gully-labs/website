@@ -1,4 +1,5 @@
-import { Activity, ArrowLeftRight, BadgeCheck, BellRing, Blocks, BookOpen, Bot, FileCheck, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HeartPulse, History, Home, KeyRound, Layers, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, ScanSearch, Search, Send, ShieldCheck, Smartphone, Store, Tags, Users, Wallet, X } from 'lucide-react'
+import { Activity, ArrowLeftRight, BadgeCheck, BellRing, BookOpen, Bot, FileCheck, Network, Server, Gamepad2, CircleDollarSign, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HardDrive, HeartPulse, History, Home, KeyRound, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, ScanSearch, Search, Send, ShieldCheck, Smartphone, Tags, Users, X } from 'lucide-react'
+import { securityPrimary } from '../site-host'
 import { useContext, useEffect, useId, useMemo, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useNavigate, useResolvedPath } from 'react-router'
 import { NewTabMark } from '../components/LayoutLinks'
@@ -38,13 +39,12 @@ function ApiPill() {
   )
 }
 
-const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-pay': Wallet, 'gully-pay-merchants': Store, 'gully-security': ShieldCheck, 'gully-score': Gauge, teams: Users, roadmap: Milestone, 'roadmap-l3': Layers, changelog: History, 'holder-map': ScanSearch, 'gully-ai': Bot, telegram: Send, 'telegram-mini-app': Smartphone, 'news-gate': Newspaper, 'stock-pages': ChartCandlestick, 'solana-pay': QrCode, swaps: ArrowLeftRight, solana: Orbit, 'chain-kit': Blocks, status: HeartPulse, contracts: FileCheck, 'holder-map-integrate': Plug, badges: BadgeCheck }
+const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-security': ShieldCheck, 'gully-score': Gauge, teams: Users, roadmap: Milestone, changelog: History, 'holder-map': ScanSearch, 'gully-ai': Bot, telegram: Send, 'telegram-mini-app': Smartphone, 'news-gate': Newspaper, 'stock-pages': ChartCandlestick, 'solana-pay': QrCode, swaps: ArrowLeftRight, solana: Orbit, ipfs: HardDrive, status: HeartPulse, contracts: FileCheck, 'holder-map-integrate': Plug, badges: BadgeCheck }
 
 /** Links to the rest of Gully Labs: all on another host, so each opens in a new tab with the ↗ marker. */
 const GULLY_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
   { label: 'Live tracker', href: `${SITE}/tracker`, icon: Activity },
-  { label: 'Holder Map', href: `${SITE}/holders`, icon: ScanSearch },
-  { label: 'Security', href: `${SITE}/security`, icon: ShieldCheck },
+  { label: 'Products', href: `${SITE}/products`, icon: Package },
   { label: 'Gully Score', href: `${SITE}/score`, icon: Gauge },
   { label: 'Widget builder', href: `${SITE}/widget`, icon: Puzzle },
   { label: 'Gully AI', href: `${SITE}/ask`, icon: MessageCircleQuestion },
@@ -55,6 +55,15 @@ const GULLY_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
   { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
   { label: 'Privacy', href: `${SITE}/legal/privacy`, icon: Lock },
   { label: 'App dashboard', href: 'https://app.gullylabs.xyz', icon: KeyRound },
+]
+/** The products on their own domains, each with its own docs or home (2026-10-26). */
+const PRODUCT_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
+  { label: 'Gully Chain docs', href: 'https://docs.gullychain.xyz/', icon: Network },
+  { label: 'Gully Pay docs', href: 'https://gullypay.xyz/docs', icon: CircleDollarSign },
+  { label: 'Gully RPC docs', href: 'https://gullyrpc.xyz/docs/', icon: Server },
+  { label: 'HolderMaps', href: 'https://holdermaps.xyz/', icon: ScanSearch },
+  { label: 'Gully Security', href: 'https://gullysecurity.xyz/', icon: ShieldCheck },
+  { label: 'Gully Studio', href: 'https://gullystudio.xyz/', icon: Gamepad2 },
 ]
 
 type Hit = { slug: DocSlug; title: string; group: string }
@@ -190,7 +199,7 @@ function Sidebar({ onPick }: { onPick: () => void }) {
       {groups.map((g) => (
         <div key={g} className="flex flex-col gap-1">
           <span className="px-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint">{g.toUpperCase()}</span>
-          {DOC_PAGES.filter((p) => p.group === g).map((p) => (
+          {DOC_PAGES.filter((p) => p.group === g && !(p.slug === 'gully-security' && securityPrimary())).map((p) => (
             <SideLink key={p.slug} slug={p.slug} title={p.title} onPick={onPick} />
           ))}
         </div>
@@ -198,6 +207,16 @@ function Sidebar({ onPick }: { onPick: () => void }) {
       <div className="flex flex-col gap-1 border-t border-line pt-5">
         <span className="px-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint">GULLY LABS</span>
         {GULLY_LINKS.map((l) => (
+          <a key={l.href} href={l.href} {...newTab} className="group flex min-h-11 items-center gap-3 rounded-sm px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
+            <l.icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
+            <span className="flex-1">{l.label}</span>
+            <NewTabMark size={14} />
+          </a>
+        ))}
+      </div>
+      <div className="flex flex-col gap-1 border-t border-line pt-5">
+        <span className="px-3 pb-1 font-mono text-[11px] tracking-[1px] text-faint">GULLY PRODUCTS</span>
+        {PRODUCT_LINKS.map((l) => (
           <a key={l.href} href={l.href} {...newTab} className="group flex min-h-11 items-center gap-3 rounded-sm px-3 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink">
             <l.icon aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint transition-colors group-hover:text-gold" />
             <span className="flex-1">{l.label}</span>

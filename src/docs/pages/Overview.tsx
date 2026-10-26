@@ -1,9 +1,9 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, P, Section } from '../DocPage'
 import { ApiStatusStrip } from '../LiveCharts'
-import { useDocHref, type DocSlug } from '../nav'
+import { PRODUCT_DOCS, useDocHref, type DocSlug } from '../nav'
 
 const sections = [
   { id: 'what-it-is', title: 'What the tracker is' },
@@ -11,6 +11,7 @@ const sections = [
   { id: 'start-here', title: 'Start here' },
   { id: 'quick-start', title: 'Quick start' },
   { id: 'products', title: 'Products and more' },
+  { id: 'elsewhere', title: 'Docs on product domains' },
   { id: 'sources', title: 'Where the numbers come from' },
 ]
 
@@ -27,7 +28,8 @@ const PRODUCTS: { slug: DocSlug; title: string; note: string }[] = [
   { slug: 'holder-map', title: 'Holder Map', note: 'Who really holds a token, clusters and the launch health score.' },
   { slug: 'gully-ai', title: 'Gully AI', note: 'Answers from our docs and live data, with a source on every fact.' },
   { slug: 'telegram', title: 'Telegram bot', note: '@GullyLabsBot: gaps, launches, alerts with Mute, and the Mini App.' },
-  { slug: 'chain-kit', title: 'Chain Kit', note: 'A branded Blockscout explorer for your EVM chain, run for you. Waitlist.' },
+  { slug: 'gully-score', title: 'Gully Score', note: 'A 0 to 100 reading of how a contract is controlled, from public evidence.' },
+  { slug: 'ipfs', title: 'Gully IPFS', note: 'Our IPFS node and read-only gateway for Gully content.' },
   { slug: 'status', title: 'Status', note: 'What each live check means, uptime and incidents.' },
 ]
 
@@ -54,7 +56,7 @@ export function Overview() {
       slug=""
       eyebrow="GULLY LABS DOCS"
       title="Tokenised stocks, priced two ways"
-      description="Docs for Gully Labs: the stock token tracker on Robinhood Chain, BNB Chain and Solana, its public API, the widget and API keys, plus Gully Pay, the Holder Map, Gully AI, the Telegram bot, swaps and status."
+      description="Docs for Gully Labs: the stock token tracker, its public API, widget and API keys, the Holder Map, Gully Score, Gully AI, Gully IPFS and the Telegram bot."
       lead={
         <>
           The Gully Labs tracker checks every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, live. These docs cover how it works, the public API it is built on, the widget that puts it on your own page, and the
@@ -102,6 +104,25 @@ export function Overview() {
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-3">
           {PRODUCTS.map((c, i) => (
             <Card key={c.slug} {...c} i={i} />
+          ))}
+        </div>
+      </Section>
+
+      <Section id="elsewhere" title="Docs on product domains">
+        <P>Gully Chain, Gully Pay, Gully RPC and Gully Security run on their own domains, and their docs live there. The old pages here forward to them.</P>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-3">
+          {PRODUCT_DOCS.map((d) => (
+            <a key={d.name} href={d.href} target="_blank" rel="noopener noreferrer" className="group flex min-w-0 flex-col gap-2 rounded-card border border-line bg-card-token p-5 transition-[border-color,transform] duration-200 hover:-translate-y-[2px] hover:border-gold-line">
+              <span className="flex items-center justify-between gap-2 font-display text-[22px] font-bold text-ink uppercase">
+                {d.name}
+                <ArrowUpRight size={16} aria-hidden className="text-gold transition-transform group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
+              </span>
+              <span className="text-[14px] leading-[1.55] text-muted">{d.note}</span>
+              <span className="font-mono text-[12px] text-faint">
+                {d.href.replace('https://', '').replace(/\/$/, '')}
+                <span className="sr-only"> (opens in a new tab)</span>
+              </span>
+            </a>
           ))}
         </div>
       </Section>

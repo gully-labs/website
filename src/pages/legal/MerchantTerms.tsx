@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Seo } from '../../components/Seo'
 import { eyebrow } from '../../components/ui'
-import { FeeCurve } from '../../docs/pages/GullyPayMerchantsDocs'
+import { FeeCurve } from '../../components/pay/FeeCurve'
 
 /* /legal/merchant-terms: the Gully Pay merchant terms, adapted from the Common Paper Cloud Service
    Agreement Standard Terms Version 2.1 (CC BY 4.0; attribution and the list of changes at the foot of the
