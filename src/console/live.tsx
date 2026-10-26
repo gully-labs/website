@@ -29,9 +29,11 @@ export interface Live {
   chain: ChainRead | null
   chainState: 'loading' | 'ok' | 'error'
   rpcMs: number[]
+  /** Gully Studio: Frog Hop's latest season on the GullyArcade contract (Gully Chain testnet), and its player counts read so far. */
+  arcade: { season: number; players: number; history: number[] } | null
 }
 
-const empty: Live = { stats: null, statsState: 'loading', status: null, payChains: null, chain: null, chainState: 'loading', rpcMs: [] }
+const empty: Live = { stats: null, statsState: 'loading', status: null, payChains: null, chain: null, chainState: 'loading', rpcMs: [], arcade: null }
 const Ctx = createContext<Live>(empty)
 export const useLive = () => useContext(Ctx)
 
@@ -45,6 +47,20 @@ async function rpc(calls: { method: string; params: unknown[] }[]) {
   return [...j].sort((a, b) => a.id - b.id).map((x) => x.result)
 }
 const hex = (h: string) => parseInt(h, 16)
+
+// GullyArcade on the Gully Chain testnet (the contract gullystudio.xyz reads): latestSeasonOf(uint256), season(uint256).
+const ARCADE = '0xe573789b235314661DEdDA08a18Ca261c069c872'
+const FROG_HOP = 1
+const word = (data: string, i: number) => '0x' + data.slice(2 + i * 64, 2 + (i + 1) * 64)
+const arg = (n: number) => n.toString(16).padStart(64, '0')
+async function fetchArcade(): Promise<{ season: number; players: number } | null> {
+  const [latest] = (await rpc([{ method: 'eth_call', params: [{ to: ARCADE, data: '0x0e48b19a' + arg(FROG_HOP) }, 'latest'] }])) as string[]
+  const id = latest ? Number(BigInt(latest)) : 0
+  if (!id) return null
+  const [s] = (await rpc([{ method: 'eth_call', params: [{ to: ARCADE, data: '0x8371b1c5' + arg(id) }, 'latest'] }])) as string[]
+  if (!s || s.length < 2 + 7 * 64) return null
+  return { season: id, players: Number(BigInt(word(s, 6))) }
+}
 
 /** The newest `n` blocks, oldest first; `known` caches blocks between reads. */
 async function fetchBlocks(n: number, known: Map<number, Block>): Promise<ChainRead> {
@@ -101,6 +117,12 @@ export function LiveProvider({ children }: { children: ReactNode }) {
         set({ payChains: Array.isArray(p.chains) ? p.chains.length : null })
       } catch {
         set({ payChains: null })
+      }
+      try {
+        const a = await fetchArcade()
+        set((l) => ({ arcade: a ? { ...a, history: [...(l.arcade?.history ?? []), a.players].slice(-20) } : l.arcade }))
+      } catch {
+        /* the arcade figure stays as last read */
       }
       try {
         const st = (await (await fetch(STATUS_URL, { cache: 'no-store' })).json()) as StatusBody

@@ -75,10 +75,10 @@ background:var(--gs-paper);color:var(--gs-ink);font:14px/1.55 var(--gs-font-body
 `
 
 /**
- * Static HTML for a report. Options: logoUrl (default the kit's horizontal lockup for light paper),
+ * Static HTML for a report. Options: logoUrl (default the Gully Security kit's logo for light paper, logo/logo-on-light.svg),
  * standalone (wrap in a full document; default true), inlineCss (default true).
  */
-export function renderReportHtml(r, { logoUrl = '/brand/gullylabs-logo-horizontal-on-light.svg', standalone = true, inlineCss = true } = {}) {
+export function renderReportHtml(r, { logoUrl = '/brand/products/gullysecurity-logo-on-light.svg', standalone = true, inlineCss = true } = {}) {
   const t = r.target
   const targetRows = [
     ['Target', targetText(t)],
@@ -115,7 +115,7 @@ ${f.poc ? `<details class="gs-poc"><summary>Proof of concept (${esc(f.poc.status
   const deps = r.dependencies ? `<h2>Dependencies</h2><p>${r.dependencies.ran ? `npm audit on the lockfile: ${Object.entries(r.dependencies.counts ?? {}).map(([k, v]) => `${v} ${k}`).join(', ')}.` : `npm audit not run: ${esc(r.dependencies.reason)}`}</p>${r.dependencies.advisories.length ? `<table><thead><tr><th>Package</th><th>Severity</th><th>Advisory</th></tr></thead><tbody>${r.dependencies.advisories.slice(0, 60).map((a) => `<tr><td class="gs-mono">${esc(a.name)}</td><td>${esc(a.severity)}</td><td>${esc(a.title)}${a.url ? ` <span class="gs-mono">${esc(a.url)}</span>` : ''}</td></tr>`).join('')}</tbody></table>` : ''}` : ''
   const inj = r.ai.promptInjectionFlags.length ? `<h3>Comments addressed to AI reviewers (removed before review)</h3><ul>${r.ai.promptInjectionFlags.map((p) => `<li class="gs-mono">${esc(p.file)}:${p.line}: ${esc(p.excerpt)}</li>`).join('')}</ul>` : ''
   const body = `<main class="gs-report" data-mode="${esc(r.mode)}">
-<header class="gs-header"><img class="gs-logo" src="${esc(logoUrl)}" alt="Gully Labs"><span class="gs-badge">${esc(r.label)}</span></header>
+<header class="gs-header"><img class="gs-logo" src="${esc(logoUrl)}" alt="Gully Security"><span class="gs-badge">${esc(r.label)}</span></header>
 <h1>${esc(r.title)}</h1>
 <p class="gs-muted">${esc(targetText(t))}</p>
 <section class="gs-summary"><h2>Summary</h2><p>${esc(r.summary.text)}</p><div class="gs-counts">${counts}</div>${r.summary.dropped ? `<p class="gs-meta">${r.summary.dropped} tool finding(s) dismissed as false positives, listed below with reasons.</p>` : ''}</section>

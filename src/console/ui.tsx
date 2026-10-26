@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Activity, ArrowUpRight, Blocks, Check, CircleDollarSign, Coins, Gamepad2, KeyRound, LayoutGrid, Network, Rocket, ScanSearch, Server, ShieldCheck, Wallet, X, Zap, type LucideProps } from 'lucide-react'
+import { ProductLogo as KitProductLogo } from '../components/ProductLogo'
 import { countUp, fmtInt, fmtTime, spark } from './charts'
 import { dismissToast, toastStore, type ToastIcon } from './toast'
 import { tapeItems, useLive, type TapeItem } from './live'
@@ -199,25 +200,24 @@ export interface ProductDef {
   url: string
   /** Where its signed-in app lives, when it has one (the Gully Labs App hands off there). */
   app?: string
-  /** Logo from the product's OWN kit (Desktop/GULLY LABS GRAPHICS/<product>), sized for a 34 px row. */
-  logo: { src: string; w: number; h: number }
   /** Lucide icon for menus. */
   icon: Icon
   blurb: string
 }
 /* The six products, each on its own domain since 2026-10-26: Gully Labs is the hub that points to them. */
 export const PRODUCTS: ProductDef[] = [
-  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', app: 'https://app.gullychain.xyz', logo: { src: '/brand/products/gullychain-logo-transparent.png', w: 147, h: 34 }, icon: Network, blurb: 'An L3 chain for launches and trading, with DeepCore built in.' },
-  { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', logo: { src: '/brand/products/gullypay-logo-ondark.svg', w: 132, h: 34 }, icon: CircleDollarSign, blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
-  { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', app: 'https://app.gullyrpc.xyz', logo: { src: '/brand/products/gullyrpc-logo.png', w: 118, h: 34 }, icon: Server, blurb: 'Node control plane and RPC gateway for every Gully chain.' },
-  { key: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz', logo: { src: '/brand/products/HolderMaps_Logo.png', w: 184, h: 34 }, icon: ScanSearch, blurb: 'Who really holds a token: bubble maps, clusters and deep checks.' },
-  { key: 'security', name: 'Gully Security', url: 'https://gullysecurity.xyz', logo: { src: '/brand/products/logo-primary.svg', w: 205, h: 34 }, icon: ShieldCheck, blurb: 'AI security scans, monitors and reports for any contract.' },
-  { key: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz', logo: { src: '/brand/products/gullystudio-logo.png', w: 119, h: 34 }, icon: Gamepad2, blurb: 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.' },
+  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', app: 'https://app.gullychain.xyz', icon: Network, blurb: 'An L3 chain for launches and trading, with DeepCore built in.' },
+  { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', icon: CircleDollarSign, blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
+  { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', app: 'https://app.gullyrpc.xyz', icon: Server, blurb: 'Node control plane and RPC gateway for every Gully chain.' },
+  { key: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz', icon: ScanSearch, blurb: 'Who really holds a token: bubble maps, clusters and deep checks.' },
+  { key: 'security', name: 'Gully Security', url: 'https://gullysecurity.xyz', icon: ShieldCheck, blurb: 'AI security scans, monitors and reports for any contract.' },
+  { key: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz', icon: Gamepad2, blurb: 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.' },
 ]
 export const productByKey = (k: ProductKey) => PRODUCTS.find((p) => p.key === k) as ProductDef
 
+/** The product's kit logo in the shared slot (src/components/ProductLogo.tsx). */
 export function ProductLogo({ p }: { p: ProductDef }) {
-  return <img src={p.logo.src} width={p.logo.w} height={p.logo.h} alt={p.name} />
+  return <KitProductLogo product={p.key} />
 }
 
 export interface ProductFigure {

@@ -1,19 +1,19 @@
 :root {
-  --gl-lab-night: #0D141C;
-  --gl-midnight: #151D28;
-  --gl-slate: #2A3542;
-  --gl-bone: #F4F2EC;
-  --gl-lab-gold: #D9B563;
-  --gl-pale-gold: #F2D58A;
+  --gl-lab-night: #06050D;
+  --gl-midnight: #0B0A16;
+  --gl-slate: #1A1830;
+  --gl-bone: #FFFFFF;
+  --gl-lab-gold: #00D2FF;
+  --gl-pale-gold: #248BFF;
   --gl-frog-green: #2F6B35;
   --gl-moss: #3C553B;
-  --gl-text-muted: #AEB5BE;
+  --gl-text-muted: #A3A8C3;
   --gl-text-dim: #7D8794;
   --gl-alert-red: #FF8A7A; /* warning colour, added 2026-10-19 */
 
-  --gl-grad-labs: linear-gradient(180deg, #F6E1A0 0%, #D9B563 38%, #8C8150 70%, #3C553B 100%);
-  --gl-grad-labs-light: linear-gradient(180deg, #D9B563 0%, #A07C3A 45%, #5C6440 75%, #2F4A33 100%);
-  --gl-grad-bar: linear-gradient(90deg, #2A3542 0%, #6F7560 40%, #D9B563 85%, #F2D58A 100%);
+  --gl-grad-labs: linear-gradient(180deg, #F6E1A0 0%, #00D2FF 38%, #8C8150 70%, #3C553B 100%);
+  --gl-grad-labs-light: linear-gradient(180deg, #00D2FF 0%, #A07C3A 45%, #5C6440 75%, #2F4A33 100%);
+  --gl-grad-bar: linear-gradient(90deg, #1A1830 0%, #6F7560 40%, #00D2FF 85%, #248BFF 100%);
   --gl-bg: radial-gradient(ellipse at 70% 40%, #1D2836 0%, #111923 50%, #0B1118 100%);
   --gl-glow: radial-gradient(circle, rgba(217,181,99,0.16) 0%, rgba(217,181,99,0) 65%);
 

@@ -1,4 +1,5 @@
-import { Lockup, Mascot } from '../../components/brand'
+import { Wordmark } from '../../components/brand'
+import { GULLY_MARK_SRC } from '../../components/pay/SecuredBy'
 import { Check, Copy, ExternalLink, ShieldCheck, Store } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { SecuredBy } from '../../components/pay/SecuredBy'
@@ -17,8 +18,8 @@ import { accentOf, storeName, type Brand } from './brand'
    not set a name is "Store" with its owner's short address. The accent is only used where it keeps
    WCAG contrast against the page (accentOf); otherwise the kit gold.
 
-   Brand assets come from public/brand/kit (the kit's transparent PNGs at the size shown, 1x and 2x) and
-   public/brand/gully-mark-96.png. TODO(feat/brand-kit): switch to src/components/brand once it lands. */
+   Brand assets: the Gully Labs kit logo through src/components/brand, and the Gully Pay kit mark
+   (public/brand/products/gullypay-mark.svg) beside "Gully Pay". */
 
 /* -------------------------------------------------------------- marks --- */
 
@@ -34,14 +35,15 @@ export function StoreMark({ brand, size = 40 }: { brand: Brand; size?: number })
   )
 }
 
-/** The kit's horizontal lockup (mascot + wordmark), on dark or on light, from public/brand/kit. */
+/** The Gully Labs kit's compact logo (flask icon + horizontal wordmark), on dark or on light. `height` is the
+    slot height the old lockup used; the kit icon takes 80% of it so the width stays about the same. */
 export function GullyLockup({ height = 34, light = false, className = '' }: { height?: number; light?: boolean; className?: string }) {
-  return <Lockup height={height} theme={light ? 'light' : 'dark'} className={className} />
+  return <Wordmark height={Math.round(height * 0.8)} theme={light ? 'light' : 'dark'} className={className} />
 }
 
-/** The kit mark (the mascot bust on its disc), as in the site's logo registry. */
+/** The Gully Pay kit's mark (logo/gullypay-mark.svg), for the "Secured by Gully Pay" lines. */
 export function GullyMark({ size = 20, className = '' }: { size?: number; className?: string }) {
-  return <Mascot size={size} className={className} decorative />
+  return <img src={GULLY_MARK_SRC} alt="" width={size} height={size} decoding="async" className={`inline-block shrink-0 ${className}`} style={{ width: size, height: size }} />
 }
 
 /* --------------------------------------------------------------- root --- */

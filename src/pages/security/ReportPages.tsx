@@ -1,6 +1,5 @@
 import { ArrowLeft, ArrowUpRight, FileSearch, FileText, Info, Printer, ScanSearch } from 'lucide-react'
 import { Link, useParams } from 'react-router'
-import { Lockup } from '../../components/brand'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { ScansChart } from './ScansChart'
 import { ModeBadge, ReportBody } from '../../components/security/ReportBody'
@@ -135,7 +134,7 @@ export function PublicReportPage() {
       <Seo title={`Security scan report: ${r.title}`} description="An AI Security Scan report published by its owner: findings by severity, the tools that ran and the limits of an automated scan. Not an audit." noindex={!r.indexable} />
       <article className="flex flex-col gap-4 px-page pt-10 pb-16 print:p-0" data-testid="public-report">
         <div className="hidden items-center justify-between border-b border-[#ccc] pb-3 print:flex">
-          <Lockup height={28} theme="light" />
+          <img src="/brand/products/gullysecurity-logo-on-light.svg" width={169} height={28} alt="Gully Security" className="block shrink-0" style={{ width: 169, height: 28 }} />
           <span className="font-mono text-[11px] text-[#333]">gullylabs.xyz{r.url}</span>
         </div>
         <div className="flex flex-wrap items-center gap-3 print:hidden">

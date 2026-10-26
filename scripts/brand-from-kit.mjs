@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+// RETIRED 2026-10-26: this read the old frog/gold kit (Desktop\GRAPHICS\Gully Labs). The 2026 kit is
+// Desktop\GULLY LABS GRAPHICS\Gully Labs\brand-kit, copied byte-exact into public/brand/ (see its
+// CLAUDE_INTEGRATION_PROMPT.md). Running this would bring the retired wordmark back, so it refuses.
+console.error('scripts/brand-from-kit.mjs is retired: copy files from the 2026 brand kit instead.')
+process.exit(1)
 /* Brings the Gully Labs brand kit into the stack. Nothing brand-shaped is drawn by hand anywhere in
    this repository: every logo comes from the kit's own files, through this script.
 

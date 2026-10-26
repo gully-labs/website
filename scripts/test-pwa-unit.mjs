@@ -48,7 +48,7 @@ test('routing: hashed build files are cache-first, page navigations network-firs
   assert.equal(nav('/tracker/robinhood/NVDA'), 'navigate')
   // Not hashed, not a navigation: the network decides.
   assert.equal(route('/assets/plain.js'), null)
-  assert.equal(route('/brand/gullylabs-mark-640.png'), null)
+  assert.equal(route('/brand/icon/app-icon-1024.png'), null)
   assert.equal(route('/icon-192.png'), null)
 })
 

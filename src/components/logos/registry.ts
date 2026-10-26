@@ -23,7 +23,7 @@ const CHAINS: Record<string, Mark> = {
   optimism: { src: '/chains/optimism.svg', name: 'OP Mainnet', disc: null, inset: 0 },
   polygon: { src: '/chains/polygon.svg', name: 'Polygon', disc: null, inset: 0 },
   avalanche: { src: '/chains/avalanche.svg', name: 'Avalanche', disc: null, inset: 0 },
-  gully: { src: '/brand/gully-mark-96.png', name: 'Gully Chain Testnet', disc: null, inset: 0 }, // our own L3 testnet: the brand kit's mark
+  gully: { src: '/brand/products/gullychain-icon-transparent-512.png', name: 'Gully Chain Testnet', disc: null, inset: 0 }, // our own L3 testnet: the Gully Chain kit's icon (icon/gullychain-icon-transparent-512.png)
 }
 
 /** Other keys and display names the site and the API use for the same chain. */
@@ -78,7 +78,7 @@ export function tokenMark(symbol: string | null | undefined): Mark | null {
 }
 
 const VENUES: Record<string, Mark> = {
-  gully: { src: '/brand/gully-mark-96.png', name: 'Gully Labs', disc: null, inset: 0 }, // the brand kit's icon master, cut down (scripts/brand-from-kit.mjs)
+  gully: { src: '/brand/icon/gully-labs-icon-512.png', name: 'Gully Labs', disc: null, inset: 0 }, // the Gully Labs kit's icon (icon/gully-labs-icon-512.png)
   deepcore: { src: '/venues/deepcore.png', name: 'DeepCore', disc: '#04060c', inset: 0.1 },
   peddleswap: { src: '/venues/peddleswap.png', name: 'PeddleSwap', disc: '#10131a', inset: 0 },
   peddles: { src: '/venues/peddles.svg', name: 'Peddles', disc: '#0f1318', inset: 0 },

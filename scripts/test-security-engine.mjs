@@ -337,7 +337,7 @@ let fullReport
   check('report validates against the schema', schema.validateReport(r).ok, schema.validateReport(r).errors.join('; '))
   check('summary counts add up', Object.values(r.summary.counts).reduce((a, b) => a + b, 0) === r.findings.length)
   const html = sec.getReportHtml(s.id)
-  check('HTML: label, disclaimer, scope, tools, print CSS, kit logo, no script', html.includes(schema.MODE_LABELS['static+ai'].replace('+', '+')) && html.includes('point-in-time') && html.includes('src/VulnBank.sol') && html.includes('@media print') && html.includes('/brand/gullylabs-logo-horizontal-on-light.svg') && !/<script/i.test(html))
+  check('HTML: label, disclaimer, scope, tools, print CSS, kit logo, no script', html.includes(schema.MODE_LABELS['static+ai'].replace('+', '+')) && html.includes('point-in-time') && html.includes('src/VulnBank.sol') && html.includes('@media print') && html.includes('/brand/products/gullysecurity-logo-on-light.svg') && !/<script/i.test(html))
   check('HTML: never calls the scan an audit (only the disclaimer says it is not one)', (html.match(/\baudit\b/gi) ?? []).length === 1 && /not an audit/.test(html))
   check('events: queued -> progress -> done with counts', events.some((e) => e.id === s.id && e.status === 'queued') && events.some((e) => e.id === s.id && e.status === 'triaging') && events.some((e) => e.id === s.id && e.status === 'done'))
 }

@@ -142,20 +142,41 @@ export const KIT = {
   }
 }
 
-export function wordmarkSvg({ height = 28, theme = 'dark', id = 'glk', attrs = '', title = 'Gully Labs' } = {}) {
-  const w = KIT.wordmark
-  const width = Math.round((height * w.width) / w.height * 100) / 100
-  const stops = (list) => list.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('')
-  const lg = w.labsGradient
-  const bg = w.barGradient
+/* The 2026 Gully Labs brand kit (Desktop\GULLY LABS GRAPHICS\Gully Labs\brand-kit, byte-exact in public/brand/).
+   The kit ships its logos as rasters, so server-rendered pages and images embed or link those files. The old
+   outlined gold wordmark above (KIT.wordmark) is retired: nothing draws it any more. */
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const HERE = path.dirname(fileURLToPath(import.meta.url))
+export const KIT_FILES = {
+  icon: { file: 'icon/gully-labs-icon.png', width: 343, height: 372 },
+  wordmark: { file: 'logo/gully-labs-wordmark-horizontal.png', width: 1171, height: 116 },
+  wordmarkOnLight: { file: 'logo/gully-labs-wordmark-horizontal-on-light.png', width: 1171, height: 116 },
+}
+const uris = new Map()
+/** A kit file as a data URI (dist/brand in production, public/brand in dev), or null when missing. */
+export function kitDataUri(key) {
+  if (uris.has(key)) return uris.get(key)
+  const rel = KIT_FILES[key].file
+  const p = [process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand', rel), path.join(HERE, 'dist', 'brand', rel), path.join(HERE, '..', 'dist', 'brand', rel), path.join(HERE, '..', 'public', 'brand', rel)].find((c) => c && fs.existsSync(c))
+  const uri = p ? `data:image/png;base64,${fs.readFileSync(p).toString('base64')}` : null
+  uris.set(key, uri)
+  return uri
+}
+
+/** The kit's compact logo (flask icon + horizontal wordmark) for server-rendered HTML; `height` is the icon's. */
+export function wordmarkSvg({ height = 28, theme = 'dark', attrs = '', title = 'Gully Labs' } = {}) {
+  const r = (n) => Math.round(n * 100) / 100
+  const iw = r((height * 343) / 372)
+  const wh = r((height * 17) / 33)
+  const ww = r((wh * 1171) / 116)
+  const gap = r((height * 10) / 33)
+  const wm = theme === 'light' ? 'gully-labs-wordmark-horizontal-on-light.png' : 'gully-labs-wordmark-horizontal.png'
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w.width} ${w.height}" width="${width}" height="${height}" role="img" aria-label="${title}" data-brand="kit" ${attrs}>` +
-    `<title>${title}</title>` +
-    `<defs><linearGradient id="${id}-labs" gradientUnits="userSpaceOnUse" x1="${lg.x1}" y1="${lg.y1}" x2="${lg.x2}" y2="${lg.y2}">${stops(lg[theme])}</linearGradient>` +
-    `<linearGradient id="${id}-bar" gradientUnits="userSpaceOnUse" x1="${bg.x1}" y1="${bg.y1}" x2="${bg.x2}" y2="${bg.y2}">${stops(bg[theme])}</linearGradient></defs>` +
-    `<path fill="${w.fill[theme]}" d="${w.gully}"/>` +
-    `<path fill="url(#${id}-labs)" d="${w.labs}"/>` +
-    `<rect x="${w.bar.x}" y="${w.bar.y}" width="${w.bar.width}" height="${w.bar.height}" fill="url(#${id}-bar)"/>` +
-    `</svg>`
+    `<span role="img" aria-label="${title}" data-brand="kit" style="display:inline-flex;align-items:center;gap:${gap}px;height:${height}px" ${attrs}>` +
+    `<img src="https://gullylabs.xyz/brand/icon/gully-labs-icon.png" width="${iw}" height="${height}" alt="">` +
+    `<img src="https://gullylabs.xyz/brand/logo/${wm}" width="${ww}" height="${wh}" alt=""></span>`
   )
 }

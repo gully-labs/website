@@ -40,9 +40,9 @@ check('TOKENS are the kit tokens (public/brand/tokens/tokens.json)', Object.valu
 
 /* The spec, restated here: geometry per size. */
 const SPEC = {
-  S: { h: 20, pad: 5, markW: 15, markH: 14, gap: 5, label: 12, value: 10, seg: 6, wm: 11 },
-  M: { h: 28, pad: 6, markW: 21, markH: 20, gap: 6, label: 16, value: 12, seg: 8, wm: 16 },
-  L: { h: 36, pad: 8, markW: 27, markH: 26, gap: 8, label: 20, value: 14, seg: 10, wm: 22 },
+  S: { h: 20, pad: 5, markW: 14, markH: 14, gap: 5, label: 12, value: 10, seg: 6, wm: 11 },
+  M: { h: 28, pad: 6, markW: 20, markH: 20, gap: 6, label: 16, value: 12, seg: 8, wm: 16 },
+  L: { h: 36, pad: 8, markW: 26, markH: 26, gap: 8, label: 20, value: 14, seg: 10, wm: 22 },
 }
 const adv = (fontKey, text, px, track = 0) => {
   const f = GLYPHS.fonts[fontKey]
@@ -136,7 +136,7 @@ for (const o of ALL) {
   // width from the glyph advances, restated
   const labelW = Math.ceil(adv('display', o.label.toUpperCase(), sp.label, 0.04))
   const hasSeg = o.kind === 'project' || o.value !== ''
-  const valueW = o.kind === 'project' ? Math.ceil(KIT.wordmark.width * (sp.wm / KIT.wordmark.height)) : Math.ceil(adv('mono', o.value, sp.value))
+  const valueW = Math.ceil(adv('mono', o.kind === 'project' ? 'GULLY LABS' : o.value, sp.value))
   const expected = hasSeg ? sp.pad + sp.markW + sp.gap + labelW + sp.gap + sp.seg + valueW + sp.seg + 1 : sp.pad + sp.markW + sp.gap + labelW + sp.pad + 1
   if (Number(attr(root, 'width')) !== expected || m.width !== expected) bad.width.push(`${id} ${attr(root, 'width')} != ${expected}`)
   // ink inside its box
@@ -160,9 +160,9 @@ check(
   'every glyph used is outlined (a label or value never falls back to a missing glyph)',
   ALL.every((o) => [...o.label.toUpperCase()].every((ch) => GLYPHS.fonts.display.glyphs[ch]) && [...o.value].every((ch) => GLYPHS.fonts.mono.glyphs[ch])),
 )
-check('the kit mark is embedded (mark-64 or mark-128 data URI)', renderBadge(ALL[0]).includes('data:image/png;base64,iVBOR'))
+check('the kit icon is embedded (favicon-48 or app-icon-180 data URI)', renderBadge(ALL[0]).includes('data:image/png;base64,iVBOR'))
 const proj = renderBadge({ kind: 'project', label: 'Built by', size: 'M' })
-check('project badge carries the kit wordmark paths verbatim', proj.includes(KIT.wordmark.gully) && proj.includes(KIT.wordmark.labs))
+check('project badge names Gully Labs beside the kit icon, no retired wordmark paths', !proj.includes(KIT.wordmark.gully) && proj.includes('data:image/png;base64,iVBOR'))
 check('a link is added only when asked', !renderBadge(ALL[0]).includes('<a ') && renderBadge({ ...ALL[0], href: 'https://gullylabs.xyz/x?a=1&b=2' }).includes('href="https://gullylabs.xyz/x?a=1&amp;b=2"'))
 const evil = renderBadge({ kind: 'score', label: '</svg><script>', value: '"><b>', title: '<x>' })
 check('markup in a label, value or title is escaped and cannot break out', wellFormed(evil) && !evil.includes('<script') && !evil.includes('<x>'))
@@ -235,7 +235,7 @@ const call = async (urlPath, method = 'GET') => {
   return { handled, ...out }
 }
 const built = await call('/badges/built-by-gully-labs.svg?theme=light&size=S')
-check('Built by Gully Labs: served, S and light honoured, links to the site', built.status === 200 && built.body.includes('height="20"') && built.body.includes('#F4F2EC') && built.body.includes('href="https://gullylabs.xyz"') && built.body.includes('<title>Built by Gully Labs</title>'))
+check('Built by Gully Labs: served, S and light honoured, links to the site', built.status === 200 && built.body.includes('height="20"') && built.body.includes('#FFFFFF') && built.body.includes('href="https://gullylabs.xyz"') && built.body.includes('<title>Built by Gully Labs</title>'))
 check('an unrelated path is not answered', (await call('/badges/nope.svg')).handled === false)
 
 /* Proof PNGs: every badge at 1:1 and 2:1 in Chromium, on a grid, to compare with the kit by eye. */
