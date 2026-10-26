@@ -3,8 +3,9 @@ import { Activity, CircleHelp, LayoutGrid, Play, Send, Zap } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { bars, C, fmtPct, fmtTime, fmtUsd, lineChart, type LineChart } from '../console/charts'
 import { productFigures } from '../console/figures'
-import { coversOf, NAMES, summed, totalOf, useLive, venueSeries, type Metric } from '../console/live'
+import { chainHead, coversOf, NAMES, summed, totalOf, useLive, venueSeries, type Metric } from '../console/live'
 import { Arrow, Btn, BUILD_STEPS, Count, ic, ProductGrid, SectionHead, Stepper, Ticker, Tile, TrustBand } from '../console/ui'
+import { ChainSuite, QuestsPanel } from '../console/Suite'
 import { APP_URL } from '../site-host'
 
 /* The landing, Direction A "Lab console" (owner pick, 2026-10-25): hero copy beside the live network chart
@@ -84,8 +85,8 @@ export function NetworkCard() {
         <div className="bars" ref={barsRef} />
         <div className="meta">
           <span className="lab">Gully Chain · txs / block</span>
-          <Count as="b" value={chain?.head} />
-          <span>{live.chainState === 'error' ? 'RPC could not be read' : avg ? `${blocks.reduce((a, b) => a + b.txs, 0)} tx in 40 blocks · ~${Math.round(avg)} s/block` : 'reading testnet RPC…'}</span>
+          <Count as="b" value={chainHead(live)} />
+          <span>{live.chainState === 'error' ? (live.hub?.chain ? 'RPC could not be read · head from the indexer' : 'RPC could not be read') : avg ? `${blocks.reduce((a, b) => a + b.txs, 0)} tx in 40 blocks · ~${Math.round(avg)} s/block` : 'reading testnet RPC…'}</span>
         </div>
       </div>
       <Ticker />
@@ -94,7 +95,8 @@ export function NetworkCard() {
 }
 
 function StatTiles() {
-  const { stats, chain, status } = useLive()
+  const live = useLive()
+  const { stats, chain, status } = live
   const ok = stats ? stats.venues.filter((v) => v.state === 'ok') : []
   const api = status?.components.find((c) => c.id === 'api')
   const blocks = chain?.blocks ?? []
@@ -103,7 +105,7 @@ function StatTiles() {
       <Tile label="Value locked" value={stats?.totals.tvlUsd} fmt={fmtUsd} spark={stats ? summed(stats, 'tvl') : []} color={C.s[0]} sub={stats ? `${coversOf(stats, 'tvl').length} venues · 30-day line` : 'across our venues'} />
       <Tile label="Volume · all-time" value={stats?.totals.volumeAllUsd} fmt={fmtUsd} spark={stats ? summed(stats, 'volume') : []} color={C.s[1]} sub={stats ? coversOf(stats, 'volume').map((k) => NAMES[k] ?? k).join(', ') || 'no venue publishes it' : 'venues that publish it'} />
       <Tile label="Fees · all-time" value={stats?.totals.feesAllUsd} fmt={fmtUsd} spark={stats ? summed(stats, 'fees') : []} color={C.s[2]} sub="USD, venue APIs + DefiLlama" />
-      <Tile label="Gully Chain blocks" value={chain?.head} spark={blocks.map((b) => b.txs)} color={C.cyan} sub={chain ? `testnet · chain 485590 · ${blocks[blocks.length - 1]?.txs ?? 0} tx in the newest block` : 'testnet · chain 485590'} />
+      <Tile label="Gully Chain blocks" value={chainHead(live)} spark={blocks.map((b) => b.txs)} color={C.cyan} sub={chain ? `testnet · chain 485590 · ${blocks[blocks.length - 1]?.txs ?? 0} tx in the newest block` : 'testnet · chain 485590'} />
       <Tile
         label="Public API uptime · 24h"
         value={api ? Math.round((api.uptime24h ?? 0) * 1000) / 10 : null}
@@ -122,7 +124,7 @@ export function Home() {
   const figs = productFigures(live)
   return (
     <div className="lcp">
-      <Seo title="You Think It, We Ship It." description="Gully Labs builds and runs Web3 products: Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio. Every figure on this page is read live." />
+      <Seo title="You Think It, We Ship It." description="Gully Labs builds and runs Web3 products: Gully Chain with Gully Street and Gully Quests, Gully Pay (x402), Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio. Every figure on this page is read live." />
       <section className="hero" id="network">
         <div className="wrap">
           <div className="copy rise">
@@ -133,7 +135,7 @@ export function Home() {
               <span className="grad">We Ship It.</span>
             </h1>
             <p className="promise">
-              One lab, six live products: an L3 chain, crypto payments, RPC infrastructure, holder maps, security scans and games. <b>Every number on this page is read live</b> from our own APIs and the Gully Chain testnet.
+              One lab, seven live products: an L3 chain, crypto payments, RPC infrastructure, IPFS storage, holder maps, security scans and games. <b>Every number on this page is read live</b> from our own APIs and the Gully Chain testnet.
             </p>
             <div className="what card" role="note">
               {ic(CircleHelp)}
@@ -170,6 +172,18 @@ export function Home() {
             Each card shows one live figure from the product itself. Open any of them to use it today.
           </SectionHead>
           <ProductGrid figs={figs} />
+        </div>
+      </section>
+
+      <section id="live" aria-labelledby="live-h">
+        <div className="wrap">
+          <SectionHead label="Live on Gully Chain" title="Testnet 485590, open to everyone" id="live-h">
+            Gully Street, the explorer, faucet, bridge and docs, checked every minute, and Gully Quests read on chain.
+          </SectionHead>
+          <div className="livegrid">
+            <ChainSuite />
+            <QuestsPanel />
+          </div>
         </div>
       </section>
 

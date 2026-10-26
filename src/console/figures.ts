@@ -1,6 +1,6 @@
 /* One live figure per product card (the same reads on the landing, /products and each product page). */
 import { C, fmtPct } from './charts'
-import { type Live } from './live'
+import { chainHead, type Live } from './live'
 import type { ProductFigure, ProductKey } from './ui'
 
 export function productFigures(l: Live): Record<ProductKey, ProductFigure> {
@@ -14,7 +14,7 @@ export function productFigures(l: Live): Record<ProductKey, ProductFigure> {
   const ipfs = l.ipfs
   const secUp = sec.some((c) => c.uptime24h != null) ? Math.round(Math.min(...sec.filter((c) => c.uptime24h != null).map((c) => c.uptime24h as number)) * 1000) / 10 : null
   return {
-    chain: { value: l.chain?.head, label: 'latest block · testnet', spark: gaps, color: C.s[0] },
+    chain: { value: chainHead(l), label: l.chain || !l.hub?.chain ? 'latest block · testnet' : 'latest block · testnet indexer', spark: gaps, color: C.s[0] },
     // Gully Pay's own status (gullypay.xyz/api/status): services operational, one point a minute.
     pay: { value: pay?.up ?? null, fmt: pay ? (v) => `${v}/${pay.total}` : undefined, label: pay ? `services operational · Gully Pay${pay.status ? ` · ${pay.status}` : ''}` : 'Gully Pay status · reading', spark: (pay?.history ?? []).map((h) => h.v), color: C.s[1] },
     // Gully RPC's own status.json: networks served (live or beta) out of those listed.

@@ -70,15 +70,17 @@ function handoffCopy(id: HandoffTab, go: (t: AppTab) => void): HandoffCopy {
   )
   switch (id) {
     case 'chain':
-      return { line: <>The L3 for launches and trading, <b>DeepCore built in</b> as its launchpad, your own chain and Chain Kit explorers: the launch flow runs in Gully Chain&apos;s own app.</>, href: 'https://app.gullychain.xyz', docs: 'https://docs.gullychain.xyz/' }
+      return { line: <>Testnet 485590 is open: <b>Gully Street</b> (launchpad, Gully Swap, .gully names, Quests, Arcade, copy trading, referrals), the explorer, faucet and bridge. DeepCore is its built-in launchpad, and your own chain launches from Gully Chain&apos;s app too.</>, href: 'https://app.gullychain.xyz', docs: 'https://docs.gullychain.xyz/' }
     case 'pay':
       return {
-        line: <>x402 payments, checkout, merchant stores and glUSD run on <b>Gully Pay&apos;s own platform</b>. Your Gully Labs plan is still paid in Billing here, through Gully Pay checkout.</>,
+        line: <>x402 payments on Base, Ethereum, BNB Chain, Solana and <b>Gully Chain</b>, checkout, merchant stores and glUSD run on Gully Pay&apos;s own platform. Your Gully Labs plan is still paid in Billing here, through Gully Pay checkout.</>,
         docs: 'https://gullypay.xyz/docs',
         legacy: <>Already run a store from this workspace? Its pay links and invoices keep working. {here('Manage that store', 'merchant')}</>,
       }
     case 'rpc':
       return { line: <>RPC keys, usage and <b>every Gully chain behind one endpoint</b>: rpc.gullyrpc.xyz/&lt;project&gt;/evm/&lt;chainId&gt;, Gully Chain testnet included.</>, href: 'https://app.gullyrpc.xyz', docs: 'https://gullyrpc.xyz/docs/' }
+    case 'ipfs':
+      return { line: <>Our Kubo node and read-only gateway at <b>ipfs.gullylabs.xyz/ipfs/&lt;CID&gt;</b>: token art, metadata, NFT art and .gully sites, pinned for good.</>, href: 'https://docs.gullylabs.xyz/ipfs', docs: 'https://docs.gullylabs.xyz/ipfs' }
     case 'holders':
       return { line: <>Bubble maps, wallet clusters and deep checks for any token, <b>Gully Chain tokens included</b>. Holder alerts stay in Alerts here.</>, legacy: <>Cluster and holder alerts for the tokens you watch: {here('Open Alerts', 'alerts')}</> }
     case 'security':

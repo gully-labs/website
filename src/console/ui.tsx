@@ -200,6 +200,8 @@ export interface ProductDef {
   url: string
   /** Where its signed-in app lives, when it has one (the Gully Labs App hands off there). */
   app?: string
+  /** The product's own docs, when it has them on its domain. */
+  docs?: string
   /** Lucide icon for menus. */
   icon: Icon
   blurb: string
@@ -207,9 +209,9 @@ export interface ProductDef {
 /* The products: six on their own domains since 2026-10-26 (Gully Labs is the hub that points to them), plus Gully IPFS,
    a Gully Labs service documented at docs.gullylabs.xyz/ipfs. */
 export const PRODUCTS: ProductDef[] = [
-  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', app: 'https://app.gullychain.xyz', icon: Network, blurb: 'An L3 chain for launches and trading, with DeepCore built in.' },
-  { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', icon: CircleDollarSign, blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
-  { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', app: 'https://app.gullyrpc.xyz', icon: Server, blurb: 'Node control plane and RPC gateway for every Gully chain.' },
+  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', app: 'https://app.gullychain.xyz', docs: 'https://docs.gullychain.xyz', icon: Network, blurb: 'An L3 chain for launches and trading, with DeepCore built in.' },
+  { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', docs: 'https://gullypay.xyz/docs', icon: CircleDollarSign, blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
+  { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', app: 'https://app.gullyrpc.xyz', docs: 'https://gullyrpc.xyz/docs/', icon: Server, blurb: 'Node control plane and RPC gateway for every Gully chain.' },
   // A Gully Labs service (no own domain or kit): grouped with Gully RPC as infrastructure.
   { key: 'ipfs', name: 'Gully IPFS', url: 'https://docs.gullylabs.xyz/ipfs', icon: HardDrive, blurb: 'Our IPFS node and read-only gateway for Gully content: token art, metadata and .gully sites.' },
   { key: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz', icon: ScanSearch, blurb: 'Who really holds a token: bubble maps, clusters and deep checks.' },
