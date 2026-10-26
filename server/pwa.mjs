@@ -58,7 +58,7 @@ export const HOLDERMAPS_MANIFEST = {
     { src: '/brand/holdermaps/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
     { src: '/brand/holdermaps/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
   ],
-  description: 'HolderMaps by Gully Labs: who really holds a token, the biggest wallets and the ones that trade with each other, read live.',
+  description: 'HolderMaps by Gully Labs: who really holds a token on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana, the biggest wallets and the ones that trade with each other, read live.',
 }
 
 export const SECURITY_MANIFEST = {

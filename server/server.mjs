@@ -36,6 +36,7 @@ import { handleIpfs } from './ipfs.mjs'
 import { handleProductStatus } from './product-status.mjs'
 import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
+import { brandRootIcon } from './product-brand.mjs'
 import { handlePay } from './invoices.mjs'
 import { handleGas } from './gas.mjs'
 import { handleFeeHistory } from './fee-history.mjs'
@@ -533,7 +534,10 @@ async function handleRequest(req, res) {
   if (url.pathname === '/healthz') return send(res, 200, 'ok')
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, '')
 
-  const file = path.join(ROOT, decodeURIComponent(url.pathname))
+  // holdermaps.xyz: the icons a browser asks for by itself (/favicon.ico, /apple-touch-icon.png…) are HolderMaps'
+  // own (product-brand.mjs), not the Gully Labs ones at those paths.
+  const brandIcon = isHolderMapsHost(host) ? brandRootIcon('holdermaps', url.pathname) : null
+  const file = path.join(ROOT, decodeURIComponent(brandIcon ?? url.pathname))
   if (!file.startsWith(ROOT)) return send(res, 400, '')
 
   fs.stat(file, (err, stat) => {

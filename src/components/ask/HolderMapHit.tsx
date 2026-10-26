@@ -42,7 +42,7 @@ export function HolderMapHit({ text }: { text: string }) {
   return (
     <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Open the Holder Map" data-holder-hit>
       {matches.map((m) => {
-        const cls = 'flex min-h-11 items-center gap-2 rounded-card border border-gold-line bg-[rgba(0,210,255,.08)] px-3 text-[14px] text-ink transition-colors hover:border-gold hover:text-ink'
+        const cls = 'flex min-h-11 items-center gap-2 rounded-card border border-gold-line bg-gold/8 px-3 text-[14px] text-ink transition-colors hover:border-gold hover:text-ink'
         const body = (
           <>
             <ScanSearch aria-hidden size={16} className="flex-none text-gold" />

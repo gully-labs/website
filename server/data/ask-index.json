@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-26T11:25:54.349Z",
+ "updatedAt": "2026-10-26T14:29:49.608Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -1241,8 +1241,8 @@
    "title": "Gully AI",
    "url": "https://docs.gullylabs.xyz/gully-ai#what",
    "section": "What it answers",
-   "text": "Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the roadmap, DeepCore, the Telegram bot, privacy and the services we offer. It describes; it never advises. It does not predict prices or gaps, and never says whether to buy, sell or hold anything. It never invents a price, fee, limit, date, address or link. A figure that is not in a source or a tool result is not given. When the sources do not cover a question it searches once more in other words, then says plainly that it does not know and points to these docs or the contact form. Answers are short: a few plain sentences or a short list. Live figures appear as a card under the answer.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Answers from our own docs and live data, with every source linked. Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the roadmap, DeepCore, the Telegram bot, privacy and the services we offer. It describes; it never advises. It does not predict prices or gaps, and never says whether to buy, sell or hold anything. It never invents a price, fee, limit, date, address or link. A figure that is not in a source or a tool result is not given. When the sources do not cover a question it searches once more in other words, then says plainly that it does not know and points to these docs or the contact form. Answers are short: a few plain sentences or a short list. Live figures appear as a card under the answer.",
+   "updatedAt": "2026-10-26T14:29:49.608Z"
   },
   {
    "id": "57ddd5b9b74b",
@@ -2260,15 +2260,6 @@
    "section": "How a scan works",
    "text": "Choose the input. A contract address and its chain, a GitHub repo and commit, an upload, or a web2 repo. Confirm scope and cost. See what will be scanned, your free scans left this month and the price. Pay if needed. Beyond the free quota a scan is invoiced through Gully Pay, in crypto, with no custody. Watch it run. Live progress through fetching, analysing and triaging, with an estimate of the time left. Read the report. Charts, filters, code locations and draft PoCs; export it, or publish it at a stable link.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "3350ee2f8728",
-   "source": "Site",
-   "title": "Holder Map",
-   "url": "https://gullylabs.xyz/holders",
-   "section": null,
-   "text": "See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part.",
-   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "1ffeaddf4f87",
