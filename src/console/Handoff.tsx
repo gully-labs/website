@@ -7,6 +7,7 @@ import { ArrowUpRight, BookOpen } from 'lucide-react'
 import './console.css'
 import { productFigures } from './figures'
 import { LiveProvider, useLive } from './live'
+import { LabsBoard, ProductLive, QuestsPanel } from './Suite'
 import { Btn, Count, ProductGrid, ProductLogo, productByKey, Spark, type ProductKey } from './ui'
 import { isLocalHost, SITE_URL } from '../site-host'
 
@@ -31,7 +32,7 @@ function HandoffCard({ k, copy }: { k: ProductKey; copy: HandoffCopy }) {
         <span className="hlogo">
           <ProductLogo p={p} />
         </span>
-        <h2>{p.name} lives on its own domain now</h2>
+        <h2>{k === 'ipfs' ? 'Gully IPFS: Gully content, pinned for good' : `${p.name} lives on its own domain now`}</h2>
         <p>{copy.line}</p>
         <div className="ctas">
           <Btn icon={ArrowUpRight} href={copy.href ?? p.url} arrow>
@@ -63,6 +64,9 @@ export function ProductHandoff({ k, copy }: { k: ProductKey; copy: HandoffCopy }
     <LiveProvider>
       <div className="lc">
         <HandoffCard k={k} copy={copy} />
+        <div style={{ marginTop: 10 }}>
+          <ProductLive k={k} />
+        </div>
       </div>
     </LiveProvider>
   )
@@ -73,11 +77,15 @@ function Cards() {
   return (
     <div data-testid="product-hub">
       <ProductGrid figs={figs} hrefOf={(p) => p.app ?? p.url} statusHref={isLocalHost() ? '/status' : `${SITE_URL}/status`} />
+      <div className="livegrid" style={{ marginTop: 10 }}>
+        <LabsBoard />
+        <QuestsPanel />
+      </div>
     </div>
   )
 }
 
-/** The six products as cards, each opening its own domain (the app's product hub). */
+/** The seven products as cards, each opening its own domain, then every Gully surface live and Gully Quests (the app's product hub). */
 export function ProductHub() {
   return (
     <LiveProvider>

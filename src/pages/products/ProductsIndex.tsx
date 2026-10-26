@@ -6,6 +6,7 @@ import { MarkLogo } from '../../components/ProductLogo'
 import { productFigures } from '../../console/figures'
 import { useLive } from '../../console/live'
 import { Btn, BUILD_STEPS, ic, PRODUCTS, ProductGrid, ProductLogo, SectionHead, Stepper } from '../../console/ui'
+import { LabsBoard, NetworkChips } from '../../console/Suite'
 import { APP_URL } from '../../site-host'
 import { NetworkCard } from '../Home'
 
@@ -14,7 +15,7 @@ export function ProductsIndex() {
   const figs = productFigures(live)
   return (
     <div className="lcp">
-      <Seo title="Products" description="Gully Chain, Gully Pay, Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio: the Gully Labs products, each with one live figure from the product itself." />
+      <Seo title="Products" description="Gully Chain, Gully Pay, Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio: the Gully Labs products, each with one live figure from the product itself, and every Gully surface checked each minute." />
       <section className="hero">
         <div className="wrap">
           <div className="copy rise">
@@ -53,6 +54,20 @@ export function ProductsIndex() {
             Cards open the product itself; the names above open its page here.
           </SectionHead>
           <ProductGrid figs={figs} />
+        </div>
+      </section>
+      <section aria-labelledby="across-h">
+        <div className="wrap">
+          <SectionHead label="Live now" title="Every Gully surface, checked each minute" id="across-h">
+            Response times from our server, the networks Gully Pay settles on and the networks Gully RPC serves, Gully Chain in each.
+          </SectionHead>
+          <div className="livegrid">
+            <LabsBoard />
+            <div className="card netrow" style={{ gridTemplateColumns: 'minmax(0,1fr)', alignSelf: 'start' }}>
+              <NetworkChips kind="x402" />
+              <NetworkChips kind="gateway" />
+            </div>
+          </div>
         </div>
       </section>
       <section aria-labelledby="build-h">

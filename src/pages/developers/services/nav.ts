@@ -1,4 +1,4 @@
-import { AppWindow, Bot, ChartCandlestick, CircleDollarSign, Gamepad2, Gauge, Network, ScanSearch, Send, Server, ShieldCheck, type LucideIcon } from 'lucide-react'
+import { AppWindow, Bot, ChartCandlestick, CircleDollarSign, Gamepad2, Gauge, HardDrive, Network, ScanSearch, Send, Server, ShieldCheck, type LucideIcon } from 'lucide-react'
 import type { ProductKey } from '../../../console/ui'
 
 /* The app's service pages (each a lazy chunk, ServiceView.tsx) and the sidebar's groups.
@@ -25,11 +25,12 @@ export const SERVICE_TABS: { id: ServiceTab; label: string; icon: LucideIcon }[]
 export const isServiceTab = (id: string): id is ServiceTab => SERVICE_TABS.some((s) => s.id === id)
 
 /** The hand-off pages, one per product on its own domain. */
-export type HandoffTab = 'chain' | 'pay' | 'rpc' | 'holders' | 'security' | 'studio'
+export type HandoffTab = 'chain' | 'pay' | 'rpc' | 'ipfs' | 'holders' | 'security' | 'studio'
 export const HANDOFF_TABS: { id: HandoffTab; label: string; icon: LucideIcon; product: ProductKey }[] = [
   { id: 'chain', label: 'Gully Chain', icon: Network, product: 'chain' },
   { id: 'pay', label: 'Gully Pay', icon: CircleDollarSign, product: 'pay' },
   { id: 'rpc', label: 'Gully RPC', icon: Server, product: 'rpc' },
+  { id: 'ipfs', label: 'Gully IPFS', icon: HardDrive, product: 'ipfs' },
   { id: 'holders', label: 'HolderMaps', icon: ScanSearch, product: 'holders' },
   { id: 'security', label: 'Gully Security', icon: ShieldCheck, product: 'security' },
   { id: 'studio', label: 'Gully Studio', icon: Gamepad2, product: 'studio' },
@@ -40,7 +41,7 @@ export const NAV_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Workspace', ids: ['overview', 'activity', 'team', 'settings'] },
   { label: 'Services', ids: ['products', 'tracker', 'ai', 'score', 'widgets', 'telegram'] },
   { label: 'Tools', ids: ['keys', 'alerts', 'analytics'] },
-  { label: 'Gully products', ids: ['chain', 'pay', 'rpc', 'holders', 'security', 'studio'] },
+  { label: 'Gully products', ids: ['chain', 'pay', 'rpc', 'ipfs', 'holders', 'security', 'studio'] },
   { label: 'Account', ids: ['billing'] },
 ]
 

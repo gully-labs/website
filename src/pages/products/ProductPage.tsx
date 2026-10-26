@@ -7,7 +7,8 @@ import { ArrowUpRight, BookOpen, Code2, KeyRound, LayoutGrid, Link2, Map as MapI
 import { Seo } from '../../components/Seo'
 import { BlockBars, ChartCard, type ChartTab } from '../../console/ChartCard'
 import { C, fmtInt, fmtPct, fmtUsd, type Series } from '../../console/charts'
-import { okVenues, summed, useLive, venueSeries, type Live } from '../../console/live'
+import { chainHead, okVenues, summed, useLive, venueSeries, type Live } from '../../console/live'
+import { ProductLive } from '../../console/Suite'
 import { Btn, Count, PRODUCTS, ProductLogo, SectionHead, Stepper, Tile, TrustBand, type ProductDef, type ProductKey, type Step } from '../../console/ui'
 import { APP_URL, DOCS_URL } from '../../site-host'
 import { NotFound } from '../NotFound'
@@ -53,7 +54,7 @@ function defFor(key: ProductKey, l: Live): PageDef {
   const one = (name: string, color: string, values: (number | null)[]): Series[] => [{ name, color, values }]
   const blockLabels = blocks.map((b) => `#${b.number}`)
   const chainTabs: ChartTab[] = [
-    { id: 'txs', label: 'Txs / block', title: 'Gully Chain testnet, transactions per block', series: one('Transactions', C.cyan, blocks.map((b) => b.txs)), labels: blockLabels, fmt: int, head: <Count value={l.chain?.head} />, sub: `latest block · chain 485590 · ${txs40} tx in the last ${blocks.length} blocks` },
+    { id: 'txs', label: 'Txs / block', title: 'Gully Chain testnet, transactions per block', series: one('Transactions', C.cyan, blocks.map((b) => b.txs)), labels: blockLabels, fmt: int, head: <Count value={chainHead(l)} />, sub: `latest block · chain 485590 · ${txs40} tx in the last ${blocks.length} blocks` },
     { id: 'time', label: 'Block time', title: 'Seconds between Gully Chain blocks', series: one('Seconds', C.s[2], gaps), labels: blockLabels.slice(1), fmt: (v) => (v == null ? '—' : `${Math.round(v)} s`), head: avgGap == null ? '—' : `~${Math.round(avgGap)} s`, sub: 'average time between the last blocks' },
   ]
   const venueTab = (m: 'tvl' | 'volume' | 'fees', label: string, title: string, head: number | null | undefined, sub: string): ChartTab => {
@@ -69,7 +70,7 @@ function defFor(key: ProductKey, l: Live): PageDef {
   const tvl30 = s ? venueSeries(s, 'tvl', 30) : null
   const dcTvl = tvl30?.series.find((x) => x.key === 'deepcore')?.values ?? []
   const chainTiles: TileDef[] = [
-    { label: 'Latest block', value: l.chain?.head, spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'Gully Chain testnet · 485590' },
+    { label: 'Latest block', value: chainHead(l), spark: blocks.map((b) => b.txs), color: C.cyan, sub: l.chain || !l.hub?.chain ? 'Gully Chain testnet · 485590' : 'Gully Chain testnet · via the indexer' },
     { label: 'Block time', value: avgGap, fmt: (v) => `${Math.round(v)} s`, spark: gaps, color: C.s[2], sub: `average over ${blocks.length} blocks` },
     { label: `Txs · last ${blocks.length || 40} blocks`, value: blocks.length ? txs40 : null, spark: blocks.map((b) => b.txs), color: C.s[1], sub: 'read from the public RPC' },
     { label: 'RPC latency', value: lastMs, fmt: (v) => `${Math.round(v)} ms`, spark: l.rpcMs, color: C.s[0], sub: 'from this browser, every 8 s' },
@@ -102,7 +103,7 @@ function defFor(key: ProductKey, l: Live): PageDef {
           { label: 'Gully Pay services', value: l.products?.pay?.up ?? null, fmt: l.products?.pay ? (v) => `${v}/${l.products!.pay!.total}` : undefined, spark: (l.products?.pay?.history ?? []).map((h) => h.v), color: C.s[1], sub: l.products?.pay ? `operational · gullypay.xyz/api/status` : 'reading gullypay.xyz status' },
           { label: 'Checkout uptime · 24h', value: minUptime(pay), fmt: fmtPct, spark: histUp(pay), color: C.s[0], sub: `${pay.length} payment checks` },
           { label: 'Fees · all-time', value: s?.totals.feesAllUsd, fmt: fmtUsd, spark: s ? summed(s, 'fees') : [], color: C.s[2], sub: 'USD, venue APIs + DefiLlama' },
-          { label: 'Gully Chain block', value: l.chain?.head, spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'settlement chain 485590 (testnet)' },
+          { label: 'Gully Chain block', value: chainHead(l), spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'settlement chain 485590 (testnet)' },
         ],
         stepsTitle: 'Take your first payment',
         steps: [
@@ -145,7 +146,7 @@ function defFor(key: ProductKey, l: Live): PageDef {
           { label: 'Peddles users', value: (peddles?.counts?.users as number | null | undefined) ?? null, spark: tvl30?.series.find((x) => x.key === 'peddles')?.values ?? [], color: C.s[2], sub: 'read from the Peddles venue' },
           { label: 'Holder chains up · 24h', value: minUptime(holders), fmt: fmtPct, spark: histUp(holders), color: C.s[0], sub: `${holders.length} holder sources checked` },
           { label: 'Venues read', value: s ? ok.length : null, spark: s ? summed(s, 'tvl') : [], color: C.s[1], sub: s ? `of ${s.venues.length} venues` : 'reading venues' },
-          { label: 'Gully Chain block', value: l.chain?.head, spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'Gully Chain tokens mapped too' },
+          { label: 'Gully Chain block', value: chainHead(l), spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'Gully Chain tokens mapped too' },
         ],
         stepsTitle: 'Map a token',
         steps: [
@@ -168,7 +169,7 @@ function defFor(key: ProductKey, l: Live): PageDef {
           { label: 'Uptime · 24h', value: minUptime(sec), fmt: fmtPct, spark: histUp(sec), color: C.s[0], sub: 'scan engine + monitors' },
           { label: 'Checks · 24h', value: sec.length ? sec.reduce((a, c) => a + c.history.length, 0) : null, spark: histUp(sec), color: C.s[1], sub: '30-minute buckets' },
           { label: 'Services up', value: l.status ? l.status.components.filter((c) => c.state === 'up').length : null, spark: histUp(api), color: C.s[2], sub: l.status ? `overall ${l.status.overall}` : 'reading status' },
-          { label: 'Gully Chain block', value: l.chain?.head, spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'Gully Chain contracts scanned too' },
+          { label: 'Gully Chain block', value: chainHead(l), spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'Gully Chain contracts scanned too' },
         ],
         stepsTitle: 'Secure a contract',
         steps: [
@@ -229,6 +230,13 @@ function defFor(key: ProductKey, l: Live): PageDef {
   }
 }
 
+const LIVE_TITLE: Record<string, string> = { chain: 'Everything on Gully Chain', pay: 'Where Gully Pay settles', rpc: 'Networks behind one key' }
+const LIVE_LINE: Record<string, string> = {
+  chain: 'Gully Street, the explorer, faucet, bridge, docs and developer portal, each checked every minute, plus Gully Quests read on chain.',
+  pay: "x402 networks from Gully Pay's own facilitator, Gully Chain included, and the Gully RPC networks it reads them through.",
+  rpc: "The gateway's networks and their state right now, Gully Chain testnet first, plus the networks Gully Pay settles on.",
+}
+
 export function ProductView({ p }: { p: ProductDef }) {
   const live = useLive()
   const d = defFor(p.key, live)
@@ -249,10 +257,10 @@ export function ProductView({ p }: { p: ProductDef }) {
               <Btn icon={ArrowUpRight} href={p.url} arrow>
                 Open {p.url.replace('https://', '')}
               </Btn>
-              <Btn kind="sec" icon={Zap} href={APP_URL}>
+              <Btn kind="sec" icon={Zap} href={p.app ?? APP_URL}>
                 Launch app
               </Btn>
-              <Btn kind="ter" icon={BookOpen} href={DOCS_URL}>
+              <Btn kind="ter" icon={BookOpen} href={p.docs ?? (p.key === 'ipfs' ? `${DOCS_URL}/ipfs` : DOCS_URL)}>
                 Docs
               </Btn>
             </div>
@@ -282,6 +290,16 @@ export function ProductView({ p }: { p: ProductDef }) {
           </div>
         </div>
       </section>
+      {(p.key === 'chain' || p.key === 'pay' || p.key === 'rpc') && (
+        <section aria-labelledby="live-h" style={{ paddingTop: 0 }}>
+          <div className="wrap">
+            <SectionHead label="Live now" title={LIVE_TITLE[p.key]} id="live-h">
+              {LIVE_LINE[p.key]}
+            </SectionHead>
+            <ProductLive k={p.key} />
+          </div>
+        </section>
+      )}
       <section aria-labelledby="steps-h">
         <div className="wrap">
           <SectionHead label="How it works" title={d.stepsTitle} id="steps-h">

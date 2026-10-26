@@ -33,6 +33,7 @@ import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { handleIpfs } from './ipfs.mjs'
+import { handleHub } from './hub.mjs'
 import { handleProductStatus } from './product-status.mjs'
 import { API_URL, APP_URL, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
@@ -330,6 +331,8 @@ async function handleRequest(req, res) {
   // Which alert delivery channels this server offers (the pricing page and the docs read it). Public.
   // The products on their own domains: Gully Pay's and Gully RPC's own public status, for the hub's cards (product-status.mjs).
   if (url.pathname === '/api/products/status') return void (await handleProductStatus(req, res, url, send))
+  // What is live across Gully (hub.mjs): every public surface probed, Gully Quests, x402 networks, the RPC gateway, the status page.
+  if (url.pathname === '/api/hub') return void (await handleHub(req, res, url, send))
   // Gully IPFS (ipfs.mjs): repo size, pinned CIDs and gateway health, read from the node over the docker network. Public.
   if (url.pathname.startsWith('/api/ipfs/')) {
     if (await handleIpfs(req, res, url, send)) return
