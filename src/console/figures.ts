@@ -17,6 +17,6 @@ export function productFigures(l: Live): Record<ProductKey, ProductFigure> {
     rpc: { value: l.rpcMs.length ? l.rpcMs[l.rpcMs.length - 1] : null, label: 'ms · testnet RPC latency', spark: l.rpcMs, color: C.s[1] },
     holders: { value: (ok.find((v) => v.key === 'peddles')?.counts?.users as number | null | undefined) ?? null, label: 'users · Peddles venue', spark: tvl20.find((x) => x.key === 'peddles')?.values ?? [], color: C.s[2] },
     security: { value: secUp, fmt: fmtPct, label: sec.length ? 'uptime 24h · scan engine + monitors' : 'chains scanned', spark: (sec[0]?.history ?? []).map((h) => h.up), color: C.s[0] },
-    studio: { value: (ok.find((v) => v.key === 'deepcore')?.counts?.launches as number | null | undefined) ?? null, label: 'DeepCore launches on chain', spark: tvl20.find((x) => x.key === 'deepcore')?.values ?? [], color: C.s[3] },
+    studio: { value: l.arcade?.players ?? null, label: l.arcade ? `players · Frog Hop season ${l.arcade.season} · testnet` : 'Frog Hop players · testnet', spark: l.arcade?.history ?? [], color: C.s[3] },
   }
 }

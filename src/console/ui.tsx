@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Activity, ArrowUpRight, Blocks, Check, Coins, KeyRound, LayoutGrid, Rocket, Server, Wallet, X, Zap, type LucideProps } from 'lucide-react'
+import { ProductLogo as KitProductLogo } from '../components/ProductLogo'
 import { countUp, fmtInt, fmtTime, spark } from './charts'
 import { dismissToast, toastStore, type ToastIcon } from './toast'
 import { tapeItems, useLive, type TapeItem } from './live'
@@ -196,20 +197,20 @@ export interface ProductDef {
   key: ProductKey
   name: string
   url: string
-  logo: { src: string; w: number; h: number }
   blurb: string
 }
 export const PRODUCTS: ProductDef[] = [
-  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', logo: { src: '/brand/products/gullychain-logo-transparent.png', w: 147, h: 34 }, blurb: 'An L3 chain for launches and trading, with DeepCore built in.' },
-  { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', logo: { src: '/brand/products/gullypay-logo-ondark.svg', w: 132, h: 34 }, blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
-  { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', logo: { src: '/brand/products/GullyRPC_Logo.png', w: 111, h: 34 }, blurb: 'Node control plane and RPC gateway for every Gully chain.' },
-  { key: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz', logo: { src: '/brand/products/HolderMaps_Logo.png', w: 184, h: 34 }, blurb: 'Who really holds a token: bubble maps, clusters and deep checks.' },
-  { key: 'security', name: 'Gully Security', url: 'https://gullysecurity.xyz', logo: { src: '/brand/products/logo-primary.svg', w: 205, h: 34 }, blurb: 'AI security scans, monitors and the Gully Score for any contract.' },
-  { key: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz', logo: { src: '/brand/products/GullyStudio_Logo.png', w: 102, h: 34 }, blurb: 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.' },
+  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', blurb: 'An L3 chain for launches and trading, with DeepCore built in.' },
+  { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
+  { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', blurb: 'Node control plane and RPC gateway for every Gully chain.' },
+  { key: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz', blurb: 'Who really holds a token: bubble maps, clusters and deep checks.' },
+  { key: 'security', name: 'Gully Security', url: 'https://gullysecurity.xyz', blurb: 'AI security scans, monitors and the Gully Score for any contract.' },
+  { key: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz', blurb: 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.' },
 ]
 
+/** The product's kit logo in the shared slot (src/components/ProductLogo.tsx). */
 export function ProductLogo({ p }: { p: ProductDef }) {
-  return <img src={p.logo.src} width={p.logo.w} height={p.logo.h} alt={p.name} />
+  return <KitProductLogo product={p.key} />
 }
 
 export interface ProductFigure {
