@@ -107,7 +107,7 @@ export function Actions({ actions }: { actions: AskAction[] }) {
               {...hrefProps(a.url)}
               title={a.note}
               data-testid="ask-action"
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-gold-line px-4 text-[14px] text-gold no-underline transition-colors hover:border-gold hover:bg-[rgba(0,210,255,.08)]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-gold-line px-4 text-[14px] text-gold no-underline transition-colors hover:border-gold hover:bg-gold/8"
             >
               {a.kind === 'prefill' ? <PencilLine size={14} aria-hidden /> : <ArrowUpRight size={14} aria-hidden />}
               {a.label}

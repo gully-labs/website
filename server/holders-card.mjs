@@ -1,9 +1,9 @@
 // The Holder Map's share card: GET /api/holders/:chain/:token/card.png, 1200 x 630.
 //
 // Drawn the way the blog's share images are (og.mjs): calls on og.mjs's SvgContext record an SVG in the
-// brand fonts (Barlow Condensed 800, IBM Plex Mono 500, measured from the font files), the kit's wordmark
-// comes from its outlined paths, the kit mascot is embedded from public/brand, and resvg (WebAssembly)
-// turns it into a PNG. Every figure on the card is the map's own (summary, forensics, asOf); bubbles are
+// card fonts (Barlow Condensed 800, IBM Plex Mono 500, measured from the font files), the HolderMaps kit logo
+// is embedded from public/brand/holdermaps (product-brand.mjs; the Holder Map is the HolderMaps product, on every
+// host), and resvg (WebAssembly) turns it into a PNG. Every figure on the card is the map's own (summary, forensics, asOf); bubbles are
 // the mapped wallets sized by share, laid out deterministically so the same map gives the same picture.
 
 import fs from 'node:fs'
@@ -11,22 +11,29 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadFonts, loadResvg, SvgContext } from './og.mjs'
 import { encodeJpeg } from './holders-jpeg.mjs'
-import { holderMapsPrimary } from './hosts.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const W = 1200
 const H = 630
-const K = { night: '#0d141c', midnight: '#151d28', slate: '#2a3542', bone: '#f4f2ec', gold: '#d9b563', pale: '#f2d58a', muted: '#aeb5be', dim: '#7d8794', moss: '#3c553b' }
+// HolderMaps colours (sampled from its kit logo; src/brand/products.ts): the logo backdrop, its "Maps" gold, its white.
+const K = { night: '#10100E', midnight: '#1C1B16', slate: '#35332A', bone: '#F4F4F4', gold: '#FED629', pale: '#FFE36B', muted: '#B8B4A6', dim: '#A19D8F', moss: '#3c553b' }
+/** The HolderMaps logo (kit HolderMaps_Logo.png downscaled, 720 x 133), drawn on its own backdrop colour. */
+const LOGO = { w: 720, h: 133 }
 const INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
 
 const firstFile = (...c) => c.find((p) => p && fs.existsSync(p)) ?? null
-let mascot
-function mascotUri() {
-  if (mascot !== undefined) return mascot
-  // The Gully Labs kit icon (brand-kit icon/gully-labs-icon.png, 343 x 372), drawn at its own ratio below.
-  const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand', 'icon', 'gully-labs-icon.png'), path.join(HERE, 'dist', 'brand', 'icon', 'gully-labs-icon.png'), path.join(HERE, '..', 'public', 'brand', 'icon', 'gully-labs-icon.png'))
-  mascot = p ? `data:image/png;base64,${fs.readFileSync(p).toString('base64')}` : null
-  return mascot
+let logo
+function logoUri() {
+  if (logo !== undefined) return logo
+  const rel = ['brand', 'holdermaps', 'logo-720w.png']
+  const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, ...rel), path.join(HERE, 'dist', ...rel), path.join(HERE, '..', 'public', ...rel))
+  logo = p ? `data:image/png;base64,${fs.readFileSync(p).toString('base64')}` : null
+  return logo
+}
+/** The logo top right of the text column, 300 px wide. */
+function drawLogo(ctx, x, y) {
+  const m = logoUri()
+  if (m) ctx.out.push(`<image x="${x}" y="${y}" width="300" height="${Math.round((300 * LOGO.h) / LOGO.w)}" href="${m}"/>`)
 }
 
 /** Deterministic bubble layout: biggest in the middle, the rest on a golden-angle spiral, then pushed apart. */
@@ -158,9 +165,7 @@ export function renderHolderCardSvg(map) {
   // Text column (right).
   const X = 640
   const TW = W - X - 50
-  ctx.kitWordmark(X, 52, 0.2, 'dark')
-  const m = mascotUri()
-  if (m) ctx.out.push(`<image x="${W - 50 - 77}" y="34" width="77" height="84" href="${m}"/>`)
+  drawLogo(ctx, X - 6, 36)
   ctx.font = '500 16px "IBM Plex Mono"'
   ctx.fillStyle = K.gold
   ctx.fillText('HOLDER MAP', X, 118)
@@ -191,7 +196,7 @@ export function renderHolderCardSvg(map) {
   const asOf = map.asOf ? new Date(map.asOf).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : ''
   ctx.fillText(`As of ${asOf} · information only, not advice`, X, 566)
   ctx.fillStyle = K.gold
-  ctx.fillText('gullylabs.xyz', X, 592)
+  ctx.fillText('holdermaps.xyz', X, 592)
   return ctx.toSvg()
 }
 
@@ -234,9 +239,7 @@ export function renderHolderStatusCardSvg(body = {}) {
 
   const X = 640
   const TW = W - X - 50
-  ctx.kitWordmark(X, 52, 0.2, 'dark')
-  const m = mascotUri()
-  if (m) ctx.out.push(`<image x="${W - 50 - 77}" y="34" width="77" height="84" href="${m}"/>`)
+  drawLogo(ctx, X - 6, 36)
   ctx.font = '500 16px "IBM Plex Mono"'
   ctx.fillStyle = K.gold
   ctx.fillText('HOLDER MAP', X, 118)
@@ -263,7 +266,7 @@ export function renderHolderStatusCardSvg(body = {}) {
   ctx.fillStyle = K.dim
   ctx.fillText('Information only, not advice', X, 566)
   ctx.fillStyle = K.gold
-  ctx.fillText(holderMapsPrimary() ? 'holdermaps.xyz' : 'gullylabs.xyz/holders', X, 592)
+  ctx.fillText('holdermaps.xyz', X, 592)
   return ctx.toSvg()
 }
 

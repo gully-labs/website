@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 /** Primary gold CTA. Size (padding, font-size) is added per use. */
 export const btnGold =
-  'gl-btn rounded-full bg-gold font-semibold text-bg transition-[background-color,box-shadow,transform] duration-150 hover:shadow-[0_0_0_4px_rgba(0,210,255,.2)] active:scale-[.98]'
+  'gl-btn rounded-full bg-gold font-semibold text-bg transition-[background-color,box-shadow,transform] duration-150 hover:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-gold)_20%,transparent)] active:scale-[.98]'
 
 /** Secondary outline button. */
 export const btnOutline =

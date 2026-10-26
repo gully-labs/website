@@ -86,7 +86,7 @@ export function GhostChart({ label, height, variant = 'line', colors = [C.gold, 
           </svg>
         </div>
       )}
-      <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(0,210,255,.07),transparent)]" style={{ animation: 'gl-scan 4.5s linear infinite' }} />
+      <span aria-hidden className="pointer-events-none absolute inset-0 bg-linear-to-r from-transparent via-gold/7 to-transparent" style={{ animation: 'gl-scan 4.5s linear infinite' }} />
       <div className="relative flex h-full flex-col items-center justify-center px-6 text-center max-[480px]:px-3">
         {/* The caption sits in a masked band (design audit N4): a soft card-coloured pad that fades the curves
             out beneath the badge, label and any buttons, so nothing is struck through. */}

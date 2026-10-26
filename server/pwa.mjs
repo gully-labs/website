@@ -16,6 +16,8 @@
 //   (The build-time generator is in pwa-build.mjs; this file is browser-safe.)
 //   - The app shell (index.html, the entry chunk, its css, its static imports, the latin fonts, the offline page, the
 //     icon) is precached at install under a versioned cache; older versions' caches are deleted on activate.
+import { brandManifestIcons, PRODUCT_BRANDS } from './product-brand.mjs'
+
 /* ------------------------------------------------------------------ manifests --- */
 
 // Kit tokens (public/brand/tokens/tokens.json): lab-night for the background and the browser chrome.
@@ -46,11 +48,15 @@ export const APP_MANIFEST = {
   description: 'The Gully Labs App: API keys, alerts, analytics, payments and every Gully service in one dashboard.',
 }
 
+// HolderMaps installs as itself: its own name, icons (the globe mark from its kit) and the kit logo's backdrop colour.
 export const HOLDERMAPS_MANIFEST = {
   ...SITE_MANIFEST,
   name: 'HolderMaps',
   short_name: 'HolderMaps',
-  description: 'HolderMaps by Gully Labs: who really holds a token, the biggest wallets and the ones that trade with each other, read live.',
+  description: 'HolderMaps: who really holds a token. Bubble maps of the biggest wallets, linked clusters and launch health, read live. By Gully Labs.',
+  background_color: PRODUCT_BRANDS.holdermaps.background,
+  theme_color: PRODUCT_BRANDS.holdermaps.background,
+  icons: brandManifestIcons('holdermaps'),
 }
 
 export const SECURITY_MANIFEST = {

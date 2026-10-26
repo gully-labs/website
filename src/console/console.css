@@ -338,3 +338,20 @@
 .lc .handoff .hfig small{display:block;font-size:12px;color:var(--gl-text-muted);margin-top:4px}
 .lc .handoff .hfig svg.spk{height:56px}
 .lc .handoff .legacy{grid-column:1/-1;border-top:1px solid var(--gl-line);padding-top:12px;font-size:13px;color:var(--gl-text-muted);display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+
+/* holdermaps.xyz chrome (HolderMapsChrome.tsx): its own logo, a small "by Gully Labs", the kit badge in the footer */
+.lc .hm-nav .brand img{height:30px;width:auto}
+.lc .by-gully{display:inline-flex;align-items:center;min-height:36px;padding:0 6px;font-size:12.5px;font-weight:600;color:var(--gl-text-muted);text-decoration:none;white-space:nowrap}
+.lc .by-gully:hover{color:var(--gl-text)}
+@media (max-width:1199px){.lc .by-gully{display:none}}
+@media (max-width:639px){.lc .hm-nav .brand img{height:24px}}
+.lc .sheet-list a img{flex:none}
+.lcp footer.hm-foot .tagline{max-width:420px}
+.lcp footer.hm-foot a > img{display:block}
+.lcp footer .hm-bottom{width:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;border-top:1px solid var(--gl-line);padding-top:14px}
+.lcp footer .hm-bottom .copy2{width:auto;flex:1 1 420px}
+.lcp footer .hm-bottom .copy2 a{color:var(--gl-text-muted);text-decoration:underline;text-underline-offset:2px}
+.lcp footer .hm-bottom .copy2 a:hover{color:var(--gl-text)}
+.lcp footer .powered{display:inline-flex;flex:none;align-items:center;min-height:44px}
+.lcp footer .powered img{display:block;height:30px;width:auto}
+@media (max-width:639px){.lcp footer .powered img{height:26px}}

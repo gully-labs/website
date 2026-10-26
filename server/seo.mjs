@@ -6,6 +6,7 @@
 import fs from 'node:fs'
 import { APP_HOST, APP_URL, holderInternalPath, holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, movedDocsUrl, movedPageUrl, PAY_URL, securityInternalPath, securityPrimary, securityShortPath, SECURITY_URL } from './hosts.mjs'
 import { published, publishedJobs } from './security-store.mjs'
+import { applyBrandHead, PRODUCT_BRANDS } from './product-brand.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
 // Guarded: holders.mjs exports holdersAvailable(chain, kind), read at call time (env keys), so stock pages come back
@@ -41,7 +42,7 @@ const MAIN = {
   '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
   '/security/sample': ['Sample AI Security Scan report · Gully Labs', 'What an AI Security Scan report looks like, on a fictional contract: findings by severity with file and line, a draft proof of concept, the tools that ran and the limits. A sample, not a scan of real code.'],
   '/holders': ['Holder Map: who really holds a token · Gully Labs', 'See who holds any DeepCore launch: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part. Tokenised stocks follow chain by chain.'],
-  '/ask': ['Gully AI · Gully Labs', 'Gully AI answers questions about Gully Labs, the stock token tracker, its API, plans and products. Answers come from the docs and the site, with sources.'],
+  '/ask': ['Gully AI: ask about Gully Labs · Gully Labs', 'Ask Gully AI about Gully Labs: its products, the tracker and API, plans and docs. Every answer cites its sources and quotes live figures where they matter.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
   '/legal/scan-terms': ['AI Security Scan terms · Gully Labs', 'The terms for the AI Security Scan: what an automated scan is and is not, free scans and prices, re-run credits instead of refunds, how long your code is kept, and the limits of our liability.'],
   '/legal/terms': ['Terms of Service · Gully Labs', 'The terms for using Gully Labs: the site, the app, the API and widgets, Gully AI, the Holder Map, Gully Score, Gully Security, Gully Pay, Gully Chains and the Telegram bot. Self-custody, information not advice, final on-chain payments.'],
@@ -217,16 +218,37 @@ const payCanonical = (host, p) => (isLocal(host) ? null : `${PAY_URL}${p}`)
 
 /* holdermaps.xyz (hosts.mjs): the Holder Map's own domain. Its pages are the main site's Holder Map pages under short
    paths, named HolderMaps, with holdermaps.xyz canonicals. */
-const HOLDERMAPS_HOME = ['Holder Map: who really holds a token · HolderMaps', 'See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part. By Gully Labs.']
+const HOLDERMAPS_HOME = ['Who really holds a token? Holder bubble maps · HolderMaps', 'Map any token’s holders on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: top wallets, linked clusters and launch health, read live.']
+/** HolderMaps' own share image (scripts/product-brand-assets.py), on its own domain. */
+const HOLDERMAPS_OG = `${HOLDERMAPS_URL}${PRODUCT_BRANDS.holdermaps.og}`
+/** Gully AI's share image (its kit), for its pages on gullylabs.xyz and the docs. */
+const GULLYAI_OG = `${SITE}${PRODUCT_BRANDS.gullyai.og}`
+/** HolderMaps as an app (JSON-LD on its home). */
+const HOLDERMAPS_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'HolderMaps',
+  url: `${HOLDERMAPS_URL}/`,
+  image: `${HOLDERMAPS_URL}${PRODUCT_BRANDS.holdermaps.dir}/app-icon-512.png`,
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web',
+  description: HOLDERMAPS_HOME[1],
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  publisher: { '@type': 'Organization', name: 'Gully Labs', url: SITE },
+}
 /** A main-site Holder Map title, named for holdermaps.xyz. */
 export const holderMapsTitle = (t) => String(t).replace(/ · Holder Map · Gully Labs$/, ' · HolderMaps').replace(/ · Gully Labs$/, ' · HolderMaps')
 
 function holderMapsMeta(p) {
   const internal = holderInternalPath(p)
-  if (!internal) return { title: 'Not found · HolderMaps', description: HOLDERMAPS_HOME[1], canonical: null, found: false }
+  const brand = 'holdermaps'
+  if (!internal) return { title: 'Not found · HolderMaps', description: HOLDERMAPS_HOME[1], canonical: null, found: false, image: HOLDERMAPS_OG, brand }
   const m = pageMeta('gullylabs.xyz', internal)
-  if (internal === '/holders') return { ...m, title: HOLDERMAPS_HOME[0], description: HOLDERMAPS_HOME[1], canonical: `${HOLDERMAPS_URL}/`, ld: null }
-  return { ...m, title: holderMapsTitle(m.title), canonical: m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null }
+  if (internal === '/holders') return { ...m, title: HOLDERMAPS_HOME[0], description: HOLDERMAPS_HOME[1], canonical: `${HOLDERMAPS_URL}/`, image: HOLDERMAPS_OG, ld: HOLDERMAPS_LD, brand }
+  // A token's map: its own share card, from this origin (the API answers on holdermaps.xyz too).
+  const image = /\/api\/holders\//.test(m.image ?? '') ? HOLDERMAPS_URL + new URL(m.image).pathname : HOLDERMAPS_OG
+  const description = String(m.description).replace(/ on Gully Labs\.$/, ' on HolderMaps.')
+  return { ...m, title: holderMapsTitle(m.title), description, image, brand, canonical: m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null }
 }
 
 /* gullysecurity.xyz (hosts.mjs): Gully Security's own domain. Its pages are the main site's Security pages under short
@@ -261,7 +283,7 @@ export function pageMeta(host, pathname) {
   }
   if (host.startsWith('docs.')) {
     const m = DOCS_PAGES[p]
-    if (m) return { title: m[0], description: m[1], canonical: DOCS + (p === '/' ? '/' : p), found: true, image: `${SITE}/social/og-docs.png` }
+    if (m) return { title: m[0], description: m[1], canonical: DOCS + (p === '/' ? '/' : p), found: true, image: p === '/gully-ai' ? GULLYAI_OG : `${SITE}/social/og-docs.png`, ...(p === '/gully-ai' ? { brand: 'gullyai', brandIcons: false, brandSiteName: false } : {}) }
     return { title: 'Not found · Gully Labs docs', description: DOCS_PAGES['/'][1], canonical: null, found: false }
   }
   // The Gully Labs App.
@@ -310,7 +332,7 @@ export function pageMeta(host, pathname) {
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
   const secShort = securityPrimary() && p.startsWith('/security') ? securityShortPath(p) : null
-  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: p.startsWith('/security') ? `${SITE}/social/og-security.png` : KIT_OG, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null }
+  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : KIT_OG, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: 'gullyai', brandIcons: false, brandSiteName: false } : {}) }
 }
 
 /** A report's subject in a title: the contract or the repository. */
@@ -329,6 +351,8 @@ export function renderHead(source, meta) {
   const swap = (re, tag) => {
     html = re.test(html) ? html.replace(re, tag) : html.replace('</head>', `    ${tag}\n  </head>`)
   }
+  // A product with its own kit (product-brand.mjs): its theme colour, icons, site name and share image alt text.
+  if (meta.brand) html = applyBrandHead(html, meta.brand, { icons: meta.brandIcons !== false, siteName: meta.brandSiteName !== false })
   swap(/<title>[^<]*<\/title>/, `<title>${esc(meta.title)}</title>`)
   swap(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(meta.description)}" />`)
   swap(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${esc(meta.title)}" />`)

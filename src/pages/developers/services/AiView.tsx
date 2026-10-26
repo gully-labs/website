@@ -6,6 +6,7 @@ import { NF } from '../../../components/charts/number-formats'
 import { LiveTopGaps } from '../../../components/tracker/LiveTopGaps'
 import { CHAIN_SHORT, useTracker } from '../../../lib/tracker'
 import { docsPage, sitePage } from './links'
+import { GullyAiLogo, GullyAiScope } from '../../../brand/GullyAiBrand'
 import { Section, ServiceHeader, type Status } from './ServiceHeader'
 
 /* Gully AI, in the app: the full chat (AskPanel, the same component as /ask and the floating panel),
@@ -48,9 +49,11 @@ export default function AiView() {
         ]}
       />
       <div className="grid grid-cols-[minmax(0,1fr)_340px] items-start gap-4 max-[1100px]:grid-cols-1">
-        <section aria-label="Chat with Gully AI" className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4" data-testid="app-ask">
+        {/* Gully AI's own kit: its logo and palette inside the chat card. */}
+        <GullyAiScope as="section" aria-label="Chat with Gully AI" className="flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4" data-testid="app-ask">
+          <GullyAiLogo height={36} className="-ml-1" />
           <AskPanel variant="page" />
-        </section>
+        </GullyAiScope>
         <Section title="Widest gaps now" sub="live · Gully AI reads these when you ask about a stock">
           <LiveTopGaps count={8} />
         </Section>

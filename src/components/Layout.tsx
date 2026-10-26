@@ -4,6 +4,8 @@ import type { ServiceType } from '../content/services'
 import { ContactContext } from './ContactContext'
 import { emptyForm, type ContactForm } from './contactForm'
 import { ConsoleFooter, ConsoleHeader } from '../console/Chrome'
+import { HolderMapsFooter, HolderMapsHeader } from '../console/HolderMapsChrome'
+import { isHolderMapsHost } from '../site-host'
 import { LiveProvider } from '../console/live'
 import { ConsoleToasts } from '../console/ui'
 import '../console/console.css'
@@ -99,12 +101,13 @@ export function Layout() {
           >
             Skip to content
           </a>
-          <ConsoleHeader />
+          {/* holdermaps.xyz is HolderMaps' own app: its own header and footer (HolderMapsChrome.tsx). */}
+          {isHolderMapsHost() ? <HolderMapsHeader /> : <ConsoleHeader />}
           <main id="main" key={pathname} tabIndex={-1} className="animate-[gl-fade_.25s_ease-out_both] outline-none">
             <Outlet />
           </main>
           <div className="lcp">
-            <ConsoleFooter />
+            {isHolderMapsHost() ? <HolderMapsFooter /> : <ConsoleFooter />}
           </div>
           <ConsoleToasts />
           {/* The bottom-right dock: Back to top, then Gully AI (also ⌘K / Ctrl+K). Toasts stack above it (offset

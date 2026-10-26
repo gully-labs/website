@@ -16,7 +16,8 @@ import { eyebrow } from '../components/ui'
 import { type CheckedLaunch, type CheckedLaunches, type HolderSources, type ResolveChecked, type TopScanned } from '../lib/holders'
 import { useHolderSearch } from '../lib/holderResolve'
 import { ageText } from '../lib/tracker'
-import { holderHref } from '../site-host'
+import { holderHref, isHolderMapsHost } from '../site-host'
+import { PRODUCT_BRANDS } from '../brand/products'
 
 /* /holders: the Holder Map's front door. A search for any token: an address on Robinhood Chain, BNB Chain, Base,
    HyperEVM, Gully Chain Testnet or Solana (every supported chain is checked at once), a DeepCore launch or a tracked stock ticker
@@ -78,12 +79,27 @@ export function HoldersLanding() {
   const sources = usePoll<HolderSources>('/api/holders/sources', 0)
   return (
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
+      {/* On holdermaps.xyz the same title and description as the server writes (server/seo.mjs HOLDERMAPS_HOME). */}
       <Seo
-        title="Holder Map: who really holds a token"
-        description="See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part."
+        title={isHolderMapsHost() ? 'Who really holds a token? Holder bubble maps' : 'Holder Map: who really holds a token'}
+        description={
+          isHolderMapsHost()
+            ? 'Map any token’s holders on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: top wallets, linked clusters and launch health, read live.'
+            : 'See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part.'
+        }
       />
-      <section className="flex flex-col gap-4">
-        <span className={eyebrow}>HOLDER MAP · GULLY LABS</span>
+      <section id="map-a-token" className="relative flex flex-col gap-4">
+        {/* The HolderMaps kit mascot (reading its map), faded into the page at its edges; wide screens only. */}
+        <img
+          src={PRODUCT_BRANDS.holdermaps.mascot.src}
+          width={180}
+          height={249}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="pointer-events-none absolute top-0 right-0 hidden h-[249px] w-[180px] [mask-image:radial-gradient(ellipse_at_center,#000_58%,transparent_74%)] min-[1100px]:block"
+        />
+        <span className={eyebrow}>HOLDERMAPS · BY GULLY LABS</span>
         <h1 className="heading-1">Who really holds it?</h1>
         <p className="m-0 max-w-[720px] text-[18px] leading-[1.6] text-muted">
           Paste any token address, on any chain we cover, or a ticker. See the biggest wallets as bubbles and the ones that trade with each other in gold. New DeepCore launches also get a plain check: bundled buys, snipers, the deployer’s share and record.

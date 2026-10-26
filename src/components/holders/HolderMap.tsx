@@ -7,7 +7,7 @@ import { alpha } from '../charts/chartPresets'
 import { ChartEmpty } from '../charts/GhostChart'
 import { MiniSpark } from '../charts/MiniSpark'
 import { Segmented, type SegOption } from '../ui/Segmented'
-import { Mascot } from '../brand'
+import { ProductMark } from '../../brand/ProductMark'
 import { TokenLogo } from '../logos/TokenLogo'
 import { copyWithToast } from '../ui/toast'
 import { newTab } from '../LayoutNav'
@@ -236,7 +236,7 @@ function MapEmpty({ title, text, action }: { title: string; text: string; action
 function BrandFoot() {
   return (
     <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
-      <Mascot size={18} decorative /> HOLDER MAP · GULLY LABS
+      <ProductMark product="holdermaps" size={18} decorative /> HOLDERMAPS · BY GULLY LABS
     </span>
   )
 }
@@ -787,7 +787,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
           <span className="flex flex-none items-center gap-2">
             <LivePill on={live.on} paused={live.paused} lastAt={live.lastAt} gated={m.features.gated} now={now} beat={live.beat} />
             <span className="max-[599px]:hidden">
-              <Mascot size={compact ? 28 : 36} label="Gully Labs" />
+              <ProductMark product="holdermaps" size={compact ? 28 : 36} />
             </span>
           </span>
         </div>
