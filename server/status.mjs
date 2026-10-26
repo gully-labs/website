@@ -34,6 +34,7 @@ import { askStatus } from './ask.mjs'
 import { status as securityStatus } from './security-engine.mjs'
 import { monitorStats } from './sec-monitor.mjs'
 import * as holders from './holders.mjs'
+import { chainHealth as gullyChainHealth, GULLY_CHAIN } from './gully-chain.mjs'
 
 export const INTERVAL_MS = 60_000
 export const KEEP_MS = 24 * 3600_000
@@ -285,8 +286,27 @@ export function holderChainAvailable(chainKey) {
   }
 }
 
+/* Gully Chain Testnet: the public RPC's head and our indexer's head (gully-ops/l3/indexer). The indexer is degraded
+   when it trails the chain by more than 20 blocks and down when it cannot be read. Exported for tests. */
+export function gullyChainComponents(h) {
+  const out = []
+  if (h.rpc.error) out.push(r('gullychain-rpc', 'chains', `${GULLY_CHAIN.name} RPC`, 'down', `The public RPC did not answer: ${h.rpc.error}.`))
+  else out.push(r('gullychain-rpc', 'chains', `${GULLY_CHAIN.name} RPC`, 'up', `Block ${h.rpc.block.toLocaleString('en-US')}.`, h.rpc.ms))
+  if (h.indexer.error) out.push(r('gullychain-indexer', 'chains', `${GULLY_CHAIN.name} indexer`, 'down', `The indexer did not answer: ${h.indexer.error}.`))
+  else {
+    const lag = h.rpc.error ? null : h.rpc.block - h.indexer.block
+    const state = lag !== null && lag > 20 ? 'degraded' : 'up'
+    out.push(r('gullychain-indexer', 'chains', `${GULLY_CHAIN.name} indexer`, state, lag === null ? `Indexed to block ${h.indexer.block.toLocaleString('en-US')}.` : lag > 0 ? `Indexed to block ${h.indexer.block.toLocaleString('en-US')}, ${lag} block${lag === 1 ? '' : 's'} behind the chain.` : `Indexed to the chain head (block ${h.indexer.block.toLocaleString('en-US')}).`))
+  }
+  return out
+}
+
+async function checkGullyChain() {
+  return gullyChainComponents(await gullyChainHealth())
+}
+
 function checkHolders() {
-  const out = [r('holders-deepcore', 'holders', 'Holder Map: DeepCore launches', 'up', 'Read from DeepCore’s own log index.')]
+  const out = [r('holders-deepcore', 'holders', 'Holder Map: DeepCore launches', 'up', 'Read from DeepCore’s own log index.'), r('holders-gully', 'holders', 'Holder Map: Gully Chain Testnet', 'up', 'Read from the chain’s own archive node (every Transfer) and our indexer.')]
   for (const [key, label] of [['robinhood', 'Robinhood Chain'], ['bsc', 'BNB Chain'], ['solana', 'Solana']]) {
     out.push(holderChainAvailable(key) ? r(`holders-${key}`, 'holders', `Holder Map: ${label} stock tokens`, 'up', 'Holder data source configured.') : r(`holders-${key}`, 'holders', `Holder Map: ${label} stock tokens`, 'off', `Holder data is not available on ${label} yet.`))
   }
@@ -307,7 +327,7 @@ async function settle(name, fn) {
 export async function runChecks({ now = Date.now(), record = true } = {}) {
   if (running) return running
   running = (async () => {
-    const groups = await Promise.all([settle('api', checkApi), settle('tracker', checkTracker), settle('deepcore', checkDeepcore), settle('telegram', checkTelegram), settle('telegram-gate', checkNewsGate), settle('payments', checkPayments), settle('pay-feeproxy', checkFeeProxy), settle('ai', checkAi), settle('security', checkSecurity), settle('monitors', checkMonitors), settle('holders', checkHolders)])
+    const groups = await Promise.all([settle('api', checkApi), settle('tracker', checkTracker), settle('deepcore', checkDeepcore), settle('telegram', checkTelegram), settle('telegram-gate', checkNewsGate), settle('payments', checkPayments), settle('pay-feeproxy', checkFeeProxy), settle('ai', checkAi), settle('security', checkSecurity), settle('monitors', checkMonitors), settle('holders', checkHolders), settle('gullychain', checkGullyChain)])
     const results = groups.flat()
     if (record) recordResults(results, now)
     lastRun = { at: now, results }

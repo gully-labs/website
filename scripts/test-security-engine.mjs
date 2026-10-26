@@ -303,7 +303,7 @@ console.log('\n# unverified source: bytecode-only')
   check('mode bytecode-only with its label', r?.mode === 'bytecode-only' && r.label === 'Source not verified — bytecode notes only' && done.label === r.label)
   check('all three explorers were tried', hits.etherscan >= 1 && hits.blockscout >= 1 && hits.sourcify >= 1)
   check('notes: not verified + privileged + DELEGATECALL, all Info', r.findings.some((f) => /not verified/.test(f.title)) && r.findings.some((f) => /Privileged/.test(f.title)) && r.findings.some((f) => /DELEGATECALL/.test(f.title)) && r.findings.every((f) => f.severity === 'info'))
-  check('tools listed as not run because source is not verified', r.tools.filter((x) => x.status === 'not-run').every((x) => x.reason === 'source not verified') && r.tools.some((x) => x.name === 'slither' && x.status === 'not-run'))
+  check('tools listed as not run because source is not verified', r.tools.filter((x) => x.status === 'not-run' && x.name !== 'transfer-simulation').every((x) => x.reason === 'source not verified') && r.tools.some((x) => x.name === 'slither' && x.status === 'not-run') && r.tools.some((x) => x.name === 'transfer-simulation'))
   check('no AI call for bytecode-only', aiCalls.length === 0)
   check('report validates', schema.validateReport(r).ok)
 }

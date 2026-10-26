@@ -19,7 +19,7 @@ import { ageText } from '../lib/tracker'
 import { holderHref } from '../site-host'
 
 /* /holders: the Holder Map's front door. A search for any token: an address on Robinhood Chain, BNB Chain, Base,
-   HyperEVM or Solana (every supported chain is checked at once), a DeepCore launch or a tracked stock ticker
+   HyperEVM, Gully Chain Testnet or Solana (every supported chain is checked at once), a DeepCore launch or a tracked stock ticker
    (GET /api/holders/resolve), the newest DeepCore launches as they are checked (GET /api/holders/launches,
    every 30 s), the maps people opened most today (GET /api/holders/top) and how to read a map. Every
    figure is read live; a launch still being checked says so. */
@@ -80,7 +80,7 @@ export function HoldersLanding() {
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
       <Seo
         title="Holder Map: who really holds a token"
-        description="See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part."
+        description="See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part."
       />
       <section className="flex flex-col gap-4">
         <span className={eyebrow}>HOLDER MAP · GULLY LABS</span>
@@ -224,7 +224,7 @@ function NoMatch({ checked, address }: { checked: ResolveChecked[]; address: boo
   if (!address)
     return (
       <p className="m-0 text-[14px] leading-[1.6] text-muted" data-no-match>
-        That is not a token address or a ticker we follow. Paste a 0x… address (any ERC-20 on Robinhood Chain, BNB Chain, Base or HyperEVM), a Solana token address, or a stock ticker such as NVDA.
+        That is not a token address or a ticker we follow. Paste a 0x… address (any ERC-20 on Robinhood Chain, BNB Chain, Base, HyperEVM or Gully Chain Testnet), a Solana token address, or a stock ticker such as NVDA.
       </p>
     )
   return (

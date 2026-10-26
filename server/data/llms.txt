@@ -98,6 +98,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [PeddleSwap](https://peddleswap.xyz/): Swap. Lock. Launch.. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks. (Live; Robinhood, Base, Arc)
 - [Peddles](https://peddles.xyz/): Launch, trade and play. Memecoins paired to tokenised stocks. Holders are paid in that stock. (Live; Base, Robinhood, BNB Chain, Arc)
 - [PeddleQuest](https://peddlequest.xyz/): Quest on-chain, earn the proof. Verified quests on four chains. XP, soulbound badges, reward pools escrowed first. (Live; Base, Robinhood, BNB Chain, Arc)
+- [Gully Chain](https://gullychain.xyz/): Our own chain, with a launchpad built in. Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and glUSD. Figures are in test ETH and read from our own indexer. (Beta; Gully Chain Testnet)
 
 ## Docs
 

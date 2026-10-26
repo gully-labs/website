@@ -119,6 +119,29 @@ export const LAUNCHPADS = [
       base: { chainId: 8453, api: 'https://api-base.peddleswap.xyz' },
     },
   },
+  // Gully Launchpad (gully-ops/l3/launchpad) on Gully Chain Testnet, through our own indexer (gully-ops/l3/indexer):
+  // GET /tokens/:token -> { token: { address, source: 'launchpad', creator, createdBlock, pool, ... } }; a token the
+  // indexer does not know is a 404, and a token it indexed from a Uniswap v3 pool alone has source 'pool' (not a
+  // launch). The indexer serves one chain, so the answer carries no chainId (fields.chainId is omitted). When the
+  // indexer is down, server/gully-chain.mjs reads the launchpads themselves for the score; the map says "not a launch".
+  {
+    id: 'gully-launchpad',
+    name: 'Gully Launchpad',
+    url: 'https://gullychain.xyz',
+    lookup: 'api',
+    api: {
+      base: 'https://indexer.gullychain.xyz',
+      baseEnv: 'GULLY_INDEXER',
+      path: '/tokens/{token}',
+      root: 'token',
+      require: { field: 'source', equals: 'launchpad' },
+      fields: { address: 'address', creator: 'creator', block: 'createdBlock' },
+      pool: { path: '/tokens/{token}', field: 'token.pool' },
+    },
+    chains: {
+      gully: { chainId: 485590 },
+    },
+  },
 ]
 
 const isAddr = (a) => typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a)
@@ -148,7 +171,8 @@ export function validateLaunchpad(e) {
   const a = e.api
   if (e.lookup === 'api') {
     if (!a || typeof a.path !== 'string' || !a.path.startsWith('/') || !a.path.includes('{token}')) bad.push('api.path must start with / and contain {token}')
-    if (!a?.fields?.chainId || !a?.fields?.address) bad.push('api.fields.chainId and api.fields.address are required')
+    if (!a?.fields?.address) bad.push('api.fields.address is required')
+    if (a?.fields?.chainId === undefined && Object.keys(e.chains ?? {}).length !== 1) bad.push('api.fields.chainId may only be omitted for a single-chain API')
     if (a?.base !== undefined && !isHttps(a.base)) bad.push('api.base must be https')
   }
   if (!e.chains || typeof e.chains !== 'object' || !Object.keys(e.chains).length) bad.push('chains missing')
@@ -265,7 +289,7 @@ async function apiLookup(lp, ck, token) {
   let creationBlock = null
   if (d) {
     const f = a.fields
-    if (Number(dig(d, f.chainId)) !== cfg.chainId || lc(dig(d, f.address)) !== token) return null
+    if ((f.chainId !== undefined && Number(dig(d, f.chainId)) !== cfg.chainId) || lc(dig(d, f.address)) !== token) return null
     if (a.require && dig(d, a.require.field) !== a.require.equals) return null
     creator = lc(dig(d, f.creator))
     if (f.block) {

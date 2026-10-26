@@ -18,12 +18,22 @@
 //   control         who can change it: nobody, a Safe needing 2+ signatures, a timelock, another contract, or one wallet
 //   timelock        whether changes wait behind a delay (OpenZeppelin TimelockController getMinDelay, Compound delay)
 //   upgradeability  whether its code can be swapped (ERC-1967 / beacon / ZeppelinOS slots, Sourcify's proxy check)
+//   behaviour       tokens only: what the code lets an owner do (mint, blacklist, fee setters, limits, a trading
+//                   switch; server/security/bytecode.mjs) and a SIMULATED transfer from a real holder (eth_call with a
+//                   state override, server/gully-chain.mjs) that measures a fee on transfer or a transfer that fails
 //   changes         privileged changes seen by Gully Security monitoring in the last 30 days (only when watched)
-//   liquidity       launch liquidity locked (DeepCore launches only, from DeepCore's indexer)
+//   liquidity       launch liquidity locked: DeepCore launches (DeepCore's indexer) and Gully Launchpad launches on
+//                   Gully Chain (the bonding curve holds it until graduation; after that the LP NFT must sit in the
+//                   GullyLPLocker, read on chain)
 //   holders         Launch Health or top-10 holder share from the Holder Map (GET /api/holders/:chain/:token, when
 //                   that service runs on this server; otherwise not available and said so)
 //   review          a published Gully Security report (server/security/reports.mjs publishedReportFor, when present)
 //   age             how long the contract has existed (its deployment block, from Sourcify or Etherscan)
+//
+// Gully Chain Testnet (485590, server/gully-chain.mjs): no verification service covers the chain, but a token issued
+// by our Gully Launchpad runs the launchpad's own LaunchToken code, so it counts as known code (85). Its age comes from
+// the launch record or the first block with code, and the result carries `launch` (version, curve, LP lock, the
+// creator's record: how many tokens they launched here and how many graduated, with their .gully name).
 //
 // Endpoints (server.mjs):
 //   GET /api/score                          the listed scores (index page, sitemap)
@@ -46,9 +56,10 @@ import { chainInfo, rpc as payRpc } from './payments.mjs'
 import { scoreChainOf as chainOf, scoreChainList, decodeString, listedContracts, monitorFacts, onMonitorEvents, readControl, SEL, short } from './sec-monitor.mjs'
 import { readLaunches } from './deepcore.mjs'
 import { holderPageUrl } from './hosts.mjs'
+import { blockTimeOf as gullyBlockTime, creatorHistory, deployBlock as gullyDeployBlock, gullyNames, isGullyChain, launchStatus, setGullyFetchForTest, setGullyRpcForTest, tokenBehaviour } from './gully-chain.mjs'
 
 const FILE = () => path.join(DATA_DIR, 'gully-score.json')
-export const METHOD_VERSION = 1
+export const METHOD_VERSION = 2
 export const TTL_MS = 6 * 3_600_000
 const SOURCIFY_TTL_MS = 24 * 3_600_000
 const FAIL_TTL_MS = 10 * 60_000
@@ -65,12 +76,13 @@ const UA = 'gullylabs-score/1 (+https://gullylabs.xyz/score)'
 
 /** The components, in display order. Weights add up to 100. */
 export const COMPONENTS = [
-  { id: 'verified', label: 'Code verified', weight: 15, source: 'Sourcify (sourcify.dev) first, full or partial match; Etherscan V2 as the fallback when configured', what: 'Is the source code published and matched to what is on chain, so anyone can read what it does?' },
-  { id: 'control', label: 'Who controls it', weight: 20, source: 'owner(), the proxy admin and Safe getThreshold()/getOwners(), read from the chain', what: 'Can one wallet change it, or does a change need several signatures, a delay, or is nobody in control?' },
+  { id: 'verified', label: 'Code verified', weight: 10, source: 'Sourcify (sourcify.dev) first, full or partial match; Etherscan V2 as the fallback when configured; on Gully Chain, a Gully Launchpad token runs the launchpad’s known LaunchToken code', what: 'Is the source code published and matched to what is on chain, so anyone can read what it does?' },
+  { id: 'control', label: 'Who controls it', weight: 15, source: 'owner(), the proxy admin and Safe getThreshold()/getOwners(), read from the chain', what: 'Can one wallet change it, or does a change need several signatures, a delay, or is nobody in control?' },
   { id: 'timelock', label: 'Delay on changes', weight: 10, source: 'TimelockController getMinDelay() / Timelock delay() on the controller, read from the chain', what: 'Do changes wait behind a public delay, so users can see them coming?' },
   { id: 'upgradeability', label: 'Can the code change', weight: 10, source: 'ERC-1967, beacon and ZeppelinOS proxy slots, and Sourcify’s proxy check', what: 'Can the code this address runs be swapped for different code?' },
+  { id: 'behaviour', label: 'Token behaviour', weight: 10, source: 'The token’s own bytecode (mint, blacklist, fee, limit and trading-switch functions) and a simulated transfer from a real holder (eth_call with a state override; nothing is sent)', what: 'Can the owner mint, blacklist or tax holders, and does a transfer arrive in full?' },
   { id: 'changes', label: 'Recent privileged changes', weight: 10, source: 'Gully Security monitoring (owner, admin, roles, upgrades, pauses, Safe signers)', what: 'Have owners, roles, code or signers changed in the last 30 days?' },
-  { id: 'liquidity', label: 'Liquidity locked', weight: 10, source: 'DeepCore’s indexer (api.deepcore.fun), for DeepCore launches', what: 'Is the launch liquidity locked, so it cannot be pulled?' },
+  { id: 'liquidity', label: 'Liquidity locked', weight: 10, source: 'DeepCore’s indexer (api.deepcore.fun) for DeepCore launches; the Gully Launchpad and GullyLPLocker on Gully Chain, read on chain', what: 'Is the launch liquidity locked, so it cannot be pulled?' },
   { id: 'holders', label: 'Holder spread', weight: 10, source: 'Gully Holder Map (Launch Health, top-10 share)', what: 'Is the supply spread out, or held by a few connected wallets?' },
   { id: 'review', label: 'Gully Security review', weight: 10, source: 'Published Gully Security reports only', what: 'Has Gully Security published a report on it, and what did it find?' },
   { id: 'age', label: 'Age', weight: 5, source: 'Deployment block (Sourcify or Etherscan) and its block time', what: 'How long has it been on chain?' },
@@ -109,8 +121,14 @@ let launchesFn = (chainId) => readLaunches({ chainId, limit: 50 })
 let holdersBase = () => String(process.env.GULLY_HOLDERS_API ?? `http://127.0.0.1:${process.env.PORT ?? 8080}`).replace(/\/+$/, '')
 let reportFn = defaultReportFor
 
-export const setScoreRpcForTest = (fn) => (rpc = fn ?? payRpc)
-export const setScoreFetchForTest = (fn) => (fetchFn = fn ?? ((...a) => globalThis.fetch(...a)))
+export const setScoreRpcForTest = (fn) => {
+  rpc = fn ?? payRpc
+  setGullyRpcForTest(fn)
+}
+export const setScoreFetchForTest = (fn) => {
+  fetchFn = fn ?? ((...a) => globalThis.fetch(...a))
+  setGullyFetchForTest(fn)
+}
 export const setLaunchesForTest = (fn) => (launchesFn = fn)
 export const setHoldersBaseForTest = (base) => (holdersBase = () => base)
 /** The published-report source: (chainId, address) -> report | null. Tests replace it; see defaultReportFor. */
@@ -238,7 +256,10 @@ async function holderMap(chainId, address) {
     const r = await getJson(`${holdersBase()}/api/holders/${key}/${address}`, { timeout: 15_000 })
     if (!r.body || typeof r.body !== 'object' || r.status === 404) return { error: 'The Holder Map is not running on this server yet, so holder data is not available.' }
     if (r.body.state !== 'ok') return { error: r.body.reason || r.body.error || 'The Holder Map has no holder data for this token.' }
-    return { health: r.body.health ?? null, top10Pct: r.body.summary?.top10Pct ?? null, line: r.body.summary?.line ?? null, page: holderPageUrl(key, address) }
+    // The biggest plain wallet (not a pool, lock, burn, router or an exchange): the transfer simulation's holder.
+    const infra = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
+    const top = Array.isArray(r.body.nodes) ? r.body.nodes.find((n) => ADDR_RE.test(String(n?.id ?? '').toLowerCase()) && !(n.label && infra.has(n.label.kind))) : null
+    return { health: r.body.health ?? null, top10Pct: r.body.summary?.top10Pct ?? null, line: r.body.summary?.line ?? null, page: holderPageUrl(key, address), topWallet: top ? String(top.id).toLowerCase() : null }
   } catch {
     return { error: 'The Holder Map could not be reached from this server, so holder data is not available.' }
   }
@@ -308,6 +329,9 @@ async function doCompute(chainId, address, now) {
   // A read-only chain (Gully Chain Testnet) has no verification service: neither Sourcify nor Etherscan covers it,
   // so the score is built from on-chain reads only and the code counts as not verified (said so, with the reason).
   const noVerifier = !!chain.readOnly
+  const gully = isGullyChain(chainId)
+  // A Gully Launchpad launch (null: not one; undefined: neither the indexer nor the chain could say).
+  const launch = gully ? await launchStatus(address).catch(() => undefined) : null
   const [ctl, src] = await Promise.all([readControl(chainId, address).catch(() => null), noVerifier ? { verified: false, noService: true } : sourcify(chainId, address, now)])
   // Sourcify first. Etherscan V2 (only with ETHERSCAN_API_KEY) is asked only for what Sourcify did not give: a
   // verified source, or the deployment block for the age.
@@ -319,7 +343,8 @@ async function doCompute(chainId, address, now) {
   const parts = []
 
   // verified
-  if (src.noService) parts.push(ok('verified', 0, 'Not verified', `${chain.name} has no source verification service yet, so nobody can check what this contract does from its code. Everything else here is read from the chain.`, [{ label: chain.explorerName ?? 'Explorer', url: explorer(address) }]))
+  if (launch) parts.push(ok('verified', 85, `Gully Launchpad token (v${launch.version})`, `Issued by the Gully Launchpad v${launch.version} on ${chain.name}: every launch runs the launchpad’s own LaunchToken code (fixed supply, no owner), so what this contract does is known even though the chain has no verification service yet.`, [{ label: 'The launchpad', url: explorer(launch.launchpad) }, { label: chain.explorerName ?? 'Explorer', url: explorer(address) }], { provider: 'gully-launchpad', match: 'launchpad' }))
+  else if (src.noService) parts.push(ok('verified', 0, 'Not verified', `${chain.name} has no source verification service yet, so nobody can check what this contract does from its code. Everything else here is read from the chain.`, [{ label: chain.explorerName ?? 'Explorer', url: explorer(address) }]))
   else if (src.verified) parts.push(ok('verified', srcMatch === 'full' ? 100 : 85, srcMatch === 'full' ? 'Full match (Sourcify)' : 'Partial match (Sourcify)', `The source code is verified on Sourcify: ${srcMatch === 'full' ? 'a full match, so the compiled code and its metadata match the deployed code exactly' : 'a partial match, so the compiled code matches the deployed code but its metadata (comments, file names) differs'}.`, [{ label: `Sourcify: ${srcMatch} match`, url: sourcifyContractUrl(chainId, address) }], { provider: 'sourcify', match: srcMatch }))
   else if (esc?.verified) parts.push(ok('verified', 100, 'Verified (Etherscan)', 'The source code is published on Etherscan; Sourcify has no match for it.', [{ label: chain.explorerName ?? 'Explorer', url: `${explorer(address)}#code` }], { provider: 'etherscan', match: null }))
   else if (src.verified === false && (!esc || esc.verified === false)) parts.push(ok('verified', 0, 'Not verified', 'No published source code matches this contract, so nobody can check what it does from its code.', [{ label: 'Sourcify lookup', url: `https://sourcify.dev/#/lookup/${address}` }]))
@@ -379,8 +404,23 @@ async function doCompute(chainId, address, now) {
     )
   }
 
-  // liquidity (DeepCore launches)
-  if (chainId === 8453 || chainId === 56) {
+  // the creator's record on the Gully Launchpad (part of the launch block and the liquidity reason; not points)
+  let creator = null
+  if (launch?.creator) {
+    const [hist, names] = await Promise.all([creatorHistory(launch.creator).catch(() => null), gullyNames([launch.creator]).catch(() => new Map())])
+    creator = { address: launch.creator, name: names.get(launch.creator) ?? null, launches: hist?.launches ?? null, graduated: hist?.graduated ?? null, first: hist?.first ?? null, tokens: hist?.tokens ?? [] }
+  }
+  const creatorLine = creator ? ` Created by ${creator.name ? `${creator.name} (${short(creator.address)})` : short(creator.address)}${creator.launches !== null ? `, who has launched ${creator.launches} token${creator.launches === 1 ? '' : 's'} here${creator.launches ? `, ${creator.graduated} graduated` : ''}` : ''}.` : ''
+
+  // liquidity (DeepCore launches; Gully Launchpad launches on Gully Chain)
+  if (gully) {
+    if (launch === undefined) parts.push(na('liquidity', `The Gully Launchpad could not be read just now (neither the indexer nor ${chain.name} answered).`))
+    else if (!launch) parts.push(na('liquidity', 'Liquidity locks are read for Gully Launchpad tokens on Gully Chain, and this token was not launched there.'))
+    else if (!launch.curve.graduated) parts.push(ok('liquidity', 100, `On the curve, ${launch.curve.progressPct}%`, `The token is still on the launchpad’s bonding curve (${launch.curve.progressPct}% of the way to graduation): its liquidity is held by the launchpad contract, which can only move it into a locked pool at graduation.${creatorLine}`, [{ label: 'The launchpad', url: explorer(launch.launchpad) }]))
+    else if (launch.lp?.locked === true) parts.push(ok('liquidity', 100, 'Locked (Gully LP Locker)', `The launch graduated into a Gully Swap pool and its LP position (NFT #${launch.lp.tokenId}) is held by the GullyLPLocker ${short(launch.lp.locker)}, which can collect fees but never withdraw the liquidity.${creatorLine}`, [{ label: 'The locker', url: explorer(launch.lp.locker) }, ...(launch.pool ? [{ label: 'The pool', url: explorer(launch.pool) }] : [])]))
+    else if (launch.lp?.locked === false) parts.push(ok('liquidity', 0, 'Not locked', `The launch graduated but its LP position (NFT #${launch.lp.tokenId}) is held by ${short(launch.lp.owner)}, not by the GullyLPLocker: the liquidity could be removed.${creatorLine}`, [{ label: 'The position’s owner', url: explorer(launch.lp.owner) }]))
+    else parts.push(na('liquidity', launch.lp?.reason ?? 'The LP position could not be read just now.'))
+  } else if (chainId === 8453 || chainId === 56) {
     let launch = null
     let err = null
     try {
@@ -397,10 +437,16 @@ async function doCompute(chainId, address, now) {
       if (!known.length) parts.push(na('liquidity', 'DeepCore states no lock record for this launch’s pools yet.'))
       else parts.push(ok('liquidity', (locked / legs.length) * 100, locked === legs.length ? 'Locked' : locked ? `${locked} of ${legs.length} pools locked` : 'Not locked', locked === legs.length ? 'DeepCore’s indexer has a lock record for every launch pool: the launch liquidity cannot be pulled.' : locked ? `Only ${locked} of the ${legs.length} launch pools have a lock record.` : 'DeepCore’s indexer has no lock record for the launch pools: the liquidity could be removed.', [{ label: 'On DeepCore', url: launch.links?.token ?? 'https://deepcore.fun' }]))
     } else parts.push(na('liquidity', err ?? 'Liquidity locks are read for DeepCore launches only, and this is not one of DeepCore’s recent launches.'))
-  } else parts.push(na('liquidity', 'Liquidity locks are read for DeepCore launches only (Base and BNB Chain here).'))
+  } else parts.push(na('liquidity', 'Liquidity locks are read for DeepCore launches (Base and BNB Chain) and Gully Launchpad launches (Gully Chain).'))
 
   // holders (Holder Map)
   const hm = await holderMap(chainId, address)
+
+  // behaviour (tokens only): the code's owner controls and a simulated transfer from the biggest plain holder
+  const beh = await tokenBehaviour({ chainId, address, code, holder: hm.topWallet ?? null, fixedSupply: !!launch }).catch(() => null)
+  if (!beh) parts.push(na('behaviour', 'The token’s behaviour could not be checked just now.'))
+  else if (!beh.token) parts.push(na('behaviour', 'Not a token: it has no transfer() and balanceOf(), so there is no transfer to simulate.'))
+  else parts.push(ok('behaviour', beh.score, beh.value, beh.reason, [{ label: 'Contract', url: explorer(address) }, ...(beh.holder ? [{ label: 'Simulated from', url: explorer(beh.holder) }] : [])], { controls: beh.controls, simulation: beh.simulation }))
   if (hm.error) parts.push(na('holders', hm.error))
   else if (typeof hm.health?.score === 'number') parts.push(ok('holders', hm.health.score, `Launch Health ${hm.health.score}`, `The Holder Map rates this launch ${hm.health.score} out of 100${hm.health.verdict ? `: ${hm.health.verdict}` : ''}.`, [{ label: 'Holder Map', url: hm.page }]))
   else if (typeof hm.top10Pct === 'number') parts.push(ok('holders', spreadPoints(hm.top10Pct), `Top 10 hold ${Math.round(hm.top10Pct * 10) / 10}%`, hm.line ?? `The 10 biggest wallets hold ${hm.top10Pct}% of the supply.`, [{ label: 'Holder Map', url: hm.page }]))
@@ -430,11 +476,19 @@ async function doCompute(chainId, address, now) {
     createdAt = esc.createdAt
     createdTx = esc.creationTx ?? null
   }
+  if (!createdAt && gully) {
+    // Our own archive node: the launch record, else the first block with code at the address.
+    createdAt = launch?.createdAt ?? null
+    if (!createdAt) {
+      const b = launch?.createdBlock ?? (await gullyDeployBlock(address))
+      createdAt = b !== null && b !== undefined ? await gullyBlockTime(b) : null
+    }
+  }
   if (createdAt) {
     const d = Math.floor(days(now - Date.parse(createdAt)))
     const last = facts?.events?.length ? facts.events[facts.events.length - 1].at : null
     parts.push(ok('age', agePoints(d), d >= 365 ? `${Math.floor(d / 365)} yr ${Math.floor((d % 365) / 30)} mo` : `${d} day${d === 1 ? '' : 's'}`, `Deployed on ${createdAt.slice(0, 10)}, ${d} day${d === 1 ? '' : 's'} ago.${last ? ` Monitoring last saw activity on ${last.slice(0, 10)}.` : ''}`, createdTx ? [{ label: 'Deployment', url: `${chain.explorer}/tx/${createdTx}` }] : []))
-  } else parts.push(na('age', 'The deployment date is only read for verified contracts (Sourcify) or with an explorer key; it is not known here.'))
+  } else parts.push(na('age', gully ? `The deployment block could not be read from ${chain.name} just now.` : 'The deployment date is only read for verified contracts (Sourcify) or with an explorer key; it is not known here.'))
 
   const ordered = COMPONENTS.map((c) => ({ ...c, ...(parts.find((p) => p.id === c.id) ?? na(c.id, 'Not read.')) }))
   const { score, coverage, available } = combine(ordered)
@@ -470,6 +524,7 @@ async function doCompute(chainId, address, now) {
     components: ordered,
     history: history.slice(-KEEP_HISTORY),
     changes: changes.slice(-KEEP_CHANGES),
+    ...(launch ? { launch: { venue: launch.venue, venueName: 'Gully Launchpad', version: launch.version, launchpad: launch.launchpad, curve: launch.curve, pool: launch.pool, lp: launch.lp, createdAt: launch.createdAt, creator, source: launch.source } } : {}),
   }
   db.scores[k] = result
   save()
@@ -506,6 +561,7 @@ export function methodology() {
       'The score is the weighted average of the components that could be read. A component that could not be read is shown as not available and left out; it is never counted as zero.',
       `With less than ${MIN_COVERAGE} of the 100 weight points available, no score is given.`,
       'Nothing paid goes in. No plan, payment or account can change a score, and a Gully Security review counts only once its report is published.',
+      'Token behaviour is read from the token’s own code and from a simulated transfer (eth_call with a state override, nothing is sent): a fee on transfer, a blacklist or a closed trading switch shows up even without source code.',
       'Scores are informational. They are not an endorsement and not investment advice.',
     ],
   }

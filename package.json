@@ -47,6 +47,7 @@
     "test:sec-monitor": "node scripts/test-sec-monitor.mjs",
     "test:badges": "node scripts/test-badges.mjs",
     "test:gully-score": "node scripts/test-gully-score.mjs",
+    "test:gully-chain": "node --test scripts/test-gully-chain.mjs",
     "seo:indexnow": "node scripts/indexnow-submit.mjs",
     "test:holders": "node --test scripts/test-holders.mjs",
     "test:holders-partners": "node scripts/test-holders-partners.mjs",

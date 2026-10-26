@@ -46,6 +46,10 @@ export interface VenueOk {
   sourceNote?: string
   /** A venue with no trading at all (PeddleQuest): no bars, and the legend says why. */
   noVolume?: boolean
+  /** A testnet venue (Gully Chain): figures in test ETH only, every USD field null, nothing in the totals. */
+  testnet?: boolean
+  noUsd?: boolean
+  native?: { symbol: string; testnet: boolean; volume24h: number; volumeAll: number; liquidity: number; mcap: number; daily: Point[] }
   volume7dUsd?: number | null
   /** Venues read straight from their contracts (server/peddles.mjs). `live` once every chain is scanned to head. */
   onchain?: OnchainSummary
@@ -110,6 +114,13 @@ export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-U
 
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
+/** An amount in a venue's own coin ("0.0144 ETH", "12.5 test ETH"); never a dollar figure. */
+export function fmtNative(v: number | null | undefined, symbol: string, testnet = false): string {
+  if (v === null || v === undefined || !Number.isFinite(v)) return '—'
+  const digits = v >= 100 ? 0 : v >= 1 ? 2 : v >= 0.01 ? 4 : 6
+  return `${v.toLocaleString('en-US', { maximumFractionDigits: digits })} ${testnet ? 'test ' : ''}${symbol}`
+}
+
 /** A venue's display name from its stats key. */
 export const nameOf = (key: string) => projects.find((p) => p.key === key)?.name ?? key
 
@@ -133,6 +144,11 @@ export function metricsOf(v: Venue | undefined): [FigureLine, FigureLine] {
       return [usd('VOLUME ALL-TIME', v.volumeAllUsd), usd('FEES ALL-TIME', v.feesAllUsd)]
     case 'peddlequest':
       return [usd('ESCROWED (TVL)', v.tvlUsd), usd('FEES ALL-TIME', v.feesAllUsd)]
+    case 'gullychain':
+      return [
+        { label: 'LAUNCHES', value: v.counts.launches === null || v.counts.launches === undefined ? '—' : String(v.counts.launches), missing: v.counts.launches === null || v.counts.launches === undefined },
+        { label: 'VOLUME 24H', value: v.native ? fmtNative(v.native.volume24h, v.native.symbol, v.native.testnet) : '—', missing: !v.native },
+      ]
     default:
       return [usd('TVL', v.tvlUsd), usd('VOLUME ALL-TIME', v.volumeAllUsd)]
   }

@@ -1,5 +1,5 @@
 import { projects } from '../content/projects'
-import { fmtUsd, type Stats } from '../lib/stats'
+import { fmtNative, fmtUsd, type Stats } from '../lib/stats'
 import { MiniSpark } from './charts/MiniSpark'
 import { BlinkDot } from './ui'
 import { NewTabMark } from './LayoutLinks'
@@ -20,13 +20,16 @@ export function VenueTicker({ data, state }: { data: Stats | null; state: 'loadi
       {projects.map((p, i) => {
         const v = data?.venues.find((x) => x.key === p.key)
         const ok = v?.state === 'ok' ? v : null
-        const series = ok ? ok.daily.slice(-14).map((d) => d.v) : []
-        const all = state !== 'ok' ? (state === 'loading' ? '…' : '—') : ok ? fmtUsd(ok.volumeAllUsd ?? ok.volume30dUsd ?? null) : '—'
+        // A testnet venue (Gully Chain) publishes test-ETH figures only: shown in its own coin, never as dollars.
+        const series = ok ? (ok.daily.length ? ok.daily : (ok.native?.daily ?? [])).slice(-14).map((d) => d.v) : []
+        const all = state !== 'ok' ? (state === 'loading' ? '…' : '—') : ok ? (ok.native && ok.noUsd ? fmtNative(ok.native.volumeAll, ok.native.symbol, ok.native.testnet) : fmtUsd(ok.volumeAllUsd ?? ok.volume30dUsd ?? null)) : '—'
         const sub =
           state === 'loading'
             ? 'reading'
             : state === 'error' || !ok
               ? 'unreadable'
+              : ok.native && ok.noUsd
+                ? `24h ${fmtNative(ok.native.volume24h, ok.native.symbol, ok.native.testnet)} · ${ok.counts.launches ?? 0} launches`
               : ok.volumeAllUsd !== null
                 ? `24h ${fmtUsd(ok.volume24hUsd)}`
                 : ok.volume30dUsd !== null && ok.volume30dUsd !== undefined

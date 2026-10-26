@@ -55,6 +55,7 @@ import { isOnCurve, b58decode, isSolanaAddress, solanaRpc } from './solana.mjs'
 import { archiveKnown, readOwnHistory } from './holders-logs.mjs'
 import { probeToken, reserveAnySlot, resetAnyForTest, takeAnyBuild } from './holders-any.mjs'
 import { knownLaunch } from './holders-launchpads.mjs'
+import { GULLY_CHAIN, gullyNames, indexerGet as gullyIndexerGet, LAUNCHPADS as GULLY_LAUNCHPADS, setGullyFetchForTest } from './gully-chain.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -231,7 +232,10 @@ export function clusterize(ids, edges) {
 
 let fetchImpl = (...a) => globalThis.fetch(...a)
 /** Test hook: replace fetch for every upstream call this module makes. */
-export const setHoldersFetchForTest = (fn) => (fetchImpl = fn ?? ((...a) => globalThis.fetch(...a)))
+export const setHoldersFetchForTest = (fn) => {
+  fetchImpl = fn ?? ((...a) => globalThis.fetch(...a))
+  setGullyFetchForTest(fn)
+}
 
 async function getJson(url, headers = {}) {
   try {
@@ -578,7 +582,7 @@ export const LABEL_KINDS = {
   router: 'Swap router',
   gully: 'Gully Labs contract',
   exchange: 'Exchange',
-  known: 'Known address',
+  known: 'Known address or .gully name',
 }
 /** Kinds that are infrastructure, not people: never clustered, never counted as wallets. */
 const INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
@@ -590,11 +594,14 @@ const UNIV4_POOL_MANAGERS = { 4663: '0x8366a39CC670B4001A1121B8F6A443A643e40951'
     launchpad's bonding curve holds a launch's unsold supply, the LP locker holds graduated liquidity. */
 export const GULLY_CHAIN_LABELS = {
   485590: [
-    ['0x3378b659f6ddA7F13D87599B383b3995f82D0974', 'pool', 'Gully launchpad (bonding curve)'],
-    ['0xBAb80bf7CA383461e573Dc503c70083c0415d58B', 'lock', 'Gully LP locker'],
-    ['0x1283a251E34296675CC5130A2B02871384c0436a', 'router', 'Gully Swap router'],
-    ['0xf49b65b9912fd017fDb91D21eE9bC9992F8cF05c', 'router', 'Gully Swap (v3 router)'],
-    ['0x90aDCE86fce80E9fACD436efBb4C8A25D3d38f75', 'pool', 'Gully Swap positions'],
+    // Every launchpad deployment and locker (server/gully-chain.mjs LAUNCHPADS, from gully-ops/l3/generated/launchpad.json).
+    ...GULLY_LAUNCHPADS.map((l) => [l.address, 'pool', `Gully launchpad v${l.version} (bonding curve)`]),
+    ...GULLY_LAUNCHPADS.filter((l) => l.locker).map((l) => [l.locker, 'lock', `Gully LP locker v${l.lockerVersion}`]),
+    [GULLY_CHAIN.swapRouter, 'router', 'Gully Swap router'],
+    [GULLY_CHAIN.v3Router, 'router', 'Gully Swap (v3 router)'],
+    [GULLY_CHAIN.positionManager, 'pool', 'Gully Swap positions'],
+    [GULLY_CHAIN.weth, 'token', 'Wrapped ETH'],
+    [GULLY_CHAIN.glusdPsm, 'gully', 'glUSD PSM'],
   ],
 }
 /** The v3 factory whose pools are labelled as pools on Gully Chain (factory() of a holder contract). */
@@ -1053,12 +1060,26 @@ export function setTrackerForTest(rowFn, histFn) {
 }
 
 /** A token's holders from the first holder API that answers (Blockscout, then Moralis), or { error }. */
+/** Top holders of a Gully Chain token from our own indexer (balances with a tag: launchpad, pool, lp locker, burn). */
+async function readGullyIndexerHolders(token, want = 50) {
+  try {
+    const r = await gullyIndexerGet(`/tokens/${token}/holders?limit=${Math.min(500, Math.max(10, want))}`)
+    if (r.status === 404 || !Array.isArray(r.body?.holders)) return { error: 'The Gully Chain indexer does not list this token.' }
+    const holders = r.body.holders.filter((h) => isAddr(h?.address) && /^\d+$/.test(String(h.balance))).map((h) => ({ address: lower(h.address), raw: BigInt(h.balance) }))
+    const count = Number(r.body.holderCount)
+    const supply = /^\d+$/.test(String(r.body.totalSupply ?? '')) ? BigInt(r.body.totalSupply) : null
+    return { holders, count: Number.isFinite(count) ? count : null, supply }
+  } catch (e) {
+    return { error: String(e?.message ?? e) }
+  }
+}
+
 async function readTopHolders(chainKey, token, want) {
-  const order = [blockscoutFor(chainKey) && 'blockscout', moralisFor(chainKey) && 'moralis'].filter(Boolean)
+  const order = [chainKey === 'gully' && 'indexer', blockscoutFor(chainKey) && 'blockscout', moralisFor(chainKey) && 'moralis'].filter(Boolean)
   if (!order.length) return { error: 'no-key' }
   let last = { error: 'no-key' }
   for (const source of order) {
-    const h = source === 'blockscout' ? await readBlockscoutHolders(chainKey, token, want) : await readMoralisHolders(chainKey, token, want)
+    const h = source === 'indexer' ? await readGullyIndexerHolders(token, want) : source === 'blockscout' ? await readBlockscoutHolders(chainKey, token, want) : await readMoralisHolders(chainKey, token, want)
     if (!h.error) return { ...h, source }
     last = h
   }
@@ -1071,7 +1092,7 @@ const busyBody = (reason, status) => ({ state: 'busy', reason, status })
 let knownLaunchFn = knownLaunch
 /** Test hook: replaces holders-launchpads.mjs's knownLaunch. */
 export const setKnownLaunchForTest = (fn) => (knownLaunchFn = fn ?? knownLaunch)
-const VENUE_NAMES = { peddles: 'Peddles', peddleswap: 'PeddleSwap' }
+const VENUE_NAMES = { peddles: 'Peddles', peddleswap: 'PeddleSwap', 'gully-launchpad': 'Gully Launchpad' }
 
 /** knownLaunch() from the launchpad modules, bounded and never throwing: a normalised launch or null. */
 async function otherLaunch(chainKey, token) {
@@ -1217,7 +1238,7 @@ async function buildOne(chainKey, tier, { stock, token, launch: dcLaunch = null,
     supply = h.supply ?? probe?.supply ?? null
     if (h.decimals != null) decimals = h.decimals
     partial = h.partial ?? null
-    sources.holders = chainKey === 'solana' ? (partial ? 'Solana RPC (the 20 largest token accounts, merged by owner)' : `Solana RPC (every token account of the mint, ${holders.length.toLocaleString('en-US')} owners)`) : h.source === 'blockscout' ? `Blockscout (top ${holders.length} holders)` : `Moralis (top ${holders.length} holders)`
+    sources.holders = chainKey === 'solana' ? (partial ? 'Solana RPC (the 20 largest token accounts, merged by owner)' : `Solana RPC (every token account of the mint, ${holders.length.toLocaleString('en-US')} owners)`) : h.source === 'indexer' ? `The Gully Chain indexer (top ${holders.length} holders)` : h.source === 'blockscout' ? `Blockscout (top ${holders.length} holders)` : `Moralis (top ${holders.length} holders)`
     if (chainKey !== 'solana') {
       history = h.source === 'moralis' ? await readMoralisTransfers(chainKey, token) : await readRecentTransfers(chainKey, token)
       if (history) sources.links = `Direct transfers between the mapped wallets in the latest ${history.transfers.length.toLocaleString('en-US')} transfers (blocks ${history.fromBlock.toLocaleString('en-US')}–${history.toBlock.toLocaleString('en-US')})`
@@ -1242,6 +1263,12 @@ async function buildOne(chainKey, tier, { stock, token, launch: dcLaunch = null,
     await labelGullyPools(chainKey, [...codes].filter(([, isContract]) => isContract).map(([a]) => a), labels)
     // Moralis names entities itself.
     for (const h of holders) if (h.name && !labels.has(h.address)) labels.set(h.address, { kind: EXCHANGE_RE.test(h.name) || EXCHANGE_RE.test(h.entity ?? '') ? 'exchange' : 'known', name: String(h.name).slice(0, 48) })
+    // Gully Chain: wallets with a primary .gully name (reverse record verified forward) are shown by that name.
+    if (chainKey === 'gully') {
+      const wallets = prelim.filter((a) => !labels.has(a) && a !== ZERO && !codes.get(a)).slice(0, 60)
+      const names = await gullyNames(wallets).catch(() => new Map())
+      for (const [a, name] of names) if (!labels.has(a)) labels.set(a, { kind: 'known', name })
+    }
   }
 
   // Native-coin funding by the deployer (Blockscout, when a key is set and the chain is on it).
