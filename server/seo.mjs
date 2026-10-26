@@ -361,6 +361,9 @@ export function renderHead(source, meta) {
   swap(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(meta.description)}" />`)
   swap(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${esc(meta.title)}" />`)
   swap(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${esc(meta.description)}" />`)
+  // Twitter/X reads its own title and description first (the client's Seo sets the same after navigation).
+  swap(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${esc(meta.title)}" />`)
+  swap(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${esc(meta.description)}" />`)
   if (meta.image) {
     swap(/<meta property="og:image" [^>]*>/, `<meta property="og:image" content="${esc(meta.image)}" />`)
     swap(/<meta name="twitter:image"[^>]*>/, `<meta name="twitter:image" content="${esc(meta.image)}" />`)
