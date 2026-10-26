@@ -303,7 +303,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
       <div className="flex min-h-16 items-center justify-between gap-4 border-b border-line px-page py-2">
         <Link to={siteHref('/')} onClick={pick} className="inline-flex min-h-11 items-center rounded-btn text-ink" aria-label="Gully Labs home">
           {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}
-          <Wordmark height={28} className="max-[419px]:!h-6 max-[419px]:!w-[115.64px]" />
+          <Wordmark height={28} />
         </Link>
         <button
           type="button"
@@ -412,7 +412,7 @@ export function Header() {
       <div className="flex min-h-16 items-center gap-3 px-page py-2 min-[1024px]:gap-6">
         <Link to={siteHref('/')} className="inline-flex min-h-11 flex-none items-center rounded-btn text-ink" aria-label="Gully Labs home">
           {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}
-          <Wordmark height={28} className="max-[419px]:!h-6 max-[419px]:!w-[115.64px]" />
+          <Wordmark height={28} />
         </Link>
 
         <NavigationMenu.Root aria-label="Main" delayDuration={120} value={menu.value} onValueChange={menu.onValueChange} className="hidden min-[1024px]:block">

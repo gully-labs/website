@@ -8,9 +8,9 @@ import { Check, ExternalLink, ShieldCheck } from 'lucide-react'
    checkout config / quote gives: nothing is hard-coded here) and call it a 2-of-3 Safe, which it is on
    every EVM chain we offer (src/content/contracts.ts); Solana's treasury is not claimed to be a Safe.
    A store's checkout says the funds go to the store's own wallet and shows no Gully treasury link.
-   The mark is public/brand/gully-mark-96.png, the kit's mascot disc. */
+   The mark is public/brand/products/gullypay-mark.svg, byte-exact from the Gully Pay brand kit (logo/gullypay-mark.svg). */
 
-export const GULLY_MARK_SRC = '/brand/gully-mark-96.png'
+export const GULLY_MARK_SRC = '/brand/products/gullypay-mark.svg'
 
 export interface SecuredByProps {
   variant?: 'full' | 'small'
@@ -30,7 +30,7 @@ export interface SecuredByProps {
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
 function Mark({ size }: { size: number }) {
-  return <img src={GULLY_MARK_SRC} alt="" width={size} height={size} className="shrink-0 rounded-full" style={{ width: size, height: size }} decoding="async" />
+  return <img src={GULLY_MARK_SRC} alt="" width={size} height={size} className="shrink-0" style={{ width: size, height: size }} decoding="async" />
 }
 
 export function SecuredBy({ variant = 'full', merchant = null, treasury = null, treasuryHref = null, safe = true, light = false, className = '' }: SecuredByProps) {
