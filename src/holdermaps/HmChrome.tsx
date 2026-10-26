@@ -134,7 +134,7 @@ export function HmFooter() {
         <div className="hm-foot-bottom">
           <p>© 2026 HolderMaps · Every figure is read live from the chains; a source that cannot be read says so, never zero.</p>
           <a className="hm-badge" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" aria-label="Powered by Gully Labs (opens in a new tab)">
-            <img src="/brand/badges/powered-by-gully-labs-dark.png" srcSet="/brand/badges/powered-by-gully-labs-dark.png 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x" width={119} height={30} alt="Powered by Gully Labs" decoding="async" />
+            <img src="/brand/badges/powered-by-gully-labs-dark.png" srcSet="/brand/badges/powered-by-gully-labs-dark.png 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x" width={127} height={32} alt="Powered by Gully Labs" decoding="async" />
           </a>
         </div>
       </div>

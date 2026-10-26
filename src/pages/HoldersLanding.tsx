@@ -256,7 +256,7 @@ function NoMatch({ checked, address }: { checked: ResolveChecked[]; address: boo
   )
 }
 
-function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now: number }) {
+export function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>>; now: number }) {
   const scored = useMemo(() => (s.k === 'ok' ? s.data.launches.filter((l) => l.health?.score !== null && l.health?.score !== undefined).slice(0, 12) : []), [s])
   const option = useMemo(
     () => ({

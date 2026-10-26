@@ -217,6 +217,14 @@ try {
     check('holdermaps /: no holdermaps-primary tag while HOLDERMAPS_PRIMARY is unset', !home.text.includes('holdermaps-primary'))
     const map = await get(HM, `/base/${TOKEN}`)
     check('holdermaps /<chain>/<token>: 200, HolderMaps title, holdermaps.xyz canonical, the kit share image', map.status === 200 && /<title>Who holds [^<]+ on Base · HolderMaps<\/title>/.test(map.text) && map.text.includes(`<link rel="canonical" href="https://holdermaps.xyz/base/${TOKEN}" />`) && map.text.includes('<meta property="og:image" content="https://holdermaps.xyz/brand/holdermaps/og-image-1200x630.png" />') && !map.text.includes('gullylabs.xyz/brand/social') && !map.text.includes('card.png') && map.text.includes('<meta name="theme-color" content="#0A0A0A" />') && map.text.includes('on HolderMaps.'), map.text.match(/<title>[^<]*<\/title>/)?.[0])
+    const mapLd = [...map.text.matchAll(/<script type="application\/ld\+json">([^<]+)<\/script>/g)].map((x) => JSON.parse(x[1]))
+    check('holdermaps /<chain>/<token>: JSON-LD WebPage and a HolderMaps > chain > token breadcrumb', mapLd.some((l) => l['@type'] === 'WebPage' && l.url === `https://holdermaps.xyz/base/${TOKEN}`) && mapLd.some((l) => l['@type'] === 'BreadcrumbList' && l.itemListElement.length === 3 && l.itemListElement[1].name === 'Base'))
+    // Redesign 2026-10-26: a path that is no page on either site is HolderMaps' own 404 (mascot page), not a hop away.
+    for (const p of ['/nope', '/ethereum/0x123', `/deep/x`]) {
+      const nf = await get(HM, p)
+      check(`holdermaps ${p}: its own 404, noindex, titled Not found · HolderMaps`, nf.status === 404 && !nf.headers.location && nf.text.includes('<div id="root">') && nf.text.includes('<title>Not found · HolderMaps</title>') && /<meta name="robots" content="noindex"/.test(nf.text), `${nf.status} ${nf.headers.location ?? ''}`)
+    }
+    for (const p of ['/legal/terms', '/tracker', '/admin', '/chains']) check(`holdermaps ${p}: still a 301 to gullylabs.xyz`, (await get(HM, p)).status === 301)
     const deep = await get(HM, `/deep/${DEEP}`)
     check('holdermaps /deep/<id>: 200, noindex, no canonical (private by link)', deep.status === 200 && /<meta name="robots" content="noindex"/.test(deep.text) && !/rel="canonical"/.test(deep.text) && /HolderMaps/.test(deep.text.match(/<title>[^<]*<\/title>/)?.[0] ?? ''))
     const long = await get(HM, `/holders/base/${TOKEN}?ref=x`)
