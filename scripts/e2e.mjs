@@ -1139,7 +1139,7 @@ const shotFull = async (page, name) => {
 /** The standalone checkout frame: no site header, nav or footer; the kit's "Secured by Gully Pay" mark; noindex. */
 async function checkStandalone(page, label) {
   check(`${label}: no site nav, Launch app or site footer`, (await page.getByRole('link', { name: /Launch app/ }).count()) === 0 && (await page.getByText('© 2026 GULLY LABS').count()) === 0 && (await page.getByRole('navigation', { name: 'Main' }).count()) === 0)
-  check(`${label}: the footer says SECURED BY GULLY PAY with the shield and the kit mark`, (await page.locator('footer img[src="/brand/gully-mark-96.png"]').count()) === 1 && (await page.getByRole('link', { name: /Secured by Gully Pay/ }).count()) === 1 && /SECURED BY/.test((await page.locator('footer').first().textContent()) ?? '') && !/POWERED BY/.test((await page.locator('footer').first().textContent()) ?? '') && (await page.locator('footer a svg.lucide-shield-check').count()) === 1)
+  check(`${label}: the footer says SECURED BY GULLY PAY with the shield and the kit mark`, (await page.locator('footer img[src="/brand/products/gullypay-mark.svg"]').count()) === 1 && (await page.getByRole('link', { name: /Secured by Gully Pay/ }).count()) === 1 && /SECURED BY/.test((await page.locator('footer').first().textContent()) ?? '') && !/POWERED BY/.test((await page.locator('footer').first().textContent()) ?? '') && (await page.locator('footer a svg.lucide-shield-check').count()) === 1)
   check(`${label}: the header carries the small Secured by Gully Pay seal`, (await page.locator('header').first().getByTestId('secured-by-small').count()) === 1)
   check(`${label}: non-custodial badge and legal links in a new tab`, (await page.getByText('Non-custodial').count()) >= 1 && (await page.locator('nav[aria-label="Legal"] a[target="_blank"]').count()) >= 2)
   check(`${label}: noindex`, (await page.locator('meta[name="robots"][content="noindex"]').count()) === 1)
@@ -2902,10 +2902,10 @@ await step('da3-g6 empty states, fills, logos and prose', async () => {
     const dims = await page.evaluate(async () => {
       const load = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => res([0, 0]); i.src = src })
       const out = {}
-      for (const f of ['/assets/mascot-scientist.webp', '/assets/peddles.webp', '/assets/peddlequest.webp', '/tokens/logos/SLV.png', '/tokens/logos/EWY.png']) out[f] = await load(f)
+      for (const f of ['/brand/mascots/mascot-3-coding-feathered.png', '/assets/peddles.webp', '/assets/peddlequest.webp', '/tokens/logos/SLV.png', '/tokens/logos/EWY.png']) out[f] = await load(f)
       return out
     })
-    check('da3-g6 hero art: mascot 1000+ px, Peddles 1200+ px, PeddleQuest 1100+ px wide', dims['/assets/mascot-scientist.webp'][0] >= 1000 && dims['/assets/peddles.webp'][0] >= 1200 && dims['/assets/peddlequest.webp'][0] >= 1100, JSON.stringify(dims))
+    check('da3-g6 hero art: kit mascot 560+ px, Peddles 1200+ px, PeddleQuest 1100+ px wide', dims['/brand/mascots/mascot-3-coding-feathered.png'][0] >= 560 && dims['/assets/peddles.webp'][0] >= 1200 && dims['/assets/peddlequest.webp'][0] >= 1100, JSON.stringify(dims))
     check('da3-g6 token logos: SLV and EWY are 128+ px PNGs', dims['/tokens/logos/SLV.png'][0] >= 128 && dims['/tokens/logos/EWY.png'][0] >= 128, JSON.stringify(dims))
     await ctx.close()
   }
@@ -3217,8 +3217,8 @@ await step('brand kit everywhere', async () => {
     const html = await (await fetch(BASE + f)).text()
     check(`${f}: inlines the kit wordmark (outlined paths), no typed SVG text`, html.includes('data-brand="kit"') && !/<text[\s>]/.test(html))
   }
-  check('widget.js: the credit carries the kit mark', WIDGET_JS.toString().includes('/brand/gully-mark-96.png'))
-  for (const f of ['/favicon.ico', '/favicon-32.png', '/apple-touch-icon.png', '/icon-192.png', '/icon-512.png', '/brand/gullylabs-wordmark-on-dark.svg', '/brand/gullylabs-mascot-bust.png']) {
+  check('widget.js: the credit carries the kit mark', WIDGET_JS.toString().includes('/brand/icon/favicon-32.png'))
+  for (const f of ['/favicon.ico', '/favicon-32.png', '/apple-touch-icon.png', '/icon-192.png', '/icon-512.png', '/brand/icon/gully-labs-icon.png', '/brand/logo/gully-labs-wordmark-horizontal.png']) {
     check(`${f} is served`, (await fetch(BASE + f)).status === 200)
   }
 })

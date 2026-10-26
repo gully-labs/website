@@ -5,7 +5,7 @@ import { routeFor, SW_RULES } from './pwa.mjs'
 
 /* ------------------------------------------------------------------ build: precache list and worker --- */
 
-const FIXED = ['/index.html', '/errors/offline.html', '/icon-192.png']
+const FIXED = ['/index.html', '/errors/offline.html', '/brand/icon/app-icon-192.png']
 const isFont = (f) => /\.(woff2?|ttf|otf)$/.test(f)
 // Fonts: only the latin subsets, as woff2 (fontsource ships one file per unicode range and a woff fallback of each; the
 // rest load on demand and browsers that can run a service worker all read woff2).

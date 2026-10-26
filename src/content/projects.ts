@@ -119,7 +119,7 @@ export const projects: Project[] = [
     status: 'Beta',
     tagline: 'Our own chain, with a launchpad built in',
     description: 'Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and glUSD. Figures are in test ETH and read from our own indexer.',
-    logo: '/brand/gully-mark-512.png',
+    logo: '/brand/products/gullychain-icon-transparent-512.png',
     bg: '#0f0f10',
     accent: '#d9b563',
     fit: 'contain',

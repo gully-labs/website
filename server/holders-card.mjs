@@ -16,14 +16,15 @@ import { holderMapsPrimary } from './hosts.mjs'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const W = 1200
 const H = 630
-const K = { night: '#0d141c', midnight: '#151d28', slate: '#2a3542', bone: '#f4f2ec', gold: '#d9b563', pale: '#f2d58a', muted: '#aeb5be', dim: '#7d8794', moss: '#3c553b' }
+const K = { night: '#06050d', midnight: '#0b0a16', slate: '#1a1830', bone: '#ffffff', gold: '#00d2ff', pale: '#248bff', muted: '#a3a8c3', dim: '#7d8794', moss: '#7b3bff' } // the 2026 Gully Labs kit palette under the card's old names
 const INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
 
 const firstFile = (...c) => c.find((p) => p && fs.existsSync(p)) ?? null
 let mascot
 function mascotUri() {
   if (mascot !== undefined) return mascot
-  const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand', 'gullylabs-mascot-bust.png'), path.join(HERE, 'dist', 'brand', 'gullylabs-mascot-bust.png'), path.join(HERE, '..', 'public', 'brand', 'gullylabs-mascot-bust.png'))
+  // The Gully Labs kit icon (brand-kit icon/gully-labs-icon.png, 343 x 372), drawn at its own ratio below.
+  const p = firstFile(process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand', 'icon', 'gully-labs-icon.png'), path.join(HERE, 'dist', 'brand', 'icon', 'gully-labs-icon.png'), path.join(HERE, '..', 'public', 'brand', 'icon', 'gully-labs-icon.png'))
   mascot = p ? `data:image/png;base64,${fs.readFileSync(p).toString('base64')}` : null
   return mascot
 }
@@ -159,7 +160,7 @@ export function renderHolderCardSvg(map) {
   const TW = W - X - 50
   ctx.kitWordmark(X, 52, 0.2, 'dark')
   const m = mascotUri()
-  if (m) ctx.out.push(`<image x="${W - 50 - 88}" y="34" width="88" height="84" href="${m}"/>`)
+  if (m) ctx.out.push(`<image x="${W - 50 - 77}" y="34" width="77" height="84" href="${m}"/>`)
   ctx.font = '500 16px "IBM Plex Mono"'
   ctx.fillStyle = K.gold
   ctx.fillText('HOLDER MAP', X, 118)
@@ -235,7 +236,7 @@ export function renderHolderStatusCardSvg(body = {}) {
   const TW = W - X - 50
   ctx.kitWordmark(X, 52, 0.2, 'dark')
   const m = mascotUri()
-  if (m) ctx.out.push(`<image x="${W - 50 - 88}" y="34" width="88" height="84" href="${m}"/>`)
+  if (m) ctx.out.push(`<image x="${W - 50 - 77}" y="34" width="77" height="84" href="${m}"/>`)
   ctx.font = '500 16px "IBM Plex Mono"'
   ctx.fillStyle = K.gold
   ctx.fillText('HOLDER MAP', X, 118)

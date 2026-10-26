@@ -255,7 +255,7 @@ export function lineChart(
 const sparkPrev = new WeakMap<Element, (number | null)[]>()
 export function spark(el: HTMLElement | null, values: (number | null)[], { color = C.cyan, h = 40 }: { color?: string; h?: number } = {}) {
   if (!el) return
-  const W = 200, H = h, pad = 4
+  const W = 200, H = h, pad = 4, padX = 13
   const real = values.filter((v): v is number => v != null && isFinite(v))
   let svg = el.querySelector('svg')
   if (!svg) {
@@ -277,7 +277,8 @@ export function spark(el: HTMLElement | null, values: (number | null)[], { color
     const lo = hi0 === lo0 ? lo0 - 1 : lo0, hi = hi0 === lo0 ? lo0 + 1 : hi0
     const pts: Pt[] = []
     vals.forEach((v, i) => {
-      if (v != null) pts.push([(W * i) / Math.max(1, vals.length - 1), pad + (H - 2 * pad) * (1 - (v - lo) / (hi - lo))])
+      // padX keeps the end marker's pulse ring (r 4, scaled to 3x) inside the chart, so the card never clips it.
+      if (v != null) pts.push([padX + ((W - 2 * padX) * i) / Math.max(1, vals.length - 1), pad + (H - 2 * pad) * (1 - (v - lo) / (hi - lo))])
     })
     const d = pathD(pts), last = pts[pts.length - 1]
     s.innerHTML = `<defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".3"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path class="area" d="${d} L${last[0]},${H} L${pts[0][0]},${H} Z" fill="url(#${id})"/><path class="ln" d="${d}" stroke="${color}" stroke-width="1.5" vector-effect="non-scaling-stroke"/><circle class="pulse" cx="${last[0]}" cy="${last[1]}" r="4" stroke="${color}"/><circle class="end" cx="${last[0]}" cy="${last[1]}" r="3" fill="${color}"/>${final && !REDUCED ? `<circle class="gdot" r="2.4" fill="#fff" style="color:${color}" opacity=".85"><animateMotion dur="4.5s" repeatCount="indefinite" path="${d}"/></circle>` : ''}`

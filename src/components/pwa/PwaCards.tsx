@@ -14,17 +14,32 @@ export function PwaCards({ kind, lift = false }: { kind: 'site' | 'app'; lift?: 
   const mode = useInstallMode()
   const update = useUpdateReady()
   const [ready, setReady] = useState(false)
+  // Never on load: the install toast waits for the delay AND the visitor's first real scroll, so it never covers
+  // the first screen (owner, 2026-10-26: it sat over the product grid).
   useEffect(() => {
     if (!mode) return
-    const t = window.setTimeout(() => setReady(true), SHOW_AFTER_MS)
-    return () => window.clearTimeout(t)
+    let timed = false
+    let scrolled = window.scrollY > 240
+    const go = () => timed && scrolled && setReady(true)
+    const t = window.setTimeout(() => ((timed = true), go()), SHOW_AFTER_MS)
+    const onScroll = () => {
+      if (window.scrollY > 240) {
+        scrolled = true
+        go()
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.clearTimeout(t)
+      window.removeEventListener('scroll', onScroll)
+    }
   }, [mode])
 
   // Above the dock: its button is 44 px tall at 20 px (16 on phones); in the app the dock sits above the tab bar.
-  const place = `pointer-events-auto fixed right-5 z-40 w-[min(360px,calc(100vw-32px))] max-[600px]:right-4 print:hidden ${lift ? 'bottom-[calc(132px+env(safe-area-inset-bottom))]' : 'bottom-[76px]'}`
-  const card = 'flex items-center gap-3 rounded-card border border-gold-line bg-surface-deep p-3 shadow-[0_10px_28px_rgba(0,0,0,.45)] animate-[gl-fade_.3s_ease_both]'
-  const btn = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-btn bg-gold px-3 text-[13px] font-semibold text-[#06050d] transition-colors hover:bg-gold-hover'
-  const close = 'inline-flex size-9 shrink-0 items-center justify-center rounded-btn text-faint transition-colors hover:text-ink'
+  const place = `pointer-events-auto fixed right-5 z-40 w-[min(300px,calc(100vw-32px))] max-[600px]:right-4 print:hidden ${lift ? 'bottom-[calc(132px+env(safe-area-inset-bottom))]' : 'bottom-[76px]'}`
+  const card = 'flex items-center gap-2 rounded-full border border-gold-line bg-surface-deep py-1.5 pr-1.5 pl-4 shadow-[0_10px_28px_rgba(0,0,0,.45)] animate-[gl-fade_.3s_ease_both]'
+  const btn = 'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-gold px-3 text-[13px] font-semibold text-[#06050d] transition-colors hover:bg-gold-hover'
+  const close = 'inline-flex size-9 shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:text-ink'
 
   if (update) {
     return (
@@ -48,7 +63,7 @@ export function PwaCards({ kind, lift = false }: { kind: 'site' | 'app'; lift?: 
       <div className={card}>
         <Download size={18} className="shrink-0 text-gold" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="m-0 text-[14px] leading-tight font-semibold text-ink">{title}</p>
+          <p className="m-0 text-[13px] leading-tight font-semibold text-ink">{title}</p>
           {mode === 'ios' && (
             <p className="m-0 mt-1 flex flex-wrap items-center gap-x-1 text-[12px] leading-snug text-muted" data-testid="pwa-ios-steps">
               Tap <Share size={14} className="text-gold" aria-label="Share" /> Share <span aria-hidden>→</span> <SquarePlus size={14} className="text-gold" aria-hidden /> Add to Home Screen

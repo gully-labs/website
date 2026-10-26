@@ -15,7 +15,7 @@
 //  - Every letter is a path. scripts/gen-badge-glyphs.py outlines the kit typefaces (Barlow Condensed 700 for the
 //    label, JetBrains Mono 500 for the value) into server/badge-glyphs.mjs, so the SVG has no <text> and needs no
 //    font on the viewer's machine. The width of a run is the sum of its glyph advances (plus fixed tracking).
-//  - The mark is the kit's mascot bust (public/brand/kit/mark-64.png and mark-128.png, embedded as data URIs).
+//  - The mark is the Gully Labs kit icon (brand-kit icon/favicon-48.png and app-icon-180.png, embedded as data URIs).
 //  - Every box (badge, mark, divider, segment, bar) sits on whole pixels at 1x. Edges are filled shapes, never
 //    half-pixel strokes: the 1 px border is an outer rounded rect under an inner one. Text baselines are whole pixels.
 //  - Colours are the kit tokens (public/brand/tokens/tokens.json) and the wordmark's own gradients, nothing else.
@@ -25,17 +25,18 @@
 import GLYPHS from './badge-glyphs.mjs'
 import { KIT } from './brand.mjs'
 
-/** The kit tokens the badges draw with. */
+/** The badge palette: the 2026 Gully Labs kit (bg #06050D, surface #0B0A16, cyan #00D2FF, blue #248BFF, muted #A3A8C3), keyed by the old
+    token names so the themes below are unchanged; green and red stay as the good / warning status tones. */
 export const TOKENS = {
-  labNight: '#0D141C',
-  midnight: '#151D28',
-  slate: '#2A3542',
-  bone: '#F4F2EC',
-  labGold: '#D9B563',
-  paleGold: '#F2D58A',
+  labNight: '#06050D',
+  midnight: '#0B0A16',
+  slate: '#1A1830',
+  bone: '#FFFFFF',
+  labGold: '#00D2FF',
+  paleGold: '#248BFF',
   frogGreen: '#2F6B35',
   moss: '#3C553B',
-  textMuted: '#AEB5BE',
+  textMuted: '#A3A8C3',
   textDim: '#7D8794',
   // The site's error red (src/index.css --color-error), added to the badge kit by the owner on 2026-10-19 as the warning tone.
   alertRed: '#FF8A7A',
@@ -74,9 +75,9 @@ function normalise(opts) {
 
 /** Geometry per size, whole pixels. */
 const GEO = {
-  S: { h: 20, r: 4, pad: 5, mark: [15, 14], gap: 5, label: 12, value: 10, seg: 6, wm: 11 },
-  M: { h: 28, r: 6, pad: 6, mark: [21, 20], gap: 6, label: 16, value: 12, seg: 8, wm: 16 },
-  L: { h: 36, r: 6, pad: 8, mark: [27, 26], gap: 8, label: 20, value: 14, seg: 10, wm: 22 },
+  S: { h: 20, r: 4, pad: 5, mark: [14, 14], gap: 5, label: 12, value: 10, seg: 6, wm: 11 },
+  M: { h: 28, r: 6, pad: 6, mark: [20, 20], gap: 6, label: 16, value: 12, seg: 8, wm: 16 },
+  L: { h: 36, r: 6, pad: 8, mark: [26, 26], gap: 8, label: 20, value: 14, seg: 10, wm: 22 },
 }
 /** Label tracking in em (Barlow Condensed, upper case). */
 const LABEL_TRACK = 0.04
@@ -179,10 +180,12 @@ export function badgeMetrics(opts = {}) {
   const kind = KINDS.includes(opts.kind) ? opts.kind : 'project'
   const g = GEO[size]
   const label = clean(opts.label, 28).toUpperCase()
-  const value = kind === 'project' ? '' : clean(opts.value, 36)
+  // 'project' badges name Gully Labs in the badge's own mono type beside the kit icon (the retired gold
+  // wordmark paths are gone; the kit's wordmark is a raster too heavy to embed in a README badge).
+  const value = kind === 'project' ? 'GULLY LABS' : clean(opts.value, 36)
   const labelW = Math.ceil(runWidth('display', label, g.label, LABEL_TRACK))
   const wmS = g.wm / (KIT.wordmark.height || 176)
-  const valueW = kind === 'project' ? Math.ceil(KIT.wordmark.width * wmS) : Math.ceil(runWidth('mono', value, g.value))
+  const valueW = Math.ceil(runWidth('mono', value, g.value))
   const markX = g.pad
   const labelX = markX + g.mark[0] + g.gap
   // No value (a neutral pill): the badge ends after the label, with the mark's padding on the right.
@@ -216,24 +219,7 @@ export function renderBadge(opts = {}) {
   parts.push(`<image x="${m.markX}" y="${m.markY}" width="${g.mark[0]}" height="${g.mark[1]}" href="${GLYPHS.marks[markPx]}"/>`)
   parts.push(`<path fill="${th.ink}" d="${runPath('display', m.label, g.label, LABEL_TRACK, m.labelX, m.labelBase)}"/>`)
   let defs = ''
-  if (m.kind === 'project') {
-    // The kit wordmark, its own paths and gradients (dark variant: it sits on a dark field), scaled as one.
-    const wm = KIT.wordmark
-    const s = m.wmScale
-    const baseline = Math.round((H - wm.height * s) / 2 + 140 * s)
-    const oy = baseline - 140 * s
-    const id = `gl${m.size}`
-    const stops = (a) => a.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('')
-    const lg = wm.labsGradient
-    const bg = wm.barGradient
-    // The underline bar, on whole pixels (the master's 0.12 S offset and 0.06 S height, snapped to the grid).
-    const barY = Math.round(baseline + (wm.bar.y - 140) * s)
-    const barH = Math.max(1, Math.round(wm.bar.height * s))
-    const barW = Math.round(wm.bar.width * s)
-    defs = `<defs><linearGradient id="${id}l" gradientUnits="userSpaceOnUse" x1="${lg.x1}" y1="${lg.y1}" x2="${lg.x2}" y2="${lg.y2}">${stops(lg.dark)}</linearGradient><linearGradient id="${id}b" gradientUnits="userSpaceOnUse" x1="${m.valueX}" y1="0" x2="${m.valueX + barW}" y2="0">${stops(bg.dark)}</linearGradient></defs>`
-    parts.push(`<g transform="translate(${m.valueX} ${n2(oy)}) scale(${s.toFixed(6)})"><path fill="${wm.fill.dark}" d="${wm.gully}"/><path fill="url(#${id}l)" d="${wm.labs}"/></g>`)
-    parts.push(`<rect x="${m.valueX}" y="${barY}" width="${barW}" height="${barH}" fill="url(#${id}b)"/>`)
-  } else if (m.value) {
+  if (m.value) {
     parts.push(`<path fill="${seg.ink}" d="${runPath('mono', m.value, g.value, 0, m.valueX, m.valueBase)}"/>`)
   }
   const body = parts.join('\n')

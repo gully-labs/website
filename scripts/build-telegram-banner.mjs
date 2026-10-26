@@ -1,4 +1,6 @@
 // Builds the Telegram bot's animated banner from the Gully Labs brand kit, as a seamless 6 s loop:
+// RETIRED 2026-10-26: built the old frog banner. public/brand/telegram/banner.{mp4,gif} are now the 2026 kit OG image (social/og-image-1200x630.png) as a still clip; nothing to build.
+console.error("retired"); process.exit(1)
 //
 //   public/brand/telegram/banner.mp4                 1280×640 H.264, no audio: what the bot sends (sendAnimation)
 //   public/brand/telegram/banner.gif                 640×320 GIF fallback (and the admin channel preview)

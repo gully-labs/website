@@ -68,7 +68,7 @@ export function About() {
           </p>
         </div>
         <div className="relative aspect-square overflow-hidden rounded-modal bg-mascot-bg" style={rise(2)}>
-          <img src="/assets/mascot-scientist.webp" width={800} height={800} alt="Gully Labs chief scientist" className="absolute inset-0 size-full animate-float-slow object-cover" />
+          <img src="/brand/mascots/mascot-3-coding-feathered.png" width={564} height={896} alt="The Gully Labs mascot at work" className="absolute inset-0 size-full animate-float-slow object-contain" />
         </div>
       </section>
 

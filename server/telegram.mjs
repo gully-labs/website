@@ -37,7 +37,7 @@
 // One chat per account; a newer link replaces the older one.
 //
 // /start without a code sends the banner (an H.264 MP4 animation, public/brand/telegram/banner.mp4, with
-// banner.gif as the fallback, both built from the brand kit by scripts/build-telegram-banner.mjs) with the
+// banner.gif as the fallback, both the 2026 Gully Labs kit's social/og-image-1200x630.png, encoded as a still clip at its own size) with the
 // main menu. Telegram's file_id for it is kept in DATA_DIR/telegram.json after the first upload, keyed on
 // the file's hash, and reused until the file changes. Screens: Stocks (chain → ticker grid → card
 // with a 24h sparkline → alert stepper), Top gaps, Movers (24h/1h), DeepCore launches (chain filter →
@@ -578,8 +578,8 @@ const alertsCall = (address, method, p, body) => callRoute(handleAlerts, method,
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 // The MP4 first: Telegram shows an MP4 as sent, while it re-encodes an uploaded GIF (the old 640×320 one came back at 320×160).
 const BANNER_FILES = [
-  { name: 'banner.mp4', type: 'video/mp4', upload: 'gully-labs.mp4', width: 1280, height: 640, is: (b) => b.subarray(4, 8).toString('latin1') === 'ftyp' },
-  { name: 'banner.gif', type: 'image/gif', upload: 'gully-labs.gif', width: 640, height: 320, is: (b) => b.subarray(0, 3).toString('latin1') === 'GIF' },
+  { name: 'banner.mp4', type: 'video/mp4', upload: 'gully-labs.mp4', width: 1200, height: 630, is: (b) => b.subarray(4, 8).toString('latin1') === 'ftyp' },
+  { name: 'banner.gif', type: 'image/gif', upload: 'gully-labs.gif', width: 1200, height: 630, is: (b) => b.subarray(0, 3).toString('latin1') === 'GIF' },
 ]
 /** The banner to upload: { buf, sha, type, upload, width, height }, or null. `sha` keys the cached file_id, so a rebuilt banner is uploaded again. */
 function bannerFile() {

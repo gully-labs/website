@@ -1,45 +1,25 @@
-import { KIT } from './kit.generated'
+/* The Gully Labs mark from the brand kit (Desktop\GULLY LABS GRAPHICS\Gully Labs\brand-kit, copied byte-exact
+   to public/brand/): the flask icon, `icon/gully-labs-icon.png` (343 x 372, transparent). It is drawn at its
+   intrinsic 0.922:1 ratio inside a `size` x `size` box, never cropped or recoloured. The retired frog mascot
+   (gully-mark-*.png, the mascot bust) is no longer used anywhere. `variant` is kept for old call sites:
+   both variants render the kit icon. */
+const ICON = { src: '/brand/icon/gully-labs-icon.png', width: 343, height: 372 }
 
-/* The Gully Labs mascot from the brand kit, as a picture.
-   - mark: the kit's square avatar composition (public/brand/gully-mark-*.png, cut down from the kit's
-     640 px icon master, never upscaled), round like every platform crops it. For icon slots.
-   - bust: the transparent mascot bust (1x and 2x masters) for hero and lockup-like placements.
-   The browser picks the file from srcset by device pixel ratio. */
-export function Mascot({ size = 32, variant = 'mark', className = '', label = 'Gully Labs mascot', decorative = false }: { size?: number; variant?: 'mark' | 'bust'; className?: string; label?: string; decorative?: boolean }) {
-  if (variant === 'bust') {
-    const width = size
-    const height = Math.round((size * KIT.bust.height) / KIT.bust.width)
-    return (
-      <img
-        src={KIT.bust.src}
-        srcSet={`${KIT.bust.src} ${KIT.bust.width}w, ${KIT.bust.src2x} ${KIT.bust.width * 2}w`}
-        sizes={`${width}px`}
-        width={width}
-        height={height}
-        alt={decorative ? '' : label}
-        aria-hidden={decorative ? true : undefined}
-        decoding="async"
-        draggable={false}
-        data-brand="kit"
-        className={`block shrink-0 object-contain ${className}`}
-        style={{ width, height }}
-      />
-    )
-  }
+export function Mascot({ size = 32, className = '', label = 'Gully Labs', decorative = false }: { size?: number; variant?: 'mark' | 'bust'; className?: string; label?: string; decorative?: boolean }) {
+  const height = size
+  const width = Math.round(((size * ICON.width) / ICON.height) * 100) / 100
   return (
     <img
-      src="/brand/gully-mark-96.png"
-      srcSet="/brand/gully-mark-96.png 96w, /brand/gully-mark-192.png 192w, /brand/gully-mark-512.png 512w"
-      sizes={`${size}px`}
-      width={size}
-      height={size}
+      src={ICON.src}
+      width={width}
+      height={height}
       alt={decorative ? '' : label}
       aria-hidden={decorative ? true : undefined}
       decoding="async"
       draggable={false}
       data-brand="kit"
-      className={`block shrink-0 rounded-full object-cover ${className}`}
-      style={{ width: size, height: size }}
+      className={`block shrink-0 object-contain ${className}`}
+      style={{ width, height }}
     />
   )
 }

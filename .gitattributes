@@ -1,1 +1,3 @@
 *.sh text eol=lf
+# Brand kit files stay byte-exact (no line-ending conversion).
+*.svg -text

@@ -1,4 +1,6 @@
 // Builds the KOL / launch announcement banner from the Gully Labs brand kit, as a seamless 7 s loop that
+// RETIRED 2026-10-26: built the old frog banner. public/brand/telegram/banner.{mp4,gif} are now the 2026 kit OG image (social/og-image-1200x630.png) as a still clip; nothing to build.
+console.error("retired"); process.exit(1)
 // shows the product line-up and gullylabs.xyz:
 //
 //   marketing/kol/announce-1280x720.mp4      Telegram channel post (@GullyLabsNews), H.264, under 2 MB
