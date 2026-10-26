@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-26T05:05:03.721Z",
+ "updatedAt": "2026-10-26T08:51:33.289Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -8,8 +8,8 @@
    "title": "Tokenised stocks, priced two ways",
    "url": "https://docs.gullylabs.xyz/",
    "section": null,
-   "text": "The Gully Labs tracker checks every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, live. These docs cover how it works, the public API it is built on, the widget that puts it on your own page, and the products built around it. Docs for Gully Labs: the stock token tracker on Robinhood Chain, BNB Chain and Solana, its public API, the widget and API keys, plus Gully Pay, the Holder Map, Gully AI, the Telegram bot, swaps and status.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "The Gully Labs tracker checks every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, live. These docs cover how it works, the public API it is built on, the widget that puts it on your own page, and the products built around it. Docs for Gully Labs: the stock token tracker, its public API, widget and API keys, the Holder Map, Gully Score, Gully AI, Gully IPFS and the Telegram bot.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "7aa5dc9b7774",
@@ -37,6 +37,15 @@
    "section": "Quick start",
    "text": "Read the whole tracker as JSON. No key is needed: Or put a live ticker on a web page: The API reference lists every field; the widget guide every option. Build a widget visually at gullylabs.xyz/widget.",
    "updatedAt": "2026-10-17T16:09:52.545Z"
+  },
+  {
+   "id": "74e55dfa759e",
+   "source": "Docs",
+   "title": "Tokenised stocks, priced two ways",
+   "url": "https://docs.gullylabs.xyz/#elsewhere",
+   "section": "Docs on product domains",
+   "text": "Gully Chain, Gully Pay, Gully RPC and Gully Security run on their own domains, and their docs live there. The old pages here forward to them.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "998025bd8487",
@@ -800,8 +809,8 @@
    "title": "Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map",
    "section": null,
-   "text": "Who really holds a token: the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every DeepCore launch. Any token on Robinhood Chain, BNB Chain, Base, HyperEVM and Solana can be mapped. How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "Who really holds a token: the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every DeepCore launch. Any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain Testnet and Solana can be mapped. How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "0a67b6de8a2a",
@@ -809,8 +818,8 @@
    "title": "Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map#what",
    "section": "What it shows",
-   "text": "The Holder Map covers any ERC-20 token on Robinhood Chain, BNB Chain, Base and HyperEVM and any SPL token on Solana, plus DeepCore launches and the stock tokens the tracker follows. Paste an address at gullylabs.xyz/holders: it is first checked to be a token (an ERC-20 that answers decimals and total supply, or a Solana mint), and with no chain given every supported chain is checked at once (a token on several chains gives a picker). Launch checks and the health score are for DeepCore launches and launchpads we know; a plain token gets holders, clusters and concentration. Every bubble is a wallet, sized by its share of the total supply (or of the listed holders when the supply could not be read; the map says which). Grey bubbles are not people: trading pools, liquidity and token locks, burn addresses, the token’s own contract, DeepCore and Gully Labs contracts, and exchanges. They are never put in a cluster and never counted in the “top 10 wallets” figure. The summary line says how much the top 10 wallets hold and how much the largest connected cluster holds, across how many wallets. A few plain sentences follow it. For stock tokens the map also shows what the top wallets hold at the real share price, and whether they sit on a premium or a discount to it.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "The Holder Map covers any ERC-20 token on Robinhood Chain, BNB Chain, Base, HyperEVM and Gully Chain Testnet and any SPL token on Solana, plus DeepCore launches, Gully Launchpad launches and the stock tokens the tracker follows. Paste an address at gullylabs.xyz/holders: it is first checked to be a token (an ERC-20 that answers decimals and total supply, or a Solana mint), and with no chain given every supported chain is checked at once (a token on several chains gives a picker). Launch checks and the health score are for DeepCore launches and launchpads we know; a plain token gets holders, clusters and concentration. Every bubble is a wallet, sized by its share of the total supply (or of the listed holders when the supply could not be read; the map says which). Grey bubbles are not people: trading pools, liquidity and token locks, burn addresses, the token’s own contract, DeepCore and Gully Labs contracts, and exchanges. They are never put in a cluster and never counted in the “top 10 wallets” figure. The summary line says how much the top 10 wallets hold and how much the largest connected cluster holds, across how many wallets. A few plain sentences follow it. For stock tokens the map also shows what the top wallets hold at the real share price, and whether they sit on a premium or a discount to it.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "7cd37b73f285",
@@ -827,8 +836,8 @@
    "title": "Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map#sources",
    "section": "Data sources per chain",
-   "text": "everyone. DeepCore launches (BNB Chain, HyperEVM, Robinhood Chain, Base) (DeepCore’s own log index: every transfer since the launch, so balances are exact): Every transfer between mapped wallets since the launch Any ERC-20 and stock tokens (Robinhood Chain, BNB Chain, Base, HyperEVM) (Our own Transfer-log index on an archive node (exact balances); past its caps or without one: Blockscout, then Moralis (top holders, labelled)): Every transfer since the token was deployed; for top-holders maps, the latest transfers Any SPL token and stock tokens on Solana (Every token account of the mint where the RPC allows it, else the 20 largest token accounts, merged by owner (labelled)): Not read on Solana yet Labels come from DeepCore’s list of its own contracts, the launch’s lock, the Gully Pay fee proxies, the tracker’s pool and public name tags (exchanges among them) from Blockscout’s metadata service.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "everyone. DeepCore launches (BNB Chain, HyperEVM, Robinhood Chain, Base) (DeepCore’s own log index: every transfer since the launch, so balances are exact): Every transfer between mapped wallets since the launch Any ERC-20 and stock tokens (Robinhood Chain, BNB Chain, Base, HyperEVM) (Our own Transfer-log index on an archive node (exact balances); past its caps or without one: Blockscout, then Moralis (top holders, labelled)): Every transfer since the token was deployed; for top-holders maps, the latest transfers Any ERC-20 on Gully Chain Testnet (Gully Launchpad launches included) (Our own Transfer-log index on the chain’s archive node (exact balances); past its caps, our Gully Chain indexer (top holders). The launchpad curve, LP locker, routers and Gully Swap pools are labelled; wallets with a.gully name are shown by it): Every transfer since the token was deployed Any SPL token and stock tokens on Solana (Every token account of the mint where the RPC allows it, else the 20 largest token accounts, merged by owner (labelled)): Not read on Solana yet Labels come from DeepCore’s list of its own contracts, the launch’s lock, the Gully Pay fee proxies, the tracker’s pool and public name tags (exchanges among them) from Blockscout’s metadata service.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "01392cbf2628",
@@ -980,8 +989,8 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#launchpads",
    "section": "Get your launchpad listed",
-   "text": "The Holder Map keeps a registry of launchpads. One declarative entry per launchpad is all it takes: its chains, and either a token endpoint on your API or the factory contract and the event it emits when a token is created. Peddles and PeddleSwap are the first two entries. What we need from you: Your name, website and the chains you launch on (Robinhood Chain, BNB Chain, Base and HyperEVM are supported). Either a token endpoint that answers whether an address is one of your launches and names its creator (and ideally the creation block), or your factory or hook contract address per chain with the signature of the event it emits at creation and where the token and creator sit in it. Optionally the address of the pool or pool manager that holds a launch’s liquidity, so it is labelled on the map. Send these to team@gullylabs.xyz. Gully Labs adds the entry, checks it against live launches and replies when it is live. We take contract addresses only from you or from your deployments; we never guess them.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "The Holder Map keeps a registry of launchpads. One declarative entry per launchpad is all it takes: its chains, and either a token endpoint on your API or the factory contract and the event it emits when a token is created. Peddles and PeddleSwap are the first two entries. What we need from you: Your name, website and the chains you launch on (Robinhood Chain, BNB Chain, Base, HyperEVM and Gully Chain Testnet are supported). Either a token endpoint that answers whether an address is one of your launches and names its creator (and ideally the creation block), or your factory or hook contract address per chain with the signature of the event it emits at creation and where the token and creator sit in it. Optionally the address of the pool or pool manager that holds a launch’s liquidity, so it is labelled on the map. Send these to team@gullylabs.xyz. Gully Labs adds the entry, checks it against live launches and replies when it is live. We take contract addresses only from you or from your deployments; we never guess them.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "7fb0b6c4a793",
@@ -1054,258 +1063,6 @@
    "section": "Dashboard and API",
    "text": "Sign in at analytics.gullylabs.xyz with the login from the Analytics tab. Each website has the usual Umami views plus a Web3 tab: unique wallets, connects, connect rate, transactions, transactions per wallet, a visit → connect → transaction funnel, chains, wallet apps and the top pages by connects. The Umami REST API works with your own login: sign in with POST /api/auth/login and send the token as Authorization: Bearer …. The Web3 figures are at GET /api/websites/{websiteId}/web3?startAt=…&endAt=…. The source is public: gully-labs/umami, MIT licensed like Umami.",
    "updatedAt": "2026-10-17T16:09:52.545Z"
-  },
-  {
-   "id": "e5604a3a8760",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay",
-   "section": null,
-   "text": "Non-custodial crypto billing: every payment is a plain transfer from the payer’s wallet straight to the treasury, read back from the chain. Invoices, reusable pay links, a hosted checkout and signed webhooks. Gully Pay: invoices and reusable pay links in USDC, USDT or the chain's own coin on seven chains, wallet QR codes, the Pay with crypto button, and signed merchant webhooks with how to verify them.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "c09bfe9ace94",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#overview",
-   "section": "Overview",
-   "text": "An invoice (/pay/inv_…) asks for one US dollar amount. The payer picks a chain and an asset and gets a quote: the exact amount to send, valid for 20 minutes. Stablecoins count one to one with a unique tag in the last digits; the chains' own coins (ETH, BNB, POL, AVAX) are priced by the Chainlink USD feed on the same chain. A payment is checked on chain (success, right chain, right asset, the treasury, the exact amount, enough confirmations, never used before) before the invoice is marked paid. The same rules as API plans apply. Base (8453) (10): USDC (6 decimals), ETH Ethereum (1) (6): USDC, USDT (6 decimals), ETH BNB Chain (56) (15): USDT, USDC (18 decimals), BNB Arbitrum (42161) (10): USDC (6 decimals), ETH OP Mainnet (10) (10): USDC, USDT (6 decimals), ETH Polygon (137) (64): USDC (6 decimals), POL Avalanche (43114) (2): USDC, USDT (6 decimals), AVAX The live list, read from GET /api/plans as you look at this page (hover a chain for its assets and confirmations): Nothing is held in between: the transfer goes to the treasury in the payer’s own transaction. If no treasury is configured, every page says checkout is closed and shows no amount or QR.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "cf96faf78197",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#chains",
-   "section": "Chains, treasury and the fee",
-   "text": "The treasury is a Safe: the same address on every chain, but it only exists on a chain where it has been deployed. The server reads eth_getCode(treasury) on every chain at start and hourly; a chain where the treasury has no code is not offered (no quote, no pay link, no checkout, no QR) until the Safe is deployed there, when it switches on by itself. The live list above is already filtered this way. Merchant payments go to the merchant's own wallet (checked the same way, per chain). The Gully Pay fee on a stablecoin payment is collected inside that payment through Request Network's ERC20FeeProxy only on a chain where that contract is verified byte for byte and the treasury is deployed; everywhere else, and for coin payments, the payer makes one plain transfer and the fee is invoiced to the merchant weekly. The payer never sees a difference in the amount. Base (proxy verified (0x1892…b814) · treasury deployed): stablecoins: one approve + one call pays merchant and fee; coins: one transfer Ethereum (proxy verified (0x370D…623C) · treasury deployed): same as Base BNB Chain (proxy verified (0x0Dfb…0aC9) · treasury deployed): same as Base Arbitrum (proxy verified (0x0Dfb…0aC9) · treasury deployed): same as Base OP Mainnet (proxy verified, byte-identical to Base (0x399F…cbfE) · treasury not deployed yet): Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced; once the Safe is deployed, same as Base",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "ebca8c6339cb",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#chains",
-   "section": "Chains, treasury and the fee",
-   "text": "(0x399F…cbfE) · treasury not deployed yet): Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced; once the Safe is deployed, same as Base Polygon (proxy present (0x0Dfb…0aC9) but a different build from Base’s: not used · treasury not deployed yet): Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced Avalanche (proxy present (0x0Dfb…0aC9) but a different build from Base’s: not used · treasury not deployed yet): Gully Labs checkout: not offered until the Safe is deployed there. Stores: one transfer, fee invoiced Solana (no Request deployment · its own treasury (GULLY_SOLANA_TREASURY)): one Solana Pay transfer; a merchant fee is invoiced Each new chain's proxy was read with eth_getCode through three or more public RPCs and its runtime, metadata stripped, compared with Base's 0x1892…b814; only a byte-identical one is used for a split (OP Mainnet). Polygon's and Avalanche's are other builds of the same source, so those chains stay on plain transfers with the fee invoiced. The addresses, hashes and what each RPC answered are in contracts/CHOICE.md. GET /api/plans carries feeProxy (verified contract exists) and feeSplit (usable now) per chain.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "97ffec8852af",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#gas",
-   "section": "Gas per chain",
-   "text": "Gas is paid by the payer, in the chain’s own coin, from their own wallet. Gully Pay adds nothing to it, and neither the merchant nor Gully Labs pays it. What it costs depends on the kind of payment and the chain: Stablecoin, fee in the payment (one approve (skipped when the allowance is already set) and one fee-proxy call that pays the merchant and the fee together): merchant stores on chains where the fee proxy is usable (feeSplit true in GET /api/plans) Stablecoin, plain (one ERC-20 transfer): Gully Labs invoices and plans, and stores on every other chain Native coin (one plain transfer, the cheapest of the three): every chain On the rollups the cost has two parts: the L2 execution gas, and an L1 data fee for posting the transaction to Ethereum (read from the OP Stack GasPriceOracle on Base and OP Mainnet, from NodeInterface on Arbitrum). That is why Ethereum itself costs many times what an L2 does, and why the chart below uses a log scale. Below, live: what one payment costs right now on each chain, from GET /api/pay/gas. Hover a chain for the gas price, the coin price, the L1 fee and the gas units assumed; the server re-reads every few minutes, and a chain it could not read is named, never drawn as zero. The figures come from the chain itself: eth_gasPrice on the chain and the coin’s USD price from the chain’s own Chainlink feed. When the feed cannot be read the USD cost is left out rather than guessed. A wallet may add a priority tip on top; the payer’s wallet shows the exact fee before they sign.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
-  },
-  {
-   "id": "aecd2bb90e1b",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#links",
-   "section": "Pay links",
-   "text": "A pay link (/pay/l/pl_…, an unguessable id) is reusable: every payer who opens it gets an invoice of their own, linked back to the link, then lands in the checkout. Links are made in the admin dashboard. title, description (string): Shown on the link, the checkout and the receipt. amount (fixed | open): A fixed USD amount, or open: the payer types an amount between a minimum and a maximum. The server checks it; the page cannot change it. assets (string[]): Which chain and asset pairs it takes (all by default). active (boolean): Switched off links take no payments. expiresAt (date, or empty): After it, the link takes no payments. maxUses (number, or empty): How many paid uses it allows. Checkouts in progress count against it, so a one-off link cannot be paid twice. webhook (https URL, or empty): Where its events go (webhooks). An invoice made from a link stays open for an hour. Its quote holds 20 minutes and can be renewed. Each address may start ten checkouts from links an hour. A switched-off, expired or used-up link says so plainly and starts no checkout.",
-   "updatedAt": "2026-10-19T08:04:51.615Z"
-  },
-  {
-   "id": "8a09a47ee232",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#checkout",
-   "section": "The checkout",
-   "text": "Title, amount and a status pill: awaiting payment, confirming, paid, expired or cancelled. Assets grouped by chain; the exact amount, large; a wallet QR; copy buttons for the amount, the treasury address and the token contract. A countdown on the quote, and a new quote when it runs out. A payment sent in time can still be checked after. Pay with wallet sends the exact transfer from a connected wallet. Or send from anywhere and paste the transaction hash. Live confirmations (n / needed), then a receipt with the explorer link, ready to print or save as PDF.",
-   "updatedAt": "2026-10-17T17:00:51.286Z"
-  },
-  {
-   "id": "39d6f60d00f8",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#no-stuck-funds",
-   "section": "Funds can’t get stuck",
-   "text": "Stablecoin payments to a store carry Gully Labs’ fee in the same transaction through Request Network’s ERC20FeeProxy, an immutable contract with no owner. It never holds tokens: one call moves the payment from the payer to the recipient and the fee to the treasury, and returns. The only way funds could end up inside it is a transfer sent straight to the proxy’s address, and nobody, Gully Labs included, could get those back. So the server and the checkout make that impossible: Every quote, QR code, wallet link, recipient address and split call passes one validator before it leaves the server. A proxy address (on any chain) is never a recipient; a split calls the proxy only through transferFromWithReferenceAndFee with zero value, an allowed stablecoin, the recipient and the treasury as the two legs and an approval for exactly the amount. Anything else answers 500 with no payment details at all. The Pay with wallet button checks the same rules again in the browser, simulates the proxy call with eth_call before your wallet sees it, and refuses to send on any failure. It never sends coin to the proxy and never falls back to a plain transfer to it. An hourly monitor reads every proxy’s balances on every chain. A non-zero balance (a transfer someone sent to the proxy by hand) alerts the Gully Labs team, who cannot recover it either but can warn the payer. Pay with the wallet button or send to the address shown on the quote. Never copy the pay.to contract address of a split into a wallet as a recipient: a plain transfer to it is lost for good, and the server names such a transaction as an unrecoverable mis-send instead of a payment.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "45322768dcda",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#qr",
-   "section": "Wallet QR codes",
-   "text": "Every quote carries an uri: an EIP-681 payment request for the exact amount, built on the server from base units (never floating point). The QR encodes it. Wallet support for EIP-681 varies: some read only the address, some ignore the amount or the chain. The checkout always shows the address, the exact amount and the token contract with copy buttons. Check the amount and the network in the wallet before sending.",
-   "updatedAt": "2026-10-17T17:00:51.286Z"
-  },
-  {
-   "id": "8b45ddf7deff",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#button",
-   "section": "Pay with crypto button",
-   "text": "Paste this on any site to send buyers to a pay link or an invoice. The link alone opens the checkout in a new tab; the optional script opens it in a popup window. The admin shows the snippet for each link and invoice. The checkout cannot be put in an iframe: its pages send frame-ancestors limited to Gully Labs itself, so wallet prompts and the address bar stay visible to the payer.",
-   "updatedAt": "2026-10-17T17:00:51.286Z"
-  },
-  {
-   "id": "4523974623e0",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#webhooks",
-   "section": "Webhooks",
-   "text": "A pay link, an invoice, or a default endpoint for everything else can have a webhook. When an invoice has its own, or its link has one, events go there; otherwise to the default, if set. invoice.paid (The payment is confirmed and the invoice marked paid.): invoice, link, payment invoice.expired (An open invoice ran out without a payment.): invoice, link invoice.cancelled (Gully Labs cancelled the invoice; it can no longer be paid. A cancelled invoice never sends invoice.expired afterwards.): invoice, link webhook.test (The admin pressed Send test event.): target, message https only. No user name or password in the URL. The host must resolve only to public addresses: private, loopback, link-local and reserved ranges are refused, and the request goes to the address that was checked. The signing secret (whsec_…) is shown once, when the endpoint is set. Rotating it shows the new one once; the old one stops at once. Five-second timeout, redirects not followed, the response body is not read.",
-   "updatedAt": "2026-10-17T19:27:55.110Z"
-  },
-  {
-   "id": "a4eaf1024a43",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#verify",
-   "section": "Verifying the signature",
-   "text": "Every request carries two headers. The signature is an HMAC-SHA256, with your secret, of the timestamp, a dot, and the raw body: X-Gully-Timestamp (unix seconds): When it was sent. Refuse old ones (five minutes) to stop replays. X-Gully-Signature (sha256=<hex>): hex(HMAC-SHA256(secret, `${timestamp}.${rawBody}`)) It is the same scheme as gap alerts, so one verifier serves both.",
-   "updatedAt": "2026-10-17T17:00:51.286Z"
-  },
-  {
-   "id": "d6c7b3a8c771",
-   "source": "Docs",
-   "title": "Gully Pay",
-   "url": "https://docs.gullylabs.xyz/gully-pay#retries",
-   "section": "Delivery and retries",
-   "text": "The first attempt goes out at once. Any answer other than 2xx, a timeout or a network error is retried after 1, 5, 10, 20 and 30 minutes: six attempts over about an hour. Then the delivery is marked failed. Retries carry the same event id and body; each is signed again with the current secret and timestamp. The queue is stored on disk, so a restart loses nothing: attempts that came due while the server was down go out when it is back. Each link and invoice shows its delivery log in the admin: event, state, attempts, last answer. A finished delivery (failed or delivered) can be redelivered from the admin, for example after your endpoint was down for longer than the retries. The same event goes out again, with the same id and body, as a new delivery with its own six attempts. Your handler should already drop an id it has handled. Events may arrive out of order and, rarely, more than once. Treat invoice.paid as the source of truth for a sale and look the invoice up by id.",
-   "updatedAt": "2026-10-17T19:27:55.110Z"
-  },
-  {
-   "id": "4a2a72fd495f",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants",
-   "section": null,
-   "text": "Take USDC, USDT and the chains' own coins on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon and Avalanche, straight into your own wallet. Non-custodial: payments go directly to your wallet. Gully Labs never holds your funds. Run your own non-custodial crypto checkout: wallets per chain, pay links and invoices, signed webhooks, a transaction fee only, weekly statements and the pause policy.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "e2f09edffe45",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#overview",
-   "section": "Overview",
-   "text": "Every workspace in the app dashboard can be a store. Open the Merchant tab (app.gullylabs.xyz/#merchant), add a receiving wallet and name the store: from then on your pay links and invoices take payments. The checkout, quotes and onchain checks are the same as Gully Pay uses for Gully Labs itself; the only difference is where the money goes: your wallet. The payer sends a plain transfer from their wallet to yours, in their own transaction. We read it back from a public node of that chain. Nothing passes through an account of ours, and we cannot move, hold or refund a payment.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
-  },
-  {
-   "id": "0a332018b4bf",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#setup",
-   "section": "Setup",
-   "text": "Wallets: one address per chain (the same address on every chain is fine). Store profile: name, logo (https, PNG, JPEG, GIF or WebP, 256 KB at most; fetched once and served from our origin), accent colour, support email and website. They head every checkout, which ends with “Powered by Gully Pay”. Roles: owners, admins and billing members run the store (wallets, profile, invoices); developers make pay links and set the webhook; viewers read everything.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "2380fb22467e",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#wallets",
-   "section": "Receiving wallets",
-   "text": "A mixed-case address must match its EIP-55 checksum exactly, so a mistyped character cannot slip through. An all-lower-case (or all-upper-case) address carries no checksum: it is accepted and stored in its checksummed form. We read the chain: an address with no code is a plain wallet (an EOA, an externally owned account: one controlled by a private key); with code, a contract (a Safe or another smart account); an EIP-7702 delegated EOA (a plain wallet that has lent its signing to a contract’s code) is shown as such. A contract must be deployed on a chain before that chain can be turned on. A Safe's address can exist on a chain before the Safe is deployed there; a payment to it then may be lost. If you say the wallet is a contract, or it is a contract on another of our chains, and it has no code on this one, the chain stays off. Deploy it, then press Check again, or leave it: we read every undeployed wallet again each hour, and the chain switches on by itself once the contract is there (unless you turned it off). Gully Labs' own treasury cannot be a store wallet.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "18387b06bb65",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#wallets",
-   "section": "Receiving wallets",
-   "text": "wallet again each hour, and the chain switches on by itself once the contract is there (unless you turned it off). Gully Labs' own treasury cannot be a store wallet. Never a fee proxy contract. Request Network's ERC20FeeProxy (the contract a split payment passes through) has no owner: anything sent straight to its address is lost for good. The form and the server both refuse it as a store wallet, and you should never give its address to a customer as a place to pay. Your customers pay your wallet; the proxy only passes the payment through inside one transaction.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "de7775966a90",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#safe",
-   "section": "Using a Safe as your store wallet",
-   "text": "A Safe (the multisig from safe.global) is a good store wallet: several owners, a threshold, no single key. One thing to know: a Safe exists only on the chains where it was deployed. Its address is the same everywhere, but on a chain where nobody deployed it there is no contract behind it, and a payment sent there is lost. That is why a chain stays off until the Safe has code on it. Deploy Safe on <chain>. A wallet row that reads “not deployed” has this button. We read your Safe on a chain where it exists (owners, threshold, version), recover its creation transaction (the salt and the exact set-up call live only there: from a transaction you created through us, the first block it had code in, or Safe's own service, each verified), check that Safe's official factory, singleton and fallback handler are on the target chain with the expected code, and compute the address the factory call would create. Only if that address is exactly your Safe's do we offer the call; the page recomputes it once more before your wallet is asked. Your wallet signs. Connect any wallet with a little of the chain's coin for gas (about 240,000 gas; the estimate is shown first). It does not have to be a Safe owner. The transaction goes from your wallet to Safe's factory; Gully Labs never holds a key and never sends anything.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "cba953ab5477",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#safe",
-   "section": "Using a Safe as your store wallet",
-   "text": "shown first). It does not have to be a Safe owner. The transaction goes from your wallet to Safe's factory; Gully Labs never holds a key and never sends anything. Sent → Mined → Verified. We read the receipt, then the code and owners at the address, and run the same check as “Check again”: the chain switches on by itself. The copy starts as the original was set up. If you added owners or changed the threshold after creating the Safe, the new chain starts with the original owners and threshold; change them there afterwards in Safe{Wallet}. Guards and modules are not copied. A Safe that paid for its own deployment, or whose set-up calls a contract missing on the target chain, is refused rather than deployed broken. No Safe yet? Create one. List the owners (your connected wallet is filled in), pick a threshold and a chain. We plan a Safe 1.4.1 from Safe's official factory with a deterministic salt we keep, so you see the address before anything is sent and can later deploy the same Safe at that address on every other chain with one click. Once verified it becomes your store wallet on that chain.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "e9b383f7090a",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#safe",
-   "section": "Using a Safe as your store wallet",
-   "text": "anything is sent and can later deploy the same Safe at that address on every other chain with one click. Once verified it becomes your store wallet on that chain. What cannot be reproduced. Only Safe 1.3.0 and 1.4.1 from Safe's official factory. A Safe created with createProxy (plain CREATE, old 1.3.0 flows) or by another factory has an address that depends on that factory's own history: create a new Safe for that chain instead. The fee-proxy contracts and Gully Labs' treasury are never a target. Nothing in this flow holds money: the deployment transaction carries no value, the Safe is deployed by Safe's audited factory, and until the chain shows the code and owners the chain stays off and no checkout offers it.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "7295dab55f5c",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#links-invoices",
-   "section": "Links and invoices",
-   "text": "Pay link (/pay/m/l/ml_…): Title, description, a fixed amount or one the payer chooses between a minimum and a maximum, assets, optional expiry and maximum uses. Each payer gets an invoice of their own (open one hour). Invoice (/pay/m/mi_…): Number (INV-0001… or yours), line items, due date, customer name and email, notes, assets. Payable 30 days past the due date (shown overdue), then it expires. Each has a copy button, a QR code of its checkout URL and a “Pay with crypto” button snippet for your site (the same snippet and popup script as Gully Pay's own links).",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "610177cbb910",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#checkout",
-   "section": "The checkout",
-   "text": "Your name, logo and accent; the amount; for an invoice, the line items, who it is billed to and the due date; the wallet it pays on each chain. The payer picks a chain and an asset and gets a 20-minute quote for an exact amount (stablecoins 1:1 plus a tag in the last digits; ETH, BNB, POL and AVAX at the Chainlink price on that chain). A payment counts only when it sent your wallet exactly the quoted amount in the quoted asset on the quoted chain, inside the quote's time, with the chain's confirmations, and its transaction was never used for anything else, by you, another store or Gully Labs. A transfer to any other address never counts. Stablecoin payments above your free allowance pay your wallet and Gully Labs' fee in one transaction through Request Network's ERC20FeeProxy, which never holds funds. Every quote, QR code and split call is checked on the server (and again in the payer's browser, with a simulation) so that nothing ever names the proxy as a recipient; a payment that cannot pass answers with no payment details at all. Details in Funds can't get stuck.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "b5f329fcc66f",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#webhooks",
-   "section": "Webhooks",
-   "text": "One https endpoint per store gets invoice.paid, invoice.expired and invoice.cancelled for your invoices and link checkouts, signed with your own secret (shown once, rotatable). The signing scheme, retries (six attempts over about an hour) and redeliver are Gully Pay's: see verifying the signature.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "4dee07f9faf7",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#fees",
-   "section": "Fees and statements",
-   "text": "A transaction fee only: no monthly fee, no set-up fee. Where the fee is collected depends on the chain (the checkout marks each chain, and your store's setup page lists them): Base, Ethereum, BNB Chain, Arbitrum (your wallet and the fee are paid in the same transaction (Request Network fee proxy, verified on each chain); the payer pays exactly the quoted amount): one transfer to your wallet; the fee is invoiced OP Mainnet (the proxy is verified there too (byte-identical to Base's); the in-payment fee switches on once Gully Labs' treasury is deployed on that chain, and until then the fee is invoiced): one transfer to your wallet; the fee is invoiced Polygon, Avalanche (one transfer to your wallet; the fee is invoiced (the fee proxy there is a different build from the one we verified, so it is not used)): one transfer to your wallet; the fee is invoiced Each workspace's first lifetime volume up to the free allowance is fee-free. A payment that crosses it pays only on the part above it. The fee accrues on each confirmed payment at its quoted USD value, exactly (in millionths of a dollar). Every Monday at 00:00 UTC, a store that owes $1 or more gets a statement: a normal Gully Labs invoice, payable in crypto through the Gully Pay checkout. Less than $1 rolls into the next week. The portal shows the balance, the free allowance left, every statement and a Pay now button. The CSV export lists every payment with its fee. The fee terms in full: section 5 of the merchant terms.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "c3b8a05acbf6",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#gas",
-   "section": "Gas your customers pay",
-   "text": "Gas is paid by the payer, in the chain’s own coin, from their own wallet. Gully Pay adds nothing to it, and neither the merchant nor Gully Labs pays it. What it costs depends on the kind of payment and the chain: Stablecoin, fee in the payment (one approve (skipped when the allowance is already set) and one fee-proxy call that pays the merchant and the fee together): merchant stores on chains where the fee proxy is usable (feeSplit true in GET /api/plans) Stablecoin, plain (one ERC-20 transfer): Gully Labs invoices and plans, and stores on every other chain Native coin (one plain transfer, the cheapest of the three): every chain On the rollups the cost has two parts: the L2 execution gas, and an L1 data fee for posting the transaction to Ethereum (read from the OP Stack GasPriceOracle on Base and OP Mainnet, from NodeInterface on Arbitrum). That is why Ethereum itself costs many times what an L2 does, and why the chart below uses a log scale. Below, live: what one payment costs right now on each chain, from GET /api/pay/gas. Hover a chain for the gas price, the coin price, the L1 fee and the gas units assumed; the server re-reads every few minutes, and a chain it could not read is named, never drawn as zero. The figures come from the chain itself: eth_gasPrice on the chain and the coin’s USD price from the chain’s own Chainlink feed. When the feed cannot be read the USD cost is left out rather than guessed. A wallet may add a priority tip on top; the payer’s wallet shows the exact fee before they sign.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
-  },
-  {
-   "id": "3ae8e9982c57",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#pause",
-   "section": "The pause policy",
-   "text": "Day 0: the statement is issued. You are told in the activity log and on Telegram if your workspace linked a chat. Day 5: a reminder. Day 7, still unpaid: your checkouts pause. Payers see “This store's checkout is paused” and no new quote or link checkout starts. A payment already sent against an earlier quote is still checked and recorded: the money is in your wallet either way. Paying the statement resumes checkout at once.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "669a9e81c903",
-   "source": "Docs",
-   "title": "Gully Pay for merchants",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants#terms",
-   "section": "Terms",
-   "text": "Running a store means accepting the Gully Pay merchant terms (adapted from Common Paper's Cloud Service Agreement, CC BY 4.0): you tick “I agree” when you add your first receiving wallet.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
    "id": "cde251b53bb1",
@@ -1403,8 +1160,17 @@
    "title": "Gully Score",
    "url": "https://docs.gullylabs.xyz/gully-score#components",
    "section": "Components and weights",
-   "text": "The weights below are read live from the score service, the same numbers every score page uses. The score is the weighted average of the parts that could be read. Code verified: a full Sourcify match scores 100, a partial match 85, no published source 0. Who controls it: nobody (ownership given up) or a Safe needing two or more signatures 100, a timelock 80, an unrecognised contract 50, a Safe any one signer can use 40, a single wallet 15. Delay on changes: two days or more 100, one day 90, six hours 60, anything shorter 40, none 0. Can the code change: fixed code 100, upgradeable 30. Recent privileged changes: 100 less 25 for each change in the last 30 days. Liquidity locked: the share of the launch pools with a lock record, for DeepCore launches. Holder spread: the Holder Map’s Launch Health, or from the top-10 share (20% or less is 100, 90% or more is 0). Gully Security review: 100 less 40 per critical, 20 per high, 5 per medium and 1 per low finding (unresolved ones when the report says). Age: a year or more 100, six months 85, three months 70, a month 50, a week 30, younger 10.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "The weights below are read live from the score service, the same numbers every score page uses. The score is the weighted average of the parts that could be read. Code verified: a full Sourcify match scores 100, a partial match 85, no published source 0. On Gully Chain Testnet, which no verification service covers yet, a token issued by the Gully Launchpad runs the launchpad’s known LaunchToken code and scores 85. Who controls it: nobody (ownership given up) or a Safe needing two or more signatures 100, a timelock 80, an unrecognised contract 50, a Safe any one signer can use 40, a single wallet 15. Delay on changes: two days or more 100, one day 90, six hours 60, anything shorter 40, none 0. Can the code change: fixed code 100, upgradeable 30. Token behaviour (tokens only): 100, less 40 when it can mint new tokens (not counted when a launchpad fixes the supply), 30 for blacklist functions, 15 for fee or tax setters, 10 for adjustable limits, 10 for a trading switch, 10 for DELEGATECALL; a simulated transfer from a real holder (eth_call with a state override, nothing is sent) takes 3 per percent of fee on transfer (up to 50), and 60 when the transfer reverts or returns false. Recent privileged changes: 100 less 25 for each change in the last 30 days.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
+  },
+  {
+   "id": "bb22459165e6",
+   "source": "Docs",
+   "title": "Gully Score",
+   "url": "https://docs.gullylabs.xyz/gully-score#components",
+   "section": "Components and weights",
+   "text": "of fee on transfer (up to 50), and 60 when the transfer reverts or returns false. Recent privileged changes: 100 less 25 for each change in the last 30 days. Liquidity locked: the share of the launch pools with a lock record, for DeepCore launches. For Gully Launchpad launches on Gully Chain: 100 while the token is on the bonding curve (the launchpad holds the liquidity) or once the graduated LP position sits in the GullyLPLocker, 0 when it sits anywhere else. The part also names the creator, with their.gully name and how many tokens they have launched and graduated. Holder spread: the Holder Map’s Launch Health, or from the top-10 share (20% or less is 100, 90% or more is 0). Gully Security review: 100 less 40 per critical, 20 per high, 5 per medium and 1 per low finding (unresolved ones when the report says). Age: a year or more 100, six months 85, three months 70, a month 50, a week 30, younger 10.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "935bfce69c6d",
@@ -2082,58 +1848,58 @@
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
-   "id": "04a9065817e4",
+   "id": "1dc14defd2b3",
    "source": "Docs",
-   "title": "Chain Kit",
-   "url": "https://docs.gullylabs.xyz/chain-kit",
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs",
    "section": null,
-   "text": "A new chain needs a block explorer on day one. Chain Kit is Blockscout, set up for your chain, in your brand, and run for you by Gully Labs. Chain Kit: join the waitlist. We're finalising the explorer licence before taking orders. Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. Chain Kit is on a waitlist: join it from the app. What is planned and its status.",
-   "updatedAt": "2026-10-19T06:35:57.249Z"
+   "text": "Gully IPFS is the IPFS node Gully Labs runs for its own content, with a read-only public gateway. Anything we pin is reachable at ipfs.gullylabs.xyz/ipfs/<CID> and from any other IPFS node. Gully IPFS: our Kubo node and read-only gateway at ipfs.gullylabs.xyz. It serves only content Gully pins: token images, metadata, NFT art and .gully sites.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
-   "id": "34f191eba007",
+   "id": "e7c33c753e63",
    "source": "Docs",
-   "title": "Chain Kit",
-   "url": "https://docs.gullylabs.xyz/chain-kit#what",
-   "section": "What Chain Kit is",
-   "text": "Chain Kit is a managed deployment of Blockscout for one EVM chain. We size the server and the RPC for your chain, deploy the indexer and the explorer on a domain you choose, apply your branding through configuration rather than a fork, and keep it indexed, upgraded and backed up. Chain Kit is on a waitlist: we are finalising the explorer licence before taking orders. The product page is gullylabs.xyz/chain-kit.",
-   "updatedAt": "2026-10-19T06:35:57.249Z"
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#what",
+   "section": "What Gully IPFS is",
+   "text": "A Kubo node on Gully infrastructure. It pins Gully content so it stays available, announces those pins to the IPFS network, and serves them through its own gateway. Kubo is open source (MIT and Apache-2.0). The gateway runs with Gateway.NoFetch: it answers only for blocks this node already holds and never fetches other content from the network. It is not a general public gateway, and nobody outside Gully Labs can pin to it.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
-   "id": "52f4d24fd6fc",
+   "id": "571274f7bd88",
    "source": "Docs",
-   "title": "Chain Kit",
-   "url": "https://docs.gullylabs.xyz/chain-kit#included",
-   "section": "What is planned",
-   "text": "Full explorer (Blockscout): Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts Your brand (configuration): Your name, logos, colours and links across the explorer, so upgrades stay simple Rollups (profiles): Arbitrum Nitro and Orbit chains like Robinhood Chain, and chains with a stablecoin as gas Operations (run for you): Provisioning, TLS, backups, upgrades and monitoring, with a runbook for common failures Sizing (before any promise): A busy rollup needs terabytes; a young chain far less. We size it to your chain first",
-   "updatedAt": "2026-10-19T06:35:57.249Z"
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#live",
+   "section": "Live figures",
+   "text": "Read from the node every minute by our server (the node's own API is never public). A figure that cannot be read says so, it is never shown as zero.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
-   "id": "bf6413fc7ddb",
+   "id": "bbcd50e4ba7f",
    "source": "Docs",
-   "title": "Chain Kit",
-   "url": "https://docs.gullylabs.xyz/chain-kit#request",
-   "section": "Joining the waitlist",
-   "text": "Sign in to the app at app.gullylabs.xyz and open Chain Kit under Services. Give an email to reach you and your chain: its name, chain id and an RPC. Then press “Join the waitlist”. The card shows “on the waitlist” with the date for your workspace. We write when orders open, and ask about history, settlement layer and sizing then. Nothing is charged. You can also join from gullylabs.xyz/chains without signing in.",
-   "updatedAt": "2026-10-19T06:35:57.249Z"
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#gateway",
+   "section": "The gateway",
+   "text": "Address a pinned file, or a file inside a pinned folder, by its CID: Read-only: GET and HEAD only. There is no upload or pin endpoint. The same CID works on any IPFS gateway or node, because the content is announced to the network. CIDs are content hashes: a file at a CID never changes.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
-   "id": "bf4b6eb0f297",
+   "id": "16432122ba53",
    "source": "Docs",
-   "title": "Chain Kit",
-   "url": "https://docs.gullylabs.xyz/chain-kit#status",
-   "section": "Status",
-   "text": "Chain Kit explorers run on their own servers, so they are not part of this API yet and publish no figures here: the chart below says so rather than drawing made-up numbers. What is live is the Gully Labs API the request goes through, checked every minute by our status checks.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#uses",
+   "section": "What we pin",
+   "text": "DeepCore token images and metadata, so launch pages and wallets always find them. NFT art, such as Gully passes. Sites behind.gully names: a name's contenthash points at a CID served here. Snapshots of public Gully docs. We never pin licensed third-party assets (Unity Asset Store content included) or anything that is not ours.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
-   "id": "983a139ba501",
+   "id": "63cd05d58ab0",
    "source": "Docs",
-   "title": "Chain Kit",
-   "url": "https://docs.gullylabs.xyz/chain-kit#licence",
-   "section": "Built on Blockscout",
-   "text": "Chain Kit is built on Blockscout. Your chain, your data and your domain stay yours: you are never locked in. The product page’s “charts on day one” are illustrations badged as example data. This page charts only what our API actually reports.",
-   "updatedAt": "2026-10-19T06:35:57.249Z"
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#api",
+   "section": "GET /api/ipfs/stats",
+   "text": "Public, cached for 60 seconds, open CORS. The same path answers on gullylabs.xyz and api.gullylabs.xyz. source (string): 'kubo' when the node answered; 'gateway-internal' or 'gateway-public' when only the gateway did; 'none' otherwise pinned (number | null): recursive pins on the node repoBytes (number | null): size of the node’s repository storageMaxBytes (number | null): the garbage-collection target; pinned content is never collected gatewayUp (boolean | null): whether the gateway answered; null when it could not be reached at all gatewayMs (number | null): its response time history (array): one point a minute for the last hour: t, pinned, repoBytes, up, ms",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "f12267559726",
@@ -2316,123 +2082,6 @@
    "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
-   "id": "e2cd80dfd927",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3",
-   "section": null,
-   "text": "An Arbitrum (Orbit) chain run by Gully Labs, with Chain Kit as its explorer, Gully Pay native on it, and Hyperlane as its interop layer once it launches. This page summarises the spec for developers and says exactly what exists today. The plan for the Gully L3: an Arbitrum chain settling to Arbitrum One with Chain Kit, Gully Pay and Hyperlane as its interop layer. Status: spec written, devnet prepared, nothing running.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "e612a6e09423",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#status",
-   "section": "Status",
-   "text": "Spec written. Devnet prepared. Nothing is running. There is no public RPC, no explorer, no faucet, no bridge and no Hyperlane deployment yet. The light devnet (one Arbitrum Nitro node in dev mode, chain id 412346) and the Hyperlane validator and relayer are prepared as compose files that refuse to start without free disk and RAM. The changelog will say when any of this goes live; until then, the waitlist in the app dashboard is the only thing you can join. S0 · light devnet (Nitro --dev, chain id 412346, in-memory parent): Prepared, not started. Local testing of Chain Kit, Stylus, Gully Pay and the Hyperlane agents. S1 · Gully Devnet (A public Arbitrum chain on Arbitrum Sepolia): Planned. Public RPC, Chain Kit explorer, faucet, canonical bridge, Hyperlane to Arbitrum Sepolia. S2 · Gully L3 (Production, settling to Arbitrum One (recommended)): Planned. Gully venues, Gully Pay, Warp Routes for USDC and ETH, aggregator listings. The Gully L3 is one track of the Roadmap, next to Gully Security.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "878eba24b894",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#what",
-   "section": "What the Gully L3 is",
-   "text": "An Arbitrum chain (the stack formerly branded Orbit): Nitro, deployed with the Arbitrum chain SDK through the parent chain’s RollupCreator and TokenBridgeCreator, with the Gully stack attached on day one. Explorer: Chain Kit, our Blockscout fork, with its Arbitrum profile (CHAIN_TYPE=arbitrum, traces from the node’s debug API). Payments: Gully Pay native on the chain, with USDC and ETH as assets, verified on chain the way it is today. Interop: Hyperlane. A Mailbox on the L3, Warp Routes for USDC and ETH from Arbitrum One (and Base) into it, and our own validator and relayer. Analytics, alerts, Gully AI read it like any other chain. The chain id for the public chains is not chosen yet: 412346 is the fixed id of the dev node and will not be reused for a public chain. It will be registered in ethereum-lists/chains and the Hyperlane registry before the devnet opens.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "45870c18c9ba",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#settlement",
-   "section": "Settlement chain",
-   "text": "Both Arbitrum One and Base have canonical RollupCreator factories, so either can be the parent. The spec recommends Arbitrum One: the tooling we forked, the Chain Kit profile, the tracker’s Robinhood Chain coverage and the Arbitrum ecosystem programs are all Arbitrum-shaped, and Base liquidity still reaches the L3 through a Base→L3 Warp Route and, later, the aggregators. The public devnet settles to Arbitrum Sepolia. The parent’s gas price is one input to what posting a batch costs. These are the base fees on the candidates right now, read from their public RPCs by our server; a chain that cannot be read says so. The other input, the parent’s own L1 data component, varies with Ethereum blob prices and is not reported by any public RPC, so the spec asks for a real batch to be measured on each testnet before the decision is final.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
-  },
-  {
-   "id": "df0bf8910f15",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#da",
-   "section": "Data availability",
-   "text": "Rollup (recommended) (Batches are posted to the parent chain as calldata or blobs. No extra infrastructure.): Security is the parent’s. Costs track the parent’s gas; for an L3 the parent is an L2, so already cheap. AnyTrust (A Data Availability Committee you run (one DA server per member) signs certificates; the batch poster posts the certificate. Falls back to posting full data if signatures do not arrive.): Lower DA fees, but N machines around the clock, and a committee run by one operator removes no trust. The devnet and the launch use Rollup mode. AnyTrust is reconsidered only if the batch poster’s measured spend on Arbitrum Sepolia, projected to production volume, exceeds the cost of a real committee.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "d7e1aa30b77a",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#gas",
-   "section": "Gas token",
-   "text": "ETH. A custom ERC-20 gas token is possible (18 decimals, no transfer fee, no rebasing, no transfer callbacks, already on the parent chain) but in Rollup mode it needs a fee token pricer contract supplying the ETH/token rate to reimburse the batch poster, and every wallet, bridge and aggregator must learn the token. Gully has no token, and the spec does not propose one.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "2ec1321023e2",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#interop",
-   "section": "Interop: Hyperlane",
-   "text": "Hyperlane is the interop layer for the Gully L3 when it launches, not before. LI.FI and Relay stay the swap and bridge aggregators for the chains Gully Pay offers today. What gets deployed on the L3 Mailbox (Dispatches and processes messages): One per chain, deployed with hyperlane core deploy. Default ISM (Verifies inbound messages): Devnet: a trusted-relayer ISM (testing). Public chain: a multisig ISM per origin; for messages from Arbitrum, the public Arbitrum validator set already in the registry. Merkle tree hook (Inserts each message into the tree validators sign): Default hook. Interchain gas paymaster (Senders pay the relayer in the origin chain’s gas): Gas oracle entries for Arbitrum One (and Base) kept current by us. Validator announce (Validators publish where their signatures live): One per chain. Nothing is deployed on Arbitrum One, Base or Arbitrum Sepolia: their Mailboxes already exist (addresses in the Hyperlane registry). Warp Routes A USDC route locks native USDC on Arbitrum One (collateral) and mints a synthetic USDC on the L3; Base can be added as a second collateral chain. An ETH route is the fast path beside the canonical bridge, whose withdrawals wait the parent’s challenge window. Route contracts are owned by the team multisig, never a server key. Who secures messages leaving the L3",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "19bca509de6e",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#interop",
-   "section": "Interop: Hyperlane",
-   "text": "path beside the canonical bridge, whose withdrawals wait the parent’s challenge window. Route contracts are owned by the team multisig, never a server key. Who secures messages leaving the L3 Validators sign checkpoints of their origin chain, so messages from the L3 are only as safe as the validators we run: one on the devnet, 2 of 3 in different regions with keys in a KMS at launch, external operators invited once there is value to protect. Versions pinned in the spec Hyperlane CLI @hyperlane-xyz/cli 45.0.1, registry 26.1.0. Agents ghcr.io/hyperlane-xyz/hyperlane-agent:agents-v2.3.0, pinned by digest, 220 MB compressed; each capped at 1 GB RAM in our compose file.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "f39e87d1ec7d",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#pay",
-   "section": "Gully Pay on the L3",
-   "text": "Native: the L3 joins the payment chains with ETH and the Warp Route USDC; verification is the same receipt-and-transfer check as today. Cross-chain in: a payer on Arbitrum One or Base sends into the USDC Warp Route with the merchant’s L3 address as recipient. The invoice shows settling until the Mailbox delivers on the L3; both transaction hashes are on the receipt. Cross-chain out: merchant payouts to Arbitrum One are Warp transfers paid for in L3 ETH, with the fee quoted before the merchant confirms. Fee splits (the merchant fee proxy) deploy unchanged.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "5e82c4acb619",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#aggregators",
-   "section": "Swaps and bridges today",
-   "text": "For Base, Ethereum, BNB Chain and Arbitrum One, Gully Pay’s checkout keeps using LI.FI and Relay. Relay says it can be added to “any EVM-chain, such as … Arbitrum Orbit chains” on request; LI.FI prioritises by customer demand. Both are asked to list the L3 once it has a registered chain id, a stable RPC, Chain Kit’s API, the Warp Routes and DEX liquidity.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "33d4402ddea6",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#devnet",
-   "section": "The devnet, and what you can do now",
-   "text": "The light devnet is one Nitro container in dev mode, chain id 412346, with an in-memory parent chain, run only on a machine with 15 GB free. It is for testing Chain Kit’s Arbitrum profile, Stylus contracts, Gully Pay flows and the Hyperlane agents against a chain we control. It has no bridge (its parent is simulated), so the first Hyperlane exercise is a message between it and Arbitrum Sepolia. If you want to be told when the public devnet opens, join the Gully Chains waitlist in the app dashboard. If you want to run the pieces yourself, the compose files and runbooks are in the site repository under ops/devnet and ops/l3.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "21892e0e2b1c",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#decisions",
-   "section": "Open decisions",
-   "text": "Settlement chain (Arbitrum One · Base): Arbitrum One; devnet on Arbitrum Sepolia Data availability (Rollup · AnyTrust): Rollup; re-decide on measured batch costs Gas token (ETH · custom ERC-20): ETH Validator set (ours only · ours plus external): 1 of 1 on the devnet, 2 of 3 at launch, open later Interop layer (Hyperlane (decided)): Hyperlane at launch; LI.FI and Relay for today’s chains",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "60b47a9e3696",
-   "source": "Docs",
-   "title": "Roadmap: Gully L3",
-   "url": "https://docs.gullylabs.xyz/roadmap-l3#sources",
-   "section": "Sources",
-   "text": "Everything above was read from primary sources on 17 October 2026; the full spec carries each quote and figure with its link. Arbitrum: chain SDK introduction, canonical factory contracts, choose AnyTrust, custom gas token. Hyperlane: deploy to a new chain, run validators, run a relayer, Warp Routes, registry. Aggregators: Relay supported chains, getting integrated by LI.FI.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
    "id": "5778b557c5ce",
    "source": "Changelog",
    "title": "Changelog",
@@ -2494,15 +2143,6 @@
    "section": null,
    "text": "Analytics that see the wallet. Page views alone don’t tell a dapp what worked. Gully Analytics adds what happens next: which visits connected a wallet, on which chain, with which wallet app, and which went on to send a transaction. Free trial. Built on Umami, MIT licensed. Our changes are MIT too. Start free trial Wallet connects. Detected through EIP-6963 and window.ethereum, by observing the wallet, never by prompting it. Chains and switches. Every connect, chain switch and transaction carries its chain, named for Ethereum, Base, BNB Chain, Robinhood Chain, Arc and more. Visit → wallet → transaction. A funnel from session to connected wallet to sent transaction, plus top pages by connects and wallet apps used. Addresses hashed by default. Unique wallets are counted from a one-way hash of the address. Full addresses or none are one attribute away. Everything Umami does. Page views, referrers, countries, devices, events and goals, cookie-free, on a dashboard you own. Opt-in, small, open. Web3 tracking turns on with one attribute; the whole script stays a few kilobytes. The source is public. Sign in and add your site. Connect a wallet in the app dashboard, start the free trial and add your domain. Add the script. One tag on your dapp, with data-web3=\"true\". Use your dapp as usual. Connects, chain switches and transactions are recorded as they happen. Read the Web3 tab. Wallets, connect rate, transactions, chains and the funnel for any date range. Gully Analytics. Privacy-friendly web analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel.",
    "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "1079b813e8ad",
-   "source": "Site",
-   "title": "Chain Kit",
-   "url": "https://gullylabs.xyz/chain-kit",
-   "section": null,
-   "text": "An explorer for your chain. A new chain needs a block explorer on day one. Chain Kit is Blockscout, set up for your chain, in your brand, and run by the team that builds on these chains every day. Chain Kit: join the waitlist. We’re finalising the explorer licence before taking orders. Waitlist. Built on Blockscout. Join the waitlist Full explorer. Blocks, transactions, addresses, tokens, NFTs, contract verification, APIs and charts, from Blockscout. Your brand. Your name, logos, colours and links across the explorer, configured rather than forked, so upgrades stay simple. Rollups included. Profiles for Arbitrum Nitro and Orbit chains like Robinhood Chain, and for chains like Arc with a stablecoin as gas. Operated for you. Provisioning, TLS, backups, upgrades and monitoring, with a runbook for every common failure. Sized honestly. A busy rollup needs terabytes; a young chain needs far less. We size the server and the RPC to your chain before anything is promised. No lock-in. Your chain, your data and your domain stay yours. You are never locked in. Join the waitlist. Tell us your chain id, RPC, settlement layer and how much history you need. We size and deploy. A dedicated server, your branding and the indexer, on a domain of your choice. Launch and run. We keep it indexed, upgraded and backed up while you build the chain. Chain Kit. A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.",
-   "updatedAt": "2026-10-19T06:35:57.249Z"
   },
   {
    "id": "faaefd127565",
@@ -2627,8 +2267,8 @@
    "title": "Holder Map",
    "url": "https://gullylabs.xyz/holders",
    "section": null,
-   "text": "See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "1ffeaddf4f87",
@@ -2636,8 +2276,8 @@
    "title": "Holder Map",
    "url": "https://gullylabs.xyz/holders",
    "section": "Who really holds it?",
-   "text": "Paste any token address, on any chain we cover, or a ticker. See the biggest wallets as bubbles and the ones that trade with each other in gold. New DeepCore launches also get a plain check: bundled buys, snipers, the deployer’s share and record.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "Paste any token address, on any chain we cover, or a ticker. The biggest wallets show as bubbles and the ones that trade with each other cluster together. New DeepCore launches also get a plain check: bundled buys, snipers, the deployer’s share and record.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "c6c5b2d8d2c6",
@@ -2737,24 +2377,6 @@
    "section": "What is live, on request and not offered",
    "text": "AI Security Scan Gully Score Monitors Security Review Full Audit",
    "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "4a8a89973004",
-   "source": "Site",
-   "title": "Gully Chains",
-   "url": "https://gullylabs.xyz/chains",
-   "section": null,
-   "text": "Your own Arbitrum Orbit chain, launched and run by Gully Labs, with an explorer, bridge, faucet, account abstraction and monitoring. A testnet is coming: join the waitlist.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "c151cb043c39",
-   "source": "Site",
-   "title": "Gully Chains",
-   "url": "https://gullylabs.xyz/chains",
-   "section": "Your own Arbitrum chain, run by Gully Labs",
-   "text": "We launch and operate an Arbitrum Orbit chain for your project, with the explorer, bridge, faucet and monitoring built in. A testnet is coming. Join the waitlist to be among the first. Join the waitlist Chain Kit explorer Launch a testnet chain yourself Chain Kit: the explorer, waitlist Read the docs",
-   "updatedAt": "2026-10-19T08:55:50.650Z"
   },
   {
    "id": "fa3ebb823471",
@@ -2883,6 +2505,15 @@
    "updatedAt": "2026-10-17T16:09:52.545Z"
   },
   {
+   "id": "2746d5e80cf9",
+   "source": "Site",
+   "title": "Gully Chain, a Gully Labs project",
+   "url": "https://gullylabs.xyz/projects/gullychain",
+   "section": null,
+   "text": "Gully Chain (L3 chain). Our own chain, with a launchpad built in. Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and glUSD. Figures are in test ETH and read from our own indexer. Beta. Built: Gully Launchpad: bonding curve, graduation into a Gully Swap pool with the LP locked in GullyLPLocker; Gully Swap (Uniswap v3) and the GullySwapRouter; .gully names, glUSD and bridged USDC, served through Gully RPC and indexed by our own indexer. Chains: Gully Chain Testnet. Gully Chain's own site: https://gullychain.xyz/",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
+  },
+  {
    "id": "c59b727cef48",
    "source": "Site",
    "title": "Services",
@@ -2915,8 +2546,8 @@
    "title": "Gully Labs links and contact",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. YouTube: https://www.youtube.com/@Gully_Labs. TikTok: https://www.tiktok.com/@gully_labs. Facebook: https://www.facebook.com/gullylabsllc. Medium: https://medium.com/@labsgully. Stock tracker: https://gullylabs.xyz/tracker. Holder Map: https://gullylabs.xyz/holders. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Chain Kit: https://gullylabs.xyz/chain-kit. Gully Security: https://gullylabs.xyz/security. Gully Chains: https://gullylabs.xyz/chains. Gully Pay: https://gullylabs.xyz/#pay. All products: https://gullylabs.xyz/#products. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
-   "updatedAt": "2026-10-21T01:09:07.000Z"
+   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. YouTube: https://www.youtube.com/@Gully_Labs. TikTok: https://www.tiktok.com/@gully_labs. Facebook: https://www.facebook.com/gullylabsllc. Medium: https://medium.com/@labsgully. Stock tracker: https://gullylabs.xyz/tracker. HolderMaps: https://holdermaps.xyz/. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Gully Chain: https://gullychain.xyz/. Gully Security: https://gullysecurity.xyz/. Gully RPC: https://gullyrpc.xyz/. Gully Pay: https://gullypay.xyz/. All products: https://gullylabs.xyz/products. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Holder Map: https://gullylabs.xyz/holders. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
+   "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
    "id": "b33b0edf6fb3",
@@ -4380,13 +4011,13 @@
    "status": "live"
   },
   {
-   "id": "67a15c6f099b",
+   "id": "8cc7e9159933",
    "source": "Features",
    "title": "Invoices and pay links (Gully Pay)",
-   "url": "https://docs.gullylabs.xyz/gully-pay",
+   "url": "https://gullypay.xyz/docs",
    "section": "Invoices and pay links",
    "text": "Invoices and pay links is part of Gully Pay. Status: live now. Non-custodial crypto billing: invoices and reusable pay links where the payer sends a plain transfer straight to the treasury (or the merchant), read back from the chain. EVM chains: Base (8453), Ethereum (1), BNB Chain (56), Arbitrum (42161), OP Mainnet (10), Polygon (137), Avalanche (43114), plus Solana; each is offered only while the Safe treasury is deployed there (server/treasury-chains.mjs). Confirmations required: Base 10, Ethereum 6, BNB Chain 15, Arbitrum 10, OP Mainnet 10, Polygon 64, Avalanche 2 (server/payments.mjs). A pay link is a fixed USD amount or an open amount between a minimum and maximum; a link makes at most LINK_INVOICES_PER_HOUR (10) invoices per IP per hour. Gully Labs never holds funds; a chainId:hash can be used once only.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "pay-invoices-links",
    "status": "live"
   },
@@ -4402,68 +4033,68 @@
    "status": "live"
   },
   {
-   "id": "04f0c47519ea",
+   "id": "7f75445555ab",
    "source": "Features",
    "title": "Signed payment webhooks (Gully Pay)",
-   "url": "https://docs.gullylabs.xyz/gully-pay",
+   "url": "https://gullypay.xyz/docs",
    "section": "Signed payment webhooks",
    "text": "Signed payment webhooks is part of Gully Pay. Status: live now. Sends signed events when an invoice is paid, expires or is cancelled. Events: invoice.paid, invoice.expired, invoice.cancelled and webhook.test. Signed with HMAC-SHA256 in X-Gully-Signature with X-Gully-Timestamp, using the endpoint's own whsec_ secret.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "pay-webhooks",
    "status": "live"
   },
   {
-   "id": "347a783939eb",
+   "id": "8fe1f8138c11",
    "source": "Features",
    "title": "Pay with crypto button (Gully Pay)",
-   "url": "https://docs.gullylabs.xyz/gully-pay",
+   "url": "https://gullypay.xyz/docs",
    "section": "Pay with crypto button",
    "text": "Pay with crypto button is part of Gully Pay. Status: live now. An optional script that opens a Gully Pay checkout in a popup from a normal link. Add data-gully-pay=\"popup\" to a link to a pay URL; \"tab\" or no script opens a new tab. The checkout cannot be put in an iframe; the script sets no cookies.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "pay-button-checkout",
    "status": "live"
   },
   {
-   "id": "be0175ef2315",
+   "id": "379c9ca5f724",
    "source": "Features",
    "title": "Live gas costs per chain (Gully Pay)",
-   "url": "https://docs.gullylabs.xyz/gully-pay",
+   "url": "https://gullypay.xyz/docs",
    "section": "Live gas costs per chain",
    "text": "Live gas costs per chain is part of Gully Pay. Status: live now. Shows what a Gully Pay payment costs in gas right now on each payment chain. GET /api/pay/gas; costs assume 106k gas for a fee-proxy payment and 65k for a plain ERC-20 transfer, including the L1 data fee on OP Stack chains and Arbitrum. A chain that cannot be read says unavailable.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "pay-gas-estimates",
    "status": "live"
   },
   {
-   "id": "ca3d3602c1b2",
+   "id": "4c08759b5c2a",
    "source": "Features",
    "title": "Merchant checkout (Gully Pay)",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants",
+   "url": "https://gullypay.xyz/docs",
    "section": "Merchant checkout",
    "text": "Merchant checkout is part of Gully Pay. Status: live now. Lets any workspace run its own non-custodial crypto checkout, paid straight into its own wallets, for a transaction fee only. Default fee is DEFAULT_FEE_BPS 50 (0.5%) of payment value above a lifetime free allowance of DEFAULT_FREE_USD ($5,000), both env-overridable (server/merchant-fees.mjs). Fee statements are issued every Monday 00:00 UTC to merchants owing at least $1; unpaid after PAUSE_AFTER_DAYS (7) the merchant's checkouts pause until paid. Merchants get pay links, invoices, signed webhooks, CSV export and a branded profile. Supports USDC, USDT and each chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon and Avalanche.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "pay-merchant-checkout",
    "status": "live"
   },
   {
-   "id": "4b577a04a83a",
+   "id": "38ec631c5200",
    "source": "Features",
    "title": "Fee split and no-stuck-funds guards (Gully Pay)",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants",
+   "url": "https://gullypay.xyz/docs",
    "section": "Fee split and no-stuck-funds guards",
    "text": "Fee split and no-stuck-funds guards is part of Gully Pay. Status: live now. Collects the merchant fee inside the payment through Request Network's ERC20FeeProxy on stablecoins, with guards so funds can never end up stuck in the proxy. A plain transfer, QR code or link never names a fee proxy as recipient on any chain (server/fee-proxy-guard.mjs). Split calls use only USDC or USDT, with the fee strictly between 0 and the amount. An hourly monitor reads every known proxy's balance and raises an admin alert on a non-zero balance (server/fee-proxy-monitor.mjs).",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "pay-fee-split-safety",
    "status": "live"
   },
   {
-   "id": "6cdcd7f41ae2",
+   "id": "4028ef05783e",
    "source": "Features",
    "title": "One-click Safe deployment (Gully Pay)",
-   "url": "https://docs.gullylabs.xyz/gully-pay-merchants",
+   "url": "https://gullypay.xyz/docs",
    "section": "One-click Safe deployment",
    "text": "One-click Safe deployment is part of Gully Pay. Status: live now. Deploys a Safe multisig at the same address on another chain from inside the app, with the user's own wallet signing. The server works out the factory call and never holds a key or sends a transaction. Uses Safe's CREATE2 proxy factory so the address matches across chains.",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "pay-safe-deploy",
    "status": "live"
   },
@@ -4704,19 +4335,19 @@
    "title": "Roadmap: Chain Kit managed explorer (Chain Kit), not available yet",
    "url": "https://docs.gullylabs.xyz/chain-kit",
    "section": "Chain Kit managed explorer (building)",
-   "text": "Chain Kit managed explorer (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A branded Blockscout block explorer for your EVM chain, to be deployed and run by Gully Labs. Waitlist: licensing in progress; Chain Kit is not available to order yet. Chain Kit is on a waitlist: join the waitlist from the app (POST /api/developer/chain-kit/request records interest, flagged waitlist, and takes no order or payment) or at gullylabs.xyz/chains. Gully Labs is finalising the explorer licence before taking orders. Rollup profiles cover Arbitrum Nitro and Orbit chains.",
-   "updatedAt": "2026-10-19T06:35:57.249Z",
+   "text": "Chain Kit managed explorer (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A branded Blockscout block explorer for your EVM chain, deployed and run by Gully Labs, now part of Gully Chain (gullychain.xyz). Licensing in progress; not available to order yet. Chain Kit moved to Gully Chain (gullychain.xyz) on 2026-10-26; POST /api/developer/chain-kit/request still records interest for older clients. Gully Labs is finalising the explorer licence before taking orders. Rollup profiles cover Arbitrum Nitro and Orbit chains.",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "chain-kit-explorer",
    "status": "building"
   },
   {
-   "id": "20bf67cd70c1",
+   "id": "4e873c831f04",
    "source": "Features",
-   "title": "Gully Chains waitlist (Gully Chains)",
+   "title": "Gully Chains sign-up (no waitlist) (Gully Chains)",
    "url": "https://gullylabs.xyz/",
-   "section": "Gully Chains waitlist",
-   "text": "Gully Chains waitlist is part of Gully Chains. Status: live now. A waitlist in the app for Gully Chains devnet news. No chain is running yet. POST /api/developer/chains-waitlist saves an email against the wallet. POST /api/chains/waitlist is the public form on /chains; the app waitlist remains.",
-   "updatedAt": "2026-10-19T01:23:17.562Z",
+   "section": "Gully Chains sign-up (no waitlist)",
+   "text": "Gully Chains sign-up (no waitlist) is part of Gully Chains. Status: live now. Gully Chain is open to everyone on gullychain.xyz. The old waitlist endpoints still answer for older clients and gate nothing. POST /api/developer/chains-waitlist and POST /api/chains/waitlist still save an email, for backward compatibility only. The app's Gully Chain page hands off to app.gullychain.xyz.",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "chains-devnet-waitlist",
    "status": "live"
   },
@@ -4831,24 +4462,24 @@
    "status": "live"
   },
   {
-   "id": "a079a3298175",
+   "id": "cf0f35677a40",
    "source": "Features",
-   "title": "Gully Chains offer and waitlist (Gully Chains)",
-   "url": "https://gullylabs.xyz/chains",
-   "section": "Gully Chains offer and waitlist",
-   "text": "Gully Chains offer and waitlist is part of Gully Chains. Status: live now. A public page with the managed-chain offer, its prices read from config, and a waitlist form. No Gully Chains network is running yet; a testnet is coming. Testnet: free for freeDays 30, then a monthly price that is not set (monthlyUsd null, shown as TBA) (CHAINS.testnet in server/chains-plans.mjs). Managed mainnet: from $3,500 a month (fromUsdPerMonth) plus 5% of the sequencer's profit (sequencerProfitPct), with data availability at cost. Add-on prices are null (TBA) for the paymaster, pay gas in USDC, Gully Pay on your chain, Hyperlane setup and DeepCore; prices before launch may change. Stack: Arbitrum Orbit (Nitro), settlement to Arbitrum, Hyperlane, Chain Kit explorer, Gully Bridge, faucet and RPC. GET /api/chains/plans serves the config; POST /api/chains/waitlist takes the form with a per-IP rate limit and a honeypot.",
-   "updatedAt": "2026-10-19T01:23:17.562Z",
+   "title": "Gully Chains offer (moved to gullychain.xyz) (Gully Chains)",
+   "url": "https://gullychain.xyz/",
+   "section": "Gully Chains offer (moved to gullychain.xyz)",
+   "text": "Gully Chains offer (moved to gullychain.xyz) is part of Gully Chains. Status: live now. The managed-chain offer moved to Gully Chain's own site on 2026-10-26: gullylabs.xyz/chains answers 301 to gullychain.xyz. The plans config is still served here for older clients. gullylabs.xyz/chains, /chains/launch and /chain-kit answer 301 to gullychain.xyz and app.gullychain.xyz (server/hosts.mjs movedPageUrl). GET /api/chains/plans still serves the config from server/chains-plans.mjs. Sign-up is open on gullychain.xyz; there is no waitlist. The old POST /api/chains/waitlist still answers but gates nothing.",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "chains-offer",
    "status": "live"
   },
   {
-   "id": "a386a3d6cc48",
+   "id": "301cc7e56c98",
    "source": "Features",
    "title": "Included services on the testnet (Gully Chains)",
-   "url": "https://gullylabs.xyz/chains",
+   "url": "https://gullychain.xyz/",
    "section": "Included services on the testnet",
-   "text": "Included services on the testnet is part of Gully Chains. Status: on testnet only, not on mainnet yet. The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain. SERVICES in server/chains-plans.mjs gives insight, pay and hyperlane the status testnet; chainkit (the explorer, bridge and faucet) is planned and on a waitlist. Chain Kit (waitlist) and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons. The page says nothing about Gully Chains is live yet.",
-   "updatedAt": "2026-10-19T06:35:57.249Z",
+   "text": "Included services on the testnet is part of Gully Chains. Status: on testnet only, not on mainnet yet. The Chain Kit explorer is planned. The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain. SERVICES in server/chains-plans.mjs gives insight, pay and hyperlane the status testnet; chainkit (the explorer, bridge and faucet) is planned and on a waitlist. Chain Kit (waitlist) and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons. The page says nothing about Gully Chains is live yet.",
+   "updatedAt": "2026-10-26T08:51:33.289Z",
    "feature": "chains-testnet-services",
    "status": "testnet"
   },
