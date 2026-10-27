@@ -34,6 +34,7 @@ import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { handleIpfs } from './ipfs.mjs'
 import { handleHub } from './hub.mjs'
+import { handleHubProducts } from './hub-products.mjs'
 import { handleProductStatus } from './product-status.mjs'
 import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
@@ -86,7 +87,20 @@ function send(res, status, body, headers = {}) {
   res.end(body)
 }
 
+// The contact form (landing #contact, /services): at most CONTACT_PER_HOUR posts per address per rolling hour, and a
+// honeypot field (`website`, hidden from people) that bots fill: those get a normal-looking 200 and go nowhere.
+const CONTACT_PER_HOUR = 5
+const contactHits = new Map()
+function contactAllowed(ip, now = Date.now()) {
+  const hits = (contactHits.get(ip) ?? []).filter((t) => now - t < 3_600_000)
+  if (hits.length >= CONTACT_PER_HOUR) return false
+  contactHits.set(ip, [...hits, now])
+  if (contactHits.size > 5000) contactHits.delete(contactHits.keys().next().value)
+  return true
+}
+
 function handleContact(req, res) {
+  if (!contactAllowed(clientIp(req))) return send(res, 429, JSON.stringify({ ok: false, error: 'Too many messages from this address. Try again in an hour, or write to us on Telegram.' }), { 'Content-Type': 'application/json' })
   let body = ''
   req.on('data', (chunk) => {
     body += chunk
@@ -99,6 +113,8 @@ function handleContact(req, res) {
     } catch {
       return send(res, 400, JSON.stringify({ ok: false }), { 'Content-Type': 'application/json' })
     }
+    // Honeypot: a person never sees the field, so anything in it is a bot. Answered like a success, saved nowhere.
+    if (typeof data?.website === 'string' && data.website.trim()) return send(res, 200, JSON.stringify({ ok: true }), { 'Content-Type': 'application/json' })
     // An email, or (from the Gully Chains "Message us" box) a Telegram handle instead.
     const handle = typeof data?.telegram === 'string' ? data.telegram.trim() : ''
     const tgOk = /^@?[A-Za-z][A-Za-z0-9_]{4,31}$/.test(handle)
@@ -350,6 +366,8 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/products/status') return void (await handleProductStatus(req, res, url, send))
   // What is live across Gully (hub.mjs): every public surface probed, Gully Quests, x402 networks, the RPC gateway, the status page.
   if (url.pathname === '/api/hub') return void (await handleHub(req, res, url, send))
+  // Per-product chart data (hub-products.mjs): Gully Chain by hour, indexer activity, Gully Bridge, HolderMaps, Gully Security.
+  if (url.pathname === '/api/hub/products') return void (await handleHubProducts(req, res, url, send))
   // Gully IPFS (ipfs.mjs): repo size, pinned CIDs and gateway health, read from the node over the docker network. Public.
   if (url.pathname.startsWith('/api/ipfs/')) {
     if (await handleIpfs(req, res, url, send)) return

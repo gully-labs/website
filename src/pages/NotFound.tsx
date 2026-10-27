@@ -7,7 +7,7 @@ import { useLive } from '../console/live'
 import { Btn, ProductGrid, SectionHead } from '../console/ui'
 import { CHAIN_NAME } from '../lib/tracker'
 import { DOCS_URL } from '../site-host'
-import { NetworkCard } from './Home'
+import { NetworkCard } from '../console/NetworkCard'
 
 /* A path no page owns (the server answers it with status 404), or a stock the tracker does not follow. In the
    lab-console language: the plain message and the ways on beside the live network card, then the six products

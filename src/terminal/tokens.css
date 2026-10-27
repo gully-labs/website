@@ -1,0 +1,55 @@
+/* Gully Terminal tokens (landing v3, 2026-10-26): the one file to swap when the shared design system in
+   gully-ops design/terminal/tokens.css lands. Owner brief: clean UX, minimal, corporate, terminal. Near-black
+   background, 1 px rules, monospace for data/labels/KPIs, a clean sans for prose, 8 px grid, restrained type scale,
+   the Gully Labs kit accent (cyan #00D2FF), no gaudy gradients. Every hue is from the kit or derived from it. */
+:root {
+  /* surfaces and rules */
+  --gt-bg: #06050d;
+  --gt-surface: #0a0914;
+  --gt-raise: #0f0d1c;
+  --gt-rule: #1b1930;
+  --gt-rule-2: #2a2744;
+  --gt-grid: rgba(163, 168, 195, 0.045);
+  /* text */
+  --gt-text: #eceef6;
+  --gt-muted: #a3a8c3;
+  --gt-dim: #7d829f;
+  --gt-ink: #06050d;
+  /* kit accent, used sparingly */
+  --gt-accent: #00d2ff;
+  --gt-accent-dim: rgba(0, 210, 255, 0.12);
+  --gt-violet: #9578e8;
+  /* states */
+  --gt-up: #3ddc97;
+  --gt-down: #ff6b81;
+  --gt-coming: #9578e8;
+  /* chart series (kit hues in the dark band, validated in console.css) */
+  --gt-s1: #20a0c4;
+  --gt-s2: #1a5fe6;
+  --gt-s3: #9578e8;
+  --gt-s4: #9121b5;
+  /* type */
+  --gt-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --gt-head: 'Poppins', system-ui, sans-serif;
+  --gt-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --gt-fs-xs: 12px;
+  --gt-fs-sm: 14px;
+  --gt-fs-md: 16px;
+  --gt-fs-lg: 20px;
+  --gt-fs-xl: 28px;
+  --gt-fs-2xl: 40px;
+  --gt-fs-3xl: 56px;
+  /* 8 px grid */
+  --gt-1: 8px;
+  --gt-2: 16px;
+  --gt-3: 24px;
+  --gt-4: 32px;
+  --gt-5: 40px;
+  --gt-6: 48px;
+  --gt-8: 64px;
+  --gt-10: 80px;
+  --gt-12: 96px;
+  --gt-radius: 2px;
+  --gt-max: 1280px;
+  --gt-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}

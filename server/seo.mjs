@@ -29,14 +29,14 @@ const PROJECTS = {
 /** The Gully Labs kit's share image (brand-kit social/og-image-1200x630.png), absolute (owner OG rule, 2026-10-25). */
 const KIT_OG = 'https://gullylabs.xyz/brand/social/og-image-1200x630.png'
 const MAIN = {
-  '/': ['You Think It, We Ship It. · Gully Labs', 'Gully Labs builds and runs Web3 products: Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully Studio. Every figure on this page is read live.'],
-  '/products': ['Products · Gully Labs', 'Gully Chain, Gully Pay, Gully RPC, Gully IPFS, HolderMaps, Gully Security and Gully Studio: the Gully Labs products, each with one live figure from the product itself.'],
+  '/': ['You Think It, We Ship It. · Gully Labs', 'Gully Labs is a web3 product studio and development services company. We run Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI and Gully Studio, and we build chains, contracts, apps, payments, infra and games for other teams. Every figure is read live.'],
+  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and the DeepCore launchpad. Each supports Gully Chain.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
   // The chain list is filled in per request from what checkout offers now (pricingDescription below).
   '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin from your own wallet, with no custody.'],
   '/status': ['Status · Gully Labs', 'Live status of Gully Labs: the API, tracker freshness per chain, the DeepCore poller, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents.'],
   '/widget': ['Tracker widget · Gully Labs', 'Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps.'],
-  '/services': ['Services · Gully Labs', 'Smart contracts, dApps, chain infrastructure and security testing from the team behind the Gully Labs projects.'],
+  '/services': ['Services: web3 development · Gully Labs', 'Gully Labs builds for other teams: L2/L3 chain launch, smart contracts, security reviews and monitoring, dApp/web/mobile apps, payments, RPC and infrastructure, token launch and quests, AI integration and Unity game development.'],
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
   '/security': ['Gully Security: AI Security Scan and Security Review · Gully Labs', 'Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price.'],
   '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
@@ -54,17 +54,46 @@ const MAIN = {
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
-// The six product pages (src/pages/products, lab console). Each product lives on its own domain; these pages link out.
-const PRODUCT_PAGES = {
-  chain: ['Gully Chain', 'An L3 chain for launches and trading, with DeepCore built in. Testnet chain 485590 is live.'],
-  pay: ['Gully Pay', 'x402 payments, checkout and a merchant OS, settled on chain. Every Gully product bills through Gully Pay.'],
-  rpc: ['Gully RPC', 'The node control plane and RPC gateway for every Gully chain, Gully Chain testnet included.'],
-  ipfs: ['Gully IPFS', 'Our IPFS node and read-only gateway for Gully content: DeepCore token images and metadata, NFT art and .gully sites.'],
-  holders: ['HolderMaps', 'Who really holds a token: bubble maps, clusters and deep checks, Gully Chain tokens included.'],
-  security: ['Gully Security', 'AI security scans, monitors and the Gully Score for any contract.'],
-  studio: ['Gully Studio', 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK.'],
+// The product pages (src/pages/products, landing v3; copy restated from src/terminal/catalog.ts): [name, one line,
+// kit OG image under public/brand/web/og, schema.org applicationCategory]. Each product also lives on its own domain.
+export const PRODUCT_PAGES = {
+  chain: ['Gully Chain', 'An Arbitrum Orbit L3 for launches and trading, with DeepCore built in as its launchpad.', 'gully-chain', 'BlockchainNetwork'],
+  street: ['Gully Street', 'The Gully Chain app: a social feed, five wallets per passkey, copy trading, Quests and the launchpad.', 'gully-chain', 'FinanceApplication'],
+  bridge: ['Gully Bridge', 'Move ETH between Arbitrum Sepolia and Gully Chain: a Hyperlane fast lane (gETH) and the canonical bridge.', 'gully-chain', 'FinanceApplication'],
+  safe: ['Gully Safe', 'Multisig wallets on Gully Chain, for treasuries and teams.', 'gully-chain', 'FinanceApplication'],
+  pay: ['Gully Pay', 'x402 payments, hosted checkout and a merchant OS, settled on chain to your own wallet.', 'gully-pay', 'FinanceApplication'],
+  rpc: ['Gully RPC', 'One key for every network: the node control plane and RPC gateway behind every Gully chain.', 'gully-rpc', 'DeveloperApplication'],
+  holders: ['HolderMaps', 'Who really holds a token: bubble maps, wallet clusters and deep checks, Gully Chain tokens included.', 'holdermaps', 'FinanceApplication'],
+  security: ['Gully Security', 'AI security scans, contract monitors and the Gully Score for any contract, Gully Chain contracts included.', 'gully-security', 'SecurityApplication'],
+  ai: ['Gully AI', 'Answers about Gully with sources and live figures; the Gully AI API opens when its GPU box is up.', 'gully-ai', 'DeveloperApplication'],
+  studio: ['Gully Studio', 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK, paid through Gully Pay.', 'gully-studio', 'GameApplication'],
+  ipfs: ['Gully IPFS', 'Our IPFS node and read-only gateway for Gully content: token art, metadata, NFT art and .gully sites.', 'gully-labs', 'DeveloperApplication'],
+  quests: ['Gully Quests', 'On-chain quests on Gully Chain: tasks verified by contract, rewards paid from ETH pools.', 'gully-chain', 'GameApplication'],
+  deepcore: ['DeepCore launchpad', 'Gully Chain’s built-in launchpad: a token and its pool in one step, graduating to Gully Swap.', 'gully-chain', 'FinanceApplication'],
 }
-for (const [key, [name, text]] of Object.entries(PRODUCT_PAGES)) MAIN[`/products/${key}`] = [`${name} · Gully Labs`, `${text} Live figures on this page.`]
+for (const [key, [name, text]] of Object.entries(PRODUCT_PAGES)) MAIN[`/products/${key}`] = [`${name} · Gully Labs`, `${text} Live charts on this page.`]
+
+/** A product page's share image (its kit OG) and JSON-LD (SoftwareApplication, or the chain as a Product). */
+function productExtras(p) {
+  const m = /^\/products\/([a-z]+)$/.exec(p)
+  const d = m && PRODUCT_PAGES[m[1]]
+  if (!d) return null
+  const url = `${SITE}${p}`
+  const image = `${SITE}/brand/web/og/${d[2]}.jpg`
+  const ld =
+    d[3] === 'BlockchainNetwork'
+      ? { '@context': 'https://schema.org', '@type': 'Product', name: d[0], description: d[1], url, image, brand: { '@type': 'Brand', name: 'Gully Labs' } }
+      : { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: d[0], description: d[1], url, image, applicationCategory: d[3], operatingSystem: 'Web', publisher: { '@type': 'Organization', name: 'Gully Labs', url: SITE } }
+  const crumbs = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Gully Labs', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: 'Products', item: `${SITE}/products` }, { '@type': 'ListItem', position: 3, name: d[0], item: url }] }
+  return { image, ld: [ld, crumbs] }
+}
+/** The services, as schema.org Services offered by Gully Labs (the /services page). */
+const SERVICES_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Gully Labs services',
+  itemListElement: ['L2/L3 chain launch', 'Smart contract development', 'Security reviews and monitoring', 'dApp, web and mobile development', 'Payments integration', 'RPC and infrastructure', 'Token launch, quests and growth', 'AI integration', 'Game development'].map((name, i) => ({ '@type': 'ListItem', position: i + 1, item: { '@type': 'Service', name, provider: { '@type': 'Organization', name: 'Gully Labs', url: SITE }, areaServed: 'Worldwide' } })),
+}
 
 // One page per tracked stock token, from the same tables the tracker reads (server/data next to this file).
 const HOLDER_PAGES = {}
@@ -357,7 +386,8 @@ export function pageMeta(host, pathname) {
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
   const secShort = securityPrimary() && p.startsWith('/security') ? securityShortPath(p) : null
-  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : KIT_OG, ld: p === '/' ? [ORG, APP_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
+  const prod = productExtras(p)
+  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: prod ? prod.image : p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : KIT_OG, ld: prod ? prod.ld : p === '/' ? [ORG, APP_LD] : p === '/services' ? [ORG, SERVICES_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
 }
 
 /** A report's subject in a title: the contract or the repository. */
