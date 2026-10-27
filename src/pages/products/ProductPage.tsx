@@ -1,340 +1,673 @@
-/* One page per Gully product (/products/:key), compact (about 1.5 screens at 1440): hero copy with the product's
-   kit logo beside a live chart card, four live tiles, a three-step stepper and a link out to the product's own
-   domain. Every figure is read live; nothing here is typed in. */
-import type { ReactNode } from 'react'
+/* One page per Gully product (/products/<slug>), landing v3 (2026-10-26), Gully Terminal style: hero with the kit logo,
+   one line and the CTAs (open the product, docs, start a project like it); live KPIs and charts specific to the
+   product; features, how it works, pricing (read live from /api/plans where we publish prices), FAQ and links.
+   Every figure is read live: GET /api/hub, /api/hub/products, /api/stats, /api/products/status, /api/ipfs/stats and the
+   Gully Chain RPC. A source that cannot be read says so; nothing is invented. */
+import { useMemo, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { ArrowUpRight, BookOpen, Code2, KeyRound, LayoutGrid, Link2, Map as MapIcon, Gamepad2, HardDrive, Network, Pin, Rocket, ScanSearch, ShieldCheck, Wallet, Zap } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, BookOpen, Check } from 'lucide-react'
 import { Seo } from '../../components/Seo'
-import { BlockBars, ChartCard, type ChartTab } from '../../console/ChartCard'
-import { C, fmtInt, fmtPct, fmtUsd, type Series } from '../../console/charts'
-import { chainHead, okVenues, summed, useLive, venueSeries, type Live } from '../../console/live'
-import { ProductLive } from '../../console/Suite'
-import { Btn, Count, PRODUCTS, ProductLogo, SectionHead, Stepper, Tile, TrustBand, type ProductDef, type ProductKey, type Step } from '../../console/ui'
-import { APP_URL, DOCS_URL } from '../../site-host'
+import { fmtInt, fmtPct, fmtUsd } from '../../console/charts'
+import { chainHead, useLive, venueSeries, type Live } from '../../console/live'
+import '../../terminal/terminal.css'
+import { PRODUCTS, productBySlug, SERVICES, type ProductDef } from '../../terminal/catalog'
+import { A, ACCENT, BlockStrip, Dot, Empty, fmtCompact, fmtEth, fmtMs, HBars, hourLabel, Kpi, latencySeries, Logo, minLabel, Panel, S, SecHead, stateOf, sum, TChart, UptimeGrid, useHubProducts, usePlans, useReveal, type ChartTab, type HubProducts, type Plans } from '../../terminal/kit'
+import { chainTabs } from '../Home'
 import { NotFound } from '../NotFound'
 
-const pct = (v: number | null) => (v == null ? '—' : `${v.toFixed(1)}%`)
-const ms = (v: number | null) => (v == null ? '—' : `${Math.round(v)} ms`)
-const int = (v: number | null) => fmtInt(v)
-const usd = (v: number | null) => fmtUsd(v)
-
-interface TileDef {
+interface KpiDef {
   label: string
-  value: number | null | undefined
+  value?: number | null
   fmt?: (v: number) => string
-  spark: (number | null)[]
-  color: string
-  sub: ReactNode
+  text?: ReactNode
+  sub?: ReactNode
+  spark?: (number | null)[]
+  color?: string
 }
-interface PageDef {
-  label: string
-  h1: ReactNode
-  promise: ReactNode
-  chartLabel: string
-  tabs: ChartTab[]
-  bars?: boolean
-  tiles: TileDef[]
-  stepsTitle: string
-  steps: Step[]
+interface LiveDef {
+  kpis: KpiDef[]
+  main: ReactNode
+  side?: ReactNode
+  extra?: ReactNode
 }
 
-const statusOf = (l: Live, test: (id: string, group: string) => boolean) => (l.status?.components ?? []).filter((c) => test(c.id, c.group))
-const minUptime = (cs: { uptime24h: number | null }[]) => (cs.some((c) => c.uptime24h != null) ? Math.round(Math.min(...cs.filter((c) => c.uptime24h != null).map((c) => c.uptime24h as number)) * 1000) / 10 : null)
-const histUp = (cs: { history: { t: string; up: number | null }[] }[]) => (cs[0]?.history ?? []).map((_, i) => (cs.every((c) => c.history[i]?.up == null) ? null : Math.round(Math.min(...cs.map((c) => c.history[i]?.up ?? 1)) * 1000) / 10))
-const histLabels = (cs: { history: { t: string }[] }[]) => (cs[0]?.history ?? []).map((h) => new Date(h.t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
+const avg = (xs: (number | null | undefined)[]) => {
+  const v = xs.filter((x): x is number => typeof x === 'number')
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null
+}
 
-function defFor(key: ProductKey, l: Live): PageDef {
-  const s = l.stats
-  const blocks = l.chain?.blocks ?? []
-  const gaps = blocks.slice(1).map((b, i) => b.time - blocks[i].time)
-  const avgGap = gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : null
-  const txs40 = blocks.reduce((a, b) => a + b.txs, 0)
-  const lastMs = l.rpcMs.length ? l.rpcMs[l.rpcMs.length - 1] : null
-  const ok = s ? okVenues(s) : []
-  const one = (name: string, color: string, values: (number | null)[]): Series[] => [{ name, color, values }]
-  const blockLabels = blocks.map((b) => `#${b.number}`)
-  const chainTabs: ChartTab[] = [
-    { id: 'txs', label: 'Txs / block', title: 'Gully Chain testnet, transactions per block', series: one('Transactions', C.cyan, blocks.map((b) => b.txs)), labels: blockLabels, fmt: int, head: <Count value={chainHead(l)} />, sub: `latest block · chain 485590 · ${txs40} tx in the last ${blocks.length} blocks` },
-    { id: 'time', label: 'Block time', title: 'Seconds between Gully Chain blocks', series: one('Seconds', C.s[2], gaps), labels: blockLabels.slice(1), fmt: (v) => (v == null ? '—' : `${Math.round(v)} s`), head: avgGap == null ? '—' : `~${Math.round(avgGap)} s`, sub: 'average time between the last blocks' },
-  ]
-  const venueTab = (m: 'tvl' | 'volume' | 'fees', label: string, title: string, head: number | null | undefined, sub: string): ChartTab => {
-    const vs = s ? venueSeries(s, m, 30) : { series: [], labels: [] }
-    return { id: m, label, title, series: vs.series, labels: vs.labels, fmt: usd, stacked: true, head: <Count value={head} fmt={fmtUsd} />, sub }
+function latencyTab(live: Live, keys: string[], label = 'Latency'): ChartTab {
+  const { labels, series } = latencySeries(live.hub, keys)
+  const last = series.map((s) => s.values[s.values.length - 1]).filter((v): v is number => v != null)
+  return {
+    id: 'lat',
+    label,
+    title: 'Response time per check, last hour (ms)',
+    series,
+    labels,
+    fmt: (v) => fmtMs(v),
+    state: live.hub ? 'ok' : 'loading',
+    empty: 'collecting checks: one a minute',
+    head: last.length ? fmtMs(avg(last)) : '—',
+    sub: `mean response now · ${series.length} surface${series.length === 1 ? '' : 's'} checked every minute`,
   }
-  const pay = statusOf(l, (_, g) => g === 'payments')
-  const holders = statusOf(l, (id, g) => g === 'holders' && id !== 'holders-bsc')
-  const sec = statusOf(l, (id) => id === 'security' || id === 'monitors')
-  const api = statusOf(l, (id) => id === 'api')
-  const dc = ok.find((v) => v.key === 'deepcore')
-  const peddles = ok.find((v) => v.key === 'peddles')
-  const tvl30 = s ? venueSeries(s, 'tvl', 30) : null
-  const dcTvl = tvl30?.series.find((x) => x.key === 'deepcore')?.values ?? []
-  const chainTiles: TileDef[] = [
-    { label: 'Latest block', value: chainHead(l), spark: blocks.map((b) => b.txs), color: C.cyan, sub: l.chain || !l.hub?.chain ? 'Gully Chain testnet · 485590' : 'Gully Chain testnet · via the indexer' },
-    { label: 'Block time', value: avgGap, fmt: (v) => `${Math.round(v)} s`, spark: gaps, color: C.s[2], sub: `average over ${blocks.length} blocks` },
-    { label: `Txs · last ${blocks.length || 40} blocks`, value: blocks.length ? txs40 : null, spark: blocks.map((b) => b.txs), color: C.s[1], sub: 'read from the public RPC' },
-    { label: 'RPC latency', value: lastMs, fmt: (v) => `${Math.round(v)} ms`, spark: l.rpcMs, color: C.s[0], sub: 'from this browser, every 8 s' },
+}
+
+function surfaceKpis(live: Live, keys: string[]): KpiDef[] {
+  const svc = (live.hub?.services ?? []).filter((s) => keys.includes(s.key))
+  const st = stateOf(live.hub, keys)
+  const hist = svc[0]?.history ?? []
+  const answered = svc.flatMap((s) => s.history).filter((h) => h.ms != null).length
+  const checks = svc.flatMap((s) => s.history).length
+  return [
+    { label: 'State', text: <Dot s={st} />, sub: `${svc.filter((s) => s.state === 'up').length}/${svc.length || keys.length} surfaces answering` },
+    { label: 'Response now', value: avg(svc.map((s) => s.ms)), fmt: (v) => fmtMs(v), spark: hist.map((h) => h.ms), sub: 'mean of the latest checks' },
+    { label: 'Answered · last hour', value: checks ? (answered / checks) * 100 : null, fmt: fmtPct, sub: `${answered} of ${checks} checks` },
+    { label: 'Mean · last hour', value: avg(svc.flatMap((s) => s.history.map((h) => h.ms))), fmt: (v) => fmtMs(v), sub: 'all answered checks' },
   ]
-  switch (key) {
-    case 'chain':
+}
+
+const chainState = (hp: HubProducts | null, st: string, part: 'chain' | 'activity' | 'bridge' | 'holders' | 'security') => (st === 'error' || (hp && !hp[part]) ? 'offline' : !hp ? 'loading' : 'ok')
+
+function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: string): LiveDef {
+  const hub = live.hub
+  const lat = <TChart label="Response time · last hour" tabs={[latencyTab(live, p.hub)]} height={150} />
+  const ct = chainTabs(hp, hpState)
+  const h = hp?.chain?.hourly ?? []
+  const a = hp?.activity?.hourly ?? []
+  switch (p.slug) {
+    case 'chain': {
+      const recent = hp?.chain?.recent?.length ? hp.chain.recent : (live.chain?.blocks ?? [])
       return {
-        label: 'Gully Chain · L3 on Arbitrum',
-        h1: <>Launch and trade on <span className="grad">your own chain.</span></>,
-        promise: <>An L3 chain for launches and trading with <b>DeepCore built in</b> as its launchpad. Testnet chain 485590 is live, served through Gully RPC.</>,
-        chartLabel: 'Gully Chain testnet · live',
-        tabs: chainTabs,
-        bars: true,
-        tiles: chainTiles,
-        stepsTitle: 'From wallet to launch',
-        steps: [
-          { icon: Wallet, title: 'Add the network', body: <>Chain <b>485590</b>, the public testnet RPC or your Gully RPC key, and the explorer.</> },
-          { icon: Rocket, title: 'Launch on DeepCore', body: <>DeepCore is the built-in launchpad: <b>a token and its pool in one step</b>.</> },
-          { icon: Network, title: 'Run your own L3', body: <>Gully Chains: your own Arbitrum chain, <b>run by us</b>, on the same stack.</> },
+        kpis: [
+          { label: 'Latest block', value: chainHead(live), fmt: (v) => `#${fmtInt(v)}`, sub: 'chain 485590 · testnet', spark: recent.map((b) => b.txs) },
+          { label: 'Transactions · 24 h', value: hp?.chain ? sum(h.map((x) => x.txs)) : null, spark: h.map((x) => x.txs), sub: 'user transactions, by hour' },
+          { label: 'Gas used · 24 h', value: hp?.chain ? sum(h.map((x) => x.gas)) : null, fmt: fmtCompact, spark: h.map((x) => x.gas), color: S[2], sub: 'gas units' },
+          { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), color: S[1], sub: 'DeepCore, from the indexer' },
         ],
-      }
-    case 'pay':
-      return {
-        label: 'Gully Pay · x402 payments',
-        h1: <>Get paid on chain, <span className="grad">in one link.</span></>,
-        promise: <>x402 payments, checkout and a merchant OS. <b>Every Gully product bills through Gully Pay</b>, settled straight to the merchant's wallet.</>,
-        chartLabel: 'Fees and volume · live',
-        tabs: [venueTab('fees', 'Fees', 'Daily fees by venue, 30 days', s?.totals.feesAllUsd, 'fees, all-time across our venues'), venueTab('volume', 'Volume', 'Daily volume by venue, 30 days', s?.totals.volumeAllUsd, 'volume, all-time across our venues')],
-        tiles: [
-          { label: 'Gully Pay services', value: l.products?.pay?.up ?? null, fmt: l.products?.pay ? (v) => `${v}/${l.products!.pay!.total}` : undefined, spark: (l.products?.pay?.history ?? []).map((h) => h.v), color: C.s[1], sub: l.products?.pay ? `operational · gullypay.xyz/api/status` : 'reading gullypay.xyz status' },
-          { label: 'Checkout uptime · 24h', value: minUptime(pay), fmt: fmtPct, spark: histUp(pay), color: C.s[0], sub: `${pay.length} payment checks` },
-          { label: 'Fees · all-time', value: s?.totals.feesAllUsd, fmt: fmtUsd, spark: s ? summed(s, 'fees') : [], color: C.s[2], sub: 'USD, venue APIs + DefiLlama' },
-          { label: 'Gully Chain block', value: chainHead(l), spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'settlement chain 485590 (testnet)' },
-        ],
-        stepsTitle: 'Take your first payment',
-        steps: [
-          { icon: KeyRound, title: 'Open a store', body: <>Sign in to the Gully App and <b>name your store</b>; payouts go to your own wallet.</> },
-          { icon: Link2, title: 'Share a pay link', body: <>A pay link or invoice per order, <b>x402 for APIs and agents</b>.</> },
-          { icon: Zap, title: 'Get the webhook', body: <>Paid, confirmed, settled: <b>one webhook per step</b>, with receipts.</> },
-        ],
-      }
-    case 'rpc':
-      return {
-        label: 'Gully RPC · node gateway',
-        h1: <>Every Gully chain, <span className="grad">one RPC key.</span></>,
-        promise: <>The node control plane and RPC gateway behind every Gully chain. <b>Gully Chain testnet is served at</b> rpc.gullyrpc.xyz/&lt;project&gt;/evm/485590.</>,
-        chartLabel: 'Testnet latency · live',
-        tabs: [
-          { id: 'ms', label: 'Latency', title: 'Gully Chain RPC latency from this browser', series: one('Latency', C.s[1], l.rpcMs), labels: l.rpcMs.map((_, i) => `read ${i + 1}`), fmt: ms, head: lastMs == null ? '—' : <><Count value={lastMs} /> ms</>, sub: 'latest read, every 8 s' },
-          { id: 'api', label: 'API checks', title: 'Public API latency, 30-minute buckets', series: one('API', C.s[0], (api[0]?.history ?? []).map((h) => h.ms)), labels: histLabels(api), fmt: ms, head: <Count value={minUptime(api)} fmt={fmtPct} />, sub: 'public API uptime, 24 h' },
-        ],
-        tiles: ([] as TileDef[]).concat([
-          { label: 'Networks served', value: l.products?.rpc?.served ?? null, fmt: l.products?.rpc ? (v) => `${v}/${l.products!.rpc!.total}` : undefined, spark: (l.products?.rpc?.history ?? []).map((h) => h.v), color: C.s[0], sub: 'live or beta · gullyrpc.xyz/status.json' },
-          { label: 'Latency · now', value: lastMs, fmt: (v) => `${Math.round(v)} ms`, spark: l.rpcMs, color: C.s[1], sub: 'eth_blockNumber + blocks' },
-          { label: 'Latency · average', value: l.rpcMs.length ? l.rpcMs.reduce((a, b) => a + b, 0) / l.rpcMs.length : null, fmt: (v) => `${Math.round(v)} ms`, spark: l.rpcMs, color: C.s[2], sub: `${l.rpcMs.length} reads this visit` },
-          { label: 'API uptime · 24h', value: minUptime(api), fmt: fmtPct, spark: histUp(api), color: C.s[3], sub: 'status checks every minute' },
-        ]),
-        stepsTitle: 'Point your app at Gully RPC',
-        steps: [
-          { icon: KeyRound, title: 'Get a key', body: <>One key from the Gully App, <b>free tier included</b>.</> },
-          { icon: Code2, title: 'Swap the URL', body: <>Use <b>rpc.gullyrpc.xyz/&lt;project&gt;/evm/&lt;chainId&gt;</b> in viem, ethers or wagmi.</> },
-          { icon: LayoutGrid, title: 'Watch usage', body: <>Requests, errors and latency <b>per project</b>, billed through Gully Pay.</> },
-        ],
-      }
-    case 'holders':
-      return {
-        label: 'HolderMaps · holder bubble maps',
-        h1: <>See who <span className="grad">really holds it.</span></>,
-        promise: <>Bubble maps, wallet clusters and deep checks for any token, <b>Gully Chain tokens included</b>.</>,
-        chartLabel: 'Venue value locked · live',
-        tabs: [venueTab('tvl', 'Value locked', 'Value locked by venue, 30 days', s?.totals.tvlUsd, 'value locked across our venues')],
-        tiles: [
-          { label: 'Peddles users', value: (peddles?.counts?.users as number | null | undefined) ?? null, spark: tvl30?.series.find((x) => x.key === 'peddles')?.values ?? [], color: C.s[2], sub: 'read from the Peddles venue' },
-          { label: 'Holder chains up · 24h', value: minUptime(holders), fmt: fmtPct, spark: histUp(holders), color: C.s[0], sub: `${holders.length} holder sources checked` },
-          { label: 'Venues read', value: s ? ok.length : null, spark: s ? summed(s, 'tvl') : [], color: C.s[1], sub: s ? `of ${s.venues.length} venues` : 'reading venues' },
-          { label: 'Gully Chain block', value: chainHead(l), spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'Gully Chain tokens mapped too' },
-        ],
-        stepsTitle: 'Map a token',
-        steps: [
-          { icon: ScanSearch, title: 'Paste a token', body: <>Any contract on a supported chain, <b>Gully Chain included</b>.</> },
-          { icon: MapIcon, title: 'Read the map', body: <>Bubbles are holders; links are <b>shared funding and transfers</b>.</> },
-          { icon: ShieldCheck, title: 'Run a deep check', body: <>Clusters, insiders and snipers <b>in one report</b>.</> },
-        ],
-      }
-    case 'security':
-      return {
-        label: 'Gully Security · scans and monitors',
-        h1: <>Review. Validate. <span className="grad">Defend.</span></>,
-        promise: <>AI security scans, contract monitors and the <b>Gully Score</b> for any contract, Gully Chain contracts included.</>,
-        chartLabel: 'Scan engine uptime · live',
-        tabs: [
-          { id: 'up', label: 'Uptime', title: 'Scan engine and monitors uptime, 30-minute buckets', series: one('Uptime %', C.s[0], histUp(sec)), labels: histLabels(sec), fmt: pct, head: <Count value={minUptime(sec)} fmt={fmtPct} />, sub: 'uptime 24h · scan engine + monitors' },
-          { id: 'ms', label: 'Latency', title: 'Scan engine check latency', series: one('Latency', C.s[1], (sec[0]?.history ?? []).map((h) => h.ms)), labels: histLabels(sec), fmt: ms, head: sec[0]?.latencyMs == null ? '—' : `${sec[0].latencyMs} ms`, sub: 'latest check' },
-        ],
-        tiles: [
-          { label: 'Uptime · 24h', value: minUptime(sec), fmt: fmtPct, spark: histUp(sec), color: C.s[0], sub: 'scan engine + monitors' },
-          { label: 'Checks · 24h', value: sec.length ? sec.reduce((a, c) => a + c.history.length, 0) : null, spark: histUp(sec), color: C.s[1], sub: '30-minute buckets' },
-          { label: 'Services up', value: l.status ? l.status.components.filter((c) => c.state === 'up').length : null, spark: histUp(api), color: C.s[2], sub: l.status ? `overall ${l.status.overall}` : 'reading status' },
-          { label: 'Gully Chain block', value: chainHead(l), spark: blocks.map((b) => b.txs), color: C.cyan, sub: 'Gully Chain contracts scanned too' },
-        ],
-        stepsTitle: 'Secure a contract',
-        steps: [
-          { icon: ScanSearch, title: 'Scan it', body: <>Paste an address or upload code: <b>an AI scan in minutes</b>.</> },
-          { icon: ShieldCheck, title: 'Get a Gully Score', body: <>A public score page and <b>a "Secured by" badge</b>.</> },
-          { icon: Zap, title: 'Turn on monitors', body: <>Alerts on risky changes <b>by Telegram or webhook</b>.</> },
-        ],
-      }
-    case 'ipfs': {
-      const ip = l.ipfs
-      const h = ip?.history ?? []
-      const labels = h.map((x) => new Date(x.t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
-      const gb = (v: number | null) => (v == null ? '—' : `${(v / 1e9).toFixed(2)} GB`)
-      return {
-        label: 'Gully IPFS · Gully Labs service',
-        h1: <>Gully content, <span className="grad">pinned for good.</span></>,
-        promise: <>Our own IPFS node with a read-only gateway at <b>ipfs.gullylabs.xyz/ipfs/&lt;CID&gt;</b>. It serves only what we pin: token art, metadata, NFT art and .gully sites.</>,
-        chartLabel: 'Gully IPFS node · live',
-        tabs: [
-          { id: 'pins', label: 'Pinned', title: 'CIDs pinned on the Gully IPFS node', series: one('Pinned', C.s[0], h.map((x) => x.pinned)), labels, fmt: int, head: <Count value={ip?.pinned} />, sub: ip?.pinned != null ? 'recursive pins, read from the node' : 'node not readable from this server yet' },
-          { id: 'gw', label: 'Gateway', title: 'Gateway response time', series: one('Gateway', C.s[1], h.map((x) => x.ms)), labels, fmt: ms, head: ip?.gatewayMs == null ? '—' : `${ip.gatewayMs} ms`, sub: ip?.gatewayUp ? 'gateway answering' : 'gateway not reachable yet' },
-        ],
-        tiles: [
-          { label: 'CIDs pinned', value: ip?.pinned ?? null, spark: h.map((x) => x.pinned), color: C.s[0], sub: 'GET /api/ipfs/stats' },
-          { label: 'Repo size', value: ip?.repoBytes ?? null, fmt: (v) => gb(v), spark: h.map((x) => x.repoBytes), color: C.s[2], sub: 'pinned content is never collected' },
-          { label: 'Gateway', value: ip?.gatewayMs ?? null, fmt: (v) => `${Math.round(v)} ms`, spark: h.map((x) => x.ms), color: C.s[1], sub: ip?.gatewayUp ? 'answering' : 'not reachable yet' },
-          chainTiles[0],
-        ],
-        stepsTitle: 'Serve a file from Gully IPFS',
-        steps: [
-          { icon: Pin, title: 'We pin it', body: <>Gully content only: <b>token images, metadata, NFT art</b>, docs snapshots.</> },
-          { icon: HardDrive, title: 'Link the CID', body: <>Use <b>ipfs.gullylabs.xyz/ipfs/&lt;CID&gt;</b>, or any IPFS gateway.</> },
-          { icon: Network, title: 'Name it', body: <>Point a <b>.gully name</b>&apos;s contenthash at the CID for a site on IPFS.</> },
-        ],
+        main: <TChart label="Gully Chain · by hour" tabs={ct} />,
+        side: (
+          <Panel label="Newest blocks · txs per block" right={<Dot s={recent.length ? 'up' : chainState(hp, hpState, 'chain') === 'offline' ? 'down' : 'reading'} label={recent.length ? `#${fmtInt(recent[recent.length - 1].number)}` : undefined} />}>
+            {recent.length ? (
+              <>
+                <BlockStrip blocks={recent} h={72} />
+                <table className="gt-table">
+                  <thead>
+                    <tr>
+                      <th>Block</th>
+                      <th>Txs</th>
+                      <th>Gas</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recent
+                      .slice(-6)
+                      .reverse()
+                      .map((b) => (
+                        <tr key={b.number}>
+                          <td>#{fmtInt(b.number)}</td>
+                          <td>{b.txs}</td>
+                          <td>{fmtCompact(b.gas)}</td>
+                          <td>{minLabel(new Date(b.time * 1000).toISOString())}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </>
+            ) : (
+              <Empty state={chainState(hp, hpState, 'chain') === 'offline' ? 'offline' : 'loading'} text="chain RPC could not be read · retrying" />
+            )}
+          </Panel>
+        ),
       }
     }
-    case 'studio':
+    case 'street':
       return {
-        label: 'Gully Studio · game studio',
-        h1: <>Games that <span className="grad">live on chain.</span></>,
-        promise: <>Our game studio: <b>Unity 3D titles on Gully Chain</b> with the Gully Game SDK, paid through Gully Pay.</>,
-        chartLabel: 'Gully Chain and DeepCore · live',
-        tabs: [chainTabs[0], { id: 'dc', label: 'DeepCore', title: 'DeepCore value locked, 30 days', series: one('DeepCore', C.s[3], dcTvl), labels: tvl30?.labels ?? [], fmt: usd, head: <Count value={dc?.tvlUsd} fmt={fmtUsd} />, sub: 'DeepCore value locked' }],
-        bars: true,
-        tiles: [
-          { label: 'DeepCore launches', value: (dc?.counts?.launches as number | null | undefined) ?? null, spark: dcTvl, color: C.s[3], sub: 'on chain, read live' },
-          chainTiles[0],
-          chainTiles[1],
-          chainTiles[3],
+        kpis: [
+          { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), sub: 'from the indexer feed' },
+          { label: 'Curve trades · 24 h', value: hp?.activity ? sum(a.map((x) => x.trades)) : null, spark: a.map((x) => x.trades), color: S[1], sub: 'bonding-curve buys and sells' },
+          { label: 'Swaps · 24 h', value: hp?.activity ? sum(a.map((x) => x.swaps)) : null, spark: a.map((x) => x.swaps), color: S[2], sub: 'Gully Swap router' },
+          { label: 'App state', text: <Dot s={stateOf(hub, ['street'])} />, sub: 'app.gullychain.xyz, checked each minute' },
         ],
-        stepsTitle: 'Build a game on Gully',
-        steps: [
-          { icon: Gamepad2, title: 'Build in Unity', body: <>Unity 3D with the <b>Gully Game SDK</b> for wallets and items.</> },
-          { icon: Network, title: 'Ship on Gully Chain', body: <>Items and scores <b>on chain 485590</b>, served by Gully RPC.</> },
-          { icon: Wallet, title: 'Sell with Gully Pay', body: <>In-game purchases <b>settled through Gully Pay</b>.</> },
-        ],
+        main: <TChart label="Gully Street · activity by hour" tabs={[ct[3], ct[0]]} />,
+        side: lat,
       }
+    case 'bridge': {
+      const b = hp?.bridge
+      const st = chainState(hp, hpState, 'bridge')
+      const fast = b?.fast ?? []
+      const can = b?.canonical ?? []
+      const axis = (fast.length ? fast : can).map((x) => hourLabel(x.t))
+      const ratio = b?.gethSupply != null && b.gethBacking != null && b.gethSupply > 0 ? (b.gethBacking / b.gethSupply) * 100 : null
+      const tabs: ChartTab[] = [
+        { id: 'both', label: 'Fast vs Canonical', title: 'Bridge transfers per hour, both directions', series: [{ name: 'Fast (gETH)', color: ACCENT, values: fast.map((x) => x.in + x.out) }, { name: 'Canonical', color: S[2], values: can.map((x) => x.in + x.out) }], labels: axis, fmt: (v) => fmtInt(v), stacked: true, state: st, head: b ? fmtInt(sum(fast.map((x) => x.in + x.out)) + sum(can.map((x) => x.in + x.out))) : '—', sub: 'transfers in the last 24 h, both lanes' },
+        { id: 'fast', label: 'Fast lane', title: 'Hyperlane gETH: bridged in (mint) and out (burn) per hour', series: [{ name: 'In', color: ACCENT, values: fast.map((x) => x.in) }, { name: 'Out', color: S[1], values: fast.map((x) => x.out) }], labels: axis, fmt: (v) => fmtInt(v), state: b?.fast ? st : 'offline', head: b?.fastAllIn != null ? `${fmtInt(b.fastAllIn)} in · ${fmtInt(b.fastAllOut)} out` : '—', sub: 'all-time gETH mints and burns' },
+        { id: 'can', label: 'Canonical', title: 'Arbitrum canonical bridge: deposits and withdrawals per hour', series: [{ name: 'Deposits', color: S[2], values: can.map((x) => x.in) }, { name: 'Withdrawals', color: S[3], values: can.map((x) => x.out) }], labels: axis, fmt: (v) => fmtInt(v), state: b?.canonical ? st : 'offline', head: b?.canonical ? fmtInt(sum(can.map((x) => x.in + x.out))) : '—', sub: 'deposits and withdrawals, last 24 h' },
+      ]
+      return {
+        kpis: [
+          { label: 'gETH supply', text: fmtEth(b?.gethSupply), sub: 'minted on Gully Chain · test ETH' },
+          { label: 'ETH backing', text: fmtEth(b?.gethBacking), sub: 'held by the route on Arbitrum Sepolia' },
+          { label: 'Backing ratio', value: ratio, fmt: fmtPct, sub: ratio == null ? 'needs both readings' : ratio >= 100 ? 'fully backed' : 'below 100%: being checked' },
+          { label: 'Transfers · 24 h', value: b ? sum(fast.map((x) => x.in + x.out)) + sum(can.map((x) => x.in + x.out)) : null, spark: fast.map((x, i) => x.in + x.out + (can[i]?.in ?? 0) + (can[i]?.out ?? 0)), sub: 'fast + canonical' },
+        ],
+        main: <TChart label="Gully Bridge · transfers per hour" tabs={tabs} />,
+        side: (
+          <Panel label="gETH backing · test ETH, no USD value">
+            {b && (b.gethSupply != null || b.gethBacking != null) ? (
+              <HBars rows={[{ label: 'ETH locked (Arbitrum Sepolia)', value: b.gethBacking ?? 0 }, { label: 'gETH minted (Gully Chain)', value: b.gethSupply ?? 0 }]} fmt={(v) => fmtEth(v)} />
+            ) : (
+              <Empty state={st === 'loading' ? 'loading' : 'offline'} text="backing could not be read · retrying" />
+            )}
+            <p className="gt-note">
+              gETH <code>{(b?.token ?? '0x7Dd1…b702').slice(0, 10)}…</code> · router <code>{(b?.router ?? '0x3Aa7…bad0').slice(0, 10)}…</code>
+            </p>
+          </Panel>
+        ),
+        extra: lat,
+      }
+    }
+    case 'pay': {
+      const x = hub?.x402
+      const pay = live.products?.pay
+      return {
+        kpis: [
+          { label: 'Services operational', value: pay?.up ?? null, fmt: pay ? (v) => `${v}/${pay.total}` : undefined, spark: (pay?.history ?? []).map((h) => h.v), sub: pay ? 'gullypay.xyz/api/status' : 'reading status' },
+          { label: 'x402 networks', value: x ? x.networks.length : null, sub: x ? `${x.networks.filter((n) => !n.testnet).length} mainnet · ${x.networks.filter((n) => n.testnet).length} testnet` : 'reading the facilitator' },
+          { label: 'Gully Chain', text: x ? <Dot s={x.gullyChain ? 'up' : 'coming'} label={x.gullyChain ? 'supported' : 'not yet'} /> : '—', sub: 'settlement on chain 485590' },
+          { label: 'Payments processed', text: <span className="gt-zero">no payments yet</span>, sub: 'sign-up is open · no volume to show' },
+        ],
+        main: <TChart label="Gully Pay · response time" tabs={[latencyTab(live, ['pay', 'x402', 'pay-admin'])]} />,
+        side: (
+          <Panel label="x402 facilitator · networks and assets" right={x ? <Dot s="up" label={`${x.networks.length} networks`} /> : <Dot s={hub ? 'down' : 'reading'} />}>
+            {x ? (
+              <>
+                <table className="gt-table">
+                  <thead>
+                    <tr>
+                      <th>Network</th>
+                      <th>Chain id</th>
+                      <th>Kind</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {x.networks.map((n) => (
+                      <tr key={n.id}>
+                        <td>{n.name}</td>
+                        <td>{n.chainId ?? '—'}</td>
+                        <td>{n.testnet ? 'testnet' : 'mainnet'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="gt-note">Assets: {x.assets.join(', ') || '—'} · schemes: {x.schemes.join(', ') || '—'}</p>
+              </>
+            ) : (
+              <Empty state={hub ? 'offline' : 'loading'} text="facilitator could not be read · retrying" />
+            )}
+          </Panel>
+        ),
+      }
+    }
+    case 'rpc': {
+      const g = hub?.gateway
+      const r = live.products?.rpc
+      return {
+        kpis: [
+          { label: 'Gateway networks OK', value: g?.ok ?? null, fmt: g ? (v) => `${v}/${g.total}` : undefined, sub: 'rpc.gullyrpc.xyz, read now' },
+          { label: 'Networks served', value: r?.served ?? null, fmt: r ? (v) => `${v}/${r.total}` : undefined, spark: (r?.history ?? []).map((h) => h.v), sub: 'live or beta · gullyrpc.xyz' },
+          { label: 'Gully Chain', text: g ? <Dot s={g.gullyChain ? 'up' : 'coming'} label={g.gullyChain ? 'served' : 'not yet'} /> : '—', sub: '/evm/485590, alias gully-testnet' },
+          { label: 'Gateway response', value: hub?.services.find((s) => s.key === 'rpc-gateway')?.ms ?? null, fmt: (v) => fmtMs(v), spark: (hub?.services.find((s) => s.key === 'rpc-gateway')?.history ?? []).map((h) => h.ms), sub: 'checked every minute' },
+        ],
+        main: <TChart label="Gully RPC · response time" tabs={[latencyTab(live, ['rpc-gateway', 'rpc-site', 'rpc-app'])]} />,
+        side: (
+          <Panel label="Gateway networks · live state">
+            {g ? (
+              <table className="gt-table">
+                <thead>
+                  <tr>
+                    <th>Alias</th>
+                    <th>Chain id</th>
+                    <th>State</th>
+                    <th>Block time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...g.networks]
+                    .sort((x, y) => (x.chainId === 485590 ? -1 : y.chainId === 485590 ? 1 : 0))
+                    .map((n) => (
+                      <tr key={`${n.alias}${n.chainId}`}>
+                        <td>{n.alias}</td>
+                        <td>{n.chainId ?? '—'}</td>
+                        <td>
+                          <Dot s={n.state === 'OK' ? 'up' : n.state ? 'down' : 'reading'} label={n.state.toLowerCase() || '—'} />
+                        </td>
+                        <td>{n.blockTimeMs != null ? `${(n.blockTimeMs / 1000).toFixed(1)} s` : '—'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            ) : (
+              <Empty state={hub ? 'offline' : 'loading'} text="gateway could not be read · retrying" />
+            )}
+          </Panel>
+        ),
+      }
+    }
+    case 'holders': {
+      const hd = hp?.holders
+      const st = chainState(hp, hpState, 'holders')
+      return {
+        kpis: [
+          { label: 'Maps opened today', value: hd?.today ?? null, spark: (hd?.daily ?? []).map((d) => d.maps), sub: 'UTC day, this server' },
+          { label: 'Tokens mapped today', value: hd?.tokens ?? null, sub: 'distinct tokens' },
+          { label: 'Chains today', value: hd ? hd.byChain.length : null, sub: 'of six supported' },
+          { label: 'Site state', text: <Dot s={stateOf(hub, ['holders'])} />, sub: 'holdermaps.xyz' },
+        ],
+        main: (
+          <TChart
+            label="HolderMaps · maps per day"
+            tabs={[{ id: 'd', label: 'Maps', title: 'Holder maps opened per day', series: [{ name: 'Maps', color: ACCENT, values: (hd?.daily ?? []).map((d) => d.maps) }], labels: (hd?.daily ?? []).map((d) => d.day.slice(5)), fmt: (v) => fmtInt(v), state: st, empty: (hd?.daily.length ?? 0) < 2 ? 'the daily series starts today: a point is added each day' : undefined, head: hd ? fmtInt(hd.today) : '—', sub: 'maps opened today' }]}
+          />
+        ),
+        side: (
+          <Panel label="Most scanned today">
+            {hd ? <HBars rows={hd.top.map((t) => ({ label: `${t.symbol ? `$${t.symbol}` : `${t.token.slice(0, 8)}…`} · ${t.chain}`, value: t.scans, href: `https://holdermaps.xyz/${t.chain}/${t.token}` }))} empty="no maps opened yet today" /> : <Empty state={st === 'loading' ? 'loading' : 'offline'} />}
+          </Panel>
+        ),
+        extra: (
+          <Panel label="Maps by chain today">
+            {hd ? <HBars rows={hd.byChain.map((c) => ({ label: c.chain === 'gully' ? 'Gully Chain' : c.chain, value: c.maps }))} empty="no maps opened yet today" /> : <Empty state={st === 'loading' ? 'loading' : 'offline'} />}
+          </Panel>
+        ),
+      }
+    }
+    case 'security': {
+      const sc = hp?.security
+      const st = chainState(hp, hpState, 'security')
+      return {
+        kpis: [
+          { label: 'Scans · 14 days', value: sc ? sum(sc.daily.map((d) => d.scans)) : null, spark: (sc?.daily ?? []).map((d) => d.scans), sub: 'requested on Gully Security' },
+          { label: 'Scans · all time', value: sc?.total ?? null, sub: 'jobs recorded' },
+          { label: 'Reports published', value: sc?.published ?? null, sub: 'by their owners' },
+          { label: 'Scan engine', text: <Dot s={stateOf(hub, ['security'])} />, sub: 'gullysecurity.xyz' },
+        ],
+        main: (
+          <TChart
+            label="Gully Security · scans run"
+            tabs={[{ id: 's', label: 'Scans', title: 'Security scans requested per day, 14 days', series: [{ name: 'Scans', color: ACCENT, values: (sc?.daily ?? []).map((d) => d.scans) }], labels: (sc?.daily ?? []).map((d) => d.day.slice(5)), fmt: (v) => fmtInt(v), state: st, head: sc ? fmtInt(sum(sc.daily.map((d) => d.scans))) : '—', sub: sc && sum(sc.daily.map((d) => d.scans)) === 0 ? 'no scans in the last 14 days' : 'scans in the last 14 days' }, latencyTab(live, ['security'])]}
+          />
+        ),
+        side: (
+          <Panel label="Scan states · all time">
+            {sc ? <HBars rows={Object.entries(sc.states).map(([k, v]) => ({ label: k, value: v }))} fmt={(v) => fmtInt(v)} /> : <Empty state={st === 'loading' ? 'loading' : 'offline'} />}
+          </Panel>
+        ),
+      }
+    }
+    case 'studio': {
+      const ar = live.arcade
+      return {
+        kpis: [
+          { label: 'Frog Hop season', value: ar?.season ?? null, fmt: (v) => `#${v}`, sub: 'GullyArcade on Gully Chain' },
+          { label: 'Players this season', value: ar?.players ?? null, spark: ar?.history ?? [], sub: 'read on chain' },
+          ...surfaceKpis(live, p.hub).slice(0, 2),
+        ],
+        main: lat,
+        side: (
+          <Panel label="Studio portals">
+            <UptimeGrid hub={hub} keys={p.hub} compact />
+          </Panel>
+        ),
+      }
+    }
+    case 'ipfs': {
+      const ip = live.ipfs
+      const hh = ip?.history ?? []
+      return {
+        kpis: [
+          { label: 'CIDs pinned', value: ip?.pinned ?? null, spark: hh.map((x) => x.pinned), sub: 'recursive pins' },
+          { label: 'Repo size', text: ip?.repoBytes != null ? `${(ip.repoBytes / 1e9).toFixed(2)} GB` : '—', sub: 'never garbage-collected' },
+          { label: 'Gateway', value: ip?.gatewayMs ?? null, fmt: (v) => fmtMs(v), spark: hh.map((x) => x.ms), sub: ip?.gatewayUp ? 'answering' : ip ? 'not reachable' : 'reading' },
+          { label: 'State', text: <Dot s={stateOf(hub, ['ipfs'])} />, sub: 'ipfs.gullylabs.xyz' },
+        ],
+        main: (
+          <TChart
+            label="Gully IPFS node"
+            tabs={[
+              { id: 'pins', label: 'Pinned', title: 'CIDs pinned', series: [{ name: 'Pinned', color: ACCENT, values: hh.map((x) => x.pinned) }], labels: hh.map((x) => minLabel(x.t)), fmt: (v) => fmtInt(v), state: ip ? 'ok' : 'loading', head: fmtInt(ip?.pinned), sub: 'pins on the node' },
+              { id: 'gw', label: 'Gateway', title: 'Gateway response time', series: [{ name: 'Gateway', color: S[1], values: hh.map((x) => x.ms) }], labels: hh.map((x) => minLabel(x.t)), fmt: (v) => fmtMs(v), state: ip ? 'ok' : 'loading', head: fmtMs(ip?.gatewayMs), sub: 'latest check' },
+            ]}
+          />
+        ),
+        side: lat,
+      }
+    }
+    case 'quests': {
+      const q = hub?.quests
+      const hours = q?.hourly ?? []
+      return {
+        kpis: [
+          { label: 'Live quests', value: q ? (q.active ?? q.total) : null, sub: q ? `${q.total} created on chain` : 'reading' },
+          { label: 'Completions', value: q?.completions ?? null, spark: hours, sub: q ? `${q.completions24h ?? 0} in the last 24 h` : 'reading' },
+          { label: 'ETH in pools', text: fmtEth(q?.poolEth), sub: 'test ETH · no USD value' },
+          { label: 'ETH paid out', text: fmtEth(q?.paidEth), sub: 'claimed rewards' },
+        ],
+        main: <TChart label="Gully Quests · completions" tabs={[{ id: 'c', label: 'Per hour', title: 'Quest completions per hour, last 48 h', series: [{ name: 'Completions', color: ACCENT, values: hours }], labels: hours.map((_, i) => `${hours.length - i} h ago`), fmt: (v) => fmtInt(v), state: q ? 'ok' : hub ? 'offline' : 'loading', head: fmtInt(q?.completions24h), sub: 'completions, last 24 h' }]} />,
+        side: (
+          <Panel label="Recent completions">
+            {q?.recent.length ? (
+              <table className="gt-table">
+                <tbody>
+                  {q.recent.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.title ?? `Quest #${r.questId}`}</td>
+                      <td>{r.who}</td>
+                      <td>{fmtEth(r.rewardEth)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <Empty state={q ? 'empty' : hub ? 'offline' : 'loading'} text={q ? 'no completions yet' : undefined} />
+            )}
+          </Panel>
+        ),
+        extra: (
+          <Panel label={`Quests on chain · registry ${q?.registry ? `${q.registry.slice(0, 6)}…${q.registry.slice(-4)}` : ''}`}>
+            {q?.quests.length ? (
+              <table className="gt-table">
+                <thead>
+                  <tr>
+                    <th>Quest</th>
+                    <th>Verifier</th>
+                    <th>Done</th>
+                    <th>Reward</th>
+                    <th>State</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {q.quests.map((x) => (
+                    <tr key={x.id}>
+                      <td>{x.title}</td>
+                      <td>{x.kind ?? '—'}</td>
+                      <td>
+                        {x.completions}/{x.max || '∞'}
+                      </td>
+                      <td>{fmtEth(x.rewardEth)}</td>
+                      <td>
+                        <Dot s={x.state === 'active' ? 'up' : x.state === 'upcoming' ? 'coming' : 'reading'} label={x.state || '—'} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <Empty state={q ? 'empty' : hub ? 'offline' : 'loading'} text={q ? 'no quests listed' : undefined} />
+            )}
+          </Panel>
+        ),
+      }
+    }
+    case 'deepcore': {
+      const s = live.stats
+      const dc = s?.venues.find((v) => v.key === 'deepcore')
+      const ok = dc && dc.state === 'ok' ? dc : null
+      const st = s ? (ok ? 'ok' : 'offline') : live.statsState === 'error' ? 'offline' : 'loading'
+      const one = (m: 'tvl' | 'volume' | 'fees') => {
+        const vs = s ? venueSeries(s, m, 30) : null
+        return { values: vs?.series.find((x) => x.key === 'deepcore')?.values ?? [], labels: vs?.labels ?? [] }
+      }
+      const tab = (m: 'tvl' | 'volume' | 'fees', label: string, head: number | null | undefined): ChartTab => {
+        const o = one(m)
+        return { id: m, label, title: `DeepCore ${label.toLowerCase()}, 30 days (USD)`, series: [{ name: 'DeepCore', color: ACCENT, values: o.values }], labels: o.labels, fmt: (v) => fmtUsd(v), state: st, empty: 'DeepCore API could not be read · retrying', head: fmtUsd(head), sub: 'USD · deepcore.fun/v1/overview, all chains' }
+      }
+      const o = ok as unknown as { tvlUsd?: number | null; volume24hUsd?: number | null; volumeAllUsd?: number | null; feesAllUsd?: number | null; counts?: Record<string, number | null> } | null
+      return {
+        kpis: [
+          { label: 'Value locked (USD)', value: o?.tvlUsd ?? null, fmt: (v) => fmtUsd(v), spark: one('tvl').values, sub: 'all chains' },
+          { label: 'Volume · all time (USD)', value: o?.volumeAllUsd ?? null, fmt: (v) => fmtUsd(v), spark: one('volume').values, color: S[1], sub: 'all chains' },
+          { label: 'Fees · all time (USD)', value: o?.feesAllUsd ?? null, fmt: (v) => fmtUsd(v), spark: one('fees').values, color: S[2], sub: 'all chains' },
+          { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), sub: 'on Gully Chain, indexer' },
+        ],
+        main: <TChart label="DeepCore · 30 days" tabs={[tab('tvl', 'Value locked', o?.tvlUsd), tab('volume', 'Volume', o?.volumeAllUsd), tab('fees', 'Fees', o?.feesAllUsd)]} />,
+        side: <TChart label="On Gully Chain · launches & trades" tabs={[ct[3]]} height={150} />,
+      }
+    }
+    default:
+      // Gully Safe and Gully AI: their surfaces' uptime and response time, from /api/hub.
+      return { kpis: surfaceKpis(live, p.hub), main: lat, side: <Panel label="Surfaces · last hour">{<UptimeGrid hub={hub} keys={p.hub} compact />}</Panel> }
   }
 }
 
-const LIVE_TITLE: Record<string, string> = { chain: 'Everything on Gully Chain', pay: 'Where Gully Pay settles', rpc: 'Networks behind one key' }
-const LIVE_LINE: Record<string, string> = {
-  chain: 'Gully Street, the explorer, faucet, bridge, docs and developer portal, each checked every minute, plus Gully Quests read on chain.',
-  pay: "x402 networks from Gully Pay's own facilitator, Gully Chain included, and the Gully RPC networks it reads them through.",
-  rpc: "The gateway's networks and their state right now, Gully Chain testnet first, plus the networks Gully Pay settles on.",
+function Pricing({ p, plans }: { p: ProductDef; plans: Plans | null }) {
+  const days = plans?.periodDays ?? 30
+  if (p.pricing === 'security') {
+    const sc = plans?.security?.scan
+    return (
+      <table className="gt-table gt-price">
+        <tbody>
+          <tr>
+            <td>{sc?.name ?? 'AI Security Scan'}</td>
+            <td className="num">{sc ? `${fmtUsd(sc.priceUsd)} per scan` : '—'}</td>
+            <td>{sc?.freePerMonth ? `${sc.freePerMonth.free ?? 0} free a month on the Free plan` : 'reading /api/plans'}</td>
+          </tr>
+          <tr>
+            <td>{plans?.security?.review?.name ?? 'Security Review'}</td>
+            <td>quoted per project</td>
+            <td>people read the code</td>
+          </tr>
+        </tbody>
+      </table>
+    )
+  }
+  if (p.pricing === 'holders') {
+    return (
+      <table className="gt-table gt-price">
+        <tbody>
+          {(plans?.plans ?? []).map((x) => (
+            <tr key={x.id}>
+              <td>{x.name}</td>
+              <td className="num">{x.priceUsdc === 0 ? 'Free' : `${fmtUsd(x.priceUsdc)} / ${days} days`}</td>
+              <td>{x.historyDays ? `${x.historyDays} days of history` : ''}</td>
+            </tr>
+          ))}
+          {!plans?.plans && (
+            <tr>
+              <td colSpan={3}>reading /api/plans…</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    )
+  }
+  const text = p.pricing === 'free-testnet' ? 'Free on testnet. Mainnet pricing is published when mainnet opens.' : p.pricing === 'quoted' ? 'Quoted per project. Tell us what you need below.' : `Plans and fees are published on ${p.urlLabel}, in USD.`
+  return <p className="gt-p">{text}</p>
 }
+
+const SERVICE_FOR: Partial<Record<string, string>> = { chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', deepcore: 'launch' }
 
 export function ProductView({ p }: { p: ProductDef }) {
   const live = useLive()
-  const d = defFor(p.key, live)
-  const blocks = live.chain?.blocks ?? []
+  const hpq = useHubProducts()
+  const plans = usePlans().data
+  const ref = useReveal<HTMLDivElement>()
+  const d = useMemo(() => liveFor(p, live, hpq.data, hpq.state), [p, live, hpq.data, hpq.state])
+  const st = stateOf(live.hub, p.hub)
+  const svc = SERVICES.find((s) => s.key === SERVICE_FOR[p.slug])
+  const idx = PRODUCTS.findIndex((x) => x.slug === p.slug)
   return (
-    <div className="lcp">
-      <Seo title={`${p.name}: ${p.blurb.replace(/\.$/, '')}`} description={`${p.name} by Gully Labs: ${p.blurb} Live figures on this page; the product lives at ${p.url.replace('https://', '')}.`} />
-      <section className="hero">
-        <div className="wrap">
-          <div className="copy rise">
-            <span className="plogo">
-              <ProductLogo p={p} />
-            </span>
-            <span className="lab cy">{d.label}</span>
-            <h1>{d.h1}</h1>
-            <p className="promise">{d.promise}</p>
-            <div className="ctas">
-              <Btn icon={ArrowUpRight} href={p.url} arrow>
-                Open {p.url.replace('https://', '')}
-              </Btn>
-              <Btn kind="sec" icon={Zap} href={p.app ?? APP_URL}>
-                Launch app
-              </Btn>
-              <Btn kind="ter" icon={BookOpen} href={p.docs ?? (p.key === 'ipfs' ? `${DOCS_URL}/ipfs` : DOCS_URL)}>
-                Docs
-              </Btn>
+    <div className="lcp gt" ref={ref}>
+      <Seo title={p.name} description={`${p.line} Live charts on this page.`} />
+      <section className="gt-hero gt-phero" aria-labelledby="p-h">
+        <div className="gt-wrap">
+          <div className="gt-hero-copy rise">
+            <nav className="gt-crumb gt-k" aria-label="Breadcrumb">
+              <Link to="/">gully labs</Link> / <Link to="/products">products</Link> / <span aria-current="page">{p.slug}</span>
+            </nav>
+            <Logo def={p.logo} name={p.name} scale={1.35} />
+            <h1 id="p-h" className="gt-sr-h">
+              {p.name}
+            </h1>
+            <p className="gt-lede">{p.line}</p>
+            <div className="gt-ctas">
+              <A className="gt-btn pri" href={p.url}>
+                Open {p.urlLabel}
+                <ArrowUpRight className="gt-ic" aria-hidden />
+              </A>
+              {p.docs && (
+                <A className="gt-btn sec" href={p.docs}>
+                  <BookOpen className="gt-ic" aria-hidden />
+                  Docs
+                </A>
+              )}
+              <Link className="gt-btn ter" to={`/services${svc ? `?service=${svc.key}` : ''}#contact`}>
+                Build one like it
+                <ArrowRight className="gt-ic" aria-hidden />
+              </Link>
+            </div>
+            <ul className="gt-facts">
+              <li>
+                <Dot s={st} /> {p.urlLabel}
+              </li>
+              <li>{p.group === 'chain' ? 'Runs on Gully Chain' : 'Supports Gully Chain'}</li>
+            </ul>
+          </div>
+          <div className="gt-kpis k2 rise">
+            {d.kpis.map((k) => (
+              <Kpi key={k.label} {...k} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="gt-sec" aria-labelledby="live-h">
+        <div className="gt-wrap">
+          <SecHead n="01" label="Live" title={`${p.name}, read live`} id="live-h" />
+          <div className="gt-grid2">
+            <div className="rv">{d.main}</div>
+            <div className="rv">{d.side ?? <Panel label="Surfaces">{<UptimeGrid hub={live.hub} keys={p.hub} compact />}</Panel>}</div>
+            {d.extra && <div className="rv gt-span2">{d.extra}</div>}
+            <div className="rv gt-span2">
+              <Panel label={`Uptime · ${p.name} surfaces · last hour`} right={<Dot s={st} />}>
+                <UptimeGrid hub={live.hub} keys={p.hub} />
+              </Panel>
             </div>
           </div>
-          <ChartCard label={d.chartLabel} tabs={d.tabs}>
-            {d.bars && (
-              <BlockBars
-                blocks={blocks}
-                meta={
-                  <>
-                    <span className="lab">Gully Chain · txs / block</span>
-                    <Count as="b" value={live.chain?.head} />
-                    <span>{live.chainState === 'error' ? 'RPC could not be read' : `${blocks.reduce((a, b) => a + b.txs, 0)} tx in ${blocks.length} blocks`}</span>
-                  </>
-                }
-              />
-            )}
-          </ChartCard>
         </div>
       </section>
-      <section className="statsec" aria-label="Live figures">
-        <div className="wrap">
-          <div className="stats stats4">
-            {d.tiles.map((t) => (
-              <Tile key={t.label} {...t} />
+
+      <section className="gt-sec" aria-labelledby="feat-h">
+        <div className="gt-wrap">
+          <SecHead n="02" label="Features" title="What it does" id="feat-h" />
+          <ul className="gt-feats">
+            {p.features.map((f, i) => (
+              <li key={f.t} className="rv" style={{ transitionDelay: `${(i % 3) * 50}ms` }}>
+                <span className="gt-n num">{String(i + 1).padStart(2, '0')}</span>
+                <h3>{f.t}</h3>
+                <p>{f.d}</p>
+              </li>
             ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="gt-sec" aria-labelledby="how-h">
+        <div className="gt-wrap gt-cols">
+          <div>
+            <SecHead n="03" label="How it works" title="Three steps" id="how-h" />
+            <ol className="gt-steps">
+              {p.how.map(([t, x], i) => (
+                <li key={t} className="rv">
+                  <span className="gt-n num">{String(i + 1).padStart(2, '0')}</span>
+                  <div>
+                    <h3>{t}</h3>
+                    <p>{x}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div>
+            <SecHead n="04" label="Pricing" title="Prices in USD" />
+            <div className="rv">
+              <Pricing p={p} plans={plans} />
+            </div>
           </div>
         </div>
       </section>
-      {(p.key === 'chain' || p.key === 'pay' || p.key === 'rpc') && (
-        <section aria-labelledby="live-h" style={{ paddingTop: 0 }}>
-          <div className="wrap">
-            <SectionHead label="Live now" title={LIVE_TITLE[p.key]} id="live-h">
-              {LIVE_LINE[p.key]}
-            </SectionHead>
-            <ProductLive k={p.key} />
+
+      <section className="gt-sec" aria-labelledby="faq-h">
+        <div className="gt-wrap gt-cols">
+          <div>
+            <SecHead n="05" label="FAQ" title="Questions" id="faq-h" />
+            <div className="gt-faq">
+              {p.faq.map(([q, a]) => (
+                <details key={q} className="rv">
+                  <summary>{q}</summary>
+                  <p>{a}</p>
+                </details>
+              ))}
+              <details className="rv">
+                <summary>Does {p.name} support Gully Chain?</summary>
+                <p>Yes. Every Gully product supports Gully Chain (chain 485590 on testnet today).</p>
+              </details>
+            </div>
           </div>
-        </section>
-      )}
-      <section aria-labelledby="steps-h">
-        <div className="wrap">
-          <SectionHead label="How it works" title={d.stepsTitle} id="steps-h">
-            Three steps. Every Gully product has a free tier, and billing runs through Gully Pay.
-          </SectionHead>
-          <Stepper
-            steps={d.steps}
-            cta={
-              <Btn size="sm" icon={ArrowUpRight} href={p.url} arrow>
-                Open {p.name}
-              </Btn>
-            }
-          />
-          <div className="pnav" aria-label="Other products">
-            {PRODUCTS.filter((x) => x.key !== p.key).map((x) => (
-              <Link key={x.key} to={`/products/${x.key}`} className="btn ter xs">
-                {x.name}
-              </Link>
-            ))}
-            <Link to="/products" className="btn ter xs">
-              All products
-            </Link>
+          <div>
+            <SecHead n="06" label="Links" title="Go further" />
+            <ul className="gt-links rv">
+              <li>
+                <A href={p.url}>
+                  {p.urlLabel}
+                  <ArrowUpRight className="gt-ic" aria-hidden />
+                </A>
+              </li>
+              {p.docs && (
+                <li>
+                  <A href={p.docs}>
+                    Docs
+                    <ArrowUpRight className="gt-ic" aria-hidden />
+                  </A>
+                </li>
+              )}
+              <li>
+                <Link to="/status">Status of every Gully service</Link>
+              </li>
+              {svc && (
+                <li>
+                  <Link to={`/services?service=${svc.key}#contact`}>
+                    <Check className="gt-ic" aria-hidden />
+                    Service: {svc.title}
+                  </Link>
+                </li>
+              )}
+            </ul>
           </div>
         </div>
       </section>
-      <section style={{ paddingTop: 0 }} aria-label="Trust">
-        <TrustBand mascot={false} />
-      </section>
+
+      <nav className="gt-sec gt-pnav" aria-label="Other products">
+        <div className="gt-wrap">
+          <Link to={`/products/${PRODUCTS[(idx + PRODUCTS.length - 1) % PRODUCTS.length].slug}`} className="gt-btn ter sm">
+            ← {PRODUCTS[(idx + PRODUCTS.length - 1) % PRODUCTS.length].name}
+          </Link>
+          <Link to="/products" className="gt-btn ter sm">
+            All products
+          </Link>
+          <Link to={`/products/${PRODUCTS[(idx + 1) % PRODUCTS.length].slug}`} className="gt-btn ter sm">
+            {PRODUCTS[(idx + 1) % PRODUCTS.length].name} →
+          </Link>
+        </div>
+      </nav>
     </div>
   )
 }
 
 export function ProductPage() {
   const { key } = useParams()
-  const p = PRODUCTS.find((x) => x.key === key)
+  const p = productBySlug(key)
   if (!p) return <NotFound />
-  return <ProductView key={p.key} p={p} />
+  return <ProductView key={p.slug} p={p} />
 }

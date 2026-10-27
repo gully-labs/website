@@ -1,62 +1,48 @@
-/* /products (compact refresh, 2026-10-26): one hero (the kit logos, each opening its product page here, beside the
-   live board), one compact card per product with its live state, then every Gully surface checked each minute and
-   the networks Gully Pay and Gully RPC serve. Every figure is read live. */
-import { Link } from 'react-router'
-import { ArrowRight } from 'lucide-react'
+/* /products, landing v3 (2026-10-26): the product logo wall (one page each), then every Gully surface checked each
+   minute and the venue figures in USD. Every figure is read live. */
 import { Seo } from '../../components/Seo'
-import { MarkLogo } from '../../components/ProductLogo'
-import { ic, PRODUCTS, ProductLogo, SectionHead } from '../../console/ui'
-import { LabsBoard, QuestsPanel } from '../../console/Suite'
-import { HubBoard, LaunchGrid } from '../../console/Launcher'
+import { useLive } from '../../console/live'
+import '../../terminal/terminal.css'
+import { PRODUCTS } from '../../terminal/catalog'
+import { Dot, Panel, SecHead, TChart, UptimeGrid, useReveal } from '../../terminal/kit'
+import { LogoWall } from '../../terminal/sections'
+import { venueTabs } from '../Home'
 
 export function ProductsIndex() {
+  const live = useLive()
+  const ref = useReveal<HTMLDivElement>()
+  const ok = live.hub?.services.filter((s) => s.state === 'up').length
   return (
-    <div className="lcp">
-      <Seo title="Products" description="Every Gully Labs product with its live state: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS and the status page. Each supports Gully Chain." />
-      <section className="hero">
-        <div className="wrap">
-          <div className="copy rise">
-            <span className="lab cy">Gully Labs · products</span>
-            <h1>
-              Every product,
-              <br />
-              <span className="grad">one lab.</span>
+    <div className="lcp gt" ref={ref}>
+      <Seo title="Products" description="Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and the DeepCore launchpad. Each supports Gully Chain." />
+      <section className="gt-hero gt-phero" aria-labelledby="pi-h">
+        <div className="gt-wrap gt-one">
+          <div className="gt-hero-copy rise">
+            <span className="gt-k">
+              <b>products</b> · {PRODUCTS.length} · all on or supporting Gully Chain
+            </span>
+            <h1 id="pi-h">
+              Every product, <span className="gt-acc">one lab.</span>
             </h1>
-            <p className="promise">
-              <b>Every product has a free tier</b>, supports Gully Chain and bills through Gully Pay. The logos open each product&apos;s page here.
-            </p>
-            <ul className="plist">
-              {PRODUCTS.map((p) => (
-                <li key={p.key}>
-                  <Link to={`/products/${p.key}`} aria-label={`${p.name}: product page`}>
-                    <ProductLogo p={p} />
-                    {ic(ArrowRight)}
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <Link to="/status" aria-label="Gully Labs status">
-                  <MarkLogo label="Gully Status" decorative />
-                  {ic(ArrowRight)}
-                </Link>
-              </li>
-            </ul>
+            <p className="gt-lede">Each has its own page with live charts, features and docs. The same team builds them for other teams too.</p>
           </div>
-          <HubBoard />
         </div>
       </section>
-      <section aria-labelledby="prods-h">
-        <div className="wrap">
-          <SectionHead label="Open a product" title="Each one on its own domain" id="prods-h" />
-          <LaunchGrid />
+      <section className="gt-sec" aria-labelledby="wall-h">
+        <div className="gt-wrap">
+          <SecHead n="01" label="Products" title="Pick a product" id="wall-h" />
+          <LogoWall />
         </div>
       </section>
-      <section aria-labelledby="across-h">
-        <div className="wrap">
-          <SectionHead label="Live now" title="Every Gully surface, checked each minute" id="across-h" />
-          <div className="livegrid">
-            <LabsBoard />
-            <QuestsPanel />
+      <section className="gt-sec" aria-labelledby="up-h">
+        <div className="gt-wrap gt-grid2">
+          <div className="rv">
+            <Panel label={`Uptime · ${live.hub?.services.length ?? 27} surfaces · last hour`} id="up-h" right={live.hub ? <Dot s={ok === live.hub.services.length ? 'up' : 'coming'} label={`${ok}/${live.hub.services.length} up`} /> : <Dot s="reading" />}>
+              <UptimeGrid hub={live.hub} compact />
+            </Panel>
+          </div>
+          <div className="rv">
+            <TChart label="Venues · USD" tabs={venueTabs(live)} />
           </div>
         </div>
       </section>

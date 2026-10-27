@@ -2,10 +2,11 @@
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Activity, BookOpen, Box, ChartCandlestick, ChartLine, FileText, Gauge, LayoutGrid, Lock, Menu, MessageCircle, Send, Sparkles, Tag, X, Zap, ArrowUpRight, type LucideProps } from 'lucide-react'
+import { Activity, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, LayoutGrid, Lock, Mail, Menu, MessageCircle, Send, Sparkles, Tag, X, Zap, ArrowUpRight, ArrowRight, type LucideProps } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { APP_URL, DOCS_URL } from '../site-host'
-import { Arrow, ic, LivePill, PRODUCTS } from './ui'
+import { ic, LivePill } from './ui'
+import { PRODUCTS } from '../terminal/catalog'
 
 type Icon = ComponentType<LucideProps>
 const BLOG_URL = 'https://blog.gullylabs.xyz'
@@ -53,10 +54,12 @@ export function ConsoleHeader() {
     return () => document.removeEventListener('keydown', k)
   }, [open])
   const items: Item[] = [
-    { label: 'Products', icon: LayoutGrid, to: home ? '/#products' : '/products' },
+    { label: 'Products', icon: LayoutGrid, to: '/products' },
+    { label: 'Services', icon: Briefcase, to: '/services' },
     { label: 'Live', icon: ChartLine, to: '/#live' },
     { label: 'Docs', icon: BookOpen, href: DOCS_URL },
     { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
+    { label: 'Contact', icon: Mail, to: home ? '/#contact' : '/services#contact' },
   ]
   // Gully Labs' own pages. The products live on their own domains (the Products list below, and /products).
   const pages: Item[] = [
@@ -86,11 +89,14 @@ export function ConsoleHeader() {
         </nav>
         <div className="navr">
           <LivePill />
-          <a className="btn pri sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app">
+          <a className="btn sec sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app">
             {ic(Zap)}
             <span className="lbl">Launch app</span>
-            <Arrow />
           </a>
+          <Link className="btn pri sm" to={home ? '/#contact' : '/services#contact'} aria-label="Start a project">
+            <span className="lbl">Start a project</span>
+            {ic(ArrowRight)}
+          </Link>
           <button type="button" className="btn ter sm menu-btn" aria-expanded={open} aria-controls="lc-sheet" aria-label={open ? 'Close menu' : 'Open menu'} onClick={() => setOpen(!open)}>
             {ic(open ? X : Menu)}
           </button>
@@ -110,12 +116,11 @@ export function ConsoleHeader() {
             <span className="lab">Products</span>
             <ul className="sheet-list">
               {PRODUCTS.map((p) => (
-                <li key={p.key}>
-                  <a href={p.url} target="_blank" rel="noopener noreferrer">
-                    {ic(p.icon)}
+                <li key={p.slug}>
+                  <Link to={`/products/${p.slug}`} onClick={() => setOpen(false)}>
+                    {ic(ArrowRight)}
                     <span className="lbl">{p.name}</span>
-                    {ic(ArrowUpRight, 'ic ext')}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -138,6 +143,7 @@ export function ConsoleFooter() {
   ]
   const more: Item[] = [
     { label: 'Products', icon: LayoutGrid, to: '/products' },
+    { label: 'Services', icon: Briefcase, to: '/services' },
     { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
     { label: 'Gully Score', icon: Gauge, to: '/score' },
     { label: 'Pricing', icon: Tag, to: '/pricing' },
@@ -150,7 +156,10 @@ export function ConsoleFooter() {
       <div className="wrap">
         <div>
           <img src="/brand/logo/gully-labs-logo.png" srcSet="/brand/logo/gully-labs-logo.png 1x, /brand/logo/gully-labs-logo-2x.png 2x" width={160} height={64} alt="Gully Labs — You Think It, We Ship It." />
-          <span className="tagline">You Think It, We Ship It.</span>
+          <span className="tagline">You Think It, We Ship It. · Web3 product studio and development services</span>
+          <a className="gt-badge" href="/" aria-label="Powered by Gully Labs">
+            <img src="/brand/badges/powered-by-gully-labs-dark.png" srcSet="/brand/badges/powered-by-gully-labs-dark.png 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x" width={190} height={48} alt="Powered by Gully Labs" />
+          </a>
         </div>
         <nav aria-label="Footer">
           <ul>
@@ -165,12 +174,8 @@ export function ConsoleFooter() {
           <span className="lab">Products</span>
           <ul>
             {PRODUCTS.map((p) => (
-              <li key={p.key}>
-                <a href={p.url} target="_blank" rel="noopener noreferrer">
-                  {ic(p.icon)}
-                  {p.name}
-                  <span className="sr">(opens {p.url.replace('https://', '')} in a new tab)</span>
-                </a>
+              <li key={p.slug}>
+                <Link to={`/products/${p.slug}`}>{p.name}</Link>
               </li>
             ))}
           </ul>
