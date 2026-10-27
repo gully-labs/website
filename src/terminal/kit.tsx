@@ -171,6 +171,8 @@ export interface ChartTab {
   labels: string[]
   fmt?: (v: number | null) => string
   stacked?: boolean
+  /** Whole-number data (counts): integer y ticks with a minimum domain. */
+  integer?: boolean
   /** Why there is nothing to draw: the source could not be read, or it has no points yet. */
   state?: 'ok' | 'loading' | 'offline' | 'empty'
   empty?: string
@@ -200,7 +202,7 @@ export function TChart({ label, tabs, height = 180, right }: { label: ReactNode;
       if (tbl.current) tbl.current.innerHTML = ''
       return
     }
-    if (!chart.current) chart.current = lineChart(plot.current, { series: tab.series, labels: tab.labels, title: tab.title, fmt: tab.fmt, stacked: tab.stacked, height, legendEl: legend.current, tableEl: tbl.current })
+    if (!chart.current) chart.current = lineChart(plot.current, { series: tab.series, labels: tab.labels, title: tab.title, fmt: tab.fmt, stacked: tab.stacked, integer: tab.integer, height, legendEl: legend.current, tableEl: tbl.current })
     else chart.current.update(tab.series, tab.labels, tab.title)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])

@@ -241,8 +241,14 @@ export async function readLive(chainKey, tokenIn, sinceIn) {
     try {
       const head = Number(BigInt(await evmRpc(chainKey, 'eth_blockNumber', [])))
       const from = Math.max(since + 1, head - 5_000)
-      logs = await evmRpc(chainKey, 'eth_getLogs', [{ address: map.token.address, topics: [TRANSFER_TOPIC], fromBlock: '0x' + from.toString(16), toBlock: '0x' + head.toString(16) }])
-      cursor = head
+      // No new block since the last poll (quiet chains such as Gully Chain testnet only make blocks on demand, and a
+      // lagging RPC can report a head below the cursor): nothing new, not an RPC error. fromBlock > toBlock is
+      // rejected by the RPC and surfaced as a 502 on every idle poll.
+      if (from > head) {
+        logs = []
+        cursor = head
+      } else logs = await evmRpc(chainKey, 'eth_getLogs', [{ address: map.token.address, topics: [TRANSFER_TOPIC], fromBlock: '0x' + from.toString(16), toBlock: '0x' + head.toString(16) }])
+      if (from <= head) cursor = head
     } catch {
       logs = null
     }

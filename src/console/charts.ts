@@ -4,6 +4,7 @@
    tweens (600-700 ms) instead of swapping, bars slide left as blocks arrive and the newest one flashes,
    sparklines carry a travelling glow dot. Reduced motion keeps fades and number changes only. */
 
+import { yTicks } from '../components/charts/chartData'
 export const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 export const C = { cyan: '#00D2FF', blue: '#248BFF', violet: '#7B3BFF', magenta: '#C02CFF', muted: '#A3A8C3', surface: '#0B0A16', bg: '#06050D', s: ['#20A0C4', '#1A5FE6', '#9578E8', '#9121B5'], up: '#3DDC97', down: '#FF6B81' }
 const NS = 'http://www.w3.org/2000/svg'
@@ -104,9 +105,9 @@ export interface LineChart {
 /** Multi-series (optionally stacked) area chart with legend + data table rendered into sibling hosts. */
 export function lineChart(
   el: HTMLElement,
-  opts: { series: Series[]; labels: string[]; fmt?: (v: number | null) => string; title?: string; height?: number; width?: number; stacked?: boolean; unit?: string; legendEl?: HTMLElement | null; tableEl?: HTMLElement | null },
+  opts: { series: Series[]; labels: string[]; fmt?: (v: number | null) => string; title?: string; height?: number; width?: number; stacked?: boolean; integer?: boolean; unit?: string; legendEl?: HTMLElement | null; tableEl?: HTMLElement | null },
 ): LineChart {
-  const { fmt = fmtUsd, height = 220, width = 600, stacked = false, unit = '', legendEl, tableEl } = opts
+  const { fmt = fmtUsd, height = 220, width = 600, stacked = false, integer = false, unit = '', legendEl, tableEl } = opts
   let title = opts.title ?? ''
   const W = width, H = height, L = 44, R = 16, T = 12, B = 22
   const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': title })
@@ -115,7 +116,7 @@ export function lineChart(
   const defs = mk('defs'), gGrid = mk('g'), gArea = mk('g'), gLine = mk('g'), gAx = mk('g'), gDots = mk('g')
   const xh = mk('line', { class: 'xh', y1: T, y2: H - B }), hit = mk('rect', { class: 'hit', x: L, y: 0, width: W - L - R, height: H })
   svg.append(defs, gGrid, gArea, gLine, gAx, gDots, xh, hit)
-  type Geo = { n: number; X: (i: number) => number; Y: (v: number) => number; hi: number; stacks: number[][] }
+  type Geo = { n: number; X: (i: number) => number; Y: (v: number) => number; hi: number; ticks: number[]; stacks: number[][] }
   let cur: { ser: Series[]; labs: string[]; geo: Geo } | null = null
   let drawn = false
   let anim = 0
@@ -133,22 +134,26 @@ export function lineChart(
         hi = Math.max(hi, acc)
       })
     }
-    hi = hi || 1
-    const Y = (v: number) => T + (H - T - B) * (1 - v / (hi * 1.08))
-    return { n, X, Y, hi, stacks }
+    const ax = yTicks(hi, { integer })
+    const Y = (v: number) => T + (H - T - B) * (1 - v / ax.top)
+    return { n, X, Y, hi: ax.top, ticks: ax.ticks, stacks }
   }
   const render = (ser: Series[], labs: string[], geo: Geo, final: boolean) => {
     gGrid.innerHTML = ''; gAx.innerHTML = ''; gArea.innerHTML = ''; gLine.innerHTML = ''; gDots.innerHTML = ''; defs.innerHTML = ''
-    const { n, X, Y, hi, stacks } = geo
-    for (let g = 0; g <= 3; g++) {
-      const y = T + ((H - T - B) * g) / 3
+    const { n, X, Y, ticks, stacks } = geo
+    const seen = new Set<string>()
+    for (const v of ticks) {
+      const y = Y(v)
       gGrid.appendChild(mk('line', { class: 'glx', x1: L, x2: W - R, y1: y, y2: y }))
+      const label = fmt(v)
+      if (seen.has(label)) continue
+      seen.add(label)
       const t = mk('text', { class: 'at', x: L - 6, y: y + 4, 'text-anchor': 'end' })
-      t.textContent = fmt((hi * 1.08 * (3 - g)) / 3)
+      t.textContent = label
       gAx.appendChild(t)
     }
-    const ticks = [0, Math.floor((n - 1) / 2), n - 1]
-    ticks.forEach((i) => {
+    const xTicks = [0, Math.floor((n - 1) / 2), n - 1]
+    xTicks.forEach((i) => {
       if (!labs[i]) return
       const t = mk('text', { class: 'at', x: X(i), y: H - 6, 'text-anchor': i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle' })
       t.textContent = labs[i]

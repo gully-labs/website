@@ -372,3 +372,12 @@ test('server-rendered line areas carry the url() fill the breathing CSS targets'
   assert.match(svg, /<path[^>]*fill="url\(#/, 'the area path fills with a gradient url')
   assert.match(css, /path\[fill\^='url\('\]/)
 })
+
+test('yTicks: integer counts never repeat a label and keep a minimum domain', async () => {
+  const { yTicks } = await import(`${kit}chartData.ts`)
+  assert.deepEqual(yTicks(1, { integer: true }), { top: 3, ticks: [0, 1, 2, 3] })
+  assert.deepEqual(yTicks(0, { integer: true }), { top: 3, ticks: [0, 1, 2, 3] })
+  const big = yTicks(100, { integer: true })
+  assert.ok(big.top >= 100 && big.ticks.every((t) => Number.isInteger(t)) && new Set(big.ticks).size === 4)
+  assert.equal(yTicks(10).ticks.length, 4)
+})

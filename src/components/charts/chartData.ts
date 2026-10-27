@@ -59,3 +59,18 @@ export function ghostVariantOf(option: object | null | undefined): 'line' | 'bar
   const s = (Array.isArray(list) ? list : [list]).find((x) => x && !DECOR.has(String(x.type)))
   return s?.type === 'pie' ? 'ring' : s?.type === 'line' ? 'line' : 'bars'
 }
+
+/**
+ * The y-axis of a line chart: its top and the tick values (bottom to top, 0 first). With `integer` (counts) the
+ * ticks are whole numbers on a whole step and the domain is at least `count` (so a max of 1 reads 0, 1, 2, 3, never
+ * "1, 1, 0, 0"); otherwise the top is the max plus 8 % headroom split evenly. Ticks never repeat.
+ */
+export function yTicks(max: number, { integer = false, count = 3 }: { integer?: boolean; count?: number } = {}): { top: number; ticks: number[] } {
+  const hi = Number.isFinite(max) && max > 0 ? max : 0
+  if (integer) {
+    const step = Math.max(1, Math.ceil(Math.ceil(hi * 1.08) / count))
+    return { top: step * count, ticks: Array.from({ length: count + 1 }, (_, g) => g * step) }
+  }
+  const top = (hi || 1) * 1.08
+  return { top, ticks: [...new Set(Array.from({ length: count + 1 }, (_, g) => (top * g) / count))] }
+}
