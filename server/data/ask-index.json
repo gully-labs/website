@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-19T06:35:57.249Z",
+ "updatedAt": "2026-10-19T07:52:13.564Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -2807,8 +2807,8 @@
    "title": "Gully Labs ecosystem",
    "url": "https://gullylabs.xyz/ecosystem",
    "section": "Integrates with",
-   "text": "Third-party services our shipped code calls, each with the file that does. This is a list of what we use, not of who endorses us.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Third-party services our shipped code calls today. A list of what we use, not of who endorses us. How we verified this Every entry is a call in code we ship; open “In code” on a tile to see the file that makes it. Plans are not listed. Each logo is the company’s own mark, used only to name the service; it does not mean they endorse us.",
+   "updatedAt": "2026-10-19T07:52:13.564Z"
   },
   {
    "id": "7eb2752b9587",
