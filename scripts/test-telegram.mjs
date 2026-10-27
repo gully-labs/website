@@ -831,12 +831,14 @@ try {
   check('web_app buttons only go to private chats (Telegram refuses them in groups)', kbCalls.some((c) => Number(c.body.chat_id) < 0) && !kbCalls.some((c) => Number(c.body.chat_id) < 0 && flat(c.body.reply_markup.inline_keyboard).some((b) => b.web_app)))
   // Plain words for everyone (owner, 2026-10-18): no source names, no technical terms, no raw timestamps on any
   // screen, alert or button. Gully AI's answers come from the docs and may name the API, so they are left out.
-  const JARGON = /api\.|\bAPI\b|\bRPC\b|\bfeeds?\b|\bUTC\b|endpoint|indexer|\bpool\b|not reported|unreadable|on[- ]chain|fair price|\d{4}-\d{2}-\d{2} \d{2}:\d{2}/i
+  const JARGON = /api\.|\bAPI\b|(?<!Gully )\bRPC\b|\bfeeds?\b|\bUTC\b|endpoint|indexer|\bpool\b|not reported|unreadable|on[- ]chain|fair price|\d{4}-\d{2}-\d{2} \d{2}:\d{2}/i
   const shownTexts = calls.filter((c) => VIEW.has(c.method) || c.method === 'answerCallbackQuery').map((c) => c.body.text ?? c.body.caption ?? '').filter((x) => !/^<b>🤖 Gully AI<\/b>/.test(x))
   const buttonTexts = calls.flatMap((c) => flat(c.body?.reply_markup?.inline_keyboard).map((b) => b.text)).filter((x) => !/^📄 \[\d\] /.test(x)) // Gully AI's source buttons carry doc titles
   const descriptions = cmdList.map((c) => c.description)
   const jargon = [...shownTexts, ...buttonTexts, ...descriptions].filter((x) => JARGON.test(x))
-  check(`plain words: no screen, alert, toast, button or command says "api.", "API", "RPC", "feed", "UTC", "pool", "on-chain" or a raw time (${shownTexts.length} texts, ${buttonTexts.length} buttons)`, shownTexts.length > 100 && jargon.length === 0, jargon.slice(0, 3).join(' | '))
+  check(`plain words: no screen, alert, toast, button or command says "api.", "API", "RPC" (the product name Gully RPC is fine), "feed", "UTC", "pool", "on-chain" or a raw time (${shownTexts.length} texts, ${buttonTexts.length} buttons)`, shownTexts.length > 100 && jargon.length === 0, jargon.slice(0, 3).join(' | '))
+  const moreUrls = flat(ui.moreView().keyboard).map((b) => b.url).filter(Boolean)
+  check('More: every product on its own domain plus the GullyChain news, deploys and Discord links, no waitlist', ['https://gullypay.xyz', 'https://gullyrpc.xyz', 'https://gullychain.xyz', 'https://holdermaps.xyz', 'https://gullysecurity.xyz', 'https://gullyai.xyz', 'https://gullystudio.xyz', 'https://t.me/GullyChain', 'https://t.me/GullyChainDeploys', 'https://discord.com/invite/tY2ErsNNBp'].every((u) => moreUrls.includes(u)) && !/waitlist/i.test(ui.moreView().text), JSON.stringify(moreUrls))
   const chainlink = shownTexts.filter((x) => /Chainlink/.test(x))
   check('Chainlink is named at most once per screen, and only in the help text', chainlink.every((x) => /Gully Labs bot/.test(x) && x.split('Chainlink').length === 2), chainlink.filter((x) => !/Gully Labs bot/.test(x)).slice(0, 2).join(' | '))
   check('"Information only" appears at most once per screen', shownTexts.every((x) => x.split(/information only/i).length <= 2), shownTexts.find((x) => x.split(/information only/i).length > 2))
