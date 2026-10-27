@@ -14,6 +14,10 @@ export const CHAIN_NAMES: Record<string, string> = {
   solana: 'Solana',
 }
 
+/** The chain picker's order: Gully Chain first, then the rest (server/holders.mjs HOLDER_CHAINS). */
+export const PICK_CHAINS = ['gully', 'robinhood', 'base', 'bsc', 'hyperevm', 'solana'] as const
+export const chainLabel = (c: string) => (c === 'gully' ? 'Gully Chain · 485590' : (CHAIN_NAMES[c] ?? c))
+
 const INFRA = new Set<string>(INFRA_KINDS)
 export const isInfraNode = (n: HolderNode) => !!n.label && INFRA.has(n.label.kind)
 

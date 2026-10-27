@@ -73,7 +73,7 @@ export function HmNotFoundBody() {
       <Link className="hm-btn" to="/#map">
         Map a token
       </Link>
-      <Link className="hm-btn ghost" to="/#top">
+      <Link className="hm-btn ghost" to="/#live">
         Most scanned today
       </Link>
     </HmState>
