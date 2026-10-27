@@ -23,7 +23,7 @@
 //   bco | bci                  🔕 Stop announcements (on every broadcast) | switch them back on
 //   san:0|1                    Settings: announcements off | on (private chats)
 //   hm                         Holder Map: what it is, where it has data      sec  Gully Security, Score, monitors
-//   more                       More from Gully Labs: plans, Pay, docs, blog, news
+//   more                       More from Gully Labs: every product domain, plans, docs, blog, news channels
 //   mon[:p2]                   my security monitors       mo:<id>       one monitor
 //   mop|mor|mom:<id>           pause, resume, mute 24h a monitor
 //   mmu:<id>                   Mute 24h on a monitor alert delivery (never gated, like mute:<id>)
@@ -202,6 +202,7 @@ export function helpView(linked) {
     '/security · 🛡 Gully Security: contract scans, Gully Score and monitors',
     '/score 0x… · the Gully Score of a contract (add <code>base</code>, <code>ethereum</code>…)',
     '/ask · ask Gully AI a question',
+    '/more · every Gully product: Gully Pay, Gully RPC, Gully Chain, HolderMaps, Gully Security, Gully AI, Gully Studio',
     '/contact · 💬 write to the Gully Labs team (we reply here)',
     '/app · open the Gully app inside Telegram',
     ...(linked ? ['/alerts · your alerts', '/monitors · your contract monitors', '/stop · unlink this chat'] : ['🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram.']),
@@ -262,14 +263,44 @@ export function scoreLookupView(chain, address) {
   }
 }
 
-/** 🧭 More from Gully Labs: links to the products that live on the site and in the app. */
+/** Every Gully product on its own domain (gully-protocol CLAUDE.md services table, 2026-10-26). */
+export const PRODUCT_URLS = Object.freeze({
+  pay: 'https://gullypay.xyz',
+  rpc: 'https://gullyrpc.xyz',
+  chain: 'https://gullychain.xyz',
+  holdermaps: 'https://holdermaps.xyz',
+  security: 'https://gullysecurity.xyz',
+  ai: 'https://gullyai.xyz',
+  studio: 'https://gullystudio.xyz',
+})
+/** Official GullyChain community (owner, 2026-10-26). */
+export const GULLYCHAIN_SOCIALS = Object.freeze({
+  news: 'https://t.me/GullyChain',
+  deploys: 'https://t.me/GullyChainDeploys',
+  buybot: 'https://t.me/GullyBuyBot',
+  chainbot: 'https://t.me/GullyChainBot',
+  discord: 'https://discord.com/invite/tY2ErsNNBp',
+})
+
+/** 🧭 More from Gully Labs: every product on its own domain, plans, docs, blog and both news channels. */
 export const moreView = () => ({
-  text: ['<b>🧭 More from Gully Labs</b>', 'Plans and prices, Gully Pay for your store, Gully Analytics, the Chain Kit waitlist, the docs, the blog and the news channel.'].join('\n'),
+  text: [
+    '<b>🧭 More from Gully Labs</b>',
+    '🧾 <b>Gully Pay</b>: checkout and payments in stablecoins (USD first), on Gully Chain too.',
+    '🔌 <b>Gully RPC</b>: connect your app to every chain we serve, Gully Chain included.',
+    '⛓ <b>Gully Chain</b>: our chain, with its own app, bridge, quests and launchpad.',
+    '👥 <b>HolderMaps</b> · 🛡 <b>Gully Security</b> · 🤖 <b>Gully AI</b> · 🎮 <b>Gully Studio</b> (games).',
+    '',
+    'Plans and prices, the docs, the blog and the news channels are below.',
+  ].join('\n'),
   keyboard: [
-    [ubtn('💳 Plans & prices ↗', `${SITE}/pricing`), ubtn('🧾 Gully Pay ↗', `${PORTAL}/#pay`)],
-    [ubtn('📊 Gully Analytics ↗', `${SITE}/analytics`), ubtn('🧱 Chain Kit ↗', `${SITE}/chain-kit`)],
+    [ubtn('🧾 Gully Pay ↗', PRODUCT_URLS.pay), ubtn('🔌 Gully RPC ↗', PRODUCT_URLS.rpc)],
+    [ubtn('⛓ Gully Chain ↗', PRODUCT_URLS.chain), ubtn('👥 HolderMaps ↗', PRODUCT_URLS.holdermaps)],
+    [ubtn('🛡 Gully Security ↗', PRODUCT_URLS.security), ubtn('🤖 Gully AI ↗', PRODUCT_URLS.ai)],
+    [ubtn('🎮 Gully Studio ↗', PRODUCT_URLS.studio), ubtn('💳 Plans & prices ↗', `${SITE}/pricing`)],
     [ubtn('📚 Docs ↗', 'https://docs.gullylabs.xyz'), ubtn('📝 Blog ↗', 'https://blog.gullylabs.xyz')],
-    [ubtn('📣 Gully Labs News ↗', 'https://t.me/GullyLabsNews')],
+    [ubtn('📣 Gully Labs News ↗', 'https://t.me/GullyLabsNews'), ubtn('⛓ GullyChain News ↗', GULLYCHAIN_SOCIALS.news)],
+    [ubtn('🚀 GullyChain Deploys ↗', GULLYCHAIN_SOCIALS.deploys), ubtn('💬 GullyChain Discord ↗', GULLYCHAIN_SOCIALS.discord)],
     nav('m'),
   ],
 })
