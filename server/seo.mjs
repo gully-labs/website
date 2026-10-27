@@ -252,6 +252,15 @@ const HOLDERMAPS_HOME = ['Who really holds a token? Holder bubble maps · Holder
 /** A main-site Holder Map title, named for holdermaps.xyz. */
 export const holderMapsTitle = (t) => String(t).replace(/ · Holder Map · Gully Labs$/, ' · HolderMaps').replace(/ · Gully Labs$/, ' · HolderMaps')
 
+/** A main-site canonical moved to a product domain: kept when it already names that domain, else its short path there
+    (null when the path has no short form, never "https://<domain>null"). */
+function toShort(canonical, origin, shortPath) {
+  if (!canonical) return null
+  if (canonical === origin || canonical.startsWith(`${origin}/`)) return canonical
+  const short = shortPath(new URL(canonical).pathname)
+  return short ? origin + short : null
+}
+
 /** HolderMaps' own head (its brand kit, public/brand/holdermaps; server/product-brand.mjs): site name, theme colour,
     icons and share images. */
 const HM = PRODUCT_BRANDS.holdermaps
@@ -278,12 +287,15 @@ function holderMapsMeta(p) {
   const internal = holderInternalPath(p)
   if (!internal) return { title: 'Not found · HolderMaps', description: HOLDERMAPS_HOME[1], canonical: null, found: false, image: HM_OG, brand: HOLDERMAPS_BRAND }
   const m = pageMeta('gullylabs.xyz', internal)
-  if (internal === '/holders') return { ...m, title: HOLDERMAPS_HOME[0], description: HOLDERMAPS_HOME[1], canonical: `${HOLDERMAPS_URL}/`, ld: HM_LD, image: HM_OG, brand: HOLDERMAPS_BRAND }
+  // The home page links the most-scanned maps, so crawlers find token pages from the HTML as well as the sitemap.
+  if (internal === '/holders') return { ...m, title: HOLDERMAPS_HOME[0], description: HOLDERMAPS_HOME[1], canonical: `${HOLDERMAPS_URL}/`, ld: HM_LD, image: HM_OG, brand: HOLDERMAPS_BRAND, links: topHolderPaths(30).map((hp) => [holderShortPath(hp), `${CHAIN_NAMES_ALL[hp.split('/')[2]] ?? hp.split('/')[2]}: ${holderSymbol(hp.split('/')[2], hp.split('/')[3]) ?? hp.split('/')[3].slice(0, 10)}`]) }
   // Every page on holdermaps.xyz shares HolderMaps' own kit image (owner rule 2026-10-26: og:image is the product's own
   // kit OG). The per-token bubble card (/api/holders/<chain>/<token>/card.png, now in the HolderMaps kit too) stays
   // the share image of the gullylabs.xyz/holders pages.
   const description = String(m.description).replace(/ on Gully Labs\.$/, ' on HolderMaps.')
-  const canonical = m.canonical ? HOLDERMAPS_URL + holderShortPath(new URL(m.canonical).pathname) : null
+  // pageMeta names holdermaps.xyz itself once HOLDERMAPS_PRIMARY is set; otherwise its gullylabs.xyz path is shortened.
+  // (Shortening an already-short path gave "https://holdermaps.xyznull" on every token page, 2026-10-27.)
+  const canonical = toShort(m.canonical, HOLDERMAPS_URL, holderShortPath)
   return { ...m, title: holderMapsTitle(m.title), description, canonical, image: HM_OG, brand: HOLDERMAPS_BRAND, ld: canonical ? holderMapsTokenLd(p, canonical, holderMapsTitle(m.title), description) : null }
 }
 
@@ -318,7 +330,7 @@ function securityMeta(p) {
   const m = pageMeta('gullylabs.xyz', internal)
   if (internal === '/security') return { ...m, title: SECURITY_HOME_TITLE, canonical: `${SECURITY_URL}/` }
   if (internal === '/legal/scan-terms') return { ...m, title: securityTitle(m.title), image: `${SITE}/social/og-security.png` }
-  return { ...m, title: securityTitle(m.title), canonical: m.canonical ? SECURITY_URL + securityShortPath(new URL(m.canonical).pathname) : null }
+  return { ...m, title: securityTitle(m.title), canonical: toShort(m.canonical, SECURITY_URL, securityShortPath) }
 }
 
 /** Head tags for one request. `found: false` means no page owns the path (served as a 404). */
@@ -387,7 +399,9 @@ export function pageMeta(host, pathname) {
   // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
   const secShort = securityPrimary() && p.startsWith('/security') ? securityShortPath(p) : null
   const prod = productExtras(p)
-  return { title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: prod ? prod.image : p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : KIT_OG, ld: prod ? prod.ld : p === '/' ? [ORG, APP_LD] : p === '/services' ? [ORG, SERVICES_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
+  const links = p === '/' || p === '/products' ? [...Object.entries(PRODUCT_PAGES).map(([k, d]) => [`/products/${k}`, d[0]]), ...(p === '/' ? [['/products', 'All products'], ['/services', 'Services'], ['/tracker', 'Stock token tracker'], ['/about', 'About']] : [])] : null
+  return {
+    links, title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: prod ? prod.image : p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : KIT_OG, ld: prod ? prod.ld : p === '/' ? [ORG, APP_LD] : p === '/services' ? [ORG, SERVICES_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
 }
 
 /** A report's subject in a title: the contract or the repository. */
@@ -399,6 +413,16 @@ function reportTitle(j) {
 }
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+/** The page's name for its h1: its title without the " · Brand" suffix. */
+const pageHeading = (title) => String(title).replace(/ · [^·]+$/, '')
+
+/** The pre-render body: an h1, the description and (when the page has them) its key links. */
+function shellBody(meta) {
+  const links = (meta.links ?? []).filter(([href, text]) => href && text).slice(0, 40)
+  const nav = links.length ? `<nav aria-label="Pages"><ul>${links.map(([href, text]) => `<li><a href="${esc(href)}">${esc(text)}</a></li>`).join('')}</ul></nav>` : ''
+  return `<main data-shell style="max-width:720px;margin:48px auto;padding:0 16px;font:16px/1.5 system-ui,sans-serif"><h1>${esc(pageHeading(meta.title))}</h1><p>${esc(meta.description)}</p>${nav}</main>`
+}
 
 /** Rewrites index.html's head for one page. */
 export function renderHead(source, meta) {
@@ -438,6 +462,9 @@ export function renderHead(source, meta) {
     }
     if (b.twitterImage && !/\/card\.png$/.test(meta.image ?? '')) swap(/<meta name="twitter:image"[^>]*>/, `<meta name="twitter:image" content="${esc(b.twitterImage)}" />`)
   }
+  // What a crawler sees before scripts run: the page's own h1, its description and its key links, inside #root (React's
+  // createRoot replaces it on first render, so the live page still has exactly one h1). Indexed pages only.
+  if (meta.found && !meta.noindex) html = html.replace(/<div id="root"><\/div>/, `<div id="root">${shellBody(meta)}</div>`)
   for (const ld of [meta.ld ?? []].flat()) html = html.replace('</head>', `    <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n  </head>`)
   return html
 }

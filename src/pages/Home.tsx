@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
-import { ArrowRight, ArrowUpRight } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ArrowRight, ArrowUpRight, Route, Trophy, Wrench } from 'lucide-react'
+import { ConsoleTabs } from '../console/Tabs'
 import { Seo } from '../components/Seo'
 import { fmtUsd, fmtInt, fmtTime } from '../console/charts'
 import { chainHead, coversOf, totalOf, useLive, venueSeries, type Live } from '../console/live'
@@ -125,6 +126,7 @@ export function Home() {
   const hpq = useHubProducts()
   const hp = hpq.data
   const ref = useReveal<HTMLDivElement>()
+  const [tab, setTab] = useState('services')
   const vTabs = useMemo(() => venueTabs(live), [live])
   const cTabs = useMemo(() => chainTabs(hp, hpq.state), [hp, hpq.state])
   const q = live.hub?.quests
@@ -231,33 +233,42 @@ export function Home() {
 
       <section id="services" className="gt-sec" aria-labelledby="services-h">
         <div className="gt-wrap">
-          <SecHead n="03" label="Services" title="Hire the team that runs it" id="services-h">
+          <SecHead n="03" label="Work with us" title="Hire the team that runs it" id="services-h">
             The same people who run these products build yours: scoped, priced in USD and shipped on a timeline.
           </SecHead>
-          <ServicesList />
-        </div>
-      </section>
-
-      <section id="work" className="gt-sec" aria-labelledby="work-h">
-        <div className="gt-wrap">
-          <SecHead n="04" label="Case studies" title="Our products are the proof" id="work-h">
-            Each one is in production or public testnet, with its live figure.
-          </SecHead>
-          <CaseStudies />
-        </div>
-      </section>
-
-      <section id="process" className="gt-sec" aria-labelledby="process-h">
-        <div className="gt-wrap">
-          <SecHead n="05" label="Process" title="Discover. Build. Launch. Grow." id="process-h" />
-          <Process />
+          {/* Owner rule (minimal pages, ~1.5 screens): services, case studies and process share one tabbed panel. */}
+          <ConsoleTabs
+            label="Work with us"
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              {
+                id: 'services',
+                label: 'Services',
+                icon: Wrench,
+                content: (
+                  <>
+                    <ServicesList compact />
+                    <p className="gt-more">
+                      <a className="gt-btn ter" href="/services">
+                        Every service with its deliverables
+                        <ArrowRight className="gt-ic" aria-hidden />
+                      </a>
+                    </p>
+                  </>
+                ),
+              },
+              { id: 'work', label: 'Case studies', icon: Trophy, content: <CaseStudies /> },
+              { id: 'process', label: 'Process', icon: Route, content: <Process /> },
+            ]}
+          />
         </div>
       </section>
 
       <section id="contact" className="gt-sec gt-contact" aria-labelledby="contact-h">
         <div className="gt-wrap">
           <div className="gt-contact-copy rv">
-            <SecHead n="06" label="Contact" title="Tell us what you are building" id="contact-h">
+            <SecHead n="04" label="Contact" title="Tell us what you are building" id="contact-h">
               A short brief is enough. We answer with questions or a first scope.
             </SecHead>
             <ul className="gt-alt">
