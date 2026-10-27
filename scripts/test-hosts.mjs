@@ -222,11 +222,11 @@ try {
     // Redesign 2026-10-26: a path that is no page on either site is HolderMaps' own 404 (mascot page), not a hop away.
     for (const p of ['/nope', '/ethereum/0x123', `/deep/x`]) {
       const nf = await get(HM, p)
-      check(`holdermaps ${p}: its own 404, noindex, titled Not found · HolderMaps`, nf.status === 404 && !nf.headers.location && nf.text.includes('<div id="root">') && nf.text.includes('<title>Not found · HolderMaps</title>') && /<meta name="robots" content="noindex"/.test(nf.text), `${nf.status} ${nf.headers.location ?? ''}`)
+      check(`holdermaps ${p}: its own 404, noindex, titled Not found · HolderMaps`, nf.status === 404 && !nf.headers.location && nf.text.includes('<div id="root">') && nf.text.includes('<title>Not found · HolderMaps</title>') && /<meta name="robots" content="noindex"/.test(nf.text) && nf.headers['x-robots-tag'] === 'noindex', `${nf.status} ${nf.headers.location ?? ''}`)
     }
     for (const p of ['/legal/terms', '/tracker', '/admin', '/chains']) check(`holdermaps ${p}: still a 301 to gullylabs.xyz`, (await get(HM, p)).status === 301)
     const deep = await get(HM, `/deep/${DEEP}`)
-    check('holdermaps /deep/<id>: 200, noindex, no canonical (private by link)', deep.status === 200 && /<meta name="robots" content="noindex"/.test(deep.text) && !/rel="canonical"/.test(deep.text) && /HolderMaps/.test(deep.text.match(/<title>[^<]*<\/title>/)?.[0] ?? ''))
+    check('holdermaps /deep/<id>: 200, noindex, no canonical (private by link)', deep.status === 200 && /<meta name="robots" content="noindex"/.test(deep.text) && deep.headers['x-robots-tag'] === 'noindex' && !/rel="canonical"/.test(deep.text) && /HolderMaps/.test(deep.text.match(/<title>[^<]*<\/title>/)?.[0] ?? ''))
     const long = await get(HM, `/holders/base/${TOKEN}?ref=x`)
     check('holdermaps /holders/<chain>/<token>: 301 to the short path', long.status === 301 && long.headers.location === `/base/${TOKEN}?ref=x`, `${long.status} ${long.headers.location}`)
     const www = await get('www.holdermaps.xyz', `/base/${TOKEN}`)
@@ -272,6 +272,9 @@ try {
       check('primary: an unknown chain under /holders is not redirected', (await get(MAIN, '/holders/nope/x')).status !== 301)
       check('primary: localhost keeps /holders by path (development)', (await get(`localhost:${PORT}`, '/holders')).status === 200)
       const hp = await get(HM, `/base/${TOKEN}`)
+      check('primary: a token page names its own holdermaps.xyz address as canonical (never "holdermaps.xyznull")', hp.text.includes(`<link rel="canonical" href="https://holdermaps.xyz/base/${TOKEN}" />`) && !hp.text.includes('xyznull'), hp.text.match(/<link rel="canonical"[^>]*>/)?.[0])
+      const hsm = (await get(HM, '/sitemap.xml')).text
+      check('primary: the holdermaps.xyz sitemap lists the home page and has no broken <loc>', hsm.includes('<loc>https://holdermaps.xyz/</loc>') && !hsm.includes('null'))
       check('primary: pages carry the holdermaps-primary tag (the browser follows it)', hp.text.includes('<meta name="holdermaps-primary" content="1" />') && (await get(MAIN, '/')).text.includes('holdermaps-primary'))
       const msm = (await get(MAIN, '/sitemap.xml')).text
       check('primary: the main sitemap no longer lists Holder Map pages', !msm.includes(`${MAIN}/holders`) && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))

@@ -1533,3 +1533,108 @@
     display: inline-flex;
   }
 }
+
+/* Section tabs (console/Tabs.tsx) in the Terminal kit: square 4 px, mono uppercase labels like .gt-k, accent on the open tab.
+   Scoped .lcp.gt so it outranks console.css's pill tabs (.lc .ctab) from the site layout.
+   Used on the home page so services, case studies and process share one panel (owner rule: ~1.5 screens). */
+.lcp.gt .ctabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-3);
+  scroll-margin-top: 76px;
+}
+.lcp.gt .ctabs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--gt-rule-2);
+  border-radius: var(--gt-radius);
+  background: var(--gt-raise);
+  width: max-content;
+  max-width: 100%;
+}
+.lcp.gt .ctab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--gt-radius);
+  background: transparent;
+  color: var(--gt-muted);
+  font-family: var(--gt-mono);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.lcp.gt .ctab .ic {
+  width: 16px;
+  height: 16px;
+}
+.lcp.gt .ctab:hover {
+  color: var(--gt-text);
+}
+.lcp.gt .ctab[aria-selected='true'] {
+  color: var(--gt-text);
+  border-color: var(--gt-accent);
+}
+.lcp.gt .ctab[aria-selected='true'] .ic {
+  color: var(--gt-accent);
+}
+.lcp.gt .ctab:focus-visible {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: 2px;
+}
+/* A tab's content renders after the page's scroll reveal ran: show it at once. */
+.lcp.gt .ctabs-panel .rv {
+  opacity: 1;
+  transform: none;
+}
+.lcp.gt .ctabs-panel {
+  animation: gt-rise 0.35s var(--gt-ease) both;
+}
+.lcp.gt .gt-more {
+  margin-top: var(--gt-3);
+}
+@media (max-width: 600px) {
+  .lcp.gt .ctab {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lcp.gt .ctabs-panel {
+    animation: none;
+  }
+}
+
+/* The home page's compact services list: two columns of short rows; the full list with deliverables is /services. */
+.gt-services.compact > li {
+  padding: var(--gt-2) 0;
+}
+.gt-services.compact > li > .gt-btn {
+  display: none;
+}
+.gt-services.compact .gt-svm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--gt-3);
+}
+@media (min-width: 900px) {
+  .gt-services.compact {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--gt-4);
+  }
+  .gt-services.compact > li {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 4px var(--gt-2);
+  }
+  .gt-services.compact .gt-svm {
+    grid-column: 2;
+  }
+}

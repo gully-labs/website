@@ -580,7 +580,7 @@ async function handleRequest(req, res) {
       // pay. and embed.: no-transform tells Cloudflare not to inject its Web Analytics beacon, which their CSP
       // refuses (a console error on every checkout and every embedded map, D4-11).
       const bareHost = isPayHost(host) || isEmbedHost(host)
-      res.writeHead(meta.found ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': bareHost ? 'no-cache, no-transform' : 'no-cache' })
+      res.writeHead(meta.found ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': bareHost ? 'no-cache, no-transform' : 'no-cache', ...(!meta.found || meta.noindex ? { 'X-Robots-Tag': 'noindex' } : {}) })
       // pay. and embed. carry no analytics beacon (their CSP would refuse it anyway).
       // The browser learns that holdermaps.xyz is the Holder Map's home from this tag (src/site-host.ts holderMapsPrimary).
       // Likewise gullysecurity.xyz for Gully Security (src/site-host.ts securityPrimary).
