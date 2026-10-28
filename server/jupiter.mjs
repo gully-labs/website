@@ -41,6 +41,13 @@ export const QUOTE_CACHE_MS = 10_000
 /** A quote can be turned into a swap transaction for this long. */
 export const QUOTE_LIFE_MS = 60_000
 export const SLIPPAGE_BPS = 50
+/** The highest slippage a visitor can choose on the swap card: 5 % */
+export const MAX_SLIPPAGE_BPS = 500
+/** A requested slippage in bps: an integer from 1 to MAX_SLIPPAGE_BPS, else SLIPPAGE_BPS. */
+export function slippageFrom(v) {
+  const n = Number(v)
+  return v !== null && v !== undefined && v !== '' && Number.isInteger(n) && n >= 1 && n <= MAX_SLIPPAGE_BPS ? n : SLIPPAGE_BPS
+}
 
 /** The coins a stock can be bought with or sold for: mint and decimals (both checked on mainnet). */
 export const PAY_WITH = {
@@ -176,19 +183,21 @@ export async function handleJupiterQuote(req, res, url, geo) {
   const maxIn = side === 'buy' ? MAX_IN[coin.symbol] : 100_000
   if (!raw || raw > BigInt(maxIn) * 10n ** BigInt(inDec)) return json(res, 400, { error: `amount must be a positive number with at most ${inDec} decimals, at most ${maxIn.toLocaleString('en-US')}`, code: 'BAD_AMOUNT' }), true
 
+  // the visitor's max slippage from the swap card's settings (1 to 500 bps); the default when absent or invalid
+  const slip = slippageFrom(url.searchParams.get('slippageBps'))
   const inputMint = side === 'buy' ? coin.mint : stock.token
   const outputMint = side === 'buy' ? stock.token : coin.mint
   const bps = feeBps()
   const fee = bps ? await feeAccountFor(coin.mint) : { account: null, reason: 'No Gully Labs fee is set.' }
   const useFee = !!(bps && fee.account)
-  const key = `${inputMint}:${outputMint}:${raw}:${useFee ? bps : 0}:${fee.account ?? ''}`
+  const key = `${inputMint}:${outputMint}:${raw}:${useFee ? bps : 0}:${fee.account ?? ''}:${slip}`
   const now = Date.now()
   const hit = quoteCache.get(key)
   if (!(hit && now - hit.at < QUOTE_CACHE_MS) && !allowIp('quote', clientIp(req), QUOTES_PER_IP_MIN)) return json(res, 429, { error: 'Too many quotes from this address. Wait a minute.', code: 'RATE_LIMITED' }, { 'Retry-After': '30' }), true
 
   let entry = hit && now - hit.at < QUOTE_CACHE_MS ? hit : null
   if (!entry) {
-    const q = new URLSearchParams({ inputMint, outputMint, amount: raw.toString(), slippageBps: String(SLIPPAGE_BPS), swapMode: 'ExactIn', restrictIntermediateTokens: 'true', ...(useFee ? { platformFeeBps: String(bps), instructionVersion: 'V2' } : {}) })
+    const q = new URLSearchParams({ inputMint, outputMint, amount: raw.toString(), slippageBps: String(slip), swapMode: 'ExactIn', restrictIntermediateTokens: 'true', ...(useFee ? { platformFeeBps: String(bps), instructionVersion: 'V2' } : {}) })
     const promise = jup(`/swap/v1/quote?${q}`)
     entry = { at: now, promise }
     quoteCache.set(key, entry)
@@ -230,7 +239,7 @@ export async function handleJupiterQuote(req, res, url, geo) {
           route: (b.routePlan ?? []).map((p) => ({ label: String(p?.swapInfo?.label ?? 'unknown'), percent: Number(p?.percent ?? 0) })),
           platformFee: useFee && feeRaw !== null ? { bps, amount: fmt(feeRaw, coin.decimals), symbol: coin.symbol } : null,
           feeNote: useFee ? null : fee.reason,
-          slippageBps: Number(b.slippageBps ?? SLIPPAGE_BPS),
+          slippageBps: Number(b.slippageBps ?? slip),
           contextSlot: b.contextSlot ?? null,
           expiresAt: new Date(now + QUOTE_LIFE_MS).toISOString(),
           source: 'Jupiter',
