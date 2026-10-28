@@ -494,6 +494,74 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         ),
       }
     }
+    case 'gully-social': {
+      // Gully Social's public reads (social.gullychain.xyz via /api/hub/live): the newest page of posts (30) and of new
+      // accounts (50). Counts and times only; a full page is shown as "30+" / "50+", never as a total.
+      const so = hl?.social ?? null
+      const pe = hl?.people ?? null
+      const st = so || pe ? 'ok' : hlState === 'loading' ? 'loading' : 'offline'
+      const DAY = 86400
+      const today = Math.floor(Date.now() / 1000 / DAY)
+      const days = Array.from({ length: 14 }, (_, i) => today - 13 + i)
+      const perDay = (ts: number[] | undefined) => days.map((d) => (ts ?? []).filter((t) => Math.floor(t / DAY) === d).length)
+      const labels = days.map((d) => new Date(d * DAY * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }))
+      const count = (x: { count: number; more: boolean } | null) => (x ? `${x.count}${x.more ? '+' : ''}` : '—')
+      const lastOf = (ts: number[] | undefined) => (ts?.length ? Math.max(...ts) : null)
+      const ago = (t: number | null) => {
+        if (t == null) return '—'
+        const sec = Math.max(0, Date.now() / 1000 - t)
+        return sec < 3600 ? `${Math.max(1, Math.round(sec / 60))} min ago` : sec < 86400 ? `${Math.round(sec / 3600)} h ago` : `${Math.round(sec / 86400)} d ago`
+      }
+      const tabs: ChartTab[] = [
+        { id: 'posts', label: 'Posts', title: 'Posts per day, 14 days (UTC) · from the newest 30 posts', series: [{ name: 'Posts', color: ACCENT, values: perDay(so?.times) }], labels, fmt: (v) => fmtInt(v), integer: true, state: so ? 'ok' : st, empty: 'Gully Social unreadable right now · retrying', head: count(so), sub: 'newest posts read · social.gullychain.xyz/v1/posts' },
+        { id: 'joins', label: 'New accounts', title: 'New accounts per day, 14 days (UTC) · from the newest 50', series: [{ name: 'New accounts', color: S[1], values: perDay(pe?.times) }], labels, fmt: (v) => fmtInt(v), integer: true, state: pe ? 'ok' : st, empty: 'Gully Social unreadable right now · retrying', head: count(pe), sub: 'newest accounts read · social.gullychain.xyz/v1/people' },
+      ]
+      return {
+        kpis: [
+          { label: 'Latest post', text: ago(lastOf(so?.times)), sub: so ? `${count(so)} posts in the newest page` : 'reading Gully Social' },
+          { label: 'Newest account', text: ago(lastOf(pe?.times)), sub: pe ? `${count(pe)} accounts in the newest page` : 'reading Gully Social' },
+          { label: 'Service', text: <Dot s={stateOf(hub, ['social-api'])} />, sub: 'social.gullychain.xyz, checked each minute' },
+          { label: 'Chain feed', text: <Dot s={stateOf(hub, ['social'])} />, sub: 'launches, trades and swaps from the indexer' },
+        ],
+        main: <TChart label="Gully Social · by day" tabs={tabs} />,
+        side: lat,
+        extra: <TChart label="The chain feed beside the posts · by hour" tabs={[ct[3]]} height={150} />,
+      }
+    }
+    case 'copy-trading': {
+      // The copy-trading engine's public health (copy.gullychain.xyz/health via /api/hub/live) and the indexer's trades.
+      const c = hl?.copy ?? null
+      const EXP = 'https://testnet-explorer.gullychain.xyz/address/'
+      const FEES = '0xA9d429eb1b137764B0d4964e437AF50989bdFea3'
+      return {
+        kpis: [
+          { label: 'Leaders', value: c?.leaders ?? null, sub: c ? 'traders indexed from Gully Chain trades' : hlState === 'loading' ? 'reading the engine' : 'engine unreadable · retrying' },
+          { label: 'Active copies', value: c?.activeCopies ?? null, sub: 'copies running now' },
+          { label: 'Curve trades · 24 h', value: hp?.activity ? sum(a.map((x) => x.trades)) : null, spark: a.map((x) => x.trades), color: S[1], sub: 'what leaders trade, from the indexer' },
+          { label: 'Engine', text: <Dot s={stateOf(hub, ['copy'])} />, sub: c?.block != null ? `at block ${fmtInt(c.block)}${c.dryRun ? ' · dry run' : ''}` : 'copy.gullychain.xyz, checked each minute' },
+        ],
+        main: <TChart label="Gully Chain trading · by hour" tabs={[ct[3], ct[0]]} />,
+        side: lat,
+        extra: (
+          <Panel label="Contract · Gully Chain testnet 485590">
+            <table className="gt-table">
+              <tbody>
+                <tr>
+                  <td>GullyCopyFees</td>
+                  <td>
+                    <A href={EXP + FEES}>{`${FEES.slice(0, 6)}…${FEES.slice(-4)}`}</A>
+                  </td>
+                  <td>takes the copy fee (0.5% default, 1% hard cap) and pays the leader’s share</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="gt-note">
+              Copy a leader in the Gully Street app: <A href="https://app.gullychain.xyz/copy">app.gullychain.xyz/copy</A>. Your copies: <A href="https://app.gullychain.xyz/me/copies">/me/copies</A>.
+            </p>
+          </Panel>
+        ),
+      }
+    }
     case 'deepcore': {
       const s = live.stats
       const dc = s?.venues.find((v) => v.key === 'deepcore')
@@ -570,7 +638,7 @@ function Pricing({ p, plans }: { p: ProductDef; plans: Plans | null }) {
   return <p className="gt-p">{text}</p>
 }
 
-const SERVICE_FOR: Partial<Record<string, string>> = { chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', deepcore: 'launch' }
+const SERVICE_FOR: Partial<Record<string, string>> = { chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', deepcore: 'launch' }
 
 export function ProductView({ p }: { p: ProductDef }) {
   const live = useLive()

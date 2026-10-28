@@ -259,6 +259,12 @@ function Drawer({ k, R, onClose }: { k: ProductKey | null; R: Record<ProductKey,
                 Product page
                 <ArrowRight className="gt-ic" aria-hidden />
               </Link>
+              {p.pages?.map(([l, slug]) => (
+                <Link key={slug} to={`/products/${slug}`} className="gt-btn sec sm" onClick={onClose}>
+                  {l}
+                  <ArrowRight className="gt-ic" aria-hidden />
+                </Link>
+              ))}
               {p.links.map(([l, h]) => (
                 <A key={h} href={h} className="gt-btn sec sm">
                   {l}

@@ -4,7 +4,8 @@
 //   GET /api/hub   public, cached 60 s:
 //     services   every public Gully surface probed once a minute: up, state (up | down | coming), response time and
 //                the last hour's times. Gully Chain: site, Gully Street app and its feed, explorer, faucet, bridge,
-//                docs, developer portal, public RPC, indexer, copy trading, Gully Safe (coming until it answers 200), Gully Offerwall.
+//                docs, developer portal, public RPC, indexer, copy trading, Gully Social, Gully Safe (coming until it answers 200),
+//                Gully Offerwall.
 //                Gully Labs: Gully Pay (and its admin), Gully RPC (site, app, gateway), HolderMaps, Gully Security,
 //                Gully AI (site; the API is coming until the GPU box is up), Gully Studio (and its portals),
 //                Gully IPFS and the status page.
@@ -47,7 +48,9 @@ export const SURFACES = [
   { key: 'indexer', group: 'chain', name: 'Indexer', url: 'https://indexer.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/head' },
   // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Safe is being deployed.
   { key: 'social', group: 'chain', name: 'Gully Street feed', url: 'https://app.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/feed?limit=1' },
-  { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://copy.gullychain.xyz' },
+  { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://app.gullychain.xyz/copy', probe: 'https://copy.gullychain.xyz/health' },
+  // Gully Social (posts, follows, profiles; services/social in gully-street) answers /healthz.
+  { key: 'social-api', group: 'chain', name: 'Gully Social service', url: 'https://app.gullychain.xyz', probe: 'https://social.gullychain.xyz/healthz' },
   { key: 'safe', group: 'chain', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', soon: true },
   // Gully Offerwall (OfferwallManager on chain 485590, built on Gully Quests): its public stats answer JSON.
   { key: 'offerwall', group: 'chain', name: 'Gully Offerwall', url: 'https://offers.gullychain.xyz', probe: 'https://offers.gullychain.xyz/v1/stats' },

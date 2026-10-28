@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-26T22:38:57.233Z",
+ "updatedAt": "2026-10-28T13:04:45.052Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -2177,17 +2177,17 @@
    "title": "Services",
    "url": "https://gullylabs.xyz/services",
    "section": null,
-   "text": "Smart contracts, dApps, chain infrastructure and security testing from the team behind the Gully Labs projects.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Gully Labs builds for other teams: L2/L3 chain launch, smart contracts, security reviews and monitoring, dApp/web/mobile apps, payments, RPC and infrastructure, token launch and quests, AI integration and Unity game development. services · practices · one team",
+   "updatedAt": "2026-10-28T13:04:45.052Z"
   },
   {
-   "id": "f7f5d72f5042",
+   "id": "419841e3812d",
    "source": "Site",
    "title": "Services",
    "url": "https://gullylabs.xyz/services",
-   "section": "Build with the team behind the projects",
-   "text": "We take on a small number of partner engagements alongside our own releases, using the same people and the same stack. The venues this team built, read live from each one's own API: daily volume, stacked by venue.",
-   "updatedAt": "2026-10-17T22:59:14.062Z"
+   "section": "Web3 development, shipped.",
+   "text": "Chains, contracts, apps, payments, infrastructure, AI and games, built by the team that runs Gully Chain, Gully Pay, Gully RPC and Gully Security in production. Start a project See the proof A short brief is enough. We answer with questions or a first scope.",
+   "updatedAt": "2026-10-28T13:04:45.052Z"
   },
   {
    "id": "c25c6a4a4899",
@@ -2321,8 +2321,17 @@
    "title": "Gully Labs home",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Gully Labs builds and runs Web3 products, all on Gully Chain: Gully Street (social, multi-wallet, copy trading, Quests), Gully Bridge, Gully Safe, Gully Pay (x402), Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio and Gully IPFS. Every figure on this page is read live. Gully network · live Gully Chain · txs / block",
-   "updatedAt": "2026-10-26T22:38:57.233Z"
+   "text": "Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product. Gully Labs · product studio",
+   "updatedAt": "2026-10-28T13:04:45.052Z"
+  },
+  {
+   "id": "0d8d4661d25f",
+   "source": "Site",
+   "title": "Gully Labs home",
+   "url": "https://gullylabs.xyz/",
+   "section": "One studio. Eight products that work as one.",
+   "text": "We build the whole path a user takes on chain, and every piece plugs into the next. Gully ID sign-ins · 24 h gullyid.xyz Gully Chain block indexer.gullychain.xyz Work with us Explore the suite Building something? Send us a brief or see every product page.",
+   "updatedAt": "2026-10-28T13:04:45.052Z"
   },
   {
    "id": "33b5b79c35a2",
@@ -3500,8 +3509,8 @@
    "title": "Gully Labs Telegram bot (@GullyLabsBot)",
    "url": "https://t.me/GullyLabsBot",
    "section": "Help",
-   "text": "Gully Labs · see if stock tokens trade above or below the real share price. 📈 Stock tokens on Robinhood Chain, BNB Chain and Solana · 🔔 alerts right here · 🤖 Gully AI answers. Information only, not investment advice. Gully Labs bot See how far each stock token trades above or below the real share price (the share price comes from Chainlink). Tap the buttons below, or type: /start or /menu · the main menu /gap NVDA · one stock (add bsc , robinhood or solana ) /top · biggest gaps right now /movers · biggest changes /launches · newest tokens on DeepCore /holders · 👥 Holder Map: who holds a token, and which wallets belong together /security · 🛡 Gully Security: contract scans, Gully Score and monitors /score 0x… · the Gully Score of a contract (add base , ethereum …) /ask · ask Gully AI a question /contact · 💬 write to the Gully Labs team (we reply here) /app · open the Gully app inside Telegram 🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram. /stop announcements · no more news from Gully Labs (alerts keep coming) Information only, not investment advice. /alerts · your alerts /monitors · your contract monitors /stop · unlink this chat To use the bot you follow the Gully Labs News channel (https://t.me/GullyLabsNews); alerts you already set up still arrive either way.",
-   "updatedAt": "2026-10-19T19:43:50.826Z"
+   "text": "Gully Labs · see if stock tokens trade above or below the real share price. 📈 Stock tokens on Robinhood Chain, BNB Chain and Solana · 🔔 alerts right here · 🤖 Gully AI answers. Information only, not investment advice. Gully Labs bot See how far each stock token trades above or below the real share price (the share price comes from Chainlink). Tap the buttons below, or type: /start or /menu · the main menu /gap NVDA · one stock (add bsc , robinhood or solana ) /top · biggest gaps right now /movers · biggest changes /launches · newest tokens on DeepCore /holders · 👥 Holder Map: who holds a token, and which wallets belong together /security · 🛡 Gully Security: contract scans, Gully Score and monitors /score 0x… · the Gully Score of a contract (add base , ethereum …) /ask · ask Gully AI a question /more · every Gully product: Gully Pay, Gully RPC, Gully Chain, HolderMaps, Gully Security, Gully AI, Gully Studio /contact · 💬 write to the Gully Labs team (we reply here) /app · open the Gully app inside Telegram 🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram. /stop announcements · no more news from Gully Labs (alerts keep coming) Information only, not investment advice. /alerts · your alerts /monitors · your contract monitors /stop · unlink this chat To use the bot you follow the Gully Labs News channel (https://t.me/GullyLabsNews); alerts you already set up still arrive either way.",
+   "updatedAt": "2026-10-28T13:04:45.052Z"
   },
   {
    "id": "44e023f8910c",
@@ -3572,8 +3581,8 @@
    "title": "gullylabs.xyz website (gully-labs/website README)",
    "url": "https://github.com/gully-labs/website/blob/main/README.md",
    "section": null,
-   "text": "The source of gullylabs.xyz: the ledger, the stock token tracker, the docs and the app dashboard. Part of Gully Labs, a blockchain development company that builds, launches and runs its own Web3 projects.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "You Think It, We Ship It. The source of gullylabs.xyz: the hub for every Gully product, the docs and the app. Built and run by Gully Labs. You Think It, We Ship It.",
+   "updatedAt": "2026-10-28T13:04:45.052Z"
   },
   {
    "id": "0f128ece1572",
