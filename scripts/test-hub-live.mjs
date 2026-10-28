@@ -16,6 +16,8 @@ const ANSWERS = {
   'sentry.gullychain.xyz/api/v1/network/stats': { activeKeys: 0, operators: 0, verdicts: {}, series: [{ t: 1793159400, keys: 1 }, { t: 1793160000, keys: 1 }], epoch: 20754, at: 1793174739 },
   'sentry.gullychain.xyz/api/v1/sale/stats': { deployed: true, saleMode: 'testnet', phase: 'public', totalMinted: 1, totalBurned: 0, maxSupply: 10000, available: 9999, series: [{ t: 1793153820, sold: 0 }] },
   'sentry.gullychain.xyz/api/v1/chain/health': { verdict: 'ok', summary: '3 assertion(s) match our node', l3Head: '2011', newestAssertionAgeSec: 3159, checkedAt: 1793174741 },
+  // recorded from offers.gullychain.xyz/v1/stats on 2026-10-28 (trimmed to three hours)
+  'offers.gullychain.xyz/v1/stats': { hours: 24, series: [{ t: '2026-10-28T06:00:00.000Z', completions: 0, paid: '0.00', points: 0 }, { t: '2026-10-28T07:00:00.000Z', completions: 2, paid: '1.50', points: 40 }, { t: '2026-10-28T08:00:00.000Z', completions: 0, paid: '0.00', points: 0 }], totals: { completions: 2, paid: '1.50', players: 1 }, liveOffers: 3, placement: null },
 }
 function stub(down = []) {
   const calls = []
@@ -49,6 +51,10 @@ test('reads every source and keeps only what the landing shows', async () => {
   assert.deepEqual([b.sentrySale.totalMinted, b.sentrySale.maxSupply, b.sentrySale.available], [1, 10000, 9999])
   assert.equal(b.sentryChain.verdict, 'ok')
   assert.equal(b.sentryChain.l3Head, 2011)
+  assert.equal(b.offers.totals.paid, 1.5)
+  assert.equal(b.offers.series[1].completions, 2)
+  assert.equal(b.offers.liveOffers, 3)
+  assert.ok(!('placement' in b.offers), 'only the fields the page uses')
 })
 
 test('a source that is down is null and named, never a zero; the last good reading is kept', async () => {
@@ -64,7 +70,7 @@ test('cached: one upstream round per 45 s', async () => {
   _resetHubLive(f)
   await Promise.all([hubLive(), hubLive(), hubLive()])
   await hubLive()
-  assert.equal(f.calls.length, 8)
+  assert.equal(f.calls.length, 9)
 })
 
 test('shape drops malformed answers', () => {
@@ -75,6 +81,8 @@ test('shape drops malformed answers', () => {
   assert.equal(shape('sentryNet', { series: [] }), null, 'no timestamp, no window')
   assert.equal(shape('sentrySale', { deployed: false, totalMinted: 0 }), null, 'no contract, no figures')
   assert.equal(shape('sentryChain', { summary: 'x' }), null)
+  assert.equal(shape('offers', { series: [] }), null)
+  assert.equal(shape('offers', { series: [], totals: { paid: 'lots' } }).totals.paid, null)
   assert.equal(shape('feed', { items: [{ id: 1, kind: 'trade', block: 2, timestamp: 3, txHash: 'not-a-hash' }] }).items[0].txHash, null)
 })
 

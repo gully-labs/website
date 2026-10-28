@@ -14,6 +14,8 @@
 //     sentrySale    Gully Sentry testnet keys (…/api/v1/sale/stats): minted, max supply, available
 //     sentryChain   Gully Sentry's own verdict on Gully Chain's assertions (…/api/v1/chain/health)
 //   Gully Sentry sends no CORS header for gullylabs.xyz, so it is read here too.
+//     offers Gully Offerwall public stats (offers.gullychain.xyz/v1/stats: completions, glUSD paid and points per hour,
+//            last 24 h; totals and live offers), for /products/offerwall
 //
 // Nothing is invented: a source that cannot be read is null (and named in `unread`), never a zero.
 
@@ -30,6 +32,7 @@ const SOURCES = {
   sentryNet: () => `${env('GULLY_SENTRY_URL', 'https://sentry.gullychain.xyz')}/api/v1/network/stats`,
   sentrySale: () => `${env('GULLY_SENTRY_URL', 'https://sentry.gullychain.xyz')}/api/v1/sale/stats`,
   sentryChain: () => `${env('GULLY_SENTRY_URL', 'https://sentry.gullychain.xyz')}/api/v1/chain/health`,
+  offers: () => `${env('GULLY_OFFERWALL_URL', 'https://offers.gullychain.xyz')}/v1/stats`,
 }
 /** Gully Sentry's heartbeat slot (10 minutes) and the window it reports (24 h). */
 const SLOT = 600
@@ -107,6 +110,20 @@ export function shape(key, j) {
   if (key === 'sentryChain') {
     if (typeof j.verdict !== 'string') return null
     return { verdict: j.verdict, summary: String(j.summary ?? ''), l3Head: n(Number(j.l3Head)), newestAssertionAgeSec: n(j.newestAssertionAgeSec), checkedAt: n(j.checkedAt) }
+  }
+  if (key === 'offers') {
+    if (!Array.isArray(j.series) || !j.totals || typeof j.totals !== 'object') return null
+    // glUSD amounts arrive as decimal strings ("0.00"); anything unparseable is null, never zero
+    const usd = (v) => {
+      const x = typeof v === 'number' ? v : typeof v === 'string' && /^\d+(\.\d+)?$/.test(v) ? Number(v) : NaN
+      return Number.isFinite(x) ? x : null
+    }
+    return {
+      hours: n(j.hours),
+      series: j.series.slice(-48).map((h) => ({ t: String(h.t), completions: n(h.completions) ?? 0, paid: usd(h.paid) ?? 0, points: n(h.points) ?? 0 })),
+      totals: { completions: n(j.totals.completions), paid: usd(j.totals.paid), players: n(j.totals.players) },
+      liveOffers: n(j.liveOffers),
+    }
   }
   return null
 }

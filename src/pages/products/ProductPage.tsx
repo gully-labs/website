@@ -517,6 +517,53 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         ),
       }
     }
+    case 'offerwall': {
+      // Gully Offerwall's public stats (offers.gullychain.xyz/v1/stats via /api/hub/live): glUSD is a testnet stablecoin.
+      const o = hl?.offers ?? null
+      const oSt = o ? 'ok' : hlState === 'loading' ? 'loading' : 'offline'
+      const ser = o?.series ?? []
+      const labels = ser.map((x) => `${new Date(x.t).toISOString().slice(11, 13)}:00`)
+      const tabs: ChartTab[] = [
+        { id: 'done', label: 'Completions', title: 'Offer completions per hour, last 24 h (UTC)', series: [{ name: 'Completions', color: ACCENT, values: ser.map((x) => x.completions) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.completions))) : '—', sub: 'completions in the last 24 h · offers.gullychain.xyz/v1/stats' },
+        { id: 'paid', label: 'glUSD paid', title: 'glUSD paid to players per hour, last 24 h (UTC)', series: [{ name: 'glUSD', color: S[1], values: ser.map((x) => x.paid) }], labels, fmt: (v) => (v == null ? '—' : `${v.toFixed(2)} glUSD`), state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? `${sum(ser.map((x) => x.paid)).toFixed(2)} glUSD` : '—', sub: 'glUSD on Gully Chain testnet · no USD value' },
+        { id: 'pts', label: 'Points', title: 'Points awarded per hour, last 24 h (UTC)', series: [{ name: 'Points', color: S[2], values: ser.map((x) => x.points) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.points))) : '—', sub: 'points awarded, last 24 h' },
+      ]
+      const EXP = 'https://testnet-explorer.gullychain.xyz/address/'
+      const contracts: [string, string, string][] = [
+        ['OfferwallManager', '0xD6a8c4151a7ED9865a540D20BDD42073DC9c74Bf', 'creates offers, holds budgets, pays players and publishers'],
+        ['QuestRegistry (Gully Quests)', '0xE3E57e15A9973281A8de2B3bedd512BE8C3813Bb', 'every offer is a quest here, verified on chain'],
+      ]
+      return {
+        kpis: [
+          { label: 'Live offers', value: o?.liveOffers ?? null, sub: 'open to players now' },
+          { label: 'Completions', value: o?.totals.completions ?? null, spark: ser.map((x) => x.completions), sub: 'all time' },
+          { label: 'glUSD paid', text: o?.totals.paid != null ? `${o.totals.paid.toFixed(2)} glUSD` : '—', sub: 'all time · testnet, no USD value' },
+          { label: 'Players', value: o?.totals.players ?? null, sub: 'who completed an offer' },
+        ],
+        main: <TChart label="Gully Offerwall · by hour" tabs={tabs} />,
+        side: lat,
+        extra: (
+          <Panel label="Contracts · Gully Chain testnet 485590">
+            <table className="gt-table">
+              <tbody>
+                {contracts.map(([name, addr, what]) => (
+                  <tr key={addr}>
+                    <td>{name}</td>
+                    <td>
+                      <A href={EXP + addr}>{`${addr.slice(0, 6)}…${addr.slice(-4)}`}</A>
+                    </td>
+                    <td>{what}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="gt-note">
+              Sign-in with Gully ID (<A href="https://gullyid.xyz">gullyid.xyz</A>). Advertiser billing through Gully Pay checkout is rolling out. Embed the wall on any site with an iframe or <A href="https://offers.gullychain.xyz/integrate">offerwall.js</A>.
+            </p>
+          </Panel>
+        ),
+      }
+    }
     case 'deepcore': {
       const s = live.stats
       const dc = s?.venues.find((v) => v.key === 'deepcore')
@@ -593,7 +640,7 @@ function Pricing({ p, plans }: { p: ProductDef; plans: Plans | null }) {
   return <p className="gt-p">{text}</p>
 }
 
-const SERVICE_FOR: Partial<Record<string, string>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', deepcore: 'launch' }
+const SERVICE_FOR: Partial<Record<string, string>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', deepcore: 'launch' }
 
 export function ProductView({ p }: { p: ProductDef }) {
   const live = useLive()

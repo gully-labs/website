@@ -3,7 +3,7 @@
    server/seo.mjs restates each product's title and description (PRODUCT_PAGES) for crawlers; keep the two in step. */
 
 export type Group = 'chain' | 'labs'
-export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'deepcore' | 'gully-sentry'
+export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'deepcore' | 'gully-sentry'
 
 /** A logo straight from a product's kit (web copies in public/brand/web/logos or the kit SVG), or, for a product with
     no kit of its own, the Gully Chain (or Gully Labs) kit mark with the product's name beside it. */
@@ -455,6 +455,39 @@ export const PRODUCTS: ProductDef[] = [
       ['Claim', 'The reward is paid from the quest’s pool.'],
     ],
     faq: [['Can we run quests for our launch?', 'Yes. Token launch and growth campaigns are one of our services.']],
+    pricing: 'free-testnet',
+  },
+  {
+    slug: 'offerwall',
+    name: 'Gully Offerwall',
+    group: 'chain',
+    line: 'Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn glUSD or points; publishers embed the wall and earn a share.',
+    short: 'Funded quests any site can embed.',
+    logo: { kind: 'mark', mark: 'chain', label: 'Gully Offerwall' },
+    url: 'https://offers.gullychain.xyz/',
+    urlLabel: 'offers.gullychain.xyz',
+    docs: 'https://docs.gullychain.xyz/offerwall/',
+    hub: ['offerwall'],
+    og: '/brand/web/og/gully-chain.jpg',
+    category: 'GameApplication',
+    features: [
+      { t: 'Built on Gully Quests', d: 'OfferwallManager on Gully Chain testnet 485590 creates each offer as a quest in the Gully Quests QuestRegistry, verified on chain.' },
+      { t: 'glUSD or points', d: 'Players complete offers on Gully Chain and earn glUSD or points from the advertiser’s budget.' },
+      { t: 'Publishers earn a share', d: 'Any site or game embeds the wall with an iframe or offerwall.js and earns a share of every completion.' },
+      { t: 'Sign in with Gully ID', d: 'Players and advertisers sign in with Gully ID (gullyid.xyz): passkey, wallet or email.' },
+      { t: 'Funded through Gully Pay', d: 'Advertisers pay for campaigns through Gully Pay checkout (rolling out).' },
+      { t: 'Open stats', d: 'Completions, payouts and players as public JSON at offers.gullychain.xyz/v1/stats; the figures on this page come from it.' },
+    ],
+    how: [
+      ['Advertisers fund a campaign', 'Create offers in the dashboard and fund the budget through Gully Pay.'],
+      ['Publishers embed the wall', 'Add a placement, then the iframe or offerwall.js on any page.'],
+      ['Players complete and earn', 'Sign in with Gully ID, do the task on Gully Chain, receive glUSD or points.'],
+    ],
+    faq: [
+      ['Which contracts run it?', 'OfferwallManager 0xD6a8c4151a7ED9865a540D20BDD42073DC9c74Bf on Gully Chain testnet 485590, built on the Gully Quests QuestRegistry 0xE3E57e15A9973281A8de2B3bedd512BE8C3813Bb.'],
+      ['Is it on mainnet?', 'Not yet. Gully Offerwall is live on Gully Chain testnet 485590; Gully Pay checkout for advertisers is rolling out.'],
+      ['Can our game or site show it?', 'Yes. Any site can embed the wall (iframe or offerwall.js) and earn a share of completions.'],
+    ],
     pricing: 'free-testnet',
   },
   {
