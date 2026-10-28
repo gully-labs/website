@@ -2,6 +2,9 @@
 //
 // resolveTokenLogo(chain, address, { symbol }) tries these sources in order; the first image that passes
 // every check wins:
+//   0. gullychain   Gully Chain (485590) only: the hosted Uniswap-standard token list
+//                   (gullychain.xyz/tokenlist-extended.json, logoURI), cached 10 min; the bundled copy
+//                   server/data/gully-tokenlist.json answers when the hosted list cannot be read
 //   1. deepcore     DeepCore's launch token list (GET /v1/chains/:id/tokenlists/launches.json, logoURI)
 //   2. dexscreener  DexScreener pairs where the token is the BASE token (info.imageUrl belongs to the base)
 //   3. jupiter      Solana: Jupiter's token API (lite-api.jup.ag tokens v2, `icon`)
@@ -295,6 +298,18 @@ const readJsonFile = (p, fb) => {
   }
 }
 
+/** Gully Chain's token list as Map lower-case address -> logo URL; entries that fail the shape check are dropped. */
+const GULLY_CHAIN_ID = 485590
+export function gullyListLogos(list, httpsUrl) {
+  const map = new Map()
+  for (const t of Array.isArray(list?.tokens) ? list.tokens : []) {
+    if (t?.chainId !== GULLY_CHAIN_ID || typeof t.address !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(t.address) || !Number.isInteger(t.decimals)) continue
+    const img = httpsUrl(t.logoURI)
+    if (img) map.set(t.address.toLowerCase(), img)
+  }
+  return map
+}
+
 /** Tokenised stocks the tracker follows, by chain key and address: { ticker }. */
 function loadStocks() {
   const m = new Map()
@@ -326,6 +341,7 @@ export function createTokenLogos(opts = {}) {
   const perIpResolvesPerMin = opts.perIpResolvesPerMin ?? 30
   const log = opts.log ?? ((m) => console.warn(`token-logos: ${m}`))
   const ep = {
+    gullychain: opts.endpoints?.gullychain ?? process.env.GULLY_TOKENLIST_URL ?? 'https://gullychain.xyz/tokenlist-extended.json',
     deepcore: String(opts.endpoints?.deepcore ?? process.env.DEEPCORE_API ?? 'https://api.deepcore.fun').replace(/\/+$/, ''),
     dexscreener: opts.endpoints?.dexscreener ?? 'https://api.dexscreener.com',
     jupiter: opts.endpoints?.jupiter ?? 'https://lite-api.jup.ag',
@@ -333,7 +349,7 @@ export function createTokenLogos(opts = {}) {
     coingecko: opts.endpoints?.coingecko ?? 'https://api.coingecko.com',
     trustwallet: opts.endpoints?.trustwallet ?? 'https://raw.githubusercontent.com',
   }
-  const perMin = { deepcore: 30, dexscreener: 50, jupiter: 50, xstocks: 30, coingecko: 8, trustwallet: 60, images: 120, ...opts.perMin }
+  const perMin = { gullychain: 30, deepcore: 30, dexscreener: 50, jupiter: 50, xstocks: 30, coingecko: 8, trustwallet: 60, images: 120, ...opts.perMin }
   const buckets = Object.fromEntries(Object.entries(perMin).map(([k, v]) => [k, new Bucket(v, now)]))
   const stocks = opts.stocks ?? loadStocks()
 
@@ -439,7 +455,26 @@ export function createTokenLogos(opts = {}) {
   /* ---- sources: each returns candidate image URLs (never shown to anyone) ---- */
 
   const deepcoreLists = new Map() // chainId -> { at, map }
+  let gullyList = null // { at, map }
+  const gullyBundled = () => gullyListLogos(opts.gullyTokenList ?? readJsonFile(path.join(HERE, 'data', 'gully-tokenlist.json'), {}), httpsUrl)
   const sources = [
+    {
+      id: 'gullychain',
+      supports: (c) => c === 'gully',
+      async candidates(_c, a) {
+        if (!gullyList || now() - gullyList.at > 10 * 60_000) {
+          let map = null
+          try {
+            if (buckets.gullychain.take()) map = gullyListLogos(await getJson(ep.gullychain, buckets.gullychain), httpsUrl)
+          } catch (e) {
+            log(`gully token list: ${e.code ?? 'error'}, using the bundled copy`)
+          }
+          gullyList = { at: now(), map: map?.size ? map : gullyBundled() }
+        }
+        const u = gullyList.map.get(a.toLowerCase())
+        return u ? [u] : []
+      },
+    },
     {
       id: 'deepcore',
       supports: (c) => !!LOGO_CHAINS[c].deepcore,
