@@ -3,7 +3,7 @@
    server/seo.mjs restates each product's title and description (PRODUCT_PAGES) for crawlers; keep the two in step. */
 
 export type Group = 'chain' | 'labs'
-export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'gully-social' | 'copy-trading' | 'deepcore'
+export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'gully-social' | 'copy-trading' | 'deepcore' | 'gully-sentry'
 
 /** A logo straight from a product's kit (web copies in public/brand/web/logos or the kit SVG), or, for a product with
     no kit of its own, the Gully Chain (or Gully Labs) kit mark with the product's name beside it. */
@@ -26,6 +26,9 @@ export interface ProductDef {
   logo: LogoDef
   url: string
   urlLabel: string
+  /** The hero's main button label (default "Open <urlLabel>"), and an optional second product link beside it. */
+  cta?: string
+  cta2?: [string, string]
   docs?: string
   /** The /api/hub surfaces that make up its live state. */
   hub: string[]
@@ -202,6 +205,41 @@ export const PRODUCTS: ProductDef[] = [
       ['Propose and sign', 'Owners sign until the threshold is met, then it executes.'],
     ],
     faq: [['Is Gully Safe live?', 'It is being deployed. This page shows its real state, checked every minute.']],
+    pricing: 'free-testnet',
+  },
+  {
+    slug: 'gully-sentry',
+    name: 'Gully Sentry',
+    group: 'chain',
+    line: 'Free testnet Sentry Keys and light watchers that check every Gully Chain assertion against their own node.',
+    short: 'Watchers that check Gully Chain.',
+    logo: { kind: 'mark', mark: 'chain', label: 'Gully Sentry' },
+    url: 'https://sentry.gullychain.xyz/',
+    urlLabel: 'sentry.gullychain.xyz',
+    cta: 'Claim a free Sentry Key',
+    cta2: ['Run a sentry', 'https://sentry.gullychain.xyz/run/'],
+    docs: 'https://docs.gullychain.xyz/sentry/',
+    hub: ['sentry'],
+    og: '/brand/web/og/gully-chain.jpg',
+    category: 'SecurityApplication',
+    features: [
+      { t: 'Free testnet Sentry Keys', d: 'An ERC-721 licence on Gully Chain testnet (0xa24b…30Ac). Claim one free on sentry.gullychain.xyz.' },
+      { t: 'A light watcher', d: 'The gully-sentry CLI or Docker image follows its own Gully Chain node; no validator hardware.' },
+      { t: 'Checks every assertion', d: 'Each Gully Chain assertion posted to Arbitrum Sepolia is compared with what your own node computed.' },
+      { t: 'Signed heartbeats', d: 'Every 10 minutes the watcher signs an EIP-712 heartbeat, so the network can see who is watching.' },
+      { t: 'Alarms', d: 'A mismatch between an assertion and your node raises an alarm on the watcher and on the live network page.' },
+      { t: 'Open network view', d: 'Active keys, operators, heartbeats and the chain verdict are public at sentry.gullychain.xyz/network.' },
+    ],
+    how: [
+      ['Claim a key', 'Connect a wallet on sentry.gullychain.xyz and claim a free testnet Sentry Key.'],
+      ['Run a sentry', 'Start the gully-sentry CLI or Docker image with your key (sentry.gullychain.xyz/run).'],
+      ['Watch the chain', 'It checks each assertion against its node and signs a heartbeat every 10 minutes.'],
+    ],
+    faq: [
+      ['Do testnet keys have value?', 'No. Testnet Sentry Keys have no value and do not convert to mainnet keys.'],
+      ['Who can claim one?', 'Anyone outside the United States and sanctioned regions. The risk and terms pages on sentry.gullychain.xyz apply.'],
+      ['What does a sentry check?', 'That every Gully Chain assertion posted to Arbitrum Sepolia matches the state its own node computed.'],
+    ],
     pricing: 'free-testnet',
   },
   {

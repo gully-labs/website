@@ -5,7 +5,7 @@
 //     services   every public Gully surface probed once a minute: up, state (up | down | coming), response time and
 //                the last hour's times. Gully Chain: site, Gully Street app and its feed, explorer, faucet, bridge,
 //                docs, developer portal, public RPC, indexer, copy trading, Gully Social, Gully Safe (coming until it answers 200),
-//                Gully Offerwall.
+//                Gully Sentry, Gully Offerwall.
 //                Gully Labs: Gully Pay (and its admin), Gully RPC (site, app, gateway), HolderMaps, Gully Security,
 //                Gully AI (site; the API is coming until the GPU box is up), Gully Studio (and its portals),
 //                Gully IPFS and the status page.
@@ -52,6 +52,8 @@ export const SURFACES = [
   // Gully Social (posts, follows, profiles; services/social in gully-street) answers /healthz.
   { key: 'social-api', group: 'chain', name: 'Gully Social service', url: 'https://app.gullychain.xyz', probe: 'https://social.gullychain.xyz/healthz' },
   { key: 'safe', group: 'chain', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', soon: true },
+  // Gully Sentry: free testnet Sentry Keys and the watchers that check Gully Chain's assertions (2026-10-28).
+  { key: 'sentry', group: 'chain', name: 'Gully Sentry', url: 'https://sentry.gullychain.xyz', probe: 'https://sentry.gullychain.xyz/api/healthz' },
   // Gully Offerwall (OfferwallManager on chain 485590, built on Gully Quests): its public stats answer JSON.
   { key: 'offerwall', group: 'chain', name: 'Gully Offerwall', url: 'https://offers.gullychain.xyz', probe: 'https://offers.gullychain.xyz/v1/stats' },
   { key: 'gully-id', group: 'labs', name: 'Gully ID', url: 'https://gullyid.xyz', probe: 'https://gullyid.xyz/health' },

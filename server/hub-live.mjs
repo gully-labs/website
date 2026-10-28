@@ -8,6 +8,12 @@
 //     rpc    Gully RPC live / beta / coming-soon per feature and chain (gullyrpc.xyz/status.json)
 //     head   Gully Chain latest block (indexer /head)
 //     feed   Gully Chain newest on-chain events (indexer /feed, 12 items)
+//     sentryNet     Gully Sentry network (sentry.gullychain.xyz/api/v1/network/stats): active keys, operators and
+//                   keys heard per 10-minute slot over 24 h, filled to 144 slots (a slot with no heartbeat is a real 0;
+//                   the sum is the heartbeats in 24 h)
+//     sentrySale    Gully Sentry testnet keys (…/api/v1/sale/stats): minted, max supply, available
+//     sentryChain   Gully Sentry's own verdict on Gully Chain's assertions (…/api/v1/chain/health)
+//   Gully Sentry sends no CORS header for gullylabs.xyz, so it is read here too.
 //     offers Gully Offerwall public stats (offers.gullychain.xyz/v1/stats: completions, glUSD paid and points per hour,
 //            last 24 h; totals and live offers), for /products/offerwall
 //     copy   Gully Chain copy-trading engine health (copy.gullychain.xyz/health: leaders indexed, active copies,
@@ -27,11 +33,17 @@ const SOURCES = {
   rpc: () => `${env('GULLYRPC_SITE_URL', 'https://gullyrpc.xyz')}/status.json`,
   head: () => `${env('GULLY_INDEXER', 'https://indexer.gullychain.xyz')}/head`,
   feed: () => `${env('GULLY_INDEXER', 'https://indexer.gullychain.xyz')}/feed?limit=12`,
+  sentryNet: () => `${env('GULLY_SENTRY_URL', 'https://sentry.gullychain.xyz')}/api/v1/network/stats`,
+  sentrySale: () => `${env('GULLY_SENTRY_URL', 'https://sentry.gullychain.xyz')}/api/v1/sale/stats`,
+  sentryChain: () => `${env('GULLY_SENTRY_URL', 'https://sentry.gullychain.xyz')}/api/v1/chain/health`,
   offers: () => `${env('GULLY_OFFERWALL_URL', 'https://offers.gullychain.xyz')}/v1/stats`,
   copy: () => `${env('GULLY_COPY_ENGINE_URL', 'https://copy.gullychain.xyz')}/health`,
   social: () => `${env('GULLY_SOCIAL_URL', 'https://social.gullychain.xyz')}/v1/posts`,
   people: () => `${env('GULLY_SOCIAL_URL', 'https://social.gullychain.xyz')}/v1/people?sort=new&limit=50`,
 }
+/** Gully Sentry's heartbeat slot (10 minutes) and the window it reports (24 h). */
+const SLOT = 600
+const SLOTS = 144
 
 let fetchFn = (...a) => globalThis.fetch(...a)
 let cache = null
@@ -84,6 +96,27 @@ export function shape(key, j) {
   if (key === 'feed') {
     if (!Array.isArray(j.items)) return null
     return { items: j.items.slice(0, 12).map((f) => ({ id: String(f.id), kind: String(f.kind), block: String(f.block), timestamp: String(f.timestamp), txHash: /^0x[0-9a-fA-F]{64}$/.test(f.txHash) ? f.txHash : null })) }
+  }
+  if (key === 'sentryNet') {
+    const at = n(j.at)
+    if (at == null || !Array.isArray(j.series)) return null
+    // The API lists only the slots that heard a heartbeat; every other slot of the 24 h window heard none.
+    const heard = new Map()
+    for (const x of j.series) if (n(x?.t) != null && n(x?.keys) != null) heard.set(Math.floor(x.t / SLOT) * SLOT, x.keys)
+    const last = Math.floor(at / SLOT) * SLOT
+    const series = Array.from({ length: SLOTS }, (_, i) => {
+      const t = last - (SLOTS - 1 - i) * SLOT
+      return { t, keys: heard.get(t) ?? 0 }
+    })
+    return { at, epoch: n(j.epoch), activeKeys: n(j.activeKeys), operators: n(j.operators), heartbeats24h: series.reduce((s2, x) => s2 + x.keys, 0), series }
+  }
+  if (key === 'sentrySale') {
+    if (j.deployed !== true) return null
+    return { saleMode: String(j.saleMode ?? ''), totalMinted: n(j.totalMinted), totalBurned: n(j.totalBurned), maxSupply: n(j.maxSupply), available: n(j.available) }
+  }
+  if (key === 'sentryChain') {
+    if (typeof j.verdict !== 'string') return null
+    return { verdict: j.verdict, summary: String(j.summary ?? ''), l3Head: n(Number(j.l3Head)), newestAssertionAgeSec: n(j.newestAssertionAgeSec), checkedAt: n(j.checkedAt) }
   }
   if (key === 'offers') {
     if (!Array.isArray(j.series) || !j.totals || typeof j.totals !== 'object') return null

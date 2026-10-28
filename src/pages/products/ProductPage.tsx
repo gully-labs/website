@@ -113,6 +113,76 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         ),
       }
     }
+    case 'gully-sentry': {
+      // Gully Sentry's own public figures (sentry.gullychain.xyz/api/v1/{network,sale}/stats and /chain/health), read
+      // server-side through /api/hub/live: its CORS refuses gullylabs.xyz in the browser.
+      const net = hl?.sentryNet ?? null
+      const sale = hl?.sentrySale ?? null
+      const ch = hl?.sentryChain ?? null
+      const why = (x: unknown) => (x ? undefined : hlState === 'loading' ? 'reading sentry.gullychain.xyz' : 'sentry.gullychain.xyz unreadable right now · retrying')
+      const netSt = net ? 'ok' : hlState === 'loading' ? 'loading' : 'offline'
+      const slots = net?.series ?? []
+      const watchTab: ChartTab = {
+        id: 'watchers',
+        label: 'Watchers',
+        title: 'Sentry Keys heard per 10-minute slot, last 24 h (UTC)',
+        series: [{ name: 'Keys heard', color: '#00B2FA', values: slots.map((x) => x.keys) }],
+        labels: slots.map((x) => `${new Date(x.t * 1000).toISOString().slice(11, 16)} UTC`),
+        fmt: (v) => fmtInt(v),
+        integer: true,
+        state: netSt,
+        empty: 'Gully Sentry network stats unreadable right now · retrying',
+        head: net ? fmtInt(net.heartbeats24h) : '—',
+        sub: 'signed heartbeats in the last 24 h · sentry.gullychain.xyz/api/v1/network/stats',
+      }
+      const verdict = ch ? <Dot s={ch.verdict === 'ok' ? 'up' : 'down'} label={ch.verdict === 'ok' ? 'assertions match' : ch.verdict} /> : '—'
+      const age = (sec: number | null) => (sec == null ? '—' : sec < 3600 ? `${Math.round(sec / 60)} min ago` : `${(sec / 3600).toFixed(1)} h ago`)
+      const KEY = '0xa24bF9f0eA1AE5F5226d8F7e714cEa3537aa30Ac'
+      return {
+        kpis: [
+          { label: 'Keys minted', value: sale?.totalMinted ?? null, sub: sale ? `${sale.maxSupply != null ? `of ${fmtInt(sale.maxSupply)} · ` : ''}free on testnet` : why(sale) },
+          { label: 'Active watchers', value: net?.activeKeys ?? null, sub: net ? `${fmtInt(net.operators)} operator${net.operators === 1 ? '' : 's'} · heard this epoch` : why(net) },
+          { label: 'Heartbeats · 24 h', value: net?.heartbeats24h ?? null, spark: slots.map((x) => x.keys), color: '#46FB04', sub: net ? 'EIP-712, one per key every 10 min' : why(net) },
+          { label: 'Chain verdict', text: verdict, sub: ch ? ch.summary || 'from the sentry’s own node' : why(ch) },
+        ],
+        main: <TChart label="Gully Sentry · watchers per 10 minutes" tabs={[watchTab]} height={150} />,
+        side: (
+          <Panel label="Gully Chain assertions · Sentry check" right={ch ? verdict : <Dot s={hlState === 'loading' ? 'reading' : 'down'} />}>
+            {ch ? (
+              <table className="gt-table">
+                <tbody>
+                  <tr>
+                    <td>Verdict</td>
+                    <td>{ch.summary || ch.verdict}</td>
+                  </tr>
+                  <tr>
+                    <td>Gully Chain head (sentry node)</td>
+                    <td>{ch.l3Head != null ? `#${fmtInt(ch.l3Head)}` : '—'}</td>
+                  </tr>
+                  <tr>
+                    <td>Newest assertion on Arbitrum Sepolia</td>
+                    <td>{age(ch.newestAssertionAgeSec)}</td>
+                  </tr>
+                  <tr>
+                    <td>Checked</td>
+                    <td>{ch.checkedAt != null ? minLabel(new Date(ch.checkedAt * 1000).toISOString()) : '—'}</td>
+                  </tr>
+                  <tr>
+                    <td>Keys available</td>
+                    <td>{sale?.available != null ? fmtInt(sale.available) : '—'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            ) : (
+              <Empty state={hlState === 'loading' ? 'loading' : 'offline'} text="sentry.gullychain.xyz/api/v1/chain/health unreadable right now · retrying" />
+            )}
+            <p className="gt-note">
+              Sentry Key (ERC-721, testnet) <A href={`https://testnet-explorer.gullychain.xyz/address/${KEY}`}><code>{KEY.slice(0, 6)}…{KEY.slice(-4)}</code></A> · testnet keys have no value and do not convert to mainnet keys · not offered to US persons or sanctioned regions (<A href="https://sentry.gullychain.xyz/risk/">risk</A>, <A href="https://sentry.gullychain.xyz/terms/">terms</A>)
+            </p>
+          </Panel>
+        ),
+      }
+    }
     case 'chain': {
       const recent = hp?.chain?.recent?.length ? hp.chain.recent : (live.chain?.blocks ?? [])
       return {
@@ -638,7 +708,7 @@ function Pricing({ p, plans }: { p: ProductDef; plans: Plans | null }) {
   return <p className="gt-p">{text}</p>
 }
 
-const SERVICE_FOR: Partial<Record<string, string>> = { chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', deepcore: 'launch' }
+const SERVICE_FOR: Partial<Record<string, string>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', deepcore: 'launch' }
 
 export function ProductView({ p }: { p: ProductDef }) {
   const live = useLive()
@@ -666,9 +736,15 @@ export function ProductView({ p }: { p: ProductDef }) {
             <p className="gt-lede">{p.line}</p>
             <div className="gt-ctas">
               <A className="gt-btn pri" href={p.url}>
-                Open {p.urlLabel}
+                {p.cta ?? `Open ${p.urlLabel}`}
                 <ArrowUpRight className="gt-ic" aria-hidden />
               </A>
+              {p.cta2 && (
+                <A className="gt-btn sec" href={p.cta2[1]}>
+                  {p.cta2[0]}
+                  <ArrowUpRight className="gt-ic" aria-hidden />
+                </A>
+              )}
               {p.docs && (
                 <A className="gt-btn sec" href={p.docs}>
                   <BookOpen className="gt-ic" aria-hidden />

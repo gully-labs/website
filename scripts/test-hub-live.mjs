@@ -12,6 +12,10 @@ const ANSWERS = {
   'gullyrpc.xyz/status.json': fx('rpc'),
   'indexer.gullychain.xyz/head': { chainId: 485590, block: 1829, timestamp: 1793153063 },
   'indexer.gullychain.xyz/feed': fx('feed'),
+  // Gully Sentry, recorded 2026-10-28 (the network series lists only slots that heard a heartbeat)
+  'sentry.gullychain.xyz/api/v1/network/stats': { activeKeys: 0, operators: 0, verdicts: {}, series: [{ t: 1793159400, keys: 1 }, { t: 1793160000, keys: 1 }], epoch: 20754, at: 1793174739 },
+  'sentry.gullychain.xyz/api/v1/sale/stats': { deployed: true, saleMode: 'testnet', phase: 'public', totalMinted: 1, totalBurned: 0, maxSupply: 10000, available: 9999, series: [{ t: 1793153820, sold: 0 }] },
+  'sentry.gullychain.xyz/api/v1/chain/health': { verdict: 'ok', summary: '3 assertion(s) match our node', l3Head: '2011', newestAssertionAgeSec: 3159, checkedAt: 1793174741 },
   // recorded from offers.gullychain.xyz/v1/stats on 2026-10-28 (trimmed to three hours)
   // recorded from copy.gullychain.xyz/health and social.gullychain.xyz on 2026-10-28 (bodies and addresses trimmed)
   'copy.gullychain.xyz/health': { ok: true, chainId: 485590, head: { block: 2088, timestamp: 1793192202 }, feeContract: '0xa9d429eb1b137764b0d4964e437af50989bdfea3', leaders: 6, activeCopies: 0, dryRun: false },
@@ -31,7 +35,7 @@ function stub(down = []) {
   return fn
 }
 
-test('reads all nine sources and keeps only what the landing shows', async () => {
+test('reads every source and keeps only what the landing shows', async () => {
   _resetHubLive(stub())
   const b = await hubLive()
   assert.deepEqual(b.unread, [])
@@ -42,6 +46,15 @@ test('reads all nine sources and keeps only what the landing shows', async () =>
   assert.ok(b.rpc.features.some((f) => f.status === 'live'))
   assert.equal(b.head.block, 1829)
   assert.ok(b.feed.items.length > 0 && b.feed.items.length <= 12)
+  // Gully Sentry: the 24 h window is filled to 144 ten-minute slots; the heard slots keep their counts
+  assert.equal(b.sentryNet.series.length, 144)
+  assert.equal(b.sentryNet.heartbeats24h, 2)
+  assert.equal(b.sentryNet.activeKeys, 0)
+  assert.equal(b.sentryNet.series.at(-1).t, 1793174400)
+  assert.equal(b.sentryNet.series.find((x) => x.t === 1793160000).keys, 1)
+  assert.deepEqual([b.sentrySale.totalMinted, b.sentrySale.maxSupply, b.sentrySale.available], [1, 10000, 9999])
+  assert.equal(b.sentryChain.verdict, 'ok')
+  assert.equal(b.sentryChain.l3Head, 2011)
   assert.equal(b.offers.totals.paid, 1.5)
   assert.equal(b.offers.series[1].completions, 2)
   assert.equal(b.offers.liveOffers, 3)
@@ -65,7 +78,7 @@ test('cached: one upstream round per 45 s', async () => {
   _resetHubLive(f)
   await Promise.all([hubLive(), hubLive(), hubLive()])
   await hubLive()
-  assert.equal(f.calls.length, 9)
+  assert.equal(f.calls.length, 12)
 })
 
 test('shape drops malformed answers', () => {
@@ -73,6 +86,9 @@ test('shape drops malformed answers', () => {
   assert.equal(shape('pay', { status: 'ok' }), null)
   assert.equal(shape('head', { block: 'x' }), null)
   assert.equal(shape('feed', { items: 'x' }), null)
+  assert.equal(shape('sentryNet', { series: [] }), null, 'no timestamp, no window')
+  assert.equal(shape('sentrySale', { deployed: false, totalMinted: 0 }), null, 'no contract, no figures')
+  assert.equal(shape('sentryChain', { summary: 'x' }), null)
   assert.equal(shape('offers', { series: [] }), null)
   assert.equal(shape('copy', { ok: false, leaders: 3 }), null)
   assert.equal(shape('copy', { ok: true, leaders: 'x' }), null)
