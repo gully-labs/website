@@ -12,6 +12,10 @@ const ANSWERS = {
   'gullyrpc.xyz/status.json': fx('rpc'),
   'indexer.gullychain.xyz/head': { chainId: 485590, block: 1829, timestamp: 1793153063 },
   'indexer.gullychain.xyz/feed': fx('feed'),
+  // Gully Sentry, recorded 2026-10-28 (the network series lists only slots that heard a heartbeat)
+  'sentry.gullychain.xyz/api/v1/network/stats': { activeKeys: 0, operators: 0, verdicts: {}, series: [{ t: 1793159400, keys: 1 }, { t: 1793160000, keys: 1 }], epoch: 20754, at: 1793174739 },
+  'sentry.gullychain.xyz/api/v1/sale/stats': { deployed: true, saleMode: 'testnet', phase: 'public', totalMinted: 1, totalBurned: 0, maxSupply: 10000, available: 9999, series: [{ t: 1793153820, sold: 0 }] },
+  'sentry.gullychain.xyz/api/v1/chain/health': { verdict: 'ok', summary: '3 assertion(s) match our node', l3Head: '2011', newestAssertionAgeSec: 3159, checkedAt: 1793174741 },
 }
 function stub(down = []) {
   const calls = []
@@ -25,7 +29,7 @@ function stub(down = []) {
   return fn
 }
 
-test('reads all five sources and keeps only what the landing shows', async () => {
+test('reads every source and keeps only what the landing shows', async () => {
   _resetHubLive(stub())
   const b = await hubLive()
   assert.deepEqual(b.unread, [])
@@ -36,6 +40,15 @@ test('reads all five sources and keeps only what the landing shows', async () =>
   assert.ok(b.rpc.features.some((f) => f.status === 'live'))
   assert.equal(b.head.block, 1829)
   assert.ok(b.feed.items.length > 0 && b.feed.items.length <= 12)
+  // Gully Sentry: the 24 h window is filled to 144 ten-minute slots; the heard slots keep their counts
+  assert.equal(b.sentryNet.series.length, 144)
+  assert.equal(b.sentryNet.heartbeats24h, 2)
+  assert.equal(b.sentryNet.activeKeys, 0)
+  assert.equal(b.sentryNet.series.at(-1).t, 1793174400)
+  assert.equal(b.sentryNet.series.find((x) => x.t === 1793160000).keys, 1)
+  assert.deepEqual([b.sentrySale.totalMinted, b.sentrySale.maxSupply, b.sentrySale.available], [1, 10000, 9999])
+  assert.equal(b.sentryChain.verdict, 'ok')
+  assert.equal(b.sentryChain.l3Head, 2011)
 })
 
 test('a source that is down is null and named, never a zero; the last good reading is kept', async () => {
@@ -51,7 +64,7 @@ test('cached: one upstream round per 45 s', async () => {
   _resetHubLive(f)
   await Promise.all([hubLive(), hubLive(), hubLive()])
   await hubLive()
-  assert.equal(f.calls.length, 5)
+  assert.equal(f.calls.length, 8)
 })
 
 test('shape drops malformed answers', () => {
@@ -59,6 +72,9 @@ test('shape drops malformed answers', () => {
   assert.equal(shape('pay', { status: 'ok' }), null)
   assert.equal(shape('head', { block: 'x' }), null)
   assert.equal(shape('feed', { items: 'x' }), null)
+  assert.equal(shape('sentryNet', { series: [] }), null, 'no timestamp, no window')
+  assert.equal(shape('sentrySale', { deployed: false, totalMinted: 0 }), null, 'no contract, no figures')
+  assert.equal(shape('sentryChain', { summary: 'x' }), null)
   assert.equal(shape('feed', { items: [{ id: 1, kind: 'trade', block: 2, timestamp: 3, txHash: 'not-a-hash' }] }).items[0].txHash, null)
 })
 
