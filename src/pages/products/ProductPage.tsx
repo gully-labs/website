@@ -12,7 +12,9 @@ import { chainHead, useLive, venueSeries, type Live } from '../../console/live'
 import '../../terminal/terminal.css'
 import { PRODUCTS, productBySlug, SERVICES, type ProductDef } from '../../terminal/catalog'
 import { A, ACCENT, BlockStrip, Dot, Empty, fmtCompact, fmtEth, fmtMs, HBars, hourLabel, Kpi, latencySeries, Logo, minLabel, Panel, S, SecHead, stateOf, sum, TChart, UptimeGrid, useHubProducts, usePlans, useReveal, type ChartTab, type HubProducts, type Plans } from '../../terminal/kit'
-import { chainTabs } from '../Home'
+import { chainTabs } from '../../terminal/liveTabs'
+import type { HubLive } from '../hub/hubData'
+import { useHubLive } from '../hub/useHubLive'
 import { NotFound } from '../NotFound'
 
 interface KpiDef {
@@ -69,13 +71,48 @@ function surfaceKpis(live: Live, keys: string[]): KpiDef[] {
 
 const chainState = (hp: HubProducts | null, st: string, part: 'chain' | 'activity' | 'bridge' | 'holders' | 'security') => (st === 'error' || (hp && !hp[part]) ? 'offline' : !hp ? 'loading' : 'ok')
 
-function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: string): LiveDef {
+function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: string, hl: HubLive | null, hlState: string): LiveDef {
   const hub = live.hub
   const lat = <TChart label="Response time · last hour" tabs={[latencyTab(live, p.hub)]} height={150} />
   const ct = chainTabs(hp, hpState)
   const h = hp?.chain?.hourly ?? []
   const a = hp?.activity?.hourly ?? []
   switch (p.slug) {
+    case 'gully-id': {
+      // Gully ID's own aggregate stats (gullyid.xyz/v1/stats/public via /api/hub/live): counts only, no personal data.
+      const id = hl?.id ?? null
+      const idSt = id ? 'ok' : hlState === 'loading' ? 'loading' : 'offline'
+      const hours = id?.hourly ?? []
+      const signTab: ChartTab = {
+        id: 'signins',
+        label: 'Sign-ins',
+        title: 'Gully ID sign-ins per hour, last 25 h (UTC)',
+        series: [{ name: 'Sign-ins', color: ACCENT, values: hours.map((h) => h.n) }],
+        labels: hours.map((h) => `${new Date(h.hour).toISOString().slice(11, 13)}:00`),
+        fmt: (v) => fmtInt(v),
+        integer: true,
+        state: idSt,
+        empty: 'Gully ID stats unreadable right now · retrying',
+        head: id?.signins24h != null ? fmtInt(id.signins24h) : '—',
+        sub: 'sign-ins in the last 24 h · gullyid.xyz/v1/stats/public',
+      }
+      const m = id?.methods30d ?? null
+      const ML: Record<string, string> = { passkey: 'Passkey', wallet: 'Wallet (SIWE)', email: 'Email code', social: 'Google / X', other: 'Other' }
+      return {
+        kpis: [
+          { label: 'Sign-ins · 24 h', value: id?.signins24h ?? null, spark: hours.map((h) => h.n), sub: 'all apps' },
+          { label: 'Accounts', value: id?.totals.users ?? null, sub: 'Gully ID accounts' },
+          { label: 'Passkeys', value: id?.totals.passkeys ?? null, sub: 'registered' },
+          { label: 'Apps · 30 d', value: id?.appsActive30d ?? null, sub: 'apps signed into' },
+        ],
+        main: <TChart label="Gully ID · sign-ins" tabs={[signTab]} height={150} />,
+        side: (
+          <Panel label="Sign-in methods · 30 days">
+            {m ? <HBars rows={Object.entries(m).map(([k, v]) => ({ label: ML[k] ?? k, value: v }))} fmt={(v) => fmtInt(v)} /> : <Empty state={idSt === 'loading' ? 'loading' : 'offline'} />}
+          </Panel>
+        ),
+      }
+    }
     case 'chain': {
       const recent = hp?.chain?.recent?.length ? hp.chain.recent : (live.chain?.blocks ?? [])
       return {
@@ -493,7 +530,8 @@ export function ProductView({ p }: { p: ProductDef }) {
   const hpq = useHubProducts()
   const plans = usePlans().data
   const ref = useReveal<HTMLDivElement>()
-  const d = useMemo(() => liveFor(p, live, hpq.data, hpq.state), [p, live, hpq.data, hpq.state])
+  const hlq = useHubLive()
+  const d = useMemo(() => liveFor(p, live, hpq.data, hpq.state, hlq.data, hlq.state), [p, live, hpq.data, hpq.state, hlq.data, hlq.state])
   const st = stateOf(live.hub, p.hub)
   const svc = SERVICES.find((s) => s.key === SERVICE_FOR[p.slug])
   const idx = PRODUCTS.findIndex((x) => x.slug === p.slug)

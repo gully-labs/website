@@ -24,7 +24,7 @@ export interface HubProducts {
 type Loaded<T> = { data: T | null; state: 'loading' | 'ok' | 'error' }
 
 /** One shared poller per URL (every page that mounts it shares the same read). */
-function poller<T>(url: string, ms: number) {
+export function poller<T>(url: string, ms: number) {
   let v: Loaded<T> = { data: null, state: 'loading' }
   const subs = new Set<() => void>()
   let timer: ReturnType<typeof setInterval> | null = null

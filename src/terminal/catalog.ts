@@ -3,7 +3,7 @@
    server/seo.mjs restates each product's title and description (PRODUCT_PAGES) for crawlers; keep the two in step. */
 
 export type Group = 'chain' | 'labs'
-export type Slug = 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'deepcore'
+export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'deepcore'
 
 /** A logo straight from a product's kit (web copies in public/brand/web/logos or the kit SVG), or, for a product with
     no kit of its own, the Gully Chain (or Gully Labs) kit mark with the product's name beside it. */
@@ -52,6 +52,37 @@ const LOGO = {
 const STREET = 'https://app.gullychain.xyz'
 
 export const PRODUCTS: ProductDef[] = [
+  {
+    slug: 'gully-id',
+    name: 'Gully ID',
+    group: 'labs',
+    line: 'Passwordless sign-in for any app: passkeys, wallets and email over OpenID Connect, with per-app consent.',
+    short: 'Passwordless sign-in for any app.',
+    logo: { kind: 'mark', mark: 'labs', label: 'Gully ID' },
+    url: 'https://gullyid.xyz',
+    urlLabel: 'gullyid.xyz',
+    docs: 'https://gullyid.xyz/developers',
+    hub: ['gully-id'],
+    og: '/brand/web/og/gully-labs.jpg',
+    category: 'SecurityApplication',
+    features: [
+      { t: 'Passkeys, wallets and email', d: 'Sign in with a passkey, a wallet (SIWE) or an email code. No passwords.' },
+      { t: 'Standard OpenID Connect', d: 'Any app or website adds it like any OIDC provider, or with the Sign in with Gully SDK.' },
+      { t: 'Per-app consent', d: 'People choose what each app receives; recovery is slow and visible.' },
+      { t: 'Developer console', d: 'Register apps, set redirect URIs and see sign-ins at gullyid.xyz/developers/console.' },
+    ],
+    how: [
+      ['Register your app', 'Create it in the developer console and copy the client ID.'],
+      ['Add the button', 'Use the SDK or any OIDC library with gullyid.xyz as the issuer.'],
+      ['Read the claims', 'Get the person’s ID and only what they agreed to share.'],
+    ],
+    faq: [
+      ['Is it free?', 'Free up to 1,000 monthly active users; larger plans are billed through Gully Pay.'],
+      ['Which Gully products use it?', 'The Gully Chain faucet requires it today. Sign in with Gully is built into Gully Pay and Gully RPC and switches on there next.'],
+      ['Google and X sign-in?', 'Coming: the provider keys are pending.'],
+    ],
+    pricing: 'on-site',
+  },
   {
     slug: 'chain',
     name: 'Gully Chain',

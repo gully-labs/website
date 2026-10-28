@@ -63,7 +63,9 @@
     "test:pwa-unit": "node --test scripts/test-pwa-unit.mjs",
     "test:pwa": "node scripts/test-pwa.mjs",
     "test:peddles": "node --test scripts/test-peddles.mjs",
-    "test:hub": "node --test scripts/test-hub.mjs"
+    "test:hub": "node --test scripts/test-hub.mjs",
+    "test:hub-landing": "node --test scripts/test-hub-landing.mjs",
+    "test:hub-live": "node --test scripts/test-hub-live.mjs"
   },
   "dependencies": {
     "@arbitrum/chain-sdk": "0.28.0",

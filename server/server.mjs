@@ -35,6 +35,7 @@ import { handleDeveloper } from './developer.mjs'
 import { handleIpfs } from './ipfs.mjs'
 import { handleHub } from './hub.mjs'
 import { handleHubProducts } from './hub-products.mjs'
+import { handleHubLive } from './hub-live.mjs'
 import { handleProductStatus } from './product-status.mjs'
 import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { handleManifest } from './pwa.mjs'
@@ -368,6 +369,8 @@ async function handleRequest(req, res) {
   if (url.pathname === '/api/hub') return void (await handleHub(req, res, url, send))
   // Per-product chart data (hub-products.mjs): Gully Chain by hour, indexer activity, Gully Bridge, HolderMaps, Gully Security.
   if (url.pathname === '/api/hub/products') return void (await handleHubProducts(req, res, url, send))
+  // The landing's cross-origin sources (hub-live.mjs): Gully ID stats, Gully Pay status, Gully RPC status.json, the indexer.
+  if (url.pathname === '/api/hub/live') return void (await handleHubLive(req, res, url, send))
   // Gully IPFS (ipfs.mjs): repo size, pinned CIDs and gateway health, read from the node over the docker network. Public.
   if (url.pathname.startsWith('/api/ipfs/')) {
     if (await handleIpfs(req, res, url, send)) return

@@ -6,7 +6,7 @@ import '../../terminal/terminal.css'
 import { PRODUCTS } from '../../terminal/catalog'
 import { Dot, Panel, SecHead, TChart, UptimeGrid, useReveal } from '../../terminal/kit'
 import { LogoWall } from '../../terminal/sections'
-import { venueTabs } from '../Home'
+import { venueTabs } from '../../terminal/liveTabs'
 
 export function ProductsIndex() {
   const live = useLive()
