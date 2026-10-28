@@ -51,8 +51,10 @@ export const GULLY_CHAIN = {
   v3Factory: '0x1787a3ba8c8d7a2439cfa2efafc683ecac623950',
   swapRouter: '0x1283a251e34296675cc5130a2b02871384c0436a',
   v3Router: '0xf49b65b9912fd017fdb91d21ee9bc9992f8cf05c',
+  /** glUSD is retired (redeem-only through its PSM); kept for holder labels until its supply is 0 */
   glusd: '0xdbe84be6496fb3d07f601548555ec7acc4ceba8f',
   glusdPsm: '0xe1ae51036ede1b244c532a81fac196f19fa5e28e',
+  /** USDC.e (Bridged USDC Standard, 6 decimals): the dollar on Gully Chain */
   usdc: '0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76',
   names: { tld: 'gully', registry: '0xe0be69254ce3916a38b2d266f6a7325e62e96576', reverseRegistrar: '0xf9d030660e04bdbbc3f0818f7a1f4523bd5ba12f', publicResolver: '0x9e8328918d40e45fbd40d422c854c554d6b45d37' },
   /** RedStone adapters with Chainlink's AggregatorV3 shape (latestRoundData, 8 decimals). */

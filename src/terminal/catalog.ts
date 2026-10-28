@@ -260,7 +260,7 @@ export const PRODUCTS: ProductDef[] = [
       { t: 'Hosted checkout', d: 'Pay links and invoices; payments go straight to the merchant wallet.' },
       { t: 'Merchant OS', d: 'Stores, webhooks per step (paid, confirmed, settled) and receipts.' },
       { t: 'Gateway for every Gully product', d: 'Every Gully product bills through Gully Pay.' },
-      { t: 'glUSD yield vault', d: 'Merchants can opt in to earn on idle glUSD in GullyTreasuryVault (ERC-4626) on Gully Chain testnet, with instant or queued withdrawals. The testnet yield is simulated.' },
+      { t: 'USDC.e on Gully Chain', d: 'Checkout and x402 on Gully Chain testnet settle in USDC.e (bridged USDC). glUSD is retired: redeem only, and its yield vault is withdraw only.' },
     ],
     how: [
       ['Open a store', 'Sign up and name your store; payouts go to your own wallet.'],
@@ -270,7 +270,7 @@ export const PRODUCTS: ProductDef[] = [
     faq: [
       ['How many payments has Gully Pay processed?', 'None yet. Sign-up is open; this page shows the live networks and uptime instead of volume.'],
       ['Is it custodial?', 'No. Funds settle to the merchant wallet.'],
-      ['Does glUSD earn yield?', 'On Gully Chain testnet, merchants can opt in to the glUSD yield vault on gullypay.xyz; the yield there is a testnet simulation. Mainnet yield waits on legal review.'],
+      ['What happened to glUSD?', 'glUSD is retired. Gully Chain uses USDC.e (bridged USDC) everywhere; glUSD can still be redeemed, and the glUSD yield vault is withdraw only with no replacement.'],
     ],
     pricing: 'on-site',
   },
@@ -463,7 +463,7 @@ export const PRODUCTS: ProductDef[] = [
     slug: 'offerwall',
     name: 'Gully Offerwall',
     group: 'chain',
-    line: 'Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn glUSD or points; publishers embed the wall and earn a share.',
+    line: 'Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn USDC or points; publishers embed the wall and earn a share.',
     short: 'Funded quests any site can embed.',
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Offerwall' },
     url: 'https://offers.gullychain.xyz/',
@@ -474,7 +474,7 @@ export const PRODUCTS: ProductDef[] = [
     category: 'GameApplication',
     features: [
       { t: 'Built on Gully Quests', d: 'OfferwallManager on Gully Chain testnet 485590 creates each offer as a quest in the Gully Quests QuestRegistry, verified on chain.' },
-      { t: 'glUSD or points', d: 'Players complete offers on Gully Chain and earn glUSD or points from the advertiser’s budget.' },
+      { t: 'USDC or points', d: 'Players complete offers on Gully Chain and earn USDC or points from the advertiser’s budget.' },
       { t: 'Publishers earn a share', d: 'Any site or game embeds the wall with an iframe or offerwall.js and earns a share of every completion.' },
       { t: 'Sign in with Gully ID', d: 'Players and advertisers sign in with Gully ID (gullyid.xyz): passkey, wallet or email.' },
       { t: 'Funded through Gully Pay', d: 'Advertisers pay for campaigns through Gully Pay checkout (rolling out).' },
@@ -483,7 +483,7 @@ export const PRODUCTS: ProductDef[] = [
     how: [
       ['Advertisers fund a campaign', 'Create offers in the dashboard and fund the budget through Gully Pay.'],
       ['Publishers embed the wall', 'Add a placement, then the iframe or offerwall.js on any page.'],
-      ['Players complete and earn', 'Sign in with Gully ID, do the task on Gully Chain, receive glUSD or points.'],
+      ['Players complete and earn', 'Sign in with Gully ID, do the task on Gully Chain, receive USDC or points.'],
     ],
     faq: [
       ['Which contracts run it?', 'OfferwallManager 0xD6a8c4151a7ED9865a540D20BDD42073DC9c74Bf on Gully Chain testnet 485590, built on the Gully Quests QuestRegistry 0xE3E57e15A9973281A8de2B3bedd512BE8C3813Bb.'],
@@ -510,7 +510,7 @@ export const PRODUCTS: ProductDef[] = [
       { t: 'Posts, replies and likes', d: 'Write in the Home feed beside launches, trades and swaps read live from the indexer.' },
       { t: 'Follows and People', d: 'Follow traders and builders; Explore lists the newest, most followed and verified accounts.' },
       { t: 'Device keys, no pop-ups', d: 'Each browser signs with its own device key, authorised once by your wallet or passkey account.' },
-      { t: 'Get verified', d: 'A verified badge for your X handle, paid in ETH, glUSD or USDC.e on Gully Chain testnet and attested on chain.' },
+      { t: 'Get verified', d: 'A verified badge for your X handle, paid in ETH or USDC.e on Gully Chain testnet and attested on chain.' },
       { t: 'Invites and share cards', d: 'Invite codes earn points; every profile, trade and quest has a share card with live figures.' },
     ],
     how: [

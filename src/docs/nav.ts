@@ -70,7 +70,7 @@ export const SITE = 'https://gullylabs.xyz'
 /** Docs of the products on their own domains (2026-10-26): the old slugs here 301 there (server/hosts.mjs movedDocsUrl). */
 export const PRODUCT_DOCS: { name: string; href: string; note: string }[] = [
   { name: 'Gully Chain', href: 'https://docs.gullychain.xyz/', note: 'The L3, DeepCore launchpad, bridging, names, account abstraction and the network details.' },
-  { name: 'Gully Pay', href: 'https://gullypay.xyz/docs', note: 'x402, checkout, merchant stores, webhooks and glUSD.' },
+  { name: 'Gully Pay', href: 'https://gullypay.xyz/docs', note: 'x402, checkout, merchant stores, webhooks and USDC.' },
   { name: 'Gully RPC', href: 'https://gullyrpc.xyz/docs/', note: 'Endpoints, API keys, served networks and limits.' },
   { name: 'Gully Security', href: 'https://gullysecurity.xyz/', note: 'AI security scans, monitors and published reports.' },
 ]

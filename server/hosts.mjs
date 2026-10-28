@@ -241,7 +241,7 @@ export function currentPageUrl(url) {
    the hub; these products moved out and are no longer full features here. Their old main-site and docs pages answer
    301 (GET/HEAD) to the equivalent page on the product's own domain, deep path kept where one exists there.
      Gully Chain     gullychain.xyz (site), app.gullychain.xyz (launch flow, launchpad), docs.gullychain.xyz
-     Gully Pay       gullypay.xyz (x402, checkout, merchants, glUSD; developer docs at /docs)
+     Gully Pay       gullypay.xyz (x402, checkout, merchants, USDC; /glusd stays a 301; developer docs at /docs)
      Gully RPC       gullyrpc.xyz, app.gullyrpc.xyz (keys, portal)
      Gully Studio    gullystudio.xyz
    Gully Security (gullysecurity.xyz) and HolderMaps (holdermaps.xyz) keep their own switches above (SECURITY_PRIMARY,

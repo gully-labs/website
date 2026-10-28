@@ -59,10 +59,10 @@ export const HUB_PRODUCTS: HubProduct[] = [
     key: 'pay', name: 'Gully Pay', domain: 'gullypay.xyz', url: 'https://gullypay.xyz', page: 'pay', layer: 'payments', status: 'live', color: '#3479FD',
     icon: I + 'pay.png',
     line: 'Checkout, payment links and x402 for merchants and AI agents.',
-    about: 'Accept cards, Apple Pay and USDC on Base, Ethereum, BNB Chain, Solana and Gully Chain, and let AI agents pay your API over x402. glUSD is its stablecoin, on Gully Chain testnet.',
-    live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'glUSD on Gully Chain testnet', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)', 'glUSD yield vault: earn on idle glUSD (testnet, simulated yield)'],
+    about: 'Accept cards, Apple Pay and USDC on Base, Ethereum, BNB Chain, Solana and Gully Chain, and let AI agents pay your API over x402. On Gully Chain it settles in USDC.e.',
+    live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'USDC.e on Gully Chain testnet', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)'],
     next: ['Agent Wallets', 'One-tap passkey checkout', 'Pay with any token', 'Splits and escrow', 'Tap to pay', 'Non-custodial wallet', 'iOS and Android apps'],
-    links: [['Docs', 'https://gullypay.xyz/docs'], ['Merchant setup', 'https://gullypay.xyz/setup'], ['glUSD yield', 'https://gullypay.xyz']],
+    links: [['Docs', 'https://gullypay.xyz/docs'], ['Merchant setup', 'https://gullypay.xyz/setup']],
   },
   {
     key: 'chain', name: 'Gully Chain', domain: 'gullychain.xyz', url: 'https://gullychain.xyz', page: 'chain', layer: 'chain', status: 'testnet', color: '#00B2FA',
@@ -157,8 +157,8 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
 
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
-  { d: '2026-10-28', p: 'pay', t: 'glUSD yield vault: merchants opt in to earn on idle glUSD (Gully Chain testnet, simulated yield)', s: 'testnet', href: 'https://gullypay.xyz' },
-  { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn glUSD or points, publishers embed the wall', s: 'testnet', href: 'https://offers.gullychain.xyz/' },
+  { d: '2026-10-28', p: 'pay', t: 'USDC.e is the dollar on Gully Chain: glUSD is retired (redeem only) and the glUSD yield vault is withdraw only', s: 'testnet', href: 'https://gullypay.xyz' },
+  { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn USDC or points, publishers embed the wall', s: 'testnet', href: 'https://offers.gullychain.xyz/' },
   { d: '2026-10-28', p: 'chain', t: 'Gully Sentry: free testnet Sentry Keys and watchers', s: 'testnet', href: 'https://sentry.gullychain.xyz/' },
   { d: '2026-10-27', p: 'id', t: 'Gully ID moves to gullyid.xyz, with a developer console', s: 'live', href: 'https://gullyid.xyz/developers' },
   { d: '2026-10-27', p: 'chain', t: 'Contract verification for Gully Chain: self-hosted Sourcify, 218 contracts verified', s: 'live', href: 'https://verify.gullychain.xyz' },
@@ -192,7 +192,7 @@ export interface HubLive {
   rpc: { features: { key: string; name: string; status: string }[]; chains: { name: string; chainId: number | null; status: string }[] } | null
   head: { block: number | null; timestamp: number | null } | null
   feed: { items: { id: string; kind: string; block: string; timestamp: string; txHash: string | null }[] } | null
-  /** Gully Offerwall public stats (offers.gullychain.xyz/v1/stats); glUSD amounts as numbers */
+  /** Gully Offerwall public stats (offers.gullychain.xyz/v1/stats); stablecoin (USDC) amounts as numbers */
   offers?: {
     hours: number | null
     series: { t: string; completions: number; paid: number; points: number }[]
@@ -297,8 +297,7 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     } else r.why = wait ? 'Loading…' : 'Gully Pay status unreadable right now'
     r.series = { name: 'gullypay.xyz response time', unit: 'ms', kind: 'line', rows: latency(hub, 'pay') }
     if (hub?.x402) r.extra.push(['x402 networks', hub.x402.networks.length], ['x402 assets', hub.x402.assets.join(' · ')])
-    // no public figure for the vault yet (its numbers sit behind the merchant API), so a plain line, not a number
-    r.extra.push(['glUSD yield vault', 'Testnet · opt-in'])
+    // the glUSD yield vault is retired (withdraw only, no replacement), so it is no longer listed
   } else if (key === 'chain') {
     r.source = 'indexer.gullychain.xyz + /api/hub/products'
     const head = num(live?.head?.block) ?? num(hub?.chain?.head)

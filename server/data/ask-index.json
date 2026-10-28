@@ -2510,7 +2510,7 @@
    "title": "Gully Chain, a Gully Labs project",
    "url": "https://gullylabs.xyz/projects/gullychain",
    "section": null,
-   "text": "Gully Chain (L3 chain). Our own chain, with a launchpad built in. Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and glUSD. Figures are in test ETH and read from our own indexer. Beta. Built: Gully Launchpad: bonding curve, graduation into a Gully Swap pool with the LP locked in GullyLPLocker; Gully Swap (Uniswap v3) and the GullySwapRouter; .gully names, glUSD and bridged USDC, served through Gully RPC and indexed by our own indexer. Chains: Gully Chain Testnet. Gully Chain's own site: https://gullychain.xyz/",
+   "text": "Gully Chain (L3 chain). Our own chain, with a launchpad built in. Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and USDC.e. Figures are in test ETH and read from our own indexer. Beta. Built: Gully Launchpad: bonding curve, graduation into a Gully Swap pool with the LP locked in GullyLPLocker; Gully Swap (Uniswap v3) and the GullySwapRouter; .gully names and bridged USDC (USDC.e), served through Gully RPC and indexed by our own indexer. Chains: Gully Chain Testnet. Gully Chain's own site: https://gullychain.xyz/",
    "updatedAt": "2026-10-26T08:51:33.289Z"
   },
   {
