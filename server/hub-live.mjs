@@ -8,6 +8,8 @@
 //     rpc    Gully RPC live / beta / coming-soon per feature and chain (gullyrpc.xyz/status.json)
 //     head   Gully Chain latest block (indexer /head)
 //     feed   Gully Chain newest on-chain events (indexer /feed, 12 items)
+//     offers Gully Offerwall public stats (offers.gullychain.xyz/v1/stats: completions, glUSD paid and points per hour,
+//            last 24 h; totals and live offers), for /products/offerwall
 //
 // Nothing is invented: a source that cannot be read is null (and named in `unread`), never a zero.
 
@@ -21,6 +23,7 @@ const SOURCES = {
   rpc: () => `${env('GULLYRPC_SITE_URL', 'https://gullyrpc.xyz')}/status.json`,
   head: () => `${env('GULLY_INDEXER', 'https://indexer.gullychain.xyz')}/head`,
   feed: () => `${env('GULLY_INDEXER', 'https://indexer.gullychain.xyz')}/feed?limit=12`,
+  offers: () => `${env('GULLY_OFFERWALL_URL', 'https://offers.gullychain.xyz')}/v1/stats`,
 }
 
 let fetchFn = (...a) => globalThis.fetch(...a)
@@ -74,6 +77,20 @@ export function shape(key, j) {
   if (key === 'feed') {
     if (!Array.isArray(j.items)) return null
     return { items: j.items.slice(0, 12).map((f) => ({ id: String(f.id), kind: String(f.kind), block: String(f.block), timestamp: String(f.timestamp), txHash: /^0x[0-9a-fA-F]{64}$/.test(f.txHash) ? f.txHash : null })) }
+  }
+  if (key === 'offers') {
+    if (!Array.isArray(j.series) || !j.totals || typeof j.totals !== 'object') return null
+    // glUSD amounts arrive as decimal strings ("0.00"); anything unparseable is null, never zero
+    const usd = (v) => {
+      const x = typeof v === 'number' ? v : typeof v === 'string' && /^\d+(\.\d+)?$/.test(v) ? Number(v) : NaN
+      return Number.isFinite(x) ? x : null
+    }
+    return {
+      hours: n(j.hours),
+      series: j.series.slice(-48).map((h) => ({ t: String(h.t), completions: n(h.completions) ?? 0, paid: usd(h.paid) ?? 0, points: n(h.points) ?? 0 })),
+      totals: { completions: n(j.totals.completions), paid: usd(j.totals.paid), players: n(j.totals.players) },
+      liveOffers: n(j.liveOffers),
+    }
   }
   return null
 }

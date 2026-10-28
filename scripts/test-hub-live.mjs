@@ -12,6 +12,8 @@ const ANSWERS = {
   'gullyrpc.xyz/status.json': fx('rpc'),
   'indexer.gullychain.xyz/head': { chainId: 485590, block: 1829, timestamp: 1793153063 },
   'indexer.gullychain.xyz/feed': fx('feed'),
+  // recorded from offers.gullychain.xyz/v1/stats on 2026-10-28 (trimmed to three hours)
+  'offers.gullychain.xyz/v1/stats': { hours: 24, series: [{ t: '2026-10-28T06:00:00.000Z', completions: 0, paid: '0.00', points: 0 }, { t: '2026-10-28T07:00:00.000Z', completions: 2, paid: '1.50', points: 40 }, { t: '2026-10-28T08:00:00.000Z', completions: 0, paid: '0.00', points: 0 }], totals: { completions: 2, paid: '1.50', players: 1 }, liveOffers: 3, placement: null },
 }
 function stub(down = []) {
   const calls = []
@@ -25,7 +27,7 @@ function stub(down = []) {
   return fn
 }
 
-test('reads all five sources and keeps only what the landing shows', async () => {
+test('reads all six sources and keeps only what the landing shows', async () => {
   _resetHubLive(stub())
   const b = await hubLive()
   assert.deepEqual(b.unread, [])
@@ -36,6 +38,10 @@ test('reads all five sources and keeps only what the landing shows', async () =>
   assert.ok(b.rpc.features.some((f) => f.status === 'live'))
   assert.equal(b.head.block, 1829)
   assert.ok(b.feed.items.length > 0 && b.feed.items.length <= 12)
+  assert.equal(b.offers.totals.paid, 1.5)
+  assert.equal(b.offers.series[1].completions, 2)
+  assert.equal(b.offers.liveOffers, 3)
+  assert.ok(!('placement' in b.offers), 'only the fields the page uses')
 })
 
 test('a source that is down is null and named, never a zero; the last good reading is kept', async () => {
@@ -51,7 +57,7 @@ test('cached: one upstream round per 45 s', async () => {
   _resetHubLive(f)
   await Promise.all([hubLive(), hubLive(), hubLive()])
   await hubLive()
-  assert.equal(f.calls.length, 5)
+  assert.equal(f.calls.length, 6)
 })
 
 test('shape drops malformed answers', () => {
@@ -59,6 +65,8 @@ test('shape drops malformed answers', () => {
   assert.equal(shape('pay', { status: 'ok' }), null)
   assert.equal(shape('head', { block: 'x' }), null)
   assert.equal(shape('feed', { items: 'x' }), null)
+  assert.equal(shape('offers', { series: [] }), null)
+  assert.equal(shape('offers', { series: [], totals: { paid: 'lots' } }).totals.paid, null)
   assert.equal(shape('feed', { items: [{ id: 1, kind: 'trade', block: 2, timestamp: 3, txHash: 'not-a-hash' }] }).items[0].txHash, null)
 })
 

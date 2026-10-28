@@ -39,7 +39,7 @@ const HUB_LD = {
 }
 const MAIN = {
   '/': ['Gully Labs · Eight connected products: identity, payments, chain, data, games', 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'],
-  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and the DeepCore launchpad. Each supports Gully Chain.'],
+  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests, Gully Offerwall and the DeepCore launchpad. Each supports Gully Chain.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
   // The chain list is filled in per request from what checkout offers now (pricingDescription below).
   '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin from your own wallet, with no custody.'],
@@ -79,6 +79,7 @@ export const PRODUCT_PAGES = {
   studio: ['Gully Studio', 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK, paid through Gully Pay.', 'gully-studio', 'GameApplication'],
   ipfs: ['Gully IPFS', 'Our IPFS node and read-only gateway for Gully content: token art, metadata, NFT art and .gully sites.', 'gully-labs', 'DeveloperApplication'],
   quests: ['Gully Quests', 'On-chain quests on Gully Chain: tasks verified by contract, rewards paid from ETH pools.', 'gully-chain', 'GameApplication'],
+  offerwall: ['Gully Offerwall', 'Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn glUSD or points; publishers embed the wall and earn a share.', 'gully-chain', 'GameApplication'],
   deepcore: ['DeepCore launchpad', 'Gully Chain’s built-in launchpad: a token and its pool in one step, graduating to Gully Swap.', 'gully-chain', 'FinanceApplication'],
 }
 for (const [key, [name, text]] of Object.entries(PRODUCT_PAGES)) MAIN[`/products/${key}`] = [`${name} · Gully Labs`, `${text} Live charts on this page.`]

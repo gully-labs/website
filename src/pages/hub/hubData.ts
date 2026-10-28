@@ -65,9 +65,9 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'chain.png',
     line: 'The social L3 where your profile is your wallet.',
     about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
-    live: ['Gully Street app and social feed', 'Quests with on-chain rewards', 'DeepCore launchpad and swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Sentry Node Keys site (sentry.gullychain.xyz)'],
+    live: ['Gully Street app and social feed', 'Quests with on-chain rewards', 'DeepCore launchpad and swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Sentry Node Keys site (sentry.gullychain.xyz)', 'Gully Offerwall: funded quests any site can embed (offers.gullychain.xyz)'],
     next: ['Mainnet', 'Sentry Node Key mint (coming soon)'],
-    links: [['App', 'https://app.gullychain.xyz'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz']],
+    links: [['App', 'https://app.gullychain.xyz'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz'], ['Offerwall', 'https://offers.gullychain.xyz/']],
   },
   {
     key: 'rpc', name: 'Gully RPC', domain: 'gullyrpc.xyz', url: 'https://gullyrpc.xyz', page: 'rpc', layer: 'chain', status: 'beta', color: '#FF7300',
@@ -152,6 +152,7 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
 
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
+  { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn glUSD or points, publishers embed the wall', s: 'testnet', href: 'https://offers.gullychain.xyz/' },
   { d: '2026-10-27', p: 'id', t: 'Gully ID moves to gullyid.xyz, with a developer console', s: 'live', href: 'https://gullyid.xyz/developers' },
   { d: '2026-10-27', p: 'chain', t: 'Contract verification for Gully Chain: self-hosted Sourcify, 218 contracts verified', s: 'live', href: 'https://verify.gullychain.xyz' },
   { d: '2026-10-27', p: 'rpc', t: 'Keyless Gully Chain endpoint on the gateway: rpc.gullyrpc.xyz/gullychain/evm/485590', s: 'live', href: 'https://gullyrpc.xyz' },
@@ -184,6 +185,13 @@ export interface HubLive {
   rpc: { features: { key: string; name: string; status: string }[]; chains: { name: string; chainId: number | null; status: string }[] } | null
   head: { block: number | null; timestamp: number | null } | null
   feed: { items: { id: string; kind: string; block: string; timestamp: string; txHash: string | null }[] } | null
+  /** Gully Offerwall public stats (offers.gullychain.xyz/v1/stats); glUSD amounts as numbers */
+  offers?: {
+    hours: number | null
+    series: { t: string; completions: number; paid: number; points: number }[]
+    totals: { completions: number | null; paid: number | null; players: number | null }
+    liveOffers: number | null
+  } | null
 }
 export type Load = 'loading' | 'ok' | 'error'
 export interface Sources {
@@ -213,7 +221,7 @@ export interface Reading {
 export const SERVICE_KEYS: Record<ProductKey, string[]> = {
   id: ['gully-id'],
   pay: ['pay', 'x402', 'pay-admin'],
-  chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'safe', 'copy', 'docs', 'devportal'],
+  chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'safe', 'copy', 'docs', 'devportal', 'offerwall'],
   rpc: ['rpc-site', 'rpc-app', 'rpc-gateway'],
   holdermaps: ['holders'],
   security: ['security'],
