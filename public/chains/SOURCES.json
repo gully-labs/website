@@ -76,5 +76,47 @@
     "page": "https://www.avax.network/brand",
     "terms": "Ava Labs' own published AVAX logo (#E84142 disc), unaltered; Avalanche brand guidelines apply (no implied affiliation). Used only to name Avalanche as a Gully Pay payment network.",
     "fetchedAt": "2026-10-18T02:10:00Z"
+  },
+  "gully": {
+    "file": "/chains/gully-chain.svg",
+    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): the GullyChain brand kit v3 icon (brand-kit/icon/gullychain-icon-dark-512.png) embedded at 128 px",
+    "terms": "Our own mark.",
+    "fetchedAt": "2026-10-28T10:00:00Z"
+  },
+  "arbitrum-sepolia": {
+    "file": "/chains/arbitrum-sepolia.svg",
+    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): the Arbitrum mark (github.com/OffchainLabs/arbitrum-token-bridge ArbitrumLogo.svg) plus the pack testnet corner badge",
+    "terms": "Arbitrum Foundation brand kit: unaltered mark, no implied affiliation; the badge sits outside the mark.",
+    "fetchedAt": "2026-10-28T10:00:00Z"
+  },
+  "base-sepolia": {
+    "file": "/chains/base-sepolia.svg",
+    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): the Base symbol (github.com/base/web logo.svg) plus the pack testnet corner badge",
+    "terms": "Base brand guide: unaltered mark, no implied partnership.",
+    "fetchedAt": "2026-10-28T10:00:00Z"
+  },
+  "sepolia": {
+    "file": "/chains/sepolia.svg",
+    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): ethereum.org eth-diamond-purple.svg plus the pack testnet corner badge",
+    "terms": "ethereum.org brand assets, published for public use.",
+    "fetchedAt": "2026-10-28T10:00:00Z"
+  },
+  "ink": {
+    "file": "/chains/ink.svg",
+    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): https://github.com/inkonchain/docs/blob/main/public/img/icons/ink-icon.svg",
+    "terms": "Ink's own icon, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-28T10:00:00Z"
+  },
+  "unichain": {
+    "file": "/chains/unichain.svg",
+    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): https://github.com/Uniswap/interface/blob/main/packages/mycelium/src/assets/icons/unichain.svg on a white disc",
+    "terms": "Uniswap Labs' Unichain mark, unaltered; nominative use only.",
+    "fetchedAt": "2026-10-28T10:00:00Z"
+  },
+  "xlayer": {
+    "file": "/chains/xlayer.svg",
+    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): https://github.com/okx/xlayer-docs/blob/main/media-kit/XLayer-logo-kit.zip (XLayer_Profile_WhenLessThan40px_White.svg)",
+    "terms": "OKX X Layer media kit and guideline: kit files unaltered.",
+    "fetchedAt": "2026-10-28T10:00:00Z"
   }
 }

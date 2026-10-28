@@ -23,7 +23,17 @@ const CHAINS: Record<string, Mark> = {
   optimism: { src: '/chains/optimism.svg', name: 'OP Mainnet', disc: null, inset: 0 },
   polygon: { src: '/chains/polygon.svg', name: 'Polygon', disc: null, inset: 0 },
   avalanche: { src: '/chains/avalanche.svg', name: 'Avalanche', disc: null, inset: 0 },
-  gully: { src: '/brand/products/gullychain-icon-transparent-512.png', name: 'Gully Chain Testnet', disc: null, inset: 0 }, // our own L3 testnet: the Gully Chain kit's icon (icon/gullychain-icon-transparent-512.png)
+  // Gully Chain and the testnets below come from the canonical Gully chain-logo pack (gully-ops design/chains, sources
+  // in its SOURCES.md), so every Gully product shows the same files. gully-chain.svg is the Gully Chain kit v3 icon.
+  gully: { src: '/chains/gully-chain.svg', name: 'Gully Chain Testnet', disc: null, inset: 0 },
+  // testnets: the mainnet mark with the pack's small amber corner badge
+  'arbitrum-sepolia': { src: '/chains/arbitrum-sepolia.svg', name: 'Arbitrum Sepolia', disc: null, inset: 0 },
+  'base-sepolia': { src: '/chains/base-sepolia.svg', name: 'Base Sepolia', disc: null, inset: 0 },
+  sepolia: { src: '/chains/sepolia.svg', name: 'Ethereum Sepolia', disc: null, inset: 0 },
+  // chains Gully RPC plans to serve (gully-rpc branding/status.json)
+  ink: { src: '/chains/ink.svg', name: 'Ink', disc: null, inset: 0 },
+  unichain: { src: '/chains/unichain.svg', name: 'Unichain', disc: null, inset: 0 },
+  xlayer: { src: '/chains/xlayer.svg', name: 'X Layer', disc: null, inset: 0 },
 }
 
 /** Other keys and display names the site and the API use for the same chain. */
@@ -44,12 +54,15 @@ const CHAIN_ALIAS: Record<string, string> = {
   'polygon pos': 'polygon',
   avax: 'avalanche',
   'avalanche c-chain': 'avalanche',
-  'base-sepolia': 'base',
-  'base sepolia': 'base',
+  'base sepolia': 'base-sepolia',
+  basesepolia: 'base-sepolia',
   'op-sepolia': 'optimism',
   'op sepolia': 'optimism',
-  'arbitrum-sepolia': 'arbitrum',
-  'arbitrum sepolia': 'arbitrum',
+  'arbitrum sepolia': 'arbitrum-sepolia',
+  arbitrumsepolia: 'arbitrum-sepolia',
+  'ethereum sepolia': 'sepolia',
+  'x layer': 'xlayer',
+  'x-layer': 'xlayer',
   'gully chain': 'gully',
   'gully chain testnet': 'gully',
   'gully-testnet': 'gully',
