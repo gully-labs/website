@@ -1,0 +1,150 @@
+{
+  "name": "Gully Chain Extended",
+  "timestamp": "2026-10-28T00:05:07.311Z",
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "logoURI": "https://gullychain.xyz/assets/apple-touch-icon.png",
+  "keywords": [
+    "gully",
+    "gully chain",
+    "arbitrum orbit",
+    "l3",
+    "launchpad",
+    "extended"
+  ],
+  "tags": {
+    "wrapped": {
+      "name": "native wrapped",
+      "description": "WETH9, the wrapped native gas token. Unwraps 1:1 to ETH on Gully Chain"
+    },
+    "stablecoin": {
+      "name": "stablecoin",
+      "description": "Token that tracks the US dollar"
+    },
+    "bridged": {
+      "name": "bridged",
+      "description": "Bridged to Gully Chain from Arbitrum Sepolia. The origin token is in extensions.bridgeInfo"
+    },
+    "launchpad": {
+      "name": "launchpad",
+      "description": "Launched on DeepCore, the Gully Chain launchpad. Testnet: test token, no value"
+    }
+  },
+  "tokens": [
+    {
+      "chainId": 485590,
+      "address": "0x661B016D2Dc8E5e418C3B00A4098e341d8637ec1",
+      "name": "Gully Frog",
+      "symbol": "FROG",
+      "decimals": 18,
+      "logoURI": "https://gullychain.xyz/tokens/logos/485590/0x661B016D2Dc8E5e418C3B00A4098e341d8637ec1.png",
+      "tags": [
+        "launchpad"
+      ],
+      "extensions": {
+        "launchpad": "0x3378b659f6ddA7F13D87599B383b3995f82D0974",
+        "launchpadVersion": "2.0.0"
+      }
+    },
+    {
+      "chainId": 485590,
+      "address": "0x7Dd1Aa3d8598A3edB43EB43ddcb5BCE4AbfBb702",
+      "name": "Gully Bridged ETH",
+      "symbol": "gETH",
+      "decimals": 18,
+      "logoURI": "https://gullychain.xyz/tokens/logos/485590/0x7Dd1Aa3d8598A3edB43EB43ddcb5BCE4AbfBb702.svg",
+      "tags": [
+        "bridged"
+      ],
+      "extensions": {
+        "bridge": "hyperlane",
+        "warpRoute": "GETH/arbitrumsepolia-gullychaintestnet",
+        "originNative": true,
+        "bridgeInfo": {
+          "421614": {
+            "tokenAddress": "0x3Aa770313a4c8aa6F9B1055fDBfd9dbC4051bad0"
+          }
+        }
+      }
+    },
+    {
+      "chainId": 485590,
+      "address": "0xDBE84bE6496Fb3d07F601548555ec7Acc4CeBa8F",
+      "name": "Gully USD",
+      "symbol": "glUSD",
+      "decimals": 6,
+      "logoURI": "https://gullychain.xyz/tokens/logos/485590/0xDBE84bE6496Fb3d07F601548555ec7Acc4CeBa8F.png",
+      "tags": [
+        "stablecoin"
+      ],
+      "extensions": {
+        "psm": "0xe1Ae51036ede1b244c532A81FaC196f19fa5E28e",
+        "backedBy": "0x65Ba03c6FA90Ed549f465D4c8f2e784D6eEB7E76"
+      }
+    },
+    {
+      "chainId": 485590,
+      "address": "0xE6AB829a02AAF474e7b6d4434B82A68EBC618Fe4",
+      "name": "Lab Rat",
+      "symbol": "LABRAT",
+      "decimals": 18,
+      "logoURI": "https://gullychain.xyz/tokens/logos/485590/0xE6AB829a02AAF474e7b6d4434B82A68EBC618Fe4.png",
+      "tags": [
+        "launchpad"
+      ],
+      "extensions": {
+        "launchpad": "0x3378b659f6ddA7F13D87599B383b3995f82D0974",
+        "launchpadVersion": "2.0.0"
+      }
+    },
+    {
+      "chainId": 485590,
+      "address": "0x8386a49a61060Cc3F21415bde2e78b2ecaC209DC",
+      "name": "Moss Coin",
+      "symbol": "MOSS",
+      "decimals": 18,
+      "logoURI": "https://gullychain.xyz/tokens/logos/485590/0x8386a49a61060Cc3F21415bde2e78b2ecaC209DC.png",
+      "tags": [
+        "launchpad"
+      ],
+      "extensions": {
+        "launchpad": "0x3378b659f6ddA7F13D87599B383b3995f82D0974",
+        "launchpadVersion": "2.0.0"
+      }
+    },
+    {
+      "chainId": 485590,
+      "address": "0x65Ba03c6FA90Ed549f465D4c8f2e784D6eEB7E76",
+      "name": "Bridged USDC (Gully Labs)",
+      "symbol": "USDC.e",
+      "decimals": 6,
+      "logoURI": "https://gullychain.xyz/tokens/logos/485590/0x65Ba03c6FA90Ed549f465D4c8f2e784D6eEB7E76.png",
+      "tags": [
+        "bridged",
+        "stablecoin"
+      ],
+      "extensions": {
+        "bridge": "arbitrum-usdc-gateway",
+        "bridgeInfo": {
+          "421614": {
+            "tokenAddress": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+          }
+        }
+      }
+    },
+    {
+      "chainId": 485590,
+      "address": "0x26aCCCb2e98ca9e067E58668Aa3B101beF432754",
+      "name": "Wrapped Ether",
+      "symbol": "WETH",
+      "decimals": 18,
+      "logoURI": "https://gullychain.xyz/tokens/logos/485590/0x26aCCCb2e98ca9e067E58668Aa3B101beF432754.png",
+      "tags": [
+        "wrapped"
+      ]
+    }
+  ]
+}

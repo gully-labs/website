@@ -36,7 +36,7 @@ const pixel = (b, x, y) => {
   return [...p.data.subarray(i, i + 4)]
 }
 
-const EP = { deepcore: 'https://dc.test', dexscreener: 'https://ds.test', jupiter: 'https://jup.test', xstocks: 'https://xs.test', coingecko: 'https://cg.test', trustwallet: 'https://tw.test' }
+const EP = { gullychain: 'https://gc.test/tokenlist-extended.json', deepcore: 'https://dc.test', dexscreener: 'https://ds.test', jupiter: 'https://jup.test', xstocks: 'https://xs.test', coingecko: 'https://cg.test', trustwallet: 'https://tw.test' }
 const A = '0x1111111111111111111111111111111111111111' // DeepCore launch with a logo (also on DexScreener)
 const B = '0x2222222222222222222222222222222222222222' // only DexScreener (and Trust Wallet)
 const C = '0x3333333333333333333333333333333333333333' // only CoinGecko and Trust Wallet
@@ -94,7 +94,7 @@ const goodRoutes = () => ({
 test('sources are tried in order and the first valid image wins', async () => {
   const w = world(goodRoutes())
   const { svc } = service(w)
-  assert.deepEqual(svc.sources, ['deepcore', 'dexscreener', 'jupiter', 'xstocks', 'coingecko', 'trustwallet'])
+  assert.deepEqual(svc.sources, ['gullychain', 'deepcore', 'dexscreener', 'jupiter', 'xstocks', 'coingecko', 'trustwallet'])
   const a = await svc.getLogo('base', A, { size: 64 })
   assert.equal(a.source, 'deepcore')
   assert.deepEqual(pixel(a.png, 32, 32), [217, 181, 99, 255])
@@ -124,6 +124,39 @@ test('DeepCore path: launch token list logoURI, list cached across tokens', asyn
   // Chains DeepCore does not run on never ask it.
   await svc.getLogo('ethereum', U)
   assert.ok(!w.calls.some((c) => c.url.includes('/v1/chains/1/')))
+})
+
+test('Gully Chain: hosted token list logoURI, cached 10 min, shape-checked, bundled copy as fallback', async () => {
+  const G1 = '0x661B016D2Dc8E5e418C3B00A4098e341d8637ec1'
+  const tok = (o) => ({ chainId: 485590, address: G1, name: 'Frog', symbol: 'FROG', decimals: 18, logoURI: 'https://img.gc.test/frog.png', ...o })
+  const list = { tokens: [tok(), tok({ address: B, decimals: '18', logoURI: 'https://img.gc.test/bad.png' }), tok({ address: C, chainId: 8453, logoURI: 'https://img.gc.test/bad.png' })] }
+  const w = world({ 'https://gc.test/tokenlist-extended.json': jsonr(list), 'https://img.gc.test/frog.png': img(png(64, 64, [47, 107, 53])) })
+  const { svc, clock } = service(w, { gullyTokenList: { tokens: [] } })
+  const g = await svc.getLogo('gully', G1.toLowerCase(), { size: 64 })
+  assert.equal(g.source, 'gullychain')
+  assert.deepEqual(pixel(g.png, 32, 32), [47, 107, 53, 255])
+  assert.equal((await svc.getLogo('gully', B)).source, null, 'non-integer decimals: dropped')
+  assert.equal((await svc.getLogo('gully', C)).source, null, 'another chain id: dropped')
+  assert.ok(!w.calls.some((c) => c.url.includes('bad.png')))
+  assert.equal(w.calls.filter((c) => c.url.startsWith('https://gc.test/')).length, 1, 'list cached across tokens')
+  clock.advance(11 * 60_000)
+  await svc.getLogo('gully', U)
+  assert.equal(w.calls.filter((c) => c.url.startsWith('https://gc.test/')).length, 2, 're-read after 10 min')
+  await svc.getLogo('base', U)
+  assert.equal(w.calls.filter((c) => c.url.startsWith('https://gc.test/')).length, 2, 'other chains never ask it')
+
+  // Hosted list down: the bundled copy answers.
+  const w2 = world({ 'https://gc.test/tokenlist-extended.json': { status: 503 }, 'https://img.gc.test/frog.png': img(png(64, 64)) })
+  const { svc: svc2 } = service(w2, { gullyTokenList: { tokens: [tok()] } })
+  assert.equal((await svc2.getLogo('gully', G1)).source, 'gullychain')
+})
+
+test('Gully Chain: the bundled token list in server/data is valid', async () => {
+  const { gullyListLogos } = await import('../server/token-logos.mjs')
+  const list = JSON.parse(fs.readFileSync(new URL('../server/data/gully-tokenlist.json', import.meta.url), 'utf8'))
+  const m = gullyListLogos(list, (u) => (typeof u === 'string' && u.startsWith('https://') ? u : null))
+  assert.ok(m.has('0x26acccb2e98ca9e067e58668aa3b101bef432754'), 'WETH9')
+  assert.ok(!m.has('0x3292de74305df64dbe082c6834fa841353eb2415'), 'the zero-supply bridge WETH is not listed')
 })
 
 test('Solana: Jupiter icon; xStocks: tracked stock gets the official Backed logo', async () => {
