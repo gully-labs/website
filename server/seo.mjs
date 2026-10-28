@@ -39,7 +39,7 @@ const HUB_LD = {
 }
 const MAIN = {
   '/': ['Gully Labs · Eight connected products: identity, payments, chain, data, games', 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'],
-  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and the DeepCore launchpad. Each supports Gully Chain.'],
+  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Sentry, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and the DeepCore launchpad. Each supports Gully Chain.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
   // The chain list is filled in per request from what checkout offers now (pricingDescription below).
   '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin from your own wallet, with no custody.'],
@@ -71,6 +71,7 @@ export const PRODUCT_PAGES = {
   street: ['Gully Street', 'The Gully Chain app: a social feed, five wallets per passkey, copy trading, Quests and the launchpad.', 'gully-chain', 'FinanceApplication'],
   bridge: ['Gully Bridge', 'Move ETH between Arbitrum Sepolia and Gully Chain: a Hyperlane fast lane (gETH) and the canonical bridge.', 'gully-chain', 'FinanceApplication'],
   safe: ['Gully Safe', 'Multisig wallets on Gully Chain, for treasuries and teams.', 'gully-chain', 'FinanceApplication'],
+  'gully-sentry': ['Gully Sentry', 'Free testnet Sentry Keys and light watchers that check every Gully Chain assertion against their own node.', 'gully-chain', 'SecurityApplication'],
   pay: ['Gully Pay', 'x402 payments, hosted checkout and a merchant OS, settled on chain to your own wallet.', 'gully-pay', 'FinanceApplication'],
   rpc: ['Gully RPC', 'One key for every network: the node control plane and RPC gateway behind every Gully chain.', 'gully-rpc', 'DeveloperApplication'],
   holders: ['HolderMaps', 'Who really holds a token: bubble maps, wallet clusters and deep checks, Gully Chain tokens included.', 'holdermaps', 'FinanceApplication'],
