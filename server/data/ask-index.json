@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-28T13:04:45.052Z",
+ "updatedAt": "2026-10-28T20:43:00.160Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -3293,8 +3293,8 @@
    "title": "Roadmap: the Gully L3 spec",
    "url": "https://github.com/gully-labs/website/blob/main/ops/l3/SPEC.md#1-what-the-gully-l3-is",
    "section": "1. What the Gully L3 is",
-   "text": "An Arbitrum chain (the stack formerly branded Orbit) run by Gully Labs: Nitro, settling to a parent chain, with the Gully stack attached on day one: Chain Kit as the explorer: our Blockscout fork gully-labs/blockscout, branch gully/chain-kit/gully (locally PROJECTS/gully-blockscout), with the Arbitrum profile (CHAIN_TYPE=arbitrum, ETHEREUM_JSONRPC_VARIANT=geth, trace URL on the same node; see the devnet README). Gully Pay native on the L3: USDC and ETH on the L3 become payment assets in server/payments.mjs (§10). Gully Analytics, gap alerts and Gully AI read it like any other chain. Hyperlane as the interop layer: a Mailbox on the L3, Warp Routes for USDC and ETH from Arbitrum One (and Base) into the L3, our own validator and relayer (§9). Three stages, matching the roadmap the site shows: Stage — Chain — Parent — Purpose S0, now — Gully Devnet (light): Nitro --dev, chain id 412346, one container, in-memory parent — none (simulated) — Test Chain Kit, Stylus and Gully Pay flows locally; first target for the Hyperlane agents S1, \"Gully Devnet\" (pitch milestone M3) — A public Arbitrum chain on Arbitrum Sepolia — Arbitrum Sepolia (421614) — Public RPC, Chain Kit explorer, faucet, canonical token bridge, Hyperlane to Arbitrum Sepolia S2, \"Gully L3\" — The production chain — Arbitrum One (42161) under D1 — Gully venues, Gully Pay, Warp Routes for USDC/ETH, LI.FI/Relay listing The chain id for S1 and S2 is not chosen yet: 412346 is nitro-devnode's fixed dev id and must not be reused for a public chain. Pick an unused id from chainlist before S1 and register it (ethereum-lists/chains PR) so wallets, LI.FI and Relay recognise it.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "An Arbitrum chain (the stack formerly branded Orbit) run by Gully Labs: Nitro, settling to a parent chain, with the Gully stack attached on day one: Chain Kit as the explorer: our own Gully Explorer (gully-labs/gully-explorer, MIT) on our own indexer (gully-indexer, Ponder), as on Gully Chain Testnet. Blockscout is not used: it has been under LicenseRef-Blockscout 1.0 since 2026-04-22, which forbids hosted use without a commercial licence (2026-10-28). Gully Pay native on the L3: USDC and ETH on the L3 become payment assets in server/payments.mjs (§10). Gully Analytics, gap alerts and Gully AI read it like any other chain. Hyperlane as the interop layer: a Mailbox on the L3, Warp Routes for USDC and ETH from Arbitrum One (and Base) into the L3, our own validator and relayer (§9). Three stages, matching the roadmap the site shows: Stage — Chain — Parent — Purpose S0, now — Gully Devnet (light): Nitro --dev, chain id 412346, one container, in-memory parent — none (simulated) — Test Chain Kit, Stylus and Gully Pay flows locally; first target for the Hyperlane agents S1, \"Gully Devnet\" (pitch milestone M3) — A public Arbitrum chain on Arbitrum Sepolia — Arbitrum Sepolia (421614) — Public RPC, Chain Kit explorer, faucet, canonical token bridge, Hyperlane to Arbitrum Sepolia S2, \"Gully L3\" — The production chain — Arbitrum One (42161) under D1 — Gully venues, Gully Pay, Warp Routes for USDC/ETH, LI.FI/Relay listing The chain id for S1 and S2 is not chosen yet: 412346 is nitro-devnode's fixed dev id and must not be reused for a public chain. Pick an unused id from chainlist before S1 and register it (ethereum-lists/chains PR) so wallets, LI.FI and Relay recognise it.",
+   "updatedAt": "2026-10-28T20:43:00.160Z"
   },
   {
    "id": "4cb16f583914",
@@ -3356,8 +3356,8 @@
    "title": "Roadmap: the Gully L3 spec",
    "url": "https://github.com/gully-labs/website/blob/main/ops/l3/SPEC.md#6-explorer-chain-kit",
    "section": "6. Explorer: Chain Kit",
-   "text": "Chain Kit (our Blockscout fork) joins the chain's compose network and indexes the RPC with CHAIN_ID, CHAIN_TYPE=arbitrum, ETHEREUM_JSONRPC_VARIANT=geth, ETHEREUM_JSONRPC_TRACE_URL (the node exposes debug). Stack: Postgres, backend, frontend, Redis: \"several GB of images and 1 to 2 GB of RAM\" (devnet README), so its own compose project and disk check. Served through gully-web on explorer.devnet.gullylabs.xyz (S1) and explorer.gullylabs.xyz (S2) the way the blog is forwarded (server/blog.mjs), never on a public host port. Hyperlane messages are shown by Hyperlane's own explorer once the chain is in the registry; Chain Kit shows the Mailbox Dispatch/Process events like any contract.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Chain Kit is Gully Explorer (a static Vite/React app) reading the chain's RPC and a per-chain gully-indexer (Ponder). It is hard-wired to Gully Chain (485590) today; per-chain config is tracked in gully-labs/gully-explorer. Blockscout (and its Postgres/backend/frontend/Redis stack) is no longer planned (2026-10-28). Served through gully-web on explorer.devnet.gullylabs.xyz (S1) and explorer.gullylabs.xyz (S2) the way the blog is forwarded (server/blog.mjs), never on a public host port. Hyperlane messages are shown by Hyperlane's own explorer once the chain is in the registry; Chain Kit shows the Mailbox Dispatch/Process events like any contract.",
+   "updatedAt": "2026-10-28T20:43:00.160Z"
   },
   {
    "id": "51cb9c8184f0",
@@ -3708,78 +3708,6 @@
    "url": "https://github.com/gully-labs/umami/blob/gully/analytics/README.md#getting-updates",
    "section": "🔄 Getting Updates",
    "text": "To get the latest features, simply do a pull, install any new dependencies, and rebuild: To update the Docker image, simply pull the new images and rebuild:",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "04dc5e9fa122",
-   "source": "GitHub README",
-   "title": "Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)",
-   "url": "https://github.com/gully-labs/blockscout/blob/gully/chain-kit/README.md",
-   "section": null,
-   "text": "Chain Kit: a branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs. Part of Gully Labs, a blockchain development company that builds, launches and runs its own Web3 projects.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "5fa5b55b06c9",
-   "source": "GitHub README",
-   "title": "Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)",
-   "url": "https://github.com/gully-labs/blockscout/blob/gully/chain-kit/README.md#blockscout",
-   "section": "Blockscout",
-   "text": "Blockchain Explorer for inspecting and analyzing EVM Chains. Blockscout provides a comprehensive, easy-to-use interface for users to view, confirm, and inspect transactions on EVM (Ethereum Virtual Machine) blockchains. This includes Ethereum Mainnet, Ethereum Classic, Optimism, Gnosis Chain and many other Ethereum testnets, private networks, L2s and sidechains. See our project documentation for detailed information and setup instructions. For questions, comments and feature requests see the discussions section or via Discord. Gully Chain Kit. This fork adds gully/: a deployment layer (pinned compose stack, chain profiles, branding, provisioning script) for explorers hosted by Gully Labs. Upstream code is unchanged.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "64ffaf1bcd11",
-   "source": "GitHub README",
-   "title": "Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)",
-   "url": "https://github.com/gully-labs/blockscout/blob/gully/chain-kit/README.md#about-blockscout",
-   "section": "About Blockscout",
-   "text": "Blockscout allows users to search transactions, view accounts and balances, verify and interact with smart contracts and view and interact with applications on the Ethereum network including many forks, sidechains, L2s and testnets. Blockscout is an open-source alternative to centralized, closed source block explorers such as Etherscan, Etherchain and others. As Ethereum sidechains and L2s continue to proliferate in both private and public settings, transparent, open-source tools are needed to analyze and validate all transactions.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "91a442fb8f6e",
-   "source": "GitHub README",
-   "title": "Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)",
-   "url": "https://github.com/gully-labs/blockscout/blob/gully/chain-kit/README.md#supported-projects",
-   "section": "Supported Projects",
-   "text": "Blockscout currently supports several hundred chains and rollups throughout the greater blockchain ecosystem. Ethereum, Cosmos, Polkadot, Avalanche, Near and many others include Blockscout integrations. A comprehensive list is available at chains.blockscout.com. If your project is not listed, contact the team in Discord.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "8bbb84e2c7e1",
-   "source": "GitHub README",
-   "title": "Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)",
-   "url": "https://github.com/gully-labs/blockscout/blob/gully/chain-kit/README.md#getting-started",
-   "section": "Getting Started",
-   "text": "See the project documentation for instructions: Manual deployment Docker-compose deployment Kubernetes deployment Manual deployment (backend + old UI) Ansible deployment ENV variables Configuration options",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "c2f5e4ab0178",
-   "source": "GitHub README",
-   "title": "Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)",
-   "url": "https://github.com/gully-labs/blockscout/blob/gully/chain-kit/README.md#acknowledgements",
-   "section": "Acknowledgements",
-   "text": "We would like to thank the EthPrize foundation for their funding support.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "3c5eddee165c",
-   "source": "GitHub README",
-   "title": "Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)",
-   "url": "https://github.com/gully-labs/blockscout/blob/gully/chain-kit/README.md#contributing",
-   "section": "Contributing",
-   "text": "See CONTRIBUTING.md for contribution and pull request protocol. We expect contributors to follow our code of conduct when submitting code or comments.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
-  },
-  {
-   "id": "87f1fd8c037f",
-   "source": "GitHub README",
-   "title": "Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)",
-   "url": "https://github.com/gully-labs/blockscout/blob/gully/chain-kit/README.md#license",
-   "section": "License",
-   "text": "This project is licensed under the Blockscout Software Licence. See the LICENSE file for full terms. Third-party components included in this repository remain subject to their own licenses. See dependency manifests and bundled third-party notices for component-level license terms.",
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
@@ -4335,8 +4263,8 @@
    "title": "Roadmap: Chain Kit managed explorer (Chain Kit), not available yet",
    "url": "https://docs.gullylabs.xyz/chain-kit",
    "section": "Chain Kit managed explorer (building)",
-   "text": "Chain Kit managed explorer (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A branded Blockscout block explorer for your EVM chain, deployed and run by Gully Labs, now part of Gully Chain (gullychain.xyz). Licensing in progress; not available to order yet. Chain Kit moved to Gully Chain (gullychain.xyz) on 2026-10-26; POST /api/developer/chain-kit/request still records interest for older clients. Gully Labs is finalising the explorer licence before taking orders. Rollup profiles cover Arbitrum Nitro and Orbit chains.",
-   "updatedAt": "2026-10-26T08:51:33.289Z",
+   "text": "Chain Kit managed explorer (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A branded block explorer for your EVM chain, built on our own Gully Explorer and run by Gully Labs, now part of Gully Chain (gullychain.xyz). Not available to order yet. Chain Kit moved to Gully Chain (gullychain.xyz) on 2026-10-26; POST /api/developer/chain-kit/request still records interest for older clients. The explorer is Gully Explorer (MIT), our own; Blockscout is no longer used. Rollup profiles cover Arbitrum Nitro and Orbit chains.",
+   "updatedAt": "2026-10-28T20:43:00.160Z",
    "feature": "chain-kit-explorer",
    "status": "building"
   },
@@ -4594,58 +4522,25 @@
    "status": "beta"
   },
   {
-   "id": "f7b19468d0bb",
+   "id": "348322532d28",
    "source": "Roadmap",
-   "title": "Roadmap: Hosted Blockscout explorer (Chain Kit), not available yet",
+   "title": "Roadmap: Gully Explorer for your chain (Chain Kit), not available yet",
    "url": "https://docs.gullylabs.xyz/chain-kit",
-   "section": "Hosted Blockscout explorer (building)",
-   "text": "Hosted Blockscout explorer (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A branded Blockscout explorer for an EVM chain, configured and run by Gully Labs. The deployment layer exists in the fork; no hosted explorer is confirmed in the repo. Lives in gully-blockscout/gully on branch gully/chain-kit Upstream Blockscout code is unchanged; the fork adds a pinned compose stack, chain profiles, branding and a provisioning script Stack is backend, frontend, stats, visualizer, sig-provider and optional user-ops-indexer images, with Postgres 17, Redis and a Caddy proxy Caddy gives automatic Let's Encrypt TLS on one hostname Footer credit reads 'Explorer by Gully Labs' Chain Kit is on a waitlist and cannot be ordered yet: Gully Labs is finalising the explorer licence first Service level targets in the README are marked 'to be set by Gully Labs'",
-   "updatedAt": "2026-10-19T06:35:57.249Z",
+   "section": "Gully Explorer for your chain (building)",
+   "text": "Gully Explorer for your chain (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Gully Explorer, our own MIT-licensed block explorer, branded for your EVM chain and run by Gully Labs. It runs Gully Chain's testnet explorer today; per-chain deployments for Chain Kit are being built. Gully Explorer (gully-labs/gully-explorer, MIT) replaces Blockscout in Chain Kit: Blockscout has been under a proprietary licence since 2026-04-22 that forbids hosted use without a commercial licence Live for Gully Chain Testnet (chain 485590) at testnet-explorer.gullychain.xyz Pages: blocks, transactions with decoded calls, addresses, tokens, contracts and network details, plus search Reads the chain's RPC (with fallbacks) and Gully's own Ponder indexer (gully-indexer) for tokens, holders and names Arbitrum Orbit chains: shows whether each block is in a batch posted to the parent chain Today it is configured for Gully Chain only; per-chain config (chain ID, RPC, indexer, branding) for Chain Kit customers is coming soon Chain Kit is on a waitlist and cannot be ordered yet",
+   "updatedAt": "2026-10-28T20:43:00.160Z",
    "feature": "chainkit-explorer",
    "status": "building"
   },
   {
-   "id": "16a1d8326d1e",
+   "id": "10ff14b4459e",
    "source": "Roadmap",
-   "title": "Roadmap: Chain profiles (Chain Kit), not available yet",
+   "title": "Roadmap: Verified contracts (Chain Kit), not available yet",
    "url": "https://docs.gullylabs.xyz/chain-kit",
-   "section": "Chain profiles (building)",
-   "text": "Chain profiles (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Each chain is one env file. Profiles exist for Robinhood Chain and Arc, plus a template for any EVM chain. Profiles: chains/robinhood.env (chain ID 4663, Arbitrum Nitro/Orbit, ETH gas), chains/arc.env (chain ID 5042, USDC native gas with 18 decimals), chains/template.env for any geth-compatible chain Both shipped profiles start with internal transactions turned off because the public RPCs offered no debug_* methods on 2026-10-16 Robinhood profile also has archive balances off Hardware tiers documented: Small 4 vCPU / 16 GB / 250 GB, Standard 8 / 32 GB / 1-2 TB, High throughput 16-32 vCPU / 64-128 GB / 4-8 TB",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
-   "feature": "chainkit-chain-profiles",
-   "status": "building"
-  },
-  {
-   "id": "5fc247dd95b8",
-   "source": "Roadmap",
-   "title": "Roadmap: One-command provisioning (Chain Kit), not available yet",
-   "url": "https://docs.gullylabs.xyz/chain-kit",
-   "section": "One-command provisioning (building)",
-   "text": "One-command provisioning (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. provision.sh sets up a server for a chosen chain profile and is safe to re-run. Command: sudo ./gully/provision.sh --chain arc (or robinhood) Targets Ubuntu 24.04; installs Docker and the compose plugin if missing Writes /opt/gully-chain-kit/<chain>/.env with mode 600 and generates database passwords and SECRET_KEY_BASE; existing secrets are never rotated Calls eth_chainId on the RPC and stops if it does not match CHAIN_ID Options include --no-up, --profile user-ops, --deploy-dir and --skip-rpc-check --reset-data deletes the chain's volumes and only runs with --yes-destroy-data",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
-   "feature": "chainkit-provisioning",
-   "status": "building"
-  },
-  {
-   "id": "a1922f06367d",
-   "source": "Roadmap",
-   "title": "Roadmap: Explorer APIs and contract verification (Chain Kit), not available yet",
-   "url": "https://docs.gullylabs.xyz/chain-kit",
-   "section": "Explorer APIs and contract verification (building)",
-   "text": "Explorer APIs and contract verification (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. The explorer exposes the standard Blockscout interfaces and contract verification. REST API v2, Etherscan-compatible API, JSON-RPC proxy, GraphQL and WebSocket updates are listed Verification covers Solidity and Vyper (standard JSON, flattened, multi-part, Sourcify) Rollup views (batches, L1/L2 messages) for Arbitrum Orbit chains once parent-chain tracking is on Health endpoints: /api/health, /api/health/liveness, /api/health/readiness, /api/v2/main-page/indexing-status",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "section": "Verified contracts (building)",
+   "text": "Verified contracts (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Verified contracts show their source, ABI and compiler settings, with Read and Write tabs, from a self-hosted Sourcify server. A public explorer API is coming soon. Verification goes through a self-hosted Sourcify server (Sourcify API v2; verify.gullychain.xyz for Gully Chain) Contract pages show a verified badge, source, ABI and compiler, and let visitors call read functions and send writes from their own wallet No Etherscan- or Blockscout-compatible explorer API yet: coming soon",
+   "updatedAt": "2026-10-28T20:43:00.160Z",
    "feature": "chainkit-apis-verification",
-   "status": "building"
-  },
-  {
-   "id": "f07fc6f7d461",
-   "source": "Roadmap",
-   "title": "Roadmap: Operations runbook (Chain Kit), not available yet",
-   "url": "https://docs.gullylabs.xyz/chain-kit",
-   "section": "Operations runbook (building)",
-   "text": "Operations runbook (Chain Kit) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. An operator runbook covers upgrades, reindexing, backups and disk sizing for hosted explorers. OPERATIONS.md sections: day-to-day checks, upgrades, reindexing, backup and restore, sizing, disk growth, common failures Nightly logical pg_dump with off-host shipping is described; retention is still to be set Docker logs capped at 5 x 50 MB per container Versions are pinned in the chain env and upgraded together",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
-   "feature": "chainkit-operations",
    "status": "building"
   },
   {

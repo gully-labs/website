@@ -23,7 +23,6 @@ const GH = 'gully-labs'
 const REPOS = [
   { repo: 'sdk', branch: 'main' },
   { repo: 'umami', branch: 'gully/analytics' },
-  { repo: 'blockscout', branch: 'gully/chain-kit' },
   ...['arbitrum-orbit-deployment-ui', 'orbit-setup-script', 'orbit-monitoring-tools', 'arbitrum-token-bridge', 'arbitrum-token-lists', 'stylus-sdk-rs', 'stylus-hello-world'].map((repo) => ({ repo, branch: 'gully/main' })),
   { repo: '.github', branch: 'main', file: 'profile/README.md', title: 'Gully Labs on GitHub' },
 ]

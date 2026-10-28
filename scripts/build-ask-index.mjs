@@ -475,7 +475,6 @@ const README_REPOS = [
   { repo: 'sdk', dir: 'gully-sdk', branch: 'main', title: 'Gully SDK (gully-labs/sdk README)', maxWords: 900 },
   { repo: 'website', dir: null, branch: 'main', title: 'gullylabs.xyz website (gully-labs/website README)', maxWords: 900 },
   { repo: 'umami', dir: 'gully-umami', branch: 'gully/analytics', title: 'Gully Analytics, the Umami fork (gully-labs/umami README)', maxWords: 450 },
-  { repo: 'blockscout', dir: 'gully-blockscout', branch: 'gully/chain-kit', title: 'Chain Kit explorer, the Blockscout fork (gully-labs/blockscout README)', maxWords: 450 },
   { repo: 'arbitrum-token-bridge', dir: 'gully-bridge', branch: 'gully/main', title: 'Gully Bridge, the Arbitrum token bridge fork (gully-labs/arbitrum-token-bridge README)', maxWords: 450 },
 ]
 const REPOS_DIR = path.resolve(process.env.GULLY_REPOS_DIR ?? path.join(ROOT, '..'))

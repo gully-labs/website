@@ -1,6 +1,7 @@
 # Draft: commercial licence request to Blockscout
 
-Status: DRAFT, not sent. For the owner to review and send.
+Status: **NOT NEEDED, do not send** (2026-10-28). Chain Kit switched to our own Gully Explorer (MIT,
+`gully-labs/gully-explorer`), so no Blockscout licence is required. Kept for the record.
 
 - To: Blockscout, via the contact form at https://eaas.blockscout.com/#contact
 - From: Gully Labs (gullylabs.xyz, X @Gully_Labs), reply-to team@gullylabs.xyz

@@ -107,16 +107,10 @@ and `--persistent.chain=/home/user/.arbitrum/dev`. Then size the disk for growth
 Neither is set up here. They are the next steps, and each needs its own disk check first.
 
 - **Explorer (Chain Kit).**
-  - Chain Kit is our branded Blockscout: the fork at `gully-labs/blockscout`, branch `gully/chain-kit/gully`,
-    checked out locally as `PROJECTS/gully-blockscout`.
-  - It would join the `gully-devnet` network, set as `external: true` in its own compose file, and index
-    `http://gully-devnet:8547` with:
-    - `CHAIN_ID=412346`
-    - `CHAIN_TYPE=arbitrum`
-    - `ETHEREUM_JSONRPC_VARIANT=geth`
-    - `ETHEREUM_JSONRPC_TRACE_URL` pointing at the same URL (the node exposes the `debug` API)
-  - Blockscout needs Postgres, the backend, the frontend and usually Redis. Expect several GB of images and
-    1 to 2 GB of RAM, so plan it as its own `gully-devnet-explorer` project with its own limits.
+  - Chain Kit is our own Gully Explorer (`gully-labs/gully-explorer`, MIT) on a `gully-indexer` (Ponder) for the
+    chain. Blockscout is no longer used (proprietary licence since 2026-04-22; see `ops/l3/SPEC.md` section 6).
+  - For the devnet it would read `http://gully-devnet:8547` (chain 412346) and an indexer on the `gully-devnet`
+    network. Gully Explorer is hard-wired to chain 485590 today; per-chain config is tracked in its repo.
   - It would be served through gully-web on a host such as `explorer.devnet.gullylabs.xyz`, the same way the
     blog and analytics are forwarded (`server/blog.mjs`, `server/analytics.mjs`), never on a public host port.
 - **Faucet.**

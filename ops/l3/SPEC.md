@@ -28,9 +28,9 @@ changes things.
 An **Arbitrum chain** (the stack formerly branded Orbit) run by Gully Labs: Nitro, settling to a parent chain,
 with the Gully stack attached on day one:
 
-- **Chain Kit** as the explorer: our Blockscout fork `gully-labs/blockscout`, branch `gully/chain-kit/gully`
-  (locally `PROJECTS/gully-blockscout`), with the Arbitrum profile (`CHAIN_TYPE=arbitrum`,
-  `ETHEREUM_JSONRPC_VARIANT=geth`, trace URL on the same node; see the devnet README).
+- **Chain Kit** as the explorer: our own **Gully Explorer** (`gully-labs/gully-explorer`, MIT) on our own indexer
+  (`gully-indexer`, Ponder), as on Gully Chain Testnet. Blockscout is not used: it has been under
+  `LicenseRef-Blockscout` 1.0 since 2026-04-22, which forbids hosted use without a commercial licence (2026-10-28).
 - **Gully Pay native on the L3**: USDC and ETH on the L3 become payment assets in `server/payments.mjs`
   ([§10](#10-gully-pay-on-and-across-the-l3)).
 - **Gully Analytics**, **gap alerts** and **Gully AI** read it like any other chain.
@@ -151,10 +151,9 @@ deployment time, not a switch.
 
 ## 6. Explorer: Chain Kit
 
-- Chain Kit (our Blockscout fork) joins the chain's compose network and indexes the RPC with `CHAIN_ID`,
-  `CHAIN_TYPE=arbitrum`, `ETHEREUM_JSONRPC_VARIANT=geth`, `ETHEREUM_JSONRPC_TRACE_URL` (the node exposes `debug`).
-- Stack: Postgres, backend, frontend, Redis: "several GB of images and 1 to 2 GB of RAM" (devnet README), so its
-  own compose project and disk check.
+- Chain Kit is Gully Explorer (a static Vite/React app) reading the chain's RPC and a per-chain `gully-indexer`
+  (Ponder). It is hard-wired to Gully Chain (485590) today; per-chain config is tracked in gully-labs/gully-explorer.
+  Blockscout (and its Postgres/backend/frontend/Redis stack) is no longer planned (2026-10-28).
 - Served through gully-web on `explorer.devnet.gullylabs.xyz` (S1) and `explorer.gullylabs.xyz` (S2) the way the
   blog is forwarded (`server/blog.mjs`), never on a public host port.
 - Hyperlane messages are shown by Hyperlane's own explorer once the chain is in the registry; Chain Kit shows
@@ -269,7 +268,7 @@ Each agent is one Rust process in the agent image; the prepared compose file cap
   ([getting integrated by LI.FI](https://docs.li.fi/introduction/learn-more/getting-integrated-by-lifi)).
 
 What both will ask for, so S1 should produce it: a registered chain id, a stable public RPC and WebSocket, an
-explorer with an API (Chain Kit is Blockscout, so its API is standard), USDC and ETH on the chain with a bridge
+explorer with an API (Chain Kit is Gully Explorer: verified sources through Sourcify; an Etherscan-style API is not built yet), USDC and ETH on the chain with a bridge
 they can route over (the Warp Routes and the canonical bridge), and a DEX with liquidity (the Gully venues). Until
 either lists the L3, Gully Pay's checkout keeps LI.FI/Relay for today's chains and the L3 is reached through the
 Warp Routes and the canonical bridge.
@@ -312,7 +311,7 @@ prices as of 2026-10-17 are not quoted because they change: fill the right-hand 
 | Hyperlane validator | 1 (S0/S1); 3 (S2) | "2-Core / 2GB RAM / 4GB Storage", "typical costs around $75/mo" each | [Run validators](https://docs.hyperlane.xyz/docs/operate/validators/run-validators) |
 | Hyperlane relayer | 1 | docs give no sizing; **ours**: 2 vCPU / 4 GB / 20 GB (same class as the validator, ~$75/mo) plus a **float** of ETH on each destination (L3, Arbitrum One, Base) that the IGP refills | [Run a relayer](https://docs.hyperlane.xyz/docs/operate/relayer/run-relayer) |
 | Checkpoint store (S3-compatible bucket) | 1 | cents per month at this volume | validator docs: `s3` syncer for production |
-| Chain Kit (Blockscout: Postgres, backend, frontend, Redis) | 1 | **ours**: 2 vCPU / 4 GB / 100 GB; several GB of images | devnet README |
+| Chain Kit (Gully Explorer static site + gully-indexer) | 1 | not measured yet; the indexer is the only stateful part | gully-ops l3/indexer |
 | Faucet, RPC forwarding, Gully Pay | 0 | inside gully-web | |
 | **S1 total, docs figures only** | | **≈ $2,900–3,000 / month** (1,500 + 500 + 850 + 75) before the RPC node, Chain Kit, the relayer and the batch poster's gas | sum of the quoted rows |
 | **S2 total, docs figures only** | | **≈ $5,100–5,300 / month** (2 × 1,500 + 500 + 2 × 850 + 3 × 75) before the same unquoted rows | sum of the quoted rows |

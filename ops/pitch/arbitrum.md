@@ -12,7 +12,7 @@ products are:
 - **The gap tracker.** It prices every tokenised stock on **Robinhood Chain**, an Arbitrum Orbit chain, and on
   BNB Chain against its Chainlink fair value, every few minutes, read on chain. It is served as a free public
   API, a TypeScript SDK, an embeddable widget and Telegram and webhook gap alerts.
-- **Chain Kit.** Our branded Blockscout explorer, with an Arbitrum/Orbit chain profile.
+- **Chain Kit.** Our branded block explorer, Gully Explorer (MIT, our own), with Arbitrum/Orbit batch status.
 - **Gully Pay.** Crypto invoices and reusable pay links that settle in USDC or ETH on **Arbitrum One**,
   among other chains, checked on chain with no custodian.
 - **Gully Analytics.** Web analytics that see the wallet.
@@ -92,7 +92,7 @@ is the two-Domain-Allocator ceiling. Cut it to M1 and M2 ($25,000) for a single-
 | # | Milestone | Deliverable anyone can check | Weeks | Amount |
 |---|---|---|---|---|
 | M1 | **Arbitrum One in the gap tracker** | Stock tokens on Arbitrum One priced against Chainlink in `/api/tracker`, history and movers, with the SDK, widget and alerts updated and the methodology documented on docs.gullylabs.xyz | 4 | $10,000 |
-| M2 | **Chain Kit for Orbit, open source** | The Arbitrum/Orbit profile of our Blockscout fork (`gully-labs/blockscout`) documented as a one-command setup for any Orbit chain, with a public demo explorer | 6 | $15,000 |
+| M2 | **Chain Kit for Orbit, open source** | Gully Explorer (our own MIT explorer) made configurable per Orbit chain (chain ID, RPC, indexer, branding) and documented as a one-command setup, with a public demo explorer | 6 | $15,000 |
 | M3 | **Gully Devnet: a public Orbit L3 on Arbitrum Sepolia** | A public RPC, a Chain Kit explorer, a rate-limited faucet and the canonical token bridge, plus a runbook from `orbit-setup-script` and `orbit-monitoring-tools`; Rollup mode, ETH gas (`ops/l3/SPEC.md` §0–§8). | 8 | $15,000 |
 | M4 | **Gasless Gully Pay on Arbitrum One** | Pay links settled in USDC through an ERC-20 paymaster (ArbiFuel / Pimlico), with a public dashboard of sponsored payments | 4 | $10,000 |
 
@@ -144,7 +144,7 @@ Not public, so the owner exports them if wanted:
   - App: https://app.gullylabs.xyz
   - Analytics: https://analytics.gullylabs.xyz
   - Blog: https://blog.gullylabs.xyz
-  - GitHub: https://github.com/gully-labs (SDK: https://github.com/gully-labs/sdk; explorer: https://github.com/gully-labs/blockscout)
+  - GitHub: https://github.com/gully-labs (SDK: https://github.com/gully-labs/sdk; explorer: https://testnet-explorer.gullychain.xyz)
   - X: https://x.com/Gully_Labs
   - Telegram news: https://t.me/GullyLabsNews
   - Bot: https://t.me/GullyLabsBot
@@ -191,7 +191,7 @@ each to the form's real question and fill in anything extra it asks.
 |---|---|
 | Project name | Gully Labs |
 | Short description (≈ 100 chars) | Live stock-token gap tracker, Orbit explorers (Chain Kit) and crypto pay links on Arbitrum. |
-| Long description | Gully Labs builds and runs tooling for Arbitrum chains. The gap tracker prices every tokenised stock on Robinhood Chain against its Chainlink fair value, with a free API, SDK, widget and Telegram alerts. Chain Kit is a branded Blockscout explorer for Orbit chains. Gully Pay takes USDC and ETH on Arbitrum One through invoices and reusable pay links, verified on chain. Gully Analytics and Gully AI complete the stack. Next: Gully Devnet, a public Orbit L3 on Arbitrum Sepolia. |
+| Long description | Gully Labs builds and runs tooling for Arbitrum chains. The gap tracker prices every tokenised stock on Robinhood Chain against its Chainlink fair value, with a free API, SDK, widget and Telegram alerts. Chain Kit is a branded block explorer for Orbit chains, built on our own Gully Explorer. Gully Pay takes USDC and ETH on Arbitrum One through invoices and reusable pay links, verified on chain. Gully Analytics and Gully AI complete the stack. Next: Gully Devnet, a public Orbit L3 on Arbitrum Sepolia. |
 | Category | Infrastructure (also: Developer Tools, Analytics, Payments) |
 | Chains | Arbitrum One; Robinhood Chain (Arbitrum chain); Arbitrum Sepolia (Gully Devnet, coming soon) |
 | Website | https://gullylabs.xyz |
