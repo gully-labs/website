@@ -17,6 +17,10 @@ const ANSWERS = {
   'sentry.gullychain.xyz/api/v1/sale/stats': { deployed: true, saleMode: 'testnet', phase: 'public', totalMinted: 1, totalBurned: 0, maxSupply: 10000, available: 9999, series: [{ t: 1793153820, sold: 0 }] },
   'sentry.gullychain.xyz/api/v1/chain/health': { verdict: 'ok', summary: '3 assertion(s) match our node', l3Head: '2011', newestAssertionAgeSec: 3159, checkedAt: 1793174741 },
   // recorded from offers.gullychain.xyz/v1/stats on 2026-10-28 (trimmed to three hours)
+  // recorded from copy.gullychain.xyz/health and social.gullychain.xyz on 2026-10-28 (bodies and addresses trimmed)
+  'copy.gullychain.xyz/health': { ok: true, chainId: 485590, head: { block: 2088, timestamp: 1793192202 }, feeContract: '0xa9d429eb1b137764b0d4964e437af50989bdfea3', leaders: 6, activeCopies: 0, dryRun: false },
+  'social.gullychain.xyz/v1/posts': { items: [{ id: 'u0tTOHbUCDxF', author: '0x12fa4f1f2b90422da4d425fbcf4be50e80fd7a93', body: 'gm GullyChain', media: null, replyTo: null, createdAt: 1793057825, likes: 1, replies: 0, liked: false }], next: null },
+  'social.gullychain.xyz/v1/people': { items: [{ address: '0xad71de69f8387c307690baf419466f17b600db56', followers: 0, verified: false, early: false, points: 0, joinedAt: 1793158657 }, { address: '0x0f12f25714e994f2bc38c7af7bd6abb238f701ce', followers: 1, verified: false, early: false, points: 0, joinedAt: 1793149049 }] },
   'offers.gullychain.xyz/v1/stats': { hours: 24, series: [{ t: '2026-10-28T06:00:00.000Z', completions: 0, paid: '0.00', points: 0 }, { t: '2026-10-28T07:00:00.000Z', completions: 2, paid: '1.50', points: 40 }, { t: '2026-10-28T08:00:00.000Z', completions: 0, paid: '0.00', points: 0 }], totals: { completions: 2, paid: '1.50', players: 1 }, liveOffers: 3, placement: null },
 }
 function stub(down = []) {
@@ -55,6 +59,10 @@ test('reads every source and keeps only what the landing shows', async () => {
   assert.equal(b.offers.series[1].completions, 2)
   assert.equal(b.offers.liveOffers, 3)
   assert.ok(!('placement' in b.offers), 'only the fields the page uses')
+  assert.deepEqual(b.copy, { leaders: 6, activeCopies: 0, block: 2088, dryRun: false })
+  assert.deepEqual(b.social, { count: 1, more: false, times: [1793057825] })
+  assert.equal(b.people.count, 2)
+  assert.ok(!JSON.stringify([b.social, b.people]).includes('0x'), 'no addresses or post bodies leave the server')
 })
 
 test('a source that is down is null and named, never a zero; the last good reading is kept', async () => {
@@ -70,7 +78,7 @@ test('cached: one upstream round per 45 s', async () => {
   _resetHubLive(f)
   await Promise.all([hubLive(), hubLive(), hubLive()])
   await hubLive()
-  assert.equal(f.calls.length, 9)
+  assert.equal(f.calls.length, 12)
 })
 
 test('shape drops malformed answers', () => {
@@ -82,6 +90,10 @@ test('shape drops malformed answers', () => {
   assert.equal(shape('sentrySale', { deployed: false, totalMinted: 0 }), null, 'no contract, no figures')
   assert.equal(shape('sentryChain', { summary: 'x' }), null)
   assert.equal(shape('offers', { series: [] }), null)
+  assert.equal(shape('copy', { ok: false, leaders: 3 }), null)
+  assert.equal(shape('copy', { ok: true, leaders: 'x' }), null)
+  assert.equal(shape('social', { items: 'x' }), null)
+  assert.equal(shape('people', { items: Array(50).fill({ joinedAt: 1 }) }).more, true)
   assert.equal(shape('offers', { series: [], totals: { paid: 'lots' } }).totals.paid, null)
   assert.equal(shape('feed', { items: [{ id: 1, kind: 'trade', block: 2, timestamp: 3, txHash: 'not-a-hash' }] }).items[0].txHash, null)
 })

@@ -3,7 +3,7 @@
    server/seo.mjs restates each product's title and description (PRODUCT_PAGES) for crawlers; keep the two in step. */
 
 export type Group = 'chain' | 'labs'
-export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'deepcore' | 'gully-sentry'
+export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'gully-social' | 'copy-trading' | 'deepcore' | 'gully-sentry'
 
 /** A logo straight from a product's kit (web copies in public/brand/web/logos or the kit SVG), or, for a product with
     no kit of its own, the Gully Chain (or Gully Labs) kit mark with the product's name beside it. */
@@ -260,6 +260,7 @@ export const PRODUCTS: ProductDef[] = [
       { t: 'Hosted checkout', d: 'Pay links and invoices; payments go straight to the merchant wallet.' },
       { t: 'Merchant OS', d: 'Stores, webhooks per step (paid, confirmed, settled) and receipts.' },
       { t: 'Gateway for every Gully product', d: 'Every Gully product bills through Gully Pay.' },
+      { t: 'glUSD yield vault', d: 'Merchants can opt in to earn on idle glUSD in GullyTreasuryVault (ERC-4626) on Gully Chain testnet, with instant or queued withdrawals. The testnet yield is simulated.' },
     ],
     how: [
       ['Open a store', 'Sign up and name your store; payouts go to your own wallet.'],
@@ -269,6 +270,7 @@ export const PRODUCTS: ProductDef[] = [
     faq: [
       ['How many payments has Gully Pay processed?', 'None yet. Sign-up is open; this page shows the live networks and uptime instead of volume.'],
       ['Is it custodial?', 'No. Funds settle to the merchant wallet.'],
+      ['Does glUSD earn yield?', 'On Gully Chain testnet, merchants can opt in to the glUSD yield vault on gullypay.xyz; the yield there is a testnet simulation. Mainnet yield waits on legal review.'],
     ],
     pricing: 'on-site',
   },
@@ -487,6 +489,71 @@ export const PRODUCTS: ProductDef[] = [
       ['Which contracts run it?', 'OfferwallManager 0xD6a8c4151a7ED9865a540D20BDD42073DC9c74Bf on Gully Chain testnet 485590, built on the Gully Quests QuestRegistry 0xE3E57e15A9973281A8de2B3bedd512BE8C3813Bb.'],
       ['Is it on mainnet?', 'Not yet. Gully Offerwall is live on Gully Chain testnet 485590; Gully Pay checkout for advertisers is rolling out.'],
       ['Can our game or site show it?', 'Yes. Any site can embed the wall (iframe or offerwall.js) and earn a share of completions.'],
+    ],
+    pricing: 'free-testnet',
+  },
+  {
+    slug: 'gully-social',
+    name: 'Gully Social',
+    group: 'chain',
+    line: 'The social layer of Gully Chain: posts, follows, replies and profiles tied to your wallet and .gully name, in the Gully Street app.',
+    short: 'Posts and follows tied to your wallet.',
+    logo: { kind: 'mark', mark: 'chain', label: 'Gully Social' },
+    url: STREET,
+    urlLabel: 'app.gullychain.xyz',
+    docs: 'https://docs.gullychain.xyz',
+    hub: ['social-api', 'social', 'street'],
+    og: '/brand/web/og/gully-chain.jpg',
+    category: 'SocialNetworkingApplication',
+    features: [
+      { t: 'Your profile is your wallet', d: 'Posts, followers and points belong to your Gully Chain address and show your .gully name.' },
+      { t: 'Posts, replies and likes', d: 'Write in the Home feed beside launches, trades and swaps read live from the indexer.' },
+      { t: 'Follows and People', d: 'Follow traders and builders; Explore lists the newest, most followed and verified accounts.' },
+      { t: 'Device keys, no pop-ups', d: 'Each browser signs with its own device key, authorised once by your wallet or passkey account.' },
+      { t: 'Get verified', d: 'A verified badge for your X handle, paid in ETH, glUSD or USDC.e on Gully Chain testnet and attested on chain.' },
+      { t: 'Invites and share cards', d: 'Invite codes earn points; every profile, trade and quest has a share card with live figures.' },
+    ],
+    how: [
+      ['Sign in with a passkey', 'Open app.gullychain.xyz; your wallet is your account.'],
+      ['Claim a .gully name', 'Your name shows on every post, reply and follow.'],
+      ['Post and follow', 'Write from Home and follow people from Explore or any profile.'],
+    ],
+    faq: [
+      ['Where is Gully Social?', 'Inside the Gully Street app at app.gullychain.xyz: the Home feed, Explore and your profile.'],
+      ['Who owns my posts?', 'They are tied to your wallet address; nobody else can post as you without a key you authorised.'],
+      ['Which network does it use?', 'Gully Chain testnet, chain 485590.'],
+    ],
+    pricing: 'free-testnet',
+  },
+  {
+    slug: 'copy-trading',
+    name: 'Copy Trading',
+    group: 'chain',
+    line: 'Follow a Gully Chain trader and mirror their trades from your own passkey wallet, with your own limits and an on-chain fee capped at 1%.',
+    short: 'Mirror a trader with your own limits.',
+    logo: { kind: 'mark', mark: 'chain', label: 'Copy Trading' },
+    url: `${STREET}/copy`,
+    urlLabel: 'app.gullychain.xyz/copy',
+    docs: 'https://docs.gullychain.xyz',
+    hub: ['copy', 'street'],
+    og: '/brand/web/og/gully-chain.jpg',
+    category: 'FinanceApplication',
+    features: [
+      { t: 'Leaderboard from the chain', d: 'Every leader’s trades, volume, realised PnL and followers come from indexed Gully Chain trades.' },
+      { t: 'Your own limits', d: 'A fixed size or a share of the leader’s trade, a per-trade and a daily cap, slippage, a stop, and only-these or never-these tokens. Stop at any time.' },
+      { t: 'Your wallet, a session key', d: 'Copies run from one of your passkey wallets through a scoped session key, never a custodial balance.' },
+      { t: 'Fees on chain', d: 'GullyCopyFees takes the copy fee (0.5% default, 1% hard cap) and pays the leader’s share on chain.' },
+      { t: 'Lead and earn', d: 'Traders who are copied see their followers and fees earned on their leader page (/me/leader).' },
+    ],
+    how: [
+      ['Pick a leader', 'Open Copy trading in the Gully Street app and compare leaders.'],
+      ['Set your limits', 'Choose a wallet, the size per trade and the per-trade and daily caps.'],
+      ['Copy runs on chain', 'The engine mirrors each new trade within your limits; your copies list every fill.'],
+    ],
+    faq: [
+      ['Where is it?', 'In the Gully Street app: app.gullychain.xyz/copy lists the leaders, /me/copies your copies and /me/leader your own leader stats.'],
+      ['Is it custodial?', 'No. Trades run from your own wallet through a session key you can revoke.'],
+      ['Which network does it use?', 'Gully Chain testnet, chain 485590.'],
     ],
     pricing: 'free-testnet',
   },

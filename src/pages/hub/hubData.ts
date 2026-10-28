@@ -31,6 +31,8 @@ export interface HubProduct {
   live: string[]
   next: string[]
   links: [string, string][]
+  /** more of this site's product pages that belong to it: [label, /products/<slug>] */
+  pages?: [string, string][]
 }
 
 export const LAYERS: { key: LayerKey; n: string; name: string }[] = [
@@ -58,18 +60,19 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'pay.png',
     line: 'Checkout, payment links and x402 for merchants and AI agents.',
     about: 'Accept cards, Apple Pay and USDC on Base, Ethereum, BNB Chain, Solana and Gully Chain, and let AI agents pay your API over x402. glUSD is its stablecoin, on Gully Chain testnet.',
-    live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'glUSD on Gully Chain testnet', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)'],
+    live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'glUSD on Gully Chain testnet', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)', 'glUSD yield vault: earn on idle glUSD (testnet, simulated yield)'],
     next: ['Agent Wallets', 'One-tap passkey checkout', 'Pay with any token', 'Splits and escrow', 'Tap to pay', 'Non-custodial wallet', 'iOS and Android apps'],
-    links: [['Docs', 'https://gullypay.xyz/docs'], ['Merchant setup', 'https://gullypay.xyz/setup']],
+    links: [['Docs', 'https://gullypay.xyz/docs'], ['Merchant setup', 'https://gullypay.xyz/setup'], ['glUSD yield', 'https://gullypay.xyz']],
   },
   {
     key: 'chain', name: 'Gully Chain', domain: 'gullychain.xyz', url: 'https://gullychain.xyz', page: 'chain', layer: 'chain', status: 'testnet', color: '#00B2FA',
     icon: I + 'chain.png',
     line: 'The social L3 where your profile is your wallet.',
     about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
-    live: ['Gully Street app and social feed', 'Quests with on-chain rewards', 'DeepCore launchpad and swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.gullychain.xyz)'],
+    live: ['Gully Street app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'DeepCore launchpad and swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.gullychain.xyz)'],
     next: ['Mainnet'],
-    links: [['App', 'https://app.gullychain.xyz'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz'], ['Offerwall', 'https://offers.gullychain.xyz/']],
+    links: [['App', 'https://app.gullychain.xyz'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz'], ['Offerwall', 'https://offers.gullychain.xyz/'], ['Social', 'https://app.gullychain.xyz'], ['Copy trading', 'https://app.gullychain.xyz/copy']],
+    pages: [['Gully Social', 'gully-social'], ['Copy Trading', 'copy-trading'], ['Gully Offerwall', 'offerwall'], ['Gully Quests', 'quests'], ['Gully Street', 'street']],
   },
   {
     key: 'rpc', name: 'Gully RPC', domain: 'gullyrpc.xyz', url: 'https://gullyrpc.xyz', page: 'rpc', layer: 'chain', status: 'beta', color: '#FF7300',
@@ -154,6 +157,7 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
 
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
+  { d: '2026-10-28', p: 'pay', t: 'glUSD yield vault: merchants opt in to earn on idle glUSD (Gully Chain testnet, simulated yield)', s: 'testnet', href: 'https://gullypay.xyz' },
   { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn glUSD or points, publishers embed the wall', s: 'testnet', href: 'https://offers.gullychain.xyz/' },
   { d: '2026-10-28', p: 'chain', t: 'Gully Sentry: free testnet Sentry Keys and watchers', s: 'testnet', href: 'https://sentry.gullychain.xyz/' },
   { d: '2026-10-27', p: 'id', t: 'Gully ID moves to gullyid.xyz, with a developer console', s: 'live', href: 'https://gullyid.xyz/developers' },
@@ -195,6 +199,11 @@ export interface HubLive {
     totals: { completions: number | null; paid: number | null; players: number | null }
     liveOffers: number | null
   } | null
+  /** Gully Chain copy-trading engine health (copy.gullychain.xyz/health) */
+  copy?: { leaders: number | null; activeCopies: number | null; block: number | null; dryRun: boolean } | null
+  /** Gully Social: the newest page of posts (30) and of new accounts (50), counts and unix times only */
+  social?: { count: number; more: boolean; times: number[] } | null
+  people?: { count: number; more: boolean; times: number[] } | null
   /** Gully Sentry (sentry.gullychain.xyz), read server-side: the browser is refused by its CORS. Older servers omit these. */
   sentryNet?: { at: number; epoch: number | null; activeKeys: number | null; operators: number | null; heartbeats24h: number; series: { t: number; keys: number }[] } | null
   sentrySale?: { saleMode: string; totalMinted: number | null; totalBurned: number | null; maxSupply: number | null; available: number | null } | null
@@ -228,7 +237,7 @@ export interface Reading {
 export const SERVICE_KEYS: Record<ProductKey, string[]> = {
   id: ['gully-id'],
   pay: ['pay', 'x402', 'pay-admin'],
-  chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'safe', 'copy', 'docs', 'devportal', 'sentry', 'offerwall'],
+  chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'safe', 'copy', 'social-api', 'docs', 'devportal', 'sentry', 'offerwall'],
   rpc: ['rpc-site', 'rpc-app', 'rpc-gateway'],
   holdermaps: ['holders'],
   security: ['security'],
@@ -288,6 +297,8 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     } else r.why = wait ? 'Loading…' : 'Gully Pay status unreadable right now'
     r.series = { name: 'gullypay.xyz response time', unit: 'ms', kind: 'line', rows: latency(hub, 'pay') }
     if (hub?.x402) r.extra.push(['x402 networks', hub.x402.networks.length], ['x402 assets', hub.x402.assets.join(' · ')])
+    // no public figure for the vault yet (its numbers sit behind the merchant API), so a plain line, not a number
+    r.extra.push(['glUSD yield vault', 'Testnet · opt-in'])
   } else if (key === 'chain') {
     r.source = 'indexer.gullychain.xyz + /api/hub/products'
     const head = num(live?.head?.block) ?? num(hub?.chain?.head)
@@ -295,6 +306,7 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     else r.why = wait || !hub ? 'Loading…' : 'Indexer unreadable right now'
     if (prod?.chain) r.series = { name: 'Gully Chain transactions per hour (UTC)', unit: 'txs', kind: 'bars', rows: prod.chain.hourly.map((h) => ({ v: h.txs ?? 0, x: hh(h.t) })) }
     if (hub?.quests) r.extra.push(['Quest completions, 24 h', hub.quests.completions24h], ['Active quests', hub.quests.active])
+    if (live?.copy) r.extra.push(['Copy trading leaders · active copies', `${fmtNum(live.copy.leaders)} · ${fmtNum(live.copy.activeCopies)}`])
     if (prod?.activity) {
       const a = prod.activity.hourly.reduce((s, h) => ({ l: s.l + (h.launches ?? 0), t: s.t + (h.trades ?? 0), w: s.w + (h.swaps ?? 0) }), { l: 0, t: 0, w: 0 })
       r.extra.push(['Launches · trades · swaps, 24 h', `${a.l} · ${a.t} · ${a.w}`])

@@ -16,6 +16,10 @@
 //   Gully Sentry sends no CORS header for gullylabs.xyz, so it is read here too.
 //     offers Gully Offerwall public stats (offers.gullychain.xyz/v1/stats: completions, glUSD paid and points per hour,
 //            last 24 h; totals and live offers), for /products/offerwall
+//     copy   Gully Chain copy-trading engine health (copy.gullychain.xyz/health: leaders indexed, active copies,
+//            engine head block), for /products/copy-trading and the Gully Chain card
+//     social Gully Social newest posts (social.gullychain.xyz/v1/posts, first page of 30: count and post times)
+//     people Gully Social newest accounts (social.gullychain.xyz/v1/people?sort=new, up to 50: count and join times)
 //
 // Nothing is invented: a source that cannot be read is null (and named in `unread`), never a zero.
 
@@ -33,6 +37,9 @@ const SOURCES = {
   sentrySale: () => `${env('GULLY_SENTRY_URL', 'https://sentry.gullychain.xyz')}/api/v1/sale/stats`,
   sentryChain: () => `${env('GULLY_SENTRY_URL', 'https://sentry.gullychain.xyz')}/api/v1/chain/health`,
   offers: () => `${env('GULLY_OFFERWALL_URL', 'https://offers.gullychain.xyz')}/v1/stats`,
+  copy: () => `${env('GULLY_COPY_ENGINE_URL', 'https://copy.gullychain.xyz')}/health`,
+  social: () => `${env('GULLY_SOCIAL_URL', 'https://social.gullychain.xyz')}/v1/posts`,
+  people: () => `${env('GULLY_SOCIAL_URL', 'https://social.gullychain.xyz')}/v1/people?sort=new&limit=50`,
 }
 /** Gully Sentry's heartbeat slot (10 minutes) and the window it reports (24 h). */
 const SLOT = 600
@@ -124,6 +131,21 @@ export function shape(key, j) {
       totals: { completions: n(j.totals.completions), paid: usd(j.totals.paid), players: n(j.totals.players) },
       liveOffers: n(j.liveOffers),
     }
+  }
+  if (key === 'copy') {
+    if (j.ok !== true || n(j.leaders) == null) return null
+    return { leaders: n(j.leaders), activeCopies: n(j.activeCopies), block: n(j.head?.block), dryRun: j.dryRun === true }
+  }
+  // Gully Social pages: only counts and unix times leave this server (no bodies, no addresses).
+  if (key === 'social') {
+    if (!Array.isArray(j.items)) return null
+    const times = j.items.map((x) => n(x?.createdAt)).filter((t) => t != null)
+    return { count: j.items.length, more: j.next != null, times }
+  }
+  if (key === 'people') {
+    if (!Array.isArray(j.items)) return null
+    const times = j.items.map((x) => n(x?.joinedAt)).filter((t) => t != null)
+    return { count: j.items.length, more: j.items.length >= 50, times }
   }
   return null
 }
