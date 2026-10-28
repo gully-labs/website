@@ -1,0 +1,118 @@
+{
+ "$comment": "SINGLE SOURCE OF TRUTH for what is live vs coming-soon across ALL Gully RPC surfaces (landing, portal, status page, docs). Edit this file to flip a surface as reality changes; never hardcode live/coming-soon claims anywhere else. status enum: live | syncing | coming-soon | beta. As of 2026-10-26: open beta (sign-up open to everyone); 5 chains served through a partner RPC network, own nodes in progress.",
+ "updated": "2026-10-25",
+ "brand": {
+  "name": "Gully RPC",
+  "os": "Gully RPC",
+  "tagline": "Multi-chain RPC with API keys and usage, in terminal form.",
+  "gatewayHost": "rpc.gullyrpc.xyz",
+  "appHost": "app.gullyrpc.xyz"
+ },
+ "portal": {
+  "status": "beta",
+  "note": "Open beta: anyone can sign up, free tier included. API keys and live usage are self-serve."
+ },
+ "features": [
+  {
+   "key": "keys",
+   "name": "API keys",
+   "status": "live",
+   "note": "Issue, rotate, revoke; wired to the gateway key store."
+  },
+  {
+   "key": "usage",
+   "name": "Usage metering",
+   "status": "beta",
+   "note": "Per-key request counts, aggregated hourly."
+  },
+  {
+   "key": "archive",
+   "name": "Archive + trace",
+   "status": "coming-soon",
+   "note": "Archive + trace_*/debug_* arrive with Gully's own archive nodes."
+  },
+  {
+   "key": "billing",
+   "name": "Billing",
+   "status": "coming-soon",
+   "note": "Billing through Gully Pay. Every account starts on the free tier."
+  }
+ ],
+ "chains": [
+  {
+   "name": "Gully Chain Testnet",
+   "chainId": 485590,
+   "kind": "L3 (Orbit)",
+   "status": "beta",
+   "note": "Gully Labs' own chain, served from Gully nodes."
+  },
+  {
+   "name": "Ethereum",
+   "chainId": 1,
+   "kind": "L1",
+   "status": "beta",
+   "note": "Served through a partner RPC network while Gully nodes are built; same API, same key."
+  },
+  {
+   "name": "Base",
+   "chainId": 8453,
+   "kind": "L2 (OP)",
+   "status": "beta",
+   "note": "Served through a partner RPC network while Gully nodes are built; same API, same key."
+  },
+  {
+   "name": "BNB Chain",
+   "chainId": 56,
+   "kind": "L1",
+   "status": "beta",
+   "note": "Served through a partner RPC network while Gully nodes are built; same API, same key."
+  },
+  {
+   "name": "Arbitrum One",
+   "chainId": 42161,
+   "kind": "L2",
+   "status": "beta",
+   "note": "Served through a partner RPC network while Gully nodes are built; same API, same key."
+  },
+  {
+   "name": "Robinhood",
+   "chainId": 4663,
+   "kind": "L2",
+   "status": "beta",
+   "note": "Served through a partner RPC network while Gully nodes are built; same API, same key."
+  },
+  {
+   "name": "HyperEVM",
+   "chainId": 999,
+   "kind": "L1",
+   "status": "coming-soon",
+   "note": "Planned."
+  },
+  {
+   "name": "X Layer",
+   "chainId": 196,
+   "kind": "L2",
+   "status": "coming-soon",
+   "note": "Planned."
+  },
+  {
+   "name": "Ink",
+   "chainId": 57073,
+   "kind": "L2 (OP)",
+   "status": "coming-soon",
+   "note": "Planned."
+  },
+  {
+   "name": "Unichain",
+   "chainId": 130,
+   "kind": "L2 (OP)",
+   "status": "coming-soon",
+   "note": "Planned."
+  }
+ ],
+ "counts": {
+  "$comment": "Derive display counts from the arrays above; do not hardcode. As of updated date: 1 chain live (Ethereum), 6 total scope.",
+  "chainsLive": 1,
+  "chainsPlanned": 6
+ }
+}

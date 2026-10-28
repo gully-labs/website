@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gully Labs hub: pick a direction</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/shared/favicon-32.png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root { --bg: #06050D; --night: #0C0B16; --line: #1B1F33; --text: #EEF1F4; --muted: #8D96A3; --accent: #00D2FF; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 400 15px/1.5 Poppins, system-ui, sans-serif; overflow-x: clip; }
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font: 700 18px/1.2 Poppins, sans-serif; display: flex; gap: 12px; align-items: center; }
+  h1 img { height: 20px; } h1 b { color: var(--accent); font-weight: 600; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .seg button { all: unset; cursor: pointer; padding: 8px 14px; font: 500 12px/1 'JetBrains Mono', monospace; color: var(--muted); }
+  .seg button[aria-pressed=true] { background: var(--accent); color: var(--bg); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  main { display: grid; gap: 20px; padding: 20px 24px 32px; grid-template-columns: 1fr; }
+  @media (min-width: 1100px) { main { grid-template-columns: 1fr 1fr; } }
+  section { border: 1px solid var(--line); border-radius: 4px; background: var(--night); overflow: hidden; min-width: 0; }
+  .head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+  .head .t { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+  .head h2 { margin: 0; font: 700 18px/1.2 Poppins, sans-serif; }
+  .head h2 span { font: 500 12px/1 'JetBrains Mono', monospace; color: var(--accent); margin-right: 8px; }
+  .head p { margin: 0; color: var(--muted); font-size: 13px; }
+  .head ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+  .head a { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 600; }
+  .frame { position: relative; overflow: hidden; height: var(--h); }
+  .frame iframe { position: absolute; left: 0; top: 0; border: 0; width: var(--w); height: calc(var(--h) / var(--s)); transform: scale(var(--s)); transform-origin: 0 0; background: #fff; }
+  .phone .frame { display: flex; justify-content: center; background: #000; }
+  .phone .frame iframe { position: relative; transform: none; width: 375px; height: 100%; }
+  .og { display: block; width: 100%; height: auto; border-top: 1px solid var(--line); }
+  footer { padding: 0 24px 28px; color: var(--muted); font-size: 13px; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text); }
+</style>
+</head>
+<body>
+<header>
+  <h1><img src="/shared/logos/labs-wordmark.png" alt="Gully Labs" width="1171" height="116"> gullylabs.xyz hub <b>· pick a direction</b></h1>
+  <div class="seg" role="group" aria-label="Preview width"><button aria-pressed="true" data-v="desk">Desktop 1440</button><button aria-pressed="false" data-v="phone">Phone 375</button></div>
+</header>
+<main id="m">
+  <section>
+    <div class="head">
+      <div class="t"><h2><span>A</span>Constellation</h2><a href="http://localhost:5261/" target="_blank" rel="noopener">Open A full size</a></div>
+      <p>Gully Terminal, dark, square 4 px. The eight products as a live map around Gully Chain: every link is a real integration (solid = live, dashed = flagged or planned), every node shows a live reading, click any product for its drawer (live chart, uptime, live vs building, links).</p>
+      <ul><li>Hero flow chips light the path “Sign in with Gully ID → pay with Gully Pay → built on Gully Chain” on the map.</li><li>Below: one tabbed board (Live board, What's new, All products, Work with us, Contact).</li></ul>
+    </div>
+    <div class="frame" data-site="http://localhost:5261/"></div>
+    <img class="og" src="http://localhost:5261/og.png" alt="Direction A OG image, 1200 by 630">
+  </section>
+  <section>
+    <div class="head">
+      <div class="t"><h2><span>B</span>The Gully stack</h2><a href="http://localhost:5262/" target="_blank" rel="noopener">Open B full size</a></div>
+      <p>Editorial and light: a deliberate departure from Terminal (paper ground, 16 px cards, pill buttons) that stays on the kit colours and fonts. A bold “The Gully stack.” headline over an isometric five-layer stack, a live journey stepper (Sign in → Pay → Settle → See → Play), then a live bento board and product rows with mini charts.</p>
+      <ul><li>Each journey step carries a live number and filters the product rows to its layer.</li><li>Same tabs: Live stack, Products, What's new, Work with us, Contact.</li></ul>
+    </div>
+    <div class="frame" data-site="http://localhost:5262/"></div>
+    <img class="og" src="http://localhost:5262/og.png" alt="Direction B OG image, 1200 by 630">
+  </section>
+</main>
+<footer>Both pages read the same live sources through <code>/live/*</code> on their own port (gullylabs.xyz/api/hub, /api/hub/products, /api/stats, gullyid.xyz/v1/stats/public, gullypay.xyz/api/status + /x402/status, gullyrpc.xyz/status.json, indexer.gullychain.xyz). The contact form answers in preview mode unless the server runs with <code>CONTACT_LIVE=1</code>.</footer>
+<script>
+  var frames = document.querySelectorAll('.frame'), mode = 'desk'
+  function build() {
+    frames.forEach(function (f) {
+      f.innerHTML = ''; var i = document.createElement('iframe'); i.src = f.dataset.site; i.title = 'Preview ' + f.dataset.site; i.loading = 'lazy'
+      var w = f.clientWidth
+      if (mode === 'desk') { var s = w / 1440; f.style.setProperty('--w', '1440px'); f.style.setProperty('--s', s); f.style.setProperty('--h', Math.round(1400 * s) + 'px') }
+      else { f.style.setProperty('--h', '760px') }
+      f.closest('section').classList.toggle('phone', mode === 'phone'); f.appendChild(i)
+    })
+  }
+  document.querySelectorAll('.seg button').forEach(function (b) { b.onclick = function () { mode = b.dataset.v; document.querySelectorAll('.seg button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)) }); build() } })
+  var t; addEventListener('resize', function () { clearTimeout(t); t = setTimeout(build, 200) }); build()
+</script>
+</body>
+</html>

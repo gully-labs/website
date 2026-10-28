@@ -1,0 +1,114 @@
+/*!
+ * Gully Terminal design system: tokens. gully-labs/gully-ops design/terminal/tokens.css (spec: README.md next to it).
+ * One neutral near-black system, one accent per product taken from that product's brand kit
+ * (Desktop\GULLY LABS GRAPHICS\<product>). Pick the product with data-product on <html> (or any wrapper):
+ *   <html data-product="chain">   chain | labs | pay | rpc | ai | security | studio | holdermaps
+ * Every component in components.css and every chart in chart-kit.js reads only these variables.
+ */
+:root {
+  /* ---- neutrals (shared by every product; the ground comes from the product kit below) ---- */
+  --t-bg: #07090C;
+  --t-surface: color-mix(in srgb, var(--t-bg), #fff 3%);
+  --t-surface-2: color-mix(in srgb, var(--t-bg), #fff 6%);
+  --t-line: rgba(255, 255, 255, .09);        /* 1 px rules, table rows, panel borders */
+  --t-line-strong: rgba(255, 255, 255, .16); /* hover, focus-within, axis */
+  --t-grid: rgba(255, 255, 255, .05);        /* chart gridlines, the grid motif */
+  --t-text: #EEF1F4;
+  --t-muted: #8D96A3;
+  --t-faint: #5D6672;
+
+  /* ---- semantic ---- */
+  --t-up: #3DDC84;
+  --t-down: #FF6B6B;
+  --t-warn: #F5B83D;
+  --t-idle: #5D6672;
+
+  /* ---- product accent (overridden per product below) ---- */
+  --t-accent: #00B2FA;
+  --t-accent-2: #46FB04;
+  --t-on-accent: #05080D;                    /* text on an accent fill */
+  --t-accent-soft: color-mix(in srgb, var(--t-accent) 14%, transparent);
+  --t-accent-line: color-mix(in srgb, var(--t-accent) 45%, transparent);
+
+  /* ---- chart series (accent first, then neutral steps; never a rainbow) ---- */
+  --t-s1: var(--t-accent);
+  --t-s2: var(--t-accent-2);
+  --t-s3: #8D96A3;
+  --t-s4: #C9D1DA;
+  --t-s5: #4F5965;
+
+  /* ---- type ---- */
+  --t-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; /* product kit font set below */
+  --t-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --t-fs-2xs: 11px;  /* small caps labels */
+  --t-fs-xs: 12px;
+  --t-fs-sm: 13px;
+  --t-fs-base: 15px;
+  --t-fs-md: 17px;
+  --t-fs-lg: 20px;
+  --t-fs-xl: clamp(22px, 2.2vw, 28px);   /* h2 */
+  --t-fs-2xl: clamp(30px, 3.4vw, 40px);  /* KPI value, section display */
+  --t-fs-3xl: clamp(34px, 4.6vw, 58px);  /* h1 */
+  --t-lh: 1.55;
+  --t-track-label: .12em;
+
+  /* ---- 8 px grid ---- */
+  --t-1: 4px;  --t-2: 8px;  --t-3: 12px; --t-4: 16px; --t-5: 24px;
+  --t-6: 32px; --t-7: 40px; --t-8: 48px; --t-9: 64px; --t-10: 80px;
+  --t-gutter: 16px;                          /* page side gutter; 32 px from 900 px up */
+  --t-maxw: 1280px;
+  --t-topbar-h: 56px;
+
+  /* ---- shape and motion ---- */
+  --t-r: 4px;      /* buttons, inputs, panels */
+  --t-r-sm: 2px;   /* bars, tags */
+  --t-r-pill: 999px; /* status pills only */
+  --t-ease: cubic-bezier(.2, .8, .2, 1);
+  --t-dur: 180ms;
+  --t-dur-chart: 900ms;
+  color-scheme: dark;
+}
+@media (min-width: 900px) { :root { --t-gutter: 32px; } }
+
+/* ---- products (primary colour, ground and font from each brand kit's CLAUDE_INTEGRATION_PROMPT.md / tokens.json) ---- */
+[data-product="chain"] {      /* Gully Chain kit v3: tokens.json */
+  --t-bg: #05080D; --t-accent: #00B2FA; --t-accent-2: #46FB04; --t-on-accent: #05080D;
+  --t-font-sans: "Exo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-product="labs"] {       /* Gully Labs: --gl-* */
+  --t-bg: #06050D; --t-accent: #00D2FF; --t-accent-2: #7B3BFF; --t-on-accent: #06050D;
+  --t-font-sans: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-product="pay"] {        /* Gully Pay: --gp-* */
+  --t-bg: #09131F; --t-accent: #3479FD; --t-accent-2: #16B2FE; --t-on-accent: #FFFFFF;
+  --t-font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-product="rpc"] {        /* GullyRPC: --gully-orange */
+  --t-bg: #0B0907; --t-accent: #FF7300; --t-accent-2: #C9BFB6; --t-on-accent: #0B0907;
+  --t-font-sans: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-product="ai"] {         /* GullyAI: --gully-cyan */
+  --t-bg: #03070B; --t-accent: #00F0F2; --t-accent-2: #1A98FF; --t-on-accent: #03070B;
+  --t-font-sans: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-product="security"] {   /* GullySecurity: --gs-gold */
+  --t-bg: #0C0D0D; --t-accent: #F2B232; --t-accent-2: #C9CACC; --t-on-accent: #16161A;
+  --t-font-sans: "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-product="studio"] {     /* GullyStudio: --gs-blue */
+  --t-bg: #06121F; --t-accent: #1E8BFF; --t-accent-2: #19D3FF; --t-on-accent: #FFFFFF;
+  --t-font-sans: "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-product="holdermaps"] { /* HolderMaps: --hm-yellow */
+  --t-bg: #0A0A0A; --t-accent: #FFD52E; --t-accent-2: #FDB813; --t-on-accent: #0A0A0A;
+  --t-font-sans: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+/* re-derive the mixes under each product (custom properties resolve where they are declared) */
+[data-product] {
+  --t-surface: color-mix(in srgb, var(--t-bg), #fff 3%);
+  --t-surface-2: color-mix(in srgb, var(--t-bg), #fff 6%);
+  --t-accent-soft: color-mix(in srgb, var(--t-accent) 14%, transparent);
+  --t-accent-line: color-mix(in srgb, var(--t-accent) 45%, transparent);
+  --t-s1: var(--t-accent);
+  --t-s2: var(--t-accent-2);
+}

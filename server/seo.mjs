@@ -28,8 +28,17 @@ const PROJECTS = {
 
 /** The Gully Labs kit's share image (brand-kit social/og-image-1200x630.png), absolute (owner OG rule, 2026-10-25). */
 const KIT_OG = 'https://gullylabs.xyz/brand/social/og-image-1200x630.png'
+/** The landing's own share image ("Constellation", 2026-10-27): the eight products around the Gully Labs mark. */
+const HUB_OG = 'https://gullylabs.xyz/og/hub-constellation-1200x630.png'
+/** The landing's product list for crawlers (src/pages/hub/hubData.ts HUB_PRODUCTS, in story order). */
+const HUB_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Gully Labs products',
+  itemListElement: [['Gully ID', 'https://gullyid.xyz'], ['Gully Pay', 'https://gullypay.xyz'], ['Gully Chain', 'https://gullychain.xyz'], ['Gully RPC', 'https://gullyrpc.xyz'], ['HolderMaps', 'https://holdermaps.xyz'], ['Gully Security', 'https://gullysecurity.xyz'], ['Gully Studio', 'https://gullystudio.xyz'], ['Gully AI', 'https://gullyai.xyz']].map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, url })),
+}
 const MAIN = {
-  '/': ['You Think It, We Ship It. · Gully Labs', 'Gully Labs is a web3 product studio and development services company. We run Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI and Gully Studio, and we build chains, contracts, apps, payments, infra and games for other teams. Every figure is read live.'],
+  '/': ['Gully Labs · Eight connected products: identity, payments, chain, data, games', 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'],
   '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and the DeepCore launchpad. Each supports Gully Chain.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
   // The chain list is filled in per request from what checkout offers now (pricingDescription below).
@@ -57,6 +66,7 @@ for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${s
 // The product pages (src/pages/products, landing v3; copy restated from src/terminal/catalog.ts): [name, one line,
 // kit OG image under public/brand/web/og, schema.org applicationCategory]. Each product also lives on its own domain.
 export const PRODUCT_PAGES = {
+  'gully-id': ['Gully ID', 'Passwordless sign-in for any app: passkeys, wallets and email over OpenID Connect, with per-app consent.', 'gully-labs', 'SecurityApplication'],
   chain: ['Gully Chain', 'An Arbitrum Orbit L3 for launches and trading, with DeepCore built in as its launchpad.', 'gully-chain', 'BlockchainNetwork'],
   street: ['Gully Street', 'The Gully Chain app: a social feed, five wallets per passkey, copy trading, Quests and the launchpad.', 'gully-chain', 'FinanceApplication'],
   bridge: ['Gully Bridge', 'Move ETH between Arbitrum Sepolia and Gully Chain: a Hyperlane fast lane (gETH) and the canonical bridge.', 'gully-chain', 'FinanceApplication'],
@@ -75,7 +85,7 @@ for (const [key, [name, text]] of Object.entries(PRODUCT_PAGES)) MAIN[`/products
 
 /** A product page's share image (its kit OG) and JSON-LD (SoftwareApplication, or the chain as a Product). */
 function productExtras(p) {
-  const m = /^\/products\/([a-z]+)$/.exec(p)
+  const m = /^\/products\/([a-z-]+)$/.exec(p)
   const d = m && PRODUCT_PAGES[m[1]]
   if (!d) return null
   const url = `${SITE}${p}`
@@ -401,7 +411,7 @@ export function pageMeta(host, pathname) {
   const prod = productExtras(p)
   const links = p === '/' || p === '/products' ? [...Object.entries(PRODUCT_PAGES).map(([k, d]) => [`/products/${k}`, d[0]]), ...(p === '/' ? [['/products', 'All products'], ['/services', 'Services'], ['/tracker', 'Stock token tracker'], ['/about', 'About']] : [])] : null
   return {
-    links, title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: prod ? prod.image : p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : KIT_OG, ld: prod ? prod.ld : p === '/' ? [ORG, APP_LD] : p === '/services' ? [ORG, SERVICES_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
+    links, title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: prod ? prod.image : p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : p === '/' ? HUB_OG : KIT_OG, ld: prod ? prod.ld : p === '/' ? [ORG, APP_LD, HUB_LD] : p === '/services' ? [ORG, SERVICES_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
 }
 
 /** A report's subject in a title: the contract or the repository. */

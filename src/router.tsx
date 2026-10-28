@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
-import { Home } from './pages/Home'
+import { Constellation } from './pages/hub/Constellation'
 import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, DevelopersRoute, EmbedHoldersRoute, HmLandingRoute, HmNotFoundRoute, HoldersDeepRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, SecuritySampleRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
@@ -51,7 +51,7 @@ const mainRoutes = [
   {
     element: <Layout />,
     children: [
-      { path: '/', element: <Home /> },
+      { path: '/', element: <Constellation /> },
       { path: '/projects/:slug', element: <ProjectDetailRoute /> },
       { path: '/services', element: <ServicesRoute /> },
       { path: '/about', element: <AboutRoute /> },

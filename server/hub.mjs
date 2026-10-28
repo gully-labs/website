@@ -49,6 +49,7 @@ export const SURFACES = [
   { key: 'social', group: 'chain', name: 'Gully Street feed', url: 'https://app.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/feed?limit=1' },
   { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://copy.gullychain.xyz' },
   { key: 'safe', group: 'chain', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', soon: true },
+  { key: 'gully-id', group: 'labs', name: 'Gully ID', url: 'https://gullyid.xyz', probe: 'https://gullyid.xyz/health' },
   { key: 'pay', group: 'labs', name: 'Gully Pay', url: 'https://gullypay.xyz', probe: 'https://gullypay.xyz/api/status' },
   { key: 'x402', group: 'labs', name: 'Gully Pay x402', url: 'https://gullypay.xyz/x402/status' },
   { key: 'rpc-site', group: 'labs', name: 'Gully RPC', url: 'https://gullyrpc.xyz', probe: 'https://gullyrpc.xyz/status.json' },
