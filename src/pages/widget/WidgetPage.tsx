@@ -9,6 +9,8 @@ import { CodeBlock } from '../../docs/CodeBlock'
 import { CHAIN_NAME, CHAIN_SHORT, useTracker } from '../../lib/tracker'
 import { widgetSnippet, type WidgetOptions, type WidgetTheme, type WidgetType } from '../../lib/widgetEmbed'
 import { LiveWidget } from './LiveWidget'
+import { ChainLogo } from '../../components/logos/ChainLogo'
+import { chainMark } from '../../components/logos/registry'
 
 const DOCS = 'https://docs.gullylabs.xyz/widget'
 const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.06}s ease both` })
@@ -47,8 +49,9 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
           role="radio"
           aria-checked={value === o.key}
           onClick={() => onChange(o.key)}
-          className={`min-h-11 flex-1 rounded-btn px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${value === o.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
+          className={`inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-btn px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${value === o.key ? 'bg-gold text-bg' : 'bg-transparent text-muted hover:text-ink'}`}
         >
+          {chainMark(o.key) && <ChainLogo chain={o.key} size={16} decorative />}
           {o.name}
         </button>
       ))}

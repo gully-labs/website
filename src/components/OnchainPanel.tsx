@@ -8,6 +8,7 @@ import { ChartBox } from './charts/ChartSkeleton'
 import { C } from './charts/chartPresets'
 import { esc, type ChartEvent } from './charts/chart-utils'
 import { segBtn, segGroup } from './ui/seg'
+import { ChainLogo } from './logos/ChainLogo'
 
 /* Peddles and PeddleQuest, read from their own contracts (GET /api/peddles/onchain, server/peddles.mjs). Every
    figure names the contract it is read from, linked to that chain's explorer, and every contract in Peddles'
@@ -168,7 +169,12 @@ function Contracts({ doc }: { doc: OnchainDoc }) {
         {doc.chains.map((c) => (
           <div key={c.chainId} className="overflow-x-auto">
             <table className="w-full min-w-[560px] border-collapse font-mono text-[11px]">
-              <caption className="pb-1 text-left text-[12px] text-ink-2">{c.name}</caption>
+              <caption className="pb-1 text-left text-[12px] text-ink-2">
+                <span className="inline-flex items-center gap-1.5">
+                  <ChainLogo chain={c.name} size={16} decorative />
+                  {c.name}
+                </span>
+              </caption>
               <thead>
                 <tr className="text-left text-faint">
                   <th className="py-1 pr-3 font-normal">Contract</th>
@@ -242,7 +248,8 @@ export function OnchainPanel({ venue, accent }: { venue: Venue; accent: string }
             <ul className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-3 p-0" aria-label="Scan progress by chain">
               {chains.map((c) => (
                 <li key={c.chainId} className="flex flex-col gap-1 font-mono text-[11px] text-muted">
-                  <span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <ChainLogo chain={c.name} size={16} decorative />
                     {c.name} · {Math.round(c.progress * 100)}%{c.error ? ' · retrying' : ''}
                   </span>
                   <span className="h-[6px] overflow-hidden rounded-full bg-line" aria-hidden>
