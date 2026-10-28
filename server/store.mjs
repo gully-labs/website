@@ -302,7 +302,7 @@ export const waitlistRowOf = (address) => chainKit.waitlist.find((r) => r.addres
 
 export function addChainKitRequest({ address, workspace, email, chain }) {
   chainKit.requests = chainKit.requests.filter((r) => r.workspace !== workspace)
-  // Chain Kit is on a waitlist (explorer licence pending): the row records interest only, never an order.
+  // Chain Kit is on a waitlist (per-chain Gully Explorer not ready yet): the row records interest only, never an order.
   const row = { at: new Date().toISOString(), address, workspace, email, chain: chain || null, status: 'waitlist', waitlist: true }
   chainKit.requests.push(row)
   if (chainKit.requests.length > 5000) chainKit.requests = chainKit.requests.slice(-5000)

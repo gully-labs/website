@@ -818,10 +818,10 @@ export const features: Feature[] = [
     product: "Chain Kit",
     name: "Chain Kit managed explorer",
     status: "building",
-    summary: "A branded Blockscout block explorer for your EVM chain, deployed and run by Gully Labs, now part of Gully Chain (gullychain.xyz). Licensing in progress; not available to order yet.",
+    summary: "A branded block explorer for your EVM chain, built on our own Gully Explorer and run by Gully Labs, now part of Gully Chain (gullychain.xyz). Not available to order yet.",
     facts: [
       "Chain Kit moved to Gully Chain (gullychain.xyz) on 2026-10-26; POST /api/developer/chain-kit/request still records interest for older clients.",
-      "Gully Labs is finalising the explorer licence before taking orders.",
+      "The explorer is Gully Explorer (MIT), our own; Blockscout is no longer used.",
       "Rollup profiles cover Arbitrum Nitro and Orbit chains."
     ],
     url: "https://gullychain.xyz/",
@@ -1254,95 +1254,42 @@ export const features: Feature[] = [
   {
     id: "chainkit-explorer",
     product: "Chain Kit",
-    name: "Hosted Blockscout explorer",
+    name: "Gully Explorer for your chain",
     status: "building",
-    summary: "A branded Blockscout explorer for an EVM chain, configured and run by Gully Labs. The deployment layer exists in the fork; no hosted explorer is confirmed in the repo.",
+    summary: "Gully Explorer, our own MIT-licensed block explorer, branded for your EVM chain and run by Gully Labs. It runs Gully Chain's testnet explorer today; per-chain deployments for Chain Kit are being built.",
     facts: [
-      "Lives in gully-blockscout/gully on branch gully/chain-kit",
-      "Upstream Blockscout code is unchanged; the fork adds a pinned compose stack, chain profiles, branding and a provisioning script",
-      "Stack is backend, frontend, stats, visualizer, sig-provider and optional user-ops-indexer images, with Postgres 17, Redis and a Caddy proxy",
-      "Caddy gives automatic Let's Encrypt TLS on one hostname",
-      "Footer credit reads 'Explorer by Gully Labs'",
-      "Chain Kit is on a waitlist and cannot be ordered yet: Gully Labs is finalising the explorer licence first",
-      "Service level targets in the README are marked 'to be set by Gully Labs'"
+      "Gully Explorer (gully-labs/gully-explorer, MIT) replaces Blockscout in Chain Kit: Blockscout has been under a proprietary licence since 2026-04-22 that forbids hosted use without a commercial licence",
+      "Live for Gully Chain Testnet (chain 485590) at testnet-explorer.gullychain.xyz",
+      "Pages: blocks, transactions with decoded calls, addresses, tokens, contracts and network details, plus search",
+      "Reads the chain's RPC (with fallbacks) and Gully's own Ponder indexer (gully-indexer) for tokens, holders and names",
+      "Arbitrum Orbit chains: shows whether each block is in a batch posted to the parent chain",
+      "Today it is configured for Gully Chain only; per-chain config (chain ID, RPC, indexer, branding) for Chain Kit customers is coming soon",
+      "Chain Kit is on a waitlist and cannot be ordered yet"
     ],
-    url: "https://gullychain.xyz/",
+    url: "https://testnet-explorer.gullychain.xyz/",
     source: [
-      "gully-blockscout:gully/README.md",
-      "gully-blockscout:gully/compose/docker-compose.yml",
-      "gully-blockscout:gully/branding/gully-frontend.env",
-      "gully-blockscout:README.md"
-    ]
-  },
-  {
-    id: "chainkit-chain-profiles",
-    product: "Chain Kit",
-    name: "Chain profiles",
-    status: "building",
-    summary: "Each chain is one env file. Profiles exist for Robinhood Chain and Arc, plus a template for any EVM chain.",
-    facts: [
-      "Profiles: chains/robinhood.env (chain ID 4663, Arbitrum Nitro/Orbit, ETH gas), chains/arc.env (chain ID 5042, USDC native gas with 18 decimals), chains/template.env for any geth-compatible chain",
-      "Both shipped profiles start with internal transactions turned off because the public RPCs offered no debug_* methods on 2026-10-16",
-      "Robinhood profile also has archive balances off",
-      "Hardware tiers documented: Small 4 vCPU / 16 GB / 250 GB, Standard 8 / 32 GB / 1-2 TB, High throughput 16-32 vCPU / 64-128 GB / 4-8 TB"
-    ],
-    source: [
-      "gully-blockscout:gully/README.md",
-      "gully-blockscout:gully/chains/robinhood.env",
-      "gully-blockscout:gully/chains/arc.env",
-      "gully-blockscout:gully/chains/template.env"
-    ]
-  },
-  {
-    id: "chainkit-provisioning",
-    product: "Chain Kit",
-    name: "One-command provisioning",
-    status: "building",
-    summary: "provision.sh sets up a server for a chosen chain profile and is safe to re-run.",
-    facts: [
-      "Command: sudo ./gully/provision.sh --chain arc (or robinhood)",
-      "Targets Ubuntu 24.04; installs Docker and the compose plugin if missing",
-      "Writes /opt/gully-chain-kit/<chain>/.env with mode 600 and generates database passwords and SECRET_KEY_BASE; existing secrets are never rotated",
-      "Calls eth_chainId on the RPC and stops if it does not match CHAIN_ID",
-      "Options include --no-up, --profile user-ops, --deploy-dir and --skip-rpc-check",
-      "--reset-data deletes the chain's volumes and only runs with --yes-destroy-data"
-    ],
-    source: [
-      "gully-blockscout:gully/README.md",
-      "gully-blockscout:gully/provision.sh"
+      "gully-explorer:README.md",
+      "gully-explorer:LICENSE",
+      "gully-explorer:src/main.tsx",
+      "gully-explorer:src/lib/rpc.ts",
+      "gully-explorer:src/lib/indexer.ts",
+      "gully-explorer:src/lib/parent.ts"
     ]
   },
   {
     id: "chainkit-apis-verification",
     product: "Chain Kit",
-    name: "Explorer APIs and contract verification",
+    name: "Verified contracts",
     status: "building",
-    summary: "The explorer exposes the standard Blockscout interfaces and contract verification.",
+    summary: "Verified contracts show their source, ABI and compiler settings, with Read and Write tabs, from a self-hosted Sourcify server. A public explorer API is coming soon.",
     facts: [
-      "REST API v2, Etherscan-compatible API, JSON-RPC proxy, GraphQL and WebSocket updates are listed",
-      "Verification covers Solidity and Vyper (standard JSON, flattened, multi-part, Sourcify)",
-      "Rollup views (batches, L1/L2 messages) for Arbitrum Orbit chains once parent-chain tracking is on",
-      "Health endpoints: /api/health, /api/health/liveness, /api/health/readiness, /api/v2/main-page/indexing-status"
+      "Verification goes through a self-hosted Sourcify server (Sourcify API v2; verify.gullychain.xyz for Gully Chain)",
+      "Contract pages show a verified badge, source, ABI and compiler, and let visitors call read functions and send writes from their own wallet",
+      "No Etherscan- or Blockscout-compatible explorer API yet: coming soon"
     ],
     source: [
-      "gully-blockscout:gully/README.md"
-    ]
-  },
-  {
-    id: "chainkit-operations",
-    product: "Chain Kit",
-    name: "Operations runbook",
-    status: "building",
-    summary: "An operator runbook covers upgrades, reindexing, backups and disk sizing for hosted explorers.",
-    facts: [
-      "OPERATIONS.md sections: day-to-day checks, upgrades, reindexing, backup and restore, sizing, disk growth, common failures",
-      "Nightly logical pg_dump with off-host shipping is described; retention is still to be set",
-      "Docker logs capped at 5 x 50 MB per container",
-      "Versions are pinned in the chain env and upgraded together"
-    ],
-    source: [
-      "gully-blockscout:gully/OPERATIONS.md",
-      "gully-blockscout:gully/README.md"
+      "gully-explorer:src/lib/sourcify.ts",
+      "gully-explorer:src/components/ContractPanel.tsx"
     ]
   },
   {

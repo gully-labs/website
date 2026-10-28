@@ -2587,8 +2587,8 @@ await step('holder map', async () => {
   await ctx2.close()
 })
 
-// Chain Kit (/chain-kit) is on a waitlist while the explorer licence is finalised: the page says so, offers the
-// waitlist, and has no buy, order, request-to-pay or "available" path. It also must not name Blockscout's licence.
+// Chain Kit (/chain-kit) is on a waitlist while per-chain Gully Explorer deployments are built: the page says so, offers
+// the waitlist, and has no buy, order, request-to-pay or "available" path. It also must not name Blockscout's licence.
 await step('chain kit waitlist', async () => {
   const ctx = await newContext({ width: 1440, height: 900 })
   const page = await ctx.newPage()
@@ -2596,7 +2596,7 @@ await step('chain kit waitlist', async () => {
   await page.goto(BASE + '/chain-kit')
   await page.getByRole('heading', { level: 1 }).waitFor()
   const main = await page.locator('main').innerText()
-  check('/chain-kit: shows the waitlist status and wording', /WAITLIST/.test(main) && /join the waitlist/i.test(main) && /finalising the explorer licence before taking orders/i.test(main))
+  check('/chain-kit: shows the waitlist status and wording', /WAITLIST/.test(main) && /join the waitlist/i.test(main))
   check('/chain-kit: no buy, order, request or "available on request" path', !/available on request|talk to us about your chain|request (your|an|a) explorer|buy|order now|checkout|pay now|\bprice[ds]?\b/i.test(main))
   check('/chain-kit: the call to action is a link to the chains waitlist, not a contact or payment form', (await page.locator('main a[href="/chains#waitlist"]').count()) >= 1 && (await page.locator('main').getByRole('button', { name: /start a project|talk to us|request|buy|order/i }).count()) === 0)
   check('/chain-kit: does not mention the Blockscout licence', !/blockscout[’']?s? licen[cs]e|licen[cs]e (from|with|of) blockscout|proprietary|LicenseRef|commercial licen/i.test(main))
@@ -3726,7 +3726,7 @@ await step('design audit 3 group 3: narrow-width fixes (D5 D6 D7 D10 D15 D16 D19
     await visit('/partners')
     const notLive = page.locator('[data-benefit="chainkit"]')
     check(`da3-g3 partners ${width}: the not-live Chain Kit card is dashed and not dimmed`, (await notLive.evaluate((e) => getComputedStyle(e).borderStyle === 'dashed' && Number(getComputedStyle(e).opacity) === 1)) && (await notLive.getByText('NOT LIVE YET').count()) === 1)
-    check(`da3-g3 partners ${width}: Chain Kit card says Built on Blockscout with its logo`, (await notLive.getByText('Built on Blockscout').count()) === 1 && (await notLive.locator('img').count()) >= 1)
+    check(`da3-g3 partners ${width}: Chain Kit card no longer says Built on Blockscout (Chain Kit runs Gully Explorer)`, (await notLive.getByText(/Blockscout/).count()) === 0)
     const tgP = page.locator('a[href="https://t.me/GullyLabsBot?start=partners"]')
     check(`da3-g3 partners ${width}: a Chat on Telegram button`, (await tgP.count()) === 1 && (await tgP.evaluate((e) => e.getBoundingClientRect().height >= 44)))
     check(`da3-g3 partners ${width}: chain chips carry logos`, (await page.locator('[aria-label="Chains on the Holder Map"] img').count()) >= 3)

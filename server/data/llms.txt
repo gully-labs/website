@@ -21,14 +21,14 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Holder Map alerts](https://docs.gullylabs.xyz/holder-map) (live): Alerts when the largest cluster or the top-10 share of a token reaches a level or drops, by Telegram or webhook.
 - [Deep check](https://docs.gullylabs.xyz/holder-map) (live): A paid, bounded investigation of one token that traces where top holders were funded from, shared funders, the deployer's record and snipers.
 - [Launchpad partner webhooks](https://docs.gullylabs.xyz/holder-map) (live): Lets a launchpad tell Gully Labs about a new token and receive a signed risk flag when the pre-built Holder Map shows warning signs.
-- [Invoices and pay links](https://docs.gullylabs.xyz/gully-pay) (live): Non-custodial crypto billing: invoices and reusable pay links where the payer sends a plain transfer straight to the treasury (or the merchant), read back from the chain.
+- [Invoices and pay links](https://gullypay.xyz/docs) (live): Non-custodial crypto billing: invoices and reusable pay links where the payer sends a plain transfer straight to the treasury (or the merchant), read back from the chain.
 - [Solana Pay](https://docs.gullylabs.xyz/solana-pay) (live): Takes SOL, USDC and USDT on Solana through Solana Pay transfer requests with a per-quote reference key.
-- [Signed payment webhooks](https://docs.gullylabs.xyz/gully-pay) (live): Sends signed events when an invoice is paid, expires or is cancelled.
-- [Pay with crypto button](https://docs.gullylabs.xyz/gully-pay) (live): An optional script that opens a Gully Pay checkout in a popup from a normal link.
-- [Live gas costs per chain](https://docs.gullylabs.xyz/gully-pay) (live): Shows what a Gully Pay payment costs in gas right now on each payment chain.
-- [Merchant checkout](https://docs.gullylabs.xyz/gully-pay-merchants) (live): Lets any workspace run its own non-custodial crypto checkout, paid straight into its own wallets, for a transaction fee only.
-- [Fee split and no-stuck-funds guards](https://docs.gullylabs.xyz/gully-pay-merchants) (live): Collects the merchant fee inside the payment through Request Network's ERC20FeeProxy on stablecoins, with guards so funds can never end up stuck in the proxy.
-- [One-click Safe deployment](https://docs.gullylabs.xyz/gully-pay-merchants) (live): Deploys a Safe multisig at the same address on another chain from inside the app, with the user's own wallet signing.
+- [Signed payment webhooks](https://gullypay.xyz/docs) (live): Sends signed events when an invoice is paid, expires or is cancelled.
+- [Pay with crypto button](https://gullypay.xyz/docs) (live): An optional script that opens a Gully Pay checkout in a popup from a normal link.
+- [Live gas costs per chain](https://gullypay.xyz/docs) (live): Shows what a Gully Pay payment costs in gas right now on each payment chain.
+- [Merchant checkout](https://gullypay.xyz/docs) (live): Lets any workspace run its own non-custodial crypto checkout, paid straight into its own wallets, for a transaction fee only.
+- [Fee split and no-stuck-funds guards](https://gullypay.xyz/docs) (live): Collects the merchant fee inside the payment through Request Network's ERC20FeeProxy on stablecoins, with guards so funds can never end up stuck in the proxy.
+- [One-click Safe deployment](https://gullypay.xyz/docs) (live): Deploys a Safe multisig at the same address on another chain from inside the app, with the user's own wallet signing.
 - [AI Security Scan](https://gullylabs.xyz/security) (live): A self-serve automated scan of a deployed contract, a Solidity repository, an upload or a web2 codebase. It is an AI review only until the static-tools worker runs, and is never called an audit.
 - [Published scan reports](https://gullylabs.xyz/security/reports) (live): Scan reports can be published and read as web pages, with findings, locations and draft proofs of concept.
 - [Contract monitors](https://docs.gullylabs.xyz/gully-security) (live): Watches a contract and tells you by Telegram or signed webhook when a privileged change happens.
@@ -49,7 +49,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Engineering services](https://gullylabs.xyz/services) (live): Gully Labs takes on smart contract, dApp, chain infrastructure and security work on request.
 - [Blog](https://blog.gullylabs.xyz/) (live): A self-hosted Ghost blog at blog.gullylabs.xyz with generated share images.
 - [Token logo service](https://gullylabs.xyz/) (live): Serves token logos by chain and address for the whole stack, from the first source that returns a valid image.
-- [Gully Chains waitlist](https://gullylabs.xyz/) (live): A waitlist in the app for Gully Chains devnet news. No chain is running yet.
+- [Gully Chains sign-up (no waitlist)](https://gullylabs.xyz/) (live): Gully Chain is open to everyone on gullychain.xyz. The old waitlist endpoints still answer for older clients and gate nothing.
 - [Map any token](https://gullylabs.xyz/holders) (live): The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only DeepCore launches and stock tokens. A pasted address is checked to be a token first.
 - [Launchpad registry (Peddles, PeddleSwap)](https://docs.gullylabs.xyz/holder-map-integrate) (live): A registry of launchpads lets the Holder Map recognise a token as a launch from a known launchpad. Peddles and PeddleSwap are the first two entries.
 - [Integrate the Holder Map](https://docs.gullylabs.xyz/holder-map-integrate) (live): A docs page and a partner guide that explain the embed, the iframe, the public API and the share card, and invite launchpads to be listed.
@@ -58,8 +58,8 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Inline Holder Map in any chat](https://docs.gullylabs.xyz/telegram) (live): Typing @GullyLabsBot followed by a token address or ticker in any Telegram chat answers with the Holder Map share card, a short caption of measured facts and buttons.
 - [Daily Launch radar post](https://t.me/GullyLabsNews) (live): A daily post for the @GullyLabsNews channel naming the cleanest and the most concentrated new launches, from maps the Holder Map has already built.
 - [Ecosystem and partners pages](https://gullylabs.xyz/ecosystem) (live): Public pages that list the third-party data and infrastructure Gully Labs relies on, and what launchpads, wallets, explorers and chains get from a partnership.
-- [Gully Chains offer and waitlist](https://gullylabs.xyz/chains) (live): A public page with the managed-chain offer, its prices read from config, and a waitlist form. No Gully Chains network is running yet; a testnet is coming.
-- [Included services on the testnet](https://gullylabs.xyz/chains) (testnet): The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
+- [Gully Chains offer (moved to gullychain.xyz)](https://gullychain.xyz/) (live): The managed-chain offer moved to Gully Chain's own site on 2026-10-26: gullylabs.xyz/chains answers 301 to gullychain.xyz. The plans config is still served here for older clients.
+- [Included services on the testnet](https://gullychain.xyz/) (testnet): The Chain Kit explorer is planned. The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
 - [Tracker API client](https://docs.gullylabs.xyz/api) (beta): @gullylabs/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists.
 - [Embeddable tracker widget](https://gullylabs.xyz/tracker) (beta): @gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component.
 - [Holder Map client and component](https://gullylabs.xyz/holders) (beta): @gullylabs/holders is a typed client for the Holder Map API plus a React component that frames the live map.
@@ -91,6 +91,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Soulbound badges](https://peddlequest.xyz) (live): An optional non-transferable proof-of-completion badge minted after a quest.
 - [Promotion slots](https://peddlequest.xyz) (live): Trending and banner placement is sold on chain, so what was bought is publicly recorded.
 - [Task verification and eligibility rules](https://peddlequest.xyz) (live): Off-chain checks for X, Discord and wallet tasks, with eligibility and sybil rules set in the quest wizard.
+- [Live board and product launcher](https://gullylabs.xyz/products) (live): Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve.
 
 ## Projects
 
@@ -114,8 +115,6 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Holder Map](https://docs.gullylabs.xyz/holder-map): Products
 - [Integrate the Holder Map](https://docs.gullylabs.xyz/holder-map-integrate): Products
 - [Gully Analytics](https://docs.gullylabs.xyz/analytics): Products
-- [Gully Pay](https://docs.gullylabs.xyz/gully-pay): Products
-- [Gully Pay for merchants](https://docs.gullylabs.xyz/gully-pay-merchants): Products
 - [Gully Security](https://docs.gullylabs.xyz/gully-security): Products
 - [Gully Score](https://docs.gullylabs.xyz/gully-score): Products
 - [Gully AI](https://docs.gullylabs.xyz/gully-ai): Products
@@ -126,11 +125,10 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Swaps](https://docs.gullylabs.xyz/swaps): Products
 - [Solana](https://docs.gullylabs.xyz/solana): Products
 - [Solana Pay](https://docs.gullylabs.xyz/solana-pay): Products
-- [Chain Kit](https://docs.gullylabs.xyz/chain-kit): Products
+- [Gully IPFS](https://docs.gullylabs.xyz/ipfs): Products
 - [Contracts](https://docs.gullylabs.xyz/contracts): More
 - [Status](https://docs.gullylabs.xyz/status): More
 - [Roadmap](https://docs.gullylabs.xyz/roadmap): More
-- [Roadmap: Gully L3](https://docs.gullylabs.xyz/roadmap-l3): More
 - [Changelog](https://docs.gullylabs.xyz/changelog): More
 
 ## Contracts

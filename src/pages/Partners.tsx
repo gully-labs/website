@@ -8,7 +8,7 @@ import { MiniBars } from '../components/charts/MiniBars'
 import { NF } from '../components/charts/number-formats'
 import { Segmented } from '../components/ui/Segmented'
 import { eyebrow, btnOutline } from '../components/ui'
-import { ChainChip, IntegrationChip } from '../components/ProjectRows'
+import { ChainChip } from '../components/ProjectRows'
 import { audiences, benefits, FALLBACK_CHAINS, snippets, type Audience, type Chain } from '../content/ecosystem'
 import { DOCS_URL } from '../site-host'
 import { getJson, type CheckedLaunches, type HolderSources } from '../lib/holders'
@@ -151,11 +151,6 @@ export function Partners() {
                   <span className={`flex-none rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[1px] ${STATUS_STYLE[b.status]}`}>{b.status.toUpperCase()}</span>
                 </div>
                 <p className="m-0 text-[13px] leading-[1.55] text-muted">{b.text}</p>
-                {b.id === 'chainkit' && (
-                  <span className="flex flex-wrap gap-2">
-                    <IntegrationChip id="blockscout" name="Built on Blockscout" />
-                  </span>
-                )}
                 {b.docs && (
                   <a href={b.docs.href} target="_blank" rel="noopener noreferrer" className="mt-auto inline-flex min-h-11 items-center gap-1 font-mono text-[12px] text-gold hover:text-gold-hover">
                     {b.docs.label}

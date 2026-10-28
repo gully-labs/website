@@ -103,7 +103,7 @@ const CARDS = [
   },
   {
     file: 'og-chain-kit.png',
-    html: page({ eyebrow: 'Chain Kit', title: 'An explorer for <em>your chain</em>', body: 'A branded Blockscout block explorer for your EVM chain, deployed and operated by Gully Labs.', url: 'gullylabs.xyz/chain-kit', right: codeCard('<span style="color:#6c7888"># your chain, your brand</span><br>CHAIN_ID=<span style="color:#26ab94">4663</span><br>CHAIN_TYPE=<span style="color:#26ab94">arbitrum</span><br>NETWORK_NAME="Your Chain"<br>ACCENT=<span style="color:#d9b563">#D9B563</span>'), titleSize: 92 }),
+    html: page({ eyebrow: 'Chain Kit', title: 'An explorer for <em>your chain</em>', body: 'A branded block explorer for your EVM chain, built on Gully Explorer and operated by Gully Labs.', url: 'gullylabs.xyz/chain-kit', right: codeCard('<span style="color:#6c7888"># your chain, your brand</span><br>CHAIN_ID=<span style="color:#26ab94">4663</span><br>CHAIN_TYPE=<span style="color:#26ab94">arbitrum</span><br>NETWORK_NAME="Your Chain"<br>ACCENT=<span style="color:#d9b563">#D9B563</span>'), titleSize: 92 }),
   },
   {
     file: 'og-security.png',

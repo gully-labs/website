@@ -75,7 +75,6 @@ export function ServicesBlock() {
 const OPENS: { t: string; href: string; kind: 'repo' | 'docs' | 'blog' }[] = [
   { t: 'gully-labs/sdk', href: 'https://github.com/gully-labs/sdk', kind: 'repo' },
   { t: 'gully-labs/umami', href: 'https://github.com/gully-labs/umami/tree/gully/analytics', kind: 'repo' },
-  { t: 'gully-labs/blockscout', href: 'https://github.com/gully-labs/blockscout/tree/gully/chain-kit/gully', kind: 'repo' },
   { t: 'Docs', href: DOCS_URL, kind: 'docs' },
   { t: 'Blog', href: BLOG_URL, kind: 'blog' },
 ]

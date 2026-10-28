@@ -175,7 +175,7 @@ Non-custodial crypto billing: invoices and reusable pay links where the payer se
 - A pay link is a fixed USD amount or an open amount between a minimum and maximum; a link makes at most LINK_INVOICES_PER_HOUR (10) invoices per IP per hour.
 - Gully Labs never holds funds; a chainId:hash can be used once only.
 
-URL: https://docs.gullylabs.xyz/gully-pay
+URL: https://gullypay.xyz/docs
 
 ### Solana Pay (Gully Pay, live)
 
@@ -193,7 +193,7 @@ Sends signed events when an invoice is paid, expires or is cancelled.
 - Events: invoice.paid, invoice.expired, invoice.cancelled and webhook.test.
 - Signed with HMAC-SHA256 in X-Gully-Signature with X-Gully-Timestamp, using the endpoint's own whsec_ secret.
 
-URL: https://docs.gullylabs.xyz/gully-pay
+URL: https://gullypay.xyz/docs
 
 ### Pay with crypto button (Gully Pay, live)
 
@@ -202,7 +202,7 @@ An optional script that opens a Gully Pay checkout in a popup from a normal link
 - Add data-gully-pay="popup" to a link to a pay URL; "tab" or no script opens a new tab.
 - The checkout cannot be put in an iframe; the script sets no cookies.
 
-URL: https://docs.gullylabs.xyz/gully-pay
+URL: https://gullypay.xyz/docs
 
 ### Live gas costs per chain (Gully Pay, live)
 
@@ -211,7 +211,7 @@ Shows what a Gully Pay payment costs in gas right now on each payment chain.
 - GET /api/pay/gas; costs assume 106k gas for a fee-proxy payment and 65k for a plain ERC-20 transfer, including the L1 data fee on OP Stack chains and Arbitrum.
 - A chain that cannot be read says unavailable.
 
-URL: https://docs.gullylabs.xyz/gully-pay
+URL: https://gullypay.xyz/docs
 
 ### Merchant checkout (Gully Pay, live)
 
@@ -222,7 +222,7 @@ Lets any workspace run its own non-custodial crypto checkout, paid straight into
 - Merchants get pay links, invoices, signed webhooks, CSV export and a branded profile.
 - Supports USDC, USDT and each chain's own coin on Base, Ethereum, BNB Chain, Arbitrum, OP Mainnet, Polygon and Avalanche.
 
-URL: https://docs.gullylabs.xyz/gully-pay-merchants
+URL: https://gullypay.xyz/docs
 
 ### Fee split and no-stuck-funds guards (Gully Pay, live)
 
@@ -232,7 +232,7 @@ Collects the merchant fee inside the payment through Request Network's ERC20FeeP
 - Split calls use only USDC or USDT, with the fee strictly between 0 and the amount.
 - An hourly monitor reads every known proxy's balance and raises an admin alert on a non-zero balance (server/fee-proxy-monitor.mjs).
 
-URL: https://docs.gullylabs.xyz/gully-pay-merchants
+URL: https://gullypay.xyz/docs
 
 ### One-click Safe deployment (Gully Pay, live)
 
@@ -241,7 +241,7 @@ Deploys a Safe multisig at the same address on another chain from inside the app
 - The server works out the factory call and never holds a key or sends a transaction.
 - Uses Safe's CREATE2 proxy factory so the address matches across chains.
 
-URL: https://docs.gullylabs.xyz/gully-pay-merchants
+URL: https://gullypay.xyz/docs
 
 ### AI Security Scan (Gully Security, live)
 
@@ -433,12 +433,12 @@ Serves token logos by chain and address for the whole stack, from the first sour
 
 URL: https://gullylabs.xyz/
 
-### Gully Chains waitlist (Gully Chains, live)
+### Gully Chains sign-up (no waitlist) (Gully Chains, live)
 
-A waitlist in the app for Gully Chains devnet news. No chain is running yet.
+Gully Chain is open to everyone on gullychain.xyz. The old waitlist endpoints still answer for older clients and gate nothing.
 
-- POST /api/developer/chains-waitlist saves an email against the wallet.
-- POST /api/chains/waitlist is the public form on /chains; the app waitlist remains.
+- POST /api/developer/chains-waitlist and POST /api/chains/waitlist still save an email, for backward compatibility only.
+- The app's Gully Chain page hands off to app.gullychain.xyz.
 
 URL: https://gullylabs.xyz/
 
@@ -524,27 +524,25 @@ Public pages that list the third-party data and infrastructure Gully Labs relies
 
 URL: https://gullylabs.xyz/ecosystem
 
-### Gully Chains offer and waitlist (Gully Chains, live)
+### Gully Chains offer (moved to gullychain.xyz) (Gully Chains, live)
 
-A public page with the managed-chain offer, its prices read from config, and a waitlist form. No Gully Chains network is running yet; a testnet is coming.
+The managed-chain offer moved to Gully Chain's own site on 2026-10-26: gullylabs.xyz/chains answers 301 to gullychain.xyz. The plans config is still served here for older clients.
 
-- Testnet: free for freeDays 30, then a monthly price that is not set (monthlyUsd null, shown as TBA) (CHAINS.testnet in server/chains-plans.mjs).
-- Managed mainnet: from $3,500 a month (fromUsdPerMonth) plus 5% of the sequencer's profit (sequencerProfitPct), with data availability at cost.
-- Add-on prices are null (TBA) for the paymaster, pay gas in USDC, Gully Pay on your chain, Hyperlane setup and DeepCore; prices before launch may change.
-- Stack: Arbitrum Orbit (Nitro), settlement to Arbitrum, Hyperlane, Chain Kit explorer, Gully Bridge, faucet and RPC.
-- GET /api/chains/plans serves the config; POST /api/chains/waitlist takes the form with a per-IP rate limit and a honeypot.
+- gullylabs.xyz/chains, /chains/launch and /chain-kit answer 301 to gullychain.xyz and app.gullychain.xyz (server/hosts.mjs movedPageUrl).
+- GET /api/chains/plans still serves the config from server/chains-plans.mjs.
+- Sign-up is open on gullychain.xyz; there is no waitlist. The old POST /api/chains/waitlist still answers but gates nothing.
 
-URL: https://gullylabs.xyz/chains
+URL: https://gullychain.xyz/
 
 ### Included services on the testnet (Gully Chains, testnet)
 
-The Chain Kit explorer is planned (waitlist). The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
+The Chain Kit explorer is planned. The Gully Bridge and faucet, Gully Analytics, Holder Map and Security monitors, Gully Pay and Hyperlane setup are listed as testnet services for a Gully Chains chain.
 
 - SERVICES in server/chains-plans.mjs gives insight, pay and hyperlane the status testnet; chainkit (the explorer, bridge and faucet) is planned and on a waitlist.
 - Chain Kit (waitlist) and the insight services are included in the managed price; Gully Pay and Hyperlane are add-ons.
 - The page says nothing about Gully Chains is live yet.
 
-URL: https://gullylabs.xyz/chains
+URL: https://gullychain.xyz/
 
 ### Tracker API client (SDK, beta)
 
@@ -893,10 +891,21 @@ Off-chain checks for X, Discord and wallet tasks, with eligibility and sybil rul
 
 URL: https://peddlequest.xyz
 
+### Live board and product launcher (Gully Labs, live)
+
+Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve.
+
+- GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs).
+- New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.gullychain.xyz), Gully Safe (safe.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals.
+- A surface still being set up reads "coming" until it answers 200; it is never shown as up or down before that.
+- The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz).
+
+URL: https://gullylabs.xyz/products
+
 ## Roadmap (not available yet)
 
 - Audit (planned): A premium audit tier is not offered yet. Gully Labs has published no audit reports.
-- Chain Kit managed explorer (building): A branded Blockscout block explorer for your EVM chain, to be deployed and run by Gully Labs. Waitlist: licensing in progress; Chain Kit is not available to order yet.
+- Chain Kit managed explorer (building): A branded block explorer for your EVM chain, built on our own Gully Explorer and run by Gully Labs, now part of Gully Chain (gullychain.xyz). Not available to order yet.
 - Gully L3 (Arbitrum chain) (planned): A planned Arbitrum chain settling to Arbitrum One with Chain Kit as explorer, Gully Pay native and Hyperlane interop. Spec written, nothing running.
 - Bug bounty hosting (planned): Hosting bug bounty programmes for reviewed projects is a later item on the security roadmap.
 - Account abstraction and sponsored gas (building): An ERC-4337 bundler and EntryPoint with EIP-7702-ready smart accounts, plus a usage-billed paymaster so users can transact without holding gas. Both are coming with the testnet.
@@ -905,13 +914,12 @@ URL: https://peddlequest.xyz
 - Peddles and PeddleQuest read on chain (building): Peddles and PeddleQuest figures would be read straight from their contracts instead of only from the venues' APIs, with a live ledger series and an on-chain panel on their project pages.
 - Holder Map tab in the home console (building): The home page product console gains a Holder Map tab showing the live mini map of the newest DeepCore launch with the latest launches under it.
 - Token logos on tracker, swap, score and widget (building): Stock rows, stock pages, the swap and the widget would show token logos from the logo service instead of a generic building icon, and the stock page keeps the self-gating Holder Map.
-- Hosted Blockscout explorer (building): A branded Blockscout explorer for an EVM chain, configured and run by Gully Labs. The deployment layer exists in the fork; no hosted explorer is confirmed in the repo.
-- Chain profiles (building): Each chain is one env file. Profiles exist for Robinhood Chain and Arc, plus a template for any EVM chain.
-- One-command provisioning (building): provision.sh sets up a server for a chosen chain profile and is safe to re-run.
-- Explorer APIs and contract verification (building): The explorer exposes the standard Blockscout interfaces and contract verification.
-- Operations runbook (building): An operator runbook covers upgrades, reindexing, backups and disk sizing for hosted explorers.
+- Gully Explorer for your chain (building): Gully Explorer, our own MIT-licensed block explorer, branded for your EVM chain and run by Gully Labs. It runs Gully Chain's testnet explorer today; per-chain deployments for Chain Kit are being built.
+- Verified contracts (building): Verified contracts show their source, ABI and compiler settings, with Read and Write tabs, from a self-hosted Sourcify server. A public explorer API is coming soon.
 - Chain launch interface (building): A rebranded Arbitrum Orbit deployment UI. It is not deployed and currently targets Arbitrum Sepolia only.
 - Gully Bridge (building): A fork of the Arbitrum token bridge for moving assets between a Gully chain and its parent chain. Only the README header is changed so far.
+- Gully Safe multisig (building): Safe{Wallet} multisig wallets for Gully Chain at safe.gullychain.xyz, run on Gully infrastructure.
+- Gully AI API (building): An OpenAI-compatible API for the gully-ai model at ai.gullylabs.xyz/v1, documented at gullyai.xyz/docs; it goes live when the GPU server arrives.
 
 ## Projects
 
@@ -935,8 +943,6 @@ URL: https://peddlequest.xyz
 - [Holder Map](https://docs.gullylabs.xyz/holder-map): Products
 - [Integrate the Holder Map](https://docs.gullylabs.xyz/holder-map-integrate): Products
 - [Gully Analytics](https://docs.gullylabs.xyz/analytics): Products
-- [Gully Pay](https://docs.gullylabs.xyz/gully-pay): Products
-- [Gully Pay for merchants](https://docs.gullylabs.xyz/gully-pay-merchants): Products
 - [Gully Security](https://docs.gullylabs.xyz/gully-security): Products
 - [Gully Score](https://docs.gullylabs.xyz/gully-score): Products
 - [Gully AI](https://docs.gullylabs.xyz/gully-ai): Products
@@ -947,11 +953,10 @@ URL: https://peddlequest.xyz
 - [Swaps](https://docs.gullylabs.xyz/swaps): Products
 - [Solana](https://docs.gullylabs.xyz/solana): Products
 - [Solana Pay](https://docs.gullylabs.xyz/solana-pay): Products
-- [Chain Kit](https://docs.gullylabs.xyz/chain-kit): Products
+- [Gully IPFS](https://docs.gullylabs.xyz/ipfs): Products
 - [Contracts](https://docs.gullylabs.xyz/contracts): More
 - [Status](https://docs.gullylabs.xyz/status): More
 - [Roadmap](https://docs.gullylabs.xyz/roadmap): More
-- [Roadmap: Gully L3](https://docs.gullylabs.xyz/roadmap-l3): More
 - [Changelog](https://docs.gullylabs.xyz/changelog): More
 
 ## Contracts (375, verified against Sourcify on 2026-10-18)
