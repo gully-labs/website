@@ -4,7 +4,9 @@
    Sources: /api/hub (uptime, quests, x402, RPC gateway), /api/hub/products (Gully Chain by hour, HolderMaps, Security),
    /api/stats (venues we built) and /api/hub/live (Gully ID stats, Gully Pay status, Gully RPC status.json, indexer).
    Labels were checked live on 2026-10-27: pay.gullypay.xyz tip pages answered 525 (rolling out), merchant review is
-   live (admin.gullypay.xyz, gullypay.xyz/setup), sentry.gullychain.xyz is up with the mint not open yet. */
+   live (admin.gullypay.xyz, gullypay.xyz/setup), sentry.gullychain.xyz is up with the mint not open yet.
+   2026-10-28: Gully Sentry's free testnet mint is open (sale/stats deployed, saleMode testnet); it has its own product
+   page (/products/gully-sentry) and its numbers come through /api/hub/live (sentryNet, sentrySale, sentryChain). */
 import type { HubBody } from '../../console/live'
 import type { HubProducts } from '../../terminal/kit'
 
@@ -65,8 +67,8 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'chain.png',
     line: 'The social L3 where your profile is your wallet.',
     about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
-    live: ['Gully Street app and social feed', 'Quests with on-chain rewards', 'DeepCore launchpad and swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Sentry Node Keys site (sentry.gullychain.xyz)', 'Gully Offerwall: funded quests any site can embed (offers.gullychain.xyz)'],
-    next: ['Mainnet', 'Sentry Node Key mint (coming soon)'],
+    live: ['Gully Street app and social feed', 'Quests with on-chain rewards', 'DeepCore launchpad and swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.gullychain.xyz)'],
+    next: ['Mainnet'],
     links: [['App', 'https://app.gullychain.xyz'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz'], ['Offerwall', 'https://offers.gullychain.xyz/']],
   },
   {
@@ -153,6 +155,7 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
   { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn glUSD or points, publishers embed the wall', s: 'testnet', href: 'https://offers.gullychain.xyz/' },
+  { d: '2026-10-28', p: 'chain', t: 'Gully Sentry: free testnet Sentry Keys and watchers', s: 'testnet', href: 'https://sentry.gullychain.xyz/' },
   { d: '2026-10-27', p: 'id', t: 'Gully ID moves to gullyid.xyz, with a developer console', s: 'live', href: 'https://gullyid.xyz/developers' },
   { d: '2026-10-27', p: 'chain', t: 'Contract verification for Gully Chain: self-hosted Sourcify, 218 contracts verified', s: 'live', href: 'https://verify.gullychain.xyz' },
   { d: '2026-10-27', p: 'rpc', t: 'Keyless Gully Chain endpoint on the gateway: rpc.gullyrpc.xyz/gullychain/evm/485590', s: 'live', href: 'https://gullyrpc.xyz' },
@@ -192,6 +195,10 @@ export interface HubLive {
     totals: { completions: number | null; paid: number | null; players: number | null }
     liveOffers: number | null
   } | null
+  /** Gully Sentry (sentry.gullychain.xyz), read server-side: the browser is refused by its CORS. Older servers omit these. */
+  sentryNet?: { at: number; epoch: number | null; activeKeys: number | null; operators: number | null; heartbeats24h: number; series: { t: number; keys: number }[] } | null
+  sentrySale?: { saleMode: string; totalMinted: number | null; totalBurned: number | null; maxSupply: number | null; available: number | null } | null
+  sentryChain?: { verdict: string; summary: string; l3Head: number | null; newestAssertionAgeSec: number | null; checkedAt: number | null } | null
 }
 export type Load = 'loading' | 'ok' | 'error'
 export interface Sources {
@@ -221,7 +228,7 @@ export interface Reading {
 export const SERVICE_KEYS: Record<ProductKey, string[]> = {
   id: ['gully-id'],
   pay: ['pay', 'x402', 'pay-admin'],
-  chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'safe', 'copy', 'docs', 'devportal', 'offerwall'],
+  chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'safe', 'copy', 'docs', 'devportal', 'sentry', 'offerwall'],
   rpc: ['rpc-site', 'rpc-app', 'rpc-gateway'],
   holdermaps: ['holders'],
   security: ['security'],
