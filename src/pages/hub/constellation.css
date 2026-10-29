@@ -171,9 +171,15 @@
 .cst-work { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
 .cst-work-r img { width: 100%; height: auto; display: block; border: 1px solid var(--cst-line); border-radius: var(--cst-r); margin-bottom: 12px; }
 .cst-h2 { font: 700 var(--gt-fs-xl)/1.2 var(--gt-head) !important; margin: 0 0 14px !important; }
-.cst-track { font-size: 13px; color: var(--gt-muted); margin-top: 12px !important; display: flex; gap: 8px; align-items: flex-start; }
-.cst-track .gt-ic { flex: none; margin-top: 2px; }
+.cst-track { font-size: 13px; color: var(--gt-muted); margin-top: 12px !important; }
+.cst-track .gt-ic { width: 14px; height: 14px; vertical-align: -2px; color: var(--gt-accent); }
 .cst-track b { color: var(--gt-text); font-weight: 500; }
+/* the board's services list: number, title and one line each (timelines and proofs are on /services) */
+.cst-work .gt-services.compact > li { padding: 10px 0; }
+.cst-work .gt-services.compact .gt-svm { display: none; }
+.cst-work .gt-sv h3 { font-size: 16px; margin-bottom: 2px; }
+.cst-work .gt-sv p { font-size: 13.5px; line-height: 1.45; color: var(--gt-muted); }
+.cst-work-r .gt-more { margin-top: 12px; }
 @media (max-width: 860px) { .cst-work { grid-template-columns: 1fr; } }
 
 .cst-contact { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 28px; }

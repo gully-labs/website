@@ -640,7 +640,7 @@ export function Constellation() {
                 <small>/api/hub</small>
               </div>
               <div>
-                <span className="gt-k">ID sign-ins · 24 h</span>
+                <span className="gt-k">Sign-ins 24 h</span>
                 <b className="num">{kpiText(R.id.kpi)}</b>
                 <small>gullyid.xyz</small>
               </div>
