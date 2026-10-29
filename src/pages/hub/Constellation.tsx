@@ -319,7 +319,7 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
         <UptimeGrid hub={src.hub} keys={['gully-id', 'chain-site', 'pay', 'rpc-gateway', 'holders', 'security', 'studio', 'gullyai']} compact />
       </section>
       <div className="cst-cell-chart">
-        <TChart label="Live across the suite" tabs={tabs} height={190} />
+        <TChart label="Live across the suite" tabs={tabs} height={220} />
       </div>
       <section className="cst-cell">
         <header>

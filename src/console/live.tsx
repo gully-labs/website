@@ -4,7 +4,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { fetchStats, type Stats, type VenueOk } from '../lib/stats'
 import type { StatusBody } from '../lib/status'
-import { C, fmtDay, fmtTime, fmtUsd } from './charts'
+import { C, fmtDay, fmtTimeUtc, fmtUsd } from './charts'
 import { consoleToast } from './toast'
 
 export const GULLY_CHAIN_ID = 485590
@@ -153,7 +153,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     const pollStats = async () => {
       try {
         const s = await fetchStats()
-        if (lastGen.current && s.generatedAt !== lastGen.current) consoleToast({ title: 'Venue figures refreshed', text: `${s.venues.filter((v) => v.state === 'ok').length} venues read at ${fmtTime(s.generatedAt)}`, icon: 'activity' })
+        if (lastGen.current && s.generatedAt !== lastGen.current) consoleToast({ title: 'Venue figures refreshed', text: `${s.venues.filter((v) => v.state === 'ok').length} venues read at ${fmtTimeUtc(s.generatedAt)}`, icon: 'activity' })
         lastGen.current = s.generatedAt
         set({ stats: s, statsState: 'ok' })
       } catch {

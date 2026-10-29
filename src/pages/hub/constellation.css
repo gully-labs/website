@@ -64,7 +64,7 @@
   .cst-legend { top: auto; bottom: -34px; }
   .cst-flow li + li::before { content: none; }
 }
-@media (max-width: 420px) { .cst-kpis b { font-size: 18px; } .cst-kpis > div { padding: 10px; } .cst-kpis .gt-k { font-size: 10px; letter-spacing: 0.06em; } }
+@media (max-width: 420px) { .cst-kpis b { font-size: 18px; } .cst-kpis > div { padding: 10px; } .cst-kpis .gt-k { font-size: 10px; letter-spacing: 0.06em; white-space: normal; line-height: 1.25; } }
 
 /* board */
 .cst-board { padding: 20px 0 28px; border-bottom: 1px solid var(--cst-line); scroll-margin-top: 72px; }
@@ -117,6 +117,8 @@
 .cst .gt-chart .legend small { margin-left: 6px; font-size: 12px; color: var(--gt-dim); }
 .cst .gt-chart .gt-head span { overflow-wrap: anywhere; }
 .cst-fresh { font-variant-numeric: tabular-nums; }
+.cst .gt-alt li a, .cst .gt-note { font-family: var(--gt-sans); }
+.cst .gt-alt li { padding: 9px 0; }
 
 /* Board tabs render after any scroll reveal ran and this page has no reveal observer: the shared sections
    (ServicesList, Process, CaseStudies) mark their items .rv (opacity 0 until revealed), so the Work tab showed a
@@ -172,7 +174,7 @@
 .cst-work-r img { width: 100%; height: auto; display: block; border: 1px solid var(--cst-line); border-radius: var(--cst-r); margin-bottom: 12px; }
 .cst-h2 { font: 700 var(--gt-fs-xl)/1.2 var(--gt-head) !important; margin: 0 0 14px !important; }
 .cst-track { font-size: 13px; color: var(--gt-muted); margin-top: 12px !important; }
-.cst-track .gt-ic { width: 14px; height: 14px; vertical-align: -2px; color: var(--gt-accent); }
+.cst-track .gt-ic { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; color: var(--gt-accent); }
 .cst-track b { color: var(--gt-text); font-weight: 500; }
 /* the board's services list: number, title and one line each (timelines and proofs are on /services) */
 .cst-work .gt-services.compact > li { padding: 10px 0; }
@@ -180,6 +182,8 @@
 .cst-work .gt-sv h3 { font-size: 16px; margin-bottom: 2px; }
 .cst-work .gt-sv p { font-size: 13.5px; line-height: 1.45; color: var(--gt-muted); }
 .cst-work-r .gt-more { margin-top: 12px; }
+.cst-work-r .gt-process h3 { font-size: 16px; }
+.cst-work-r .gt-process p { font-size: 13.5px; line-height: 1.45; }
 @media (max-width: 860px) { .cst-work { grid-template-columns: 1fr; } }
 
 .cst-contact { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 28px; }
