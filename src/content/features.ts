@@ -838,7 +838,7 @@ export const features: Feature[] = [
     summary: "Gully Chain is open to everyone on gullychain.xyz. The old waitlist endpoints still answer for older clients and gate nothing.",
     facts: [
       "POST /api/developer/chains-waitlist and POST /api/chains/waitlist still save an email, for backward compatibility only.",
-      "The app's Gully Chain page hands off to app.gullychain.xyz."
+      "The app's Gully Chain page hands off to kre8.fun."
     ],
     url: "https://gullylabs.xyz/",
     source: [
@@ -1031,7 +1031,7 @@ export const features: Feature[] = [
     status: "live",
     summary: "The managed-chain offer moved to Gully Chain's own site on 2026-10-26: gullylabs.xyz/chains answers 301 to gullychain.xyz. The plans config is still served here for older clients.",
     facts: [
-      "gullylabs.xyz/chains, /chains/launch and /chain-kit answer 301 to gullychain.xyz and app.gullychain.xyz (server/hosts.mjs movedPageUrl).",
+      "gullylabs.xyz/chains, /chains/launch and /chain-kit answer 301 to gullychain.xyz and kre8.fun (server/hosts.mjs movedPageUrl).",
       "GET /api/chains/plans still serves the config from server/chains-plans.mjs.",
       "Sign-up is open on gullychain.xyz; there is no waitlist. The old POST /api/chains/waitlist still answers but gates nothing."
     ],
@@ -1877,7 +1877,7 @@ export const features: Feature[] = [
     summary: "Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve.",
     facts: [
       "GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs).",
-      "New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.gullychain.xyz), Gully Safe (safe.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals.",
+      "New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Safe (safe.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals.",
       "A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that.",
       "The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz)."
     ],

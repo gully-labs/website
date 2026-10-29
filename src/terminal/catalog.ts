@@ -52,7 +52,7 @@ const LOGO = {
   studio: { kind: 'kit', webp: '/brand/web/logos/gullystudio-logo.webp', src: '/brand/web/logos/gullystudio-logo.png', w: 419, h: 120, display: 44 },
 } satisfies Record<string, LogoDef>
 
-const STREET = 'https://app.gullychain.xyz'
+const STREET = 'https://kre8.fun'
 
 export const PRODUCTS: ProductDef[] = [
   {
@@ -127,7 +127,7 @@ export const PRODUCTS: ProductDef[] = [
     short: 'Social trading app on Gully Chain.',
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Street' },
     url: STREET,
-    urlLabel: 'app.gullychain.xyz',
+    urlLabel: 'kre8.fun',
     docs: 'https://docs.gullychain.xyz',
     hub: ['street', 'social', 'copy'],
     og: '/brand/web/og/gully-chain.jpg',
@@ -441,7 +441,7 @@ export const PRODUCTS: ProductDef[] = [
     short: 'On-chain quests with ETH pools.',
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Quests' },
     url: `${STREET}/quests`,
-    urlLabel: 'app.gullychain.xyz/quests',
+    urlLabel: 'kre8.fun/quests',
     docs: 'https://docs.gullychain.xyz/gully-core/',
     hub: ['street', 'indexer'],
     og: '/brand/web/og/gully-chain.jpg',
@@ -466,8 +466,8 @@ export const PRODUCTS: ProductDef[] = [
     line: 'Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn USDC or points; publishers embed the wall and earn a share.',
     short: 'Funded quests any site can embed.',
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Offerwall' },
-    url: 'https://offers.gullychain.xyz/',
-    urlLabel: 'offers.gullychain.xyz',
+    url: 'https://offers.kre8.fun/',
+    urlLabel: 'offers.kre8.fun',
     docs: 'https://docs.gullychain.xyz/offerwall/',
     hub: ['offerwall'],
     og: '/brand/web/og/gully-chain.jpg',
@@ -478,7 +478,7 @@ export const PRODUCTS: ProductDef[] = [
       { t: 'Publishers earn a share', d: 'Any site or game embeds the wall with an iframe or offerwall.js and earns a share of every completion.' },
       { t: 'Sign in with Gully ID', d: 'Players and advertisers sign in with Gully ID (gullyid.xyz): passkey, wallet or email.' },
       { t: 'Funded through Gully Pay', d: 'Advertisers pay for campaigns through Gully Pay checkout (rolling out).' },
-      { t: 'Open stats', d: 'Completions, payouts and players as public JSON at offers.gullychain.xyz/v1/stats; the figures on this page come from it.' },
+      { t: 'Open stats', d: 'Completions, payouts and players as public JSON at offers.kre8.fun/v1/stats; the figures on this page come from it.' },
     ],
     how: [
       ['Advertisers fund a campaign', 'Create offers in the dashboard and fund the budget through Gully Pay.'],
@@ -500,7 +500,7 @@ export const PRODUCTS: ProductDef[] = [
     short: 'Posts and follows tied to your wallet.',
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Social' },
     url: STREET,
-    urlLabel: 'app.gullychain.xyz',
+    urlLabel: 'kre8.fun',
     docs: 'https://docs.gullychain.xyz',
     hub: ['social-api', 'social', 'street'],
     og: '/brand/web/og/gully-chain.jpg',
@@ -514,12 +514,12 @@ export const PRODUCTS: ProductDef[] = [
       { t: 'Invites and share cards', d: 'Invite codes earn points; every profile, trade and quest has a share card with live figures.' },
     ],
     how: [
-      ['Sign in with a passkey', 'Open app.gullychain.xyz; your wallet is your account.'],
+      ['Sign in with a passkey', 'Open kre8.fun; your wallet is your account.'],
       ['Claim a .gully name', 'Your name shows on every post, reply and follow.'],
       ['Post and follow', 'Write from Home and follow people from Explore or any profile.'],
     ],
     faq: [
-      ['Where is Gully Social?', 'Inside the Gully Street app at app.gullychain.xyz: the Home feed, Explore and your profile.'],
+      ['Where is Gully Social?', 'Inside the Gully Street app at kre8.fun: the Home feed, Explore and your profile.'],
       ['Who owns my posts?', 'They are tied to your wallet address; nobody else can post as you without a key you authorised.'],
       ['Which network does it use?', 'Gully Chain testnet, chain 485590.'],
     ],
@@ -533,7 +533,7 @@ export const PRODUCTS: ProductDef[] = [
     short: 'Mirror a trader with your own limits.',
     logo: { kind: 'mark', mark: 'chain', label: 'Copy Trading' },
     url: `${STREET}/copy`,
-    urlLabel: 'app.gullychain.xyz/copy',
+    urlLabel: 'kre8.fun/copy',
     docs: 'https://docs.gullychain.xyz',
     hub: ['copy', 'street'],
     og: '/brand/web/og/gully-chain.jpg',
@@ -551,7 +551,7 @@ export const PRODUCTS: ProductDef[] = [
       ['Copy runs on chain', 'The engine mirrors each new trade within your limits; your copies list every fill.'],
     ],
     faq: [
-      ['Where is it?', 'In the Gully Street app: app.gullychain.xyz/copy lists the leaders, /me/copies your copies and /me/leader your own leader stats.'],
+      ['Where is it?', 'In the Gully Street app: kre8.fun/copy lists the leaders, /me/copies your copies and /me/leader your own leader stats.'],
       ['Is it custodial?', 'No. Trades run from your own wallet through a session key you can revoke.'],
       ['Which network does it use?', 'Gully Chain testnet, chain 485590.'],
     ],
@@ -565,7 +565,7 @@ export const PRODUCTS: ProductDef[] = [
     short: 'Built-in launchpad on Gully Chain.',
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Core' },
     url: `${STREET}/launch`,
-    urlLabel: 'app.gullychain.xyz/launch',
+    urlLabel: 'kre8.fun/launch',
     docs: 'https://docs.gullychain.xyz/gully-core/',
     hub: ['street', 'indexer'],
     og: '/brand/web/og/gully-chain.jpg',

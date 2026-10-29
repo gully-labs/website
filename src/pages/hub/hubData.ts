@@ -69,9 +69,9 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'chain.png',
     line: 'The social L3 where your profile is your wallet.',
     about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
-    live: ['Gully Street app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'Gully launchpad and Gully Swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.gullychain.xyz)'],
+    live: ['Gully Street app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'Gully launchpad and Gully Swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.kre8.fun)'],
     next: ['Mainnet'],
-    links: [['App', 'https://app.gullychain.xyz'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz'], ['Offerwall', 'https://offers.gullychain.xyz/'], ['Social', 'https://app.gullychain.xyz'], ['Copy trading', 'https://app.gullychain.xyz/copy']],
+    links: [['App', 'https://kre8.fun'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz'], ['Offerwall', 'https://offers.kre8.fun/'], ['Social', 'https://kre8.fun'], ['Copy trading', 'https://kre8.fun/copy']],
     pages: [['Gully Social', 'gully-social'], ['Copy Trading', 'copy-trading'], ['Gully Offerwall', 'offerwall'], ['Gully Quests', 'quests'], ['Gully Street', 'street']],
   },
   {
@@ -158,7 +158,7 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
   { d: '2026-10-28', p: 'pay', t: 'USDC.e is the dollar on Gully Chain: glUSD is retired (redeem only) and the glUSD yield vault is withdraw only', s: 'testnet', href: 'https://gullypay.xyz' },
-  { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn USDC or points, publishers embed the wall', s: 'testnet', href: 'https://offers.gullychain.xyz/' },
+  { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn USDC or points, publishers embed the wall', s: 'testnet', href: 'https://offers.kre8.fun/' },
   { d: '2026-10-28', p: 'chain', t: 'Gully Sentry: free testnet Sentry Keys and watchers', s: 'testnet', href: 'https://sentry.gullychain.xyz/' },
   { d: '2026-10-27', p: 'id', t: 'Gully ID moves to gullyid.xyz, with a developer console', s: 'live', href: 'https://gullyid.xyz/developers' },
   { d: '2026-10-27', p: 'chain', t: 'Contract verification for Gully Chain: self-hosted Sourcify, 218 contracts verified', s: 'live', href: 'https://verify.gullychain.xyz' },
@@ -169,7 +169,7 @@ export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: st
   { d: '2026-10-27', p: 'chain', t: 'Faucet drain protection: Gully ID sign-in, budgets and limits', s: 'live', href: 'https://faucet.gullychain.xyz' },
   { d: '2026-10-27', p: 'chain', t: 'Gully Chain token lists 2.0.1 (default and extended) on gullychain.xyz', s: 'live', href: 'https://gullychain.xyz/tokenlist.json' },
   { d: '2026-10-27', p: 'studio', t: 'Gully Offerwall contracts on Gully Chain testnet', s: 'testnet', href: 'https://docs.gullystudio.xyz' },
-  { d: '2026-10-26', p: 'chain', t: 'Gully Quests on testnet: on-chain quests with ETH rewards', s: 'testnet', href: 'https://app.gullychain.xyz/quests' },
+  { d: '2026-10-26', p: 'chain', t: 'Gully Quests on testnet: on-chain quests with ETH rewards', s: 'testnet', href: 'https://kre8.fun/quests' },
   { d: '2026-10-26', p: 'pay', t: 'Magento 2 and OpenCart 4 plugins, Shopify connector (beta), WooCommerce 1.1', s: 'live', href: 'https://gullypay.xyz' },
   { d: '2026-10-26', p: 'holdermaps', t: 'HolderMaps on its own domain, with Gully Chain maps', s: 'live', href: 'https://holdermaps.xyz' },
   { d: '2026-10-26', p: 'rpc', t: 'Gully RPC: open sign-up, free tier, live gateway metrics', s: 'beta', href: 'https://gullyrpc.xyz' },
@@ -192,14 +192,14 @@ export interface HubLive {
   rpc: { features: { key: string; name: string; status: string }[]; chains: { name: string; chainId: number | null; status: string }[] } | null
   head: { block: number | null; timestamp: number | null } | null
   feed: { items: { id: string; kind: string; block: string; timestamp: string; txHash: string | null }[] } | null
-  /** Gully Offerwall public stats (offers.gullychain.xyz/v1/stats); stablecoin (USDC) amounts as numbers */
+  /** Gully Offerwall public stats (offers.kre8.fun/v1/stats); stablecoin (USDC) amounts as numbers */
   offers?: {
     hours: number | null
     series: { t: string; completions: number; paid: number; points: number }[]
     totals: { completions: number | null; paid: number | null; players: number | null }
     liveOffers: number | null
   } | null
-  /** Gully Chain copy-trading engine health (copy.gullychain.xyz/health) */
+  /** Gully Chain copy-trading engine health (copy.kre8.fun/health) */
   copy?: { leaders: number | null; activeCopies: number | null; block: number | null; dryRun: boolean } | null
   /** Gully Social: the newest page of posts (30) and of new accounts (50), counts and unix times only */
   social?: { count: number; more: boolean; times: number[] } | null

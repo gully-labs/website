@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-29T04:34:38.290Z",
+ "updatedAt": "2026-10-29T20:58:52.399Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -2330,8 +2330,8 @@
    "title": "Gully Labs home",
    "url": "https://gullylabs.xyz/",
    "section": "One studio. Eight products that work as one.",
-   "text": "We build the whole path a user takes on chain, and every piece plugs into the next. Gully ID sign-ins · 24 h gullyid.xyz Gully Chain block indexer.gullychain.xyz Work with us Explore the suite Building something? Send us a brief or see every product page.",
-   "updatedAt": "2026-10-28T13:04:45.052Z"
+   "text": "We build the whole path a user takes on chain, and every piece plugs into the next. Sign-ins 24 h gullyid.xyz Gully Chain block gullychain.xyz Work with us Explore the suite Building something? Send us a brief or see every product page.",
+   "updatedAt": "2026-10-29T20:58:52.399Z"
   },
   {
    "id": "33b5b79c35a2",
@@ -4274,8 +4274,8 @@
    "title": "Gully Chains sign-up (no waitlist) (Gully Chains)",
    "url": "https://gullylabs.xyz/",
    "section": "Gully Chains sign-up (no waitlist)",
-   "text": "Gully Chains sign-up (no waitlist) is part of Gully Chains. Status: live now. Gully Chain is open to everyone on gullychain.xyz. The old waitlist endpoints still answer for older clients and gate nothing. POST /api/developer/chains-waitlist and POST /api/chains/waitlist still save an email, for backward compatibility only. The app's Gully Chain page hands off to app.gullychain.xyz.",
-   "updatedAt": "2026-10-26T08:51:33.289Z",
+   "text": "Gully Chains sign-up (no waitlist) is part of Gully Chains. Status: live now. Gully Chain is open to everyone on gullychain.xyz. The old waitlist endpoints still answer for older clients and gate nothing. POST /api/developer/chains-waitlist and POST /api/chains/waitlist still save an email, for backward compatibility only. The app's Gully Chain page hands off to kre8.fun.",
+   "updatedAt": "2026-10-29T20:58:52.399Z",
    "feature": "chains-devnet-waitlist",
    "status": "live"
   },
@@ -4395,8 +4395,8 @@
    "title": "Gully Chains offer (moved to gullychain.xyz) (Gully Chains)",
    "url": "https://gullychain.xyz/",
    "section": "Gully Chains offer (moved to gullychain.xyz)",
-   "text": "Gully Chains offer (moved to gullychain.xyz) is part of Gully Chains. Status: live now. The managed-chain offer moved to Gully Chain's own site on 2026-10-26: gullylabs.xyz/chains answers 301 to gullychain.xyz. The plans config is still served here for older clients. gullylabs.xyz/chains, /chains/launch and /chain-kit answer 301 to gullychain.xyz and app.gullychain.xyz (server/hosts.mjs movedPageUrl). GET /api/chains/plans still serves the config from server/chains-plans.mjs. Sign-up is open on gullychain.xyz; there is no waitlist. The old POST /api/chains/waitlist still answers but gates nothing.",
-   "updatedAt": "2026-10-26T08:51:33.289Z",
+   "text": "Gully Chains offer (moved to gullychain.xyz) is part of Gully Chains. Status: live now. The managed-chain offer moved to Gully Chain's own site on 2026-10-26: gullylabs.xyz/chains answers 301 to gullychain.xyz. The plans config is still served here for older clients. gullylabs.xyz/chains, /chains/launch and /chain-kit answer 301 to gullychain.xyz and kre8.fun (server/hosts.mjs movedPageUrl). GET /api/chains/plans still serves the config from server/chains-plans.mjs. Sign-up is open on gullychain.xyz; there is no waitlist. The old POST /api/chains/waitlist still answers but gates nothing.",
+   "updatedAt": "2026-10-29T20:58:52.399Z",
    "feature": "chains-offer",
    "status": "live"
   },
@@ -4868,8 +4868,8 @@
    "title": "Live board and product launcher (Gully Labs)",
    "url": "https://gullylabs.xyz/products",
    "section": "Live board and product launcher",
-   "text": "Live board and product launcher is part of Gully Labs. Status: live now. Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve. GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs). New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.gullychain.xyz), Gully Safe (safe.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals. A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that. The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz).",
-   "updatedAt": "2026-10-26T22:38:57.233Z",
+   "text": "Live board and product launcher is part of Gully Labs. Status: live now. Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve. GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs). New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Safe (safe.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals. A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that. The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz).",
+   "updatedAt": "2026-10-29T20:58:52.399Z",
    "feature": "gully-labs-live-board",
    "status": "live"
   },
