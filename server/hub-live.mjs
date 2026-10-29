@@ -14,7 +14,7 @@
 //     sentrySale    Gully Sentry testnet keys (…/api/v1/sale/stats): minted, max supply, available
 //     sentryChain   Gully Sentry's own verdict on Gully Chain's assertions (…/api/v1/chain/health)
 //   Gully Sentry sends no CORS header for gullylabs.xyz, so it is read here too.
-//     offers Gully Offerwall public stats (offers.gullychain.xyz/v1/stats: completions, glUSD paid and points per hour,
+//     offers Gully Offerwall public stats (offers.gullychain.xyz/v1/stats: completions, stablecoin (USDC) paid and points per hour,
 //            last 24 h; totals and live offers), for /products/offerwall
 //     copy   Gully Chain copy-trading engine health (copy.gullychain.xyz/health: leaders indexed, active copies,
 //            engine head block), for /products/copy-trading and the Gully Chain card
@@ -120,7 +120,7 @@ export function shape(key, j) {
   }
   if (key === 'offers') {
     if (!Array.isArray(j.series) || !j.totals || typeof j.totals !== 'object') return null
-    // glUSD amounts arrive as decimal strings ("0.00"); anything unparseable is null, never zero
+    // stablecoin (USDC) amounts arrive as decimal strings ("0.00"); anything unparseable is null, never zero
     const usd = (v) => {
       const x = typeof v === 'number' ? v : typeof v === 'string' && /^\d+(\.\d+)?$/.test(v) ? Number(v) : NaN
       return Number.isFinite(x) ? x : null

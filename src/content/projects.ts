@@ -118,7 +118,7 @@ export const projects: Project[] = [
     tag: 'L3 chain',
     status: 'Beta',
     tagline: 'Our own chain, with a launchpad built in',
-    description: 'Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and glUSD. Figures are in test ETH and read from our own indexer.',
+    description: 'Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and USDC.e. Figures are in test ETH and read from our own indexer.',
     logo: '/brand/products/gullychain-icon-transparent-512.png',
     bg: '#0f0f10',
     accent: '#d9b563',
@@ -127,7 +127,7 @@ export const projects: Project[] = [
     padSm: '20px 40px',
     url: 'https://gullychain.xyz/',
     chains: ['Gully Chain Testnet'],
-    built: ['Gully Launchpad: bonding curve, graduation into a Gully Swap pool with the LP locked in GullyLPLocker', 'Gully Swap (Uniswap v3) and the GullySwapRouter', '.gully names, glUSD and bridged USDC, served through Gully RPC and indexed by our own indexer'],
+    built: ['Gully Launchpad: bonding curve, graduation into a Gully Swap pool with the LP locked in GullyLPLocker', 'Gully Swap (Uniswap v3) and the GullySwapRouter', '.gully names and bridged USDC (USDC.e), served through Gully RPC and indexed by our own indexer'],
   },
 ]
 

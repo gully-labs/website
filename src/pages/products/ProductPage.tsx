@@ -518,14 +518,14 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       }
     }
     case 'offerwall': {
-      // Gully Offerwall's public stats (offers.gullychain.xyz/v1/stats via /api/hub/live): glUSD is a testnet stablecoin.
+      // Gully Offerwall's public stats (offers.gullychain.xyz/v1/stats via /api/hub/live): payouts are a testnet stablecoin (USDC).
       const o = hl?.offers ?? null
       const oSt = o ? 'ok' : hlState === 'loading' ? 'loading' : 'offline'
       const ser = o?.series ?? []
       const labels = ser.map((x) => `${new Date(x.t).toISOString().slice(11, 13)}:00`)
       const tabs: ChartTab[] = [
         { id: 'done', label: 'Completions', title: 'Offer completions per hour, last 24 h (UTC)', series: [{ name: 'Completions', color: ACCENT, values: ser.map((x) => x.completions) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.completions))) : '—', sub: 'completions in the last 24 h · offers.gullychain.xyz/v1/stats' },
-        { id: 'paid', label: 'glUSD paid', title: 'glUSD paid to players per hour, last 24 h (UTC)', series: [{ name: 'glUSD', color: S[1], values: ser.map((x) => x.paid) }], labels, fmt: (v) => (v == null ? '—' : `${v.toFixed(2)} glUSD`), state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? `${sum(ser.map((x) => x.paid)).toFixed(2)} glUSD` : '—', sub: 'glUSD on Gully Chain testnet · no USD value' },
+        { id: 'paid', label: 'USDC paid', title: 'USDC paid to players per hour, last 24 h (UTC)', series: [{ name: 'USDC', color: S[1], values: ser.map((x) => x.paid) }], labels, fmt: (v) => (v == null ? '—' : `${v.toFixed(2)} USDC`), state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? `${sum(ser.map((x) => x.paid)).toFixed(2)} USDC` : '—', sub: 'testnet USDC on Gully Chain · no USD value' },
         { id: 'pts', label: 'Points', title: 'Points awarded per hour, last 24 h (UTC)', series: [{ name: 'Points', color: S[2], values: ser.map((x) => x.points) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.points))) : '—', sub: 'points awarded, last 24 h' },
       ]
       const EXP = 'https://testnet-explorer.gullychain.xyz/address/'
@@ -537,7 +537,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         kpis: [
           { label: 'Live offers', value: o?.liveOffers ?? null, sub: 'open to players now' },
           { label: 'Completions', value: o?.totals.completions ?? null, spark: ser.map((x) => x.completions), sub: 'all time' },
-          { label: 'glUSD paid', text: o?.totals.paid != null ? `${o.totals.paid.toFixed(2)} glUSD` : '—', sub: 'all time · testnet, no USD value' },
+          { label: 'USDC paid', text: o?.totals.paid != null ? `${o.totals.paid.toFixed(2)} USDC` : '—', sub: 'all time · testnet, no USD value' },
           { label: 'Players', value: o?.totals.players ?? null, sub: 'who completed an offer' },
         ],
         main: <TChart label="Gully Offerwall · by hour" tabs={tabs} />,
