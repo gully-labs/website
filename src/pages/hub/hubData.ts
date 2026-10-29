@@ -228,6 +228,8 @@ export interface Reading {
   kpi: { v: number; of?: number; label: string; short: string } | null
   /** why there is no KPI: the source is loading, offline, or has nothing yet */
   why: string | null
+  /** the same in a few words for the map node label (22 characters at most) */
+  note?: string
   series: { name: string; unit: string; kind: 'bars' | 'line'; rows: Row[] } | null
   extra: [string, string | number | null][]
   source: string
@@ -337,14 +339,20 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
       const listed = hub.quests.quests.filter((q) => /frog hop/i.test(q.title))
       const last = hub.quests.recent.find((q) => q.title && /frog hop/i.test(q.title) && q.at)
       if (listed.length) r.kpi = { v: listed.reduce((s, q) => s + (q.completions || 0), 0), label: 'Frog Hop quest completions (testnet)', short: 'Frog Hop runs' }
-      else r.why = last?.at ? `Frog Hop win ${ago(last.at, now)}` : 'No Frog Hop quest runs in the feed yet'
+      else if (last?.at) r.why = r.note = `Frog Hop win ${ago(last.at, now)}`
+      else {
+        r.why = 'No Frog Hop quest runs in the feed yet'
+        r.note = 'no Frog Hop runs yet'
+      }
     } else r.why = 'Loading…'
     r.series = { name: 'gullystudio.xyz response time', unit: 'ms', kind: 'line', rows: latency(hub, 'studio') }
   } else if (key === 'ai') {
     r.source = 'gullylabs.xyz/api/hub'
     const api = hub?.services.find((s) => s.key === 'ai-api')
     r.state = 'coming'
-    r.why = api && (api.state === 'up' || api.up) ? 'API answering' : 'API coming online: GPU box pending'
+    const answering = api && (api.state === 'up' || api.up)
+    r.why = answering ? 'API answering' : 'API coming online: GPU box pending'
+    r.note = answering ? 'API answering' : 'API coming online'
     r.series = { name: 'gullyai.xyz response time', unit: 'ms', kind: 'line', rows: latency(hub, 'gullyai') }
   }
   return r

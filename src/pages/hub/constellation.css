@@ -90,6 +90,33 @@
 .cst-events a:hover { text-decoration: underline; }
 .cst-empty { color: var(--gt-muted); font: 400 12.5px var(--gt-mono); padding: 24px 0; text-align: center; }
 .cst-src { font: 400 11px/1.4 var(--gt-mono); color: var(--gt-dim); }
+
+/* The site layout's console.css pads every `.lcp section` 20px 0 (specificity 0-1-1), and this page's root is
+   `.lcp.gt.cst`, so that rule beat .cst-cell (0-1-0) and the chart's .gt-panel: the cards lost their inner padding
+   and the chart panel gained 20 px above and below. These rules (0-2-1) restore the intended boxes whatever the CSS
+   order in the bundle. */
+.cst section.cst-board { padding: 20px 0 28px; }
+.cst section.cst-cell { padding: 14px; }
+.cst section.gt-panel { padding: 0; }
+
+/* Uptime in a board card: the grid's 50 one-minute cells need about 200 px, more than a third of the board
+   leaves next to the name and latency columns, so they ran out of the card and under the ms labels. In the card
+   the name and latency share the first line and the cells take the full width below it. */
+.cst-cell .gt-uptime { padding: 0; }
+.cst-cell .gt-uptime .row { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 5px 0; }
+.cst-cell .gt-uptime .row:hover { background: none; }
+.cst-cell .gt-uptime .cells { grid-column: 1 / -1; order: 3; gap: 1px; overflow: hidden; }
+.cst-cell .gt-uptime .cells i { min-width: 1px; height: 8px; }
+
+/* One type rule on the board (Gully Labs kit): names and sentences in Hanken Grotesk, uppercase labels, tabs and
+   axis ticks in IBM Plex Mono, every figure with tabular numerals. */
+.cst-cell .gt-uptime, .cst-cell .gt-uptime .ms { font: 400 13px/1.4 var(--gt-sans); font-variant-numeric: tabular-nums; }
+.cst-cell .gt-uptime .ms { font-size: 12px; }
+.cst-events time { font: 400 12px/1.4 var(--gt-sans); font-variant-numeric: tabular-nums; }
+.cst .gt-chart .legend { font: 400 13px/1.4 var(--gt-sans); font-variant-numeric: tabular-nums; align-items: baseline; }
+.cst .gt-chart .legend small { margin-left: 6px; font-size: 12px; color: var(--gt-dim); }
+.cst .gt-chart .gt-head span { overflow-wrap: anywhere; }
+.cst-fresh { font-variant-numeric: tabular-nums; }
 @media (max-width: 1100px) { .cst-live { grid-template-columns: 1fr 1fr; } .cst-live > .cst-cell-chart { grid-column: 1 / -1; grid-row: 1; } }
 @media (max-width: 680px) { .cst-live { grid-template-columns: 1fr; } }
 

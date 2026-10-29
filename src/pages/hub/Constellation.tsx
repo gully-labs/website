@@ -22,6 +22,15 @@ const fmtUsd = (v: number | null) => (v == null ? '—' : v >= 1e6 ? `$${(v / 1e
 const tagOf = (s: string) => (s === 'live' ? 'live' : s === 'soon' || s === 'rolling out' || s === 'coming soon' ? 'soon' : 'new')
 
 /* ---------------------------------------------------------------- the map ---- */
+/** A node's one-line reading when it has no KPI: the short note, never a sentence cut mid-word (the full `why` stays
+    in the node's aria-label, its title and the drawer). Nodes sit about 300 map units apart, so 22 characters is the cap. */
+function mapNote(rd: Reading) {
+  const t = rd.note ?? (rd.why && /unreadable/i.test(rd.why) ? 'source unreadable' : rd.why) ?? '…'
+  if (t.length <= 22) return t
+  const cut = t.slice(0, 22)
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), 12)).replace(/[\s,:·]+$/, '')}…`
+}
+
 function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Reading>; onOpen: (k: ProductKey, from: Element) => void; hot: { keys: ProductKey[]; nb: boolean } | null; setHot: (h: { keys: ProductKey[]; nb: boolean } | null) => void }) {
   const box = useRef<HTMLDivElement>(null)
   const [tall, setTall] = useState(false)
@@ -80,7 +89,7 @@ function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Re
           const r = p.key === 'chain' ? L.rc : L.r
           const at = L.at[p.key]
           const rd = R[p.key]
-          const metric = p.key === 'chain' && rd.kpi ? `block ${fmtNum(rd.kpi.v)}` : rd.kpi ? `${kpiText(rd.kpi)} ${rd.kpi.short}` : (rd.why ?? '…').replace(/:.*$/, '')
+          const metric = p.key === 'chain' && rd.kpi ? `block ${fmtNum(rd.kpi.v)}` : rd.kpi ? `${kpiText(rd.kpi)} ${rd.kpi.short}` : mapNote(rd)
           const cls = ['node', p.status === 'soon' ? 'is-soon' : rd.state === 'up' ? 'is-up' : '', lit ? (lit.on.has(p.key) ? 'hot' : 'dim') : ''].join(' ')
           return (
             <g
@@ -103,6 +112,7 @@ function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Re
               onFocus={() => setHot({ keys: [p.key], nb: true })}
               onBlur={() => setHot(null)}
             >
+              <title>{`${p.name}: ${rd.kpi ? `${kpiText(rd.kpi)} ${rd.kpi.label}` : (rd.why ?? '')}`}</title>
               <circle className="ring" r={r + 2} />
               <circle className="halo" r={r} />
               <image href={p.icon} x={-(r - 5)} y={-(r - 5)} width={2 * (r - 5)} height={2 * (r - 5)} clipPath={`url(#cst-cp-${p.key})`} preserveAspectRatio="xMidYMid slice" />
@@ -113,7 +123,7 @@ function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Re
                 {p.name}
               </text>
               <text className="mt" y={r + 32} textAnchor="middle">
-                {metric.length > 30 ? `${metric.slice(0, 29)}…` : metric}
+                {metric}
               </text>
             </g>
           )
@@ -295,8 +305,8 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
   const chainRows = R.chain.series?.rows ?? []
   const idRows = R.id.series?.rows ?? []
   const tabs: ChartTab[] = [
-    { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (UTC)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)' },
-    { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (UTC)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public' },
+    { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (UTC)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)', legendTotal: chainRows.length ? `${chainRows.length} h total` : undefined },
+    { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (UTC)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public', legendTotal: idRows.length ? `${idRows.length} h total` : undefined },
   ]
   const s = suite(src)
   return (
