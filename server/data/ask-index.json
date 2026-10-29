@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-28T20:43:00.160Z",
+ "updatedAt": "2026-10-29T04:34:38.290Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -4434,14 +4434,14 @@
    "status": "planned"
   },
   {
-   "id": "3ba26c86a4d3",
+   "id": "4ed2085dfc61",
    "source": "Roadmap",
-   "title": "Roadmap: DeepCore built into client chains (Gully Chains), not available yet",
+   "title": "Roadmap: Gully Core built into client chains (Gully Chains), not available yet",
    "url": "https://gullylabs.xyz/chain-kit",
-   "section": "DeepCore built into client chains (planned)",
-   "text": "DeepCore built into client chains (Gully Chains) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Putting the DeepCore launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built. deepcore has status planned and model \"revenue share on launch fees\" in server/chains-plans.mjs; price TBA.",
-   "updatedAt": "2026-10-19T01:23:17.562Z",
-   "feature": "chains-deepcore-day-one",
+   "section": "Gully Core built into client chains (planned)",
+   "text": "Gully Core built into client chains (Gully Chains) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Putting the Gully Core launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built. gully-core has status planned and model \"revenue share on launch fees\" in server/chains-plans.mjs; price TBA.",
+   "updatedAt": "2026-10-29T04:34:38.290Z",
+   "feature": "chains-gully-core-day-one",
    "status": "planned"
   },
   {

@@ -15,7 +15,7 @@ export const SERVICES = [
   { id: 'usdc-gas', name: 'Pay gas in USDC', kind: 'addon', status: 'planned', body: 'Users pay fees in USDC instead of the chain token.' },
   { id: 'pay', name: 'Gully Pay on your chain', kind: 'addon', status: 'testnet', body: 'Non-custodial checkout and pay links on your chain.' },
   { id: 'hyperlane', name: 'Hyperlane setup', kind: 'addon', status: 'testnet', body: 'Cross-chain messaging between your chain and others. A one-time setup.' },
-  { id: 'deepcore', name: 'DeepCore launchpad on day one', kind: 'addon', status: 'planned', body: 'DeepCore, the Gully Labs launchpad, on your chain from the start, with a revenue share on launch fees.' },
+  { id: 'gully-core', name: 'Gully Core launchpad on day one', kind: 'addon', status: 'planned', body: 'Gully Core, the launchpad and DEX core of Gully Chain, on your chain from the start, with a revenue share on launch fees.' },
 ]
 
 /** The stack, in order, as the page draws it. */
@@ -40,7 +40,7 @@ export const CHAINS = {
     { id: 'usdc-gas', name: 'Pay gas in USDC', model: 'monthly', usd: null, status: 'planned' },
     { id: 'pay', name: 'Gully Pay on your chain', model: 'transaction fee', usd: null, status: 'testnet' },
     { id: 'hyperlane', name: 'Hyperlane setup', model: 'one-time', usd: null, status: 'testnet' },
-    { id: 'deepcore', name: 'DeepCore launchpad', model: 'revenue share on launch fees', usd: null, status: 'planned' },
+    { id: 'gully-core', name: 'Gully Core launchpad', model: 'revenue share on launch fees', usd: null, status: 'planned' },
   ],
   note: 'Prices before launch may change.',
 }

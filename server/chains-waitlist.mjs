@@ -171,7 +171,7 @@ export async function handleChains(req, res, url) {
     void notifyIntake({
       kind: 'chains-waitlist',
       title: `New Gully Chains waitlist sign-up: ${decodeEntities(x.project)}`,
-      fields: [['Contact', decodeEntities(x.contact)], ['Use case', x.useCase], ['Scale', x.scale], ['Gas token', x.gasToken], ['DA', x.da], ['Account abstraction', x.wantsAa], ['DeepCore', x.wantsDeepcore], ['Notes', decodeEntities(x.notes)]],
+      fields: [['Contact', decodeEntities(x.contact)], ['Use case', x.useCase], ['Scale', x.scale], ['Gas token', x.gasToken], ['DA', x.da], ['Account abstraction', x.wantsAa], ['Gully Core launchpad', x.wantsDeepcore], ['Notes', decodeEntities(x.notes)]],
       contact: decodeEntities(x.contact),
     })
     return json(res, 201, { ok: true, alreadyOnList: false }), true

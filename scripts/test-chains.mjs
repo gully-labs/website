@@ -49,7 +49,7 @@ try {
   check('managed mainnet price, profit share and DA come from the config', plans.data?.mainnet?.fromUsdPerMonth === CHAINS.mainnet.fromUsdPerMonth && plans.data?.mainnet?.sequencerProfitPct === CHAINS.mainnet.sequencerProfitPct && plans.data?.mainnet?.daAtCost === true && CHAINS.mainnet.fromUsdPerMonth === 3500 && CHAINS.mainnet.sequencerProfitPct === 5)
   check('every service and add-on in the config is in the answer', plans.data?.services?.length === SERVICES.length && plans.data?.addons?.length === CHAINS.addons.length)
   check('the price note says prices may change', /may change/i.test(plans.data?.note ?? ''))
-  check('the services are marked included or add-on, and the not-yet-built ones carry a status', SERVICES.every((s) => s.kind === 'included' || s.kind === 'addon') && SERVICES.find((s) => s.id === 'aa')?.status === 'with-testnet' && SERVICES.find((s) => s.id === 'paymaster')?.status === 'with-testnet' && SERVICES.find((s) => s.id === 'usdc-gas')?.status === 'planned' && SERVICES.find((s) => s.id === 'deepcore')?.status === 'planned')
+  check('the services are marked included or add-on, and the not-yet-built ones carry a status', SERVICES.every((s) => s.kind === 'included' || s.kind === 'addon') && SERVICES.find((s) => s.id === 'aa')?.status === 'with-testnet' && SERVICES.find((s) => s.id === 'paymaster')?.status === 'with-testnet' && SERVICES.find((s) => s.id === 'usdc-gas')?.status === 'planned' && SERVICES.find((s) => s.id === 'gully-core')?.status === 'planned')
   // The /chains page moved to gullychain.xyz (2026-10-26); the config the API serves still names no competitor.
   check('the plans answer names no competitor', !/(conduit|caldera|alchemy|altlayer|raas|gelato|zksync|optimism stack|op stack|polygon cdk)/i.test(JSON.stringify(plans.data)))
 
@@ -67,7 +67,7 @@ try {
     ['an unknown scale', { ...good(3), scale: 'huge' }],
     ['an unknown gas token', { ...good(3), gasToken: 'btc' }],
     ['an unknown DA choice', { ...good(3), da: 'celestia' }],
-    ['a non yes/no DeepCore answer', { ...good(3), wantsDeepcore: 'maybe' }],
+    ['a non yes/no Gully Core answer', { ...good(3), wantsDeepcore: 'maybe' }],
   ]
   for (const [name, body] of bad) {
     const r = await post(body, '10.1.1.' + (bad.findIndex((b) => b[0] === name) + 1))

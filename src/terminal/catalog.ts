@@ -90,7 +90,7 @@ export const PRODUCTS: ProductDef[] = [
     slug: 'chain',
     name: 'Gully Chain',
     group: 'chain',
-    line: 'An Arbitrum Orbit L3 for launches and trading, with DeepCore built in as its launchpad.',
+    line: 'An Arbitrum Orbit L3 for launches and trading, with Gully Core built in as its launchpad and DEX core.',
     short: 'L3 on Arbitrum. Testnet 485590 live.',
     logo: LOGO.chain,
     url: 'https://gullychain.xyz',
@@ -101,7 +101,7 @@ export const PRODUCTS: ProductDef[] = [
     category: 'BlockchainNetwork',
     features: [
       { t: 'Arbitrum Orbit L3', d: 'Settles to Arbitrum. Chain id 485590 on testnet, with its own explorer, faucet and indexer.' },
-      { t: 'DeepCore built in', d: 'The launchpad is part of the chain: a token and its pool in one step, graduation to Gully Swap.' },
+      { t: 'Gully Core built in', d: 'The launchpad is part of the chain: a token and its pool in one step, graduation to Gully Swap.' },
       { t: 'Served by Gully RPC', d: 'A free public RPC, plus keyed access at rpc.gullyrpc.xyz/<project>/evm/485590.' },
       { t: 'Two bridges', d: 'The canonical Arbitrum bridge and a Hyperlane fast lane (gETH) in Gully Bridge.' },
       { t: 'Names and quests', d: '.gully names, on-chain Quests with ETH reward pools and the Arcade, all in Gully Street.' },
