@@ -30,7 +30,6 @@ function stats() {
   const tvl = (base) => days(40, (i) => Math.round(base * (0.9 + (i / 39) * 0.1 + Math.sin(i / 4) * 0.02)))
   const venue = (key, o) => ({ key, state: 'ok', volumeAllUsd: null, volumeAllSince: null, volume24hUsd: 0, tvlUsd: null, fees24hUsd: 0, feesAllUsd: null, daily: [], counts: {}, notes: [], source: { url: `https://${key}.example/api`, readAt: iso }, ...o })
   const v = [
-    venue('deepcore', { daily: zeros(9), tvlUsd: 1200, volumeAllUsd: 0, volumeAllSince: iso, feesAllUsd: 2 }),
     venue('peddleswap', { daily: zeros(30), tvlUsd: 0, volume30dUsd: 0 }),
     venue('peddles', { tvlUsd: 70000, volumeAllUsd: 41000, feesAllUsd: 410, fees24hUsd: 0 }),
     venue('peddlequest', { tvlUsd: 1100, feesAllUsd: 22 }),
@@ -39,13 +38,12 @@ function stats() {
     const dl = { name: 'DefiLlama', url: 'https://api.llama.fi', fallback: true }
     const own = (n) => ({ name: n, url: `https://${n}.example`, fallback: false })
     const peddlesVol = days(60, (i) => (i < 48 ? 300 + ((i * 37) % 500) : 0))
-    Object.assign(v[0], { series: { volume: zeros(9), fees: [], tvl: tvl(1200) }, sources: { volume: own('DeepCore API'), fees: null, tvl: dl }, lastActivity: null })
-    Object.assign(v[1], { series: { volume: zeros(30), fees: [], tvl: [] }, sources: { volume: own('PeddleSwap API'), fees: null, tvl: null }, lastActivity: null })
-    Object.assign(v[2], { daily: peddlesVol, series: { volume: peddlesVol, fees: peddlesVol.map((p) => ({ t: p.t, v: p.v / 100 })), tvl: tvl(70000) }, sources: { volume: dl, fees: dl, tvl: dl }, lastActivity: new Date((today - 12 * DAY) * 1000).toISOString() })
-    Object.assign(v[3], { series: { volume: [], fees: days(40, (i) => (i % 5 === 0 ? 1.5 : 0)), tvl: tvl(1100) }, sources: { volume: null, fees: dl, tvl: dl }, lastActivity: null })
+    Object.assign(v[0], { series: { volume: zeros(30), fees: [], tvl: [] }, sources: { volume: own('PeddleSwap API'), fees: null, tvl: null }, lastActivity: null })
+    Object.assign(v[1], { daily: peddlesVol, series: { volume: peddlesVol, fees: peddlesVol.map((p) => ({ t: p.t, v: p.v / 100 })), tvl: tvl(70000) }, sources: { volume: dl, fees: dl, tvl: dl }, lastActivity: new Date((today - 12 * DAY) * 1000).toISOString() })
+    Object.assign(v[2], { series: { volume: [], fees: days(40, (i) => (i % 5 === 0 ? 1.5 : 0)), tvl: tvl(1100) }, sources: { volume: null, fees: dl, tvl: dl }, lastActivity: null })
   }
-  const covers = { volumeAllUsd: ['deepcore', 'peddles'], volume24hUsd: ['deepcore', 'peddleswap', 'peddles'], tvlUsd: v.map((x) => x.key), fees24hUsd: ['deepcore', 'peddleswap', 'peddles'], feesAllUsd: ['deepcore', 'peddles', 'peddlequest'] }
-  return { generatedAt: iso, totals: { volumeAllUsd: 41000, volume24hUsd: 0, tvlUsd: 72300, fees24hUsd: 0, feesAllUsd: 434, covers, unread: [] }, daily: [], venues: v }
+  const covers = { volumeAllUsd: ['peddles'], volume24hUsd: ['peddleswap', 'peddles'], tvlUsd: v.map((x) => x.key), fees24hUsd: ['peddleswap', 'peddles'], feesAllUsd: ['peddles', 'peddlequest'] }
+  return { generatedAt: iso, totals: { volumeAllUsd: 41000, volume24hUsd: 0, tvlUsd: 71100, fees24hUsd: 0, feesAllUsd: 432, covers, unread: [] }, daily: [], venues: v }
 }
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json' }

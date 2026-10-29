@@ -3,7 +3,7 @@
 //   node scripts/test-gully-score.mjs        (no build needed; TEST_PORT overrides the port, default 8798)
 //
 // The chain is a JavaScript stub (setScoreRpcForTest / setMonitorRpcForTest), Sourcify and the Holder Map are a
-// stubbed fetch, DeepCore's launch list and the published-report source are stub functions. Nothing upstream is read.
+// stubbed fetch, the Gully Chain indexer is stubbed and the published-report source is a stub function. Nothing upstream is read.
 //
 // Covers: the component maths for each kind of control and upgrade setup, missing data left out (never 0) and no
 // score under the minimum coverage, the published-report-only rule, that nothing paid can change a score (imports,
@@ -48,7 +48,6 @@ Object.assign(process.env, {
   DIST_DIR: dist,
   ADMIN_TOKEN: ADMIN,
   TRACKER_LOOP: 'off',
-  DEEPCORE_LOOP: 'off',
   ASK_REMOTE: 'off',
   GULLY_ALLOW_LOOPBACK_WEBHOOKS: '1',
   ...Object.fromEntries([1, 8453, 56, 42161, 10, 137, 43114].map((id) => [`GULLY_RPC_${id}`, 'http://127.0.0.1:9'])),
@@ -171,7 +170,6 @@ score.setScoreFetchForTest(async (url) => {
   }
   throw new TypeError(`unexpected fetch ${url}`)
 })
-score.setLaunchesForTest(async (chainId) => ({ state: 'ok', launches: chainId === 8453 ? [{ token: F, legs: [{ locked: true }, { locked: true }], links: { token: `https://deepcore.fun/tokens/${F}?net=base` } }] : [] }))
 let report = null
 score.setReportSource(async (chainId, a) => (a === A ? report : null))
 
@@ -204,7 +202,7 @@ try {
   check('A: upgradeable scores 30 and names the current code', part(a, 'upgradeability').score === 30 && /0x0000…1001/.test(part(a, 'upgradeability').reason))
   check('A: deployed 400 days ago scores 100', part(a, 'age').score === 100 && /400 days ago/.test(part(a, 'age').reason), part(a, 'age').reason)
   check('A: not watched → recent changes not available, with the reason', !part(a, 'changes').available && /does not watch/.test(part(a, 'changes').reason))
-  check('A: not a DeepCore launch → liquidity not available', !part(a, 'liquidity').available)
+  check('A: off Gully Chain → liquidity not available, said plainly', !part(a, 'liquidity').available && /Gully Launchpad launches on Gully Chain/.test(part(a, 'liquidity').reason), part(a, 'liquidity').reason)
   check('A: Holder Map answers 404 → not available, said plainly', !part(a, 'holders').available && /not running on this server/.test(part(a, 'holders').reason), part(a, 'holders').reason)
   check('A: no report → review not available', !part(a, 'review').available)
   const expectA = Math.round((W.verified * 100 + W.control * 15 + W.timelock * 0 + W.upgradeability * 30 + W.age * 100) / (W.verified + W.control + W.timelock + W.upgradeability + W.age))
@@ -248,7 +246,7 @@ try {
   check('E: a minimal clone cannot change its code: 100', part(e, 'upgradeability').score === 100 && /clone/.test(part(e, 'upgradeability').value.toLowerCase()))
   const f = await get(8453, F)
   check('F: a Safe needing 2 of 3 scores 100', part(f, 'control').score === 100 && part(f, 'control').value === 'Safe, 2 of 3')
-  check('F: a DeepCore launch with every pool locked scores 100, linked to DeepCore', part(f, 'liquidity').score === 100 && part(f, 'liquidity').evidence[0].url.startsWith('https://deepcore.fun/'))
+  check('F: a launch on Base reads no lock record: liquidity not available, never scored 0', !part(f, 'liquidity').available && !JSON.stringify(f).includes('deepcore'))
   check('F: Launch Health from the Holder Map is used when present', part(f, 'holders').score === 72 && part(f, 'holders').evidence[0].url.endsWith(`/holders/base/${F}`))
   const g = await get(8453, G)
   check('G: not verified is a real 0 (available), not missing', part(g, 'verified').available && part(g, 'verified').score === 0)

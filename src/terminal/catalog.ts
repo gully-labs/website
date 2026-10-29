@@ -442,7 +442,7 @@ export const PRODUCTS: ProductDef[] = [
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Quests' },
     url: `${STREET}/quests`,
     urlLabel: 'app.gullychain.xyz/quests',
-    docs: 'https://docs.gullychain.xyz/gully-core/',
+    docs: 'https://docs.gullychain.xyz',
     hub: ['street', 'indexer'],
     og: '/brand/web/og/gully-chain.jpg',
     category: 'GameApplication',

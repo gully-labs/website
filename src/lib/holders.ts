@@ -5,9 +5,9 @@ import type { Load } from './tracker'
    (the site's map, the stock and launch pages, the Telegram Mini App and the embed). Nothing here
    computes a figure: every number is the server's. */
 
-export type HolderLabelKind = 'deployer' | 'pool' | 'lock' | 'burn' | 'token' | 'deepcore' | 'router' | 'gully' | 'exchange' | 'known'
+export type HolderLabelKind = 'deployer' | 'pool' | 'lock' | 'burn' | 'token' | 'router' | 'gully' | 'exchange' | 'known'
 export type HolderFlag = 'deployer' | 'bundled' | 'funded-by-deployer'
-export const INFRA_KINDS: HolderLabelKind[] = ['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange']
+export const INFRA_KINDS: HolderLabelKind[] = ['pool', 'lock', 'burn', 'token', 'router', 'gully', 'exchange']
 
 export interface HolderNode {
   id: string
@@ -56,18 +56,14 @@ export interface HolderForensics {
     coinNote: string | null
   }
   deployerPct: number | null
-  liquidity: {
-    locked: boolean | null
-    locker: string | null
-    since: string | null
-  }
   buyers: number
   riskLine: string
   /** Wallets that bought in the first blocks after the launch (bots and fast buyers). */
   snipers?: { wallets: number; pct: number | null; blocks: number }
 }
 
-export type HealthPartId = 'liquidity' | 'bundle' | 'deployer' | 'top10' | 'snipers' | 'record'
+/** Launch Health's parts (server/holders-intel.mjs HEALTH_WEIGHTS: 30, 30, 25 and 15 points). */
+export type HealthPartId = 'bundle' | 'deployer' | 'top10' | 'snipers'
 export interface HolderHealth {
   /** 0–100, or null when too little is known to score. */
   score: number | null
@@ -83,34 +79,6 @@ export interface HolderHealth {
     value: string
     reason: string
     wallets: string[]
-  }[]
-}
-export type LaunchOutcome = 'trading' | 'liquidity-pulled' | 'deployer-sold' | 'unknown'
-export interface DeployerHistory {
-  checked: boolean
-  reason: string | null
-  total: number
-  serial: boolean
-  launches: {
-    chainKey: string
-    token: string
-    symbol: string | null
-    createdAt: string
-    outcome: LaunchOutcome
-    note: string
-    path: string
-  }[]
-}
-export interface CrossToken {
-  cluster: string
-  checkedWallets: number
-  line: string
-  tokens: {
-    chainKey: string
-    token: string
-    symbol: string | null
-    wallets: number
-    path: string
   }[]
 }
 /** A hidden link: two mapped wallets joined through an address that is not on the map. */
@@ -129,12 +97,12 @@ export interface HolderFrame {
   top10Pct: number | null
   holders: number | null
 }
-/** deepcore-launch: a DeepCore launch. launch: another launchpad's token (venue says which). stock: a tracked stock token. token: any other token. */
-export type HolderKind = 'deepcore-launch' | 'launch' | 'stock' | 'token'
+/** launch: a launchpad's token (venue says which: the Gully Launchpad or a registered launchpad). stock: a tracked stock token. token: any other token. */
+export type HolderKind = 'launch' | 'stock' | 'token'
 export interface HolderMapOk {
   state: 'ok'
   kind: HolderKind
-  /** Other launchpads' launches: the launchpad's name. */
+  /** Launches: the launchpad's name. */
   venue?: string | null
   /** full: every holder's exact balance. top: the biggest holders only, and why (shown on the map). */
   coverage?: { level: 'full' | 'top'; reason: string | null; shown: number | null }
@@ -193,8 +161,6 @@ export interface HolderMapOk {
   timeline: { basis: string; frames: HolderFrame[] } | null
   /** Launches only (else null): an explainable 0–100 score. Never gated. */
   health?: HolderHealth | null
-  deployerHistory?: DeployerHistory | null
-  crossToken?: CrossToken | null
   hidden?: HiddenLink[]
   live?: { supported: boolean; cursor: number | null }
 }
@@ -297,7 +263,7 @@ export interface ResolveChecked {
 export interface HolderSources {
   chains: { chain: string; name: string; stocks: boolean; launches: boolean; tokens: boolean; any: 'full' | 'top' | 'none' }[]
 }
-/** GET /api/holders/launches */
+/** GET /api/holders/launches: the newest Gully Launchpad launches on Gully Chain, with their checks. */
 export interface CheckedLaunch {
   chainKey: string
   chainName: string
@@ -314,6 +280,8 @@ export interface CheckedLaunch {
   path: string
 }
 export interface CheckedLaunches {
+  /** unreadable: the Gully Chain indexer could not be read just now (launches is empty). */
+  state?: 'ok' | 'unreadable'
   asOf: string | null
   launches: CheckedLaunch[]
 }
@@ -343,30 +311,6 @@ export interface LiveUpdate {
   pcts: Record<string, number>
   asOf: string
 }
-/** GET /api/holders/:chain/:token/wallet/:address */
-export interface WalletDetail {
-  state: 'ok' | 'unsupported' | 'error'
-  firstBuy: {
-    at: string | null
-    block: number
-    tokens: number
-    paid: { amount: number; symbol: string } | null
-  } | null
-  buys: number
-  sells: number
-  entryPrice: number | null
-  priceNow: number | null
-  quote: string | null
-  pnlPct: number | null
-  otherLaunches: {
-    chainKey: string
-    token: string
-    symbol: string | null
-    path: string
-  }[]
-  asOf: string
-}
-
 /** A one-shot JSON GET: resolves to the body, or null when it failed. */
 export async function getJson<T>(path: string): Promise<T | null> {
   try {

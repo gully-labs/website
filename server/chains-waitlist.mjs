@@ -77,6 +77,8 @@ export function readEntry(b) {
   const gasToken = oneOf('gasToken', b?.gasToken)
   const da = oneOf('da', b?.da)
   const wantsAa = yesNo(b?.wantsAa)
+  // The Gully Core launchpad answer. The wire and storage name `wantsDeepcore` predates the rename (2026-10-29) and is
+  // kept so stored rows, the CSV column and forms already in the wild keep working; every label says Gully Core.
   const wantsDeepcore = yesNo(b?.wantsDeepcore)
   if ([useCase, scale, gasToken, da, wantsAa, wantsDeepcore].includes(null)) return { ok: false, error: 'One of the answers is not a listed choice.' }
   return { ok: true, row: { project, contact: clean(contact, 254), useCase, scale, gasToken, da, wantsAa, wantsDeepcore, notes: clean(b?.notes, 2000) } }

@@ -93,7 +93,7 @@ export function HmSearch({ compact = false, autoFocus = false }: { compact?: boo
                     <b>{m.symbol ?? `${m.token.slice(0, 6)}…${m.token.slice(-4)}`}</b>
                     <span className="c">{m.chain === 'gully' ? 'Gully Chain' : m.chainName}</span>
                     <span className="k">
-                      {m.kind === 'deepcore-launch' ? 'DeepCore launch' : m.kind === 'launch' ? 'Launchpad token' : m.kind === 'token' ? 'Token' : 'Stock token'}
+                      {m.kind === 'launch' ? 'Launchpad token' : m.kind === 'token' ? 'Token' : 'Stock token'}
                       {m.available === false ? ' · coming soon' : ''}
                     </span>
                   </Link>

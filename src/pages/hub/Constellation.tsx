@@ -464,9 +464,7 @@ function ProductTable({ R, open }: { R: Record<ProductKey, Reading>; open: (k: P
   )
 }
 
-// The venues line: Peddles, PeddleSwap and PeddleQuest only. /api/stats still reads a `deepcore` venue, but that is
-// DeepCore's own cross-chain API (deepcore.fun), not Gully Core, and the partnership ended 2026-10-29, so it is left
-// out of the sum and the names rather than relabelled.
+// The venues line: Peddles, PeddleSwap and PeddleQuest only (Gully Chain's testnet venue has no dollar figures).
 const BUILT = ['peddles', 'peddleswap', 'peddlequest'] as const
 function builtVenues(src: Sources) {
   const vs = (src.stats?.venues ?? []).filter((v) => (BUILT as readonly string[]).includes(v.key) && v.state === 'ok') as { tvlUsd?: number | null; volumeAllUsd?: number | null; feesAllUsd?: number | null }[]
@@ -552,6 +550,20 @@ export function Constellation() {
   const back = useRef<Element | null>(null)
   const [tab, setTab] = useState<TabId>(() => (typeof location !== 'undefined' && HASH[location.hash]) || 'live')
   const board = useRef<HTMLElement>(null)
+  const strip = useRef<HTMLDivElement>(null)
+
+  // On phones the tab strip scrolls sideways: keep the active tab in view (centred where it can be). Only the strip's
+  // own scrollLeft moves, never the page, so opening a tab from a header link does not jump the page twice.
+  useEffect(() => {
+    const el = strip.current
+    const btn = el?.querySelector<HTMLElement>(`#cst-t-${tab}`)
+    if (!el || !btn || el.scrollWidth <= el.clientWidth) return
+    const r = btn.getBoundingClientRect()
+    const box = el.getBoundingClientRect()
+    const left = el.scrollLeft + (r.left - box.left) - (el.clientWidth - r.width) / 2
+    const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollTo({ left: Math.max(0, left), behavior: reduce ? 'auto' : 'smooth' })
+  }, [tab])
 
   // toasts: only for real changes between two polls
   const seen = useRef<Seen | null>(null)
@@ -667,7 +679,7 @@ export function Constellation() {
 
       <section className="cst-board" id="board" ref={board} aria-label="Live board, news, products, services and contact">
         <div className="gt-wrap">
-          <div className="cst-tabs" role="tablist" aria-label="Board">
+          <div className="cst-tabs" role="tablist" aria-label="Board" ref={strip}>
             {TABS.map((t) => (
               <button
                 key={t.id}

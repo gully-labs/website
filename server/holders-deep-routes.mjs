@@ -58,7 +58,7 @@
 //   budget: { limits: { rpcCalls, logSpans, explorerCalls, ms, holders, hops }, used: { rpcCalls, logSpans, explorerCalls, ms } },
 //   base: { mapState, kind, note, sources?, holders? },
 //   sections: {
-//     trading:  { state, method: 'deepcore-launch-forensics' | 'inferred-from-transfers', source, confidence,
+//     trading:  { state, method: 'launch-forensics' | 'inferred-from-transfers', source, confidence,
 //                 launchBlock?, firstLiquidityBlock?, firstTradeBlock, window: { blocks }, pool?, snipers: { count, pctOfSupply, wallets },
 //                 bundled: { count, pctOfSupply, … }, bundles?: [{ block, wallets, count }], reason? },
 //     funding:  { state, reason, wallets, hopsMax, sources: [string],
@@ -69,7 +69,7 @@
 //     clusters: { state, reason, direct: { clusters }, sharedFunder: { clusters }, combined: [{ id, wallets, count,
 //                 pctOfSupply, basis: 'direct-transfers'|'shared-funder'|'direct-transfers+shared-funder', confidence }] },
 //     deployer: { state, reason, address, source, tokens: [{ chain, address, symbol, outcome, source, confidence }],
-//                 chains: [{ chain, name, state, reason, created, tokens }], deepcore, otherLaunchpads },
+//                 chains: [{ chain, name, state, reason, created, tokens }], launchpad: { state, total?, graduated?, reason? } },
 //   },
 //   findings: [{ id, section, text, confidence: 'high'|'medium'|'low', source }],   every one has both
 //   unavailable: [{ section, what, reason }],                                       what could not be read, and why

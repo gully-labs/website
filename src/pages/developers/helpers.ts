@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { usePoll } from './poll'
-import { ago, api, conditionText, type AlertsView, type AnalyticsBlock, type AnalyticsSite, type AnalyticsUsage, type ApiKey, type GapAlert, type PayAsset } from './api'
+import { ago, api, conditionText, RETIRED_ALERT_TEXT, type AlertsView, type AnalyticsBlock, type AnalyticsSite, type AnalyticsUsage, type ApiKey, type GapAlert, type PayAsset } from './api'
 import { keyColor } from './styles'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 
@@ -14,7 +14,7 @@ const n = (v: number) => v.toLocaleString('en-US')
 export type Secret = { title: string; secret: string } | null
 
 export function alertName(a: GapAlert) {
-  return a.name || (a.condition.type === 'deepcore-launch' ? 'DeepCore launch alert' : a.condition.type === 'holders' ? `${a.condition.symbol ?? 'Token'} holder alert` : a.ticker ? `${a.ticker} alert` : 'Any-stock alert')
+  return a.name || (a.condition.type === 'deepcore-launch' ? RETIRED_ALERT_TEXT : a.condition.type === 'holders' ? `${a.condition.symbol ?? 'Token'} holder alert` : a.ticker ? `${a.ticker} alert` : 'Any-stock alert')
 }
 
 export function alertRule(a: GapAlert) {
@@ -23,6 +23,8 @@ export function alertRule(a: GapAlert) {
 }
 
 export function alertState(a: GapAlert): { t: string; c: string } {
+  // The retired new-launch alert (see api.ts RetiredAlertCondition): nothing left to watch, only delete.
+  if (a.condition.type === 'deepcore-launch') return { t: 'retired · delete it', c: '#9398b5' }
   if (!a.coveredByPlan) return { t: 'not in your plan', c: '#ff8a7a' }
   if (!a.enabled) return { t: 'paused', c: '#9398b5' }
   if (a.mutedUntil) return { t: `muted until ${new Date(a.mutedUntil).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`, c: '#9398b5' }

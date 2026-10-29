@@ -29,30 +29,6 @@ export interface Project {
 
 export const projects: Project[] = [
   {
-    slug: 'deepcore',
-    key: 'deepcore',
-    name: 'DeepCore',
-    tag: 'DeFi infrastructure',
-    status: 'Live',
-    tagline: 'Launch on one core',
-    description: 'A launchpad, hosted Launchpads and DEXes, and a best-price router on one shared liquidity core, at the same addresses on four chains.',
-    logo: '/assets/deepcore.webp',
-    bg: '#061729',
-    accent: '#2ee6c5',
-    fit: 'contain',
-    pad: '56px 96px',
-    padSm: '28px 40px',
-    url: 'https://deepcore.fun/',
-    chains: ['Base', 'BNB Chain', 'HyperEVM', 'Robinhood'],
-    built: [
-      'Launchpad: token, pool and liquidity locked forever in one transaction, with a decaying anti-snipe fee',
-      'Hosted Launchpads and DEXes on the core, opened in one transaction; the site earns a share of its fees',
-      'Router: best price across DeepCore pools and the major DEXes on each chain',
-      'Locks, vesting, airdrops, team splits, multisend, limit orders and DCA',
-      'Coming soon: custom domains, a buy bot and market-hours stock pools',
-    ],
-  },
-  {
     slug: 'peddleswap',
     key: 'peddleswap',
     name: 'PeddleSwap',

@@ -1,5 +1,5 @@
 // The Gully Labs Telegram bot: a menu-driven bot (buttons, one message edited in place per screen) for
-// the gap tracker, DeepCore launches, gap alerts to a linked chat and Gully AI. Views and keyboards live
+// the gap tracker, gap and holder alerts to a linked chat and Gully AI. Views and keyboards live
 // in telegram-ui.mjs; this file talks to the Bot API, reads the data and routes updates.
 // No dependency: the Bot API over fetch. Everything is off unless TELEGRAM_BOT_TOKEN is set.
 //
@@ -14,9 +14,9 @@
 // Updates arrive by webhook: POST /api/telegram/<path>, where <path> is the first 32 hex of
 // sha256(token) and the secret header must match. On start (startTelegram) the server calls setWebhook
 // for https://gullylabs.xyz/api/telegram/<path> (allowed_updates message + callback_query + inline_query), setMyCommands
-// per scope (private chats: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help,
-// stop; /menu and /monitors work when typed; groups: gap,
-// top, launches, help; the default scope gets the private list), setChatMenuButton { type: 'commands' } so
+// per scope (private chats: start, app, gap, top, movers, holders, alerts, security, score, ask, help,
+// stop; /menu and /monitors work when typed, and /launches answers that its feed was retired on 2026-10-29;
+// groups: gap, top, help; the default scope gets the private list), setChatMenuButton { type: 'commands' } so
 // the Menu button next to the text box lists those commands (inline mode, "@bot <address or ticker>": telegram-inline.mjs), and getMe; failures are logged (without the
 // token) and retried, never fatal. The Mini App opens from the "📱 Open app" inline web_app button on the
 // main menu (private chats only: Telegram refuses web_app buttons in groups), from /app, and from the bot
@@ -40,10 +40,10 @@
 // banner.gif as the fallback, both the 2026 Gully Labs kit's social/og-image-1200x630.png, encoded as a still clip at its own size) with the
 // main menu. Telegram's file_id for it is kept in DATA_DIR/telegram.json after the first upload, keyed on
 // the file's hash, and reused until the file changes. Screens: Stocks (chain → ticker grid → card
-// with a 24h sparkline → alert stepper), Top gaps, Movers (24h/1h), DeepCore launches (chain filter →
-// launch card, new-launch alert), My alerts (pause, resume, mute, test, delete), Gully AI (force_reply)
+// with a 24h sparkline → alert stepper), Top gaps, Movers (24h/1h), My alerts (pause, resume, mute, test,
+// delete), Gully AI (force_reply)
 // and Settings (mute all, usage notices, unlink). The routes and their callback encoding are listed at
-// the top of telegram-ui.mjs. Typed commands (/gap /top /movers /launches /alerts /ask /stop /help /menu)
+// the top of telegram-ui.mjs. Typed commands (/gap /top /movers /alerts /ask /stop /help /menu)
 // answer with the matching screen.
 //
 // Alerts are created, paused, resumed, tested and deleted through alerts.mjs's own route handler
@@ -70,7 +70,6 @@ import { alertsOf, handleAlerts, muteAlert } from './alerts.mjs'
 import { getAccount, randomToken, sha256 } from './store.mjs'
 import * as tracker from './tracker.mjs'
 import { askConfigured, askForChat, MAX_QUESTION } from './ask.mjs'
-import { DEEPCORE_CHAINS, readDeepcorePool, readLaunches } from './deepcore.mjs'
 import { handleProfileRoutes, profileOf } from './profile.mjs'
 import { workspaceName } from './workspaces.mjs'
 import * as ui from './telegram-ui.mjs'
@@ -159,8 +158,8 @@ function apiBase() {
 /* ---------------------------------------------------------- Holder Map data --- */
 
 /* Whether a "👥 Holders" button leads to a map with data: server/holders.mjs decides (holdersButtonVisible:
-   a tracked stock follows its chain's holder source, anything else is a DeepCore launch; holdersAvailable for a
-   chain's stock tokens). Never throws: a failing check hides the button. */
+   a tracked stock follows its chain's holder source, any other token its chain's token source; holdersAvailable for
+   a chain's stock tokens). Never throws: a failing check hides the button. */
 let holderVisibleOverride = null
 
 /** Whether a "👥 Holders" button for (chain, token) leads to a map with data. */
@@ -168,7 +167,7 @@ export function holderChainAvailable(chain, token) {
   try {
     if (!holderVisibleOverride) return holdersButtonVisible(chain, token) === true
     const ck = chainKeyOf(chain)
-    return !!ck && (findStock(ck, token) ? holderVisibleOverride(ck, 'stock') === true : holdersAvailable(ck, 'deepcore-launch'))
+    return !!ck && (findStock(ck, token) ? holderVisibleOverride(ck, 'stock') === true : holdersAvailable(ck, 'token'))
   } catch {
     return false
   }
@@ -338,7 +337,6 @@ const COMMANDS = {
   gap: '📈 One stock token, e.g. /gap NVDA',
   top: '🔥 Furthest from the real share price',
   movers: '🚀 Biggest gap moves in 24 hours',
-  launches: '🛰 Newest tokens launched on DeepCore',
   holders: '👥 Holder Map: who holds a token',
   alerts: '🔔 Your alerts: pause, mute, test or delete',
   security: '🛡 Contract scans, Gully Score and monitors',
@@ -349,8 +347,8 @@ const COMMANDS = {
   stop: '🔕 Stop announcements, or unlink this chat',
 }
 const SCOPE_COMMANDS = {
-  private: ['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop'],
-  group: ['gap', 'top', 'launches', 'help'],
+  private: ['start', 'app', 'gap', 'top', 'movers', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop'],
+  group: ['gap', 'top', 'help'],
 }
 /** The command list for one scope ('private' or 'group'). */
 export const commandList = (scope = 'private') => SCOPE_COMMANDS[scope].map((command) => ({ command, description: COMMANDS[command] }))
@@ -515,9 +513,6 @@ let readRows = async () => {
 }
 let readMoversFn = (window) => tracker.readMovers(window)
 let readHistoryFn = (chain, ticker) => tracker.readHistory(chain, ticker)
-let readLaunchesFn = (o) => readLaunches(o)
-/** Price and market cap of one launch (readDeepcorePool's match), or null: the launch card shows them when DeepCore states them. */
-let readLaunchMarketFn = async (l) => (await readDeepcorePool({ token: l.token, chain: l.chainId }))?.matches?.[0] ?? null
 /** Gully AI's "my" tools in Telegram: only a private chat linked to a wallet, and only that link's workspace. */
 const askCtxOf = (chatId) => {
   const l = linkOfChat(chatId)
@@ -526,7 +521,7 @@ const askCtxOf = (chatId) => {
 let askFn = (chatId, q) => askForChat(chatId, q, askCtxOf(chatId))
 let askReady = () => askConfigured()
 
-/** Test hooks: replace the tracker read (rows with sessionOpen), movers, history, launches and Ask. */
+/** Test hooks: replace the tracker read (rows with sessionOpen), movers, history and Ask. */
 export function setTrackerReaderForTest(fn) {
   readRows = fn
 }
@@ -535,10 +530,6 @@ export function setMoversReaderForTest(fn) {
 }
 export function setHistoryReaderForTest(fn) {
   readHistoryFn = fn
-}
-export function setLaunchesReaderForTest(fn, marketFn = async () => null) {
-  readLaunchesFn = fn
-  readLaunchMarketFn = marketFn
 }
 export function setAskForTest(fn, ready = () => true) {
   askFn = fn ?? ((chatId, q) => askForChat(chatId, q, askCtxOf(chatId)))
@@ -691,17 +682,6 @@ async function stockCard(cc, ticker, from) {
   return ui.cardView({ cc, ticker, from, row, name: stock.name, spark })
 }
 
-async function launchesScreen(filter) {
-  const f = Number(filter) || 0
-  let r
-  try {
-    r = await readLaunchesFn({ chainId: f || null, limit: ui.LIST_MAX })
-  } catch {
-    r = { state: 'unreadable', launches: [] }
-  }
-  return ui.launchesView(r, f, DEEPCORE_CHAINS)
-}
-
 async function moversScreen(win) {
   let m = null
   try {
@@ -714,7 +694,7 @@ async function moversScreen(win) {
 
 async function myAlertsScreen(link, page = 1) {
   if (!link) return ui.linkNeededView('m')
-  return ui.myAlertsView(await alertsOf(link.address), page, DEEPCORE_CHAINS)
+  return ui.myAlertsView(await alertsOf(link.address), page)
 }
 
 const alertById = async (link, id) => (await alertsOf(link.address)).alerts.find((a) => a.id === id) ?? null
@@ -799,7 +779,6 @@ async function prompt(chatId, text, pending, placeholder) {
 
 /* ------------------------------------------------------------ commands --- */
 
-const LAUNCH_CHAIN_ALIASES = { bnb: 56, bsc: 56, binance: 56, hyperevm: 999, hype: 999, hl: 999, robinhood: 4663, rh: 4663, hood: 4663, base: 8453 }
 const chainArgOf = (a) => (!a ? null : ['bnb', 'bsc', 'binance', 'bn'].includes(a) ? 'bsc' : ['robinhood', 'rh', 'hood'].includes(a) ? 'robinhood' : ['solana', 'sol', 'sl'].includes(a) ? 'solana' : a)
 
 /** /gap TICKER [chain]: the card, a chain choice, or the stocks screen. */
@@ -902,12 +881,8 @@ async function onMessage(msg) {
   else if (cmd === 'gap') view = await gapScreen(args)
   else if (cmd === 'top') view = ui.topView(await rowsOrNull())
   else if (cmd === 'movers') view = await moversScreen('24h')
-  else if (cmd === 'launches') {
-    const a = args.split(/\s+/).filter(Boolean)[0]?.toLowerCase().slice(0, 20)
-    const chainId = a ? (LAUNCH_CHAIN_ALIASES[a] ?? (DEEPCORE_CHAINS[Number(a)] ? Number(a) : undefined)) : 0
-    if (chainId === undefined) view = { text: `DeepCore runs on ${Object.values(DEEPCORE_CHAINS).map((c) => esc(c.name)).join(', ')}. Try <code>/launches</code> or <code>/launches base</code>, or pick a chain below.`, keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], ui.nav('m')] }
-    else view = await launchesScreen(chainId)
-  } else if (cmd === 'ask') {
+  else if (cmd === 'launches') view = ui.launchesRetiredView() // retired 2026-10-29; still answers when typed
+  else if (cmd === 'ask') {
     const q = rawArgs.trim().slice(0, MAX_QUESTION + 1)
     if (!q) return void (await prompt(chatId, ui.AI_PROMPT, { kind: 'ai' }, 'How do gap alerts work?'))
     view = await aiAnswer(chatId, q)
@@ -1022,44 +997,8 @@ async function routeView(route, c) {
   }
   if (route === 'top') return c.answer(), ui.topView(await rowsOrNull())
   if ((m = route.match(/^mv:(24h|1h)$/))) return c.answer(), moversScreen(m[1])
-  if ((m = route.match(/^dc:(\d{1,5})$/)) && (m[1] === '0' || DEEPCORE_CHAINS[Number(m[1])])) return c.answer(), launchesScreen(m[1])
-  if ((m = route.match(/^dl:(\d{1,5}):([0-9a-f]{40}):(\d{1,5})$/))) {
-    c.answer()
-    let r
-    try {
-      r = await readLaunchesFn({ chainId: Number(m[1]), limit: 50 })
-    } catch {
-      r = { launches: [] }
-    }
-    const l = (r?.launches ?? []).find((x) => String(x.token).toLowerCase() === `0x${m[2]}`) ?? null
-    let market = null
-    if (l) {
-      try {
-        market = await readLaunchMarketFn(l)
-      } catch {
-        market = null
-      }
-    }
-    return ui.launchCardView(l, Number(m[3]) || 0, { market })
-  }
-  if ((m = route.match(/^dla:(\d{1,5})(?::(\d{1,5}))?$/))) {
-    const [, f, cid] = m
-    if (cid !== undefined && cid !== '0' && !DEEPCORE_CHAINS[Number(cid)]) return undefined
-    if (!link) return c.answer(), ui.linkNeededView(`dc:${f}`, 'Launch alerts')
-    if (!mayAct(link, fromId)) return c.answer('Only the person who linked this group can create alerts here.', true), NO_CHANGE
-    c.answer()
-    return cid === undefined ? ui.launchAlertStep1View(f, DEEPCORE_CHAINS) : ui.launchAlertStep2View(f, Number(cid), DEEPCORE_CHAINS)
-  }
-  if ((m = route.match(/^dlk:(\d{1,5})$/))) {
-    const cid = Number(m[1])
-    if (cid !== 0 && !DEEPCORE_CHAINS[cid]) return undefined
-    if (!link) return c.answer(), ui.linkNeededView('dc:0', 'Launch alerts')
-    const guard = actGuard('create alerts here')
-    if (guard) return c.answer(guard, true), NO_CHANGE
-    const r = await alertsCall(link.address, 'POST', '/api/developer/alerts', { condition: { type: 'deepcore-launch', chainId: cid || null }, telegram: true })
-    c.answer(r.status === 201 ? '✅ Alert created' : 'The alert was not created', r.status !== 201)
-    return ui.createdView({ ok: r.status === 201, status: r.status, error: r.data?.error, back: `dc:${cid}`, what: `New DeepCore launches on ${cid ? DEEPCORE_CHAINS[cid].name : 'any chain'}.` })
-  }
+  // The launches screens and the new-launch alert stepper were retired on 2026-10-29: their buttons in old messages say so.
+  if (/^(?:dc|dl|dla|dlk):/.test(route)) return c.answer(), ui.launchesRetiredView()
   if ((m = route.match(/^ma(?::p(\d{1,2}))?$/))) return c.answer(), myAlertsScreen(link, Number(m[1] ?? 1))
   if ((m = route.match(/^(ac|ap|ar|am|at|ad|adx):([\w-]{1,40})$/))) {
     const [, act, id] = m
@@ -1069,10 +1008,10 @@ async function routeView(route, c) {
       c.answer('That alert no longer exists.')
       return myAlertsScreen(link)
     }
-    if (act === 'ac') return c.answer(), ui.alertCardView(a, DEEPCORE_CHAINS)
+    if (act === 'ac') return c.answer(), ui.alertCardView(a)
     const guard = actGuard('change its alerts')
     if (guard) return c.answer(guard, true), NO_CHANGE
-    if (act === 'ad') return c.answer(), ui.deleteConfirmView(a, DEEPCORE_CHAINS)
+    if (act === 'ad') return c.answer(), ui.deleteConfirmView(a)
     if (act === 'adx') {
       const r = await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/delete`)
       c.answer(r.status === 200 ? '🗑 Deleted' : ui.friendlyError(r.data?.error, 'Not deleted. Try again in a minute.'), r.status !== 200)
@@ -1089,7 +1028,7 @@ async function routeView(route, c) {
       await alertsCall(link.address, 'POST', `/api/developer/alerts/${id}/test`)
     }
     const fresh = await alertById(link, id)
-    return fresh ? ui.alertCardView(fresh, DEEPCORE_CHAINS) : myAlertsScreen(link)
+    return fresh ? ui.alertCardView(fresh) : myAlertsScreen(link)
   }
   if (route === 'hm') return c.answer(), ui.holderMapView(holderStockChains())
   if (route === 'sec') return c.answer(), ui.securityView(!!link)
@@ -1289,7 +1228,7 @@ export async function followsChannel(userId, { fresh = false } = {}) {
 }
 
 const gateView = (ch) => ({
-  text: '<b>📣 Follow Gully Labs News to use this bot</b>\n📊 The widest stock-token gaps · 🚀 new DeepCore launches as they happen · 🛠 product drops.\nJoin the channel, then tap <b>I’ve joined</b>.',
+  text: '<b>📣 Follow Gully Labs News to use this bot</b>\n📊 The widest stock-token gaps · ⛓ Gully Chain news · 🛠 product drops.\nJoin the channel, then tap <b>I’ve joined</b>.',
   keyboard: [[ubtn(`📣 Join ${ch.startsWith('@') ? ch : 'the channel'} ↗`, channelUrl(ch))], [btn('✅ I’ve joined', 'jchk')]],
 })
 

@@ -26,7 +26,7 @@ export interface AdminChartsData {
   revenue: { usd: number[]; payments: number[]; byAsset: Series; byChain: Series; byKind: Series; unpriced: number; note: string }
   accounts: { wallets: number[]; analytics: number[] }
   api: { anonymous: Num[]; keyed: Num[]; limited: Num[]; since: string | null; note: string }
-  alerts: { gap: number[]; launch: number[]; telegram: number[]; webhook: number[]; note: string }
+  alerts: { gap: number[]; telegram: number[]; webhook: number[]; note: string }
   ask: { byChannel: Series | null; unanswered: number[] | null; note: string }
   payLinks: { payments: number[]; usd: number[]; links: number }
   webhooks: { pay: { delivered: number[]; failed: number[]; pending: number[] }; alerts: { delivered: number[]; failed: number[] }; rate: Num[]; rateOverall: number | null; note: string }
@@ -197,12 +197,11 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
       </section>
 
       <section className={card}>
-        <Head title="Alerts fired" figure={<AnimatedNumber value={(sum(data.alerts.gap) ?? 0) + (sum(data.alerts.launch) ?? 0)} />} note={data.alerts.note} />
+        <Head title="Alerts fired" figure={<AnimatedNumber value={sum(data.alerts.gap) ?? 0} />} note={data.alerts.note} />
         <Daily
           days={d}
           lines={[
             { name: 'Gap alerts', data: data.alerts.gap, color: C.gold },
-            { name: 'DeepCore launch alerts', data: data.alerts.launch, color: PALETTE[2] },
             { name: 'Telegram sends', data: data.alerts.telegram, color: PALETTE[1], kind: 'line' },
           ]}
           label="Alerts fired per day"

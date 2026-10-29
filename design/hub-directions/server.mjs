@@ -19,7 +19,7 @@ const HUB = process.env.HUB_ORIGIN || 'https://gullylabs.xyz'
 const LIVE = {
   hub: `${HUB}/api/hub`,                                   // service uptime, chain head, quests, x402, RPC gateway, status page
   products: `${HUB}/api/hub/products`,                     // Gully Chain hourly blocks/txs, launch/trade/swap activity, bridge, HolderMaps, Security
-  stats: `${HUB}/api/stats`,                               // venues the studio built (DeepCore, Peddles, PeddleSwap, PeddleQuest, Gully Chain)
+  stats: `${HUB}/api/stats`,                               // venues the studio built (Peddles, PeddleSwap, PeddleQuest, Gully Chain)
   id: 'https://gullyid.xyz/v1/stats/public',               // Gully ID aggregate sign-ins (no PII)
   pay: 'https://gullypay.xyz/api/status',                  // Gully Pay service states
   x402: 'https://gullypay.xyz/x402/status',                // Gully Pay x402 facilitator: networks + assets

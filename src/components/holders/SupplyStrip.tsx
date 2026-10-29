@@ -21,7 +21,6 @@ const ICONS: Partial<Record<KindKey, typeof Waves>> = {
   token: Coins,
   exchange: Landmark,
   contract: Box,
-  deepcore: Box,
   gully: Box,
 }
 

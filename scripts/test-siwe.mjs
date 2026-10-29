@@ -30,7 +30,7 @@ if (!BASE) {
   await guardTestRun(PORT)
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-siwe-'))
   ADMIN = crypto.randomBytes(24).toString('hex')
-  Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off' })
+  Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, TRACKER_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off' })
   for (const k of ['TELEGRAM_BOT_TOKEN', 'ANTHROPIC_API_KEY', 'GULLY_TREASURY_ADDRESS']) delete process.env[k]
   await import('../server/server.mjs')
   await new Promise((r) => setTimeout(r, 300))

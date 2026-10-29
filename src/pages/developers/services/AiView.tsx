@@ -38,7 +38,7 @@ export default function AiView() {
       <ServiceHeader
         icon={Bot}
         title="Gully AI"
-        desc="Ask about the tracker, its API, plans and alerts, Gully Pay, Chain Kit and DeepCore. Answers cite the docs and read live figures."
+        desc="Ask about the tracker, its API, plans and alerts, the Holder Map, Gully Pay and Chain Kit. Answers cite the docs and read live figures."
         status={status}
         docs={docsPage()}
         page={{ href: sitePage('/ask') }}

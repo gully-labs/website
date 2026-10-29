@@ -49,7 +49,6 @@ Object.assign(process.env, {
   ADMIN_TOKEN: crypto.randomBytes(24).toString('hex'),
   TRACKER_LOOP: 'off',
   TRACKER_SKIP_APIS: '1',
-  DEEPCORE_LOOP: 'off',
   ASK_REMOTE: 'off',
   IPFS_API: 'http://127.0.0.1:9',
   IPFS_GATEWAY: 'http://127.0.0.1:9',
@@ -501,6 +500,7 @@ try {
     check('/pay/ (trailing slash) and HEAD /pay: gullypay.xyz too', (await get(MAIN, '/pay/')).headers.location === 'https://gullypay.xyz/' && (await get(MAIN, '/pay', { method: 'HEAD' })).headers.location === 'https://gullypay.xyz/')
     check('checkout links keep working: /pay/<id> still goes to pay. and is served there', (await get(MAIN, INV)).headers.location === `${PAY_URL}${INV}` && (await get(PAY, INV)).status === 200)
     check('movedPageUrl: /pay is Gully Pay\'s product page on gullypay.xyz; checkouts never move', movedPageUrl('/pay') === 'https://gullypay.xyz/' && movedPageUrl('/pay/') === 'https://gullypay.xyz/' && movedPageUrl(INV) === null && movedPageUrl('/pay/l/x') === null)
+    check('movedPageUrl: the old DeepCore pages open Gully Core (partnership ended 2026-10-29)', ['/products/deepcore', '/projects/deepcore', '/projects/deepcore/'].every((p) => movedPageUrl(p) === 'https://gullylabs.xyz/products/gully-core') && movedPageUrl('/products/gully-core') === null)
     for (const [p, to] of [['/keys', '/#keys'], ['/alerts', '/#alerts'], ['/billing', '/#billing'], ['/settings', '/#settings'], ['/settings/profile', '/#settings/profile'], ['/billing/plans/', '/#billing/plans'], ['/dashboard', '/'], ['/overview', '/'], ['/team', '/#team'], ['/activity', '/#activity'], ['/tracker/alerts', '/#tracker/alerts']]) {
       const r = await get(APP, p)
       check(`app ${p}: 301 to the app's own ${to}, not a gullylabs.xyz 404`, r.status === 301 && r.headers.location === `https://${APP}${to}`, `${r.status} ${r.headers.location}`)

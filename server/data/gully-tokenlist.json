@@ -30,7 +30,7 @@
     },
     "launchpad": {
       "name": "launchpad",
-      "description": "Launched on DeepCore, the Gully Chain launchpad. Testnet: test token, no value"
+      "description": "Launched on the Gully Launchpad, Gully Chain's launchpad. Testnet: test token, no value"
     }
   },
   "tokens": [

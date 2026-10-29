@@ -13,8 +13,7 @@
 //   alx:rh:NVDA:g2             custom threshold prompt (force_reply)
 //   alk:rh:NVDA:g2:2:e         create the alert
 //   top                        top gaps                   mv:24h|mv:1h  movers
-//   dc:0|dc:<chainId>          DeepCore launches (0 = every chain)
-//   dl:<chainId>:<40 hex>:<f>  one launch                 dla:<f>[:<cid>]  launch-alert stepper   dlk:<cid> create
+//   dc:… dl:… dla:… dlk:…      the launches screens, retired 2026-10-29: old buttons answer launchesRetiredView
 //   ma[:p2]                    my alerts                  ac:<id>       one alert
 //   ap|ar|am|at:<id>           pause, resume, mute 24h, test        ad:<id> delete? → adx:<id> delete
 //   ai                         Gully AI prompt (force_reply)        aiq:<n> an example question
@@ -35,7 +34,6 @@ export const SITE = 'https://gullylabs.xyz'
 export const PORTAL = 'https://app.gullylabs.xyz'
 export const PORTAL_ALERTS = `${PORTAL}/#alerts`
 export const PORTAL_BILLING = `${PORTAL}/#billing`
-export const DEEPCORE = 'https://deepcore.fun'
 export const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', solana: 'Solana' }
 /** Tracker chain key <-> two-letter route code. */
 export const CHAIN_OF = { rh: 'robinhood', bn: 'bsc', sl: 'solana' }
@@ -80,7 +78,6 @@ export function forTime(iso, now = Date.now()) {
 }
 
 /** A small dollar price: 2 decimals from $1 up, 3 significant digits below ($0.00123). */
-export const usdSmall = (n) => (!num(n) ? null : n >= 1 ? usd(n) : `$${Number(n.toPrecision(3)).toLocaleString('en-US', { maximumSignificantDigits: 3, maximumFractionDigits: 12 })}`)
 
 /** The gap in words: "NVDA token is <b>1.20% above</b> the real share price." */
 export function gapSentence(ticker, gapPct) {
@@ -161,10 +158,10 @@ export const callbackDataOf = (kb) => (kb ?? []).flat().map((b) => b.callback_da
 
 export const MENU_KEYBOARD = [
   [btn('📈 Stocks', 'stk'), btn('🔥 Top gaps', 'top')],
-  [btn('🚀 Movers', 'mv:24h'), btn('🛰 DeepCore launches', 'dc:0')],
-  [btn('🔔 My alerts', 'ma'), btn('🤖 Gully AI', 'ai')],
-  [btn('👥 Holder Map', 'hm'), btn('🛡 Security', 'sec')],
-  [ubtn('💼 App dashboard ↗', PORTAL), btn('🧭 More', 'more'), btn('⚙️ Settings', 'set')],
+  [btn('🚀 Movers', 'mv:24h'), btn('🔔 My alerts', 'ma')],
+  [btn('🤖 Gully AI', 'ai'), btn('👥 Holder Map', 'hm')],
+  [btn('🛡 Security', 'sec'), btn('🧭 More', 'more')],
+  [ubtn('💼 App dashboard ↗', PORTAL), btn('⚙️ Settings', 'set')],
 ]
 
 /** Plain words for an error that came back from a module: a short sentence is kept, anything technical is not. */
@@ -197,7 +194,6 @@ export function helpView(linked) {
     '/gap NVDA · one stock (add <code>bsc</code>, <code>robinhood</code> or <code>solana</code>)',
     '/top · biggest gaps right now',
     '/movers · biggest changes',
-    '/launches · newest tokens on DeepCore',
     '/holders · 👥 Holder Map: who holds a token, and which wallets belong together',
     '/security · 🛡 Gully Security: contract scans, Gully Score and monitors',
     '/score 0x… · the Gully Score of a contract (add <code>base</code>, <code>ethereum</code>…)',
@@ -229,10 +225,10 @@ export function holderMapView(stockChains = []) {
       '<b>👥 Holder Map</b>',
       'Who holds a token, drawn as a map. Wallets that sent the token to each other are joined into a <b>connected cluster</b>: joined wallets are often one person or team. The <b>deployer</b> is the wallet that created the token.',
       '',
-      names.length ? `Maps are ready for every new DeepCore launch and for stock tokens on ${esc(names.join(', '))}.` : 'Maps are ready for every new DeepCore launch. Stock tokens follow soon.',
-      'Open a launch below and tap 👥 Holders, or browse every map on the site.',
+      names.length ? `Maps are ready for any token you look up, and for stock tokens on ${esc(names.join(', '))}.` : 'Maps are ready for any token you look up. Stock tokens follow soon.',
+      'Tap 👥 Holders on a stock card, or open any token’s map on the site.',
     ].join('\n'),
-    keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], [ubtn('👥 Open Holder Map ↗', holderHomeUrl())], nav('m')],
+    keyboard: [[ubtn('👥 Open Holder Map ↗', holderHomeUrl())], nav('m')],
   }
 }
 
@@ -350,7 +346,7 @@ export const monitorAlertKeyboard = (monitorId, openUrl) => [[...(/^https:\/\//.
 
 /** /app in a private chat: the Mini App behind an inline web_app button. */
 export const appView = (url) => ({
-  text: '<b>📱 Gully app</b>\nStocks, gaps, launches and your alerts on one screen, right here in Telegram. Tap below to open it.',
+  text: '<b>📱 Gully app</b>\nStocks, gaps and your alerts on one screen, right here in Telegram. Tap below to open it.',
   keyboard: [[appBtn(url)], [btn('🏠 Menu', 'm')]],
 })
 /** /app in a group: Telegram opens Mini Apps from private chats only, so the button opens one with the bot. */
@@ -621,79 +617,29 @@ export function moversView(m, win) {
   return { text: `${head}\nThe biggest moves in the gap over ${win}, and where each token is now. Tap one for details.`, keyboard: [...keys, toggles, nav('m')] }
 }
 
-/* ------------------------------------------------------------- DeepCore --- */
+/* ------------------------------------------------------- retired launches --- */
 
-/** "🔒 Liquidity locked" when any pool is locked, "🔓 Liquidity not locked" when none is, null when DeepCore does not say. */
-export function lockLine(l) {
-  const legs = l.pools ?? l.legs ?? []
-  if (legs.some((g) => g.locked === true)) return '🔒 Liquidity locked'
-  if (legs.length && legs.every((g) => g.locked === false)) return '🔓 Liquidity not locked'
-  return null
-}
-
-/**
- * One DeepCore launch in plain words: name, chain, how long ago, price and market cap when `market`
- * (readDeepcorePool's match) has them, and whether the liquidity is locked. No addresses, no pool ids.
- */
-export function launchBlock(l, { now = Date.now(), market = null } = {}) {
-  const a = ago(l.createdAt, now)
-  const lines = [`<b>${esc(l.symbol ?? 'New token')}</b> · ${esc(l.chainName)}${a ? ` · ${esc(a)}` : ''}`]
-  const price = usdSmall(market?.priceUsd)
-  const cap = usd0(market?.marketCapUsd)
-  if (price || cap) lines.push([price ? `💵 Price ${esc(price)}` : null, cap ? `Market cap ${esc(cap)}` : null].filter(Boolean).join(' · '))
-  const lock = lockLine(l)
-  if (lock) lines.push(lock)
-  return lines.join('\n')
-}
-
-export function launchesView(r, filter, chains, now = Date.now()) {
-  const f = Number(filter) || 0
-  const filters = rows([btn(f === 0 ? '• All •' : 'All', 'dc:0'), ...Object.entries(chains).map(([id, c]) => btn(Number(id) === f ? `• ${c.name} •` : c.name, `dc:${id}`))], 3)
-  const tail = [[btn('🔔 Alert me on new launches', `dla:${f}`)], [btn('🔄 Refresh', `dc:${f}`), ...nav('m')]]
-  const where = f ? ` on ${esc(chains[f]?.name ?? f)}` : ''
-  const head = `<b>🛰 DeepCore launches${where}</b>`
-  if (!r || r.state === 'unreadable') return { text: `${head}\nDeepCore isn’t answering right now. Try again in a minute.`, keyboard: [...filters, ...tail] }
-  const notes = []
-  if (r.state === 'stale') notes.push(`<i>DeepCore isn’t answering right now; this list is from ${esc(ago(r.asOf, now) ?? 'earlier')}.</i>`)
-  const unread = (r.chains ?? []).filter((c) => c.status !== 'ok' && (!f || c.chainId === f)).map((c) => esc(c.name))
-  if (unread.length) notes.push(`<i>${unread.join(', ')} couldn’t be checked; launches there may be missing.</i>`)
-  if (!r.launches.length) return { text: [`${head}`, `No launches on DeepCore${where} yet.`, ...notes].join('\n'), keyboard: [...filters, ...tail] }
-  const keys = r.launches.slice(0, LIST_MAX).map((l) => [btn(`${l.symbol ?? 'New token'} · ${l.chainName} · ${ago(l.createdAt, now) ?? ''}`.slice(0, 60), `dl:${l.chainId}:${String(l.token).slice(2).toLowerCase()}:${f}`)])
-  return { text: [head, 'The newest tokens launched on DeepCore. Tap one for details.', ...notes, INFO].join('\n'), keyboard: [...keys, ...filters, ...tail] }
-}
-
-/** One launch. `market` is readDeepcorePool's match for it (price, market cap) or null. */
-export function launchCardView(l, filter, { now = Date.now(), market = null } = {}) {
-  if (!l) return { text: '<b>🛰 Launch</b>\nThis launch is no longer in DeepCore’s latest list.', keyboard: [[ubtn('🌐 View on DeepCore ↗', DEEPCORE)], nav(`dc:${filter}`)] }
-  return { text: `🛰 ${launchBlock(l, { now, market })}\n\n${INFO}`, keyboard: [[ubtn('🌐 View on DeepCore ↗', l.links.token)], [holdersBtn(l.chainKey, String(l.token).toLowerCase(), 'deepcore')], [btn('🔔 Alert me on new launches', `dla:${filter}`)], nav(`dc:${filter}`)] }
-}
-
-export function launchAlertStep1View(filter, chains) {
-  return {
-    text: '<b>🔔 New-launch alert</b>\nStep 1 of 2 · Which chain? Every new token launched on DeepCore there arrives in this chat.',
-    keyboard: [...rows([btn('🌐 Any chain', `dla:${filter}:0`), ...Object.entries(chains).map(([id, c]) => btn(`⛓ ${c.name}`, `dla:${filter}:${id}`))], 3), nav(`dc:${filter}`)],
-  }
-}
-
-export function launchAlertStep2View(filter, cid, chains) {
-  const where = cid ? chains[cid]?.name ?? `chain ${cid}` : 'any chain'
-  return {
-    text: ['<b>🔔 New-launch alert</b>', 'Step 2 of 2 · Check and create', '', `Fires for every new token launched on DeepCore on ${esc(where)}. Launches within 5 minutes of the last message arrive together.`].join('\n'),
-    keyboard: [[btn('✅ Create', `dlk:${cid}`), btn('⬅ Back', `dla:${filter}`)], [btn('🏠 Menu', 'm')]],
-  }
-}
+/** /launches and the old launches buttons (dc:, dl:, dla:, dlk:): that list was retired on 2026-10-29. */
+export const launchesRetiredView = () => ({
+  text: '<b>🛰 Launches</b>\nThe launches list was retired on 2026-10-29. Tokens on Gully Chain launch through Gully Core.',
+  keyboard: [[ubtn('📘 Gully Core docs ↗', 'https://docs.gullychain.xyz/gully-core/')], nav('m')],
+})
 
 /* ------------------------------------------------------------ my alerts --- */
 
 const isHolderAlert = (a) => a?.kind === 'holders' || a?.condition?.type === 'holders'
 const holderTarget = (c) => `${c.symbol ?? shortAddr(c.token)} · ${HOLDER_CHAIN_NAMES[c.chain] ?? c.chain}`
-const alertLabel = (a, chains) => a.name || (isHolderAlert(a) ? `🫧 ${a.condition.symbol ?? shortAddr(a.condition.token)} holders · ${HOLDER_CHAIN_NAMES[a.condition.chain] ?? a.condition.chain}` : a.kind === 'deepcore-launch' ? `DeepCore launches${a.condition?.chainId ? ` · ${chains[a.condition.chainId]?.name ?? a.condition.chainId}` : ''}` : a.ticker ? `${a.ticker} · ${chainName(a.chain)}` : 'Any stock')
+// The new-launch alert retired on 2026-10-29 (alerts.mjs kind 'retired'): it still lists, so it can be deleted.
+const isRetiredAlert = (a) => a?.kind === 'retired'
+const RETIRED_TEXT = 'New-launch alert (retired 2026-10-29)'
+const alertLabel = (a) => a.name || (isRetiredAlert(a) ? RETIRED_TEXT : isHolderAlert(a) ? `🫧 ${a.condition.symbol ?? shortAddr(a.condition.token)} holders · ${HOLDER_CHAIN_NAMES[a.condition.chain] ?? a.condition.chain}` : a.ticker ? `${a.ticker} · ${chainName(a.chain)}` : 'Any stock')
 export function alertState(a, now = Date.now()) {
+  if (isRetiredAlert(a)) return { emoji: '⏹', text: 'retired · delete it' }
   if (!a.coveredByPlan) return { emoji: '⚠️', text: 'not in your plan' }
   if (!a.enabled) return { emoji: '⏸', text: 'paused' }
   if (a.mutedUntil && Date.parse(a.mutedUntil) > now) return { emoji: '🔕', text: `muted ${forTime(a.mutedUntil, now)}` }
   if (isHolderAlert(a) && !a.armed) return { emoji: '🟠', text: 'fired · watching again once it falls back' }
-  if (a.kind !== 'deepcore-launch' && !a.armed) return { emoji: '🟠', text: 'fired · watching again once the gap closes' }
+  if (!a.armed) return { emoji: '🟠', text: 'fired · watching again once the gap closes' }
   return { emoji: '🟢', text: 'watching' }
 }
 /** A gap condition in plain words, with its direction arrow (an alert stored before directions existed is 'both'). */
@@ -708,28 +654,29 @@ export function holderWords(c) {
   if (typeof c.sellPct === 'number') parts.push(`${parts.length ? 'or they' : `${who} of ${holderTarget(c)}`} sell ${c.sellPct}% or more of what they hold`)
   return parts.join(', ') || `${who} of ${holderTarget(c)} change`
 }
-export const conditionWords = (c, chains) => (c.type === 'holders' ? holderWords(c) : c.type === 'deepcore-launch' ? `a new token launches on DeepCore (${c.chainId ? (chains?.[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'})` : c.type === 'gap' ? gapWords(c) : statusWords(c.status))
+export const conditionWords = (c) => (c.type === 'holders' ? holderWords(c) : c.type === 'gap' ? gapWords(c) : statusWords(c.status))
 
-export function myAlertsView(data, page, chains, now = Date.now()) {
+export function myAlertsView(data, page, now = Date.now()) {
   const list = data.alerts
   const lim = data.limits
   const head = `<b>🔔 My alerts</b> · ${list.length} of ${lim.max} on ${esc(lim.planName)}`
-  if (!list.length) return { text: `${head}\nNo alerts yet. Open a stock card and press 🔔 Alert me, or alert on new DeepCore launches.`, keyboard: [[btn('📈 Stocks', 'stk'), btn('🛰 Launches', 'dc:0')], nav('m')] }
+  if (!list.length) return { text: `${head}\nNo alerts yet. Open a stock card and press 🔔 Alert me.`, keyboard: [[btn('📈 Stocks', 'stk'), btn('👥 Holder Map', 'hm')], nav('m')] }
   const pages = Math.max(1, Math.ceil(list.length / ALERTS_PAGE))
   const p = Math.min(Math.max(1, page), pages)
   const shown = list.slice((p - 1) * ALERTS_PAGE, p * ALERTS_PAGE)
-  const keys = shown.map((a) => [btn(`${alertState(a, now).emoji} ${alertLabel(a, chains)}`.slice(0, 60), `ac:${a.id}`)])
+  const keys = shown.map((a) => [btn(`${alertState(a, now).emoji} ${alertLabel(a)}`.slice(0, 60), `ac:${a.id}`)])
   const pager = pages > 1 ? [[btn('◀', `ma:p${p === 1 ? pages : p - 1}`), btn(`Page ${p}/${pages}`, 'noop'), btn('▶', `ma:p${p === pages ? 1 : p + 1}`)]] : []
   const over = list.length > lim.max ? `\n<i>Only the oldest ${lim.max} run on your plan.</i>` : ''
   return { text: `${head}\n🟢 watching · 🟠 fired · 🔕 muted · ⏸ paused${over}\nTap an alert to pause, mute, test or delete it.`, keyboard: [...keys, ...pager, [ubtn('💼 Manage in the app ↗', PORTAL_ALERTS)], nav('m')] }
 }
 
-export function alertCardView(a, chains, now = Date.now()) {
+export function alertCardView(a, now = Date.now()) {
   const st = alertState(a, now)
   const last = a.deliveries?.[0]
+  if (isRetiredAlert(a)) return { text: `${st.emoji} <b>${esc(alertLabel(a))}</b>\nThis alert type was retired on 2026-10-29 and no longer fires. Delete it to free the slot on your plan.`, keyboard: [[btn('🗑 Delete', `ad:${a.id}`)], nav('ma')] }
   const lines = [
-    `${st.emoji} <b>${esc(alertLabel(a, chains))}</b>`,
-    `When: ${esc(conditionWords(a.condition, chains))}`,
+    `${st.emoji} <b>${esc(alertLabel(a))}</b>`,
+    `When: ${esc(conditionWords(a.condition))}`,
     `State: ${esc(st.text)}`,
     `Sent to: ${[a.telegram ? 'Telegram' : null, a.webhook ? 'your own server' : null].filter(Boolean).join(' + ') || 'nowhere yet'}`,
     `Last fired: ${a.lastFiredAt ? esc(ago(a.lastFiredAt, now) ?? 'earlier') : 'never'}`,
@@ -739,8 +686,8 @@ export function alertCardView(a, chains, now = Date.now()) {
   return { text: lines.join('\n'), keyboard: [[toggle, btn('🔕 Mute 24h', `am:${a.id}`)], [btn('🧪 Test', `at:${a.id}`), btn('🗑 Delete', `ad:${a.id}`)], nav('ma')] }
 }
 
-export const deleteConfirmView = (a, chains) => ({
-  text: `<b>🗑 Delete “${esc(alertLabel(a, chains))}”?</b>\nThis cannot be undone; deliveries stop at once.`,
+export const deleteConfirmView = (a) => ({
+  text: `<b>🗑 Delete “${esc(alertLabel(a))}”?</b>\nThis cannot be undone; deliveries stop at once.`,
   keyboard: [[btn('🗑 Yes, delete', `adx:${a.id}`), btn('⬅ Back', `ac:${a.id}`)], [btn('🏠 Menu', 'm')]],
 })
 
@@ -834,13 +781,12 @@ export const unlinkConfirmView = (link) => ({
 /**
  * One alert delivery in plain words: status emoji, ticker and chain, the gap as a sentence, the two prices
  * and liquidity when known, with [🌐 Open ↗] [🔕 Mute 24h] [📈 Card] (Card opens the stock card in place).
- * Launch alerts list the launches with View on DeepCore buttons. A test is plain text.
+ * Holder alerts list the tokens with Open map buttons. A test is plain text.
  * Gap alerts state their condition from `condition` when given ("▲ 2% or more above the real share
  * price"), else from `conditionText`.
  * @param {{ alertId: string, name: string | null, conditionText: string, condition?: object | null, direction?: string | null, events: object[], test: boolean, now?: number }} a
  */
 export function deliveryView(a) {
-  const now = a.now ?? Date.now()
   const title = `<b>Gully Labs alert</b>${a.name ? ` “${esc(a.name)}”` : ''}`
   const cond = a.condition?.type === 'gap' ? gapWords(a.condition) : a.condition?.type === 'holders' ? esc(holderWords(a.condition)) : esc(a.conditionText)
   const dirLine = `Alert: ${cond}`
@@ -863,12 +809,6 @@ export function deliveryView(a) {
       ...(metrics.has('deployer') ? ['The deployer is the wallet that created the token.'] : []),
     ]
     return { text: `🫧 ${title}\n${dirLine}\n\n${blocks.join('\n\n')}${notes.length ? `\n\n<i>${esc(notes.join(' '))}</i>` : ''}\n\n${INFO}`, keyboard: [[open[0], mute], ...(open.length > 1 ? [open.slice(1)] : [])] }
-  }
-  if (a.events.some((e) => e.kind === 'deepcore.launch')) {
-    const shown = a.events.slice(0, 5)
-    const text = `🛰 ${title}\n${cond}\n\n${shown.map((e) => launchBlock(e, { now })).join('\n\n')}${a.events.length > shown.length ? `\n…and ${a.events.length - shown.length} more on DeepCore` : ''}\n\n${INFO}`
-    const open = shown.slice(0, 3).map((e) => ubtn(`🌐 View ${e.symbol ?? 'token'} on DeepCore ↗`.slice(0, 48), e.links.token))
-    return { text, keyboard: [...(open.length ? [open] : []), [mute]] }
   }
   const shown = a.events.slice(0, 5)
   const blocks = shown.map((e) => {

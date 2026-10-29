@@ -8,8 +8,7 @@ import { startStatsWatchdog } from './stats-watchdog.mjs'
 import { handlePeddlesOnchain, startPeddlesLoop } from './peddles.mjs'
 import { onSnapshot, readGapIndex, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
-import { evaluateAlerts, evaluateLaunchAlerts, startHolderAlerts } from './alerts.mjs'
-import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
+import { evaluateAlerts, startHolderAlerts } from './alerts.mjs'
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
@@ -380,10 +379,11 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
   }
-  // DeepCore router quote for the stock pages' comparison panel (deepcore.mjs): cached and rate limited here.
-  if (url.pathname === '/api/deepcore/quote') return void (await handleDeepcoreQuote(req, res, url, geoFor(req, isLocal)))
-  // DeepCore's latest launches from the poller's cache (the app dashboard's DeepCore view). Public.
-  if (url.pathname === '/api/deepcore/launches') return void (await handleDeepcoreLaunches(req, res, url))
+  // The DeepCore integration (router quotes, the launch feed) ended on 2026-10-29: its old URLs answer 410 Gone
+  // so old clients get a clear reason instead of the SPA fallback.
+  if (url.pathname === '/api/deepcore/quote' || url.pathname === '/api/deepcore/launches') {
+    return send(res, 410, JSON.stringify({ error: 'DeepCore integration ended on 2026-10-29.', docs: 'https://docs.gullychain.xyz/gully-core/' }), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' })
+  }
   if (url.pathname.startsWith('/api/logo/') || url.pathname === '/api/logo') return void (await (await import('./token-logos.mjs')).handleLogo(req, res, url)) // token logos (token-logos.mjs), public, cached
   // Solana (solana-routes.mjs): the RPC proxy, Solana Pay reference lookup and the geo-gated Jupiter quote/swap proxy.
   if (url.pathname.startsWith('/api/solana/')) {
@@ -629,8 +629,6 @@ server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), flushAnalyticsUsage(), flushStatus(), process.exit(0)))
 // Gap alerts are evaluated on every recorded tracker snapshot.
 onSnapshot((rows, at) => evaluateAlerts(rows, at))
-// DeepCore launch alerts run on every DeepCore poll (DEEPCORE_LOOP=off in tests: polled on demand).
-onLaunches((fresh, at) => evaluateLaunchAlerts(fresh, at))
 
 /* Background loops (upstream polls that fire alerts, the Telegram webhook, Gully Ask's refresh). During a
    zero-downtime deploy (ops/deploy.sh) the new container starts with GULLY_STANDBY=1: it answers requests
@@ -646,7 +644,6 @@ function startLoops() {
   if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
   // Peddles and PeddleQuest read on chain: backfill once, then every 30 s (peddles.mjs). PEDDLES_LOOP=off skips it.
   startPeddlesLoop()
-  startDeepcore()
   // Holder Map alerts: each watched token's map is re-read every ten minutes (alerts.mjs).
   startHolderAlerts()
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.

@@ -42,7 +42,7 @@ export function HmTokenPage() {
     m?.state === 'ok'
       ? `${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim().slice(0, 300)
       : comingSoon
-        ? `Token maps for ${chainName} are coming soon. DeepCore launches and tokens on the other chains already have live maps on HolderMaps.`
+        ? `Token maps for ${chainName} are coming soon. Tokens on Gully Chain and the other chains already have live maps on HolderMaps.`
         : `Who holds ${symbol ?? 'this token'} on ${chainName}: the biggest wallets as bubbles, the ones that trade with each other, and how concentrated it is, read live.`
   const ok = m?.state === 'ok' ? m : null
   useRefreshToast(ok)
@@ -61,7 +61,7 @@ export function HmTokenPage() {
           <span aria-current="page" className="tok">
             {symbol ?? `${token.slice(0, 6)}…${token.slice(-4)}`}
           </span>
-          {ok && (ok.kind === 'token' || ok.kind === 'launch' || ok.kind === 'deepcore-launch') && ok.token.url && (
+          {ok && (ok.kind === 'token' || ok.kind === 'launch') && ok.token.url && (
             <a className="ext" href={ok.token.url} target="_blank" rel="noopener noreferrer">
               Explorer <ArrowUpRight aria-hidden className="hm-ic sm" />
               <span className="hm-sr"> (opens in a new tab)</span>

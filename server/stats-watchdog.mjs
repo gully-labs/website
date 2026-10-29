@@ -24,8 +24,8 @@ const RETRY_MS = 3_600_000
 export const REPEAT_MS = 7 * 86_400_000
 const FLAT_DAYS = 3
 // Series a venue is expected to draw. PeddleQuest is quests, not trading: no volume.
-const EXPECT = { deepcore: ['volume', 'tvl'], peddleswap: ['volume', 'tvl'], peddles: ['volume', 'tvl'], peddlequest: ['tvl', 'fees'] }
-const NAMES = { deepcore: 'DeepCore', peddleswap: 'PeddleSwap', peddles: 'Peddles', peddlequest: 'PeddleQuest' }
+const EXPECT = { peddleswap: ['volume', 'tvl'], peddles: ['volume', 'tvl'], peddlequest: ['tvl', 'fees'] }
+const NAMES = { peddleswap: 'PeddleSwap', peddles: 'Peddles', peddlequest: 'PeddleQuest' }
 
 const FILE = () => path.join(DATA_DIR, 'stats-watchdog.json')
 const readState = () => {

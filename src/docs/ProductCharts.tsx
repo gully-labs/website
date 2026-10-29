@@ -186,7 +186,7 @@ export function AskStatusPanel() {
 /* -------------------------------------------------------------- status --- */
 
 type StatusState = 'up' | 'degraded' | 'down' | 'off' | 'unknown'
-type StatusGroup = 'platform' | 'tracker' | 'deepcore' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders'
+type StatusGroup = 'platform' | 'tracker' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders'
 interface StatusBucket {
   t: string
   up: number | null

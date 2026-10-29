@@ -1,7 +1,7 @@
 // The app host, in one place for the server (src/site-host.ts holds the same names for the browser).
 //
 //   app.gullylabs.xyz         the Gully Labs App (the app dashboard: keys, alerts, analytics, payments,
-//                             and every service: tracker, Gully Pay, Chain Kit, Gully AI, DeepCore, widgets).
+//                             and every service: tracker, Gully Pay, Chain Kit, Gully AI, widgets).
 //
 // The dashboard's old host (developers.*) was retired on 2026-10-17: its DNS record is gone and nothing
 // here routes it any more. The main site's /app and /developers paths still answer 301 to the app.
@@ -278,6 +278,9 @@ export function movedPageUrl(pathname) {
   if (rpc) return `${RPC_URL}/${rpc[1] && RPC_PAGES.has(rpc[1]) ? `${rpc[1]}/` : ''}`
   // Gully Studio.
   if (/^\/(studio|gully-studio|games)(\/|$)/.test(p)) return `${STUDIO_URL}/`
+  // The DeepCore partnership ended on 2026-10-29: its old product and portfolio pages open Gully Core, Gully Chain's
+  // own launchpad and DEX core (our fork of the DeepCore contracts).
+  if (p === '/products/deepcore' || p === '/projects/deepcore') return `${MAIN_URL}/products/gully-core`
   return null
 }
 

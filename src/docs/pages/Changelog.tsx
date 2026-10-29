@@ -2,6 +2,7 @@ import { StatusBoard } from '../../components/status/StatusBoard'
 import { AssetText, C, ChainName, DocLink, DocPage, Ext, List, P, Section } from '../DocPage'
 
 const sections = [
+  { id: '2026-10-29', title: '29 October 2026' },
   { id: '2026-10-18', title: '18 October 2026' },
   { id: '2026-10-17', title: '17 October 2026' },
   { id: '2026-10-16', title: '16 October 2026' },
@@ -19,6 +20,14 @@ export function Changelog() {
     >
       <P>What is running now, live from the status checks (every part below, checked every minute):</P>
       <StatusBoard compact />
+      <Section id="2026-10-29" title="29 October 2026">
+        <List>
+          <li>
+            Gully Core is Gully Chain’s own launchpad and DEX core, built and run by Gully Labs (<Ext href="https://docs.gullychain.xyz/gully-core/">docs.gullychain.xyz/gully-core</Ext>). The features that read another launchpad’s platform are retired: new-launch alerts, the launches screens in the bot and the Mini App, the swap card’s router comparison, Gully AI’s launch and pool tools, and that venue’s figures. Their old API routes answer <C>410 Gone</C>; existing new-launch alerts stay listed and can be deleted.
+          </li>
+          <li>The Holder Map maps those launchpad tokens like any other token; launch checks cover Gully Launchpad launches and the launchpads in the registry.</li>
+        </List>
+      </Section>
       <Section id="2026-10-18" title="18 October 2026">
         <List>
           <li>
@@ -31,7 +40,7 @@ export function Changelog() {
             The <DocLink to="gully-score">Gully Score</DocLink> is live at <Ext href="https://gullylabs.xyz/score">gullylabs.xyz/score</Ext>: a 0 to 100 score for any contract from public evidence, every weight and source shown, with an embeddable badge. Contract monitors are live in the app: privileged changes and large outflows on the contracts you watch, by Telegram or signed webhook.
           </li>
           <li>
-            The <DocLink to="holder-map">Holder Map</DocLink> is live for every DeepCore launch at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext>: who holds a token, the wallets that trade with each other, bundled launch buys, the deployer’s record and a health score, with holder alerts. Maps for tokenised stocks open chain by chain; until a chain’s holder data is connected its pages say “coming soon”.
+            The <DocLink to="holder-map">Holder Map</DocLink> is live at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext>: who holds a token, the wallets that trade with each other, bundled launch buys, the deployer’s record and a health score, with holder alerts. Maps for tokenised stocks open chain by chain; until a chain’s holder data is connected its pages say “coming soon”.
           </li>
           <li>
             A general <DocLink to="roadmap">Roadmap</DocLink> page listing each track with its status: the Gully L3 (planned) and <DocLink to="roadmap" hash="security">Gully Security</DocLink> (scan, score and monitors live; reviews on request; audits not offered).
@@ -46,7 +55,7 @@ export function Changelog() {
             The treasury is a Safe, so each chain is now <DocLink to="gully-pay" hash="chains">offered only where the Safe is deployed</DocLink>; the server checks hourly and the admin panel says what to do. Merchant stores get the in-payment fee on the same condition; elsewhere the fee is invoiced as before. A store's own Safe that is not deployed on a chain yet is read again every hour and switches on by itself once it is.
           </li>
           <li>
-            A public <Ext href="https://gullylabs.xyz/status">status page</Ext> and <C>GET /api/status</C>: the API, tracker freshness on each chain, the DeepCore launch poller, the Telegram bot webhook, Gully Pay RPCs per chain, Gully AI, the security scan engine, contract monitors and Holder Map sources, checked every minute by the server, with 24 h uptime and the incident history. See <DocLink to="status">Status</DocLink>.
+            A public <Ext href="https://gullylabs.xyz/status">status page</Ext> and <C>GET /api/status</C>: the API, tracker freshness on each chain, the Telegram bot webhook, Gully Pay RPCs per chain, Gully AI, the security scan engine, contract monitors and Holder Map sources, checked every minute by the server, with 24 h uptime and the incident history. See <DocLink to="status">Status</DocLink>.
           </li>
           <li>
             New docs pages: <DocLink to="gully-ai">Gully AI</DocLink>, the <DocLink to="telegram">Telegram bot and Mini App</DocLink>, <DocLink to="chain-kit">Chain Kit</DocLink>, <DocLink to="swaps">Swaps</DocLink> (LI.FI on EVM chains, Jupiter on Solana), <DocLink to="solana">Solana</DocLink> and <DocLink to="status">Status</DocLink>. The <DocLink to="api">API reference</DocLink> now covers every public endpoint group, including <C>/api/pay/gas</C>, <C>/api/tracker/gap-index</C>, <C>/api/holders</C>, <C>/api/score</C> and <C>/api/status</C>; unknown <C>/api/</C> paths answer a JSON 404. The docs have a search box and a live chart on every page.
@@ -69,14 +78,11 @@ export function Changelog() {
             <Ext href="https://gullylabs.xyz/chain-kit">Chain Kit</Ext>: a branded Blockscout explorer for your chain, operated by Gully Labs.
           </li>
           <li>The widget links each stock to its page.</li>
-          <li>
-            The <Ext href="https://gullylabs.xyz/">landing page</Ext> describes DeepCore as it is today (launchpad, hosted Launchpads and DEXes, router) and shows its hosted sites, launches in the last 24 hours and dollars in locks, read from <Ext href="https://api.deepcore.fun/v1/overview">api.deepcore.fun</Ext>.
-          </li>
           <li>A preview of Gully Chains, managed Arbitrum Orbit L3s, starting with Gully Devnet. In development; nothing is live yet.</li>
           <li>
             <DocLink to="roadmap-l3">Roadmap: Gully L3</DocLink>: the consolidated spec (settlement, data availability, gas token, Chain Kit, Gully Pay, Hyperlane as the interop layer at launch), with its status: spec written, devnet prepared, nothing running.
           </li>
-          <li>The tracker reads DeepCore pools through DeepCore's own pool manager, never as Uniswap v4 pools.</li>
+          <li>The tracker reads launchpad CL pools through their own pool manager, never as Uniswap v4 pools.</li>
         </List>
       </Section>
       <Section id="2026-10-16" title="16 October 2026">

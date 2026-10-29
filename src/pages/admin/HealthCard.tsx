@@ -21,7 +21,8 @@ interface Health {
     source: string | null
     env: string | null
     available: boolean
-    launches: boolean
+    /** Any token (by address) can be mapped there. Absent on an older server. */
+    tokens?: boolean
     reason: string | null
   }[]
   monitors: {
@@ -36,15 +37,6 @@ interface Health {
     lastError: string | null
     lastErrorAt: string | null
     detail: 'loop' | 'chains'
-  }
-  deepcore: {
-    lastOkAt: string | null
-    lagMs: number | null
-    pollMs: number
-    lastError: string | null
-    baselineAt: string | null
-    seen: number | null
-    cached: number | null
   }
   bot: {
     enabled: boolean
@@ -230,8 +222,9 @@ export function HealthCard({ token }: { token: string }) {
   const monLagLimit = 5 * 60_000
   const monTone: Tone = m.monitors === 0 ? 'off' : m.lagMs != null && m.lagMs > monLagLimit ? 'down' : m.errors ? 'warn' : m.detail === 'loop' && m.lastTickAt ? 'ok' : m.errors === 0 ? 'ok' : 'warn'
 
-  const d = h.deepcore
-  const dcTone: Tone = d.lagMs == null ? 'down' : d.lagMs > d.pollMs * 4 ? 'down' : d.lastError || d.lagMs > d.pollMs * 2 ? 'warn' : 'ok'
+  // The home ledger's data watchdog: 'off' until its first check (it runs every 15 minutes).
+  const st = h.stats
+  const ledgerTone: Tone = !st?.at ? 'off' : st.issues.length ? 'warn' : 'ok'
 
   const b = h.bot
   const botTone: Tone = !b.enabled ? 'off' : b.errors && b.lastErrorAt && (!b.lastUpdateAt || b.lastErrorAt > b.lastUpdateAt) ? 'warn' : b.detail === 'stats' ? 'warn' : 'ok'
@@ -242,7 +235,7 @@ export function HealthCard({ token }: { token: string }) {
   const em = h.embeddings
   const embTone: Tone = em.configured === false ? 'down' : em.retrieval === 'hybrid' ? 'ok' : 'warn'
 
-  const tones = [holdersTone, monTone, dcTone, botTone, engTone, embTone]
+  const tones = [holdersTone, monTone, ledgerTone, botTone, engTone, embTone]
   const worst: Tone = tones.includes('down') ? 'down' : tones.includes('warn') ? 'warn' : 'ok'
 
   return (
@@ -265,14 +258,14 @@ export function HealthCard({ token }: { token: string }) {
                 <span className="flex items-center gap-2 text-ink-2">
                   <Dot tone={c.available ? 'ok' : 'down'} /> {c.name}
                 </span>
-                <span className={`truncate ${c.available ? 'text-faint' : 'text-error'}`} title={`Source: ${c.source ?? 'none'}${c.env ? ` (${c.env})` : ''}. DeepCore launches: ${c.launches ? 'mapped' : 'not on this chain'}.`}>
+                <span className={`truncate ${c.available ? 'text-faint' : 'text-error'}`} title={`Source: ${c.source ?? 'none'}${c.env ? ` (${c.env})` : ''}. Any token: ${c.tokens ? 'mapped' : 'not on this chain'}.`}>
                   {c.available ? 'stocks available' : (c.reason ?? 'unavailable')}
-                  {c.launches ? ' · launches' : ''}
+                  {c.tokens ? ' · any token' : ''}
                 </span>
               </li>
             ))}
           </ul>
-          <span className="font-mono text-[11px] text-faint">"launches": DeepCore launches map there without a key. Stock tokens need the source above.</span>
+          <span className="font-mono text-[11px] text-faint">"any token": a token address maps there without a key. Stock tokens need the source above.</span>
           <Spark history={h.history} field="holdersAvailable" tone={holdersTone} fmt={(v) => `${v} chains available`} label="Holder Map chains with data, per minute" />
         </Item>
 
@@ -296,21 +289,16 @@ export function HealthCard({ token }: { token: string }) {
 
         <Item
           icon={Satellite}
-          title="DeepCore poller"
-          tone={dcTone}
-          status={TONE[dcTone].word}
+          title="Ledger feeds"
+          tone={ledgerTone}
+          status={st?.at ? TONE[ledgerTone].word : 'not checked yet'}
           rows={[
-            ['last good read', ago(d.lastOkAt)],
-            ['polls every', dur(d.pollMs)],
-            ['launches cached', num(d.cached)],
-            ['launches seen', num(d.seen)],
-            ['last error', errText(d.lastError)],
-            ['ledger feeds', !h.stats?.at ? 'not checked yet' : h.stats.issues.length ? `${h.stats.issues.length} problem${h.stats.issues.length === 1 ? '' : 's'}: ${h.stats.issues.map((i) => `${i.venue} ${i.kind}`).join(', ')}` : `all venues fine · checked ${ago(h.stats.at)}`],
+            ['last check', ago(st?.at ?? null)],
+            ['problems', !st?.at ? '—' : st.issues.length ? `${st.issues.length}: ${st.issues.map((i) => `${i.venue} ${i.kind}`).join(', ')}` : 'none'],
+            ['alerted at that check', !st?.at ? '—' : st.alerted.length ? st.alerted.join(', ') : 'none'],
           ]}
-          testId="health-deepcore"
-        >
-          <Spark history={h.history} field="deepcoreLagS" tone={dcTone} fmt={secs} label="Time since DeepCore's last good read, per minute" />
-        </Item>
+          testId="health-ledger"
+        />
 
         <Item
           icon={Bot}

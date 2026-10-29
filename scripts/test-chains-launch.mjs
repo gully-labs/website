@@ -19,7 +19,7 @@ await guardTestRun(PORT)
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-chains-launch-'))
 
-Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: crypto.randomBytes(24).toString('hex'), TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off', CHAINLIST_URL: 'off' })
+Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: crypto.randomBytes(24).toString('hex'), TRACKER_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off', CHAINLIST_URL: 'off' })
 delete process.env.TELEGRAM_BOT_TOKEN
 await import('../server/server.mjs')
 const mod = await import('../server/chains-launch.mjs')

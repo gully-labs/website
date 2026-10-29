@@ -414,7 +414,7 @@ await step('layout at 390 px', async () => {
   }
 })
 
-check('the server made no unexpected outbound calls', blockedOutbound.filter((u) => !/localhost|127\.0\.0\.1/.test(u)).every((u) => /dexscreener|geckoterminal|rpc\.|arbitrum|base|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|e2e\.invalid/i.test(u)), blockedOutbound.slice(0, 3).join(' | '))
+check('the server made no unexpected outbound calls', blockedOutbound.filter((u) => !/localhost|127\.0\.0\.1/.test(u)).every((u) => /dexscreener|geckoterminal|rpc\.|arbitrum|base|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|e2e\.invalid/i.test(u)), blockedOutbound.slice(0, 3).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)
 console.log(`\n${t.passed} passed, ${t.failed} failed (${secs} s)`)

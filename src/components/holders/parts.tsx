@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router'
 import { Bot, Loader2 } from 'lucide-react'
-import type { CrossToken, DeployerHistory, HealthPartId, HolderHealth, HolderMapOk, LaunchOutcome } from '../../lib/holders'
+import type { HealthPartId, HolderHealth, HolderMapOk } from '../../lib/holders'
 import { ageText } from '../../lib/tracker'
 import { K } from './theme'
 import { useCountUp } from './count'
 
-/* The Holder Map's side cards: the explainable health score, the deployer's record, wallets seen in other
-   tokens, the live pill and "Explain this map" (Gully AI). Every figure is the server's. */
+/* The Holder Map's side cards: the explainable health score, the live pill and "Explain this map" (Gully AI).
+   Every figure is the server's. */
 
 const LEVEL = {
   good: { text: 'Looks healthy', colour: K.gold },
@@ -122,79 +121,6 @@ export function HealthCard({ h, active, onPart, compact = false, children }: { h
   )
 }
 
-
-const OUTCOME: Record<LaunchOutcome, { text: string; colour: string }> = {
-  trading: { text: 'Still trading', colour: K.gold },
-  'liquidity-pulled': { text: 'Liquidity pulled', colour: K.warn },
-  'deployer-sold': { text: 'Deployer sold', colour: K.warn },
-  unknown: { text: 'Unknown', colour: K.dim },
-}
-
-export function DeployerHistoryCard({ d, now }: { d: DeployerHistory; now: number }) {
-  return (
-    <section aria-label="The deployer's other launches" className="flex flex-col gap-2 rounded-[12px] border border-line-strong p-4" style={{ background: K.night }} data-deployer-history>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-mono text-[11px] tracking-[1px] text-dim">THE DEPLOYER’S RECORD</span>
-        {d.serial && (
-          <span className="rounded-full border px-2 py-[1px] font-mono text-[11px]" style={{ borderColor: K.warn, color: K.warn }}>
-            Serial launcher
-          </span>
-        )}
-      </div>
-      {!d.checked ? (
-        <p className="m-0 text-[13px] text-muted">{d.reason ?? 'Not checked yet.'}</p>
-      ) : !d.launches.length ? (
-        <p className="m-0 text-[13px] text-muted">No other launches by this deployer on DeepCore.</p>
-      ) : (
-        <>
-          <p className="m-0 text-[13px] text-muted">
-            {d.total} other launch{d.total === 1 ? '' : 'es'} by this deployer on DeepCore.
-          </p>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {d.launches.slice(0, 8).map((l) => (
-              <li key={`${l.chainKey}:${l.token}`}>
-                <Link to={l.path} className="flex min-h-11 items-center gap-2 rounded-[8px] border border-line px-2 text-[13px] hover:border-gold" title={l.note}>
-                  <span className="min-w-0 flex-1 truncate font-semibold text-ink">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
-                  <span className="flex-none font-mono text-[11px] text-dim">{ageText(l.createdAt, now)}</span>
-                  <span
-                    className="flex-none rounded-full border px-2 py-[1px] font-mono text-[11px]"
-                    style={{
-                      borderColor: OUTCOME[l.outcome].colour,
-                      color: OUTCOME[l.outcome].colour,
-                    }}
-                  >
-                    {OUTCOME[l.outcome].text}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </section>
-  )
-}
-
-export function CrossTokenCard({ x }: { x: CrossToken }) {
-  return (
-    <section aria-label="The same wallets in other tokens" className="flex flex-col gap-2 rounded-[12px] border border-line-strong p-4" style={{ background: K.night }} data-cross-token>
-      <span className="font-mono text-[11px] tracking-[1px] text-dim">SAME WALLETS ELSEWHERE</span>
-      <p className="m-0 text-[13px] leading-[1.5] text-ink">{x.line}</p>
-      {x.tokens.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {x.tokens.slice(0, 10).map((t) => (
-            <Link key={`${t.chainKey}:${t.token}`} to={t.path} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line-strong px-3 font-mono text-[12px] text-gold-hover hover:border-gold">
-              {t.symbol ?? `${t.token.slice(0, 6)}…`} <span className="text-dim">· {t.wallets}</span>
-            </Link>
-          ))}
-        </div>
-      )}
-      <span className="font-mono text-[11px] text-dim">
-        Checked {x.checkedWallets} wallets of cluster {x.cluster.toUpperCase()}.
-      </span>
-    </section>
-  )
-}
 
 export function LivePill({ on, paused, lastAt, gated, now, beat = 0 }: { on: boolean; paused: boolean; lastAt: string | null; gated: boolean; now: number; beat?: number }) {
   if (paused)

@@ -126,7 +126,7 @@ export function WidgetGuide() {
 
       <Section id="holder-map" title="Holder Map">
         <P>
-          Show who holds a DeepCore launch or a tracked stock token: bubbles sized by share, connected wallets, launch checks and a replay. The same script frames the Holder Map from gullylabs.xyz:
+          Show who holds any token, a Gully Chain launch or a tracked stock token: bubbles sized by share, connected wallets, launch checks and a replay. The same script frames the Holder Map from gullylabs.xyz:
         </P>
         <CodeBlock lang="html" code={'<div data-gully-widget="holders" data-chain="robinhood" data-token="0x8d901a1b3f3a57f9c36a71382fa183476c41545b"></div>\n<script src="https://embed.gullylabs.xyz/widget.js" async></script>'} />
         <List>

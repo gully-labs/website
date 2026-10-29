@@ -129,7 +129,7 @@ const SOURCE_WORDS: Record<string, string> = {
   timelock: 'Read from the contract that delays changes, on the chain',
   upgradeability: 'Read from the contract’s upgrade settings on the chain',
   changes: 'Read from Gully Security monitoring of the last 30 days',
-  liquidity: 'Read from DeepCore’s launch records (DeepCore launches only)',
+  liquidity: 'Read from the Gully Launchpad and its LP locker on Gully Chain (Gully Chain launches only)',
   holders: 'Read from the Gully Holder Map',
   review: 'Read from published Gully Security reports',
   age: 'Read from the contract’s deployment on the chain',

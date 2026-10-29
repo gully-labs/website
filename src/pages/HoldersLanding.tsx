@@ -21,8 +21,8 @@ import { HmStage } from '../holdermaps/HmHero'
 import '../holdermaps/hm.css'
 
 /* /holders: the Holder Map's front door. A search for any token: an address on Robinhood Chain, BNB Chain, Base,
-   HyperEVM, Gully Chain Testnet or Solana (every supported chain is checked at once), a DeepCore launch or a tracked stock ticker
-   (GET /api/holders/resolve), the newest DeepCore launches as they are checked (GET /api/holders/launches,
+   HyperEVM, Gully Chain Testnet or Solana (every supported chain is checked at once), a Gully Chain launch's ticker or a tracked stock
+   ticker (GET /api/holders/resolve), the newest Gully Chain launches as they are checked (GET /api/holders/launches,
    every 30 s), the maps people opened most today (GET /api/holders/top) and how to read a map. Every
    figure is read live; a launch still being checked says so. */
 
@@ -86,7 +86,7 @@ export function HoldersLanding() {
         description={
           isHolderMapsHost()
             ? 'Map any token’s holders on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: top wallets, linked clusters and launch health, read live.'
-            : 'See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. DeepCore launches also get bundled-buy checks, the deployer’s record and a health score you can check part by part.'
+            : 'See who holds any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain or Solana: the biggest wallets and the ones that trade with each other. Gully Chain launches and other supported launchpads’ tokens also get bundled-buy and sniper checks, the deployer’s share and a health score you can check part by part.'
         }
       />
       <section id="map" className="hm-hero scroll-mt-20">
@@ -96,7 +96,7 @@ export function HoldersLanding() {
             Who <em>really</em> holds it?
           </h1>
           <p className="m-0 max-w-[640px] text-[18px] leading-[1.6] text-muted">
-            Paste any token address, on any chain we cover, or a ticker. The biggest wallets show as bubbles and the ones that trade with each other cluster together. New DeepCore launches also get a plain check: bundled buys, snipers, the deployer’s share and record.
+            Paste any token address, on any chain we cover, or a ticker. The biggest wallets show as bubbles and the ones that trade with each other cluster together. Launches on Gully Chain and other supported launchpads also get a plain check: bundled buys, snipers and the deployer’s share.
           </p>
           <SearchBox />
           <Sources s={sources} />
@@ -108,7 +108,7 @@ export function HoldersLanding() {
         <section id="launches" aria-labelledby="hl-feed" className="card card-pad flex min-w-0 scroll-mt-20 flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="hl-feed" className="heading-4 text-ink">
-              New launches, checked
+              New Gully Chain launches, checked
             </h2>
             <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-dim">
               <span className="relative inline-flex size-2.5" aria-hidden>
@@ -137,7 +137,7 @@ export function HoldersLanding() {
         {[
           ['Bubbles', 'One wallet each, sized by its share. Grey ones are pools, locks, burn addresses and exchanges, not people.'],
           ['Gold clusters', 'Wallets that sent the token to each other. A big cluster is often one holder behind many wallets.'],
-          ['Health score', 'For launches: liquidity lock, bundled buys, snipers, the deployer’s share and record, the top 10. Tap a part to see its wallets.'],
+          ['Health score', 'For launches: bundled buys, snipers, the deployer’s share and the top 10. Tap a part to see its wallets.'],
           ['Live and replay', 'Watch transfers as they happen, or replay how holdings spread since launch.'],
         ].map(([t, d]) => (
           <div key={t} className="card card-pad flex flex-col gap-2">
@@ -160,7 +160,7 @@ function Sources({ s }: { s: ReturnType<typeof usePoll<HolderSources>> }) {
   return (
     <ul className="m-0 flex max-w-[760px] list-none flex-wrap items-center gap-2 p-0 font-mono text-[12px]" aria-label="Where Holder Maps work today" data-holder-sources>
       <li className="inline-flex min-h-9 items-center gap-2 rounded-full border border-gold/40 px-3 text-ink">
-        <Radar aria-hidden size={14} className="text-gold" /> DeepCore launches · live on {launches.join(', ')}
+        <Radar aria-hidden size={14} className="text-gold" /> Launch checks · {launches.length ? `live on ${launches.join(', ')}` : 'coming soon'}
       </li>
       {live.map((c) => (
         <li key={c.chain} className="inline-flex min-h-9 items-center gap-2 rounded-full border border-gold/40 px-3 text-ink">
@@ -218,7 +218,7 @@ function SearchBox() {
                   <span className="font-semibold text-ink">{m.symbol ?? `${m.token.slice(0, 6)}…${m.token.slice(-4)}`}</span>
                   <span className="font-mono text-[12px] text-faint">{m.chainName}</span>
                   <span className="ml-auto font-mono text-[11px] text-dim">
-                    {m.kind === 'deepcore-launch' ? 'DeepCore launch' : m.kind === 'launch' ? 'Launchpad token' : m.kind === 'token' ? 'Token' : 'Stock token'}
+                    {m.kind === 'launch' ? 'Launchpad token' : m.kind === 'token' ? 'Token' : 'Stock token'}
                     {m.available === false ? ' · coming soon' : ''}
                   </span>
                 </Link>
@@ -313,7 +313,7 @@ export function Feed({ s, now }: { s: ReturnType<typeof usePoll<CheckedLaunches>
               return tipHtml({
                 title: `${recency.labels[i]} hour`,
                 rows: STATES.map((st, k) => ({ name: st.label, value: String(recency.counts[k][i]), color: st.colour() })),
-                note: 'New DeepCore launches in the live feed.',
+                note: 'New Gully Chain launches in the live feed.',
               })
             }, 'shadow'),
             series: STATES.map((st, k) => ({
@@ -449,7 +449,7 @@ function TopList({ s }: { s: ReturnType<typeof usePoll<TopScanned>> }) {
               <span className="relative w-5 font-mono text-[12px] text-faint">{i + 1}</span>
               <ChainLogo chain={x.chain} size={16} decorative className="relative" />
               <span className="relative font-semibold text-ink">{x.symbol ?? `${x.token.slice(0, 6)}…`}</span>
-              <span className="relative font-mono text-[11px] text-dim">{x.kind === 'deepcore-launch' || x.kind === 'launch' ? 'launch' : x.kind === 'token' ? 'token' : 'stock'}</span>
+              <span className="relative font-mono text-[11px] text-dim">{x.kind === 'launch' ? 'launch' : x.kind === 'token' ? 'token' : 'stock'}</span>
               <span className="relative ml-auto font-mono text-[12px] text-muted">{x.scans.toLocaleString('en-US')} scans</span>
             </Link>
           </li>

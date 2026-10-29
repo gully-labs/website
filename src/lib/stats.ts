@@ -30,8 +30,6 @@ export interface VenueOk {
   fees24hUsd: number | null
   feesAllUsd?: number | null
   feesNative?: { symbol: string; amount: number } | null
-  /** DeepCore only: dollars held in its locks (launch LP locked forever, timed locks, vesting). */
-  lockedUsd?: number | null
   /** Daily volume, kept for older readers: the same points as `series.volume`. */
   daily: Point[]
   /** Daily volume, fees and value locked (USD). Absent on a server older than the series; [] = nobody publishes it. */

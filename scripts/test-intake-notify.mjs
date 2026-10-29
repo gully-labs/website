@@ -52,7 +52,7 @@ await new Promise((r) => api.listen(0, '127.0.0.1', r))
 
 fs.writeFileSync(path.join(tmp, 'bot-users.json'), JSON.stringify({ users: { [KNOWN_CHAT]: { firstSeen: '2026-01-01T00:00:00Z', lastSeen: '2026-01-01T00:00:00Z', lang: 'en', username: 'knownperson', linked: false, follows: null, followsAt: null, blocked: null, optedOut: null, source: 'start' } } }))
 Object.assign(process.env, {
-  PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off',
+  PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, TRACKER_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off',
   TELEGRAM_BOT_TOKEN: '123456:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh', TELEGRAM_API: `http://127.0.0.1:${api.address().port}`, TELEGRAM_ADMIN_CHAT_ID: ADMIN_CHAT,
 })
 const logs = []

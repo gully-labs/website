@@ -633,8 +633,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       }
     }
     case 'gully-core': {
-      // Gully Core (our fork of the DeepCore contracts, partnership ended 2026-10-29): Gully Chain's own launchpad and
-      // DEX core. Only Gully Chain figures, from the indexer; DeepCore's own cross-chain API is not shown here.
+      // Gully Core: Gully Chain's own launchpad and DEX core. Only Gully Chain figures, from the indexer.
       return {
         kpis: [
           { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), sub: 'Gully Core, from the indexer' },

@@ -254,7 +254,11 @@ export interface BillingView {
 export type GapDirection = 'above' | 'below' | 'both'
 /** `direction` is absent only on a reply from an older server, and then means 'both'. */
 export type HolderAlertCondition = { type: 'holders'; chain: string; token: string; symbol: string | null; metric: 'cluster' | 'top10' | 'deployer'; above: number | null; dropPts: number | null; sellPct?: number | null }
-export type AlertCondition = { type: 'gap'; pct: number; direction?: GapDirection } | { type: 'status'; status: 'premium' | 'discount' | 'either' } | { type: 'deepcore-launch'; chainId: number | null } | HolderAlertCondition
+/** A stored alert of the new-launch type retired on 2026-10-29 (the DeepCore integration ended): it is never
+    evaluated again and can only be paused or deleted. New ones cannot be made. */
+export type RetiredAlertCondition = { type: 'deepcore-launch' }
+export type AlertCondition = { type: 'gap'; pct: number; direction?: GapDirection } | { type: 'status'; status: 'premium' | 'discount' | 'either' } | RetiredAlertCondition | HolderAlertCondition
+export const RETIRED_ALERT_TEXT = 'New-launch alert (retired 2026-10-29)'
 
 /** The direction control's options, in order. */
 export const GAP_DIRECTIONS: { id: GapDirection; label: string; hint: string }[] = [
@@ -268,11 +272,10 @@ export const gapText = (pct: number, direction: GapDirection = 'both') => (direc
 
 /** An alert kind the server offers (GET /api/developer/alerts `kinds`). */
 export interface AlertKind {
-  id: 'gap' | 'deepcore-launch' | 'holders'
+  id: 'gap' | 'holders'
   label: string
-  target: 'stock' | 'deepcore-chain' | 'token'
-  chains?: { chainId?: number; key?: string; name: string }[]
-  cooldownMinutes?: number
+  target: 'stock' | 'token'
+  chains?: { key: string; name: string }[]
   /** Holder alerts: how often maps are re-read, and whether the plan includes them. */
   everyMinutes?: number
   available?: boolean
@@ -337,12 +340,11 @@ export interface AlertsView {
   kinds?: AlertKind[]
 }
 
-const DEEPCORE_CHAIN_NAMES: Record<number, string> = { 56: 'BNB Chain', 999: 'HyperEVM', 4663: 'Robinhood Chain', 8453: 'Base' }
 const HOLDER_CHAIN_NAMES: Record<string, string> = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', base: 'Base', hyperevm: 'HyperEVM', solana: 'Solana' }
 /** A holder alert's rule in words. */
 export const holdersText = (c: HolderAlertCondition) =>
   `${c.metric === 'top10' ? 'Top 10 wallets' : c.metric === 'deployer' ? 'Deployer' : 'Largest cluster'} of ${c.symbol ?? (c.token.length > 14 ? `${c.token.slice(0, 6)}…${c.token.slice(-4)}` : c.token)} on ${HOLDER_CHAIN_NAMES[c.chain] ?? c.chain}${c.above !== null ? ` ≥ ${c.above}%` : ''}${c.above !== null && c.dropPts !== null ? ' or' : ''}${c.dropPts !== null ? ` falls ${c.dropPts} pts` : ''}${c.sellPct != null ? ` sells ${c.sellPct}%` : ''}`
-export const conditionText = (c: AlertCondition) => (c.type === 'holders' ? holdersText(c) : c.type === 'deepcore-launch' ? `New DeepCore launch on ${c.chainId ? (DEEPCORE_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapText(c.pct, c.direction) : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
+export const conditionText = (c: AlertCondition) => (c.type === 'holders' ? holdersText(c) : c.type === 'deepcore-launch' ? RETIRED_ALERT_TEXT : c.type === 'gap' ? gapText(c.pct, c.direction) : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
 
 export const fmtUsd0 = (n: number) => n.toLocaleString('en-US')
 

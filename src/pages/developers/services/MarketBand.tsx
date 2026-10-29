@@ -1,14 +1,11 @@
-import { TokenLogo } from '../../../components/logos/TokenLogo'
-import { Activity, ChartCandlestick, Rocket, Waves } from 'lucide-react'
+import { Activity, ChartCandlestick, Waves } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
 import { C } from '../../../components/charts/chartPresets'
 import { NF } from '../../../components/charts/number-formats'
 import { CHAIN_SHORT, fmtGap, useTracker } from '../../../lib/tracker'
-import { ago } from '../api'
 import { Skeleton } from '../parts'
 import { HBars, LiveMarker } from '../vcharts'
-import { deepcoreColor, useLaunches } from './useDeepcore'
 import { useHealthPings } from './health'
 import { LineChart } from './LineChart'
 import { StatusPill as KitPill } from '../../../components/ui/StatusPill'
@@ -19,12 +16,11 @@ import { StatusPill as KitPill } from '../../../components/ui/StatusPill'
      Widest gaps   GET /api/tracker every 30 s, the widest trusted gaps on every chain (animated bars)
      Gap index     the average absolute gap of the 8 widest stock tokens over 24 h, in 30-minute buckets,
                    from GET /api/tracker/gap-index (one call, every 5 minutes), a line with hover tooltips
-     DeepCore      GET /api/deepcore/launches: launches in the last 24 h per chain, and the newest
      API status    this browser's own round trip to GET /healthz every 5 s, as a live sparkline
    Gully Pay has no public network-wide volume, so it is not shown (never invented). */
 
 const TOP = 8 // server/tracker.mjs GAP_INDEX_TOP
-/** The band's mini chart height: four tiles in one ~140 px row. */
+/** The band's mini chart height: three tiles in one ~140 px row. */
 const MINI = 84
 
 /** GET /api/tracker/gap-index: the server's 24h index of the TOP widest tokens (one call, cached there for a
@@ -81,18 +77,7 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
   const rows = tr.k === 'ok' ? tr.data.rows : null
   const widest = useMemo(() => (rows ?? []).filter((r) => r.gapPct !== null && r.status !== 'thin').sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0)), [rows])
   const index = useGapIndex()
-  const dc = useLaunches()
   const pings = useHealthPings(5_000).slice(-36)
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30_000)
-    return () => clearInterval(id)
-  }, [])
-
-  const d = dc.k === 'ok' && dc.data.state !== 'unreadable' ? dc.data : null
-  const day = d ? d.launches.filter((l) => now - Date.parse(l.createdAt) <= 86_400_000) : []
-  const perChain = d ? [...new Map(d.launches.map((l) => [l.chainId, l.chainName])).entries()].map(([id, name]) => ({ name, value: day.filter((l) => l.chainId === id).length, color: deepcoreColor(id) })) : []
-  const newest = d?.launches[0]
   const lastMs = [...pings].reverse().find((p) => p.ms !== null)?.ms ?? null
   const okPings = pings.filter((p) => p.ms !== null) as { t: number; ms: number }[]
   const down = pings.length > 0 && pings[pings.length - 1].ms === null
@@ -107,8 +92,8 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
         <KitPill tone="live">NETWORK · LIVE</KitPill>
         <span className="font-mono text-[11px] text-faint">market data across Gully, not your account</span>
       </div>
-      {/* 1, 2 or 4 tiles a row by the band's own width (never 3 + 1). */}
-      <div className="grid grid-cols-1 gap-3 @min-[560px]:grid-cols-2 @min-[1060px]:grid-cols-4" data-testid="mk-grid">
+      {/* 1 or 3 tiles a row by the band's own width (never 2 + 1). */}
+      <div className="grid grid-cols-1 gap-3 @min-[820px]:grid-cols-3" data-testid="mk-grid">
         <Tile
           testId="mk-gaps"
           icon={<ChartCandlestick size={15} aria-hidden />}
@@ -146,24 +131,6 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
           ) : (
             <LiveMarker text="Not enough history for a series yet" height={MINI} />
           )}
-        </Tile>
-
-        <Tile
-          testId="mk-deepcore"
-          icon={<Rocket size={15} aria-hidden />}
-          title="DeepCore launches · 24h"
-          sub="Launches per chain over 24 hours, from DeepCore's indexer"
-          figure={d ? <AnimatedNumber value={day.length} className="font-display text-[20px] leading-none font-bold" /> : <span className="font-mono text-[11px] text-faint">{dc.k === 'loading' ? '…' : 'unreadable'}</span>}
-        >
-          {newest && (
-            <span key={newest.key} className="flex min-w-0 items-center gap-2 font-mono text-[11px] text-ink-2" style={{ animation: 'gl-fade .5s ease both' }} data-testid="mk-newest">
-              <TokenLogo symbol={newest.symbol ?? 'token'} chain={newest.chainKey} address={newest.token} size={16} decorative />
-              <span className="truncate">
-                newest: <b className="font-medium text-ink">{newest.symbol ?? newest.token.slice(0, 8)}</b> on {newest.chainName}, {ago(newest.createdAt)}
-              </span>
-            </span>
-          )}
-          {!d ? dc.k === 'loading' ? <Skeleton h={MINI} /> : <LiveMarker text="The launch list is unreadable right now" height={MINI} /> : perChain.length ? <HBars rowH={22} minH={MINI} rows={perChain.slice(0, 3)} label={`DeepCore launches in the last 24 hours: ${perChain.map((c) => `${c.name} ${c.value}`).join(', ')}.`} /> : <LiveMarker text="Watching DeepCore for launches" height={MINI} />}
         </Tile>
 
         <Tile

@@ -1,4 +1,4 @@
-import { Activity, ChartCandlestick, LayoutGrid, Rocket } from 'lucide-react'
+import { Activity, ChartCandlestick, LayoutGrid } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
 import { OVERALL_WORDS, STATE_WORDS, STATUS_GROUPS, type StatusComponent, type StatusGroup, type StatusState } from '../../../lib/status'
@@ -14,8 +14,8 @@ import { LineChart } from './LineChart'
 /* The app's Status view (the header's Status button). It reads the public status (GET /api/status on
    gullylabs.xyz, server/status.mjs: every part of the stack checked once a minute by the server, 24 h kept in
    30-minute buckets) every 15 s while open, and links to the full public page (https://gullylabs.xyz/status, a
-   new tab). The API (uptime over 24 h, latency per bucket), tracker data per chain and the DeepCore launch
-   poller come first; every other part follows in one compact list. Nothing is guessed: a part the server
+   new tab). The API (uptime over 24 h, latency per bucket) and tracker data per chain come first; every other
+   part follows in one compact list. Nothing is guessed: a part the server
    could not read says "Not checked yet", one not set up on the server "Not configured". */
 
 const STATE_COLOR: Record<StatusState, string> = { up: '#3ddc97', degraded: '#00d2ff', down: '#ff8a7a', off: '#8f94b0', unknown: '#8f94b0' }
@@ -79,7 +79,7 @@ function Body() {
   const of = (g: StatusGroup) => (b ? b.components.filter((c) => c.group === g) : [])
   const api = b?.components.find((c) => c.id === 'api') ?? of('platform')[0] ?? null
   const latency = (api?.history ?? []).filter((h) => h.ms !== null).map((h) => [Date.parse(h.t), h.ms as number] as [number, number])
-  const others = STATUS_GROUPS.filter((g) => !['platform', 'tracker', 'deepcore'].includes(g.id))
+  const others = STATUS_GROUPS.filter((g) => !['platform', 'tracker'].includes(g.id))
   const pending = s.error ? 'unreadable' : '…'
   const stateChip = (list: StatusComponent[]) => {
     const w = worst(list)
@@ -112,10 +112,6 @@ function Body() {
 
       <Section icon={<ChartCandlestick size={15} aria-hidden />} title="Tracker data" state={stateChip(of('tracker'))}>
         <GroupRows title="Tracker data" list={of('tracker')} empty={s.error ? 'GET /api/status did not answer.' : 'Reading…'} />
-      </Section>
-
-      <Section icon={<Rocket size={15} aria-hidden />} title="DeepCore launch poller" state={stateChip(of('deepcore'))}>
-        <GroupRows title="DeepCore launch poller" list={of('deepcore')} empty={s.error ? 'GET /api/status did not answer.' : 'Reading…'} />
       </Section>
 
       <Section icon={<LayoutGrid size={15} aria-hidden />} title="Everything else" state={stateChip(others.flatMap((g) => of(g.id)))}>

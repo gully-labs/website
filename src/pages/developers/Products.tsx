@@ -26,7 +26,7 @@ import { StatusPill as KitPill } from '../../components/ui/StatusPill'
    workspace and a live chart where data exists (a pulsing live marker where it does not yet; a
    figure the server does not know is "not tracked yet", never 0).
      Tracker API      /account (keys) + /usage?range=7d (requests sparkline)
-     Alerts           /alerts (gap and DeepCore launch alerts, Telegram, firings from the delivery logs)
+     Alerts           /alerts (gap and holder alerts, Telegram, firings from the delivery logs)
      Gully Analytics  /analytics (trial or plan, the events ring)
      Gully Pay        /billing (plan, payments to Gully)
      Gully AI         /api/ask/status, and an inline question (POST /api/ask); recent questions stay in this browser
@@ -164,8 +164,8 @@ function AlertsCard({ s, go }: { s: Load<AlertsView>; go: (t: Tab) => void }) {
       return { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), values: { fired: n } }
     })
   }, [v])
-  const gap = v ? v.alerts.filter((a) => a.condition.type !== 'deepcore-launch').length : null
-  const launch = v ? v.alerts.filter((a) => a.condition.type === 'deepcore-launch').length : null
+  const gap = v ? v.alerts.filter((a) => a.condition.type === 'gap' || a.condition.type === 'status').length : null
+  const holders = v ? v.alerts.filter((a) => a.condition.type === 'holders').length : null
   const fired = days.reduce((a, d) => a + d.values.fired, 0)
   return (
     <Card icon={<BellRing size={16} aria-hidden />} title="Alerts" badge={v ? (v.telegram.linked ? pill('Telegram linked', 'green') : v.telegram.enabled ? pill('Telegram not linked') : pill('webhooks only')) : null} foot={goBtn(go, 'alerts', 'Open alerts')}>
@@ -177,10 +177,10 @@ function AlertsCard({ s, go }: { s: Load<AlertsView>; go: (t: Tab) => void }) {
         <>
           <div className="flex flex-wrap gap-3">
             <Stat label="Gap alerts" value={gap} />
-            <Stat label="DeepCore launch" value={launch} />
+            <Stat label="Holder alerts" value={holders} />
             <Stat label="Fired · 14d" value={fired} />
           </div>
-          {fired ? <StackedDays height={64} days={days} kinds={[{ id: 'fired', name: 'fired', color: '#248bff' }]} label={`Alerts fired per day over 14 days: ${fired}.`} /> : <LiveMarker text={v.alerts.length ? 'Watching: firings chart here as they happen' : 'No alerts yet: set one on a gap or a DeepCore launch'} height={64} />}
+          {fired ? <StackedDays height={64} days={days} kinds={[{ id: 'fired', name: 'fired', color: '#248bff' }]} label={`Alerts fired per day over 14 days: ${fired}.`} /> : <LiveMarker text={v.alerts.length ? 'Watching: firings chart here as they happen' : "No alerts yet: set one on a gap or a token's holders"} height={64} />}
         </>
       )}
     </Card>

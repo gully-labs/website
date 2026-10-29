@@ -496,6 +496,13 @@
 }
 
 /* ---------------------------------------------------------------- panels and charts */
+/* Panels are <section>s, and the site layout's console.css pads every `.lcp section` 20px 0 (0-1-1), which beat
+   .gt-panel (0-1-0): every chart panel on the product pages, /products and /services gained 20 px above its header and
+   below its body. This (0-2-1) keeps panels flush whatever the CSS order. Section rhythm (.gt-sec, .gt-hero) keeps the
+   compact 20 px from console.css on purpose. */
+.gt section.gt-panel {
+  padding: 0;
+}
 .gt-panel {
   border: 1px solid var(--gt-rule);
   border-radius: var(--gt-radius);

@@ -1,6 +1,6 @@
 {
   "chainId": 56,
-  "source": "DeepCore SDK deployments/stockFeeds.ts + stocks.ts (Binance bStocks), every feed read on chain 2026-10-15; feeds price the underlying share, so fair = feed x uiMultiplier()",
+  "source": "Chainlink stock feeds and the token list beside them (Binance bStocks), every feed read on chain 2026-10-15; feeds price the underlying share, so fair = feed x uiMultiplier()",
   "stocks": [
     {
       "ticker": "AAPL",

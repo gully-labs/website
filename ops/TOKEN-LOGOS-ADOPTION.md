@@ -83,19 +83,17 @@ a9c2016.
 |---|---|---|---|
 | `src/components/swap/SwapWidget.tsx:49-69` (LiFi) | LiFi's own token list | LiFi's letter avatar for stock tokens | Pass `tokens.include: [{ chainId, address: row.token, symbol, decimals, name, logoURI: 'https://gullylabs.xyz/api/logo/<chain>/<token>.png?s=128' }]` |
 | `src/components/swap/JupiterSwap.tsx:107-140` USDC/SOL toggles and `{sym}` | text | none | `TokenLogo` 16 by symbol (USDC, SOL); the stock side gets `chain="solana" address={row.token}` |
-| `src/components/swap/DeepCoreQuote.tsx:108,126` | `q.out.symbol`, `q.fee.symbol` text | none | `TokenLogo` 16 with `row.chain` and `row.token` for the out leg; by symbol for the fee coin |
 | `src/components/swap/StockSwap.tsx` | text | none | As above |
 
-### 5. DeepCore launches (owners: site and app, branch D; bot and Mini App, the Telegram branches)
+### 5. Launch lists (owners: site and app, branch D; bot and Mini App, the Telegram branches)
 
-Every launch record has `chainKey`, `token` and `symbol` (`server/deepcore.mjs` `normaliseLaunch`, `:151`).
+The third-party launch feed these rows were planned for was retired on 2026-10-29 (DeepCore partnership ended); the rows below that still exist take a `TokenLogo` from their own chain and token.
 
 | Where | Today | Fallback | Switch |
 |---|---|---|---|
 | `src/components/holders/LaunchHolders.tsx:76` (site: ProjectDetail `:166`; app: Products `:395`, HoldersView `:37`) | symbol text | none | `TokenLogo` 20 with `l.chainKey`, `l.token` |
 | `src/pages/HoldersLanding.tsx:343` feed row | ScoreRing, no token image | none | `TokenLogo` 24 next to the ring |
 | `src/pages/HoldersLanding.tsx:378` top scanned, `:199` resolve matches | text | none | `TokenLogo` 20 with `x.chain`/`x.token`, `m.chain`/`m.token` |
-| `src/pages/developers/services/DeepcoreView.tsx:115-117` (app) | a chain-coloured dot plus symbol | none | `TokenLogo` 20 with `l.chainKey`, `l.token` (keep the chain as a ChainLogo badge) |
 | `src/pages/developers/services/MarketBand.tsx:166` | text | none | `TokenLogo` 16 |
 | **Mini App** `src/pages/tg/screens.tsx:445-447` | **letter tile**: the first 3 letters of the symbol on a chain-colour disc | the letter tile | **Replace now that the service exists** (no letter tiles): `TokenLogo` 32 with `l.chainKey`, `l.token`. The Mini App is served by gully-web, so `/api/logo` is same-origin |
 | Bot `server/telegram-ui.mjs:469` `launchBlock`, `:480` `launchesView`, `:497` `launchCardView` (sent by `telegram.mjs:617`) | text messages | none | Optional: the launch card as `sendPhoto` with photo `…/api/logo/<chainKey>/<token>.png?s=256` and the card as caption. Lists stay text |

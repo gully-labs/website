@@ -28,8 +28,6 @@ const STAGE: Record<string, string> = {
   'tool:get_top_gaps': 'Reading the tracker…',
   'tool:get_ledger': 'Reading the live ledger…',
   'tool:get_alert_channels': 'Checking the alert channels…',
-  'tool:deepcore_launches': 'Reading DeepCore launches…',
-  'tool:deepcore_pool': 'Reading the DeepCore pool…',
   'tool:get_pay_chains': 'Reading the Gully Pay config…',
   'tool:get_holders': 'Reading the Holder Map…',
   'tool:search_docs': 'Searching again…',
@@ -42,7 +40,7 @@ const STAGE: Record<string, string> = {
   'tool:get_gully_score': 'Reading the Gully Score…',
   'tool:get_published_reports': 'Reading published reports…',
 }
-const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels', deepcore_launches: 'DeepCore launches', deepcore_pool: 'DeepCore pool', get_pay_chains: 'Gully Pay config', get_holders: 'Holder Map', search_docs: 'a second search', get_my_store: 'your store', get_my_usage: 'your usage', get_my_alerts: 'your alerts', get_status: 'status', get_pay_gas: 'gas costs', get_security_offer: 'Gully Security', get_gully_score: 'Gully Score', get_published_reports: 'published reports' }
+const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels', get_pay_chains: 'Gully Pay config', get_holders: 'Holder Map', search_docs: 'a second search', get_my_store: 'your store', get_my_usage: 'your usage', get_my_alerts: 'your alerts', get_status: 'status', get_pay_gas: 'gas costs', get_security_offer: 'Gully Security', get_gully_score: 'Gully Score', get_published_reports: 'published reports' }
 
 /** Where Gully AI was used, for the ask-asked event: the app, the docs side panel, the /ask page, the home console. */
 function askSurface(variant: 'page' | 'panel'): string {

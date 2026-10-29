@@ -54,7 +54,8 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: 'settings', label: 'Settings', icon: <Settings size={ICON} aria-hidden /> },
 ]
 const HIDDEN = new Set<string>(['merchant', 'scans'])
-// Old hashes: Keys and Settings sections, Security's sections, and the Gully Chain features that moved to gullychain.xyz.
+// Old hashes: Keys and Settings sections, Security's sections, the Gully Chain features that moved to gullychain.xyz, and
+// #deepcore (the launches view retired 2026-10-29), which opens the Gully Chain hand-off too (services/nav.ts).
 const LEGACY: Record<string, AppTab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings', 'security-new': 'security', 'security-reports': 'security', 'security-monitors': 'security', 'security-review': 'security', chains: 'chain', 'chains/launch': 'chain', 'chain-kit': 'chain', deepcore: 'chain' }
 
 /** Every page: the tabs above plus the service pages and the product hand-offs (services/nav.ts), each with its icon. */

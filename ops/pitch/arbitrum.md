@@ -18,7 +18,7 @@ products are:
 - **Gully Analytics.** Web analytics that see the wallet.
 - **Gully AI.** Answers questions about our products with sources, and indexes our forks of the Orbit and
   Stylus tooling.
-- **The @GullyLabsBot Telegram bot.** It also carries DeepCore launch alerts.
+- **The @GullyLabsBot Telegram bot.** It also carries gap and Holder Map alerts.
 
 Next we are launching **Gully Chains**: managed Orbit L3s, starting with a public **Gully Devnet** on Arbitrum
 Sepolia with a Chain Kit explorer, a faucet and a bridge, then the **Gully L3** settling to Arbitrum One with

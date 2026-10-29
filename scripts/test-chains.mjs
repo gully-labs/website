@@ -20,7 +20,7 @@ const ADMIN = crypto.randomBytes(24).toString('hex')
 const t = makeChecker()
 const { check } = t
 
-Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off' })
+Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, TRACKER_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off' })
 await import('../server/server.mjs')
 await new Promise((r) => setTimeout(r, 300))
 const { CHAINS, SERVICES, WAITLIST_CHOICES } = await import('../server/chains-plans.mjs')

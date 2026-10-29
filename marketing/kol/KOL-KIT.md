@@ -37,7 +37,7 @@ Tools for on-chain markets, built and run by Gully Labs:
 
 📊 <b>Stock tracker</b>: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, every minute
 🔁 <b>Swap</b> any stock token from its page
-🔔 <b>Alerts</b> by Telegram or webhook, plus <b>DeepCore launches</b> as they happen
+🔔 <b>Alerts</b> by Telegram or webhook, for stock gaps and token holders
 🤖 <b>Gully AI</b>: questions about any Gully product, answered from our docs with sources
 📈 <b>Gully Analytics</b>: web analytics that see the wallet
 💳 <b>Gully Pay</b>: non-custodial crypto checkout and pay links. 0.5% per payment after your first $5,000, no monthly fee
@@ -105,10 +105,10 @@ https://gullylabs.xyz/tracker?utm_source=kol&utm_medium=telegram&utm_campaign=la
 
 🔁 Swap any stock token from its own page on the tracker
 
-🔔 Alerts: set a gap rule once and get a Telegram message or a signed webhook. DeepCore launch alerts too.
+🔔 Alerts: set a gap rule once and get a Telegram message or a signed webhook. Holder Map alerts too.
 https://app.gullylabs.xyz/?utm_source=kol&utm_medium=telegram&utm_campaign=launch
 
-🤖 Telegram bot + Mini App: the tracker, DeepCore launches, your alerts and Gully AI inside Telegram
+🤖 Telegram bot + Mini App: the tracker, Holder Map, your alerts and Gully AI inside Telegram
 https://t.me/GullyLabsBot
 
 🧠 Gully AI: ask anything about a Gully product, answered from the docs with sources
@@ -158,7 +158,7 @@ https://gullylabs.xyz/tracker?utm_source=kol&utm_medium=x&utm_campaign=launch
 **3/5**
 
 ```text
-🤖 In Telegram: @GullyLabsBot and its Mini App bring the tracker, DeepCore launches, your alerts and Gully AI into chat. Gully AI answers questions about any Gully product from the docs, with sources.
+🤖 In Telegram: @GullyLabsBot and its Mini App bring the tracker, Holder Map, your alerts and Gully AI into chat. Gully AI answers questions about any Gully product from the docs, with sources.
 https://t.me/GullyLabsBot
 ```
 

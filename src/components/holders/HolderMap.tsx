@@ -14,10 +14,10 @@ import { newTab } from '../LayoutNav'
 import { feeText, jupiterFeeText } from '../swap/swapConfig'
 import { xPost } from '../../lib/share'
 import { ageText } from '../../lib/tracker'
-import { getJson, holdersCardUrl, holdersCsvUrl, holdersPagePath, holdersPath, INFRA_KINDS, useHolderMap, type HealthPartId, type HolderFrame, type HolderLabelKind, type HolderMapOk, type HolderNode, type WalletDetail } from '../../lib/holders'
+import { holdersCardUrl, holdersCsvUrl, holdersPagePath, INFRA_KINDS, useHolderMap, type HealthPartId, type HolderFrame, type HolderLabelKind, type HolderMapOk, type HolderNode } from '../../lib/holders'
 import { APP_URL, holderAbsUrl, holderHref, isLocalHost } from '../../site-host'
 import { useLive } from './live'
-import { AskExplain, CrossTokenCard, DeployerHistoryCard, HealthCard, LivePill } from './parts'
+import { AskExplain, HealthCard, LivePill } from './parts'
 import { extentOf, forceLayout, radiusFor } from './layout'
 import { fmtPct, norm } from './format'
 import { K } from './theme'
@@ -58,7 +58,7 @@ const fmtUsd = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(Math.round(n)).t
 const fmtUnits = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 4 }))
 const PCT = { maximumFractionDigits: 2 } as const
 /** A holder's label for a narrow row: the parenthetical detail ("Burn (dead address)") is dropped. */
-const shortLabel = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').replace(/^DeepCore launch lock$/, 'Launch lock')
+const shortLabel = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '')
 
 const VIEWS: SegOption<'map' | 'list'>[] = [
   { id: 'map', label: 'Map' },
@@ -128,7 +128,7 @@ export interface HolderMapProps {
   compact?: boolean
   /** Embedded on another site: trades and shares open gullylabs.xyz. */
   embed?: boolean
-  /** Where Buy / Sell goes: '#swap' on a stock page; null hides it. Launches go to DeepCore's swap by default. */
+  /** Where Buy / Sell goes: '#swap' on a stock page; null hides it. Launches and other tokens open the explorer by default. */
   tradeHref?: string | null
   onTrade?: () => void
   /** The map's own page: the title is the page's h1, live mode runs, the map takes the first screen. */
@@ -157,7 +157,7 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
                 ? 'The Holder Map could not check this token'
                 : 'The Holder Map is busy'
         }
-        text={m.comingSoon ? `Maps for tokens on ${chainName} are on the way. DeepCore launches already have live maps you can open now.` : m.reason}
+        text={m.comingSoon ? `Maps for tokens on ${chainName} are on the way. Tokens on Gully Chain already have live maps you can open now.` : m.reason}
         action={
           m.state === 'busy'
             ? undefined
@@ -759,8 +759,6 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       )}
       {sel && <Panel key={sel.id} n={sel} m={m} pct={pctAt(sel)} frames={frames} idx={idxOf.get(sel.id) ?? null} recent={m.recentFlows ?? []} onClose={() => setSelected(null)} onPick={(id) => (setSelected(id), shownView === 'map' && canvas.current?.flyTo(id))} />}
       {why}
-      {m.deployerHistory && <DeployerHistoryCard d={m.deployerHistory} now={now} />}
-      {m.crossToken && <CrossTokenCard x={m.crossToken} />}
       {!compact && !embed && (
         <div className="flex flex-col gap-2">
           <AskExplain m={m} />
@@ -1158,21 +1156,6 @@ function Panel({ n, m, pct, frames, idx, recent, onClose, onPick }: { n: HolderN
   const [copied, setCopied] = useState(false)
   const mine = m.links.filter((l) => l.source === n.id || l.target === n.id)
   const cluster = n.cluster ? m.clusters.find((c) => c.id === n.cluster) : null
-  // Launches: the wallet's first buy, its buys and sells, and P&L against its entry price (server side).
-  const [detail, setDetail] = useState<{
-    id: string
-    d: WalletDetail | null
-  } | null>(null)
-  const wantDetail = m.kind === 'deepcore-launch' && !(n.label && INFRA.has(n.label.kind))
-  useEffect(() => {
-    if (!wantDetail) return
-    let alive = true
-    getJson<WalletDetail>(`${holdersPath(m.chain.key, m.token.address)}/wallet/${encodeURIComponent(n.id)}`).then((d) => alive && setDetail({ id: n.id, d }))
-    return () => {
-      alive = false
-    }
-  }, [wantDetail, m.chain.key, m.token.address, n.id])
-  const wd = detail?.id === n.id ? detail.d : undefined
   return (
     <aside aria-label={`Wallet ${n.short}`} className="flex animate-[gl-panel-in_.32s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-3 self-stretch rounded-[12px] border border-gold p-4" style={{ background: K.night }} data-holder-panel>
       <div className="flex items-start justify-between gap-2">
@@ -1211,7 +1194,6 @@ function Panel({ n, m, pct, frames, idx, recent, onClose, onPick }: { n: HolderN
           {n.contract !== null && <span className="rounded-full border border-line-strong px-2 py-[1px] font-mono text-[11px] text-muted">{n.contract ? 'Contract' : 'Plain wallet'}</span>}
         </div>
       )}
-      {wantDetail && <WalletFacts d={wd} symbol={m.token.symbol} />}
       {cluster && (
         <p className="m-0 text-[13px] leading-[1.5] text-muted">
           In cluster {cluster.id.toUpperCase()}: {cluster.count} wallets that sent tokens to each other
@@ -1271,53 +1253,6 @@ function Panel({ n, m, pct, frames, idx, recent, onClose, onPick }: { n: HolderN
         </a>
       </div>
     </aside>
-  )
-}
-
-/** First buy and P&L vs entry, as the server states them (undefined while reading, null when unreadable). */
-function WalletFacts({ d, symbol }: { d: WalletDetail | null | undefined; symbol: string | null }) {
-  if (d === undefined) return <div className="h-[52px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[8px]" style={{ background: K.slate }} aria-label="Reading this wallet's trades" role="status" />
-  if (!d || d.state !== 'ok') return <p className="m-0 font-mono text-[11px] text-dim">This wallet’s trades could not be read just now.</p>
-  const fb = d.firstBuy
-  return (
-    <dl className="m-0 grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-[12px]" data-wallet-facts>
-      <dt className="text-dim">First buy</dt>
-      <dd className="m-0 text-right text-ink">{fb ? `${fb.at ? new Date(fb.at).toISOString().slice(0, 16).replace('T', ' ') : `block ${fb.block.toLocaleString('en-US')}`}` : 'never bought from the pool'}</dd>
-      {fb && (
-        <>
-          <dt className="text-dim">Bought</dt>
-          <dd className="m-0 text-right text-ink">
-            {fmtUnits(fb.tokens)} {symbol ?? ''}
-            {fb.paid ? ` for ${fb.paid.amount.toLocaleString('en-US', { maximumFractionDigits: 6 })} ${fb.paid.symbol}` : ''}
-          </dd>
-        </>
-      )}
-      <dt className="text-dim">Buys / sells</dt>
-      <dd className="m-0 text-right text-ink">
-        {d.buys} / {d.sells}
-      </dd>
-      <dt className="text-dim">P&amp;L vs entry</dt>
-      <dd
-        className="m-0 text-right"
-        style={{
-          color: d.pnlPct === null ? K.muted : d.pnlPct >= 0 ? K.pale : K.warn,
-        }}
-      >
-        {d.pnlPct === null ? 'not known' : `${d.pnlPct >= 0 ? '+' : ''}${d.pnlPct.toFixed(1)}%${d.quote ? ` in ${d.quote} terms` : ''}`}
-      </dd>
-      {d.otherLaunches.length > 0 && (
-        <>
-          <dt className="col-span-2 mt-1 text-dim">Also holds launches</dt>
-          <dd className="col-span-2 m-0 flex flex-wrap gap-1">
-            {d.otherLaunches.slice(0, 6).map((o) => (
-              <Link key={`${o.chainKey}:${o.token}`} to={o.path} className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-2 text-[11px] text-gold-hover hover:border-gold">
-                {o.symbol ?? `${o.token.slice(0, 6)}…`}
-              </Link>
-            ))}
-          </dd>
-        </>
-      )}
-    </dl>
   )
 }
 
@@ -1417,18 +1352,17 @@ function FairBlock({ m }: { m: HolderMapOk }) {
 
 /** The line under the title: what kind of token this map is of. */
 function kindLabel(m: HolderMapOk) {
-  return m.kind === 'deepcore-launch' ? 'DeepCore launch' : m.kind === 'launch' ? `${m.venue ?? 'Launchpad'} launch` : m.kind === 'token' ? 'Token' : 'Stock token'
+  return m.kind === 'launch' ? `${m.venue ?? 'Launchpad'} launch` : m.kind === 'token' ? 'Token' : 'Stock token'
 }
 
 function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embed: boolean; tradeHref?: string | null; onTrade?: () => void; pageUrl: string }) {
   if (tradeHref === null) return null
   const sym = m.token.symbol ?? 'this token'
-  const launch = m.kind === 'deepcore-launch'
+  // Launches and other tokens have no Gully Labs swap: the button opens the block explorer.
   const generic = m.kind === 'token' || m.kind === 'launch'
-  const net = { robinhood: 'robinhood', bsc: 'bsc', base: 'base', hyperevm: 'hyperevm' }[m.chain.key] ?? m.chain.key
-  const href = embed ? pageUrl : (tradeHref ?? (generic ? m.token.url : launch ? `https://deepcore.fun/app/swap?net=${net}&in=0x0000000000000000000000000000000000000000&out=${m.token.address}` : `/tracker/${m.chain.key}/${sym}#swap`))
+  const href = embed ? pageUrl : (tradeHref ?? (generic ? m.token.url : `/tracker/${m.chain.key}/${sym}#swap`))
   const external = embed || /^https?:/.test(href)
-  const note = generic ? 'Opens the block explorer; Gully Labs has no swap for this token.' : launch ? `Opens DeepCore’s own swap; Gully Labs takes no fee there.` : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
+  const note = generic ? 'Opens the block explorer; Gully Labs has no swap for this token.' : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
   return (
     <div className="flex flex-col gap-2 rounded-[12px] border border-line-strong p-4" style={{ background: K.night }} data-holder-trade>
       <p className="m-0 text-[14px] leading-[1.5] text-ink">

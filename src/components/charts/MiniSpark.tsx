@@ -16,7 +16,7 @@ import { useCursor, useInView, useSeen, useTween } from './useMiniChart'
 export interface MiniSparkProps {
   /** One value per point, oldest first; null is an unknown reading (a gap). */
   data: readonly (number | null)[]
-  /** Accessible name: what the line is ("DeepCore daily volume, 30 days"). */
+  /** Accessible name: what the line is ("PeddleSwap daily volume, 30 days"). */
   label: string
   /** x positions (e.g. timestamps) when the points are not evenly spaced. */
   xs?: readonly number[]
