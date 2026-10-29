@@ -4,7 +4,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { fetchStats, type Stats, type VenueOk } from '../lib/stats'
 import type { StatusBody } from '../lib/status'
-import { C, fmtDay, fmtTime, fmtUsd } from './charts'
+import { C, fmtDay, fmtTimeUtc, fmtUsd } from './charts'
 import { consoleToast } from './toast'
 
 export const GULLY_CHAIN_ID = 485590
@@ -153,7 +153,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     const pollStats = async () => {
       try {
         const s = await fetchStats()
-        if (lastGen.current && s.generatedAt !== lastGen.current) consoleToast({ title: 'Venue figures refreshed', text: `${s.venues.filter((v) => v.state === 'ok').length} venues read at ${fmtTime(s.generatedAt)}`, icon: 'activity' })
+        if (lastGen.current && s.generatedAt !== lastGen.current) consoleToast({ title: 'Venue figures refreshed', text: `${s.venues.filter((v) => v.state === 'ok').length} venues read at ${fmtTimeUtc(s.generatedAt)}`, icon: 'activity' })
         lastGen.current = s.generatedAt
         set({ stats: s, statsState: 'ok' })
       } catch {
@@ -290,7 +290,7 @@ function seed(): TapeItem[] {
   }
   return [
     { icon: 'blocks', k: 'Gully Chain', text: `testnet · chain ${GULLY_CHAIN_ID} · reading the newest blocks` },
-    { icon: 'coins', k: 'Venues', text: 'DeepCore, PeddleSwap, Peddles, PeddleQuest, Gully Chain · reading value locked' },
+    { icon: 'coins', k: 'Venues', text: 'PeddleSwap, Peddles, PeddleQuest, Gully Chain · reading value locked' },
     { icon: 'activity', k: 'Gully Quests', text: 'reading quests on chain 485590' },
     { icon: 'server', k: 'Gully RPC', text: 'measuring testnet latency' },
     { icon: 'wallet', k: 'Gully Pay', text: 'reading payment chains' },
@@ -299,7 +299,7 @@ function seed(): TapeItem[] {
 export function tapeItems(l: Live): TapeItem[] {
   const items: TapeItem[] = []
   if (l.stats)
-    for (const v of l.stats.venues)
+    for (const v of l.stats.venues.filter((x) => x.key !== 'deepcore')) // DeepCore partnership ended 2026-10-29
       items.push(
         v.state !== 'ok'
           ? { icon: 'activity', k: NAMES[v.key] || v.key, text: 'could not be read' }

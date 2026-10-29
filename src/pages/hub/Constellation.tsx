@@ -12,7 +12,7 @@ import { useLive } from '../../console/live'
 import { consoleToast } from '../../console/toast'
 import { Spark } from '../../console/ui'
 import '../../terminal/terminal.css'
-import { A, Dot, TChart, UptimeGrid, useHubProducts, type ChartTab } from '../../terminal/kit'
+import { A, TChart, UptimeGrid, useHubProducts, type ChartTab } from '../../terminal/kit'
 import { ContactForm, Process, ServicesList } from '../../terminal/sections'
 import './constellation.css'
 import { useHubLive } from './useHubLive'
@@ -22,6 +22,15 @@ const fmtUsd = (v: number | null) => (v == null ? '—' : v >= 1e6 ? `$${(v / 1e
 const tagOf = (s: string) => (s === 'live' ? 'live' : s === 'soon' || s === 'rolling out' || s === 'coming soon' ? 'soon' : 'new')
 
 /* ---------------------------------------------------------------- the map ---- */
+/** A node's one-line reading when it has no KPI: the short note, never a sentence cut mid-word (the full `why` stays
+    in the node's aria-label, its title and the drawer). Nodes sit about 300 map units apart, so 22 characters is the cap. */
+function mapNote(rd: Reading) {
+  const t = rd.note ?? (rd.why && /unreadable/i.test(rd.why) ? 'source unreadable' : rd.why) ?? '…'
+  if (t.length <= 22) return t
+  const cut = t.slice(0, 22)
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), 12)).replace(/[\s,:·]+$/, '')}…`
+}
+
 function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Reading>; onOpen: (k: ProductKey, from: Element) => void; hot: { keys: ProductKey[]; nb: boolean } | null; setHot: (h: { keys: ProductKey[]; nb: boolean } | null) => void }) {
   const box = useRef<HTMLDivElement>(null)
   const [tall, setTall] = useState(false)
@@ -80,7 +89,7 @@ function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Re
           const r = p.key === 'chain' ? L.rc : L.r
           const at = L.at[p.key]
           const rd = R[p.key]
-          const metric = p.key === 'chain' && rd.kpi ? `block ${fmtNum(rd.kpi.v)}` : rd.kpi ? `${kpiText(rd.kpi)} ${rd.kpi.short}` : (rd.why ?? '…').replace(/:.*$/, '')
+          const metric = p.key === 'chain' && rd.kpi ? `block ${fmtNum(rd.kpi.v)}` : rd.kpi ? `${kpiText(rd.kpi)} ${rd.kpi.short}` : mapNote(rd)
           const cls = ['node', p.status === 'soon' ? 'is-soon' : rd.state === 'up' ? 'is-up' : '', lit ? (lit.on.has(p.key) ? 'hot' : 'dim') : ''].join(' ')
           return (
             <g
@@ -103,6 +112,7 @@ function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Re
               onFocus={() => setHot({ keys: [p.key], nb: true })}
               onBlur={() => setHot(null)}
             >
+              <title>{`${p.name}: ${rd.kpi ? `${kpiText(rd.kpi)} ${rd.kpi.label}` : (rd.why ?? '')}`}</title>
               <circle className="ring" r={r + 2} />
               <circle className="halo" r={r} />
               <image href={p.icon} x={-(r - 5)} y={-(r - 5)} width={2 * (r - 5)} height={2 * (r - 5)} clipPath={`url(#cst-cp-${p.key})`} preserveAspectRatio="xMidYMid slice" />
@@ -113,7 +123,7 @@ function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Re
                 {p.name}
               </text>
               <text className="mt" y={r + 32} textAnchor="middle">
-                {metric.length > 30 ? `${metric.slice(0, 29)}…` : metric}
+                {metric}
               </text>
             </g>
           )
@@ -295,8 +305,8 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
   const chainRows = R.chain.series?.rows ?? []
   const idRows = R.id.series?.rows ?? []
   const tabs: ChartTab[] = [
-    { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (UTC)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)' },
-    { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (UTC)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public' },
+    { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (UTC)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)', legendTotal: chainRows.length ? `${chainRows.length} h total` : undefined },
+    { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (UTC)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public', legendTotal: idRows.length ? `${idRows.length} h total` : undefined },
   ]
   const s = suite(src)
   return (
@@ -309,7 +319,7 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
         <UptimeGrid hub={src.hub} keys={['gully-id', 'chain-site', 'pay', 'rpc-gateway', 'holders', 'security', 'studio', 'gullyai']} compact />
       </section>
       <div className="cst-cell-chart">
-        <TChart label="Live across the suite" tabs={tabs} height={190} />
+        <TChart label="Live across the suite" tabs={tabs} height={220} />
       </div>
       <section className="cst-cell">
         <header>
@@ -454,8 +464,18 @@ function ProductTable({ R, open }: { R: Record<ProductKey, Reading>; open: (k: P
   )
 }
 
+// The venues line: Peddles, PeddleSwap and PeddleQuest only. /api/stats still reads a `deepcore` venue, but that is
+// DeepCore's own cross-chain API (deepcore.fun), not Gully Core, and the partnership ended 2026-10-29, so it is left
+// out of the sum and the names rather than relabelled.
+const BUILT = ['peddles', 'peddleswap', 'peddlequest'] as const
+function builtVenues(src: Sources) {
+  const vs = (src.stats?.venues ?? []).filter((v) => (BUILT as readonly string[]).includes(v.key) && v.state === 'ok') as { tvlUsd?: number | null; volumeAllUsd?: number | null; feesAllUsd?: number | null }[]
+  const add = (k: 'tvlUsd' | 'volumeAllUsd' | 'feesAllUsd') => (vs.some((v) => typeof v[k] === 'number') ? vs.reduce((n, v) => n + (typeof v[k] === 'number' ? (v[k] as number) : 0), 0) : null)
+  return vs.length ? { tvl: add('tvlUsd'), volumeAll: add('volumeAllUsd'), feesAll: add('feesAllUsd') } : null
+}
+
 function Work({ src }: { src: Sources }) {
-  const s = suite(src)
+  const s = builtVenues(src)
   return (
     <div className="cst-work">
       <div>
@@ -463,17 +483,18 @@ function Work({ src }: { src: Sources }) {
         <ServicesList compact />
         <p className="cst-track">
           <ChartSpline className="gt-ic" aria-hidden />{' '}
-          {s.tvl != null ? (
+          {s && s.tvl != null ? (
             <>
-              Venues we built hold <b className="num">{fmtUsd(s.tvl)}</b> in TVL, with <b className="num">{fmtUsd(s.volumeAll)}</b> all-time volume and <b className="num">{fmtUsd(s.feesAll)}</b> in fees (DeepCore, Peddles, PeddleSwap, PeddleQuest; source /api/stats).
+              Venues we built hold <b className="num">{fmtUsd(s.tvl)}</b> in TVL, with <b className="num">{fmtUsd(s.volumeAll)}</b> all-time volume and <b className="num">{fmtUsd(s.feesAll)}</b> in fees (Peddles, PeddleSwap, PeddleQuest; source /api/stats).
             </>
+          ) : src.stats ? (
+            'The venue figures could not be read right now.'
           ) : (
             'Reading the venues we built…'
           )}
         </p>
       </div>
       <div className="cst-work-r">
-        <img src="/brand/hub/art/services.svg" alt="" width={560} height={300} />
         <Process />
         <p className="gt-more">
           <Link className="gt-btn ter" to="/services">
@@ -619,14 +640,14 @@ export function Constellation() {
                 <small>/api/hub</small>
               </div>
               <div>
-                <span className="gt-k">Gully ID sign-ins · 24 h</span>
+                <span className="gt-k">Sign-ins 24 h</span>
                 <b className="num">{kpiText(R.id.kpi)}</b>
                 <small>gullyid.xyz</small>
               </div>
               <div>
                 <span className="gt-k">Gully Chain block</span>
                 <b className="num">{kpiText(R.chain.kpi)}</b>
-                <small>indexer.gullychain.xyz</small>
+                <small>gullychain.xyz</small>
               </div>
             </div>
             <div className="cst-ctas">
@@ -638,9 +659,6 @@ export function Constellation() {
                 <Orbit className="gt-ic" aria-hidden />
                 Explore the suite
               </button>
-              <span className="cst-pill">
-                <Dot s={s.up == null ? 'reading' : s.up === s.total ? 'up' : 'coming'} label={s.up == null ? 'checking' : s.up === s.total ? `all ${s.total} services up` : `${s.up}/${s.total} up`} />
-              </span>
             </div>
           </div>
           <ConstellationMap R={R} onOpen={openDrawer} hot={hot} setHot={setHot} />

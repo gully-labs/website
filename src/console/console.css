@@ -193,7 +193,7 @@
 .lc .trust .badges img{display:block;width:190px;height:48px}
 .lc .trust .facts{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--gl-text-muted);font-variant-numeric:tabular-nums}
 .lc .trust .facts b{color:#fff;font-weight:600}
-.lcp footer{border-top:1px solid var(--gl-line);padding:22px 0 26px;background:var(--gl-surface)}
+.lcp footer{border-top:1px solid var(--gl-line);padding:16px 0 18px;background:var(--gl-surface)}
 .lcp footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px 24px;align-items:center}
 .lcp footer .tagline{display:block;font-weight:600;font-size:13px;color:var(--gl-text-muted);margin-top:8px}
 .lcp footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px}
@@ -321,8 +321,17 @@
 .lc .chainrow .bars:empty{height:56px;border-radius:4px;background:repeating-linear-gradient(90deg,var(--gl-line-2) 0 11px,transparent 11px 14px);animation:breathe-a 2.4s ease-in-out infinite}
 
 /* products on their own domains (2026-10-26): footer product list, menu marks, hand-off cards */
-.lcp footer .fprods{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px}
-.lcp footer .fprods .lab{margin-right:4px}
+.lcp footer .fprods{width:100%;display:grid;gap:2px;padding-top:12px;border-top:1px solid var(--gl-line)}
+.lcp footer .fgrp{display:grid;grid-template-columns:108px minmax(0,1fr);align-items:baseline;gap:0 12px}
+.lcp footer .fgrp ul{gap:0 14px}
+.lcp footer .fgrp ul a{min-height:28px}
+@media (max-width:599px){.lcp footer .fgrp{grid-template-columns:1fr}.lcp footer .fgrp .lab{margin-top:6px}}
+/* compact brand row: logo, tagline and badge on one line where it fits */
+.lcp footer .wrap>div:first-child{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+.lcp footer .wrap>div:first-child>img{width:120px;height:auto}
+.lcp footer .wrap>div:first-child .tagline{margin-top:0}
+.lcp footer .wrap>div:first-child .gt-badge{margin-top:0}
+.lcp footer .wrap>div:first-child .gt-badge img{width:auto;height:36px}
 .lcp footer .fprods .ic{color:var(--gl-cyan)}
 .lc .sheet-list a .ic.ext{width:14px;height:14px;margin-left:auto;opacity:.7}
 .lc .handoff{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:18px;align-items:center}

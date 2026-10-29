@@ -171,14 +171,23 @@ export function ConsoleFooter() {
           </ul>
         </nav>
         <nav aria-label="Gully products" className="fprods">
-          <span className="lab">Products</span>
-          <ul>
-            {PRODUCTS.map((p) => (
-              <li key={p.slug}>
-                <Link to={`/products/${p.slug}`}>{p.name}</Link>
-              </li>
-            ))}
-          </ul>
+          {(
+            [
+              ['labs', 'Gully Labs'],
+              ['chain', 'Gully Chain'],
+            ] as const
+          ).map(([g, label]) => (
+            <div className="fgrp" key={g}>
+              <span className="lab">{label}</span>
+              <ul>
+                {PRODUCTS.filter((p) => p.group === g).map((p) => (
+                  <li key={p.slug}>
+                    <Link to={`/products/${p.slug}`}>{p.name}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
         {!home && (
           <nav aria-label="Site pages" className="more">

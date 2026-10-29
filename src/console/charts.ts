@@ -14,6 +14,8 @@ export const fmtUsd = (v: number | null | undefined) =>
 export const fmtInt = (v: number | null | undefined) => (v == null || !isFinite(v) ? '—' : Math.round(v).toLocaleString('en-US'))
 export const fmtPct = (v: number) => `${v.toFixed(1)}%`
 export const fmtTime = (iso: string | number | Date) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+/** The same clock in UTC, labelled, so every live stamp on a page agrees (the hub board reads UTC). */
+export const fmtTimeUtc = (iso: string | number | Date) => `${new Date(iso).toISOString().slice(11, 19)} UTC`
 export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
 const ease = (t: number) => 1 - Math.pow(1 - t, 3)
 const esc = (s: unknown) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string)
@@ -98,17 +100,21 @@ export interface Series {
 }
 
 export interface LineChart {
-  update(series: Series[], labels: string[], title?: string): void
+  /** `legendTotal` (optional): show each series' total over the window with this note instead of its last point. */
+  update(series: Series[], labels: string[], title?: string, legendTotal?: string | null): void
   destroy(): void
 }
 
 /** Multi-series (optionally stacked) area chart with legend + data table rendered into sibling hosts. */
 export function lineChart(
   el: HTMLElement,
-  opts: { series: Series[]; labels: string[]; fmt?: (v: number | null) => string; title?: string; height?: number; width?: number; stacked?: boolean; integer?: boolean; unit?: string; legendEl?: HTMLElement | null; tableEl?: HTMLElement | null },
+  opts: { series: Series[]; labels: string[]; fmt?: (v: number | null) => string; title?: string; height?: number; width?: number; stacked?: boolean; integer?: boolean; unit?: string; legendEl?: HTMLElement | null; tableEl?: HTMLElement | null; legendTotal?: string | null },
 ): LineChart {
   const { fmt = fmtUsd, height = 220, width = 600, stacked = false, integer = false, unit = '', legendEl, tableEl } = opts
   let title = opts.title ?? ''
+  // legend value: the newest point by default; with legendTotal, the sum over the window (a partial current hour
+  // reads 0 early in the hour, which made "Transactions 0" sit under a busy chart)
+  let legendTotal = opts.legendTotal ?? null
   const W = width, H = height, L = 44, R = 16, T = 12, B = 22
   const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': title })
   el.innerHTML = ''
@@ -192,7 +198,9 @@ export function lineChart(
   }
   const legend = (ser: Series[]) => {
     if (!legendEl) return
-    legendEl.innerHTML = ser.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.name)}<b>${esc(fmt(s.values.filter((v) => v != null).slice(-1)[0] ?? null))}</b></span>`).join('')
+    const real = (s: Series) => s.values.filter((v): v is number => v != null && isFinite(v))
+    const val = (s: Series) => (legendTotal ? (real(s).length ? real(s).reduce((a, v) => a + v, 0) : null) : (real(s).slice(-1)[0] ?? null))
+    legendEl.innerHTML = ser.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.name)}<b>${esc(fmt(val(s)))}</b>${legendTotal ? `<small>${esc(legendTotal)}</small>` : ''}</span>`).join('')
   }
   const table = (ser: Series[], labs: string[]) => {
     if (!tableEl) return
@@ -221,10 +229,14 @@ export function lineChart(
   })
   const same = (a: Series[], b: Series[]) => a.length === b.length && a.every((s, i) => s.values.length === b[i].values.length && s.values.every((v, j) => v === b[i].values[j]))
   return {
-    update(ser, labs, nextTitle) {
+    update(ser, labs, nextTitle, nextTotal) {
       if (nextTitle) {
         title = nextTitle
         svg.setAttribute('aria-label', title)
+      }
+      if (nextTotal !== undefined && nextTotal !== legendTotal) {
+        legendTotal = nextTotal
+        if (cur) legend(cur.ser)
       }
       if (!cur) return
       if (same(cur.ser, ser) && cur.labs.join() === labs.join()) return

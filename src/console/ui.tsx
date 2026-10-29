@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type Compon
 import { Link } from 'react-router'
 import { Activity, ArrowUpRight, Blocks, Check, CircleDollarSign, Coins, Gamepad2, HardDrive, KeyRound, LayoutGrid, Network, Rocket, ScanSearch, Server, ShieldCheck, Wallet, X, Zap, type LucideProps } from 'lucide-react'
 import { MarkLogo, ProductLogo as KitProductLogo } from '../components/ProductLogo'
-import { countUp, fmtInt, fmtTime, spark } from './charts'
+import { countUp, fmtInt, fmtTime, fmtTimeUtc, spark } from './charts'
 import { dismissToast, toastStore, type ToastIcon } from './toast'
 import { tapeItems, useLive, type TapeItem } from './live'
 
@@ -104,7 +104,7 @@ export function LivePill() {
   return (
     <span className={`pill ${down ? 'down' : 'live'}`}>
       <span className="dot" />
-      <span>{down ? 'Stats unreadable' : stats ? `Live · ${fmtTime(stats.generatedAt)}` : 'Connecting'}</span>
+      <span>{down ? 'Stats unreadable' : stats ? `Live · ${fmtTimeUtc(stats.generatedAt)}` : 'Connecting'}</span>
     </span>
   )
 }

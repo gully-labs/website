@@ -1440,10 +1440,10 @@
 }
 .lc .nav ul a {
   border-radius: var(--gt-radius);
-  font-family: var(--gt-mono);
+  /* one type system with the header buttons beside them (kit: sans for words, mono for figures and labels) */
+  font-family: var(--gt-sans);
   font-weight: 500;
-  font-size: 13px;
-  text-transform: lowercase;
+  font-size: 14px;
 }
 .lc .nav ul a:hover,
 .lc .nav ul a[aria-current] {
@@ -1488,7 +1488,7 @@
   border-top: 1px solid var(--gt-rule);
 }
 .lcp footer ul a {
-  font-family: var(--gt-mono);
+  font-family: var(--gt-sans);
   font-size: 13px;
 }
 .lcp footer .gt-badge {

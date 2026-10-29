@@ -178,6 +178,8 @@ export interface ChartTab {
   empty?: string
   head?: ReactNode
   sub?: ReactNode
+  /** Legend shows each series' total over the window, followed by this note (e.g. "24 h total"), not its last point. */
+  legendTotal?: string
 }
 
 /** A live line/area chart with tabs, a data table toggle and honest empty and offline states. */
@@ -191,7 +193,7 @@ export function TChart({ label, tabs, height = 180, right }: { label: ReactNode;
   const tab = tabs[Math.min(cur, tabs.length - 1)]
   const enough = tab.series.some((s) => s.values.filter((v) => v != null).length >= 2)
   const state = tab.state && tab.state !== 'ok' ? tab.state : enough ? 'ok' : 'empty'
-  const key = JSON.stringify([tab.id, tab.series, tab.labels, state])
+  const key = JSON.stringify([tab.id, tab.series, tab.labels, state, tab.legendTotal ?? null])
   useEffect(() => {
     if (!plot.current) return
     if (state !== 'ok') {
@@ -202,8 +204,8 @@ export function TChart({ label, tabs, height = 180, right }: { label: ReactNode;
       if (tbl.current) tbl.current.innerHTML = ''
       return
     }
-    if (!chart.current) chart.current = lineChart(plot.current, { series: tab.series, labels: tab.labels, title: tab.title, fmt: tab.fmt, stacked: tab.stacked, integer: tab.integer, height, legendEl: legend.current, tableEl: tbl.current })
-    else chart.current.update(tab.series, tab.labels, tab.title)
+    if (!chart.current) chart.current = lineChart(plot.current, { series: tab.series, labels: tab.labels, title: tab.title, fmt: tab.fmt, stacked: tab.stacked, integer: tab.integer, height, legendEl: legend.current, tableEl: tbl.current, legendTotal: tab.legendTotal ?? null })
+    else chart.current.update(tab.series, tab.labels, tab.title, tab.legendTotal ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
   useEffect(
