@@ -67,6 +67,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Wallet address privacy modes](https://gullylabs.xyz) (live): The site owner chooses how wallet addresses are stored: hashed, in full, or not at all.
 - [Web3 dashboard](https://gullylabs.xyz) (live): A per-website Web3 page shows unique wallets, connect rate, transactions and a funnel.
 - [Self-hosting and fork licence](https://analytics.gullylabs.xyz) (live): A Docker Compose file runs the app with PostgreSQL. The fork is MIT licensed, like Umami.
+- [Gully Core launchpad and DEX core](https://docs.gullychain.xyz/gully-core/) (testnet): Gully Chain's own launchpad and DEX core: a token launch, its pool and liquidity locked forever in one transaction, with no bonding curve and no migration. Launchpads and DEXes open as clones, and routing charges nothing on Gully Core pools. Built by Gully Labs, live on Gully Chain testnet.
 - [Swap](https://peddleswap.xyz) (live): V2 and V3 liquidity behind one router, with an Auto mode that picks the better venue.
 - [Volatility-aware dynamic fee](https://peddleswap.xyz) (live): A V3 pool can attach a fee module that raises the swap fee as spot drifts from the pool's TWAP.
 - [Token and LP locker](https://peddleswap.xyz) (live): Locks tokens, V2 LP and V3 positions with no admin unlock. Locked V3 positions keep earning fees.

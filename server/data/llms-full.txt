@@ -631,6 +631,19 @@ A Docker Compose file runs the app with PostgreSQL. The fork is MIT licensed, li
 
 URL: https://analytics.gullylabs.xyz
 
+### Gully Core launchpad and DEX core (Gully Core, testnet)
+
+Gully Chain's own launchpad and DEX core: a token launch, its pool and liquidity locked forever in one transaction, with no bonding curve and no migration. Launchpads and DEXes open as clones, and routing charges nothing on Gully Core pools. Built by Gully Labs, live on Gully Chain testnet.
+
+- Our fork of the DeepCore contracts (GPL-2.0-or-later, PancakeSwap Infinity lineage), kept in gully-ops/l3/gully-core
+- LaunchpadKitV2 opens a launch on a CL range or a Bin distribution, tradable from the first block, with liquidity locked forever by GullyCoreLPLocker / GullyCoreBinLPLocker
+- Our launchpad's defaults: an anti-snipe fee that opens at 50% and falls to 0.3% over 60 seconds, a 0.0001 ETH launch fee, and trading fees split 75% to the creator and 25% to Gully
+- GullyCorePadFactory creates a Launchpad or DEX as a clone in one transaction
+- Trades on Gully Core pools pay no router fee; GullyCoreFillRouter fills other venues for a fee under an immutable cap
+- Live on Gully Chain testnet (chain 485590) since 2026-10-29
+
+URL: https://docs.gullychain.xyz/gully-core/
+
 ### Swap (PeddleSwap, live)
 
 V2 and V3 liquidity behind one router, with an Auto mode that picks the better venue.
@@ -833,7 +846,6 @@ URL: https://gullylabs.xyz/products
 - Verified contracts (building): Verified contracts show their source, ABI and compiler settings, with Read and Write tabs, from a self-hosted Sourcify server. A public explorer API is coming soon.
 - Chain launch interface (building): A rebranded Arbitrum Orbit deployment UI. It is not deployed and currently targets Arbitrum Sepolia only.
 - Gully Bridge (building): A fork of the Arbitrum token bridge for moving assets between a Gully chain and its parent chain. Only the README header is changed so far.
-- Gully Core launchpad and DEX core (building): Gully Chain's own launchpad and DEX core: a token launch, its pool and liquidity locked forever in one transaction, Launchpads and DEXes opened as clones, and routing that charges nothing on Gully Core pools. Built by Gully Labs, not deployed yet; the first target is Gully Chain testnet.
 - Gully Safe multisig (building): Safe{Wallet} multisig wallets for Gully Chain at safe.gullychain.xyz, run on Gully infrastructure.
 - Gully AI API (building): An OpenAI-compatible API for the gully-ai model at ai.gullylabs.xyz/v1, documented at gullyai.xyz/docs; it goes live when the GPU server arrives.
 

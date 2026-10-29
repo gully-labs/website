@@ -1380,19 +1380,21 @@ export const features: Feature[] = [
     id: "gully-core-launch-kit",
     product: "Gully Core",
     name: "Gully Core launchpad and DEX core",
-    status: "building",
-    summary: "Gully Chain's own launchpad and DEX core: a token launch, its pool and liquidity locked forever in one transaction, Launchpads and DEXes opened as clones, and routing that charges nothing on Gully Core pools. Built by Gully Labs, not deployed yet; the first target is Gully Chain testnet.",
+    status: "testnet",
+    summary: "Gully Chain's own launchpad and DEX core: a token launch, its pool and liquidity locked forever in one transaction, with no bonding curve and no migration. Launchpads and DEXes open as clones, and routing charges nothing on Gully Core pools. Built by Gully Labs, live on Gully Chain testnet.",
     facts: [
       "Our fork of the DeepCore contracts (GPL-2.0-or-later, PancakeSwap Infinity lineage), kept in gully-ops/l3/gully-core",
       "LaunchpadKitV2 opens a launch on a CL range or a Bin distribution, tradable from the first block, with liquidity locked forever by GullyCoreLPLocker / GullyCoreBinLPLocker",
-      "Launch guards charge an opening fee of up to 50% on CL (10% on Bin) that decays to the pool's fee over at least 60 seconds",
+      "Our launchpad's defaults: an anti-snipe fee that opens at 50% and falls to 0.3% over 60 seconds, a 0.0001 ETH launch fee, and trading fees split 75% to the creator and 25% to Gully",
       "GullyCorePadFactory creates a Launchpad or DEX as a clone in one transaction",
       "Trades on Gully Core pools pay no router fee; GullyCoreFillRouter fills other venues for a fee under an immutable cap",
-      "Not deployed yet: the first target is Gully Chain testnet (chain 485590)"
+      "Live on Gully Chain testnet (chain 485590) since 2026-10-29"
     ],
     url: "https://docs.gullychain.xyz/gully-core/",
     source: [
-      "gully-ops:l3/gully-core/README.md"
+      "gully-ops:l3/gully-core/README.md",
+      "gully-ops:l3/docs/gully-core.md",
+      "gully-ops:sites/_docs/gully-core-launch-defaults.json"
     ]
   },
   {

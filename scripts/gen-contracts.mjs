@@ -130,8 +130,8 @@ for (const [chainId, address] of [
 }
 
 // DeepCore's own deployments (deepcore:packages/sdk address book) were listed here until the partnership ended on
-// 2026-10-29: they are DeepCore's contracts, not addresses Gully Labs uses. Gully Core, our fork, gets its own entries
-// from l3/generated/gully-core.json once it is deployed on Gully Chain.
+// 2026-10-29: they are DeepCore's contracts, not addresses Gully Labs uses. Gully Core, our fork, is live on Gully Chain
+// testnet since 2026-10-29 (l3/generated/gully-core.json); adding its entries here is a follow-up.
 
 // ------------------------------------------------------------------------------------------ Peddles (deployment records)
 for (const chainId of [56, 4663, 8453, 5042]) {

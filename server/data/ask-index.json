@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-29T19:22:16.111Z",
+ "updatedAt": "2026-10-29T19:47:07.720Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -4561,15 +4561,15 @@
    "status": "building"
   },
   {
-   "id": "36f7571388d9",
-   "source": "Roadmap",
-   "title": "Roadmap: Gully Core launchpad and DEX core (Gully Core), not available yet",
-   "url": "https://gullylabs.xyz/products",
-   "section": "Gully Core launchpad and DEX core (building)",
-   "text": "Gully Core launchpad and DEX core (Gully Core) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Gully Chain's own launchpad and DEX core: a token launch, its pool and liquidity locked forever in one transaction, Launchpads and DEXes opened as clones, and routing that charges nothing on Gully Core pools. Built by Gully Labs, not deployed yet; the first target is Gully Chain testnet. Our fork of the DeepCore contracts (GPL-2.0-or-later, PancakeSwap Infinity lineage), kept in gully-ops/l3/gully-core LaunchpadKitV2 opens a launch on a CL range or a Bin distribution, tradable from the first block, with liquidity locked forever by GullyCoreLPLocker / GullyCoreBinLPLocker Launch guards charge an opening fee of up to 50% on CL (10% on Bin) that decays to the pool's fee over at least 60 seconds GullyCorePadFactory creates a Launchpad or DEX as a clone in one transaction Trades on Gully Core pools pay no router fee; GullyCoreFillRouter fills other venues for a fee under an immutable cap Not deployed yet: the first target is Gully Chain testnet (chain 485590)",
-   "updatedAt": "2026-10-29T19:22:16.111Z",
+   "id": "835f0e07d954",
+   "source": "Features",
+   "title": "Gully Core launchpad and DEX core (Gully Core)",
+   "url": "https://docs.gullychain.xyz/gully-core/",
+   "section": "Gully Core launchpad and DEX core",
+   "text": "Gully Core launchpad and DEX core is part of Gully Core. Status: on testnet only, not on mainnet yet. Gully Chain's own launchpad and DEX core: a token launch, its pool and liquidity locked forever in one transaction, with no bonding curve and no migration. Launchpads and DEXes open as clones, and routing charges nothing on Gully Core pools. Built by Gully Labs, live on Gully Chain testnet. Our fork of the DeepCore contracts (GPL-2.0-or-later, PancakeSwap Infinity lineage), kept in gully-ops/l3/gully-core LaunchpadKitV2 opens a launch on a CL range or a Bin distribution, tradable from the first block, with liquidity locked forever by GullyCoreLPLocker / GullyCoreBinLPLocker Our launchpad's defaults: an anti-snipe fee that opens at 50% and falls to 0.3% over 60 seconds, a 0.0001 ETH launch fee, and trading fees split 75% to the creator and 25% to Gully GullyCorePadFactory creates a Launchpad or DEX as a clone in one transaction Trades on Gully Core pools pay no router fee; GullyCoreFillRouter fills other venues for a fee under an immutable cap Live on Gully Chain testnet (chain 485590) since 2026-10-29",
+   "updatedAt": "2026-10-29T19:47:07.720Z",
    "feature": "gully-core-launch-kit",
-   "status": "building"
+   "status": "testnet"
   },
   {
    "id": "3206ddfe33bf",
